@@ -524,12 +524,12 @@ public static class MoonSurface
         // shipped materials across the system to seal this room, and nobody does that for a store cupboard.
         // Rare on purpose (one in seven): a signal that fires on every ruin is wallpaper. It is seeded per
         // doorway, so the room worth breaking into is a fact about the site rather than a fresh die.
-        int doorwayIndex = 0;
-        foreach (SurfaceLayout.Doorway d in layout.Doorways ?? [])
+        // #563 slice 2 · ASKED IN CORE, because the lattice's tiles hang exactly these and a rule written
+        // out twice is the bug class where one copy gets edited. SurfaceTiles.Doors answers the HOME tile on
+        // the site's own salt, so every door on this ground is the colour it has always been.
+        foreach (SurfaceTiles.HungDoor d in SurfaceTiles.Doors(bodyId, siteSalt, SurfaceTiles.Home))
         {
-            bool imported = DiceRule.Roll(
-                DiceRule.Seed($"imported-door:{bodyId}:{siteSalt}:{doorwayIndex++}"), 7).Face == 1;
-            doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2, Imported: imported));
+            doors.Add(new((float)d.X1, (float)d.Y1, (float)d.X2, (float)d.Y2, Imported: d.Imported));
         }
 
         // #573 · AND SOMETHING INSIDE ABOUT HALF OF THEM — the "services" half of the same report. A
@@ -537,17 +537,11 @@ public static class MoonSurface
         // in cost air and taught you not to bother next time. But if EVERY building paid out, entering them
         // would stop being a decision and become a chore performed on all of them, so the empty ones are
         // load-bearing: they are what make the others worth the suit-air.
-        var salvageSpots = new List<(int Index, float X, float Y)>();
-        IReadOnlyList<(double X, double Y)> centres = layout.BuildingCentres ?? [];
-        for (int i = 0; i < centres.Count; i++)
-        {
-            SurfaceSalvage.Find find = SurfaceSalvage.WhatIsInside(bodyId, siteSalt, i);
-            if (find == SurfaceSalvage.Find.Nothing)
-            {
-                continue;
-            }
-            salvageSpots.Add((i, (float)centres[i].X, (float)centres[i].Y));
-        }
+        //
+        // #563 slice 2 · …and this question, too, is Core's now, for the same reason the doors above are:
+        // every tile in the lattice asks it and there must be exactly one asking.
+        IReadOnlyList<SurfaceTiles.Drawer> salvageSpots =
+            SurfaceTiles.Drawers(bodyId, siteSalt, SurfaceTiles.Home);
 
         var consoles = new List<DeckPlan.ConsoleSpot>(
             ship.Consoles.Where(c => c.Kind != DeckPlan.ConsoleKind.Airlock))
@@ -853,10 +847,10 @@ public static class MoonSurface
             labels.Add(((float)shelter.CentreX, (float)(shelter.CentreY - 7), "⛺ SHELTER"));
         }
 
-        foreach ((int index, float sx, float sy) in salvageSpots)
+        foreach (SurfaceTiles.Drawer drawer in salvageSpots)
         {
-            consoles.Add(new(DeckPlan.ConsoleKind.RuinSalvage, sx, sy,
-                SurfaceSalvage.LabelFor(SurfaceSalvage.WhatIsInside(bodyId, siteSalt, index))));
+            consoles.Add(new(DeckPlan.ConsoleKind.RuinSalvage, (float)drawer.X, (float)drawer.Y,
+                SurfaceSalvage.LabelFor(drawer.Find)));
         }
 
 

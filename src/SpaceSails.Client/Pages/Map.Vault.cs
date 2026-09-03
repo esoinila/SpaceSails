@@ -486,6 +486,14 @@ public partial class Map
             PapersShown = YourPaperTrail.Count > 0
                 ? new PapersShownSection { Shown = [.. YourPaperTrail.Select(r => r.Stored)] }
                 : null,
+            // #563 slice 2 · WHAT THIS CAPTAIN CHANGED ON A MOON — the hatches forced, the lockers lifted,
+            // the effects read, keyed on (body, site, tile). Durable because a hut is a PLACE: walking away
+            // from one and finding it dogged again on the next trip is the world becoming wallpaper, which
+            // is the exact failure the treadmill decision names. Written only when there is something to
+            // write, so a voyage that never set foot on a moon leaves the section out of the file entirely.
+            Ground = _groundMemory.Count > 0
+                ? new GroundSection { Changed = _groundMemory.Stored }
+                : null,
             // #603 · the satchel — everything carried on foot, durable because a thing found eleven floors
             // under a moon has to still be in the pocket a month and a world later. Opaque item strings, so
             // the save carries the FACT and never the words.
@@ -704,77 +712,6 @@ public partial class Map
         => _voyageGroups = GameThreads.GroupSlots(
             _threadList, _activeThreadId,
             tid => (tid == (_activeThreadId ?? "") ? Slots : new SaveSlotBook(_slotStore, tid)).List());
-
-    // ── Captain-card display helpers (presentation over the Core-seeded identity). ──
-
-    // The active universe's registry row — its captain identity — for the in-play captain chip (owner
-    // 2026-07-19: "the current captain profile pic could also be at some corner of the screen while
-    // playing"). Prefers the cached list; falls back to a direct registry read so the chip is correct even
-    // before the first RefreshThreadList of a session. The name is EDITABLE stored data (a later lane's
-    // rename UI writes GameThreadInfo.CaptainName); the chip just reads whatever is stored (or seeded).
-    private GameThreadInfo? ActiveThreadInfo
-        => string.IsNullOrEmpty(_activeThreadId)
-            ? null
-            : _threadList.FirstOrDefault(t => t.Id == _activeThreadId) ?? Threads.Get(_activeThreadId);
-
-    // The book for a given thread id: the bound active book when it IS the active universe (so the drawer
-    // and live writes stay on one instance), else a fresh book over the same store for that other universe.
-    private SaveSlotBook BookFor(string threadId)
-        => string.IsNullOrEmpty(threadId) || threadId == (_activeThreadId ?? "")
-            ? Slots
-            : new SaveSlotBook(_slotStore, threadId);
-
-    // A captain's card subtitle: where the voyage sits and when it was last touched — the "which universe is
-    // this" line under the name. A thin (pre-#354) thread honestly reads "unknown waters" here.
-    private static string CaptainWhen(GameThreadInfo t)
-    {
-        string place = string.IsNullOrWhiteSpace(t.Where) ? "unknown waters" : t.Where;
-        string last = t.LastActiveTicks > 0
-            ? new DateTimeOffset(t.LastActiveTicks, TimeSpan.Zero).ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
-            : "—";
-        return $"{place} · day {Math.Max(0, t.SimDay)} · last active {last}";
-    }
-
-    // The captain card's "retired" line (Evening wind #20): who held this license before the piracy
-    // insurance replaced them, most recent first. Compact — the newest one or two retirees, then a "+N
-    // more" tail so a long-lived, oft-killed universe doesn't run the card off the door. Each entry reads
-    // "under Capt. <name> until day <N>" (Core CaptainSuccession.RetiredLine).
-    private static string CaptainRetiredSummary(GameThreadInfo t)
-    {
-        IReadOnlyList<RetiredCaptain> retired = t.Retired;
-        if (retired.Count == 0)
-        {
-            return "";
-        }
-
-        const int show = 2;
-        IEnumerable<RetiredCaptain> newestFirst = retired.Reverse();
-        string head = string.Join(" · ", newestFirst.Take(show).Select(CaptainSuccession.RetiredLine));
-        int more = retired.Count - show;
-        return more > 0 ? $"{head} · +{more} more" : head;
-    }
-
-    // The monogram initial for the fallback avatar disc (first letter of the captain's given name).
-    private static string CaptainInitial(string captainName)
-    {
-        string n = captainName.StartsWith("Captain ", StringComparison.Ordinal)
-            ? captainName["Captain ".Length..]
-            : captainName;
-        return n.Length > 0 ? n[..1].ToUpperInvariant() : "?";
-    }
-
-    // A stable seeded hue for the fallback disc, so a captain whose portrait fails to load still gets a
-    // consistent colour (and two captains rarely share one). Derived from the thread id, deterministic.
-    private static string CaptainMonoColor(string id)
-    {
-        uint h = 2166136261u;
-        foreach (char c in id)
-        {
-            h = (h ^ c) * 16777619u;
-        }
-
-        return $"hsl({h % 360} 42% 36%)";
-    }
 
     // The front door's "Continue — <where>": restore the ACTIVE thread's newest slot instead of a fresh start.
     private Task ContinueFromSave() => LoadSlot(Slots.Newest()?.Id);
@@ -1084,6 +1021,11 @@ public partial class Map
                 _caseThreads = [.. Core.CaseThreads.Draw(_caseThreads, line.A, line.B)];
             }
         }
+
+        // #563 slice 2 · The marks this captain left on the ground of every moon they walked. Restored
+        // wholesale rather than merged, because a load is a different life and not this one continuing; a
+        // pre-slice-2 file simply has none, and every hut on every moon is honestly dogged again.
+        _groundMemory = GroundMemory.Restore(vault.Ground?.Changed);
 
         // #836 · The captain's paper trail — which identity was handed to which man, on which floor. A row
         // this build cannot parse is dropped rather than thrown over, the same tolerance the satchel gets;

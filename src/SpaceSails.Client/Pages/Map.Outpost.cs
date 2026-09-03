@@ -72,7 +72,7 @@ public partial class Map
             SurfaceOutpost.OutpostCover cover =
                 SurfaceOutpost.CoverFor(ex.Stop.Body.Id, ex.Site.LayoutSalt, p.Tile);
 
-            if (!ex.HutsForced.Contains(p.Tile))
+            if (!HutRemembers(ex, p.Tile, GroundMemory.HutChange.Forced))
             {
                 // Unforced, the hut is a LANDMARK you can see from across the ground, not a secret you must
                 // detect. That is deliberate: the owner's design is that a captain plans a route out and back
@@ -98,8 +98,9 @@ public partial class Map
                 // its walls and its landmark, so it still reads as a place you have been.
                 bool spent = c.Kind switch
                 {
-                    SurfaceOutpost.OutpostConsoleKind.AmmoCache => ex.HutsLooted.Contains(p.Tile),
-                    _ => ex.HutsRead.Contains(p.Tile),
+                    SurfaceOutpost.OutpostConsoleKind.AmmoCache =>
+                        HutRemembers(ex, p.Tile, GroundMemory.HutChange.Emptied),
+                    _ => HutRemembers(ex, p.Tile, GroundMemory.HutChange.Read),
                 };
                 if (spent)
                 {
@@ -177,7 +178,7 @@ public partial class Map
             return;
         }
 
-        ex.HutsForced.Add(tile);
+        RememberHut(ex, tile, GroundMemory.HutChange.Forced);
 
         // #573 · THE JOB COSTS AIR. Levering a dogged hatch is not a five-second thing; the five seconds you
         // held E is the game being polite about it. The clock jumps to the far side of the work and the
@@ -211,7 +212,8 @@ public partial class Map
         {
             return;
         }
-        if (HutUnderYourHand(ex, at.X, at.Y) is not { } hut || ex.HutsLooted.Contains(hut.Tile))
+        if (HutUnderYourHand(ex, at.X, at.Y) is not { } hut
+            || HutRemembers(ex, hut.Tile, GroundMemory.HutChange.Emptied))
         {
             return;
         }
@@ -259,7 +261,7 @@ public partial class Map
             left -= take;
         }
 
-        ex.HutsLooted.Add(hut.Tile);
+        RememberHut(ex, hut.Tile, GroundMemory.HutChange.Emptied);
         RebuildSurfaceDeck();
         RendererInterop.PlayCue("board");
         ShowPulseMessage(SurfaceOutpost.CacheLine(rounds - left));
@@ -281,14 +283,15 @@ public partial class Map
         {
             return;
         }
-        if (HutUnderYourHand(ex, at.X, at.Y) is not { } hut || ex.HutsRead.Contains(hut.Tile))
+        if (HutUnderYourHand(ex, at.X, at.Y) is not { } hut
+            || HutRemembers(ex, hut.Tile, GroundMemory.HutChange.Read))
         {
             return;
         }
 
         SurfaceOutpost.OutpostCover cover =
             SurfaceOutpost.CoverFor(ex.Stop.Body.Id, ex.Site.LayoutSalt, hut.Tile);
-        ex.HutsRead.Add(hut.Tile);
+        RememberHut(ex, hut.Tile, GroundMemory.HutChange.Read);
         RebuildSurfaceDeck();
 
         // #588 · FILED, AND IT COUNTS AS A PIECE OF SOMEBODY'S KIT. Owner, finding the hut mid-playtest: "now

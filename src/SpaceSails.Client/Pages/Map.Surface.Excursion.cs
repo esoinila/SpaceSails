@@ -593,18 +593,24 @@ public partial class Map
         // on stepping out, so coming back in says it again — arriving in a refuge is worth noticing twice.
         public bool ShelterBreathNoted { get; set; }
 
-        // #563 · THE GROUND IS A LATTICE, so a hut is not "the site's hut" any more. Everything below is
-        // keyed on a TILE ADDRESS, because a state keyed on the site would have every hut in the world open
-        // the moment the captain forced the first one — the exact "the world quietly becomes wallpaper"
-        // failure the treadmill decision names. Huts is the resolved placement per loaded tile (a cache of a
-        // pure function, so it can be dropped and recomputed at will); the three sets are what the CAPTAIN
-        // did, which cannot be recomputed from a seed by definition and so is remembered.
+        // #563 · THE GROUND IS A LATTICE, so a hut is not "the site's hut" any more. Huts is the resolved
+        // placement per loaded tile — a cache of a PURE FUNCTION, so it can be dropped and recomputed at
+        // will, which is exactly the property that makes it safe to keep on a visit.
+        //
+        // #563 slice 2 · WHAT THE CAPTAIN DID TO THEM IS NOT HERE ANY MORE, and that is the whole of the
+        // slice. Forced / emptied / read were three HashSets on this record, so they were forgotten the
+        // moment the shuttle lifted: a hatch shouldered open on one trip was dogged again on the next and
+        // the rounds already taken were back on the shelf. They live on the ship's own ledger now
+        // (Map._groundMemory / Core GroundMemory), keyed on (body, site, tile, what) and written to the
+        // vault. There is deliberately NO copy of them here — a cached copy of a fact is a second source of
+        // that fact, and this is the class of state that must not have two.
         public Dictionary<SurfaceTiles.Address, SurfaceOutpost.Placement> Huts { get; } = [];
-        public HashSet<SurfaceTiles.Address> HutsForced { get; } = [];
-        public HashSet<SurfaceTiles.Address> HutsLooted { get; } = [];
-        public HashSet<SurfaceTiles.Address> HutsRead { get; } = [];
         public SurfaceTiles.Address? OutpostDoorTile { get; set; }
         public DoorChannel? OutpostDoorChannel { get; set; }
+
+        // #563 law 7 · Has the backstop already refused a step this excursion? One voice per visit, so the
+        // line is said once and a boundary a captain can lean on never becomes a nag.
+        public SurfaceEdge.BackstopVoice Backstop { get; } = new();
 
         // #563 · Which tiles are carried right now, and how many times that has changed. Never null: an
         // excursion always stands on ground, even before it has walked a step.

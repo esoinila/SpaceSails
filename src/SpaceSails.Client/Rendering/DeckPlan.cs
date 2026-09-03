@@ -511,7 +511,11 @@ public sealed class DeckPlan
     /// floor and under the walls, because it is what is standing IN a room rather than what the room is made
     /// of. Empty everywhere Core furnishes nothing, which is every deck in the game but the Hive's.</summary>
     public FurnitureSpot[] Furniture { get; private set; }
-    public Door[] Doors { get; }
+    /// <summary>#563 slice 2 · Settable for the same reason <see cref="Walls"/> is: a live plan GROWS. A
+    /// tile welded on at a crossing brings its own buildings, and a building without its doorway is the
+    /// #573 report ("shelter like spaces that were just missing the services and the doors") re-shipped one
+    /// tile out.</summary>
+    public Door[] Doors { get; private set; }
 
     /// <summary>#563 · TERRAIN — drawn, never collided. Kept in its own array rather than as a flag on
     /// <see cref="Wall"/> ON PURPOSE: <see cref="CollisionSegments"/> is derived from <c>Walls</c> in the
@@ -722,7 +726,13 @@ public sealed class DeckPlan
         // grows a live plan, and a tile is mostly weather: craters, scree, rille banks. Scenery is drawn and
         // never collides (SurfaceScenery), so appending it cannot seal anything and cannot fail an audit —
         // it is the one part of a tile that is pure picture.
-        SpaceSails.Core.SurfaceScenery.Mark[]? Scenery = null);
+        SpaceSails.Core.SurfaceScenery.Mark[]? Scenery = null,
+        // #563 slice 2 · …and DOORS, last so every existing positional caller is untouched. Everything off
+        // the home tile arrived through this door as bare walls, so a ruin a hundred du out had the openings
+        // the generator hands back and nothing hung in them — word for word the complaint #573 was filed
+        // about, reintroduced by the lattice. A door is not collision (the wall either side of the gap is),
+        // so appending one can never seal anything and cannot fail an audit.
+        Door[]? Doors = null);
 
     /// <summary>Grow this plan by one region. The walls (and ONLY the new walls) get fresh collision
     /// segments appended after the existing ones; consoles, labels and backdrops concatenate. Existing
@@ -750,6 +760,7 @@ public sealed class DeckPlan
         }
 
         Consoles = Concat(Consoles, region.Consoles);
+        Doors = Concat(Doors, region.Doors);
         RoomLabels = Concat(RoomLabels, region.Labels);
         Backdrops = Concat(Backdrops, region.Backdrops);
         Structures = Concat(Structures, region.Structures);

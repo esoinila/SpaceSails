@@ -558,7 +558,14 @@ public sealed class EveryFrameHashesTheSameTests
         // than a nudge to get green: the sweep laid 25,062 marks and now lays 12,776, because every one of the
         // missing ones was drawn past the edge of the glass. The floor's job is to catch a sweep that has
         // stopped drawing anything, so it goes just under what the sweep genuinely lays.
-        Assert.True(calls > 10_000, $"only {calls} mark(s) were laid in all — this sweep proves little.");
+        //
+        // #563 slice 2 · …and down again, 12,776 → 9,420, for the same reason and by the same measurement:
+        // the cull reached the DOORS and the console PLATES, which it had never covered. Every mark it took
+        // was one drawn past the edge of the glass — a deck's view is 64 du across and a Hive floor is three
+        // hundred — so what is gone was never on a screen. Re-measured, never nudged: the floor sits just
+        // under what the sweep genuinely lays, and its job is unchanged (catch a sweep that has stopped
+        // drawing).
+        Assert.True(calls > 9_000, $"only {calls} mark(s) were laid in all — this sweep proves little.");
 
         // …and the ledger holds two rows for every case and not one row more: a pin for a case that is no
         // longer drawn is a number nothing measures, and it would sit there green forever.

@@ -164,6 +164,51 @@ public static class SurfaceEdge
         return r > BackstopRadiusAt(bodyId, siteSalt, Math.Atan2(dy, dx));
     }
 
+    /// <summary>
+    /// #563 law 7 · WHAT THE BACKSTOP SAYS, AND HOW OFTEN — one excursion's worth of "has the suit already
+    /// refused a step?".
+    ///
+    /// <para>The rule the whole air mechanic is built under is that <b>nothing may stop a captain in
+    /// silence</b> (#564: a countdown that quietly runs out is the same design failure as an invisible wall).
+    /// The backstop is the last place in the game that could still do that, so it speaks — and exactly once,
+    /// because the boundary is a place a captain can stand and lean against, and a sentence fired on every
+    /// frame of that would be a nag rather than a fact.</para>
+    ///
+    /// <para>The geometry is asked ONCE here and handed back with the line, so the caller never re-runs
+    /// <see cref="BeyondBackstop"/> to decide whether to hold — two calls are two chances to answer
+    /// differently, which is this project's most expensive habit.</para>
+    ///
+    /// <para>Deliberately NOT re-armed on coming back inside. A captain who walks out, is refused, walks in
+    /// and walks out again has learned the fact; repeating it would be the game explaining itself twice to
+    /// somebody who has demonstrably understood.</para>
+    /// </summary>
+    public sealed class BackstopVoice
+    {
+        private bool _said;
+
+        /// <summary>Whether this step is past the backstop, and the line to say if it is the first one that
+        /// was. <c>Line</c> is null on every step but that one.</summary>
+        public readonly record struct Refusal(bool Beyond, string? Line);
+
+        /// <summary>Has this excursion already been refused a step?</summary>
+        public bool HasSpoken => _said;
+
+        /// <summary>Ask the boundary about one step.</summary>
+        public Refusal Step(string bodyId, string siteSalt, double x, double y)
+        {
+            if (!BeyondBackstop(bodyId, siteSalt, x, y))
+            {
+                return new Refusal(false, null);
+            }
+            if (_said)
+            {
+                return new Refusal(true, null);
+            }
+            _said = true;
+            return new Refusal(true, SuitAir.BackstopRefusal);
+        }
+    }
+
     /// <summary>Walk one edge in steps of at most <see cref="SegmentDu"/>, joining consecutive samples.</summary>
     private static void AddRun(
         List<(double, double, double, double)> chain, double length, Func<double, (double X, double Y)> at)
