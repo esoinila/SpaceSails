@@ -200,18 +200,25 @@ public sealed class AFindIsADecisionTests
     // ── The words ─────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// <b>TWO WORDS, AND THEY ARE THE ONLY TWO.</b>
+    /// <b>TWO WORDS AND ONE AUTHORED SENTENCE, AND THEY ARE THE ONLY THREE.</b>
     ///
     /// <para>Everything else this feature says out loud is somebody else's sentence, already written and
     /// already shipped — the room's haul line, Core's full-pocket refusal, the sleeve's row name. So the law
-    /// is that this type publishes exactly two strings; a third one appearing here is prose that nobody
+    /// is that this type publishes exactly three strings; a fourth one appearing here is prose that nobody
     /// authored, which is the one thing a lane like this may not ship.</para>
+    ///
+    /// <para>The third arrived the way the law requires and not around it: #615 shipped LEAVE with a
+    /// <c>// FABLE: line needed</c> marker and no sentence, Fable authored one on the issue's closing pass,
+    /// and it is pinned character for character by
+    /// <see cref="TheLeaveLine_IsTheAuthoredSentenceAndClaimsNothingMoved"/>. That pairing is what keeps
+    /// this guard from being a counter: the count says nothing new may appear, and the other says what the
+    /// one that did appear must be.</para>
     ///
     /// <para>Read by reflection rather than from a list, because a list would have to be edited by the same
     /// hand that added the string.</para>
     /// </summary>
     [Fact]
-    public void TheOnlyWordsThisFeatureAddsAreKeepAndLeave()
+    public void TheOnlyWordsThisFeatureAddsAreKeepAndLeaveAndTheLeaveLine()
     {
         string[] published = [.. typeof(KeepOrLeave)
             .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)
@@ -219,15 +226,20 @@ public sealed class AFindIsADecisionTests
             .Select(f => (string)f.GetRawConstantValue()!)
             .OrderBy(s => s, StringComparer.Ordinal)];
 
-        Assert.Equal(["Keep", "Leave"], published);
+        Assert.Equal(["Keep", "Leave", KeepOrLeave.LeftWhereItLies], published);
 
         // Plate-idiom nouns: what the hand does, and nothing about what the thing is. No glyph, no
         // sentence, no punctuation — the room's own line is already on the card above them.
-        foreach (string word in published)
+        foreach (string word in new[] { KeepOrLeave.KeepLabel, KeepOrLeave.LeaveLabel })
         {
             Assert.DoesNotContain(' ', word);
             Assert.True(word.All(char.IsAsciiLetter), $"\"{word}\" is not one plain word");
         }
+
+        // …and the sentence is a sentence, not a third button: it would be on the card as a label the
+        // moment it read like one.
+        Assert.Contains(' ', KeepOrLeave.LeftWhereItLies);
+        Assert.EndsWith(".", KeepOrLeave.LeftWhereItLies, StringComparison.Ordinal);
     }
 
     /// <summary>§8's reserved word, and the fifteen beside it. This feature's own strings say nothing about
@@ -297,5 +309,29 @@ public sealed class AFindIsADecisionTests
         Assert.False(KeepOrLeave.TryReadKey("luna|-3", Body, out _, out _));
         Assert.False(KeepOrLeave.TryReadKey("luna|-3|2|4", Body, out _, out _));
         Assert.False(KeepOrLeave.TryReadKey("", Body, out _, out _));
+    }
+
+    /// <summary>#615 · <b>THE LEAVE LINE IS FABLE'S, VERBATIM.</b> Authored on the issue's closing pass
+    /// (2026-09-03) for the one <c>// FABLE: line needed</c> this feature shipped with, so the guard is the
+    /// sentence character for character.
+    ///
+    /// <para>And it checks what the line must NOT be, which is the half that can tell pass from fail. It may
+    /// not borrow <see cref="LeftBehind"/>'s wording — <i>where you left it</i> is about a thing that was in
+    /// a hand and put down, and a sheet nobody picked up was never left anywhere — because that is the exact
+    /// lie <see cref="KeepOrLeave"/>'s own docblock refused to tell and the reason this verb never writes to
+    /// that store. It may not name the reserved word (worldbuilding-notes §8), and it may not report that
+    /// the find was taken, dropped or lost: nothing moved.</para></summary>
+    [Fact]
+    public void TheLeaveLine_IsTheAuthoredSentenceAndClaimsNothingMoved()
+    {
+        Assert.Equal("Left where it lies. The room will still have it.", KeepOrLeave.LeftWhereItLies);
+
+        foreach (string forbidden in new[]
+        {
+            "monolith", "where you left it", "dropped", "taken", "lost", "gone",
+        })
+        {
+            Assert.DoesNotContain(forbidden, KeepOrLeave.LeftWhereItLies, StringComparison.OrdinalIgnoreCase);
+        }
     }
 }
