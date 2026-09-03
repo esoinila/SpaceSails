@@ -1,4 +1,4 @@
-@page "/map"
+﻿@page "/map"
 @implements IDisposable
 @implements IHandleEvent
 @inject HttpClient Http
@@ -7564,7 +7564,11 @@
                                     </div>
                                     @if (_fuelPump is { } _pump)
                                     {
-                                        int _fuelPrice = FuelMarket.PricePerPulse(_ephemeris!.Position(_pump.Id, SimTime).Length);
+                                        @* #1068 · the same quote the till charges, market move and all — a desk that
+                                           priced a fill differently from the till would be the named bug class exactly. *@
+                                        int _fuelPrice = FuelMarket.PricePerPulse(
+                                            _ephemeris!.Position(_pump.Id, SimTime).Length,
+                                            QuietHands.PulsePriceMoveAt(_ephemeris!, _pump.Id));
                                         int _fuelRoom = _fuelCap - _fuelPulses;
                                         FuelMarket.Quote _fill = FuelMarket.QuoteFill(_fuelPulses, _fuelCap, _fuelPrice, _credits, int.MaxValue);
                                         FuelMarket.Quote _topUp = FuelMarket.QuoteFill(_fuelPulses, _fuelCap, _fuelPrice, _credits, 10);
