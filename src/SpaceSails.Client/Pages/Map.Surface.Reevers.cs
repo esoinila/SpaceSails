@@ -362,7 +362,9 @@ public partial class Map
         {
             foreach (SentryBot.Husk h in volley.Husks)
             {
-                ex.Husks.Add((h.X, h.Y));
+                // #316 · The ONE writer: the visit gets the mark it draws and the ground gets the row it
+                // keeps, so a field a captain stood in is still a field he stood in next month.
+                AHuskFallsAt(ex, h.X, h.Y);
             }
             RendererInterop.PlayCue("alarm");
             ShowPulseMessage($"🔫 Zap — {volley.Husks.Count} Old One{(volley.Husks.Count == 1 ? "" : "s")} down, {(volley.Husks.Count == 1 ? "a husk" : "husks")} left in the regolith. The sentries hold — watch the counters.");

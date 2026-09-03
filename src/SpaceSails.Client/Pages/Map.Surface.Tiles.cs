@@ -244,6 +244,126 @@ public partial class Map
     /// excursions and across the whole voyage. See <see cref="GroundMemory"/>.</summary>
     private GroundMemory _groundMemory = new();
 
+    // ── #316 law 1 · THE HUSKS ARE ON THE SAME LEDGER, AND FOR THE SAME REASON ──────────────────────────
+    //
+    //  Owner, live: "If we find already shot Reevers at a site then we know that somebody else has been there
+    //  to hide, pick-up, search etc :-D It serves as a clue." A clue is a thing you come BACK to, and the
+    //  husks were the one mark in this game that could not be come back to: a list on the excursion, written
+    //  by the sentry volley and the sweep team, thrown away with the visit. Lift off, land again, and the
+    //  field where four Old Ones went down was clean regolith.
+    //
+    //  So a husk on the regolith is a ground mark like any other — the identical (body, site, tile) key, the
+    //  identical vault section, the identical law that the ledger is the one source. What it carries that no
+    //  other mark does is WHEN, because its value as evidence is its age.
+
+    /// <summary>Does the GROUND out here keep husks? Only the regolith does. A poured floor hundreds of
+    /// metres down and somebody else's steel deck are both real places to be shot on, and neither of them is
+    /// a landing site's tile lattice — a husk recorded there would be filed against a coordinate frame it
+    /// was never measured in.</summary>
+    private bool TheGroundKeepsHusksHere(SurfaceExcursion ex) => ex.Floor == 0 && !OnWreck;
+
+    /// <summary>
+    /// ONE OLD ONE GOES DOWN. The single writer, and every path that drops one comes through here — the
+    /// sentry volley, and the sweep team's professionals. It does two things and they cannot come apart: the
+    /// visit gets the mark it draws, and the GROUND gets the row it keeps.
+    /// </summary>
+    private void AHuskFallsAt(SurfaceExcursion ex, double x, double y)
+    {
+        var husk = new GroundMemory.Husk(x, y, SimTime);
+        ex.Husks.Add(husk);
+
+        if (!TheGroundKeepsHusksHere(ex))
+        {
+            return;
+        }
+
+        if (_groundMemory.Remember(GroundMemory.HuskKey(ex.Stop.Body.Id, ex.Site.LayoutSalt, husk)))
+        {
+            RequestVaultSave();   // the footprints have to survive the shuttle, which means surviving the file
+        }
+    }
+
+    /// <summary>What the last visit left lying here, before the first frame of this one is drawn. The same
+    /// place and the same reason <see cref="SeedTurnedOverRooms"/> runs: a ground painted ahead of the
+    /// seeding would be a field a captain walks into clean and then watches sprout corpses.
+    ///
+    /// <para>Core reads its own rows (<see cref="GroundMemory.TryReadHuskKey"/>); nothing here knows the key
+    /// format. And nothing here rolls: a husk is on this ground because something actually fell on it.</para>
+    /// </summary>
+    private void SeedTheHusksLeftHere(SurfaceExcursion ex)
+    {
+        foreach (GroundMemory.Husk husk in _groundMemory.HusksAt(ex.Stop.Body.Id, ex.Site.LayoutSalt))
+        {
+            ex.Husks.Add(husk);
+        }
+    }
+
+    /// <summary>
+    /// #316 law 2 · READING THE SCENE. Owner: <i>"on visiting, remains render with age-graded flavor in the
+    /// house voice — 'still smoking' vs 'regolith-dusted, weeks old' — so recency is legible to a captain who
+    /// looks."</i> Walk onto the pile and the pile says how long it has been there; the words are Core's
+    /// (<see cref="GroundMemory.AgeLine"/>), off the sim time in the ledger.
+    ///
+    /// <para><b>Why the walk and not [E].</b> A press would have been the natural verb — the ground already
+    /// answers one ahead of the consoles (#688) — but [E] on the regolith is <c>BURY THE CHEST HERE</c>, and a
+    /// husk that ate that press would be a corpse a captain can never bury a chest beside. The pulse is also
+    /// the idiom the husks already speak in, and it is what the issue actually asks for: legible <i>on
+    /// visiting</i>, not on a deliberate verb.</para>
+    ///
+    /// <para>THE WHOLE PILE IN REACH IS ONE LOOK: every husk within the reach is marked read and the FRESHEST
+    /// of them supplies the sentence, so four bodies in a heap are one line about the most recent death
+    /// rather than four lines in four frames. Latched per husk per visit (<c>HusksRead</c>).</para>
+    /// </summary>
+    private void CheckHusksUnderfoot()
+    {
+        // `_viewObject` for the sibling polls' reason (#680): a pulse played under an open card renders
+        // beneath its backdrop.
+        if (_surface is not { } ex || ex.Husks.Count == 0 || _viewObject is not null)
+        {
+            return;
+        }
+
+        GroundMemory.Husk? freshest = null;
+        var reached = new List<string>();
+        foreach (GroundMemory.Husk husk in ex.Husks)
+        {
+            double dx = husk.X - _avatarX;
+            double dy = husk.Y - _avatarY;
+            if ((dx * dx) + (dy * dy) > DeckPlan.InteractRadius * DeckPlan.InteractRadius)
+            {
+                continue;
+            }
+
+            // The ledger's own key identifies it, so the latch and the store name the same corpse. A husk on
+            // a steel deck has no ledger row of its own; the key is still the thing that tells two of them
+            // apart, so it is built the same way and simply never written.
+            string id = GroundMemory.HuskKey(ex.Stop.Body.Id, ex.Site.LayoutSalt, husk);
+            if (!ex.HusksRead.Add(id))
+            {
+                continue;
+            }
+
+            reached.Add(id);
+            if (freshest is not { } far || husk.FellAtSimTime > far.FellAtSimTime)
+            {
+                freshest = husk;
+            }
+        }
+
+        if (reached.Count == 0 || freshest is not { } read)
+        {
+            return;
+        }
+
+        // A middle-aged husk has no sentence yet (GroundMemory.AgeLine returns null, and the marker there
+        // says why). It is still MARKED read: the silence is the reading, and asking again every frame for a
+        // line that does not exist would be a poll with no end.
+        if (GroundMemory.AgeLine(read, SimTime) is { } line)
+        {
+            ShowPulseMessage($"☠ {line}");
+        }
+    }
+
     /// <summary>Where this tile's hut stands, resolved once and remembered for the visit. A cache of a pure
     /// function — dropping it would cost a regeneration and change nothing, which is exactly the property
     /// that makes it safe to keep.</summary>

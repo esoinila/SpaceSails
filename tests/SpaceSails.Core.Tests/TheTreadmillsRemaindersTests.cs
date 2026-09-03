@@ -235,6 +235,172 @@ public class TheTreadmillsRemaindersTests
         Assert.Equal(1, tolerant.Count);
     }
 
+    // ── #316 law 1 · THE HUSKS TELL THE TALE ────────────────────────────────────────────────────────────
+    //
+    //  Owner, live: "If we find already shot Reevers at a site then we know that somebody else has been there
+    //  to hide, pick-up, search etc :-D It serves as a clue." A clue is a thing you come BACK to, and the
+    //  husks were the one mark in this game that could not be: a list on the excursion, thrown away with the
+    //  visit, so the field where four Old Ones went down was clean regolith on the next landing. They are on
+    //  the same ledger as everything else the captain changed now, and they carry WHEN, because a husk's
+    //  whole value as evidence is its age.
+
+    /// <summary>
+    /// A HUSK LEFT ON ONE VISIT IS STILL LYING THERE ON THE NEXT — through a real save and load, which is
+    /// the only version of "the next visit" that matters. The excursion is thrown away between the halves,
+    /// exactly as the shuttle throws it away, and what comes back is a position and a MOMENT: the sim time it
+    /// fell, so the age is knowable a month later.
+    ///
+    /// <para>Positions round to a hundredth of a deck unit and the moment to the second on the way in, which
+    /// is deliberate — a key built out of raw doubles would come back a different husk every time the game
+    /// was saved. Two Old Ones cannot stand a centimetre apart, so nothing real collides.</para>
+    ///
+    /// <para><b>Proven RED</b> by keeping the husks on the excursion (not writing the ledger row): the
+    /// reload finds an empty field.</para>
+    /// </summary>
+    [Fact]
+    public void AHuskLeftOnOneVisit_IsStillLyingThereOnTheNextAndAcrossTheFile()
+    {
+        // Two went down in a stand at the tube mouth, one out on a tile of its own, at two different hours.
+        GroundMemory.Husk[] fell =
+        [
+            new(4.25, -8.5, 120_000.0),
+            new(-2.0, -11.25, 120_000.0),
+            new(SurfaceTiles.TileWidthDu * 2 + 3.5, -SurfaceTiles.TileHeightDu - 6.0, 300_000.0),
+        ];
+
+        var ship = new GroundMemory();
+        foreach (GroundMemory.Husk husk in fell)
+        {
+            Assert.True(ship.Remember(GroundMemory.HuskKey("phobos", "RidgeCamp", husk)));
+        }
+        Assert.False(ship.Remember(GroundMemory.HuskKey("phobos", "RidgeCamp", fell[0])),
+            "the same corpse twice is not two corpses.");
+
+        // Lift-off, then the file. A captain who saves on the ground and loads a week later walks back into
+        // the same field.
+        var saved = new Vault { Ground = new GroundSection { Changed = ship.Stored } };
+        Vault loaded = VaultSerializer.Load(VaultSerializer.Save(saved));
+        GroundMemory back = GroundMemory.Restore(loaded.Ground?.Changed);
+
+        IReadOnlyList<GroundMemory.Husk> found = back.HusksAt("phobos", "RidgeCamp");
+        Assert.Equal(fell.Length, found.Count);
+
+        foreach (GroundMemory.Husk want in fell)
+        {
+            GroundMemory.Husk got = Assert.Single(found,
+                h => Math.Abs(h.X - want.X) < 0.005 && Math.Abs(h.Y - want.Y) < 0.005);
+            Assert.Equal(want.FellAtSimTime, got.FellAtSimTime, 0);
+
+            // …and it is lying on the tile it fell on, which is DERIVED from the position and never a second
+            // field that could disagree with it.
+            Assert.Equal(SurfaceTiles.At(want.X, want.Y), got.Tile);
+        }
+
+        // NOTHING APPEARS WHERE NOTHING FELL. No seeding, no roll: another site of the same moon, another
+        // moon, and a moon nobody has walked on all hold an empty field.
+        Assert.Empty(back.HusksAt("phobos", "WildPlain"));
+        Assert.Empty(back.HusksAt("miranda", "RidgeCamp"));
+        Assert.Empty(new GroundMemory().HusksAt("phobos", "RidgeCamp"));
+
+        // A row this build cannot parse is refused rather than guessed at — the file's own standing law.
+        Assert.False(GroundMemory.TryReadHuskKey("husk:phobos:RidgeCamp:0_0:nonsense", "phobos", "RidgeCamp", out _));
+        Assert.False(GroundMemory.TryReadHuskKey("hut:phobos:RidgeCamp:0_0:forced", "phobos", "RidgeCamp", out _));
+        Assert.Empty(GroundMemory.Restore(["husk:phobos:RidgeCamp:0_0:4.25_junk@1"]).HusksAt("phobos", "RidgeCamp"));
+    }
+
+    /// <summary>
+    /// #316 law 2 · WHAT A CAPTAIN WHO LOOKS CAN TELL. Owner's own words are the only prose — <i>"'still
+    /// smoking' vs 'regolith-dusted, weeks old'"</i> — and the band is read off the SIM CLOCK against the
+    /// moment in the ledger, so the sentence is a fact about the world rather than about the session.
+    ///
+    /// <para>The middle band says NOTHING on purpose: the owner wrote two lines and this is the third case,
+    /// and a sentence invented here would be a line in the house voice he never wrote (there is a
+    /// <c>FABLE: line needed</c> at the band). Asserted at every boundary, because a threshold that selects
+    /// everything is a known bug class here.</para>
+    ///
+    /// <para><b>Proven RED</b> by widening the fresh band to a week: a six-day-old husk claims to be
+    /// smoking.</para>
+    /// </summary>
+    [Fact]
+    public void AHusksAgeReadsOffTheSimClockAndPicksTheRightBand()
+    {
+        const string smoking = "Still smoking.";
+        const string dusted = "Regolith-dusted. Weeks old.";
+        const double now = 1_000_000.0;
+
+        GroundMemory.Husk At(double secondsAgo) => new(3.0, -5.0, now - secondsAgo);
+
+        // FRESH — under one sim day, and right up to the boundary.
+        Assert.Equal(smoking, GroundMemory.AgeLine(At(0), now));
+        Assert.Equal(smoking, GroundMemory.AgeLine(At(GroundMemory.FreshWithinSeconds - 1), now));
+
+        // THE MIDDLE — a day old to a week old, and no line for any of it.
+        Assert.Null(GroundMemory.AgeLine(At(GroundMemory.FreshWithinSeconds), now));
+        Assert.Null(GroundMemory.AgeLine(At(3 * GroundMemory.DaySeconds), now));
+        Assert.Null(GroundMemory.AgeLine(At(GroundMemory.OldAfterSeconds - 1), now));
+
+        // OLD — a week or more.
+        Assert.Equal(dusted, GroundMemory.AgeLine(At(GroundMemory.OldAfterSeconds), now));
+        Assert.Equal(dusted, GroundMemory.AgeLine(At(40 * GroundMemory.DaySeconds), now));
+
+        // The bands are the sim clock's, not the wall clock's: the same husk read at two moments reads
+        // differently, which is the whole of "recency is legible".
+        GroundMemory.Husk shot = new(3.0, -5.0, now);
+        Assert.Equal(smoking, GroundMemory.AgeLine(shot, now + 3_600));
+        Assert.Null(GroundMemory.AgeLine(shot, now + (2 * GroundMemory.DaySeconds)));
+        Assert.Equal(dusted, GroundMemory.AgeLine(shot, now + (30 * GroundMemory.DaySeconds)));
+
+        // Two strings, and neither borrows the reserved word (worldbuilding-notes §8).
+        foreach (string line in new[] { smoking, dusted })
+        {
+            Assert.DoesNotContain("monolith", line, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>ONE HUSK'S ROW IS ONLY THAT HUSK'S ROW. The key carries the body, the site salt, the tile,
+    /// the position and the moment — so a stand at one landing site does not litter another site of the same
+    /// moon, and a husk that fell on Tuesday is not the one that fell on Friday two metres away. A persisted
+    /// key that collides is a bug that only shows up on the visit after next.</summary>
+    [Fact]
+    public void OneHusksRow_IsOnlyThatHusksRow()
+    {
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        int made = 0;
+
+        foreach ((string body, string salt) in Sites())
+        {
+            foreach (SurfaceTiles.Address a in Spread())
+            {
+                (double leftX, _, double bottomY, _) = SurfaceTiles.Rect(a);
+                foreach (double when in new[] { 0.0, 86_400.0, 900_000.5 })
+                {
+                    foreach (double offset in new[] { 1.5, 4.25 })
+                    {
+                        made++;
+                        Assert.True(
+                            keys.Add(GroundMemory.HuskKey(body, salt,
+                                new GroundMemory.Husk(leftX + offset, bottomY + offset, when))),
+                            $"{body}/{salt} tile ({a.X}, {a.Y}) +{offset} at {when}: this row is already "
+                            + "somebody else's — one stand would litter another moon.");
+                    }
+                }
+            }
+        }
+        Assert.Equal(made, keys.Count);
+
+        // …and the reader only ever hands back this ground's dead.
+        var ship = new GroundMemory();
+        ship.Remember(GroundMemory.HuskKey("phobos", "RidgeCamp", new(4.0, -8.0, 500.0)));
+        ship.Remember(GroundMemory.HuskKey("phobos", "", new(4.0, -8.0, 500.0)));
+        ship.Remember(GroundMemory.HuskKey("miranda", "RidgeCamp", new(4.0, -8.0, 500.0)));
+        ship.Remember(GroundMemory.HutKey("phobos", "RidgeCamp", new(0, -1), GroundMemory.HutChange.Forced));
+
+        Assert.Single(ship.HusksAt("phobos", "RidgeCamp"));
+        Assert.Single(ship.HusksAt("phobos", ""));
+        Assert.Single(ship.HusksAt("miranda", "RidgeCamp"));
+        Assert.Equal(4, ship.Count);   // the hatch is still a hatch and never read back as a corpse
+    }
+
     // ── REMAINDER 3 · THE TILES OUT THERE HAVE DOORS AND DRAWERS ────────────────────────────────────────
 
     /// <summary>ONE SALT PER TILE'S CONTENTS, AND THE HOME TILE'S IS THE SITE'S OWN. The first clause is

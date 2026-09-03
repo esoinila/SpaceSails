@@ -79,6 +79,64 @@ public class TheGroundRemembersWhatYouDidToItTests
         Assert.Contains("GroundMemory.Restore(vault.Ground?.Changed)", vault, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// #316 law 1 · THE HUSKS RIDE THE SAME LEDGER, AND ONE HAND WRITES THEM. The Core guards
+    /// (<c>TheTreadmillsRemaindersTests</c>) prove the rows survive a vault; what only the client can get
+    /// wrong is the WIRING, and every way it could be half-done is a silent forget:
+    ///
+    /// <list type="bullet">
+    ///   <item>a kill path that appends to the visit's list and never writes the ledger — the exact bug this
+    ///   lane is fixing, re-shipped through the other of the two guns;</item>
+    ///   <item>a ledger written and never read back on arrival, so the field is clean anyway;</item>
+    ///   <item>the age reading never polled, so a row with a moment in it is a moment nobody is told.</item>
+    /// </list>
+    ///
+    /// <para>Read off the shipping method bodies, the way this file's siblings read routing claims: the page
+    /// cannot be stood up in a test, and half a wiring is exactly the mistake that would ship.</para>
+    ///
+    /// <para><b>Proven RED</b> three ways: by putting the sweep team's kill back to
+    /// <c>_surface?.Husks.Add(...)</c>, by removing the arrival seeding, and by removing the poll from
+    /// <c>StepSurface</c>.</para>
+    /// </summary>
+    [Fact]
+    public void TheHusks_AreWrittenByOneHandSeededOnArrivalAndRead()
+    {
+        // ONE WRITER. Both guns come through AHuskFallsAt, and nothing else in the client builds a husk row:
+        // a second writer is a second place to forget the ledger, which is this bug exactly.
+        foreach (string file in new[] { "Map.Surface.Reevers.cs", "Map.SweepTeam.cs" })
+        {
+            Assert.Contains("AHuskFallsAt(ex,", Pages(file), StringComparison.Ordinal);
+            Assert.DoesNotContain(".Husks.Add(", Pages(file), StringComparison.Ordinal);
+        }
+
+        string tiles = Pages("Map.Surface.Tiles.cs");
+        Assert.Contains("private void AHuskFallsAt(SurfaceExcursion ex, double x, double y)", tiles,
+            StringComparison.Ordinal);
+        Assert.Contains("_groundMemory.Remember(GroundMemory.HuskKey(", tiles, StringComparison.Ordinal);
+        Assert.Contains("RequestVaultSave()", tiles, StringComparison.Ordinal);
+
+        // …and the row is only written where the GROUND can hold one. A poured floor hundreds of metres down
+        // and somebody else's steel deck are real places to be shot on and neither is a tile of a landing
+        // site's lattice, so a husk filed there would be measured in a frame it was never in.
+        Assert.Contains("TheGroundKeepsHusksHere(ex)", tiles, StringComparison.Ordinal);
+        Assert.Contains("ex.Floor == 0 && !OnWreck", tiles, StringComparison.Ordinal);
+
+        // SEEDED ON ARRIVAL, at the one place the excursion is built, beside the rooms it already seeds —
+        // and out of Core's own reader, so the client never learns the key format.
+        Assert.Contains("SeedTheHusksLeftHere(excursion);", Pages("Map.Surface.cs"), StringComparison.Ordinal);
+        Assert.Contains("_groundMemory.HusksAt(ex.Stop.Body.Id, ex.Site.LayoutSalt)", tiles,
+            StringComparison.Ordinal);
+
+        // READ: the age band is polled as the captain walks, in the underfoot family, and the words are
+        // Core's own rather than a second copy of them here.
+        Assert.Contains("CheckHusksUnderfoot();", Pages("Map.Surface.Frame.cs"), StringComparison.Ordinal);
+        Assert.Contains("GroundMemory.AgeLine(read, SimTime)", tiles, StringComparison.Ordinal);
+        foreach (string prose in new[] { "Still smoking", "Regolith-dusted" })
+        {
+            Assert.DoesNotContain(prose, tiles, StringComparison.Ordinal);
+        }
+    }
+
     /// <summary>THE GROUND OUT THERE IS FURNISHED. Slice 1 welded a tile's WALLS and nothing else, so a
     /// building a hundred du from the tube was a thick-walled room with an open gap where its door belongs
     /// and nothing at all inside — word for word the report #573 was filed about, re-shipped one tile out.

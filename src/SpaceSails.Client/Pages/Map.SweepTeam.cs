@@ -621,7 +621,12 @@ public sealed partial class Map
         if (target.HitsTaken >= SentryBot.RoundsPerReever * 2)
         {
             _reevers.Remove(target);
-            _surface?.Husks.Add((target.X, target.Y));
+            if (_surface is { } ex)
+            {
+                // #316 · Through the one writer, exactly as the captain's own sentries go — a professional's
+                // kill leaves the same evidence in the regolith as an amateur's.
+                AHuskFallsAt(ex, target.X, target.Y);
+            }
         }
     }
 

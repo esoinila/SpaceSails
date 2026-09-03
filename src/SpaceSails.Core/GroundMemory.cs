@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace SpaceSails.Core;
@@ -64,6 +65,148 @@ public sealed class GroundMemory
         ArgumentNullException.ThrowIfNull(siteSalt);
         return $"hut:{bodyId}:{siteSalt}:{tile.X}_{tile.Y}:{Word(what)}";
     }
+
+    // ── #316 law 1 · THE HUSKS TELL THE TALE ──────────────────────────────────────────────────────────
+    //
+    // Owner, live: "If we find already shot Reevers at a site then we know that somebody else has been there
+    // to hide, pick-up, search etc :-D It serves as a clue."
+    //
+    // Which is a claim about PERSISTENCE, and the husks did not have it. They were a list on the excursion
+    // record (SurfaceExcursion.Husks) written by the sentry volley and by the sweep team, and lift-off threw
+    // it away with the visit: the footprints of a firefight died with the shuttle, so a captain could never
+    // come back to a field and read what had happened in it — not his own stand, and certainly not somebody
+    // else's. That is #563's own bug one layer out, and this is #563's own answer: it belongs on the SHIP's
+    // ledger, keyed on the ground, written to the vault.
+    //
+    // A husk carries the SIM-TIME IT FELL, and that is the difference between this and every other mark in
+    // here. The other marks are facts that do not age (a hatch is open or it is not); a husk's whole value as
+    // a clue is HOW OLD IT IS, so the moment is in the key and the reading is a function of it.
+    //
+    // No tile field: the tile is DERIVED from the position (SurfaceTiles.At), so a husk cannot be recorded
+    // on one tile and drawn on another — the fourth named bug class in this repo is exactly two answers to
+    // one question.
+
+    /// <summary>One downed Old One, where it fell and when. <see cref="FellAtSimTime"/> is the ship's sim
+    /// clock in seconds — the same clock the vault, the heat decay and the hunters' fitting-out all run
+    /// on.</summary>
+    public readonly record struct Husk(double X, double Y, double FellAtSimTime)
+    {
+        /// <summary>Which tile of the lattice it is lying on. Derived, never stored: one position, one
+        /// answer.</summary>
+        public SurfaceTiles.Address Tile => SurfaceTiles.At(X, Y);
+    }
+
+    /// <summary>A sim day, in seconds — the unit the age bands below are measured in.</summary>
+    public const double DaySeconds = 86400.0;
+
+    /// <summary>Under this much sim time since it fell, a husk is FRESH.</summary>
+    public const double FreshWithinSeconds = DaySeconds;
+
+    /// <summary>At or over this much, it is OLD. A week is the owner's own boundary ("weeks old").</summary>
+    public const double OldAfterSeconds = 7 * DaySeconds;
+
+    /// <summary>The key for one husk. The position is rounded to a hundredth of a deck unit and the moment
+    /// to the second before it goes in, so the same husk always spells the same row: a key built out of raw
+    /// doubles would round-trip through the file and come back a DIFFERENT husk, which is a corpse that
+    /// duplicates itself every time the game is saved.</summary>
+    public static string HuskKey(string bodyId, string siteSalt, Husk husk)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        ArgumentNullException.ThrowIfNull(siteSalt);
+        SurfaceTiles.Address tile = husk.Tile;
+        return $"husk:{bodyId}:{siteSalt}:{tile.X}_{tile.Y}:{Fixed(husk.X)}_{Fixed(husk.Y)}"
+             + $"@{husk.FellAtSimTime.ToString("F0", CultureInfo.InvariantCulture)}";
+    }
+
+    /// <summary>Read one back, if it is a husk on THIS ground. Core reads its own key — a transcription of
+    /// the format in the client would be a second reader that agrees with the writer until the day one of
+    /// them is edited. A row this build cannot parse is refused rather than guessed at, exactly as
+    /// <see cref="Restore"/> drops one it cannot trust.</summary>
+    public static bool TryReadHuskKey(string key, string bodyId, string siteSalt, out Husk husk)
+    {
+        husk = default;
+        if (key is null || bodyId is null || siteSalt is null)
+        {
+            return false;
+        }
+
+        string prefix = $"husk:{bodyId}:{siteSalt}:";
+        if (!key.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        // "<tx>_<ty>:<x>_<y>@<fell>" — the tile half is re-derived from the position and never trusted, so a
+        // hand-edited file cannot put a husk on a tile it is not standing on.
+        string[] halves = key[prefix.Length..].Split(':');
+        if (halves.Length != 2)
+        {
+            return false;
+        }
+
+        string[] atAndWhen = halves[1].Split('@');
+        if (atAndWhen.Length != 2)
+        {
+            return false;
+        }
+
+        string[] xy = atAndWhen[0].Split('_');
+        if (xy.Length != 2
+            || !double.TryParse(xy[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double x)
+            || !double.TryParse(xy[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double y)
+            || !double.TryParse(atAndWhen[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double fell))
+        {
+            return false;
+        }
+
+        husk = new Husk(x, y, fell);
+        return true;
+    }
+
+    /// <summary>Every husk this ledger is holding for one landing site, in the ledger's own stable order.
+    /// Built by asking Core to read its own rows, so what is drawn on a return visit is what was written on
+    /// the last one and nothing else — there is no seeding here and no roll: a husk exists because something
+    /// actually fell.</summary>
+    public IReadOnlyList<Husk> HusksAt(string bodyId, string siteSalt)
+    {
+        var found = new List<Husk>();
+        foreach (string row in Stored)
+        {
+            if (TryReadHuskKey(row, bodyId, siteSalt, out Husk husk))
+            {
+                found.Add(husk);
+            }
+        }
+        return found;
+    }
+
+    /// <summary>
+    /// WHAT A CAPTAIN WHO LOOKS CAN TELL, and it is the whole of #316 law 2: recency is legible. Owner's own
+    /// words, and the only prose here — <i>"remains render with age-graded flavor in the house voice —
+    /// 'still smoking' vs 'regolith-dusted, weeks old'"</i>.
+    ///
+    /// <para>Null in the middle band, deliberately: see the note below. A husk between a day and a week old
+    /// draws its mark and says nothing, which is honest — the game has no sentence for it yet, and inventing
+    /// one here would put a line in the house voice that the owner never wrote.</para>
+    /// </summary>
+    public static string? AgeLine(Husk husk, double nowSimTime)
+    {
+        double age = nowSimTime - husk.FellAtSimTime;
+        if (age < FreshWithinSeconds)
+        {
+            return "Still smoking.";
+        }
+
+        // FABLE: line needed — the middle age. Between a sim day and a week there is no sentence, because
+        // the owner wrote two and this is the third case. It wants to be the band where a captain can still
+        // tell somebody was here THIS trip but not this hour: something about the dust having started, or
+        // the frost, without either of the two lines above being nearly true. Left silent rather than
+        // guessed at.
+        return age >= OldAfterSeconds ? "Regolith-dusted. Weeks old." : null;
+    }
+
+    private static string Fixed(double v) =>
+        Math.Round(v, 2).ToString("F2", CultureInfo.InvariantCulture);
 
     /// <summary>Is this already so?</summary>
     public bool Knows(string key)

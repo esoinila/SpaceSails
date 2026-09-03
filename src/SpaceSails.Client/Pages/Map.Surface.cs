@@ -522,6 +522,10 @@ public partial class Map
         // is that a declined find is still there, which is a promise you can only keep if a KEPT one is not.
         SeedTurnedOverRooms(excursion);
 
+        // #316 law 1 · …AND THE HUSKS THE LAST VISIT LEFT LYING HERE. Same moment, same reason: what the
+        // ground kept is on the ship's ledger, and a field is meant to still be the field you shot it up.
+        SeedTheHusksLeftHere(excursion);
+
         _surface = excursion;
 
         // ── #583 · DOES THE HEAT FOLLOW YOU DOWN? Rolled ONCE, here, off the heat this captain earned and
