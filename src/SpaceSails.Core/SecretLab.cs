@@ -471,8 +471,19 @@ public static class SecretLab
                 SurfaceStructure.KeepOutRadius(shelter) + reach + HeadBerth));
         }
 
-        SurfaceOutpost.Placement hut = SurfaceOutpost.For(bodyId, salt, field, forcePresent: true);
-        taken.Add((hut.DoorX, hut.DoorY, OutpostClearance));
+        // #563 · AND NOT THE HUT ANY MORE — the precedence between these two is REVERSED, deliberately.
+        //
+        // The hut used to be pinned to the far edge lane, which no ordinary generator ever touched, so it was
+        // the fixed thing and the lift head moved around it. An unbounded ground has no edge lane, so the hut
+        // now places itself against this site's real furniture the same way this does — and the two asking
+        // each other "where are you?" is a cycle that recurses until the stack gives out (it did, in one run
+        // of the suite). Somebody has to go first.
+        //
+        // The lab goes first, and it should: a lift head is the mouth of a whole facility and cannot be
+        // anywhere else, while a hut is one shed and the owner's own rule for this ledger is that the thing
+        // which costs nothing to move is the thing that moves. SurfaceOutpost.ForTile reads
+        // SurfaceLayout.StandingClaims, which carries the chamber this head reserves, so the invariant that
+        // used to be enforced from here is enforced from there — same law, one direction.
 
         // #649 · And the monolith, on the one ground that carries one. The lift head is seeded down the deep
         // field and the deep field is where the stone is; without this the camouflaged shed could be seeded
@@ -504,9 +515,6 @@ public static class SecretLab
     /// footprints. Enough that the two never read as one complex; small, because every du of it is ground
     /// claimed away from the ordinary buildings (#587).</summary>
     private const double HeadBerth = 4.0;
-
-    /// <summary>The hut is a room appended from its hatch, so it needs a generous berth from a bare point.</summary>
-    private const double OutpostClearance = 30.0;
 
     private static bool Clashes(double x, double y, List<(double X, double Y, double R)> taken)
     {

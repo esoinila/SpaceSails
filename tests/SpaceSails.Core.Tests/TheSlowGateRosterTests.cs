@@ -75,7 +75,6 @@ public sealed class TheSlowGateRosterTests
             // ── The traffic and surface generators: deterministic sweeps over whole scenarios ──
             { nameof(ZubrinTrafficTests), 349 },
             { nameof(EncounterRuleTests), 151 },
-            { nameof(SurfaceReachabilityTests), 142 },
             { nameof(OneCounterAndOnlyOneTests), 132 },
             { nameof(SurfaceStructureTests), 104 },
             { nameof(TrafficAndPredictionTests), 35 },

@@ -277,6 +277,24 @@ public sealed partial class DeckView
     /// </summary>
     private const double LampRingDu = DeckPlan.InteractRadius;
 
+    // #563 · THE GLASS, remembered for the frame. Set once in Draw, read by the passes that paint a
+    // ground which is no longer one field: the regolith is a lattice of tiles (SurfaceTiles) and the frame
+    // carries nine of them, so "paint all of it" stopped being a sentence with a bounded cost in it.
+    private int _viewW = 1, _viewH = 1;
+
+    /// <summary>Is this segment entirely past one edge of the glass? A cheap, conservative reject — it is
+    /// only ever true when BOTH ends are outside the SAME edge, so nothing that crosses the view can be
+    /// skipped and no picture changes. The margin covers a stroke's own width and the fact that a wall is
+    /// drawn thicker than the line it is given.</summary>
+    private bool OffTheGlass(float x1, float y1, float x2, float y2)
+    {
+        const float Margin = 12f;
+        return (x1 < -Margin && x2 < -Margin)
+            || (x1 > _viewW + Margin && x2 > _viewW + Margin)
+            || (y1 < -Margin && y2 < -Margin)
+            || (y1 > _viewH + Margin && y2 > _viewH + Margin);
+    }
+
     private void FillRect(float x, float y, float w, float h, RgbaColor color)
     {
         Span<float> s = _scratch.AsSpan(0, 8);

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -152,16 +152,49 @@ public sealed class TheHallsAreDrawnInAThirdIdiomTests
             Marks.Add(new Mark("slice", [x, y], new RgbaColor(0, 0, 0), 0f));
     }
 
-    /// <summary>One frame of a real floor, drawn by the real <see cref="DeckView"/>, with the lights ON so
-    /// the dark is not what is being measured. The captain stands where the car puts them.</summary>
+    /// <summary>THE WHOLE FLOOR, drawn by the real <see cref="DeckView"/> with the lights ON so the dark is
+    /// not what is being measured — walked past in overlapping frames rather than seen from one standpoint.
+    ///
+    /// <para>#563 · It used to be a single frame from where the car puts you, and the assertion below counted
+    /// on the renderer drawing every wall it was handed whether or not that wall was on the glass. It culls
+    /// now, so one frame of a gallery hall drew 11 strokes for 161 walls and this test was quietly measuring
+    /// the VIEWPORT instead of the ink.</para>
+    ///
+    /// <para>The fix is not to widen the canvas — the view is a fixed 64 deck units across at any canvas size
+    /// (<c>DeckView.PlacementFor</c>) — and it is certainly not to copy the cull's arithmetic in here, which
+    /// would be a second opinion about what is visible. It is to LOOK AT ALL OF IT: stand at a grid of spots
+    /// across the plan's own extent, keep every mark, and ask the union. The claim is stronger than it was —
+    /// no wall anywhere down here is inked hull or stone, seen from anywhere — and it is answered by the
+    /// renderer that ships.</para></summary>
     private static List<Mark> Frame(DeckPlan plan)
     {
-        (double ax, double ay) = HiveInterior.SpawnOn(Field);
-        var pen = new RecordingRenderer();
-        new DeckView(pen).Draw(plan, WidthPx, HeightPx, 0,
-            new DeckView.State(ax, ay, 0, 0, 0, ShuttleAway: false, ElectricUniverse: false, Dark: false),
-            0, 0, null);
-        return pen.Marks;
+        double minX = double.MaxValue, maxX = double.MinValue, minY = double.MaxValue, maxY = double.MinValue;
+        foreach (DeckPlan.Wall w in plan.Walls)
+        {
+            minX = Math.Min(minX, Math.Min(w.X1, w.X2)); maxX = Math.Max(maxX, Math.Max(w.X1, w.X2));
+            minY = Math.Min(minY, Math.Min(w.Y1, w.Y2)); maxY = Math.Max(maxY, Math.Max(w.Y1, w.Y2));
+        }
+        if (plan.Walls.Length == 0)
+        {
+            (minX, maxX, minY, maxY) = (0, 0, 0, 0);
+        }
+
+        // The view is 64 x 28 du; step well inside that so consecutive standpoints overlap and no wall can
+        // fall between two frames.
+        const double StepX = 30.0, StepY = 14.0;
+        var marks = new List<Mark>();
+        for (double ax = minX - StepX; ax <= maxX + StepX; ax += StepX)
+        {
+            for (double ay = minY - StepY; ay <= maxY + StepY; ay += StepY)
+            {
+                var pen = new RecordingRenderer();
+                new DeckView(pen).Draw(plan, WidthPx, HeightPx, 0,
+                    new DeckView.State(ax, ay, 0, 0, 0, ShuttleAway: false, ElectricUniverse: false, Dark: false),
+                    0, 0, null);
+                marks.AddRange(pen.Marks);
+            }
+        }
+        return marks;
     }
 
     /// <summary>The three wall inks, transcribed from <c>DeckView</c> — deliberately, because a test that

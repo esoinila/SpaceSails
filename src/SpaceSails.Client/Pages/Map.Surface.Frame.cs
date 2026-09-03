@@ -145,7 +145,8 @@ public partial class Map
         // #409: on ANY body that hides a lab (expedition deep field or a rare ordinary moon), compose the
         // revealed hidden door and — once forced — replay the appended lab region onto the freshly-built base.
         ComposeSecretLabSite(ex);
-        ComposeOutpost(ex);          // #563: the hut — its dogged hatch, or the room once it is forced
+        ComposeTiles(ex);            // #563: the ground beyond the home tile — the treadmill's carried chunk
+        ComposeOutpost(ex);          // #563: the huts — its dogged hatch, or the room once it is forced
         ComposeWhatYouLeft(ex);      // #698: and whatever the captain themselves put down on this ground
         // #1061 beat 2 · …and the one thing on this ground somebody ELSE put down, which is why it is not in
         // the store above: every sentence that store prints says "where YOU left it".
@@ -304,6 +305,11 @@ public partial class Map
             _surface.LandedAtMs += dtRealSeconds * 1000.0;
             return;
         }
+
+        // #563 · FIRST, THE GROUND UNDER THE BOOTS. If the last step crossed a tile boundary the world is
+        // re-welded here, before anything asks a question about it — a Reever stepped against walls that are
+        // about to be replaced is a Reever stepped against the wrong ground.
+        StepGroundStream(_surface);
 
         StepSuitAir(dtRealSeconds);     // #564: the tank, the line, and the walk home
         StepTubeRearm(dtRealSeconds);   // #562: the ship feeds your sentries while you stand in her tube

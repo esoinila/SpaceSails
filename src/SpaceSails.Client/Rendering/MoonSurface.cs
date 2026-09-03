@@ -72,11 +72,17 @@ public static class MoonSurface
     /// can never climb it — the door won't open to them. Fed to <c>ReeverChase.Step</c>.</summary>
     public const double ReeverBarrierY = SurfaceTopY;
 
-    /// <summary>Where a tide Reever claws out for spawn index — a deterministic, seed-jittered x spread
-    /// across the deep edge (<see cref="ReeverTide.SpawnX"/>), just inside the bottom rim so it walks the
-    /// field rather than piling against the outer wall.</summary>
-    public static (double X, double Y) TideSpawnPoint(ulong threatSeed, int spawnIndex) =>
-        (ReeverTide.SpawnX(threatSeed, spawnIndex, SurfaceLeftX + 3, SurfaceRightX - 3), SurfaceBottomY + 1.5);
+    /// <summary>Where a tide Reever claws out for spawn index — a deterministic, seed-jittered bearing on a
+    /// ring AROUND THE CAPTAIN (<see cref="ReeverTide.SpawnAround"/>).
+    ///
+    /// <para>#563 · It used to be "just inside the bottom rim", and there is no rim: the ground is unbounded
+    /// now. Rising around whoever is standing on the regolith is the more honest reading anyway — the deep is
+    /// answering a captain, not a coordinate — and the ring is isotropic, so #453's deleted y-graded danger
+    /// stays deleted rather than creeping back in through the spawner.</para></summary>
+    public static (double X, double Y) TideSpawnPoint(
+        ulong threatSeed, int spawnIndex, double captainX, double captainY) =>
+        ReeverTide.SpawnAround(
+            threatSeed, spawnIndex, captainX, captainY, ReeverTide.SpawnRingDu(SurfaceLayout.DefaultField));
 
     /// <summary>The avatar's fallback spawn (the excursion keeps the captain where they stood at the bay,
     /// so this is only a safety default).</summary>
@@ -469,10 +475,12 @@ public static class MoonSurface
         // the precise shape of the bug that made the map lie (SpecFor vs SpecsFor) and of the envelope drift
         // before it. There is nothing to keep in sync if there is only one of it.
         SurfaceLayout.Field field = ExpeditionField();
-        foreach ((double x1, double y1, double x2, double y2) in SurfaceEdge.Bound(bodyId, siteSalt, field))
-        {
-            walls.Add(new((float)x1, (float)y1, (float)x2, (float)y2, false, false, Unseen: true));
-        }
+
+        // #563 · AND THEN THE BOUND CAME OFF ALTOGETHER. The wandering chain used to be laid here as three
+        // unseen-but-solid runs, and it was the last thing making the ground finite. It is a far BACKSTOP now
+        // (SurfaceEdge.BeyondBackstop, ten thousand du out, enforced as a radius rather than as stone), and
+        // what stops a captain at any distance a captain actually walks is the tether: the tank, the
+        // magazine, the walk home. The ground itself simply carries on — SurfaceTiles lays the next tile.
 
         // ── The PER-BODY geography (Sunday-morning wind #1–#2): the deep-field ruin/maze walls and the
         //    landmark vary by body — Miranda keeps THE MONOLITH maze (canon), Luna gets the mass-driver
