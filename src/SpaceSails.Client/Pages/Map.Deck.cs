@@ -53,11 +53,18 @@ public partial class Map
             // the cellar door has no console at his chair any more, and whoever has come out of it and sat
             // down has one at his.
             && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce,
-                                        FillBarWalkerDroids, TheBarsChurn) is { } complex)
+                                        FillBarWalkerDroids, TheBarsChurn, TubeTierAt(id)) is { } complex)
         {
             _deckPlan = complex;
         }
     }
+
+    /// <summary>#380 item 10 · Which tube this berth earned, for the customs desk on its concourse — the page's
+    /// own <see cref="ArrivalTube.TierFor"/> read, the SAME call the arrival plate makes (Map.Docking), so the
+    /// officer's card and the plate the captain read on the way in cannot come to two answers about one port.
+    /// Null with no ephemeris loaded, which leaves the desk off rather than guessing a tier.</summary>
+    private ArrivalTube.Tier? TubeTierAt(string havenId) =>
+        _ephemeris is { } sky ? ArrivalTube.TierFor(sky, havenId) : null;
 
     private void ToggleDeck()
     {
@@ -85,7 +92,7 @@ public partial class Map
             // the cellar door has no console at his chair any more, and whoever has come out of it and sat
             // down has one at his.
             && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce,
-                                        FillBarWalkerDroids, TheBarsChurn) is { } complex)
+                                        FillBarWalkerDroids, TheBarsChurn, TubeTierAt(id)) is { } complex)
         {
             _deckPlan = complex;
             _havenName = _ephemeris?.Bodies.FirstOrDefault(b => b.Id == id)?.Name ?? "the haven";

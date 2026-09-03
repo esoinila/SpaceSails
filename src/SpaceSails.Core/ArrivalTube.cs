@@ -203,4 +203,39 @@ public static class ArrivalTube
         Tier.WorkingBerth => StoryBeats.Beat.BerthWorkingBerth,
         _ => StoryBeats.Beat.BerthOutpost,
     };
+
+    // ── #380 item 10 · THE DESK AT THE END OF THE WALK ────────────────────────────────────────────────
+    //
+    // The audit's last open complaint: a counter, a gate, a signed authority and an officer standing at it
+    // set an expectation of being CHECKED, and the captain walks through carrying whatever he likes, every
+    // time, for ever. The rule already existed — WalkLine says, on the arrival plate, exactly how far you
+    // carry something you should not be carrying before anybody can ask about it — and the mechanic already
+    // existed (#537/#538's sweep), aboard somebody else's hull. What was missing was the officer's own
+    // sentence, and it lives HERE, in the same tier switch as the walk line it has to agree with: the port's
+    // first sentence to a new captain and the plate he read ninety seconds earlier are one object, so they
+    // cannot come to two answers about the same berth.
+
+    /// <summary>The customs desk's console label. One string, so the deck that hangs the desk and the guard
+    /// that looks for it are reading the same word.</summary>
+    public const string CustomsLabel = "🛃 CUSTOMS";
+
+    /// <summary>
+    /// What the officer at the gate is FOR, said once, on the card the desk raises. It answers the question
+    /// the gate itself asks and never answers: <b>why does this port wave this captain through?</b> Because
+    /// the checking is the WALK and not the counter — a great port's queue is where anybody who wanted to
+    /// look already looked, and the officer at the end of it is stamping an answer somebody else arrived at.
+    ///
+    /// <para><b>Null at an outpost, and that is the whole of the third tier.</b> There is no tube, no queue
+    /// and nobody to run one (<see cref="Tier.Outpost"/>); a desk there would be a promise the collar cannot
+    /// keep. A haven whose traffic reads Outpost simply has no customs console on its concourse.</para>
+    /// </summary>
+    public static string? CustomsLine(Tier tier) => tier switch
+    {
+        Tier.GreatPort =>
+            "Anyone who wanted a look at you had the length of that concourse to take it. This desk stamps "
+            + "what they decided.",
+        Tier.WorkingBerth =>
+            "A formality this berth does not fund. The stamp is real; the looking is not.",
+        _ => null,
+    };
 }
