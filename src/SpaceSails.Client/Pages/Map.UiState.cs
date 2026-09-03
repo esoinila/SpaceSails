@@ -212,10 +212,20 @@ public partial class Map
     }
 
     // #203: which one voice a body speaks — a mass-less (μ≤0) dock haven is clamped, not orbited.
+    //
+    // #938 D3a / #244 item 1 / a live #212 breach: this used to ask μ ALONE, and μ alone is not the
+    // question. sol.json carries three μ=0 stations with no `haven` flag — Mercury Compute Farms, Highport
+    // Satellite Works and the Derelict Roadster — while the clamp gate everything else obeys is
+    // DockableHavens.IsDockable (IsHaven AND μ≤0). So the whole dock vocabulary fired at a wreck: the map
+    // menu offered "navigate to dock" and "✈ Autopilot: dock at Derelict Roadster", the arm hint promised
+    // "you press ⚓ Dock at the end", the plan step read "Dock at" — and UpdateDockAffordance, which asks
+    // IsDockableHaven, would never put a ⚓ button on the board for any of them. Every one of those
+    // sentences named a button that cannot exist. Ask the predicate the clamp itself asks and they all
+    // speak orbit instead, in words that already shipped.
     private HarborClass HarborClassOf(string? bodyId)
     {
         CelestialBody? body = bodyId is null ? null : _ephemeris?.Bodies.FirstOrDefault(b => b.Id == bodyId);
-        return body is { Mu: <= 0 } ? HarborClass.Dock : HarborClass.Orbit;
+        return body is not null && DockableHavens.IsDockable(body) ? HarborClass.Dock : HarborClass.Orbit;
     }
 
     // #203: captain-facing distance-to-a-body is ALWAYS altitude above the surface, unit-labelled

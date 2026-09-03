@@ -426,8 +426,16 @@ public partial class Map
         ResetApproachTracking();
         ResetAutopilotBudget();
         _autopilotStandDownReason = null; // SUCCESS — deliberately NOT a handback surface (#147 vs #155)
-        _dockReadyStatus = $"🛰 in the dock envelope at {station.Name} — hit ⚓ Dock to clamp on";
-        LogAutopilotEvent($"autopilot delivered {station.Name} — matched inside the dock envelope; hit ⚓ Dock to clamp on");
+        // #938 D3a / a live #212 breach: the branch that gets here asks BodyKind.Station, because μ=0 is
+        // what makes a body unorbitable and the envelope its only arrival — that part is physics and stays.
+        // What must NOT ride on BodyKind is the PROMISE. `hit ⚓ Dock to clamp on` names a button that
+        // UpdateDockAffordance only ever offers for a DockableHavens.IsDockable body, and sol.json's
+        // Derelict Roadster, Mercury Compute Farms and Highport Satellite Works are μ=0 stations with no
+        // haven flag: the autopilot flew you to a wreck and told you to clamp onto it. The clamp clause is
+        // now spoken only where a clamp exists; alongside a wreck the line stops at the truth.
+        string clamp = IsDockableHaven(station) ? " — hit ⚓ Dock to clamp on" : "";
+        _dockReadyStatus = $"🛰 in the dock envelope at {station.Name}{clamp}";
+        LogAutopilotEvent($"autopilot delivered {station.Name} — matched inside the dock envelope{(clamp.Length > 0 ? "; hit ⚓ Dock to clamp on" : "")}");
         Warp = 1;               // auto-drop so the arrival moment isn't missed at warp
         _effectiveWarp = 1;
         ShowPulseMessage(_dockReadyStatus);

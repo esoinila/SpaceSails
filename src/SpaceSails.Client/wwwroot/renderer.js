@@ -326,6 +326,21 @@ const CUES = {
     block: { freq: 1400, to: 520, duration: 0.14, gain: 0.11, type: 'square' },   // steel turns it — a hard bright CLANG
     wound: { freq: 150,  to: 42,  duration: 0.55, gain: 0.16, type: 'sawtooth' }, // it got in — low, wet and wrong
     last:  { freq: 90,   to: 70,  duration: 0.9,  gain: 0.18, type: 'sawtooth' }, // one more will do it — a floor-level dread tone
+    // ─── #938 D1 · SIXTY-ONE CALL SITES THAT MADE NO SOUND. `playCue` bails silently on a name it does not
+    // know (`if (!cue) { return; }` below), so five names the game has always shouted have always been mute:
+    // `alarm` ×41 — every atmosphere breach, every scuttle, BUSTED, the deflection impact — plus `blip` ×11,
+    // `gameover` ×5, `burn` ×2 and `door` ×2. The note above blames #467 for deleting `alarm`; the history
+    // says otherwise. `git log --all -S "alarm:" -- "*.js"` returns NOTHING: these five were never defined,
+    // in any commit, on any branch. The callers were written against a table that never had them, and the
+    // only guard on cues (TheRedPenIsAnInstrumentTests) asserts the call is WRITTEN, never that it sounds.
+    // So there is nothing to restore — and inventing five voices out of nowhere is not this house's habit
+    // either. Each one below is CUT FROM THE NEAREST CUE THAT ALREADY SHIPPED and names its parent, so the
+    // game keeps one palette instead of gaining five strangers.
+    alarm: { freq: 880, to: 415, duration: 0.30, gain: 0.10, type: 'square' },    // `buzzer`'s square alert voice, an octave up and given the urgency the buzzer deliberately withholds — the buzzer is the one nobody explains, this is the one everybody hears
+    blip:  { freq: 1046, to: 1245, duration: 0.06, gain: 0.05, type: 'square' },  // `pulse`'s short square tick, two octaves up and a third the length — a console acknowledging a keypress, not an engine
+    gameover:{ freq: 220, to: 55, duration: 1.2,  gain: 0.13, type: 'sine' },     // `miss`'s sad sine fall (the round that went nowhere) dropped an octave and held two and a half times as long — the same shape at the scale of a life
+    burn:  { freq: 110, to: 220, duration: 0.55, gain: 0.08, type: 'square' },    // `pulse`'s engine thump an octave down and six times longer — a burn IS the thump, sustained
+    door:  { freq: 420, to: 180, duration: 0.18, gain: 0.05, type: 'sawtooth' },  // `vent`'s sawtooth hiss-fall, shortened and pitched into the middle — the same escaping air, through a seal instead of a nozzle
 };
 
 export function playCue(kind) {
