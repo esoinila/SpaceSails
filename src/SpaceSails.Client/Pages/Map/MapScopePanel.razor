@@ -1,0 +1,95 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE MAP SCOPE PANEL, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+    <OverlayShell class="map-scope card bg-dark bg-opacity-75 text-light"
+                  Hidden="@(_activeDesk != ShipDesk.Nav)"
+                  Dismiss="OverlayDismiss.Minimize" @bind-Minimized="_scopeMinimized"
+                  Title="Scope 🔭" TitleClass="fw-bold small"
+                  HeadClass="card-header py-1 d-flex justify-content-between align-items-center gap-1"
+                  BodyClass="card-body p-1"
+                  DismissClass="btn btn-sm btn-outline-light py-0 map-scope-min"
+                  DismissFace="–" DismissLabel="Minimise the scope"
+                  DismissTitle="Minimise the scope into a tile — click the tile to bring it back"
+                  TileClass="map-scope-tile" TileGlyph="🔭" TileLabel="@ScopeTileTargetName()"
+                  TileButtonClass="btn btn-sm btn-outline-info"
+                  OpenTitle="@($"Open the scope wide — the telescope is on {ScopeTileTargetName()}")">
+        <Tools>
+            <div class="btn-group btn-group-sm" role="group" aria-label="Scope target">
+                <button type="button" class="btn btn-outline-light py-0" title="Point the scope at the previous target" @onclick="() => CycleScopeTarget(-1)">◀</button>
+                <button type="button" class="btn @(_scopeManualId is null ? "btn-info" : "btn-outline-light") py-0" title="Let the scope pick its own target automatically" @onclick="() => _scopeManualId = null">AUTO</button>
+                <button type="button" class="btn btn-outline-light py-0" title="Point the scope at the next target" @onclick="() => CycleScopeTarget(1)">▶</button>
+            </div>
+        </Tools>
+        <ChildContent>
+            <canvas id="@ScopeCanvasId" class="map-scope-canvas"></canvas>
+        </ChildContent>
+    </OverlayShell>
+
+    @* SATURDAY-ANCHOR: panels — the desk layer (PR-11): each non-Nav/Deck desk fills the screen
+       (rule 1 — 70% belongs to the desk's own topic) while the map/sim keeps running underneath
+       (rule 4). Sensors dims the map through; the rest go near-opaque. Parallel desk lanes
+       (PR-12/13/14) touch only their own branch of this if-chain; PR-15 adds the Captain branch. *@
+    @* M27: the Sensors desk renders ALWAYS (d-none off-desk) — the tracking post must never be
+       destroyed: the ledger, the passive watch, and its live-scope canvas all live in it. A
+       conditionally-rendered component forgot every track on desk switch and left renderer.js
+       holding a stale canvas context (the same disease the Nav scope had). *@
+    @* M29: the target dossier — a box of its own for the tactical target, independent of the
+       NAV destination: bound for Mercury with the book open on a hauler. Floats bottom-center
+       ABOVE the desk layers so the sensors chief reads the same book the navigator does. *@
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `ShipDesk _activeDesk`</summary>
+    [Parameter] public ShipDesk _activeDesk { get; set; } = default!;
+    /// <summary>the page's `string? _scopeManualId` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_scopeManualId` and the assignment still lands on the page.</summary>
+    [Parameter] public string? _scopeManualIdValue { get; set; }
+    /// <summary>The page's `_scopeManualId = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<string?> _scopeManualIdSet { get; set; } = default!;
+    private string? _scopeManualId { get => _scopeManualIdValue; set { _scopeManualIdValue = value; _scopeManualIdSet(value); } }
+    /// <summary>the page's `bool _scopeMinimized` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_scopeMinimized` and the assignment still lands on the page.</summary>
+    [Parameter] public bool _scopeMinimizedValue { get; set; }
+    /// <summary>The page's `_scopeMinimized = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<bool> _scopeMinimizedSet { get; set; } = default!;
+    private bool _scopeMinimized { get => _scopeMinimizedValue; set { _scopeMinimizedValue = value; _scopeMinimizedSet(value); } }
+    /// <summary>the page's `void CycleScopeTarget(int step)`</summary>
+    [Parameter] public Action<int> CycleScopeTarget { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `string ScopeCanvasId`</summary>
+    [Parameter] public string ScopeCanvasId { get; set; } = default!;
+    /// <summary>the page's `string ScopeTileTargetName()`</summary>
+    [Parameter] public Func<string> ScopeTileTargetName { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

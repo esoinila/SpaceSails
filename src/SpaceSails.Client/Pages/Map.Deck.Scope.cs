@@ -24,7 +24,7 @@ public partial class Map
     // in the game's voice, plus the true body id so the "point the scope" hook can aim an area scan.
     // Provenance (Giver/Station/AcquiredSimTime, PR-J) is optional and client-side — who slid it to
     // you, where, and when — so the Captain's ledger can attribute it; older tips render without it.
-    private sealed record ScopeIntel(string Id, string BodyId, string Headline, IReadOnlyList<string> Lines,
+    public sealed record ScopeIntel(string Id, string BodyId, string Headline, IReadOnlyList<string> Lines,
         string? Giver = null, string? Station = null, double AcquiredSimTime = 0);
 
     private const string ScopeCanvasId = "scope-canvas";

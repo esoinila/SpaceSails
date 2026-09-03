@@ -1,0 +1,199 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using DossierInfo = SpaceSails.Client.Pages.Map.DossierInfo
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 item 1 · THE TACTICAL DOSSIER CARD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        @* #960 — the owner's screenshot has this card lying ON TOP of the navigation-target panel, hiding
+           its text and half its buttons. Two answers, both his ("selectable top window or movable windows?
+           Maybe option to minimize a window into a sugarcube tile"): when the nav panel is up the dossier is
+           RAISED to ride above it (the panel with the buttons keeps the floor), and either way the card now
+           minimises into a tile of its own. No dragging — that is the can of worms he named. *@
+        @* #997 · both of #960's answers are now the shell's, and they are the SAME two the scope has —
+           one minimise mechanism instead of two independent booleans and two markup shapes. The card keeps
+           BOTH verbs, because they are not the same verb: tucking keeps the target and closing drops it. *@
+        <OverlayShell class="map-dossier bg-dark bg-opacity-75 rounded p-2 text-light small"
+                      Dismiss="OverlayDismiss.Minimize" @bind-Minimized="_dossierMinimized"
+                      Stacked="DossierIsStacked" StackedClass="map-dossier-raised"
+                      HeadClass="d-flex justify-content-between align-items-center"
+                      TitleClass="fw-bold" ToolsClass="d-flex align-items-center gap-1"
+                      DismissClass="btn btn-sm btn-outline-light py-0 map-dossier-min"
+                      DismissFace="–" DismissLabel="Minimise the dossier"
+                      DismissTitle="Minimise the dossier into a tile — click it to bring it back"
+                      CloseClass="btn-close btn-close-white btn-sm" CloseLabel="Close dossier"
+                      CloseTitle="Close the target dossier" OnClose="() => Dismiss(CloseDossier)"
+                      TileClass="map-dossier-tile" Corner="OverlayCorner.BottomCentre"
+                      TileGlyph="📖" TileLabel="@dossier.Name"
+                      TileButtonClass="btn btn-sm btn-outline-info"
+                      OpenTitle="Open the dossier back up">
+            <TitleContent>📖 @dossier.Name <span class="text-secondary">@dossier.Detail</span></TitleContent>
+            <ChildContent>
+            @* #997 wave 9 · THE SECOND CONSUMER OF `CappedScrollPanel` (#997/#993), and the one it was
+               described by: a head that keeps its measured height over ONE body that takes what is left and
+               scrolls there. The head here is the SHELL'S — 📖 her name and her stamp on the left, the – and
+               the ✕ on the right — and until now it scrolled away with everything else, because the only cap
+               this card had was `.map-dossier-raised`'s `max-height … overflow-y: auto` ON THE ROOT.
+
+               TWO THINGS THAT WERE TRUE BEFORE AND ARE NOT NOW, both measured in a browser and written up in
+               the PR:
+
+               · RAISED and long, the whole card scrolled — so the way out went up past the top edge of its
+                 own box and the captain scrolled to find a ✕. Now the head does not move and only her file
+                 does.
+               · UNSTACKED and long, the card had NO CAP AT ALL. It is anchored `bottom: .75rem` and grows
+                 UPWARD, so a dossier with terms and an autosteal box and a long history simply ran off the
+                 top of the window, taking the head — and both ways out — off the glass with it. That is
+                 #735's own bug wearing a different card's clothes, and it is why this wave extends the
+                 tall-card gate to cover this surface too.
+
+               THE PANEL IS INSIDE THE SHELL AND NOT AROUND IT, because the ROOT has to stay the shell's: the
+               tile round-trip and #971's stacking are class swaps on that element, and a `display: contents`
+               host around it would leave `.map-dossier-tile` and `.map-dossier-raised` with no box to move.
+               So `.map-dossier` becomes the flex column, the shell's head is its first item, and the shell's
+               own body is `display: contents` (Map.razor.css, beside the rule) so the panel is the second —
+               one property, rather than #993's arithmetic written out a second time on `.overlay-shell-body`.
+
+               `HasContent` is left at its default: unlike the Plotting panel this card has no empty state —
+               a dossier that exists has a status line — so the body is always drawn and always has something
+               in it. No `Header`: the head this panel keeps is the shell's, one element up. *@
+            <CappedScrollPanel class="map-dossier-scroll" BodyClass="map-dossier-file" BodyFloor="6rem">
+            <div>@dossier.StatusLine</div>
+            @* The Victoria-I one-line teaser (owner ruling, 2026-07-19): a scanned hull's history in a
+               glance — "ex-AURORA QUEEN · three owners deep". The full ledger lives on her comms dossier. *@
+            <div class="text-secondary">📜 @ShipHistories.For(dossierId).Teaser</div>
+            <div>@FormatDistance(dossier.Distance) · rel @((dossier.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s ·
+                 @RelativeMotion.WordedBefore(dossier.Closing)</div>
+            @* #962 · THE CARD HAS TO CHANGE WHEN THE BUTTON UNDER IT IS PRESSED. Owner, having pressed the
+               telescope button below and read the same sentence back: "It says we are not tracking the debt
+               collector and we should ... but really HOW??????" With every telescope held there is no
+               custody to give him — but the scope IS on her, and that is a different thing to say than
+               "not on the ledger". (Nothing in this block may repeat the button's own label: #962's guard
+               finds that button by searching the shipping razor for it.) *@
+            @if (dossier.TrackQuality is { } quality)
+            {
+                <div>📡 telescope fix @((int)(quality * 100))% <span class="text-secondary">— sharpen it at the Sensors desk</span></div>
+            }
+            else if (dossier.ScopeOrdered)
+            {
+                <div class="text-info">📡 the telescope is on her — her pass is on the Sensors task list</div>
+            }
+            else
+            {
+                <div class="text-secondary">📡 not on the telescope ledger — the telescope button below puts the scope on her</div>
+            }
+            <div class="@(dossier.InDriverReach ? "text-info" : "text-secondary")">@dossier.FireLine</div>
+            @* #962 · THE TERMS OF HER CONTRACT, on the card the captain is already reading. Owner, docked
+               at a haven with the heat gauge at zero and a collector still closing: "So we have zero heat
+               and are docked at haven ... why is this still hunting us?" Every sentence here is composed
+               in EncounterRule beside the rule it describes, so the card and the sim quote one number. *@
+            @if (dossier.Terms is { } terms)
+            {
+                <div class="border border-secondary rounded px-2 py-1 mt-1">
+                    <div class="text-warning">@terms.Warrant</div>
+                    <div class="fw-bold mt-1">She stands down when:</div>
+                    <div>@terms.Hiding</div>
+                    <div class="text-secondary">@terms.Nerve</div>
+                    <div class="text-secondary">@terms.Sail</div>
+                </div>
+            }
+            @if (dossier.IsPrey)
+            {
+                @* The autosteal criterion box (owner): both must be green before shuttles launch. *@
+                bool rangeOk = dossier.Distance <= CaptureRule.CaptureRadiusMeters;
+                bool speedOk = dossier.RelSpeed <= CaptureRule.MaxRelativeSpeed;
+                <div class="border border-secondary rounded px-2 py-1 mt-1">
+                    <div class="fw-bold">🎯 Autosteal needs BOTH:</div>
+                    <div class="@(rangeOk ? "text-success" : "text-warning")">
+                        @(rangeOk ? "✅" : "❌") close enough —
+                        @FormatDistance(dossier.Distance) @(rangeOk ? "≤" : ">") @FormatDistance(CaptureRule.CaptureRadiusMeters)
+                    </div>
+                    <div class="@(speedOk ? "text-success" : "text-warning")">
+                        @(speedOk ? "✅" : "❌") speed match —
+                        @((dossier.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                        @(speedOk ? "≤" : ">") @((CaptureRule.MaxRelativeSpeed / 1000).ToString("F0", CultureInfo.InvariantCulture)) km/s
+                    </div>
+                    <div class="@(dossier.BoardReady == 2 ? "text-success fw-bold" : "text-secondary")">
+                        @(dossier.BoardReady switch
+                        {
+                            2 => "→ BOARDABLE NOW — hold the match, shuttles launch on their own",
+                            1 => "→ too fast — match her velocity, or hole her sail so she drifts",
+                            _ => "→ close the distance, then match her speed",
+                        })
+                    </div>
+                </div>
+            }
+            @if (_interestTargetId == dossierId && InterceptChipLine() is { } clock)
+            {
+                <div class="text-warning">@clock</div>
+            }
+            <div class="d-flex gap-1 mt-1">
+                <button type="button" class="btn btn-sm py-0 @(_interestTargetId == dossierId ? "btn-info" : "btn-outline-info")"
+                        title="Mark her the target of interest — intercept clock and firing solutions" @onclick="() => SetInterestTarget(dossierId)">🎯 interest</button>
+                <button type="button" class="btn btn-sm btn-outline-info py-0"
+                        title="Put the telescope on her to sharpen the fix" @onclick="() => TrackShipFromMenu(dossierId)">📡 sharpen fix</button>
+                <button type="button" class="btn btn-sm btn-outline-light py-0"
+                        title="Take this target to the war room" @onclick="() => SwitchDeskFromClick(ShipDesk.WarRoom)">⚔ war room</button>
+            </div>
+            </CappedScrollPanel>
+            </ChildContent>
+        </OverlayShell>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
+
+@code {
+    /// <summary>the page's `bool _dossierMinimized` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_dossierMinimized` and the assignment still lands on the page.</summary>
+    [Parameter] public bool _dossierMinimizedValue { get; set; }
+    /// <summary>The page's `_dossierMinimized = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<bool> _dossierMinimizedSet { get; set; } = default!;
+    private bool _dossierMinimized { get => _dossierMinimizedValue; set { _dossierMinimizedValue = value; _dossierMinimizedSet(value); } }
+    /// <summary>the page's `string? _interestTargetId`</summary>
+    [Parameter] public string? _interestTargetId { get; set; }
+    /// <summary>the page's `void CloseDossier()`</summary>
+    [Parameter] public Action CloseDossier { get; set; } = default!;
+    /// <summary>the page's `Task Dismiss(Action close)`</summary>
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    /// <summary>the page's `bool DossierIsStacked`</summary>
+    [Parameter] public bool DossierIsStacked { get; set; }
+    /// <summary>the page's `string FormatDistance(double meters)`</summary>
+    [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
+    /// <summary>the page's `string? InterceptChipLine()`</summary>
+    [Parameter] public Func<string?> InterceptChipLine { get; set; } = default!;
+    /// <summary>the page's `void SetInterestTarget(string id)`</summary>
+    [Parameter] public Action<string> SetInterestTarget { get; set; } = default!;
+    /// <summary>the page's `Task SwitchDeskFromClick(ShipDesk desk)`</summary>
+    [Parameter] public Func<ShipDesk, Task> SwitchDeskFromClick { get; set; } = default!;
+    /// <summary>the page's `void TrackShipFromMenu(string id)`</summary>
+    [Parameter] public Action<string> TrackShipFromMenu { get; set; } = default!;
+    /// <summary>bound by the @if that stays in the page</summary>
+    [Parameter] public DossierInfo dossier { get; set; } = default!;
+    /// <summary>bound by the @if that stays in the page</summary>
+    [Parameter] public string dossierId { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

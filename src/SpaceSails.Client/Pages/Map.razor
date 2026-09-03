@@ -474,25 +474,8 @@
        and its own words, and it still offers no cancel — that decision is about the world, not the screen. *@
     @if (_jumpActive)
     {
-        <OverlayShell class="jump-overlay"
-                      Dismiss="OverlayDismiss.Minimize" @bind-Minimized="_voidCardTucked"
-                      HeadClass="jump-overlay-head" BodyClass="jump-overlay-inner"
-                      DismissClass="jump-overlay-min" DismissFace="–"
-                      DismissLabel="Minimise the crossing"
-                      DismissTitle="Tuck the crossing into a tile — it keeps its own clock and the map comes back"
-                      TileClass="jump-overlay-tile" TileGlyph="🚀"
-                      TileLabel="@LongHaul.VoidYearLine(_jumpYear, _jumpTotalYears)"
-                      TileButtonClass="btn btn-sm btn-outline-info"
-                      OpenTitle="Open the crossing back up">
-            <div class="jump-overlay-title">🚀 @LongHaul.VoidTitle</div>
-            <div class="jump-overlay-year">@LongHaul.VoidYearLine(_jumpYear, _jumpTotalYears)</div>
-            <div class="jump-overlay-bar">
-                <div class="jump-overlay-fill" style="width:@(_jumpTotalYears > 0 ? (int)(100.0 * Math.Clamp(_jumpYear, 0, _jumpTotalYears) / _jumpTotalYears) : 100)%"></div>
-            </div>
-            <div class="jump-overlay-bound">@LongHaul.VoidBound(_jumpDestName)</div>
-            <div class="jump-overlay-note">@_jumpFlavor</div>
-            <div class="jump-overlay-nostop">@LongHaul.VoidNoStop</div>
-        </OverlayShell>
+        <JumpCard _jumpDestName="@_jumpDestName" _jumpFlavor="@_jumpFlavor" _jumpTotalYears="@_jumpTotalYears"
+                  _jumpYear="@_jumpYear" _voidCardTuckedValue="@_voidCardTucked" _voidCardTuckedSet="@(v => _voidCardTucked = v)" Dismiss="@Dismiss" />
     }
 
     @* #261 — the COMPUTED skip's short beat: a jump-scale coast is reckoned in closed form (or chunked with
@@ -506,20 +489,8 @@
        away on the next crossing too, which is the scope's own stated reason for remembering. *@
     @if (_coastSkipActive)
     {
-        <OverlayShell class="jump-overlay"
-                      Dismiss="OverlayDismiss.Minimize" @bind-Minimized="_voidCardTucked"
-                      HeadClass="jump-overlay-head" BodyClass="jump-overlay-inner"
-                      DismissClass="jump-overlay-min" DismissFace="–"
-                      DismissLabel="Minimise the coast"
-                      DismissTitle="Tuck the coast into a tile — it keeps its own clock and the map comes back"
-                      TileClass="jump-overlay-tile" TileGlyph="⏭"
-                      TileLabel="@WarpSkip.CoastConsumedBound(_coastSkipLabel)"
-                      TileButtonClass="btn btn-sm btn-outline-info"
-                      OpenTitle="Open the crossing back up">
-            <div class="jump-overlay-title">⏭ @WarpSkip.CoastConsumedTitle</div>
-            <div class="jump-overlay-bound">@WarpSkip.CoastConsumedBound(_coastSkipLabel)</div>
-            <div class="jump-overlay-note">@WarpSkip.CoastComputingNote(_coastSkipDays)</div>
-        </OverlayShell>
+        <CoastSkipCard _coastSkipDays="@_coastSkipDays" _coastSkipLabel="@_coastSkipLabel"
+                       _voidCardTuckedValue="@_voidCardTucked" _voidCardTuckedSet="@(v => _voidCardTucked = v)" Dismiss="@Dismiss" />
     }
 
     @* #304 — THE ARRIVAL BRAKE ASKS (owner 2026-07-18: "it is hard to remember in the heat of the moment").
@@ -1943,689 +1914,109 @@
        exactly the toolbar button the owner sent away); a minimised one leaves its own way back, and the
        tile names what is in the eyepiece so it reads as an instrument standing by rather than a mystery
        button. *@
-    <OverlayShell class="map-scope card bg-dark bg-opacity-75 text-light"
-                  Hidden="@(_activeDesk != ShipDesk.Nav)"
-                  Dismiss="OverlayDismiss.Minimize" @bind-Minimized="_scopeMinimized"
-                  Title="Scope 🔭" TitleClass="fw-bold small"
-                  HeadClass="card-header py-1 d-flex justify-content-between align-items-center gap-1"
-                  BodyClass="card-body p-1"
-                  DismissClass="btn btn-sm btn-outline-light py-0 map-scope-min"
-                  DismissFace="–" DismissLabel="Minimise the scope"
-                  DismissTitle="Minimise the scope into a tile — click the tile to bring it back"
-                  TileClass="map-scope-tile" TileGlyph="🔭" TileLabel="@ScopeTileTargetName()"
-                  TileButtonClass="btn btn-sm btn-outline-info"
-                  OpenTitle="@($"Open the scope wide — the telescope is on {ScopeTileTargetName()}")">
-        <Tools>
-            <div class="btn-group btn-group-sm" role="group" aria-label="Scope target">
-                <button type="button" class="btn btn-outline-light py-0" title="Point the scope at the previous target" @onclick="() => CycleScopeTarget(-1)">◀</button>
-                <button type="button" class="btn @(_scopeManualId is null ? "btn-info" : "btn-outline-light") py-0" title="Let the scope pick its own target automatically" @onclick="() => _scopeManualId = null">AUTO</button>
-                <button type="button" class="btn btn-outline-light py-0" title="Point the scope at the next target" @onclick="() => CycleScopeTarget(1)">▶</button>
-            </div>
-        </Tools>
-        <ChildContent>
-            <canvas id="@ScopeCanvasId" class="map-scope-canvas"></canvas>
-        </ChildContent>
-    </OverlayShell>
-
-    @* SATURDAY-ANCHOR: panels — the desk layer (PR-11): each non-Nav/Deck desk fills the screen
-       (rule 1 — 70% belongs to the desk's own topic) while the map/sim keeps running underneath
-       (rule 4). Sensors dims the map through; the rest go near-opaque. Parallel desk lanes
-       (PR-12/13/14) touch only their own branch of this if-chain; PR-15 adds the Captain branch. *@
-    @* M27: the Sensors desk renders ALWAYS (d-none off-desk) — the tracking post must never be
-       destroyed: the ledger, the passive watch, and its live-scope canvas all live in it. A
-       conditionally-rendered component forgot every track on desk switch and left renderer.js
-       holding a stale canvas context (the same disease the Nav scope had). *@
-    @* M29: the target dossier — a box of its own for the tactical target, independent of the
-       NAV destination: bound for Mercury with the book open on a hauler. Floats bottom-center
-       ABOVE the desk layers so the sensors chief reads the same book the navigator does. *@
+    <MapScopePanel _activeDesk="@_activeDesk" _scopeManualIdValue="@_scopeManualId" _scopeManualIdSet="@(v => _scopeManualId = v)" _scopeMinimizedValue="@_scopeMinimized" _scopeMinimizedSet="@(v => _scopeMinimized = v)"
+                   CycleScopeTarget="@CycleScopeTarget" Dismiss="@Dismiss" ScopeCanvasId="@ScopeCanvasId"
+                   ScopeTileTargetName="@ScopeTileTargetName" />
     @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors && TacticalTargetId is { } dossierId && DossierFor(dossierId) is { } dossier)
     {
-        @* #960 — the owner's screenshot has this card lying ON TOP of the navigation-target panel, hiding
-           its text and half its buttons. Two answers, both his ("selectable top window or movable windows?
-           Maybe option to minimize a window into a sugarcube tile"): when the nav panel is up the dossier is
-           RAISED to ride above it (the panel with the buttons keeps the floor), and either way the card now
-           minimises into a tile of its own. No dragging — that is the can of worms he named. *@
-        @* #997 · both of #960's answers are now the shell's, and they are the SAME two the scope has —
-           one minimise mechanism instead of two independent booleans and two markup shapes. The card keeps
-           BOTH verbs, because they are not the same verb: tucking keeps the target and closing drops it. *@
-        <OverlayShell class="map-dossier bg-dark bg-opacity-75 rounded p-2 text-light small"
-                      Dismiss="OverlayDismiss.Minimize" @bind-Minimized="_dossierMinimized"
-                      Stacked="DossierIsStacked" StackedClass="map-dossier-raised"
-                      HeadClass="d-flex justify-content-between align-items-center"
-                      TitleClass="fw-bold" ToolsClass="d-flex align-items-center gap-1"
-                      DismissClass="btn btn-sm btn-outline-light py-0 map-dossier-min"
-                      DismissFace="–" DismissLabel="Minimise the dossier"
-                      DismissTitle="Minimise the dossier into a tile — click it to bring it back"
-                      CloseClass="btn-close btn-close-white btn-sm" CloseLabel="Close dossier"
-                      CloseTitle="Close the target dossier" OnClose="() => Dismiss(CloseDossier)"
-                      TileClass="map-dossier-tile" Corner="OverlayCorner.BottomCentre"
-                      TileGlyph="📖" TileLabel="@dossier.Name"
-                      TileButtonClass="btn btn-sm btn-outline-info"
-                      OpenTitle="Open the dossier back up">
-            <TitleContent>📖 @dossier.Name <span class="text-secondary">@dossier.Detail</span></TitleContent>
-            <ChildContent>
-            @* #997 wave 9 · THE SECOND CONSUMER OF `CappedScrollPanel` (#997/#993), and the one it was
-               described by: a head that keeps its measured height over ONE body that takes what is left and
-               scrolls there. The head here is the SHELL'S — 📖 her name and her stamp on the left, the – and
-               the ✕ on the right — and until now it scrolled away with everything else, because the only cap
-               this card had was `.map-dossier-raised`'s `max-height … overflow-y: auto` ON THE ROOT.
-
-               TWO THINGS THAT WERE TRUE BEFORE AND ARE NOT NOW, both measured in a browser and written up in
-               the PR:
-
-               · RAISED and long, the whole card scrolled — so the way out went up past the top edge of its
-                 own box and the captain scrolled to find a ✕. Now the head does not move and only her file
-                 does.
-               · UNSTACKED and long, the card had NO CAP AT ALL. It is anchored `bottom: .75rem` and grows
-                 UPWARD, so a dossier with terms and an autosteal box and a long history simply ran off the
-                 top of the window, taking the head — and both ways out — off the glass with it. That is
-                 #735's own bug wearing a different card's clothes, and it is why this wave extends the
-                 tall-card gate to cover this surface too.
-
-               THE PANEL IS INSIDE THE SHELL AND NOT AROUND IT, because the ROOT has to stay the shell's: the
-               tile round-trip and #971's stacking are class swaps on that element, and a `display: contents`
-               host around it would leave `.map-dossier-tile` and `.map-dossier-raised` with no box to move.
-               So `.map-dossier` becomes the flex column, the shell's head is its first item, and the shell's
-               own body is `display: contents` (Map.razor.css, beside the rule) so the panel is the second —
-               one property, rather than #993's arithmetic written out a second time on `.overlay-shell-body`.
-
-               `HasContent` is left at its default: unlike the Plotting panel this card has no empty state —
-               a dossier that exists has a status line — so the body is always drawn and always has something
-               in it. No `Header`: the head this panel keeps is the shell's, one element up. *@
-            <CappedScrollPanel class="map-dossier-scroll" BodyClass="map-dossier-file" BodyFloor="6rem">
-            <div>@dossier.StatusLine</div>
-            @* The Victoria-I one-line teaser (owner ruling, 2026-07-19): a scanned hull's history in a
-               glance — "ex-AURORA QUEEN · three owners deep". The full ledger lives on her comms dossier. *@
-            <div class="text-secondary">📜 @ShipHistories.For(dossierId).Teaser</div>
-            <div>@FormatDistance(dossier.Distance) · rel @((dossier.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s ·
-                 @RelativeMotion.WordedBefore(dossier.Closing)</div>
-            @* #962 · THE CARD HAS TO CHANGE WHEN THE BUTTON UNDER IT IS PRESSED. Owner, having pressed the
-               telescope button below and read the same sentence back: "It says we are not tracking the debt
-               collector and we should ... but really HOW??????" With every telescope held there is no
-               custody to give him — but the scope IS on her, and that is a different thing to say than
-               "not on the ledger". (Nothing in this block may repeat the button's own label: #962's guard
-               finds that button by searching the shipping razor for it.) *@
-            @if (dossier.TrackQuality is { } quality)
-            {
-                <div>📡 telescope fix @((int)(quality * 100))% <span class="text-secondary">— sharpen it at the Sensors desk</span></div>
-            }
-            else if (dossier.ScopeOrdered)
-            {
-                <div class="text-info">📡 the telescope is on her — her pass is on the Sensors task list</div>
-            }
-            else
-            {
-                <div class="text-secondary">📡 not on the telescope ledger — the telescope button below puts the scope on her</div>
-            }
-            <div class="@(dossier.InDriverReach ? "text-info" : "text-secondary")">@dossier.FireLine</div>
-            @* #962 · THE TERMS OF HER CONTRACT, on the card the captain is already reading. Owner, docked
-               at a haven with the heat gauge at zero and a collector still closing: "So we have zero heat
-               and are docked at haven ... why is this still hunting us?" Every sentence here is composed
-               in EncounterRule beside the rule it describes, so the card and the sim quote one number. *@
-            @if (dossier.Terms is { } terms)
-            {
-                <div class="border border-secondary rounded px-2 py-1 mt-1">
-                    <div class="text-warning">@terms.Warrant</div>
-                    <div class="fw-bold mt-1">She stands down when:</div>
-                    <div>@terms.Hiding</div>
-                    <div class="text-secondary">@terms.Nerve</div>
-                    <div class="text-secondary">@terms.Sail</div>
-                </div>
-            }
-            @if (dossier.IsPrey)
-            {
-                @* The autosteal criterion box (owner): both must be green before shuttles launch. *@
-                bool rangeOk = dossier.Distance <= CaptureRule.CaptureRadiusMeters;
-                bool speedOk = dossier.RelSpeed <= CaptureRule.MaxRelativeSpeed;
-                <div class="border border-secondary rounded px-2 py-1 mt-1">
-                    <div class="fw-bold">🎯 Autosteal needs BOTH:</div>
-                    <div class="@(rangeOk ? "text-success" : "text-warning")">
-                        @(rangeOk ? "✅" : "❌") close enough —
-                        @FormatDistance(dossier.Distance) @(rangeOk ? "≤" : ">") @FormatDistance(CaptureRule.CaptureRadiusMeters)
-                    </div>
-                    <div class="@(speedOk ? "text-success" : "text-warning")">
-                        @(speedOk ? "✅" : "❌") speed match —
-                        @((dossier.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
-                        @(speedOk ? "≤" : ">") @((CaptureRule.MaxRelativeSpeed / 1000).ToString("F0", CultureInfo.InvariantCulture)) km/s
-                    </div>
-                    <div class="@(dossier.BoardReady == 2 ? "text-success fw-bold" : "text-secondary")">
-                        @(dossier.BoardReady switch
-                        {
-                            2 => "→ BOARDABLE NOW — hold the match, shuttles launch on their own",
-                            1 => "→ too fast — match her velocity, or hole her sail so she drifts",
-                            _ => "→ close the distance, then match her speed",
-                        })
-                    </div>
-                </div>
-            }
-            @if (_interestTargetId == dossierId && InterceptChipLine() is { } clock)
-            {
-                <div class="text-warning">@clock</div>
-            }
-            <div class="d-flex gap-1 mt-1">
-                <button type="button" class="btn btn-sm py-0 @(_interestTargetId == dossierId ? "btn-info" : "btn-outline-info")"
-                        title="Mark her the target of interest — intercept clock and firing solutions" @onclick="() => SetInterestTarget(dossierId)">🎯 interest</button>
-                <button type="button" class="btn btn-sm btn-outline-info py-0"
-                        title="Put the telescope on her to sharpen the fix" @onclick="() => TrackShipFromMenu(dossierId)">📡 sharpen fix</button>
-                <button type="button" class="btn btn-sm btn-outline-light py-0"
-                        title="Take this target to the war room" @onclick="() => SwitchDeskFromClick(ShipDesk.WarRoom)">⚔ war room</button>
-            </div>
-            </CappedScrollPanel>
-            </ChildContent>
-        </OverlayShell>
+        <DossierCard _dossierMinimizedValue="@_dossierMinimized" _dossierMinimizedSet="@(v => _dossierMinimized = v)" _interestTargetId="@_interestTargetId"
+                     CloseDossier="@CloseDossier" Dismiss="@Dismiss" DossierIsStacked="@DossierIsStacked"
+                     FormatDistance="@FormatDistance" InterceptChipLine="@InterceptChipLine"
+                     SetInterestTarget="@SetInterestTarget" SwitchDeskFromClick="@SwitchDeskFromClick"
+                     TrackShipFromMenu="@TrackShipFromMenu" dossier="@dossier" dossierId="@dossierId" />
     }
 
     @* M29: desk-layer-passthrough — the sensors chief works the SKY, not a form: pointer
        events fall through the desk's empty space to the live map below (pan, wheel zoom,
        ship click → contact menu), while every actual instrument re-enables its own events. *@
-    <div class="desk-layer desk-layer-dimmed desk-layer-passthrough @(_activeDesk == ShipDesk.Sensors ? "" : "d-none")">
-        <div class="desk-content">
-            <SpaceSails.Client.Pages.Stations.TrackingPost @ref="_trackingPost" Visible="_activeDesk == ShipDesk.Sensors" FullScreen="true"
-                SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" ShipCharge="_ship.Charge"
-                Ephemeris="_ephemeris" Candidates="TrackingCandidates()" MaxTracks="_telescopeLevel + 1"
-                TelescopeSpeedFactor="1 + 0.5 * _telescopeLevel"
-                RadarActive="_activeRadar" OnRadarToggle="SetActiveRadar"
-                Transponder="_transponderMode" OnTransponderChange="SetTransponder"
-                Opportunities="_courseOpportunities" OnSetInterest="SetInterestTarget"
-                OnZoomMap="ZoomSensorsBackdrop" OnCenterShip="CenterShipOnMap"
-                OnAreaScanCompleted="OnAreaScanCovered"
-                OnClose="() => SwitchDeskFromClick(ShipDesk.Nav)" />
-        </div>
-    </div>
+    <SensorsDeskLayer _activeDesk="@_activeDesk" _activeRadar="@_activeRadar"
+                      _courseOpportunities="@_courseOpportunities" _ephemeris="@_ephemeris" _ship="@_ship"
+                      _telescopeLevel="@_telescopeLevel" _trackingPostValue="@_trackingPost" _trackingPostSet="@(v => _trackingPost = v)"
+                      _transponderMode="@_transponderMode" CenterShipOnMap="@CenterShipOnMap"
+                      OnAreaScanCovered="@OnAreaScanCovered" SetActiveRadar="@SetActiveRadar"
+                      SetInterestTarget="@SetInterestTarget" SetTransponder="@SetTransponder" SimTime="@SimTime"
+                      SwitchDeskFromClick="@SwitchDeskFromClick" TrackingCandidates="@TrackingCandidates"
+                      ZoomSensorsBackdrop="@ZoomSensorsBackdrop" />
     @* #1021 · ShipDesk.Galley came off this list with the branch below it. The enum member stays (removing
        it would renumber Deck and Captain under every keyed and persisted thing that reads them) — what has
        gone is its ability to be `_activeDesk` at all. *@
     @if (_activeDesk is ShipDesk.WarRoom or ShipDesk.Trade or ShipDesk.Comms or ShipDesk.Captain)
     {
-        @* The war room dims instead of blanking (long-shots PR): the live map behind it IS the
-           orrery view for cross-system firing solutions — DrawFirePlan draws the transfer.
-           And it's PASSTHROUGH (owner: "the war room map seems dead to mouse clicks") — the
-           gunner pans, zooms and clicks contacts on the sky, same as the sensors chief. *@
-        <div class="desk-layer @(_activeDesk == ShipDesk.WarRoom ? "desk-layer-dimmed desk-layer-passthrough" : "")">
-            <div class="desk-content">
-                @if (_activeDesk == ShipDesk.WarRoom)
-                {
-                    <SpaceSails.Client.Pages.Stations.WarRoom Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" Contacts="WarRoomContacts()" Hunters="WarRoomHunters()" HeatLevel="_heat.Level" CoolingAtHaven="IsHiddenAtHaven()" Credits="_credits" SensorTracks="WarRoomSensorTracks()" InterestId="@_interestTargetId" Intercept="_intercept" InterceptTargetName="@InterestTargetName()" OnSetInterest="SetInterestTarget"
-                        FireAimOffsetSeconds="_fireAimOffsetSeconds" MaxAimOffsetSeconds="MaxFireAimOffsetSeconds" MaxMuzzleSpeedMps="MaxMuzzleSpeed" InterestDistanceMeters="InterestDistanceNow()" FireKind="_fireKind" FireSolution="_fireSolution" FireBlockedBy="@_fireBlockedBy" RoundsInFlight="LiveRounds()" PlannedImpactInSeconds="PlannedImpactEta()" StraightWindowText="@StraightWindowText()" WeaponsAuthorized="WeaponsAuthorized" FireAtWill="_fireAtWill" SlugAmmo="_slugAmmo" MissileAmmo="_missileAmmo" Docked="_docked" CanWarnInterest="CanWarnInterest()" OnBuyAmmo="BuyAmmo" FireDispersionMeters="_fireDispersionMeters" RevealedIterations="_revealedIterations" FireCountdownSeconds="@(FireLocked ? _fireAtSimTime - SimTime : null)" FireTip="@_fireTip" FirePulseCost="@(_fireKind == OrdnanceKind.Missile ? MissilePulseCost : SlugPulseCost)" PulsesAvailable="_reactionMassPulses"
-                        OnAimOffsetChanged="SetFireAimOffset" OnFireKindChanged="SetFireKind" OnComputeSolution="ComputeFiringSolution" OnCancelFire="CancelFiringSolution" OnScanWindows="ScanFiringWindows" OnAutoAim="AutoAim" OnArmFire="ArmFire"
-                        OnClose="() => SwitchDeskFromClick(ShipDesk.Nav)" OnWarningShot="FireWarningShot" OnBribe="BribeShip" />
-                }
-                else if (_activeDesk == ShipDesk.Trade)
-                {
-                    @* Trading floor, master–detail edition (owner: "like File Explorer"): the
-                       places-of-business TREE + detail pane owns two thirds of the desk, the
-                       cargo manifest keeps its column. The dock market is no longer a loose
-                       floating panel — it renders as the dockyard node's detail inside the tree
-                       (passed down as a fragment so all its bindings stay right here). *@
-                    <div class="desk-trade-grid">
-                        <SpaceSails.Client.Pages.Stations.LocalSpace @ref="_localSpace" Visible="true" FullScreen="true" BodyName="@(LocalSpaceBodyId is { } lsb ? BodyName(lsb) : null)" OrbitBodyId="@_orbitedBodyId" ContextBodyId="@LocalSpaceBodyId" Contacts="LocalContacts()" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" CargoUnits="_cargoUnits" CargoValue="_cargoValue" Credits="_credits" HoldSpaceUnits="CargoCapacity - _cargoUnits" ActiveTradeTargetId="@_localTradeTargetId" TradeProgress="_localTradeProgress" TradeMessage="@_localTradeMessage" DockedBodyId="@(_docked ? _dockBodyId : null)" DockedBodyName="@(_docked && _dockBodyId is { } dbn ? BodyName(dbn) : null)" BodyNameLookup="BodyName" OnStartTrade="StartLocalTrade" OnStartBuy="StartLocalBuy" OnClose="() => SwitchDesk(ShipDesk.Nav)">
-                            <DockMarket>
-                                <div class="d-flex gap-2 mb-2">
-                                    <button type="button" class="btn btn-sm btn-success flex-grow-1" disabled="@(_cargoValue <= 0)" title="Sell the whole hold at this dock's prices" @onclick="SellCargo">
-                                        Sell cargo (@_cargoValue.ToString("N0", CultureInfo.InvariantCulture) cr)
-                                    </button>
-                                </div>
-                                @* ⛽ fuel is bought in the always-visible fuel gauge (side panel), so it
-                                   answers "how do I fill her up?" (#157) whether or not you're docked. *@
-                                <div class="fw-bold mb-1">Upgrades</div>
-                                <table class="table table-sm table-dark mb-0">
-                                    <tbody>
-                                        <tr>
-                                            <td>Reaction mass<br /><span class="text-secondary">Lv @_massLevel → cap @(ReactionMassCapacity + 150)</span></td>
-                                            <td class="text-end align-middle">
-                                                <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_massLevel))" title="Buy the reaction-mass upgrade — a bigger fuel cap" @onclick='() => BuyUpgrade("mass")'>
-                                                    @UpgradePrice(_massLevel).ToString("N0", CultureInfo.InvariantCulture) cr
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Sensor range<br /><span class="text-secondary">Lv @_sensorLevel → @FormatDistance(SensorModel.Default.RangeMeters * Math.Pow(1.4, _sensorLevel + 1))</span></td>
-                                            <td class="text-end align-middle">
-                                                <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_sensorLevel))" title="Buy the sensor upgrade — a longer detection range" @onclick='() => BuyUpgrade("sensor")'>
-                                                    @UpgradePrice(_sensorLevel).ToString("N0", CultureInfo.InvariantCulture) cr
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Cargo hold<br /><span class="text-secondary">Lv @_holdLevel → @(CargoCapacity + 10) units</span></td>
-                                            <td class="text-end align-middle">
-                                                <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < UpgradePrice(_holdLevel))" title="Buy the cargo-hold upgrade — more units of space" @onclick='() => BuyUpgrade("hold")'>
-                                                    @UpgradePrice(_holdLevel).ToString("N0", CultureInfo.InvariantCulture) cr
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>Telescope<br /><span class="text-secondary">Lv @_telescopeLevel → @(_telescopeLevel + 2) simultaneous tracks</span></td>
-                                            <td class="text-end align-middle">
-                                                <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_telescopeLevel >= 3 || _credits < UpgradePrice(_telescopeLevel))" title="Buy the telescope upgrade — track more ships at once" @onclick='() => BuyUpgrade("telescope")'>
-                                                    @(_telescopeLevel >= 3 ? "MAX" : $"{UpgradePrice(_telescopeLevel):N0} cr")
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        @* PR-BUSTED: the one shipped dice helper — a named +2 on any last stand (the
-                                           purchasable-modifier seam; the shop of helpers is a follow-up). *@
-                                        <tr>
-                                            <td>Boarding-nets jammer<br /><span class="text-secondary">@(_hasNetJammer ? "fitted — +2 on resist" : "+2 on any last stand")</span></td>
-                                            <td class="text-end align-middle">
-                                                <button type="button" class="btn btn-sm btn-outline-info" disabled="@(_hasNetJammer || _credits < NetJammerPriceCr)" title="A named +2 modifier on resist/Bolivia initiative — proves the dice-helper seam" @onclick="BuyNetJammer">
-                                                    @(_hasNetJammer ? "OWNED" : $"{NetJammerPriceCr:N0} cr")
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </DockMarket>
-                        </SpaceSails.Client.Pages.Stations.LocalSpace>
-                        <div class="desk-side-panel">
-                            @* ⛽ FILL HER UP (#157) — the desk's answer to "how do I refuel her?", always
-                               shown: a car-gauge fuel meter banded green / amber (<18%) / red (floor),
-                               a fat FILL HER UP button + a +10 p top-up when the ship is alongside a pump
-                               (FuelReachability.AlongsidePump — the same truth the fuel alarm reads), and an
-                               honest "nearest pump N p away" line when it isn't. *@
-                            @{
-                                int _fuelCap = ReactionMassCapacity;
-                                int _fuelPulses = _reactionMassPulses;
-                                double _fuelFrac = _fuelCap > 0 ? Math.Clamp((double)_fuelPulses / _fuelCap, 0, 1) : 0;
-                                AlertSeverity? _fuelBand = FuelAlertRule.Evaluate(_fuelPulses, _fuelCap);
-                                string _fuelBandClass = _fuelBand switch
-                                {
-                                    AlertSeverity.Red => "fuel-red",
-                                    AlertSeverity.Amber => "fuel-amber",
-                                    _ => "fuel-green",
-                                };
-                                CelestialBody? _fuelPump = _ephemeris is not null ? FuelReachability.AlongsidePump(_ephemeris, _ship) : null;
-                            }
-                            <div class="fuel-desk card bg-dark bg-opacity-50 text-light mb-2">
-                                <div class="card-body p-2">
-                                    <div class="fuel-desk-title fw-bold">⛽ FUEL</div>
-                                    <div class="fuel-gauge @_fuelBandClass" title="Reaction mass: @_fuelPulses of @_fuelCap pulses">
-                                        <div class="fuel-gauge-fill" style="width:@(((int)(_fuelFrac * 100)))%"></div>
-                                        <div class="fuel-gauge-readout">@_fuelPulses<span class="fuel-gauge-cap"> / @_fuelCap p</span></div>
-                                    </div>
-                                    @if (_fuelPump is { } _pump)
-                                    {
-                                        @* #1068 · the same quote the till charges, market move and all — a desk that
-                                           priced a fill differently from the till would be the named bug class exactly. *@
-                                        int _fuelPrice = FuelMarket.PricePerPulse(
-                                            _ephemeris!.Position(_pump.Id, SimTime).Length,
-                                            QuietHands.PulsePriceMoveAt(_ephemeris!, _pump.Id));
-                                        int _fuelRoom = _fuelCap - _fuelPulses;
-                                        FuelMarket.Quote _fill = FuelMarket.QuoteFill(_fuelPulses, _fuelCap, _fuelPrice, _credits, int.MaxValue);
-                                        FuelMarket.Quote _topUp = FuelMarket.QuoteFill(_fuelPulses, _fuelCap, _fuelPrice, _credits, 10);
-                                        <div class="fuel-alongside small mt-1">Alongside @BodyName(_pump.Id) · @_fuelPrice cr/p</div>
-                                        <div class="d-flex gap-2 mt-2">
-                                            <button type="button" class="btn btn-warning fw-bold fuel-fill-btn flex-grow-1"
-                                                    title="@($"Top the tank right off — buys {_fill.Pulses} p for {_fill.Cost:N0} cr")"
-                                                    disabled="@(_fuelRoom <= 0 || _fill.Pulses <= 0)" @onclick="() => BuyFuel(int.MaxValue)">
-                                                ⛽ FILL HER UP@(_fuelRoom > 0 && _fill.Pulses > 0 ? $" · {_fill.Cost:N0} cr" : "")
-                                            </button>
-                                            <button type="button" class="btn btn-outline-warning fuel-topup-btn"
-                                                    title="@($"Take on {_topUp.Pulses} p for {_topUp.Cost:N0} cr")"
-                                                    disabled="@(_fuelRoom <= 0 || _topUp.Pulses <= 0)" @onclick="() => BuyFuel(10)">
-                                                +10 p
-                                            </button>
-                                        </div>
-                                        @if (_fuelRoom <= 0)
-                                        {
-                                            <div class="fuel-note small text-secondary mt-1">Tank's full.</div>
-                                        }
-                                        else if (_fill.Pulses <= 0)
-                                        {
-                                            <div class="fuel-note small text-danger mt-1">Not enough credits for even one pulse (@_fuelPrice cr/p).</div>
-                                            @* PR-WIRE: broke at the pump — the dream's anonymized favor wire. A trusted
-                                               dark-web-native contact wires gas money; you owe them one quiet delivery. *@
-                                            @if (BestWireLenderId() is { } lender)
-                                            {
-                                                <button type="button" class="btn btn-sm btn-warning mt-2 w-100"
-                                                        title="@($"Call in a favor — {ContactSheets.For(lender).DisplayName} wires you {PumpLoanPrincipal(_fuelRoom, _fuelPrice):N0} cr for fuel. You'll owe one quiet delivery.")"
-                                                        @onclick="CallInFavorAtPump">
-                                                    📡 Call in a favor — @ContactSheets.For(lender).DisplayName wires @PumpLoanPrincipal(_fuelRoom, _fuelPrice).ToString("N0", CultureInfo.InvariantCulture) cr
-                                                </button>
-                                            }
-                                        }
-                                        else if (_fill.Pulses < _fuelRoom)
-                                        {
-                                            <div class="fuel-note small text-warning mt-1">Credits cover @_fill.Pulses of the @_fuelRoom p of room.</div>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        <div class="fuel-directions small mt-1">@FuelDirectionsLine()</div>
-                                    }
-                                </div>
-                            </div>
-                            @* #314 — the sentry rearm line, sitting with the berth's services. Tops the
-                               ship's bot magazines back to 99 at one honest price; a receipt prints. *@
-                            @if (_dockedHavenId is not null)
-                            {
-                                <div class="fuel-desk card bg-dark bg-opacity-50 text-light mb-2">
-                                    <div class="card-body p-2">
-                                        <div class="fuel-desk-title fw-bold">🤖 SENTRY ARMORY</div>
-                                        @if (_shipBots.Count == 0)
-                                        {
-                                            <div class="small text-secondary mt-1">No bots aboard — they're deployed on a surface, or written off.</div>
-                                        }
-                                        else
-                                        {
-                                            int _sentryMissing = SentryRoundsMissing();
-                                            int _sentryCost = SentryRestockCost();
-                                            <div class="small mt-1">
-                                                @foreach (var _b in _shipBots)
-                                                {
-                                                    <span class="me-2">@_b.Unit <span class="fw-bold" style="color:#ff5a46">@SentryBot.Readout(_b.Rounds)</span></span>
-                                                }
-                                            </div>
-                                            @* #562: the affordability gate below reads the CONSTANT, not a
-                                               literal. A hard-coded 2 there silently shadowed
-                                               RestockPricePerRound and went wrong the moment the
-                                               ammo was re-priced — which is now.
-
-                                               This note sits ABOVE the tag, not between its attributes,
-                                               because Razor does NOT treat a comment inside a START TAG as
-                                               a comment: it compiles the whole run into an ATTRIBUTE NAME,
-                                               and the browser answers
-                                               "InvalidCharacterError: Failed to execute 'setAttribute'" —
-                                               which kills the render, so the Trade desk showed
-                                               "An unhandled error has occurred. Reload." and nothing else.
-                                               A note goes above a tag or after its closing bracket; never
-                                               inside it. TheRazorCommentIsNotAnAttributeTests is that law. *@
-                                            <button type="button" class="btn btn-outline-warning btn-sm w-100 mt-2 sentry-rearm-btn"
-                                                    disabled="@(_sentryMissing <= 0 || _credits < SentryBot.RestockPricePerRound)"
-                                                    title="@($"Rack {_sentryMissing} rounds across the roster at {SentryBot.RestockPricePerRound} cr each")"
-                                                    @onclick="RestockSentries">
-                                                @(_sentryMissing <= 0 ? "Magazines full" : $"🔫 Rearm sentries — {_sentryMissing} rounds · {_sentryCost:N0} cr")
-                                            </button>
-                                        }
-                                    </div>
-                                </div>
-                            }
-                            <div class="trade-manifest-panel card bg-dark bg-opacity-50 text-light">
-                            <div class="card-header py-1"><span class="fw-bold small">Cargo manifest</span></div>
-                            <div class="card-body p-2 small">
-                                @if (_localTradeTargetId is not null)
-                                {
-                                    <div class="trade-manifest-transfer mb-2">
-                                        <div class="text-info trade-manifest-transfer-label">@(_localTradeMessage ?? "Drones ferrying…")</div>
-                                        <div class="progress trade-manifest-progress">
-                                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-info" style="width:@(((int)(_localTradeProgress * 100)))%"></div>
-                                        </div>
-                                        <div class="text-info trade-manifest-transfer-pct">@((int)(_localTradeProgress * 100))%</div>
-                                    </div>
-                                }
-                                @{ IReadOnlyList<CargoManifestEntry> manifest = CargoManifest(); }
-                                @if (manifest.Count == 0)
-                                {
-                                    <div class="text-secondary">Hold empty.</div>
-                                }
-                                else
-                                {
-                                    <table class="table table-sm table-dark mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Class</th>
-                                                <th class="text-end">Units</th>
-                                                <th class="text-end">Est. value</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach (CargoManifestEntry entry in manifest)
-                                            {
-                                                <tr>
-                                                    <td>@entry.CargoClass</td>
-                                                    <td class="text-end">@entry.Units</td>
-                                                    <td class="text-end">@entry.Value.ToString("N0", CultureInfo.InvariantCulture) cr</td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                        <tfoot>
-                                            <tr class="fw-bold">
-                                                <td>Total</td>
-                                                <td class="text-end">@_cargoUnits/@CargoCapacity</td>
-                                                <td class="text-end">@_cargoValue.ToString("N0", CultureInfo.InvariantCulture) cr</td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                }
-                            </div>
-                            </div>
-                        </div>
-                    </div>
-                }
-                else if (_activeDesk == ShipDesk.Comms)
-                {
-                    @* Comms room, master–detail edition (ui-guidelines.md; validated by the Gemini
-                       playtest consult): ticker on top, then the CONTACTS TREE on the left — lean
-                       rows, one status badge each, grouped Scheduled / En route / fixtures, plus
-                       "Off the books" and the dark web market as first-class nodes — and ONLY the
-                       selected node's detail on the right. The three loose consoles are gone:
-                       tight-beam and laser ranging were always per-contact actions, so they live
-                       in the contact's detail now; the market is the dark-web node's detail. *@
-                    <div class="desk-comms-room">
-                        @* #1021 · THE TICKER IS THE WIRE COMPONENT'S SECOND CONSUMER, and it is the half of
-                           this issue that proves the refactor rather than claiming it. Owner: "keep the news
-                           feed... refactor it so it can be elsewhere also." A component with one caller is a
-                           file move; this strip is the elsewhere. Its markup and its `.comms-ticker*` rules
-                           moved into NewsWirePanel word for word (the rules had to MOVE rather than be
-                           reached with ::deep — Blazor scopes a stylesheet to the component that rendered
-                           the element, and the strip is drawn there now), so the comms room is unchanged on
-                           the glass and the two readings of one feed live in one file. *@
-                        <SpaceSails.Client.Pages.Stations.NewsWirePanel
-                            Shape="SpaceSails.Client.Pages.Stations.NewsWirePanel.WireShape.Ticker"
-                            SimTime="SimTime" Feed="NewsFeed(CommsTickerAmbientDays)"
-                            ItemCount="CommsTickerItemCount" />
-                        <div class="desk-comms-grid">
-                            <div class="desk-side-panel comms-traffic-panel card bg-dark bg-opacity-50 text-light">
-                                <div class="card-header py-1"><span class="fw-bold small">Contacts &amp; intel</span></div>
-                                <div class="card-body p-2 small desk-traffic-scroll">
-                                    @foreach ((string groupLabel, List<NpcState> members) in CommsGroups())
-                                    {
-                                        <div class="comms-tree-group text-secondary fw-bold">@groupLabel</div>
-                                        @foreach (NpcState npc in members)
-                                        {
-                                            NpcState row = npc;
-                                            <div class="comms-node @(row.Ship.Id == _commsSelectedId ? "comms-node-selected" : "")"
-                                                 role="button" tabindex="0" title="Open her file in the comms panel" @onclick="() => SelectCommsShip(row.Ship.Id)">
-                                                <span class="flex-grow-1">@row.Ship.Callsign</span>
-                                                @if (!row.Ship.PublishesTimetable)
-                                                {
-                                                    <span class="badge bg-dark border border-secondary" title="Bought intel — off the books">🕸</span>
-                                                }
-                                                @{ (string rowBadge, string rowBadgeCss) = CommsStatusBadge(row); }
-                                                <span class="badge @rowBadgeCss">@rowBadge</span>
-                                            </div>
-                                        }
-                                    }
-                                    <div class="comms-tree-group text-secondary fw-bold">Intel</div>
-                                    @foreach (ScopeIntel intel in _scopeIntel)
-                                    {
-                                        ScopeIntel si = intel;
-                                        string siNodeId = $"scopeintel:{si.Id}";
-                                        <div class="comms-node @(_commsSelectedId == siNodeId ? "comms-node-selected" : "")"
-                                             role="button" tabindex="0" title="Open this tip in the comms panel" @onclick="() => _commsSelectedId = siNodeId">
-                                            <span class="flex-grow-1">@si.Headline</span>
-                                            <span class="badge bg-info text-dark">tip</span>
-                                        </div>
-                                    }
-                                    <div class="comms-node @(_commsSelectedId == "offbooks" ? "comms-node-selected" : "")"
-                                         role="button" tabindex="0" title="Open the off-the-books ships in the comms panel" @onclick='() => _commsSelectedId = "offbooks"'>
-                                        <span class="flex-grow-1">🕵 Off the books</span>
-                                        <span class="badge bg-secondary">@OffBooksCount unknown</span>
-                                    </div>
-                                    <div class="comms-node @(_commsSelectedId == "darkweb" ? "comms-node-selected" : "")"
-                                         role="button" tabindex="0" title="Open the dark-web market in the comms panel" @onclick='() => _commsSelectedId = "darkweb"'>
-                                        <span class="flex-grow-1">🕸 Dark web market</span>
-                                        <span class="badge @(DarkWebCanTrade() ? "bg-success" : "bg-secondary")">@(DarkWebCanTrade() ? "open" : "offline")</span>
-                                    </div>
-                                </div>
-                            </div>
-                            @if (_commsSelectedId == "darkweb")
-                            {
-                                <SpaceSails.Client.Pages.Stations.DarkWeb Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" Ledger="_intelLedger" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" WireContacts="DarkWebWireContacts()" OnOpenWireBank="id => OpenBank(id, viaWire: true)" OnIntelPurchased="(string cs) => PushNewsEvent(NewsWire.NewsEventKind.IntelPurchased, cs)" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
-                            }
-                            else
-                            {
-                                <div class="desk-side-panel card bg-dark bg-opacity-50 text-light">
-                                    @if (_commsSelectedId is { } scSel && scSel.StartsWith("scopeintel:", StringComparison.Ordinal) && ScopeIntelById(scSel) is { } tip)
-                                    {
-                                        <div class="card-header py-1"><span class="fw-bold small">@tip.Headline</span></div>
-                                        <div class="card-body p-2 small">
-                                            <div class="comms-breadcrumbs text-secondary mb-1">Intel › orbit fix</div>
-                                            @foreach (string line in tip.Lines)
-                                            {
-                                                <div class="mb-1">@line</div>
-                                            }
-                                            <div class="d-grid gap-1 mt-2">
-                                                <button type="button" class="btn btn-sm btn-info py-0 px-1 text-start"
-                                                        title="Slew the scope to where this tip predicts and scan" @onclick="() => PointScopeWhereIntelSays(tip)">
-                                                    🔭 Point the scope where this says
-                                                </button>
-                                            </div>
-                                            <div class="text-secondary mt-2">The scope slews to the predicted spot and runs a prioritized area scan. Warp time at the <span class="text-light">Sensors desk</span> until the pass lands — when it sweeps over her, she's charted.</div>
-                                        </div>
-                                    }
-                                    else if (_commsSelectedId == "offbooks")
-                                    {
-                                        <div class="card-header py-1"><span class="fw-bold small">🕵 Off the books</span></div>
-                                        <div class="card-body p-2 small">
-                                            <div class="comms-breadcrumbs text-secondary mb-1">Intel › Off the books</div>
-                                            <div><span class="fw-bold">@OffBooksCount ship@(OffBooksCount == 1 ? "" : "s")</span> are flying with no published timetable — the board can't list what nobody filed.</div>
-                                            <div class="text-secondary mt-2">Two ways to find them:</div>
-                                            <div class="text-secondary">🔭 sweep the sky with the telescope at the <span class="text-light">Sensors desk</span> — lane watches and area scans catch dark hulls;</div>
-                                            <div class="text-secondary">🕸 buy their route intel at the <span class="text-light">dark web market</span> (open at a haven, or a station past Mars) — bought ships join the contacts tree with a 🕸 badge until the tip goes stale.</div>
-                                        </div>
-                                    }
-                                    else if (_commsSelectedId is { } commsSelId && FindNpc(commsSelId) is { } commsShip)
-                                    {
-                                        bool commsTracked = _trackingPost is not null && _trackingPost.TryGetTrack(commsShip.Ship.Id, out _);
-                                        <div class="card-header py-1 d-flex justify-content-between align-items-center">
-                                            <span class="fw-bold small">@commsShip.Ship.Callsign</span>
-                                            @{ (string detailBadge, string detailBadgeCss) = CommsStatusBadge(commsShip); }
-                                            <span class="badge @detailBadgeCss">@detailBadge</span>
-                                        </div>
-                                        <div class="card-body p-2 small">
-                                            <div class="comms-breadcrumbs text-secondary mb-1">Departures board › @commsShip.Ship.Callsign</div>
-                                            <div>@commsShip.Ship.CargoClass (@commsShip.Ship.CargoUnits u) · @RouteLabel(commsShip.Ship)</div>
-                                            <div>@DepartureLabel(commsShip.Ship)</div>
-                                            <div class="text-secondary">last seen: @(commsShip.LastObservation is { } lastObs ? FormatSimTime(lastObs.SimTime) : "never — not yet inside sensor reach")</div>
-                                            @{ ShipHistory commsHist = ShipHistories.For(commsShip.Ship.Id); }
-                                            @* The Victoria-I history block (owner ruling, 2026-07-19): every hull carries a
-                                               past — where she was laid down, the proud names she outlived, how many owners
-                                               deep she runs, and the wear that proves the glory. *@
-                                            <div class="border-top border-secondary mt-2 pt-1">
-                                                <div class="fw-bold">📜 Service history</div>
-                                                <div class="text-secondary">@commsHist.LaidDown</div>
-                                                @if (commsHist.HasFormerNames)
-                                                {
-                                                    <div>@commsHist.FormerNamesLine</div>
-                                                }
-                                                @if (commsHist.CurrentNameLine(commsShip.Ship.Callsign, flyingFalseColors: false) is { } commsNameLine)
-                                                {
-                                                    <div class="text-secondary">@commsNameLine</div>
-                                                }
-                                                <div class="text-secondary fst-italic">@commsHist.Condition</div>
-                                            </div>
-                                            @if (!commsShip.Ship.PublishesTimetable)
-                                            {
-                                                <div class="text-secondary">🕸 bought intel — goes stale in @IntelStaleInDays(commsShip.Ship.Id).ToString("F0") d</div>
-                                            }
-                                            <div class="d-grid gap-1 mt-2 comms-actions">
-                                                @if (commsTracked)
-                                                {
-                                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1 text-start"
-                                                            title="Hail her on tight-beam and ask her intentions" @onclick="() => CommsHail(commsShip)">
-                                                        📻 Hail via tight-beam — ask her intentions
-                                                    </button>
-                                                    @if (_commsHailAnswer is not null)
-                                                    {
-                                                        <div class="text-info">@_commsHailAnswer</div>
-                                                    }
-                                                    <button type="button" class="btn btn-sm btn-outline-warning py-0 px-1 text-start"
-                                                            title="Laser-range her for an exact fix — but she learns where we are" @onclick="() => CommsLaserRange(commsShip)">
-                                                        ⚡ Laser range — exact fix, but she learns where we are
-                                                    </button>
-                                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-1 text-start"
-                                                            disabled="@(!CommsCanFence(commsShip))"
-                                                            title="@(DarkWebCanTrade() ? "Sell this telescope track to the dark-web market for coin" : DarkWebDisabledReason())"
-                                                            @onclick="() => CommsSellTrack(commsShip)">
-                                                        🕸 Fence this track@(CommsFencePrice(commsShip) is { } fencePrice ? $" — +{fencePrice:N0} cr" : " — needs ≥50% quality at a haven")
-                                                    </button>
-                                                }
-                                                else
-                                                {
-                                                    <div class="text-secondary">Not on your telescope ledger — track her at the <span class="text-light">Sensors desk</span> to hail, laser-range, or fence the track.</div>
-                                                }
-                                                @if (SelectedTrackedTarget() is { } pinTarget && pinTarget.Ship.Id == commsShip.Ship.Id)
-                                                {
-                                                    <button type="button" class="btn btn-sm @(_pinned ? "btn-warning" : "btn-outline-light") py-0 px-1 text-start" title="Pin her so the scope holds her brake point" @onclick="TogglePin">
-                                                        📌 Pin: brakes at @BodyName(pinTarget.Ship.DestinationId)
-                                                    </button>
-                                                }
-                                            </div>
-                                            @if (_commsActionMessage is not null)
-                                            {
-                                                <div class="text-warning mt-1">@_commsActionMessage</div>
-                                            }
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="card-body p-2 small text-secondary">
-                                            Select a contact in the tree — its dossier and comms actions (hail, laser ranging, fencing the track) show here.
-                                            Ships missing from the board are found at the <span class="text-light">Sensors desk</span> or bought at the <span class="text-light">dark web market</span>.
-                                        </div>
-                                    }
-                                </div>
-                            }
-                        </div>
-                    </div>
-                }
-                @* #1021 · THE GALLEY BRANCH USED TO BE HERE, and it is gone. Owner: "this UI MUST GO!" The
-                   news wire and the rum locker are a pop-up card now (search `.galley-card` in this file);
-                   `SwitchDesk(ShipDesk.Galley)` raises it and never writes `_activeDesk`, so this band has
-                   nothing left to draw for that value and the gate above no longer lists it.
-                   TheGalleyIsACardNotADeskTests asks the band the question directly. *@
-                else if (_activeDesk == ShipDesk.Captain)
-                {
-                    <SpaceSails.Client.Pages.Stations.Captain CurrentMission="_mission" Options="_missionOptions" OnSelectMission="SetMission"
-                                                              StatusChips="AllStationChips()" OnGoToDesk="SwitchDeskFromClick"
-                                                              ShotAuthorized="_shotAuthorized" FireAtWill="_fireAtWill"
-                                                              OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill"
-                                                              WeaponsTight="_weaponsTight"
-                                                              DamageControlAuthorized="_dcStandingOrder"
-                                                              OnToggleDamageControlAuthority="ToggleDamageControlAuthority"
-                                                              DamageControlNextActCleared="_dcNextActionCleared"
-                                                              OnAuthorizeNextDamageControlAct="AuthorizeNextDamageControlAct"
-                                                              ArmedCompartment="@_shipAuthorized"
-                                                              BridgeRepeaterAlive="ShipBridgeAlive"
-                                                              Tutorials="TutorialCards()" ActiveTutorial="ActiveTutorialIndex()" OnStartTutorial="StartTutorial"
-                                                              OpenToTutorials="_openCaptainToTutorials" Quests="QuestCards()"
-                                                              OnPointScope="PointScopeForActiveFetch"
-                                                              Tips="LedgerTipsAsRemembered()" OnScopeTip="PointScopeFromLedger"
-                                                              OnReadGreyPage="ReadTheGreyPage"
-                                                              GreyPageMark="@FilingLine.Mark" GreyPageLabel="@FilingLine.Label"
-                                                              Crossings="CrossingRows()" CrossingsHeading="@CaptainCrossings.Heading"
-                                                              Accounts="LedgerAccounts()"
-                                                              OnRouteToDarkWeb="OpenDarkWebFromLedger" OnRouteToDossier="OpenDossierFromLedger"
-                                                              Maps="LedgerMaps()" OnViewMap="ViewMapFromLedger"
-                                                              HoardSummary="@_caches.HoardLine()"
-                                                              OnReopenStartPicker="ReopenStartPicker"
-                                                              OnOpenSaves="OpenSaveDrawer"
-                                                              CaptainName="@ActiveCaptainName"
-                                                              RenamingCaptain="@(_renamingThreadId is { Length: > 0 } rid && rid == _activeThreadId)"
-                                                              RenameDraft="@_renameDraft"
-                                                              OnBeginRename="() => BeginRenameCaptain(_activeThreadId ?? string.Empty)"
-                                                              OnRenameDraft="v => _renameDraft = v"
-                                                              OnRenameKeyDown="RenameKeyDown"
-                                                              OnCommitRename="CommitRenameCaptain"
-                                                              OnCancelRename="CancelRenameCaptain"
-                                                              Voyage="CrewVoyage()"
-                                                              WorkingStopsSinceShoreLeave="_workingStopsSinceShoreLeave"
-                                                              LastError="CaptainCrashNote()" ErrorCopied="_crashNoteCopied"
-                                                              OnCopyError="CopyCrashNote" OnDismissError="DismissCrashNote"
-                                                              InitialTab="_captainTab" OnTabChanged="t => { _captainTab = t; }" />
-                }
-            </div>
-        </div>
+        <DeskPanels _activeDesk="@_activeDesk" _activeThreadId="@_activeThreadId" _caches="@_caches"
+                    _captainTabValue="@_captainTab" _captainTabSet="@(v => _captainTab = v)" _cargoUnits="@_cargoUnits" _cargoValue="@_cargoValue"
+                    _commsActionMessage="@_commsActionMessage" _commsHailAnswer="@_commsHailAnswer"
+                    _commsSelectedIdValue="@_commsSelectedId" _commsSelectedIdSet="@(v => _commsSelectedId = v)" _crashNoteCopied="@_crashNoteCopied" _creditsValue="@_credits" _creditsSet="@(v => _credits = v)"
+                    _dcNextActionCleared="@_dcNextActionCleared" _dcStandingOrder="@_dcStandingOrder"
+                    _dockBodyId="@_dockBodyId" _docked="@_docked" _dockedHavenId="@_dockedHavenId"
+                    _ephemeris="@_ephemeris" _fireAimOffsetSeconds="@_fireAimOffsetSeconds"
+                    _fireAtSimTime="@_fireAtSimTime" _fireAtWill="@_fireAtWill" _fireBlockedBy="@_fireBlockedBy"
+                    _fireDispersionMeters="@_fireDispersionMeters" _fireKind="@_fireKind"
+                    _fireSolution="@_fireSolution" _fireTip="@_fireTip" _hasNetJammer="@_hasNetJammer"
+                    _heat="@_heat" _holdLevel="@_holdLevel" _intelLedger="@_intelLedger" _intercept="@_intercept"
+                    _interestTargetId="@_interestTargetId" _localSpaceValue="@_localSpace" _localSpaceSet="@(v => _localSpace = v)"
+                    _localTradeMessage="@_localTradeMessage" _localTradeProgress="@_localTradeProgress"
+                    _localTradeTargetId="@_localTradeTargetId" _massLevel="@_massLevel" _missileAmmo="@_missileAmmo"
+                    _mission="@_mission" _missionOptions="@_missionOptions"
+                    _openCaptainToTutorials="@_openCaptainToTutorials" _orbitedBodyId="@_orbitedBodyId"
+                    _pinned="@_pinned" _reactionMassPulses="@_reactionMassPulses" _renameDraftValue="@_renameDraft" _renameDraftSet="@(v => _renameDraft = v)"
+                    _renamingThreadId="@_renamingThreadId" _revealedIterations="@_revealedIterations"
+                    _scopeIntel="@_scopeIntel" _sensorLevel="@_sensorLevel" _ship="@_ship"
+                    _shipAuthorized="@_shipAuthorized" _shipBots="@_shipBots" _shotAuthorized="@_shotAuthorized"
+                    _slugAmmo="@_slugAmmo" _telescopeLevel="@_telescopeLevel" _trackingPost="@_trackingPost"
+                    _weaponsTight="@_weaponsTight" _workingStopsSinceShoreLeave="@_workingStopsSinceShoreLeave"
+                    ActiveCaptainName="@ActiveCaptainName" ActiveTutorialIndex="@ActiveTutorialIndex"
+                    AllStationChips="@AllStationChips" ArmFire="@ArmFire"
+                    AuthorizeNextDamageControlAct="@AuthorizeNextDamageControlAct" AuthorizeShot="@AuthorizeShot"
+                    AutoAim="@AutoAim" BeginRenameCaptain="@BeginRenameCaptain" BestWireLenderId="@BestWireLenderId"
+                    BodyName="@BodyName" BribeShip="@BribeShip" BuyAmmo="@BuyAmmo" BuyFuel="@BuyFuel"
+                    BuyNetJammer="@BuyNetJammer" BuyUpgrade="@BuyUpgrade" CallInFavorAtPump="@CallInFavorAtPump"
+                    CancelFiringSolution="@CancelFiringSolution" CancelRenameCaptain="@CancelRenameCaptain"
+                    CanWarnInterest="@CanWarnInterest" CaptainCrashNote="@CaptainCrashNote"
+                    CargoCapacity="@CargoCapacity" CargoManifest="@CargoManifest"
+                    CommitRenameCaptain="@CommitRenameCaptain" CommsCanFence="@CommsCanFence"
+                    CommsFencePrice="@CommsFencePrice" CommsGroups="@CommsGroups" CommsHail="@CommsHail"
+                    CommsLaserRange="@CommsLaserRange" CommsSellTrack="@CommsSellTrack"
+                    CommsStatusBadge="@CommsStatusBadge" CommsTickerAmbientDays="@CommsTickerAmbientDays"
+                    CommsTickerItemCount="@CommsTickerItemCount" ComputeFiringSolution="@ComputeFiringSolution"
+                    CopyCrashNote="@CopyCrashNote" CrewVoyage="@CrewVoyage" CrossingRows="@CrossingRows"
+                    DarkWebCanTrade="@DarkWebCanTrade" DarkWebDisabledReason="@DarkWebDisabledReason"
+                    DarkWebDistanceFromEarth="@DarkWebDistanceFromEarth" DarkWebMarketShips="@DarkWebMarketShips"
+                    DarkWebTrackedShips="@DarkWebTrackedShips" DarkWebWireContacts="@DarkWebWireContacts"
+                    DepartureLabel="@DepartureLabel" DismissCrashNote="@DismissCrashNote"
+                    DockedBodyName="@DockedBodyName" DrawFirePlan="@DrawFirePlan" FindNpc="@FindNpc"
+                    FireLocked="@FireLocked" FireTip="@FireTip" FireWarningShot="@FireWarningShot"
+                    FormatDistance="@FormatDistance" FormatSimTime="@FormatSimTime"
+                    FuelDirectionsLine="@FuelDirectionsLine" IntelStaleInDays="@IntelStaleInDays"
+                    InterestDistanceNow="@InterestDistanceNow" InterestTargetName="@InterestTargetName"
+                    IsHiddenAtHaven="@IsHiddenAtHaven" LedgerAccounts="@LedgerAccounts" LedgerMaps="@LedgerMaps"
+                    LedgerTipsAsRemembered="@LedgerTipsAsRemembered" LiveRounds="@LiveRounds"
+                    LocalContacts="@LocalContacts" LocalSpaceBodyId="@LocalSpaceBodyId"
+                    MaxFireAimOffsetSeconds="@MaxFireAimOffsetSeconds" MaxMuzzleSpeed="@MaxMuzzleSpeed"
+                    MissilePulseCost="@MissilePulseCost" NetJammerPriceCr="@NetJammerPriceCr" OnNewsFeed="@((int n, NewsWire.NewsScope scope, string? salt) => NewsFeed(n, scope, salt))"
+                    OffBooksCount="@OffBooksCount" OnOpenBank="@((string contactId, bool viaWire) => OpenBank(contactId, viaWire))"
+                    OpenDarkWebFromLedger="@OpenDarkWebFromLedger" OpenDossierFromLedger="@OpenDossierFromLedger"
+                    OpenSaveDrawer="@OpenSaveDrawer" PlannedImpactEta="@PlannedImpactEta"
+                    PointScopeForActiveFetch="@PointScopeForActiveFetch"
+                    PointScopeFromLedger="@PointScopeFromLedger"
+                    PointScopeWhereIntelSays="@PointScopeWhereIntelSays" PumpLoanPrincipal="@PumpLoanPrincipal"
+                    OnPushNewsEvent="@((NewsWire.NewsEventKind kind, string subject, string? detail) => PushNewsEvent(kind, subject, detail))" QuestCards="@QuestCards"
+                    ReactionMassCapacity="@ReactionMassCapacity" ReadTheGreyPage="@ReadTheGreyPage"
+                    RenameKeyDown="@RenameKeyDown" ReopenStartPicker="@ReopenStartPicker"
+                    RestockSentries="@RestockSentries" RouteLabel="@RouteLabel"
+                    ScanFiringWindows="@ScanFiringWindows" ScopeIntelById="@ScopeIntelById"
+                    SelectCommsShip="@SelectCommsShip" SelectedTrackedTarget="@SelectedTrackedTarget"
+                    SellCargo="@SellCargo" SentryRestockCost="@SentryRestockCost"
+                    SentryRoundsMissing="@SentryRoundsMissing" SetFireAimOffset="@SetFireAimOffset"
+                    SetFireKind="@SetFireKind" SetInterestTarget="@SetInterestTarget" SetMission="@SetMission"
+                    ShipBridgeAlive="@ShipBridgeAlive" SimTime="@SimTime" SlugPulseCost="@SlugPulseCost"
+                    StartLocalBuy="@StartLocalBuy" StartLocalTrade="@StartLocalTrade" StartTutorial="@StartTutorial"
+                    StraightWindowText="@StraightWindowText" SwitchDesk="@SwitchDesk"
+                    SwitchDeskFromClick="@SwitchDeskFromClick"
+                    ToggleDamageControlAuthority="@ToggleDamageControlAuthority"
+                    ToggleFireAtWill="@ToggleFireAtWill" TogglePin="@TogglePin" TutorialCards="@TutorialCards"
+                    UpgradePrice="@UpgradePrice" ViewMapFromLedger="@ViewMapFromLedger" Warp="@Warp"
+                    WarRoomContacts="@WarRoomContacts" WarRoomHunters="@WarRoomHunters"
+                    WarRoomSensorTracks="@WarRoomSensorTracks" WeaponsAuthorized="@WeaponsAuthorized" />
     }
 
     @* #330: the right-side desk status-chip column is ship chrome — hidden on a surface excursion so the

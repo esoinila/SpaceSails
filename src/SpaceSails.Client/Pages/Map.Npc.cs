@@ -519,7 +519,7 @@ public partial class Map
         }
     }
 
-    private readonly record struct DossierInfo(
+    public readonly record struct DossierInfo(
         string Name, string Detail, string StatusLine,
         double Distance, double RelSpeed, double Closing,
         double? TrackQuality, bool InDriverReach, string FireLine,
@@ -536,7 +536,7 @@ public partial class Map
     /// <summary>What the collector's own card says about how this ends. Every sentence is built in Core,
     /// beside the rule it describes, so a card and a sim can never quote different numbers at each other
     /// (#962, and this repo's fifth named bug class).</summary>
-    private readonly record struct HuntTerms(string Warrant, string Hiding, string Nerve, string Sail);
+    public readonly record struct HuntTerms(string Warrant, string Hiding, string Nerve, string Sail);
 
     private DossierInfo? DossierFor(string id)
     {
