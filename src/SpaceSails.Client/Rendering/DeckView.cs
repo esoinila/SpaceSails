@@ -284,15 +284,20 @@ public sealed partial class DeckView
 
     /// <summary>Is this segment entirely past one edge of the glass? A cheap, conservative reject — it is
     /// only ever true when BOTH ends are outside the SAME edge, so nothing that crosses the view can be
-    /// skipped and no picture changes. The margin covers a stroke's own width and the fact that a wall is
-    /// drawn thicker than the line it is given.</summary>
-    private bool OffTheGlass(float x1, float y1, float x2, float y2)
+    /// skipped and no picture changes. The default margin covers a stroke's own width and the fact that a
+    /// wall is drawn thicker than the line it is given.
+    ///
+    /// <para>#563 slice 2 · <paramref name="margin"/> is a parameter because not everything drawn at a point
+    /// is a point. A console's PLATE is a line of text centred on it and reaches half its own width to each
+    /// side, so a plate rejected on a twelve-pixel margin would have its words clipped off the edge of the
+    /// screen — the picture changing, which is the one thing a cull may never do. Callers that draw wide
+    /// pass their own reach.</para></summary>
+    private bool OffTheGlass(float x1, float y1, float x2, float y2, float margin = 12f)
     {
-        const float Margin = 12f;
-        return (x1 < -Margin && x2 < -Margin)
-            || (x1 > _viewW + Margin && x2 > _viewW + Margin)
-            || (y1 < -Margin && y2 < -Margin)
-            || (y1 > _viewH + Margin && y2 > _viewH + Margin);
+        return (x1 < -margin && x2 < -margin)
+            || (x1 > _viewW + margin && x2 > _viewW + margin)
+            || (y1 < -margin && y2 < -margin)
+            || (y1 > _viewH + margin && y2 > _viewH + margin);
     }
 
     private void FillRect(float x, float y, float w, float h, RgbaColor color)

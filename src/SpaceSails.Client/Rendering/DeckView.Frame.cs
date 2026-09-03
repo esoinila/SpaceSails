@@ -455,6 +455,19 @@ public sealed partial class DeckView
         // then they retract to a stub at each jamb. Purely visual — the passage is always walkable.
         foreach (DeckPlan.Door d in plan.Doors)
         {
+            // #563 slice 2 · OFF THE GLASS IS NOT DRAWN — the same conservative reject slice 1 gave the
+            // ground, walls and unseen falloff, and for the same reason: the regolith is a lattice and the
+            // frame carries nine tiles, every one of which now hangs doors in its buildings. Eight of those
+            // tiles are mostly several hundred deck units off the side of the screen. A door is one segment
+            // and cannot cross the view when both its ends are past the same edge, so nothing visible is
+            // skipped and no pixel changes.
+            (float dsx1, float dsy1) = project(d.X1, d.Y1);
+            (float dsx2, float dsy2) = project(d.X2, d.Y2);
+            if (OffTheGlass(dsx1, dsy1, dsx2, dsy2))
+            {
+                continue;
+            }
+
             if (d.Locked)
             {
                 // Another berth's sealed hatch — always shut, drawn cold (steel-blue), a real wall behind.
@@ -1135,6 +1148,7 @@ public sealed partial class DeckView
         }
 
         DeckPlan.ConsoleSpot? answering = plan.NearestConsoleSpot(state.AvatarX, state.AvatarY);
+        bool near0(DeckPlan.ConsoleSpot spot) => answering == spot;
 
         foreach (DeckPlan.ConsoleSpot console in plan.Consoles)
         {
@@ -1146,10 +1160,28 @@ public sealed partial class DeckView
             }
             (float sx, float sy) = project(console.X, console.Y);
 
+            // #563 slice 2 · …and the same reject for a plate, at ITS OWN reach. A console is a dot with a
+            // line of text centred over it, so the thing on screen is as wide as the label — tested as a
+            // zero-length segment with a margin that covers half that width (the plates are drawn at ~6px a
+            // character) plus the ring. Anything narrower would clip words off the edge of the screen, and a
+            // cull that changes the picture is not a cull.
+            //
+            // The ANSWERING console is never skipped, whatever the arithmetic says: #212's law is that an
+            // affordance the game will let you use may not be invisible. Neither is a service RUN, which is
+            // eighty deck units of counter and not a point at all.
+            //
+            // What this drops is the several dozen plates a nine-tile chunk now carries, standing in ruins
+            // several hundred deck units off the side of the screen.
+            if (!near0(console) && !console.IsRun
+                && OffTheGlass(sx, sy, sx, sy, 24f + (console.Label.Length * 3.5f)))
+            {
+                continue;
+            }
+
             // Lit only when [E] would actually reach THIS console. The radius check is still the gate —
             // NearestConsoleSpot applies it — so nothing lights up across the ship; what changed is that a
             // second console in range no longer claims a key it will not get.
-            bool near = answering == console;
+            bool near = near0(console);
             RgbaColor c = near ? ConsoleNear : ConsoleGlow;
 
             // ── #791 · A FIXTURE THAT IS A RUN IS DRAWN AS ONE ────────────────────────────────────────
