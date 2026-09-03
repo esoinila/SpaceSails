@@ -407,13 +407,31 @@ public sealed partial class DeckView
                 continue;
             }
 
-            // #371 Phase 3 fog: a wall inside a still-unseen forced chamber is hidden (the room is unknown
-            // until the captain looks in); one in an explored-but-out-of-sight chamber draws dim.
+            // #371 Phase 3 fog · #442 · A WALL IN A CHAMBER NOBODY HAS LOOKED INTO DRAWS DIM. IT DOES NOT
+            // VANISH.
+            //
+            // This used to read `if (ws == 0) { continue; }`, and it was the purest invisible wall in the
+            // game: collision has never heard of the fog, so inside a still-unseen forced chamber every wall
+            // was fully solid and completely undrawn. Owner, live 2026-07-26: "See the invisible wall there
+            // now?" … "There should be a refactor to make sure the visible and physics wall ALWAYS are 1 to
+            // 1 the same." OneWallOneTruthTests generates that wall now — 131 of them over 40 seeded fields,
+            // every one a place where the boot is stopped, the shamble is stopped, the round is stopped, the
+            // eye is broken, and the pen drew nothing.
+            //
+            // #442 offers two structural answers and says to pick one and mean it: an unseen wall draws as a
+            // darkened hint (still there, still solid), or an unseen region genuinely has no collision until
+            // it is discovered. THE FIRST, and the reason is the door. A chamber only enters this state once
+            // its door has been FORCED, so it is reachable the instant it exists; taking the collision away
+            // would let a captain walk through the stone of a room they had opened and not yet looked into,
+            // which trades an invisible wall for a wall that is not there at all — the same defect facing the
+            // other way. Leaving it solid and drawing it costs the fog nothing it was for: the room's SHAPE
+            // shows as dim linework over the hatched void, and everything IN it — the consoles, the labels,
+            // the furniture — stays hidden by the passes that still test this state.
+            //
+            // Unseen and explored share one ink deliberately. Two dim greys would be a distinction the eye
+            // cannot make, and the sim would then be keeping a promise nobody could read.
             int ws = darkState((w.X1 + w.X2) / 2.0, (w.Y1 + w.Y2) / 2.0);
-            if (ws == 0)
-            {
-                continue;
-            }
+
             // #589 · A body's stone is drawn in a body's colour. Falls back to the old warm grey-brown
             // when a plan carries no ink (the ship, the stations, anything made of steel), so nothing that
             // is not a world changes at all.
@@ -430,7 +448,7 @@ public sealed partial class DeckView
             // a palette — the department that painted this corridor, the moon this rock came out of — and a
             // palette is an ANSWER. The found halls are drawn in one flat constant, ahead of both, because
             // the day a livery or a body colour reached them the walls would start saying whose they were.
-            RgbaColor color = ws == 1 ? ExploredWall
+            RgbaColor color = ws is 0 or 1 ? ExploredWall
                 : w.IsWindow ? WindowLine
                 : w.IsSeamless ? SeamlessLine
                 : w.IsStone ? stone
