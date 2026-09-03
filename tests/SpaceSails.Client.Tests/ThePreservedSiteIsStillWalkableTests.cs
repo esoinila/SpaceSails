@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
+using SpaceSails.Core.Tests;
 using Xunit;
 
 namespace SpaceSails.Client.Tests;
@@ -27,6 +28,11 @@ namespace SpaceSails.Client.Tests;
 /// <see cref="SurfaceCollision.Blocked"/>), so the audit and the game agree by construction rather than by
 /// comment.</para>
 /// </summary>
+// #1108 · This suite fences REAL body ids (luna, phobos, titan …) and MoonSurface.SurfaceDeck reads the
+// preservation register ambiently, so an install here welds a fence onto every other class's ground for
+// as long as it stands. It is the flake TheLiftHeadIsJustAnotherHutTests and EveryFrameHashesTheSameTests
+// were reporting. See StopRegisterCollection.
+[Collection(StopRegisterCollection.Name)]
 public sealed class ThePreservedSiteIsStillWalkableTests
 {
     private static readonly SurfaceLayout.Field Env = SurfaceLayout.DefaultField;

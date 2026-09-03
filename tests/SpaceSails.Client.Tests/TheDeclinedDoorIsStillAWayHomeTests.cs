@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
+using SpaceSails.Core.Tests;
 
 namespace SpaceSails.Client.Tests;
 
@@ -25,6 +26,9 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 [SlowGate] // #251 · 30 s over 3 test(s), measured 2026-09-02; see TheSlowGateRosterTests.
+// #1108 · Writes the decline register, which UndergroundComplex reads ambiently. Its ids are its own, but
+// the RESTORE is a read-modify-write of a process-wide field: a writer of one of these runs alone.
+[Collection(StopRegisterCollection.Name)]
 public sealed class TheDeclinedDoorIsStillAWayHomeTests
 {
     private static SurfaceLayout.Field Field => MoonSurface.ExpeditionField();

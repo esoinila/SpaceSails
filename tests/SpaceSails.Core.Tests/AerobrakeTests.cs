@@ -8,6 +8,10 @@ namespace SpaceSails.Core.Tests;
 /// and the per-pass hull/heat cost is deterministic with the dice-episode hook (owner's open Q3) ready.
 /// Every priced number is measured by flying real Core drag passes (<see cref="Simulator.RunAdaptiveWithDrag"/>).
 /// </summary>
+// #1108 · Assigns Aerobrake.DiceEpisodeHook, which is a process-wide static delegate every caller of
+// CostOfPass goes through — and this suite ASSERTS the hook is null on both sides of its own use, so a
+// concurrent AerobrakeEpisodesTests holding it turns that assertion red on a world it does not own.
+[Collection(StopRegisterCollection.Name)]
 public class AerobrakeTests
 {
     // Uranus params MIRROR scenarios/sol.json; the shell is #290's shipped proposal (added to sol.json).

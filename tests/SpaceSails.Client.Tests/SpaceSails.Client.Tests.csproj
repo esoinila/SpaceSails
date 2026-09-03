@@ -36,6 +36,17 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- #1108 — THE SERIALISING COLLECTION, LINKED SO THERE IS EXACTLY ONE OF IT. An xUnit collection
+       definition is per-ASSEMBLY, so both suites need one; the process-wide registers it protects
+       (StopOrder, PreservationZone, Burial, PoliteDecline, QuietHands) are Core's, and BOTH suites write
+       to them — four classes in this one do. Two copies of a definition whose whole job is "there is one
+       of these" is how the two halves come to disagree, so the file is LINKED, exactly as this project's
+       MapMarkup.cs is linked into the Core suite next door and for the same reason. Its namespace is
+       SpaceSails.Core.Tests, so the classes here that use it say `using SpaceSails.Core.Tests;`. -->
+  <ItemGroup>
+    <Compile Include="..\SpaceSails.Core.Tests\StopRegisterCollection.cs" Link="StopRegisterCollection.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\SpaceSails.Client\SpaceSails.Client.csproj" />
   </ItemGroup>

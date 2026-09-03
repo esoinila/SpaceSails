@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
+using SpaceSails.Core.Tests;
 
 namespace SpaceSails.Client.Tests;
 
@@ -20,6 +21,10 @@ namespace SpaceSails.Client.Tests;
 /// eating, and the only thing he can do about it is ask her.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+// #1108 · This suite closes the working on REAL body ids (luna, phobos, titan …), and StopOrder is an
+// ambient every deck generator in the game reads. While it is installed, any class building one of those
+// bodies on another thread gets a stopped ground it never asked for. See StopRegisterCollection.
+[Collection(StopRegisterCollection.Name)]
 public sealed class TheMugOnTheShelfTests
 {
     private static readonly string[] Bodies =
