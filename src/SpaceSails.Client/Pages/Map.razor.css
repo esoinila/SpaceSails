@@ -4949,6 +4949,51 @@
     color: #d3bb7d;
 }
 
+/* #602 · THE KEYPAD ON THE CAR PANEL. It sits UNDER the row it belongs to, inside the stops list, so the
+   pad and the lock it is bolted to are one object on screen rather than two things in a column. The keys
+   themselves are the hatch keypad's (.pin-pad-*) and are not restyled: a second kind of keypad would be a
+   building with two kinds of keypad in it. */
+.lift-pad {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.55rem 0.7rem 0.7rem;
+    border: 1px solid rgba(255, 150, 120, 0.28);
+    border-top: none;
+    border-radius: 0 0 0.4rem 0.4rem;
+    background: rgba(255, 120, 90, 0.05);
+}
+
+/* The sticker. Shouted, amber-red, and ABOVE the keys — the affordance states its own cost before the
+   first press, which is the whole reason a keypad is allowed on this ground at all (#602). */
+.lift-pad-sticker {
+    font: 700 0.7rem/1.4 var(--ui-font, inherit);
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: #ffb0a0;
+}
+
+/* What the pad answered — one of Core's four plates. Centred under the stops, in the pad's own monospace,
+   because it is a machine's reply and not a sentence anybody said. */
+.lift-pad-said {
+    margin-top: 0.5rem;
+    padding: 0.35rem 0.6rem;
+    text-align: center;
+    font: 700 0.95rem/1.2 monospace;
+    letter-spacing: 0.22em;
+    color: #8affc0;
+    background: #05070c;
+    border: 1px solid rgba(120, 220, 160, 0.3);
+    border-radius: 0.35rem;
+}
+
+/* A dark pad. It called security and it is out for the window — the keys stay drawn, because a keypad that
+   vanished would take the sticker's promise with it and leave a captain wondering what happened. */
+.pin-pad-key:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
 /* #603 · THE LOCKED DOOR, and the pockets it reminds you of. Owner: "we should advertise the items list on
    closed locked door pop-up... something like check your items button there that opens inventory." */
 .locked-door {
