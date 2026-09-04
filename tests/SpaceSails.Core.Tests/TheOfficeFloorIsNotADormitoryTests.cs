@@ -28,10 +28,17 @@ namespace SpaceSails.Core.Tests;
 /// written down, and every one of them is a FLOOR under the measurement rather than the measurement itself:
 /// a threshold resting on the case it selects is a threshold that reddens on a rounding.</para>
 ///
-/// <para><b>Proved red</b> — each guard was run against <c>IsLandscapeFloor</c> returning false, which is the
-/// tree as it stood before this issue. The four that are about the new floor go red on every landscape floor
-/// in the sweep for the honest reason (there are none), and the dormitory guard goes red with
-/// <c>luna B2 · the biggest room on this floor is 180 du² — that is the cell module, not an office</c>.</para>
+/// <para><b>Proved red.</b> Every guard here was run against <c>IsLandscapeFloor</c> returning false — the
+/// tree exactly as it stood before this issue — and eight of the nine went red, each on its own
+/// anti-vacuity clause rather than on a coincidence: <c>only 0 landscape floor(s) — this proved little</c>,
+/// <c>only 0 laboratories floor(s) — this proved little</c>, <c>only 0 room(s) swept</c>, <c>only 49 block
+/// floor(s)</c>. That is the shape a world-shaped law SHOULD fail in when the world it is about is not
+/// there, and it is why the clause is in every one of them.</para>
+///
+/// <para>The ninth — <c>EVERY_DESK_WORK_DEPARTMENT_IsOneThisBuildingActuallyHangs</c> — stayed green,
+/// correctly and deliberately: it is a law about the REGISTER (are these real department plates, and does
+/// the list select fewer than all of them) rather than about the floors, and the register does not care
+/// which floors were cut. A guard that reddened there would be a guard measuring the wrong thing.</para>
 /// </summary>
 public sealed class TheOfficeFloorIsNotADormitoryTests
 {
