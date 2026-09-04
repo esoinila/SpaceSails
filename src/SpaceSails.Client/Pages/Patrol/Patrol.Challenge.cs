@@ -348,6 +348,17 @@ public sealed partial class Map
             _host.ApplyNerveShock(NervePips.SightingPips * NervePips.PipUnit, "you were asked and could not answer");
             _host.FileNote(PatrolBeat.EscortNote, "👮");
 
+            // #719 slice 2 · …AND HE SAYS THE FLOOR INTO HIS RADIO. One of the two roads to the maintenance
+            // break, and this is the mild one: a wallet that could not answer. Nothing is said about it — not
+            // here, not on the card in front of him, not in the book — because the panel is what says it, on
+            // a plate, when the captain gets back to the car and finds the floors gone. A sentence here would
+            // be the building explaining its own consequence to the person it is happening to (§13.8), and it
+            // would spend the beat two corridors before the captain can act on it.
+            //
+            // It goes AFTER the pip and the note deliberately: those two are what a refusal has always cost,
+            // and this lane may not quietly reprice them.
+            TheCarIsStoppedForMaintenance(ex);
+
             // The mildest honest consequence, and the whole of it: back to the car — WALKED (#833). It is only
             // ARMED here, because the card telling the captain about it is standing in front of him at this exact
             // moment; the walk starts on the first frame after the card comes down, which is the frame he can

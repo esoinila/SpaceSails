@@ -92,9 +92,21 @@ public partial class Map
     ///
     /// <para>#752 · The whole satchel goes in, and not a second list of ids: the cage's gate reads the
     /// day-labour chit, and whether the captain has cover is a fact about what they are CARRYING
-    /// (<c>CanteenTable.Cover</c>) — asked of the same pocket the player can open and look in.</para></summary>
+    /// (<c>CanteenTable.Cover</c>) — asked of the same pocket the player can open and look in.</para>
+    ///
+    /// <para>#719 slice 2 · <b>AND A STOPPED CAR HAS NO FLOORS.</b> The break empties the list rather than
+    /// drawing thirteen rows that all refuse: a refusing row is right where a GATE exists and the paper is
+    /// missing (#590), and there is no gate here — there is no car. What stands in the list's place is the
+    /// plate, drawn by <c>LiftPanel.razor</c>, and it is the whole of the telling.</para>
+    ///
+    /// <para>BOTH cars, and that is a ruling. The goods car is a car (#801) and the break is a fact about the
+    /// building's lifts rather than about the one panel a captain happened to press; a live panel at the
+    /// other end of the corridor would teach a captain that a maintenance break is something you walk around,
+    /// which is the opposite of what it is. What you walk to is the stair.</para></summary>
     private IReadOnlyList<UndergroundComplex.LiftStop> LiftStops() =>
-        _surface is { } ex
+        TheCarIsStopped
+            ? []
+            : _surface is { } ex
             ? UndergroundComplex.LiftPanel(
                 ex.Stop.Body.Id, ex.Floor, _liftCar, AuthorityCardIds(), _satchel,
                 // #715 · …and what this site's outfit remembers, which is what decides whether the gate is
@@ -230,6 +242,15 @@ public partial class Map
 
         if (level == 0)
         {
+            // #719 slice 2 · THE MAINTENANCE BREAK ENDS HERE AND NOWHERE ELSE. Owner's ruling: "the car stays
+            // stopped until the captain is back on the surface; the next excursion finds it running (nobody
+            // files a maintenance ticket against a man who left)." Both halves are this one line: it cannot
+            // be reset by walking away, hiding, changing floor or waiting, because nothing else touches it —
+            // and it cannot outlive the trip, because the flag is the excursion's own and a landing makes a
+            // new one. Cleared on EVERY road to the regolith, the climb and the kick-out included: a man who
+            // has been thrown out of the building is a man who left.
+            ex.CarStopped = false;
+
             // #602 · Back out INSIDE THE SHED — the box the car came up into. Owner: "I would expect to spawn
             // into the elevator box where we went down with", which is also what the line below has always
             // said out loud ("lets you out into somebody's idea of a maintenance shed").

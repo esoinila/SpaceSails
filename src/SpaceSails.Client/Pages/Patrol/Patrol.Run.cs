@@ -86,6 +86,19 @@ public sealed partial class Map
             _host.ShowPulseMessage(PatrolBeat.CallsItInLine, PulseRank.Beat);
             _host.LogAutopilotEvent(PatrolBeat.CallsItInLine);
             RendererInterop.PlayCue("blip");
+
+            // #719 slice 2 · AND WHAT HE SAYS INTO IT COSTS YOU THE CAR. The second road to the maintenance
+            // break, and the reason it is HERE rather than at the three provocations: this method is already
+            // "the one road into a run, so a fourth trigger invented tomorrow has to come through here", and
+            // a break wired to the triggers instead of to the call would be a second list of what a run is.
+            //
+            // The captain has already been told everything they are going to be told — CallsItInLine, one
+            // line up, is the warning and the beat. What the radio actually ACHIEVED is read off the panel,
+            // later, as a plate. Nobody narrates the other end of a radio call.
+            if (_host.Surface is { } ex)
+            {
+                TheCarIsStoppedForMaintenance(ex);
+            }
         }
 
         /// <summary>

@@ -42,10 +42,18 @@ public sealed partial class Map
     private string? LiftPadSaid => _surface?.LiftPadSaid;
 
     /// <summary>#602 · Is the pad out? It goes dark when it calls security and comes back when the window
-    /// forgets — Core's one arithmetic, asked rather than re-derived here.</summary>
+    /// forgets — Core's one arithmetic, asked rather than re-derived here.
+    ///
+    /// <para>#719 slice 2 · <b>…and it is out for as long as the car is.</b> The pad is bolted beside the one
+    /// gated row of a panel that no longer has any rows, so with the break up it is not drawn at all — but
+    /// the ARITHMETIC has to say so too, or "are the keys live" would have two answers and only the markup's
+    /// would be true. A keypad that would still open a gate for a car that cannot come is an affordance with
+    /// nothing behind it (#212), and the plate standing where the rows were has already said why.</para>
+    /// </summary>
     private bool LiftPadIsDark =>
-        _surface is { } ex
-        && UndergroundComplex.LiftCode.IsDark(ex.LiftPad, ex.SecondsOnTheGround);
+        TheCarIsStopped
+        || (_surface is { } ex
+            && UndergroundComplex.LiftCode.IsDark(ex.LiftPad, ex.SecondsOnTheGround));
 
     private void LiftPadPush(string digit)
     {

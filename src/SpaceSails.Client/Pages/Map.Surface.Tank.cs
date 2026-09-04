@@ -308,9 +308,31 @@ public partial class Map
 
     /// <summary>How far the captain is from the tube mouth — the way home, and the only distance the suit
     /// has any opinion about. A DISTANCE and never a coordinate, so a captain 400 du sideways and one 400 du
-    /// deep are priced identically (#453: depth is not a danger gradient).</summary>
+    /// deep are priced identically (#453: depth is not a danger gradient).
+    ///
+    /// <para>#719 slice 2 · <b>UNLESS SOMEBODY HAS STOPPED THE CAR</b>, in which case the way home is the
+    /// walk to the stair's door and then the climb, and the suit says so. This is #1115's one flagged
+    /// judgement call, paid off: the stair's price was real from the day it shipped and the readout would
+    /// not quote it, because underground the fan's HOME ring was the CAGE and
+    /// <c>TheWayBackIsAlwaysOnTheFanTests</c> holds the law that the ring and the readout measure ONE
+    /// journey — quoting a climb as "the walk home" with a free ride standing in the corridor would have
+    /// been two instruments disagreeing about where home is.</para>
+    ///
+    /// <para>The break settles it the right way round. With the car stopped there is no free ride left to
+    /// disagree with: the ring moves to the stair door (<c>BuildBeacons</c>) and this measures to the same
+    /// door and then up, off Core's own arithmetic — so the law holds BY the break rather than being broken
+    /// by it. <b>And every threshold the suit already owns moves with it</b>: the crossing line, the
+    /// reserve, the low-air card and the on-grid countdown are all written against this one number, so
+    /// nothing new has to warn anybody. The instruments that were already watching simply start telling the
+    /// truth about a longer journey — which is the owner's <i>going up would use more air</i>, arriving as
+    /// the price of a thing the captain did.</para></summary>
     private double DistanceToTheTube()
     {
+        if (_surface is { } stopped && TheCarIsStopped)
+        {
+            return TheClimbHomeDu(stopped);
+        }
+
         double dx = _avatarX - MoonSurface.SpawnX;
         double dy = _avatarY - MoonSurface.SpawnY;
         return Math.Sqrt((dx * dx) + (dy * dy));

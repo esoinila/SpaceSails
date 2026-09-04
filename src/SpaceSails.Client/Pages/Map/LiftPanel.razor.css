@@ -49,6 +49,23 @@
     overflow-y: auto;
 }
 
+/* #719 slice 2 · THE MAINTENANCE BREAK, where the floor list was: one plate, in the panel's own dead ink
+   rather than in the amber a refusal wears. A refusal is the building saying NOT YOU; this is the building
+   saying nothing about you at all, and the colour has to carry that difference because the words never
+   will. Monospace and tracked out, because every other plate down here is (.lift-stop-depth, and the
+   descent stack over the car mouth) — it is a sign somebody screwed to a wall, not a sentence. */
+.lift-stopped {
+    padding: 1.6rem 0.7rem;
+    font-family: monospace;
+    font-size: 1.05rem;
+    letter-spacing: 0.12em;
+    text-align: center;
+    color: #93a3b6;
+    background: #121924;
+    border: 1px dashed rgba(140, 190, 235, 0.28);
+    border-radius: 0.35rem;
+}
+
 /* One row per button: the depth big on the left (it is the fact that decides whether the trip is free),
    what the floor is called in the middle, and its air state on the right. */
 .lift-stop {
