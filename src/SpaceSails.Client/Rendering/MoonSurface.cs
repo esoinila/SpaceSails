@@ -348,22 +348,14 @@ public static class MoonSurface
         bool preserved = PreservationZone.On(bodyId);
         SurfaceDeckKey key = SurfaceDeckKey.For(
             bodyId, bodyDisplayName, ownCaches, siteSalt, monolithEpoch, hasSecretSite, preserved);
-        Layout layout;
-        if (!_layoutCache.TryGetValue(key, out layout))
-        {
-            layout = BuildLayout(
-                bodyId, bodyDisplayName, ownCaches, siteSalt, siteName, monolithEpoch, hasSecretSite,
-                preserved);
-            // Cheap unbounded-growth guard: each distinct (body, cache-set) leaves one small entry, and a
-            // long game of bury/lift cycles could accumulate stale sets nobody revisits. A generous cap
-            // that never trips in normal play keeps the cache from creeping; on overflow we simply start
-            // fresh (the next builds re-warm the live grounds).
-            if (_layoutCache.Count >= LayoutCacheCap)
-            {
-                _layoutCache.Clear();
-            }
-            _layoutCache[key] = layout;
-        }
+        // Cheap unbounded-growth guard: each distinct (body, cache-set) leaves one small entry, and a
+        // long game of bury/lift cycles could accumulate stale sets nobody revisits. A generous cap
+        // that never trips in normal play keeps the cache from creeping; on overflow we simply start
+        // fresh (the next builds re-warm the live grounds). #1112 · the check-clear-insert that used to
+        // stand here is now BoundedMemo's, so the haven's twin memo cannot drift away from this rule again.
+        Layout layout = _layoutCache.GetOrBuild(key, () => BuildLayout(
+            bodyId, bodyDisplayName, ownCaches, siteSalt, siteName, monolithEpoch, hasSecretSite,
+            preserved));
 
         return new DeckPlan(
             layout.Walls, layout.Consoles, layout.Labels, layout.Backdrops,
@@ -406,8 +398,6 @@ public static class MoonSurface
         // opposite of the scenery array: drawn AND collided, by the walls that share its outline.
         DeckPlan.Structure[] Structures);
 
-    // WASM is single-threaded, so a plain dictionary is safe. Bounded (see the growth guard above).
-    private const int LayoutCacheCap = 64;
     // #585 · CONCURRENT, because the browser is not this cache's only caller. In WASM the game is
     // single-threaded and a plain Dictionary was safe; the AUDITS are not — xUnit runs test classes in
     // parallel, so two of them building surface decks at once raced on this dictionary and produced a shelter
@@ -416,8 +406,17 @@ public static class MoonSurface
     //
     // Building a Layout is deterministic, so a racing double-build is pure waste and never a wrong answer —
     // only the dictionary itself needed protecting.
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<SurfaceDeckKey, Layout>
-        _layoutCache = new();
+    //
+    // #1112 · BOUNDED, and now bounded by a policy rather than by four lines up in SurfaceDeck: the cap and
+    // the flush that were written here are BoundedMemo's, which HavenInterior's twin memo holds too. It had
+    // no cap at all until this issue, which is what a rule living in one call site and not in a type costs.
+    private static readonly BoundedMemo<SurfaceDeckKey, Layout> _layoutCache = new(BoundedMemo.DefaultCap);
+
+    /// <summary>#1112 · The layout memo, for the guard that holds it to its cap. Test-visible only.</summary>
+    internal static int LayoutCacheCount => _layoutCache.Count;
+
+    /// <summary>#1112 · …and the cap it is held to.</summary>
+    internal static int LayoutCacheCap => _layoutCache.Cap;
 
     private static Layout BuildLayout(
         string bodyId,
