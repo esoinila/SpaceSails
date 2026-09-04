@@ -1073,12 +1073,18 @@ public static partial class UndergroundComplex
                 // floor.
                 //
                 // THE BACK BAND, because that is where a department's closed rooms are: off the service
-                // street, behind the core, away from the desks. EVERY THIRD one, off the ground rather than
+                // street, behind the core, away from the desks. EVERY OTHER one, off the ground rather than
                 // off a die, because a seeded share can roll none and the illusion would then be missing on
                 // some worlds forever with every test still green — the same reasoning KeyRoomFor is
-                // designated for. They are spread down the band rather than clustered, which is what makes
-                // the row read as a department's own doors rather than as one sealed corner.
-                bool closed = landscape && back % 3 == 2;
+                // designated for. Alternating rather than clustered, so the row reads as a department's own
+                // doors down its own street rather than as one sealed corner.
+                //
+                // EVERY OTHER and not every third, and the difference is a law: the band is six rooms on the
+                // thinnest floor the generator makes, so alternating guarantees THREE closed doors and a
+                // third would have guaranteed two. Three is the number the unlisted band's own guard has
+                // demanded of every floor in this building since #592 — watched go red at exactly two on
+                // probe-moon-36 B10 with a third, which is the arithmetic saying so rather than a taste.
+                bool closed = landscape && back % 2 == 1;
                 back++;
                 ring.Add(RingBox(
                     walls, glass, doorways, labels, claimed, spineDoors, bodyId, level, found,
