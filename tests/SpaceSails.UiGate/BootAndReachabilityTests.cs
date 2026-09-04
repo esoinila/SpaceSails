@@ -66,33 +66,55 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
     // localise a regression (which phase got slow), and the total catches drift no single milestone
     // trips. All four are logged every run; a breach names the numbers ("boot took 41.2s, budget 20s")
     // and still lets the existing failure-artifact capture run.
-    // #161 · A FIFTH BUDGET, AND THE TIGHTEST ONE — how long until the FRONT DOOR is pressable.
+    //
+    // #161 · A FIFTH BUDGET, AND THE ONLY ONE THAT HAS TO FIT BETWEEN TWO MEASURED NUMBERS — how long
+    // until the FRONT DOOR is pressable.
     //
     // The owner's ask on this issue is not "boot faster", it is "stop showing me a dead menu": *stage the
     // picker EARLY so Continue is clickable while the heavy assemblies stream; perceived boot time is
     // picker time.* That is a different milestone from `scenario boot complete`, and until #161 the two
-    // were the SAME number — the door waited on _worldReady, which waits on fourteen seconds of route
-    // planning. So this milestone is the one that can silently regress back: any future edit that makes
-    // the front door wait for the world again would leave every other budget here untouched and green.
+    // were the SAME number, because the door waited on `_worldReady` — which waits on the whole traffic
+    // plan. So this is the milestone that can silently regress back: an edit that makes the front door
+    // wait for the world again would leave every other budget in this file untouched and green.
     //
-    // Measured before writing the number, both payloads, worst of three cold + three warm on the dev box:
+    // MEASURED BEFORE THE NUMBER WAS WRITTEN, both payloads, three cold + three warm runs of a Release
+    // publish driven by this same Playwright host on the dev box (.NET 10.0.301, headless Chromium):
     //
-    //     payload        picker interactive BEFORE   AFTER    budget    what the budget catches
-    //     AOT (CI)              3.42 s               0.75 s    8 s      the regression, 4.5× under
-    //     interpreted           15.11 s              0.61 s    6 s      the regression, 2.5× under
+    //     payload        un-staged (the regression)   staged (this branch)   budget
+    //     AOT  (CI)          3.25 – 3.48 s               0.12 – 0.34 s        2.5 s
+    //     interpreted       14.36 – 15.11 s              0.21 – 0.61 s        6 s
     //
-    // The budgets are set the way this file has always set the sub-second ones: an absolute floor with
-    // room for a slow or contended runner, not a ratio of a small measurement. Both sit ~10× over the
-    // measurement and comfortably UNDER the number the un-staged boot produced on the same box, which is
-    // the whole job of the law — it must be able to tell the two apart. The interpreted floor is the
-    // tighter of the two in ratio terms deliberately: that is the payload a bare local `dotnet test`
-    // drives, and it is where the fourteen-second block lives.
+    // A budget for this milestone is not free to be generous, and that is the interesting part. It has to
+    // sit ABOVE the staged measurement with room for a slow or contended runner, and BELOW the un-staged
+    // one, or it is not a law about staging at all — it is a law about nothing. On AOT that window is
+    // 0.34 s to 3.25 s, so 2.5 s is the pick: 7× the worst staged run measured here, ~4× the CI baseline
+    // this file estimates at local×1.9, and still 0.75 s clear of the number the un-staged boot produced.
+    // The interpreted window is enormous (0.61 s to 14.4 s), so 6 s there is 10× the measurement and
+    // still catches the regression twice over; that is the payload a bare local `dotnet test` drives, and
+    // the one where the fourteen-second block lives.
+    //
+    // Proven red the way this repo requires, and quoted verbatim in the PR body: put the front door's own
+    // gate back on `_worldReady` (the one-line undo of this lane, in SaveLoadRack) and the gate reports
+    //
+    //     front door pressable took 14.1s (14074ms), budget 6.0s (6000ms)
+    //
+    // with `scenario boot complete`, the front page, the desk switch and the whole-canary total all still
+    // green. Nothing else in this file can see the difference — which is the argument for the milestone
+    // existing at all.
+    //
+    // (A FIRST ATTEMPT AT THE RED PROOF DID NOT REDDEN, and it is worth knowing why: moving the boot's
+    // OpenTheFrontDoorAsync stage back below the traffic planner leaves this gate green, because the
+    // door's gate is `FrontDoorReady` — "the ephemeris is built", which is all a BERTH start needs — and
+    // the ephemeris is built either way. What that stage's position decides is whether the VAULT has been
+    // read, i.e. whether "Continue — docked at <haven>" is on the door. This gate boots a fresh browser
+    // context with no saved voyage in it, so it has no Continue to look for and cannot be the law for
+    // that. Named here rather than left as a trap for the next reader.)
     private sealed record LoadBudget(long FrontPageMs, long PickerMs, long BootMs, long DeskSwitchMs, long TotalMs);
 
     // AOT payload (the shipping artifact — the numbers that gate CI). Tuned from the measurement above.
     private static readonly LoadBudget AotBudget = new(
         FrontPageMs: 10_000,
-        PickerMs: 8_000,
+        PickerMs: 2_500,
         BootMs: 20_000,
         DeskSwitchMs: 8_000,
         TotalMs: 30_000);

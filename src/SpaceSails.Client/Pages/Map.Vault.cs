@@ -309,6 +309,14 @@ public partial class Map
     ///
     /// <para>In game it is simply always true, which is right: the logbook drawer opens over a running
     /// world.</para>
+    ///
+    /// <para><b>What it does NOT say</b>, said out loud so nobody reads more into it than is there: this is
+    /// "the world the door offers exists", not "the vault has been read". The two coincide only because the
+    /// boot does them in one breath, and that coincidence is the boot's to keep — move
+    /// <c>OpenTheFrontDoorAsync</c> away from the ephemeris and the berths would go live with no Continue
+    /// beside them. The UiGate's front-door budget measures the berths (a fresh browser context has no
+    /// saved voyage to continue), so the ordering is guarded by the conductor's own shape and by this
+    /// note, not by a browser.</para>
     /// </summary>
     private bool FrontDoorReady => _ephemeris is not null;
 
