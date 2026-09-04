@@ -212,9 +212,25 @@ public partial class Map
         await BootPhaseAsync("plotting the traffic lanes — pods…", abandoned);
         IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(_ephemeris!, seed: 43, count: 3);
         SayTheBootStageCost("the traffic lanes — pods");
+        // #161 · THE FOURTEEN-SECOND BLOCK, TAKEN ONE SHIP AT A TIME. The measurement that opened this
+        // lane: planning these eight founding freighters costs 13.3–14.0 s on the interpreted payload —
+        // ninety-five percent of the whole boot, in ONE synchronous block. A phase yield in FRONT of it
+        // (which is all #318 could do) paints the door and then hands the browser a fourteen-second task
+        // anyway, which is precisely the shape of thing Chrome puts a "page unresponsive" dialog over.
+        //
+        // Each ship is independent of its neighbours except through the one rng they share, so Core now
+        // offers the same wave as an iterator (TrafficSchedule.GenerateShipByShip) and the frame goes
+        // back to the browser between ships. It is the SAME SKY — an iterator resumes on the same rng in
+        // the same state, which TheSkyIsTheSameSkyOneShipAtATimeTests holds ship by ship — and the
+        // longest block the main thread now owes the browser is one ship instead of eight.
         await BootPhaseAsync("plotting the traffic lanes — freighters…", abandoned);
-        IReadOnlyList<NpcShip> traffic = TrafficSchedule.Generate(_ephemeris!, seed: 42, count: 8);
-        SayTheBootStageCost("the traffic lanes — freighters");
+        var traffic = new List<NpcShip>(8);
+        foreach (NpcShip hauler in TrafficSchedule.GenerateShipByShip(_ephemeris!, seed: 42, count: 8))
+        {
+            traffic.Add(hauler);
+            SayTheBootStageCost($"the traffic lanes — freighter {traffic.Count} of 8");
+            await BootPhaseAsync($"plotting the traffic lanes — freighter {traffic.Count} of 8…", abandoned);
+        }
         // The derelict roadster is a dead wreck, not a trading post — it's a station body only so its
         // map label reads at a sane zoom (the fetch-mission target). Drop the depot GenerateDepots
         // would otherwise hang on it (any sun-orbiting body gets one).

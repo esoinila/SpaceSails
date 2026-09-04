@@ -139,10 +139,15 @@
                 : "Your saved voyages. Continue where you left off — or begin a new one.")
         </div>
 
-        @if (!_worldReady)
+        @if (!FrontDoorReady)
         {
             @* Honest boot state (#310, #212): the door SAYS it is warming rather than silently eating
-               clicks. Buttons are disabled until the reactor is warm. *@
+               clicks. Buttons are disabled until the reactor is warm.
+
+               #161 · …and the question is FrontDoorReady, not _worldReady. What this door needs is the
+               berth roster and the vault, both of which the boot has in hand seconds before the sky is
+               plotted; waiting on the rAF loop kept it dark for fourteen of the boot's fifteen seconds.
+               A verb pressed while the world is still building waits for it (TheRestOfTheBootAsync). *@
             <div class="save-warming">
                 <span class="save-warming-spin">⚙</span>
                 <span>Warming the reactor — the ship's computer is still booting. One moment…</span>
@@ -358,7 +363,7 @@
         <div class="start-picker-backdrop">
             <div class="start-picker save-surface">
                 @SaveLoadInside(false)
-                @if (_worldReady)
+                @if (FrontDoorReady)
                 {
                     <div class="save-surface-foot">
                         <button type="button" class="btn btn-sm btn-outline-light"
@@ -387,7 +392,7 @@
                     @SaveLoadInside(true)
                 </ChildContent>
                 <FootHost Context="theWayOut">
-                    @if (_worldReady)
+                    @if (FrontDoorReady)
                     {
                         <div class="save-surface-foot">
                             <button type="button" class="btn btn-sm btn-outline-light"
@@ -439,7 +444,9 @@
     [Parameter] public bool _showStartPicker { get; set; }
     [Parameter] public IReadOnlyList<SaveSlotMeta> _slotList { get; set; } = default!;
     [Parameter] public IReadOnlyList<GameThreadGroup> _voyageGroups { get; set; } = default!;
-    [Parameter] public bool _worldReady { get; set; }
+    /// <summary>#161 · the page's `bool FrontDoorReady` — the berths are known and the vault is read, which
+    /// is stages before `_worldReady`. See the property's own note in Map.Vault.</summary>
+    [Parameter] public bool FrontDoorReady { get; set; }
     [Parameter] public string[] AllSlotIds { get; set; } = default!;
     [Parameter] public Action<string> BeginBankToSlot { get; set; } = default!;
     [Parameter] public Action<string, string> BeginEditSlotPage { get; set; } = default!;
