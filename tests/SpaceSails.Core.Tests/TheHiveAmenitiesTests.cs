@@ -599,8 +599,19 @@ public sealed class TheHiveAmenitiesTests
                 }
             }
 
+            // #719 · …AND THE STAIR IS A PLACE — the one leaf in this building that leads somewhere which is
+            // not a room. It is cut into the spine's own face at the far blind end, on every floor the
+            // building admits to, and it leads exactly where its plate says: out. Asked of the generator's
+            // own two predicates rather than counted off the plan, which is the correction #775 had to make
+            // to the hall's line above.
+            int stairDoors =
+                UndergroundComplex.HasStairOn(body, level)
+                && UndergroundComplex.StairShaftAt(Field) is not null
+                    ? 1
+                    : 0;
+
             int places = floor.RoomCentres.Count + floor.Refuges.Count + floor.Amenities.Count
-                + extraHallDoors + ringExtraDoors
+                + extraHallDoors + ringExtraDoors + stairDoors
                 + (floor.Park is { } green ? green.Ways.Count : 0);
             if (places != floor.Doorways.Count)
             {
