@@ -103,7 +103,20 @@ public static class HavenInterior
     // Found by an unrelated change to the surface renderer shifting the timing enough to lose the race. It
     // was always there. Building a deck is deterministic, so a racing double-build is pure waste and never a
     // wrong answer — only the dictionary itself ever needed protecting.
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, DeckPlan> Cache = new();
+    //
+    // #1112 · …and BOUNDED, which it was not. The key carries the docking watch, and the watch advances for
+    // ever: a long voyage left one built station in memory per watch, permanently, because nothing here ever
+    // took one out again. MoonSurface's twin memo has had a cap and a flush since #371 and this one never
+    // grew one — so the cap is not written here either. Both twins now hold the same BoundedMemo, whose whole
+    // reason for existing is that a cache policy kept in two call sites is a cache policy that drifts.
+    private static readonly BoundedMemo<string, DeckPlan> Cache = new(BoundedMemo.DefaultCap);
+
+    /// <summary>#1112 · How many built stations the memo is holding, for the guard that holds it to its cap.
+    /// Test-visible only — nothing in the game may care how warm a cache is.</summary>
+    internal static int DeckCacheCount => Cache.Count;
+
+    /// <summary>#1112 · …and the cap it is held to.</summary>
+    internal static int DeckCacheCap => Cache.Cap;
 
     /// <summary>Does this haven have a walkable interior (so docking should weld on a tube)?</summary>
     public static bool HasInterior(string bodyId) => System.Array.Exists(Specs, s => s.BodyId == bodyId);
@@ -178,12 +191,10 @@ public static class HavenInterior
         string room = churn is { Anything: true } c ? "+" + c.Signature : "";
         string gate = tier is { } t ? "+" + t : "";
         string key = $"{wingKey}@{watch}{(forceOracle ? "+oracle" : "")}{room}{gate}"; // the seated-regular rota re-rolls each watch, so it keys the cache
-        if (!Cache.TryGetValue(key, out DeckPlan? deck))
-        {
-            deck = BuildComplex(spec, active, simTime, forceOracle, null, churn, tier);
-            Cache[key] = deck;
-        }
-        return deck;
+        // #1112 · Held to a cap, and on overflow the memo starts fresh. A rebuilt deck is the deck that was
+        // thrown away — every input to BuildComplex here is in the key — so an eviction costs the few hundred
+        // objects of one build and nothing else.
+        return Cache.GetOrBuild(key, () => BuildComplex(spec, active, simTime, forceOracle, null, churn, tier));
     }
 
     // --- The docking-tube umbilical (deck units), mouthing at the ship's airlock vestibule hatch ---
