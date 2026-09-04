@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -239,6 +239,11 @@ public partial class Map
                 // #585: down the shaft, or back up out of it. #801: whichever of the two cars you walked
                 // to — the method asks the pressed spot, so this arm does not have to know.
                 HiveLiftInteract();
+                break;
+            case DeckPlan.ConsoleKind.HiveStair:
+                // #719: the second way out. No panel and no floor to choose — the press IS the climb, it
+                // goes one way, and the tank pays for it.
+                ClimbTheStairOut();
                 break;
             case DeckPlan.ConsoleKind.HiveHaul:
                 HiveHaulInteract();   // #585: turn over one room of the facility

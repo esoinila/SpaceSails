@@ -234,6 +234,14 @@ public static partial class UndergroundComplex
         // every site in almost every world — this returns having done nothing at all.
         CarveStopSeal(bodyId, level, field, walls, alcoveMouths, claimed, locked);
 
+        // #719 · …and THE SECOND WAY OUT, at the other blind end of the same corridor. Cut here with its two
+        // neighbours for the same two reasons — it is a mouth in the spine's own face, and it must claim its
+        // ground before any room placer runs — and its own placer is written to refuse the ends those two
+        // stand in, so a stair can never be cut through a preserved doorway or a stop order's seal. On every
+        // floor below the listed bottom this returns having done nothing at all: the building files a
+        // means-of-escape drawing for the floors it admits to and for no others.
+        CarveStair(bodyId, level, field, walls, alcoveMouths, claimed, doorways, labels);
+
         // #775 · THE DOORS THE HALL CUTS IN THE SPINE'S OWN FACE, filled in by the carve below and read by
         // the wall builder — one list, so the gap the corridor leaves and the door the hall publishes are
         // the same gap. #585's law, said about the one wall the hall did not previously own a hole in.

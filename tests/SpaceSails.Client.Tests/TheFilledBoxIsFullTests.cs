@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -314,7 +314,7 @@ public sealed class TheFilledBoxIsFullTests
     public void TheHonestBoxesCostNoMoreWallThanTheBodySaid()
     {
         long total = 0;
-        int floors = 0, worst = 0;
+        int floors = 0, worst = 0, stairFloors = 0;
         string worstAt = "";
 
         foreach (string body in Bodies())
@@ -324,6 +324,11 @@ public sealed class TheFilledBoxIsFullTests
                 int n = UndergroundComplex.Build(body, level, Field).Walls.Count;
                 floors++;
                 total += n;
+                if (UndergroundComplex.HasStairOn(body, level)
+                    && UndergroundComplex.StairShaftAt(Field) is not null)
+                {
+                    stairFloors++;
+                }
                 if (n > worst)
                 {
                     (worst, worstAt) = (n, $"{body} B{-level}");
@@ -347,10 +352,30 @@ public sealed class TheFilledBoxIsFullTests
             + $"somebody has spent {(worst - WorstFloorBefore) / (double)WorstFloorBefore:P1} more of the "
             + "patrol eye's frame than this PR said it would (Lab 45: the sightline is O(walls)).");
 
-        long cap = (long)(SegmentsBefore * (1 + Allowance));
+        // ── #719 · THE SECOND WAY OUT IS PAID FOR IN THE OPEN, NOT OUT OF THIS ALLOWANCE ──
+        //
+        // The stair's pocket is three segments — two sides and a back, the cage's own alcove exactly — and
+        // cutting its mouth into the spine's face makes two runs of wall out of one, which is the fourth. So
+        // FOUR segments, once, on every floor the building admits to: a KNOWN, BOUNDED, per-floor cost of a
+        // feature that ships after #883, and the honest way to carry it is to say so out loud rather than to
+        // widen #883's percentage until it fits. Widening is exactly what the anti-vacuity clause above
+        // exists to stop — an allowance that grows to cover whatever arrived last has stopped being a budget.
+        //
+        // The number 4 is the carve's own (UndergroundComplex.CarveStair, plus the cut in SpineFace) and the
+        // floor count is MEASURED in the sweep above, never typed — the rule the rest of this file keeps.
+        const int StairSegmentsPerFloor = 4;
+        long stairCost = (long)stairFloors * StairSegmentsPerFloor;
+
+        Assert.True(stairFloors > 500,
+            $"only {stairFloors} floor(s) carry a stair, so this budget line is about nothing — #719's own "
+            + "guard is the one to read, but a cost stated for a thing that is barely there is a cost "
+            + "nobody should trust.");
+
+        long cap = (long)(SegmentsBefore * (1 + Allowance)) + stairCost;
         Assert.True(total <= cap,
-            $"the building carries {total} wall segment(s) against {SegmentsBefore} before #883 — "
-            + $"{(total - SegmentsBefore) / (double)SegmentsBefore:P1} more, and the stated allowance is "
-            + $"{Allowance:P0} ({cap}).");
+            $"the building carries {total} wall segment(s) against {SegmentsBefore} before #883 plus "
+            + $"{stairCost} for #719's stair on {stairFloors} floor(s) — "
+            + $"{(total - SegmentsBefore - stairCost) / (double)SegmentsBefore:P1} more than either of those "
+            + $"says, and the stated allowance is {Allowance:P0} ({cap}).");
     }
 }

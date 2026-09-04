@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -456,24 +456,48 @@ public sealed class EveryRoundFingerprintsTheSameTests
     ///
     /// <para>The other six — the empty floor, the surface, both plain rounds, <i>by the time he moves you are
     /// gone</i> and the gunshot — are byte-identical and their digests are untouched.</para>
+
+    /// <h3>#719 · RE-RECORDED — twelve of the fourteen, and NOT ONE FRAME OF ANY ROUND MOVED</h3>
+    ///
+    /// <para>The second way out cuts a pocket into the spine's face at the far blind end of every listed
+    /// floor: four wall segments, one leaf, one plate. The rounds themselves are untouched by it and that was
+    /// MEASURED rather than argued, twice over.</para>
+    ///
+    /// <para><b>The circuit is identical.</b> <c>PatrolBeat.Circuit</c> for luna B1 and B2, dumped with the
+    /// carve in and with it commented out, is byte-for-byte the same list of stops at the same coordinates —
+    /// the stair stands past the outermost rib, where no stop and no checkpoint reaches.</para>
+    ///
+    /// <para><b>And so is every frame.</b> Each case's whole transcript was written to disk both ways and
+    /// diffed. In all twelve the ONLY differing lines are in the closing census of what the case moved on the
+    /// page, and they are COUNTS of geometry:</para>
+    /// <code>
+    /// &lt;   _sightBlockers.Count: 0 → 721        &gt;   _sightBlockers.Count: 0 → 726
+    /// &lt;   _sightDoorShut.Count: 0 → 66         &gt;   _sightDoorShut.Count: 0 → 67
+    /// &lt;   _sightStone.Count: (not there) → 655 &gt;   _sightStone.Count: (not there) → 659
+    /// &lt;   _patrolReadables.Count: 139 → 0      &gt;   _patrolReadables.Count: 141 → 0
+    /// </code>
+    /// <para>+4 stone (the pocket's two sides, its back, and the run of spine face the mouth splits in two),
+    /// +1 shut door (the leaf), +2 readables (the leaf and its plate). Not one man's position, arm, clock,
+    /// decision or line differs on any frame of any case. The two rows NOT re-recorded are the ones with no
+    /// sight sets to count: the empty floor and the surface.</para>
     /// </summary>
     private static readonly Dictionary<string, string> Pinned = new(StringComparer.Ordinal)
     {
         ["an empty floor still fades the plate"] = "148ff6f3378feede544d018d3771364edfe52e86ecdf3b316d39696757114ab3",
         ["up on the surface there is no round at all"] = "343943d96209111af869ab6dbe8a2fb427427d89b9ca1eb09e9de0fa1934d8ae",
-        ["two men walk the round and nobody is watching"] = "07cd8ad1a5538d1e77e4c603c96aeadb8d5c25f4b180d9cb7f4c2de9ffafc34d",
-        ["one man walks the round, all the way round it"] = "11c4a45bcf8bc5264099ba24343ce57433152cba227fd2714cd37ce05af3dc43",
+        ["two men walk the round and nobody is watching"] = "ee91c1af19ee9bfac481b1803b663ae168ab4c61e2d7195e89c49751e67af025",
+        ["one man walks the round, all the way round it"] = "1584a99dedef68f26a9bede1c55c7faecc54cdf244b1d0d7e87dc9283edc9844",
         // #920 · re-recorded (was 11047c53… / e28da120…) — the walk-up clock now stops when the walk-up does,
         // and the transcript writes the clock down. 1,972 lines, WalkUpFor and nothing else. See above.
-        ["he hails you and you walk away from it"] = "7b6929d931c9fff8ccc54fbe6ce467115e887445fc0a4ce96c8347766473d689",
-        ["he crosses the floor, reads your papers, and walks you to the car"] = "ca437e5449b5f27d46b055748c5d2f6406eabfdb831b073e8372c03e1de77bba",
-        ["…and this time he does not press the button for your floor"] = "8042c18a1b6966915e825f740bfb47ce31a5e5415550b5aa039a60d73f313a14",
-        ["he calls it in, comes at a run, and he has you"] = "4e6269e42d74fac27af5c06bb02813a260117885a9f33a8c792576d5f8fce2a8",
-        ["he calls it in, and by the time he moves you are gone"] = "23bd65d4552be534fcbfc6b59b8ecdc2a4d3209a700982b2ba0869f217aa01e1",
-        ["you duck into a cubicle and he watched the catch turn"] = "8716c9594350386f7b789b1fb65fa1b36e0c2091deafeb799d46bbd1c1fe148a",
-        ["you duck into a cubicle and nobody saw a thing"] = "14c60f2925c7f1349f83e23853df0d24a9e12438f8fbca9a4404cc9b29e34975",
-        ["he called it in, and then you shut a door in his face"] = "107c5cd2f2c0afca6ae7e1429b3ee30799e339f559c0e10638e281a362689e99",
-        ["you duck in while he is already walking over"] = "2217725ba64fe571b5a3652934fb15c75429aa7bbff0852bcb860dfa9ee71130",
+        ["he hails you and you walk away from it"] = "d2571d4d5d1e03a6974bc9816dfac58b95b4f926ef91917b5fe3a108a6dec620",
+        ["he crosses the floor, reads your papers, and walks you to the car"] = "62bfac54db0b728e288caa80e87b2428fa92f2a23e76cf68ae9511d57cb5fb29",
+        ["…and this time he does not press the button for your floor"] = "0189602951060c2b4607f72a210dcd853d82c01a6b5e2d72ec3e68bf33f84d47",
+        ["he calls it in, comes at a run, and he has you"] = "b5f30b958844925a76d5c551e8be80fdc9748a31d7485247437872886099ef4d",
+        ["he calls it in, and by the time he moves you are gone"] = "6e092abd4f8b4e53cf8f34cca65e0cdbbe875e9e56bde25c4d13eba597a42418",
+        ["you duck into a cubicle and he watched the catch turn"] = "eaea42898bd99509cc4c64f45cb50e03b39a60828b6bcd1d5aca12d0fef4cd35",
+        ["you duck into a cubicle and nobody saw a thing"] = "71d7e635fce30337a5e420a53f79cb12737bacaa9075e219a038ce7eee88fa94",
+        ["he called it in, and then you shut a door in his face"] = "338d8a0010b3b55a9cd0e02ee1bc91c9c566e226d8e7930321478f622c81418c",
+        ["you duck in while he is already walking over"] = "67b2b4ce80c4b02b200b578b1b7024663a0c1f78ff691d136a3d343b6c1f3775",
 
         // #618 · THE FOURTEENTH, and the ONLY digest in this file taken on new code — stated here rather than
         // left for somebody to work out from a git blame. It could not have been taken anywhere else: before
@@ -485,7 +509,7 @@ public sealed class EveryRoundFingerprintsTheSameTests
         // else changed, the same four hundred frames hash to
         // e75f975023f12182859b00c33b7647935431e65f328beeb98b897585145912ea. The bang is what this row is about.
         ["a gun goes off down the corridor and somebody walks over"] =
-            "10ceb4b993182fc97c1f58a73f83133925ff7c7ab38a1510ecb1b365046fa128",
+            "f303f0a8a166c56eaa599292e6d3f5c34b70541a3b611c061a15ffc3019a58f5",
     };
 
 

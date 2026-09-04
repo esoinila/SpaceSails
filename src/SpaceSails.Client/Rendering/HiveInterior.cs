@@ -975,6 +975,21 @@ public static class HiveInterior
                 car.Sign));
         }
 
+        // #719 · …AND THE WAY OUT THAT IS NOT A CAR, on every floor the building admits to. Same idiom, same
+        // arithmetic, same source for its sign: the pocket hangs off the upper face like the cage's, so the
+        // console stands the cage's own way into it. Nothing is drawn on a floor the building never declared
+        // (UndergroundComplex.HasStairOn) and nothing on a ground with no blind end to cut one into, which is
+        // the same silence the goods car keeps where the field will not take it.
+        if (UndergroundComplex.HasStairOn(bodyId, level)
+            && UndergroundComplex.StairOn(field) is { } stair)
+        {
+            consoles.Add(new(
+                DeckPlan.ConsoleKind.HiveStair,
+                (float)stair.X,
+                (float)(stair.Y + UndergroundComplex.CorridorHalf + 2.5),
+                stair.Sign));
+        }
+
         foreach (SurfaceLayout.Landmark m in floor.Labels)
         {
             labels.Add(((float)m.X, (float)m.Y, m.Label));

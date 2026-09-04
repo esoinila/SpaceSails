@@ -46,7 +46,8 @@ public static partial class UndergroundComplex
     // gate, no way past the seam. A second car that could cross a band boundary would be a way to buy depth
     // without the paper, and depth past the first band is the one thing this game makes you earn.
 
-    /// <summary>#801 · Which of the two cars this is.</summary>
+    /// <summary>#801 · Which of the two cars this is. #719 · …and the one way out that is not a car at
+    /// all.</summary>
     public enum ShaftKind
     {
         /// <summary>The cage: the one the surface head sits on top of, the one the plate is beside, and the
@@ -56,29 +57,46 @@ public static partial class UndergroundComplex
         /// <summary>The goods car at the blind end of the corridor. Same four floors, no surface, no
         /// gate.</summary>
         Service,
+
+        /// <summary>#719 · The service stair, at the OTHER blind end. No motor, no call button, no panel and
+        /// no gate — a flight of steps a safety inspectorate made somebody build, which climbs out and is
+        /// paid for in air. See <see cref="UndergroundComplex.StairShaftAt"/>.</summary>
+        Stair,
     }
 
     /// <summary>#801 · A car, on the plan. Published from <see cref="ShaftsOn"/> so that a law about "every
     /// way off this floor" has a list to be written against — the same reason <see cref="Hall.Openings"/>
-    /// and <see cref="Park.Ways"/> exist, said about the thing a captain leaves by.</summary>
+    /// and <see cref="Park.Ways"/> exist, said about the thing a captain leaves by.
+    ///
+    /// <para>#719 · …and the stair is one of these too (<see cref="ExitsOn"/>), so that anything asking what
+    /// a way out IS gets one kind of answer whichever of the three it is holding.</para></summary>
     public readonly record struct Shaft(ShaftKind Kind, double X, double Y)
     {
-        /// <summary>What is painted at the car mouth.</summary>
-        public string Sign => Kind == ShaftKind.Cage ? CageSign : ServiceCarSign;
+        /// <summary>What is painted at the car mouth — or, for the stair, at its door.</summary>
+        public string Sign => Kind switch
+        {
+            ShaftKind.Cage => CageSign,
+            ShaftKind.Stair => StairSign,
+            _ => ServiceCarSign,
+        };
 
-        /// <summary>Does this one climb all the way out? Only the cage does, because only the cage has a
-        /// hut on the regolith over it (#606).</summary>
-        public bool ReachesTheSurface => Kind == ShaftKind.Cage;
+        /// <summary>Does this one climb all the way out? The cage does, because it has a hut on the regolith
+        /// over it (#606) — and, since #719, so does the stair, which comes up under that same lid. The goods
+        /// car does not, and that is still the whole of why the cage was ever the only way home.</summary>
+        public bool ReachesTheSurface => Kind != ShaftKind.Service;
 
         /// <summary>Does this one run the gate to the band below? Only the cage. §13.5 is a law about the
-        /// building, not about a car, and the second car may not be a way round it.</summary>
+        /// building, not about a car, and neither the second car nor the stair may be a way round it — the
+        /// stair least of all, because it does not open onto a floor at all (<see cref="CarveStair"/>).
+        /// </summary>
         public bool RunsTheGate => Kind == ShaftKind.Cage;
 
         /// <summary>Where a captain stands when the doors open — a pace out of the car, on the spine. The
         /// cage's alcove hangs off the spine's upper face and the service car's off the lower one, so the
-        /// pace is outward in opposite directions and neither of them is a typed sign.</summary>
+        /// pace is outward in opposite directions and neither of them is a typed sign. #719 · The stair's
+        /// pocket is on the upper face, like the cage's, so its doorstep is the cage's own way round.</summary>
         public (double X, double Y) Landing =>
-            (X, Kind == ShaftKind.Cage ? Y + 1.0 : Y - 1.0);
+            (X, Kind == ShaftKind.Service ? Y - 1.0 : Y + 1.0);
     }
 
     /// <summary>#801 · What is painted at the cage's mouth. The console has said this since #585.</summary>
@@ -244,7 +262,12 @@ public static partial class UndergroundComplex
     /// one.
     ///
     /// <para>Published so that "no floor of a clandestine site has exactly one way off it" is a law that
-    /// can be written down and can go red, instead of an arrangement two placers happen to agree on.</para></summary>
+    /// can be written down and can go red, instead of an arrangement two placers happen to agree on.</para>
+    ///
+    /// <para><b>#719 · CARS, and only cars.</b> This is the list a motor, a call button, a panel, a radio
+    /// emitter (<c>SdrScanner</c>) and a refuge's detour are all facts about, and the stair is none of those
+    /// things. A law about ESCAPE asks <see cref="ExitsOn"/>, which is this list with the stair on the end of
+    /// it.</para></summary>
     public static IReadOnlyList<Shaft> ShaftsOn(in SurfaceLayout.Field field)
     {
         (double cageX, double cageY) = ShaftAt(field);
