@@ -117,10 +117,15 @@ public partial class Map
             // two different promises is the map lying (#573) in exactly the way the refuge ring was built
             // not to.
             //
-            // HOME STAYS THE CAGE all the same, because the cage is FIRST in this list and stays first —
-            // ShaftsOn puts it there and everything that asks the fan for "the way home" takes the first
-            // home ring it finds. The stair is appended after the cars, so nothing that has ever meant the
-            // cage by HOME now means the stair.
+            // HOME STAYS THE CAGE while the car runs, because the cage is FIRST in this list and stays
+            // first — ShaftsOn puts it there and everything that asks the fan for "the way home" takes the
+            // first home ring it finds. The stair is appended after the cars, so on an ordinary afternoon
+            // nothing that has ever meant the cage by HOME now means the stair.
+            //
+            // #719 slice 2 · …and the day the car stops, the cars are not added at all, so the stair is the
+            // first home ring and therefore IS home. That is the owner's "the HOME ring moves from the cage
+            // to the stair door", achieved by the list being shorter rather than by a second rule about
+            // which ring counts.
             //
             // #719 slice 2 · …and the spot is Core's own now (StairRingAt), because the tank measures to it
             // as well the moment the car stops. One journey, one function: the ring that says WHICH WAY and
