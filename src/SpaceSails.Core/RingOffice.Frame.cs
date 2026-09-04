@@ -35,6 +35,15 @@ public static partial class RingOffice
         /// <summary>#821 · A terrace of cubicles down one pier, a basin run down the other, and a bench to
         /// wait on. The block's own public washroom.</summary>
         Washroom,
+
+        /// <summary>#775 · A run of laboratory bench down one pier with stools at it, and banks of desks
+        /// behind. The owner's second beat — <i>"the work done there is lab work and office work related to
+        /// that lab work, so the space should look like that"</i> — as one room rather than as two.
+        ///
+        /// <para>Never returned by <see cref="DressingFor"/>, because nothing on a door says it: it is
+        /// handed to <see cref="Fit(in UndergroundComplex.RingRoom, Dressing)"/> by the carve, which is the
+        /// only thing that knows it is standing on a LABORATORIES floor.</para></summary>
+        LabHall,
     }
 
     /// <summary>#821 · Is this the block's public washroom? Off the PLATE, which is the only thing that says

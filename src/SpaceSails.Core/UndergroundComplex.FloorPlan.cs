@@ -41,11 +41,19 @@ public static partial class UndergroundComplex
         // glazing is: the list a segment arrives in is what decides its ink, and this one is drawn in the
         // found band's own no-texture idiom on a floor that is otherwise entirely poured. Appended, for the
         // reason above.
-        Specimen? Specimen = null)
+        Specimen? Specimen = null,
+        // #775 · THE MEETING ROOMS in a landscape floor's core — the glass boxes off the open floor, and
+        // nowhere else in the game. Appended and never inserted, for the reason every optional on this
+        // record is appended: every caller of it builds it positionally.
+        IReadOnlyList<MeetingRoom>? Meetings = null)
     {
         /// <summary>#1063 · The preserved doorway on this floor, where this floor keeps one — which is the
         /// listed bottom of a filled ground and no other floor in the game.</summary>
         public Specimen? TheSpecimen => Specimen;
+
+        /// <summary>#775 · The meeting rooms in this floor's core, never null. Empty on every floor that is
+        /// not a landscape floor, which is a true statement about them rather than a missing one.</summary>
+        public IReadOnlyList<MeetingRoom> TheMeetingRooms => Meetings ?? [];
 
         /// <summary>#853 · The framed posters on this floor, never null. Empty on every floor that is not a
         /// laboratories floor, which is a true statement about them rather than a missing one.</summary>
@@ -154,7 +162,12 @@ public static partial class UndergroundComplex
         // deliberate gap at each rib, and both ends are shut.
         // ── #813 · IS THIS THE BLOCK'S FLOOR? Decided first, because it decides which way every corridor on
         //    it runs. See the Manhattan header above ParkBlock.
-        ParkBlock? blockOn = HasParkBlock(bodyId, level) ? BlockOn(field) : null;
+        // #775 · …and it is HasBlockOn now, not HasParkBlock. The block is a ring of large rooms with a
+        //    street on every side of it; the PARK is what stands in the middle of it on the one floor of a
+        //    branch office with a garden. Those were one predicate until the owner asked for landscape
+        //    offices on B1 AND BELOW, and the audit on #938 found that the whole of what stood between him
+        //    and them was this line. See UndergroundComplex.Landscape.cs.
+        ParkBlock? blockOn = HasBlockOn(bodyId, level) ? BlockOn(field) : null;
 
         var ribXs = new System.Collections.Generic.List<(double X, bool Down)>();
         // #801 · The x's come from RibColumnsOn now — the same list the second car is placed against, so a
@@ -409,6 +422,9 @@ public static partial class UndergroundComplex
         (int Rib, int Side)? hallSlot = null;
         var ring = new List<RingRoom>();
 
+        // #775 · …and what stands in the middle of a block with no garden in it: the meeting rooms.
+        var meetings = new List<MeetingRoom>();
+
         // #759 · The park's own glazing, kept apart from the poured walls all the way out of this method.
         // See CarveHall: one segment, in the list that says what it is MADE OF, and the client turns it back
         // into a wall the eye reads as glass and the boots read as wall.
@@ -419,6 +435,12 @@ public static partial class UndergroundComplex
             Comfort use = HallUseOn(bodyId, level);
             double mouth = block.SpineFaceY, far = block.Y1;
 
+            // #775 · IS THERE A HALL ON THIS BLOCK AT ALL. On the one floor with a park there is, and it
+            // takes the widest sub-segment of the near band. On a landscape floor there is not — the near
+            // band is offices end to end — so the whole siting pass below is stepped over rather than run
+            // against a canteen that is not on this floor.
+            bool hasHall = HasParkBlock(bodyId, level);
+
             // ── WHICH SUB-SEGMENT OF THE BAND · #751's rule, unchanged, asked of the block's own list
             //    (RingNearSegments) rather than of the room slots down a rib: the best FLOOR wins and
             //    nearest-the-cage breaks the tie. The hall takes the whole of the segment it stands in
@@ -426,12 +448,12 @@ public static partial class UndergroundComplex
             //    be one — the owner's "not unused" applied to the ground the biggest room in the building
             //    does not want.
             var wide = new List<Rib> { new(block.WestInnerX - CorridorHalf, true) };
-            double wanted = HallGround(
+            double wanted = !hasHall ? 0.0 : HallGround(
                 bodyId, use, wide, 0, +1, mouth, far, shaftX, serviceX, left, right + 400.0, roomScale)
                 is { } asked ? asked.Wanted : 0.0;
 
             double bestLo = double.NaN, bestW = 0, bestD2 = double.MaxValue;
-            foreach ((double lo, double hi) in RingNearSegments(block))
+            foreach ((double lo, double hi) in hasHall ? RingNearSegments(block) : [])
             {
                 double span = hi - lo;
                 double w = span <= wanted || span - wanted < RingRoomMinDu ? span : wanted;
@@ -458,27 +480,46 @@ public static partial class UndergroundComplex
                     shaftX, serviceX, left, bestLo + bestW + HallEdgePadDu, roomScale, glazed: true);
             }
 
-            if (hallSite is { } built)
+            // #775 · THE BLOCK IS CARVED WHENEVER THERE IS A BLOCK — and, on the venue's floor, only if
+            // its hall actually stood up. A ring round a middle with no hall in it is a landscape floor
+            // (this issue); a ring round a middle whose HALL WAS REFUSED THE GROUND is a canteen floor with
+            // no canteen on it, and that floor keeps the ordinary grid it has always had.
+            if (!hasHall || hallSite is not null)
             {
-                // #775 · WHICH FACE OF THE SPINE THE HALL'S FRONT DOORS ARE CUT IN — the carve's own mouth,
-                // and never a second opinion about it. It is the whole near band's face now.
+                // #775 · WHICH FACE OF THE SPINE THE NEAR BAND'S FRONT DOORS ARE CUT IN — the carve's own
+                // mouth, and never a second opinion about it. It is the whole near band's face, hall or no
+                // hall: on a landscape floor every door in it belongs to an office.
                 hallSpineFaceY = mouth;
-                claimed.Add((
-                    built.Hall.X0 - 1.5, built.Hall.Y0 - 1.5,
-                    built.Hall.X1 + 1.5, built.Hall.Y1 + 1.5));
+                if (hallSite is { } built)
+                {
+                    claimed.Add((
+                        built.Hall.X0 - 1.5, built.Hall.Y0 - 1.5,
+                        built.Hall.X1 + 1.5, built.Hall.Y1 + 1.5));
+                }
 
-                // ── #813 · THE RING, AND THEN THE GREEN IN THE MIDDLE OF IT ────────────────────────────
+                // ── #813 · THE RING, AND THEN WHAT IS IN THE MIDDLE OF IT ──────────────────────────────
                 //
-                // In this order because the ring owns the park's whole boundary: every wall the park has is
-                // a room's glass or a gate's stub, so the green is what is left when the block has been
-                // built rather than a box with openings cut in it afterwards.
+                // In this order because the ring owns the middle's whole boundary: every wall it has is a
+                // room's glass or a gate's stub, so the middle is what is LEFT when the block has been
+                // built rather than a box with openings cut in it afterwards. That was #813's law about a
+                // garden and it is the same law about a core of meeting rooms.
                 var parkGates = new List<SurfaceLayout.Doorway>();
                 ring = CarveRing(
                     walls, glass, doorways, labels, claimed, ringSpineCuts, spineMouths, parkGates,
-                    bodyId, level, block, built.Hall);
+                    bodyId, level, block, hallSite is { } withHall ? withHall.Hall : null);
 
-                park = CarvePark(
-                    walls, bodyId, level, built.Hall, built.Glass!.Value, block, parkGates, ring);
+                if (hallSite is { } theVenue)
+                {
+                    park = CarvePark(
+                        walls, bodyId, level, theVenue.Hall, theVenue.Glass!.Value, block, parkGates, ring);
+                }
+                else
+                {
+                    // #775 · …and on a landscape floor, the meeting rooms. Owner: "lots of meeting rooms —
+                    // glass-box rooms off the open floor." See UndergroundComplex.Landscape.cs.
+                    meetings = CarveMeetingCore(
+                        walls, glass, doorways, labels, claimed, bodyId, level, block);
+                }
             }
         }
         else
@@ -712,7 +753,12 @@ public static partial class UndergroundComplex
         // are rooms — they hold what any room down here holds and the A* audit walks to every one of them —
         // but they are the garden's, and an amenity or a refuge carved out of one would be the building
         // taking back the thing this feature exists to give: somewhere on the far side of the green.
-        if (park is not null)
+        // #775 · …asked of the RING and not of the park, which is what says whether one was carved at all.
+        // The condition here used to be `park is not null`, and on a landscape floor — a block with a core
+        // of meeting rooms in the middle of it rather than a garden — that would have left the whole far
+        // band carved, doored, plated and never published: "34 doors were cut and only 28 of them lead
+        // anywhere", the very sentence #813 recorded, one storey down.
+        if (ring.Count > 0)
         {
             // #813 · …asked of the RING rather than of Park.Rooms, which is the #801 view of it and holds
             // only the ones with a door onto the gravel. The far band's two CORNER rooms stand past the end
@@ -758,6 +804,17 @@ public static partial class UndergroundComplex
                 published.Add(new Room(
                     cell.X0, cell.Y0, cell.X1, cell.Y1, cell.Plate, [cell.Door], RoomKind.Cubicle));
             }
+        }
+
+        // #775 · …and the meeting rooms in a landscape floor's core, out of the pool for the reason the
+        // hall's cabinets are: they are the rooms a department books, not the rooms a canteen or a refuge
+        // may be carved out of. Published so the fire code, the never-empty-floor sweep and the seat verb
+        // all walk one list.
+        foreach (MeetingRoom room in meetings)
+        {
+            published.Add(new Room(
+                room.X0, room.Y0, room.X1, room.Y1, room.Plate, room.Ways, RoomKind.MeetingRoom,
+                room.Furniture, room.Seats));
         }
         foreach (EnSuite cell in ensuites)
         {
@@ -878,7 +935,7 @@ public static partial class UndergroundComplex
 
         return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(bodyId, level),
             walls, doorways, locked, labels, centres, ribList, refuges, amenities, ensuites,
-            glass, park, bins, published, posters, board, specimen);
+            glass, park, bins, published, posters, board, specimen, meetings);
     }
 
     /// <summary>#585/#751 · How far a rib reaches off the spine, and where its mouth is. ONE function,

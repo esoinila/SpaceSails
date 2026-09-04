@@ -142,6 +142,12 @@ public static partial class UndergroundComplex
 
         /// <summary>An en-suite cell hung off a principal chamber (#707). Bedroom-small, by design.</summary>
         Cell,
+
+        /// <summary>#775 · A glass box in the middle of a landscape floor — one of the meeting rooms off the
+        /// open core. Its own kind rather than a <see cref="Cabinet"/>, because a cabinet is a booking made
+        /// at a bar's counter down a hall's outer wall and this is the room a department holds its
+        /// meetings in.</summary>
+        MeetingRoom,
     }
 
     /// <summary>
@@ -953,9 +959,22 @@ public static partial class UndergroundComplex
         List<(double Lo, double Hi, double PlateX, string Plate)> spineDoors,
         List<(double Lo, double Hi)> spineMouths,
         List<SurfaceLayout.Doorway> gates,
-        string bodyId, int level, in ParkBlock block, in Hall hall)
+        string bodyId, int level, in ParkBlock block, Hall? hall)
     {
         bool found = IsFound(bodyId, level);
+
+        // #775 · IS THIS A LANDSCAPE FLOOR — a block with no garden in the middle of it? Two things follow
+        // from the answer, and both of them are about not telling a lie the plan can be read for:
+        //
+        //   · THE PLATES. ParkViewPlates says GARDEN ASPECT and GREEN SIDE and ParkBackPlates is a potting
+        //     shed's register. Every one of those is true of the one floor with a park behind the glass and
+        //     false of every floor without one, so down here the rooms take the floor's own department
+        //     register — SignFor, which is exactly what the block's corner offices have always taken.
+        //   · THE DRESSING. A LABORATORIES floor's back band is a lab and not a store: benches with the
+        //     glassware racked along them, and desks behind (#775 beat 2).
+        bool landscape = !HasParkBlock(bodyId, level);
+        bool labs = landscape && ChamberFitting.LabsOn(ChamberFitting.DepartmentOn(bodyId, level));
+
         var ring = new List<RingRoom>();
         double sf = block.SpineFaceY;
 
@@ -985,14 +1004,18 @@ public static partial class UndergroundComplex
         // frontage in the building, with the hall on one side of it and a gate onto the green on the other,
         // which is where a public washroom goes — and it makes the room a fact a captain can learn rather
         // than a shift's roll.
-        double washroomAt = WashroomFrontageOn(block, in hall);
+        double washroomAt = WashroomFrontageOn(block, hall);
 
         // ── (1) THE NEAR BAND · the premium suites, doors on the spine, glass on the green.
         foreach ((double lo, double hi) in RingNearSegments(block))
         {
             // The hall stands in one of these and it stands in the whole of it (see Build). Nothing else is
             // laid on that ground: the hall published its own glass and its own front doors already.
-            if (hall.X1 > lo + 0.001 && hall.X0 < hi - 0.001)
+            //
+            // #775 · …on the ONE floor that has a hall. A landscape floor's near band is offices end to end,
+            // and the null here is a room that was never carved rather than a room this loop has to guess
+            // the extent of — which is why the hall arrives as a Hall? and not as a box of NaNs.
+            if (hall is { } venue && venue.X1 > lo + 0.001 && venue.X0 < hi - 0.001)
             {
                 continue;
             }
@@ -1015,7 +1038,8 @@ public static partial class UndergroundComplex
                 ring.Add(RingBox(
                     walls, glass, doorways, labels, claimed, spineDoors, bodyId, level, found,
                     ring.Count + 1, RingSide.Near, rx0, block.Y1, rx1, sf, block, gate: true,
-                    plateOverride: washroom ? ParkWashroomPlate : null));
+                    plateOverride: washroom ? ParkWashroomPlate : null,
+                    landscape: landscape, labs: labs));
             }
         }
 
@@ -1033,7 +1057,7 @@ public static partial class UndergroundComplex
                 ring.Add(RingBox(
                     walls, glass, doorways, labels, claimed, spineDoors, bodyId, level, found,
                     ring.Count + 1, RingSide.Far, rx0, block.BackStreetY1, rx1, block.Y0, block,
-                    gate: true));
+                    gate: true, plateOverride: null, landscape: landscape, labs: labs));
             }
         }
 
@@ -1053,7 +1077,8 @@ public static partial class UndergroundComplex
                 // face with nowhere to stand.
                 ring.Add(RingBox(
                     walls, glass, doorways, labels, claimed, spineDoors, bodyId, level, found,
-                    ring.Count + 1, side, inner, lo, outer, hi, block, gate: true));
+                    ring.Count + 1, side, inner, lo, outer, hi, block, gate: true,
+                    plateOverride: null, landscape: landscape, labs: labs));
             }
         }
 
@@ -1066,7 +1091,7 @@ public static partial class UndergroundComplex
         //    red without this: "the door at (-1.5,-177.4) is one the hall knows about and the deck plan does
         //    not", 208 of them, on every floor with a block on it.
         var abutting = new List<SurfaceLayout.Doorway>();
-        foreach (SurfaceLayout.Doorway o in hall.Openings)
+        foreach (SurfaceLayout.Doorway o in hall is { } withDoors ? withDoors.Openings : [])
         {
             if (Math.Abs(o.X1 - o.X2) < 0.001)
             {
@@ -1111,14 +1136,14 @@ public static partial class UndergroundComplex
     /// the middle of the block, and then to the LOWER x — so the answer never depends on the order a list
     /// happened to be built in.</para>
     /// </summary>
-    private static double WashroomFrontageOn(in ParkBlock block, in Hall hall)
+    private static double WashroomFrontageOn(in ParkBlock block, Hall? hall)
     {
         double middle = (block.X0 + block.X1) / 2.0;
         double best = double.NaN, bestWide = double.MaxValue, bestGap = double.MaxValue;
 
         foreach ((double lo, double hi) in RingNearSegments(block))
         {
-            if (hall.X1 > lo + 0.001 && hall.X0 < hi - 0.001)
+            if (hall is { } venue && venue.X1 > lo + 0.001 && venue.X0 < hi - 0.001)
             {
                 continue;
             }
@@ -1160,7 +1185,7 @@ public static partial class UndergroundComplex
         List<(double Lo, double Hi, double PlateX, string Plate)> spineDoors,
         string bodyId, int level, bool found, int number, RingSide side,
         double fromX, double fromY, double toX, double toY, in ParkBlock block, bool gate,
-        string? plateOverride = null)
+        string? plateOverride = null, bool landscape = false, bool labs = false)
     {
         bool horizontal = side is RingSide.Near or RingSide.Far;
         double x0 = Math.Min(fromX, toX), x1 = Math.Max(fromX, toX);
@@ -1219,7 +1244,7 @@ public static partial class UndergroundComplex
         //    a sentence. The back of house keeps #801's plates, because those rooms did not become premium
         //    by acquiring a street door.
         string plate = found ? "" : SignFor(bodyId, level, $"hive:{level}:ring:{(int)side}:{number}");
-        if (view && side != RingSide.Far)
+        if (view && side != RingSide.Far && !landscape)
         {
             plate = found
                 ? ""
@@ -1227,7 +1252,7 @@ public static partial class UndergroundComplex
                     (number + (int)(Frac(bodyId, $"hive:{level}:ring-view") * ParkViewPlates.Count))
                         % ParkViewPlates.Count];
         }
-        if (side == RingSide.Far)
+        if (side == RingSide.Far && !landscape)
         {
             plate = found
                 ? ""
@@ -1361,7 +1386,14 @@ public static partial class UndergroundComplex
         // has to be able to find them without knowing what a WC is.
         var furnished = new RingRoom(
             number, x0, y0, x1, y1, side, door, viewWall, parkDoor, plate, openings);
-        RingOffice.Furnishing fit = RingOffice.Fit(in furnished);
+
+        // #775 · WHAT IT IS DRESSED AS. Off the plate everywhere the plate says something — which is every
+        // room the block round the park cuts — and told by the CARVE on a laboratories floor's back band,
+        // because nothing on a door down there says LAB and the register would have to grow a word to say
+        // it. See RingOffice.Fit's second overload for why that is the honest way round.
+        RingOffice.Furnishing fit = labs && side == RingSide.Far
+            ? RingOffice.Fit(in furnished, RingOffice.Dressing.LabHall)
+            : RingOffice.Fit(in furnished);
         foreach (SurfaceLayout.Wall solid in fit.Solids)
         {
             walls.Add(solid);
