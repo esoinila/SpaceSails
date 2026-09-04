@@ -77,6 +77,14 @@ public static partial class UndergroundComplex
         string? plateOverride = null, bool landscape = false, bool labs = false,
         List<LockedDoor>? locked = null, bool shut = false)
     {
+        // #775 · A NEAR-BAND ROOM MAY NEVER BE SHUT, and this is the line rather than a comment hoping.
+        // The near band's doors are not cut here at all: its rooms hand their spans to the spine's own
+        // sweep (spineDoors) and Build turns every one of those into a published doorway, so a shut room on
+        // that band would be a locked plate with an open hole beside it — the plan and the collision saying
+        // different things, which is this ground's oldest bug class. CarveRing only ever shuts the far
+        // band; this makes that a property of the placer instead of a property of its caller.
+        shut &= side != RingSide.Near;
+
         bool horizontal = side is RingSide.Near or RingSide.Far;
         double x0 = Math.Min(fromX, toX), x1 = Math.Max(fromX, toX);
         double y0 = Math.Min(fromY, toY), y1 = Math.Max(fromY, toY);

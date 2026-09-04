@@ -556,4 +556,76 @@ public sealed class TheOfficeFloorIsNotADormitoryTests
         Assert.True(blocks >= 50, $"only {blocks} block floor(s) — this proved little.");
         Assert.True(parks >= 10, $"only {parks} park(s) — the other arm proved little.");
     }
+
+    /// <summary>
+    /// #775 ADDENDUM (2026-08-09, circulation) · <b>THE PARK IS A THOROUGHFARE.</b> Owner: <i>"let's have
+    /// multiple doors to the park … it is a kind of place people like to walk through on their way"</i> —
+    /// the green re-cut so natural routes between B1's places pass THROUGH it rather than round it.
+    ///
+    /// <para><b>It already does, and this is the guard that says so rather than a second carve.</b> #813's
+    /// Manhattan ruling moved the park into the middle of a city block with a street on every side of it, and
+    /// every crossing through the ring arrives at one of the green's own four walls — so the gate count went
+    /// from the ONE the addendum complains about ("shipped with ONE gate at the end of the hall's rib
+    /// corridor") to a gate on each of the four sides, plus a door onto the gravel from every suite that
+    /// looks at it. A route from the west street to the east street, or from the spine to the back street,
+    /// crosses the green because crossing it is the short way.</para>
+    ///
+    /// <para>What is left unbuilt is written down in the PR rather than pretended: the addendum's own
+    /// consequence that WALKERS (#731) route through the green is not asserted here, because who walks where
+    /// is that lane's machinery and not this one's geometry.</para>
+    /// </summary>
+    [Fact]
+    public void THE_PARK_IsCrossedOnFourSidesAndNotVisitedDownOneCorridor()
+    {
+        int parks = 0;
+        var wrong = new List<string>();
+
+        foreach (string body in Sweep())
+        {
+            foreach (int level in UndergroundComplex.FloorsOf(body))
+            {
+                UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(body, level, Field);
+                if (floor.Park is not { } green)
+                {
+                    continue;
+                }
+                parks++;
+
+                // WHICH WALL each gate is in, asked of the park's own box — the room publishes its ways
+                // (Park.Ways) and its own four edges, so nothing here measures a rectangle it did not carve.
+                var sides = new HashSet<string>(StringComparer.Ordinal);
+                foreach (SurfaceLayout.Doorway way in green.Ways)
+                {
+                    double mx = (way.X1 + way.X2) / 2.0, my = (way.Y1 + way.Y2) / 2.0;
+                    if (Math.Abs(my - green.Y1) < 0.01)
+                    {
+                        sides.Add("near");
+                    }
+                    else if (Math.Abs(my - green.Y0) < 0.01)
+                    {
+                        sides.Add("far");
+                    }
+                    else if (Math.Abs(mx - green.X0) < 0.01)
+                    {
+                        sides.Add("west");
+                    }
+                    else if (Math.Abs(mx - green.X1) < 0.01)
+                    {
+                        sides.Add("east");
+                    }
+                }
+
+                if (green.Ways.Count < 2 || sides.Count < 2)
+                {
+                    wrong.Add(
+                        $"  {body} B{-level}: {green.Ways.Count} gate(s) on {sides.Count} side(s) — that is "
+                        + "a place you visit down one corridor, not one you walk through on your way.");
+                }
+            }
+        }
+
+        Assert.True(parks >= 10, $"only {parks} park(s) — this proved little.");
+        Assert.True(wrong.Count == 0,
+            string.Join(Environment.NewLine, ["a park nobody crosses:", .. wrong]));
+    }
 }
