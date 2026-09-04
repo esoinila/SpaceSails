@@ -2157,6 +2157,17 @@ builders lay, then has every core rebuild them fifty times over and asserts the 
 move. A cache keyed on a pure function of its inputs is fine; one whose value depends on call order
 is not.
 
+**And they are BOUNDED (#1112).** The haven memo's key carries the docking watch, which advances for
+ever, so a long voyage left one built station in memory per watch — while its twin had had a cap and a
+flush since #371, because the rule was written into a call site instead of into a type. Both now hold one
+`BoundedMemo<TKey, TValue>` (`src/SpaceSails.Client/Rendering/BoundedMemo.cs`): a `ConcurrentDictionary`
+with a cap of 64 and the moon's eviction rule — on overflow, flush and start fresh — whose insert path is
+taken under a lock, so `Count <= Cap` is an invariant and not a near-miss a guard would flake on. **A
+process-wide memo you add goes through it**, and `TheWorldMemosDoNotGrowForEverTests` will say so: it
+holds both twins to their cap over cap + 1 distinct keys, checks that a hit and a post-eviction rebuild
+are the same deck mark for mark, and fails any static `ConcurrentDictionary` field left bare in the
+client.
+
 **"But the boot path writes them on every page build."** It does — a live `Pages.Map` is the game's one
 writer and installs all five on every world build, so every Client guard that boots a page writes them too.
 Those writes are `Install([])`: a fresh voyage has nothing stopped, fenced, filled or declined, and no test
