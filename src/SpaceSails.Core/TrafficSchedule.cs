@@ -1,4 +1,4 @@
-using SpaceSails.Contracts;
+﻿using SpaceSails.Contracts;
 
 namespace SpaceSails.Core;
 
@@ -118,6 +118,27 @@ public static class TrafficSchedule
     private static readonly string[] FixedPodDestinations = ["mars", "venus"];
 
     public static IReadOnlyList<NpcShip> Generate(ICelestialEphemeris ephemeris, ulong seed, int count, TrafficDefinition? traffic = null)
+        => GenerateShipByShip(ephemeris, seed, count, traffic).ToList();
+
+    /// <summary>
+    /// #161 · THE SAME WAVE, HANDED OVER ONE SHIP AT A TIME.
+    ///
+    /// <para>The boot's own measurement: planning eight founding freighters is a single synchronous block
+    /// of fourteen seconds on the interpreted WASM payload — ninety-five percent of the whole boot, and by
+    /// itself the browser's "page unresponsive" dialog. There is nothing to make faster here (each ship is
+    /// two <c>RoutePlanner.PlanRoute</c> searches and a catch-up integration, and they are the world's
+    /// physics), but there IS something to make INTERRUPTIBLE: the loop's iterations are independent of
+    /// each other except through the one <see cref="DeterministicRandom"/> they share, so a caller that
+    /// wants to hand the frame back to the browser between ships can, simply by walking this instead.</para>
+    ///
+    /// <para><b>It is the same wave, not a similar one.</b> An iterator suspends between yields and resumes
+    /// exactly where it stopped, on the same rng in the same state — so ship <c>i</c> is drawn from the
+    /// identical sequence whether the caller materialises the list in one breath (which is what
+    /// <see cref="Generate"/> above now does) or takes a frame between each. <c>TheSkyIsTheSameSkyOneShip
+    /// AtATimeTests</c> holds that: the two ways of walking it are compared ship by ship.</para>
+    /// </summary>
+    public static IEnumerable<NpcShip> GenerateShipByShip(
+        ICelestialEphemeris ephemeris, ulong seed, int count, TrafficDefinition? traffic = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
 
@@ -141,8 +162,8 @@ public static class TrafficSchedule
 
         TrafficDefinition? effective = traffic ?? ephemeris.Traffic;
         return effective is { Routes.Count: > 0 }
-            ? GenerateFromScenario(ephemeris, seed, count, effective, nowSimTime, waveNumber)
-            : GenerateFromFixedTables(ephemeris, seed, count, nowSimTime, waveNumber);
+            ? GenerateFromScenario(ephemeris, seed, count, effective, nowSimTime, waveNumber).ToList()
+            : GenerateFromFixedTables(ephemeris, seed, count, nowSimTime, waveNumber).ToList();
     }
 
     /// <summary>A fresh pod wave, launching over the days after <paramref name="nowSimTime"/> —
@@ -158,12 +179,11 @@ public static class TrafficSchedule
             : GeneratePodsFromFixedLauncher(ephemeris, seed, count, nowSimTime, waveNumber);
     }
 
-    private static IReadOnlyList<NpcShip> GenerateFromFixedTables(
+    private static IEnumerable<NpcShip> GenerateFromFixedTables(
         ICelestialEphemeris ephemeris, ulong seed, int count, double baseSimTime = 0, int wave = 0)
     {
         var rng = new DeterministicRandom(seed);
         var catchUpSim = new Simulator(ephemeris, CatchUpTimeStep);
-        var ships = new List<NpcShip>(count);
 
         int midFlight = Math.Max(1, count * 6 / 10);
         for (int i = 0; i < count; i++)
@@ -193,32 +213,29 @@ public static class TrafficSchedule
 
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, origin, destination, virtualDeparture, personality, rng);
                 ShipState now = catchUpSim.Run(route.DepartureState, baseSimTime - virtualDeparture, route.Plan);
-                ships.Add(new NpcShip(
+                yield return new NpcShip(
                     id, callsign, cargo, origin, destination, personality,
                     virtualDeparture, now.SimTime, now, route.Plan, route.EstimatedArrivalTime,
-                    cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false));
+                    cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false);
             }
             else
             {
                 double departure = baseSimTime + Math.Floor(rng.NextDouble(3 * Day, 30 * Day));
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, origin, destination, departure, personality, rng);
-                ships.Add(new NpcShip(
+                yield return new NpcShip(
                     id, callsign, cargo, origin, destination, personality,
                     departure, departure, route.DepartureState, route.Plan, route.EstimatedArrivalTime,
-                    cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false));
+                    cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false);
             }
         }
-
-        return ships;
     }
 
-    private static IReadOnlyList<NpcShip> GenerateFromScenario(
+    private static IEnumerable<NpcShip> GenerateFromScenario(
         ICelestialEphemeris ephemeris, ulong seed, int count, TrafficDefinition traffic,
         double baseSimTime = 0, int wave = 0)
     {
         var rng = new DeterministicRandom(seed);
         var catchUpSim = new Simulator(ephemeris, CatchUpTimeStep);
-        var ships = new List<NpcShip>(count);
 
         (List<RouteDefinition> longHaul, List<RouteDefinition> shortHaul) = SplitRoutesByDistance(ephemeris, traffic.Routes);
         IReadOnlyList<RouteDefinition> all = traffic.Routes;
@@ -266,25 +283,23 @@ public static class TrafficSchedule
 
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, planFrom, planTo, virtualDeparture, personality, rng);
                 ShipState now = catchUpSim.Run(route.DepartureState, baseSimTime - virtualDeparture, route.Plan);
-                ships.Add(new NpcShip(
+                yield return new NpcShip(
                     id, callsign, chosen.Cargo, chosen.From, chosen.To, personality,
                     virtualDeparture, now.SimTime, now, route.Plan, route.EstimatedArrivalTime,
                     cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false,
-                    PublishesTimetable: chosen.PublishesTimetable));
+                    PublishesTimetable: chosen.PublishesTimetable);
             }
             else
             {
                 double departure = baseSimTime + Math.Floor(rng.NextDouble(3 * Day, 30 * Day));
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, planFrom, planTo, departure, personality, rng);
-                ships.Add(new NpcShip(
+                yield return new NpcShip(
                     id, callsign, chosen.Cargo, chosen.From, chosen.To, personality,
                     departure, departure, route.DepartureState, route.Plan, route.EstimatedArrivalTime,
                     cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false,
-                    PublishesTimetable: chosen.PublishesTimetable));
+                    PublishesTimetable: chosen.PublishesTimetable);
             }
         }
-
-        return ships;
     }
 
     private static (List<RouteDefinition> Long, List<RouteDefinition> Short) SplitRoutesByDistance(

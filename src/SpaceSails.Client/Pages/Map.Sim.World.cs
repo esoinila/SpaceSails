@@ -177,7 +177,8 @@ public partial class Map
     {
         // #310 honest boot state: if this boot will end at the load view (no direct start/dock cheat),
         // raise the front door NOW in its "warming the reactor" state, so the WASM warm-up never reads as
-        // a broken, click-eating menu. It flips to the live slots once _worldReady flips below.
+        // a broken, click-eating menu. It flips to the live slots once the front door OPENS — which,
+        // since #161, is stages before the world behind it is finished (see OpenTheFrontDoor).
         if (q.DockCheat is null && q.StartId is null && q.SlingCheat is null && q.SkimCheat is null)
         {
             _showStartPicker = true;
@@ -185,34 +186,124 @@ public partial class Map
         }
     }
 
+    /// <summary>
+    /// #161 · THE FRONT DOOR OPENS BEFORE THE WORLD BEHIND IT IS BUILT.
+    ///
+    /// <para>Owner, 2026-07-16: <i>"we should find a way to load the game without causing the
+    /// timeout-warnings in the browser… or doing it stages perhaps"</i>, and the vault-era follow-up:
+    /// <i>"stage the picker EARLY — the scenario list and the vault header are tiny — so Continue is
+    /// clickable while the heavy assemblies stream; perceived boot time is picker time."</i></para>
+    ///
+    /// <para>The measurement (the phase log this lane added, quoted in the PR body) says exactly what was
+    /// in the way: fourteen of the boot's fifteen seconds are <c>TrafficSchedule.Generate</c>, and the
+    /// door was dark for every one of them because it waited on <c>_worldReady</c> — a flag that means
+    /// "the rAF loop is running", which the front door has never needed. What the door DOES need is two
+    /// things, and both are already in hand by this line: the berth roster (the ephemeris, five
+    /// milliseconds ago) and the vault (localStorage, through the renderer module — a browser read of a
+    /// few kilobytes). So they are done here, and the door goes live thirteen seconds early.</para>
+    ///
+    /// <para><b>Why this is the only browser work that moved forward, and why it is invisible off one.</b>
+    /// Everything below is a BROWSER line — <c>JSHost.ImportAsync</c>, then localStorage through it — so
+    /// off a browser it is the no-op <c>RendererInterop.PlayCue</c> is (#837). That matters more than
+    /// tidiness: the boot's fingerprint sweep (<c>TheBootBuildsTheSameWorldTests</c>) runs off-browser and
+    /// its horizon is the FIRST browser-only call, so a module import that ran unguarded here would move
+    /// that horizon eleven stages earlier and unpin the whole world. Guarded, the horizon does not move
+    /// and all eighty-two hashes stand unchanged.</para>
+    ///
+    /// <para><b>And it is synchronous on purpose.</b> There is no await between the ephemeris build and
+    /// this peek, so no render can land in between — which is what lets the door's own "am I live?"
+    /// question be simply <c>_ephemeris is not null</c> (<see cref="FrontDoorReady"/>) instead of another
+    /// flag on this page. A door that painted its berths one frame before its Continue would be a worse
+    /// front door than the one that waited.</para>
+    /// </summary>
+    private async Task OpenTheFrontDoorAsync(BootQuery q, CancellationToken abandoned)
+    {
+        // The two starts that reach the picker branch of ApplyTheStartPoint but never SHOW the door
+        // (?sling= / ?skim= suppress it again below) still want their vault peeked — it is where
+        // "the tutorial was already played" comes from — so the condition here is the peek's own, not
+        // the door's. Off a browser there is no localStorage to peek and no module to reach it through.
+        if (q.DockCheat is not null || q.StartId is not null || !OperatingSystem.IsBrowser())
+        {
+            return;
+        }
+
+        await LoadTheBrowsersRendererModuleAsync();
+        PeekSavedVault(); // #225: surface a "Continue — docked at <haven>" lead if a vault exists.
+
+        // …and hand the frame back so the door the captain is looking at actually becomes the live one
+        // before the fourteen seconds of route planning start. Only when there IS a door to paint.
+        if (_showStartPicker)
+        {
+            await BootPhaseAsync("the sky is still being plotted — the door above is already open", abandoned);
+        }
+    }
+
+    /// <summary>#161 · <c>renderer.js</c>, imported at the top of the boot instead of eleven stages down.
+    ///
+    /// <para>It is how this page reaches localStorage, and the front door cannot say "Continue — docked at
+    /// &lt;haven&gt;" without it. The import itself is milliseconds (it is a module fetch the browser has
+    /// usually already cached), it is idempotent — <c>EnsureModuleLoadedAsync</c> is a
+    /// <c>??=</c> over one task — and the renderer stage below still calls it, so nothing downstream
+    /// depends on this having happened.</para>
+    ///
+    /// <para>Browser-guarded for the reason spelled out on <see cref="OpenTheFrontDoorAsync"/>: this is the
+    /// call that would otherwise become the off-browser fingerprint's new horizon.</para></summary>
+    private static Task LoadTheBrowsersRendererModuleAsync() =>
+        OperatingSystem.IsBrowser() ? RendererInterop.EnsureModuleLoadedAsync() : Task.CompletedTask;
+
     /// <summary>#870 lane 7a · THE BOOT, AS ITS OWN STAGES. Every line below is a stage of the one
     /// pass this used to be, in the one order it has always run: read the URL, default a berth for the
     /// cheats that need one, raise the front door, fetch the scenario, hang the cheats’ bodies off it,
     /// build the ephemeris and everything fed by it, lay the ship down, plan the traffic, point the
     /// camera, wire the renderer — and only then apply the start and the cheats that need a live world
     /// under them. Nothing here reorders a side effect; the world every URL builds is pinned, hash by
-    /// hash, by <c>TheBootBuildsTheSameWorldTests</c>.</summary>
+    /// hash, by <c>TheBootBuildsTheSameWorldTests</c>.
+    ///
+    /// <para>#161 · TWO STAGES MOVED FORWARD, and both of them are browser-only so the fingerprint's
+    /// horizon (and therefore every one of its hashes) is where it was: the renderer MODULE is imported
+    /// at the top — it is how localStorage is reached, and it costs milliseconds — and the vault is
+    /// peeked the instant the ephemeris exists, which is what OPENS the front door. Everything after
+    /// that line is the world behind a door the captain can already read, choose from, and walk
+    /// through.</para></summary>
     private async Task BootTheWorldAsync(CancellationToken abandoned)
     {
+        StartTheBootClock();
+
         var uri = new Uri(Navigation.Uri);
         BootQuery q = ReadEveryQueryKey(uri);
         DefaultABerthForTheCheatsThatNeedOne(q);
         RaiseTheFrontDoorWhileTheReactorWarms(q);
+        SayTheBootStageCost("the URL read");
 
         ScenarioDefinition scenario = await FetchTheScenarioAsync(q, abandoned);
         scenario = AppendTheBodiesTheCheatsAskFor(scenario, q);
+        SayTheBootStageCost("the scenario fetched and parsed");
 
         BuildTheEphemerisAndAnnounceTheBerths(scenario);
+        await OpenTheFrontDoorAsync(q, abandoned);
+        SayTheBootStageCost("the ephemeris built and the vault read — THE FRONT DOOR IS LIVE");
+
         BuildWhatTheEphemerisFeeds(scenario);
+        SayTheBootStageCost("the mission catalog, the plasma and the two simulators");
+
         LayTheShipDownWithHerHistory();
+        SayTheBootStageCost("the ship laid down and her arc projected");
+
         await PlanTheTrafficAsync(abandoned);
+
         PointTheCameraAtHer();
+        SayTheBootStageCost("the camera pointed");
+
         await WireTheRendererToTheBrowserAsync(abandoned);
+        SayTheBootStageCost("the renderer wired to the browser");
 
         ApplyTheStartPoint(q);
         StandTheCaptainWhereTheCheatsAsk(q);
         SeedTheArcsAndTheJobs(q);
         SeedTheApproachesAndThePurse(q);
+        SayTheBootStageCost("the start point applied and the cheats seeded");
+
         await HandThePageToThePlayerAsync(abandoned);
+        SayTheBootStageCost("the page handed to the player");
     }
 }

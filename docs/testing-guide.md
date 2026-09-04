@@ -78,6 +78,16 @@ above, and this is the only place it gets asked.
 **Broken looks like:** blank canvas, a spinner that never clears past "Rigging the sails…", or
 the wrong scenario's bodies rendering.
 
+**What the boot should look like (#161, staged).** The front door — the berth list, the saved
+voyages, **Continue — docked at &lt;haven&gt;** — comes up **live and pressable within about a
+second**, long before the world behind it is finished; measured 0.2 s on the shipping (AOT) build
+and 0.6 s on a plain local publish. Choosing from it while the sky is still being plotted is
+supported and is the ordinary case: the door shuts, the ⚙ loading door shows through narrating the
+phase it is on (*"plotting the traffic lanes — freighter 5 of 8…"*), and the voyage starts the
+moment the world is ready. **Broken looks like:** a front door stuck on *"Warming the reactor — the
+ship's computer is still booting"* for more than a couple of seconds, a berth click that does
+nothing, or the picker reappearing **on top of** the voyage it just started.
+
 ---
 
 ## 2. Warp / pause / follow

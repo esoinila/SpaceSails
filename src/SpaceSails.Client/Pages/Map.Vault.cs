@@ -295,12 +295,63 @@ public partial class Map
             ? []
             : [.. DockableHavens.All(_ephemeris).Select(b => (b.Id, b.Name))];
 
+    /// <summary>
+    /// #161 · IS THE FRONT DOOR LIVE? — which is a different question from "is the world ready", and
+    /// asking the wrong one is what left the boot picker dead for fourteen seconds.
+    ///
+    /// <para>The door needs two things and only two: the berth roster, which is
+    /// <see cref="BerthStarts"/> off the ephemeris, and the vault, which <c>PeekSavedVault</c> reads.
+    /// The boot does both in one breath (<c>OpenTheFrontDoorAsync</c>, no await between the ephemeris
+    /// build and the peek, deliberately) — so the ephemeris standing there IS the whole answer, and this
+    /// page needs no flag of its own to say so. That matters beyond tidiness: every instance field here
+    /// is swept by the 793-field roster and by the boot's own fingerprint, and a boolean that only ever
+    /// says what <c>_ephemeris is not null</c> already says would have joined both ledgers for nothing.</para>
+    ///
+    /// <para>In game it is simply always true, which is right: the logbook drawer opens over a running
+    /// world.</para>
+    ///
+    /// <para><b>What it does NOT say</b>, said out loud so nobody reads more into it than is there: this is
+    /// "the world the door offers exists", not "the vault has been read". The two coincide only because the
+    /// boot does them in one breath, and that coincidence is the boot's to keep — move
+    /// <c>OpenTheFrontDoorAsync</c> away from the ephemeris and the berths would go live with no Continue
+    /// beside them. The UiGate's front-door budget measures the berths (a fresh browser context has no
+    /// saved voyage to continue), so the ordering is guarded by the conductor's own shape and by this
+    /// note, not by a browser.</para>
+    /// </summary>
+    private bool FrontDoorReady => _ephemeris is not null;
+
+    /// <summary>
+    /// #161 · THE DOOR IS OPEN BEFORE THE WORLD IS. So every verb ON that door — Continue, a berth, a
+    /// captain's saved row, an imported file — waits here for the rest of the boot before it acts.
+    ///
+    /// <para>The wait is honest rather than hidden: the caller has already shut the picker, so what shows
+    /// through underneath is the boot's OWN loading door, gear turning, narrating the phase it is on
+    /// ("plotting the traffic lanes — freighter 5 of 8…"). A captain who chooses at second two watches
+    /// the same thing they used to watch before the door opened at all; a captain who takes ten seconds
+    /// reading the berths waits for nothing.</para>
+    ///
+    /// <para>Awaiting <c>Boot</c> is the whole mechanism. It is the one handle on the running boot
+    /// (#737), it swallows its own abandonment, and it completes AFTER <c>ApplyTheStartPoint</c> — which
+    /// is why that method no longer re-raises the picker over the voyage this click is starting.</para>
+    /// </summary>
+    private Task TheRestOfTheBootAsync()
+    {
+        if (_worldReady || Boot is not { } booting)
+        {
+            return Task.CompletedTask;
+        }
+
+        StateHasChanged(); // the picker is shut; let the boot's own door and its phase line show through
+        return booting;
+    }
+
     // Boot a brand-new voyage already clamped on at a chosen berth — the front door's primary start action
     // (docked-starts rework, 2026-07-18). Dismisses the front door and hands to the shared docked-start
     // path, then lands on the deck (walkable haven) or the Nav map (pumps-only berth).
     private async Task ChooseBerthStart(string havenId)
     {
         _showStartPicker = false;
+        await TheRestOfTheBootAsync(); // #161: the door opens before the world behind it is finished
         EnterNewGameThread(); // a berth start is a NEW voyage — fresh universe, fresh thread (feat/game-threads)
         StartDockedAtHaven(havenId);
         MaybeGreetTutorialHome(havenId); // a fresh new captain picking Selene Gate gets the soft-catch lesson, seeded here
@@ -815,6 +866,7 @@ public partial class Map
     {
         _showStartPicker = false;
         _showSaveDrawer = false;
+        await TheRestOfTheBootAsync(); // #161: Continue is clickable while the sky is still being plotted
 
         if (slotId is not null && Slots.ReadPayload(slotId) is { } raw && !string.IsNullOrWhiteSpace(raw))
         {
@@ -1394,6 +1446,8 @@ public partial class Map
         {
             return;
         }
+
+        await TheRestOfTheBootAsync(); // #161: the door's ⬆ Import is live before the world behind it is
 
         Vault vault = VaultSerializer.Load(text);
         // An imported file is a whole universe arriving — give it its OWN thread (feat/game-threads) so it
