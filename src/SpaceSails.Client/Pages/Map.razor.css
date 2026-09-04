@@ -58,9 +58,14 @@
        strip already owned, because the clearance below was written for the OTHER six desks only.
 
        So the strip's geometry lives here and every reader takes it from here: the two controls set their
-       `top` from --map-control-top, the search input its height from --map-control-height, and every desk
-       reserves --desk-top-clearance above itself. Move the strip tomorrow and the desks move with it; there
-       is no second number to forget (#561's lesson, applied to the other axis). */
+       `top` from --map-control-top, the search input its height from --map-control-height, and the top
+       stack's own floor (`min-height`, below) is the sum of the two — so the band the masthead claims is
+       never shorter than the strip standing in it, and the desks that flow under the band clear both
+       without knowing either number (#561's lesson, applied to the other axis).
+
+       #236 · These two are now the ONLY typed lengths in the top band, and they describe the STRIP, not
+       the banner: nothing here guesses how tall a masthead can get. The band is whatever .map-topstack
+       lays out — measured by the browser, per frame. */
     --map-control-top: 3.2rem;
     --map-control-height: 1.9rem;
 
@@ -83,13 +88,14 @@
        overlap; the two are stacked, not side by side. */
     --desk-chip-strip-clearance: 11rem;
 
-    /* Clearance under the whole top stack. 5.75rem was tuned for the ONE-row banner; the #190 voice runs
-       2–3 rows ("YOU HAVE THE SHIP / NOW: …/ NEXT: …"), which slid every desk's own header row — the owner
-       caught the Captain's Orders/Status/Tutorials/Ledger toggle — underneath it. 8.25rem clears the 3-row
-       banner plus the alert strip's first line, and it clears the floating control strip above it
-       (--map-control-top + --map-control-height = 5.1rem), which is what #986 F1 was about. (The proper fix
-       is the desks joining the #197 flow column; tracked, this is the clearance until then.) */
-    --desk-top-clearance: 8.25rem;
+    /* The gap between the top stack's rows, named because .map-topstack reads it twice: as its own `gap`
+       and inside the `min-height` that gives the band its floor. One token, both readers. */
+    --topstack-gap: 0.4rem;
+
+    /* #236 · WHERE --desk-top-clearance USED TO BE. It said 5.75rem, then 8.25rem: "how tall can the
+       masthead above me get?", answered by hand, twice — the second time the day the #190 voice grew the
+       banner to three rows and slid every desk's own first row underneath it. The desks flow under
+       .map-topstack now (Map.razor), so that height is the browser's arithmetic and nobody's estimate. */
 }
 
 .map-canvas {
@@ -272,8 +278,19 @@
     display: flex;
     flex-direction: column;
     align-items: center;    /* tabs · banner · alert strip stay top-centred */
-    gap: 0.4rem;
+    gap: var(--topstack-gap);
     padding: 0.5rem 0.75rem 0;
+
+    /* #236 · THE BAND HAS A FLOOR, AND THE FLOOR IS THE OTHER STRIP'S OWN GEOMETRY.
+       Everything that must clear the masthead flows underneath this box now, so this box IS the reserved
+       band — its laid-out height, whatever the banner grew to this frame. Right for the banner, wrong by
+       itself for one neighbour: the floating map controls (🗺 Layers, the #406 find box) are absolutely
+       positioned in the top-LEFT of the same band and are NOT in this column, so where the masthead is
+       short — the deck, which has no banner at all — a desk flowing under a 3rem stack would begin at a y
+       the strip already owns. #986 F1's bug, back the moment the band stopped being generous by accident.
+       So the band claims the strip standing in it, in the strip's own terms: every var() below is the one
+       the control itself reads. */
+    min-height: calc(var(--map-control-top) + var(--map-control-height) + var(--topstack-gap));
 }
 
 /* The shuttle-bay airlock pop-up (#163): same card family as the bar offer, but a scrollable list of
