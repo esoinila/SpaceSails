@@ -31,12 +31,18 @@
        and was caught by diffing the generated bundle. pilot-banner-pulse, save-warming-turn,
        adrift-pulse, wait-shuttle-fly and story-plate-in have users on both sides, so they all stayed.
 
-     * SELECTORS NO MARKUP CLAIMS. Sixteen rules name classes that appear in no source file at all
-       (.map-traffic, .map-dock, .comms-traffic-table, .map-plot-horizon, .save-scenarios, .wc-note and
-       friends), and four more (.captain-vault-actions, .captain-ident-row/-label/-name) style markup only
-       Pages/Stations/Captain.razor renders — which, written without ::deep, this scope can never reach.
-       Both are listed as found-not-fixed on this lane's PR: a dead selector is a bug for somebody to
-       confirm, not something a pure move gets to delete.
+     * SELECTORS NO MARKUP CLAIMS — GONE, in #1110. Fifteen rules named classes that appear in no source
+       file at all (.map-traffic, .map-dock, .comms-traffic-table, .map-plot-horizon, .save-scenarios,
+       .wc-note and friends), and four more (.captain-vault-actions, .captain-ident-row/-label/-name) styled
+       markup only Pages/Stations/Captain.razor renders — which, written without ::deep, this scope could
+       never reach, so the captain's identity line was unstyled on that desk. The dead ones are deleted; the
+       four moved into Captain.razor.css, where they land. NoRuleIsWrittenForMarkupItCanNeverReachTests is
+       the law that keeps both shapes out of every scoped sheet in the client from here on.
+
+       (#1109's found-not-fixed list said SIXTEEN dead. It was wrong about one: .map-plan-step-active is
+       assembled at render time — `class="map-plan-step map-plan-step-@_is.ToString().ToLowerInvariant()"`
+       in NavHud, where _is is Active while the autopilot flies an approach — so it is live, and it stayed.
+       Catching a class name that no source spells out is exactly what the new law's stem rule is for.)
 
    ORDER IS THE WHOLE PROOF. The bundle concatenates *.razor.css by project-relative path compared without
    regard to case, so this file's rules still come before every surface's, and every rule kept its place
@@ -342,33 +348,6 @@
     flex: 0 0 auto;
 }
 
-.map-traffic {
-    position: absolute;
-    top: 0.75rem;
-    right: 0.75rem;
-    width: 32rem;
-    max-width: calc(100% - 1.5rem);
-    pointer-events: auto;
-}
-
-.map-traffic-scroll {
-    max-height: 60vh;
-    overflow-y: auto;
-}
-
-.map-traffic-row {
-    cursor: pointer;
-}
-
-.map-dock {
-    position: absolute;
-    bottom: 0.75rem;
-    right: 0.75rem;
-    width: 24rem;
-    max-width: calc(100% - 1.5rem);
-    pointer-events: auto;
-}
-
 /* #997 wave 11 · ::deep because OverlayShell draws this root now. Without it the rule compiles to
    `.map-tutorial[b-map]`, matches nothing, and the checklist loses its anchor outright — every
    declaration in this block is here, so it falls out of the bottom-left corner into the document flow
@@ -477,20 +456,11 @@
     margin-bottom: 0.3rem;
 }
 
-.map-plot-horizon {
-    width: 5.2rem;
-}
-
 .map-loading {
     position: absolute;
     inset: 0;
     z-index: calc(var(--z-map-chrome) + 40);
     background: #060912;
-}
-
-.map-horizon-readout {
-    min-width: 3.2rem;
-    text-align: right;
 }
 
 .map-plan-step-active {
@@ -539,20 +509,6 @@
     animation: pilot-banner-pulse 1.4s ease-in-out infinite;
 }
 
-/* #180: orbit degrading — amber for the tide-chaotic band, red for a surface-grazing orbit. The
-   pilot banner is the surface until the #166 ShipAlerts channel lands. */
-.pilot-banner-alert-amber {
-    color: #ffcf6b;
-    font-weight: 800;
-    opacity: 1;
-}
-
-.pilot-banner-alert-red {
-    color: #ff7a7a;
-    font-weight: 800;
-    opacity: 1;
-}
-
 /* Manual: calm, neutral — nothing alarming, you have the stick. */
 .pilot-banner-manual {
     background: rgba(20, 28, 36, 0.85);
@@ -572,13 +528,6 @@
 @keyframes pilot-banner-pulse {
     0%, 100% { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55); }
     50% { box-shadow: 0 0 16px 2px rgba(255, 176, 40, 0.6); }
-}
-
-/* "Roomier rows" (owner direction): the departures board gets its own column now, so it no
-   longer needs table-sm's cramped padding. */
-.comms-traffic-table td,
-.comms-traffic-table th {
-    padding: 0.55rem 0.6rem;
 }
 
 /* ---- M28: the ship's parrot — a perch above the scope, visible on every desk. ---- */
@@ -676,19 +625,6 @@
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
 }
 
-.start-picker-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-}
-
-/* The Captain-desk vault buttons (Save / Export / Import) wrap on a narrow desk. */
-.captain-vault-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-}
-
 .save-warming-spin {
     font-size: 1.4rem;
     display: inline-block;
@@ -757,31 +693,6 @@
 .save-surface-foot-center {
     justify-content: center;
     margin-top: 1.3rem;
-}
-
-.save-scenarios-toggle {
-    margin-left: auto;
-    background: none;
-    border: none;
-    color: rgba(224, 228, 236, 0.5);
-    font-size: 0.8rem;
-    cursor: pointer;
-}
-
-.save-scenarios-toggle:hover {
-    color: rgba(224, 228, 236, 0.85);
-}
-
-.save-scenarios {
-    margin-top: 0.5rem;
-    max-height: 34vh;
-}
-
-/* #312 — the 'start docked at a berth' toggle sits left under New voyage, not floated right. */
-.save-berth-toggle {
-    margin-left: 0;
-    align-self: flex-start;
-    text-align: left;
 }
 
 /* the seeded-colour monogram disc — the fallback that shows through when the portrait is missing
@@ -1010,7 +921,6 @@
 .vent-spine-tag.pumping-tag { fill: #7fd4e8; }
 .vent-spine-tag.banked-tag { fill: #78dcaa; }
 .vent-spine-tag.here-tag { fill: #78dcaa; }
-.wc-note { color: #78dcaa; font-size: 0.66rem; }
 
 /* ── Making sure ────────────────────────────────────────────────────────────────────────────────────
    The scuttling panel and the card you read afterwards from your own cockpit. */
@@ -1442,26 +1352,6 @@
 
 ::deep .deck-offer-card {
     --card-foot-scrim: rgba(6, 9, 15, 0.92);
-}
-
-/* The captain's identity line at their own desk. */
-.captain-ident-row {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin: 0 0 0.5rem;
-}
-
-.captain-ident-label {
-    color: rgba(224, 228, 236, 0.55);
-    font-size: 0.8rem;
-}
-
-.captain-ident-name {
-    color: #e8eef6;
-    font-size: 1.05rem;
-    font-weight: 600;
 }
 
 .old-crew-history {

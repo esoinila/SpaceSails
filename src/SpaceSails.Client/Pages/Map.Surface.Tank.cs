@@ -483,8 +483,45 @@ public partial class Map
         _groundGrewOpen = false;
     }
 
-    /// <summary>#563 · Raise the map-just-grew card, but only ever once per captain. Called from every path
-    /// that appends real ground to the live plan (a forced expedition door, Vantar's concealed lab door).
+    /// <summary>
+    /// #584 · <b>THE GROUND GREW, AND HERE IS WHERE — the one writer every reveal goes through.</b>
+    ///
+    /// <para>Owner, mid-tour: <i>"I got like one 'you expanded the map' notification in one map but I was
+    /// left totally un-aware about what that did and where?"</i> Three call sites appended real ground to the
+    /// live plan and every one of them raised the same card, which said WHAT at length and WHERE not at all.
+    /// They go through here now, and they hand over the one fact they each already had in hand: the mouth of
+    /// the ground that just joined — the forced door, the hatch, the seal that cracked.</para>
+    ///
+    /// <para>Two things happen with it, and they are deliberately different in lifetime. The CARD is told
+    /// once, in the plate idiom the game uses for a place (<see cref="GroundGrows.Where"/>); the FAN is told
+    /// for the rest of the excursion (<c>ex.NewGround</c> → <c>BuildBeacons</c>), because a card is gone in
+    /// four seconds and the walk is not. That split is the whole of this fix: the sentence answers the
+    /// question and the instrument keeps answering it.</para>
+    ///
+    /// <para>Returns whatever <see cref="ShowGroundGrewCardOnce"/> returned, so a caller that keeps a toast
+    /// for every later time goes on keeping it.</para>
+    /// </summary>
+    /// <param name="ex">The live excursion — the fan's mark is filed on it.</param>
+    /// <param name="mouthX">Where the ground joined: the door/hatch that gave, in field coordinates.</param>
+    /// <param name="mouthY">The same.</param>
+    private bool TheGroundJustGrew(SurfaceExcursion ex, double mouthX, double mouthY)
+    {
+        ArgumentNullException.ThrowIfNull(ex);
+
+        // The instrument first, so it is already pointing when the card comes down — and unconditionally,
+        // because the card is once per CAPTAIN and the second door a captain ever forces is the one they are
+        // most likely to walk away from without noticing.
+        ex.NewGround.Add((mouthX, mouthY, ex.Floor));
+
+        _groundGrewWhere = GroundGrows.Where(
+            ex.Stop.Body.Id, ex.Floor, mouthX - _avatarX, mouthY - _avatarY);
+
+        return ShowGroundGrewCardOnce();
+    }
+
+    /// <summary>#563 · Raise the map-just-grew card, but only ever once per captain. Reached through
+    /// <see cref="TheGroundJustGrew"/> from every path that appends real ground to the live plan (a forced
+    /// expedition door, an outpost hatch, Vantar's concealed lab door).
     ///
     /// <para>Returns true when the card went up, so the caller can keep its toast for every later time —
     /// the card explains the rule to someone who has never seen it, and the toast is exactly right for

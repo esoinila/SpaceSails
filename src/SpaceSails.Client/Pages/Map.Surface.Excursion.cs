@@ -128,6 +128,17 @@ public partial class Map
         public HashSet<string> OpenedDoors { get; } = [];
         public HashSet<string> LootedCaches { get; } = [];
 
+        // #584 · THE MOUTHS OF EVERY GROUND THAT JOINED THE PLAN THIS VISIT, and which floor each joined on.
+        //
+        // Owner: "I was left totally un-aware what that did and where?" The card names the place once; this
+        // is what lets the INSTRUMENT go on pointing at it, so the notification can still be acted on ten
+        // seconds later when the card is gone. BuildBeacons rings every entry that belongs to the floor the
+        // captain is standing on — a chamber forced on B2 is not a place on B3.
+        //
+        // Session-only and never saved, the same law as OpenedDoors above it: a fresh landing starts sealed,
+        // so a fresh landing has no new ground to point at either.
+        public List<(double X, double Y, int Floor)> NewGround { get; } = [];
+
         // #371 Phase 3 · fog-of-war state (expedition sites only). SeenRegions = every appended region the
         // captain's line of sight has ever reached (stays "explored", drawn dim); VisibleRegions = those in
         // sight right now (drawn lit). Echoes = the fading "movement was here" ripples a contact leaves when it

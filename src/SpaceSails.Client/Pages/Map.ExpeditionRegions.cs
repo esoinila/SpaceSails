@@ -157,7 +157,8 @@ public partial class Map
 
         // The forced door's own console becomes the open doorway — drop it (only the small console array
         // rebuilds; the geometry just grew).
-        if (ExpeditionRegions.DoorPosition(kind, doorId, field) is { } pos)
+        (double X, double Y)? mouth = ExpeditionRegions.DoorPosition(kind, doorId, field);
+        if (mouth is { } pos)
         {
             _deckPlan.RemoveConsoleAt((float)pos.X, (float)pos.Y, DeckPlan.ConsoleKind.SealedDoor, 0.2);
         }
@@ -169,7 +170,17 @@ public partial class Map
         // is of great interest." It did not — the most distinctive thing this game does was announced by a
         // toast that faded, while a scuttled ship got a full card with art. After the first showing the
         // toast IS the right register: you know the rule now, and a card on every door would be a nag.
-        if (!ShowGroundGrewCardOnce())
+        //
+        // #584 · …and the card said nothing about WHERE, which is the owner's other complaint about this same
+        // moment ("I was left totally un-aware what that did and where?"). The mouth was already resolved
+        // nine lines up, for the console it takes off the plan; it is handed to the one writer now, which
+        // names it on the card and rings it on the fan for the rest of the excursion. A door whose position
+        // the site will not resolve appends nothing a captain could walk to, so it is not claimed as ground.
+        if (mouth is not { } where)
+        {
+            return;
+        }
+        if (!TheGroundJustGrew(ex, where.X, where.Y))
         {
             ShowPulseMessage("⚙ The door gives — cold air that hasn't moved in ten thousand years. New ground on the plan. Step through and look.");
         }
