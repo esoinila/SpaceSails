@@ -337,6 +337,23 @@ public class TheGroundThatGrewSaysWhereTests
         exType.GetProperty("Floor")!.SetValue(ex, 0);
         exType.GetProperty("Expedition")!.SetValue(ex, true);
 
+        // ── A PLAN OF ITS OWN, AND THIS LINE IS NOT OPTIONAL ────────────────────────────────────────
+        //
+        // A fresh Map starts on `DeckPlan.Ship`, which is a `{ get; } = BuildShip(null)` SINGLETON, and
+        // `AppendRegion` MUTATES the plan it is called on. So a bench that drove ForceOpenDoor on a page
+        // still holding the default welded an expedition chamber — and then Vantar's whole lab — onto the
+        // process-wide ship deck, for every other class in the assembly.
+        //
+        // It was not subtle once it landed, and it was invisible until CI: 49 tests red on a Linux runner
+        // and 11 on this box, reporting the ship drawing 462 marks where 364 were pinned, two identical
+        // '🖥 VANTAR — FIELD LOG' consoles 0.00 du apart on `surface:luna:1`, and thirty landings that
+        // could no longer be walked to a shelter. Nothing was wrong with the code under test; the bench
+        // was editing the world the other suites read.
+        //
+        // ShipWith([]) is BuildShip run again — the same deck, a new object. One line, and this suite's
+        // appends stay inside this suite.
+        Set(map, "_deckPlan", DeckPlan.ShipWith([]));
+
         Set(map, "_surface", ex);
         Set(map, "_avatarX", x);
         Set(map, "_avatarY", y);
