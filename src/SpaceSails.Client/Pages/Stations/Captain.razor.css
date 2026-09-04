@@ -11,6 +11,33 @@
     overflow-y: auto;
 }
 
+/* #1110 · THE CAPTAIN'S IDENTITY LINE, IN THE SHEET THAT CAN ACTUALLY REACH IT.
+
+   These three, and .captain-vault-actions further down beside .captain-start-jump, were written in
+   Pages/Map.razor.css WITHOUT ::deep — so they compiled to `.captain-ident-row[b-4dqsdx4p75]` while this
+   desk's elements wear this component's own scope, and the row a captain reads their own name off has been
+   unstyled the whole time. Nothing about the source looked wrong: real classes, real values, in a sheet
+   that really loads, next to the twins of .captain-card and .job-plain that already say the same lesson
+   further down this file. Moved verbatim — every value is the one Map.razor.css had. */
+.captain-ident-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0 0 0.5rem;
+}
+
+.captain-ident-label {
+    color: rgba(224, 228, 236, 0.55);
+    font-size: 0.8rem;
+}
+
+.captain-ident-name {
+    color: #e8eef6;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
 .captain-articles {
     text-align: center;
     padding: 1.5rem 1rem;
@@ -253,6 +280,18 @@
     justify-content: center;
     flex: 0 0 auto;
     margin-top: -0.5rem;
+}
+
+/* #1110 · The Captain-desk vault buttons (Save / Export / Import) wrap on a narrow desk. Moved out of
+   Pages/Map.razor.css with the ident row above, for the same reason. It is the one of the four that got
+   away with being unreachable, because the element wearing it also wears .captain-start-jump, which this
+   sheet does style — so the row was laid out, just never allowed to wrap. Written AFTER .captain-start-jump
+   deliberately: they share `display: flex` and nothing else, and on the one element that carries both the
+   later rule is the one that should be answering for the box. */
+.captain-vault-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
 }
 
 /* ── CREW TEMPERATURE ──────────────────────────────────────────────────────────────────────────────

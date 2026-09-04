@@ -12,6 +12,19 @@
 # DELETING A RULE? Delete its line here, in the same PR, or the guard reddens naming the selector — which
 # is the point: a rule vanishing out of a stylesheet nobody reads end-to-end any more should cost somebody
 # a deliberate keystroke.
+#
+# #1110 · 780 → 759. Twenty-one lines came out, deliberately, and not one of them could ever have painted
+# anything:
+#   * seventeen wholly dead selectors — the fifteen #1109 found in this sheet and left standing
+#     (.map-traffic and friends), plus .busted-freeze-art .bf-silhouettes and .bf-flash, which the new law
+#     found in the surface they had moved to. No source in this client writes any of those class names.
+#   * four rules for markup only Pages/Stations/Captain.razor renders (.captain-vault-actions,
+#     .captain-ident-row/-label/-name), written here WITHOUT ::deep, so they compiled to the Map page's
+#     scope while the captain's own elements wore Captain's. Those are not deleted: they MOVED into
+#     Pages/Stations/Captain.razor.css, which is outside this cascade, and the captain's ident row is
+#     styled for the first time.
+# NoRuleIsWrittenForMarkupItCanNeverReachTests is the law that will not let either shape back in. The count
+# in THE_LAW_CanTellPassFromFail was re-measured off this file, never edited until it matched.
 .map-page
 .map-canvas
 .map-canvas:active
@@ -91,10 +104,6 @@
 .map-burn-frame-offer
 .map-burn-frame-offer-line
 .map-plot-pulses
-.map-traffic
-.map-traffic-scroll
-.map-traffic-row
-.map-dock
 ::deep .map-tutorial
 .map-adrift
 .map-adrift-reopen
@@ -114,11 +123,9 @@
 ::deep .map-scope-tile
 ::deep .map-scope-min
 .map-scope-canvas
-.map-plot-horizon
 .map-loading
 .map-warp-control .form-range
 .map-warp-readout
-.map-horizon-readout
 .map-plot-percent
 .map-plot-heading
 .map-plot-node-selected
@@ -170,8 +177,6 @@
 .ship-alert-ack
 .ship-alert-action
 .ship-alert-silence
-.pilot-banner-alert-amber
-.pilot-banner-alert-red
 .pilot-banner-manual
 .pilot-banner-auto
 .pilot-banner-auto .pilot-banner-who
@@ -202,7 +207,6 @@
 .desk-traffic-scroll
 .desk-comms-room
 .desk-comms-grid
-.comms-traffic-table td, .comms-traffic-table th
 .parrot-perch
 .parrot-bird
 .parrot-bubble
@@ -252,7 +256,6 @@
 .start-picker-title
 .start-picker-sub
 .start-picker-berths-intro
-.start-picker-list
 .start-picker-option
 .start-picker-option:hover, .start-picker-option:focus-visible
 .start-picker-continue
@@ -267,7 +270,6 @@
 .start-picker-devstart:hover, .start-picker-devstart:focus-visible
 .start-picker-devtag
 .start-picker-devurl
-.captain-vault-actions
 .start-picker-icon
 .start-picker-text
 .start-picker-label
@@ -301,13 +303,9 @@
 .slot-mini-danger:hover
 .save-surface-foot
 .save-surface-foot-center
-.save-scenarios-toggle
-.save-scenarios-toggle:hover
-.save-scenarios
 .slot-row-empty .slot-load-empty
 .slot-where-empty
 .slot-latest
-.save-berth-toggle
 .save-berth-starts
 .save-captain-roster
 .captain-card
@@ -455,8 +453,6 @@
 ::deep .busted-close
 .busted-freeze
 .busted-freeze-art
-.busted-freeze-art .bf-silhouettes
-.busted-freeze-art .bf-flash
 .busted-explosion
 .busted-freeze-art .bf-art
 .busted-freeze-art.has-art
@@ -580,7 +576,6 @@
 .wc-tag
 .wc-room
 .wc-time
-.wc-note
 ::deep .scuttle-panel, ::deep .scuttle-epitaph
 .scuttle-art
 .scuttle-epitaph-text
@@ -771,9 +766,6 @@
 .captain-rename-input:focus
 .captain-rename-pencil
 .captain-card:hover .captain-rename-pencil, .captain-rename-pencil:hover, .captain-rename-pencil:focus-visible
-.captain-ident-row
-.captain-ident-label
-.captain-ident-name
 ::deep .busted-close-row
 ::deep .busted-card .busted-close-row .busted-close
 ::deep .busted-logbook
