@@ -56,6 +56,29 @@ public partial class Map
                     home: true);
             }
 
+            // ── #719 · AND THE STAIR, WHICH IS A WAY OFF THIS FLOOR AND SO PAINTS LIKE ONE ──
+            //
+            // It goes on the fan for the reason the cars do, in this loop's own words one screen up: down
+            // here the places worth a ring are the ways out, "the way home in the only sense that matters
+            // underground". The stair is one — the only one besides the cage that actually climbs out — and
+            // a captain who has to hunt for the second way out in the dark has not got one.
+            //
+            // IT IS NOT PAINTED IN THE REFUGE'S INK, and that is the decision. The not-home ring means AIR
+            // YOU CAN REACH on this floor (#608), and a stairwell has none: two rings in one colour meaning
+            // two different promises is the map lying (#573) in exactly the way the refuge ring was built
+            // not to.
+            //
+            // HOME STAYS THE CAGE all the same, because the cage is FIRST in this list and stays first —
+            // ShaftsOn puts it there and everything that asks the fan for "the way home" takes the first
+            // home ring it finds. The stair is appended after the cars, so nothing that has ever meant the
+            // cage by HOME now means the stair.
+            if (UndergroundComplex.HasStairOn(ex.Stop.Body.Id, ex.Floor)
+                && UndergroundComplex.StairOn(MoonSurface.ExpeditionField()) is { } stair)
+            {
+                (double stairX, double stairY) = stair.Landing;
+                Add(stairX, stairY + UndergroundComplex.CorridorHalf + 1.5, home: true);
+            }
+
             // ── #608 · AND THE REFUGES, WHICH ARE THIS FLOOR'S SHELTERS ──
             //
             // Owner, exactly: "and those need to show in the motion detector, not the surface ones, when you

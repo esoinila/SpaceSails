@@ -33,6 +33,11 @@ public sealed partial class DeckPlan
         // same machine: the cage climbs out and runs the gate, the goods car does neither, and a [E] press
         // that could not tell them apart would open the cage's panel at the other end of the building.
         HiveServiceLift,
+        // #719 · THE SERVICE STAIR. Its own kind for the goods car's own reason, one step further: this is
+        // not a machine at all. There is no panel to open and no floor to choose — the press is the climb,
+        // it goes one way, and it is paid for out of the tank. A [E] that could not tell it from a car would
+        // offer a captain a lift directory at the top of a flight of stairs.
+        HiveStair,
         // #608 · The pressure refuge's rack. Its OWN kind rather than a re-used ShelterTank, because the two
         // buildings share the air law and nothing else: the surface rack sits beside an ammunition press in
         // a regolith drum that a whole site has several of, and this is a poured room a safety inspectorate

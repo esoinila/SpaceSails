@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace SpaceSails.Core;
@@ -134,9 +134,9 @@ public static partial class UndergroundComplex
         double bestX = double.NaN, bestGap = -1;
         foreach ((double lo, double hi) in ends)
         {
-            if (hi - lo < 2 * ShaftHalf)
+            if (hi - lo < 2 * DoorHalf)
             {
-                continue;   // not enough wall to cut a mouth in
+                continue;   // not enough wall to cut a door in
             }
             if (Taken(goodsCarX, lo, hi, clear) || Taken(pocketX, lo, hi, clear))
             {
@@ -146,7 +146,7 @@ public static partial class UndergroundComplex
             // Hard against this end's own cap — the side of the stretch that is further from the cage, which
             // is the end of the corridor. Held a half-width in, so the pocket is cut inside the ground the
             // blind end actually offers rather than through the cap.
-            double x = Math.Abs(lo - cageX) > Math.Abs(hi - cageX) ? lo + ShaftHalf : hi - ShaftHalf;
+            double x = Math.Abs(lo - cageX) > Math.Abs(hi - cageX) ? lo + DoorHalf : hi - DoorHalf;
             if (Math.Abs(x - cageX) < (2 * ShaftHalf) + ShaftClearDu)
             {
                 continue;   // never shoulder to shoulder with the car everybody arrives in
@@ -269,17 +269,22 @@ public static partial class UndergroundComplex
             return;
         }
 
+        // #724/#819 · CUT TO THE BUILDING'S OWN DOOR WIDTH, and the pocket's sides stand on the very same
+        // number. Both halves matter. A leaf narrower than DoorHalf fails #724's law — a captain a body-width
+        // off the cut, pressing only the axis through it, must still be taken through — on the one door in
+        // the building a captain reaches for when the car has stopped; and a mouth cut to a width the box
+        // either side of it does not share is #819's daylight, which the owner spotted at the goods car.
         double face = at.Y + CorridorHalf;
         double far = face + StairRecessDu;
-        walls.Add(new(at.X - ShaftHalf, face, at.X - ShaftHalf, far, true));
-        walls.Add(new(at.X + ShaftHalf, face, at.X + ShaftHalf, far, true));
-        walls.Add(new(at.X - ShaftHalf, far, at.X + ShaftHalf, far, true));
-        alcoveMouths.Add((face, at.X - ShaftHalf, at.X + ShaftHalf));
-        doorways.Add(new(at.X - ShaftHalf, face, at.X + ShaftHalf, face));
+        walls.Add(new(at.X - DoorHalf, face, at.X - DoorHalf, far, true));
+        walls.Add(new(at.X + DoorHalf, face, at.X + DoorHalf, far, true));
+        walls.Add(new(at.X - DoorHalf, far, at.X + DoorHalf, far, true));
+        alcoveMouths.Add((face, at.X - DoorHalf, at.X + DoorHalf));
+        doorways.Add(new(at.X - DoorHalf, face, at.X + DoorHalf, face));
 
         // On the corridor side, never over the leaf — #775 watched a captain stand squarely on top of a plate
         // centred on its own doorway, and a sign you have to step off to read is not signage.
         labels.Add(new(at.X, face - 2.0, StairSign));
-        claimed.Add((at.X - ShaftHalf - 1.5, face, at.X + ShaftHalf + 1.5, far + 1.5));
+        claimed.Add((at.X - DoorHalf - 1.5, face, at.X + DoorHalf + 1.5, far + 1.5));
     }
 }

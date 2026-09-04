@@ -216,8 +216,13 @@ public partial class Map
     /// <param name="via">#689 · The button that was pressed, when a button was pressed. A ride that goes
     /// through the card gate has a story to tell on arrival, and only the panel knows which trip that was —
     /// the dev floor cheat rides the same car and has no gate to cross.</param>
+    /// <param name="byStair">#719 · Whether this trip was made on the captain's own legs. Everything about
+    /// the arrival is the same — the shed's own floor spot, the net under it, the patrol cleared, the save —
+    /// except the one sentence that says a CAR did it. A stair narrated as a car would be the house bug class
+    /// on the loudest line in the feature, so the line is not said and the marker beside it names the beat
+    /// that is owed one.</param>
     private void RideTheLiftTo(
-        SurfaceExcursion ex, int level, UndergroundComplex.LiftStop? via = null)
+        SurfaceExcursion ex, int level, UndergroundComplex.LiftStop? via = null, bool byStair = false)
     {
         int fromLevel = ex.Floor;
         bool wasUnderground = ex.Floor < 0;
@@ -244,11 +249,22 @@ public partial class Map
             string carried = _satchel.Count > 0
                 ? $" You are carrying {_satchel.Count} thing{(_satchel.Count == 1 ? "" : "s")} out of it \u2014 \ud83c\udf92 I to look."
                 : "";
-            ShowPulseMessage("\ud83d\udec3 The car climbs for a long time and lets you out into somebody's idea of a " +
-                "maintenance shed. The moon is exactly as indifferent as you left it." + carried);
+            // FABLE: line needed \u2014 the climb out by STAIR, said once on arrival: a long flight in a hard
+            // suit, the lid from underneath, and what it cost. The car's line below may not be spent on it
+            // (it names a machine that did not carry you) and this crew does not author lines, so until that
+            // one exists the stair arrives in the suit's own voice \u2014 the tank is visibly shorter and SuitAir
+            // says the rest in its own words the moment a threshold is crossed.
+            if (!byStair)
+            {
+                ShowPulseMessage("\ud83d\udec3 The car climbs for a long time and lets you out into somebody's idea of a " +
+                    "maintenance shed. The moon is exactly as indifferent as you left it." + carried);
+            }
+
             // #681: and the placement LAST, so if the net has to catch anybody its line is the one left on
             // screen. A rescue nobody sees is a bug nobody reports.
-            StandCaptainAt(carX, carY, "the car lets you out into the shed on the surface");
+            StandCaptainAt(carX, carY, byStair
+                ? "the stair lets you out into the shed on the surface"
+                : "the car lets you out into the shed on the surface");
             // #804 · Nobody walks a round on the regolith. Cleared on the way out so a captain who surfaces
             // mid-challenge does not leave two people standing in a corridor that is no longer drawn.
             SpawnPatrolFor(ex);
