@@ -45,7 +45,22 @@ public static partial class UndergroundComplex
         // #775 · THE MEETING ROOMS in a landscape floor's core — the glass boxes off the open floor, and
         // nowhere else in the game. Appended and never inserted, for the reason every optional on this
         // record is appended: every caller of it builds it positionally.
-        IReadOnlyList<MeetingRoom>? Meetings = null)
+        IReadOnlyList<MeetingRoom>? Meetings = null,
+        // #775 · THE RING ITSELF, on the plan rather than inside the park's own record.
+        //
+        // It has lived in Park.Frontage since #813, which was true while a ring only ever existed on a
+        // floor with a garden in the middle of it — and that is precisely the conflation this issue undoes.
+        // Every consumer that wants the rooms (the seat verb, the cubicle lock, the renderer, the counter's
+        // own booking) was reaching for them THROUGH the park, so on a landscape floor they would each have
+        // found nothing and said nothing. Park.Frontage is untouched and still the park's own view of its
+        // frontage; this is the building's. Appended, same reason as every optional above.
+        IReadOnlyList<RingRoom>? Ring = null,
+        // #775 · EVERY GATE THROUGH THE RING — the crossings that arrive in the middle of the block, on
+        // whichever kind of floor it is. Park.Ways is the GARDEN'S view of this same list and stays exactly
+        // what it was; this is the building's, and it exists because a floor whose middle is a core of
+        // meeting rooms has the same six crossings and no park to publish them. Appended, same reason as
+        // every optional above.
+        IReadOnlyList<SurfaceLayout.Doorway>? Crossings = null)
     {
         /// <summary>#1063 · The preserved doorway on this floor, where this floor keeps one — which is the
         /// listed bottom of a filled ground and no other floor in the game.</summary>
@@ -54,6 +69,15 @@ public static partial class UndergroundComplex
         /// <summary>#775 · The meeting rooms in this floor's core, never null. Empty on every floor that is
         /// not a landscape floor, which is a true statement about them rather than a missing one.</summary>
         public IReadOnlyList<MeetingRoom> TheMeetingRooms => Meetings ?? [];
+
+        /// <summary>#775 · Every room on this floor's ring, never null — the block's own frontage, asked of
+        /// the FLOOR and not of the garden that used to be the only reason a floor had one. Empty on every
+        /// floor without a block, which is a true statement about them rather than a missing one.</summary>
+        public IReadOnlyList<RingRoom> TheRing => Ring ?? [];
+
+        /// <summary>#775 · Every gate through this floor's ring, never null. Empty on every floor without a
+        /// block, which is a true statement about them rather than a missing one.</summary>
+        public IReadOnlyList<SurfaceLayout.Doorway> TheCrossings => Crossings ?? [];
 
         /// <summary>#853 · The framed posters on this floor, never null. Empty on every floor that is not a
         /// laboratories floor, which is a true statement about them rather than a missing one.</summary>
@@ -422,6 +446,11 @@ public static partial class UndergroundComplex
         (int Rib, int Side)? hallSlot = null;
         var ring = new List<RingRoom>();
 
+        // #775 · …and the crossings through it, hoisted here so the plan can publish them on both kinds of
+        // floor. The park has published its own view of this list as Park.Ways since #759; a floor whose
+        // middle is a core of meeting rooms has the very same gates and nothing to publish them through.
+        var parkGates = new List<SurfaceLayout.Doorway>();
+
         // #775 · …and what stands in the middle of a block with no garden in it: the meeting rooms.
         var meetings = new List<MeetingRoom>();
 
@@ -503,9 +532,8 @@ public static partial class UndergroundComplex
                 // room's glass or a gate's stub, so the middle is what is LEFT when the block has been
                 // built rather than a box with openings cut in it afterwards. That was #813's law about a
                 // garden and it is the same law about a core of meeting rooms.
-                var parkGates = new List<SurfaceLayout.Doorway>();
                 ring = CarveRing(
-                    walls, glass, doorways, labels, claimed, ringSpineCuts, spineMouths, parkGates,
+                    walls, glass, doorways, labels, claimed, ringSpineCuts, spineMouths, parkGates, locked,
                     bodyId, level, block, hallSite is { } withHall ? withHall.Hall : null);
 
                 if (hallSite is { } theVenue)
@@ -728,6 +756,10 @@ public static partial class UndergroundComplex
         // The back of house is NOT in here — it goes in below, after both have chosen, for #801's reason.
         foreach (RingRoom room in ring)
         {
+            if (room.Shut)
+            {
+                continue;   // #775 · not a space a captain can stand in. See CarveRing's back band.
+            }
             if (room.Side != RingSide.Far)
             {
                 // #818 · …carrying the furniture #817 already stood in it. The suites were furnished at the
@@ -768,7 +800,7 @@ public static partial class UndergroundComplex
             // lead anywhere."
             foreach (RingRoom room in ring)
             {
-                if (room.Side == RingSide.Far)
+                if (room.Side == RingSide.Far && !room.Shut)
                 {
                     var back = new Room(
                         room.X0, room.Y0, room.X1, room.Y1, room.Plate, room.WaysOut, RoomKind.RingSuite,
@@ -935,7 +967,7 @@ public static partial class UndergroundComplex
 
         return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(bodyId, level),
             walls, doorways, locked, labels, centres, ribList, refuges, amenities, ensuites,
-            glass, park, bins, published, posters, board, specimen, meetings);
+            glass, park, bins, published, posters, board, specimen, meetings, ring, parkGates);
     }
 
     /// <summary>#585/#751 · How far a rib reaches off the spine, and where its mouth is. ONE function,

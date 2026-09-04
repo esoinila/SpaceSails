@@ -584,10 +584,25 @@ public sealed class TheHiveAmenitiesTests
             // (RingRoom.Doors, RingRoom.Gate, RingRoom.Furniture) and never off coordinates read from the
             // plan. Each ring room is ONE place, so the first street door is the one this sum already has;
             // everything past it is what is added here.
+            //
+            // #775 · …AND IT IS ASKED OF THE FLOOR AND NOT OF THE GARDEN. This read the ring out of
+            // Park.Frontage, which was the ring's only publisher while a ring only ever stood round a park.
+            // The landscape floors have a block with a core of meeting rooms in the middle of it instead, so
+            // the sum found no ring at all and the guard went red on 258 floors with the geometry perfectly
+            // correct — a guard reading a fact through the one thing that was about to stop being true of
+            // it. FloorPlan.TheRing is the building's own list and it is the same list on both kinds.
             int ringExtraDoors = 0;
-            foreach (UndergroundComplex.RingRoom room in
-                floor.Park is { } block ? block.Frontage : [])
+            foreach (UndergroundComplex.RingRoom room in floor.TheRing)
             {
+                // #775 · A SHUT ROOM IS NOT A PLACE AND HAS NO DOORWAY. A share of a landscape floor's back
+                // band does not open (the owner's illusion of scale, which the ordinary grid has always got
+                // for free from its locked chambers): its leaf is in floor.Locked, not in floor.Doorways,
+                // and the room is not in the pool. It is on neither side of this sum, which is exactly what
+                // a locked chamber has always been.
+                if (room.Shut)
+                {
+                    continue;
+                }
                 ringExtraDoors += room.Doors.Count - 1;
                 ringExtraDoors += room.Gate is null ? 0 : 1;
                 foreach (RingOffice.Fixture fitting in room.Furniture)
@@ -610,9 +625,26 @@ public sealed class TheHiveAmenitiesTests
                     ? 1
                     : 0;
 
+            // #775 · …AND EVERY MEETING ROOM IN THE CORE IS A PLACE WITH TWO DOORS. They are out of the
+            // pool for the reason the hall's cabinets are — they are the rooms a department books, not the
+            // rooms a canteen or a refuge may be carved out of — so neither of their leaves is in
+            // RoomCentres and both are counted here. Off the room's own published list and never off
+            // coordinates read from the plan, which is the correction this whole sum is made of.
+            int coreDoors = 0;
+            foreach (UndergroundComplex.MeetingRoom cell in floor.TheMeetingRooms)
+            {
+                coreDoors += cell.Ways.Count;
+            }
+
+            // #775 · …AND THE CROSSINGS ARE A PLACE ON BOTH KINDS OF BLOCK FLOOR. The gates through the
+            // ring arrive in the middle of it, and the middle is a place: a garden on the one floor that has
+            // one, an open core with a row of meeting rooms in it on every landscape floor. Read off the
+            // park where there is a park (its own view of the same list, unchanged since #759) and off the
+            // building's own list where there is not.
+            int crossings = floor.Park is { } green ? green.Ways.Count : floor.TheCrossings.Count;
+
             int places = floor.RoomCentres.Count + floor.Refuges.Count + floor.Amenities.Count
-                + extraHallDoors + ringExtraDoors + stairDoors
-                + (floor.Park is { } green ? green.Ways.Count : 0);
+                + extraHallDoors + ringExtraDoors + stairDoors + coreDoors + crossings;
             if (places != floor.Doorways.Count)
             {
                 return $"{floor.Doorways.Count} doors were cut and only {places} of them lead anywhere.";

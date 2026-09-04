@@ -185,9 +185,12 @@ public static class HiveInterior
         // Keyed on the leaf's own geometry so the doorway list and the cubicle list cannot come to two
         // different opinions about which hole in which partition this is.
         var shut = new HashSet<string>(StringComparer.Ordinal);
-        if (cubiclesShut is { Count: > 0 } && floor.Park is { } shutPark)
+        if (cubiclesShut is { Count: > 0 })
         {
-            foreach (UndergroundComplex.RingRoom suite in shutPark.Frontage)
+            // #775 · The floor's own ring, not the park's view of it — a landscape floor's big suites have
+            // service strips with cubicles in them too, and a lock that could only be found through a
+            // garden would be a lock that silently stopped working two floors down.
+            foreach (UndergroundComplex.RingRoom suite in floor.TheRing)
             {
                 foreach (RingOffice.Stall cell in suite.Cubicles)
                 {
@@ -676,116 +679,154 @@ public static class HiveInterior
             // offering things would be a park that had noticed you.
             labels.Add((
                 (float)green.FigureX, (float)(green.FigureY + 2.2), green.FigurePlate));
+        }
 
-            // ── #817 · THE SUITES, FURNISHED ──────────────────────────────────────────────────────────
+        // ── #817/#775 · THE SUITES, FURNISHED ─────────────────────────────────────────────────────
+        //
+        // Owner, standing in one of these on a bare deck: "It really needs tables … the cubicles etc
+        // chairs maybe tables etc. It is way too empty" / "in office people sit down".
+        //
+        // EVERY SOLID THING IN HERE IS ALREADY IN floor.Walls — Core laid the desks, the screens, the
+        // kitchenette and the cubicles as segments, so they were drawn and collided with by the loop at
+        // the top of this method, exactly as the park's raised beds and the en-suite's own pan are (the
+        // fixture idiom the owner named as the one interior in the building that reads right). What is
+        // left for a renderer is the STENCIL and the VERB, which is the whole of a renderer's business
+        // in a room somebody else furnished.
+        // #775 · …ASKED OF THE FLOOR AND NOT OF THE GARDEN. This walked green.Frontage, which was
+        // the ring's only publisher while a ring only ever stood round a park — and on a landscape
+        // floor (#775) that would have drawn a whole block of offices with no plate, no fill and no
+        // seat to press, silently, because the `if` above simply never opened. FloorPlan.TheRing is
+        // the building's own list and it is the same list on both kinds of floor.
+        foreach (UndergroundComplex.RingRoom suite in floor.TheRing)
+        {
+            // ── #770 · THE ONE ROOM ON THE FRONTAGE WITH A NAME AGAINST IT ────────────────────────
             //
-            // Owner, standing in one of these on a bare deck: "It really needs tables … the cubicles etc
-            // chairs maybe tables etc. It is way too empty" / "in office people sit down".
-            //
-            // EVERY SOLID THING IN HERE IS ALREADY IN floor.Walls — Core laid the desks, the screens, the
-            // kitchenette and the cubicles as segments, so they were drawn and collided with by the loop at
-            // the top of this method, exactly as the park's raised beds and the en-suite's own pan are (the
-            // fixture idiom the owner named as the one interior in the building that reads right). What is
-            // left for a renderer is the STENCIL and the VERB, which is the whole of a renderer's business
-            // in a room somebody else furnished.
-            foreach (UndergroundComplex.RingRoom suite in green.Frontage)
+            // The ring's plates are not otherwise stencilled on the plan — a block of forty-du suites
+            // with a caption on every one of them is a wall of text over a garden, and the plate is
+            // already told where it matters (the sit line names the room you sat down in). What IS drawn
+            // is the room somebody has PAID FOR, because that is a state and states go on the plan: the
+            // door reads BOOKED and which shift it is booked for, exactly as a cubicle's leaf reads
+            // OCCUPIED. Core owns the words (RoomBooking.Booking.Plate) and this composes nothing.
+            if (booked is { } mine
+                && RoomBooking.HoldsThisRoom(in mine, level, suite.Number, canteenWatch))
             {
-                // ── #770 · THE ONE ROOM ON THE FRONTAGE WITH A NAME AGAINST IT ────────────────────────
-                //
-                // The ring's plates are not otherwise stencilled on the plan — a block of forty-du suites
-                // with a caption on every one of them is a wall of text over a garden, and the plate is
-                // already told where it matters (the sit line names the room you sat down in). What IS drawn
-                // is the room somebody has PAID FOR, because that is a state and states go on the plan: the
-                // door reads BOOKED and which shift it is booked for, exactly as a cubicle's leaf reads
-                // OCCUPIED. Core owns the words (RoomBooking.Booking.Plate) and this composes nothing.
-                if (booked is { } mine
-                    && RoomBooking.HoldsThisRoom(in mine, level, suite.Number, canteenWatch))
+                labels.Add((
+                    (float)suite.Door.X1, (float)suite.Door.Y1, mine.Plate));
+            }
+
+            foreach (RingOffice.Fixture fitting in suite.Furniture)
+            {
+                if (fitting.Plate.Length > 0)
                 {
-                    labels.Add((
-                        (float)suite.Door.X1, (float)suite.Door.Y1, mine.Plate));
+                    labels.Add(((float)fitting.X, (float)fitting.Y, fitting.Plate));
                 }
 
-                foreach (RingOffice.Fixture fitting in suite.Furniture)
+                // #868 · …AND THE BOX ITSELF, FILLED. Owner, sitting in one of these on the back street:
+                // "The graphics kind of does not show there being a table" / "The bench is a line" —
+                // and, three paces away, "The Shelving is clear as furniture goes."
+                //
+                // The sentence above ("what is left for a renderer is the STENCIL and the VERB") was
+                // true of a floor whose only fixtures were rectangles: four wall segments round a dark
+                // gap DO read as a cupboard. It was never true of the back of house, whose bench was one
+                // degenerate box and therefore one stroke, and it was never true of anything at all,
+                // because an outline reads as a space you could stand in. So the deck is handed the
+                // published BOX and fills it — Core's own rectangle, never one measured here (§13.15).
+                Furnish(furniture, in fitting);
+            }
+
+            // #775 · A SHUT SUITE IS DRAWN AND NEVER PRESSED. Its wall onto the core is glass, so its
+            // desks are visible from the promenade and the fill above is the point of it — and its leaf
+            // does not open, so hanging a seat console inside would put an [E] on a chair no body can
+            // reach. Everything below this line is a verb; everything above it is a picture.
+            if (suite.Shut)
+            {
+                continue;
+            }
+
+            // The chairs take the SIT verb, on the seam the stools and the park benches already use:
+            // Core says where a seat is and this hangs a console on it. The plate carries the VERB
+            // (#783: "why not use words like SIT DOWN here if it means sitting down?").
+            foreach (RingOffice.Chair chair in suite.Seats)
+            {
+                consoles.Add(new(
+                    DeckPlan.ConsoleKind.HiveOfficeChair,
+                    (float)chair.X, (float)chair.Y, chair.DeckPlate));
+            }
+
+            // ── #821 · THE CUBICLES: A LEAF YOU PRESS, AND A SEAT INSIDE ──────────────────────────
+            //
+            // Owner, standing in the park: "we might want to hide from guards in one toilet cubicle we
+            // lock from inside :-D"
+            //
+            // TWO consoles per cell and deliberately not one, because they are two verbs and the room
+            // separates them: the LEAF is at the opening and the SEAT is at the pan, three du apart —
+            // which is exactly DeckPlan.InteractRadius, so a captain at the door presses the door and a
+            // captain at the pan presses the pan. A single console that meant "lock" or "sit down"
+            // depending on which half of a six-du box you stood in would be one key doing two things
+            // with no way for the plate to say which.
+            //
+            // The leaf's plate is the STATE (CubicleLock.PlateFor): a washroom door says VACANT or
+            // OCCUPIED, and that is the whole of what a guard walking past this room can read.
+            foreach (RingOffice.Stall cell in suite.Cubicles)
+            {
+                bool over = cubiclesShut is not null
+                    && cubiclesShut.Contains(CubicleKey(level, in cell));
+
+                consoles.Add(new(
+                    DeckPlan.ConsoleKind.HiveCubicle,
+                    (float)cell.DoorX, (float)cell.DoorY, CubicleLock.PlateFor(over)));
+
+                // The seat takes the OFFICE CHAIR's verb, on the same seam and with the same snap
+                // (#820): Core says where the seat is and this hangs the press on it. The plate is the
+                // cell's own, so a captain reads which cubicle they are stepping into rather than
+                // "AN OFFICE CHAIR" in a WC.
+                consoles.Add(new(
+                    DeckPlan.ConsoleKind.HiveOfficeChair,
+                    (float)cell.SeatX, (float)cell.SeatY, cell.Plate));
+            }
+
+            // ── #821 · AND THE BASIN RUN, AS ONE FIXTURE THE LENGTH OF ITSELF ─────────────────────
+            //
+            // #791's E-bus, borrowed whole: the run is one console with a LENGTH on it rather than a tap
+            // per basin, for the reason the bar desk is — four [E] dots in a row all opening the same
+            // beat would be three pieces of furniture pretending to be a choice. The run is taken off
+            // the published taps, so nothing here measures a length of porcelain.
+            //
+            // #827 · …as the two END TAPS rather than a half-span about their midpoint, which is what a
+            // run became when the counter's plate stopped standing at the middle of its own desk. Here
+            // the two are the same segment either way; there it is the whole issue.
+            if (suite.Basins.Count > 0)
+            {
+                RingOffice.Basin first = suite.Basins[0], last = suite.Basins[^1];
+                consoles.Add(new(
+                    DeckPlan.ConsoleKind.HiveBasin,
+                    (float)((first.X + last.X) / 2.0), (float)((first.Y + last.Y) / 2.0),
+                    RingOffice.BasinRunPlate,
+                    Run: ((float)first.X, (float)first.Y, (float)last.X, (float)last.Y)));
+            }
+        }
+
+        // ── #775 · THE MEETING ROOMS IN THE CORE ──────────────────────────────────────────────────────
+        //
+        // Owner: "lots of meeting rooms — glass-box rooms off the open floor", and they take the ring's own
+        // two lines because they are the ring's own furniture: every solid thing in one is already in
+        // floor.Walls (Core laid the table), so what is left for a renderer is the FILL, the STENCIL and the
+        // VERB. The chairs take the universal seat verb (#757/#820) on the same seam a suite's do.
+        foreach (UndergroundComplex.MeetingRoom cell in floor.TheMeetingRooms)
+        {
+            foreach (RingOffice.Fixture fitting in cell.Furniture)
+            {
+                if (fitting.Plate.Length > 0)
                 {
-                    if (fitting.Plate.Length > 0)
-                    {
-                        labels.Add(((float)fitting.X, (float)fitting.Y, fitting.Plate));
-                    }
-
-                    // #868 · …AND THE BOX ITSELF, FILLED. Owner, sitting in one of these on the back street:
-                    // "The graphics kind of does not show there being a table" / "The bench is a line" —
-                    // and, three paces away, "The Shelving is clear as furniture goes."
-                    //
-                    // The sentence above ("what is left for a renderer is the STENCIL and the VERB") was
-                    // true of a floor whose only fixtures were rectangles: four wall segments round a dark
-                    // gap DO read as a cupboard. It was never true of the back of house, whose bench was one
-                    // degenerate box and therefore one stroke, and it was never true of anything at all,
-                    // because an outline reads as a space you could stand in. So the deck is handed the
-                    // published BOX and fills it — Core's own rectangle, never one measured here (§13.15).
-                    Furnish(furniture, in fitting);
+                    labels.Add(((float)fitting.X, (float)fitting.Y, fitting.Plate));
                 }
-
-                // The chairs take the SIT verb, on the seam the stools and the park benches already use:
-                // Core says where a seat is and this hangs a console on it. The plate carries the VERB
-                // (#783: "why not use words like SIT DOWN here if it means sitting down?").
-                foreach (RingOffice.Chair chair in suite.Seats)
-                {
-                    consoles.Add(new(
-                        DeckPlan.ConsoleKind.HiveOfficeChair,
-                        (float)chair.X, (float)chair.Y, chair.DeckPlate));
-                }
-
-                // ── #821 · THE CUBICLES: A LEAF YOU PRESS, AND A SEAT INSIDE ──────────────────────────
-                //
-                // Owner, standing in the park: "we might want to hide from guards in one toilet cubicle we
-                // lock from inside :-D"
-                //
-                // TWO consoles per cell and deliberately not one, because they are two verbs and the room
-                // separates them: the LEAF is at the opening and the SEAT is at the pan, three du apart —
-                // which is exactly DeckPlan.InteractRadius, so a captain at the door presses the door and a
-                // captain at the pan presses the pan. A single console that meant "lock" or "sit down"
-                // depending on which half of a six-du box you stood in would be one key doing two things
-                // with no way for the plate to say which.
-                //
-                // The leaf's plate is the STATE (CubicleLock.PlateFor): a washroom door says VACANT or
-                // OCCUPIED, and that is the whole of what a guard walking past this room can read.
-                foreach (RingOffice.Stall cell in suite.Cubicles)
-                {
-                    bool over = cubiclesShut is not null
-                        && cubiclesShut.Contains(CubicleKey(level, in cell));
-
-                    consoles.Add(new(
-                        DeckPlan.ConsoleKind.HiveCubicle,
-                        (float)cell.DoorX, (float)cell.DoorY, CubicleLock.PlateFor(over)));
-
-                    // The seat takes the OFFICE CHAIR's verb, on the same seam and with the same snap
-                    // (#820): Core says where the seat is and this hangs the press on it. The plate is the
-                    // cell's own, so a captain reads which cubicle they are stepping into rather than
-                    // "AN OFFICE CHAIR" in a WC.
-                    consoles.Add(new(
-                        DeckPlan.ConsoleKind.HiveOfficeChair,
-                        (float)cell.SeatX, (float)cell.SeatY, cell.Plate));
-                }
-
-                // ── #821 · AND THE BASIN RUN, AS ONE FIXTURE THE LENGTH OF ITSELF ─────────────────────
-                //
-                // #791's E-bus, borrowed whole: the run is one console with a LENGTH on it rather than a tap
-                // per basin, for the reason the bar desk is — four [E] dots in a row all opening the same
-                // beat would be three pieces of furniture pretending to be a choice. The run is taken off
-                // the published taps, so nothing here measures a length of porcelain.
-                //
-                // #827 · …as the two END TAPS rather than a half-span about their midpoint, which is what a
-                // run became when the counter's plate stopped standing at the middle of its own desk. Here
-                // the two are the same segment either way; there it is the whole issue.
-                if (suite.Basins.Count > 0)
-                {
-                    RingOffice.Basin first = suite.Basins[0], last = suite.Basins[^1];
-                    consoles.Add(new(
-                        DeckPlan.ConsoleKind.HiveBasin,
-                        (float)((first.X + last.X) / 2.0), (float)((first.Y + last.Y) / 2.0),
-                        RingOffice.BasinRunPlate,
-                        Run: ((float)first.X, (float)first.Y, (float)last.X, (float)last.Y)));
-                }
+                Furnish(furniture, in fitting);
+            }
+            foreach (RingOffice.Chair chair in cell.Seats)
+            {
+                consoles.Add(new(
+                    DeckPlan.ConsoleKind.HiveOfficeChair,
+                    (float)chair.X, (float)chair.Y, chair.DeckPlate));
             }
         }
 

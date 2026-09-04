@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
@@ -64,10 +64,15 @@ public partial class Map
             //
             // Asked BEFORE the ring, because a chamber exists on every floor in the game and the park exists on
             // one: a floor with no block would otherwise return before this loop ever ran.
+            // #775 · …AND SO DOES A CHAIR AT A MEETING-ROOM TABLE, for the same reason and on the same seam.
+            // The glass boxes in a landscape floor's core are published as rooms with seats in them
+            // (RoomKind.MeetingRoom), and the owner's ask was that they be "enterable with the universal seat
+            // verb" — which they are, by being in this loop rather than by growing one of their own.
             for (int r = 0; r < floor.TheRooms.Count; r++)
             {
                 UndergroundComplex.Room room = floor.TheRooms[r];
-                if (room.Kind != UndergroundComplex.RoomKind.Chamber)
+                if (room.Kind is not (UndergroundComplex.RoomKind.Chamber
+                    or UndergroundComplex.RoomKind.MeetingRoom))
                 {
                     continue;
                 }
@@ -84,13 +89,16 @@ public partial class Map
                 }
             }
 
-            if (floor.Park is not { } green)
+            // #775 · The FLOOR's own ring and not the park's view of it. This asked the garden for the
+            // rooms, which was the ring's only publisher while a ring only ever stood round one — so on a
+            // landscape floor every desk in the building would have been a chair with no [E] on it, and the
+            // one beat this issue is about would have shipped un-sittable.
+            foreach (UndergroundComplex.RingRoom room in floor.TheRing)
             {
-                return false;
-            }
-
-            foreach (UndergroundComplex.RingRoom room in green.Frontage)
-            {
+                if (room.Shut)
+                {
+                    continue;   // nobody is sitting in a room whose own leaf does not open
+                }
                 foreach (RingOffice.Chair chair in room.Seats)
                 {
                     if (Math.Abs(chair.X - spot.X) >= SameChairDu
