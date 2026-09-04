@@ -14,7 +14,23 @@ public static partial class RingOffice
     /// <para>Everything is laid in the room's own u/v grid and mapped out at the end, so nothing below knows
     /// or cares which of the park's four walls this room is one of.</para>
     /// </summary>
-    public static Furnishing Fit(in UndergroundComplex.RingRoom room)
+    public static Furnishing Fit(in UndergroundComplex.RingRoom room) =>
+        Fit(in room, DressingFor(in room));
+
+    /// <summary>
+    /// #775 · FURNISH ONE ROOM AS SOMETHING ITS PLATE DOES NOT SAY — the same placer, handed the dressing.
+    ///
+    /// <para><see cref="DressingFor"/> reads a room's PLATE, because on the ring round the park the plate is
+    /// the only thing that says what a room is for, and that stays the answer for every room the ring cuts.
+    /// The landscape floors have two rooms it cannot answer for: a meeting room in the block's core, whose
+    /// plate comes out of the floor's own department register and says nothing about tables, and a
+    /// laboratory suite, which is a room of desks with a run of benches down one pier and has no plate
+    /// anywhere in this building either. Both are decided by the CARVE — it knows it is laying a core, and
+    /// it knows what department it is standing on — so the carve SAYS so, rather than encoding the answer in
+    /// a string and reading it back out. One fact told twice is the table at the top of this repo's
+    /// spec.</para>
+    /// </summary>
+    public static Furnishing Fit(in UndergroundComplex.RingRoom room, Dressing dressing)
     {
         var frame = new Frame(in room);
         double uA = frame.ULo + PierClearDu, uB = frame.UHi - PierClearDu;
@@ -51,8 +67,34 @@ public static partial class RingOffice
             ServiceStrip(lay, in room, uB - StripDu, uB, vA, vB);
         }
 
-        switch (DressingFor(in room))
+        switch (dressing)
         {
+            // #775 · THE LABORATORY SUITE — the owner's second beat, drawn: <i>"benches with instruments
+            // beside desk banks"</i>. It is the READING ROOM's own sentence with the shelving swapped for a
+            // run of bench: a band down the near pier, a gangway, and then the desks. The bench is the
+            // building's existing fixture and wears the building's existing plate — a laboratory floor's
+            // chambers have carried both since #818, and a second vocabulary for the same length of worktop
+            // would be two answers to what a bench is.
+            case Dressing.LabHall:
+                double run = uA + BenchDepthDu;
+                if (lay.Box(
+                        Fitting.LabBench, uA, vA, run, vB, ChamberFitting.BenchPlate, Seating.OneSide))
+                {
+                    // …and the stools at it, facing BACK ALONG THE FRONTAGE at the bench they belong to —
+                    // off the published axis and never a rotation of the glass normal, which is the one-line
+                    // sign fault #868 found on the east band twice already. A run of glassware nobody can
+                    // sit at is the very lie #818 was opened about.
+                    (double ax, double ay) = lay.Frame.AlongTheFrontage;
+                    int stools = Math.Max(1, (int)((vB - vA) / SeatPitchDu));
+                    for (int s = 0; s < stools; s++)
+                    {
+                        lay.Chair(
+                            in room, run + SeatClearDu, vA + ((vB - vA) * (s + 0.5) / stools), (-ax, -ay));
+                    }
+                }
+                Banks(lay, in room, run + GangwayDu, workUB, vA, vB);
+                break;
+
             case Dressing.Washroom:
                 Washroom(lay, in room, uA, uB, vA, vB);
                 break;
