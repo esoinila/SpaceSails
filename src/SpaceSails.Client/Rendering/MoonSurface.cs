@@ -408,8 +408,8 @@ public static class MoonSurface
     // only the dictionary itself needed protecting.
     //
     // #1112 · BOUNDED, and now bounded by a policy rather than by four lines up in SurfaceDeck: the cap and
-    // the flush that were written here are BoundedMemo's, which HavenInterior's twin memo holds too. It had
-    // no cap at all until this issue, which is what a rule living in one call site and not in a type costs.
+    // the flush that were written here are BoundedMemo's, which HavenInterior's twin memo holds too. THAT one
+    // had no cap at all until this issue — which is what a rule kept in a call site instead of a type costs.
     private static readonly BoundedMemo<SurfaceDeckKey, Layout> _layoutCache = new(BoundedMemo.DefaultCap);
 
     /// <summary>#1112 · The layout memo, for the guard that holds it to its cap. Test-visible only.</summary>
