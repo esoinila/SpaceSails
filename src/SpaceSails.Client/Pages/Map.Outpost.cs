@@ -165,13 +165,15 @@ public partial class Map
         if (ch.Progress >= 1.0)
         {
             ex.OutpostDoorChannel = null;
-            ForceOutpostHatch(ex);
+            // #584 · The channel's anchor IS the hatch — the console the captain has had their hands on for
+            // five seconds. Read before the channel is dropped, so the ground that joins has a mouth to name.
+            ForceOutpostHatch(ex, ch.AnchorX, ch.AnchorY);
         }
     }
 
     /// <summary>The hatch gives and the hut joins the live plan — walls, landmark and what is still worth
     /// pressing. The map grew, so the #563 card fires here too if this is the captain's first time.</summary>
-    private void ForceOutpostHatch(SurfaceExcursion ex)
+    private void ForceOutpostHatch(SurfaceExcursion ex, double hatchX, double hatchY)
     {
         if (ex.OutpostDoorTile is not { } tile)
         {
@@ -196,8 +198,9 @@ public partial class Map
         ShowPulseMessage(SurfaceOutpost.ForcedLine(cover));
 
         // The ground just grew. On an ordinary moon this is now the FIRST way that can ever happen to a
-        // captain, so the card that explains it belongs here more than anywhere.
-        ShowGroundGrewCardOnce();
+        // captain, so the card that explains it belongs here more than anywhere — and #584's WHERE with it,
+        // through the one writer: the hatch that gave is the mouth of the room that arrived.
+        TheGroundJustGrew(ex, hatchX, hatchY);
         RequestVaultSave();
     }
 

@@ -43,6 +43,14 @@
                           DismissClass="btn btn-light convergence-close" DismissFace="@GroundGrows.Dismiss"
                           OnClose="() => Dismiss(CloseGroundGrew)">
                 <div class="convergence-stamp">@GroundGrows.Stamp</div>
+                @* #584 · …AND WHERE. Directly under the stamp, dressed as a plate rather than as prose,
+                   because it is not a sentence: it is the floor's own label, the compass the SDR kit
+                   answers in, and the range the fan quotes, composed by GroundGrows.Where. Empty only on a
+                   bench that raised the card without a place — the page always has one. *@
+                @if (!string.IsNullOrEmpty(_groundGrewWhere))
+                {
+                    <div class="ground-grows-where">@_groundGrewWhere</div>
+                }
                 <img class="ground-grows-art" src="@GroundGrows.ArtFile" alt=""
                      onerror="this.style.display='none'" />
                 <div class="convergence-head">@GroundGrows.Head</div>
@@ -70,6 +78,11 @@
 
     [Parameter] public Action CloseGroundGrew { get; set; } = default!;
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+
+    // #584 · WHERE the ground grew, composed by GroundGrows.Where out of the floor's own plate, the SDR
+    // compass and the fan's own "N du". It keeps the page field's own name, underscore and all, per the
+    // note above — this surface renders the page's member, it does not own a second copy of the fact.
+    [Parameter] public string _groundGrewWhere { get; set; } = "";
 
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

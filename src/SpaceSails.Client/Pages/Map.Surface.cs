@@ -195,6 +195,13 @@ public partial class Map
     private bool _groundGrewSeen;
     private bool _groundGrewOpen;
 
+    // #584 · …and WHERE it grew, which the card never said. Composed by GroundGrows.Where out of the floor's
+    // own plate, the SDR compass and the fan's own "N du" — no sentence of its own — and set by the one
+    // writer every reveal goes through (TheGroundJustGrew). Transient like the OPEN bit: it describes a spot
+    // relative to where the captain was standing at the moment the door gave, so it has no business
+    // outliving the card that quotes it.
+    private string _groundGrewWhere = "";
+
     // #562 · the tube-feeds-you card, same shape again. Fires the first time the ship racks a magazine while
     // the captain stands in her down-tube — the card that teaches the supply line, not the feature.
     private bool _tubeRearmSeen;

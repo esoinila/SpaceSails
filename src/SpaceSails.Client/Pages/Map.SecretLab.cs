@@ -339,7 +339,12 @@ public partial class Map
         // the room, and the card is a mechanics lesson about the map growing. Different jobs, so the card
         // rides on top the first time rather than replacing anything. (It may well be a captain's first
         // expansion ever: the lab is the ONLY way an ordinary moon can grow at all today.)
-        ShowGroundGrewCardOnce();
+        //
+        // #584 · Through the ONE writer, with the same spot the two lines above already used: the placement's
+        // own door, which is where AppendSecretLabGeometry grew the chamber from and where the hidden-door
+        // console stood until this line took it off the plan. So the card's plate and the fan's ring name the
+        // ground that actually appended, and not a second opinion about where the lab is.
+        TheGroundJustGrew(ex, placement.DoorX, placement.DoorY);
     }
 
     /// <summary>The small nerve chill of crossing into the lab (owner: "entering the lab … is a nerve hit").

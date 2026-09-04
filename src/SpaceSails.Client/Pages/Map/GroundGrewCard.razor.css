@@ -38,3 +38,20 @@
 .ground-grows-beats li + li {
     margin-top: 0.55rem;
 }
+
+/* #584 · WHERE THE GROUND GREW — a plate, not a sentence.
+
+   It is set in the monospace the instruments already speak in, because every one of its three tokens comes
+   off an instrument or a wall: the floor's own stencil, the SDR kit's compass, the fan's "N du". Prose face
+   would have dressed a readout as narration, which is the one thing this line must not be — the captain is
+   meant to read it the way they read the tracker's own caption and then walk.
+
+   Under the stamp and above the art, so a captain who dismisses the card in one second has still had the
+   answer in the same glance as the headline. Same ink as the card's own border family. */
+.ground-grows-where {
+    margin: 0.15rem 0 0.35rem;
+    color: rgba(150, 235, 205, 0.92);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+}

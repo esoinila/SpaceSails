@@ -10,7 +10,15 @@ public partial class Map
     // ── #573 · THE SHELTER'S CHARGING RACK [E]. The only place outside her tube that refills a suit, and
     //    therefore the only reason the deep field is worth crossing rather than merely looking at. ──
     /// <summary>#573 · The fixed places the fan should point at: the way home, and every shelter. Bearings
-    /// and ranges from the captain, so the tracker answers "which way" for somewhere that does not move.</summary>
+    /// and ranges from the captain, so the tracker answers "which way" for somewhere that does not move.
+    ///
+    /// <para><b>What the three flags mean, because one of them is not named for what it draws.</b>
+    /// <c>IsHome</c> is the way back — the ship's tube, or the lift cars underground. <c>IsDead</c> is a
+    /// place that is on the plan and is not answering. <c>IsLab</c> is neither: it is the ring in the
+    /// IMPORTED VIOLET a door itself wears (#592) and it means <i>a way in that somebody made</i> — the lift
+    /// head when the hidden door is known (#585), and, since #584, the mouth of any ground that has JOINED
+    /// THE PLAN this excursion. Both are the same claim and the same ink, which is why they share the flag
+    /// rather than growing a fourth colour nobody could tell from the other three.</para></summary>
     private List<(double Bearing, double Range, bool IsHome, bool IsLab, bool IsDead)> BuildBeacons(
         SurfaceExcursion ex)
     {
@@ -24,6 +32,32 @@ public partial class Map
         {
             double dx = x - _avatarX, dy = y - _avatarY;
             list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), home, lab, dead));
+        }
+
+        // ── #584 · AND THE GROUND THAT JUST GREW, FOR THE REST OF THE EXCURSION ────────────────────────
+        //
+        // Owner, after forcing a door: "I was left totally un-aware about what that did and where?"
+        //
+        // The card names the place once. This is what keeps answering after it is dismissed, and it is the
+        // half that makes the notification ACTIONABLE — a chamber is appended at a seeded spot that is
+        // routinely off the current view, so a captain who read the card, closed it and turned round had
+        // nothing left to walk toward. The instrument they are already watching has it now.
+        //
+        // ONLY THIS FLOOR'S. A room forced on B2 is not a place on B3, and a beacon that ignored the floor
+        // would be the map lying (#573) in the register this fan has already been burned by twice — #591's
+        // surface huts painted underground, #608's shelters painted on a dead floor.
+        //
+        // It is called from both branches below rather than once at the end, because the underground branch
+        // returns early and a captain who forces a door down there is the captain who most needs the ring.
+        void AddNewGround()
+        {
+            foreach ((double gx, double gy, int floor) in ex.NewGround)
+            {
+                if (floor == ex.Floor)
+                {
+                    Add(gx, gy, home: false, lab: true);
+                }
+            }
         }
 
         // ── #591 · UNDERGROUND, THE BEACONS ARE DIFFERENT PLACES ──
@@ -111,6 +145,7 @@ public partial class Map
             {
                 Add(rx, ry, home: false, dead: failed);
             }
+            AddNewGround();   // #584
             return list;
         }
 
@@ -190,6 +225,7 @@ public partial class Map
             Add(headX, headY, home: false, lab: true);
         }
 
+        AddNewGround();   // #584
         return list;
     }
 

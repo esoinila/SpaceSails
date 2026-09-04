@@ -1252,7 +1252,8 @@
 
     @if (_groundGrewOpen)
     {
-        <GroundGrewCard CloseGroundGrew="@CloseGroundGrew" Dismiss="@Dismiss" />
+        <GroundGrewCard CloseGroundGrew="@CloseGroundGrew" Dismiss="@Dismiss"
+                        _groundGrewWhere="@_groundGrewWhere" />
     }
 
     @if (_tubeRearmOpen)

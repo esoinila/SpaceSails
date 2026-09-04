@@ -55,4 +55,42 @@ public static class GroundGrows
     /// <summary>The line under the button: where the rule keeps being stated once the card is gone.</summary>
     public const string Foot =
         "Sealed ways read as consoles on the plan. Stand at one and hold E — stepping away lets it close again.";
+
+    // ── #584 · AND WHERE ────────────────────────────────────────────────────────────────────────────────
+    //
+    // Owner, mid-tour of the rebuilt grounds: "I got like one 'you expanded the map' notification in one map
+    // but I was left totally un-aware about what that did and where?"
+    //
+    // The card above answers WHAT, at length, and has since #563. It has never answered WHERE — and the
+    // ground it announces is laid at a seeded spot that is routinely off the current view, so the most
+    // distinctive thing this game does was announced by a card telling a captain to go and look at something
+    // without saying which way to walk. A notification that cannot be acted on is worse than silence,
+    // because the player now knows they have missed something.
+    //
+    // THE ANSWER IS NOT A NEW SENTENCE. Every word below is already in the game, said by the instrument or
+    // the wall that owns it:
+    //
+    //   * the FLOOR is the building's own plate, read through WalletChoice.FloorTag — "SURFACE" out on the
+    //     regolith, "B2" once the ground that grew is underground. Read, never re-derived: a building that
+    //     renames its floors renames this too;
+    //   * the BEARING is SdrScanner's four-word compass, the one the SDR kit already answers a captain in.
+    //     Its two long words are FIELD words — the landing band and the deep field are surface geography the
+    //     block downstairs borrowed (SurfaceLayout.Field owns both, above ground and below) — so the compass
+    //     is honest on the regolith as well as in a corridor;
+    //   * the RANGE is the fan's own "N du", the format MotionTracker.Readout has quoted a captain since
+    //     #338. The guard holds it to that BY SUBSTRING against the fan's own line, so a unit invented here
+    //     goes red instead of quietly becoming a second way this game says how far.
+    //
+    // Which leaves this function nothing of its own to say, and that is the whole point: it is punctuation
+    // around three tokens somebody else owns. The instrument answers the rest — #584's other half puts a
+    // ring on the new ground for the remainder of the excursion, so the card NAMES it and the fan POINTS at
+    // it, which is the difference between being told and being able to act.
+
+    /// <summary>#584 · WHERE the ground grew, in the plate idiom the game already uses for a place: the
+    /// floor's own plate, the bearing from the captain, and the range the fan would quote — composed, never
+    /// typed. <paramref name="dx"/>/<paramref name="dy"/> are the mouth of the new ground MINUS the captain,
+    /// in the field's own coordinates.</summary>
+    public static string Where(string bodyId, int level, double dx, double dy) =>
+        $"{WalletChoice.FloorTag(bodyId, level)} · {SdrScanner.BearingFrom(dx, dy)} — " +
+        $"{Math.Sqrt((dx * dx) + (dy * dy)):F0} du";
 }
