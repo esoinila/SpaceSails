@@ -19,10 +19,18 @@
  */
 
 /* Full-screen desk container (rule 1: the desk's own topic owns the screen). Sensors dims the
-   live map through behind it (rule 4); every other desk goes near-opaque. */
+   live map through behind it (rule 4); every other desk goes near-opaque.
+
+   #236 · IN FLOW, NOT ANCHORED. This was `position: absolute; inset: 0` with a hand-tuned
+   `padding-top` standing in for the masthead's height. It is the flow column's own child now
+   (Map.razor), so it BEGINS where .map-topstack ends and there is no height to write down: a banner
+   that grows to three rows with an alert strip under it pushes the desk, exactly as it already
+   pushes the Nav HUD (#195/#992). `min-height: 0` is the flex idiom that lets .desk-content's own
+   overflow scroll instead of the layer growing past the window. */
 .desk-layer {
-    position: absolute;
-    inset: 0;
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
     z-index: calc(var(--z-map-chrome) + 5);
     background: rgba(6, 9, 15, 0.92);
     pointer-events: auto;
@@ -38,9 +46,27 @@
     box-sizing: border-box;
 }
 
+/* #236 · THE SCRIM CARRIES ON OVER THE BAND. The layer stopped covering the whole window the moment
+   it joined the flow, and the near-opaque ground under the masthead went with it — the tabs and the
+   banner would have stood on the live starfield instead of on the desk's own dark plate, which is a
+   pixel move this lane has no business making. So the layer paints its ground UPWARD out of its own
+   top edge: full width, a viewport tall, `background: inherit` so the dimmed desks (Sensors, War
+   Room) dim it exactly as they dim the layer. It is part of the layer's own box at z-index
+   chrome+5, so .map-topstack (chrome+14) still paints over it, as it always did. */
+.desk-layer::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: 100vh;
+    background: inherit;
+}
+
 /* #127: the desk tab bar + pilot-in-command banner own the top-center strip, and the 🗺 Layers /
-   find-a-target pair owns the top-left one. EVERY desk is anchored below both — aligned to the top
-   with --desk-top-clearance reserved above it — so a desk's own first row (the Captain's
+   find-a-target pair owns the top-left one. EVERY desk is anchored below both — the first because
+   the desk FLOWS under the band (#236), the second because the band's own `min-height` is the
+   floating strip's `top` plus its height (Map.razor.css) — so a desk's own first row (the Captain's
    Orders/Status/Tutorials/Ledger toggle, the Sensors desk's "Tracking post 📡" header) is never
    hidden behind the chrome.
 
@@ -49,14 +75,18 @@
    .tracking-post-desk and .war-room-desk are `height: 100%` inside .desk-content, so their card
    headers start wherever the layer starts — which was the top of the screen, under the two floating
    controls. Excusing a desk from the clearance is what buried the title; the exemption is gone and
-   the two passthrough desks obey the same law as the other six. */
+   the two passthrough desks obey the same law as the other six.
+
+   #236 · `stretch` rather than `flex-start`: the layer's height is now exactly what the flow left it,
+   so the desk fills it instead of being told a viewport-relative number that had the chrome subtracted
+   out of it by hand. */
 .desk-layer {
-    align-items: flex-start;
-    padding-top: var(--desk-top-clearance);
+    align-items: stretch;
+    padding-top: 0;
 }
 
 .desk-layer .desk-content {
-    height: calc(100vh - var(--desk-top-clearance) - 2rem);
+    height: auto;
 }
 
 .desk-layer-dimmed {

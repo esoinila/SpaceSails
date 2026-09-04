@@ -934,6 +934,122 @@
             Undock="@Undock" UseAncientsPilot="@UseAncientsPilot" Warp="@Warp" WarpReadout="@WarpReadout"
             WarpSliderValue="@WarpSliderValue" OnZoomStep="@((bool zoomIn) => ZoomStep(zoomIn))" />
     }
+    @* #236 · THE DESKS JOIN THE FLOW COLUMN — the whole of this lane, in one move.
+
+       A full-screen desk used to be `position: absolute; inset: 0` with `padding-top:
+       --desk-top-clearance`, a hand-tuned 8.25rem that stood for "how tall can the masthead above me
+       get?". It was tuned twice (5.75rem for the one-row banner, then 8.25rem when the #190 voice grew
+       the banner to three rows and slid every desk's own first row underneath it) and it was a guess
+       both times — the owner's rule (#236, 2026-07-17) is that the banner's real estate is a no-button
+       zone on EVERY screen, and a guess cannot keep that promise.
+
+       So the desks stop guessing and start FLOWING. .map-flowcolumn is already the window-tall column
+       #992 built for the top stack and the Nav HUD; a desk is the same kind of thing — a box that must
+       begin exactly where the masthead ends — so it becomes the column's next child instead of a
+       stranger anchored to the page with a number. A three-row banner with an alert strip under it now
+       PUSHES the desk down by construction; there is nothing left to keep in sync, because there is no
+       longer a second place the height is written.
+
+       Never mind the pointer-events note below: .desk-layer already declares its own `pointer-events:
+       auto` (it is the desk's shield), so it re-enables its clicks inside the column exactly as
+       .map-topstack and .map-hud do. And the scrim it paints over the whole window is unchanged —
+       .desk-layer::before carries it up over the band, so the masthead still stands on the desk's own
+       dark ground rather than on the live map (DeskPanels.razor.css).
+
+       WHY HERE AND NOT AT THE BOTTOM OF THE COLUMN. A desk stands where .map-hud stands — the greedy
+       middle, `flex: 1 1 auto` — and the story plate below it has to stay the column's LAST item, which
+       is the whole of #994 item 2: the plate lands on the pixels it always landed on precisely because
+       the flow hands it its own height at the FOOT. The first cut of this move put the desks after it
+       and the plate was squeezed to the top of the column instead — measured at 1280×720, the Captain
+       desk's own first row slid from y 140 to y 168 and the plate's ✕ appeared at y 120, in the band. *@
+
+    <SensorsDeskLayer _activeDesk="@_activeDesk" _activeRadar="@_activeRadar"
+                      _courseOpportunities="@_courseOpportunities" _ephemeris="@_ephemeris" _ship="@_ship"
+                      _telescopeLevel="@_telescopeLevel" _trackingPostValue="@_trackingPost" _trackingPostSet="@(v => _trackingPost = v)"
+                      _transponderMode="@_transponderMode" CenterShipOnMap="@CenterShipOnMap"
+                      OnAreaScanCovered="@OnAreaScanCovered" SetActiveRadar="@SetActiveRadar"
+                      SetInterestTarget="@SetInterestTarget" SetTransponder="@SetTransponder" SimTime="@SimTime"
+                      SwitchDeskFromClick="@SwitchDeskFromClick" TrackingCandidates="@TrackingCandidates"
+                      ZoomSensorsBackdrop="@ZoomSensorsBackdrop" />
+    @if (_activeDesk is ShipDesk.WarRoom or ShipDesk.Trade or ShipDesk.Comms or ShipDesk.Captain)
+    {
+        <DeskPanels _activeDesk="@_activeDesk" _activeThreadId="@_activeThreadId" _caches="@_caches"
+                    _captainTabValue="@_captainTab" _captainTabSet="@(v => _captainTab = v)" _cargoUnits="@_cargoUnits" _cargoValue="@_cargoValue"
+                    _commsActionMessage="@_commsActionMessage" _commsHailAnswer="@_commsHailAnswer"
+                    _commsSelectedIdValue="@_commsSelectedId" _commsSelectedIdSet="@(v => _commsSelectedId = v)" _crashNoteCopied="@_crashNoteCopied" _creditsValue="@_credits" _creditsSet="@(v => _credits = v)"
+                    _dcNextActionCleared="@_dcNextActionCleared" _dcStandingOrder="@_dcStandingOrder"
+                    _dockBodyId="@_dockBodyId" _docked="@_docked" _dockedHavenId="@_dockedHavenId"
+                    _ephemeris="@_ephemeris" _fireAimOffsetSeconds="@_fireAimOffsetSeconds"
+                    _fireAtSimTime="@_fireAtSimTime" _fireAtWill="@_fireAtWill" _fireBlockedBy="@_fireBlockedBy"
+                    _fireDispersionMeters="@_fireDispersionMeters" _fireKind="@_fireKind"
+                    _fireSolution="@_fireSolution" _fireTip="@_fireTip" _hasNetJammer="@_hasNetJammer"
+                    _heat="@_heat" _holdLevel="@_holdLevel" _intelLedger="@_intelLedger" _intercept="@_intercept"
+                    _interestTargetId="@_interestTargetId" _localSpaceValue="@_localSpace" _localSpaceSet="@(v => _localSpace = v)"
+                    _localTradeMessage="@_localTradeMessage" _localTradeProgress="@_localTradeProgress"
+                    _localTradeTargetId="@_localTradeTargetId" _massLevel="@_massLevel" _missileAmmo="@_missileAmmo"
+                    _mission="@_mission" _missionOptions="@_missionOptions"
+                    _openCaptainToTutorials="@_openCaptainToTutorials" _orbitedBodyId="@_orbitedBodyId"
+                    _pinned="@_pinned" _reactionMassPulses="@_reactionMassPulses" _renameDraftValue="@_renameDraft" _renameDraftSet="@(v => _renameDraft = v)"
+                    _renamingThreadId="@_renamingThreadId" _revealedIterations="@_revealedIterations"
+                    _scopeIntel="@_scopeIntel" _sensorLevel="@_sensorLevel" _ship="@_ship"
+                    _shipAuthorized="@_shipAuthorized" _shipBots="@_shipBots" _shotAuthorized="@_shotAuthorized"
+                    _slugAmmo="@_slugAmmo" _telescopeLevel="@_telescopeLevel" _trackingPost="@_trackingPost"
+                    _weaponsTight="@_weaponsTight" _workingStopsSinceShoreLeave="@_workingStopsSinceShoreLeave"
+                    ActiveCaptainName="@ActiveCaptainName" ActiveTutorialIndex="@ActiveTutorialIndex"
+                    AllStationChips="@AllStationChips" ArmFire="@ArmFire"
+                    AuthorizeNextDamageControlAct="@AuthorizeNextDamageControlAct" AuthorizeShot="@AuthorizeShot"
+                    AutoAim="@AutoAim" BeginRenameCaptain="@BeginRenameCaptain" BestWireLenderId="@BestWireLenderId"
+                    BodyName="@BodyName" BribeShip="@BribeShip" BuyAmmo="@BuyAmmo" BuyFuel="@BuyFuel"
+                    BuyNetJammer="@BuyNetJammer" BuyUpgrade="@BuyUpgrade" CallInFavorAtPump="@CallInFavorAtPump"
+                    CancelFiringSolution="@CancelFiringSolution" CancelRenameCaptain="@CancelRenameCaptain"
+                    CanWarnInterest="@CanWarnInterest" CaptainCrashNote="@CaptainCrashNote"
+                    CargoCapacity="@CargoCapacity" CargoManifest="@CargoManifest"
+                    CommitRenameCaptain="@CommitRenameCaptain" CommsCanFence="@CommsCanFence"
+                    CommsFencePrice="@CommsFencePrice" CommsGroups="@CommsGroups" CommsHail="@CommsHail"
+                    CommsLaserRange="@CommsLaserRange" CommsSellTrack="@CommsSellTrack"
+                    CommsStatusBadge="@CommsStatusBadge" CommsTickerAmbientDays="@CommsTickerAmbientDays"
+                    CommsTickerItemCount="@CommsTickerItemCount" ComputeFiringSolution="@ComputeFiringSolution"
+                    CopyCrashNote="@CopyCrashNote" CrewVoyage="@CrewVoyage" CrossingRows="@CrossingRows"
+                    DarkWebCanTrade="@DarkWebCanTrade" DarkWebDisabledReason="@DarkWebDisabledReason"
+                    DarkWebDistanceFromEarth="@DarkWebDistanceFromEarth" DarkWebMarketShips="@DarkWebMarketShips"
+                    DarkWebTrackedShips="@DarkWebTrackedShips" DarkWebWireContacts="@DarkWebWireContacts"
+                    DepartureLabel="@DepartureLabel" DismissCrashNote="@DismissCrashNote"
+                    DockedBodyName="@DockedBodyName" DrawFirePlan="@DrawFirePlan" FindNpc="@FindNpc"
+                    FireLocked="@FireLocked" FireTip="@FireTip" FireWarningShot="@FireWarningShot"
+                    FormatDistance="@FormatDistance" FormatSimTime="@FormatSimTime"
+                    FuelDirectionsLine="@FuelDirectionsLine" IntelStaleInDays="@IntelStaleInDays"
+                    InterestDistanceNow="@InterestDistanceNow" InterestTargetName="@InterestTargetName"
+                    IsHiddenAtHaven="@IsHiddenAtHaven" LedgerAccounts="@LedgerAccounts" LedgerMaps="@LedgerMaps"
+                    LedgerTipsAsRemembered="@LedgerTipsAsRemembered" LiveRounds="@LiveRounds"
+                    LocalContacts="@LocalContacts" LocalSpaceBodyId="@LocalSpaceBodyId"
+                    MaxFireAimOffsetSeconds="@MaxFireAimOffsetSeconds" MaxMuzzleSpeed="@MaxMuzzleSpeed"
+                    MissilePulseCost="@MissilePulseCost" NetJammerPriceCr="@NetJammerPriceCr" OnNewsFeed="@((int n, NewsWire.NewsScope scope, string? salt) => NewsFeed(n, scope, salt))"
+                    OffBooksCount="@OffBooksCount" OnOpenBank="@((string contactId, bool viaWire) => OpenBank(contactId, viaWire))"
+                    OpenDarkWebFromLedger="@OpenDarkWebFromLedger" OpenDossierFromLedger="@OpenDossierFromLedger"
+                    OpenSaveDrawer="@OpenSaveDrawer" PlannedImpactEta="@PlannedImpactEta"
+                    PointScopeForActiveFetch="@PointScopeForActiveFetch"
+                    PointScopeFromLedger="@PointScopeFromLedger"
+                    PointScopeWhereIntelSays="@PointScopeWhereIntelSays" PumpLoanPrincipal="@PumpLoanPrincipal"
+                    OnPushNewsEvent="@((NewsWire.NewsEventKind kind, string subject, string? detail) => PushNewsEvent(kind, subject, detail))" QuestCards="@QuestCards"
+                    ReactionMassCapacity="@ReactionMassCapacity" ReadTheGreyPage="@ReadTheGreyPage"
+                    RenameKeyDown="@RenameKeyDown" ReopenStartPicker="@ReopenStartPicker"
+                    RestockSentries="@RestockSentries" RouteLabel="@RouteLabel"
+                    ScanFiringWindows="@ScanFiringWindows" ScopeIntelById="@ScopeIntelById"
+                    SelectCommsShip="@SelectCommsShip" SelectedTrackedTarget="@SelectedTrackedTarget"
+                    SellCargo="@SellCargo" SentryRestockCost="@SentryRestockCost"
+                    SentryRoundsMissing="@SentryRoundsMissing" SetFireAimOffset="@SetFireAimOffset"
+                    SetFireKind="@SetFireKind" SetInterestTarget="@SetInterestTarget" SetMission="@SetMission"
+                    ShipBridgeAlive="@ShipBridgeAlive" SimTime="@SimTime" SlugPulseCost="@SlugPulseCost"
+                    StartLocalBuy="@StartLocalBuy" StartLocalTrade="@StartLocalTrade" StartTutorial="@StartTutorial"
+                    StraightWindowText="@StraightWindowText" SwitchDesk="@SwitchDesk"
+                    SwitchDeskFromClick="@SwitchDeskFromClick"
+                    ToggleDamageControlAuthority="@ToggleDamageControlAuthority"
+                    ToggleFireAtWill="@ToggleFireAtWill" TogglePin="@TogglePin" TutorialCards="@TutorialCards"
+                    UpgradePrice="@UpgradePrice" ViewMapFromLedger="@ViewMapFromLedger" Warp="@Warp"
+                    WarRoomContacts="@WarRoomContacts" WarRoomHunters="@WarRoomHunters"
+                    WarRoomSensorTracks="@WarRoomSensorTracks" WeaponsAuthorized="@WeaponsAuthorized" />
+    }
+
     @* #994 · THE PLATE IS THE LAST THING IN THE COLUMN, NOT A LAYER OVER IT.
 
        It used to be absolutely positioned against .map-page at left 1rem / bottom 5.5rem, which put it on
@@ -1021,9 +1137,10 @@
 
     </div>@* /.map-flowcolumn — the window-tall stack: the top stack, then the Nav HUD in what is left
               (#992), then the story plate (#994) and the navigation-target panel (#1037) at the foot of
-              it. It closes HERE, around those four only: everything below is absolutely positioned
-              against .map-page, and pulling it inside a pointer-events:none column would cost it its
-              clicks. *@
+              it, and #236's addition — the DESKS, which now begin where the masthead ends instead of at
+              a number that stood for it. It closes HERE, around those five only: everything below is
+              absolutely positioned against .map-page, and pulling it inside a pointer-events:none column
+              would cost it its clicks unless, like the five above, it re-enables its own. *@
 
     @if (_activeDesk == ShipDesk.Nav)
     {
@@ -1096,93 +1213,6 @@
                      FormatDistance="@FormatDistance" InterceptChipLine="@InterceptChipLine"
                      SetInterestTarget="@SetInterestTarget" SwitchDeskFromClick="@SwitchDeskFromClick"
                      TrackShipFromMenu="@TrackShipFromMenu" dossier="@dossier" dossierId="@dossierId" />
-    }
-
-    <SensorsDeskLayer _activeDesk="@_activeDesk" _activeRadar="@_activeRadar"
-                      _courseOpportunities="@_courseOpportunities" _ephemeris="@_ephemeris" _ship="@_ship"
-                      _telescopeLevel="@_telescopeLevel" _trackingPostValue="@_trackingPost" _trackingPostSet="@(v => _trackingPost = v)"
-                      _transponderMode="@_transponderMode" CenterShipOnMap="@CenterShipOnMap"
-                      OnAreaScanCovered="@OnAreaScanCovered" SetActiveRadar="@SetActiveRadar"
-                      SetInterestTarget="@SetInterestTarget" SetTransponder="@SetTransponder" SimTime="@SimTime"
-                      SwitchDeskFromClick="@SwitchDeskFromClick" TrackingCandidates="@TrackingCandidates"
-                      ZoomSensorsBackdrop="@ZoomSensorsBackdrop" />
-    @if (_activeDesk is ShipDesk.WarRoom or ShipDesk.Trade or ShipDesk.Comms or ShipDesk.Captain)
-    {
-        <DeskPanels _activeDesk="@_activeDesk" _activeThreadId="@_activeThreadId" _caches="@_caches"
-                    _captainTabValue="@_captainTab" _captainTabSet="@(v => _captainTab = v)" _cargoUnits="@_cargoUnits" _cargoValue="@_cargoValue"
-                    _commsActionMessage="@_commsActionMessage" _commsHailAnswer="@_commsHailAnswer"
-                    _commsSelectedIdValue="@_commsSelectedId" _commsSelectedIdSet="@(v => _commsSelectedId = v)" _crashNoteCopied="@_crashNoteCopied" _creditsValue="@_credits" _creditsSet="@(v => _credits = v)"
-                    _dcNextActionCleared="@_dcNextActionCleared" _dcStandingOrder="@_dcStandingOrder"
-                    _dockBodyId="@_dockBodyId" _docked="@_docked" _dockedHavenId="@_dockedHavenId"
-                    _ephemeris="@_ephemeris" _fireAimOffsetSeconds="@_fireAimOffsetSeconds"
-                    _fireAtSimTime="@_fireAtSimTime" _fireAtWill="@_fireAtWill" _fireBlockedBy="@_fireBlockedBy"
-                    _fireDispersionMeters="@_fireDispersionMeters" _fireKind="@_fireKind"
-                    _fireSolution="@_fireSolution" _fireTip="@_fireTip" _hasNetJammer="@_hasNetJammer"
-                    _heat="@_heat" _holdLevel="@_holdLevel" _intelLedger="@_intelLedger" _intercept="@_intercept"
-                    _interestTargetId="@_interestTargetId" _localSpaceValue="@_localSpace" _localSpaceSet="@(v => _localSpace = v)"
-                    _localTradeMessage="@_localTradeMessage" _localTradeProgress="@_localTradeProgress"
-                    _localTradeTargetId="@_localTradeTargetId" _massLevel="@_massLevel" _missileAmmo="@_missileAmmo"
-                    _mission="@_mission" _missionOptions="@_missionOptions"
-                    _openCaptainToTutorials="@_openCaptainToTutorials" _orbitedBodyId="@_orbitedBodyId"
-                    _pinned="@_pinned" _reactionMassPulses="@_reactionMassPulses" _renameDraftValue="@_renameDraft" _renameDraftSet="@(v => _renameDraft = v)"
-                    _renamingThreadId="@_renamingThreadId" _revealedIterations="@_revealedIterations"
-                    _scopeIntel="@_scopeIntel" _sensorLevel="@_sensorLevel" _ship="@_ship"
-                    _shipAuthorized="@_shipAuthorized" _shipBots="@_shipBots" _shotAuthorized="@_shotAuthorized"
-                    _slugAmmo="@_slugAmmo" _telescopeLevel="@_telescopeLevel" _trackingPost="@_trackingPost"
-                    _weaponsTight="@_weaponsTight" _workingStopsSinceShoreLeave="@_workingStopsSinceShoreLeave"
-                    ActiveCaptainName="@ActiveCaptainName" ActiveTutorialIndex="@ActiveTutorialIndex"
-                    AllStationChips="@AllStationChips" ArmFire="@ArmFire"
-                    AuthorizeNextDamageControlAct="@AuthorizeNextDamageControlAct" AuthorizeShot="@AuthorizeShot"
-                    AutoAim="@AutoAim" BeginRenameCaptain="@BeginRenameCaptain" BestWireLenderId="@BestWireLenderId"
-                    BodyName="@BodyName" BribeShip="@BribeShip" BuyAmmo="@BuyAmmo" BuyFuel="@BuyFuel"
-                    BuyNetJammer="@BuyNetJammer" BuyUpgrade="@BuyUpgrade" CallInFavorAtPump="@CallInFavorAtPump"
-                    CancelFiringSolution="@CancelFiringSolution" CancelRenameCaptain="@CancelRenameCaptain"
-                    CanWarnInterest="@CanWarnInterest" CaptainCrashNote="@CaptainCrashNote"
-                    CargoCapacity="@CargoCapacity" CargoManifest="@CargoManifest"
-                    CommitRenameCaptain="@CommitRenameCaptain" CommsCanFence="@CommsCanFence"
-                    CommsFencePrice="@CommsFencePrice" CommsGroups="@CommsGroups" CommsHail="@CommsHail"
-                    CommsLaserRange="@CommsLaserRange" CommsSellTrack="@CommsSellTrack"
-                    CommsStatusBadge="@CommsStatusBadge" CommsTickerAmbientDays="@CommsTickerAmbientDays"
-                    CommsTickerItemCount="@CommsTickerItemCount" ComputeFiringSolution="@ComputeFiringSolution"
-                    CopyCrashNote="@CopyCrashNote" CrewVoyage="@CrewVoyage" CrossingRows="@CrossingRows"
-                    DarkWebCanTrade="@DarkWebCanTrade" DarkWebDisabledReason="@DarkWebDisabledReason"
-                    DarkWebDistanceFromEarth="@DarkWebDistanceFromEarth" DarkWebMarketShips="@DarkWebMarketShips"
-                    DarkWebTrackedShips="@DarkWebTrackedShips" DarkWebWireContacts="@DarkWebWireContacts"
-                    DepartureLabel="@DepartureLabel" DismissCrashNote="@DismissCrashNote"
-                    DockedBodyName="@DockedBodyName" DrawFirePlan="@DrawFirePlan" FindNpc="@FindNpc"
-                    FireLocked="@FireLocked" FireTip="@FireTip" FireWarningShot="@FireWarningShot"
-                    FormatDistance="@FormatDistance" FormatSimTime="@FormatSimTime"
-                    FuelDirectionsLine="@FuelDirectionsLine" IntelStaleInDays="@IntelStaleInDays"
-                    InterestDistanceNow="@InterestDistanceNow" InterestTargetName="@InterestTargetName"
-                    IsHiddenAtHaven="@IsHiddenAtHaven" LedgerAccounts="@LedgerAccounts" LedgerMaps="@LedgerMaps"
-                    LedgerTipsAsRemembered="@LedgerTipsAsRemembered" LiveRounds="@LiveRounds"
-                    LocalContacts="@LocalContacts" LocalSpaceBodyId="@LocalSpaceBodyId"
-                    MaxFireAimOffsetSeconds="@MaxFireAimOffsetSeconds" MaxMuzzleSpeed="@MaxMuzzleSpeed"
-                    MissilePulseCost="@MissilePulseCost" NetJammerPriceCr="@NetJammerPriceCr" OnNewsFeed="@((int n, NewsWire.NewsScope scope, string? salt) => NewsFeed(n, scope, salt))"
-                    OffBooksCount="@OffBooksCount" OnOpenBank="@((string contactId, bool viaWire) => OpenBank(contactId, viaWire))"
-                    OpenDarkWebFromLedger="@OpenDarkWebFromLedger" OpenDossierFromLedger="@OpenDossierFromLedger"
-                    OpenSaveDrawer="@OpenSaveDrawer" PlannedImpactEta="@PlannedImpactEta"
-                    PointScopeForActiveFetch="@PointScopeForActiveFetch"
-                    PointScopeFromLedger="@PointScopeFromLedger"
-                    PointScopeWhereIntelSays="@PointScopeWhereIntelSays" PumpLoanPrincipal="@PumpLoanPrincipal"
-                    OnPushNewsEvent="@((NewsWire.NewsEventKind kind, string subject, string? detail) => PushNewsEvent(kind, subject, detail))" QuestCards="@QuestCards"
-                    ReactionMassCapacity="@ReactionMassCapacity" ReadTheGreyPage="@ReadTheGreyPage"
-                    RenameKeyDown="@RenameKeyDown" ReopenStartPicker="@ReopenStartPicker"
-                    RestockSentries="@RestockSentries" RouteLabel="@RouteLabel"
-                    ScanFiringWindows="@ScanFiringWindows" ScopeIntelById="@ScopeIntelById"
-                    SelectCommsShip="@SelectCommsShip" SelectedTrackedTarget="@SelectedTrackedTarget"
-                    SellCargo="@SellCargo" SentryRestockCost="@SentryRestockCost"
-                    SentryRoundsMissing="@SentryRoundsMissing" SetFireAimOffset="@SetFireAimOffset"
-                    SetFireKind="@SetFireKind" SetInterestTarget="@SetInterestTarget" SetMission="@SetMission"
-                    ShipBridgeAlive="@ShipBridgeAlive" SimTime="@SimTime" SlugPulseCost="@SlugPulseCost"
-                    StartLocalBuy="@StartLocalBuy" StartLocalTrade="@StartLocalTrade" StartTutorial="@StartTutorial"
-                    StraightWindowText="@StraightWindowText" SwitchDesk="@SwitchDesk"
-                    SwitchDeskFromClick="@SwitchDeskFromClick"
-                    ToggleDamageControlAuthority="@ToggleDamageControlAuthority"
-                    ToggleFireAtWill="@ToggleFireAtWill" TogglePin="@TogglePin" TutorialCards="@TutorialCards"
-                    UpgradePrice="@UpgradePrice" ViewMapFromLedger="@ViewMapFromLedger" Warp="@Warp"
-                    WarRoomContacts="@WarRoomContacts" WarRoomHunters="@WarRoomHunters"
-                    WarRoomSensorTracks="@WarRoomSensorTracks" WeaponsAuthorized="@WeaponsAuthorized" />
     }
 
     @* #330: the right-side desk status-chip column is ship chrome — hidden on a surface excursion so the
