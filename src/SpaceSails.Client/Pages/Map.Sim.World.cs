@@ -194,25 +194,42 @@ public partial class Map
     /// hash, by <c>TheBootBuildsTheSameWorldTests</c>.</summary>
     private async Task BootTheWorldAsync(CancellationToken abandoned)
     {
+        StartTheBootClock();
+
         var uri = new Uri(Navigation.Uri);
         BootQuery q = ReadEveryQueryKey(uri);
         DefaultABerthForTheCheatsThatNeedOne(q);
         RaiseTheFrontDoorWhileTheReactorWarms(q);
+        SayTheBootStageCost("the URL read");
 
         ScenarioDefinition scenario = await FetchTheScenarioAsync(q, abandoned);
         scenario = AppendTheBodiesTheCheatsAskFor(scenario, q);
+        SayTheBootStageCost("the scenario fetched and parsed");
 
         BuildTheEphemerisAndAnnounceTheBerths(scenario);
+        SayTheBootStageCost("the ephemeris built");
+
         BuildWhatTheEphemerisFeeds(scenario);
+        SayTheBootStageCost("the mission catalog, the plasma and the two simulators");
+
         LayTheShipDownWithHerHistory();
+        SayTheBootStageCost("the ship laid down and her arc projected");
+
         await PlanTheTrafficAsync(abandoned);
+
         PointTheCameraAtHer();
+        SayTheBootStageCost("the camera pointed");
+
         await WireTheRendererToTheBrowserAsync(abandoned);
+        SayTheBootStageCost("the renderer wired to the browser");
 
         ApplyTheStartPoint(q);
         StandTheCaptainWhereTheCheatsAsk(q);
         SeedTheArcsAndTheJobs(q);
         SeedTheApproachesAndThePurse(q);
+        SayTheBootStageCost("the start point applied and the cheats seeded");
+
         await HandThePageToThePlayerAsync(abandoned);
+        SayTheBootStageCost("the page handed to the player");
     }
 }
