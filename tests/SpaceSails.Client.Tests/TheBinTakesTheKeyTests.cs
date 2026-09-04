@@ -179,9 +179,18 @@ public sealed class TheBinTakesTheKeyTests
             }
 
             // …and far from it the key is the room's again — the picker is a thing you walk to.
+            //
+            // #775 · THREE REACHES IN A DIRECTION WITH NOTHING IN IT, and the direction is asked of the
+            // deck rather than typed. This stepped away on one fixed diagonal, which was three reaches of
+            // bare floor while the room a bin stands in was a 15 x 12 du cell — and landscape offices put a
+            // desk bank and a meeting-room table on that ground, so the probe walked onto a CHAIR and the
+            // office-chair verb answered the press. The bin's law is untouched: what this has to be is a
+            // square out of the bin's reach, and "out of the bin's reach" was never the same claim as
+            // "three reaches north-east".
             Pages.Map away = Bench(body, level, bin, new Satchel.Item(Satchel.Kind.Paper, "p"), worked: true);
-            Set(away, "_avatarX", bin.X + (RipAndBin.ReachDu * 3));
-            Set(away, "_avatarY", bin.Y + (RipAndBin.ReachDu * 3));
+            (double ax, double ay) = SomewhereWithNothingOnIt(away, bin);
+            Set(away, "_avatarX", ax);
+            Set(away, "_avatarY", ay);
             PressE(away);
             if (ThePickerIsOpen(away))
             {
@@ -324,6 +333,46 @@ public sealed class TheBinTakesTheKeyTests
     private static string TheKeyBar(Pages.Map map) =>
         (string)typeof(Pages.Map).GetMethod("BuildSurfaceKeyHints", Hidden)!
             .Invoke(map, [Get(map, "_surface")])!;
+
+    /// <summary>#775 · A square three reaches or more off this bin with NO console on it — the probe the
+    /// "far from it the key is the room's again" clause needs. Asked of the deck the bench actually built
+    /// (DeckPlan.NearestConsoleSpot, the very lookup the [E] press uses), so a floor that grows furniture
+    /// moves the probe instead of breaking it. Falls back to the old fixed diagonal, which keeps the
+    /// clause asserting something rather than quietly passing on a square nobody chose.</summary>
+    private static (double X, double Y) SomewhereWithNothingOnIt(Pages.Map map, RipAndBin.Bin bin)
+    {
+        var deck = (DeckPlan)Get(map, "_deckPlan")!;
+
+        // THE SPOT THIS CLAUSE HAS ALWAYS USED IS TRIED FIRST, so every case that passed before #775 is
+        // pressed on exactly the square it was pressed on before. Only a probe that lands on a console —
+        // which is what a landscape floor's desks and meeting tables put on ground that used to be bare —
+        // walks on to the ring below it.
+        (double X, double Y) first = (bin.X + (RipAndBin.ReachDu * 3), bin.Y + (RipAndBin.ReachDu * 3));
+        if (deck.NearestConsoleSpot(first.X, first.Y) is null)
+        {
+            return first;
+        }
+
+        // Never NEARER than that diagonal (three reaches on each axis is 4.24 of them), because the
+        // distance IS the claim: the probe may move round the bin and may never walk in towards it. And
+        // never onto a square the bin itself says is within reach — a secure disposal publishes its own
+        // standing spot away from its box (#828), so "far from the box" and "out of reach" are two
+        // different sentences and this needs both.
+        foreach (double reach in new[] { 4.3, 6.0, 8.0 })
+        {
+            for (int step = 0; step < 8; step++)
+            {
+                double a = step * Math.PI / 4.0;
+                double x = bin.X + (Math.Cos(a) * RipAndBin.ReachDu * reach);
+                double y = bin.Y + (Math.Sin(a) * RipAndBin.ReachDu * reach);
+                if (deck.NearestConsoleSpot(x, y) is null && !RipAndBin.WithinReach(x, y, in bin))
+                {
+                    return (x, y);
+                }
+            }
+        }
+        return first;
+    }
 
     private static void PressE(Pages.Map map) =>
         typeof(Pages.Map).GetMethod("InteractAtConsole", Hidden)!.Invoke(map, null);
