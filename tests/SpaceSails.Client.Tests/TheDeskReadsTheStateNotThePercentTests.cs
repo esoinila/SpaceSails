@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -104,7 +104,7 @@ public sealed class TheDeskReadsTheStateNotThePercentTests
     [Fact]
     public void TheSensorTasksListPutsTheStateOnEveryRow()
     {
-        string razor = File.ReadAllText(TrackingPostRazor);
+        string razor = TrackingPostMarkup.Read(TrackingPostRazor);
         string box = SensorTasksBlock(razor);
 
         Assert.Contains("_schedule.StateOf(", box, StringComparison.Ordinal);
@@ -133,7 +133,7 @@ public sealed class TheDeskReadsTheStateNotThePercentTests
         Assert.All(words, w => Assert.Equal(w.ToUpperInvariant(), w));
 
         // The desk does not spell any of them itself.
-        string box = SensorTasksBlock(File.ReadAllText(TrackingPostRazor));
+        string box = SensorTasksBlock(TrackingPostMarkup.Read(TrackingPostRazor));
         foreach (string word in words)
         {
             Assert.DoesNotContain($"\"{word}\"", box, StringComparison.Ordinal);
@@ -193,7 +193,12 @@ public sealed class TheDeskReadsTheStateNotThePercentTests
 
     /// <summary>The Sensor-tasks box out of the shipping razor: from its own container down to the cold-case
     /// board that follows it. Located structurally so this reads the block a captain sees, not a string that
-    /// happens to appear somewhere in a 1,000-line file.</summary>
+    /// happens to appear somewhere in a 1,000-line file.
+    ///
+    /// <para>#251 · the desk's markup lives in surfaces under <c>Pages/Stations/TrackingPost/</c> now, so the
+    /// text comes through <see cref="TrackingPostMarkup"/> — the desk with every surface spliced back in at
+    /// its invocation site. This slice is exactly why it is a splice and not a concatenation: it runs from one
+    /// region's container to the NEXT region's, and only an in-order composition still has an end to find.</para></summary>
     private static string SensorTasksBlock(string razor)
     {
         int start = razor.IndexOf("sensor-tasks-box", StringComparison.Ordinal);

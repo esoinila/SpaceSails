@@ -77,6 +77,25 @@
     <None Update="Pages\Map\*.razor.css" CssScope="b-4dqsdx4p75" />
   </ItemGroup>
 
+  <!-- #251 · THE SAME LAW FOR THE TRACKING POST, WHERE IT BITES HARDER.
+
+       Pages/Stations/TrackingPost.razor's markup is being taken apart into
+       Pages/Stations/TrackingPost/<Surface>.razor the same way. Map.razor.css at least had 168 `::deep`
+       rules that would have survived the cut on their own; TrackingPost.razor.css has FORTY rules and
+       NOT ONE `::deep` among them, so every rule in it is scope-dependent and every one of them would
+       have stopped matching the instant a block moved out — the rosette unstyled, the sensor-task chips
+       unstyled, the tracked-target cards unstyled, with no build error and no test to say so.
+
+       `b-9ekzcovohe` is what the SDK's ComputeCssScope task already derives for
+       `Pages/Stations/TrackingPost.razor.css` from the assembly name plus that path (read out of
+       obj/…/scopedcss/Pages/Stations/TrackingPost.razor.rz.scp.css at this lane's base). Pinning it here
+       does not change today's value — it stops it being a secret, and it hands every surface the desk's
+       own identifier so the shipped bundle does not change by a byte. -->
+  <ItemGroup>
+    <None Update="Pages\Stations\TrackingPost.razor.css" CssScope="b-9ekzcovohe" />
+    <None Update="Pages\Stations\TrackingPost\*.razor.css" CssScope="b-9ekzcovohe" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\SpaceSails.Core\SpaceSails.Core.csproj" />
     <ProjectReference Include="..\SpaceSails.Contracts\SpaceSails.Contracts.csproj" />

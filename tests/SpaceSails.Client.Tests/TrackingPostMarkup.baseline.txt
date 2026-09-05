@@ -14,8 +14,25 @@
    subscribed to the render loop that's already running. *@
 
 <div class="tracking-post-card @(FullScreen ? "tracking-post-desk text-light" : "card bg-dark bg-opacity-75 text-light") @(Visible ? "" : "d-none")">
-    <DeskHeaderBar FullScreen="@FullScreen"
-                   OnZoomMap="OnZoomMap" OnCenterShip="OnCenterShip" OnClose="OnClose" />
+    <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
+        <span class="fw-bold small">Tracking post 📡</span>
+        @if (FullScreen)
+        {
+            @* M27: the backdrop sun diagram is the live map — give the sensors chief its zoom. *@
+            <div class="btn-group btn-group-sm" role="group" aria-label="Backdrop map zoom">
+                <button type="button" class="btn btn-outline-light py-0" title="Zoom map out"
+                        @onclick="() => OnZoomMap.InvokeAsync(1.6)">🔍−</button>
+                <button type="button" class="btn btn-outline-light py-0" title="Zoom map in"
+                        @onclick="() => OnZoomMap.InvokeAsync(1 / 1.6)">🔍+</button>
+                <button type="button" class="btn btn-outline-light py-0" title="Center the ship"
+                        @onclick="() => OnCenterShip.InvokeAsync()">⌖ ship</button>
+            </div>
+        }
+        else
+        {
+            <button type="button" class="btn-close btn-close-white" aria-label="Close" title="Close the tracking post and stow the telescope panel" @onclick="() => OnClose.InvokeAsync()"></button>
+        }
+    </div>
     <div class="card-body p-2 small @(FullScreen ? "tracking-post-desk-body" : "")">
         <div class="d-flex gap-2 @(FullScreen ? "tracking-post-desk-top" : "")">
             <div class="tracking-rosette flex-shrink-0 @(FullScreen ? "tracking-rosette-big" : "")">

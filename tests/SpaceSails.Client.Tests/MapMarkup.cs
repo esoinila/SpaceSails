@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -39,12 +39,16 @@ internal static class MapMarkup
     /// <summary>The one file every guard used to open.</summary>
     private const string PageFileName = "Map.razor";
 
+    /// <summary>How the page names itself in the composer's own error messages.</summary>
+    private const string PageLabel = "Pages/Map.razor";
+
     /// <summary>Opens the sliceable region of an extracted surface. Everything between this line and
-    /// <see cref="MarkupEnds"/> is the block as it stood in <c>Map.razor</c>, character for character.</summary>
-    internal const string MarkupBegins = "MARKUP BEGINS";
+    /// <see cref="MarkupEnds"/> is the block as it stood in <c>Map.razor</c>, character for character.
+    /// The mechanics live in <see cref="SurfaceComposition"/>, said once for both decomposed pages.</summary>
+    internal const string MarkupBegins = SurfaceComposition.MarkupBegins;
 
     /// <summary>Closes the sliceable region of an extracted surface.</summary>
-    internal const string MarkupEnds = "MARKUP ENDS";
+    internal const string MarkupEnds = SurfaceComposition.MarkupEnds;
 
     private static readonly Lazy<string> TheComposedPage = new(Compose, isThreadSafe: true);
 
@@ -69,17 +73,10 @@ internal static class MapMarkup
     {
         if (MapStylesheet.IsThePageSheet(path))
         {
-            string[] css = MapStylesheet.Text.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
-            return css.Length > 0 && css[^1].Length == 0 ? css[..^1] : css;
+            return SurfaceComposition.AsLines(MapStylesheet.Text);
         }
 
-        if (!IsThePage(path))
-        {
-            return File.ReadAllLines(path);
-        }
-
-        string[] split = TheComposedPage.Value.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
-        return split.Length > 0 && split[^1].Length == 0 ? split[..^1] : split;
+        return IsThePage(path) ? SurfaceComposition.AsLines(TheComposedPage.Value) : File.ReadAllLines(path);
     }
 
     /// <summary>The composed page, for guards that want it without a path.</summary>
@@ -93,50 +90,14 @@ internal static class MapMarkup
 
     /// <summary>Every extracted surface, by component name, with its sliceable markup.</summary>
     internal static IReadOnlyList<(string Name, string Path, string Markup)> Surfaces() =>
-    [
-        .. Directory
-            .EnumerateFiles(SurfacesDirectory(), "*.razor", SearchOption.TopDirectoryOnly)
-            .OrderBy(p => p, StringComparer.Ordinal)
-            .Select(p => (Path.GetFileNameWithoutExtension(p), p, MarkupOf(p)))
-    ];
+        SurfaceComposition.SurfacesIn(SurfacesDirectory(), "Pages/Map/");
 
     private static bool IsThePage(string path) =>
         Path.GetFileName(path).Equals(PageFileName, StringComparison.Ordinal)
         && Path.GetFileName(Path.GetDirectoryName(path) ?? "").Equals("Pages", StringComparison.Ordinal);
 
     private static string PagesDirectory() =>
-        Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
-
-    private static string RepoRoot()
-    {
-        for (DirectoryInfo? at = new(AppContext.BaseDirectory); at is not null; at = at.Parent)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Core")))
-            {
-                return at.FullName;
-            }
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
-    /// <summary>The block between the two sentinels of a surface file — the markup, and nothing else: not the
-    /// directives above it, not the <c>@code</c> plumbing below it.</summary>
-    private static string MarkupOf(string surfacePath)
-    {
-        string[] lines = File.ReadAllText(surfacePath).Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
-
-        int begins = Array.FindIndex(lines, l => l.Contains(MarkupBegins, StringComparison.Ordinal));
-        int ends = Array.FindIndex(lines, l => l.Contains(MarkupEnds, StringComparison.Ordinal));
-        if (begins < 0 || ends < 0 || ends <= begins)
-        {
-            throw new InvalidOperationException(
-                $"#251 · {Path.GetFileName(surfacePath)} has no sliceable markup region. Every surface under " +
-                $"Pages/Map/ must fence its moved block with `@* ── {MarkupBegins} … *@` and " +
-                $"`@* ── {MarkupEnds} ── *@`, or the guards that read the page cannot see it.");
-        }
-
-        return string.Join("\n", lines[(begins + 1)..ends]);
-    }
+        Path.Combine(SurfaceComposition.RepoRoot(), "src", "SpaceSails.Client", "Pages");
 
     /// <summary>Map.razor with every surface spliced in where the page invokes it.</summary>
     private static string Compose() => ComposeFrom(File.ReadAllText(PagePath), Surfaces());
@@ -144,58 +105,5 @@ internal static class MapMarkup
     /// <summary>The composition itself, stated over a page text and a set of surfaces rather than over the
     /// disk — so the guard can hand it a doctored page and watch it go red.</summary>
     internal static string ComposeFrom(string page, IReadOnlyList<(string Name, string Path, string Markup)> surfaces)
-    {
-        bool crlf = page.Contains("\r\n", StringComparison.Ordinal);
-        List<string> lines = [.. page.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n')];
-
-        foreach ((string name, string path, string markup) in surfaces)
-        {
-            Splice(lines, name, path, markup);
-        }
-
-        string composed = string.Join("\n", lines);
-        return crlf ? composed.Replace("\n", "\r\n", StringComparison.Ordinal) : composed;
-    }
-
-    /// <summary>Replaces the one <c>&lt;Surface … /&gt;</c> element in the page with the surface's own markup.
-    /// Exactly one: none and the page has lost a surface, two and the composed text would double a region and
-    /// every order guard reading it would be reading a fiction.</summary>
-    private static void Splice(List<string> lines, string name, string path, string markup)
-    {
-        List<int> opens = [];
-        for (int i = 0; i < lines.Count; i++)
-        {
-            string t = lines[i].TrimStart();
-            if (t.StartsWith('<') && t.Length > name.Length + 1
-                && t.AsSpan(1).StartsWith(name, StringComparison.Ordinal)
-                && !char.IsLetterOrDigit(t[name.Length + 1]) && t[name.Length + 1] != '_')
-            {
-                opens.Add(i);
-            }
-        }
-
-        if (opens.Count != 1)
-        {
-            throw new InvalidOperationException(
-                $"#251 · Pages/Map.razor invokes <{name}> {opens.Count} time(s); a surface is hosted exactly " +
-                "once. Composing the page's markup out of the file plus its surfaces only means anything while " +
-                $"that is true — see {Path.GetFileName(path)} and MapMarkup.");
-        }
-
-        int start = opens[0];
-        int end = start;
-        while (end < lines.Count && !lines[end].TrimEnd().EndsWith("/>", StringComparison.Ordinal)
-                                 && !lines[end].TrimEnd().EndsWith($"</{name}>", StringComparison.Ordinal))
-        {
-            end++;
-        }
-        if (end >= lines.Count)
-        {
-            throw new InvalidOperationException(
-                $"#251 · the <{name}> element opened on line {start + 1} of Pages/Map.razor never closes.");
-        }
-
-        lines.RemoveRange(start, end - start + 1);
-        lines.InsertRange(start, markup.Split('\n'));
-    }
+        => SurfaceComposition.ComposeFrom(page, surfaces, PageLabel);
 }
