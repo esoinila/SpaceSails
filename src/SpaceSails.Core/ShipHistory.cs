@@ -58,17 +58,35 @@ public sealed record ShipHistory(
     ///
     /// <para>Deliberately the SAME entry <see cref="Teaser"/> headlines — one hull, one remembered name —
     /// so the pulse and the dossier can never name her two different former selves.</para></summary>
-    public string? GloryName
+    public string? GloryName => BareFormerNames.Count > 0 ? BareFormerNames[0] : null;
+
+    /// <summary>#417 · <b>EVERY NAME SHE HAS ANSWERED TO, BARE</b> — the same stripping
+    /// <see cref="GloryName"/> does, run down the whole ledger instead of stopping at the first entry:
+    /// <i>AURORA QUEEN</i>, <i>KESTREL</i> out of <i>ex-AURORA QUEEN (mail packet, Luna run) ·
+    /// ex-KESTREL (impounded, renamed)</i>. Empty for a hull still under her maiden name.
+    ///
+    /// <para>It lives here rather than in the finder's case for the reason the ledger's own line lives here:
+    /// a second parser for the dossier's <c>ex-NAME (fate)</c> shape would be two readings of one record, and
+    /// the day somebody changed how a former name is written the two would disagree in front of the player.
+    /// <see cref="GloryName"/> is now the FIRST of these, so a hull's remembered name and the list she is
+    /// matched on cannot come apart.</para></summary>
+    public IReadOnlyList<string> BareFormerNames
     {
         get
         {
             if (!HasFormerNames)
             {
-                return null;
+                return [];
             }
 
-            string bare = WithoutFate(FormerNames[0]);
-            return bare.StartsWith(ExPrefix, StringComparison.Ordinal) ? bare[ExPrefix.Length..] : bare;
+            var bare = new List<string>(FormerNames.Count);
+            foreach (string entry in FormerNames)
+            {
+                string name = WithoutFate(entry);
+                bare.Add(name.StartsWith(ExPrefix, StringComparison.Ordinal) ? name[ExPrefix.Length..] : name);
+            }
+
+            return bare;
         }
     }
 

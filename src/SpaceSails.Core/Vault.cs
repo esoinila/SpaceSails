@@ -87,6 +87,12 @@ public sealed class Vault
     /// captain who never worked it out — and exactly what the card says before the SPREAD fires.</summary>
     public WalkInSection? WalkIn { get; init; }
 
+    /// <summary>#417 · THE FINDER'S CASE — the graph Ilse Varga handed over and how far down it the captain
+    /// has got. Its own independently optional section; a file written before the finder existed simply lacks
+    /// it and loads with no case at all, which is the truth about a captain nobody ever asked to find
+    /// anything.</summary>
+    public FinderSection? Finder { get; init; }
+
     /// <summary>#973 L5a · THE CAPTAIN'S CROSSINGS (the-captains-character.md §3). Its own independently
     /// optional section; a pre-#973 file lacks it and loads with an empty book, which is the honest state of
     /// a captain nobody ever asked about his face.</summary>
@@ -824,6 +830,24 @@ public sealed record WalkInSection
     /// <summary>One job id per walk-in the SPREAD has read the same hand off. A set on the page, so the order
     /// this list happens to be in is not a fact about anything.</summary>
     public IReadOnlyList<string> SetupsRevealed { get; init; } = [];
+}
+
+/// <summary>#417 · THE FINDER'S CASE, as two opaque rows (<see cref="FinderCase.Stored(in FinderCase.Case)"/>
+/// and its progress twin). The file carries the GRAPH — which port, which witness, which two hulls, which
+/// berth — and how far down it the captain has got, and never one of Varga's sentences, which are rebuilt
+/// from Core's own constants on every render.
+///
+/// <para>The graph is written down rather than re-derived because it is a function of the TRAFFIC as well as
+/// of the thread, and a wave dealt afresh would move the hull and the berth under a captain who is halfway
+/// along the trail. A row this build cannot parse is dropped and the captain simply has no case, which is the
+/// same tolerance the filing line and the satchel keep.</para></summary>
+public sealed record FinderSection
+{
+    /// <summary>The case Varga handed over, or empty when she never has.</summary>
+    public string Case { get; init; } = "";
+
+    /// <summary>…and what has been done about it.</summary>
+    public string Progress { get; init; } = "";
 }
 
 /// <summary>#973 L5a · THE OLD CREW's seeding. Stored as opaque row strings so the file carries the FACT
