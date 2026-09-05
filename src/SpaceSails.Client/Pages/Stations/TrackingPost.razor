@@ -18,33 +18,10 @@
                    OnZoomMap="OnZoomMap" OnCenterShip="OnCenterShip" OnClose="OnClose" />
     <div class="card-body p-2 small @(FullScreen ? "tracking-post-desk-body" : "")">
         <div class="d-flex gap-2 @(FullScreen ? "tracking-post-desk-top" : "")">
-            <div class="tracking-rosette flex-shrink-0 @(FullScreen ? "tracking-rosette-big" : "")">
-                <svg viewBox="0 0 200 200" class="tracking-rosette-svg" aria-label="Sun-relative detection range">
-                    <polygon points="@RosettePolygonPoints()" class="tracking-rosette-envelope" />
-                    <polygon points="@WedgePolygonPoints()" class="tracking-rosette-wedge @(_activeJob is not null ? "tracking-rosette-wedge-active" : "")" />
-                    @* M27: bearing vectors from the ship to every tracked target — threats dashed red. *@
-                    @foreach ((double x, double y, string color, bool threat) in TrackedTargetDots())
-                    {
-                        <line x1="100" y1="100" x2="@x" y2="@y"
-                              class="@(threat ? "tracking-vector tracking-vector-threat" : "tracking-vector")"
-                              stroke="@color" />
-                    }
-                    @foreach ((double x, double y, string color, bool threat) in TrackedTargetDots())
-                    {
-                        <circle cx="@x" cy="@y" r="@(threat ? 4 : 3)" fill="@color" />
-                    }
-                    @* M27: the prograde arrow — which way the ship is actually flying. *@
-                    @if (ProgradePoint() is { } fwd)
-                    {
-                        <line x1="100" y1="100" x2="@fwd.X" y2="@fwd.Y" class="tracking-prograde-line" />
-                        <circle cx="@fwd.X" cy="@fwd.Y" r="2.5" class="tracking-prograde-tip" />
-                    }
-                    <line x1="100" y1="100" x2="100" y2="14" class="tracking-rosette-sunline" />
-                    <text x="100" y="10" class="tracking-rosette-label" text-anchor="middle">☉</text>
-                    <circle cx="100" cy="100" r="4" class="tracking-rosette-ship" />
-                </svg>
-                <div class="text-secondary tracking-heading-line">@HeadingLine()</div>
-            </div>
+            <AimRosette FullScreen="@FullScreen"
+                        RosettePolygonPoints="RosettePolygonPoints" WedgePolygonPoints="WedgePolygonPoints"
+                        _activeJob="_activeJob" TrackedTargetDots="TrackedTargetDots"
+                        ProgradePoint="ProgradePoint" HeadingLine="HeadingLine" />
             <div class="flex-grow-1">
                 <label class="form-label mb-0 d-block">Bearing @((int)_centerBearingDeg)°</label>
                 <input type="range" class="form-range" min="0" max="359" step="1" value="@_centerBearingDeg"

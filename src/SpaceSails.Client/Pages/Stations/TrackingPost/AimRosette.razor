@@ -1,0 +1,64 @@
+@namespace SpaceSails.Client.Pages.Stations
+@using SpaceSails.Core
+@*
+    #251 · THE AIM ROSETTE, ON ITS OWN FILE.
+
+    Moved out of Pages/Stations/TrackingPost.razor by PURE MOTION — the block between the two fences
+    below is the block that stood in the desk, character for character, at the indentation it had
+    there. Every member it reads is a [Parameter] carrying the desk's own member UNDER THAT MEMBER'S
+    OWN NAME (a field keeps its underscore, a method arrives as a delegate, a callback as itself), so
+    the markup moved without a rewrite and TrackingPostMarkup splices the desk back byte for byte.
+
+    The .razor.css beside this file carries no rules; it is there to give the component
+    TrackingPost.razor.css's OWN scope (b-9ekzcovohe, pinned in SpaceSails.Client.csproj). That sheet
+    has forty rules and not one `::deep` among them, so every one of them is scope-dependent: without
+    the carrier, every rule that styles this surface would stop matching the moment the markup moved
+    out of the desk — no build error, no test, the block just renders unstyled.
+
+    The dial is drawn from TelescopeModel.Range itself rather than a re-derived formula, so the picture
+    can never drift from what the sweep logic actually does (TrackingPost.Rosette.cs says why at length).
+    All seven members below are that file's, arriving under their own names.
+*@
+@* ── MARKUP BEGINS · verbatim from TrackingPost.razor ─────────────────────────────────────────────── *@
+            <div class="tracking-rosette flex-shrink-0 @(FullScreen ? "tracking-rosette-big" : "")">
+                <svg viewBox="0 0 200 200" class="tracking-rosette-svg" aria-label="Sun-relative detection range">
+                    <polygon points="@RosettePolygonPoints()" class="tracking-rosette-envelope" />
+                    <polygon points="@WedgePolygonPoints()" class="tracking-rosette-wedge @(_activeJob is not null ? "tracking-rosette-wedge-active" : "")" />
+                    @* M27: bearing vectors from the ship to every tracked target — threats dashed red. *@
+                    @foreach ((double x, double y, string color, bool threat) in TrackedTargetDots())
+                    {
+                        <line x1="100" y1="100" x2="@x" y2="@y"
+                              class="@(threat ? "tracking-vector tracking-vector-threat" : "tracking-vector")"
+                              stroke="@color" />
+                    }
+                    @foreach ((double x, double y, string color, bool threat) in TrackedTargetDots())
+                    {
+                        <circle cx="@x" cy="@y" r="@(threat ? 4 : 3)" fill="@color" />
+                    }
+                    @* M27: the prograde arrow — which way the ship is actually flying. *@
+                    @if (ProgradePoint() is { } fwd)
+                    {
+                        <line x1="100" y1="100" x2="@fwd.X" y2="@fwd.Y" class="tracking-prograde-line" />
+                        <circle cx="@fwd.X" cy="@fwd.Y" r="2.5" class="tracking-prograde-tip" />
+                    }
+                    <line x1="100" y1="100" x2="100" y2="14" class="tracking-rosette-sunline" />
+                    <text x="100" y="10" class="tracking-rosette-label" text-anchor="middle">☉</text>
+                    <circle cx="100" cy="100" r="4" class="tracking-rosette-ship" />
+                </svg>
+                <div class="text-secondary tracking-heading-line">@HeadingLine()</div>
+            </div>
+@* ── MARKUP ENDS ──────────────────────────────────────────────────────────────────────────────────── *@
+
+@code {
+    // #251 · Every [Parameter] below is a member of TrackingPost under the member's own name.
+    // A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public bool FullScreen { get; set; }
+    [Parameter] public Func<string> RosettePolygonPoints { get; set; } = default!;
+    [Parameter] public Func<string> WedgePolygonPoints { get; set; } = default!;
+    /// <summary>the desk's `ScanJob? _activeJob` — read here only to light the wedge while a sweep runs.</summary>
+    [Parameter] public ScanJob? _activeJob { get; set; }
+    [Parameter] public Func<IEnumerable<(double X, double Y, string Color, bool Threat)>> TrackedTargetDots { get; set; } = default!;
+    [Parameter] public Func<(double X, double Y)?> ProgradePoint { get; set; } = default!;
+    [Parameter] public Func<string> HeadingLine { get; set; } = default!;
+}
