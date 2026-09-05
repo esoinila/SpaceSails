@@ -65,19 +65,9 @@
                PRIORITIZE REDISCOVERY button. Priority is a real trade: every other task waits. *@
             @if (_lostTracks.Entries.Count > 0)
             {
-                <div class="sensor-lost-box mb-2">
-                    <div class="fw-bold text-warning">🔍 Lost locks — search areas open on the map</div>
-                    @foreach (LostTrack lost in _lostTracks.Entries)
-                    {
-                        <div class="d-flex justify-content-between align-items-center gap-2">
-                            <span>@(FindCandidate(lost.ShipId)?.Callsign ?? lost.ShipId)</span>
-                            <span class="text-secondary">area @FormatWallDistance(lost.SearchRadius(SimTime)) and growing</span>
-                            <button type="button" class="btn btn-sm btn-warning py-0 px-1"
-                                    title="The search runs as the very next pass — tracked targets and scans wait"
-                                    @onclick="() => PrioritizeSearch(lost.ShipId)">⏫ PRIORITIZE REDISCOVERY</button>
-                        </div>
-                    }
-                </div>
+                <LostLockBoard _lostTracks="_lostTracks" SimTime="@SimTime"
+                               FindCandidate="FindCandidate" FormatWallDistance="FormatWallDistance"
+                               PrioritizeSearch="PrioritizeSearch" />
             }
 
             @if (_recentFinds.Count > 0)

@@ -1,0 +1,50 @@
+@namespace SpaceSails.Client.Pages.Stations
+@using SpaceSails.Core
+@using TrackingCandidate = SpaceSails.Client.Pages.Stations.TrackingPost.TrackingCandidate
+@*
+    #251 · THE COLD-CASE BOARD (PR-D's lost locks), ON ITS OWN FILE.
+
+    Moved out of Pages/Stations/TrackingPost.razor by PURE MOTION — the block between the two fences
+    below is the block that stood in the desk, character for character, at the indentation it had
+    there. Every member it reads is a [Parameter] carrying the desk's own member UNDER THAT MEMBER'S
+    OWN NAME (a field keeps its underscore, a method arrives as a delegate, a callback as itself), so
+    the markup moved without a rewrite and TrackingPostMarkup splices the desk back byte for byte.
+
+    The .razor.css beside this file carries no rules; it is there to give the component
+    TrackingPost.razor.css's OWN scope (b-9ekzcovohe, pinned in SpaceSails.Client.csproj). That sheet
+    has forty rules and not one `::deep` among them, so every one of them is scope-dependent: without
+    the carrier, every rule that styles this surface would stop matching the moment the markup moved
+    out of the desk — no build error, no test, the block just renders unstyled.
+
+    The `@if (_lostTracks.Entries.Count > 0)` and PR-D's paragraph above it stay in TrackingPost.razor.
+
+    PRIORITIZE REDISCOVERY is a real trade — the search pass runs as the very next look and every other
+    task waits — so the button calls the desk's own PrioritizeSearch, which is the same one call it made
+    before the cut, arriving here as a delegate under its own name.
+*@
+@* ── MARKUP BEGINS · verbatim from TrackingPost.razor ─────────────────────────────────────────────── *@
+                <div class="sensor-lost-box mb-2">
+                    <div class="fw-bold text-warning">🔍 Lost locks — search areas open on the map</div>
+                    @foreach (LostTrack lost in _lostTracks.Entries)
+                    {
+                        <div class="d-flex justify-content-between align-items-center gap-2">
+                            <span>@(FindCandidate(lost.ShipId)?.Callsign ?? lost.ShipId)</span>
+                            <span class="text-secondary">area @FormatWallDistance(lost.SearchRadius(SimTime)) and growing</span>
+                            <button type="button" class="btn btn-sm btn-warning py-0 px-1"
+                                    title="The search runs as the very next pass — tracked targets and scans wait"
+                                    @onclick="() => PrioritizeSearch(lost.ShipId)">⏫ PRIORITIZE REDISCOVERY</button>
+                        </div>
+                    }
+                </div>
+@* ── MARKUP ENDS ──────────────────────────────────────────────────────────────────────────────────── *@
+
+@code {
+    // #251 · Every [Parameter] below is a member of TrackingPost under the member's own name.
+    // A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public LostTrackLedger _lostTracks { get; set; } = default!;
+    [Parameter] public double SimTime { get; set; }
+    [Parameter] public Func<string, TrackingCandidate?> FindCandidate { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatWallDistance { get; set; } = default!;
+    [Parameter] public Action<string> PrioritizeSearch { get; set; } = default!;
+}
