@@ -335,6 +335,25 @@ public sealed class ThePlayerIsToldTests
         new("the wreck you scuttled is gone, and you heard whether anything was aboard",
             Surface.RaisedCard, "Map.Scuttle.cs", "ResolveScuttleOnDeparture",
             "_scuttleEpitaph = Scuttle.SheGoes(Scuttle.Method.ReactorOverload, _scuttleHeardIt);"),
+
+        // ── #525 · THE BERTH SCENE, and BOTH of its authored sentences are tellings ─────────────────────
+        //
+        // The PA is a Beat rather than a Status line for that rank's own definition — "something happened
+        // once and the book will keep it" — and here the book is literal: a harbour retypes its roster, the
+        // row rides the vault, and backing the keys out does not put it back. It is also the one moment the
+        // captain can still act on, because the recall window is open while the concourse is emptying, and a
+        // declared overload losing the slot to a fuel price would be #689's shape said about the loudest
+        // thing that has ever happened at a berth.
+        new("you declared an overload at a berth, and the port told the concourse",
+            Surface.RankedPulse, "Map.BerthScuttle.cs", "TheCollarIsCleared",
+            "ShowPulseMessage(pa, PulseRank.Beat);"),
+
+        // …and the port's second line, which is a CARD row rather than a pulse: it goes under the ending the
+        // castaway card already tells, so it is read at the moment it is true and cannot lose a race to
+        // anything. The markup renders the field (ShipEpitaphCard.razor, spliced back into the page).
+        new("the port has your name — the castaway who is standing on their concourse",
+            Surface.RaisedCard, "Map.ShipScuttleBoard.cs", "SheGoesWithoutHim",
+            "_shipEpitaph = new ShipEpitaph("),
     ];
 
     /// <summary>

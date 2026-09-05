@@ -522,6 +522,8 @@ public partial class Map
                 HallsStopped = StopRows(),
                 // #1074 beat 2 · …and which of THOSE it has since fenced and signed (Map.Preserve.cs).
                 HallsPreserved = PreserveRows(),
+                // #525 · …and the one collar a harbour has cleared with a reason on it (Map.BerthScuttle.cs).
+                CollarCleared = ClearedCollarRow(),
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
@@ -984,6 +986,8 @@ public partial class Map
         // it has since taken into care — that one restores and installs in one call (Map.Preserve.cs).
         RestoreStop(vault.Progress);
         RestorePreserve(vault.Progress);
+        // #525: and the one collar a harbour has cleared with a reason on it (Map.BerthScuttle.cs).
+        RestoreClearedCollar(vault.Progress);
 
         // …and Core is told at once, rather than waiting for the next descent: a save loaded straight onto a
         // ground must come back to a shaft that already ends where the burial left it, to the same one
@@ -1232,9 +1236,13 @@ public partial class Map
         Vector2d dockPos = _ephemeris.Position(havenId, savedSimTime);
         // The shared berth build (#269), in the slot the roster gives (#1068) — the SAME call the clamp
         // makes, so a resumed voyage ties up where the clamp tied up rather than a slot away from it.
+        // #525 · …and the slot is kept as well as the bearing, for ClampOntoHaven's own reason: the port's PA
+        // reads the number out, and a resumed berth that could not say which slot it was in would say the
+        // ordinary one while sitting on a reassigned collar.
+        _berthSlot = TheSlotTheRosterGives(havenId);
         _ship = BerthState.CoMoving(
             _ephemeris, havenId, savedSimTime, BerthState.BerthOffsetMeters, 0,
-            DockRoster.BearingAt(_ephemeris, havenId));
+            TheBearingOfSlot(havenId, _berthSlot.Value));
 
         SimTime = savedSimTime;
 
