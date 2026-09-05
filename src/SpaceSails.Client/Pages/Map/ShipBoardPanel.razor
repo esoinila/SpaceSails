@@ -323,7 +323,7 @@
     [Parameter] public Func<double, string> Du { get; set; } = default!;
     [Parameter] public Action<string> GiveTheCaptainsWord { get; set; } = default!;
     [Parameter] public Action<string> RefillShipCompartment { get; set; } = default!;
-    [Parameter] public Action SealHerUp { get; set; } = default!;
+    [Parameter] public EventCallback SealHerUp { get; set; }
     [Parameter] public Action<string> SelectShipSpace { get; set; } = default!;
     [Parameter] public Func<string, (string Text, string Class)> ShipAreaTag { get; set; } = default!;
     [Parameter] public Func<ShipAuthority.VentAuthority> ShipAuthorityNow { get; set; } = default!;
@@ -339,13 +339,13 @@
     [Parameter] public Action<string> StartShipPump { get; set; } = default!;
     [Parameter] public Action<string> StopShipPump { get; set; } = default!;
     [Parameter] public Action<string, bool> ToggleShipDoor { get; set; } = default!;
-    [Parameter] public Action UnsealHer { get; set; } = default!;
+    [Parameter] public EventCallback UnsealHer { get; set; }
     [Parameter] public Func<string, float, float, float, (string Text, string Class), float, string> OnVentAreaLabelSvg { get; set; } = default!;
     private string VentAreaLabelSvg(string label, float cx, float cy, float roomWidth,
         (string Text, string Class) tag, float roomHeight = 0f)
         => OnVentAreaLabelSvg(label, cx, cy, roomWidth, tag, roomHeight);
     [Parameter] public Action<string> VentShipCompartment { get; set; } = default!;
-    [Parameter] public Action WithdrawTheCaptainsWord { get; set; } = default!;
+    [Parameter] public EventCallback WithdrawTheCaptainsWord { get; set; }
 
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

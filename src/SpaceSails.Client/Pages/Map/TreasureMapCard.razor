@@ -73,7 +73,7 @@
 
     [Parameter] public Func<string, string> BodyName { get; set; } = default!;
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    [Parameter] public Func<Task> DismissMapCard { get; set; } = default!;
+    [Parameter] public EventCallback DismissMapCard { get; set; }
     [Parameter] public Func<string, string> TreasureMapArtCss { get; set; } = default!;
     [Parameter] public TreasureCache map { get; set; } = default!;
 

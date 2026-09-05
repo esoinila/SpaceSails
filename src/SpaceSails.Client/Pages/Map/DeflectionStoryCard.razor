@@ -69,7 +69,7 @@
     // when it lived in the page. A parameter that needs saying more than that says it on its own line.
 
     [Parameter] public int _deflectionStoryIndex { get; set; }
-    [Parameter] public Action AdvanceDeflectionStory { get; set; } = default!;
+    [Parameter] public EventCallback AdvanceDeflectionStory { get; set; }
     [Parameter] public Func<DeflectionStoryPanel, string> DeflectionPanelArtCss { get; set; } = default!;
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
     [Parameter] public List<DeflectionStoryPanel> story { get; set; } = default!;

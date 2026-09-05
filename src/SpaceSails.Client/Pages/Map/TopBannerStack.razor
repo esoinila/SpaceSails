@@ -129,12 +129,12 @@
     [Parameter] public string? _dockReadyStatus { get; set; }
     [Parameter] public ShipAlerts _shipAlerts { get; set; } = default!;
     [Parameter] public Action<AlertKind> AcknowledgeAlert { get; set; } = default!;
-    [Parameter] public Action AuthorizePlunder { get; set; } = default!;
+    [Parameter] public EventCallback AuthorizePlunder { get; set; }
     [Parameter] public bool AutopilotStoodDown { get; set; }
-    [Parameter] public Action BannerPageDown { get; set; } = default!;
-    [Parameter] public Action BannerPageUp { get; set; } = default!;
+    [Parameter] public EventCallback BannerPageDown { get; set; }
+    [Parameter] public EventCallback BannerPageUp { get; set; }
     [Parameter] public Action<NpcState> Board { get; set; } = default!;
-    [Parameter] public Action DeclinePlunder { get; set; } = default!;
+    [Parameter] public EventCallback DeclinePlunder { get; set; }
     [Parameter] public Func<FlightPlanStatus> FlightNowNext { get; set; } = default!;
     [Parameter] public Func<ShipDesk, Task> SwitchDeskFromClick { get; set; } = default!;
 

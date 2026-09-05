@@ -177,7 +177,7 @@
     [Parameter] public Func<string?, CelestialBody?> LongHaulTargetPlanet { get; set; } = default!;
     [Parameter] public Func<(double X, double Y), string> MenuAnchorStyle { get; set; } = default!;
     [Parameter] public bool NavLockedByDock { get; set; }
-    [Parameter] public Func<Task> RideTheCyclerWindow { get; set; } = default!;
+    [Parameter] public EventCallback RideTheCyclerWindow { get; set; }
     [Parameter] public Action<Vector2d, double, string> ScanAreaFromMenu { get; set; } = default!;
     [Parameter] public Func<Vector2d, double, string> ScanCostText { get; set; } = default!;
     [Parameter] public Action<string?> SetDestination { get; set; } = default!;

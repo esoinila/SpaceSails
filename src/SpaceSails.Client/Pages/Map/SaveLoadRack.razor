@@ -450,26 +450,26 @@
     [Parameter] public string[] AllSlotIds { get; set; } = default!;
     [Parameter] public Action<string> BeginBankToSlot { get; set; } = default!;
     [Parameter] public Action<string, string> BeginEditSlotPage { get; set; } = default!;
-    [Parameter] public Action BeginExportMoment { get; set; } = default!;
+    [Parameter] public EventCallback BeginExportMoment { get; set; }
     [Parameter] public Action<string> BeginRenameCaptain { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<(string Id, string Name)>> BerthStarts { get; set; } = default!;
-    [Parameter] public Action CancelRenameCaptain { get; set; } = default!;
+    [Parameter] public EventCallback CancelRenameCaptain { get; set; }
     [Parameter] public Func<string, string> CaptainInitial { get; set; } = default!;
     [Parameter] public Func<string, string> CaptainMonoColor { get; set; } = default!;
     [Parameter] public Func<GameThreadInfo, string> CaptainRetiredSummary { get; set; } = default!;
     [Parameter] public Func<GameThreadInfo, string> CaptainWhen { get; set; } = default!;
     [Parameter] public Func<string, Task> ChooseBerthStart { get; set; } = default!;
-    [Parameter] public Action CloseSaveDrawer { get; set; } = default!;
-    [Parameter] public Action CommitRenameCaptain { get; set; } = default!;
-    [Parameter] public Func<Task> ContinueFromSave { get; set; } = default!;
+    [Parameter] public EventCallback CloseSaveDrawer { get; set; }
+    [Parameter] public EventCallback CommitRenameCaptain { get; set; }
+    [Parameter] public EventCallback ContinueFromSave { get; set; }
     [Parameter] public Action<string, string> DeleteThreadSlot { get; set; } = default!;
     [Parameter] public Action<string, string> ExportThreadSlot { get; set; } = default!;
     [Parameter] public Action<SpaceSails.Core.DevStarts.Entry> GoToDevStart { get; set; } = default!;
     [Parameter] public Func<string, string, Task> ImportIntoThreadSlot { get; set; } = default!;
-    [Parameter] public Func<Task> ImportVault { get; set; } = default!;
+    [Parameter] public EventCallback ImportVault { get; set; }
     [Parameter] public Func<string, string, Task> LoadThreadSlot { get; set; } = default!;
     [Parameter] public Func<string, string, bool> NoteIsOpen { get; set; } = default!;
-    [Parameter] public Action<KeyboardEventArgs> RenameKeyDown { get; set; } = default!;
+    [Parameter] public EventCallback<KeyboardEventArgs> RenameKeyDown { get; set; }
     [Parameter] public bool ShowDevStarts { get; set; }
     [Parameter] public Action<CapturedSelfie> ShowSelfie { get; set; } = default!;
     [Parameter] public Action<string> StartDockedAtHaven { get; set; } = default!;

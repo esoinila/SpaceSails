@@ -71,9 +71,9 @@
     [Parameter] public ArrivalBrake.Gate _brakeGate { get; set; } = default!;
     [Parameter] public Func<string> ArrivalBrakeAskText { get; set; } = default!;
     [Parameter] public bool BrakeIsAerobrake { get; set; }
-    [Parameter] public Action DeclineArrivalBrake { get; set; } = default!;
+    [Parameter] public EventCallback DeclineArrivalBrake { get; set; }
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    [Parameter] public Action FireArrivalBrake { get; set; } = default!;
+    [Parameter] public EventCallback FireArrivalBrake { get; set; }
 
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

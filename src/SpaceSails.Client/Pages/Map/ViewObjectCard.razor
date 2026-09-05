@@ -103,8 +103,8 @@
 
     [Parameter] public Action CloseViewObject { get; set; } = default!;
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    [Parameter] public Action KeepTheFind { get; set; } = default!;
-    [Parameter] public Action LeaveTheFind { get; set; } = default!;
+    [Parameter] public EventCallback KeepTheFind { get; set; }
+    [Parameter] public EventCallback LeaveTheFind { get; set; }
     [Parameter] public Action<SdrScanner.Hit> PressTheHit { get; set; } = default!;
     [Parameter] public bool TheFindIsWaitingOnAnAnswer { get; set; }
     [Parameter] public bool TheKitsCardIsUp { get; set; }

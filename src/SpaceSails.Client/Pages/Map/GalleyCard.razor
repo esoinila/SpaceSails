@@ -140,7 +140,7 @@
     [Parameter] public int GalleyFeedAmbientDays { get; set; }
     [Parameter] public int GalleyFeedItemCount { get; set; }
     [Parameter] public Func<int, IReadOnlyList<NewsWire.NewsItem>> NewsFeed { get; set; } = default!;
-    [Parameter] public Action PourRumFromGalley { get; set; } = default!;
+    [Parameter] public EventCallback PourRumFromGalley { get; set; }
     [Parameter] public bool RumWobbleActive { get; set; }
     [Parameter] public double SimTime { get; set; }
 

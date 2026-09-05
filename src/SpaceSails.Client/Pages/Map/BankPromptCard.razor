@@ -130,8 +130,8 @@
     [Parameter] public Action<string> _bankTitleSet { get; set; } = default!;
     private string _bankTitle { get => _bankTitleValue; set { _bankTitleValue = value; _bankTitleSet(value); } }
     [Parameter] public string BankPromptHeading { get; set; } = default!;
-    [Parameter] public Action CancelBankPrompt { get; set; } = default!;
-    [Parameter] public Action CommitBankPrompt { get; set; } = default!;
+    [Parameter] public EventCallback CancelBankPrompt { get; set; }
+    [Parameter] public EventCallback CommitBankPrompt { get; set; }
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
     [Parameter] public BankPromptKind bankKind { get; set; } = default!;
 

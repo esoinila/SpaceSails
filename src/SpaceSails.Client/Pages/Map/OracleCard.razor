@@ -103,11 +103,11 @@
     [Parameter] public int _credits { get; set; }
     [Parameter] public int _oracleDrinks { get; set; }
     [Parameter] public string? _oracleNotice { get; set; }
-    [Parameter] public Action BuyOracleDrink { get; set; } = default!;
+    [Parameter] public EventCallback BuyOracleDrink { get; set; }
     [Parameter] public Action CloseOracle { get; set; } = default!;
     [Parameter] public Core.Interior.Barkeep? CurrentKeep { get; set; }
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    [Parameter] public Action NextOracleLine { get; set; } = default!;
+    [Parameter] public EventCallback NextOracleLine { get; set; }
     [Parameter] public OracleLine oline { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

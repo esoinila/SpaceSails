@@ -224,7 +224,7 @@
     [Parameter] public Func<string> BoardingHoldQuote { get; set; } = default!;
     [Parameter] public Func<int> BoardingHoldSeverity { get; set; } = default!;
     [Parameter] public string BotMusterLine { get; set; } = default!;
-    [Parameter] public Action CancelBoarding { get; set; } = default!;
+    [Parameter] public EventCallback CancelBoarding { get; set; }
     [Parameter] public Func<ShuttleStop, Task> ConfirmBoarding { get; set; } = default!;
     [Parameter] public Func<double, string> FormatDuration { get; set; } = default!;
     [Parameter] public Func<int> HotHoldUnits { get; set; } = default!;

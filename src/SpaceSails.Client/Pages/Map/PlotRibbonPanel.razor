@@ -151,7 +151,7 @@
     [Parameter] public Func<string, string> BodyName { get; set; } = default!;
     [Parameter] public Func<ClosestApproach.Pass, DestPassInfo?> DestinationPassInfo { get; set; } = default!;
     [Parameter] public string DockNavLockTip { get; set; } = default!;
-    [Parameter] public Func<Task> EngageLongHaul { get; set; } = default!;
+    [Parameter] public EventCallback EngageLongHaul { get; set; }
     [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
     [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
     [Parameter] public Func<string?, HarborClass> HarborClassOf { get; set; } = default!;

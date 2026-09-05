@@ -242,7 +242,7 @@
     [Parameter] public string CabinetLeafHint { get; set; } = default!;
     [Parameter] public string CabinetLeafLabel { get; set; } = default!;
     [Parameter] public bool CanSpreadTheCaseHere { get; set; }
-    [Parameter] public Action OpenTheSpread { get; set; } = default!;
+    [Parameter] public EventCallback OpenTheSpread { get; set; }
     [Parameter] public Func<double?> ProcessingFraction { get; set; } = default!;
     [Parameter] public Func<string?> ProcessingUnderway { get; set; } = default!;
     [Parameter] public Func<Core.Satchel.Item, string> SatchelLabel { get; set; } = default!;
@@ -258,8 +258,8 @@
     [Parameter] public Func<IReadOnlyList<Encounter.Move>> TableMovesOnTheTable { get; set; } = default!;
     [Parameter] public Action<Core.Satchel.Item> TableShow { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<Core.Satchel.Item>> TableShowables { get; set; } = default!;
-    [Parameter] public Action ToggleSeatedNews { get; set; } = default!;
-    [Parameter] public Action WorkTheCabinetLeaf { get; set; } = default!;
+    [Parameter] public EventCallback ToggleSeatedNews { get; set; }
+    [Parameter] public EventCallback WorkTheCabinetLeaf { get; set; }
 
     /// <summary>bound by the OUTER `@if (SeatedTable is { } tab)` that stays in the page</summary>
     [Parameter] public TableTalk tab { get; set; } = default!;

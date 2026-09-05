@@ -70,7 +70,7 @@
     // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
     // when it lived in the page. A parameter that needs saying more than that says it on its own line.
 
-    [Parameter] public Action CloseSelfieShot { get; set; } = default!;
+    [Parameter] public EventCallback CloseSelfieShot { get; set; }
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
     [Parameter] public CapturedSelfie shot { get; set; } = default!;
 

@@ -140,8 +140,8 @@
     [Parameter] public Action CloseChargeBoard { get; set; } = default!;
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
     [Parameter] public Func<double> HullChargeNow { get; set; } = default!;
-    [Parameter] public Action ToggleContactor { get; set; } = default!;
-    [Parameter] public Action VentCharge { get; set; } = default!;
+    [Parameter] public EventCallback ToggleContactor { get; set; }
+    [Parameter] public EventCallback VentCharge { get; set; }
 
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

@@ -136,8 +136,8 @@
     // when it lived in the page. A parameter that needs saying more than that says it on its own line.
 
     [Parameter] public double? _scuttleSecondsLeft { get; set; }
-    [Parameter] public Action AbortTheOverload { get; set; } = default!;
-    [Parameter] public Action ArmTheOverload { get; set; } = default!;
+    [Parameter] public EventCallback AbortTheOverload { get; set; }
+    [Parameter] public EventCallback ArmTheOverload { get; set; }
     [Parameter] public Action CloseScuttlePanel { get; set; } = default!;
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<Scuttle.Method>> ScuttleMethods { get; set; } = default!;

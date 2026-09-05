@@ -134,7 +134,7 @@
     [Parameter] public HashSet<string> CollapsedLayerGroups { get; set; } = default!;
     [Parameter] public HashSet<string> HiddenLayers { get; set; } = default!;
     [Parameter] public Func<string, bool> LayerVisible { get; set; } = default!;
-    [Parameter] public Action ResetLayersToDeskDefaults { get; set; } = default!;
+    [Parameter] public EventCallback ResetLayersToDeskDefaults { get; set; }
     [Parameter] public Action<string> ToggleLayer { get; set; } = default!;
     [Parameter] public Action<MapLayerTree.Group> ToggleLayerGroup { get; set; } = default!;
     [Parameter] public Action<string> ToggleLayerGroupCollapsed { get; set; } = default!;

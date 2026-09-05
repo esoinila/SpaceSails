@@ -298,16 +298,16 @@
     [Parameter] public string? _barNotice { get; set; }
     [Parameter] public int _credits { get; set; }
     [Parameter] public bool _showBarMenu { get; set; }
-    [Parameter] public Action AskAboutKaamos { get; set; } = default!;
-    [Parameter] public Action AskAboutNebula { get; set; } = default!;
-    [Parameter] public Action AskBarkeepForRumor { get; set; } = default!;
+    [Parameter] public EventCallback AskAboutKaamos { get; set; }
+    [Parameter] public EventCallback AskAboutNebula { get; set; }
+    [Parameter] public EventCallback AskBarkeepForRumor { get; set; }
     [Parameter] public Action<bool> BookARoom { get; set; } = default!;
     [Parameter] public string BookingHint { get; set; } = default!;
     [Parameter] public Action<Core.Drink> BuyDrink { get; set; } = default!;
-    [Parameter] public Action BuyHouseSpecial { get; set; } = default!;
-    [Parameter] public Action BuyRoundForRoom { get; set; } = default!;
-    [Parameter] public Action BuyTheCutter { get; set; } = default!;
-    [Parameter] public Action BuyTheKit { get; set; } = default!;
+    [Parameter] public EventCallback BuyHouseSpecial { get; set; }
+    [Parameter] public EventCallback BuyRoundForRoom { get; set; }
+    [Parameter] public EventCallback BuyTheCutter { get; set; }
+    [Parameter] public EventCallback BuyTheKit { get; set; }
     [Parameter] public bool CaptainIsOnAStool { get; set; }
     [Parameter] public Action CloseBarkeep { get; set; } = default!;
     [Parameter] public Func<string, string, Core.Interior.Barkeep, RenderFragment> ContactDrinkOffer { get; set; } = default!;
@@ -325,12 +325,12 @@
     [Parameter] public Func<Encounter.Move, bool> StoolMoveOnOffer { get; set; } = default!;
     [Parameter] public Func<Encounter.Move, string> StoolMoveRefusal { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<Encounter.Move>> StoolMovesOnTheTable { get; set; } = default!;
-    [Parameter] public Action TakeAStool { get; set; } = default!;
+    [Parameter] public EventCallback TakeAStool { get; set; }
     [Parameter] public bool TheBackCounterIsOpen { get; set; }
     [Parameter] public bool TheCounterRentsRooms { get; set; }
     [Parameter] public Func<string?> TheKeepsTell { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<string>> TheOverheardBlock { get; set; } = default!;
-    [Parameter] public Action ToggleBarMenu { get; set; } = default!;
+    [Parameter] public EventCallback ToggleBarMenu { get; set; }
     [Parameter] public Func<string?> WhoIsInTonight { get; set; } = default!;
     [Parameter] public Core.Interior.Barkeep keep { get; set; } = default!;
 

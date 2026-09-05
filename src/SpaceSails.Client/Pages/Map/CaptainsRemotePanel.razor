@@ -197,20 +197,20 @@
     [Parameter] public bool _weaponsTight { get; set; }
     [Parameter] public Func<string?> AwayWindowRemoteLine { get; set; } = default!;
     [Parameter] public Func<string> AwayWindowRemoteSubLine { get; set; } = default!;
-    [Parameter] public Action BackToTheSwitches { get; set; } = default!;
+    [Parameter] public EventCallback BackToTheSwitches { get; set; }
     [Parameter] public SilentRunning.BoatState BoatState { get; set; } = default!;
     [Parameter] public Action CloseCaptainsRemote { get; set; } = default!;
     [Parameter] public Func<List<SurfaceBot>> DesignatableGuns { get; set; } = default!;
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
     [Parameter] public Action<DesignateTarget> FireOnTheLock { get; set; } = default!;
     [Parameter] public bool OnWreck { get; set; }
-    [Parameter] public Action OpenDesignate { get; set; } = default!;
+    [Parameter] public EventCallback OpenDesignate { get; set; }
     [Parameter] public Action<string> PickTheGun { get; set; } = default!;
-    [Parameter] public Action SendTheStanding { get; set; } = default!;
+    [Parameter] public EventCallback SendTheStanding { get; set; }
     [Parameter] public HullSounding.Method SoundingGear { get; set; } = default!;
-    [Parameter] public Action ToggleBoatPower { get; set; } = default!;
-    [Parameter] public Action ToggleQuietSearch { get; set; } = default!;
-    [Parameter] public Action ToggleWeaponsTight { get; set; } = default!;
+    [Parameter] public EventCallback ToggleBoatPower { get; set; }
+    [Parameter] public EventCallback ToggleQuietSearch { get; set; }
+    [Parameter] public EventCallback ToggleWeaponsTight { get; set; }
 
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

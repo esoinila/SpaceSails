@@ -96,7 +96,7 @@
     [Parameter] public Action CloseAlarmPanel { get; set; } = default!;
     [Parameter] public Func<LabSecurity.Approach> CurrentApproach { get; set; } = default!;
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    [Parameter] public Action HackTheAlarm { get; set; } = default!;
+    [Parameter] public EventCallback HackTheAlarm { get; set; }
     [Parameter] public int LabHackStack { get; set; }
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

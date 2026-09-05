@@ -416,24 +416,24 @@
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
     [Parameter] public Func<double, string> Du { get; set; } = default!;
     [Parameter] public Func<int> FloodCost { get; set; } = default!;
-    [Parameter] public Action FloodTheShip { get; set; } = default!;
-    [Parameter] public Action OrderWholeShipPumped { get; set; } = default!;
+    [Parameter] public EventCallback FloodTheShip { get; set; }
+    [Parameter] public EventCallback OrderWholeShipPumped { get; set; }
     [Parameter] public Func<IReadOnlyList<string>> PumpableRooms { get; set; } = default!;
-    [Parameter] public Action PumpEverySealedRoom { get; set; } = default!;
+    [Parameter] public EventCallback PumpEverySealedRoom { get; set; }
     [Parameter] public Func<string, PumpRun?> PumpOn { get; set; } = default!;
     [Parameter] public Action<string> ReadLifeSigns { get; set; } = default!;
     [Parameter] public Action<string> RefillCompartment { get; set; } = default!;
     [Parameter] public Action<string> RescueSurvivor { get; set; } = default!;
-    [Parameter] public Action SealTheShip { get; set; } = default!;
+    [Parameter] public EventCallback SealTheShip { get; set; }
     [Parameter] public Action<string> SelectVentSpace { get; set; } = default!;
     [Parameter] public Func<string, HullVenting.Space> SpaceNow { get; set; } = default!;
     [Parameter] public bool SpinePumpable { get; set; }
     [Parameter] public Func<(string Text, string Class)> SpineTag { get; set; } = default!;
     [Parameter] public Action<string> StartPumpDown { get; set; } = default!;
-    [Parameter] public Action StartSpinePump { get; set; } = default!;
+    [Parameter] public EventCallback StartSpinePump { get; set; }
     [Parameter] public Action<string> StopPump { get; set; } = default!;
     [Parameter] public Action<string> ToggleVentDoor { get; set; } = default!;
-    [Parameter] public Action UnsealTheShip { get; set; } = default!;
+    [Parameter] public EventCallback UnsealTheShip { get; set; }
     [Parameter] public Func<string, float, float, float, (string Text, string Class), float, string> OnVentAreaLabelSvg { get; set; } = default!;
     private string VentAreaLabelSvg(string label, float cx, float cy, float roomWidth,
         (string Text, string Class) tag, float roomHeight = 0f)

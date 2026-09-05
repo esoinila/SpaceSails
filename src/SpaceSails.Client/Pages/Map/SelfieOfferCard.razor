@@ -60,8 +60,8 @@
     // when it lived in the page. A parameter that needs saying more than that says it on its own line.
 
     [Parameter] public SelfieOffer? _selfieOffer { get; set; }
-    [Parameter] public Action AcceptSelfieOffer { get; set; } = default!;
-    [Parameter] public Action DeclineSelfieOffer { get; set; } = default!;
+    [Parameter] public EventCallback AcceptSelfieOffer { get; set; }
+    [Parameter] public EventCallback DeclineSelfieOffer { get; set; }
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
     [Parameter] public SelfieOffer selfieOffer { get; set; } = default!;
 
