@@ -156,6 +156,9 @@ public partial class Map
         CheckFetchPickup();     // coasting past the wreck grabs a fetch job's goods
         DriveSkip();            // #172: own the warp while skipping — arrive/announce, or yield to the helm
         UpdateEffectiveWarp();
+        // #160: the milk-run lesson reads the live loop and says its next line. AFTER the warp is settled,
+        // because one of its eight gates is the warp the game is actually honouring this frame.
+        WatchTheMilkRun();
     }
 
     /// <summary>Buy this frame's worth of sim seconds, and never more than the loop below can spend.</summary>

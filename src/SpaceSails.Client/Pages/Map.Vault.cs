@@ -229,6 +229,7 @@ public partial class Map
         _revealedBodyIds.Clear();
         _scopeIntel.Clear();
 
+        TheMilkRunIsUntaught(); // #160: a new universe has not been taught the loop
         // #292 note: _tutorialPlayed is deliberately NOT reset here. Whether a fresh universe re-runs the
         // tutorial (and its date-triggered target rush) is the docked-starts lane's rework, not this one;
         // this lane owns that the persistence model resets and isolates the mission slate above.
@@ -497,6 +498,7 @@ public partial class Map
                 // ShoreLeaveIsALedgerLineTests against a real pre-#1066 file).
                 WorkingStopsSinceShoreLeave =
                     _workingStopsSinceShoreLeave > 0 ? _workingStopsSinceShoreLeave : null,
+                MilkRunLessonStep = _milkRunStep > 0 ? _milkRunStep : null, // #160 · null while untaken
                 // #677 · the disclosure clock's register — which grounds this thread has been past the seam
                 // of, and the world-side window each was opened in. A clock that forgot across a reload
                 // would not be a clock. Null while empty: an eager [] would move every legacy vault's
@@ -989,6 +991,7 @@ public partial class Map
         // field and wakes as a ship that has just come off a gangway, which is the kind direction to be
         // wrong in — nobody is owed a run ashore they were never denied.
         _workingStopsSinceShoreLeave = vault.Progress?.WorkingStopsSinceShoreLeave ?? _workingStopsSinceShoreLeave;
+        TheMilkRunResumes(vault.Progress?.MilkRunLessonStep); // #160: the lesson's own place, and its row
         // #409: restore the secret labs this thread has found, so a known body's hidden door stays revealed
         // on every future landing (a pre-#409 save simply lacks the field — an empty set, harmless).
         if (vault.Progress?.SecretLabsFound is { } found)

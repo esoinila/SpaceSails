@@ -459,6 +459,27 @@ public sealed record ProgressSection
     [System.Text.Json.Serialization.JsonIgnore(
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public int? WorkingStopsSinceShoreLeave { get; init; }
+
+    /// <summary>
+    /// #160 · WHERE THE MILK-RUN LESSON HAD GOT TO — 1..8 while the loop is being walked (the step that is
+    /// current, whose line has already been said), one past the last once the coin is on the counter.
+    ///
+    /// <para><b>Why this one lesson vaults its place and the other three do not.</b> The milk run's eight
+    /// lines are said ONCE EACH, as their step becomes the thing to do, and the canon pass' own law is that
+    /// none of them is re-fired on a reload. <c>_tutorialStep</c> cannot carry that: it is deliberately not
+    /// persisted — it rests at 0 for every captain who never took a lesson, which is exactly what
+    /// <c>KeepTheLessonsPreyInTheWorld</c> reads — so a resumed voyage would say line 1 again at the next
+    /// berth. This is the lesson's own place, and the page restores <c>_tutorialStep</c> from it.</para>
+    ///
+    /// <para><b>Written only when there is something to write</b>, the #1066/#1072 rule: the checksum is
+    /// taken over the payload, so a <c>"milkRunLessonStep": 0</c> on every save would change the digest of
+    /// every vault ever written and hang the 📛 tampered marker on an honest voyage. Null means "this
+    /// captain never took the lesson", which is the truth about every file written before it existed.</para>
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public int? MilkRunLessonStep { get; init; }
+
     /// <summary>#677 — THE DISCLOSURE CLOCK'S REGISTER: the grounds whose halls this thread has been past the
     /// seam of, and the world-side window each was opened in (<see cref="DisclosureClock"/>).
     ///

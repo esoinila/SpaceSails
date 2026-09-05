@@ -98,6 +98,21 @@ public partial class Map
     private const int StepInsertHaven = 13;
     private const int StepCoolHeat = 14;
 
+    // #160 · Fourth tutorial (THE MILK RUN) — the eight steps of the whole working loop, in order. Written
+    // as consts off the third track's last step rather than derived from TutorialSteps.Length, because a
+    // static FIELD that reads another static field of the same partial class depends on which source file
+    // the compiler happened to see first; a const does not. The eight LINES are canon and live in Core
+    // (MilkRunLesson.Lines); the eight GATES — the real state that finishes each step — are in
+    // Map.Quests.MilkRun.cs, one row per line.
+    private const int StepTakeTheMilkRun = StepCoolHeat + 1;         // 1 · take the contract off the board
+    private const int StepPlanDockToDock = StepTakeTheMilkRun + 1;   // 2 · plot the whole trip, berth to berth
+    private const int StepTopHerOff = StepTakeTheMilkRun + 2;        // 3 · fill the tank (#157)
+    private const int StepArmAndRead = StepTakeTheMilkRun + 3;       // 4 · arm, and read the rehearsal's quote
+    private const int StepDepartureBurn = StepTakeTheMilkRun + 4;    // 5 · the cast-off fires itself (#159)
+    private const int StepWarpTheCoast = StepTakeTheMilkRun + 5;     // 6 · warp is the captain's clock
+    private const int StepArriveAndDock = StepTakeTheMilkRun + 6;    // 7 · the armed-at-plan-time arrival (#955)
+    private const int StepPaidAtTheCounter = StepTakeTheMilkRun + 7; // 8 · the coin on the counter
+
     private static readonly string[] TutorialSteps =
     [
         // First hunt — the soft catch (a compliant Luna pod)
@@ -121,6 +136,11 @@ public partial class Map
         // hard way that a cooled gauge is not what calls a collector off ("we have zero heat and are docked
         // at haven ... why is this still hunting us?"). Her own card carries the break-off clock.
         "Lie low until the heat cools to nothing (her contract has its own clock — read her card)",
+        // #160 · Fourth — THE MILK RUN, the whole working loop end to end. Its eight rows are the eight
+        // canon lines themselves, spliced in from Core: the row you read on the checklist IS the line the
+        // game speaks when that step becomes the one to do, because they are one string and there was never
+        // a reason for them to be two. (The splice is why StepTakeTheMilkRun is a const off StepCoolHeat.)
+        .. MilkRunLesson.Lines,
     ];
 
     // The tutorials are independent tracks over ranges of TutorialSteps — the Captain's Tutorials tab
@@ -134,6 +154,10 @@ public partial class Map
         new(0, FirstHuntSteps, "The soft catch", "A compliant Luna pod — learn the intercept and the board."),
         new(StepSelectFreighter, 6, "The gun", "A runner who won't heave to — hole her sail, take her cargo."),
         new(StepOrderLayLow, 3, "Use a haven", "You've made enemies. Cool the heat and shake the hunter at a haven."),
+        // #160 · The milk run. Its card's name and blurb are the two halves of its own first line — derived,
+        // not authored, because the canon pass wrote eight lines and a ninth for a picker card would be a
+        // ninth line. Length comes off the array so a step can never be added without a card that shows it.
+        new(StepTakeTheMilkRun, MilkRunLesson.StepCount, MilkRunLesson.Title, MilkRunLesson.Blurb),
     ];
 
     // The track _tutorialStep currently sits in, or -1 once every step is behind you.
@@ -202,6 +226,7 @@ public partial class Map
             case 0: SeedFirstHuntTarget(); break;
             case 1: SeedSecondHuntTarget(); break;
             case 2: SeedHavenLesson(); break;
+            case 3: SeedMilkRun(); break;   // #160 — the lesson posts its OWN contract (#1091's law)
         }
 
         SwitchDesk(ShipDesk.Nav); // the hunt/haven all play out on the map; go to the helm
@@ -322,6 +347,13 @@ public partial class Map
                  && !SheIsStillOutThere(TrafficSchedule.StarterFreighterId))
         {
             SeedSecondHuntTarget();
+        }
+        else
+        {
+            // #160 · The milk run's "prey" is a notice on a wall. The same ruling reaches it: if the lesson
+            // still wants the contract taken and it is not on the board, opening the checklist puts it back
+            // there. (A run already in the captain's hand is left strictly alone — see the method.)
+            PostTheMilkRunContractAgain();
         }
     }
 
