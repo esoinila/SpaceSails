@@ -1553,6 +1553,26 @@ Discovery **persists per game-thread**: once found, a revisit to that body shows
 To exercise the *discovery* vector itself on an ordinary body, land empty-handed and **probe** (`[E]` on the
 regolith) — the detector shrieks a proximity hint near the door and reveals it on the exact square.
 
+### The chain-of-custody worry (#426)
+
+Storm-triggered dread over #397's ship history, and the first thing in the game that reads the **captain's
+own hull's** service record rather than an NPC's. **Walk her own deck** (no haven, no landing) and wait for
+the first `〰` toast of a fresh rough patch: the tremor that OPENS a storm window speaks a chain-of-custody
+line instead of the ordinary pool line — *"Something aft settles into a new shape. Koski & Daughters Orbital
+Yards (Rauma Crater, Luna) laid her down in 2341, and every owner since has trusted that."* The yard and the
+year are her **builder's plate's** (#392); the rest of her record (two owners deep, no rename) is seeded off
+the same pools every hull is dealt from.
+
+What a tester should see, and what should never happen:
+
+- **Once per storm.** The second, third and fourth tremors of the same rough patch speak the ordinary ship
+  pool again. A fresh run (the storm blew over, or the caution PA announced it) may worry again.
+- **Her hull only.** A shudder in a haven bar or on a moon never says it — a station settling on its clamps
+  is somebody else's paperwork.
+- **Nothing resolves, and nothing is charged.** No yard can inspect the weld, no dossier field says
+  UNSURVEYED, no nerve pip moves, and there is no maintenance debt anywhere (the issue's optional hook is
+  deliberately **not** built). If a mechanic ever offers to settle it, the beat has been broken.
+
 ### The dockable berths — `?dock=<id>` (#288 / #289)
 
 `?dock=<id>` rides the **same clamp path a real arrival takes** (co-moving berth + `ClampOntoHaven`),
