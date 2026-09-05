@@ -176,12 +176,25 @@ public static class EncounterRule
     /// <summary>Deterministic per-ship "type": hashes the ship's id rather than drawing from any
     /// live RNG stream, so asking twice (or asking on client and server) always agrees. Heat
     /// nudges the odds — the same ship can flip from compliant to stubborn as the player's
-    /// reputation grows.</summary>
+    /// reputation grows.
+    ///
+    /// <para>#534 · <b>A hull that is not a merchant does not answer as one.</b> A masked warship
+    /// (<see cref="QShip.IsMasked"/>) never heaves to, at any heat, and that is the whole of what
+    /// committing to her costs: no new rule about combat, no special case at the boarding gate — the
+    /// ordinary machinery meeting a target that shoots back. Everything downstream already exists and
+    /// resolves off this one answer (a warning shot buys nothing, the robbery costs the stubborn heat,
+    /// and the muscle she calls is the muscle the heat already spawns). The read before the pass was the
+    /// whole chance.</para></summary>
     public static ComplianceState ComplianceOf(NpcShip npc, int playerHeat)
     {
         if (npc.IsPod)
         {
             return ComplianceState.NothingToComply;
+        }
+
+        if (QShip.IsMasked(npc))
+        {
+            return ComplianceState.Stubborn;
         }
 
         double stubbornFraction = Math.Min(MaxStubbornFraction,
