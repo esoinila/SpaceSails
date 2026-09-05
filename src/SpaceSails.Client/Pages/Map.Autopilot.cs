@@ -438,6 +438,11 @@ public partial class Map
         // Derelict Roadster, Mercury Compute Farms and Highport Satellite Works are μ=0 stations with no
         // haven flag: the autopilot flew you to a wreck and told you to clamp onto it. The clamp clause is
         // now spoken only where a clamp exists; alongside a wreck the line stops at the truth.
+        // FABLE: line needed — the arrival line for a berth with no clamp. #244 item 1 asks for a wreck's
+        // own sentence ("alongside <name> — closing to pickup range") and item 3 for its own arm-menu verb
+        // instead of "✈ Autopilot: orbit <name>" at a massless car; both are new prose and belong to a
+        // canon pass, not to this lane. The DISTANCE is honest now — the ship really is inside pickup
+        // range — and no clamp is promised (#1104); only the noun is still the harbour's.
         string clamp = IsDockableHaven(station) ? " — hit ⚓ Dock to clamp on" : "";
         _dockReadyStatus = $"🛰 in the dock envelope at {station.Name}{clamp}";
         LogAutopilotEvent($"autopilot delivered {station.Name} — matched inside the dock envelope{(clamp.Length > 0 ? "; hit ⚓ Dock to clamp on" : "")}");
@@ -838,13 +843,22 @@ public partial class Map
             {
                 return; // still flying the rendezvous — the split fires the burns; coast, decisions muzzled
             }
-            if (DockRule.InEnvelope(_ship, bodyPos, bodyVel, body.BodyRadius))
+            // #244 · THE ENVELOPE IS NOT THE DESTINATION. Owner, arrived at the roadster: "I think we
+            // dropped out of autopilot… did we miss the dock button press while warping?" The autopilot had
+            // SUCCEEDED — 499,721 km out, rel 4.0 — and for a WRECK that success is wrong: a fetch pickup is
+            // proximity at a three-metre object, so half a million kilometres is a car-park in the next
+            // county. DockRule.Arrived asks the clamp gate (DockableHavens.IsDockable, the predicate the ⚓
+            // button itself obeys) rather than BodyKind or μ: a berth with an arm to throw is arrived at
+            // when the arm can reach, and one without is arrived at where the errand actually happens.
+            if (DockRule.Arrived(_ship, bodyPos, bodyVel, body))
             {
                 AutopilotStandInEnvelope(body);
                 return;
             }
             // Schedule done (or none available) but not yet matched/alongside — fall through to the legacy
             // Approach loop to match velocity and close the last stretch; its reserve guard stays intact.
+            // For a non-clamp berth that stretch is now the last mile proper, flown by the same loop that
+            // always closed the gap: nothing here burns differently, it simply stops later.
         }
 
         // #146 the moon run: while a transfer schedule is still in flight, keep AutopilotDecision MUZZLED.

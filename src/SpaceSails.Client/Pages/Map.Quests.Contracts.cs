@@ -226,7 +226,9 @@ public partial class Map
         }
     }
 
-    private const double FetchPickupRangeM = 1e8; // coast within ~100,000 km of the wreck to grab the goods
+    // #244: the pickup's range and the autopilot's arrival are ONE number now — the armed arrival at a
+    // berth you cannot clamp onto closes to exactly this, so the trip ends where the errand happens.
+    private const double FetchPickupRangeM = DockRule.AlongsideMeters;
 
     // Coasting close to a fetch job's derelict prises the goods loose — flips Active → PickedUp. Called
     // each tick while flying; player-driven state, never read by the physics sim, and idempotent (only
