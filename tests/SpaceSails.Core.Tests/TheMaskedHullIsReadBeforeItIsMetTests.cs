@@ -200,19 +200,28 @@ public sealed class TheMaskedHullIsReadBeforeItIsMetTests
     }
 
     /// <summary>
-    /// THE PANEL COUNT SURVIVES BINARY. <c>0.5 / 0.1</c> is 5.000000000000001 in a double and <c>0.3 / 0.1</c>
-    /// is 2.9999999999999996 — a naive ceiling reads those as 6 and 3, which would put a whole extra panel on
-    /// every warship for no reason but the format of a float, and would differ between machines the moment
-    /// anybody changed a constant. The rule's guard band is asked here directly.
+    /// A PANEL IS A PANEL: THE COUNT ROUNDS UP AND NEVER DOWN. A hull carrying nine tenths of the cooling
+    /// its drive needs is a hull that cannot run its drive, so a part panel is a whole panel. Pinned on the
+    /// two drives the game actually produces — the hauler's claimed 0.3 and the hunter class's 0.5 — plus a
+    /// value that is not a multiple of the panel, which is the only place the rounding is visible at all.
     ///
-    /// <para><b>Proven RED</b> by removing the <c>- 1e-9</c> from <c>PanelsFor</c>: the hunter's own 0.5
-    /// came back as 6 panels.</para>
+    /// <para>The monotone sweep is the law rather than the table: more drive is never fewer panels, asked of
+    /// a hundred accelerations rather than of five.</para>
+    ///
+    /// <para><b>Proven RED</b> by rounding instead of ceiling in <c>PanelsFor</c>: 0.71 m/s² came back as
+    /// 7 panels for a drive that needs eight.</para>
+    ///
+    /// <para>An earlier cut of <c>PanelsFor</c> carried a <c>- 1e-9</c> floating-point guard band. It was
+    /// taken out because it could not be proven red: no accelerations in [0.001, 2.000] divided by a tenth
+    /// lands over its own integer, so the band was defending against nothing measurable — and this repo does
+    /// not ship a guard it has not watched fail.</para>
     /// </summary>
     [Fact]
     public void ThePanelCountIsCountedAndNotRoundedByAccident()
     {
-        Assert.Equal(3, QShip.PanelsFor(0.3));
-        Assert.Equal(5, QShip.PanelsFor(0.5));
+        Assert.Equal(3, QShip.PanelsFor(0.3));   // an honest hauler's claim
+        Assert.Equal(5, QShip.PanelsFor(0.5));   // the hunter class's own thrust
+        Assert.Equal(8, QShip.PanelsFor(0.71));  // a part panel is a whole panel
         Assert.Equal(1, QShip.PanelsFor(0.05));
         Assert.Equal(0, QShip.PanelsFor(0));
         Assert.Equal(0, QShip.PanelsFor(-1));

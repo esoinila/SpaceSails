@@ -111,11 +111,15 @@ public static class QShip
     /// </summary>
     public const double Mps2CooledByOnePanel = 0.1;
 
-    /// <summary>Panels a drive of this thrust has to carry. Rounded up — you cannot fit most of a panel —
-    /// with a floating-point guard band, because <c>0.5 / 0.1</c> is not 5 in binary and a radiator count
-    /// that read 6 on one machine and 5 on another would break determinism over an arithmetic artefact.</summary>
+    /// <summary>Panels a drive of this thrust has to carry: rounded UP, because you cannot fit most of a
+    /// panel and a hull that cannot dump its heat does not fly. A drive that makes no thrust needs no
+    /// radiator, so the floor is zero rather than one.
+    /// <para>An earlier cut carried a <c>- 1e-9</c> floating-point guard band against a division landing a
+    /// hair over its own integer. No such division exists here — nothing in [0.001, 2.000] over a tenth
+    /// overshoots — so the band could not be proven red and came out rather than ship as a claim nothing
+    /// owns. If <see cref="Mps2CooledByOnePanel"/> ever moves, ask that question again before assuming.</para></summary>
     public static int PanelsFor(double trimAccelMps2) =>
-        (int)Math.Ceiling((Math.Max(0, trimAccelMps2) / Mps2CooledByOnePanel) - 1e-9);
+        (int)Math.Ceiling(Math.Max(0, trimAccelMps2) / Mps2CooledByOnePanel);
 
     /// <summary>The cooling her claimed drive needs.</summary>
     public static int ClaimedRadiatorPanels(NpcShip ship) => PanelsFor(ClaimedTrimAccelMps2(ship));
