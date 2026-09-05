@@ -29,6 +29,12 @@
          linked. MapMarkup.Read hands the whole cascade back for Pages/Map.razor.css, so it cannot compile
          without it. -->
     <Compile Include="..\SpaceSails.Client.Tests\MapStylesheet.cs" Link="MapStylesheet.cs" />
+    <!-- #234 — Lab 31's arithmetic, LINKED for exactly the same reason: one copy. The lab prints five
+         graded verdicts ("BEYOND ANY REAL MATERIAL", "A LONG ROPE WITH A ROCK ON THE END"), and a memorable
+         sentence outlives the numbers that produced it. Lab31BeanstalkTests holds each printed verdict to
+         the taper column it was read off, so the function that printed it IS the function under test —
+         copying it in here would only prove the copy agrees with itself. -->
+    <Compile Include="..\..\labs\31-the-beanstalk\Beanstalk.cs" Link="Lab31\Beanstalk.cs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -48,6 +48,7 @@ dotnet run --project labs/27-the-getaway -c Release
 dotnet run --project labs/28-the-pump-crawl -c Release
 dotnet run --project labs/29-the-harbor-pattern -c Release
 dotnet run --project labs/30-the-mass-driver-timetable -c Release
+dotnet run --project labs/31-the-beanstalk -c Release
 dotnet run --project labs/32-aerocapture-at-the-ice-giant -c Release
 dotnet run --project labs/33-aerobrake-in-the-live-loop -c Release
 dotnet run --project labs/34-the-unclickable-lifeline -c Release
@@ -301,6 +302,21 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     `OrbitRule.PulsesFor`: a pod is cheapest at the launch end — **loiter-and-match near Earth for ~3.5
     km/s (12 pulses)** vs a full Venus chase at **5202 m/s (17 pulses)**; chase it mid-dive and you buy
     the transfer yourself. `--viz` draws the launch fan off Luna over the inner system.
+31. [**The beanstalk**](31-the-beanstalk/README.md) — the owner asked for "a space elevator somewhere
+    where materials stress would not be an issue", and the answer is one exponential over six bodies:
+    `taper = exp(dPhi / (sigma/rho))`. Everybody who says the elevator is science fiction is quoting
+    **Earth**, which wants **48.49 MJ/kg** and tapers **1.5e+83 in steel**, **36,559** in the best
+    carbon-nanotube fibre ever spun — not "not yet", but *not with matter*. Luna is tidally locked so
+    it has no synchronous orbit at all; hang the cable from Earth through **L1 at 58,027 km** and its
+    climb is **2.70 MJ/kg** — **taper 2.94 in Kevlar**, a material with a datasheet and a price. Ceres
+    wants **steel wire** (1.26). And Phobos's entire Hill sphere is **16.58 km** with its surface at
+    11, so the cable is **5.57 km** long and lifting a kilogram its whole height costs **ten joules**:
+    the taper is 1.00 to every digit printed. The five verdicts are PRINTED from the table, never
+    asserted, and `Lab31BeanstalkTests` links the lab's own arithmetic to hold each one to the numbers
+    above it *and* to this README's copy — flip the threshold and four gates go red. The flagship, by
+    a rule stated before the data (buildable from stock material, most propellant saved): **Luna**, at
+    **2,421 m/s = 1,163 kg of propellant per tonne shipped**, eight times the next candidate — the
+    same moon that already flings pods by mass driver in lab 30. Two launch industries, one rock.
 32. [**Aerocapture: the ice giant's haze is the free brake**](32-aerocapture-at-the-ice-giant/README.md) —
     the lesson where the owner arrives at Uranus stranded (29.8 km/s relative, 32 pulses) and asks if the
     air can stop him. Reusing lab 22's Core drag unchanged, the corridor is measured against arrival
