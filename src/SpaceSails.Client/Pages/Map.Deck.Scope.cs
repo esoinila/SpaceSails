@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -191,11 +191,17 @@ public partial class Map
             // between a planet and the station in its Hill sphere every station orbit. Where there IS a
             // hierarchy, the sub-line says whose sphere we are in — the box still names, and still draws,
             // the object actually locked, so the words and the picture can never disagree.
-            string? note = _nearestParentName is { } parentName && _nearestChildName == body.Name
+            ScopeView.TargetKind kind = ScopeKindOf(body);
+            // #241 · …and NOT for a landmark. The orbit note is one of the two things an ephemeris body is
+            // asked, and the ruling is that the storied ground is asked neither: a landmark has no rail of
+            // its own, and printing its host's would be the instrument answering a question about a
+            // different object.
+            string? note = kind == ScopeView.TargetKind.Body
+                && _nearestParentName is { } parentName && _nearestChildName == body.Name
                 ? NearestRule.OrbitsNote(parentName)
                 : null;
             return new ScopeView.Target(
-                ScopeKindOf(body), body.Name, note,
+                kind, body.Name, note,
                 _nearestBodyPosition, _nearestBodyVelocity,
                 body.BodyRadius, BodyColor(body.Id), InPlasmaAt(_nearestBodyPosition),
                 IsHaven: body.IsHaven, Dockable: IsDockableHaven(body));
@@ -215,8 +221,22 @@ public partial class Map
     /// kind-per-class rather than a special case, so the next oddity that deserves a portrait gets one
     /// without new plumbing.</para>
     /// </summary>
+    /// <para>#241 (owner ruling, 2026-09-05) · …and the STORIED GROUND, which is the other half of the same
+    /// issue. The Phobos monolith reached this glass the only way it can — as the rock it stands on — and
+    /// came out tagged <b>PLANET</b>, sorted by an 11 km radius that is a fact about the rock and not about
+    /// the thing anybody points a telescope at it for. The ruling is that the landmark is NOT promoted to an
+    /// ephemeris body (<c>Landmark</c> is deliberately "a small Core datum, NOT an ephemeris body"): the glass
+    /// simply says LANDMARK, and asks it neither of the two questions an ephemeris body is asked — no orbit
+    /// note, no radius class.</para>
+    ///
+    /// <para><see cref="Landmarks.HasNamedSite"/> is the one question, the same one the rumour-giver asks
+    /// ("is this moon storied enough to hang a rumour on"), so nothing new is seeded and nothing is typed
+    /// twice. A HAVEN is excluded on purpose: a port is a port, and its own plate is the more useful thing to
+    /// read off a corner of an instrument you are steering by.</para>
     private static ScopeView.TargetKind ScopeKindOf(CelestialBody body) =>
-        Derelict.IsWreckBody(body.Id) ? ScopeView.TargetKind.Derelict : ScopeView.TargetKind.Body;
+        Derelict.IsWreckBody(body.Id) ? ScopeView.TargetKind.Derelict
+        : !body.IsHaven && Landmarks.HasNamedSite(body.Id) ? ScopeView.TargetKind.Landmark
+        : ScopeView.TargetKind.Body;
 
     private ScopeView.Target? ResolveScopeTarget(string id)
     {

@@ -1,4 +1,4 @@
-using SpaceSails.Core;
+﻿using SpaceSails.Core;
 
 namespace SpaceSails.Client.Rendering;
 
@@ -10,7 +10,11 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public sealed class ScopeView
 {
-    public enum TargetKind { None, Body, Freighter, Pod, Player, Derelict }
+    /// <summary>#241 · One kind per CLASS of thing the glass can be aimed at. <see cref="Landmark"/> is the
+    /// storied ground (owner ruling on #241, 2026-09-05): a landmark is deliberately not an ephemeris body
+    /// and is NOT promoted to one, so the glass simply says what it is looking at and asks it nothing an
+    /// ephemeris body would be asked.</summary>
+    public enum TargetKind { None, Body, Freighter, Pod, Player, Derelict, Landmark }
 
     public readonly record struct Target(
         TargetKind Kind,
@@ -102,6 +106,12 @@ public sealed class ScopeView
             case TargetKind.Derelict:
                 DrawDerelict(cx, cy, s, heading);
                 break;
+            // #241 · The storied ground is drawn as the ground it is. DrawBody's own radius question is
+            // answered NO for a landmark before it is asked (see the flag inside), so nothing here reads a
+            // class off a number that describes the host and not the thing.
+            case TargetKind.Landmark:
+                DrawBody(cx, cy, s, simTime, target, shipPosition);
+                break;
         }
 
         DrawLockBrackets(cx, cy, s * 0.36f, simTime);
@@ -136,6 +146,13 @@ public sealed class ScopeView
         // #241: a three-metre dead hull is not a planet. DERELICT is the plate the game already speaks
         // (Derelict, the wreck board, the death card) — no new vocabulary, just the right word.
         TargetKind.Derelict => "DERELICT",
+        // #241 (owner ruling, 2026-09-05) · …and the storied ground is not a planet either. The landmark is
+        // NOT promoted to an ephemeris body — it stays "a small Core datum" — so the glass neither invents a
+        // rail for it nor sorts it by a radius that belongs to the rock it stands on. LANDMARK is the
+        // existing kind's own name (Core's `Landmark`), so this instrument mints no vocabulary, and above all
+        // it is not the reserved word of docs/worldbuilding-notes.md §8: there is ONE monolith, and an
+        // instrument that starts printing that word is how a second one gets born.
+        TargetKind.Landmark => "LANDMARK",
         _ => "",
     };
 
@@ -211,7 +228,10 @@ public sealed class ScopeView
 
     private void DrawBody(float cx, float cy, float s, double simTime, in Target target, Vector2d shipPosition)
     {
-        bool isStar = target.BodyRadius > 1e8;
+        // #241 · The radius question is an EPHEMERIS BODY's question. A landmark's `BodyRadius` is its host
+        // rock's, so asking it here would sort the storied ground by a number about something else — the same
+        // shape of bug as a three-metre car tagged PLANET.
+        bool isStar = target.Kind == TargetKind.Body && target.BodyRadius > 1e8;
         float r = s * (isStar ? 0.30f : 0.33f);
 
         if (isStar)

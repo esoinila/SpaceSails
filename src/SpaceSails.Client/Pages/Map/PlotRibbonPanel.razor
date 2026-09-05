@@ -72,11 +72,16 @@
                 <button type="button" class="btn btn-sm @(!NavLockedByDock && _armedOrbitBodyId == dp.BodyId ? "btn-success" : !NavLockedByDock && info.InRange ? "btn-info" : "btn-outline-info")"
                         disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : ArmMenuHint(dp.BodyId))"
                         @onclick="() => ToggleArmedInsertion(dp.BodyId)">
+                    @* #244 item 3 · …and the same verb on the ribbon's own arm button, because the two
+                       buttons arm the same thing and a captain who read one of them would be told the ship
+                       was going to orbit a car. *@
                     @(_armedOrbitBodyId == dp.BodyId
                         ? $"🛰 Autopilot ARMED for {dp.BodyName} — click to disarm"
-                        : HarborClassOf(dp.BodyId) == HarborClass.Dock
-                            ? HarborVocabulary.ArmAction(HarborClass.Dock, dp.BodyName)
-                            : $"🛰 Arm auto-orbit at {dp.BodyName}")
+                        : Derelict.IsWreckBody(dp.BodyId)
+                            ? $"🛰 {HarborVocabulary.PickupArmVerb}"
+                            : HarborClassOf(dp.BodyId) == HarborClass.Dock
+                                ? HarborVocabulary.ArmAction(HarborClass.Dock, dp.BodyName)
+                                : $"🛰 Arm auto-orbit at {dp.BodyName}")
                 </button>
             }
             else

@@ -68,11 +68,17 @@
                     <button type="button" class="btn btn-sm @(!NavLockedByDock && _armedOrbitBodyId == menuBody.Id ? "btn-success" : "btn-outline-info")"
                             disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : ArmMenuHint(menuBody.Id))"
                             @onclick="() => ToggleArmedInsertionFromMenu(menuBody.Id)">
+                        @* #244 item 3 · A WRECK IS NEITHER DOCKED AT NOR ORBITED. #938 D3a took the clamp
+                           vocabulary off the three μ=0 stations with no haven flag and left them speaking the
+                           ORBIT vocabulary instead — "arm auto-insert" at three metres of dead car with no μ
+                           to insert into. It is CLOSED WITH, and what happens there is a pickup. *@
                         @(_armedOrbitBodyId == menuBody.Id
                             ? "🛰 Armed — click to disarm"
-                            : HarborClassOf(menuBody.Id) == HarborClass.Dock
-                                ? HarborVocabulary.ArmAction(HarborClass.Dock, menuBody.Name)
-                                : "🛰 Arm auto-insert at window")
+                            : Derelict.IsWreckBody(menuBody.Id)
+                                ? $"🛰 {HarborVocabulary.PickupArmVerb}"
+                                : HarborClassOf(menuBody.Id) == HarborClass.Dock
+                                    ? HarborVocabulary.ArmAction(HarborClass.Dock, menuBody.Name)
+                                    : "🛰 Arm auto-insert at window")
                     </button>
                     @* #246/#249 🚀 LONG HAUL — the PRIMARY entry (owner: "autopilot into vicinity from clicking
                        the target"). When the clicked body sits across the void, the menu recognizes the long-

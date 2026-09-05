@@ -311,6 +311,35 @@ public static class SecretLab
         return new Placement(has, doorX, doorY, sqX, sqY);
     }
 
+    /// <summary>#1119 item 2 · <b>THE PLACEMENT AS THIS SITE ACTUALLY BUILT IT — the one every client reader
+    /// should hold.</b>
+    ///
+    /// <para><see cref="For"/> answers a question about a BODY: the seeded pocket the door was rolled into,
+    /// which knows nothing about the shelters, the outpost hut and the monolith standing on that particular
+    /// site. <see cref="HeadSpot"/> is that spot after the site has had its say, and it is where the shed is
+    /// drawn (<see cref="HeadHut"/>), where the ground is kept clear (<see cref="ChamberFootprint"/>), where
+    /// #625 points the tracker's ring and its rumour wash, and where the lift car sets the captain down.</para>
+    ///
+    /// <para>The hidden-door CONSOLE was the one thing still reading the raw spot — measured up to 235 du
+    /// from the hut on 21 of 34 body × site pairs, because the raw spot is seeded per BODY and the clamp
+    /// re-seeds per SITE, so when it fires it does not nudge, it RELOCATES. The instrument and the ground
+    /// disagreeing is the #573 family, and #584 is the map lying; this was both at once.</para>
+    ///
+    /// <para>Rather than teach eight call sites to remember a second function, the excursion holds a
+    /// placement that is ALREADY the resolved one — door spot and beach-comber square alike — so the console,
+    /// the chamber the force appends, the alarm's doors, the plate on the card, the detector's needle and the
+    /// reveal square are one fact by construction. <see cref="HasLab"/> is still the honest roll.</para></summary>
+    /// <param name="siteSalt">This landing site's layout salt — the reason the answer is per-site.</param>
+    public static Placement OnThisSite(
+        string bodyId, string? siteSalt, in SurfaceLayout.Field field, bool forcePresent = false)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        Placement seeded = For(bodyId, field, forcePresent);
+        (double hx, double hy) = HeadSpot(bodyId, siteSalt, field);
+        (int sqX, int sqY) = BeachComber.SquareOf(hx, hy);
+        return new Placement(seeded.HasLab, hx, hy, sqX, sqY);
+    }
+
     /// <summary>Whether the seed alone (no cheat) hides a lab on this body — 1 in <see cref="ExpeditionOneInN"/>
     /// in the deep field of an away-expedition site, 1 in <see cref="OrdinaryOneInN"/> on an ordinary moon.</summary>
     public static bool Present(string bodyId)

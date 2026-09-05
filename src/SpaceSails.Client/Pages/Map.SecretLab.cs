@@ -48,12 +48,21 @@ public partial class Map
                 return;
             }
 
-            ex.Lab = SecretLab.For(body, MoonSurface.ExpeditionField(), forcePresent: true);
+            ex.Lab = SecretLab.OnThisSite(body, ex.Site.LayoutSalt, MoonSurface.ExpeditionField(),
+                                          forcePresent: true);
             ex.SecretLabDoorRevealed = true;
             return;
         }
 
-        SecretLab.Placement placement = SecretLab.For(body, MoonSurface.ExpeditionField(), forcePresent: cheat);
+        // #1119 item 2 · ONE SPOT, ONE PUBLISHER. `SecretLab.For` answers about a BODY and knows nothing of
+        // the shelters, the outpost and the monolith standing on THIS site; `OnThisSite` is that answer after
+        // the site has had its say — the spot the shed is drawn at, the ground the ledger keeps clear, and
+        // the spot #625 already points the tracker's ring and its rumour wash at. The hidden-door console was
+        // the last reader of the raw seed, up to 235 du away from all of them, and rather than teach eight
+        // call sites a second function the excursion now HOLDS the resolved placement: console, chamber,
+        // alarm doors, card plate, detector needle and reveal square are one fact by construction.
+        SecretLab.Placement placement = SecretLab.OnThisSite(
+            body, ex.Site.LayoutSalt, MoonSurface.ExpeditionField(), forcePresent: cheat);
         if (!placement.HasLab)
         {
             ex.Lab = null;

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -438,18 +438,31 @@ public partial class Map
         // Derelict Roadster, Mercury Compute Farms and Highport Satellite Works are μ=0 stations with no
         // haven flag: the autopilot flew you to a wreck and told you to clamp onto it. The clamp clause is
         // now spoken only where a clamp exists; alongside a wreck the line stops at the truth.
-        // FABLE: line needed — the arrival line for a berth with no clamp. #244 item 1 asks for a wreck's
-        // own sentence ("alongside <name> — closing to pickup range") and item 3 for its own arm-menu verb
-        // instead of "✈ Autopilot: orbit <name>" at a massless car; both are new prose and belong to a
-        // canon pass, not to this lane. The DISTANCE is honest now — the ship really is inside pickup
-        // range — and no clamp is promised (#1104); only the noun is still the harbour's.
+        // The clamp clause is spoken only where a clamp exists; alongside a wreck the line stops at the
+        // truth.
         string clamp = IsDockableHaven(station) ? " — hit ⚓ Dock to clamp on" : "";
         _dockReadyStatus = $"🛰 in the dock envelope at {station.Name}{clamp}";
         LogAutopilotEvent($"autopilot delivered {station.Name} — matched inside the dock envelope{(clamp.Length > 0 ? "; hit ⚓ Dock to clamp on" : "")}");
+        // #244 item 1 (canon pass, Fable, 2026-09-05) · …AND THE WRECK'S OWN SENTENCE. #1104 stopped the
+        // autopilot promising a clamp here and left the arrival with nothing of its own to say, which is
+        // what the owner walked into: "I think we dropped out of autopilot… did we miss the dock button
+        // press while warping?" The line goes on the autopilot's OWN channel, beside the delivery it
+        // belongs to, and it is said ONCE per arrival — a berth that repeats itself every tick is noise,
+        // and the whole complaint was that the moment went unnoticed rather than unheard.
+        if (Derelict.IsWreckBody(station.Id) && _pickupHailSaidAt != station.Id)
+        {
+            _pickupHailSaidAt = station.Id;
+            LogAutopilotEvent(HarborVocabulary.PickupArrival);
+        }
         Warp = 1;               // auto-drop so the arrival moment isn't missed at warp
         _effectiveWarp = 1;
         ShowPulseMessage(_dockReadyStatus);
     }
+
+    /// <summary>#244 item 1 · The wreck this arrival has already been announced at, so the sentence is said
+    /// once and not once per tick. Cleared when an insertion is armed (a fresh approach is a fresh arrival),
+    /// which is what makes coming back to the same hull say it again.</summary>
+    private string? _pickupHailSaidAt;
 
     // #204/#186: the autopilot completes the clamp itself only for an HONEST arrival — the armed
     // destination is a dock haven and nothing about the errand is hostile-flagged (no authorized plunder,
@@ -475,6 +488,7 @@ public partial class Map
         }
 
         _dockReadyStatus = null; // a fresh arm/disarm supersedes any lingering "dock is ready" success line
+        _pickupHailSaidAt = null; // #244 item 1: a fresh approach is a fresh arrival, and it may say so again
 
         // Disarming (toggle off) the currently-armed body. #179: the autopilot is what keeps you on
         // orbit — losing it to a stray click stranded the owner, so confirm once. First click arms
