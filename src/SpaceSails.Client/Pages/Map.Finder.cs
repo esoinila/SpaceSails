@@ -346,7 +346,11 @@ public sealed partial class Map
         }
 
         _finderProgress = _finderProgress with { WitnessHeard = true };
-        FileNoteAbout(FinderCase.LeadBody, FinderGlyph,
+
+        // THE QUESTION HE WAS ASKED, under his own name as well as the case's. Not a new sentence and not
+        // an answer somebody put in his mouth: the hook is what the captain came to ask about, and what the
+        // book keeps is that he asked THIS person about it.
+        FileNoteAbout(c.TheHook, FinderGlyph,
                       CaseSubjects.Line([.. c.Subjects, CaseSubjects.Person(giver)]));
         RequestVaultSave();
     }
@@ -397,7 +401,11 @@ public sealed partial class Map
         if (!_finderProgress.HullRead && string.Equals(shipId, c.HullId, StringComparison.Ordinal))
         {
             _finderProgress = _finderProgress with { HullRead = true };
-            FileNoteAbout(FinderCase.LeadBody, FinderGlyph,
+
+            // HER OWN LEDGER OF NAMES, in the dossier's own words — the fact the captain went and looked at,
+            // filed under the case as well as under her. Nothing is composed here: the line is the one the
+            // dossier prints (#397), and a second phrasing of it would be two readings of one record.
+            FileNoteAbout(ShipHistories.For(c.HullId).FormerNamesLine, FinderGlyph,
                           CaseSubjects.Line([.. c.Subjects, CaseSubjects.Place(c.HullCallsign)]));
             RequestVaultSave();
             return;
