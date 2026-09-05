@@ -142,8 +142,20 @@
                     }
                 </div>
             }
-            @* FABLE: line needed — the hail exchange (#534 tell e, slice 2). Procedure a beat too clean;
-               the right words in the wrong order for a merchant. Prose, so it is authored and not generated. *@
+            @* #534 tell (e) · HOW SHE ANSWERS A HAIL — the fifth tell, and the only one that is prose. It is
+               HER sentence, composed in Core beside the rule that draws it, out of her own callsign and her
+               own destination off the record; the card adds nothing to it. No label, no colour, no icon, no
+               plate — exactly what the four numbers above get, because a line the game explained would stop
+               being a tell and start being an answer.
+
+               It appears only once the captain has actually keyed the tight-beam at her, at the Comms desk's
+               own 📻 Hail — the same "a tell may need a completed pass" gate the two glass rows run on, with
+               this pass flown by the captain rather than the telescope. Until then her file says nothing
+               about it, and an unhailed hull's card is every other unhailed hull's card. *@
+            @if (dossier.HailAnswer is { } answered)
+            {
+                <div class="fst-italic">@answered</div>
+            }
             @if (dossier.IsPrey)
             {
                 @* The autosteal criterion box (owner): both must be green before shuttles launch. *@

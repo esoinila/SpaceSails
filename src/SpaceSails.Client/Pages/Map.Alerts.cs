@@ -148,13 +148,39 @@ public partial class Map
         return delta >= 0 ? $"departs in {amount}" : $"departed {amount} ago (mid-flight — outer transfers take years)";
     }
 
+    /// <summary>
+    /// #534 tell (e) · <b>THE CAPTAIN KEYS THE TIGHT-BEAM AND SOMETHING ANSWERS.</b> The button was already
+    /// here — this is the desk's own 📻 Hail, the one channel the captain has ever used to ask a hull her
+    /// intentions — and slice 2 puts <see cref="QShipHail"/>'s two canon answers on it rather than opening a
+    /// second way to talk to traffic.
+    ///
+    /// <para>What she says also goes on her FILE (<see cref="_hailAnswers"/>), because the dossier card is
+    /// where the other four tells are read and a fifth tell nobody can put beside them is not a tell. It is
+    /// written only when she actually answers, so the card never carries "out of tight-beam range" as though
+    /// it were something a hull said.</para>
+    ///
+    /// <para>The two older sentences below are unchanged and are now what the hulls with nothing to say fall
+    /// back to: a pod, which has nobody aboard to key a microphone, and an off-books hauler, whose
+    /// destination is the intel economy's goods and is not given away for the price of a hail.</para>
+    /// </summary>
     private void CommsHail(NpcState npc)
     {
-        _commsHailAnswer = !ActiveSensors.CanTightBeam(_ship.Position, npc.State.Position)
-            ? $"{npc.Ship.Callsign} — out of tight-beam range."
-            : npc.Ship.PublishesTimetable
-                ? $"{npc.Ship.Callsign} — \"Bound for {BodyName(npc.Ship.DestinationId)}, over.\""
-                : $"{npc.Ship.Callsign} — \"No flight plan filed.\"";
+        if (!ActiveSensors.CanTightBeam(_ship.Position, npc.State.Position))
+        {
+            _commsHailAnswer = $"{npc.Ship.Callsign} — out of tight-beam range.";
+            return;
+        }
+
+        if (QShipHail.AnswerTo(npc.Ship, BodyName(npc.Ship.DestinationId)) is { } said)
+        {
+            _hailAnswers[npc.Ship.Id] = said;
+            _commsHailAnswer = said;
+            return;
+        }
+
+        _commsHailAnswer = npc.Ship.PublishesTimetable
+            ? $"{npc.Ship.Callsign} — \"Bound for {BodyName(npc.Ship.DestinationId)}, over.\""
+            : $"{npc.Ship.Callsign} — \"No flight plan filed.\"";
     }
 
     private void CommsLaserRange(NpcState npc)
@@ -199,6 +225,12 @@ public partial class Map
     // Comms-tree selection (master–detail; ui-guidelines.md): a ship id, "offbooks", "darkweb".
     private string? _commsSelectedId;
     private string? _commsHailAnswer;
+
+    // #534 tell (e): what each hull has been heard to say, by hull id. Written by CommsHail when a hull
+    // actually answers, read by DossierFor so the sentence sits on her file beside the four numbers. Not on
+    // NpcState on purpose — this is what the CAPTAIN has heard, not a fact about the ship, and the world's
+    // boot fingerprint has no business moving because a radio was used.
+    private readonly Dictionary<string, string> _hailAnswers = [];
     private string? _commsActionMessage;
 
     // ---- PR-14: the news wire (docs/SaturdayPlan/StationDesks.md #14) ----
