@@ -179,13 +179,19 @@
                     <div class="fw-bold">🔭 Sensor tasks — one telescope, worked top to bottom</div>
                     @foreach (SensorTask task in _schedule.Queue)
                     {
-                        bool activeTask = _schedule.Active?.Id == task.Id;
+                        @* #239: the chip is READ off the schedule, never inferred. A job the telescope is on
+                           and a job waiting its turn are the same picture at 0% — the owner read the correct
+                           aimed job's "● 0%" as "maybe it is waiting to start", which is exactly the mistake
+                           that cost him the roadster hunt. The percent stays; it is progress, not state. *@
+                        SensorTaskState state = _schedule.StateOf(task.Id) ?? SensorTaskState.Queued;
+                        bool activeTask = state == SensorTaskState.Running;
                         <div class="d-flex align-items-center gap-1 @(activeTask ? "sensor-task-active" : "")" @key="task.Id">
                             <span>@KindIcon(task.Kind)</span>
                             <span class="flex-grow-1">@task.Label@(task.Recurring ? "" : " · once")</span>
+                            <span class="sensor-task-chip @StateChipClass(state)">@StateGlyph(state) @SensorTaskPlates.For(state)</span>
                             @if (activeTask)
                             {
-                                <span class="text-info">◉ @((int)(_schedule.ActiveProgress(SimTime) * 100))%</span>
+                                <span class="text-info">@((int)(_schedule.ActiveProgress(SimTime) * 100))%</span>
                             }
                             else
                             {
@@ -215,6 +221,18 @@
                                 <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Call this look off"
                                         @onclick="() => _schedule.Remove(task.Id)">✕</button>
                             }
+                        </div>
+                    }
+                    @* #239: …and the passes that landed. A one-shot that finished used to vanish from the
+                       list at the tick it completed, so a captain who looked away for a second could not
+                       tell a job that had DONE its work from one that had never been ordered. Dimmed,
+                       capped, and pruned by the schedule itself. *@
+                    @foreach (CompletedPass done in _schedule.RecentlyDone)
+                    {
+                        <div class="d-flex align-items-center gap-1 sensor-task-done" @key="@("done:" + done.Task.Id)">
+                            <span>@KindIcon(done.Task.Kind)</span>
+                            <span class="flex-grow-1">@done.Task.Label</span>
+                            <span class="sensor-task-chip @StateChipClass(SensorTaskState.Done)">@StateGlyph(SensorTaskState.Done) @SensorTaskPlates.For(SensorTaskState.Done)</span>
                         </div>
                     }
                 </div>
@@ -899,6 +917,26 @@
     /// <summary>Ledger entries sorted best-quality-first — stable card order.</summary>
     private List<TrackedTarget> OrderedTracks() =>
         _ledger.Entries.OrderByDescending(e => e.EffectiveQuality(SimTime)).ToList();
+
+    // #239 · THE CHIP. The glyph is the thing the eye catches from across the desk; the word beside it is
+    // Core's (SensorTaskPlates), so the desk and anything else that grows a task row cannot drift apart.
+    // ▶ pulses — the owner's own note: "with a pulse/animation on the ▶ so a stationary zero still reads
+    // alive". A running job at 0% must not look like a stopped one.
+    private static string StateGlyph(SensorTaskState state) => state switch
+    {
+        SensorTaskState.Running => "▶",
+        SensorTaskState.Waiting => "⏸",
+        SensorTaskState.Done => "✓",
+        _ => "◷",
+    };
+
+    private static string StateChipClass(SensorTaskState state) => state switch
+    {
+        SensorTaskState.Running => "sensor-chip-running",
+        SensorTaskState.Waiting => "sensor-chip-waiting",
+        SensorTaskState.Done => "sensor-chip-done",
+        _ => "sensor-chip-queued",
+    };
 
     private static string KindIcon(SensorTaskKind kind) => kind switch
     {
