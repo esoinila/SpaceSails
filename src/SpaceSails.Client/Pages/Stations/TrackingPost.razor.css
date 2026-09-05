@@ -149,6 +149,36 @@
     border-radius: 0.25rem;
 }
 
+/* #239: the state chip — its own signal, never inferred from the progress number beside it. */
+.sensor-task-chip {
+    flex: 0 0 auto;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    padding: 0 0.3rem;
+    border-radius: 0.2rem;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+}
+
+.sensor-chip-running {
+    color: #7ddcff;
+    animation: sensor-chip-alive 1.4s ease-in-out infinite;
+}
+
+/* A stationary 0% must still read ALIVE (owner, #239): the chip breathes, the percent does not. */
+@keyframes sensor-chip-alive {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}
+
+.sensor-chip-waiting { color: #c8ccd4; }
+
+.sensor-chip-queued { color: #8d949f; }
+
+.sensor-chip-done { color: #7fbf8a; }
+
+.sensor-task-done { opacity: 0.55; }
+
 /* PR-D: the cold-case board — lost locks with live search areas. */
 .sensor-lost-box {
     border: 1px solid rgba(255, 150, 100, 0.5);

@@ -392,7 +392,7 @@ public partial class Map
     // spot), else the first interior station. Pair intel with ?start=wreck to test the proximity pickup.
     private void InjectFetchCheat(string stage)
     {
-        const string wreckId = "derelict-roadster";
+        const string wreckId = Derelict.RoadsterBodyId;
         if (_ephemeris is null || _quests.Any(q => q.Kind == QuestKind.Fetch)
             || _ephemeris.Bodies.All(b => b.Id != wreckId))
         {

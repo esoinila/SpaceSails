@@ -188,7 +188,7 @@ public partial class Map
         // also keeps ?start=wreck&fetch=active green.
         if (q.StartId == "wreck")
         {
-            RevealBody("derelict-roadster", "", announce: false);
+            RevealBody(Derelict.RoadsterBodyId, "", announce: false);
         }
 
         // ?reveal=<bodyId> (repeatable): chart any hidden body at boot for testing every downstream leg.

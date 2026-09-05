@@ -304,11 +304,21 @@ public partial class Map
         CloseSkyMenu();
     }
 
-    // Tuesday plan PR-A (the reveal): a scan finished and swept some disc of sky. If a hidden body's
-    // TRUE position at the scan's completion instant fell inside that disc, the scope resolved it —
-    // chart it. It must be a completed pass, not merely a scheduled one (this fires from the tracking
-    // post's HandlePass, which only runs when a pass actually lands).
-    private void OnAreaScanCovered(SpaceSails.Client.Pages.Stations.TrackingPost.CompletedAreaScan scan)
+    // Tuesday plan PR-A (the reveal): the telescope has swept some of a disc of sky. If a hidden body's
+    // TRUE position is inside that disc and the beam has already been over it, the scope resolved it —
+    // chart it.
+    //
+    // #240 · THE GLINT COMES WHEN THE BEAM CROSSES HER, NOT AT 100 %. Owner, watching the roadster scan
+    // climb: "Is it randomized now, the point when we find the car, or is it always at 100%? We might get
+    // lucky earlier also?" It was always 100 %: PR-A hung the reveal on the pass's COMPLETION instant, so
+    // wherever in the swept sky she actually sat, she was found at the end.
+    //
+    // Luck by geometry, not by dice. The sweep's coverage-over-time was already fully defined — the wedge
+    // aims it and the pass's progress times it — so the only thing added is the question this asks of it:
+    // has the beam been past her bearing yet? Early in the arc and she glints at 12 %; late and it is 96 %;
+    // and it is the same fraction every time, on any machine, because none of it is random. A pass that
+    // never covers her still completes empty, honestly.
+    private void OnAreaScanCovered(AreaScanCoverage scan)
     {
         if (_ephemeris is null)
         {
@@ -320,12 +330,27 @@ public partial class Map
             {
                 continue;
             }
-            Vector2d truePos = _ephemeris.Position(id, scan.CompleteTime);
-            if ((truePos - scan.Center).Length <= scan.Radius)
+            Vector2d truePos = _ephemeris.Position(id, scan.SimTime);
+            if ((truePos - scan.Center).Length > scan.Radius)
             {
-                RevealBody(id, WreckRevealMessage(id));
-                _scopeIntel.RemoveAll(si => si.BodyId == id);
+                continue;
             }
+
+            // The completing pass reveals everything in the disc exactly as it always did — that is the
+            // backstop, and it is why a contact that drifted in late is never lost. Mid-pass, she has to
+            // have been swept: her bearing's own moment in the arc must already have gone by.
+            if (scan.Covered < 1.0)
+            {
+                double? crossesAt = scan.Job.CoverageFraction(
+                    TrackingStation.Bearing(truePos - scan.Observer));
+                if (crossesAt is not { } moment || moment > scan.Covered)
+                {
+                    continue;
+                }
+            }
+
+            RevealBody(id, WreckRevealMessage(id));
+            _scopeIntel.RemoveAll(si => si.BodyId == id);
         }
     }
 

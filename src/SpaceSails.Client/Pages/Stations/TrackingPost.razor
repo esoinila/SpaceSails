@@ -179,13 +179,15 @@
                     <div class="fw-bold">🔭 Sensor tasks — one telescope, worked top to bottom</div>
                     @foreach (SensorTask task in _schedule.Queue)
                     {
-                        bool activeTask = _schedule.Active?.Id == task.Id;
-                        <div class="d-flex align-items-center gap-1 @(activeTask ? "sensor-task-active" : "")" @key="task.Id">
+                        @* #239: READ, never inferred — RUNNING at 0% and WAITING are one picture if the picture is a percentage. *@
+                        SensorTaskState state = _schedule.StateOf(task.Id) ?? SensorTaskState.Queued;
+                        <div class="d-flex align-items-center gap-1 @(state == SensorTaskState.Running ? "sensor-task-active" : "")" @key="task.Id">
                             <span>@KindIcon(task.Kind)</span>
                             <span class="flex-grow-1">@task.Label@(task.Recurring ? "" : " · once")</span>
-                            @if (activeTask)
+                            <span class="sensor-task-chip @StateChipClass(state)">@SensorTaskPlates.Chip(state)</span>
+                            @if (state == SensorTaskState.Running)
                             {
-                                <span class="text-info">◉ @((int)(_schedule.ActiveProgress(SimTime) * 100))%</span>
+                                <span class="text-info">@((int)(_schedule.ActiveProgress(SimTime) * 100))%</span>
                             }
                             else
                             {
@@ -215,6 +217,13 @@
                                 <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Call this look off"
                                         @onclick="() => _schedule.Remove(task.Id)">✕</button>
                             }
+                        </div>
+                    }
+                    @foreach (CompletedPass done in _schedule.RecentlyDone)
+                    {
+                        <div class="d-flex align-items-center gap-1 sensor-task-done" @key="@("done:" + done.Task.Id)">
+                            <span class="flex-grow-1">@KindIcon(done.Task.Kind) @done.Task.Label</span>
+                            <span class="sensor-task-chip @StateChipClass(SensorTaskState.Done)">@SensorTaskPlates.Chip(SensorTaskState.Done)</span>
                         </div>
                     }
                 </div>
@@ -388,14 +397,8 @@
     [Parameter] public EventCallback<double> OnZoomMap { get; set; }
     [Parameter] public EventCallback OnCenterShip { get; set; }
 
-    /// <summary>Tuesday plan PR-A: fires when an area scan finishes, reporting the disc it covered
-    /// (center, radius) and the sim time it completed. Map.razor checks whether a hidden body's true
-    /// position at that instant falls inside — an actual completed scan is what reveals the wreck.</summary>
-    [Parameter] public EventCallback<CompletedAreaScan> OnAreaScanCompleted { get; set; }
-
-    /// <summary>The covered disc of one finished area scan: everything Map.razor needs to test
-    /// "did this scan sweep over a hidden body?" without the tracking post knowing what a body is.</summary>
-    public readonly record struct CompletedAreaScan(Vector2d Center, double Radius, double CompleteTime);
+    /// <summary>Tuesday plan PR-A / #240: how much of a scan's sky the telescope has been over.</summary>
+    [Parameter] public EventCallback<AreaScanCoverage> OnAreaScanCoverage { get; set; }
 
     private const double RosetteCenterPx = 100;
     private const double RosetteMaxRadiusPx = 82;
@@ -589,7 +592,22 @@
 
             HandlePass(pass);
         }
+
+        // #240 · THE BEAM'S OWN POSITION, reported while it is still moving — it was always 100 % because
+        // the reveal hung on the completion instant. The #1068 gate applies here exactly as to a landed pass.
+        if (_schedule.Active is { Kind: SensorTaskKind.AreaScan } live
+            && !(Ephemeris is not null && PoliteDecline.BringsNothingBack(live, Ephemeris, _schedule.ActiveCompleteTime)))
+        {
+            ReportCoverage(live, _schedule.ActiveProgress(SimTime), SimTime);
+        }
     }
+
+    // #240 · The ONE place a coverage report is built.
+    private void ReportCoverage(SensorTask task, double covered, double atTime) =>
+        OnAreaScanCoverage.InvokeAsync(new AreaScanCoverage(
+            task.AreaCenter, task.AreaRadius,
+            SensorTaskGeometry.WedgeToward(ShipPosition, task.AreaCenter, task.AreaRadius),
+            ShipPosition, covered, atTime));
 
     private double DurationOf(SensorTask task) =>
         SensorTaskGeometry.Duration(task, JobFor(task), Math.Max(0.1, TelescopeSpeedFactor));
@@ -716,10 +734,10 @@
                     SkySeed, pass.Task.AreaCenter, pass.Task.AreaRadius, pass.CompleteTime);
                 _lastSweepMessage =
                     $"{pass.Task.Label}: resolved {_recentFinds.Count} object(s) — {_recentFinds[0].Description}";
-                // A real completed scan may have swept over a hidden body — hand the covered disc up
-                // so Map.razor can reveal the wreck (intel → scan → reveal, Tuesday plan PR-A).
-                OnAreaScanCompleted.InvokeAsync(
-                    new CompletedAreaScan(pass.Task.AreaCenter, pass.Task.AreaRadius, pass.CompleteTime));
+                // The whole wedge is behind the beam now (intel → scan → reveal, Tuesday plan PR-A): the
+                // backstop for anything the live coverage did not catch, such as a contact that drifted
+                // into the disc late in the pass.
+                ReportCoverage(pass.Task, 1.0, pass.CompleteTime);
                 break;
         }
     }
@@ -899,6 +917,16 @@
     /// <summary>Ledger entries sorted best-quality-first — stable card order.</summary>
     private List<TrackedTarget> OrderedTracks() =>
         _ledger.Entries.OrderByDescending(e => e.EffectiveQuality(SimTime)).ToList();
+
+    // #239 · Which colour the chip wears; the glyph and word are Core's. Written out rather than built from
+    // the enum, because a rule no source can be SEEN to write is a rule nobody can find (#1110).
+    private static string StateChipClass(SensorTaskState state) => state switch
+    {
+        SensorTaskState.Running => "sensor-chip-running",
+        SensorTaskState.Waiting => "sensor-chip-waiting",
+        SensorTaskState.Done => "sensor-chip-done",
+        _ => "sensor-chip-queued",
+    };
 
     private static string KindIcon(SensorTaskKind kind) => kind switch
     {

@@ -21,7 +21,7 @@ namespace SpaceSails.Client.Pages;
 public partial class Map
 {
 
-    private string WreckRevealMessage(string bodyId) => bodyId == "derelict-roadster"
+    private string WreckRevealMessage(string bodyId) => bodyId == Derelict.RoadsterBodyId
         ? "🔭 There she is — a cherry-red glint on the return, right where the tip said. Contact: the Derelict Roadster."
         : $"🔭 Scan resolved a new contact — {BodyName(bodyId)} is on the charts now.";
 
@@ -226,7 +226,9 @@ public partial class Map
         }
     }
 
-    private const double FetchPickupRangeM = 1e8; // coast within ~100,000 km of the wreck to grab the goods
+    // #244: the pickup's range and the autopilot's arrival are ONE number now — the armed arrival at a
+    // berth you cannot clamp onto closes to exactly this, so the trip ends where the errand happens.
+    private const double FetchPickupRangeM = DockRule.AlongsideMeters;
 
     // Coasting close to a fetch job's derelict prises the goods loose — flips Active → PickedUp. Called
     // each tick while flying; player-driven state, never read by the physics sim, and idempotent (only

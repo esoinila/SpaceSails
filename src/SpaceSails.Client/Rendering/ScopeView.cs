@@ -10,7 +10,7 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public sealed class ScopeView
 {
-    public enum TargetKind { None, Body, Freighter, Pod, Player }
+    public enum TargetKind { None, Body, Freighter, Pod, Player, Derelict }
 
     public readonly record struct Target(
         TargetKind Kind,
@@ -39,6 +39,9 @@ public sealed class ScopeView
     private static readonly RgbaColor SailLine = new(140, 190, 235, 190);
     private static readonly RgbaColor EngineGlow = new(255, 170, 80, 200);
     private static readonly RgbaColor NightShade = new(0, 0, 0, 165);
+    // #241: a dead hull, lit by nothing of its own — the same grey as a lit hull with the life taken out.
+    private static readonly RgbaColor DeadHull = new(170, 178, 190);
+    private static readonly RgbaColor DeadHullFaint = new(170, 178, 190, 110);
 
     private readonly IRenderer _renderer;
     private readonly float[] _scratch = new float[64];
@@ -96,6 +99,9 @@ public sealed class ScopeView
             case TargetKind.Player:
                 DrawPlayerDart(cx, cy, heading);
                 break;
+            case TargetKind.Derelict:
+                DrawDerelict(cx, cy, s, heading);
+                break;
         }
 
         DrawLockBrackets(cx, cy, s * 0.36f, simTime);
@@ -127,6 +133,9 @@ public sealed class ScopeView
         TargetKind.Freighter => "FREIGHTER",
         TargetKind.Pod => "CARGO POD",
         TargetKind.Player => "SHIP ∙ CREW",
+        // #241: a three-metre dead hull is not a planet. DERELICT is the plate the game already speaks
+        // (Derelict, the wreck board, the death card) — no new vocabulary, just the right word.
+        TargetKind.Derelict => "DERELICT",
         _ => "",
     };
 
@@ -299,6 +308,56 @@ public sealed class ScopeView
             var beacon = new RgbaColor(255, 90, 90, 220);
             _renderer.DrawCircle(cx + bx, cy + by, 2.2f, beacon, beacon);
         }
+    }
+
+    /// <summary>
+    /// #241 · THE WRECK'S OWN PORTRAIT — her silhouette, drawn from <see cref="WreckLayout.HullOutline"/>,
+    /// which is the very outline the away team's boots collide with. Owner, mid-hunt: <i>"We need a
+    /// roadster-graph for the scope"</i>. Nothing here is a typed shape: the hull comes out of Core, and the
+    /// only numbers in this method are the fraction of the screen she fills and the pen weights.
+    ///
+    /// <para>She is drawn COLD. No bridge light, no engine glow, no beacon — every other sprite on this
+    /// instrument has one of those, and their absence is the whole reading: a hull with nobody aboard and
+    /// nothing running. That is also why the spine and the aft bulkhead are drawn dimmer than the skin, the
+    /// way a wreck reads on a survey plot: the shell is what the glass can actually see.</para>
+    /// </summary>
+    private void DrawDerelict(float cx, float cy, float s, double heading)
+    {
+        // She fills the same share of the frame the freighter does; the scale falls out of her own length,
+        // so a hull that is re-cut in Core is re-framed here for free.
+        const float FrameFill = 0.72f;
+        float length = WreckLayout.BowX - WreckLayout.TransomX;
+        float u = s * FrameFill / length;
+        float midX = (WreckLayout.BowX + WreckLayout.TransomX) / 2f;
+
+        // NOT the shared scratch: DrawRotated writes its result into _scratch, so handing it the same
+        // buffer as its source would be an alias one careless edit away from drawing garbage.
+        IReadOnlyList<(float X, float Y)> outline = WreckLayout.HullOutline();
+        Span<float> pts = stackalloc float[outline.Count * 2];
+        for (int i = 0; i < outline.Count; i++)
+        {
+            pts[i * 2] = outline[i].X - midX;
+            pts[i * 2 + 1] = outline[i].Y;
+        }
+        DrawRotated(cx, cy, heading, u, DeadHull, 2f, pts);
+
+        // Her spine and the bulkhead that closes the pressure hull off from the machinery space — the two
+        // lines that make a silhouette read as a SHIP rather than as a chip of rock.
+        DrawRotated(cx, cy, heading, u, DeadHullFaint, 1f,
+        [
+            WreckLayout.AftX - midX, -WreckLayout.SpineHalfHeight,
+            WreckLayout.ShieldingForwardEnd - midX, -WreckLayout.SpineHalfHeight,
+        ]);
+        DrawRotated(cx, cy, heading, u, DeadHullFaint, 1f,
+        [
+            WreckLayout.AftX - midX, WreckLayout.SpineHalfHeight,
+            WreckLayout.ShieldingForwardEnd - midX, WreckLayout.SpineHalfHeight,
+        ]);
+        DrawRotated(cx, cy, heading, u, DeadHullFaint, 1f,
+        [
+            WreckLayout.AftX - midX, WreckLayout.TopY,
+            WreckLayout.AftX - midX, WreckLayout.BottomY,
+        ]);
     }
 
     private void DrawPlayerDart(float cx, float cy, double heading)
