@@ -40,28 +40,8 @@
 
         @if (FullScreen && RadarActive)
         {
-            <div class="sensors-radar-box mt-2">
-                <div class="fw-bold text-danger">📡 Radar returns — exact fixes inside @FormatWallDistance(RadarRule.RangeMeters); every ship in earshot now knows where we are.</div>
-                @{ List<TrackingCandidate> returns = RadarReturns(); }
-                @if (returns.Count == 0)
-                {
-                    <div class="text-secondary">No returns — nothing inside radar range.</div>
-                }
-                else
-                {
-                    @foreach (TrackingCandidate c in returns)
-                    {
-                        double rd = (c.State.Position - ShipPosition).Length;
-                        double rv = (c.State.Velocity - ShipVelocity).Length;
-                        double rc = RelativeMotion.ClosingSpeed(ShipPosition, ShipVelocity, c.State.Position, c.State.Velocity);
-                        <div class="d-flex justify-content-between">
-                            <span>@(c.IsThreat ? "🐺 " : "")@c.Callsign</span>
-                            @* #210: one voice — the signed range-rate, not a bare magnitude. *@
-                            <span class="text-secondary">@FormatWallDistance(rd) · rel @((rv / 1000).ToString("F2")) km/s · @RelativeMotion.WordedBefore(rc, "F2")</span>
-                        </div>
-                    }
-                }
-            </div>
+            <RadarReturnsBox ShipPosition="@ShipPosition" ShipVelocity="@ShipVelocity"
+                             RadarReturns="RadarReturns" FormatWallDistance="FormatWallDistance" />
         }
 
         @if (_activeJob is not null)
