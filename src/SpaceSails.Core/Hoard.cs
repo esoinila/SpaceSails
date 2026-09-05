@@ -127,9 +127,13 @@ public static class DiscoveryRule
     /// <summary>The effective discovery chance, in whole percent, for a stash whose only recorded term is
     /// its standing Reever presence (#295) — the legacy read, and the one every chest buried before #455
     /// still lives under: 4%, 3%, 2%, 1%. It is the oracle's own answer, divided by ten, not a second
-    /// ladder kept beside it.</summary>
-    public static int DiscoveryChanceFor(int reeverLevel) =>
-        CacheSafety.Read(padDistanceDu: null, buried: null, reeverLevel).ChancePerMille / 10;
+    /// ladder kept beside it.
+    ///
+    /// <para>#316 law 3 · <paramref name="huskCount"/> is the ground's own recorded battle — the husks a
+    /// stand left lying on it (<see cref="GroundMemory.HusksAt"/>). Left at zero, which is the quiet dig and
+    /// every caller that has never had a ground to ask about, this is the legacy ladder to the point.</para></summary>
+    public static int DiscoveryChanceFor(int reeverLevel, int huskCount = 0) =>
+        CacheSafety.Read(padDistanceDu: null, buried: null, reeverLevel, huskCount).ChancePerMille / 10;
 
     /// <summary>The discovery period index containing a sim time (whole days since epoch).</summary>
     public static long PeriodIndex(double simTime) => (long)Math.Floor(simTime / PeriodSeconds);
@@ -143,10 +147,11 @@ public static class DiscoveryRule
     public static bool IsDiscovered(string cacheId, long periodIndex, int reeverLevel = 0) =>
         Roll(cacheId, periodIndex) <= CacheSafety.Read(null, null, reeverLevel).ChancePerMille;
 
-    /// <summary>#455 · True when THIS chest is found in a given period — the full three-term read (carry,
-    /// shovel, watchdogs). The overload above is the same call with the other two terms unrecorded.</summary>
-    public static bool IsDiscovered(TreasureCache cache, long periodIndex) =>
-        Roll(cache.Id, periodIndex) <= CacheSafety.Read(cache).ChancePerMille;
+    /// <summary>#455 · True when THIS chest is found in a given period — the full read (carry, shovel,
+    /// watchdogs, and #316's battlefield signpost). The overload above is the same call with the other terms
+    /// unrecorded.</summary>
+    public static bool IsDiscovered(TreasureCache cache, long periodIndex, int huskCount = 0) =>
+        Roll(cache.Id, periodIndex) <= CacheSafety.Read(cache, huskCount).ChancePerMille;
 
     /// <summary>Whether a cache buried at <paramref name="buriedSimTime"/> gets discovered somewhere
     /// in the span (<paramref name="lastCheckedPeriod"/>, nowPeriod] — the client passes the last
@@ -166,13 +171,18 @@ public static class DiscoveryRule
     }
 
     /// <summary>#455 · The same skipped-span scan for a WHOLE chest, so the return-trip roll prices the
-    /// carry and the shovel as well as the ground. This is the one the discovery watch calls.</summary>
-    public static long? DiscoveredWithin(TreasureCache cache, long lastCheckedPeriod, double nowSimTime)
+    /// carry and the shovel as well as the ground. This is the one the discovery watch calls.
+    ///
+    /// <para>#316 · …and the FIGHT the ground carries, handed in by the watch off the ship's ground ledger.
+    /// It is the same day-by-day scan; the threshold each day is compared against simply now includes what a
+    /// rival can see from the ridge.</para></summary>
+    public static long? DiscoveredWithin(
+        TreasureCache cache, long lastCheckedPeriod, double nowSimTime, int huskCount = 0)
     {
         long nowPeriod = PeriodIndex(nowSimTime);
         for (long p = lastCheckedPeriod + 1; p <= nowPeriod; p++)
         {
-            if (IsDiscovered(cache, p))
+            if (IsDiscovered(cache, p, huskCount))
             {
                 return p;
             }
