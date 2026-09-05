@@ -349,4 +349,60 @@ public sealed class TheStairIsAWayHomeTests
         Assert.DoesNotContain(surface.Consoles, c => c.Kind == DeckPlan.ConsoleKind.HiveStair);
         Assert.Contains(surface.Consoles, c => c.Kind == DeckPlan.ConsoleKind.HiveHead);
     }
+
+    // ── (c) THE ARRIVAL SAYS WHICH ROAD IT WAS ───────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// THE CLIMB HAS ITS OWN SENTENCE, AND IT IS SAID ONCE. Fable canon 2026-09-04 — the line the FABLE
+    /// marker in <c>Map.Surface.Hive</c> was left standing for. Three laws in one case, and the middle one is
+    /// the reason the marker existed at all: the CAR's line names a machine, and saying it for a trip made on
+    /// the captain's own legs would be a sentence reporting a thing the sim did not do.
+    ///
+    /// <list type="number">
+    /// <item>a stair arrival says the stair's line, verbatim, off Core;</item>
+    /// <item>it never says the car's;</item>
+    /// <item>and a second climb in the same excursion says it again to nobody — the captain has been told
+    /// what a climb costs, and the tank is the thing still saying it.</item>
+    /// </list>
+    ///
+    /// <para><b>Proven RED</b> by spending the car's line on the stair (deleting the <c>byStair</c> arm):
+    /// <c>Assert.Equal() Failure — Expected: Up the long way… / Actual: 🛃 The car climbs for a long
+    /// time…</c>; and by dropping the <c>ex.StairArrivalSaid</c> latch, on the third assertion:
+    /// <c>the climb said its line a second time in one excursion.</c></para>
+    /// </summary>
+    [Fact]
+    public void TheClimbSaysItsOwnLineOnce_AndNeverTheCars()
+    {
+        const string Body = "luna";
+        int level = UndergroundComplex.DepthOf(Body);
+        Pages.Map map = OnTheFloor(Body, level, SuitAir.TankSeconds);
+
+        StandAtTheStair(map);
+        Invoke(map, "ClimbTheStairOut");
+        Assert.Equal(0, FloorOf(map));
+
+        string? said = ((PulseSlot)Get(map, "_pulse")!).Message;
+        Assert.Equal(UndergroundComplex.StairArrivalLine, said);
+        Assert.DoesNotContain("car climbs", said!, StringComparison.OrdinalIgnoreCase);
+
+        // Back down the way the captain came, and up the long way a second time. Nothing new is said: the
+        // beat belongs to the excursion, not to the flight of steps.
+        Get(map, "_surface")!.GetType().GetProperty("Floor")!.SetValue(Get(map, "_surface"), level);
+        Invoke(map, "RebuildSurfaceDeck");
+        Set(map, "_pulse", PulseSlot.Empty);
+        StandAtTheStair(map);
+        Invoke(map, "ClimbTheStairOut");
+
+        Assert.Equal(0, FloorOf(map));
+        Assert.NotEqual(UndergroundComplex.StairArrivalLine, ((PulseSlot)Get(map, "_pulse")!).Message);
+    }
+
+    /// <summary>Put the captain on the stair's own console spot, wherever this floor's plan cut it.</summary>
+    private static void StandAtTheStair(Pages.Map map)
+    {
+        DeckPlan deck = (DeckPlan)Get(map, "_deckPlan")!;
+        DeckPlan.ConsoleSpot at = deck.Consoles.Single(c => c.Kind == DeckPlan.ConsoleKind.HiveStair);
+        Set(map, "_avatarX", (double)at.X);
+        Set(map, "_avatarY", (double)at.Y);
+    }
 }

@@ -369,26 +369,27 @@ public sealed class TheStairIsASecondWayOutTests
         Report(bad, seen, "nothing below the listed bottom has a stair", 1000);
     }
 
-    // ── (6) ONE NEW STRING, AND IT IS NOT A CAR'S ────────────────────────────────────────────────────────
+    // ── (6) TWO STRINGS, AND NEITHER OF THEM IS A CAR'S ──────────────────────────────────────────────────
 
     /// <summary>
-    /// THE PLATE IS THE WHOLE OF WHAT THIS FEATURE SAYS OUT LOUD. One string, swept for by reflection over
-    /// everything <c>UndergroundComplex</c> publishes, because "we added no sentences" is a claim that goes
-    /// stale the first afternoon somebody adds one.
+    /// EVERYTHING THIS FEATURE SAYS OUT LOUD, swept for by reflection over everything
+    /// <c>UndergroundComplex</c> publishes — because "we added no sentences" is a claim that goes stale the
+    /// first afternoon somebody adds one.
     ///
-    /// <para>And it does not wear the cars' vocabulary. A stair whose plate said LIFT or CAR would be a sign
-    /// reporting a machine that is not there — the house bug class, printed on a wall — and it may not name
-    /// anything canon reserves either (§13.8: a fire regulation explains nothing about the Old Ones).</para>
+    /// <para>There are exactly two, and they are the plate and the ARRIVAL. The plate is the building
+    /// labelling its own fabric; the arrival line (Fable canon, 2026-09-04) is what the marker in
+    /// <c>Map.Surface.Hive</c> was left standing for, and it exists because the car's own sentence names a
+    /// machine that did not carry you — the house bug class on the loudest line in the feature. Both are
+    /// held to the same two laws: neither wears the cars' vocabulary, and neither names anything canon
+    /// reserves (§13.8: a fire regulation explains nothing about the Old Ones).</para>
     ///
-    /// <para><b>Proven RED</b> by adding a second <c>public const string StairDoorLine</c> beside the
-    /// plate:</para>
+    /// <para><b>Proven RED</b> by adding a third <c>public const string StairDoorLine</c> beside them:</para>
     /// <code>
-    /// the stair speaks with 2 string(s): StairDoorLine, StairSign. The plate is meant to be the only
-    /// thing this feature says out loud.
+    /// the stair speaks with 4 string(s): StairArrivalGlyph, StairArrivalLine, StairDoorLine, StairSign.
     /// </code>
     /// </summary>
     [Fact]
-    public void ThePlateIsTheOnlyStringTheStairEverSays()
+    public void ThePlateAndTheArrivalAreTheOnlyStringsTheStairEverSays()
     {
         List<string> named = typeof(UndergroundComplex)
             .GetFields(BindingFlags.Public | BindingFlags.Static)
@@ -403,27 +404,40 @@ public sealed class TheStairIsASecondWayOutTests
             .OrderBy(n => n, StringComparer.Ordinal)
             .ToList();
 
-        Assert.True(named.Count == 1 && named[0] == "StairSign",
-            $"the stair speaks with {named.Count} string(s): {string.Join(", ", named)}. The plate is meant "
-            + "to be the only thing this feature says out loud — a beat that wants a sentence gets a "
-            + "// FABLE: marker, not a const.");
+        Assert.True(
+            named.Count == 3 && named[0] == "StairArrivalGlyph" && named[1] == "StairArrivalLine"
+                && named[2] == "StairSign",
+            $"the stair speaks with {named.Count} string(s): {string.Join(", ", named)}. The plate and the "
+            + "arrival line are meant to be the whole of what this feature says out loud — a beat that wants "
+            + "another sentence gets a // FABLE: marker, not a const.");
 
         // The plate idiom: a glyph and a noun, in the voice CageSign and ServiceCarSign are stencilled in.
         Assert.EndsWith("STAIR", UndergroundComplex.StairSign, StringComparison.Ordinal);
 
-        foreach (string reserved in new[] { "LIFT", "CAR", "CAGE", "GOODS" })
-        {
-            Assert.False(
-                UndergroundComplex.StairSign.Contains(reserved, StringComparison.OrdinalIgnoreCase),
-                $"the stair's plate says \"{reserved}\" — a flight of steps wearing the cars' vocabulary is "
-                + "a sign reporting a machine that is not there.");
-        }
+        // THE ARRIVAL LINE, VERBATIM (Fable canon, 2026-09-04). Retyped here on purpose: this is the one
+        // guard that would catch the sentence being quietly reworded, and a test that read the constant back
+        // to itself would catch nothing at all.
+        Assert.Equal(
+            "Up the long way, in a hard suit, to the lid from underneath. The tank says what it cost.",
+            UndergroundComplex.StairArrivalLine);
 
-        foreach (string canon in new[] { "reever", "old one", "kaamos", "restore" })
+        foreach (string said in new[] { UndergroundComplex.StairSign, UndergroundComplex.StairArrivalLine })
         {
-            Assert.False(UndergroundComplex.StairSign.Contains(canon, StringComparison.OrdinalIgnoreCase),
-                $"the stair's plate says \"{canon}\" — §13.8: a second means of escape is a fire "
-                + "regulation, and that is all it ever needs to be.");
+            foreach (string reserved in new[] { "LIFT", "CAR", "CAGE", "GOODS", "ELEVATOR" })
+            {
+                Assert.False(
+                    said.Contains(reserved, StringComparison.OrdinalIgnoreCase),
+                    $"the stair says \"{reserved}\" — a flight of steps wearing the cars' vocabulary is a "
+                    + "sentence reporting a machine that did not carry you.");
+            }
+
+            foreach (string canon in new[]
+                     { "monolith", "reever", "old one", "ancient", "alien", "kaamos", "restore" })
+            {
+                Assert.False(said.Contains(canon, StringComparison.OrdinalIgnoreCase),
+                    $"the stair says \"{canon}\" — §13.8: a second means of escape is a fire regulation, "
+                    + "and that is all it ever needs to be.");
+            }
         }
     }
 }
