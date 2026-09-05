@@ -181,12 +181,11 @@
                     {
                         @* #239: READ, never inferred — RUNNING at 0% and WAITING are one picture if the picture is a percentage. *@
                         SensorTaskState state = _schedule.StateOf(task.Id) ?? SensorTaskState.Queued;
-                        bool activeTask = state == SensorTaskState.Running;
-                        <div class="d-flex align-items-center gap-1 @(activeTask ? "sensor-task-active" : "")" @key="task.Id">
+                        <div class="d-flex align-items-center gap-1 @(state == SensorTaskState.Running ? "sensor-task-active" : "")" @key="task.Id">
                             <span>@KindIcon(task.Kind)</span>
                             <span class="flex-grow-1">@task.Label@(task.Recurring ? "" : " · once")</span>
                             <span class="sensor-task-chip @StateChipClass(state)">@SensorTaskPlates.Chip(state)</span>
-                            @if (activeTask)
+                            @if (state == SensorTaskState.Running)
                             {
                                 <span class="text-info">@((int)(_schedule.ActiveProgress(SimTime) * 100))%</span>
                             }
@@ -398,8 +397,7 @@
     [Parameter] public EventCallback<double> OnZoomMap { get; set; }
     [Parameter] public EventCallback OnCenterShip { get; set; }
 
-    /// <summary>Tuesday plan PR-A / #240: how much of an area scan's patch of sky the telescope has been
-    /// over — raised every tick one is under way, and once more when it lands.</summary>
+    /// <summary>Tuesday plan PR-A / #240: how much of a scan's sky the telescope has been over.</summary>
     [Parameter] public EventCallback<AreaScanCoverage> OnAreaScanCoverage { get; set; }
 
     private const double RosetteCenterPx = 100;
@@ -595,10 +593,8 @@
             HandlePass(pass);
         }
 
-        // #240 · THE BEAM'S OWN POSITION, reported while it is still moving. Owner: "is it always at 100%?
-        // We might get lucky earlier also?" — it was, because the reveal hung on the completion instant. The
-        // coverage-over-time was already defined; this says it out loud on the ticks between. The #1068 gate
-        // applies to the live report exactly as to a landed one, against the same instant.
+        // #240 · THE BEAM'S OWN POSITION, reported while it is still moving — it was always 100 % because
+        // the reveal hung on the completion instant. The #1068 gate applies here exactly as to a landed pass.
         if (_schedule.Active is { Kind: SensorTaskKind.AreaScan } live
             && !(Ephemeris is not null && PoliteDecline.BringsNothingBack(live, Ephemeris, _schedule.ActiveCompleteTime)))
         {
@@ -606,7 +602,7 @@
         }
     }
 
-    /// <summary>#240 · The ONE place a coverage report is built.</summary>
+    // #240 · The ONE place a coverage report is built.
     private void ReportCoverage(SensorTask task, double covered, double atTime) =>
         OnAreaScanCoverage.InvokeAsync(new AreaScanCoverage(
             task.AreaCenter, task.AreaRadius,
@@ -922,10 +918,15 @@
     private List<TrackedTarget> OrderedTracks() =>
         _ledger.Entries.OrderByDescending(e => e.EffectiveQuality(SimTime)).ToList();
 
-    // #239 · Which colour the chip wears — one class per state, named for it. The glyph and word are Core's;
-    // only the pulse is the desk's, and it is the owner's note: "so a stationary zero still reads alive".
-    private static string StateChipClass(SensorTaskState state) =>
-        "sensor-chip-" + state.ToString().ToLowerInvariant();
+    // #239 · Which colour the chip wears; the glyph and word are Core's. Written out rather than built from
+    // the enum, because a rule no source can be SEEN to write is a rule nobody can find (#1110).
+    private static string StateChipClass(SensorTaskState state) => state switch
+    {
+        SensorTaskState.Running => "sensor-chip-running",
+        SensorTaskState.Waiting => "sensor-chip-waiting",
+        SensorTaskState.Done => "sensor-chip-done",
+        _ => "sensor-chip-queued",
+    };
 
     private static string KindIcon(SensorTaskKind kind) => kind switch
     {
