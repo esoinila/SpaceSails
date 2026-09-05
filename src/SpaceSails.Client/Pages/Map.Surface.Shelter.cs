@@ -80,14 +80,29 @@ public partial class Map
         // one place it costs a life.
         if (ex.Floor < 0)
         {
-            foreach (UndergroundComplex.Shaft car in
-                UndergroundComplex.ShaftsOn(MoonSurface.ExpeditionField()))
+            // ── #719 slice 2 · …AND A STOPPED CAR IS NOT ONE OF THEM ──
+            //
+            // The break takes the cars off the fan altogether. Two readings were available and only one of
+            // them is honest. Painting them NOT-home would put them in the refuge's ink, and that ring means
+            // AIR YOU CAN REACH (#608) — a car has none. Painting them home would have the instrument
+            // offering a way out that will not come, which is the map lying (#573) in the one place it costs
+            // a life. So the fan is silent about them, exactly as it is silent about every other bit of
+            // fabric down here, and the panel's own plate is where a captain learns why.
+            //
+            // What that leaves is the stair, alone and FIRST, which is how "the HOME ring moves from the cage
+            // to the stair door" is said in this loop's own vocabulary: everything that asks the fan for the
+            // way home takes the first home ring it finds.
+            if (!TheCarIsStopped)
             {
-                (double carX, double carY) = car.Landing;
-                Add(carX,
-                    carY + ((car.Kind == UndergroundComplex.ShaftKind.Cage ? 1 : -1)
-                        * (UndergroundComplex.CorridorHalf + 1.5)),
-                    home: true);
+                foreach (UndergroundComplex.Shaft car in
+                    UndergroundComplex.ShaftsOn(MoonSurface.ExpeditionField()))
+                {
+                    (double carX, double carY) = car.Landing;
+                    Add(carX,
+                        carY + ((car.Kind == UndergroundComplex.ShaftKind.Cage ? 1 : -1)
+                            * (UndergroundComplex.CorridorHalf + 1.5)),
+                        home: true);
+                }
             }
 
             // ── #719 · AND THE STAIR, WHICH IS A WAY OFF THIS FLOOR AND SO PAINTS LIKE ONE ──
@@ -102,15 +117,23 @@ public partial class Map
             // two different promises is the map lying (#573) in exactly the way the refuge ring was built
             // not to.
             //
-            // HOME STAYS THE CAGE all the same, because the cage is FIRST in this list and stays first —
-            // ShaftsOn puts it there and everything that asks the fan for "the way home" takes the first
-            // home ring it finds. The stair is appended after the cars, so nothing that has ever meant the
-            // cage by HOME now means the stair.
+            // HOME STAYS THE CAGE while the car runs, because the cage is FIRST in this list and stays
+            // first — ShaftsOn puts it there and everything that asks the fan for "the way home" takes the
+            // first home ring it finds. The stair is appended after the cars, so on an ordinary afternoon
+            // nothing that has ever meant the cage by HOME now means the stair.
+            //
+            // #719 slice 2 · …and the day the car stops, the cars are not added at all, so the stair is the
+            // first home ring and therefore IS home. That is the owner's "the HOME ring moves from the cage
+            // to the stair door", achieved by the list being shorter rather than by a second rule about
+            // which ring counts.
+            //
+            // #719 slice 2 · …and the spot is Core's own now (StairRingAt), because the tank measures to it
+            // as well the moment the car stops. One journey, one function: the ring that says WHICH WAY and
+            // the readout that says WHAT IT COSTS cannot come to two answers about where the door is.
             if (UndergroundComplex.HasStairOn(ex.Stop.Body.Id, ex.Floor)
-                && UndergroundComplex.StairOn(MoonSurface.ExpeditionField()) is { } stair)
+                && UndergroundComplex.StairRingAt(MoonSurface.ExpeditionField()) is { } stair)
             {
-                (double stairX, double stairY) = stair.Landing;
-                Add(stairX, stairY + UndergroundComplex.CorridorHalf + 1.5, home: true);
+                Add(stair.X, stair.Y, home: true);
             }
 
             // ── #608 · AND THE REFUGES, WHICH ARE THIS FLOOR'S SHELTERS ──

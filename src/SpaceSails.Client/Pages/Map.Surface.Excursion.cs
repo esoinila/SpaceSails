@@ -310,6 +310,24 @@ public partial class Map
         // gate eleven times is not eleven findings.
         public HashSet<int> HiveShaftsRefused { get; } = [];
 
+        // ── #719 slice 2 · THE MAINTENANCE BREAK, AND WHY IT LIVES HERE ─────────────────────────────────
+        //
+        // Whether somebody has taken the car away from this captain. False is a car running, which is what
+        // every excursion starts as and therefore what the next one finds — "nobody files a maintenance
+        // ticket against a man who left."
+        //
+        // ON THE EXCURSION AND NOT IN THE VAULT, and that is the owner's ruling rather than a convenience:
+        // it is the pad's own rule (LiftCodeOpened, four lines down) said about a second machine. A radio
+        // call is a thing that happened to an afternoon; a shuttle that carried it away would be the
+        // building holding a grudge across a launch. Nothing in Map.Vault.BuildVault reaches this class at
+        // all, so the ruling is kept by construction and the guard only has to prove that stays true.
+        //
+        // AND IT IS NOT RESET BY WALKING AWAY. Nothing clears it but arriving on the surface (RideTheLiftTo's
+        // own level == 0 arm) — not a floor change, not a refuge, not a watch turning over. A captain who
+        // hides in a cubicle for two minutes comes out to the same dead panel, which is what makes the break
+        // a price rather than a timer.
+        public bool CarStopped { get; set; }
+
         // ── #602 · THE KEYPAD, WHICH REMEMBERS FOR EXACTLY AS LONG AS THIS TRIP ──────────────────────────
         //
         // ALL FOUR OF THESE ARE ON THE EXCURSION AND NOT IN THE VAULT, and that is the ruling rather than a

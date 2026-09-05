@@ -66,6 +66,21 @@
                     <div class="lift-outcome">@refusedLine</div>
                 }
 
+                @* #719 slice 2 · THE MAINTENANCE BREAK, AND IT IS THE WHOLE OF WHAT THE FEATURE SAYS.
+                   Somebody the captain has just been read by said the floor into a radio, and the directory
+                   is gone: one plate where thirteen buttons were, in the stencil idiom every other sign
+                   down here is painted in, and nothing anywhere that names who called it.
+
+                   It REPLACES the list rather than sitting over it. A plate above a row of dead buttons
+                   would be an instrument saying two things — here are your floors, and there are no floors
+                   — and the way out of this building is now a flight of steps at the other end of the
+                   corridor, which a captain reading a list of buttons is not looking for. *@
+                @if (TheCarIsStopped)
+                {
+                    <div class="lift-stopped">@SpaceSails.Core.UndergroundComplex.CarStoppedPlate</div>
+                }
+                else
+                {
                 <div class="lift-stops">
                     @foreach (SpaceSails.Core.UndergroundComplex.LiftStop stop in LiftStops())
                     {
@@ -158,6 +173,7 @@
                         }
                     }
                 </div>
+                }
 
                 @* #602 · What the pad answered, in its own words and nobody else's — one of Core's four
                    plates. It is OUTSIDE the loop because the pad comes off the row the instant a code
@@ -192,6 +208,12 @@
     [Parameter] public Action<UndergroundComplex.LiftStop> LiftPadSubmit { get; set; } = default!;
     [Parameter] public Func<string> LiftPanelLine { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<UndergroundComplex.LiftStop>> LiftStops { get; set; } = default!;
+
+    /// <summary>#719 slice 2 · Whether the car has been stopped under this captain. The page's own question
+    /// (Map.Surface.Break.cs), asked here rather than inferred from an empty <see cref="LiftStops"/> — a
+    /// panel that read "no rows" as "stopped" would paint the plate over any future silence, and the panel
+    /// is not the place that knows what a silence means.</summary>
+    [Parameter] public bool TheCarIsStopped { get; set; }
     [Parameter] public Action<UndergroundComplex.LiftStop> PressLiftButton { get; set; } = default!;
     [Parameter] public SurfaceExcursion liftEx { get; set; } = default!;
 
