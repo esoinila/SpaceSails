@@ -569,9 +569,7 @@ public partial class Map
             // #973 L5b · which walk-ins the SPREAD has read the same hand off. Job ids only — the grey line
             // itself is rebuilt from Core every render, so the file carries the knowing and never the words.
             WalkIn = BuildWalkInSection(),
-            // #417 · the finder's case and how far down it the captain has got. Opaque rows — the file
-            // carries the GRAPH and never one of Varga's sentences.
-            Finder = BuildFinderSection(),
+            Finder = BuildFinderSection(),   // #417 · the case's graph, and how far along it he has got
             // #973 L5a · the old crew: who this universe cast, the history rolled between them, and where
             // they ended up working. Opaque rows — the file carries the FACT and the book's sentences are
             // rebuilt from the pool.
@@ -1107,11 +1105,7 @@ public partial class Map
         // somebody does not become unknown again — least of all across a save — so the knowing rides the
         // file rather than waiting for the player to lay the same two papers down a second time.
         RestoreWalkInSection(vault.WalkIn);
-
-        // #417 · The finder's case. Written down rather than re-derived: it is a function of the TRAFFIC as
-        // well as of the thread, and a wave dealt afresh would move the hull and the berth under a captain
-        // who is halfway along the trail.
-        RestoreFinderSection(vault.Finder);
+        RestoreFinderSection(vault.Finder);   // #417 · and the case, which is written down, never re-rolled
 
         // #973 · The void's weather. A sentence the captain has worn out stays worn out across a save, and a
         // station the room was on about last time is still on something else today.
