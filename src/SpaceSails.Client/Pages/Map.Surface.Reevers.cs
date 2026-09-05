@@ -317,7 +317,11 @@ public partial class Map
         // #603 · And what does leave is what is IN them: a bot loaded with the lab round drops a queue in
         // one shot and one loaded with issue ball grinds them down.
         var loaded = live.Select(b => Core.Ammunition.ById(b.AmmoId)).ToList();
-        SentryBot.Volley volley = SentryBot.Step(deployed, targets, SightBlockers(), loaded);
+        // #326 · …and WHO it goes at. Both stances shoot under the same doctrine: anything standing in the
+        // corridor between the captain and the way home outranks anything that is merely close to the gun.
+        // The line is handed in live — the captain moved this frame — and it is null underground, where the
+        // way out is a lift on another map and there is no corridor to hold.
+        SentryBot.Volley volley = SentryBot.Step(deployed, targets, SightBlockers(), loaded, TheRetreatLine);
 
         // Fold the drained magazines back and flash a zap line from each bot that fired.
         double nowMs = _lastTimestampMs ?? 0;
@@ -454,7 +458,11 @@ public partial class Map
     // #314: deploy a carried sentry at the captain's feet, or retrieve a deployed one they're standing on.
     // The [E]-style act on the bare ground — no console, so it's the T key (Map.Deck). Retrieval wins when
     // you're on top of a bot (dry or not); else you set one down.
-    private void DeployOrRetrieveSentry()
+    // #326: …and WHICH STANCE it goes down in. The press carries the choice (⇧T is the second one) rather
+    // than raising a question over a real-time field — a modal between a captain and the bot he needs on the
+    // ground is the one shape this verb must never take. Retrieval ignores it: you pick a bot up the same
+    // way whichever stance it was standing in.
+    private void DeployOrRetrieveSentry(bool holdTheLine = false)
     {
         if (_surface is not { } ex)
         {
@@ -495,6 +503,7 @@ public partial class Map
             return;
         }
         carried.Deployed = true;
+        carried.HoldsTheLine = holdTheLine;
         carried.X = _avatarX;
         carried.Y = _avatarY;
         RendererInterop.PlayCue("board");

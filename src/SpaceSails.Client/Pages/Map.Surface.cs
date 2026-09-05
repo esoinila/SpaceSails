@@ -341,6 +341,13 @@ public partial class Map
         public double AimY { get; set; }
         public double FiringUntilMs { get; set; }
 
+        // #326 · WHICH STANCE IT WAS SET DOWN IN. False is the #314 post — it holds the arc it was put on,
+        // for ever, which is the right object for guarding a hole in the ground. True is the bodyguard: it
+        // walks to the middle of the captain→home line every frame (Map.Surface.Escort) until its counter
+        // reads 00, and then it stops where it stands. Chosen at the press, never changed afterwards —
+        // shoulder it and set it down again if you want the other one.
+        public bool HoldsTheLine { get; set; }
+
         // #603 · WHAT IS IN IT. Owner: "those rounds might be special types even." A magazine is no longer
         // just a count — it is a count OF SOMETHING, because the lab round clears a line with one shot and
         // will kill you at arm's length, and issue ball does neither.
