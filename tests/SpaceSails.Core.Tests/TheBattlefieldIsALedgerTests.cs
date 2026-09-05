@@ -97,6 +97,10 @@ public class TheBattlefieldIsALedgerTests
 
         // The robbed ground: bodies, and a hole where the ✗ was.
         Assert.NotEmpty(ground.HusksAt(Body, Salt));
+        // …and the unordered count the odds oracle asks is the ordered list's own length. Two readers of
+        // one truth is this repo's third bug class; they are held against each other here.
+        Assert.Equal(ground.HusksAt(Body, Salt).Count, ground.HuskCountAt(Body, Salt));
+        Assert.Equal(0, ground.HuskCountAt(Body, "site-b"));
         Assert.Contains(ground.ScarsAt(Body, Salt), s => s.What == GroundMemory.ScarKind.Pit);
         Assert.Equal(SpotX, ground.ScarsAt(Body, Salt).First(s => s.What == GroundMemory.ScarKind.Pit).X, 2);
         Assert.Equal(SpotY, ground.ScarsAt(Body, Salt).First(s => s.What == GroundMemory.ScarKind.Pit).Y, 2);

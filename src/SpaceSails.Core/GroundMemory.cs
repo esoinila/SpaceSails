@@ -267,6 +267,23 @@ public sealed class GroundMemory
         return true;
     }
 
+    /// <summary>#316 law 3 · HOW MANY husks are on one ground, without building the ordered list. The odds
+    /// oracle asks this of every chest in the hoard every time the ledger's map section renders, and a count
+    /// has no use for an order — <see cref="Stored"/> sorts the whole ledger to produce one. Same predicate,
+    /// same single reader of the key format; only the ordering is skipped.</summary>
+    public int HuskCountAt(string bodyId, string siteSalt)
+    {
+        int found = 0;
+        foreach (string row in _marks)
+        {
+            if (TryReadHuskKey(row, bodyId, siteSalt, out _))
+            {
+                found++;
+            }
+        }
+        return found;
+    }
+
     /// <summary>Every scar this ledger is holding for one landing site, in the ledger's own stable order.
     /// No seeding and no roll, exactly as <see cref="HusksAt"/>: a hole is here because something was
     /// actually dug out of it.</summary>

@@ -53,12 +53,12 @@ public partial class Map
     /// there is no ground to count the bodies on.</para>
     /// </summary>
     private int TheFightThisGroundCarries(TreasureCache cache) =>
-        GroundSaltFor(cache) is { } salt ? _groundMemory.HusksAt(cache.BodyId, salt).Count : 0;
+        GroundSaltFor(cache) is { } salt ? _groundMemory.HuskCountAt(cache.BodyId, salt) : 0;
 
     /// <summary>The same count for the ground the captain is STANDING ON — what the shovel's own line has to
     /// quote, because a chest going into this regolith right now will be rolled against exactly this.</summary>
     private int TheFightThisGroundCarries(SurfaceExcursion ex) =>
-        _groundMemory.HusksAt(ex.Stop.Body.Id, ex.Site.LayoutSalt).Count;
+        _groundMemory.HuskCountAt(ex.Stop.Body.Id, ex.Site.LayoutSalt);
 
     /// <summary>
     /// <b>THE RIVALS WERE HERE, AND THE GROUND KEEPS IT.</b> Called once, by the discovery watch, the moment
