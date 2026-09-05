@@ -100,6 +100,10 @@ public partial class Map
     private readonly List<(double X, double Y, bool Haunted)> _hudMarks = [];
     private readonly List<(double X, double Y, string Counter, bool Dry, bool Firing, double AimX, double AimY)> _hudBots = [];
     private readonly List<(double X, double Y)> _hudHusks = [];
+    // #316 law 1, second half · the robbed holes — disturbed ground where a ✗ used to be. The abandoned dry
+    // bots are NOT a list of their own: they go into _hudBots as the dry bots they are, so the mark a captain
+    // reads is the mark #314 already draws for a sentry at 00.
+    private readonly List<(double X, double Y)> _hudPits = [];
     private readonly List<(double X, double Y, bool Hard)> _hudSwept = [];
 
     // #371 Phase 1 (perf) · the swept-grid draw is bounded. The per-visit probed squares grow toward the
@@ -555,6 +559,10 @@ public partial class Map
         // ground kept is on the ship's ledger, and a field is meant to still be the field you shot it up.
         SeedTheHusksLeftHere(excursion);
 
+        // #316 law 1, second half · …AND WHAT SOMEBODY ELSE LEFT. A hole where one of our ✗ marks used to
+        // be, and any sentry a rival crew walked away from. Same moment, same reason, same ledger.
+        SeedTheScarsLeftHere(excursion);
+
         _surface = excursion;
 
         // ── #583 · DOES THE HEAT FOLLOW YOU DOWN? Rolled ONCE, here, off the heat this captain earned and
@@ -880,7 +888,7 @@ public partial class Map
         // says. The coin and cargo therefore DO leave the books now (#648's honest "nothing left the books"
         // line was honest about a world that no longer exists), so the news is what the chest reads as.
         string dropTail = dropped is { } open
-            ? $" 🧰 You lifted off without the chest you dropped — it stays where it fell. {open.Safety.Sentence} Map filed (🗺)."
+            ? $" 🧰 You lifted off without the chest you dropped — it stays where it fell. {open.SafetyWith(TheFightThisGroundCarries(open)).Sentence} Map filed (🗺)."
             : droppedAndLeft
                 ? " 🧰 You lifted off without the chest you dropped — but it was empty, so nothing was left out there."
                 : "";

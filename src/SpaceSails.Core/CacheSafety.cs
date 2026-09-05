@@ -24,12 +24,15 @@ public enum CacheSafetyRung
 /// <param name="DepthCredit">Per mille shaved off by the carry — the courage term (0 for a dropped chest).</param>
 /// <param name="ShovelTerm">Per mille the shovel bought (negative) or the open ground cost (positive).</param>
 /// <param name="WatchdogTerm">Per mille shaved off by the Old Ones standing over it (negative).</param>
+/// <param name="BattleTerm">#316 law 3 · Per mille ADDED by the firefight this ground already carries — the
+/// husks lying on it (positive). Zero for the quiet dig, which is the whole point of the term.</param>
 public readonly record struct CacheSafetyRead(
     int ChancePerMille,
     CacheSafetyRung Rung,
     int DepthCredit,
     int ShovelTerm,
-    int WatchdogTerm)
+    int WatchdogTerm,
+    int BattleTerm = 0)
 {
     /// <summary>The rung's WORD — "Exposed" / "Considered" / "Guarded". What the ledger row shows.</summary>
     public string Word => CacheSafety.Word(Rung);
@@ -59,7 +62,7 @@ public readonly record struct CacheSafetyRead(
 /// watch dogs"</i>. The governing law the issue states from those: <b>the same distance that makes the walk
 /// dangerous is what makes the cache safe.</b></para>
 ///
-/// <h3>Three terms, one function</h3>
+/// <h3>Four terms, one function</h3>
 /// <list type="number">
 /// <item><b>The carry</b> — how far from the landing pad the shovel went in. Carried courage: the walk that
 /// nearly killed you is the thing that pays. Full credit at the deep commitment anchor
@@ -70,14 +73,17 @@ public readonly record struct CacheSafetyRead(
 /// <item><b>The ground's Reever weight</b> — the watchdogs (#295). Each standing Old One shaves a full
 /// percentage point off a rival's odds, which is the arithmetic that has shipped since #295 and is preserved
 /// here to the point.</item>
+/// <item>#316 law 3 · <b>The battlefield</b> — the husks already lying on that ground. The only term that
+/// makes a chest LESS safe, and the only one the captain chose on purpose: <i>sentry fire buys safety today
+/// and advertises the site tomorrow</i>. The quiet dig pays nothing for it.</item>
 /// </list>
 ///
 /// <h3>Why it is one function and not two</h3>
 /// <para>The line shown when you bury and the roll thrown when you are away read the SAME
-/// <see cref="Read(double?, bool?, int)"/>. This repository's named bug class is one truth with two
+/// <see cref="Read(double?, bool?, int, int)"/>. This repository's named bug class is one truth with two
 /// reporters — a sim doing one thing while a sentence reports another — and a promise about a hiding place
 /// is exactly the shape that bug likes. So the rung is derived from the chance
-/// (<see cref="RungFor"/>), the chance is derived from the three terms, and there is nowhere else to
+/// (<see cref="RungFor"/>), the chance is derived from the terms, and there is nowhere else to
 /// compute either.</para>
 ///
 /// <h3>The legacy read</h3>
@@ -124,6 +130,36 @@ public static class CacheSafety
     /// <summary>The most the carry can ever buy. Deliberately larger than the shovel premium: the walk is
     /// the expensive thing and it is the thing the issue is about.</summary>
     public const int MaxCarryCreditPerMille = 18;
+
+    // ── #316 law 3 · THE SYMMETRY, AND IT IS THE POINT OF THE WHOLE FORENSICS ISSUE ───────────────────
+    //
+    // Owner, #316: "YOUR battles leave the same evidence for rivals — sentry fire buys safety today and
+    // advertises the site tomorrow. The quiet dig leaves nothing; the loud stand leaves a signpost. Loadout
+    // choice becomes an information-warfare choice."
+    //
+    // Everything above this line makes a chest SAFER. This is the one term that makes it less safe for a
+    // reason the captain chose, and it reads off the same ledger a returning captain reads: the husks lying
+    // on that ground (GroundMemory.HusksAt). Not a flag, not a counter kept beside it — the marks themselves.
+    // Which also settles the question of WHOSE fight it was: the ground does not know, and neither does
+    // whoever is out there reading it. That anonymity is not a shortcut, it IS law 1 — a field of husks says
+    // somebody was here, and never who.
+    //
+    // NEITHER NUMBER BELOW IS TUNED. A husk is worth exactly what the shovel bought (ShovelPremiumPerMille),
+    // in the opposite direction: one body is a shrug, and it takes a real stand to undo a real hiding place.
+    // And the whole signpost is capped at what the deepest carry buys (MaxCarryCreditPerMille), so the
+    // loudest possible stand can cancel the bravest possible walk and never more than that.
+
+    /// <summary>What ONE husk on the ground adds to a rival's daily odds — the shovel's premium, inverted.</summary>
+    public const int BattleSignpostPerMille = ShovelPremiumPerMille;
+
+    /// <summary>The most a battlefield can ever add: exactly what the deepest carry buys, so the loudest
+    /// stand undoes the bravest walk and stops there.</summary>
+    public const int MaxBattleSignpostPerMille = MaxCarryCreditPerMille;
+
+    /// <summary>The signpost term for a ground carrying <paramref name="huskCount"/> husks. Zero at zero —
+    /// the quiet dig leaves nothing — and saturated at <see cref="MaxBattleSignpostPerMille"/>.</summary>
+    public static int BattleSignpost(int huskCount) =>
+        Math.Min(MaxBattleSignpostPerMille, BattleSignpostPerMille * Math.Max(0, huskCount));
 
     // ── The rung boundaries ──────────────────────────────────────────────────────────────────────────
     //
@@ -184,7 +220,11 @@ public static class CacheSafety
     /// <param name="buried">True = the shovel went in; false = it lies in the open where it was dropped;
     /// null = unrecorded, and the chest keeps the deal it was buried under.</param>
     /// <param name="reeverLevel">Standing Old Ones on this ground, 0..<see cref="ReeverRaid.MaxReevers"/>.</param>
-    public static CacheSafetyRead Read(double? padDistanceDu, bool? buried, int reeverLevel)
+    /// <param name="huskCount">#316 law 3 · DOWNED Old Ones already lying on this ground, off the ship's
+    /// ground ledger (<see cref="GroundMemory.HusksAt"/>). Zero for a ground nobody has fought on — which is
+    /// every ground until the captain makes a stand on one, so every chest ever buried before this term
+    /// existed reads exactly as it always has.</param>
+    public static CacheSafetyRead Read(double? padDistanceDu, bool? buried, int reeverLevel, int huskCount = 0)
     {
         // The carry is CARRIED COURAGE — a walk you chose, with a chest and a shovel, to put the thing
         // somewhere. A chest dropped mid-sprint was not placed anywhere; it fell where your legs gave out,
@@ -201,18 +241,36 @@ public static class CacheSafety
 
         int watchdogs = -WatchdogPerMille * Math.Max(0, reeverLevel);
 
-        int chance = Math.Clamp(
+        // #316 law 3 · THE SIGNPOST GOES ON AFTER THE FLOOR, and that is deliberate rather than sloppy.
+        //
+        // MinChancePerMille is a promise about a HIDING PLACE: however deep you carried it and however many
+        // Old Ones stand over it, a hoard is never immortal. A battlefield is not a hiding place. Folded in
+        // with the other three terms the signpost would be eaten alive by exactly the case it exists for —
+        // a stand happens where the pack turned out, which is haunted ground, which is already on the floor
+        // — and the loudest possible afternoon in the game would move a number by nothing at all. So the
+        // hiding place is priced first and clamped, and then the fight the captain left on top of it is
+        // added to what a rival can SEE from a distance. The ceiling still holds.
+        int battle = BattleSignpost(huskCount);
+
+        int hidden = Math.Clamp(
             BaseChancePerMille - carry + shovel + watchdogs,
             MinChancePerMille,
             MaxChancePerMille);
 
-        return new CacheSafetyRead(chance, RungFor(chance), carry, shovel, watchdogs);
+        int chance = Math.Min(MaxChancePerMille, hidden + battle);
+
+        return new CacheSafetyRead(chance, RungFor(chance), carry, shovel, watchdogs, battle);
     }
 
     /// <summary>The same read, off a chest already in the ledger — what the return-trip roll and the ledger
-    /// row both call. There is no second arithmetic anywhere: this forwards.</summary>
-    public static CacheSafetyRead Read(TreasureCache cache) =>
-        Read(cache.PadDistance, cache.Buried, cache.ReeverLevel);
+    /// row both call. There is no second arithmetic anywhere: this forwards.
+    ///
+    /// <para>#316 · <paramref name="huskCount"/> is the ground's own recorded battle, which a chest cannot
+    /// carry: a cache is a saved record and the husks are a fact about the REGOLITH that goes on changing
+    /// after the shovel is back on the boat. The caller who knows the ground (the discovery watch, the bury
+    /// line) hands it in; everyone else reads the chest exactly as they always have.</para></summary>
+    public static CacheSafetyRead Read(TreasureCache cache, int huskCount = 0) =>
+        Read(cache.PadDistance, cache.Buried, cache.ReeverLevel, huskCount);
 
     /// <summary>The rung for a chance. The ONLY place a rung is decided, which is what makes the promise
     /// and the dice the same fact.</summary>

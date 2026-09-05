@@ -241,6 +241,19 @@ public partial class Map
             }
             _hudBots.Add((b.X, b.Y, SentryBot.Readout(b.Rounds), b.Rounds <= 0, b.FiringUntilMs > nowMs, b.AimX, b.AimY));
         }
+
+        // #316 law 1, second half · AND THE ONES SOMEBODY ELSE LEFT STANDING. A rival crew that walked into
+        // a full pack over one hole did not stroll back for their hardware, and what is left is a sentry
+        // frozen at 00 on ground the captain never fought on — which is the most eloquent husk in the game
+        // and one #314 already knows how to draw. So it is not a new mark and not a new list: it comes
+        // through here as the dry bot it is, with no rounds, never firing, aiming at nothing.
+        foreach (GroundMemory.Scar scar in ex.Scars)
+        {
+            if (scar.What == GroundMemory.ScarKind.DryBot)
+            {
+                _hudBots.Add((scar.X, scar.Y, SentryBot.Readout(0), true, false, scar.X, scar.Y));
+            }
+        }
     }
 
     private DeckView.SurfaceHud? BuildSurfaceHud()
@@ -266,6 +279,17 @@ public partial class Map
         if (onWreck)
         {
             RefreshHudBots(ex);
+
+            // #316 · …and the husks THIS boarding made. The regolith's refill lives past the early return
+            // below, so a hull boarded after a moon walk was drawn with the MOON's husks still in the buffer
+            // — somebody else's dead scattered across her compartments. A wreck keeps no ground ledger
+            // (ex.Husks is this visit only, and nothing on a steel deck is ever written to one), so this is
+            // the honest list: what went down here, since the airlock.
+            _hudHusks.Clear();
+            foreach (GroundMemory.Husk husk in ex.Husks)
+            {
+                _hudHusks.Add((husk.X, husk.Y));
+            }
 
             // THE TRACKER COMES UP WHEN THERE IS SOMETHING TO TRACK, AND THAT IS THE POINT. Owner: "we
             // could really use the motion detector here … I think we need it activating to bring it up on
@@ -492,21 +516,30 @@ public partial class Map
             {
                 continue;
             }
-            (double mx, double my) = c is { DigX: { } dx, DigY: { } dy }
-                ? (dx, dy)
-                : MoonSurface.CachePosition(c.Id);
+            (double mx, double my) = MoonSurface.CacheSpot(c);
             _hudMarks.Add((mx, my, c.ReeverLevel > 0));
         }
 
         RefreshHudBots(ex);
 
         _hudHusks.Clear();
-        // 🗺 Layers (#405) Ground finds → Husks: the downed-Old-One marks left in the regolith (#316).
+        _hudPits.Clear();
+        // 🗺 Layers (#405) Ground finds → Husks: the downed-Old-One marks left in the regolith (#316) —
+        // and, on the same layer and for the same reason, the holes somebody else's shovel left (#316 law 1's
+        // second half). A robbed ✗ and the bodies around it are ONE piece of evidence; a captain who has
+        // turned the husk layer off is not asking to be shown half a crime scene.
         if (LayerVisible("finds.husks"))
         {
             foreach (GroundMemory.Husk husk in ex.Husks)
             {
                 _hudHusks.Add((husk.X, husk.Y));
+            }
+            foreach (GroundMemory.Scar scar in ex.Scars)
+            {
+                if (scar.What == GroundMemory.ScarKind.Pit)
+                {
+                    _hudPits.Add((scar.X, scar.Y));
+                }
             }
         }
 
@@ -581,6 +614,7 @@ public partial class Map
                 : null,
             Bots: _hudBots,
             Husks: _hudHusks,
+            Pits: _hudPits,                   // #316: the holes somebody else's shovel left at our ✗
             KeyHints: BuildSurfaceKeyHints(ex),
             OrbitComms: orbit?.Line,          // #327: the ship's calling-home line, never buried
             OrbitSeverity: orbit?.Severity ?? 0,
