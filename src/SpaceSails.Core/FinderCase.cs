@@ -204,6 +204,32 @@ public static partial class FinderCase
 
         /// <summary>…joined, for the note itself.</summary>
         public string SubjectLine => CaseSubjects.Line(Subjects);
+
+        // ── THE THREE THE TRAIL ADDS ────────────────────────────────────────────────────────────────
+        //
+        // #741 v1's law, and it is a law about WHERE: a subject is the AUTHOR's, declared in Core beside
+        // the sentence it describes, and the client may not mint one. So the three headings the trail
+        // grows are minted here rather than in the page that files them — the guard
+        // `TheThreadsPageIsInTheSatchelTests.TheFilingFunnelCarriesTheAuthorsSubjects` sweeps the whole
+        // client tree for a `CaseSubjects.Person(` and reds on the first one.
+        //
+        // A HULL IS FILED AS A PLACE. Of the three kinds she is the least wrong one: a hull with a name on
+        // her transponder is somewhere the captain can go alongside, and she is certainly not a person or
+        // an office. Both callsigns are printed for the captain to read — the dossier draws them — which
+        // is the condition Person carries and which Place is not even asked for.
+
+        /// <summary>The case's own headings, plus the PERSON the captain actually spoke to. Minted through
+        /// <see cref="CaseSubjects.Person"/>, which is a promise by the author that this name is printed on
+        /// something the captain is reading: it is, on the plate over the regular's own chair.</summary>
+        public string SubjectsWithTheWitness(string printedName) =>
+            CaseSubjects.Line([.. Subjects, CaseSubjects.Person(printedName)]);
+
+        /// <summary>…plus the hull he went and looked up.</summary>
+        public string SubjectsWithTheHull => CaseSubjects.Line([.. Subjects, CaseSubjects.Place(HullCallsign)]);
+
+        /// <summary>…and plus the one her own record clears.</summary>
+        public string SubjectsWithTheHerring =>
+            CaseSubjects.Line([.. Subjects, CaseSubjects.Place(HerringCallsign)]);
     }
 
     // ── THE PAY ─────────────────────────────────────────────────────────────────────────────────────────

@@ -47,6 +47,16 @@ public sealed partial class Map
     /// forgotten with it. Null when she has nothing to hand over.</summary>
     private FinderCase.Case? _finderOffer;
 
+    /// <summary>Whether this evening has already ASKED the world for a case. Null is a question this berth
+    /// has not put yet; false is an answer it gave (a world with nothing to find in it).
+    ///
+    /// <para>It is here because the question is expensive and its answer cannot change while the captain is
+    /// sitting in the room: <see cref="TheCaseThisPortDeals"/> walks every body and every hull in the
+    /// scenario, and the gate above it is <i>the captain is sitting alone</i> — so without this the walked
+    /// frame would rebuild the whole graph sixty times a second for as long as he sat there. #731's own
+    /// lesson, in a bar.</para></summary>
+    private bool? _finderAskedTheWorld;
+
     /// <summary>…and how far down it he has got.</summary>
     private FinderCase.Progress _finderProgress = FinderCase.Progress.Fresh;
 
@@ -95,6 +105,7 @@ public sealed partial class Map
 
         _finderVisitBerth = berth;
         _finderOffer = null;
+        _finderAskedTheWorld = null;
         _finderCard = null;
         _finderAnswered = false;
         _finderAskedThisVisit = false;
@@ -161,8 +172,16 @@ public sealed partial class Map
             return false;
         }
 
+        // Asked ONCE an evening. The answer is a fact about a scenario and a berth and cannot change while
+        // the captain is in the chair, and the walk to it is the whole traffic list.
+        if (_finderAskedTheWorld is { } asked)
+        {
+            return asked;
+        }
+
         _finderOffer = TheCaseThisPortDeals(berth);
-        return _finderOffer is not null;
+        _finderAskedTheWorld = _finderOffer is not null;
+        return _finderAskedTheWorld.Value;
     }
 
     /// <summary>
@@ -350,8 +369,7 @@ public sealed partial class Map
         // THE QUESTION HE WAS ASKED, under his own name as well as the case's. Not a new sentence and not
         // an answer somebody put in his mouth: the hook is what the captain came to ask about, and what the
         // book keeps is that he asked THIS person about it.
-        FileNoteAbout(c.TheHook, FinderGlyph,
-                      CaseSubjects.Line([.. c.Subjects, CaseSubjects.Person(giver)]));
+        FileNoteAbout(c.TheHook, FinderGlyph, c.SubjectsWithTheWitness(giver));
         RequestVaultSave();
     }
 
@@ -405,8 +423,7 @@ public sealed partial class Map
             // HER OWN LEDGER OF NAMES, in the dossier's own words — the fact the captain went and looked at,
             // filed under the case as well as under her. Nothing is composed here: the line is the one the
             // dossier prints (#397), and a second phrasing of it would be two readings of one record.
-            FileNoteAbout(ShipHistories.For(c.HullId).FormerNamesLine, FinderGlyph,
-                          CaseSubjects.Line([.. c.Subjects, CaseSubjects.Place(c.HullCallsign)]));
+            FileNoteAbout(ShipHistories.For(c.HullId).FormerNamesLine, FinderGlyph, c.SubjectsWithTheHull);
             RequestVaultSave();
             return;
         }
@@ -415,8 +432,7 @@ public sealed partial class Map
         {
             _finderProgress = _finderProgress with { HerringCleared = true };
             SayItWhereTheyAreLooking(FinderCase.HerringCleared, Telling.Floor);
-            FileNoteAbout(FinderCase.HerringCleared, FinderGlyph,
-                          CaseSubjects.Line([.. c.Subjects, CaseSubjects.Place(c.HerringCallsign)]));
+            FileNoteAbout(FinderCase.HerringCleared, FinderGlyph, c.SubjectsWithTheHerring);
             RequestVaultSave();
         }
     }
