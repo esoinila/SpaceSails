@@ -27,15 +27,38 @@ public static partial class UndergroundComplex
     // WHAT IT IS NOT. It is not the executive lift (that hangs off a principal apartment, is on no panel and
     // costs your cover — a beat, and a different lane), and it is not the maintenance break.
 
-    /// <summary>#719 · What is painted at the stair's door. <b>The only new string this feature has</b>, and
-    /// it is a plate rather than a sentence for the reason every other plate down here is one: the building
-    /// labels its own fabric and never narrates it.
+    /// <summary>#719 · What is painted at the stair's door. A plate rather than a sentence for the reason
+    /// every other plate down here is one: the building labels its own fabric and never narrates it.
     ///
     /// <para>It says STAIR and it does not say LIFT or CAR, which is a rule and not a preference — a stair
     /// wearing the cars' vocabulary would be a sign reporting a machine that is not there, which is this
     /// project's house bug class printed on a wall (see <see cref="CageSign"/>, <see cref="ServiceCarSign"/>
     /// and #802's surface row).</para></summary>
     public const string StairSign = "\U0001FA9C STAIR";
+
+    /// <summary>
+    /// #719 · <b>WHAT THE CLIMB OUT WAS LIKE</b>, said once on arriving at the surface on the captain's own
+    /// legs. Fable canon, 2026-09-04, verbatim — the line the FABLE marker in <c>Map.Surface.Hive</c> was
+    /// left standing for, and the second and last string this feature authors.
+    ///
+    /// <para>It exists because the car's line may not be spent on this trip: that sentence names a MACHINE
+    /// that did not carry you, which is this project's house bug class (a sentence reporting a thing the sim
+    /// did not do) printed on the loudest line in the feature. So the stair gets its own, and it says the
+    /// one thing the stair actually is — long, climbed in a hard suit, and <b>paid for out of the tank</b>.
+    /// That last clause is <see cref="ClimbAirSeconds"/> in six words: it points at the gauge rather than
+    /// quoting it, because the tank is the authority on its own number and a sentence that quoted one would
+    /// be a second place for it to be wrong.</para>
+    ///
+    /// <para>Nothing in it names what is down there, wonders about the building, or reaches for the reserved
+    /// word. A fire stair is the most ordinary object in the game and the sentence keeps it that way, which
+    /// is exactly why coming up through one is not reassuring.</para>
+    /// </summary>
+    public const string StairArrivalLine =
+        "Up the long way, in a hard suit, to the lid from underneath. The tank says what it cost.";
+
+    /// <summary>The glyph the arrival line is said and filed on — the stair's own, the same mark its plate
+    /// wears, so the book's row for the climb and the sign at its foot read as one object.</summary>
+    public const string StairArrivalGlyph = "\U0001FA9C";
 
     /// <summary>#719 · How deep the stair's own pocket runs off the spine — <b>the lift alcove's five du</b>,
     /// the same number <see cref="SpecimenRecessDu"/> takes and for the same stated reason: a pocket the

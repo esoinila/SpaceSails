@@ -62,6 +62,15 @@ public partial class Map
         public bool SentryHintShown { get; set; }         // #380 item 7: the one-time first-deploy sentry hint has fired
         public bool NerveBandDropAnnounced { get; set; }  // #380 item 2: the one-time "nerves fraying" band-drop pulse has fired
 
+        // #436 · Whether the one authored sentence for the moment an Old One FIXES has been said this trip.
+        // Once per excursion, because the latch is one-way: after the first fix the ground is never clean
+        // again, and a second announcement would be old news said over the sound of the thing coming.
+        public bool FixedOnYouSaid { get; set; }
+
+        // #719 · …and the same shape for the climb out by stair. Once on arrival, and only for the trip that
+        // was actually made on the captain's own legs — the car has its own line and may not be spent on it.
+        public bool StairArrivalSaid { get; set; }
+
         // #649 · The one-per-excursion beat for the moment the monolith stops being a shape and becomes the
         // sky. Separate from _monolithSeen, which is the once-in-a-LIFE nerve hit: the first sight is a
         // milestone and happens once ever, but ARRIVING at the foot of it is worth a line every time you make

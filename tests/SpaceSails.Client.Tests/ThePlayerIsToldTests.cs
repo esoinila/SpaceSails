@@ -179,6 +179,19 @@ public sealed class ThePlayerIsToldTests
             Surface.RaisedCard, "Map.Surface.Hive.cs", "RideTheLiftTo",
             "_viewObject = new DeckPlan.ConsoleSpot("),
 
+        // ── SOMEBODY WHO WILL NOW REMEMBER, AND IT IS NOT A PERSON ─────────────────────────────────────
+        //
+        // #436 · The instant an Old One fixes on the captain. It changes what he KNOWS (he has been seen)
+        // and what he CAN DO (the ground behind him has stopped being a place nobody is walking towards),
+        // and the latch is one-way, so it is a standing change and not weather. The 2026-08-02 story-QA run
+        // is the row's own reason: before this lane the moment produced not one byte of output, and "a
+        // player cannot tell the frame it happened from the frame before it" is the law's failure stated in
+        // the owner's own vocabulary. Ranked rather than carded on purpose — the owner's note that a banner
+        // is the wrong shape for this, and there is nothing in front of a captain out on the regolith.
+        new("one of them has stopped shivering and is looking at you",
+            Surface.RankedPulse, "Map.Surface.Observation.cs", "TheMomentItFixes",
+            "ReeverObservation.FixedOnYouGlyph, PulseRank.Climax);"),
+
         // The wintering hall — the sentence a whole feature was built to say, and the only CLIMAX raised
         // from the client. The owner's 2026-08-03 ruling put the head of the organization at the far end of
         // it; nothing routine may stand on top of that.

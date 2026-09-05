@@ -372,6 +372,11 @@ public partial class Map
         {
             _reevers.Clear();
         }
+        // #436 · How fast the captain is going, measured BEFORE anything looks at him and OUTSIDE the pack's
+        // own step — StepReevers returns early on an empty field, and a measure that skipped those frames
+        // would hand the first contact of an excursion a speed computed across every frame since the last one
+        // existed. The observation roll reads this; nothing else does.
+        MeasureTheCaptainsMotion(dtRealSeconds);
         StepReevers(dtRealSeconds);
         // #1061 beat 2 · …and the one person out here who is frightened of them. AFTER the pack, deliberately
         // and for the rep's own reason further down: what he decides about is a field whose Old Ones have

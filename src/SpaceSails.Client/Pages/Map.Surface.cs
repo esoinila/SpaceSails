@@ -276,6 +276,21 @@ public partial class Map
         public double LastSeenX, LastSeenY;
         public bool EverSeen;
 
+        // #436 · THE OBSERVATION ROLL's own two fields. EverSeen above is now the FIXED state of
+        // ReeverObservation.Watch and keeps every property it had (one-way, for the excursion, granted by the
+        // ear as well as by the eye); these are the two things a contact has to carry BETWEEN looks.
+        //
+        // Stirred is the fear window: stone has stopped standing between you, the head is up and turned your
+        // way, and it has NOT committed — so it does not latch, and backing behind stone puts the head back
+        // down. Drawn as a pose change on the existing mark and never spoken (canon, 2026-09-05).
+        //
+        // LastLookIndex is the cadence's carried state: a die is cast when this number turns over, so a
+        // sightline that opens and shuts inside one look never gets one cast at it. long.MinValue is "has
+        // never looked", and it must not be 0 — index 0 is a REAL look, the first one of an excursion, and a
+        // contact born believing it had already taken that look would silently skip it.
+        public bool Stirred;
+        public long LastLookIndex = long.MinValue;
+
         // Thermal motion (owner, cruise 2026-07-19: "the reevers could be more active, like little thermal
         // motion so they don't just stay still"). A STILL Old One — pinned by a sentry, held at its tide
         // leash, or idling on a stalled chase — shivers around a FIXED anchor instead of standing statue.
