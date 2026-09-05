@@ -166,10 +166,20 @@ public static class SentryDoctrine
 
     // ── WHERE A BODYGUARD STANDS ──────────────────────────────────────────────────────────────────────
 
-    /// <summary>#326 · How finely the line is sounded when the midpoint is inside a wall. The post is walked
-    /// out from the middle in steps of this fraction of the line's length, one hand then the other, so the
-    /// answer is the NEAREST legal point along the line rather than the first convenient one.</summary>
-    private const double PostProbeFraction = 0.01;
+    /// <summary>#326 · How finely the line is sounded when the midpoint is inside a wall, as a fraction of
+    /// the body's own radius. A QUARTER of a body: fine enough that the spot handed back is the nearest legal
+    /// one to within a fraction of the thing standing on it, and measured in deck units rather than in
+    /// fractions of the line — a corridor eleven thousand units long and one twenty units long must be
+    /// sounded at the same resolution, because a wall is the same width in both.</summary>
+    public const double PostProbeInRadii = 0.25;
+
+    /// <summary>#326 · …and how far out the sounding goes before it gives up: <c>256</c> probes, which is
+    /// about two engagement arcs to either hand at a captain's body radius. A bodyguard forced further off
+    /// its mark than that is not holding a post any more, it is executing a different plan — so the middle
+    /// stands, the bot walks at the stone and grinds on it, and the picture says plainly that this corridor
+    /// has a wall in it. Also the thing that keeps a frame bounded when the captain is out at the backstop
+    /// with ten thousand units of line behind him.</summary>
+    private const int PostProbes = 256;
 
     /// <summary>#326 · Halfway. The fraction the owner named — <i>"Protect the path to the ship at about half
     /// way"</i> — written down once so the post and every guard measure the same middle.</summary>
@@ -202,17 +212,31 @@ public static class SentryDoctrine
             return middle;
         }
 
-        for (double step = PostProbeFraction; step <= PostFraction; step += PostProbeFraction)
+        double length = Math.Sqrt((dx * dx) + (dy * dy));
+        if (length <= 1e-9)
         {
-            (double X, double Y) toward = At(PostFraction - step);      // the captain's side, first
-            if (!SurfaceCollision.Blocked(toward.X, toward.Y, radius, walls))
+            return middle;   // the captain is standing in the door; there is no line to walk
+        }
+        double probe = radius * PostProbeInRadii / length;
+
+        for (int i = 1; i <= PostProbes; i++)
+        {
+            double off = probe * i;
+            if (PostFraction - off >= 0)
             {
-                return toward;
+                (double X, double Y) toward = At(PostFraction - off);   // the captain's side, first
+                if (!SurfaceCollision.Blocked(toward.X, toward.Y, radius, walls))
+                {
+                    return toward;
+                }
             }
-            (double X, double Y) away = At(PostFraction + step);        // …then the door's
-            if (!SurfaceCollision.Blocked(away.X, away.Y, radius, walls))
+            if (PostFraction + off <= 1)
             {
-                return away;
+                (double X, double Y) away = At(PostFraction + off);     // …then the door's
+                if (!SurfaceCollision.Blocked(away.X, away.Y, radius, walls))
+                {
+                    return away;
+                }
             }
         }
 
