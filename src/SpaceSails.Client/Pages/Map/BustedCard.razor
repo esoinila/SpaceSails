@@ -132,7 +132,36 @@
                                     ? "All guns blazing. A last stand on the dice — you fight clear, or the freeze-frame does the rest and the policy issues somebody new."
                                     : "One opposed roll. Win and they peel off, but heat climbs a notch and the next wave is meaner; lose and it's a harsher cut.")@(_hasNetJammer ? " (jammer +2)" : "")</span>
                             </button>
+                            @* #535 · THE FIFTH EXIT, drawn only when there is a key in the pocket.
+
+                               Not disabled-with-a-tell like the bribe two buttons up: a greyed BRIBE teaches
+                               a captain what money would have bought, and a greyed key would teach them that
+                               an object they have never heard of exists and would have saved them — a quest
+                               marker wearing a button's clothes.
+
+                               It carries no detail line. The other three price themselves because they cost
+                               something the captain can weigh; this one costs the key, answers NO CONTACT
+                               LOGGED, and the whole point of it is that nothing else is said.
+                               FABLE: line needed — if this exit ever wants a detail, it is one line about
+                               what is SPENT and not one word about what is erased. *@
+                            @if (CarryingABlackOpsKey)
+                            {
+                                <button type="button" class="btn btn-outline-light busted-opt busted-key"
+                                        @onclick="() => PressAndRefocus(PresentTheBlackOpsKey)">
+                                    <span class="bo-title">@SpaceSails.Core.BlackOpsKey.Glyph @SpaceSails.Core.BlackOpsKey.PresentVerb</span>
+                                </button>
+                            }
                         </div>
+                        break;
+
+                    @* #535 · THE ENCOUNTER NEVER HAPPENED. The plate is the whole of what the player is told
+                       (#761's law, and ThePlayerIsToldTests carries the row): no roll, no result line and no
+                       quote from anybody, because there is nobody left to have said anything and nothing was
+                       filed for this card to report. The way out is the same "Fly on" every other survived
+                       catch ends on — the silence is the treasure, not a different button. *@
+                    case BustedEncounter.Stage.NoContactLogged:
+                        <div class="busted-hail">@SpaceSails.Core.BlackOpsKey.NoContactLoggedPlate</div>
+                        <button type="button" class="btn btn-outline-light busted-close" @onclick="() => Dismiss(CloseBusted)">Fly on</button>
                         break;
 
                     case BustedEncounter.Stage.Confiscated:
@@ -478,6 +507,9 @@
     [Parameter] public Action BustedResist { get; set; } = default!;
     [Parameter] public Action BustedResistLostConfirm { get; set; } = default!;
     [Parameter] public Action BustedResurrect { get; set; } = default!;
+    /// <summary>#535 · Whether the fifth exit is drawn at all — the page's own <c>CarryingABlackOpsKey</c>.</summary>
+    [Parameter] public bool CarryingABlackOpsKey { get; set; }
+    [Parameter] public Action PresentTheBlackOpsKey { get; set; } = default!;
     [Parameter] public Action<bool> OnBustedSubmit { get; set; } = default!;
     private void BustedSubmit(bool harsher = false) => OnBustedSubmit(harsher);
     [Parameter] public Action CloseBusted { get; set; } = default!;

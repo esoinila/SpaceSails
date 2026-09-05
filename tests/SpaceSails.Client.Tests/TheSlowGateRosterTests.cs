@@ -95,6 +95,9 @@ public sealed class TheSlowGateRosterTests
             { nameof(TheSalesmanWorksTheRoomTests), 23 },
             { nameof(TheTenderLeadsTheGalleyCardTests), 15 },
             { nameof(TheDirectNavActionsAreEmergenciesTests), 12 },
+            // #535 · the two spends, driven on the shipping card and the shipping row. Measured 2026-09-05
+            // rather than in the 09-02 baseline.
+            { nameof(TheKeyLeavesNoTraceTests), 26 },
 
             // ── The concurrency guard (#1108), measured 2026-09-04 rather than in the 09-02 baseline ──
             { nameof(TheWorldBuildersAreThreadSafeTests), 15 },

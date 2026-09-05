@@ -715,6 +715,39 @@ public static class WreckLayout
          ("the archive node", ArchiveStation),
          ("the purge handle", ArchiveSwitchStation)];
 
+    // ── The black-ops key, when a hull that fought is carrying one ───────────────────────────────────
+    //
+    // NOT a standard fitting, for the archive node's reason one section up: it is not something a ship is
+    // built with, it is something that was ABOARD her. Written down here rather than in the renderer because
+    // every wreck literal placed by eye in the client turned out to be wrong the moment a test could see it
+    // — the scuttling panel on the nest, the valve board standing in a doorway, three for three.
+
+    /// <summary>
+    /// #535 · WHERE THE KEY IS LYING: in the CREW SPACES, in somebody's kit, at the outboard end of the room.
+    ///
+    /// <para>The placement is the cheap half of the object's canon. A code nobody was ever meant to read is
+    /// not in the safe with the manifest and it is not invoiced into the hold — it is in the personal effects
+    /// of whoever was carrying it when she stopped being a ship, which is exactly the drawer this game
+    /// already puts loose rounds and somebody's wallet in (#563's outpost effects).</para>
+    ///
+    /// <para>Not the DEEP HOLD, which is the tempting room: that is freight nobody invoiced — a different
+    /// sentence about a different kind of secret — and it is already spoken for by the column
+    /// (<see cref="ArchiveStation"/>) on the very cause this key is dealt on.</para>
+    ///
+    /// <para>(11, −7.5) clears the CREW SPACES bulkhead at x 13 and the hull at y −9 by more than the walk
+    /// audit's margin, and stands clear of every other station on every cause by more than the separation
+    /// rule's three units — the nearest is the life-support/mutiny evidence at (7, −6), four and a quarter
+    /// away.</para></summary>
+    public static DeckReachability.Point KeyStation => new(11f, -7.5f);
+
+    /// <summary>The reachability/separation list for a hull that IS carrying a key. Kept apart from
+    /// <see cref="Stations"/> so the "every ship has identical fittings" law stays literally true — and
+    /// audited on every cause anyway, for <see cref="StationsWithArchive"/>'s reason: geometry checked only
+    /// where it is currently used is geometry that breaks the day somebody widens the eligibility rule.</summary>
+    public static IReadOnlyList<(string Name, DeckReachability.Point At)> StationsWithKey(
+        Derelict.WreckCause cause) =>
+        [.. Stations(cause), ("the black-ops key", KeyStation)];
+
     /// <summary>Where the cause's own evidence stands.</summary>
     public static DeckReachability.Point CauseStation(Derelict.WreckCause cause) => cause switch
     {

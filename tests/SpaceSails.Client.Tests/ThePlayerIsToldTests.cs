@@ -126,6 +126,23 @@ public sealed class ThePlayerIsToldTests
             Surface.OnModalOutcome, "Map.Combat.Busted.cs", "BustedBribe",
             "b.ResultMessage = $\"{b.Bribe.Total:N0} cr changes hands."),
 
+        // #535 · PRESENT THE KEY: the encounter never happened. This is the strangest row in the table and
+        // it is the reason the law is written the way it is — what changed about what the captain knows is
+        // that NOTHING was filed, and the plate is the whole of the telling. There is deliberately no
+        // ResultMessage under it: a sentence narrating the silence would be the game filing a report about
+        // the report it did not file. The STAGE is the card, exactly as the confiscation's is.
+        new("you present the key, and there is nothing to report",
+            Surface.OnModalOutcome, "Map.Combat.Busted.cs", "PresentTheBlackOpsKey",
+            "b.Phase = BustedEncounter.Stage.NoContactLogged;"),
+
+        // #535 · BURN IT COLD: a band comes off a file that is not yours, and it is the only thing in the
+        // game that lowers heat without time, a haven or a bribe. What the captain owes changed, so it is
+        // told at the moment it happens on whatever surface they are looking at — the open satchel on this
+        // press, and the pulse the instant nothing is up in front of them.
+        new("a key burns and a file closes",
+            Surface.OnModalOutcome, "Map.BlackOpsKey.cs", "BurnTheBlackOpsKey",
+            "SayItWhereTheyAreLooking(BlackOpsKey.BurnLine, PulseRank.Climax);"),
+
         // THE REBIRTH — the largest single change in the game to what the captain owes and is owed: a
         // clinic bill, an insurance tier consulted, a hull nobody wanted, a new face, and a book that has
         // been re-greyed at the filing line. Every one of those rides the card's own record (b.ClinicBillCr,

@@ -595,7 +595,10 @@ public sealed partial class Map
             // #537 slice 3 · the plate, the hole and the captain behind it are STATE, so the deck is built
             // from them. The plate console used to be appended to the live plan, which meant any rebuild —
             // a dogged hatch, a pump, a purge — silently deleted the one find of the whole search.
-            plate: _plateFound ? _hullVoid : null, voidOpen: _voidOpened, plateShut: _inTheVoid);
+            plate: _plateFound ? _hullVoid : null, voidOpen: _voidOpened, plateShut: _inTheVoid,
+            // #535 · …and whether the key is still lying in her crew spaces. It is STATE for the plate's own
+            // reason one comment up: taking it must not be undone by the next pump or dogged hatch.
+            keyAboard: _keyAboard);
     }
 
     /// <summary>The wreck's own header line, and the loiter promise under it — the reason the away team is

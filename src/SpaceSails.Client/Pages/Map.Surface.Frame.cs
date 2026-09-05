@@ -109,7 +109,8 @@ public partial class Map
         {
             _deckPlan = WreckInterior.WreckDeck(
                 aboard, _wreckExamined, _wreckSalvaged, SurfaceDroidCount, FillSurfaceDroids,
-                HeldDoors(), BlockedDoors(), _archiveAboard, _archivePurged);
+                HeldDoors(), BlockedDoors(), _archiveAboard, _archivePurged,
+                keyAboard: _keyAboard);   // #535 · the code in her crew spaces, if she is still holding one
             ComposeWhatYouLeft(ex);
             return;
         }

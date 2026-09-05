@@ -884,6 +884,21 @@
                                                 title="@ScanHint(item)"
                                                 @onclick="() => ScanWithTheKit(item)">@SpaceSails.Core.SdrScanner.ScanLabel</button>
                                     }
+                                    @* #535 · BURN IT COLD — the second of the key's two spends, and the only
+                                       thing in the game that takes heat off a file without time, a haven or
+                                       a bribe. Owner: "We could use these keys to drop heat at a tight spot."
+
+                                       Drawn on the key, and only where there is a file for it to close: the
+                                       meter is per-outfit (#715), so off their ground, or on the ground of an
+                                       outfit that has nothing on you, this is not a refusal — there is
+                                       nothing to refuse. It is the fourth control on this row to follow that
+                                       rule and the reason is written out in Map.BlackOpsKey.cs. *@
+                                    @if (BurnIsOffered(item))
+                                    {
+                                        <button type="button" class="satchel-load"
+                                                title="@SpaceSails.Core.BlackOpsKey.BurnVerb"
+                                                @onclick="() => BurnTheBlackOpsKey(item)">@SpaceSails.Core.BlackOpsKey.BurnVerb</button>
+                                    }
                                  </div>;
                         }
 
@@ -1044,6 +1059,8 @@
     [Parameter] public Func<Core.Satchel.Item, bool> RipIsOffered { get; set; } = default!;
     [Parameter] public Action<Core.Satchel.Item> RipItUp { get; set; } = default!;
     [Parameter] public Action<Core.CaseSubjects.SubjectThread> RunThePenDownTheStack { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, bool> BurnIsOffered { get; set; } = default!;
+    [Parameter] public Action<Core.Satchel.Item> BurnTheBlackOpsKey { get; set; } = default!;
     [Parameter] public Func<Core.Satchel.Item, string> SatchelLabel { get; set; } = default!;
     [Parameter] public Func<Core.Satchel.Item, string> ScanHint { get; set; } = default!;
     [Parameter] public Func<Core.Satchel.Item, bool> ScanIsOffered { get; set; } = default!;
