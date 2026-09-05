@@ -409,11 +409,22 @@
     /// <summary>Tuesday plan PR-A: fires when an area scan finishes, reporting the disc it covered
     /// (center, radius) and the sim time it completed. Map.razor checks whether a hidden body's true
     /// position at that instant falls inside — an actual completed scan is what reveals the wreck.</summary>
-    [Parameter] public EventCallback<CompletedAreaScan> OnAreaScanCompleted { get; set; }
+    [Parameter] public EventCallback<AreaScanCoverage> OnAreaScanCoverage { get; set; }
 
     /// <summary>The covered disc of one finished area scan: everything Map.razor needs to test
     /// "did this scan sweep over a hidden body?" without the tracking post knowing what a body is.</summary>
-    public readonly record struct CompletedAreaScan(Vector2d Center, double Radius, double CompleteTime);
+    /// <summary>
+    /// #240 · HOW MUCH OF A PATCH OF SKY THE TELESCOPE HAS ACTUALLY BEEN OVER, and when. Raised every tick
+    /// an area scan is under way and once more when it lands, so a hidden thing is found at the sim-moment
+    /// the beam crosses it rather than at the moment the pass happens to end.
+    ///
+    /// <para><paramref name="Covered"/> is the fraction of the swept wedge behind the beam right now (1 on
+    /// the completing pass). <paramref name="Job"/> and <paramref name="Observer"/> travel together
+    /// deliberately: the wedge and the bearing of anything judged against it must be measured from the same
+    /// point, or the reader would be re-deriving the aim from a ship that has moved since.</para>
+    /// </summary>
+    public readonly record struct AreaScanCoverage(
+        Vector2d Center, double Radius, ScanJob Job, Vector2d Observer, double Covered, double SimTime);
 
     private const double RosetteCenterPx = 100;
     private const double RosetteMaxRadiusPx = 82;
@@ -592,7 +603,29 @@
             return;
         }
 
-        foreach (CompletedPass pass in _schedule.Advance(SimTime, DurationOf))
+        IReadOnlyList<CompletedPass> landed = _schedule.Advance(SimTime, DurationOf);
+
+        // #240 · THE BEAM'S OWN POSITION, reported while it is still moving. Owner, watching the roadster
+        // scan climb: "Is it randomized now, the point when we find the car, or is it always at 100%? We
+        // might get lucky earlier also?" — it was always 100 %, because the reveal hung on the completion
+        // instant. The sweep's coverage-over-time was already fully defined (WedgeToward aims it,
+        // ActiveProgress times it); nothing here is new arithmetic, only the fact being said out loud on
+        // the ticks between the start of a pass and its end.
+        //
+        // The #1068 gate is applied to the LIVE report exactly as it is to the landed one, and against the
+        // same instant: a pass that is going to bring nothing back must not leak its find early either.
+        if (_schedule.Active is { Kind: SensorTaskKind.AreaScan } live
+            && OnAreaScanCoverage.HasDelegate
+            && !(Ephemeris is not null
+                 && PoliteDecline.BringsNothingBack(live, Ephemeris, _schedule.ActiveCompleteTime)))
+        {
+            OnAreaScanCoverage.InvokeAsync(new AreaScanCoverage(
+                live.AreaCenter, live.AreaRadius,
+                SensorTaskGeometry.WedgeToward(ShipPosition, live.AreaCenter, live.AreaRadius),
+                ShipPosition, _schedule.ActiveProgress(SimTime), SimTime));
+        }
+
+        foreach (CompletedPass pass in landed)
         {
             // #1068 · CHANNEL TWO — THE PASS THAT DOES NOT LAND. The telescope worked the job for its full
             // duration and the job left the carousel exactly as a finished one-shot does; what does not
@@ -735,9 +768,14 @@
                 _lastSweepMessage =
                     $"{pass.Task.Label}: resolved {_recentFinds.Count} object(s) — {_recentFinds[0].Description}";
                 // A real completed scan may have swept over a hidden body — hand the covered disc up
-                // so Map.razor can reveal the wreck (intel → scan → reveal, Tuesday plan PR-A).
-                OnAreaScanCompleted.InvokeAsync(
-                    new CompletedAreaScan(pass.Task.AreaCenter, pass.Task.AreaRadius, pass.CompleteTime));
+                // so Map.razor can reveal the wreck (intel → scan → reveal, Tuesday plan PR-A). #240: the
+                // whole wedge is behind the beam now, so this is the honest backstop for anything the
+                // live coverage above did not already catch — including a contact that only drifted into
+                // the disc late in the pass.
+                OnAreaScanCoverage.InvokeAsync(new AreaScanCoverage(
+                    pass.Task.AreaCenter, pass.Task.AreaRadius,
+                    SensorTaskGeometry.WedgeToward(ShipPosition, pass.Task.AreaCenter, pass.Task.AreaRadius),
+                    ShipPosition, 1.0, pass.CompleteTime));
                 break;
         }
     }

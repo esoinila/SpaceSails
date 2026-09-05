@@ -44,7 +44,7 @@
                 Transponder="_transponderMode" OnTransponderChange="SetTransponder"
                 Opportunities="_courseOpportunities" OnSetInterest="SetInterestTarget"
                 OnZoomMap="ZoomSensorsBackdrop" OnCenterShip="CenterShipOnMap"
-                OnAreaScanCompleted="OnAreaScanCovered"
+                OnAreaScanCoverage="OnAreaScanCovered"
                 OnClose="() => SwitchDeskFromClick(ShipDesk.Nav)" />
         </div>
     </div>
@@ -76,7 +76,7 @@
     private SpaceSails.Client.Pages.Stations.TrackingPost? _trackingPost { get => _trackingPostValue; set { _trackingPostValue = value; _trackingPostSet(value); } }
     [Parameter] public TransponderMode _transponderMode { get; set; } = default!;
     [Parameter] public Action CenterShipOnMap { get; set; } = default!;
-    [Parameter] public Action<SpaceSails.Client.Pages.Stations.TrackingPost.CompletedAreaScan> OnAreaScanCovered { get; set; } = default!;
+    [Parameter] public Action<SpaceSails.Client.Pages.Stations.TrackingPost.AreaScanCoverage> OnAreaScanCovered { get; set; } = default!;
     [Parameter] public Action<bool> SetActiveRadar { get; set; } = default!;
     [Parameter] public Action<string> SetInterestTarget { get; set; } = default!;
     [Parameter] public Action<TransponderMode> SetTransponder { get; set; } = default!;
