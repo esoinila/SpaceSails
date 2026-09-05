@@ -111,8 +111,9 @@ public static class IllegalHeat
         TheEscort,
 
         /// <summary>#835 · The round has spent its patience and walks you all the way to the sky, taking the
-        /// pass back on the way. The dearest thing on the list, because it is the only one where the outfit
-        /// stops treating you as a problem for this floor and starts treating you as a problem.</summary>
+        /// pass back on the way. The dearest thing a captain can do TO A FLOOR, because it is the only one
+        /// where the outfit stops treating you as a problem for this floor and starts treating you as a
+        /// problem.</summary>
         TheKickOut,
 
         /// <summary>#618 · A gun went off on a floor they have somebody on, close enough for him to hear it,
@@ -124,10 +125,36 @@ public static class IllegalHeat
         /// you are a problem, and a bang on a working floor is between the two — nobody has your name, and
         /// nobody is going to forget the evening either.</para></summary>
         ShotOnTheirFloor,
+
+        /// <summary>
+        /// #525 · <b>HE SET HIS OWN REACTOR TO RUN AWAY WITH ITSELF WHILE CLAMPED TO THEIR COLLAR, AND LET
+        /// IT.</b> Appended, like every member before it, because several switches name these arms by hand.
+        ///
+        /// <para><b>This is not a crossing of a floor and it is not on the same ladder as the five above
+        /// it.</b> Those are an evening going badly: a card refused, a man walked to his car, a bang someone
+        /// heard. Every one of them is written small on purpose, because the pressure in this meter is meant
+        /// to come from doing things again. This one cannot be done again — there is one ship — and no
+        /// number of refused cards adds up to a hull going off inside a harbour.</para>
+        ///
+        /// <para>So it is worth <see cref="Ceiling"/>: as hot as this outfit will ever get about one captain,
+        /// which is not a big number chosen to feel big but <b>the meter's own top, quoted</b>. A typed 12
+        /// beside it would be the mirrored constant this ground keeps a table of — retune the ceiling and a
+        /// hand-typed weight would silently stop reaching it, or start overshooting a clamp that hides the
+        /// bug. <see cref="Bank"/> clamps to the room that is left, so the answer at this outfit afterwards
+        /// is exactly <see cref="Ceiling"/> whatever was on the book a moment before.</para>
+        ///
+        /// <para><b>And what it buys is already built.</b> <see cref="StartingRung"/> at the ceiling is
+        /// <see cref="PatrolBeat.EscortsAWatchAllows"/> — the last rung — so their round begins every watch
+        /// at the end of its patience. He is not carrying a new flag around their concourse; he is carrying
+        /// their file.</para>
+        /// </summary>
+        SheWentAtTheirBerth,
     }
 
     /// <summary>What one crossing costs. Small numbers on purpose: the pressure in this meter comes from
-    /// doing things again, not from any single evening. FLAGGED for the owner's tuning.</summary>
+    /// doing things again, not from any single evening — with the one exception that cannot be done again
+    /// (<see cref="Crossing.SheWentAtTheirBerth"/>, which is worth the meter's own <see cref="Ceiling"/> and
+    /// says why beside itself). FLAGGED for the owner's tuning.</summary>
     public static int WeightOf(Crossing why) => why switch
     {
         Crossing.RefusedCardAtAGate => UndergroundComplex.RefusedCardHeat,
@@ -136,6 +163,7 @@ public static class IllegalHeat
         Crossing.TheEscort => 2,
         Crossing.ShotOnTheirFloor => 3,
         Crossing.TheKickOut => 4,
+        Crossing.SheWentAtTheirBerth => Ceiling,
         _ => 0,
     };
 
