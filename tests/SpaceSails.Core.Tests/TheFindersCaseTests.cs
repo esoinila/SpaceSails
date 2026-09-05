@@ -248,25 +248,51 @@ public sealed class TheFindersCaseTests
     /// This is the whole of the red herring, asserted off the hulls' own ledgers of names and their own yard
     /// records — never off anything this case wrote down about them.
     ///
+    /// <para><b>Asked of TWENTY universes, and that is not thoroughness for its own sake.</b> The builder
+    /// keeps whichever way round it found the pair unless the record says otherwise, so about half of all
+    /// cases are already the right way round by accident — a guard that looked at ONE case would pass on a
+    /// builder that had no swap in it at all, half the time, which is the worst kind of guard there is.
+    /// Twenty universes reduces that to a part in a million and the sweep records how many of them the
+    /// builder actually had to turn over.</para>
+    ///
     /// <para><b>Watched RED:</b> <c>TheTwoHulls</c> made to keep the pair the way round it found them
     /// (dropping the <c>TheRecordClears</c> swap) — <i>"the hull the case is about was cleared by her own
-    /// record: laid down 2274, against the herring's 2301"</i>.</para>
+    /// record"</i>.</para>
     /// </summary>
     [Fact]
     public void TheHerringCarriesTheNameAndHerOwnRecordClearsHer()
     {
-        FinderCase.Case c = TheCase();
-        FinderCase.Hull suspect = Traffic().First(h => h.Id == c.HullId);
-        FinderCase.Hull herring = Traffic().First(h => h.Id == c.HerringHullId);
+        IReadOnlyList<FinderCase.Hull> traffic = Traffic();
+        int turnedOver = 0;
 
-        Assert.Contains(c.FormerName, suspect.History.BareFormerNames);
-        Assert.Contains(c.FormerName, herring.History.BareFormerNames);
+        for (int universe = 0; universe < 20; universe++)
+        {
+            string thread = $"417universe{universe:00}0000000000000000000";
+            FinderCase.Case c = FinderCase.Build(thread, "selene-gate", Berths, Names, traffic, Sites)
+                ?? throw new InvalidOperationException($"universe {universe} dealt no case.");
 
-        Assert.True(FinderCase.TheRecordClears(herring, suspect),
-            $"the herring is not cleared by her own record: {herring.Id} laid down "
-            + $"{herring.History.Year}, against the suspect's {suspect.History.Year}.");
-        Assert.False(FinderCase.TheRecordClears(suspect, herring),
-            "the hull the case is about was cleared by her own record.");
+            FinderCase.Hull suspect = traffic.First(h => h.Id == c.HullId);
+            FinderCase.Hull herring = traffic.First(h => h.Id == c.HerringHullId);
+
+            Assert.Contains(c.FormerName, suspect.History.BareFormerNames);
+            Assert.Contains(c.FormerName, herring.History.BareFormerNames);
+
+            Assert.True(FinderCase.TheRecordClears(herring, suspect),
+                $"the herring is not cleared by her own record: {herring.Id} laid down "
+                + $"{herring.History.Year}, against the suspect's {suspect.History.Year}.");
+            Assert.False(FinderCase.TheRecordClears(suspect, herring),
+                "the hull the case is about was cleared by her own record.");
+
+            // Which of the two the WALK found first, so the sweep can say the swap really fires.
+            if (string.CompareOrdinal(herring.Id, suspect.Id) < 0)
+            {
+                turnedOver++;
+            }
+        }
+
+        Assert.True(turnedOver > 0,
+            "in twenty universes the builder never once had to turn a pair over, so this guard would pass "
+            + "on a builder with no custody rule in it at all.");
     }
 
     /// <summary>
@@ -335,23 +361,40 @@ public sealed class TheFindersCaseTests
     /// than posting somebody somewhere: no berth in the world is a better bet for this regular than the one
     /// the case names.
     ///
+    /// <para><b>Asked of twenty universes, for the red herring's own reason:</b> the roster has four regulars
+    /// and only some of them are biased anywhere, so one case is one draw and a builder that simply took the
+    /// first berth in the list would pass on it whenever the draw was a regular the table says nothing about.
+    /// The sweep also insists that at least one of the twenty is a regular the affinity table really does
+    /// have an opinion about, or the whole claim is being made about a world of defaults.</para>
+    ///
     /// <para><b>Watched RED:</b> <c>TheWitness</c> made to take the FIRST berth in the list instead of the
-    /// best-affinity one — <i>"THE FIXER is sought at cinder-roost (0.88) but the case sends the captain to
+    /// best-affinity one — <i>"THE FIXER is a better bet at cinder-roost (0.88) than at the case's
     /// selene-gate (0.32)"</i>.</para>
     /// </summary>
     [Fact]
     public void TheWitnessIsSoughtWhereTheRotaActuallyFavoursThem()
     {
-        FinderCase.Case c = TheCase();
-        double named = PatronRota.Affinity(c.WitnessId, c.WitnessPortId);
+        bool anybodyIsBiasedAnywhere = false;
 
-        foreach (OldCrew.Berth b in Berths)
+        for (int universe = 0; universe < 20; universe++)
         {
-            Assert.True(PatronRota.Affinity(c.WitnessId, b.Id) <= named,
-                $"{c.WitnessId} is a better bet at {b.Id} "
-                + $"({PatronRota.Affinity(c.WitnessId, b.Id)}) than at the case's {c.WitnessPortId} "
-                + $"({named}).");
+            FinderCase.Case c = TheCase(thread: $"417witness{universe:00}00000000000000000000");
+            double named = PatronRota.Affinity(c.WitnessId, c.WitnessPortId);
+
+            foreach (OldCrew.Berth b in Berths)
+            {
+                Assert.True(PatronRota.Affinity(c.WitnessId, b.Id) <= named,
+                    $"{c.WitnessId} is a better bet at {b.Id} "
+                    + $"({PatronRota.Affinity(c.WitnessId, b.Id)}) than at the case's {c.WitnessPortId} "
+                    + $"({named}).");
+            }
+
+            anybodyIsBiasedAnywhere |= named != PatronRota.DefaultAffinity;
         }
+
+        Assert.True(anybodyIsBiasedAnywhere,
+            "twenty universes and not one of them drew a regular the rota has an opinion about — this "
+            + "guard is being asked of a world where every port is the same bet.");
     }
 
     // ══ THE PAY ══════════════════════════════════════════════════════════════════════════════════════════
