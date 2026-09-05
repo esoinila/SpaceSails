@@ -15,15 +15,30 @@ namespace SpaceSails.Client.Tests;
 /// two, because the write does land: the page's field is correct within microseconds of the press and the
 /// SCREEN goes on showing the old one.</para>
 ///
-/// <para><b>The mechanism, said once.</b> Blazor re-renders the component that HANDLED the event, and the
-/// handler's receiver is decided by the delegate's TYPE at the component boundary. A method group crossing
-/// into an <c>Action</c>/<c>Func</c> parameter is an ordinary delegate: whoever's markup wired it — the
-/// SURFACE — is the receiver. The same method group crossing into an <c>EventCallback</c> parameter is
-/// compiled as <c>EventCallback.Factory.Create(this, …)</c> with <c>this</c> the PAGE, so the page is the
-/// receiver and razor re-renders the page. Found the hard way in #1134: <c>Start sweep</c> moved off
-/// <c>TrackingPost.razor</c> into <c>ScopeControls.razor</c> as an <c>Action</c>, the press set the desk's
-/// <c>_activeJob</c>, and the button went on saying <c>Start sweep</c> until the next HUD tick — up to
-/// 200 ms of a control lying about what it just did.</para>
+/// <para><b>The mechanism, measured rather than assumed — and it is not quite the one #1135 was filed on.</b>
+/// Blazor re-renders the component that HANDLED the event, and every <c>@on…</c> binding funnels through
+/// <c>EventCallbackFactory</c>, whose whole rule is one line:</para>
+/// <code>
+/// new EventCallback(callback?.Target as IHandleEvent ?? receiver as IHandleEvent, callback)
+/// </code>
+/// <para>Two candidates, in that order. <b>The delegate's own TARGET wins</b>, and <c>receiver</c> — the
+/// component whose markup wrote the binding, i.e. the surface — is only the fallback. So:</para>
+/// <list type="bullet">
+/// <item>A page METHOD GROUP crossing as a bare <c>Action</c> (<c>StartSweep="StartSweep"</c> then
+/// <c>@onclick="StartSweep"</c>) has the PAGE as its target, and a page is an <c>IHandleEvent</c>. The page
+/// is the receiver already. So is a page lambda that captures only <c>this</c>, which the C# compiler emits
+/// as an instance method on the page rather than a closure.</item>
+/// <item>A lambda that captures a LOCAL — <c>@onclick="() =&gt; Drop(entry.ShipId)"</c> inside a
+/// <c>@foreach</c>, which is what every per-row button in this repo is — has a compiler-generated display
+/// class as its target. That is not an <c>IHandleEvent</c>, so the fallback takes it, and the fallback is
+/// the SURFACE. <b>That</b> is the swallow, and changing the parameter's type cannot reach it: an
+/// <c>EventCallback</c> built from the same lambda in the same markup lands on the same fallback.</item>
+/// </list>
+/// <para><b>This was checked in the bench, not reasoned about.</b> Put <c>ScopeControls.StartSweep</c> back
+/// to <c>[Parameter] public Action</c> — #1134's own before-state — and
+/// <c>ThePressPaintsOnItsOwnTickTests</c> stays GREEN: the press repaints the desk (component 11 in the
+/// renderer's own batch). #1134's paragraph about that handler is the one thing in it that does not survive
+/// being driven, and this law says so rather than inheriting it.</para>
 ///
 /// <para><b>Why this law has two regimes and not one rule.</b> The repo has two decomposed pages and they
 /// dispatch events in OPPOSITE ways, deliberately:</para>
@@ -36,17 +51,17 @@ namespace SpaceSails.Client.Tests;
 /// nothing. Where Map wants a repaint on the press it calls <c>StateHasChanged</c> in its own method, and it
 /// does so in some seven hundred places.</item>
 /// <item><b><c>TrackingPost.razor</c> leaves it ON</b> — no override, on the desk or on any of its eleven
-/// surfaces. So the receiver decides the paint, and the receiver is exactly what the parameter's type
-/// picks.</item>
+/// surfaces. So on the desk, and only on the desk, who the receiver is decides what the glass says.</item>
 /// </list>
 ///
-/// <para>The difference decides only what is POSSIBLE, never what is allowed to be sloppy. Where the type is
-/// the whole fix and the markup does not move — a handler wired straight to an event — the law is stated over
-/// both pages and over all 89 surfaces, because getting the receiver right costs nothing and a Map surface
-/// carrying a bare <c>Action</c> is one deleted <c>@implements</c> line away from being the same bug.
-/// Where the fix would mean rewriting moved markup — a handler the markup CALLS from a lambda — the law
-/// falls back on the other end (the page repaints itself), and there it does read the page's own dispatch,
-/// because a page that has said "no press repaints me" has already answered the question.</para>
+/// <para>That difference decides where a swallow can HURT, never where the crossing is allowed to be sloppy.
+/// Clause 2 is therefore stated over both pages and all 89 surfaces: it costs nothing, and what it buys is
+/// that the guarantee stops depending on <b>what the page happens to pass</b>. An <c>Action</c> parameter
+/// lands on the page only while the page keeps handing it a method group; the day someone passes a closure
+/// instead, the receiver silently becomes the surface and nothing anywhere says so. An
+/// <c>EventCallback</c> parameter is bound at the PAGE's own <c>Create(this, …)</c>, so the page is pinned as
+/// receiver at the boundary and cannot be lost further down. Clause 3 is stated only where a swallow can be
+/// seen — a page that has said "no press repaints me" has already answered the question.</para>
 ///
 /// <para><b>The three clauses.</b>
 /// <list type="number">
@@ -56,17 +71,18 @@ namespace SpaceSails.Client.Tests;
 /// half of a desk ends up showing a different world from the other half.</item>
 /// <item><see cref="EveryHandlerBoundStraightToAnEventCrossesAsAnEventCallback"/> — on EVERY surface, a
 /// parameter wired directly (<c>@onclick="StartSweep"</c>) must be
-/// <c>EventCallback</c>/<c>EventCallback&lt;T&gt;</c>. This costs nothing: razor binds an EventCallback to
-/// <c>@onclick</c> as readily as an Action, so not one character of markup changes — 126 of them crossed
-/// here, across 38 of the Map's surfaces (104 <c>Action</c>, 6 <c>Action&lt;T&gt;</c>, 16
-/// <c>Func&lt;…Task&gt;</c>), and the client built with zero errors and zero warnings on the first attempt
-/// because there was nothing else to change.</item>
-/// <item><see cref="EveryHandlerReachedFromALambdaLeavesThePagePainting"/> — where the page has NOT
-/// suppressed, a parameter reached from a markup LAMBDA (<c>@onclick="() =&gt; Drop(id)"</c>) cannot be given
-/// the page as receiver without rewriting the markup, which is the one thing the decomposition promised not
-/// to do. So the other end has to answer for it: the page's method of that name must call
-/// <c>StateHasChanged</c>. Before the cut that button was ON the page and the press re-rendered the page;
-/// this is that, restored, and it is the follow-up #1134 asked for in its own found-not-fixed.</item>
+/// <c>EventCallback</c>/<c>EventCallback&lt;T&gt;</c>, so the receiver is pinned by the TYPE and not by the
+/// page's habits. This costs nothing: razor binds an EventCallback to <c>@onclick</c> as readily as an
+/// Action, so not one character of markup changes — 126 of them crossed here, across 38 of the Map's
+/// surfaces (104 <c>Action</c>, 6 <c>Action&lt;T&gt;</c>, 16 <c>Func&lt;…Task&gt;</c>), and the client built
+/// with zero errors and zero warnings on the first attempt because there was nothing else to change.</item>
+/// <item><see cref="EveryHandlerReachedFromALambdaLeavesThePagePainting"/> — the live one. Where the page has
+/// NOT suppressed, a parameter reached from a markup LAMBDA (<c>@onclick="() =&gt; Drop(id)"</c>) has a
+/// closure for a target and so lands on the surface, and no parameter type can move it: the fix would be
+/// rewriting moved markup, which is the one thing the decomposition promised not to do. So the other end
+/// answers for it — the page's method of that name must call <c>StateHasChanged</c>. Before the cut that
+/// button was ON the page and the press re-rendered the page; this is that, restored, and it is the
+/// follow-up #1134 asked for in its own found-not-fixed.</item>
 /// </list></para>
 ///
 /// <para><b>What counts as a handler.</b> A delegate parameter that hands the markup nothing back:
@@ -76,11 +92,12 @@ namespace SpaceSails.Client.Tests;
 /// an EventCallback has no return value. Sweeping those in would have made the law unsatisfiable, which is a
 /// law nobody can keep.</para>
 ///
-/// <para><b>Proven RED, three ways</b> — see <see cref="THE_RERENDER_AUDIT_CanTellPassFromFail"/> for the
-/// synthetic halves, and the PR body for the run against real files: clause 3 was red on this branch's base
-/// on six parameters across four surfaces, clause 2 goes red the moment <c>StartSweep</c> is put back to
-/// <c>Action</c>, and clause 1 goes red on deleting one <c>@implements IHandleEvent</c> line from any Map
-/// surface.</para>
+/// <para><b>Proven RED, every clause</b> — <see cref="THE_RERENDER_AUDIT_CanTellPassFromFail"/> holds the
+/// synthetic halves, and the PR body carries the runs against real files. Clause 2 was red on this branch's
+/// base with 126 named parameters and clause 3 with six; clause 1 goes red on adding one
+/// <c>@implements IHandleEvent</c> line to <c>TrackingPost.razor</c> — the same plant that reddens
+/// <c>ThePressPaintsOnItsOwnTickTests</c>, which is the pair worth having: the source law and the driven
+/// law falling over the same break, from the two different ends.</para>
 /// </summary>
 public sealed class NoSurfaceSwallowsARerenderTests
 {

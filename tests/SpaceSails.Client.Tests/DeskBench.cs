@@ -93,6 +93,7 @@ internal sealed class DeskBench : Renderer
 
     private readonly Map _map;
     private readonly List<Exception> _escaped = [];
+    private readonly List<int> _repainted = [];
     private int _rootId = -1;
 
     private DeskBench(IServiceProvider services, Map map)
@@ -102,7 +103,18 @@ internal sealed class DeskBench : Renderer
 
     protected override void HandleException(Exception e) => _escaped.Add(e);
 
-    protected override Task UpdateDisplayAsync(in RenderBatch batch) => Task.CompletedTask;
+    /// <summary>#1135 · Every component the renderer has repainted, in order, kept rather than dropped.
+    /// A batch is Blazor's own answer to "who re-rendered", so a law about WHO the receiver of a press was
+    /// can read it instead of inferring it from the pixels.</summary>
+    protected override Task UpdateDisplayAsync(in RenderBatch batch)
+    {
+        for (int i = 0; i < batch.UpdatedComponents.Count; i++)
+        {
+            _repainted.Add(batch.UpdatedComponents.Array[i].ComponentId);
+        }
+
+        return Task.CompletedTask;
+    }
 
     // ── Booting ──────────────────────────────────────────────────────────────────────────────────────
 
@@ -197,6 +209,71 @@ internal sealed class DeskBench : Renderer
         var painted = new Painted();
         WalkComponent(_rootId, painted, new StringBuilder(), painted.Root);
         return painted;
+    }
+
+    /// <summary>
+    /// #1135 · <b>THE TREE AS IT STANDS</b> — <see cref="RenderAsync"/>'s walk with the render left out.
+    ///
+    /// <para>It exists for one question and it is the only way to ask it: <b>did the press repaint the page
+    /// BY ITSELF?</b> <see cref="RenderAsync"/> calls <c>StateHasChanged</c> on its second and every later
+    /// visit, which is exactly what the HUD's 200 ms tick does — so a law that pressed a button and then
+    /// called RenderAsync would be reading the tick's paint and would go green on a control that swallowed
+    /// the re-render completely. This reads the frames the renderer is holding right now, asks the page for
+    /// nothing, and so shows the screen a player would be looking at in the ~200 ms before the tick lands.</para>
+    /// </summary>
+    public Painted CurrentPaint()
+    {
+        if (_rootId < 0)
+        {
+            throw new InvalidOperationException(
+                "nothing has been rendered yet — CurrentPaint reads the tree as it stands, and there is no "
+                + "tree until RenderAsync has drawn one.");
+        }
+
+        var painted = new Painted();
+        WalkComponent(_rootId, painted, new StringBuilder(), painted.Root);
+        return painted;
+    }
+
+    /// <summary>#1135 · One CHILD component of the page, by its type, with the id the renderer knows it by —
+    /// so a law can put state on the shipping desk that Map has no field for, and can then ask the batch
+    /// record whether that desk was one of the components a press repainted. Throws by name if the component
+    /// is not on screen, rather than handing back a null that would make the law pass on an empty page.</summary>
+    public (T Component, int Id) Onscreen<T>() where T : class, IComponent
+    {
+        List<(IComponent Instance, int Id)> mounted = [];
+        CollectComponents(_rootId, mounted);
+        foreach ((IComponent instance, int id) in mounted)
+        {
+            if (instance is T wanted)
+            {
+                return (wanted, id);
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"no {typeof(T).Name} is on screen — this bench found {mounted.Count} component(s) under the page "
+            + "and none of them was that one.");
+    }
+
+    /// <summary>#1135 · Which components the renderer has repainted since <see cref="ForgetRepaints"/>.</summary>
+    public IReadOnlyList<int> Repainted => _repainted;
+
+    /// <summary>#1135 · Draw the line: everything after this is what THE PRESS did.</summary>
+    public void ForgetRepaints() => _repainted.Clear();
+
+    private void CollectComponents(int componentId, List<(IComponent, int)> into)
+    {
+        ArrayRange<RenderTreeFrame> frames = GetCurrentRenderTreeFrames(componentId);
+        for (int i = 0; i < frames.Count; i++)
+        {
+            RenderTreeFrame frame = frames.Array[i];
+            if (frame.FrameType == RenderTreeFrameType.Component && frame.Component is not null)
+            {
+                into.Add((frame.Component, frame.ComponentId));
+                CollectComponents(frame.ComponentId, into);
+            }
+        }
     }
 
     /// <summary>
