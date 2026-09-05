@@ -233,21 +233,36 @@ public partial class Map
 
     // A parcel to carry to another haven — completes when you berth there. Destination is any haven
     // other than the one you're standing in, chosen by sim time + berth so it's stable per booth.
-    private Quest? MakeCargoRunOffer(string giver)
+    // #160 · `destOverride` is the milk-run lesson's one entry into this method: the tutorial has already
+    // chosen the berth it wants taught (the nearest OTHER clampable berth to the one the captain is standing
+    // in) and needs the card, the purse and the pitch to be the ones the board would really have written. It
+    // comes through here rather than being built beside it so the lesson can never issue a contract the game
+    // does not issue — the #742 lesson, one arc over: a job handed over for a different number is a job that
+    // playtests nothing. Null (the ordinary walk-up) keeps the weighted neighbourhood pick untouched.
+    private Quest? MakeCargoRunOffer(string giver, CelestialBody? destOverride = null)
     {
-        List<CelestialBody> havens = (_ephemeris?.Bodies ?? [])
-            .Where(b => b.IsHaven && b.Id != _dockedHavenId
-                        && _quests.All(q => q.DestBodyId != b.Id))
-            .OrderBy(b => b.Id, StringComparer.Ordinal)
-            .ToList();
-        if (havens.Count == 0)
+        CelestialBody dest;
+        if (destOverride is not null)
         {
-            return null;
+            dest = destOverride;
+        }
+        else
+        {
+            List<CelestialBody> havens = (_ephemeris?.Bodies ?? [])
+                .Where(b => b.IsHaven && b.Id != _dockedHavenId
+                            && _quests.All(q => q.DestBodyId != b.Id))
+                .OrderBy(b => b.Id, StringComparer.Ordinal)
+                .ToList();
+            if (havens.Count == 0)
+            {
+                return null;
+            }
+
+            // The neighbourhood law (owner 2026-07-19): weight the pick toward nearby systems so most parcels
+            // are a local hop, a neighbour planet is the occasional stretch, and a cross-system saga is rare.
+            dest = havens[WeightedOfferIndex(havens, b => b.Id)];
         }
 
-        // The neighbourhood law (owner 2026-07-19): weight the pick toward nearby systems so most parcels
-        // are a local hop, a neighbour planet is the occasional stretch, and a cross-system saga is rare.
-        CelestialBody dest = havens[WeightedOfferIndex(havens, b => b.Id)];
         // #349: the purse scales with the actual HAUL — the heliocentric void from where the job is taken
         // (this berth) to the destination — not the old flat 300 that read a station's tiny local orbit and
         // paid the same to Luna as to Neptune. A cross-system parcel now pays like the long trip it is.
