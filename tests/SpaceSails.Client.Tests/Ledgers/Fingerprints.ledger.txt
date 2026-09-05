@@ -1846,36 +1846,36 @@ the patrol clock | TheElectricUniverse.OneLongGap | 0
 the patrol clock | TheElectricUniverse.AHeldKey | 0
 the patrol clock | TheElectricUniverse.APlannedRoute | 0
 the patrol clock | TheElectricUniverse.AHandOnTheWarpSlider | 0
-the traffic | HerOwnDeckInFlight.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8550 chars, sha256 c354ac6fc0e3d9aa
-the traffic | HerOwnDeckInFlight.OneLongGap | [NpcState(Active=yes, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=yes, Disabled=no, LastOb… 9194 chars, sha256 3584629a0feee37a
-the traffic | HerOwnDeckInFlight.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8550 chars, sha256 c354ac6fc0e3d9aa
-the traffic | HerOwnDeckInFlight.APlannedRoute | [NpcState(Active=yes, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=yes, Disabled=no, LastOb… 9057 chars, sha256 e7c4d9dac7662283
-the traffic | HerOwnDeckInFlight.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8549 chars, sha256 e08803637666faf5
-the traffic | TheRegolithOnFoot.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
-the traffic | TheRegolithOnFoot.OneLongGap | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
-the traffic | TheRegolithOnFoot.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
-the traffic | TheRegolithOnFoot.APlannedRoute | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
-the traffic | TheRegolithOnFoot.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8549 chars, sha256 4e7c48ef00f2b8f4
-the traffic | AHiveFloorWithAPatrol.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
-the traffic | AHiveFloorWithAPatrol.OneLongGap | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
-the traffic | AHiveFloorWithAPatrol.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
-the traffic | AHiveFloorWithAPatrol.APlannedRoute | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
-the traffic | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8549 chars, sha256 4e7c48ef00f2b8f4
-the traffic | ACaptainInAChair.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
-the traffic | ACaptainInAChair.OneLongGap | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
-the traffic | ACaptainInAChair.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
-the traffic | ACaptainInAChair.APlannedRoute | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8484 chars, sha256 7ddd06b7916857ee
-the traffic | ACaptainInAChair.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8549 chars, sha256 4e7c48ef00f2b8f4
-the traffic | TheMapFrameInFlight.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8550 chars, sha256 ae1b4b6b70e2a26e
-the traffic | TheMapFrameInFlight.OneLongGap | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8549 chars, sha256 ff962fa644343616
-the traffic | TheMapFrameInFlight.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8550 chars, sha256 ae1b4b6b70e2a26e
-the traffic | TheMapFrameInFlight.APlannedRoute | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8551 chars, sha256 00eafb99e3144793
-the traffic | TheMapFrameInFlight.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8550 chars, sha256 791815c1190b13e3
-the traffic | TheElectricUniverse.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8550 chars, sha256 c354ac6fc0e3d9aa
-the traffic | TheElectricUniverse.OneLongGap | [NpcState(Active=yes, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=yes, Disabled=no, LastOb… 9195 chars, sha256 6832e8d848ccda2f
-the traffic | TheElectricUniverse.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8550 chars, sha256 c354ac6fc0e3d9aa
-the traffic | TheElectricUniverse.APlannedRoute | [NpcState(Active=yes, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=yes, Disabled=no, LastOb… 9056 chars, sha256 024905af99b11991
-the traffic | TheElectricUniverse.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no, LastObse… 8549 chars, sha256 e08803637666faf5
+the traffic | HerOwnDeckInFlight.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8660 chars, sha256 9a2962089f1218fc
+the traffic | HerOwnDeckInFlight.OneLongGap | [NpcState(Active=yes, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=yes, Disabled=… 9304 chars, sha256 feb583a9de6a4945
+the traffic | HerOwnDeckInFlight.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8660 chars, sha256 9a2962089f1218fc
+the traffic | HerOwnDeckInFlight.APlannedRoute | [NpcState(Active=yes, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=yes, Disabled=… 9167 chars, sha256 58295b26572148d9
+the traffic | HerOwnDeckInFlight.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8659 chars, sha256 0647ca3f0666a639
+the traffic | TheRegolithOnFoot.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8594 chars, sha256 de494ec50ecd9c79
+the traffic | TheRegolithOnFoot.OneLongGap | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8594 chars, sha256 de494ec50ecd9c79
+the traffic | TheRegolithOnFoot.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8594 chars, sha256 de494ec50ecd9c79
+the traffic | TheRegolithOnFoot.APlannedRoute | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8594 chars, sha256 de494ec50ecd9c79
+the traffic | TheRegolithOnFoot.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8659 chars, sha256 16537b36ccad2311
+the traffic | AHiveFloorWithAPatrol.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8594 chars, sha256 de494ec50ecd9c79
+the traffic | AHiveFloorWithAPatrol.OneLongGap | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8594 chars, sha256 de494ec50ecd9c79
+the traffic | AHiveFloorWithAPatrol.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8594 chars, sha256 de494ec50ecd9c79
+the traffic | AHiveFloorWithAPatrol.APlannedRoute | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8594 chars, sha256 de494ec50ecd9c79
+the traffic | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8659 chars, sha256 16537b36ccad2311
+the traffic | ACaptainInAChair.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8594 chars, sha256 de494ec50ecd9c79
+the traffic | ACaptainInAChair.OneLongGap | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8594 chars, sha256 de494ec50ecd9c79
+the traffic | ACaptainInAChair.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8594 chars, sha256 de494ec50ecd9c79
+the traffic | ACaptainInAChair.APlannedRoute | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8594 chars, sha256 de494ec50ecd9c79
+the traffic | ACaptainInAChair.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8659 chars, sha256 16537b36ccad2311
+the traffic | TheMapFrameInFlight.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8660 chars, sha256 1ebc1b9f203eadf4
+the traffic | TheMapFrameInFlight.OneLongGap | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8659 chars, sha256 11a7f04d9f6a2d50
+the traffic | TheMapFrameInFlight.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8660 chars, sha256 1ebc1b9f203eadf4
+the traffic | TheMapFrameInFlight.APlannedRoute | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8661 chars, sha256 bcc967e2265a9ad5
+the traffic | TheMapFrameInFlight.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8660 chars, sha256 d94b5ed16b7aa9de
+the traffic | TheElectricUniverse.SteadyFrames | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8660 chars, sha256 9a2962089f1218fc
+the traffic | TheElectricUniverse.OneLongGap | [NpcState(Active=yes, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=yes, Disabled=… 9305 chars, sha256 901c59b695c442b7
+the traffic | TheElectricUniverse.AHeldKey | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8660 chars, sha256 9a2962089f1218fc
+the traffic | TheElectricUniverse.APlannedRoute | [NpcState(Active=yes, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=yes, Disabled=… 9166 chars, sha256 4b33280498f564af
+the traffic | TheElectricUniverse.AHandOnTheWarpSlider | [NpcState(Active=no, Arrived=no, Boarded=no, Bribed=no, Broke=no, CargoSoldToPlayer=0, CurrentlyObserved=no, Disabled=no… 8659 chars, sha256 0647ca3f0666a639
 the hunters | HerOwnDeckInFlight.SteadyFrames | []
 the hunters | HerOwnDeckInFlight.OneLongGap | []
 the hunters | HerOwnDeckInFlight.AHeldKey | []
@@ -2026,36 +2026,36 @@ the pulse cooldown | TheElectricUniverse.OneLongGap | -1
 the pulse cooldown | TheElectricUniverse.AHeldKey | -1
 the pulse cooldown | TheElectricUniverse.APlannedRoute | -1
 the pulse cooldown | TheElectricUniverse.AHandOnTheWarpSlider | -1
-sweep | HerOwnDeckInFlight.SteadyFrames | 804 fields, sha256 843a361f1ede729415fc5c5df56b7f2a8d9e81d70b8955da87e302a82db3d9bb
-sweep | HerOwnDeckInFlight.OneLongGap | 804 fields, sha256 75ef8c7071930fb1487ba8b1ba925588b693c494d638c0b33d9a9049d738937e
-sweep | HerOwnDeckInFlight.AHeldKey | 804 fields, sha256 5ffcd0111ae093bd37026a30c50c16f292ea0a337158facd6093b2ce35f25de9
-sweep | HerOwnDeckInFlight.APlannedRoute | 804 fields, sha256 7e6f322220d768d7d8a8e76495e8a50bf924a1bf485286a5519aa2bd95efbb1b
-sweep | HerOwnDeckInFlight.AHandOnTheWarpSlider | 804 fields, sha256 9c859b8dab98ba2b78fbe86b82727c8bf1a9e654ca2ed3475201ff08e2d04f56
-sweep | TheRegolithOnFoot.SteadyFrames | 804 fields, sha256 d6dd884d061830ee930bc081319976fbd1199c7e3d92ea7422d7787f82c005d9
-sweep | TheRegolithOnFoot.OneLongGap | 804 fields, sha256 bdbda69adb1cfb601c4c2c3bf968e9450368d56fb22283632715c580515cd495
-sweep | TheRegolithOnFoot.AHeldKey | 804 fields, sha256 99b488bbe5a723821040d895dde3829d1e6a64e7b74fd71cacd56d1bbf59cf10
-sweep | TheRegolithOnFoot.APlannedRoute | 804 fields, sha256 83f5f9d051f3be529e8c5db37f1ce5a6f3d9c0cbbf6616718761ec62b571a3d6
-sweep | TheRegolithOnFoot.AHandOnTheWarpSlider | 804 fields, sha256 cb7a87f02c5a31e66ecf8d4da2ea54abf598595fa4fb966da68e013e584a54e0
-sweep | AHiveFloorWithAPatrol.SteadyFrames | 804 fields, sha256 66d570675d645a78bee99e719773358fa1f979ec14b0684ce0815e966771787a
-sweep | AHiveFloorWithAPatrol.OneLongGap | 804 fields, sha256 a28de3040efc884a041cdb4979a1032dbf2c64a062f1c16873af61b0a0708779
-sweep | AHiveFloorWithAPatrol.AHeldKey | 804 fields, sha256 caa0746f214585c51ae73b264ca4cfbc860ef42398d0893e6830105615fb50f3
-sweep | AHiveFloorWithAPatrol.APlannedRoute | 804 fields, sha256 ead4a9ac5e89cceb8bd3a000af582c0a92aae1c9a28b5a803813869c42004fbe
-sweep | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 804 fields, sha256 8cee4a85e67a33b2bbe7be81dc9e26ebd9e9e56e1a2188f016e63e5f3502bc64
-sweep | ACaptainInAChair.SteadyFrames | 804 fields, sha256 64b7dcb37615e31cd4cec13a1c3f9c3c2bda312b1d46b5c48f34ad292aaa2f13
-sweep | ACaptainInAChair.OneLongGap | 804 fields, sha256 4de258b0adac42ca942a82944ead56ca477566143296beea0e8dd71021f60a5e
-sweep | ACaptainInAChair.AHeldKey | 804 fields, sha256 6c039a74579052319d85f1cfe78328c224c8200411152c817a30b0a5b83895ea
-sweep | ACaptainInAChair.APlannedRoute | 804 fields, sha256 ead4a9ac5e89cceb8bd3a000af582c0a92aae1c9a28b5a803813869c42004fbe
-sweep | ACaptainInAChair.AHandOnTheWarpSlider | 804 fields, sha256 2b7243061bea64661e7f2be27cac4e993fd54e16b00c5b2591a4b4f1201fe56c
-sweep | TheMapFrameInFlight.SteadyFrames | 804 fields, sha256 6759168fd7c4b9f5fbcdcf5835f6fd9e89a84fcc4410c7497e46ae5e122f97dc
-sweep | TheMapFrameInFlight.OneLongGap | 804 fields, sha256 d56fec617fc345126fddfb161ba56949c022d9c53e6cd6b4e09ac5e48dd10e6b
-sweep | TheMapFrameInFlight.AHeldKey | 804 fields, sha256 e0b2e53d33172564c43507ebee6efc9bced903919ec0eac4ea5520c331821829
-sweep | TheMapFrameInFlight.APlannedRoute | 804 fields, sha256 bdf2a0ae9f790e6c814fb9db9921da9a63de6149f19477e74e1bdd896c59fbe0
-sweep | TheMapFrameInFlight.AHandOnTheWarpSlider | 804 fields, sha256 d395acf66065e3f45238a69f4e8000c360c98d8d50195514f7ea2d5b1bca640b
-sweep | TheElectricUniverse.SteadyFrames | 804 fields, sha256 2f0936f35448ec0a1fd20669e60c4f71fc90b202d8cccadf3285113b5908b3f8
-sweep | TheElectricUniverse.OneLongGap | 804 fields, sha256 ab9a551cdd1b6730e1f72d77de8cc11447f9ffa981800b320923ad550fed57f7
-sweep | TheElectricUniverse.AHeldKey | 804 fields, sha256 39ff5c07261b1e28730f3d8c651ac383a19e93db169a82b7c266369b8e1d31c2
-sweep | TheElectricUniverse.APlannedRoute | 804 fields, sha256 96ddcee988c2ae3f4a82a3c47a8f5ae9cef9127f6a5446cf3988f0a99e8708b3
-sweep | TheElectricUniverse.AHandOnTheWarpSlider | 804 fields, sha256 7f9190b63fa38ce7a668d5976efbd25612561e9a168527aa0de300219037e1db
+sweep | HerOwnDeckInFlight.SteadyFrames | 804 fields, sha256 e83709552a0e2a6c67c778d873586c5f9155222816843d0212286660598100b2
+sweep | HerOwnDeckInFlight.OneLongGap | 804 fields, sha256 6e29b5bc401188d6a3e85d93180ff9198b55b741e75a449c824b6ea6bc4a38f0
+sweep | HerOwnDeckInFlight.AHeldKey | 804 fields, sha256 d619d553eef6ce487a361a8dfd7cdc5308e7d964f08bfa0b314fa0694992ce33
+sweep | HerOwnDeckInFlight.APlannedRoute | 804 fields, sha256 44e13476835e61a983fe7cd176bf49dc8d2712b32c945cba8f62e52f66c62e41
+sweep | HerOwnDeckInFlight.AHandOnTheWarpSlider | 804 fields, sha256 e6a24f71026f2de58636eaa8ba0cd02fa8c37e31a1244525ea5f800caee7e772
+sweep | TheRegolithOnFoot.SteadyFrames | 804 fields, sha256 0cb2ef408a4bd8f64372d672c9594643508e0d4e70b02403ef2a0e99bf160e62
+sweep | TheRegolithOnFoot.OneLongGap | 804 fields, sha256 f151ea9158a1b5df37ee965b6c8744d3bef22a8399a10789d5cfe415196dd381
+sweep | TheRegolithOnFoot.AHeldKey | 804 fields, sha256 53927f49115f9f4cddb694f08a52c838fb951a413fdaf845b352564e2ae4bb5d
+sweep | TheRegolithOnFoot.APlannedRoute | 804 fields, sha256 6ca657c6a8df6674560d968fa002d8be244d6ec4353d863105a2401ce671635e
+sweep | TheRegolithOnFoot.AHandOnTheWarpSlider | 804 fields, sha256 59f28e8c4d66cc025b5398184160f9afb36ba59fc4b29f0419eff3277df47040
+sweep | AHiveFloorWithAPatrol.SteadyFrames | 804 fields, sha256 4fe39746732bb6fce14ffa841ca14597acc67969f864d5374f7ae84815b32ebe
+sweep | AHiveFloorWithAPatrol.OneLongGap | 804 fields, sha256 113c10008c67c64ec9b8a966734c48db71fa5b257e531bad1b3a1a82223c10d2
+sweep | AHiveFloorWithAPatrol.AHeldKey | 804 fields, sha256 b53eefe0e55dec20715ae799fcf5f510b66c97c7124d948ff631941aadf33744
+sweep | AHiveFloorWithAPatrol.APlannedRoute | 804 fields, sha256 087984f9b596c752c4bf9c7ea8cb029746ec93b9b09c1ce2f44d793054101eda
+sweep | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 804 fields, sha256 96be9231b08e528c502a18a1b28c307c20ce181f5c964bf8e641bb24f4a25e7a
+sweep | ACaptainInAChair.SteadyFrames | 804 fields, sha256 85f307ab6e5ad8a5c8ccb1fd0cbff32151914398469d78500ecaca3b137d8448
+sweep | ACaptainInAChair.OneLongGap | 804 fields, sha256 fa36d40d890cd9362c16dbfc3d2490daa3504ceb9e82fd74cfde138b5398eef2
+sweep | ACaptainInAChair.AHeldKey | 804 fields, sha256 ce34b2f37016e977bde89b188534dca5273bcbf98e7405ef37c401583f57aba7
+sweep | ACaptainInAChair.APlannedRoute | 804 fields, sha256 087984f9b596c752c4bf9c7ea8cb029746ec93b9b09c1ce2f44d793054101eda
+sweep | ACaptainInAChair.AHandOnTheWarpSlider | 804 fields, sha256 dc1c3457130844bfc7467a7fb3bb45a7f7337237269dd9236fd09f92a3e18613
+sweep | TheMapFrameInFlight.SteadyFrames | 804 fields, sha256 adcd731a6623fcc427c61b55864cccb8f51e7eb0f0662a706ae02c34b56ad5f2
+sweep | TheMapFrameInFlight.OneLongGap | 804 fields, sha256 d4891370d779a9b271cd35668f4eea6e7898640eaaaca50a0ce6706bbd400f6e
+sweep | TheMapFrameInFlight.AHeldKey | 804 fields, sha256 3ff5ac156e0b2f65f34c14bc5498d4ac40d1f4bfa008cda9770e7ccadb1543ba
+sweep | TheMapFrameInFlight.APlannedRoute | 804 fields, sha256 95fef986d9ab1ffa024b7ed4c57db5d50324dca30e4ef06f15f4b9ccda1f59bb
+sweep | TheMapFrameInFlight.AHandOnTheWarpSlider | 804 fields, sha256 e13ba093d75c9252f049cf889da83e914e508d3d01a3ad20ad3158035d95c64e
+sweep | TheElectricUniverse.SteadyFrames | 804 fields, sha256 e910d37f580a27d6cc278da77ba81f408a050ca3b3d83e77f0643737c93d6d53
+sweep | TheElectricUniverse.OneLongGap | 804 fields, sha256 9b8061422241df2632c4b3b5a496bc8f9bbfa718418ad1a1abf66071b911221e
+sweep | TheElectricUniverse.AHeldKey | 804 fields, sha256 419aec312a131b48713db592373b5c0b48ced4a961a060b16a1dcfab0b50691a
+sweep | TheElectricUniverse.APlannedRoute | 804 fields, sha256 3599623d4c570152f475fb974ecbee2bffad2b5300b011cdd3b929e05cc8c9a6
+sweep | TheElectricUniverse.AHandOnTheWarpSlider | 804 fields, sha256 5f8ee855c213d2673083edd499ac49e5f7e46a8db2c2d4a06ff4fe1e8a25dc17
 walked-view pen | HerOwnDeckInFlight.SteadyFrames | 39397 calls, sha256 e4a2d0b25df18e3bf7b360589b17fe0b7fa7dd14d3b861903edf1594ba618acb
 walked-view pen | HerOwnDeckInFlight.OneLongGap | 39406 calls, sha256 5297158a2c8eefea027e7c47384a3605357b794dc4eafc2269f629a83635336f
 walked-view pen | HerOwnDeckInFlight.AHeldKey | 39395 calls, sha256 b85af1d2af7441fda3e67a7618d9e56e6765f8c27d1b0f818b8598a48efdcada
