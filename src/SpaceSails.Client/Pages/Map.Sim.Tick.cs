@@ -597,6 +597,9 @@ public partial class Map
             // the first line when there is no excursion, and a berth has none. This is the room the owner
             // drinks in finally having people who move in it.
             AdvanceBarWalkers(dtRealSeconds);
+            // #417 · …and the fourth name, which is tied up outside whether or not this berth has a bar in
+            // it. Raised here rather than in the room's metabolism for exactly that reason.
+            TheRevealAtTheBerth();
             // #1052 · …AND A CARD HELD BEHIND A SCRIM GETS ITS TURN. One line, in the one frame a bar or a
             // canteen runs at all, so the salesman who arrived while the captain was reading the galley card
             // speaks on the frame after the captain shuts it rather than dimming the room a second time.

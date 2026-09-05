@@ -397,7 +397,10 @@ public partial class Map
             case SurfaceSalvage.Find.Papers:
                 // Texture, never testimony (#563): a roster, a docket, a note in a locker. Nothing here
                 // explains what is outside, and nothing ever will.
-                ShowAndFile(SurfaceSalvage.PapersLine(body, salt, which), "📄");
+                // #417 · …and under the case's own headings when this is the ground a finder's case names.
+                // Empty subjects everywhere else, which is exactly what ShowAndFile already files.
+                ShowAndFileAbout(
+                    SurfaceSalvage.PapersLine(body, salt, which), "📄", ThePapersSubjectsAt(body));
                 ApplyNerveShock(2.0, "somebody else's paperwork, still where they left it");
                 AssembleSomebody(ex, body, salt, which);   // #588: a person, out of the pieces
 

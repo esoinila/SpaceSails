@@ -241,6 +241,7 @@ public partial class Map
     private void SetInterestTarget(string id)
     {
         _interestTargetId = _interestTargetId == id ? null : id;
+        TheCaseReadsThisHull(_interestTargetId);   // #417 · a hull looked up is a hull read
         _intercept = null;
         _passDirty = true; // recompute the intercept clock with the next pass scan
         StateHasChanged();

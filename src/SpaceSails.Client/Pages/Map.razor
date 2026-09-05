@@ -207,6 +207,19 @@
         <WalkInCard AnswerTheWalkIn="@AnswerTheWalkIn" Dismiss="@Dismiss" sheAsks="@sheAsks" />
     }
 
+    @* #417 · Ilse Varga at the table, and the fourth name at the berth. Two surfaces, one feature: the
+       first is a woman standing at your elbow with a case, the second is a card with nobody behind it. *@
+    @if (_finderCard is { } finderAsks)
+    {
+        <FinderCard AnswerTheFinder="@AnswerTheFinder" Dismiss="@Dismiss" sheAsks="@finderAsks" />
+    }
+
+    @if (_finderReveal is not null)
+    {
+        <FinderRevealCard CloseTheReveal="@CloseTheReveal" Dismiss="@Dismiss"
+                          SettleTheCase="@SettleTheCase" _finderOutcome="@_finderOutcome" />
+    }
+
     @if (_shipEpitaph is { } castaway)
     {
         <ShipEpitaphCard CloseShipEpitaph="@CloseShipEpitaph" Dismiss="@Dismiss" castaway="@castaway" />

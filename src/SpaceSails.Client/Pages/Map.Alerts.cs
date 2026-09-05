@@ -101,6 +101,7 @@ public partial class Map
     private void SelectCommsShip(string id)
     {
         _commsSelectedId = id;
+        TheCaseReadsThisHull(id);   // #417 · the other press that puts a ledger of names in front of him
         _commsHailAnswer = null;
         _commsActionMessage = null;
         if (_selectedTargetId != id)

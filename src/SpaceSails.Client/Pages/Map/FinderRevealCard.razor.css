@@ -1,0 +1,18 @@
+/* #251 item 1/3 · FINDERREVEALCARD'S OWN RULE, and the scope carrier that makes it match.
+
+   Shares Map.razor.css's css scope (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj) so the
+   .view-object / .rep-card / .rep-said / .rep-offer family this card borrows keeps matching. The shared
+   kit is RepCard.razor.css; read it before changing any of those.
+
+   ══════════════════════════════════════════════════════════════════════════════════════════════════
+   #417 · THE OUTCOME, ON THE CARD THAT ASKED FOR IT (#736).
+
+   It rides .rep-said — the register a card uses for something said back — and adds only the weight,
+   because this one sentence is what the whole scene was for and it replaces the two verbs rather than
+   sitting under them.
+   ══════════════════════════════════════════════════════════════════════════════════════════════════ */
+.finder-outcome {
+    margin-top: 0.8rem;
+    border-left-color: #f3e2c4;
+    font-style: normal;
+}

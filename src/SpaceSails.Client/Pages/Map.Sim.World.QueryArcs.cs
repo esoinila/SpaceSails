@@ -22,7 +22,7 @@ public partial class Map
 {
 
     /// <summary>The rolls a room makes about you, and the state you are in when it makes them —
-    /// <c>?approach=</c>, <c>?rep=</c>, <c>?kolt=</c>, <c>?walkin=</c>, <c>?hurt=</c>, <c>?shelter=</c>, <c>?mags=</c>, <c>?watch=</c> and
+    /// <c>?approach=</c>, <c>?rep=</c>, <c>?kolt=</c>, <c>?walkin=</c>, <c>?finder=</c>, <c>?hurt=</c>, <c>?shelter=</c>, <c>?mags=</c>, <c>?watch=</c> and
     /// <c>?roll=</c>.</summary>
     private bool ReadTheRoomsOwnDice(string pair, BootQuery q)
     {
@@ -99,6 +99,23 @@ public partial class Map
             // lines are the ones a captain gets, and whether this one is a setup is the seed's.
             string candidate = Uri.UnescapeDataString(pair["walkin=".Length..]).ToLowerInvariant();
             _walkInCheat = candidate switch
+            {
+                "1" or "true" or "yes" or "now" => true,
+                "0" or "false" or "no" or "never" => false,
+                _ => null,
+            };
+        }
+        else if (pair.StartsWith("finder=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #417 dev cheat: /map?finder=1 lets Ilse Varga cross this floor whatever else is true;
+            // /map?finder=0 keeps her away.
+            //
+            // It forces WHETHER and never WHAT. Whether this world can furnish a case at all is still Core's
+            // answer — a universe whose traffic has never shared a name between two hulls has no case in it,
+            // and the lever cannot conjure one — and the witness, the ground, the two hulls, the berth and
+            // the pay are all the ones a captain gets.
+            string candidate = Uri.UnescapeDataString(pair["finder=".Length..]).ToLowerInvariant();
+            _finderCheat = candidate switch
             {
                 "1" or "true" or "yes" or "now" => true,
                 "0" or "false" or "no" or "never" => false,
