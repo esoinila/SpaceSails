@@ -365,10 +365,11 @@ public sealed class TheStairIsAWayHomeTests
     /// what a climb costs, and the tank is the thing still saying it.</item>
     /// </list>
     ///
-    /// <para><b>Proven RED</b> by spending the car's line on the stair (deleting the <c>byStair</c> arm):
-    /// <c>Assert.Equal() Failure — Expected: Up the long way… / Actual: 🛃 The car climbs for a long
-    /// time…</c>; and by dropping the <c>ex.StairArrivalSaid</c> latch, on the third assertion:
-    /// <c>the climb said its line a second time in one excursion.</c></para>
+    /// <para><b>Proven RED</b>, twice. Spending the car's line on the stair:
+    /// <c>Assert.Equal() Failure — Expected: "Up the long way, in a hard suit, to the l"··· /
+    /// Actual: "🛃 The car climbs for a long time and let"···</c>. And dropping the
+    /// <c>ex.StairArrivalSaid</c> latch, on the last assertion:
+    /// <c>Assert.NotEqual() Failure — Strings are equal.</c></para>
     /// </summary>
     [Fact]
     public void TheClimbSaysItsOwnLineOnce_AndNeverTheCars()

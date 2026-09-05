@@ -56,16 +56,30 @@ public sealed class TheMomentItLooksAtYouTests
     /// from them the way they hide from you.
     ///
     /// <para><b>Proven RED</b> by returning 0 from <c>ReeverObservation.MotionModifier</c> for a still
-    /// captain (i.e. deleting the <see cref="ReeverObservation.StillPenalty"/> arm): the frozen captain is
-    /// then fixed on inside the first few looks and the first assertion fails —
-    /// <c>a captain who never moved a boot was fixed on after 40 looks.</c></para>
+    /// captain (i.e. deleting the <see cref="ReeverObservation.StillPenalty"/> arm). The bench itself then
+    /// refuses to exist, which is the strongest failure this file can produce: <c>no range exists where
+    /// standing still is cover and walking is not — the motion term has stopped deciding anything, and
+    /// every guard in this file would pass on a rule that read no motion.</c></para>
+    ///
+    /// <para>…and the silence half proved RED by saying the line on the STIRRED transition instead of at
+    /// the fix: <c>Assert.NotEqual() Failure — Actual: "One of them has stopped. It is looking at
+    /// you."</c>, forty looks before anything had fixed.</para>
     /// </summary>
     [Fact]
     public void AStillCaptainIsNotSeenWhereAWalkingOneIs()
     {
         Pages.Map frozen = OnTheRegolith();
         object one = PutAnUnawareOneAtRange(frozen, DecidingRangeDu);
-        RunLooks(frozen, 40, walking: false);
+        for (int look = 0; look < 40; look++)
+        {
+            Set(frozen, "_pulse", PulseSlot.Empty);
+            RunLooks(frozen, 1, walking: false);
+            // AND NOT ONE WORD IN FORTY LOOKS. This contact is STIRRED the whole way through — a clear
+            // sightline it can never make anything of — which is the one world that tells "said at the fix"
+            // apart from "said when the head came up". The pose is the beat here, and it is silent.
+            Assert.NotEqual(ReeverObservation.FixedOnYouLine, PulseLine(frozen));
+        }
+        Assert.True(Stirred(one), "the contact was never stirred, so its silence proved nothing.");
         Assert.False(EverSeen(one),
             $"a captain who never moved a boot was fixed on after 40 looks at {DecidingRangeDu:F2} du.");
 
@@ -144,9 +158,15 @@ public sealed class TheMomentItLooksAtYouTests
     /// whole approach: while nothing has fixed, the line is not on the pulse; the frame the first contact
     /// fixes, it is; and a second contact fixing later never says it again.
     ///
-    /// <para><b>Proven RED</b>, twice. Saying it on the <c>Stirred</c> transition instead of the fix:
-    /// <c>the line was said on a frame when nothing had fixed yet.</c> And dropping the
-    /// <c>ex.FixedOnYouSaid</c> latch: <c>the line was said 2 times.</c></para>
+    /// <para><b>Proven RED</b> by dropping the <c>ex.FixedOnYouSaid</c> latch:
+    /// <c>Assert.Equal() Failure — Expected: 1, Actual: 2.</c> (The "never before a fix" half is proved red
+    /// in <see cref="AStillCaptainIsNotSeenWhereAWalkingOneIs"/>, which owns a world where a contact is
+    /// stirred for forty looks and fixes on none of them.)</para>
+    ///
+    /// <para><b>An earlier version of this case was a green test that asserted nothing</b> on exactly the
+    /// half it exists for: it watched the pulse for a CHANGE of text, and the second contact says the
+    /// identical sentence, so a build that said it twice counted one write and passed. Hence the empty-slot
+    /// bench below — a write has to be observable as a write.</para>
     /// </summary>
     [Fact]
     public void TheLineIsSaidExactlyOnceAndOnlyAtTheFix()
@@ -155,30 +175,41 @@ public sealed class TheMomentItLooksAtYouTests
         object first = PutAnUnawareOneAtRange(map, DecidingRangeDu);
         object second = PutAnUnawareOneAtRange(map, DecidingRangeDu + 1.5);
 
+        // The slot is EMPTIED before every look, so a WRITE is observable rather than a change of text.
+        // This matters: the second contact says the identical sentence, so a guard that watched the pulse
+        // for a different string would count one write and pass on a build that said it twice — the green
+        // number that asserts nothing, on the exact half of the law this case exists for.
         int said = 0;
-        bool anyFixedBefore = false;
+        int fixings = 0;
+        bool hadFirst = false, hadSecond = false;
         for (int look = 0; look < 60; look++)
         {
-            string? before = PulseLine(map);
+            Set(map, "_pulse", PulseSlot.Empty);
             RunLooks(map, 1, walking: true);
-            string? after = PulseLine(map);
 
-            bool anyFixedNow = EverSeen(first) || EverSeen(second);
-            if (after == ReeverObservation.FixedOnYouLine && before != after)
+            int newlyFixed = 0;
+            if (EverSeen(first) && !hadFirst)
+            {
+                hadFirst = true;
+                newlyFixed++;
+            }
+            if (EverSeen(second) && !hadSecond)
+            {
+                hadSecond = true;
+                newlyFixed++;
+            }
+            fixings += newlyFixed;
+
+            if (PulseLine(map) == ReeverObservation.FixedOnYouLine)
             {
                 said++;
-                Assert.True(anyFixedNow, "the line was said on a frame when nothing had fixed yet.");
+                Assert.True(newlyFixed > 0, "the line was said on a look when nothing newly fixed.");
             }
-            if (!anyFixedNow)
-            {
-                Assert.NotEqual(ReeverObservation.FixedOnYouLine, after);
-            }
-            anyFixedBefore |= anyFixedNow;
         }
 
-        Assert.True(anyFixedBefore, "nothing ever fixed, so this case proved nothing about the line.");
-        Assert.True(EverSeen(first) && EverSeen(second),
+        Assert.True(hadFirst && hadSecond,
             "only one of the two ever fixed — the 'never said twice' half of this guard is untested.");
+        Assert.Equal(2, fixings);
         Assert.Equal(1, said);
     }
 

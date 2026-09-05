@@ -14,6 +14,25 @@ namespace SpaceSails.Core.Tests;
 ///
 /// <para>And the line: ONE new authored sentence on this side, verbatim, with the reserved word (§8) absent
 /// from every string the rule owns.</para>
+///
+/// <para><b>Every case here was proved RED</b>, by breaking the rule one clause at a time and watching the
+/// named case go down (then restoring):</para>
+/// <list type="bullet">
+/// <item>the <c>!hasLineOfSight</c> arm deleted →
+/// <c>WithNoSightline_NoDieIsCast_AndNothingIsStirred</c>;</item>
+/// <item>the <c>alreadyFixed</c> arm deleted →
+/// <c>AFixedContactIsNeverRolledForAgain_WithOrWithoutASightline</c>;</item>
+/// <item>the range term inverted (near becomes the hard look) → four cases, led by
+/// <c>TheOddsFallWithRange_AndBothEndsAreRealWorlds</c>;</item>
+/// <item>every business modifier flattened to 0 → <c>TheOddsRiseWithBusiness_InTheEnumsOwnOrder</c> and the
+/// range case's "both ends are real worlds" half;</item>
+/// <item>the "still inside this look" early-out deleted → <c>ADieLeavesTheCupOncePerLook_NotOncePerFrame</c>
+/// (600 dice where 13 are owed);</item>
+/// <item><c>PhaseOf</c> returning a constant → <c>EachContactLooksOnItsOwnPhase</c>;</item>
+/// <item><c>LookSeed</c> ignoring the contact → <c>TheSameLookReplaysExactly</c>;</item>
+/// <item>the sentence reworded, a third string published, and the reserved word reached for → all three of
+/// the line's cases at once.</item>
+/// </list>
 /// </summary>
 public class ReeverObservationTests
 {
