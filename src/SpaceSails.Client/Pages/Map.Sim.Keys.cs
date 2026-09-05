@@ -232,7 +232,10 @@ public partial class Map
             return;
         }
 
-        if (_deckMode && HandleDeckKey(e.Key))
+        // #326 · The modifier travels with the key. One verb on the deck reads it — T's two sentry stances —
+        // and it is handed over from the EVENT, because a letter's case cannot tell a shifted press from a
+        // caps-locked one.
+        if (_deckMode && HandleDeckKey(e.Key, e.ShiftKey))
         {
             return;
         }

@@ -353,6 +353,11 @@ public partial class Map
         StepSecretLabDetector();                 // #585: the needle climbs as you close on a named moon
         StepOutpostDoorChannel(dtRealSeconds);   // #563: the outpost hatch's force channel
         StepDrillChannel(dtRealSeconds); // #394: the drilling — sinking the charge into the rock
+        // #326 · THE BODYGUARDS WALK FIRST. A bot set down in the escort stance re-posts to the middle of
+        // the captain→home line, and it does so BEFORE the volley so it shoots from where it is standing
+        // this frame rather than from where it stood last one — a zap line drawn from a spot the bot has
+        // already left is the third named bug class, a drawn shape reporting what the sim never said.
+        StepEscorts(dtRealSeconds);
         StepSentries(dtRealSeconds);
         // #585 · NOTHING SHAMBLES DOWN HERE. Owner, stepping out of the car: "I don't think there should be
         // reevers down here", then "now the reevers are on surface right, so they should not be visible here

@@ -685,7 +685,12 @@ public partial class Map
 
             if (ex.Bots.Any(b => !b.Deployed))
             {
-                aboard.Add("🤖 T — deploy a sentry");
+                // #326 · TWO STANCES, BOTH NAMED. The choice is made at the press, so both halves of it have
+                // to be on the bar at the moment the press is available — a stance the captain is never told
+                // about is a stance he does not have (#212), and this is the one that decides whether the
+                // way back to her lock stays open. The words are the owner's own.
+                aboard.Add($"🤖 T — {SentryDoctrine.DeployHereLabel}");
+                aboard.Add($"🤖 ⇧T — {SentryDoctrine.HoldMyLineHomeLabel}");
             }
             else if (ex.Bots.Any(b => b.Deployed &&
                      ((b.X - _avatarX) * (b.X - _avatarX)) + ((b.Y - _avatarY) * (b.Y - _avatarY))
@@ -829,7 +834,11 @@ public partial class Map
         int deployed = ex.Bots.Count(b => b.Deployed);
         if (carried > 0)
         {
-            lines.Add($"🤖 T — set a sentry ({carried} in the sling)");
+            // #326 · …and in WHICH STANCE, on the same plate and at the same moment, because the stance is
+            // chosen at the press and there is no second screen to choose it on. The owner's own two
+            // phrases; the count rides the first, where it always did.
+            lines.Add($"🤖 T — {SentryDoctrine.DeployHereLabel} ({carried} in the sling)");
+            lines.Add($"🤖 ⇧T — {SentryDoctrine.HoldMyLineHomeLabel}");
         }
         if (deployed > 0)
         {

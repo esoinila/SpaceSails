@@ -355,10 +355,16 @@ public static class SentryBot
     /// <para>Owner: <i>"some special ammo that only uses one round per reever"</i> and <i>"those rounds would
     /// go through several reevers if in group also"</i>. Both are the same fact about a round that arms after
     /// travel and does its work on the far side of the first thing it meets.</para></param>
+    /// <param name="line">#326 · The captain→home corridor, when there is a captain on this ground. Anything
+    /// standing in it outranks anything that is not, at any range — <see cref="SentryDoctrine.Pick"/> owns
+    /// that comparison, and this method owns nothing about it. Null is the pre-#326 world exactly: no
+    /// corridor, so the pick is the nearest visible target, which is what every existing caller and every
+    /// existing test gets by construction.</param>
     public static Volley Step(
         IReadOnlyList<Deployed> bots, IReadOnlyList<Target> reevers,
         IReadOnlyList<SurfaceCollision.Segment>? walls = null,
-        IReadOnlyList<Ammunition.Kind>? ammo = null)
+        IReadOnlyList<Ammunition.Kind>? ammo = null,
+        SentryDoctrine.RetreatLine? line = null)
     {
         System.ArgumentNullException.ThrowIfNull(bots);
         System.ArgumentNullException.ThrowIfNull(reevers);
@@ -387,23 +393,12 @@ public static class SentryBot
                 continue; // 00 — the readout is frozen, the bot silent
             }
 
-            int best = -1;
-            double bestSq = double.MaxValue;
-            for (int j = 0; j < reevers.Count; j++)
-            {
-                if (!alive[j])
-                {
-                    continue;
-                }
-                double dx = reevers[j].X - bots[i].X, dy = reevers[j].Y - bots[i].Y;
-                double d2 = (dx * dx) + (dy * dy);
-                if (d2 <= RangeDeckUnits * RangeDeckUnits && d2 < bestSq
-                    && SurfaceCollision.HasLineOfSight(bots[i].X, bots[i].Y, reevers[j].X, reevers[j].Y, walls))
-                {
-                    bestSq = d2;
-                    best = j;
-                }
-            }
+            // #326 · WHICH ONE. Not the nearest any more — the one in the corridor between the captain and
+            // the way home, if there is one, and only then the nearest. The whole comparison lives in
+            // SentryDoctrine.Pick so there is one author of it: this loop used to BE the target rule, and a
+            // second copy of a priority is how a bot comes to shoot one thing while the doctrine says
+            // another. With `line` null it picks exactly what this loop picked.
+            int best = SentryDoctrine.Pick(bots[i], reevers, alive, line, walls);
             if (best < 0)
             {
                 continue; // nothing it can SEE in the arc — hold fire, no drain (#437)

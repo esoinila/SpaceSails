@@ -255,7 +255,7 @@ public sealed class TwoGripsOneWalkTests
             Invoke(map, "CancelAutoWalk", false);
             Set(map, "_avatarX", homeX);
             Set(map, "_avatarY", homeY);
-            Invoke(map, "HandleDeckKey", wayOut);
+            Invoke(map, "HandleDeckKey", wayOut, false);
             Invoke(map, "MoveAvatar", 1.0 / 60.0);
             bool byKey = Math.Abs(((double)Get(map, "_avatarX")!) - homeX)
                 + Math.Abs(((double)Get(map, "_avatarY")!) - homeY) > WalkedDu;
@@ -338,7 +338,7 @@ public sealed class TwoGripsOneWalkTests
 
         (double x0, double y0) = Where(map);
         Set(map, "_pulse", PulseSlot.Empty);
-        Invoke(map, "HandleDeckKey", key);
+        Invoke(map, "HandleDeckKey", key, false);
         for (int frame = 0; frame < 60; frame++)
         {
             Invoke(map, "MoveAvatar", 1.0 / 60.0);

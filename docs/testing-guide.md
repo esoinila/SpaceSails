@@ -1668,6 +1668,34 @@ Sets you down a pace outside a shelter's door with both sentries holding twelve 
 2. **The magazines are on screen** — `🔫 MAGAZINES · K-77 12/99 in the sling · R-3B 12/99 in the sling`, under the motion tracker, above the key hints. Press `[E]` on the locker and watch it go to `99/99` in the same breath as the receipt says how many rounds went in. Before #728 that receipt paid into a number the player could see nowhere.
 3. **Come down with nothing and the press says so** — board with no sentry in the sling and the readout reads `none down here — no sentry came with you`, and the press answers *"finds nothing to fill"* rather than claiming your magazines are full.
 
+#### The bodyguard, and the road home (#326)
+
+```
+/map?dock=the-tilt&site=0&land=1&reevers=4
+```
+
+Owner, live 2026-07-18: *"I think the securibots most important job is not let anything come between me and
+the shuttle :-D"* — and *"Protect the path to the ship at about half way so there is always a way to retreat
+back to safety (until bullets run out) :-D"*
+
+Walk down-field until the tube is well behind you, then check the four things:
+
+1. **The plate names both stances** — `🤖 T — deploy here` and `🤖 ⇧T — hold my line home`, side by side,
+   whenever a bot is in the sling. The stance is chosen at the press, so both halves of the choice have to be
+   readable at the press.
+2. **`⇧T` sets a bodyguard down and it WALKS.** Set it at your feet, then keep walking deeper. It does not
+   stay where you put it: it goes to the middle of the line between you and the tube and holds that spot,
+   recomputing every time you move. Turn and walk sideways and it crosses the field to the new middle.
+3. **`T` is still the post.** Set the second bot down with plain `T` and it never moves again, in the same
+   world, on the same walk. If both walk, the modifier is not being read.
+4. **The counter is the expiry.** Let the escort grind a pack down to `00` and it stops where it stands — a
+   dry bot on your retreat line wearing its frozen counter, which is the mark #316 reads. Lift off without it
+   and the ledger prints the write-off it always printed.
+
+What *broken* looks like: a bodyguard that shoots the Old One nearest ITSELF while another walks up the
+corridor behind it (the priority is not reaching the trigger), a bot that walks once and then stands still
+(the post is not being recomputed), or a bot that walks through a slab to get to its mark.
+
 ### Add-ons for any of the above
 
 | Argument | What it does |

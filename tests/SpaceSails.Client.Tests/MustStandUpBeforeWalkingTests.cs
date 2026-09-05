@@ -177,7 +177,7 @@ public sealed class MustStandUpBeforeWalkingTests
 
         (double x, double y) = Where(map);
 
-        Assert.True((bool)Invoke(map, "HandleDeckKey", "d")!, "the deck did not take the movement key.");
+        Assert.True((bool)Invoke(map, "HandleDeckKey", "d", false)!, "the deck did not take the movement key.");
 
         Assert.True(Get(map, "_stool") is null,
             "W/A/S/D at the counter left the captain ON the stool — the press cost nothing, and the frame " +
@@ -221,7 +221,7 @@ public sealed class MustStandUpBeforeWalkingTests
             "this bench steps off onto the seat itself, so the guard below could not tell a captain who " +
             "stood up from one who never moved. The bench carve has changed under this test.");
 
-        Assert.True((bool)Invoke(map, "HandleDeckKey", "w")!, "the deck did not take the movement key.");
+        Assert.True((bool)Invoke(map, "HandleDeckKey", "w", false)!, "the deck did not take the movement key.");
 
         Assert.True(Get(map, "_table") is null,
             "W/A/S/D on a bench left the sitting open — the scene is still up and the captain is still in it.");
