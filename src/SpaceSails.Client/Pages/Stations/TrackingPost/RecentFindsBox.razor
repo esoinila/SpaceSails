@@ -1,0 +1,41 @@
+@namespace SpaceSails.Client.Pages.Stations
+@using SpaceSails.Core
+@*
+    #251 · THE AREA-SCAN FINDS BOX (#240's resolved sky), ON ITS OWN FILE.
+
+    Moved out of Pages/Stations/TrackingPost.razor by PURE MOTION — the block between the two fences
+    below is the block that stood in the desk, character for character, at the indentation it had
+    there. Every member it reads is a [Parameter] carrying the desk's own member UNDER THAT MEMBER'S
+    OWN NAME (a field keeps its underscore, a method arrives as a delegate, a callback as itself), so
+    the markup moved without a rewrite and TrackingPostMarkup splices the desk back byte for byte.
+
+    The .razor.css beside this file carries no rules; it is there to give the component
+    TrackingPost.razor.css's OWN scope (b-9ekzcovohe, pinned in SpaceSails.Client.csproj). That sheet
+    has forty rules and not one `::deep` among them, so every one of them is scope-dependent: without
+    the carrier, every rule that styles this surface would stop matching the moment the markup moved
+    out of the desk — no build error, no test, the block just renders unstyled.
+
+    What the last area scan actually resolved out of the populated sky — five rows and a count of the
+    rest. The `@if (_recentFinds.Count > 0)` stays in TrackingPost.razor.
+*@
+@* ── MARKUP BEGINS · verbatim from TrackingPost.razor ─────────────────────────────────────────────── *@
+                <div class="sensors-finds-box mb-2">
+                    <div class="fw-bold">✨ Last area scan resolved:</div>
+                    @foreach (Discovery find in _recentFinds.Take(5))
+                    {
+                        <div class="text-secondary">@FindIcon(find.Kind) @find.Description</div>
+                    }
+                    @if (_recentFinds.Count > 5)
+                    {
+                        <div class="text-secondary">… and @(_recentFinds.Count - 5) more</div>
+                    }
+                </div>
+@* ── MARKUP ENDS ──────────────────────────────────────────────────────────────────────────────────── *@
+
+@code {
+    // #251 · Every [Parameter] below is a member of TrackingPost under the member's own name.
+    // A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public IReadOnlyList<Discovery> _recentFinds { get; set; } = [];
+    [Parameter] public Func<DiscoveryKind, string> FindIcon { get; set; } = default!;
+}

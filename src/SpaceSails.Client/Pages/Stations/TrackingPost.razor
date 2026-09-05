@@ -72,17 +72,7 @@
 
             @if (_recentFinds.Count > 0)
             {
-                <div class="sensors-finds-box mb-2">
-                    <div class="fw-bold">✨ Last area scan resolved:</div>
-                    @foreach (Discovery find in _recentFinds.Take(5))
-                    {
-                        <div class="text-secondary">@FindIcon(find.Kind) @find.Description</div>
-                    }
-                    @if (_recentFinds.Count > 5)
-                    {
-                        <div class="text-secondary">… and @(_recentFinds.Count - 5) more</div>
-                    }
-                </div>
+                <RecentFindsBox _recentFinds="_recentFinds" FindIcon="FindIcon" />
             }
 
             @* PR-D: the tracked-target boxes, one live scope image per slot (owner: "boxes with
