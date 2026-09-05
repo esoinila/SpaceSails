@@ -108,11 +108,11 @@ public sealed class TheDeskReadsTheStateNotThePercentTests
         string box = SensorTasksBlock(razor);
 
         Assert.Contains("_schedule.StateOf(", box, StringComparison.Ordinal);
-        Assert.Contains("SensorTaskPlates.For(", box, StringComparison.Ordinal);
+        Assert.Contains("SensorTaskPlates.Chip(", box, StringComparison.Ordinal);
 
         // The queue row and the finished row both carry it: a chip on the live jobs only would leave the
         // captain exactly where he was about the pass that just landed.
-        int chips = Regex.Matches(box, @"SensorTaskPlates\.For\(").Count;
+        int chips = Regex.Matches(box, @"SensorTaskPlates\.Chip\(").Count;
         Assert.True(chips >= 2,
             $"only {chips} row(s) in the Sensor tasks list wear a state chip — the DONE row this fix added "
             + "prints nothing, so a finished pass still vanishes from the desk.");

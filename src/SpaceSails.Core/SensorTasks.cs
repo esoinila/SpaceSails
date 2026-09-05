@@ -111,6 +111,20 @@ public static class SensorTaskPlates
         SensorTaskState.Done => "DONE",
         _ => "QUEUED",
     };
+
+    /// <summary>The glyph that goes in front of it — the thing the eye catches from across the desk. Here
+    /// rather than on the desk because a chip is one plate: a surface that spelled its own glyph could drift
+    /// from the word beside it without anything noticing.</summary>
+    public static string Glyph(SensorTaskState state) => state switch
+    {
+        SensorTaskState.Running => "▶",
+        SensorTaskState.Waiting => "⏸",
+        SensorTaskState.Done => "✓",
+        _ => "◷",
+    };
+
+    /// <summary>The whole chip, glyph and word.</summary>
+    public static string Chip(SensorTaskState state) => $"{Glyph(state)} {For(state)}";
 }
 
 /// <summary>
