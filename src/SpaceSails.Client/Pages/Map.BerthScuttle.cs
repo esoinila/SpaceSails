@@ -125,7 +125,7 @@ public partial class Map
         // at and there is no card here — the card is ninety seconds away. Logged as the same string rather
         // than a second sentence about it: the board is a transcript, not a commentary.
         string pa = BerthScuttle.PaCall(BerthScuttle.BerthNumber(slot));
-        ShowPulseMessage(pa);
+        ShowPulseMessage(pa, PulseRank.Beat);
         ShipBoardLog(pa);
 
         // THE ROSTER. #1092 hands a captain a different slot for reasons nobody in the office could tell
@@ -218,7 +218,7 @@ public partial class Map
         PushNewsEvent(
             NewsWire.NewsEventKind.HunterDispatched,
             SiteOperator.Of(havenId).Name,
-            BodyName(havenId) ?? _havenName);
+            BodyName(havenId));
 
         BankTheCrossing(BerthScuttle.Charge(havenId));
     }
