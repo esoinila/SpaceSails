@@ -56,58 +56,9 @@
                bottom and wraps around; one-shots leave after their pass. *@
             @if (_schedule.Queue.Count > 0)
             {
-                <div class="sensor-tasks-box mb-2">
-                    <div class="fw-bold">🔭 Sensor tasks — one telescope, worked top to bottom</div>
-                    @foreach (SensorTask task in _schedule.Queue)
-                    {
-                        @* #239: READ, never inferred — RUNNING at 0% and WAITING are one picture if the picture is a percentage. *@
-                        SensorTaskState state = _schedule.StateOf(task.Id) ?? SensorTaskState.Queued;
-                        <div class="d-flex align-items-center gap-1 @(state == SensorTaskState.Running ? "sensor-task-active" : "")" @key="task.Id">
-                            <span>@KindIcon(task.Kind)</span>
-                            <span class="flex-grow-1">@task.Label@(task.Recurring ? "" : " · once")</span>
-                            <span class="sensor-task-chip @StateChipClass(state)">@SensorTaskPlates.Chip(state)</span>
-                            @if (state == SensorTaskState.Running)
-                            {
-                                <span class="text-info">@((int)(_schedule.ActiveProgress(SimTime) * 100))%</span>
-                            }
-                            else
-                            {
-                                <span class="text-secondary">@TaskCostText(task)</span>
-                            }
-                            <button type="button" class="btn btn-sm btn-outline-light py-0 px-1" title="Earlier in the round"
-                                    @onclick="() => _schedule.MoveUp(task.Id)">▲</button>
-                            <button type="button" class="btn btn-sm btn-outline-light py-0 px-1" title="Later in the round"
-                                    @onclick="() => _schedule.MoveDown(task.Id)">▼</button>
-                            <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" title="Run as the very next pass"
-                                    @onclick="() => _schedule.PrioritizeNext(task.Id)">⏫</button>
-                            @if (task.Kind is SensorTaskKind.AreaScan or SensorTaskKind.CorridorSweep)
-                            {
-                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Cancel this task"
-                                        @onclick="() => _schedule.Remove(task.Id)">✕</button>
-                            }
-                            else if (task.Kind == SensorTaskKind.LostSearch)
-                            {
-                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Abandon the case — let her go"
-                                        @onclick="() => AbandonSearch(task.TargetShipId!)">✕</button>
-                            }
-                            else if (!task.Recurring)
-                            {
-                                @* #962: a one-shot look the captain ordered by hand is his to call off again.
-                                   A STANDING custody pass gets no ✕ on purpose — the ledger re-queues it every
-                                   tick, so the button would do nothing anyone could see. Drop the track. *@
-                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Call this look off"
-                                        @onclick="() => _schedule.Remove(task.Id)">✕</button>
-                            }
-                        </div>
-                    }
-                    @foreach (CompletedPass done in _schedule.RecentlyDone)
-                    {
-                        <div class="d-flex align-items-center gap-1 sensor-task-done" @key="@("done:" + done.Task.Id)">
-                            <span class="flex-grow-1">@KindIcon(done.Task.Kind) @done.Task.Label</span>
-                            <span class="sensor-task-chip @StateChipClass(SensorTaskState.Done)">@SensorTaskPlates.Chip(SensorTaskState.Done)</span>
-                        </div>
-                    }
-                </div>
+                <SensorTaskQueue _schedule="_schedule" SimTime="@SimTime"
+                                 KindIcon="KindIcon" StateChipClass="StateChipClass"
+                                 TaskCostText="TaskCostText" AbandonSearch="AbandonSearch" />
             }
 
             @* PR-D: the cold-case board — every lost lock, its live search area, and the

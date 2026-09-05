@@ -1,0 +1,97 @@
+@namespace SpaceSails.Client.Pages.Stations
+@using SpaceSails.Core
+@*
+    #251 · THE SENSOR TASK QUEUE (#239's state rows), ON ITS OWN FILE.
+
+    Moved out of Pages/Stations/TrackingPost.razor by PURE MOTION — the block between the two fences
+    below is the block that stood in the desk, character for character, at the indentation it had
+    there. Every member it reads is a [Parameter] carrying the desk's own member UNDER THAT MEMBER'S
+    OWN NAME (a field keeps its underscore, a method arrives as a delegate, a callback as itself), so
+    the markup moved without a rewrite and TrackingPostMarkup splices the desk back byte for byte.
+
+    The .razor.css beside this file carries no rules; it is there to give the component
+    TrackingPost.razor.css's OWN scope (b-9ekzcovohe, pinned in SpaceSails.Client.csproj). That sheet
+    has forty rules and not one `::deep` among them, so every one of them is scope-dependent: without
+    the carrier, every rule that styles this surface would stop matching the moment the markup moved
+    out of the desk — no build error, no test, the block just renders unstyled.
+
+    The `@if (_schedule.Queue.Count > 0)` and PR-D's paragraph above it stay in TrackingPost.razor; what
+    moved is the box inside the braces, #239's and #962's own notes on the rows included.
+
+    #239's law lives on this block — READ, never inferred: a chip that says RUNNING at 0% and one that
+    says WAITING are one picture if the picture is a percentage. TheDeskReadsTheStateNotThePercentTests
+    slices this box out by text, from `sensor-tasks-box` to `sensor-lost-box`, and reads it through
+    TrackingPostMarkup — which is why the composition is a SPLICE at the invocation site and not an
+    append: a concatenation would leave that slice with no end to find and the law would quietly stop
+    asserting anything.
+
+    `_schedule` crosses as the object it is, not a copy. The row buttons call MoveUp/MoveDown/
+    PrioritizeNext/Remove on it, and a class is shared by reference, so those still land on the desk's own
+    schedule — the write the audit hunts for is an assignment to a FIELD, and there is none here.
+*@
+@* ── MARKUP BEGINS · verbatim from TrackingPost.razor ─────────────────────────────────────────────── *@
+                <div class="sensor-tasks-box mb-2">
+                    <div class="fw-bold">🔭 Sensor tasks — one telescope, worked top to bottom</div>
+                    @foreach (SensorTask task in _schedule.Queue)
+                    {
+                        @* #239: READ, never inferred — RUNNING at 0% and WAITING are one picture if the picture is a percentage. *@
+                        SensorTaskState state = _schedule.StateOf(task.Id) ?? SensorTaskState.Queued;
+                        <div class="d-flex align-items-center gap-1 @(state == SensorTaskState.Running ? "sensor-task-active" : "")" @key="task.Id">
+                            <span>@KindIcon(task.Kind)</span>
+                            <span class="flex-grow-1">@task.Label@(task.Recurring ? "" : " · once")</span>
+                            <span class="sensor-task-chip @StateChipClass(state)">@SensorTaskPlates.Chip(state)</span>
+                            @if (state == SensorTaskState.Running)
+                            {
+                                <span class="text-info">@((int)(_schedule.ActiveProgress(SimTime) * 100))%</span>
+                            }
+                            else
+                            {
+                                <span class="text-secondary">@TaskCostText(task)</span>
+                            }
+                            <button type="button" class="btn btn-sm btn-outline-light py-0 px-1" title="Earlier in the round"
+                                    @onclick="() => _schedule.MoveUp(task.Id)">▲</button>
+                            <button type="button" class="btn btn-sm btn-outline-light py-0 px-1" title="Later in the round"
+                                    @onclick="() => _schedule.MoveDown(task.Id)">▼</button>
+                            <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" title="Run as the very next pass"
+                                    @onclick="() => _schedule.PrioritizeNext(task.Id)">⏫</button>
+                            @if (task.Kind is SensorTaskKind.AreaScan or SensorTaskKind.CorridorSweep)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Cancel this task"
+                                        @onclick="() => _schedule.Remove(task.Id)">✕</button>
+                            }
+                            else if (task.Kind == SensorTaskKind.LostSearch)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Abandon the case — let her go"
+                                        @onclick="() => AbandonSearch(task.TargetShipId!)">✕</button>
+                            }
+                            else if (!task.Recurring)
+                            {
+                                @* #962: a one-shot look the captain ordered by hand is his to call off again.
+                                   A STANDING custody pass gets no ✕ on purpose — the ledger re-queues it every
+                                   tick, so the button would do nothing anyone could see. Drop the track. *@
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Call this look off"
+                                        @onclick="() => _schedule.Remove(task.Id)">✕</button>
+                            }
+                        </div>
+                    }
+                    @foreach (CompletedPass done in _schedule.RecentlyDone)
+                    {
+                        <div class="d-flex align-items-center gap-1 sensor-task-done" @key="@("done:" + done.Task.Id)">
+                            <span class="flex-grow-1">@KindIcon(done.Task.Kind) @done.Task.Label</span>
+                            <span class="sensor-task-chip @StateChipClass(SensorTaskState.Done)">@SensorTaskPlates.Chip(SensorTaskState.Done)</span>
+                        </div>
+                    }
+                </div>
+@* ── MARKUP ENDS ──────────────────────────────────────────────────────────────────────────────────── *@
+
+@code {
+    // #251 · Every [Parameter] below is a member of TrackingPost under the member's own name.
+    // A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public TelescopeSchedule _schedule { get; set; } = default!;
+    [Parameter] public double SimTime { get; set; }
+    [Parameter] public Func<SensorTaskKind, string> KindIcon { get; set; } = default!;
+    [Parameter] public Func<SensorTaskState, string> StateChipClass { get; set; } = default!;
+    [Parameter] public Func<SensorTask, string> TaskCostText { get; set; } = default!;
+    [Parameter] public Action<string> AbandonSearch { get; set; } = default!;
+}
