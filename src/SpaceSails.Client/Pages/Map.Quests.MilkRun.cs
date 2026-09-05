@@ -56,11 +56,12 @@ public partial class Map
     /// </summary>
     private double _milkRunSaidAtMs = double.NegativeInfinity;
 
-    /// <summary>A beat between lines. The gates are read off live state, and several of them can already be
-    /// true when their step comes round (a full tank, a warp the captain never dropped) — without this, a
-    /// lesson that is correctly ticking steps off would overwrite its own teaching inside one frame and the
-    /// captain would read only the last of them.</summary>
-    private const double MilkRunLineSpacingMs = 1_200;
+    /// <summary>A beat between lines, and it is not a number typed for this lesson: it is
+    /// <see cref="PulseSlot.MinDwellMs"/>, "the shortest time the screen ever shows anything". The gates are
+    /// read off live state and several of them can already be true when their step comes round (a full tank,
+    /// a warp the captain never dropped) — without this, a lesson that is correctly ticking steps off would
+    /// overwrite its own teaching inside one frame and the captain would read only the last of them.</summary>
+    private static double MilkRunLineSpacingMs => PulseSlot.MinDwellMs;
 
     /// <summary>The lesson's contract, once it is in the captain's hand — found by the id it was stamped
     /// with, which is what quests are vaulted under, so a reload finds it again.</summary>
@@ -89,6 +90,7 @@ public partial class Map
     private void SeedMilkRun()
     {
         _milkRunStep = 1;
+        _tutorialStep = StepTakeTheMilkRun;   // StartTutorial has already done this; a replay from anywhere else has not
         _milkRunPostedAshore = false;
         _milkRunSaidAtMs = double.NegativeInfinity;
         SayTheMilkRunLine(1);
