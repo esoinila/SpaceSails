@@ -1,0 +1,53 @@
+@namespace SpaceSails.Client.Pages.Stations
+@using CourseOpportunity = SpaceSails.Client.Pages.Stations.TrackingPost.CourseOpportunity
+@*
+    #251 · THE EN-ROUTE PASSES BOX (M29's cover-story instrument), ON ITS OWN FILE.
+
+    Moved out of Pages/Stations/TrackingPost.razor by PURE MOTION — the block between the two fences
+    below is the block that stood in the desk, character for character, at the indentation it had
+    there. Every member it reads is a [Parameter] carrying the desk's own member UNDER THAT MEMBER'S
+    OWN NAME (a field keeps its underscore, a method arrives as a delegate, a callback as itself), so
+    the markup moved without a rewrite and TrackingPostMarkup splices the desk back byte for byte.
+
+    The .razor.css beside this file carries no rules; it is there to give the component
+    TrackingPost.razor.css's OWN scope (b-9ekzcovohe, pinned in SpaceSails.Client.csproj). That sheet
+    has forty rules and not one `::deep` among them, so every one of them is scope-dependent: without
+    the carrier, every rule that styles this surface would stop matching the moment the markup moved
+    out of the desk — no build error, no test, the block just renders unstyled.
+
+    The `@if (FullScreen && Opportunities.Count > 0)` that opens this box stays in TrackingPost.razor —
+    the desk keeps its paint order in one place, and a closed surface is still never instantiated. What
+    moved is the block inside the braces, its own M29 note included.
+
+    `CourseOpportunity` is TrackingPost's own nested record and the moved markup names it bare, so it
+    arrives here as a using ALIAS rather than a rewritten type name: the `@foreach` reads exactly as it
+    read in the desk.
+*@
+@* ── MARKUP BEGINS · verbatim from TrackingPost.razor ─────────────────────────────────────────────── *@
+            @* M29: the cover-story instrument — what the CURRENT plotted course conveniently
+               brushes by. Fly somewhere innocent; the sensors quietly note who drifts close. *@
+            <div class="sensors-opportunity-box mt-2">
+                <div class="fw-bold">🧭 En-route passes — this course brushes by:</div>
+                @foreach (CourseOpportunity opp in Opportunities)
+                {
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>@(opp.Tracked ? "📡 " : "")@opp.Callsign</span>
+                        <span class="text-secondary">min @FormatWallDistance(opp.MinDistance) @FormatOppDuration(opp.MinSimTime - SimTime)</span>
+                        <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                title="War-room target of interest — intercept clock & firing solutions"
+                                @onclick="() => OnSetInterest.InvokeAsync(opp.Id)">🎯</button>
+                    </div>
+                }
+            </div>
+@* ── MARKUP ENDS ──────────────────────────────────────────────────────────────────────────────────── *@
+
+@code {
+    // #251 · Every [Parameter] below is a member of TrackingPost under the member's own name.
+    // A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public IReadOnlyList<CourseOpportunity> Opportunities { get; set; } = [];
+    [Parameter] public double SimTime { get; set; }
+    [Parameter] public Func<double, string> FormatWallDistance { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatOppDuration { get; set; } = default!;
+    [Parameter] public EventCallback<string> OnSetInterest { get; set; }
+}

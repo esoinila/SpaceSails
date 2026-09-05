@@ -33,21 +33,9 @@
 
         @if (FullScreen && Opportunities.Count > 0)
         {
-            @* M29: the cover-story instrument — what the CURRENT plotted course conveniently
-               brushes by. Fly somewhere innocent; the sensors quietly note who drifts close. *@
-            <div class="sensors-opportunity-box mt-2">
-                <div class="fw-bold">🧭 En-route passes — this course brushes by:</div>
-                @foreach (CourseOpportunity opp in Opportunities)
-                {
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span>@(opp.Tracked ? "📡 " : "")@opp.Callsign</span>
-                        <span class="text-secondary">min @FormatWallDistance(opp.MinDistance) @FormatOppDuration(opp.MinSimTime - SimTime)</span>
-                        <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
-                                title="War-room target of interest — intercept clock & firing solutions"
-                                @onclick="() => OnSetInterest.InvokeAsync(opp.Id)">🎯</button>
-                    </div>
-                }
-            </div>
+            <EnRoutePassesBox Opportunities="Opportunities" SimTime="@SimTime"
+                              FormatWallDistance="FormatWallDistance" FormatOppDuration="FormatOppDuration"
+                              OnSetInterest="OnSetInterest" />
         }
 
         @if (FullScreen && RadarActive)
