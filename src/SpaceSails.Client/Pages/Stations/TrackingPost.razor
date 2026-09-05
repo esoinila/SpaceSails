@@ -44,16 +44,8 @@
                              RadarReturns="RadarReturns" FormatWallDistance="FormatWallDistance" />
         }
 
-        @if (_activeJob is not null)
-        {
-            <div class="progress tracking-progress mt-2" role="progressbar" aria-label="Sweep progress">
-                <div class="progress-bar bg-info" style="width:@(SweepProgressPercent.ToString("F0"))%"></div>
-            </div>
-        }
-        @if (_lastSweepMessage is not null)
-        {
-            <div class="text-secondary mt-1">@_lastSweepMessage</div>
-        }
+        <SweepReadoutStrip _activeJob="_activeJob" SweepProgressPercent="@SweepProgressPercent"
+                           _lastSweepMessage="_lastSweepMessage" />
 
         <hr class="my-2" />
 
