@@ -681,13 +681,18 @@ public partial class Map
             // #488: aboard, a SHUT DOOR breaks their look as well as a wall — otherwise a hull full of
             // dogged hatches is no cover at all, and closing one behind you buys nothing. `sight` is walls
             // plus shut doors; off a wreck it is null and this is the old walls-only test exactly.
-            if (SurfaceArrival.CanBeSpotted(((_lastTimestampMs ?? 0) - (_surface?.LandedAtMs ?? 0)) / 1000.0)
-                && SurfaceCollision.HasLineOfSight(r.X, r.Y, _avatarX, _avatarY, sight ?? walls))
-            {
-                r.LastSeenX = _avatarX;
-                r.LastSeenY = _avatarY;
-                r.EverSeen = true;
-            }
+            // #436 · AND THE SIGHTLINE IS NOW PERMISSION TO ROLL, NOT KNOWLEDGE. Owner, 2026-07-26: "There
+            // needs to be a reevers observation roll to its line of sight environment… Then the moment reever
+            // discovers becomes special." This used to be the latch flipping in the same frame the geometry
+            // opened; the rule that decides now lives in Core (ReeverObservation) and the beat that says so
+            // lives in Map.Surface.Observation. Everything the two clauses below meant is unchanged and is
+            // still asked here — the grace, and whether stone (or a shut door) stands between the two — and
+            // the answer is handed to the look rather than acted on directly.
+            //
+            // Called with the answer either way, deliberately: a look with no sightline is how the head goes
+            // back DOWN, and an un-stirring is as much of the fear window as a stirring.
+            TakeALook(r, SurfaceArrival.CanBeSpotted(((_lastTimestampMs ?? 0) - (_surface?.LandedAtMs ?? 0)) / 1000.0)
+                && SurfaceCollision.HasLineOfSight(r.X, r.Y, _avatarX, _avatarY, sight ?? walls));
 
             // Owner, 2026-07-26: "make sure reevers behind walls can be unaware of the player being there
             // if they have not seen the player." An Old One that has NEVER laid eyes on the captain does
@@ -717,7 +722,14 @@ public partial class Map
                 }
                 r.Vx = 0;
                 r.Vy = 0;
-                ApplyIdleShiver(r, walls, reeverRadius, now, r.Facing);
+                // #436 · THE HEAD COMES UP, AND IT IS DRAWN AND NOT SAID. Canon, 2026-09-05: the head coming
+                // up is a POSE CHANGE ON THE EXISTING MARK, no line, no banner — the owner's own note that
+                // "SECURITY ALERTED as a banner is the wrong shape". A stirred one turns to face the captain
+                // (the same expression a sentry-pinned one already uses); an unaware one keeps its own
+                // facing, exactly as before. Nothing else about it changes: it holds its ground, it shivers,
+                // and it has not committed — which is what makes backing behind stone still work.
+                ApplyIdleShiver(r, walls, reeverRadius, now,
+                    r.Stirred ? Math.Atan2(_avatarY - r.AnchorY, _avatarX - r.AnchorX) : r.Facing);
                 if (onSurface && ReeverChase.Caught(r.X, r.Y, _avatarX, _avatarY))
                 {
                     caught = true; // walked right into it in the dark — that counts as being found

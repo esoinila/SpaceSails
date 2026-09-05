@@ -270,12 +270,22 @@ public partial class Map
             string carried = _satchel.Count > 0
                 ? $" You are carrying {_satchel.Count} thing{(_satchel.Count == 1 ? "" : "s")} out of it \u2014 \ud83c\udf92 I to look."
                 : "";
-            // FABLE: line needed \u2014 the climb out by STAIR, said once on arrival: a long flight in a hard
-            // suit, the lid from underneath, and what it cost. The car's line below may not be spent on it
-            // (it names a machine that did not carry you) and this crew does not author lines, so until that
-            // one exists the stair arrives in the suit's own voice \u2014 the tank is visibly shorter and SuitAir
-            // says the rest in its own words the moment a threshold is crossed.
-            if (!byStair)
+            // #719 \u00b7 AND THE CLIMB OUT HAS ITS OWN SENTENCE NOW (Fable canon, 2026-09-04 \u2014 the line the FABLE
+            // marker that stood here was left for). The two roads to the lid say different things because
+            // they ARE different things: the car's line names a machine, and naming a machine that did not
+            // carry you is the house bug class on the loudest line in the feature. Neither is ever said for
+            // the other trip, and the stair's is said ONCE \u2014 a captain who climbs out twice in one excursion
+            // has already been told what a climb costs, and the tank is the thing still saying it.
+            if (byStair)
+            {
+                if (!ex.StairArrivalSaid)
+                {
+                    ex.StairArrivalSaid = true;
+                    ShowAndFile(UndergroundComplex.StairArrivalLine + carried,
+                        UndergroundComplex.StairArrivalGlyph, PulseRank.Beat);
+                }
+            }
+            else
             {
                 ShowPulseMessage("\ud83d\udec3 The car climbs for a long time and lets you out into somebody's idea of a " +
                     "maintenance shed. The moon is exactly as indifferent as you left it." + carried);
