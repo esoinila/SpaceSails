@@ -237,6 +237,12 @@ public sealed class SheWorriesAboutHerOwnPaperworkTests
     {
         // Zero mechanics: nothing rolls, nothing breaks, and the dread is not priced. The chill is a deep
         // site's job and her own deck has never had one.
+        //
+        // THE BANK IS PART OF THE WORLD. #480 lets a sub-pip prickle accrue in `_nerveShockCarry` and show
+        // nothing until it owes a whole pip — so a guard that watches only the gauge and the ledger passes
+        // on a version that charges for the dread and merely hides the charge. (Proved: reverting with an
+        // `ApplyNerveShock(ChillNerveTick, …)` here left the gauge and the ledger untouched.) The carry is
+        // asserted too, which is what makes this guard able to fail.
         Pages.Map map = OnDeck();
         Set(map, "_shudderIndex", 0);
         Set(map, "_cautionRun", 0);
@@ -244,5 +250,6 @@ public sealed class SheWorriesAboutHerOwnPaperworkTests
 
         Assert.Empty(Get<IReadOnlyList<NervePips.Event>>(map, "_nerveLedger"));
         Assert.Equal(NervePips.FromPips(NervePips.MaxPips), Get<double>(map, "_nerve"));
+        Assert.Equal(0.0, Get<double>(map, "_nerveShockCarry"));
     }
 }
