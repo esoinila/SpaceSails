@@ -213,6 +213,53 @@ public sealed class TheMomentItLooksAtYouTests
         Assert.Equal(1, said);
     }
 
+    /// <summary>
+    /// #324 SURVIVES THE ROLL. The oldest law on this ground: <i>duck behind stone and the hunter loses your
+    /// live position — the maze becomes a real instrument.</i> The latch is one-way, and it is a latch on
+    /// HAVING SEEN YOU, not on knowing where you are: a contact that already has the captain must still stop
+    /// updating its memory the frame stone comes between them.
+    ///
+    /// <para>This case exists because the lane's first draft repealed that law by accident — the rule
+    /// reports Fixed for an already-fixed contact whether or not it can see anything, and the client wrote
+    /// the captain's live position on the strength of the STATE rather than of the LOOK. No existing test
+    /// caught it: every guard about the maze watches a contact that has not yet seen you.</para>
+    ///
+    /// <para><b>Proven RED</b> by dropping the <c>!clearLine</c> half of that gate:
+    /// <c>Assert.Equal() Failure — the hunter learned where the captain moved to through a slab.</c></para>
+    /// </summary>
+    [Fact]
+    public void AFixedOneStillLosesYouBehindStone()
+    {
+        Pages.Map map = OnTheRegolith();
+        object one = PutAnUnawareOneAtRange(map, DecidingRangeDu);
+        one.GetType().GetField("EverSeen", Hidden)!.SetValue(one, true);   // it already has him
+
+        // In the open: it tracks him, which is the behaviour that must SURVIVE.
+        RunLooks(map, 1, walking: true);
+        Assert.Equal((double)Get(map, "_avatarX")!, LastSeenX(one), 3);
+
+        // Now stone. Whatever he does after this, its memory is of where he WAS.
+        (double hx, double hy) = BehindStoneFrom(map);
+        foreach (string where in new[] { "X", "AnchorX" })
+        {
+            one.GetType().GetField(where, Hidden)!.SetValue(one, hx);
+        }
+        foreach (string where in new[] { "Y", "AnchorY" })
+        {
+            one.GetType().GetField(where, Hidden)!.SetValue(one, hy);
+        }
+        double remembered = LastSeenX(one);
+
+        Set(map, "_avatarX", (double)Get(map, "_avatarX")! + 6.0);
+        RunLooks(map, 4, walking: true);
+
+        Assert.Equal(remembered, LastSeenX(one), 3);
+        Assert.NotEqual((double)Get(map, "_avatarX")!, LastSeenX(one), 3);
+    }
+
+    private static double LastSeenX(object r) =>
+        (double)r.GetType().GetField("LastSeenX", Hidden)!.GetValue(r)!;
+
     // ── The bench ────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>A captain standing out on the open regolith of a real landing site, past the arrival grace,
