@@ -111,8 +111,9 @@ public sealed class TwoHullsOneCardAndOnlyTheNumbersDifferTests
     /// papers say — that is what makes her papers a lie rather than a warning. So the CLAIMED column of both
     /// files is identical, and every difference is on the measured side.
     ///
-    /// <para><b>Proven RED</b> by having <c>ClaimedTrimAccelMps2</c> return the measured value: the claimed
-    /// column moved with her and the two hulls stopped claiming the same thing.</para>
+    /// <para><b>Proven RED</b> by letting <c>ClaimedTrimAccelMps2</c> answer with the hunter's own thrust
+    /// for a masked hull: her claimed column moved with her and the two hulls stopped claiming the same
+    /// thing — which is a hull whose papers announce her.</para>
     /// </summary>
     [Fact]
     public void HerPapersSayWhatEveryHaulersPapersSay()
