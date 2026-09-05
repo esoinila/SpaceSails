@@ -72,6 +72,7 @@ public partial class Map
         public bool WarningShotFired;    // PR-7: heaves to (if compliant) — faster boarding
         public bool Bribed;              // PR-7: compliant AND no heat generated when robbed
         public bool Disabled;            // M28: slug through the sail — no more burns, drifts ballistic
+        public bool Broke;               // #534: she has already made her one break for open water
     }
     private static readonly RgbaColor DisabledNpcColor = new(150, 150, 160);
 
@@ -556,7 +557,11 @@ public partial class Map
         bool ScopeOrdered = false,
         // #962: a hunter's card carries the terms of her contract — who bought it and what ends it, with
         // the clocks running. Null on traffic, which has no contract to state.
-        HuntTerms? Terms = null);
+        HuntTerms? Terms = null,
+        // #534: what the instruments measure of her, beside what her own papers imply. Every hull in the
+        // sky carries it and on almost every one the two columns agree — see Map.Npc.QShip. Null on a
+        // hunter, who is not pretending to be anything.
+        HullReading? Reading = null);
 
     /// <summary>What the collector's own card says about how this ends. Every sentence is built in Core,
     /// beside the rule it describes, so a card and a sim can never quote different numbers at each other
@@ -570,9 +575,11 @@ public partial class Map
         string statusLine;
         bool isPrey = false;
         HuntTerms? terms = null;
+        NpcShip? hull = null;
         if (FindNpc(id) is { Active: true, Arrived: false } npc)
         {
             isPrey = true;
+            hull = npc.Ship;
             name = npc.Ship.Callsign;
             detail = npc.Ship.IsPod ? "· cargo pod" : $"· {npc.Ship.CargoClass} ({npc.Ship.CargoUnits}u)";
             if (npc.CurrentlyObserved)
@@ -660,7 +667,12 @@ public partial class Map
             boardReady = within && slow ? 2 : within ? 1 : 0;
         }
 
-        return new DossierInfo(name, detail, statusLine, distance, relSpeed, closing, quality, inReach, fireLine, isPrey, boardReady, scopeOrdered, terms);
+        // #534 · the same block every hull carries: what the instruments measure, beside what her papers
+        // imply. The radiator count and the comms fit are things the GLASS resolves, so they arrive with a
+        // held fix; the burn is read off her observed motion and needs only a contact.
+        HullReading? reading = hull is { } ship ? ReadingOf(ship, quality is not null) : null;
+
+        return new DossierInfo(name, detail, statusLine, distance, relSpeed, closing, quality, inReach, fireLine, isPrey, boardReady, scopeOrdered, terms, reading);
     }
 
     /// <summary>
@@ -725,6 +737,10 @@ public partial class Map
 
     private void StepNpcs()
     {
+        // #534 · Before anybody is integrated: a hull that is not a merchant, with the captain inside her
+        // boarding envelope, puts a break into her own plan. Honest traffic never reaches this (Map.Npc.QShip).
+        LetTheMaskedHullsRun();
+
         foreach (NpcState npc in _npcStates)
         {
             if (npc.Arrived)

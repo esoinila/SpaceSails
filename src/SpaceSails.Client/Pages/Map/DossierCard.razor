@@ -119,6 +119,31 @@
                     <div class="text-secondary">@terms.Sail</div>
                 </div>
             }
+            @* #534 · WHAT THE INSTRUMENTS MEASURE, BESIDE WHAT HER PAPERS IMPLY. Two columns, no verdict:
+               every hull in the sky carries this block and on almost every one of them the two agree. The
+               card does not say what a disagreement means, because the arithmetic IS the mechanic — the
+               scope reports a burn, the telescope reports a radiator, and the captain does the sum or does
+               not. Nothing in here may ever become a flag, a colour or a conclusion.
+
+               The burn is read off her observed motion, so it comes with the contact. The radiator count
+               and the comms fit are things the GLASS resolves, so they arrive only once the telescope is
+               actually holding her — and the rows are simply absent until then rather than drawn empty,
+               since a blank row is itself a hint about which rows matter. *@
+            @if (dossier.Reading is { } read)
+            {
+                <div class="border border-secondary rounded px-2 py-1 mt-1">
+                    <div class="fw-bold">📐 Measured · claimed</div>
+                    <div>burn @read.MeasuredTrimAccelMps2.ToString("F2", CultureInfo.InvariantCulture)
+                         · @read.ClaimedTrimAccelMps2.ToString("F2", CultureInfo.InvariantCulture) m/s²</div>
+                    @if (read.FixHeld)
+                    {
+                        <div>radiator @read.MeasuredRadiatorPanels · @read.ClaimedRadiatorPanels panels</div>
+                        <div>comms @read.MeasuredGuardedChannels · @read.ClaimedGuardedChannels channels</div>
+                    }
+                </div>
+            }
+            @* FABLE: line needed — the hail exchange (#534 tell e, slice 2). Procedure a beat too clean;
+               the right words in the wrong order for a merchant. Prose, so it is authored and not generated. *@
             @if (dossier.IsPrey)
             {
                 @* The autosteal criterion box (owner): both must be green before shuttles launch. *@
