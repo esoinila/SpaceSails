@@ -58,6 +58,12 @@ public static class CarriedObject
 
             Satchel.Kind.Relic => RelicReveal(item.Id),
 
+            // #535 · THE KEY, and this card is the whole of what the object ever says about itself. Caption
+            // only (#528's deliberate no-picture idiom, the same call the cutting rig makes two arms down):
+            // there is no painting of a code. It says what the thing IS and never who issued it — the canon
+            // law of the object, and the one question the whole feature is interesting for.
+            Satchel.Kind.BlackOpsKey => BlackOpsKey.Card,
+
             // #763 · The kit that hears the buttons. Its card is not decoration — it is the SCREEN, and the
             // sweep is written onto it by whoever raises it (<see cref="SdrScanner.Hits"/>), which is why
             // what is composed here is the object's own story and never a picture of one.

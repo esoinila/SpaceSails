@@ -289,6 +289,67 @@ public static class IllegalHeat
     public static int StartingRung(int heat) =>
         Math.Clamp(heat / HeatPerRung, 0, PatrolBeat.EscortsAWatchAllows);
 
+    // ── #535/#938 · AND THE ONE WAY TO TAKE SOMETHING OFF IT THAT IS NOT TIME ───────────────────────────
+    //
+    // The 2026-09-03 audit's row on this file, in four words: `IllegalHeat` has `Cool` and no scrub path.
+    // Everything this meter could do was ADD, or wait. That was right while the only currency was hours —
+    // owner's word for cooling is "get out", and a second way to walk it off would have been a second answer
+    // to the question the whole meter asks.
+    //
+    // #535's key is the exception the fiction pays for, and the owner wrote the reason down himself: HEAT IS
+    // NOT A MOOD, IT IS A PAPER TRAIL. Nobody is warier at their gate because they feel wronged; they are
+    // warier because of what is filed. Delete the filings and the wariness loses its basis — which is why
+    // this is the only thing in the game that lowers heat without time, a haven or a bribe, and why it costs
+    // an object that cannot be bought.
+
+    /// <summary>
+    /// #535 · <b>ONE BAND OF THE METER</b>, and it is the meter's OWN step rather than a number somebody
+    /// typed beside it: <see cref="HeatPerRung"/> is what a band means everywhere else in this file — it is
+    /// the width <see cref="StartingRung"/> divides by to decide how far up the round's patience a captain
+    /// starts. So "drops by one whole band" and "starts one rung lower at their gate" are the same sentence,
+    /// and they cannot come apart the day the rung is retuned.
+    /// </summary>
+    public static int ABand => HeatPerRung;
+
+    /// <summary>
+    /// #535 · <b>SCRUB A BAND OFF ONE OUTFIT'S BOOK — an EDIT, not an hour.</b>
+    ///
+    /// <para>Takes <see cref="ABand"/> points off what this outfit remembers, or everything it remembers if
+    /// that is less. An outfit with nothing on the book is untouched and answers zero: there is no such thing
+    /// as negative heat, and a key burned over a clean file has burned for nothing (owner: <i>"a key burned
+    /// at heat 1 removes almost nothing and nobody notices"</i>).</para>
+    ///
+    /// <para><b>The stamp does not move</b>, and that is the whole difference between this and
+    /// <see cref="Cool"/>. Cooling advances the clock because it IS the clock; a scrub reaches into the file
+    /// and takes pages out of it, so the hours the captain has or has not spent away from these people are
+    /// exactly what they were a moment ago. Banking through <see cref="ContactLedger.ApplyHeat"/> at the
+    /// row's own existing stamp is what says so.</para>
+    ///
+    /// <para><paramref name="why"/> is required and unused by the arithmetic. It is here because the audit
+    /// row asked for a path that is <i>visible in the ledger as an edit, not as time passing</i>: a caller
+    /// that cannot say why it is deleting somebody's file is a caller that should not be deleting it.</para>
+    /// </summary>
+    /// <returns>HOW MUCH WAS ERASED — the number the owner's own note says has to be carried forward,
+    /// because <i>an absence is only evidence if somebody wrote down how big it was</i>. Zero when there was
+    /// nothing on the book.</returns>
+    public static int Scrub(ContactLedger book, string operatorId, string why)
+    {
+        ArgumentNullException.ThrowIfNull(book);
+        ArgumentNullException.ThrowIfNull(operatorId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(why);
+
+        string id = LedgerId(operatorId);
+        ContactHistory standing = book.For(id);
+        int erased = Math.Min(ABand, Math.Max(0, standing.HeatOwed));
+        if (erased <= 0)
+        {
+            return 0;
+        }
+
+        book.ApplyHeat(id, NameOf(operatorId), -erased, standing.HeatStampSimTime);
+        return erased;
+    }
+
     /// <summary>#715 · Past this, the panel at their gate wants a face with the paper.</summary>
     public const int TheGateWantsAFaceAt = 3;
 
