@@ -65,7 +65,8 @@ public static class TheOldShip
     /// that holds her paper is the other. The condition line is the fleet's own key.</para>
     /// </summary>
     public static ShipHistory History { get; } = new(
-        LaidDown: "Laid down at Vellamo Drydocks (the cloud-yards, Cinder Roost), 2298.",
+        Yard: "Vellamo Drydocks (the cloud-yards, Cinder Roost)",
+        Year: 2298,
         FormerNames: [FormerNameEntry],
         OwnersDeep: 2,
         Condition: "She's carried better names in better days, and she remembers them.");

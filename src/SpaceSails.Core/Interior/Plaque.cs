@@ -38,6 +38,12 @@ public sealed record Plaque(string Id, string ConsoleLabel, string ArtUrl, strin
 /// </summary>
 public static class Plaques
 {
+    /// <summary>#426 · The year on <see cref="Ship"/>'s plate, as a NUMBER the rest of the game can reason
+    /// about — the one fact the captain's own chain-of-custody worry (<see cref="ChainOfCustody"/>, through
+    /// <see cref="ShipHistories.Hers"/>) needs and authored prose cannot hand it. A guard reads it back out
+    /// of the plate's own text, so the plate and the record can never drift into two different years.</summary>
+    public const int ShipLaidDownYear = 2341;
+
     /// <summary>
     /// The player's ship — her builder's plate and service history (canon set here). Koski &amp;
     /// Daughters Orbital Yards, Rauma Crater, Luna; Hull No. 77, laid down 2341. The service-history

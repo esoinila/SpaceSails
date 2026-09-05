@@ -18,7 +18,10 @@ namespace SpaceSails.Core;
 /// Koski &amp; Daughters yard canon, extended with the other house yards, worn onto every trader,
 /// pod and hunter the scope resolves.</para>
 /// </summary>
-/// <param name="LaidDown">The service-life line — "Laid down at &lt;yard&gt; (&lt;berth&gt;), &lt;year&gt;."</param>
+/// <param name="Yard">The house yard that laid her down — "Koski &amp; Daughters Orbital Yards (Rauma
+/// Crater, Luna)". Blank only for a hull with no yard record at all (a record nobody kept).</param>
+/// <param name="Year">The laying-down year. Zero alongside a blank <paramref name="Yard"/> — the same
+/// "no yard record" case; see <see cref="HasYardRecord"/>.</param>
 /// <param name="FormerNames">0–3 former names, each with a brief fate — "ex-AURORA QUEEN (mail packet,
 /// Luna run)". Distinct within a hull; empty for a ship still under her maiden name.</param>
 /// <param name="OwnersDeep">How many owners deep she is — previous owners before the present one
@@ -27,13 +30,58 @@ namespace SpaceSails.Core;
 /// <param name="Condition">One condition line in the Victoria-I key — "shows her age; the history is
 /// still in her frames."</param>
 public sealed record ShipHistory(
-    string LaidDown,
+    string Yard,
+    int Year,
     IReadOnlyList<string> FormerNames,
     int OwnersDeep,
     string Condition)
 {
+    /// <summary>#426 · The yard and the year are FACTS now, not a sentence — the service-life line is
+    /// composed from them rather than carried beside them. Anything that wants to say "laid down at X in
+    /// Y" (the dossier's line here, the chain-of-custody worry in <see cref="ChainOfCustody"/>) reads the
+    /// same two fields, so a hull's plate and a hull's dread can never name two different yards.
+    ///
+    /// <para>The service-life line — "Laid down at &lt;yard&gt; (&lt;berth&gt;), &lt;year&gt;." Empty for a
+    /// hull with no yard record, because there is nothing honest to write.</para></summary>
+    public string LaidDown => HasYardRecord ? $"Laid down at {Yard}, {Year}." : string.Empty;
+
+    /// <summary>Is there a yard record at all — a named yard AND a year? A hull whose paper starts
+    /// somewhere nobody kept is not a hull with a blank yard and a real year; the two travel together.</summary>
+    public bool HasYardRecord => Yard.Length > 0 && Year > 0;
+
     /// <summary>True once there is any former name on the book — she's carried another name before this.</summary>
     public bool HasFormerNames => FormerNames.Count > 0;
+
+    /// <summary>#426 · The GLORY NAME itself — her first former name with the dossier's "ex-" prefix and
+    /// its "(fate)" tail taken off: <i>AURORA QUEEN</i> out of <i>ex-AURORA QUEEN (mail packet, Luna
+    /// run)</i>. Null for a hull that has never been renamed.
+    ///
+    /// <para>Deliberately the SAME entry <see cref="Teaser"/> headlines — one hull, one remembered name —
+    /// so the pulse and the dossier can never name her two different former selves.</para></summary>
+    public string? GloryName
+    {
+        get
+        {
+            if (!HasFormerNames)
+            {
+                return null;
+            }
+
+            string bare = WithoutFate(FormerNames[0]);
+            return bare.StartsWith(ExPrefix, StringComparison.Ordinal) ? bare[ExPrefix.Length..] : bare;
+        }
+    }
+
+    /// <summary>How a dossier marks a name she used to answer to.</summary>
+    private const string ExPrefix = "ex-";
+
+    /// <summary>Drop the " (fate)" tail off a former-name entry — "ex-AURORA QUEEN (mail packet, Luna
+    /// run)" → "ex-AURORA QUEEN".</summary>
+    private static string WithoutFate(string entry)
+    {
+        int paren = entry.IndexOf(" (", StringComparison.Ordinal);
+        return paren >= 0 ? entry[..paren] : entry;
+    }
 
     /// <summary>The former names joined the way a dossier lists them —
     /// "ex-AURORA QUEEN (mail packet, Luna run) · ex-KESTREL (impounded, renamed)"; empty when none.</summary>
@@ -48,11 +96,8 @@ public sealed record ShipHistory(
         {
             if (HasFormerNames)
             {
-                // The bare former name (drop the "ex-" prefix and the "(fate)" tail) for a tight teaser.
-                string first = FormerNames[0];
-                int paren = first.IndexOf(" (", StringComparison.Ordinal);
-                string bare = paren >= 0 ? first[..paren] : first;
-                return $"{bare} · {OwnersDeepPhrase}";
+                // The bare former name (drop the "(fate)" tail, keep the dossier's "ex-") for a tight teaser.
+                return $"{WithoutFate(FormerNames[0])} · {OwnersDeepPhrase}";
             }
 
             return OwnersDeep > 0
@@ -107,9 +152,14 @@ public static class ShipHistories
     // yard (#392, Plaques.Ship); the other three are the sister houses that fit out the rest of the
     // system's hulls, each named in the house voice and berthed at a place the world already knows —
     // and Louhi Sunside is the "Mercury yards" The Deep's dedication plaque already names.
+    /// <summary>#426 · HER OWN BUILDER'S YARD, written once. The player's plate (#392,
+    /// <see cref="Interior.Plaques.Ship"/>) names Koski &amp; Daughters, and the house-yard pool below opens
+    /// with the same yard — one string, two uses, so her plate and the pool cannot drift apart.</summary>
+    public const string KoskiAndDaughters = "Koski & Daughters Orbital Yards (Rauma Crater, Luna)";
+
     private static readonly string[] Yards =
     [
-        "Koski & Daughters Orbital Yards (Rauma Crater, Luna)",
+        KoskiAndDaughters,
         "Ahti & Sons Shipwrights (the Rusty Roadstead, Mars orbit)",
         "Vellamo Drydocks (the cloud-yards, Cinder Roost)",
         "Louhi Sunside Yards (Mercury, sunside)",
@@ -156,6 +206,29 @@ public static class ShipHistories
         "She's carried better names in better days, and she remembers them.",
     ];
 
+    /// <summary>
+    /// #426 · THE CAPTAIN'S OWN HULL, AT LAST — the record she has never had.
+    ///
+    /// <para>For two years <see cref="For"/> answered only for OTHER PEOPLE'S ships (the audit on #938 says
+    /// so: three call sites, all NPC dossiers), and the player's own hull carried her past as authored
+    /// PLAQUE PROSE that nothing could reason about. So the dread #426 is about — <i>was this hull actually
+    /// maintained across all its owners?</i> — could not be felt about the one hull it is about.</para>
+    ///
+    /// <para>The shape is the 2026-08-02 recommendation, verbatim: <b>the plate is the first entry and the
+    /// seed fills in the rest.</b> Her yard and her year are her builder's plate's (#392) and are not
+    /// rolled; her former names, how many owners deep she runs and her condition come off the same seeded
+    /// pools every other hull is dealt from. No new authored content — a hull, read the way hulls are read.</para>
+    /// </summary>
+    public static ShipHistory Hers { get; } = Seeded(Interior.Plaques.Ship.Id) with
+    {
+        Yard = KoskiAndDaughters,
+        Year = Interior.Plaques.ShipLaidDownYear,
+    };
+
+    /// <summary>Is this the captain's own hull, keyed the way her builder's plate is keyed (#392)?</summary>
+    public static bool IsHerOwnHull(string? shipId) =>
+        string.Equals(shipId, Interior.Plaques.Ship.Id, StringComparison.Ordinal);
+
     /// <summary>The seeded service history for a hull, by its stable ship id. Deterministic — the same
     /// id yields the same story on every call, session and machine (repo agreement §9). A null/blank id
     /// gets a stable maiden-hull default rather than throwing.</summary>
@@ -170,6 +243,19 @@ public static class ShipHistories
             return TheOldShip.History;
         }
 
+        // #426 · …and one hull is the captain's. Asked here for the same reason: her yard and year are her
+        // plate's, and no change to the pools below may ever roll her a different builder.
+        if (IsHerOwnHull(shipId))
+        {
+            return Hers;
+        }
+
+        return Seeded(shipId);
+    }
+
+    // The seeded story every hull without an authored record is dealt.
+    private static ShipHistory Seeded(string shipId)
+    {
         uint state = Seed(shipId);
 
         // Laid down: a house yard and a comfortably-old year. "Now" is ~2341 (the player's plate, the
@@ -177,7 +263,6 @@ public static class ShipHistories
         // a past — none newer than the player's own 2341.
         string yard = Yards[(int)(Next(ref state) % (uint)Yards.Length)];
         int year = 2270 + (int)(Next(ref state) % 50u);
-        string laidDown = $"Laid down at {yard}, {year}.";
 
         // 0..3 former names, distinct within the hull (a rename to a name she already wore is no rename).
         int formerCount = (int)(Next(ref state) % 4u);
@@ -196,7 +281,7 @@ public static class ShipHistories
 
         string condition = Conditions[(int)(Next(ref state) % (uint)Conditions.Length)];
 
-        return new ShipHistory(laidDown, formerNames, ownersDeep, condition);
+        return new ShipHistory(yard, year, formerNames, ownersDeep, condition);
     }
 
     // A stable, process-independent seed from the ship id — FNV-1a, the same hash the plaques' seeded
