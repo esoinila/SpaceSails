@@ -561,7 +561,11 @@ public partial class Map
         // #534: what the instruments measure of her, beside what her own papers imply. Every hull in the
         // sky carries it and on almost every one the two columns agree — see Map.Npc.QShip. Null on a
         // hunter, who is not pretending to be anything.
-        HullReading? Reading = null);
+        HullReading? Reading = null,
+        // #534 tell (e): what she said back the last time the captain keyed the tight-beam at her. Null
+        // until he actually has — the fifth tell is something he DID, not something the glass hands him,
+        // and an unhailed hull's file is the same file whatever she is.
+        string? HailAnswer = null);
 
     /// <summary>What the collector's own card says about how this ends. Every sentence is built in Core,
     /// beside the rule it describes, so a card and a sim can never quote different numbers at each other
@@ -672,7 +676,12 @@ public partial class Map
         // held fix; the burn is read off her observed motion and needs only a contact.
         HullReading? reading = hull is { } ship ? ReadingOf(ship, quality is not null) : null;
 
-        return new DossierInfo(name, detail, statusLine, distance, relSpeed, closing, quality, inReach, fireLine, isPrey, boardReady, scopeOrdered, terms, reading);
+        // #534 tell (e) · and the fifth one is hers to say. It arrives only when the captain has keyed the
+        // tight-beam at her (Map.Alerts.CommsHail), the same way the two glass rows arrive only with a held
+        // fix: a tell may need a completed pass, and a hail is a pass the captain flies himself.
+        string? said = _hailAnswers.TryGetValue(id, out string? heard) ? heard : null;
+
+        return new DossierInfo(name, detail, statusLine, distance, relSpeed, closing, quality, inReach, fireLine, isPrey, boardReady, scopeOrdered, terms, reading, said);
     }
 
     /// <summary>
