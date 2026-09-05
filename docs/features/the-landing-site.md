@@ -309,6 +309,42 @@ either way decides every lock in the game.
 - **Behind a door somebody shut is a room.** Bare floor, bare walls, bolt holes where shelving was taken
   out. Nothing that comes open ever explains the building (§13.8).
 
+5.8 **Nothing comes between the captain and the shuttle** (#326). Owner, live 2026-07-18: *"I think the
+securibots most important job is not let anything come between me and the shuttle :-D"*, and the second half
+of it the same day: *"I think the bot at surface should act a bit like a body guard. Protect the path to the
+ship at about half way so there is always a way to retreat back to safety (until bullets run out) :-D"*
+
+- **Target priority is the LINE, not the nearest.** A deployed bot shoots whatever is standing in the
+  corridor between the captain and the way home BEFORE whatever shambles closest to itself; nearest only
+  decides between two of the same class. It is the counter to the pack's own flanking bias (`EncircleBias`),
+  which aims them a little toward the way out — so the Old Ones that will actually corner you are exactly
+  the ones not walking at the gun, and a turret spends its 99 digits on the wrong ones. `SentryDoctrine.Pick`,
+  pure and deterministic; hand it no line and it picks the nearest visible target, bit for bit what #314
+  shipped.
+- **The corridor is 11 du to a side — half the bot's own arc** (`SentryBot.RangeDeckUnits / 2`). It has to be
+  derived from the arc, because that is the only measure of what this machine can do about a threat, and it
+  has to be strictly INSIDE it, or "threatens the line" becomes a synonym for "is in range" and the priority
+  selects everything. Half is also the last width at which the thing is still guarding a *road*: covered
+  length along the line is `2·√(R² − w²)`, so `w = R/2` keeps 87 % of the reach pointed down the corridor.
+- **Two stances, chosen at the press, in the owner's own two phrases.** `T` is **deploy here** — the #314
+  post, still the right object for guarding a hole in the ground. `⇧T` is **hold my line home** — the bot
+  becomes a bodyguard, walks to the MIDDLE of the captain→tube line, and keeps walking there as he moves.
+  Both are named on the surface plate whenever a bot rides the sling. The modifier is read off the event and
+  not off the letter's case, because a capital `T` arrives from a shifted press and from a caps-locked one
+  alike.
+- **No modal.** A question raised between a captain and the bot he needs on the ground, on a real-time field
+  with a pack closing, is the one shape this verb must never take.
+- **Walls respected, no formation AI.** The post is nudged along the line to the nearest legal point when the
+  middle of it is inside stone (sounded in quarter-bodies, bounded at about two arcs either way), and the
+  walk there is #324's own bump-and-slide at the captain's own pace — an escort that cannot keep up with the
+  man it is escorting is not an escort. Two bots in the escort stance both walk at the same middle and shove
+  past each other; that is a layered corridor by accident, which is all it was asked to be.
+- **The countdown IS the retreat timer.** Same magazine law for both stances, and at 00 the escort stops
+  where it stands. What is left on the retreat line is a bot with a frozen counter — the mark #316 already
+  reads and the write-off `SentryBot.AbandonLedgerLine` already prints. Nothing new was minted for it.
+- **Underground there is no line.** The way out down there is a lift on another map, so the doctrine has no
+  corridor to hold: an escort holds where it stands and the pick falls back to nearest.
+
 ## 6 · What the ship does NOT do down here
 
 **The captain is in a suit on a moon. The hull is docked and empty somewhere above.**
