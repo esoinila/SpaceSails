@@ -1,0 +1,70 @@
+@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SpaceSails.Core
+@*
+    #417 slice 1 · ILSE VARGA'S CARD, at a bar table.
+
+    She came out of a leaf that does not open for you, crossed the floor on the real A*, and is standing at
+    the top the captain took for himself. She is not sitting: a finder does not stay.
+
+    EVERYTHING SHE SAYS COMES OUT OF CORE (FinderCase), including the case's own head and body. Nothing here
+    is authored and nothing here is typed twice — the file that holds her words is the file the field book's
+    entry, the reveal and the ledger line all read.
+
+    THE TWO FACES ON THE BUTTONS are the game's own, and deliberately: "Take the job" and "Pass" are what a
+    contract card in this game already says (PendingOfferCard), so a captain has nothing new to learn about a
+    press that means the same thing. The canon pass wrote the two verbs for the CONFRONTATION, and they are
+    on that card and only on it.
+
+    …AND WHEN SHE IS PAYING there is only the way out, because being handed money is not a decision.
+*@
+@{
+@* ── MARKUP BEGINS ──────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop rep-backdrop">
+            @* #997 wave 2's shell, the walk-in's own arrangement: a BARE frame so the foot stays pinned by
+               `::deep .view-object > .view-object-close`, the scrim held off by the shell's StopClicks, and
+               the way out running the same verb her "Pass" runs — a ✕ that only took the panel away would
+               leave a woman at your elbow with nothing left to answer. *@
+            <OverlayShell class="view-object rep-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close"
+                          DismissFace="@(sheAsks.Paying ? "Let her go" : "Pass")"
+                          DismissLabel="@(sheAsks.Paying ? "Let her go" : "Pass — the same as not taking it")"
+                          DismissTitle="@(sheAsks.Paying
+                              ? "Let her go — she has said her piece and the account is square"
+                              : "Pass — she says nothing more about it and walks back to the counter")"
+                          OnClose="() => Dismiss(() => AnswerTheFinder(false))">
+                <div class="view-object-title">@SpaceSails.Core.FinderCase.DisplayName</div>
+                <div class="view-object-caption rep-pitch">
+                    @(sheAsks.Paying ? SpaceSails.Core.FinderCase.Payoff : SpaceSails.Core.FinderCase.Approach)
+                </div>
+                @if (!sheAsks.Paying)
+                {
+                    <div class="rep-said">@sheAsks.Case.TheHook</div>
+                    <div class="finder-lead">
+                        <span class="finder-lead-title">@SpaceSails.Core.FinderCase.LeadTitle</span>
+                        <span class="finder-lead-body">@SpaceSails.Core.FinderCase.LeadBody</span>
+                    </div>
+                    <div class="rep-offers">
+                        <button type="button" class="rep-offer"
+                                @onclick="() => Dismiss(() => AnswerTheFinder(true))">Take the job</button>
+                        <button type="button" class="rep-offer"
+                                @onclick="() => Dismiss(() => AnswerTheFinder(false))">Pass</button>
+                    </div>
+                }
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ───────────────────────────────────────────────────── *@
+}
+
+@code {
+    // #251 item 1's convention: every [Parameter] carries a member of the page under the member's own name,
+    // so the markup can be read by the suite's source guards exactly as if it were still in Map.razor.
+
+    [Parameter] public Action<bool> AnswerTheFinder { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public (FinderCase.Case Case, bool Paying) sheAsks { get; set; } = default!;
+
+    // The page's own event dispatch, repeated: no automatic re-render per event.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

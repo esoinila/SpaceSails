@@ -70,6 +70,7 @@ public static class VaultSerializer
     private const string SecAuthorities = "authorities";  // #590 · the cards that run a shaft
     private const string SecFiling = "filing";            // #973 · the pages you don't remember writing
     private const string SecWalkIn = "walkin";            // #973 L5b · the walk-ins the SPREAD found out
+    private const string SecFinder = "finder";            // #417 · the finder's case, and how far down it
     private const string SecOldCrew = "oldcrew";           // #973 L5a · the four who knew the old face
     private const string SecCrossings = "crossings";       // #973 L5a · ⚖ what he said of it, and who heard
     private const string SecHeldMemories = "heldmemories"; // #978 · the sheets that are not documents
@@ -110,6 +111,7 @@ public static class VaultSerializer
         AddSection(sections, SecAuthorities, vault.Authorities);
         AddSection(sections, SecFiling, vault.Filing);
         AddSection(sections, SecWalkIn, vault.WalkIn);
+        AddSection(sections, SecFinder, vault.Finder);
         AddSection(sections, SecOldCrew, vault.OldCrew);
         AddSection(sections, SecCrossings, vault.Crossings);
         AddSection(sections, SecHeldMemories, vault.HeldMemories);
@@ -262,6 +264,7 @@ public static class VaultSerializer
             Authorities = Harvest<AuthoritiesSection>(sections, SecAuthorities, warnings),
             Filing = Harvest<FilingSection>(sections, SecFiling, warnings),
             WalkIn = Harvest<WalkInSection>(sections, SecWalkIn, warnings),
+            Finder = Harvest<FinderSection>(sections, SecFinder, warnings),
             OldCrew = Harvest<OldCrewSection>(sections, SecOldCrew, warnings),
             Crossings = Harvest<CrossingsSection>(sections, SecCrossings, warnings),
             HeldMemories = Harvest<HeldMemoriesSection>(sections, SecHeldMemories, warnings),

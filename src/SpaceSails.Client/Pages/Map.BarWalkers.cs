@@ -194,6 +194,7 @@ public partial class Map
         StepTheBarsFeet(dtRealSeconds, bar);
         AdvanceTheRepAshore(bar);
         AdvanceTheWalkIn(bar);   // #973 L5b · …and whoever the evening has crossing the floor to your table
+        AdvanceTheFinder(bar);   // #417 · …and the finder, when there is a case or an account to settle
     }
 
     /// <summary>#973 L0 · CASTING OFF IS THE ROOM FORGETTING. Same law a turned shift is underground: what

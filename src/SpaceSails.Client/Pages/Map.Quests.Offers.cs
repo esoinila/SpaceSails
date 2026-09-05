@@ -34,6 +34,11 @@ public partial class Map
         }
         string giver = spot.Label.Replace("◈", "").Trim();
 
+        // #417 · …and a finder's case may be about this face at this port. It TAKES nothing: the regular
+        // still opens their own table card and still hands over whatever work they had — what the case adds
+        // is the entry in the field book, under this person's name as well as its own.
+        TheWitnessMayHaveSeenIt(giver);
+
         // The station oracle (#425): Solenne "Static" Marsh wears a BarPatron console but is no quest-giver —
         // route her to the ranting-oracle flow before any give-work path. Matched by name (OracleRant.IsOracle),
         // the same idiom the Magpie is matched by.

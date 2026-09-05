@@ -569,6 +569,7 @@ public partial class Map
             // #973 L5b · which walk-ins the SPREAD has read the same hand off. Job ids only — the grey line
             // itself is rebuilt from Core every render, so the file carries the knowing and never the words.
             WalkIn = BuildWalkInSection(),
+            Finder = BuildFinderSection(),   // #417 · the case's graph, and how far along it he has got
             // #973 L5a · the old crew: who this universe cast, the history rolled between them, and where
             // they ended up working. Opaque rows — the file carries the FACT and the book's sentences are
             // rebuilt from the pool.
@@ -597,66 +598,6 @@ public partial class Map
                 ? null
                 : new VoidSection { DeclaredDay = _voidDeclaredDay, LastToldDay = _voidLastToldDay },
         };
-    }
-
-    private QuestsSection BuildQuestsSection()
-    {
-        var quests = _quests.Select(q =>
-        {
-            var fields = new Dictionary<string, string>();
-            if (!string.IsNullOrEmpty(q.TargetShipId)) fields["targetShipId"] = q.TargetShipId;
-            if (!string.IsNullOrEmpty(q.TargetCallsign)) fields["targetCallsign"] = q.TargetCallsign;
-            if (q.DestBodyId is { } dest) fields["destBodyId"] = dest;
-            if (q.SourceBodyId is { } src) fields["sourceBodyId"] = src;
-            if (q.Pin is { } pin) fields["pin"] = pin;
-
-            return new QuestRecord
-            {
-                Id = q.Id,
-                Kind = q.Kind.ToString(),
-                Status = q.State.ToString(),
-                Title = q.Title,
-                Detail = q.Blurb,
-                GiverContactId = q.Giver,
-                RewardCredits = q.Reward,
-                Fields = fields,
-            };
-        }).ToList();
-
-        return new QuestsSection { Quests = quests, Obligations = VaultMapper.ToRecords(_favorObligations) };
-    }
-
-    // The persistent dice items (TTRPG helpers). Today only the boarding-nets jammer exists (the
-    // dice-helper seam, #222); it saves as a labelled +2 modifier so the section is future-proof.
-    private const string NetJammerItemId = "boarding-nets-jammer";
-
-    private DiceItemsSection BuildDiceItemsSection()
-    {
-        var items = new List<DiceItemRecord>();
-        if (_hasNetJammer)
-        {
-            items.Add(new DiceItemRecord(NetJammerItemId, "Boarding-nets jammer", 2));
-        }
-
-        return new DiceItemsSection(items);
-    }
-
-    // The resume berth: docked haven if clamped, else the nearest dockable haven at save time (never a
-    // trajectory). Positions are read at the current sim time so a load rebuilds the ship clamped at
-    // the load-time ephemeris.
-    private ResumeSection? BuildResumeSection()
-    {
-        if (_ephemeris is null)
-        {
-            return null;
-        }
-
-        var havens = _ephemeris.Bodies
-            .Where(IsDockableHaven)
-            .Select(b => new VaultResume.HavenLocus(b.Id, b.Name, _ephemeris.Position(b.Id, _ship.SimTime)))
-            .ToList();
-
-        return VaultResume.Select(_dockedHavenId, _ship.Position, havens);
     }
 
     // Boot peek: adopt any pre-thread saves into a game thread, bind to the ACTIVE thread, then read its
@@ -1104,6 +1045,7 @@ public partial class Map
         // somebody does not become unknown again — least of all across a save — so the knowing rides the
         // file rather than waiting for the player to lay the same two papers down a second time.
         RestoreWalkInSection(vault.WalkIn);
+        RestoreFinderSection(vault.Finder);   // #417 · and the case, which is written down, never re-rolled
 
         // #973 · The void's weather. A sentence the captain has worn out stays worn out across a save, and a
         // station the room was on about last time is still on something else today.

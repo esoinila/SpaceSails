@@ -1,0 +1,58 @@
+@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SpaceSails.Core
+@*
+    #417 slice 1 · THE FOURTH NAME, AT THE BERTH.
+
+    The captain has walked the whole trail and tied up at the port the case ends at, and the transponder in
+    the next berth is answering to a name he has been looking for. Nobody is at the table: this card is its
+    own moment, and the two verbs on it are the whole of the scene.
+
+    THIS CARD IS THE TELLING (#761). What changed about what the captain knows and can do is entirely on it,
+    and ThePlayerIsToldTests carries the row that says so — which is why the outcome line lands HERE, on the
+    panel the captain is looking at, and never as a pulse under this card's own backdrop (#736).
+
+    The two verb faces and both outcome lines are the canon pass's, in Core, and are not typed here.
+*@
+@{
+@* ── MARKUP BEGINS ──────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop rep-backdrop">
+            <OverlayShell class="view-object rep-card" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close"
+                          DismissFace="Close"
+                          DismissLabel="Close the finding"
+                          DismissTitle="Close it. What has been settled stays settled."
+                          OnClose="() => Dismiss(CloseTheReveal)">
+                <div class="view-object-title">@SpaceSails.Core.FinderCase.LeadTitle</div>
+                <div class="view-object-caption rep-pitch">@SpaceSails.Core.FinderCase.Reveal</div>
+
+                @if (_finderOutcome is { } settled)
+                {
+                    @* #736 · The arithmetic and the sentence land on the card that asked for them. *@
+                    <div class="rep-said finder-outcome">@settled</div>
+                }
+                else
+                {
+                    <div class="rep-offers">
+                        <button type="button" class="rep-offer"
+                                @onclick="() => SettleTheCase(SpaceSails.Core.FinderCase.Outcome.TurnedIn)">
+                            @SpaceSails.Core.FinderCase.TurnHimIn</button>
+                        <button type="button" class="rep-offer"
+                                @onclick="() => SettleTheCase(SpaceSails.Core.FinderCase.Outcome.Bribed)">
+                            @SpaceSails.Core.FinderCase.TakeTheBribe</button>
+                    </div>
+                }
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ───────────────────────────────────────────────────── *@
+}
+
+@code {
+    [Parameter] public Action<FinderCase.Outcome> SettleTheCase { get; set; } = default!;
+    [Parameter] public Action CloseTheReveal { get; set; } = default!;
+    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
+    [Parameter] public string? _finderOutcome { get; set; }
+
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}
