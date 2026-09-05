@@ -67,6 +67,18 @@ public sealed record SensorTask(
 public readonly record struct CompletedPass(SensorTask Task, double StartTime, double CompleteTime);
 
 /// <summary>
+/// #240 · HOW MUCH OF AN AREA SCAN'S PATCH OF SKY THE TELESCOPE HAS BEEN OVER, and when — everything a
+/// reader needs to ask "has this sweep crossed that point YET?" without knowing what is out there.
+///
+/// <para><see cref="Covered"/> is the fraction of the wedge behind the beam (1 on the completing pass).
+/// <see cref="Job"/> and <see cref="Observer"/> travel together deliberately: the wedge and the bearing of
+/// anything judged against it must be measured from the same point, or a reader would be re-deriving the
+/// aim from a ship that has moved since.</para>
+/// </summary>
+public readonly record struct AreaScanCoverage(
+    Vector2d Center, double Radius, ScanJob Job, Vector2d Observer, double Covered, double SimTime);
+
+/// <summary>
 /// #239 · WHERE ONE SENSOR TASK STANDS WITH THE TELESCOPE. Four states, and the captain can be told which
 /// one without doing arithmetic.
 ///

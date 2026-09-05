@@ -318,7 +318,7 @@ public partial class Map
     // has the beam been past her bearing yet? Early in the arc and she glints at 12 %; late and it is 96 %;
     // and it is the same fraction every time, on any machine, because none of it is random. A pass that
     // never covers her still completes empty, honestly.
-    private void OnAreaScanCovered(SpaceSails.Client.Pages.Stations.TrackingPost.AreaScanCoverage scan)
+    private void OnAreaScanCovered(AreaScanCoverage scan)
     {
         if (_ephemeris is null)
         {

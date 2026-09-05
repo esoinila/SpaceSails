@@ -179,9 +179,7 @@
                     <div class="fw-bold">🔭 Sensor tasks — one telescope, worked top to bottom</div>
                     @foreach (SensorTask task in _schedule.Queue)
                     {
-                        @* #239: the chip is READ off the schedule, never inferred. RUNNING at 0% and WAITING
-                           are the same picture if the picture is a percentage. The percent stays: it is
-                           progress, and the chip is truth. *@
+                        @* #239: READ, never inferred — RUNNING at 0% and WAITING are one picture if the picture is a percentage. *@
                         SensorTaskState state = _schedule.StateOf(task.Id) ?? SensorTaskState.Queued;
                         bool activeTask = state == SensorTaskState.Running;
                         <div class="d-flex align-items-center gap-1 @(activeTask ? "sensor-task-active" : "")" @key="task.Id">
@@ -222,13 +220,10 @@
                             }
                         </div>
                     }
-                    @* #239: …and the passes that landed. A one-shot used to vanish at the tick it finished,
-                       so a job that had DONE its work looked like one nobody ordered. *@
                     @foreach (CompletedPass done in _schedule.RecentlyDone)
                     {
                         <div class="d-flex align-items-center gap-1 sensor-task-done" @key="@("done:" + done.Task.Id)">
-                            <span>@KindIcon(done.Task.Kind)</span>
-                            <span class="flex-grow-1">@done.Task.Label</span>
+                            <span class="flex-grow-1">@KindIcon(done.Task.Kind) @done.Task.Label</span>
                             <span class="sensor-task-chip @StateChipClass(SensorTaskState.Done)">@SensorTaskPlates.Chip(SensorTaskState.Done)</span>
                         </div>
                     }
@@ -403,20 +398,9 @@
     [Parameter] public EventCallback<double> OnZoomMap { get; set; }
     [Parameter] public EventCallback OnCenterShip { get; set; }
 
-    /// <summary>Tuesday plan PR-A: fires when an area scan finishes, reporting the disc it covered
-    /// (center, radius) and the sim time it completed. Map.razor checks whether a hidden body's true
-    /// position at that instant falls inside — an actual completed scan is what reveals the wreck.</summary>
+    /// <summary>Tuesday plan PR-A / #240: how much of an area scan's patch of sky the telescope has been
+    /// over — raised every tick one is under way, and once more when it lands.</summary>
     [Parameter] public EventCallback<AreaScanCoverage> OnAreaScanCoverage { get; set; }
-
-    /// <summary>The covered disc of one finished area scan: everything Map.razor needs to test
-    /// "did this scan sweep over a hidden body?" without the tracking post knowing what a body is.</summary>
-    /// <summary>#240 · HOW MUCH OF A PATCH OF SKY THE TELESCOPE HAS BEEN OVER, and when — raised every tick
-    /// a scan is under way and once more when it lands. <paramref name="Covered"/> is the fraction of the
-    /// wedge behind the beam (1 on the completing pass); <paramref name="Job"/> and
-    /// <paramref name="Observer"/> travel together so the wedge and the bearings judged against it are
-    /// measured from one point.</summary>
-    public readonly record struct AreaScanCoverage(
-        Vector2d Center, double Radius, ScanJob Job, Vector2d Observer, double Covered, double SimTime);
 
     private const double RosetteCenterPx = 100;
     private const double RosetteMaxRadiusPx = 82;
@@ -595,25 +579,7 @@
             return;
         }
 
-        IReadOnlyList<CompletedPass> landed = _schedule.Advance(SimTime, DurationOf);
-
-        // #240 · THE BEAM'S OWN POSITION, reported while it is still moving. Owner: "is it always at 100%?
-        // We might get lucky earlier also?" — it was, because the reveal hung on the completion instant. The
-        // coverage-over-time was already defined (WedgeToward aims it, ActiveProgress times it); this only
-        // says it out loud on the ticks between. The #1068 gate is applied to the live report exactly as to
-        // the landed one, against the same instant, so a pass that will bring nothing back leaks nothing.
-        if (_schedule.Active is { Kind: SensorTaskKind.AreaScan } live
-            && OnAreaScanCoverage.HasDelegate
-            && !(Ephemeris is not null
-                 && PoliteDecline.BringsNothingBack(live, Ephemeris, _schedule.ActiveCompleteTime)))
-        {
-            OnAreaScanCoverage.InvokeAsync(new AreaScanCoverage(
-                live.AreaCenter, live.AreaRadius,
-                SensorTaskGeometry.WedgeToward(ShipPosition, live.AreaCenter, live.AreaRadius),
-                ShipPosition, _schedule.ActiveProgress(SimTime), SimTime));
-        }
-
-        foreach (CompletedPass pass in landed)
+        foreach (CompletedPass pass in _schedule.Advance(SimTime, DurationOf))
         {
             // #1068 · CHANNEL TWO — THE PASS THAT DOES NOT LAND. The telescope worked the job for its full
             // duration and the job left the carousel exactly as a finished one-shot does; what does not
@@ -628,7 +594,24 @@
 
             HandlePass(pass);
         }
+
+        // #240 · THE BEAM'S OWN POSITION, reported while it is still moving. Owner: "is it always at 100%?
+        // We might get lucky earlier also?" — it was, because the reveal hung on the completion instant. The
+        // coverage-over-time was already defined; this says it out loud on the ticks between. The #1068 gate
+        // applies to the live report exactly as to a landed one, against the same instant.
+        if (_schedule.Active is { Kind: SensorTaskKind.AreaScan } live
+            && !(Ephemeris is not null && PoliteDecline.BringsNothingBack(live, Ephemeris, _schedule.ActiveCompleteTime)))
+        {
+            ReportCoverage(live, _schedule.ActiveProgress(SimTime), SimTime);
+        }
     }
+
+    /// <summary>#240 · The ONE place a coverage report is built.</summary>
+    private void ReportCoverage(SensorTask task, double covered, double atTime) =>
+        OnAreaScanCoverage.InvokeAsync(new AreaScanCoverage(
+            task.AreaCenter, task.AreaRadius,
+            SensorTaskGeometry.WedgeToward(ShipPosition, task.AreaCenter, task.AreaRadius),
+            ShipPosition, covered, atTime));
 
     private double DurationOf(SensorTask task) =>
         SensorTaskGeometry.Duration(task, JobFor(task), Math.Max(0.1, TelescopeSpeedFactor));
@@ -755,14 +738,10 @@
                     SkySeed, pass.Task.AreaCenter, pass.Task.AreaRadius, pass.CompleteTime);
                 _lastSweepMessage =
                     $"{pass.Task.Label}: resolved {_recentFinds.Count} object(s) — {_recentFinds[0].Description}";
-                // A real completed scan may have swept over a hidden body — hand the covered disc up so
-                // Map.razor can reveal the wreck (intel → scan → reveal, Tuesday plan PR-A). #240: the whole
-                // wedge is behind the beam now, so this is the backstop for anything the live coverage did
-                // not catch — a contact that only drifted into the disc late in the pass.
-                OnAreaScanCoverage.InvokeAsync(new AreaScanCoverage(
-                    pass.Task.AreaCenter, pass.Task.AreaRadius,
-                    SensorTaskGeometry.WedgeToward(ShipPosition, pass.Task.AreaCenter, pass.Task.AreaRadius),
-                    ShipPosition, 1.0, pass.CompleteTime));
+                // The whole wedge is behind the beam now (intel → scan → reveal, Tuesday plan PR-A): the
+                // backstop for anything the live coverage did not catch, such as a contact that drifted
+                // into the disc late in the pass.
+                ReportCoverage(pass.Task, 1.0, pass.CompleteTime);
                 break;
         }
     }
@@ -943,15 +922,10 @@
     private List<TrackedTarget> OrderedTracks() =>
         _ledger.Entries.OrderByDescending(e => e.EffectiveQuality(SimTime)).ToList();
 
-    // #239 · Which colour the chip wears. The glyph and word are Core's; only the pulse is the desk's, and
-    // it is the owner's note — "a pulse on the ▶ so a stationary zero still reads alive".
-    private static string StateChipClass(SensorTaskState state) => state switch
-    {
-        SensorTaskState.Running => "sensor-chip-running",
-        SensorTaskState.Waiting => "sensor-chip-waiting",
-        SensorTaskState.Done => "sensor-chip-done",
-        _ => "sensor-chip-queued",
-    };
+    // #239 · Which colour the chip wears — one class per state, named for it. The glyph and word are Core's;
+    // only the pulse is the desk's, and it is the owner's note: "so a stationary zero still reads alive".
+    private static string StateChipClass(SensorTaskState state) =>
+        "sensor-chip-" + state.ToString().ToLowerInvariant();
 
     private static string KindIcon(SensorTaskKind kind) => kind switch
     {

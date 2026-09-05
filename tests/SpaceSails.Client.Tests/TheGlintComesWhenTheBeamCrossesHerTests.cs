@@ -169,7 +169,7 @@ public sealed class TheGlintComesWhenTheBeamCrossesHerTests
     /// </summary>
     private static (double? FoundAtProgress, int Ticks) RunTheScan(Vector2d patch)
     {
-        (Pages.Map map, TrackingPost post, List<TrackingPost.AreaScanCoverage> reports) = AHuntInProgress();
+        (Pages.Map map, TrackingPost post, List<AreaScanCoverage> reports) = AHuntInProgress();
 
         Assert.True(post.EnqueueTask(SensorTask.AreaScan(patch, PatchRadius, "the patch")));
 
@@ -181,7 +181,7 @@ public sealed class TheGlintComesWhenTheBeamCrossesHerTests
             reports.Clear();
             Tick(post, step * i);
 
-            foreach (TrackingPost.AreaScanCoverage report in reports)
+            foreach (AreaScanCoverage report in reports)
             {
                 Invoke(map, "OnAreaScanCovered", report);
                 if (revealed.Contains(LostThingId))
@@ -196,7 +196,7 @@ public sealed class TheGlintComesWhenTheBeamCrossesHerTests
 
     /// <summary>A world with one hidden thing in it, a ship, and a telescope desk aimed from the same
     /// point — the standing the owner's roadster hunt was actually in.</summary>
-    private static (Pages.Map Map, TrackingPost Post, List<TrackingPost.AreaScanCoverage> Reports) AHuntInProgress()
+    private static (Pages.Map Map, TrackingPost Post, List<AreaScanCoverage> Reports) AHuntInProgress()
     {
         var map = new Pages.Map();
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
@@ -216,7 +216,7 @@ public sealed class TheGlintComesWhenTheBeamCrossesHerTests
         Set(map, "_ship", new ShipState(ShipAt, Vector2d.Zero, 0));
         ((HashSet<string>)Get(map, "_hiddenBodyIds")!).Add(LostThingId);
 
-        var reports = new List<TrackingPost.AreaScanCoverage>();
+        var reports = new List<AreaScanCoverage>();
         var post = new TrackingPost
         {
             ShipPosition = ShipAt,
@@ -233,7 +233,7 @@ public sealed class TheGlintComesWhenTheBeamCrossesHerTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(post, true);
         post.OnAreaScanCoverage =
-            EventCallback.Factory.Create<TrackingPost.AreaScanCoverage>(post, reports.Add);
+            EventCallback.Factory.Create<AreaScanCoverage>(post, reports.Add);
 
         Tick(post, 0);
         reports.Clear();
