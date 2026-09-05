@@ -16,7 +16,7 @@ namespace SpaceSails.Core.Tests;
 /// <para>Everything the pad is allowed to be rests on two facts holding each other up — the code is FOUND and
 /// never derived, and the count is a WINDOW rather than a ledger — so the guards below are mostly about
 /// those two and about the things that must NOT have happened: no new security kind, no pad on a welded
-/// seal, no fifth string.</para>
+/// seal, no unauthored string.</para>
 ///
 /// <h3>Proven able to fail, each by breaking the shipped code and watching it go red</h3>
 /// <list type="bullet">
@@ -30,8 +30,10 @@ namespace SpaceSails.Core.Tests;
 /// <see cref="ARightCodeOpensTheBandForThisExcursionAndNoLonger"/>.</item>
 /// <item>Putting the pad on every refusing row reddens <see cref="OneRowInOneBuildingCarriesAPad"/> and
 /// <see cref="ASealedWorkingNeverCarriesAPad"/>.</item>
-/// <item>Adding a sixth authored string to <see cref="UndergroundComplex.LiftCode"/> reddens
-/// <see cref="TheFourPlatesAndTheStickerAreVerbatimAndAreTheOnlyProseHere"/>.</item>
+/// <item>Adding an unauthored string to <see cref="UndergroundComplex.LiftCode"/> reddens
+/// <see cref="TheFourPlatesAndTheStickerAreVerbatimAndAreTheOnlyProseHere"/>; removing the
+/// <c>PaperIn</c> arm from <c>FieldClue.Document</c> reddens
+/// <see cref="TheCodePapersHeadIsCanonAndAnOrdinaryPaperKeepsItsSeededOne"/>.</item>
 /// <item>Adding a <c>Provocation</c> member for the pad reddens
 /// <see cref="WhatComesIsTheChallengeThisGroundAlreadyHadAndNoNewKind"/>.</item>
 /// <item>Tuning <c>WindowSeconds</c> to 60 reddens <see cref="TheWindowIsNinetySecondsAndThePromiseIsThree"/>;
@@ -189,9 +191,8 @@ public sealed class ThePadOnTheCarPanelTests
     /// without: a pad whose paper quoted a different code would be a lock that cannot be opened at all, and
     /// nothing on screen would ever say so — the quiet bug class this ground has paid for before.
     ///
-    /// <para>Asserted three ways down the whole chain a captain actually meets: the sentence, the room that
-    /// holds it, and the sleeve the paper is read in afterwards. And the sentence itself is canon verbatim —
-    /// only the four digits move.</para>
+    /// <para>Asserted down the whole chain a captain actually meets: the sentence, and the room that hands
+    /// it over. And the sentence itself is canon verbatim — only the four digits move.</para>
     ///
     /// <para><b>RED</b> by seeding <c>PaperLine</c> off a different tag than <c>CodeFor</c>.</para>
     /// </summary>
@@ -219,16 +220,88 @@ public sealed class ThePadOnTheCarPanelTests
                 UndergroundComplex.InRoom(body, at.Level, at.RoomIndex));
             Assert.Contains(code, UndergroundComplex.HaulLine(
                 UndergroundComplex.Haul.Records, body, at.Level, at.RoomIndex, null));
-
-            // …and it still says it in the sleeve, away from the room, which is where a captain who is
-            // standing at the pad will actually be reading it.
-            string findId = UndergroundComplex.FindId(body, at.Level, at.RoomIndex);
-            Assert.Equal(UndergroundComplex.LiftCode.PaperLine(body), FieldClue.Document(findId));
-            Assert.Equal(UndergroundComplex.LiftCode.PaperTitle, FieldClue.Title(findId));
-
-            // The pocket row never shouts the answer. Finding the paper is the act being paid for.
-            Assert.DoesNotContain(code, FieldClue.Title(findId), StringComparison.Ordinal);
         }
+    }
+
+    /// <summary>
+    /// <b>#602's PAPER HAS A HEAD OF ITS OWN, AND IT IS THE ONE THE CANON PASS WROTE.</b> The code paper is
+    /// the sixth head read through #1100's seam: <see cref="FieldClue.Title"/> and
+    /// <see cref="FieldClue.Document"/> branch on the find id, the pair is verbatim canon (#602,
+    /// 2026-09-05), and the head DESCRIBES the page rather than transcribing it — the four digits stay on
+    /// the works floor where the sheet is lying.
+    ///
+    /// <para>Before the pass the title was the sentence's own first clause behind a <c>FABLE: line
+    /// needed</c> and the document was the handwriting itself, digits and all.</para>
+    ///
+    /// <para><b>THE CONTROL</b> is the half that makes this mean anything: an ORDINARY records room on the
+    /// same floor of the same ground, in the same world, still reads one of #613's six seeded forms, title
+    /// and body both — checked by the seeded tail an authored head never carries. A branch that swallowed
+    /// every paper in the game would pass every assertion above it.</para>
+    ///
+    /// <para><b>Proven RED</b> two ways: the <c>PaperIn</c> arm removed from <c>FieldClue.Document</c> (the
+    /// code paper opens as one of the six seeded forms), and that arm widened to answer for any records
+    /// room (the control paper stops being a seeded form).</para>
+    /// </summary>
+    [Fact]
+    public void TheCodePapersHeadIsCanonAndAnOrdinaryPaperKeepsItsSeededOne()
+    {
+        Assert.Equal("A lift code, lower band", UndergroundComplex.LiftCode.PaperTitle);
+        Assert.Equal(
+            "Four digits somebody was told not to write down. They wrote them down.",
+            UndergroundComplex.LiftCode.PaperDocument);
+
+        int controlsSeen = 0;
+        var faces = new HashSet<FieldClue.Certainty>();
+        foreach (string body in PaddedGrounds())
+        {
+            string code = UndergroundComplex.LiftCode.CodeFor(body);
+            (int Level, int RoomIndex) at = UndergroundComplex.LiftCode.PaperRoomFor(body)!.Value;
+            string findId = UndergroundComplex.FindId(body, at.Level, at.RoomIndex);
+
+            // The head, both halves, off the id — which is how every seam away from the room asks.
+            Assert.Equal(UndergroundComplex.LiftCode.PaperTitle, FieldClue.Title(findId));
+            Assert.Equal(UndergroundComplex.LiftCode.PaperDocument, FieldClue.Document(findId));
+
+            // Neither half shouts the answer. Finding the paper is the act being paid for.
+            Assert.DoesNotContain(code, FieldClue.Title(findId), StringComparison.Ordinal);
+            Assert.DoesNotContain(code, FieldClue.Document(findId), StringComparison.Ordinal);
+
+            // THE CERTAINTY IS NOT BRANCHED: the head changed what the sheet SAYS, not what it is WORTH, so
+            // the ladder behind the code paper is still the ordinary seeded roll. Collected over the whole
+            // swept population and asserted below to come up in more than one rung — a branch that gave the
+            // code paper a certainty of its own would pin every one of these to a single face.
+            faces.Add(FieldClue.CertaintyOf(findId));
+
+            // THE CONTROL — an ordinary records room on the same floor of the same ground.
+            foreach (int roomIndex in Enumerable.Range(0, 12))
+            {
+                if (roomIndex == at.RoomIndex
+                    || UndergroundComplex.InRoom(body, at.Level, roomIndex) != UndergroundComplex.Haul.Records
+                    || UndergroundComplex.AuthoredPaperOf(
+                        UndergroundComplex.FindId(body, at.Level, roomIndex)) is not null)
+                {
+                    continue;
+                }
+
+                string ordinary = UndergroundComplex.FindId(body, at.Level, roomIndex);
+                Assert.NotEqual(UndergroundComplex.LiftCode.PaperTitle, FieldClue.Title(ordinary));
+                Assert.NotEqual(UndergroundComplex.LiftCode.PaperDocument, FieldClue.Document(ordinary));
+
+                // …and it is a SEEDED form, proven by the tail an authored head never carries.
+                Assert.Contains("\n\n", FieldClue.Document(ordinary), StringComparison.Ordinal);
+                controlsSeen++;
+            }
+        }
+
+        Assert.True(controlsSeen > 0, "no ordinary paper was ever asked; the control proves nothing.");
+        Assert.Equal(Enum.GetValues<FieldClue.Certainty>().Length, faces.Count);
+
+        // And the marker the pass answered is gone from the file it stood in.
+        Assert.DoesNotContain(
+            "FABLE: line needed",
+            TheCardCarriesItsOwnStoryTests.ReadRepoFile(
+                "src/SpaceSails.Core/UndergroundComplex.LiftCode.cs"),
+            StringComparison.Ordinal);
     }
 
     /// <summary>The code is a fact about a SITE and differs between them — a single number shared by every
@@ -510,16 +583,17 @@ public sealed class ThePadOnTheCarPanelTests
     // ── THE PROSE, AND WHAT DID NOT HAPPEN ────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// <b>THE FIVE AUTHORED STRINGS, VERBATIM — AND THERE IS NO SIXTH.</b> Canon (2026-09-03) gave the
-    /// sticker, the four plates and the code paper's sentence, and that is the whole of the new prose this
+    /// <b>THE AUTHORED STRINGS, VERBATIM — AND THERE IS NO UNAUTHORED ONE.</b> Canon (2026-09-03) gave the
+    /// sticker, the four plates and the code paper's sentence, and the pass of 2026-09-05 gave the paper's
+    /// head — its title and the one flat line of what is on the page. That is the whole of the prose this
     /// feature is allowed to put in front of a player.
     ///
     /// <para>Swept by reflection rather than listed, because a list is a thing somebody forgets to add to:
     /// the guard walks every public string on <see cref="UndergroundComplex.LiftCode"/> and demands it be one
     /// of the authored ones.</para>
     ///
-    /// <para><b>RED</b> by adding any sixth authored string to the class, or by touching a comma in one of
-    /// the five.</para>
+    /// <para><b>RED</b> by adding any unauthored string to the class, or by touching a comma in one of
+    /// them.</para>
     /// </summary>
     [Fact]
     public void TheFourPlatesAndTheStickerAreVerbatimAndAreTheOnlyProseHere()
@@ -543,13 +617,14 @@ public sealed class ThePadOnTheCarPanelTests
             UndergroundComplex.LiftCode.WrongTwoPlate,
             UndergroundComplex.LiftCode.SecurityCalledPlate,
             UndergroundComplex.LiftCode.PaperTitle,
+            UndergroundComplex.LiftCode.PaperDocument,
         ];
 
         FieldInfo[] strings = [.. typeof(UndergroundComplex.LiftCode)
             .GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)
             .Where(f => f.FieldType == typeof(string))];
 
-        Assert.True(strings.Length >= 6,
+        Assert.True(strings.Length >= 7,
             "the reflection sweep found fewer strings than the file declares — it is reading the wrong type.");
 
         foreach (FieldInfo f in strings)
@@ -557,8 +632,8 @@ public sealed class ThePadOnTheCarPanelTests
             string said = (string)f.GetValue(null)!;
             Assert.True(authored.Contains(said),
                 $"LiftCode.{f.Name} is a player-facing string nobody authored: \"{said}\". Canon gave the "
-                + "sticker, the four plates and the paper's sentence and nothing else — file a FABLE marker "
-                + "instead of writing one.");
+                + "sticker, the four plates, the paper's sentence and the paper's head and nothing else — "
+                + "file a FABLE marker instead of writing one.");
         }
     }
 
@@ -573,6 +648,7 @@ public sealed class ThePadOnTheCarPanelTests
                      UndergroundComplex.LiftCode.WrongOnePlate, UndergroundComplex.LiftCode.WrongTwoPlate,
                      UndergroundComplex.LiftCode.SecurityCalledPlate,
                      UndergroundComplex.LiftCode.PaperTitle,
+                     UndergroundComplex.LiftCode.PaperDocument,
                      UndergroundComplex.LiftCode.PaperLine("pad-ground-1"),
                  })
         {

@@ -132,14 +132,16 @@ public static class FieldClue
             return PaperHeads.DocumentOf(written);
         }
 
-        // #602 · …and the one sheet whose body is not a constant, because four of its characters are this
-        // SITE's. Same door as the five above and for the same reason: a captain who carries the code paper
-        // up to the car and opens it in the sleeve must read the code, not a torn shipping manifest. Body
-        // alone, again — the seeded tail below is a paper saying how well it pins a place, and this one pins
-        // a button on a panel three floors up.
-        if (UndergroundComplex.LiftCode.PaperIn(paperId) is { } padSite)
+        // #602 · …and the code paper, the sixth head, through the same door as the five above. Until #602's
+        // canon pass of 2026-09-05 this arm returned the sheet's own handwriting, digits and all; the pass
+        // wrote it a head of its own instead, and a head DESCRIBES the page rather than transcribing it —
+        // see LiftCode.PaperDocument for why the four digits stay on the works floor.
+        //
+        // Body ALONE, again, and the certainty is not branched: it still rolls off the id, so the tracker's
+        // spread, the row's short word and Line() all say what they always said.
+        if (UndergroundComplex.LiftCode.PaperIn(paperId) is not null)
         {
-            return UndergroundComplex.LiftCode.PaperLine(padSite);
+            return UndergroundComplex.LiftCode.PaperDocument;
         }
 
         string[] papers =
@@ -219,9 +221,10 @@ public static class FieldClue
             return PaperHeads.TitleOf(written);
         }
 
-        // #602 · …and the code paper is called what its own first clause calls it, WITHOUT the digits. A row
-        // that shouted the number would put the answer in the inventory, where the captain never had to open
-        // anything to get it.
+        // #602 · …and the code paper is called what the canon pass named it, WITHOUT the digits — it used to
+        // wear its own first clause sliced off the sentence, which is a title borrowed rather than written.
+        // A row that shouted the number would put the answer in the inventory, where the captain never had
+        // to open anything to get it.
         if (UndergroundComplex.LiftCode.PaperIn(paperId) is not null)
         {
             return UndergroundComplex.LiftCode.PaperTitle;
