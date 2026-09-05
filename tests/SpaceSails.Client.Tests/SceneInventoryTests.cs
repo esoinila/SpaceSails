@@ -313,6 +313,9 @@ public sealed class SceneInventoryTests
         [DeckPlan.ConsoleKind.ArchiveNode] = "the column, aboard about one eligible hull in three " +
                                              "(ArchiveNode.IsAboard) — a fresh wreck plan carries none",
         [DeckPlan.ConsoleKind.ArchiveSwitch] = "the purge handle on that same housing, and only when it is there",
+        [DeckPlan.ConsoleKind.WreckKey] = "#535 the black-ops key in her crew spaces — only on the sweep's own " +
+                                          "kind of hull, one eligible hull in five (BlackOpsKey.IsAboard), and " +
+                                          "gone for good once this captain has been through her",
 
         // #698 · The one kind on this list that no GENERATOR could ever place, on any deck, under any seed:
         // it marks a square because the CAPTAIN put something down on it. Composed onto whichever deck the

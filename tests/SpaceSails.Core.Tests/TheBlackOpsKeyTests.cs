@@ -192,9 +192,12 @@ public sealed class TheBlackOpsKeyTests
         Assert.Equal(key, back);
         Assert.True(BlackOpsKey.IsTheKey(back));
 
-        // Appended, never inserted: every kind that existed before this one keeps its ordinal.
-        Assert.Equal((int)Satchel.Kind.Tool + 1, (int)Satchel.Kind.BlackOpsKey);
-        Assert.Equal(0, (int)Satchel.Kind.Authority);
+        // APPENDED, NEVER INSERTED. The ordinal is what a saved satchel stores, so the whole ORDER is the
+        // vault's schema — asking only "is the key last" would stay green while a kind slipped in above it
+        // silently reinterpreted every relic in every existing save as a chit.
+        Assert.Equal(
+            ["Authority", "Paper", "Rounds", "Dirt", "Relic", "Chit", "Badge", "Tool", "BlackOpsKey"],
+            Enum.GetNames<Satchel.Kind>());
     }
 
     // ── BURNING ONE COLD ────────────────────────────────────────────────────────────────────────────────
