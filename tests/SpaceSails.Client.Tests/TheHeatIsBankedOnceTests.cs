@@ -191,7 +191,11 @@ public sealed class TheHeatIsBankedOnceTests
             // #417 · THE NINTH BANKER, and it is the finder's. Taking the bribe at the confrontation berth
             // costs one whole band of heat — IllegalHeat.ABand, the meter's own step — owed to whoever runs
             // THAT berth, through the one seam, like every other crossing in this list.
-            ["Map.Combat.Remote.cs×1", "Map.Finder.cs×1", "Map.IllegalHeat.cs×1", "Map.OldCrew.cs×1",
+            // #233 · THE TENTH, and it is the only crossing in the game the captain chooses in cold blood at
+            // a desk: selling the roadster's photographs to the dark web instead of handing them back. One
+            // band, owed to whoever runs the ground the desk was worked from, through the same one seam.
+            ["Map.Blackmail.cs×1", "Map.Combat.Remote.cs×1", "Map.Finder.cs×1", "Map.IllegalHeat.cs×1",
+             "Map.OldCrew.cs×1",
              "Map.Scan.cs×1", "Map.Surface.Hive.cs×1", "Map.WalkIn.cs×1", "Patrol.Floor.cs×1",
              "Patrol.Run.cs×1"],
             bankers);

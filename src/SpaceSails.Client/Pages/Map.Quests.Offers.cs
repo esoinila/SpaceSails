@@ -378,14 +378,13 @@ public partial class Map
         // #349: name the hand-off's address (station — PLANET system) so the captain knows where the
         // associate waits without hunting every moon.
         string blurb = $"“Word is a dead tycoon's cherry-red roadster is drifting sunward of Mars — shot up as a stunt, never came down. There's a hardware wallet wedged between the seats: a fortune, and untraceable. Fetch it, bring it quiet to my associate at {BodyAddress(dest.Id)}. {reward:N0} cr, and we never spoke.”";
-        var job = new Quest($"fetch-{++_questSeq}", QuestKind.Fetch, giver,
+        // #233 · …and what is ACTUALLY between the seats is dealt here, off the same booth seed the hand-off
+        // address above was picked with. The brief still says wallet, because the client believes it says
+        // wallet — one car in four is wrong about that, and nobody finds out until the seats. See
+        // Map.Blackmail for why the answer rides Pin.
+        return new Quest($"fetch-{++_questSeq}", QuestKind.Fetch, giver,
             "", dest.Name, "Fetch the roadster's lost wallet", blurb, reward,
-            DestBodyId: dest.Id, SourceBodyId: Derelict.RoadsterBodyId);
-        // #233 · …and what is ACTUALLY between the seats is dealt here, off the same booth seed the
-        // hand-off address above was picked with. The brief still says wallet, because the client believes
-        // it says wallet. See Map.Blackmail.
-        DealWhatIsBetweenTheSeats(job);
-        return job;
+            DestBodyId: dest.Id, SourceBodyId: Derelict.RoadsterBodyId, Pin: WhatIsBetweenTheSeats());
     }
 
     // #223: the Fixer's cache run — a map to SOMEONE ELSE'S buried hoard. The recovery flow and the

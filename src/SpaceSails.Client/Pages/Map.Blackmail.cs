@@ -20,34 +20,35 @@ public partial class Map
 {
     // ── WHICH CAR IS THIS ─────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>The fetch jobs whose roadster has the chip between the seats rather than the wallet. Keyed by
-    /// quest id and dealt ONCE, at the moment the offer is built — never re-rolled at the pickup, because a
-    /// car that is a different car depending on when you look at it is not a car.</summary>
-    private readonly HashSet<string> _chipFetches = [];
-
-    /// <summary>The key this deal rides under in a saved quest's open field bag (Map.Vault). Named for the
-    /// question it answers rather than for the answer, so a second cargo one day needs no second key.</summary>
-    private const string CarCargoField = "carCargo";
-
     /// <summary>The bird has already asked where the car is on this hunt. One gag, one asking.</summary>
     private bool _parrotHuntedTheCar;
 
-    /// <summary>Deal this roadster its cargo — the wallet, or one car in
+    /// <summary>Deal this roadster its cargo — the wallet (null), or, one car in
     /// <see cref="CompromisingChip.OneInEvery"/>, the chip. The seed is the booth's own idiom, the same two
     /// numbers the hand-off address is picked with one line up in <c>MakeFetchOffer</c>: a slow sim-time
     /// rotation and a stable char-sum of the berth. So the card on the table does not flicker between two
-    /// cars while the captain reads it, and two docks on the same watch deal differently.</summary>
-    private void DealWhatIsBetweenTheSeats(Quest offer)
-    {
-        if (CompromisingChip.BetweenTheSeats(
-                (long)(SimTime / 1000), (_dockedHavenId ?? "").Sum(ch => ch)))
-        {
-            _chipFetches.Add(offer.Id);
-        }
-    }
+    /// cars while the captain reads it, and two docks on the same watch deal differently.
+    ///
+    /// <para>Dealt ONCE, when the offer is built, and carried on the quest itself — never re-rolled at the
+    /// pickup, because a car that is a different car depending on when you look at it is not a car.</para>
+    /// </summary>
+    private string? WhatIsBetweenTheSeats() =>
+        CompromisingChip.BetweenTheSeats((long)(SimTime / 1000), (_dockedHavenId ?? "").Sum(ch => ch))
+            ? CompromisingChip.FindId
+            : null;
 
-    /// <summary>Is THIS job's car the blackmail twin?</summary>
-    private bool TheCarHasTheChip(Quest q) => _chipFetches.Contains(q.Id);
+    /// <summary>Is THIS job's car the blackmail twin?
+    ///
+    /// <para><b>Where the answer lives, and why.</b> On the quest's own <c>Pin</c> — the field the record
+    /// keeps for THE ONE EXTRA FACT A JOB CARRIES. A crack's is the code for the keypad; a cache run's is the
+    /// key its map was drawn from; a fetch's, until now, was nothing at all, and a fetch's is the only one
+    /// with no reader anywhere in the game. That matters twice over: the deal has to survive the vault, and
+    /// <c>Pin</c> already round-trips there without Map.Vault — which is twenty-five lines off a hard gate —
+    /// growing a line; and the tag must never leak into a sentence, which a guard in
+    /// TheCarWithPhotographsInItTests holds the whole client to.</para></summary>
+    private static bool TheCarHasTheChip(Quest q) =>
+        q.Kind == QuestKind.Fetch
+        && string.Equals(q.Pin, CompromisingChip.FindId, System.StringComparison.Ordinal);
 
     /// <summary>The chip in the captain's own pocket, or null. Every ending asks this first.</summary>
     private Satchel.Item? TheChipInThePocket => CompromisingChip.InThePocket(_satchel);
