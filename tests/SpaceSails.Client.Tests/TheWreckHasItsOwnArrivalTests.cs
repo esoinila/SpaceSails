@@ -23,9 +23,11 @@ namespace SpaceSails.Client.Tests;
 /// no haven flag and left them speaking the ORBIT vocabulary instead — "🛰 Arm auto-orbit at Derelict
 /// Roadster" at three metres of dead car with no μ to orbit. Two wrong verbs is not a fix.</para>
 ///
-/// <para>Canon closes both, and they are the only two new strings: the arm verb
-/// <see cref="HarborVocabulary.PickupArmVerb"/> and the arrival line
-/// <see cref="HarborVocabulary.PickupArrival"/>. This file holds them VERBATIM (the text is pinned here
+/// <para>Canon closes both, and #244's follow-up closes the third hole they left between them — the arm-menu
+/// TOOLTIP, which kept promising orbit under a button that had stopped offering it. Three strings: the arm
+/// verb <see cref="HarborVocabulary.PickupArmVerb"/>, the arrival line
+/// <see cref="HarborVocabulary.PickupArrival"/>, and the hint <see cref="HarborVocabulary.PickupArmHint"/>.
+/// This file holds them VERBATIM (the text is pinned here
 /// character for character, so a silent reword shows up as a red test and not as a shipped rewrite), holds
 /// the line to ONCE per arrival, and holds both to the wreck and to nothing else.</para>
 ///
@@ -44,18 +46,24 @@ public sealed class TheWreckHasItsOwnArrivalTests
     /// <summary>The canon arrival line, pinned character for character. Fable, on #244, 2026-09-05.</summary>
     private const string TheLine = "Alongside. Inside pickup range, and nobody is answering.";
 
+    /// <summary>The canon arm-menu hint, pinned character for character. Fable, on #244, 2026-09-05 — the
+    /// follow-up this crew noted when the verb moved and the tooltip under it did not.</summary>
+    private const string TheHint = "No orbit to slip into. She closes to pickup range and holds.";
+
     private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
         new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
 
     // ── THE WORDS THEMSELVES ──────────────────────────────────────────────────────────────────────────
 
-    /// <summary>VERBATIM. Both strings, as canon authored them — the whole point of pinning them in a second
-    /// place is that a reword has to be a deliberate act in two files rather than a typo in one.</summary>
+    /// <summary>VERBATIM. All three strings, as canon authored them — the whole point of pinning them in a
+    /// second place is that a reword has to be a deliberate act in two files rather than a typo in one.
+    /// </summary>
     [Fact]
-    public void TheTwoNewStrings_AreExactlyWhatCanonAuthored()
+    public void TheThreeNewStrings_AreExactlyWhatCanonAuthored()
     {
         Assert.Equal(TheVerb, HarborVocabulary.PickupArmVerb);
         Assert.Equal(TheLine, HarborVocabulary.PickupArrival);
+        Assert.Equal(TheHint, HarborVocabulary.PickupArmHint);
     }
 
     /// <summary>ONE PUBLISHER. Each sentence is written down once in the source tree — in Core, where the
@@ -64,7 +72,7 @@ public sealed class TheWreckHasItsOwnArrivalTests
     [Fact]
     public void EachSentence_IsWrittenDownExactlyOnceInTheSource()
     {
-        foreach (string sentence in new[] { TheVerb, TheLine })
+        foreach (string sentence in new[] { TheVerb, TheLine, TheHint })
         {
             var carriers = new List<string>();
             foreach (string file in Directory.EnumerateFiles(
@@ -218,6 +226,54 @@ public sealed class TheWreckHasItsOwnArrivalTests
         // …and each offer is gated on the wreck question, not on the harbour class, which is what the orbit
         // vocabulary was wrongly falling through to.
         Assert.Equal(2, Occurrences(page, $"{nameof(Derelict)}.{nameof(Derelict.IsWreckBody)}"));
+    }
+
+    /// <summary>
+    /// …AND THE SENTENCE UNDER THOSE BUTTONS SAYS THE SAME THING THEY DO. #1125 moved the verb and left the
+    /// tooltip behind: <c>ArmMenuHint</c> still promised a captain hovering the arm button at three metres of
+    /// dead car that the ship <i>slips into orbit here when the capture window opens</i>. One press, two
+    /// sentences, and they disagreed — the third named bug class, and the reason the follow-up was filed on
+    /// #244 rather than left alone.
+    ///
+    /// <para>Asked of the page's OWN method with the shipping scenario in it, so this is what a captain reads
+    /// and not what a literal in this file says. Both arms are asserted: the wreck gets the canon hint
+    /// verbatim, and every other berth in sol.json keeps the dock or orbit hint it has always had — a branch
+    /// that answered the wreck's line everywhere would pass the first half on its own.</para>
+    ///
+    /// <para><b>Proven RED</b> two ways: the <c>IsWreckBody</c> arm removed from <c>ArmMenuHint</c> (the
+    /// roadster promises orbit again, which is the follow-up's own words reproduced), and that arm widened
+    /// to answer for every body (Titan and the havens start refusing to orbit).</para>
+    /// </summary>
+    [Fact]
+    public void TheArmMenuHint_SaysPickupAtTheWreckAndOrbitOrDockEverywhereElse()
+    {
+        Assert.Equal(TheHint, HarborVocabulary.PickupArmHint);
+
+        Pages.Map map = Booted();
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+
+        int wrecksSeen = 0;
+        int others = 0;
+        foreach (CelestialBody body in eph.Bodies)
+        {
+            string hint = (string)Invoke(map, "ArmMenuHint", body.Id)!;
+            if (Derelict.IsWreckBody(body.Id))
+            {
+                Assert.Equal(TheHint, hint);
+                wrecksSeen++;
+                continue;
+            }
+
+            Assert.NotEqual(TheHint, hint);
+
+            // …and it is one of the two hints that already shipped, not merely "something else": a branch
+            // that answered the empty string for every other berth would pass a NotEqual on its own.
+            Assert.Contains("The autopilot flies the approach", hint, StringComparison.Ordinal);
+            others++;
+        }
+
+        Assert.Equal(1, wrecksSeen);
+        Assert.True(others > 5, $"only {others} non-wreck berths were asked; the control proves little.");
     }
 
     // ── The bench ─────────────────────────────────────────────────────────────────────────────────────

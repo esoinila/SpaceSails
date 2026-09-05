@@ -70,6 +70,18 @@ public static class HarborVocabulary
     /// promised, no clamp is named, and nobody is coming out to meet you.</para></summary>
     public const string PickupArrival = "Alongside. Inside pickup range, and nobody is answering.";
 
+    /// <summary>#244 item 3, follow-up (canon pass, Fable, 2026-09-05) · <b>THE ARM-MENU HINT AT A WRECK.</b>
+    /// The verb above moved and the hint under it did not, so a captain hovering the arm button at three
+    /// metres of dead car was still promised the ship would <i>slip into orbit here</i> — the sentence
+    /// saying one thing while the button beside it said another, which is this repo's third named bug class
+    /// and the exact one #938 D3a opened when it took the dock words off a wreck and left the orbit ones on.
+    ///
+    /// <para>It answers the tooltip's own question — what will the ship DO — and it answers it the way the
+    /// dock and orbit hints do: what happens on the approach, and what happens at the end of it. <b>The end
+    /// is that it HOLDS.</b> There is no clamp to press here and no capture window to wait for, so the
+    /// sentence stops where the approach does rather than promising a third thing.</para></summary>
+    public const string PickupArmHint = "No orbit to slip into. She closes to pickup range and holds.";
+
     /// <summary>The collapsed armed-step verb, e.g. "Insert at" for an orbit vs "Dock at" for a
     /// haven — the flight-plan step line's leading phrase before the body name.</summary>
     public static string ArmedStepVerb(HarborClass harbor) =>
