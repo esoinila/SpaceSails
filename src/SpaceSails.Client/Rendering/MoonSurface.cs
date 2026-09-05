@@ -288,11 +288,21 @@ public static class MoonSurface
             {
                 continue;
             }
-            (double x, double y) = c is { DigX: { } dx, DigY: { } dy } ? (dx, dy) : CachePosition(c.Id);
+            (double x, double y) = CacheSpot(c);
             list.Add((c.Id, x, y, c.ReeverLevel));
         }
         return list;
     }
+
+    /// <summary>WHERE ONE CHEST'S ✗ IS, and the only place that question is answered. The real dug spot when
+    /// the free-form bury recorded one (playtest bug #5), else the deterministic
+    /// <see cref="CachePosition"/> hash-scatter.
+    ///
+    /// <para>#316 · It became a function the day a THIRD reader needed it: the hole a rival leaves behind has
+    /// to be at the ✗ and not near it, so the mark, the shovel and the robbery all ask this. Three copies of
+    /// a projection is how a chest comes to be dug up in a place its map never pointed at.</para></summary>
+    public static (double X, double Y) CacheSpot(TreasureCache cache) =>
+        cache is { DigX: { } dx, DigY: { } dy } ? (dx, dy) : CachePosition(cache.Id);
 
     private static int StableHash(string s)
     {

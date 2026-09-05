@@ -93,6 +93,12 @@ public readonly record struct TreasureCache(
     /// the dice it throws are the same arithmetic and cannot drift apart.</summary>
     public CacheSafetyRead Safety => CacheSafety.Read(this);
 
+    /// <summary>#316 law 3 · The same read for a caller who KNOWS THE GROUND — how many husks are lying on
+    /// the site this chest is under (<see cref="GroundMemory.HusksAt"/>). The battlefield is not a property
+    /// of the chest: it is a fact about the REGOLITH that goes on changing after the shovel is back on the
+    /// boat, so it is handed in rather than stored. <see cref="Safety"/> is this call on quiet ground.</summary>
+    public CacheSafetyRead SafetyWith(int huskCount) => CacheSafety.Read(this, huskCount);
+
     /// <summary>#455 · True when this chest is lying in the open where it was dropped rather than under a
     /// shovel's worth of regolith. False for a bury AND for every chest that never recorded which it was.</summary>
     public bool LeftInTheOpen => Buried is false;

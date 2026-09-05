@@ -180,6 +180,126 @@ public sealed class GroundMemory
         return found;
     }
 
+    // ── #316 law 1, SECOND HALF · THE MARKS THAT ARE NOT BODIES ───────────────────────────────────────
+    //
+    // Owner, live: "If we find already shot Reevers at a site then we know that somebody else has been there
+    // to hide, pick-up, search etc" — and the issue spells out what the "etc" leaves lying: "husks near a
+    // cache, disturbed ground at a dug spot, in dire cases an abandoned dry sentry bot".
+    //
+    // A husk is a body and carries only where and when. The other two are not bodies and are never loot: a
+    // ROBBED HOLE where a ✗ used to be, and a SENTRY somebody walked away from. They age exactly as a husk
+    // ages and off the same clock, so they are the same row shape with a word in it — one ledger, one vault
+    // section, one reader. A separate store for them would be a second place to forget to save, which is the
+    // bug the husks themselves were just dragged out of.
+
+    /// <summary>A mark on the ground that is not a body. Two of them, and no more: the forensic vocabulary
+    /// the issue itself names.</summary>
+    public enum ScarKind
+    {
+        /// <summary>Disturbed ground at a dug spot — the hole a chest came out of.</summary>
+        Pit,
+
+        /// <summary>A sentry left standing where it ran dry, counter frozen at 00 (#314/#326).</summary>
+        DryBot,
+    }
+
+    /// <summary>One scar, where it is and when it was made — the same (position, moment) pair a
+    /// <see cref="Husk"/> carries, for the same reason: what a captain wants from a hole in the ground is
+    /// HOW OLD IT IS.</summary>
+    public readonly record struct Scar(ScarKind What, double X, double Y, double AtSimTime)
+    {
+        /// <summary>Which tile of the lattice it is on. Derived, never stored: one position, one answer.</summary>
+        public SurfaceTiles.Address Tile => SurfaceTiles.At(X, Y);
+    }
+
+    /// <summary>The key for one scar. Same rounding law as <see cref="HuskKey"/> — a key built out of raw
+    /// doubles round-trips through the file as a DIFFERENT scar, which is a hole that duplicates itself
+    /// every time the game is saved.</summary>
+    public static string ScarKey(string bodyId, string siteSalt, Scar scar)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        ArgumentNullException.ThrowIfNull(siteSalt);
+        SurfaceTiles.Address tile = scar.Tile;
+        return $"scar:{bodyId}:{siteSalt}:{Word(scar.What)}:{tile.X}_{tile.Y}"
+             + $":{Fixed(scar.X)}_{Fixed(scar.Y)}@{scar.AtSimTime.ToString("F0", CultureInfo.InvariantCulture)}";
+    }
+
+    /// <summary>Read one back, if it is a scar on THIS ground. Core reads its own key, exactly as it reads
+    /// its own husk key, and a row this build cannot parse is refused rather than guessed at.</summary>
+    public static bool TryReadScarKey(string key, string bodyId, string siteSalt, out Scar scar)
+    {
+        scar = default;
+        if (key is null || bodyId is null || siteSalt is null)
+        {
+            return false;
+        }
+
+        string prefix = $"scar:{bodyId}:{siteSalt}:";
+        if (!key.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        // "<word>:<tx>_<ty>:<x>_<y>@<when>" — the tile half is re-derived from the position and never
+        // trusted, so a hand-edited file cannot put a scar on a tile it is not on.
+        string[] parts = key[prefix.Length..].Split(':');
+        if (parts.Length != 3 || ScarFor(parts[0]) is not { } what)
+        {
+            return false;
+        }
+
+        string[] atAndWhen = parts[2].Split('@');
+        if (atAndWhen.Length != 2)
+        {
+            return false;
+        }
+
+        string[] xy = atAndWhen[0].Split('_');
+        if (xy.Length != 2
+            || !double.TryParse(xy[0], NumberStyles.Float, CultureInfo.InvariantCulture, out double sx)
+            || !double.TryParse(xy[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double sy)
+            || !double.TryParse(atAndWhen[1], NumberStyles.Float, CultureInfo.InvariantCulture, out double at))
+        {
+            return false;
+        }
+
+        scar = new Scar(what, sx, sy, at);
+        return true;
+    }
+
+    /// <summary>#316 law 3 · HOW MANY husks are on one ground, without building the ordered list. The odds
+    /// oracle asks this of every chest in the hoard every time the ledger's map section renders, and a count
+    /// has no use for an order — <see cref="Stored"/> sorts the whole ledger to produce one. Same predicate,
+    /// same single reader of the key format; only the ordering is skipped.</summary>
+    public int HuskCountAt(string bodyId, string siteSalt)
+    {
+        int found = 0;
+        foreach (string row in _marks)
+        {
+            if (TryReadHuskKey(row, bodyId, siteSalt, out _))
+            {
+                found++;
+            }
+        }
+        return found;
+    }
+
+    /// <summary>Every scar this ledger is holding for one landing site, in the ledger's own stable order.
+    /// No seeding and no roll, exactly as <see cref="HusksAt"/>: a hole is here because something was
+    /// actually dug out of it.</summary>
+    public IReadOnlyList<Scar> ScarsAt(string bodyId, string siteSalt)
+    {
+        var found = new List<Scar>();
+        foreach (string row in Stored)
+        {
+            if (TryReadScarKey(row, bodyId, siteSalt, out Scar scar))
+            {
+                found.Add(scar);
+            }
+        }
+        return found;
+    }
+
     /// <summary>
     /// WHAT A CAPTAIN WHO LOOKS CAN TELL, and it is the whole of #316 law 2: recency is legible. The two ends
     /// are the owner's own words — <i>"remains render with age-graded flavor in the house voice — 'still
@@ -190,9 +310,16 @@ public sealed class GroundMemory
     /// <para>THREE BANDS AND NO SILENCE. Every husk answers now; the band is read off the SIM CLOCK against
     /// the moment in the ledger, so the sentence is a fact about the world rather than about the session.</para>
     /// </summary>
-    public static string AgeLine(Husk husk, double nowSimTime)
+    public static string AgeLine(Husk husk, double nowSimTime) =>
+        AgeLine(husk.FellAtSimTime, nowSimTime);
+
+    /// <summary>The same three bands off any moment in the ledger — a husk's fall, a rival's dig. The
+    /// #316 lane that made the marks did not author a fourth sentence and must not: dating a hole is the
+    /// same question as dating a body, and this repo's third named bug class is two reporters of one
+    /// truth.</summary>
+    public static string AgeLine(double atSimTime, double nowSimTime)
     {
-        double age = nowSimTime - husk.FellAtSimTime;
+        double age = nowSimTime - atSimTime;
         if (age < FreshWithinSeconds)
         {
             return "Still smoking.";
@@ -254,5 +381,17 @@ public sealed class GroundMemory
         HutChange.Forced => "forced",
         HutChange.Emptied => "emptied",
         _ => "read",
+    };
+
+    private static string Word(ScarKind what) => what == ScarKind.Pit ? "pit" : "drybot";
+
+    /// <summary>The inverse of <see cref="Word(ScarKind)"/>. Null for a word this build does not know, so a
+    /// file written by a later build loads as a captain who can see less rather than one who cannot
+    /// load.</summary>
+    private static ScarKind? ScarFor(string word) => word switch
+    {
+        "pit" => ScarKind.Pit,
+        "drybot" => ScarKind.DryBot,
+        _ => null,
     };
 }

@@ -229,10 +229,19 @@ public partial class Map
     // #455 rule 3 (#761) · …and the row now carries HOW SAFE the captain promised himself it was: the one
     // word off the same oracle the return-trip roll compares against, so a captain coming back after a
     // rebirth knows which kind of hiding place his predecessor made without having to remember the walk.
+    //
+    // #316 law 3 · …read against THE GROUND IT IS UNDER, not against the chest alone. The husks a captain
+    // left on that site are a term in the return-trip roll now, so a row that quoted the bare chest would go
+    // on saying "Guarded" about a hole in the middle of somebody's battlefield — the word promising a safe
+    // the dice stopped delivering, which is exactly what #455 built the one oracle to prevent.
     private Stations.Captain.CacheMapItem[] LedgerMaps() =>
-        _caches.Caches.Select(c => new Stations.Captain.CacheMapItem(
-            c.Id, c.Caption(BodyName(c.BodyId)), c.BearingLine, c.ContentsLine(),
-            GiverDisplay(c.Owner), c.PlayerOwned, c.Safety.Word, c.Safety.Line)).ToArray();
+        _caches.Caches.Select(c =>
+        {
+            CacheSafetyRead read = c.SafetyWith(TheFightThisGroundCarries(c));
+            return new Stations.Captain.CacheMapItem(
+                c.Id, c.Caption(BodyName(c.BodyId)), c.BearingLine, c.ContentsLine(),
+                GiverDisplay(c.Owner), c.PlayerOwned, read.Word, read.Line);
+        }).ToArray();
 
     // Open the full-screen map card for a cache the captain clicked in the ledger.
     private void ViewMapFromLedger(string cacheId)
