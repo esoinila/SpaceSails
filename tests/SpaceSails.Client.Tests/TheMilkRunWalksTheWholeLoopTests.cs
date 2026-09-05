@@ -291,8 +291,8 @@ public sealed class TheMilkRunWalksTheWholeLoopTests
         string vault = PagesFile("Map.Vault.cs");
 
         Assert.Contains("MilkRunLessonStep = _milkRunStep > 0 ? _milkRunStep : null,", vault, StringComparison.Ordinal);
-        Assert.Contains("_milkRunStep = vault.Progress?.MilkRunLessonStep ?? _milkRunStep;", vault, StringComparison.Ordinal);
-        Assert.Contains("RestoreTheMilkRunsPlace();", vault, StringComparison.Ordinal);
+        Assert.Contains("TheMilkRunResumes(vault.Progress?.MilkRunLessonStep);", vault, StringComparison.Ordinal);
+        Assert.Contains("TheMilkRunIsUntaught();", vault, StringComparison.Ordinal);
     }
 
     /// <summary>AND THE WATCHER IS ACTUALLY IN THE LOOP. A lesson nothing calls is a lesson that never

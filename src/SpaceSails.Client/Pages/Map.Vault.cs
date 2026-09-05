@@ -229,14 +229,7 @@ public partial class Map
         _revealedBodyIds.Clear();
         _scopeIntel.Clear();
 
-        // #160: a new universe has not been taught the loop. The milk run's place resets with the mission
-        // slate above it (unlike _tutorialPlayed below, which is about the PERSON at the keyboard): the
-        // lesson's contract lives in _quests, which this reset empties, so a place left behind would point
-        // at a job no world has.
-        _milkRunStep = 0;
-        _milkRunPostedAshore = false;
-        _milkRunSaidAtMs = double.NegativeInfinity;
-
+        TheMilkRunIsUntaught(); // #160: a new universe has not been taught the loop
         // #292 note: _tutorialPlayed is deliberately NOT reset here. Whether a fresh universe re-runs the
         // tutorial (and its date-triggered target rush) is the docked-starts lane's rework, not this one;
         // this lane owns that the persistence model resets and isolates the mission slate above.
@@ -505,10 +498,7 @@ public partial class Map
                 // ShoreLeaveIsALedgerLineTests against a real pre-#1066 file).
                 WorkingStopsSinceShoreLeave =
                     _workingStopsSinceShoreLeave > 0 ? _workingStopsSinceShoreLeave : null,
-                // #160 · Where the milk-run lesson had got to, so none of its eight lines is said twice
-                // across a reload. Null while the captain has never taken it — the same byte law as the
-                // line above, and for the same reason.
-                MilkRunLessonStep = _milkRunStep > 0 ? _milkRunStep : null,
+                MilkRunLessonStep = _milkRunStep > 0 ? _milkRunStep : null, // #160 · null while untaken
                 // #677 · the disclosure clock's register — which grounds this thread has been past the seam
                 // of, and the world-side window each was opened in. A clock that forgot across a reload
                 // would not be a clock. Null while empty: an eager [] would move every legacy vault's
@@ -1001,12 +991,7 @@ public partial class Map
         // field and wakes as a ship that has just come off a gangway, which is the kind direction to be
         // wrong in — nobody is owed a run ashore they were never denied.
         _workingStopsSinceShoreLeave = vault.Progress?.WorkingStopsSinceShoreLeave ?? _workingStopsSinceShoreLeave;
-        // #160: and where the milk-run lesson had got to. Restored HERE and not left to _tutorialStep,
-        // which is not vaulted — see MilkRunLessonStep's own note. RestoreTheMilkRunsPlace also puts
-        // _tutorialStep back on the row the captain was on, so the checklist they reopen is the one they
-        // closed; it does not RAISE the checklist, because #292's law is that a loaded save never does.
-        _milkRunStep = vault.Progress?.MilkRunLessonStep ?? _milkRunStep;
-        RestoreTheMilkRunsPlace();
+        TheMilkRunResumes(vault.Progress?.MilkRunLessonStep); // #160: the lesson's own place, and its row
         // #409: restore the secret labs this thread has found, so a known body's hidden door stays revealed
         // on every future landing (a pre-#409 save simply lacks the field — an empty set, harmless).
         if (vault.Progress?.SecretLabsFound is { } found)

@@ -109,6 +109,29 @@ public partial class Map
         }
     }
 
+    /// <summary>A new universe has not been taught the loop. Called from the new-game reset, beside the
+    /// mission slate it belongs to: the lesson's contract lives in <c>_quests</c>, which that reset empties,
+    /// so a place left behind would stand on a job no world has. (This is NOT <c>_tutorialPlayed</c>'s law —
+    /// that one is about the person at the keyboard and deliberately survives a new universe.)</summary>
+    private void TheMilkRunIsUntaught()
+    {
+        _milkRunStep = 0;
+        _milkRunPostedAshore = false;
+        _milkRunSaidAtMs = double.NegativeInfinity;
+    }
+
+    /// <summary>A resumed voyage takes the lesson's place back off the vault, and the checklist's row with
+    /// it. Two statements behind one name, and that is deliberate: <c>Map.Vault.cs</c> sits within a couple
+    /// of dozen lines of the size gate's line (<c>NoSourceFileIsTooLongTests</c>), so a lane that spends
+    /// three lines there spends its whole allowance. The lesson's own file is where the lesson's own logic
+    /// belongs anyway. <paramref name="place"/> is null for every captain who never took it — and for every
+    /// file written before it existed — which leaves what is already there alone.</summary>
+    private void TheMilkRunResumes(int? place)
+    {
+        _milkRunStep = place ?? _milkRunStep;
+        RestoreTheMilkRunsPlace();
+    }
+
     /// <summary>Put the checklist back on the row the reload found the lesson on. Only while the loop is
     /// still being walked: a finished milk run leaves <c>_tutorialStep</c> alone, because writing it past the
     /// last row would tick every OTHER lesson's card as done in the picker for a captain who never flew them.
