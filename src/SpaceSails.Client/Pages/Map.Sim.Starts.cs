@@ -72,6 +72,7 @@ public partial class Map
     private void ApplyStart(string id)
     {
         _dockedHavenId = null;   // drop any prior clamp before the jump
+        _berthSlot = null;       // #525 · …and the slot it was in
         SetDeckForDock(null);    // back to the bare ship deck (pulls you aboard if you'd wandered ashore)
 
         // Owner ruling (2026-07-18): every start is a DOCKED start — clamp onto the haven the id names,

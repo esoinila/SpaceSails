@@ -603,7 +603,34 @@ public sealed record ProgressSection
     [System.Text.Json.Serialization.JsonIgnore(
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<string>? HallsPreserved { get; init; }
+
+    /// <summary>
+    /// #525 · <b>THE COLLAR A DECLARED OVERLOAD CLEARED</b>, or null in every voyage where nobody has turned
+    /// both keys against his own hull while clamped to somebody's ring — which is almost every voyage.
+    ///
+    /// <para><b>It rides the file because backing the keys out does not put it back.</b> A harbour that moved
+    /// two hulls off a collar on the strength of an announcement has moved them; the captain changing his
+    /// mind afterwards is not information anybody down there has. A consequence a reload undid would make the
+    /// whole scene free — arm at a berth, watch the room empty, call it off, pay nothing.</para>
+    ///
+    /// <para><b>Written only when there is something to write</b>, the #1057/#1072/#1066/#1063/#1074 law: the
+    /// checksum is taken over the payload, so an eager row on every save would change the digest of every
+    /// vault ever written and hang the 📛 tampered marker on an honest voyage.</para>
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public ClearedCollarRecord? CollarCleared { get; init; }
 }
+
+/// <summary>#525 — <see cref="ProgressSection.CollarCleared"/>'s row: the port, the slot the ship that
+/// declared the overload was tied up in, the neighbouring slots the roster emptied, and <b>why</b>.
+///
+/// <para>The reason rides as a STRING and is parsed back, rather than as the enum serialized directly, for
+/// <see cref="HallDeclineRecord"/>'s own reason and one of its own: a file written by a later build with a
+/// second reason in it has to load on this one as a reassignment this build cannot account for — which is
+/// #1092's kind and not this one's — rather than as a silently wrong cause.</para></summary>
+public sealed record ClearedCollarRecord(
+    string HavenId, int Berth, IReadOnlyList<int> Neighbours, string Reason);
 
 /// <summary>#1068 — one row of <see cref="ProgressSection.HallsDeclined"/>: a ground, and the world-side
 /// window the world declined on it in. A wire record of its own rather than

@@ -872,9 +872,15 @@ public partial class Map
         // in which case he is tied up somewhere else round the same station, once, with nothing said. Same
         // port, same tube, same tier, same walk ashore: nothing here goes near ArrivalTube.TierFor, which is
         // what #1066's shore-leave tally and #1078's establishing shot both read, a few lines below.
+        //
+        // #525 · …and the SLOT is kept, not just the bearing it points in. DockRoster.BearingAt IS
+        // BearingOf(BerthGiven(…)), split into its two halves here for one reason: the very next line marks
+        // the reassignment spent, after which asking the roster again answers with the ORDINARY slot while
+        // the hull is pinned on the reassigned one. The port's PA reads this number out loud (#525).
+        _berthSlot = TheSlotTheRosterGives(dock.Id);
         _ship = BerthState.CoMoving(
             _ephemeris!, dock.Id, SimTime, BerthState.BerthOffsetMeters, _ship.Charge,
-            DockRoster.BearingAt(_ephemeris!, dock.Id));
+            TheBearingOfSlot(dock.Id, _berthSlot.Value));
         TakeTheBerthTheRosterGave(dock.Id);                  // …and a reassignment is spent by being given
         _dockOffset = _ship.Position - dockPos;               // the arm's reach is now the berth offset
         HoldAtDock();                                        // and HoldAtDock keeps it pinned every tick
@@ -968,6 +974,7 @@ public partial class Map
         // the other end, and it heals a session that clamped on before that fix existed.
         ArrivedAt(_dockedHavenId);
         _dockedHavenId = null;
+        _berthSlot = null;      // #525 · a ship that is not tied up is not in a slot
         ShowPulseMessage($"Clamps released — pushing off from {name}. 🚀");
         RequestVaultSave(); // #225: undock resumes at the nearest haven; persist the new resume basis
     }

@@ -50,6 +50,12 @@
                 <div class="view-object-caption">@castaway.Went</div>
                 <div class="view-object-caption">@castaway.Survives</div>
                 <div class="view-object-caption">@castaway.Rescue</div>
+                @* #525 · …and the port's own second line, at a berth and nowhere else. Null in the dark, so
+                   the castaway card in open space is the three-caption card it has always been. *@
+                @if (castaway.Port is { } port)
+                {
+                    <div class="view-object-caption">@port</div>
+                }
             </OverlayShell>
         </div>
 @* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
