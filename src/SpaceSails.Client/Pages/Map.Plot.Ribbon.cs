@@ -25,6 +25,12 @@ public partial class Map
         // #148: while the autopilot has the ship and a rehearsed plan to draw, the ballistic ribbon
         // shows loops the ship will never fly (the owner's report) — hand the line over to the
         // intended-path draw. The ballistic ribbon stays for manual flight.
+        // #167 · WHAT IS ACTUALLY ON THE GLASS THIS FRAME. The burn beat re-strokes the leading stretch of
+        // this ribbon (DrawTheBurnBeatAlongThePathAhead), and every early return below is a frame where
+        // _scratch holds LAST frame's line. Zeroing the count first, and setting it only once the vertices
+        // are genuinely laid, is what stops the beat washing a line nobody drew.
+        _ribbonVertexCount = 0;
+
         if (_armedOrbitBodyId is not null && _autopilotPlanPath is { Count: >= 2 }) return;
         if (_samples.Count < 2) return;
 
@@ -40,6 +46,8 @@ public partial class Map
             _scratch[i * 2] = x;
             _scratch[i * 2 + 1] = y;
         }
+
+        _ribbonVertexCount = _samples.Count;
 
         // Sun frame (or a frame with no local orbit): the pre-#145 flat polyline, byte-identical.
         double? window = FrameDisplayWindowSeconds();

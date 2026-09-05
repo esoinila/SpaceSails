@@ -300,13 +300,18 @@ public partial class Map
                 return;
             }
 
+            Vector2d beforeTheBurn = _ship.Velocity;
             _ship = _ship with { Velocity = _ship.Velocity * factor };
             _reactionMassPulses--;
             _lastPulseSimTime = _ship.SimTime;
             ShowPulseMessage(factor > 1
                 ? (fine ? "Trim: +1%" : "Pulse: accelerate +10%")
                 : (fine ? "Trim: −1%" : "Pulse: decelerate −10%"));
-            RendererInterop.PlayCue("pulse");
+            // #167 BURN KIND 1/9 - THE HAND. This used to fire `pulse` - the 90 ms engine tick - directly.
+            // It goes through the one hook now like every other burn, which means the `burn` cue scaled to
+            // one pulse: shorter and quieter than the sustained voice an insertion gets, and this is where
+            // that scaling earns its keep. Nothing else in the client fires the burn cue.
+            BurnFired(1, _ship.Velocity - beforeTheBurn);
 
             // A live override invalidates every still-pending node (plan §4).
             bool anyStaled = false;

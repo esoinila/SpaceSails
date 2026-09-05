@@ -807,6 +807,7 @@ public partial class Map
             return;
         }
 
+        Vector2d beforeTheMatch = _ship.Velocity;
         _ship = matched;
         // #268 pay-at-the-pump: the redirect impulse fires NOW (instant match, #213) but its pulses are NOT
         // taken here — they go on the tab and settle only when the clamp lands (ClampOntoHaven). If the
@@ -818,7 +819,9 @@ public partial class Map
         // #185 no-silent-money, applied to outflows: name the bill against the quote, and say plainly it is
         // owed-on-delivery, not taken now.
         ShowPulseMessage($"⚓ matched at {t.Body.Name} — {cost} p on the tab (quoted ≈{quote}); settles when you clamp on. Hit ⚓ Dock.");
-        RendererInterop.PlayCue("burn");
+        // #167 BURN KIND 8/9 - THE TERMINAL MATCH. It already made the burn noise; now it makes the burn
+        // PICTURE too, and the noise is sized by the match's own bill instead of being one flat thump.
+        BurnFired(cost, _ship.Velocity - beforeTheMatch);
         UpdateDockAffordance(); // so the plain ⚓ Dock button appears this frame
     }
 

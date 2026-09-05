@@ -876,6 +876,7 @@ public partial class Map
             return;
         }
 
+        Vector2d beforeTheBrake = _ship.Velocity;
         double currentRel = RelativeSpeedTo(body);
         int tank = LongHaulBudgetPulses();
         ArrivalBrake.FireResult fire =
@@ -900,7 +901,9 @@ public partial class Map
             : ArrivalBrake.Fired(_brakeDestName, fire.PulsesSpent);
         ShowPulseMessage(receipt);
         LogAutopilotEvent(receipt);
-        RendererInterop.PlayCue("burn");
+        // #167 BURN KIND 9/9 - THE ARRIVAL BRAKE. Same as the match: it had the sound, it never had the
+        // flame, and the sound was the same size whether she shed 2 pulses or 60.
+        BurnFired(fire.PulsesSpent, _ship.Velocity - beforeTheBrake);
         _passDirty = true; // the brake changed the trajectory — re-plot
         ReprojectTrajectory();
     }
