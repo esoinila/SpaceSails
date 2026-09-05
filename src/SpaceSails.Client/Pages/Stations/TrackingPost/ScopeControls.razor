@@ -80,11 +80,20 @@
     [Parameter] public bool _passiveWatch { get; set; }
     [Parameter] public bool RadarActive { get; set; }
     [Parameter] public TransponderMode Transponder { get; set; }
-    [Parameter] public Action<ChangeEventArgs> OnBearingInput { get; set; } = default!;
-    [Parameter] public Action<ChangeEventArgs> OnArcInput { get; set; } = default!;
-    [Parameter] public Action StartSweep { get; set; } = default!;
-    [Parameter] public Action StopSweep { get; set; } = default!;
-    [Parameter] public Action TogglePassiveWatch { get; set; } = default!;
+    // #251 · THESE FIVE ARE EventCallbacks AND NOT Actions, AND THE DIFFERENCE IS VISIBLE.
+    //
+    // The moved markup writes them bare — `@oninput="OnBearingInput"`, `@onclick="StartSweep"` — and a
+    // bare method group would bind fine as an Action. But Blazor re-renders the component that HANDLES an
+    // event, and with an Action that component is this surface: the desk's own `_activeJob` and
+    // `_passiveWatch` would change and the button showing them would go on showing the old word until
+    // Map's 200 ms HUD throttle came round. Razor compiles a method group passed to an EventCallback
+    // parameter as `EventCallback.Factory.Create(this, …)` with `this` the DESK, so the desk is the
+    // receiver, the desk re-renders, and the button changes on the press exactly as it did before the cut.
+    [Parameter] public EventCallback<ChangeEventArgs> OnBearingInput { get; set; }
+    [Parameter] public EventCallback<ChangeEventArgs> OnArcInput { get; set; }
+    [Parameter] public EventCallback StartSweep { get; set; }
+    [Parameter] public EventCallback StopSweep { get; set; }
+    [Parameter] public EventCallback TogglePassiveWatch { get; set; }
     [Parameter] public Func<string> TransponderHint { get; set; } = default!;
     [Parameter] public EventCallback<bool> OnRadarToggle { get; set; }
     [Parameter] public EventCallback<TransponderMode> OnTransponderChange { get; set; }
