@@ -137,7 +137,7 @@ public sealed class TheDeskHumsAndRisesTests
 
     /// <summary>Press [E] where the captain is standing, through the shipping key handler.</summary>
     private static void PressE(Pages.Map map) =>
-        Assert.True((bool)Invoke(map, "HandleDeckKey", "e")!, "the deck did not take the [E] key.");
+        Assert.True((bool)Invoke(map, "HandleDeckKey", "e", false)!, "the deck did not take the [E] key.");
 
     // ── THE LEDGER, SNAPSHOTTED ───────────────────────────────────────────────────────────────────────
 

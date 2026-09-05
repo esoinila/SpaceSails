@@ -158,21 +158,21 @@ public sealed class TheStallSaysSoTests
         Serviced(map, 1.0 / 60.0);
 
         Serviced(map, 16.0);
-        Assert.True((bool)Invoke(map, "HandleDeckKey", "d")!, "the deck did not take the movement key.");
+        Assert.True((bool)Invoke(map, "HandleDeckKey", "d", false)!, "the deck did not take the movement key.");
         Assert.Equal(FrameGap.HeldLine, ThePulse(map));
 
         // Said once. Hammer the key: the stall has already been announced and nothing new is owed.
         Invoke(map, "ShowPulseMessage", "— nothing —", PulseRank.Status);
         for (int press = 0; press < 8; press++)
         {
-            Invoke(map, "HandleDeckKey", "d");
+            Invoke(map, "HandleDeckKey", "d", false);
         }
         Assert.Equal("— nothing —", ThePulse(map));
 
         // …and the next stall IS announced afresh, because a frame that arrived on time cleared the latch.
         Serviced(map, 1.0 / 60.0);
         Serviced(map, 16.0);
-        Invoke(map, "HandleDeckKey", "d");
+        Invoke(map, "HandleDeckKey", "d", false);
         Assert.Equal(FrameGap.HeldLine, ThePulse(map));
     }
 

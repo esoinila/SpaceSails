@@ -343,7 +343,26 @@ public sealed class AJambIsNotASealedDoorTests
         //
         // ReeverChase.cs and ReeverPack.cs are unchanged and are still checked line by line above. Nothing an
         // Old One steps through was touched by any of this, and NpcWalk cannot be handed one at all.
-        Assert.Equal(8, claims.Count);
+        // #326 · AND THE EIGHTH CLAIM IS A MACHINE THE CAPTAIN PAID FOR — this guard forcing its ruling and
+        // getting one for the fifth time.
+        //
+        // Owner, live 2026-07-18: "I think the bot at surface should act a bit like a body guard. Protect the
+        // path to the ship at about half way so there is always a way to retreat back to safety." A sentry in
+        // the escort stance walks to the middle of the captain→tube line and keeps walking there as he moves,
+        // and it spends that step through SurfaceCollision.Slide like every other body on the ground.
+        //
+        // It gets the funnel for the reason the enum itself names: Gait.Person is "anything else on somebody's
+        // payroll that has to look like it belongs in a corridor", and a boarding trooper is the most literal
+        // reading of that sentence in the game. A bodyguard pinned on a jamb for the rest of an excursion is a
+        // bodyguard that is not between you and the shuttle, which is the entire thing the captain bought. The
+        // gait travels with the MOVER, as it has since #804.
+        //
+        // The claim is +1 and it is in ONE place: SentryDoctrine.StepToward, the single step every escort
+        // spends. ReeverChase.cs and ReeverPack.cs are unchanged and are still checked line by line above —
+        // and note which way this one cuts, because it is the owner's own ruling ("Lets not help reevers move
+        // in any easier if possible"): the machine hunting them walks like a person, and the Old Ones stagger.
+        Assert.Equal(9, claims.Count);
+        Assert.Single(claims.FindAll(c => c.StartsWith("SentryDoctrine.cs:", StringComparison.Ordinal)));
         Assert.Contains(claims, c => c.StartsWith("DeckPlan.cs:", StringComparison.Ordinal));
         Assert.Contains(claims, c => c.StartsWith("Map.SweepTeam.cs:", StringComparison.Ordinal));
         Assert.Equal(2, claims.FindAll(c => c.StartsWith("NpcWalk.cs:", StringComparison.Ordinal)).Count);
