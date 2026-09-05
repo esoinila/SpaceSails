@@ -61,6 +61,9 @@ public static class WreckInterior
     /// <param name="plateShut">…and the captain is folded in behind it with the plate back in its hole. The
     /// pressure hull closes over the gap, which is the entire hiding rule — walls are law for everyone
     /// (#324), and nothing about a sweeper's eye needs to know a stowaway exists.</param>
+    /// <param name="keyAboard">#535 · This hull is carrying a black-ops key and it is still lying there
+    /// (<see cref="BlackOpsKey.IsAboard"/>, and the captain has not already been through her). The CALLER
+    /// decides — the deck never rolls, exactly as with <paramref name="archiveAboard"/>.</param>
     public static DeckPlan WreckDeck(
         in Derelict.Wreck wreck,
         System.Collections.Generic.IReadOnlySet<string> examined,
@@ -73,7 +76,8 @@ public static class WreckInterior
         bool archivePurged = false,
         HullSounding.HiddenVoid? plate = null,
         bool voidOpen = false,
-        bool plateShut = false)
+        bool plateShut = false,
+        bool keyAboard = false)
     {
         System.ArgumentNullException.ThrowIfNull(fillDroids);
         examined ??= new System.Collections.Generic.HashSet<string>();
@@ -284,6 +288,19 @@ public static class WreckInterior
                 (float)WreckLayout.ArchiveStation.X,
                 (float)WreckLayout.ArchiveStation.Y + 1.4f,
                 archivePurged ? "NEBULA MUTUAL · SUBSTRATE SPAR" : "NEBULA MUTUAL · SUBSTRATE SPAR · ⚡"));
+        }
+
+        // ── The one thing aboard that is worth more than her cargo ────────────────────────────────────
+        // #535 · A code in somebody's kit in the CREW SPACES, on a hull the black-ops sweep came aboard to
+        // make stop existing as evidence. Not a fitting and not evidence: it is what one of her people was
+        // carrying, and the plate over it is the object's own canon name and nothing else — a plate that
+        // said what it was FOR would answer the one question the whole object is interesting for.
+        if (keyAboard)
+        {
+            consoles.Add(new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.WreckKey,
+                (float)WreckLayout.KeyStation.X, (float)WreckLayout.KeyStation.Y,
+                BlackOpsKey.CardLabel));
         }
 
         // ── The decision ──────────────────────────────────────────────────────────────────────────────

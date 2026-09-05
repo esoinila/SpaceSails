@@ -404,6 +404,50 @@ public partial class Map
         StateHasChanged();
     }
 
+    /// <summary>
+    /// #535 · <b>PRESENT THE KEY — the fifth exit, and the only one that reaches backwards.</b>
+    ///
+    /// <para>Every other answer on this card leaves a mark. Submit and the hold goes; bribe and the coin
+    /// goes; resist and heat climbs whichever way the dice fall. This one costs the key and nothing else,
+    /// and what the captain buys is <b>an encounter that never happened</b>: no heat gained, no entry on the
+    /// wire, nobody who remembers, and the pursuer simply gone.</para>
+    ///
+    /// <h4>The scrub is written as four things this method does NOT do</h4>
+    /// <list type="bullet">
+    /// <item><b>No heat.</b> <c>_heat</c> is not touched at all — not raised, and not cleared either. A catch
+    /// that never happened cannot clear a debt any more than it can add to one, so submitting stays the only
+    /// way heat goes to zero.</item>
+    /// <item><b>No wire entry, and it never forms.</b> There is no <c>PushNewsEvent</c> here — not
+    /// <c>HunterBrokeOff</c>, which is the headline this seam would otherwise reach for, because breaking a
+    /// pursuer off is exactly what just happened. The scrub is not a deletion after the fact: nothing is ever
+    /// pushed, so there is nothing on the wire to find, and <c>TheKeyLeavesNoTraceTests</c> reads the pushed
+    /// list rather than the rendered ticker.</item>
+    /// <item><b>Nobody remembers.</b> No contact row, no goodwill, no hostility — <c>_contacts</c> is not
+    /// opened. A memory that never forms is the whole of what the issue calls the treasure.</item>
+    /// <item><b>Nothing is said.</b> <see cref="BlackOpsKey.NoContactLoggedPlate"/> IS the telling (#761's
+    /// law, met by the plate this stage renders), and there is no result message under it. A sentence
+    /// narrating the silence would be the game filing a report about a report it did not file.</item>
+    /// </list>
+    ///
+    /// <para>The pursuer leaves through <see cref="RemoveHunter"/>, which is the deterrent's own break-off
+    /// (#522/#1090) and the same call the bribe makes — a hand-written removal beside it would be this repo's
+    /// first named bug class aimed at a state transition.</para>
+    /// </summary>
+    private void PresentTheBlackOpsKey()
+    {
+        if (_busted is not { Phase: BustedEncounter.Stage.Demand } b
+            || BlackOpsKey.InThePocket(_satchel) is not { } key)
+        {
+            return;
+        }
+
+        _satchel = [.. BlackOpsKey.Spend(_satchel, key)];
+        RemoveHunter(b.HunterId);
+        b.Phase = BustedEncounter.Stage.NoContactLogged;
+        RequestVaultSave();   // #225: the pocket changed, and it is the only thing that did
+        StateHasChanged();
+    }
+
     // RESIST: heat 1–2 → one opposed dice check (lose = SUBMIT + harsher cut; win = hunter broken off,
     // heat +1). Heat 3 → the full Bolivia.
     private void BustedResist()
@@ -775,7 +819,10 @@ public partial class Map
         // freeze-frame → clinic re-birth. Reuses this whole encounter so the death machinery is shared.
         // SurfaceEnd (Evening wind #20): a nerve-overdraw death out on the regolith — no collector, no dice.
         // Its own freeze-beat (the cause art + the place-dependent line) before the shared resurrection.
-        public enum Stage { Demand, Confiscated, BribedOff, ResistWon, ResistLost, Bolivia, Fled, FreezeFrame, Resurrected, Impact, SurfaceEnd }
+        // #535 · NoContactLogged is the fifth exit: a key was presented and the encounter never happened.
+        // Appended, like every stage that has joined this list before it — the markup switches on these arms
+        // and several guards name one by hand, so a stage slipped into the middle would re-page all of them.
+        public enum Stage { Demand, Confiscated, BribedOff, ResistWon, ResistLost, Bolivia, Fled, FreezeFrame, Resurrected, Impact, SurfaceEnd, NoContactLogged }
 
         public required string HunterId { get; init; }
         public required string HunterCallsign { get; init; }

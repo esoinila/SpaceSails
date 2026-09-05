@@ -681,6 +681,13 @@ public partial class Map
             : Core.HullCutter.IsTheCutter(item) ? Core.HullCutter.RowLabel(item.Count)
             : "🧰 a piece of kit",
 
+        // #535 · The key, by its own canon name and nothing else. NOT by the hull it came off — the id IS the
+        // hull, and a row that printed it would stencil a ship's designation onto the one object in the game
+        // whose entire value is that it leads back to nobody. It has an arm here for the kit's reason one
+        // arm up: without one a code falls through to the default and reads as a file on somebody, which is
+        // the third named bug class in a row of a list.
+        Core.Satchel.Kind.BlackOpsKey => $"{Core.BlackOpsKey.Glyph} {Core.BlackOpsKey.Name}",
+
         _ => "🗃 a file on somebody",
     };
 }

@@ -129,7 +129,12 @@ public sealed partial class DeckPlan
         // front face (press it and the motor runs), and the PRESET buttons at the other (read what they
         // remember, or lean on them). Neither is a seat — the chair is the sit, and this is a press you make
         // standing up — and one kind for both would file the pettiest verb in the game under "raise the desk".
-        HiveDeskEdge, HiveDeskPresets }
+        HiveDeskEdge, HiveDeskPresets,
+        // #535 · THE BLACK-OPS KEY, in somebody's kit in the crew spaces of a hull that fought. Its own kind
+        // and not a re-used RuinSalvage, for the reason every other split in this list is: a ruin's drawer is
+        // a weighted roll with five faces and an empty room among them, and this is one object that either is
+        // aboard or is not. One kind per verb — pick up the thing, and look at it.
+        WreckKey }
 
     /// <summary>A wall segment. <paramref name="IsHull"/> draws it as pressure hull — bright and thick,
     /// the readable boundary of a made thing; anything else draws as a dimmer inner line.

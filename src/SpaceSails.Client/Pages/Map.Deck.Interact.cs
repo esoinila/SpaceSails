@@ -383,6 +383,9 @@ public partial class Map
             case DeckPlan.ConsoleKind.WreckPlacard:
                 ReadDamageControlPlacard(); // #488: where the valves are, told at the lock
                 break;
+            case DeckPlan.ConsoleKind.WreckKey:
+                TakeTheBlackOpsKey();       // #535: the code in somebody's kit, and its own card on the spot
+                break;
             case DeckPlan.ConsoleKind.ArchiveNode:
                 ConfrontArchiveNode();      // look at the thing in the hold — the throw, and what it gives back
                 break;

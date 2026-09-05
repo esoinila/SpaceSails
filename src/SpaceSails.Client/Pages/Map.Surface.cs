@@ -679,6 +679,12 @@ public partial class Map
                 // …and whether she is carrying the one warm thing. Seeded off her id, decided ONCE here, so
                 // a rebuild of the deck can never roll a node onto a hull that did not have one.
                 PrepareArchiveNode(aboardWreck);
+
+                // #535 · …and whether one of her people was carrying a code nobody was ever meant to read.
+                // The same law and the same seam: rolled ONCE, here, off her id, so no rebuild of the deck
+                // can put a key on a hull that never had one — or a second one on a hull that has already
+                // given hers up.
+                PrepareBlackOpsKey(aboardWreck);
             }
 
             // A fresh boarding is a fresh hull: nothing has woken, the fan has not come up, and the tracker
