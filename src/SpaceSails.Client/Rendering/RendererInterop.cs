@@ -50,17 +50,23 @@ internal static partial class RendererInterop
     /// trusts, the one that presses what the page presses, could not be written for any verb that makes a
     /// noise. A cue is decoration in a browser and it is decoration on a test runner; the only difference is
     /// that one of them has an audio context. Silent there, unchanged here.</para></summary>
-    internal static void PlayCue(string kind)
+    /// <param name="kind">A key of <c>renderer.js</c>'s <c>CUES</c> table. A name the table does not carry
+    /// makes no sound and no complaint — <c>EveryCueTheGameFiresHasAVoiceTests</c> is the guard that keeps
+    /// the two halves honest (#938 D1).</param>
+    /// <param name="scale">#167 — how big the event was, 0…1: length and loudness both move with it, so a
+    /// one-pulse trim and a forty-pulse orbital insertion do not sound alike. The default of 1 is the cue
+    /// exactly as its table entry was tuned, which is what every caller that says nothing gets.</param>
+    internal static void PlayCue(string kind, double scale = 1.0)
     {
         if (OperatingSystem.IsBrowser())
         {
-            PlayTheCue(kind);
+            PlayTheCue(kind, scale);
         }
     }
 
     /// <inheritdoc cref="PlayCue"/>
     [JSImport("playCue", ModuleName)]
-    private static partial void PlayTheCue(string kind);
+    private static partial void PlayTheCue(string kind, double scale);
 
     /// <summary>#338 addendum — THE GAME'S FIRST SOUND: the motion tracker's first-contact chirp (two short
     /// rising tones). Fired on the Core-gated 0→N tracker edge; respects the master audio switch JS-side.</summary>

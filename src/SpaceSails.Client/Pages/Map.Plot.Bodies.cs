@@ -224,6 +224,12 @@ public partial class Map
         // place it can never start. The physics handed us the better picture for free.
         DrawDischarge(sx, sy);
 
+        // #167 · A BURN MUST BE FELT. The flame off her stern for the second after any burn fires — hand,
+        // plotted node, autopilot, or a scheduled transfer that lit itself at 10,000× warp while the
+        // captain was reading the ledger. Under the hull dot and the dart, so the marker sits on its own
+        // exhaust; the geometry is BurnPlume in Core and this is only the call that asks for it.
+        DrawBurnPlume(sx, sy);
+
         // M28: the hull has a facing now — cosmetic on the map, but it SLEWS: toward the
         // firing bearing through a lock countdown, back to prograde after the round leaves.
         double heading = ShipHeadingRad();

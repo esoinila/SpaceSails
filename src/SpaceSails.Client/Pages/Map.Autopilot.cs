@@ -375,6 +375,11 @@ public partial class Map
         _reactionMassPulses -= charge;
         _armedSpentPulses += cost;
         _armedTransferBurnsFired++;
+        // #167 BURN KIND 3/9 - THE SCHEDULED TRANSFER BURN, and the reason this lane exists at all: this one
+        // fires ITSELF at its epoch, usually at four figures of warp, with no hand anywhere near the ship.
+        // The flame is on the wall clock precisely so that this burn - whose whole sim-time existence is one
+        // frame - is still on the glass for a second afterwards.
+        BurnFired(charge, deltaV);
         StaleFutureNodes();
         ShowPulseMessage($"Transfer burn — riding the well toward {BodyName(_armedOrbitBodyId)} ({charge} p) 🛰");
     }
@@ -912,10 +917,13 @@ public partial class Map
                     return;
                 }
 
+                Vector2d beforeTheApproach = _ship.Velocity;
                 _ship = OrbitRule.Approach(_ship, bodyPos, bodyVel, body, obstacle, hill);
                 _reactionMassPulses -= approachCharge;
                 _armedSpentPulses += approachCost;
                 _approachBurnCount++;
+                // #167 BURN KIND 4/9 - THE AUTOPILOT'S APPROACH BURN.
+                BurnFired(approachCharge, _ship.Velocity - beforeTheApproach);
                 StaleFutureNodes();
                 ShowPulseMessage($"Approach burn — falling toward {body.Name} ({approachCharge} p) 🛰");
                 return;
@@ -932,9 +940,13 @@ public partial class Map
                     return;
                 }
 
+                Vector2d beforeTheInsertion = _ship.Velocity;
                 _ship = OrbitRule.Insert(_ship, bodyPos, bodyVel, body);
                 _reactionMassPulses -= insertCharge;
                 _armedSpentPulses += cost;
+                // #167 BURN KIND 5/9 - THE AUTOPILOT'S INSERTION - the arrival, and the biggest burn in the
+                // game. The pulse scaling is what makes it read as one against a hand's single trim.
+                BurnFired(insertCharge, _ship.Velocity - beforeTheInsertion);
                 // Friday §0 (owner ruling): "armed auto-orbit ends in a KEPT orbit, not an achieved
                 // one." The park is NOT a handback — the autopilot stays in command and now STATION-KEEPS
                 // the orbit (holds it with trims, priced from Lab 25). _armedOrbitBodyId stays set to the
@@ -1023,10 +1035,15 @@ public partial class Map
             return;
         }
 
+        Vector2d beforeTheTrim = _ship.Velocity;
         _ship = OrbitKeeping.Trim(_ship, bodyPos, bodyVel, body, park);
         _reactionMassPulses -= cost;
         _armedSpentPulses += cost;
         _keepTrimsFired++;
+        // #167 BURN KIND 6/9 - THE STATION-KEEPING TRIM. Small, periodic, and the whole reason the banner
+        // says AUTOPILOT HOLDS THE ORBIT - a held park that visibly spends a puff now and then is the
+        // owner's ruling made legible without opening a panel.
+        BurnFired(cost, _ship.Velocity - beforeTheTrim);
         StaleFutureNodes();
         ShowPulseMessage($"🛰 orbit trim at {body.Name} ({cost} p) — holding the park");
     }
@@ -1199,8 +1216,12 @@ public partial class Map
         Vector2d bodyPos = _ephemeris.Position(oi.Body.Id, SimTime);
         double h = 1.0;
         Vector2d bodyVel = (_ephemeris.Position(oi.Body.Id, SimTime + h) - _ephemeris.Position(oi.Body.Id, SimTime - h)) / (2 * h);
+        Vector2d beforeTheOrbit = _ship.Velocity;
         _ship = OrbitRule.Insert(_ship, bodyPos, bodyVel, oi.Body);
         _reactionMassPulses -= oi.Cost;
+        // #167 BURN KIND 7/9 - THE PANEL'S OWN ORBITAL INSERTION (the button / the `o` key). The `board`
+        // cue below is the ARRIVAL's jingle and stays; this is the burn that got her there.
+        BurnFired(oi.Cost, _ship.Velocity - beforeTheOrbit);
         ArrivedAt(oi.Body.Id);
         StaleFutureNodes();
         CompleteBoundCargoRunQuests(); // a parcel bound for this moon haven delivers on the park (#175)

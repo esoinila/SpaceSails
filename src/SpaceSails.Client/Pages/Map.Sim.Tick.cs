@@ -653,6 +653,9 @@ public partial class Map
         // to find anything." One flag records it (ShipLanes.Archived) and the lane GEOMETRY still serves the
         // telescope's lane sweeps; nothing on this stack draws it.
         DrawShipTrajectory();
+        // #167 · the burn's beat washes the stretch of that ribbon she is about to fly — over the ribbon
+        // it re-tints, and only for the second the flame off her stern lasts.
+        DrawTheBurnBeatAlongThePathAhead();
         // #405 Routes → Flight plan & burns: the plotted autopilot path + its burn nodes (DrawNodeMarkers,
         // below). The ship's own live trajectory ribbon (DrawShipTrajectory, above) stays — that's the
         // nav essential, not part of the plan overlay.
