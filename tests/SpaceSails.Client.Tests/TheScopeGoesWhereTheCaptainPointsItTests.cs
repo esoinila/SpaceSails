@@ -297,6 +297,14 @@ public sealed class TheScopeGoesWhereTheCaptainPointsItTests
         hunters.Add(EncounterRule.SpawnHunter(HunterId, Callsign, "mercury", HunterAt, Vector2d.Zero, 0));
 
         var post = new TrackingPost { ShipPosition = ShipAt, ShipVelocity = new Vector2d(0, 3e4), MaxTracks = 1 };
+
+        // #1135 · This bench drives the desk's own methods by name on a component no renderer has attached,
+        // and Drop/ConfirmNow now end in StateHasChanged — the fix for the handlers pressed through a lambda,
+        // whose receiver is the surface that drew the button and never the desk. Same early-out the boot
+        // benches have always used on Map, for the same reason: nothing about the desk is faked, it is simply
+        // told a render is already queued.
+        TheBootBuildsTheSameWorldTests.NeverRender(post);
+
         post.Candidates =
         [
             new TrackingPost.TrackingCandidate(HunterId, Callsign, new ShipState(HunterAt, Vector2d.Zero, 0),
