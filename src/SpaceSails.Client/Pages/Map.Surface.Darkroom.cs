@@ -688,6 +688,11 @@ public partial class Map
         // the third named bug class in a row of a list.
         Core.Satchel.Kind.BlackOpsKey => $"{Core.BlackOpsKey.Glyph} {Core.BlackOpsKey.Name}",
 
+        // #233 · The chip out of the roadster. It IS a file on somebody — that is precisely why it rides in
+        // this kind — but it is a NAMED one, and the row says so, because a captain carrying two kinds of
+        // leverage has to be able to tell which of them a client is asking for back.
+        Core.Satchel.Kind.Dirt when Core.CompromisingChip.IsTheChip(item) => Core.CompromisingChip.RowLabel,
+
         _ => "🗃 a file on somebody",
     };
 }

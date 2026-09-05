@@ -266,6 +266,13 @@ public partial class Map
         }
         RecomputeCargoTotals();
 
+        // #233 · …and what the captain is carrying ON HIM can go in the hole too, if it is the one thing in
+        // the game that is evidence rather than goods. Added AFTER the hold has been settled, because the
+        // chip was never in the hold and HoldAfterBurying must not be asked to subtract it from anything;
+        // added BEFORE the mint, because the manifest that goes into the ground is the one that comes back
+        // out of it. Nothing is said — see Map.Blackmail.
+        TheChipGoesInTheChest(ex.PendingCargo);
+
         int standing = WatchdogLevelAt(ex.Stop.Body.Id);
         int presence = Math.Max(standing, roll.Reevers);
         // #650 · The chest goes into THIS ground, not "somewhere on this moon": the site the shuttle set down

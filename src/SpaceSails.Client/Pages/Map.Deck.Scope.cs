@@ -303,6 +303,10 @@ public partial class Map
         Vector2d center = _ephemeris.Position(intel.BodyId, aimTime);
         string label = $"intel fix · {intel.Headline}";
         _trackingPost.EnqueueAndPrioritize(SensorTask.AreaScan(center, WreckScanRadiusM, label));
+        // #233 · Beat one of the car mission's gag: the hunt for the dead car starts HERE, at the one funnel
+        // all three 🔭 buttons come through, so the bird cannot miss it down one of them. Only the roadster
+        // — see Map.Blackmail.
+        SquawkTheCarHunt(intel.BodyId);
         SwitchDesk(ShipDesk.Sensors);
         ShowPulseMessage("🔭 Scope slewing to the intel fix — watch the Sensors desk. Warp time to let the pass land.");
     }
