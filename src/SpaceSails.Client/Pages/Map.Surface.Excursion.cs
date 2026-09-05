@@ -709,6 +709,15 @@ public partial class Map
         // somebody else's steel deck, is not a mark in the regolith. Everything in it that IS a mark in the
         // regolith went through the one writer, so the two cannot disagree.
         public List<GroundMemory.Husk> Husks { get; init; } = [];
+
+        // #316 law 1, second half · …AND THE MARKS THAT ARE NOT BODIES: a hole where one of our ✗ marks used
+        // to be, and a sentry somebody else left standing at 00. Same story as the husks above and the same
+        // shape — the GROUND holds them (Map._groundMemory, keyed and vaulted) and this is the visit's copy,
+        // seeded on arrival (SeedTheScarsLeftHere) because it is what the renderer walks.
+        //
+        // Nothing on this list is ever written HERE. A rival's visit happens while the captain is in orbit
+        // and is filed straight to the ledger (TheRivalsLeftTheirMarks); an excursion only ever reads it.
+        public List<GroundMemory.Scar> Scars { get; init; } = [];
         public double FireTimer { get; set; }              // #314: accrues to the SentryBot fire cadence
 
         // #316 law 2 · Which husks this visit has already been told about, by their ledger key. Presentation

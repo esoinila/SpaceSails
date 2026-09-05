@@ -119,8 +119,16 @@ public partial class Map
             // #455: the odds this chest actually earned — the carry, the shovel and the ground's own Reever
             // weight, read off the ONE oracle (CacheSafety) that also wrote the line the captain was shown
             // when he put it down. The promise and the dice cannot drift because they are the same call.
-            if (DiscoveryRule.DiscoveredWithin(c, from, SimTime) is not null)
+            //
+            // #316 law 3 · …and the FOURTH term, the only one the captain chose on purpose: the husks his own
+            // stand left on that ground. Sentry fire buys safety today and advertises the site tomorrow. A
+            // quiet dig hands a zero in here and the chest reads exactly as it always has.
+            if (DiscoveryRule.DiscoveredWithin(c, from, SimTime, TheFightThisGroundCarries(c)) is { } found)
             {
+                // #316 law 1, second half · THE GROUND CARRIES WHAT HAPPENED — written BEFORE the chest comes
+                // off the books, because every mark is derived from the chest: where its ✗ was, and what
+                // haunted the ground it was under.
+                TheRivalsLeftTheirMarks(c, found);
                 _caches.Remove(c.Id);
                 RendererInterop.PlayCue("alarm");
                 ShowPulseMessage($"🏴‍☠️ Someone dug up our chest on {BodyName(c.BodyId)} — {c.ContentsLine()} gone. Split the hoards next time.");

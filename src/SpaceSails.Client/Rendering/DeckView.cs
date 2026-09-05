@@ -94,6 +94,12 @@ public sealed partial class DeckView
         (double X, double Y, string Text)? Countdown = null,
         System.Collections.Generic.IReadOnlyList<(double X, double Y, string Counter, bool Dry, bool Firing, double AimX, double AimY)>? Bots = null,
         System.Collections.Generic.IReadOnlyList<(double X, double Y)>? Husks = null,
+        // #316 law 1, second half: DISTURBED GROUND AT A DUG SPOT — the hole a rival's shovel left where one
+        // of our ✗ marks used to be. The chest is off the ledger by the time this draws, so the hole is all
+        // that is left of it, and the whole point is that it is not nothing. Drawn in the ground-mark
+        // vocabulary the regolith already speaks (the divot ring the beach-comber's checked squares use, with
+        // the ✗'s own glyph gone dead inside it) — no new art: these marks are a closed alphabet.
+        System.Collections.Generic.IReadOnlyList<(double X, double Y)>? Pits = null,
         // #324: the contextual surface keybar — the deploy/drop keys spelled out along the bottom while
         // they're live (a bot in the sling shows [T], a chest in hand shows [G]). #212 affordances-never-hide.
         string? KeyHints = null,

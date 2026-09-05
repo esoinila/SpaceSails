@@ -563,6 +563,19 @@ public sealed partial class DeckView
                     }
                 }
             }
+            // #316 law 1, second half · THE HOLE WHERE A ✗ USED TO BE. Under the live marks, because a hole
+            // is older than anything standing on it, and in the ground vocabulary already here: the divot
+            // ring a probed square wears, with the treasure glyph gone grey in the middle of it. Nothing new
+            // is drawn for this — the ✗ that is no longer yours IS the mark.
+            if (hud.Pits is { } pits)
+            {
+                foreach ((double px, double py) in pits)
+                {
+                    (float sx, float sy) = project(px, py);
+                    _renderer.DrawCircle(sx, sy, 0.5f * scale, null, PitRing, 1f);
+                    _renderer.DrawText(sx, sy + 4, "✗", PitInk, "bold 16px monospace", TextAlign.Center);
+                }
+            }
             foreach ((double mx, double my, bool haunted) in hud.CacheMarks)
             {
                 (float sx, float sy) = project(mx, my);

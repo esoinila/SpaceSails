@@ -298,7 +298,12 @@ public partial class Map
         // #455 · …and now that sentence has real numbers behind it. The rung read is the SAME call the
         // return-trip roll makes (TreasureCache.Safety → CacheSafety.Read), so the promise made here is
         // literally the threshold the dice will be compared against while the captain is away.
-        ShowPulseMessage($"⛏ Chest buried — {cache.ContentsLine()} off the books. The ✗ marks this spot. {cache.Safety.Sentence} Rivals may dig it up over the coming days; the more Reevers haunt this ground, the safer it stays. Now get back to the shuttle.");
+        //
+        // #316 law 3 · WHICH MEANS IT HAS TO KNOW ABOUT THE MESS HE MADE GETTING HERE. The watch prices this
+        // chest against the husks lying on this ground; a bury line that read the chest alone would quote a
+        // safe he does not have — this repo's third named bug class, the sentence and the sim disagreeing —
+        // and would quote it in the one case the captain most needs told: the loud stand he just made.
+        ShowPulseMessage($"⛏ Chest buried — {cache.ContentsLine()} off the books. The ✗ marks this spot. {cache.SafetyWith(TheFightThisGroundCarries(cache)).Sentence} Rivals may dig it up over the coming days; the more Reevers haunt this ground, the safer it stays. Now get back to the shuttle.");
     }
 
     // ── #455 rule 2 · A CHEST YOU RAN AWAY FROM IS STILL A CHEST ──────────────────────────────────────
@@ -450,8 +455,11 @@ public partial class Map
         // it stays in the ground as an OPEN cache (Map.Surface, the liftoff seam) — so the same oracle that
         // prices a bury prices this, read here for the chest as it would be LEFT: in the open, on this
         // ground. He is deciding whether to come back for it, and this is the number that decides it.
+        // #316 law 3 · …priced against the fight this ground is already carrying, exactly as the bury line
+        // is. A chest abandoned in the middle of a firefight is the loudest hiding place in the game.
         CacheSafetyRead read = CacheSafety.Read(
-            CacheSafety.PadDistanceOf(_avatarX, _avatarY), buried: false, WatchdogLevelAt(ex.Stop.Body.Id));
+            CacheSafety.PadDistanceOf(_avatarX, _avatarY), buried: false, WatchdogLevelAt(ex.Stop.Body.Id),
+            TheFightThisGroundCarries(ex));
         ShowPulseMessage($"🪤 Chest dropped! {read.Sentence} Full sprint now — come back for it when the ground's clear.");
     }
 
