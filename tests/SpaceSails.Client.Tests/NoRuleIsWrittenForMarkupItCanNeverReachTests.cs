@@ -149,6 +149,21 @@ public sealed class NoRuleIsWrittenForMarkupItCanNeverReachTests
             "the stem reading is gone: .map-plan-step-active is assembled at render time and would now be " +
             "called dead, which is the false red this law cannot survive.");
 
+        // #251 · the same question of the SECOND decomposition, where every surface's sheet is a rules-free
+        // carrier. Building the scope groups out of Sheets() alone left these components out of their own
+        // scope and called four of the desk's rules unreachable; EveryScopedSheet() is what fixed it, and
+        // this is the assertion that stops it silently coming back.
+        Sheet desk = sheets.Single(s => s.Path == "Pages/Stations/TrackingPost.razor.css");
+        Assert.True(Writes(byScope[desk.Scope], "tracking-post-card"),          // the desk's own root
+            "the sensors desk's scope does not know the class its own markup writes.");
+        Assert.True(Writes(byScope[desk.Scope], "sensors-opportunity-box"),     // a SURFACE's class
+            "the sensors desk's scope does not include its surfaces. Their .razor.css files carry no rules, "
+            + "so the compiler stamps no scope on them, and a scope group built out of sheets-with-rules "
+            + "leaves every one of them out — which reads exactly like #1110 and is not.");
+        Assert.False(Writes(byScope[page.Scope], "sensors-opportunity-box"),
+            "the map's scope now claims a class only the sensors desk writes — the pin has drifted, or the "
+            + "grouping has stopped telling two scopes apart.");
+
         // #1110 itself, stated as a fact about the two readings: the class IS written, and NOT in the scope
         // whose sheet used to carry the rule for it.
         Assert.True(Writes(TheClassNamesTheMarkupWrites.Value, "captain-ident-row"));
@@ -166,7 +181,30 @@ public sealed class NoRuleIsWrittenForMarkupItCanNeverReachTests
 
     /// <summary>Every scoped stylesheet in the client that has a rule in it, with the scope the COMPILER
     /// gave it and the selectors it writes (at-rule wrappers unwrapped, keyframes left alone).</summary>
-    private static IEnumerable<Sheet> Sheets()
+    private static IEnumerable<Sheet> Sheets() =>
+        EveryScopedSheet().Select(s =>
+        {
+            List<string> selectors = [];
+            Collect(File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", s.Path)), selectors);
+            return new Sheet(s.Path, s.Scope, selectors);
+        }).Where(s => s.Selectors.Count > 0);
+
+    /// <summary>
+    /// #251 · EVERY SHEET WITH A SCOPE, RULES OR NO RULES — which is a different set from
+    /// <see cref="Sheets"/>, and the difference is a bug this law shipped for two days.
+    ///
+    /// <para>A scope is a GROUP of components, and the group is what clause 2 asks about ("is this class
+    /// written by anything wearing my scope?"). Building that group out of <see cref="Sheets"/> silently
+    /// leaves out every component whose sheet is a RULES-FREE CARRIER — a file that exists only to give the
+    /// component its page's scope. Map's surfaces all carry rules (#1109 moved them), so the omission never
+    /// showed; the tracking post's eleven surfaces carry none, and the first run of this law over them called
+    /// four of the desk's own rules unreachable. The rules were fine. The law could not see the markup.</para>
+    ///
+    /// <para>So the scope is read from the compiler's stamp where there IS one, and from the csproj pin that
+    /// PUT it there where the sheet had no rule to stamp it on. Both are the build's own answer rather than
+    /// this file's — and <c>EverySurfaceWearsThePagesCssScopeTests</c> holds the pin to the page's sheet, so
+    /// the two cannot drift apart without something going red.</para></summary>
+    private static IEnumerable<(string Path, string Scope)> EveryScopedSheet()
     {
         string root = Path.Combine(RepoRoot(), "src", "SpaceSails.Client");
         foreach (string path in Directory.EnumerateFiles(root, "*.razor.css", SearchOption.AllDirectories)
@@ -175,18 +213,31 @@ public sealed class NoRuleIsWrittenForMarkupItCanNeverReachTests
                      .OrderBy(p => p, StringComparer.Ordinal))
         {
             string relative = Loose(path)[(Loose(root).Length + 1)..];
-            if (ScopeOf(relative) is not { } scope)
+            if ((ScopeOf(relative) ?? PinnedScopeOf(relative)) is { } scope)
             {
-                continue;   // a rules-free scope carrier: the compiler stamped nothing on it
-            }
-
-            List<string> selectors = [];
-            Collect(File.ReadAllText(path), selectors);
-            if (selectors.Count > 0)
-            {
-                yield return new Sheet(relative, scope, selectors);
+                yield return (relative, scope);
             }
         }
+    }
+
+    /// <summary>The scope the csproj pins onto a sheet, for a rules-free carrier the compiler stamped
+    /// nothing on. Reads the same <c>&lt;None Update="…" CssScope="…" /&gt;</c> entries
+    /// <c>EverySurfaceWearsThePagesCssScopeTests</c> holds to the page's own identifier, and understands the
+    /// one wildcard shape they use (<c>Pages\Map\*.razor.css</c>).</summary>
+    private static string? PinnedScopeOf(string relativeSheetPath)
+    {
+        foreach (Match pin in Regex.Matches(
+            File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "SpaceSails.Client.csproj")),
+            @"<None\s+Update=""([^""]+)""\s+CssScope=""([^""]+)""\s*/>"))
+        {
+            string pattern = pin.Groups[1].Value.Replace('\\', '/');
+            string asRegex = "^" + string.Join("[^/]*", pattern.Split('*').Select(Regex.Escape)) + "$";
+            if (Regex.IsMatch(relativeSheetPath, asRegex))
+            {
+                return pin.Groups[2].Value;
+            }
+        }
+        return null;
     }
 
     /// <summary>The scope attribute the SDK actually stamped on this sheet, read out of the generated
@@ -329,18 +380,18 @@ public sealed class NoRuleIsWrittenForMarkupItCanNeverReachTests
     private static IReadOnlyDictionary<string, Written> BuildByScope()
     {
         Dictionary<string, (HashSet<string> Names, HashSet<string> Stems)> byScope = new(StringComparer.Ordinal);
-        foreach (Sheet sheet in Sheets())
+        foreach ((string path, string scope) in EveryScopedSheet())
         {
             string razor = Path.Combine(
-                RepoRoot(), "src", "SpaceSails.Client", sheet.Path[..^4]);   // "X.razor.css" → "X.razor"
+                RepoRoot(), "src", "SpaceSails.Client", path[..^4]);   // "X.razor.css" → "X.razor"
             if (!File.Exists(razor))
             {
                 continue;
             }
 
-            if (!byScope.TryGetValue(sheet.Scope, out (HashSet<string> Names, HashSet<string> Stems) set))
+            if (!byScope.TryGetValue(scope, out (HashSet<string> Names, HashSet<string> Stems) set))
             {
-                byScope[sheet.Scope] = set =
+                byScope[scope] = set =
                     (new HashSet<string>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal));
             }
 

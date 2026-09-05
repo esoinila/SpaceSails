@@ -25,6 +25,11 @@
        of it, and it is held to its own law next door in TheComposedPageIsThePageTests. -->
   <ItemGroup>
     <Compile Include="..\SpaceSails.Client.Tests\MapMarkup.cs" Link="MapMarkup.cs" />
+    <!-- #251 - and the splice itself, which MapMarkup is a binding of. There are two decomposed pages in
+         the client now (Pages/Map.razor and Pages/Stations/TrackingPost.razor) and the mechanics are said
+         once, in SurfaceComposition; MapMarkup will not compile without it. Same rule as the two files
+         either side: one copy, linked. -->
+    <Compile Include="..\SpaceSails.Client.Tests\SurfaceComposition.cs" Link="SurfaceComposition.cs" />
     <!-- #251 item 3 — and its twin for the stylesheet, for the same reason and by the same rule: one copy,
          linked. MapMarkup.Read hands the whole cascade back for Pages/Map.razor.css, so it cannot compile
          without it. -->
