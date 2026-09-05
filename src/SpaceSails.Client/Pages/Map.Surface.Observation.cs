@@ -97,13 +97,24 @@ public partial class Map
         r.LastLookIndex = glance.LookIndex;
         r.Stirred = glance.State == ReeverObservation.Watch.Stirred;
 
-        if (glance.State != ReeverObservation.Watch.Fixed)
+        // #324 STAYS WHOLE, AND THE `clearLine` HALF OF THIS IS THE WHOLE OF IT. `Look` reports Fixed for a
+        // contact that already has you whether or not it can see you — because that is the LATCH, and the
+        // latch is one-way. What the latch is NOT is knowledge of where you are standing now.
+        //
+        // Written without that half first, and it quietly repealed the oldest law on this ground: an Old One
+        // that had once seen the captain went on writing his live position into its memory through a slab,
+        // which is exactly what #324 forbids ("duck behind stone and the hunter loses your live position —
+        // the maze becomes a real instrument"). It broke no existing test, because every guard the repo has
+        // about the maze watches a contact that has NOT yet seen you. The one that watches a contact that
+        // HAS is AFixedOneStillLosesYouBehindStone.
+        if (!clearLine || glance.State != ReeverObservation.Watch.Fixed)
         {
             return;
         }
 
-        // It has you: the look becomes knowledge of WHERE. Done for an already-fixed contact too — that is
-        // the old "tracks your live position while it can see you" behaviour (#324), unchanged.
+        // It has you AND it can see you: the look becomes knowledge of WHERE. Done for an already-fixed
+        // contact too — that is the old "tracks your live position while the look holds" behaviour (#324),
+        // unchanged.
         r.LastSeenX = _avatarX;
         r.LastSeenY = _avatarY;
         if (r.EverSeen)
