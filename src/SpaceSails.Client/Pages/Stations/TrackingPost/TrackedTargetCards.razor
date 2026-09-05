@@ -1,0 +1,112 @@
+@namespace SpaceSails.Client.Pages.Stations
+@using SpaceSails.Core
+@using TrackedTarget = SpaceSails.Core.TrackedTarget
+@using TrackingCandidate = SpaceSails.Client.Pages.Stations.TrackingPost.TrackingCandidate
+@*
+    #251 · THE TRACKED-TARGET CARDS (PR-D's scope wall, one box per slot), ON ITS OWN FILE.
+
+    Moved out of Pages/Stations/TrackingPost.razor by PURE MOTION — the block between the two fences
+    below is the block that stood in the desk, character for character, at the indentation it had
+    there. Every member it reads is a [Parameter] carrying the desk's own member UNDER THAT MEMBER'S
+    OWN NAME (a field keeps its underscore, a method arrives as a delegate, a callback as itself), so
+    the markup moved without a rewrite and TrackingPostMarkup splices the desk back byte for byte.
+
+    The .razor.css beside this file carries no rules; it is there to give the component
+    TrackingPost.razor.css's OWN scope (b-9ekzcovohe, pinned in SpaceSails.Client.csproj). That sheet
+    has forty rules and not one `::deep` among them, so every one of them is scope-dependent: without
+    the carrier, every rule that styles this surface would stop matching the moment the markup moved
+    out of the desk — no build error, no test, the block just renders unstyled.
+
+    PR-D's own paragraph above this block stays in TrackingPost.razor with the `@if (FullScreen)` that
+    selects between this and the compact ledger table; what moved is the header line and the card wall.
+
+    The `<canvas id="@CardCanvasId(entry.ShipId)">` per card is unaffected by the move: a DOM id is
+    global, and TrackingPost.Cards.cs goes on finding each canvas by that id off the shared
+    RendererInterop.FrameTick, exactly as it did when the element was written in the desk's own file.
+*@
+@* ── MARKUP BEGINS · verbatim from TrackingPost.razor ─────────────────────────────────────────────── *@
+            <div class="fw-bold mb-1">Tracked targets (@_ledger.Entries.Count / @_ledger.MaxTracks)</div>
+            <div class="sensors-main">
+                <div class="sensors-cards flex-grow-1">
+                    @{
+                        List<TrackedTarget> orderedCards = OrderedTracks();
+                    }
+                    @if (orderedCards.Count == 0)
+                    {
+                        <div class="text-secondary">Track ledger empty — the passive watch is scanning; contacts land here as the sweep finds them, and lost tracks come back as cold cases.</div>
+                    }
+                    @foreach (TrackedTarget entry in orderedCards)
+                    {
+                        TrackingCandidate? candidate = FindCandidate(entry.ShipId);
+                        double quality = entry.EffectiveQuality(SimTime);
+                        double daysAgo = (SimTime - entry.LastConfirmedTime) / 86400.0;
+                        Vector2d position = candidate?.State.Position ?? entry.LastObservation.Position;
+                        Vector2d velocity = candidate?.State.Velocity ?? entry.LastObservation.Velocity;
+                        double distance = (position - ShipPosition).Length;
+                        double relSpeed = (velocity - ShipVelocity).Length;
+                        double closing = RelativeMotion.ClosingSpeed(ShipPosition, ShipVelocity, position, velocity);
+                        double bearingDeg = TrackingStation.Bearing(position - ShipPosition) * 180.0 / Math.PI;
+                        if (bearingDeg < 0) { bearingDeg += 360; }
+                        bool isThreat = candidate?.IsThreat ?? false;
+                        bool onScope = _schedule.Active?.TargetShipId == entry.ShipId;
+                        SightAdvantage sight = SensorModel.Default.Advantage(
+                            new ShipState(ShipPosition, ShipVelocity, SimTime, ShipCharge),
+                            new ShipState(position, velocity, SimTime));
+                        <div class="sensor-card sensor-card-row @(onScope ? "sensor-card-live" : "") @(isThreat ? "sensor-card-threat" : "")"
+                             @key="entry.ShipId">
+                            <canvas id="@CardCanvasId(entry.ShipId)" class="sensor-card-scope"></canvas>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold">@(isThreat ? "🐺 " : "")@(candidate?.Callsign ?? entry.ShipId)@(_aware.Contains(entry.ShipId) ? " · aware ⚠" : "")</span>
+                                    <span>@(onScope ? "● ON SCOPE" : "")</span>
+                                </div>
+                                <div>@FormatWallDistance(distance) · rel @((relSpeed / 1000).ToString("F2")) km/s ·
+                                     @RelativeMotion.WordedBefore(closing, "F2")</div>
+                                <div class="text-secondary">brg @((int)bearingDeg)° · @daysAgo.ToString("F1")d since fix@(candidate?.CargoDetail is { } cd ? $" · {cd}" : "")</div>
+                                <div class="@(sight.TheySeeUs ? "text-warning" : "text-info")">@SightLine(sight)</div>
+                                @if (BeaconLine(sight) is { } beaconLine)
+                                {
+                                    <div class="@(beaconLine.StartsWith("🚨") ? "text-danger fw-bold" : "text-secondary")">@beaconLine</div>
+                                }
+                                <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
+                                <div class="d-flex justify-content-end gap-1 mt-1">
+                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                            title="War-room target of interest — a DIFFERENT slot than the nav destination"
+                                            @onclick="() => OnSetInterest.InvokeAsync(entry.ShipId)">🎯</button>
+                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" disabled="@(candidate is null)"
+                                            title="Take a fresh fix on this contact now — a zero-age observation tightens the prediction cone"
+                                            @onclick="() => ConfirmNow(entry.ShipId)">Confirm</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1"
+                                            title="Drop this track from the ledger and free the telescope slot"
+                                            @onclick="() => Drop(entry.ShipId)">Drop</button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+@* ── MARKUP ENDS ──────────────────────────────────────────────────────────────────────────────────── *@
+
+@code {
+    // #251 · Every [Parameter] below is a member of TrackingPost under the member's own name.
+    // A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public TrackedTargetLedger _ledger { get; set; } = default!;
+    [Parameter] public TelescopeSchedule _schedule { get; set; } = default!;
+    /// <summary>the desk's `HashSet&lt;string&gt; _aware` (PR-6: who knows they have been pinged) — the SAME
+    /// set, not a copy, so the ⚠ beside a callsign is the desk's own bookkeeping and not a snapshot.</summary>
+    [Parameter] public HashSet<string> _aware { get; set; } = default!;
+    [Parameter] public double SimTime { get; set; }
+    [Parameter] public Vector2d ShipPosition { get; set; }
+    [Parameter] public Vector2d ShipVelocity { get; set; }
+    [Parameter] public double ShipCharge { get; set; }
+    [Parameter] public Func<List<TrackedTarget>> OrderedTracks { get; set; } = default!;
+    [Parameter] public Func<string, TrackingCandidate?> FindCandidate { get; set; } = default!;
+    [Parameter] public Func<string, string> CardCanvasId { get; set; } = default!;
+    [Parameter] public Func<SightAdvantage, string> SightLine { get; set; } = default!;
+    [Parameter] public Func<SightAdvantage, string?> BeaconLine { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatWallDistance { get; set; } = default!;
+    [Parameter] public EventCallback<string> OnSetInterest { get; set; }
+    [Parameter] public Action<string> ConfirmNow { get; set; } = default!;
+    [Parameter] public Action<string> Drop { get; set; } = default!;
+}

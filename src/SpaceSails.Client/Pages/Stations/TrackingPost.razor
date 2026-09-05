@@ -78,66 +78,13 @@
             @* PR-D: the tracked-target boxes, one live scope image per slot (owner: "boxes with
                images. Each has its own") — the M27 single cycling tile grew into a per-card
                instrument; the card still carries the full nav-grade picture beside it. *@
-            <div class="fw-bold mb-1">Tracked targets (@_ledger.Entries.Count / @_ledger.MaxTracks)</div>
-            <div class="sensors-main">
-                <div class="sensors-cards flex-grow-1">
-                    @{
-                        List<TrackedTarget> orderedCards = OrderedTracks();
-                    }
-                    @if (orderedCards.Count == 0)
-                    {
-                        <div class="text-secondary">Track ledger empty — the passive watch is scanning; contacts land here as the sweep finds them, and lost tracks come back as cold cases.</div>
-                    }
-                    @foreach (TrackedTarget entry in orderedCards)
-                    {
-                        TrackingCandidate? candidate = FindCandidate(entry.ShipId);
-                        double quality = entry.EffectiveQuality(SimTime);
-                        double daysAgo = (SimTime - entry.LastConfirmedTime) / 86400.0;
-                        Vector2d position = candidate?.State.Position ?? entry.LastObservation.Position;
-                        Vector2d velocity = candidate?.State.Velocity ?? entry.LastObservation.Velocity;
-                        double distance = (position - ShipPosition).Length;
-                        double relSpeed = (velocity - ShipVelocity).Length;
-                        double closing = RelativeMotion.ClosingSpeed(ShipPosition, ShipVelocity, position, velocity);
-                        double bearingDeg = TrackingStation.Bearing(position - ShipPosition) * 180.0 / Math.PI;
-                        if (bearingDeg < 0) { bearingDeg += 360; }
-                        bool isThreat = candidate?.IsThreat ?? false;
-                        bool onScope = _schedule.Active?.TargetShipId == entry.ShipId;
-                        SightAdvantage sight = SensorModel.Default.Advantage(
-                            new ShipState(ShipPosition, ShipVelocity, SimTime, ShipCharge),
-                            new ShipState(position, velocity, SimTime));
-                        <div class="sensor-card sensor-card-row @(onScope ? "sensor-card-live" : "") @(isThreat ? "sensor-card-threat" : "")"
-                             @key="entry.ShipId">
-                            <canvas id="@CardCanvasId(entry.ShipId)" class="sensor-card-scope"></canvas>
-                            <div class="flex-grow-1">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold">@(isThreat ? "🐺 " : "")@(candidate?.Callsign ?? entry.ShipId)@(_aware.Contains(entry.ShipId) ? " · aware ⚠" : "")</span>
-                                    <span>@(onScope ? "● ON SCOPE" : "")</span>
-                                </div>
-                                <div>@FormatWallDistance(distance) · rel @((relSpeed / 1000).ToString("F2")) km/s ·
-                                     @RelativeMotion.WordedBefore(closing, "F2")</div>
-                                <div class="text-secondary">brg @((int)bearingDeg)° · @daysAgo.ToString("F1")d since fix@(candidate?.CargoDetail is { } cd ? $" · {cd}" : "")</div>
-                                <div class="@(sight.TheySeeUs ? "text-warning" : "text-info")">@SightLine(sight)</div>
-                                @if (BeaconLine(sight) is { } beaconLine)
-                                {
-                                    <div class="@(beaconLine.StartsWith("🚨") ? "text-danger fw-bold" : "text-secondary")">@beaconLine</div>
-                                }
-                                <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
-                                <div class="d-flex justify-content-end gap-1 mt-1">
-                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
-                                            title="War-room target of interest — a DIFFERENT slot than the nav destination"
-                                            @onclick="() => OnSetInterest.InvokeAsync(entry.ShipId)">🎯</button>
-                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" disabled="@(candidate is null)"
-                                            title="Take a fresh fix on this contact now — a zero-age observation tightens the prediction cone"
-                                            @onclick="() => ConfirmNow(entry.ShipId)">Confirm</button>
-                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1"
-                                            title="Drop this track from the ledger and free the telescope slot"
-                                            @onclick="() => Drop(entry.ShipId)">Drop</button>
-                                </div>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </div>
+            <TrackedTargetCards _ledger="_ledger" _schedule="_schedule" _aware="_aware"
+                                SimTime="@SimTime" ShipPosition="@ShipPosition" ShipVelocity="@ShipVelocity"
+                                ShipCharge="@ShipCharge" OrderedTracks="OrderedTracks"
+                                FindCandidate="FindCandidate" CardCanvasId="CardCanvasId"
+                                SightLine="SightLine" BeaconLine="BeaconLine"
+                                FormatWallDistance="FormatWallDistance" OnSetInterest="OnSetInterest"
+                                ConfirmNow="ConfirmNow" Drop="Drop" />
         }
         else
         {
