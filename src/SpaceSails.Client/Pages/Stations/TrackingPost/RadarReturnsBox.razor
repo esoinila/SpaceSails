@@ -1,0 +1,58 @@
+@namespace SpaceSails.Client.Pages.Stations
+@using SpaceSails.Core
+@using TrackingCandidate = SpaceSails.Client.Pages.Stations.TrackingPost.TrackingCandidate
+@*
+    #251 · THE RADAR RETURNS BOX, ON ITS OWN FILE.
+
+    Moved out of Pages/Stations/TrackingPost.razor by PURE MOTION — the block between the two fences
+    below is the block that stood in the desk, character for character, at the indentation it had
+    there. Every member it reads is a [Parameter] carrying the desk's own member UNDER THAT MEMBER'S
+    OWN NAME (a field keeps its underscore, a method arrives as a delegate, a callback as itself), so
+    the markup moved without a rewrite and TrackingPostMarkup splices the desk back byte for byte.
+
+    The .razor.css beside this file carries no rules; it is there to give the component
+    TrackingPost.razor.css's OWN scope (b-9ekzcovohe, pinned in SpaceSails.Client.csproj). That sheet
+    has forty rules and not one `::deep` among them, so every one of them is scope-dependent: without
+    the carrier, every rule that styles this surface would stop matching the moment the markup moved
+    out of the desk — no build error, no test, the block just renders unstyled.
+
+    The `@if (FullScreen && RadarActive)` that opens the box stays in TrackingPost.razor. What moved is
+    the block inside the braces, #210's own note on the signed range-rate included.
+
+    `TrackingCandidate` is TrackingPost's own nested record, named bare by the moved `@{ }` and the
+    `@foreach`; it arrives as a using ALIAS so neither line had to be retyped.
+*@
+@* ── MARKUP BEGINS · verbatim from TrackingPost.razor ─────────────────────────────────────────────── *@
+            <div class="sensors-radar-box mt-2">
+                <div class="fw-bold text-danger">📡 Radar returns — exact fixes inside @FormatWallDistance(RadarRule.RangeMeters); every ship in earshot now knows where we are.</div>
+                @{ List<TrackingCandidate> returns = RadarReturns(); }
+                @if (returns.Count == 0)
+                {
+                    <div class="text-secondary">No returns — nothing inside radar range.</div>
+                }
+                else
+                {
+                    @foreach (TrackingCandidate c in returns)
+                    {
+                        double rd = (c.State.Position - ShipPosition).Length;
+                        double rv = (c.State.Velocity - ShipVelocity).Length;
+                        double rc = RelativeMotion.ClosingSpeed(ShipPosition, ShipVelocity, c.State.Position, c.State.Velocity);
+                        <div class="d-flex justify-content-between">
+                            <span>@(c.IsThreat ? "🐺 " : "")@c.Callsign</span>
+                            @* #210: one voice — the signed range-rate, not a bare magnitude. *@
+                            <span class="text-secondary">@FormatWallDistance(rd) · rel @((rv / 1000).ToString("F2")) km/s · @RelativeMotion.WordedBefore(rc, "F2")</span>
+                        </div>
+                    }
+                }
+            </div>
+@* ── MARKUP ENDS ──────────────────────────────────────────────────────────────────────────────────── *@
+
+@code {
+    // #251 · Every [Parameter] below is a member of TrackingPost under the member's own name.
+    // A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public Vector2d ShipPosition { get; set; }
+    [Parameter] public Vector2d ShipVelocity { get; set; }
+    [Parameter] public Func<List<TrackingCandidate>> RadarReturns { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatWallDistance { get; set; } = default!;
+}

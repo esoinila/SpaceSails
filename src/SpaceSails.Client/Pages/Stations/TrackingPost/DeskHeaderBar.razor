@@ -1,0 +1,48 @@
+@namespace SpaceSails.Client.Pages.Stations
+@*
+    #251 item 1 · THE DESK'S HEADER BAR, ON ITS OWN FILE.
+
+    Moved out of Pages/Stations/TrackingPost.razor by PURE MOTION — the block between the two fences
+    below is the block that stood in the desk, character for character, at the indentation it had
+    there. Every member it reads is a [Parameter] carrying the desk's own member UNDER THAT MEMBER'S
+    OWN NAME (a field keeps its underscore, a method arrives as a delegate, a callback as itself),
+    which is what lets the markup move without a rewrite and lets TrackingPostMarkup splice the desk
+    back together byte for byte.
+
+    The .razor.css beside this file carries no rules; it is there to give the component
+    TrackingPost.razor.css's OWN scope (b-9ekzcovohe, pinned in SpaceSails.Client.csproj). That sheet
+    has forty rules and not one `::deep` among them, so every single one of them is scope-dependent:
+    without the carrier, every rule that styles this surface would stop matching the moment the markup
+    moved out of the desk — no build error, no test, the card just renders unstyled.
+*@
+@* ── MARKUP BEGINS · verbatim from TrackingPost.razor ─────────────────────────────────────────────── *@
+    <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
+        <span class="fw-bold small">Tracking post 📡</span>
+        @if (FullScreen)
+        {
+            @* M27: the backdrop sun diagram is the live map — give the sensors chief its zoom. *@
+            <div class="btn-group btn-group-sm" role="group" aria-label="Backdrop map zoom">
+                <button type="button" class="btn btn-outline-light py-0" title="Zoom map out"
+                        @onclick="() => OnZoomMap.InvokeAsync(1.6)">🔍−</button>
+                <button type="button" class="btn btn-outline-light py-0" title="Zoom map in"
+                        @onclick="() => OnZoomMap.InvokeAsync(1 / 1.6)">🔍+</button>
+                <button type="button" class="btn btn-outline-light py-0" title="Center the ship"
+                        @onclick="() => OnCenterShip.InvokeAsync()">⌖ ship</button>
+            </div>
+        }
+        else
+        {
+            <button type="button" class="btn-close btn-close-white" aria-label="Close" title="Close the tracking post and stow the telescope panel" @onclick="() => OnClose.InvokeAsync()"></button>
+        }
+    </div>
+@* ── MARKUP ENDS ──────────────────────────────────────────────────────────────────────────────────── *@
+
+@code {
+    // #251 item 1 · Every [Parameter] below is a member of TrackingPost under the member's own name.
+    // A parameter that needs saying more than that says it on its own line.
+
+    [Parameter] public bool FullScreen { get; set; }
+    [Parameter] public EventCallback<double> OnZoomMap { get; set; }
+    [Parameter] public EventCallback OnCenterShip { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+}

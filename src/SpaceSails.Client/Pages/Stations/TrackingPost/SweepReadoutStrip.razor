@@ -1,0 +1,47 @@
+@namespace SpaceSails.Client.Pages.Stations
+@using SpaceSails.Core
+@*
+    #251 · THE SWEEP READOUT STRIP, ON ITS OWN FILE.
+
+    Moved out of Pages/Stations/TrackingPost.razor by PURE MOTION — the block between the two fences
+    below is the block that stood in the desk, character for character, at the indentation it had
+    there. Every member it reads is a [Parameter] carrying the desk's own member UNDER THAT MEMBER'S
+    OWN NAME (a field keeps its underscore, a method arrives as a delegate, a callback as itself), so
+    the markup moved without a rewrite and TrackingPostMarkup splices the desk back byte for byte.
+
+    The .razor.css beside this file carries no rules; it is there to give the component
+    TrackingPost.razor.css's OWN scope (b-9ekzcovohe, pinned in SpaceSails.Client.csproj). That sheet
+    has forty rules and not one `::deep` among them, so every one of them is scope-dependent: without
+    the carrier, every rule that styles this surface would stop matching the moment the markup moved
+    out of the desk — no build error, no test, the block just renders unstyled.
+
+    THE ONE SURFACE THAT CARRIES ITS OWN GATES, and deliberately. Everywhere else in this decomposition
+    the `@if` stays in TrackingPost.razor (#1107's idiom: the desk keeps its paint order in one place and
+    a closed surface is never instantiated). This region is TWO gates over ONE subject — how far the
+    running sweep has got, and what the last one said — three lines and one line. Split at the `@if` they
+    would be two three-line surfaces saying nothing to each other; kept whole they are the desk's sweep
+    readout, which is a thing a reader can name. Both gates moved inside the fence, so the composed desk
+    is still the desk, character for character.
+*@
+@* ── MARKUP BEGINS · verbatim from TrackingPost.razor ─────────────────────────────────────────────── *@
+        @if (_activeJob is not null)
+        {
+            <div class="progress tracking-progress mt-2" role="progressbar" aria-label="Sweep progress">
+                <div class="progress-bar bg-info" style="width:@(SweepProgressPercent.ToString("F0"))%"></div>
+            </div>
+        }
+        @if (_lastSweepMessage is not null)
+        {
+            <div class="text-secondary mt-1">@_lastSweepMessage</div>
+        }
+@* ── MARKUP ENDS ──────────────────────────────────────────────────────────────────────────────────── *@
+
+@code {
+    // #251 · Every [Parameter] below is a member of TrackingPost under the member's own name.
+    // A parameter that needs saying more than that says it on its own line.
+
+    /// <summary>the desk's `ScanJob? _activeJob` — the progress bar exists only while a sweep runs.</summary>
+    [Parameter] public ScanJob? _activeJob { get; set; }
+    [Parameter] public double SweepProgressPercent { get; set; }
+    [Parameter] public string? _lastSweepMessage { get; set; }
+}

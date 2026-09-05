@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -40,6 +40,11 @@ namespace SpaceSails.Client.Tests;
 /// <c>_renameDraftSet</c> parameter and the private property, and passing <c>_renameDraft</c> straight in:
 /// "SaveLoadRack.razor writes `_renameDraft`, which is a one-way [Parameter] — the page will never hear
 /// it."</para>
+///
+/// <para>#251 · <b>The law is stated over EVERY decomposed page</b>, not over one directory. The sensors
+/// desk's markup came out into <c>Pages/Stations/TrackingPost/</c> the same way and is swept by the same
+/// pass — a law that knew about one surfaces directory would be a law that a second decomposition walks
+/// straight past.</para>
 /// </summary>
 public sealed class NoSurfaceSwallowsAWriteTests
 {
@@ -57,6 +62,18 @@ public sealed class NoSurfaceSwallowsAWriteTests
 
     private static string SurfacesDir =>
         Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map");
+
+    /// <summary>Every decomposed page's surfaces directory. One pass, all of them.</summary>
+    private static IReadOnlyList<string> AllSurfaceDirs =>
+    [
+        SurfacesDir,
+        Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Stations", "TrackingPost"),
+    ];
+
+    private static IEnumerable<string> EverySurfaceFile() =>
+        AllSurfaceDirs
+            .SelectMany(d => Directory.EnumerateFiles(d, "*.razor", SearchOption.TopDirectoryOnly))
+            .OrderBy(p => p, StringComparer.Ordinal);
 
     /// <summary>Everything the moved block of one surface writes: an assignment it spells out, and an
     /// assignment <c>@bind</c> spells for it.</summary>
@@ -95,9 +112,7 @@ public sealed class NoSurfaceSwallowsAWriteTests
     {
         var swallowed = new List<string>();
 
-        foreach (string path in Directory
-            .EnumerateFiles(SurfacesDir, "*.razor", SearchOption.TopDirectoryOnly)
-            .OrderBy(p => p, StringComparer.Ordinal))
+        foreach (string path in EverySurfaceFile())
         {
             string text = File.ReadAllText(path);
             int begins = text.IndexOf(MapMarkup.MarkupBegins, StringComparison.Ordinal);
@@ -153,8 +168,15 @@ public sealed class NoSurfaceSwallowsAWriteTests
         Assert.DoesNotContain("_satchelPage", WhatItWrites("""@if (_satchelPage == SatchelPage.Notes)"""));
 
         // And there are surfaces to hold it to, several of which really do write.
-        string[] surfaces = [.. Directory.EnumerateFiles(SurfacesDir, "*.razor", SearchOption.TopDirectoryOnly)];
+        string[] surfaces = [.. EverySurfaceFile()];
         Assert.True(surfaces.Length > 60, $"only {surfaces.Length} surface(s) — this law is guarding an empty room.");
+
+        // #251 · every decomposed page is swept, not just the first one. A law that knew about Pages/Map/
+        // alone would let a second decomposition through untested, which is how this class of bug returns.
+        foreach (string dir in AllSurfaceDirs)
+        {
+            Assert.Contains(surfaces, p => Path.GetDirectoryName(p) == dir);
+        }
 
         int writers = surfaces.Count(p =>
         {

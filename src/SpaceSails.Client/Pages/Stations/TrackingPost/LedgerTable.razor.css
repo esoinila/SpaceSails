@@ -1,0 +1,7 @@
+/* #251 · THE CARRIER, NOT A STYLESHEET.
+
+   This file holds no rules. It exists so LedgerTable.razor gets a CSS scope at all, and the csproj pins that
+   scope to Pages/Stations/TrackingPost.razor.css's own (b-9ekzcovohe) — so every selector in the desk's
+   sheet compiles to exactly the string it compiled to before the cut and matches exactly the elements it
+   matched. Forty rules, none of them ::deep: without this file, none of them would match this surface.
+   See EverySurfaceWearsThePagesCssScopeTests. */
