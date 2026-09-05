@@ -396,6 +396,9 @@ public partial class Map
     //   intel  = the new first stage: accepted, wreck HIDDEN, transponder fix in the Comms ledger.
     //   active = post-scan (backward-compatible): accepted AND wreck already charted.
     //   picked = charted AND already lifted (fly nowhere — hand off on the spot).
+    // #233 · Any stage may be suffixed with "-chip" (/map?fetch=intel-chip) to deal the roadster the
+    // blackmail twin's cargo rather than the wallet, so the three endings can be walked without waiting for
+    // the one-in-four to land.
     // The drop-off is the interior station you're standing in (so "picked" can be delivered on the
     // spot), else the first interior station. Pair intel with ?start=wreck to test the proximity pickup.
     private void InjectFetchCheat(string stage)
@@ -417,12 +420,17 @@ public partial class Map
         _quests.Add(new Quest($"fetch-{++_questSeq}", QuestKind.Fetch, "THE FIXER",
             "", destName, "Fetch the roadster's lost wallet",
             "[test] a fetch job, dropped straight into the ledger.", 4200,
-            DestBodyId: dest, SourceBodyId: wreckId)
+            DestBodyId: dest, SourceBodyId: wreckId,
+            Pin: stage.Contains("chip", StringComparison.Ordinal) ? CompromisingChip.FindId : null)
         {
-            State = stage == "picked" ? QuestState.PickedUp : QuestState.Active,
+            State = stage.StartsWith("picked", StringComparison.Ordinal) ? QuestState.PickedUp : QuestState.Active,
         });
+        if (stage.StartsWith("picked", StringComparison.Ordinal) && stage.Contains("chip", StringComparison.Ordinal))
+        {
+            _satchel = [.. Core.Satchel.Add(_satchel, CompromisingChip.Found())]; // already prised, in the pocket
+        }
 
-        if (stage == "intel")
+        if (stage.StartsWith("intel", StringComparison.Ordinal))
         {
             // Pre-scan: leave the wreck hidden and seed the transponder fix (the hunt's first stage).
             if (IsBodyHidden(wreckId) && !_scopeIntel.Any(si => si.BodyId == wreckId))

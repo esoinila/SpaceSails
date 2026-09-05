@@ -93,6 +93,29 @@
                 </table>
             }
 
+            @* #233 · The buyer seam, used for the one thing on this desk that is not a timetable. The row
+               only exists while the chip is in the captain's pocket and this desk is open, so there is no
+               verb here to refuse — a verb is drawn where it applies rather than shown and denied. *@
+            @if (ChipPrice is { } chipPrice)
+            {
+                <div class="text-secondary mb-1">Off the books entirely:</div>
+                <table class="table table-sm table-dark mb-2">
+                    <tbody>
+                        <tr>
+                            <td>
+                                @CompromisingChip.Name
+                                <div class="text-secondary">@CompromisingChip.LookCardLine</div>
+                            </td>
+                            <td class="text-end align-middle text-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-success py-0 px-1" title="Sell it here instead of handing it back — the buyer pays more than the contract, and the outfit that runs this ground will hear about it" @onclick="() => OnSellChip.InvokeAsync()">
+                                    Sell @chipPrice.ToString("N0", CultureInfo.InvariantCulture) cr
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            }
+
             <div class="text-secondary mb-1">Your sellable tracks (quality ≥ 50%):</div>
             @if (!SellableTracks.Any())
             {
@@ -175,6 +198,15 @@
     /// <summary>Raised after a successful intel buy (the callsign bought) — Map.razor drops a
     /// line on the news wire (PR-14); this component never needs to know the wire exists.</summary>
     [Parameter] public EventCallback<string> OnIntelPurchased { get; set; }
+
+    /// <summary>#233 · What this desk's buyer will pay for the roadster's data chip, or null when the
+    /// captain is not carrying one. Priced by Map off the contract's own pay
+    /// (<see cref="CompromisingChip.FencePrice"/>) — this component never does arithmetic about it.</summary>
+    [Parameter] public int? ChipPrice { get; set; }
+
+    /// <summary>#233 · Raised when the captain sells the chip here. Map moves the coin, takes it out of the
+    /// pocket, banks the band of heat and lets the fence speak; the desk only carries the press.</summary>
+    [Parameter] public EventCallback OnSellChip { get; set; }
 
     private IEnumerable<TrackedShipInfo> SellableTracks =>
         TrackedShips.Where(t => IntelMarket.CanSellTrack(t.Quality));

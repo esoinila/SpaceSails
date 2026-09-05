@@ -501,6 +501,7 @@ sweep roster | _parkWalkCheat | Boolean
 sweep roster | _parrotBubbleUntilMs | Double
 sweep roster | _parrotCooldownUntilMs | Double
 sweep roster | _parrotCounter | Int32
+sweep roster | _parrotHuntedTheCar | Boolean
 sweep roster | _parrotOffBooks | HashSet<String>
 sweep roster | _parrotSawArc | Boolean
 sweep roster | _parrotSawHunter | Boolean
@@ -2041,36 +2042,36 @@ the pulse cooldown | TheElectricUniverse.OneLongGap | -1
 the pulse cooldown | TheElectricUniverse.AHeldKey | -1
 the pulse cooldown | TheElectricUniverse.APlannedRoute | -1
 the pulse cooldown | TheElectricUniverse.AHandOnTheWarpSlider | -1
-sweep | HerOwnDeckInFlight.SteadyFrames | 819 fields, sha256 f5e307fb5f83ddd0d2f7720cc901bd9485904b4838b5139b5bd22e071823bc71
-sweep | HerOwnDeckInFlight.OneLongGap | 819 fields, sha256 9217d9a8c682f76d3892bd5f16e584fcc7bdfa337489885cf80282f2114b3c98
-sweep | HerOwnDeckInFlight.AHeldKey | 819 fields, sha256 a7feb4fdfebf0f67d18536904884a8422145fb8e3752cd3c276d9bc91f96d7f4
-sweep | HerOwnDeckInFlight.APlannedRoute | 819 fields, sha256 a2cf2a03f6afaa4c7b9a29cd37fbc835180a789e1fff09fed62312e30b993a2f
-sweep | HerOwnDeckInFlight.AHandOnTheWarpSlider | 819 fields, sha256 9978cec25187c22aad720bf161ef97d0f00655065fe95b5e9af17a31276909a3
-sweep | TheRegolithOnFoot.SteadyFrames | 819 fields, sha256 3402d5587abccc0d7a67a89a3ed15d0f0e039cd901364aa69b3c5aff5e878ff0
-sweep | TheRegolithOnFoot.OneLongGap | 819 fields, sha256 8d059a50bab554764cd64da5c54655b3650b220638d72a361d683c6731449ee7
-sweep | TheRegolithOnFoot.AHeldKey | 819 fields, sha256 b90a4f5c7e4c3128bc29bf32fd62de161c76b65aead45242b8abd5b395ae6503
-sweep | TheRegolithOnFoot.APlannedRoute | 819 fields, sha256 ca8726f21a5845e6cb2039c4af52f8d1f7bcb405a9891637ab84a806f9b27e77
-sweep | TheRegolithOnFoot.AHandOnTheWarpSlider | 819 fields, sha256 20a7337136416493d455a6653efbe954d9fe9c006331128db2d478a6aa8b4450
-sweep | AHiveFloorWithAPatrol.SteadyFrames | 819 fields, sha256 e19e1090ca4def8bbb0c2329d351d60468b61be1d5c375b88828ca5a17016262
-sweep | AHiveFloorWithAPatrol.OneLongGap | 819 fields, sha256 702910c9306f22acda484f896ab502885afdb788d65832a1a9e276ad5ebc763a
-sweep | AHiveFloorWithAPatrol.AHeldKey | 819 fields, sha256 de3f3fbcefb1480764408bc9c281ac2b4ead9830489957aaccd9bf3908fd0e55
-sweep | AHiveFloorWithAPatrol.APlannedRoute | 819 fields, sha256 fb9673c2e13aa4857ea7428b20813bcfea97166567bdbf34726f4d144515ceb5
-sweep | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 819 fields, sha256 723c9bcc9ad4f59c9fa26249f10daded231393e82dae88d1693fb1e8dfad1846
-sweep | ACaptainInAChair.SteadyFrames | 819 fields, sha256 4c6a2f4917a8bf6e723c1229bbc4e223155e80a8d08e489d3aad045546c0a4d3
-sweep | ACaptainInAChair.OneLongGap | 819 fields, sha256 b4ef181a159e0217652e6156f57dbc34e7ab2a39a15861e133c6b6be365ab283
-sweep | ACaptainInAChair.AHeldKey | 819 fields, sha256 9100cd4ec45661459e9a503139da6d3b08eec803ba7aab26c9f9332c1784fd27
-sweep | ACaptainInAChair.APlannedRoute | 819 fields, sha256 fb9673c2e13aa4857ea7428b20813bcfea97166567bdbf34726f4d144515ceb5
-sweep | ACaptainInAChair.AHandOnTheWarpSlider | 819 fields, sha256 13a3801be5b6e7984036eb4bc8ee47882501de6c0385571459e41f03f4e9b368
-sweep | TheMapFrameInFlight.SteadyFrames | 819 fields, sha256 d99e8c1b6af1c1f88cf8f68331e87678f86dc00828936a72f89e6b81b6c671c9
-sweep | TheMapFrameInFlight.OneLongGap | 819 fields, sha256 5a9cf4d44bbf65b028c395f2e61294f75161ed8a03e794dffdf0637a505353ee
-sweep | TheMapFrameInFlight.AHeldKey | 819 fields, sha256 d6bbfa9e4d27dc2be13d1a4970637d62ec85229eecf6d38e26afb3588e525cf0
-sweep | TheMapFrameInFlight.APlannedRoute | 819 fields, sha256 e7f0f605537073fa9bf0275f031311456f834a98302411c73028ae98e3bcb1bd
-sweep | TheMapFrameInFlight.AHandOnTheWarpSlider | 819 fields, sha256 00362a3bb400e30c236c70e8322bc9735ccffd63850aa6f543ba5a57a2ca6566
-sweep | TheElectricUniverse.SteadyFrames | 819 fields, sha256 0ff5934d0b0c06231088d2101589c5b3aa502c2721eb1f1320e27a68a0627dc9
-sweep | TheElectricUniverse.OneLongGap | 819 fields, sha256 8a444f103751f4ef350c25c8bf3f54f28ccca97265c82dbde242239aa982e59c
-sweep | TheElectricUniverse.AHeldKey | 819 fields, sha256 618d6f398fde0506f1e626f56b8a7797a898f06928d23496a22e51682981ef2e
-sweep | TheElectricUniverse.APlannedRoute | 819 fields, sha256 00d159f540491e6b6bfd170ac70046d4568bb35a2930fea9732aa4ed6b9d711a
-sweep | TheElectricUniverse.AHandOnTheWarpSlider | 819 fields, sha256 6278ab06964abb60a12a03bac675f7d84b5c6880e1d93f72b27ef5274d08734f
+sweep | HerOwnDeckInFlight.SteadyFrames | 820 fields, sha256 b950ab744d5843d33a277c7681907fa6cee42b832d27ac325b923e7f52175f01
+sweep | HerOwnDeckInFlight.OneLongGap | 820 fields, sha256 99586d2de5fd2d722a4f42af8fd4ff4fcea0e5cfa8715e885bc94f1c879697c1
+sweep | HerOwnDeckInFlight.AHeldKey | 820 fields, sha256 68a8232431696d00cd18cc897b1b3c58c385f1bbba28179100b8e9e43cd3ece2
+sweep | HerOwnDeckInFlight.APlannedRoute | 820 fields, sha256 f40149b537301eec6666a0370b6a9068f393d7fda0c98bc6cf13f8e00a789a06
+sweep | HerOwnDeckInFlight.AHandOnTheWarpSlider | 820 fields, sha256 fbc34e994ebc4e308c9196f8006db1956989124a6ff994bbf8ef162c0a58655b
+sweep | TheRegolithOnFoot.SteadyFrames | 820 fields, sha256 097d8d82b1cfeeb2a59122621f0ddc2e4f4430ea58685581651a2ebac66e260d
+sweep | TheRegolithOnFoot.OneLongGap | 820 fields, sha256 e0f56659f83b616bd6708e3c65d2493548fd708109a8cbc8e8a118b457b6e1d5
+sweep | TheRegolithOnFoot.AHeldKey | 820 fields, sha256 08f977c777bcca6f1cd4efe8c3264d2844b311bab43a78cb8515cb78c9bb2dcd
+sweep | TheRegolithOnFoot.APlannedRoute | 820 fields, sha256 d5cae01f6822030049d92e1e6fd328c4f24e359c48f66d16669d5d242ee866b9
+sweep | TheRegolithOnFoot.AHandOnTheWarpSlider | 820 fields, sha256 7c64c5cbbc59ea506b1dce998f19def189b16c85c689f2eeb76592d1bbd27578
+sweep | AHiveFloorWithAPatrol.SteadyFrames | 820 fields, sha256 4eb733b888755da7efc2d96dfb10074ebbf1b46679464678f813abda53a22152
+sweep | AHiveFloorWithAPatrol.OneLongGap | 820 fields, sha256 c4a8de6e05599ac0bebc4dcababf955a215530b582eef4e8a0d86e6269e6616a
+sweep | AHiveFloorWithAPatrol.AHeldKey | 820 fields, sha256 bc0eaeaa8b74401bddcd087d563219e4fe22044d016be615558e23d0b921bad4
+sweep | AHiveFloorWithAPatrol.APlannedRoute | 820 fields, sha256 6996e0b7a74fd421b71e9321e8a40edd1e489c86e22b38882397c4e29c81720d
+sweep | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 820 fields, sha256 02b4635548f11eb91115ee459ea6ff48a19680b32ebabc5d0639227119909693
+sweep | ACaptainInAChair.SteadyFrames | 820 fields, sha256 fba6d11a0bc8920fb09bd8e9ffe91f767cecdafa36b98b91ec77b54ede01df37
+sweep | ACaptainInAChair.OneLongGap | 820 fields, sha256 9c038064575083007da97ec3816620b9b92c4f285a054d8b9b0b5119067a5ace
+sweep | ACaptainInAChair.AHeldKey | 820 fields, sha256 cfe7d7806352db8836a10a147da5b0b76d866bba34fbd5327f1adb37d1f28648
+sweep | ACaptainInAChair.APlannedRoute | 820 fields, sha256 6996e0b7a74fd421b71e9321e8a40edd1e489c86e22b38882397c4e29c81720d
+sweep | ACaptainInAChair.AHandOnTheWarpSlider | 820 fields, sha256 299b1bcab9df0f056d10084cf415bba128c6b707c96258e8fa8facc794342049
+sweep | TheMapFrameInFlight.SteadyFrames | 820 fields, sha256 ed27aae50999d1d700b9b53d7fd520d3120d78f0bd1cc4133e23a1e35fb6b286
+sweep | TheMapFrameInFlight.OneLongGap | 820 fields, sha256 25881c8b28590c5371ceec206d715c3bb6ea73ec022a9395d27344877bc94829
+sweep | TheMapFrameInFlight.AHeldKey | 820 fields, sha256 4ae79b7ba5c4f197b7d105e3b19ded34cfecf6a69a05dbd3fd286630b8286eef
+sweep | TheMapFrameInFlight.APlannedRoute | 820 fields, sha256 bbd133dc7ca3da5aa6eff8c17eef413bd70dd2e859c9c4efdf64f4bb0a1caf4a
+sweep | TheMapFrameInFlight.AHandOnTheWarpSlider | 820 fields, sha256 2d259f30cfca6cd5039e5503f61489adc50c843574bb916575a7318ca1711eb6
+sweep | TheElectricUniverse.SteadyFrames | 820 fields, sha256 6615da7a62704793756ede14b14fdc232449756041164094f032f37774a741cf
+sweep | TheElectricUniverse.OneLongGap | 820 fields, sha256 919a05d74d4f9112e4095996d8fd2c94f0d47477da3f08c648530991788f7032
+sweep | TheElectricUniverse.AHeldKey | 820 fields, sha256 b8d90ef762b7c7b368e04e5dfe91f092268bbfefe7c7f61a3e35439b0eb1d8cf
+sweep | TheElectricUniverse.APlannedRoute | 820 fields, sha256 fc53644c98d5b4d4f5ced98ffe12da118347729f67612cd8550db52400d88942
+sweep | TheElectricUniverse.AHandOnTheWarpSlider | 820 fields, sha256 f3f6a065e3914572b6ed646930aff3fd941d2556074b1d7225efa4f81a1e9154
 walked-view pen | HerOwnDeckInFlight.SteadyFrames | 39397 calls, sha256 e4a2d0b25df18e3bf7b360589b17fe0b7fa7dd14d3b861903edf1594ba618acb
 walked-view pen | HerOwnDeckInFlight.OneLongGap | 39406 calls, sha256 5297158a2c8eefea027e7c47384a3605357b794dc4eafc2269f629a83635336f
 walked-view pen | HerOwnDeckInFlight.AHeldKey | 39395 calls, sha256 b85af1d2af7441fda3e67a7618d9e56e6765f8c27d1b0f818b8598a48efdcada

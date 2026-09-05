@@ -29,6 +29,12 @@ public static class Parrot
         Busted,
         LongHaul,
         Adrift,
+
+        // #233 · The car mission's running gag, in the owner's own words. Appended deliberately, never
+        // inserted: Lines is indexed by the ordinal, so a kind put in the middle would silently reassign
+        // every sentence below it to the wrong event.
+        CarHunt,
+        CarFound,
     }
 
     /// <summary>One squawk at a time, and then the bird sulks this long (real seconds).</summary>
@@ -82,6 +88,13 @@ public static class Parrot
         // alert. The bird names the fix and PROPOSES the tow (the owner went adrift for real and couldn't
         // find the one button the moment existed to offer — so the parrot offers it aloud).
         ["We're dry, captain — shall I whistle for a tow? SQUAWK!", "Dead in the black, not a pulse left — say the word and I'll whistle up a rescue!", "Adrift and drifting! Call the tug, captain — I'll squawk 'em over. SQUAWK!"],
+        // CarHunt (#233) — the scope swings onto the Fixer's fix and the hunt for the dead car begins.
+        // ONE line where every other kind has three, and deliberately: this is half of a two-beat gag whose
+        // punchline lands four beats later, and a set-up that rotates is a different joke every time you
+        // hear it. Owner-authored, verbatim (rotation is still safe — Line() wraps on the row's length).
+        ["DUDE. WHERE. Is. The CAR?!"],
+        // CarFound (#233) — the punchline, at the moment the pickup unlocks. Owner-authored, verbatim.
+        ["You found your CAAAR!"],
     ];
 
     /// <summary>The squawk text for an event: a fixed rotation over that event's small line

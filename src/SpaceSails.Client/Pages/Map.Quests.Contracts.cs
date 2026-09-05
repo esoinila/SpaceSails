@@ -248,6 +248,19 @@ public partial class Map
             Vector2d wreck = _ephemeris.Position(q.SourceBodyId, SimTime);
             if ((_ship.Position - wreck).Length <= FetchPickupRangeM)
             {
+                // #233 · ALONGSIDE, and the bird has been waiting the whole flight for this. Owner's own
+                // framing: the punchline lands at "the moment the fetch pickup unlocks", which is this line,
+                // so it needs no latch of its own — the state pattern above already fires once.
+                SquawkTheCarFound();
+
+                // #233 · …and one car in four has photographs in it instead. Same moment, same range, same
+                // cue; what differs is that this one comes ABOARD, in the pocket, with three ways out.
+                if (TheCarHasTheChip(q))
+                {
+                    TheChipComesAboard(q);
+                    continue;
+                }
+
                 // #727 · the one writer. This leg IS the chair's — a proximity the ship earns by coasting,
                 // and the compass collapses it accordingly — but it goes through the same door all the same,
                 // so "the chair advanced it" and "the boots advanced it" stay one code path.
@@ -263,6 +276,19 @@ public partial class Map
     // you walk to the bar and talk to the contact.
     private void DeliverFetch(Quest q)
     {
+        // #233 · The blackmail twin's first ending. Same table, same coin, same quiet history — the client
+        // pays what the contract said and not one credit more — but he has his own sentence for it, and he
+        // only gets to say it if the thing is still in your pocket. See Map.Blackmail.
+        if (TheCarHasTheChip(q))
+        {
+            if (TheChipInThePocket is not null)
+            {
+                HandTheChipBack(q);
+            }
+
+            return;
+        }
+
         _credits += q.Reward;
         // A history builds even in the shadows — but quietly: no fanfare would suit an under-the-
         // table hand-off, so the relationship is seeded (#185) without the pop-up the bar job gets.

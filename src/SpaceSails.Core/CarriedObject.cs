@@ -94,6 +94,12 @@ public static class CarriedObject
             // through — and the caption-only idiom (#528, the odd book) because a paper is not a portrait.
             Satchel.Kind.Paper => PaperReveal(item.Id),
 
+            // #233 · The chip out of the roadster. Caption-only for the third reason the idiom exists and
+            // the sharpest one: this card COULD have shown the photographs, and showing them would have
+            // named the two people the client is paying a stranger not to be able to name. The line says
+            // what the object is — two faces and a clock — and stops there.
+            Satchel.Kind.Dirt when CompromisingChip.IsTheChip(item) => CompromisingChip.Card,
+
             _ => null,
         };
     }

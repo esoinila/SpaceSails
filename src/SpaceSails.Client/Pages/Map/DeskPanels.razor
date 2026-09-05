@@ -361,7 +361,7 @@
                             </div>
                             @if (_commsSelectedId == "darkweb")
                             {
-                                <SpaceSails.Client.Pages.Stations.DarkWeb Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" Ledger="_intelLedger" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" WireContacts="DarkWebWireContacts()" OnOpenWireBank="id => OpenBank(id, viaWire: true)" OnIntelPurchased="(string cs) => PushNewsEvent(NewsWire.NewsEventKind.IntelPurchased, cs)" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
+                                <SpaceSails.Client.Pages.Stations.DarkWeb Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" Ledger="_intelLedger" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" WireContacts="DarkWebWireContacts()" OnOpenWireBank="id => OpenBank(id, viaWire: true)" OnIntelPurchased="(string cs) => PushNewsEvent(NewsWire.NewsEventKind.IntelPurchased, cs)" ChipPrice="ChipFencePrice()" OnSellChip="SellTheChipToTheFence" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
                             }
                             else
                             {
@@ -669,6 +669,10 @@
     [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.MarketShip>> DarkWebMarketShips { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.TrackedShipInfo>> DarkWebTrackedShips { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.DarkWeb.WireContact>> DarkWebWireContacts { get; set; } = default!;
+    // #233 · The chip's row on the dark-web desk: what the buyer pays (null while the captain carries no
+    // chip) and the press that sells it. Both are Map's — the desk does no arithmetic and keeps no state.
+    [Parameter] public Func<int?> ChipFencePrice { get; set; } = default!;
+    [Parameter] public Action SellTheChipToTheFence { get; set; } = default!;
     [Parameter] public Func<NpcShip, string> DepartureLabel { get; set; } = default!;
     [Parameter] public Action DismissCrashNote { get; set; } = default!;
     [Parameter] public Func<string?> DockedBodyName { get; set; } = default!;
