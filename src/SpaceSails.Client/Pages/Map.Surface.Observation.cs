@@ -1,4 +1,3 @@
-using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -198,6 +197,11 @@ public partial class Map
         }
         ex.FixedOnYouSaid = true;
         ShowAndFile(ReeverObservation.FixedOnYouLine, ReeverObservation.FixedOnYouGlyph, PulseRank.Climax);
-        RendererInterop.PlayCue("alarm");
+
+        // AND NO CUE. A klaxon was written here and taken out again: the 2026-09-05 canon pass enumerates
+        // exactly three channels for this beat — the pose, the sentence, and the walk — and a sound is a
+        // fourth. It is also the wrong sound. "alarm" is what a sentry volley and a hand on your suit say,
+        // and this moment is the opposite of those: nothing has happened yet. The owner's own note on the
+        // shape is the argument — "the scariest version of 'it noticed you' is the ground going quiet."
     }
 }
