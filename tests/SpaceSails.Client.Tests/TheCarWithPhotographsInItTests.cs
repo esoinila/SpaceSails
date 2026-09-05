@@ -310,8 +310,8 @@ public sealed class TheCarWithPhotographsInItTests
         // …and it joins the manifest AFTER the hold has been settled, because the chip was never in the hold
         // and HoldAfterBurying must not be asked to subtract it from anything.
         Assert.True(
-            body.IndexOf("HoldAfterBurying", StringComparison.Ordinal)
-            < body.IndexOf("TheChipGoesInTheChest", StringComparison.Ordinal),
+            body.IndexOf("ShuttleExcursion.HoldAfterBurying(", StringComparison.Ordinal)
+            < body.IndexOf("TheChipGoesInTheChest(", StringComparison.Ordinal),
             "the chip joins the manifest before the hold is settled — the hold will be asked to give up a "
             + "unit it never had.");
     }
