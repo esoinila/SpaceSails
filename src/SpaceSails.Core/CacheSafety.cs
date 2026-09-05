@@ -62,7 +62,7 @@ public readonly record struct CacheSafetyRead(
 /// watch dogs"</i>. The governing law the issue states from those: <b>the same distance that makes the walk
 /// dangerous is what makes the cache safe.</b></para>
 ///
-/// <h3>Three terms, one function</h3>
+/// <h3>Four terms, one function</h3>
 /// <list type="number">
 /// <item><b>The carry</b> — how far from the landing pad the shovel went in. Carried courage: the walk that
 /// nearly killed you is the thing that pays. Full credit at the deep commitment anchor
@@ -73,14 +73,17 @@ public readonly record struct CacheSafetyRead(
 /// <item><b>The ground's Reever weight</b> — the watchdogs (#295). Each standing Old One shaves a full
 /// percentage point off a rival's odds, which is the arithmetic that has shipped since #295 and is preserved
 /// here to the point.</item>
+/// <item>#316 law 3 · <b>The battlefield</b> — the husks already lying on that ground. The only term that
+/// makes a chest LESS safe, and the only one the captain chose on purpose: <i>sentry fire buys safety today
+/// and advertises the site tomorrow</i>. The quiet dig pays nothing for it.</item>
 /// </list>
 ///
 /// <h3>Why it is one function and not two</h3>
 /// <para>The line shown when you bury and the roll thrown when you are away read the SAME
-/// <see cref="Read(double?, bool?, int)"/>. This repository's named bug class is one truth with two
+/// <see cref="Read(double?, bool?, int, int)"/>. This repository's named bug class is one truth with two
 /// reporters — a sim doing one thing while a sentence reports another — and a promise about a hiding place
 /// is exactly the shape that bug likes. So the rung is derived from the chance
-/// (<see cref="RungFor"/>), the chance is derived from the three terms, and there is nowhere else to
+/// (<see cref="RungFor"/>), the chance is derived from the terms, and there is nowhere else to
 /// compute either.</para>
 ///
 /// <h3>The legacy read</h3>
