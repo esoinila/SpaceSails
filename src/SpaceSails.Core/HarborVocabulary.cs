@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 
 namespace SpaceSails.Core;
 
@@ -48,6 +48,27 @@ public static class HarborVocabulary
         harbor == HarborClass.Dock
             ? $"✈ Autopilot: dock at {bodyName}"
             : $"✈ Autopilot: orbit {bodyName}";
+
+    /// <summary>#244 item 3 (canon pass, Fable, 2026-09-05) · <b>THE ARM-MENU VERB AT A BERTH WITH NO CLAMP.</b>
+    ///
+    /// <para>#938 D3a took the dock vocabulary off the three μ=0 stations that carry no haven flag, because
+    /// every clamp sentence at one of them named a button that cannot exist. What it left them speaking was
+    /// the ORBIT vocabulary — "🛰 Arm auto-orbit at Derelict Roadster" — at three metres of dead car with no
+    /// μ to orbit. Two wrong verbs is not a fix; it is the second one.</para>
+    ///
+    /// <para>A wreck is neither docked at nor orbited: it is CLOSED WITH, and the errand that happens there
+    /// is a pickup. The verb says what the ship will do, which is the same rule <see cref="ArmAction"/> was
+    /// written to (#203 comment item 4).</para></summary>
+    public const string PickupArmVerb = "Close to pickup";
+
+    /// <summary>#244 item 1 (canon pass, Fable, 2026-09-05) · <b>THE ARRIVAL, ON THE AUTOPILOT'S OWN
+    /// CHANNEL.</b> Owner, arrived at the roadster: <i>"I think we dropped out of autopilot… did we miss the
+    /// dock button press while warping?"</i> — because the arrival said nothing a wreck's arrival could say.
+    ///
+    /// <para>Three sentences' worth of work in one: the ship is <b>alongside</b> (the distance is honest now,
+    /// #1121), the errand is a <b>pickup</b> and not a berthing, and the silence is the fact — nothing is
+    /// promised, no clamp is named, and nobody is coming out to meet you.</para></summary>
+    public const string PickupArrival = "Alongside. Inside pickup range, and nobody is answering.";
 
     /// <summary>The collapsed armed-step verb, e.g. "Insert at" for an orbit vs "Dock at" for a
     /// haven — the flight-plan step line's leading phrase before the body name.</summary>
