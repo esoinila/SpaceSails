@@ -1,4 +1,4 @@
-using SpaceSails.Client.Rendering;
+﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -225,7 +225,10 @@ public sealed partial class Map
     private DeckPlan ShipDeckNow()
     {
         HashSet<string> blocked = BlockedShipDoors();
-        return blocked.Count == 0 ? DeckPlan.Ship : DeckPlan.ShipWith(blocked);
+        // #1119 item 1 · ALWAYS A BUILD, never the singleton — this answer becomes `_deckPlan`, the plan
+        // `AppendRegion` writes into, and handing back `DeckPlan.Ship` would put the process-wide ship deck
+        // back under the captain's feet the moment every hatch happened to be open. Same deck, own object.
+        return DeckPlan.ShipWith(blocked);
     }
 
     /// <summary>Every doorway of hers the captain cannot walk through: dogged by hand, or loaded by a pressure
