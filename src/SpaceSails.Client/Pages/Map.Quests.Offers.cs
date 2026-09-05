@@ -338,7 +338,7 @@ public partial class Map
         {
             return null; // no world yet, or there is only one lost roadster
         }
-        if (_ephemeris.Bodies.All(b => b.Id != "derelict-roadster"))
+        if (_ephemeris.Bodies.All(b => b.Id != Derelict.RoadsterBodyId))
         {
             return null; // scenario without the wreck
         }
@@ -360,7 +360,7 @@ public partial class Map
         string blurb = $"“Word is a dead tycoon's cherry-red roadster is drifting sunward of Mars — shot up as a stunt, never came down. There's a hardware wallet wedged between the seats: a fortune, and untraceable. Fetch it, bring it quiet to my associate at {BodyAddress(dest.Id)}. {reward:N0} cr, and we never spoke.”";
         return new Quest($"fetch-{++_questSeq}", QuestKind.Fetch, giver,
             "", dest.Name, "Fetch the roadster's lost wallet", blurb, reward,
-            DestBodyId: dest.Id, SourceBodyId: "derelict-roadster");
+            DestBodyId: dest.Id, SourceBodyId: Derelict.RoadsterBodyId);
     }
 
     // #223: the Fixer's cache run — a map to SOMEONE ELSE'S buried hoard. The recovery flow and the

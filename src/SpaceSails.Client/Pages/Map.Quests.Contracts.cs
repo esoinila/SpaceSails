@@ -21,7 +21,7 @@ namespace SpaceSails.Client.Pages;
 public partial class Map
 {
 
-    private string WreckRevealMessage(string bodyId) => bodyId == "derelict-roadster"
+    private string WreckRevealMessage(string bodyId) => bodyId == Derelict.RoadsterBodyId
         ? "🔭 There she is — a cherry-red glint on the return, right where the tip said. Contact: the Derelict Roadster."
         : $"🔭 Scan resolved a new contact — {BodyName(bodyId)} is on the charts now.";
 

@@ -49,6 +49,18 @@ public static class Derelict
         return false;
     }
 
+    /// <summary>#241 · The scenario's own hand-authored wreck — the lost roadster the fetch job is sent
+    /// after. It predates <see cref="BodyIdPrefix"/> and so does not carry it, which is why the client had
+    /// the id typed into five files and no predicate could answer "is that body a wreck".</summary>
+    public const string RoadsterBodyId = "derelict-roadster";
+
+    /// <summary>#241 · IS THIS BODY A DEAD HULL? Every generated wreck (<see cref="BodyIdPrefix"/>) and the
+    /// scenario's own roadster. One question, one answer — so an instrument that must not call a three-metre
+    /// wreck a planet, and a code path that must not promise a clamp on one, are asking the same thing.</summary>
+    public static bool IsWreckBody(string? bodyId) =>
+        TryParseWreckId(bodyId, out _)
+        || string.Equals(bodyId, RoadsterBodyId, System.StringComparison.Ordinal);
+
     /// <summary>The finder's fee for filing an honest accident report, as a fraction of the assessed cargo
     /// value (owner: <i>"say 10% of the value"</i>). FLAGGED for tuning.</summary>
     public const double ReportFeeFraction = 0.10;

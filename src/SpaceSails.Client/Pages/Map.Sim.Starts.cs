@@ -162,7 +162,7 @@ public partial class Map
             "jupiter" => CoOrbitalBy("europa", 2e7),           // clear of Europa's surface, amid the Galilean system
             "saturn" => CoOrbitalBy("ringside-exchange", 2e7), // by the ring station, Enceladus/Titan a burn away
             "enceladus" => CoOrbitalBy("enceladus", 5e6),      // (test) co-moving alongside Enceladus, ~5 Hill radii out (#136)
-            "wreck" => CoOrbitalBy("derelict-roadster", 2_000), // (test) alongside the wreck, inside fetch-pickup range
+            "wreck" => CoOrbitalBy(Derelict.RoadsterBodyId, 2_000), // (test) alongside the wreck, inside fetch-pickup range
             _ => InitializeShipState(),
         };
     }

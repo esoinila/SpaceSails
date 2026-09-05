@@ -55,6 +55,35 @@ public static class WreckLayout
     /// <summary>Where the band runs forward to. Aft it runs to the transom.</summary>
     public const float ShieldingForwardEnd = BowX - 6;
 
+    /// <summary>Half the flat of her nose, where the bow taper stops. Named rather than typed twice because
+    /// the silhouette and the collision shell have to be cut from the same number: the shape a captain walks
+    /// and the shape an instrument draws are one ship, or one of them is lying.</summary>
+    public const float NoseHalfHeight = 2f;
+
+    /// <summary>
+    /// #241 · HER SILHOUETTE — the outer skin as one closed polyline, in deck units, bow to +X, tracing
+    /// exactly what <see cref="Walls"/> lays: the transom, the shielding band, the forward end of the band,
+    /// the bow taper, the flat of the nose, and back down the other side.
+    ///
+    /// <para>It exists so the SCOPE has a wreck to draw (#241 asks for "a wireframe-per-body-class seam …
+    /// future wrecks and oddities each get a portrait without new plumbing") without a second set of numbers
+    /// being typed into a renderer. Bug class 1 in this repo is a literal in a drawing that nothing derives
+    /// or checks, found wrong three times out of three; the cure is that the picture and the deck read the
+    /// same constants, so a hull that changes shape changes shape in both places or in neither.</para>
+    /// </summary>
+    public static IReadOnlyList<(float X, float Y)> HullOutline() =>
+    [
+        (TransomX, OuterTopY),
+        (ShieldingForwardEnd, OuterTopY),
+        (ShieldingForwardEnd, TopY),
+        (BowX, -NoseHalfHeight),
+        (BowX, NoseHalfHeight),
+        (ShieldingForwardEnd, BottomY),
+        (ShieldingForwardEnd, OuterBottomY),
+        (TransomX, OuterBottomY),
+        (TransomX, OuterTopY),
+    ];
+
     /// <summary>
     /// #537 · AND SHE IS LONGER THAN HER ROOMS. Owner, on being told the side band was the fix: <i>"It would make
     /// sense that the walls that can hold vacuum are not thin and all kinds of tech needs to exist on the ship
@@ -331,9 +360,9 @@ public static class WreckLayout
         // plus everything that makes the rooms work.
         AddPressureHull(walls, TopY, top: true, opened);
         AddPressureHull(walls, BottomY, top: false, opened);
-        walls.Add(new(BowX - 6, TopY, BowX, -2f));
-        walls.Add(new(BowX - 6, BottomY, BowX, 2f));
-        walls.Add(new(BowX, -2f, BowX, 2f));
+        walls.Add(new(BowX - 6, TopY, BowX, -NoseHalfHeight));
+        walls.Add(new(BowX - 6, BottomY, BowX, NoseHalfHeight));
+        walls.Add(new(BowX, -NoseHalfHeight, BowX, NoseHalfHeight));
         walls.Add(new(TransomX, TopY, TransomX, BottomY));
 
         // …and the aft bulkhead that closes the pressure hull off from it. The machinery space is OUTSIDE the

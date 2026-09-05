@@ -195,7 +195,7 @@ public partial class Map
                 ? NearestRule.OrbitsNote(parentName)
                 : null;
             return new ScopeView.Target(
-                ScopeView.TargetKind.Body, body.Name, note,
+                ScopeKindOf(body), body.Name, note,
                 _nearestBodyPosition, _nearestBodyVelocity,
                 body.BodyRadius, BodyColor(body.Id), InPlasmaAt(_nearestBodyPosition),
                 IsHaven: body.IsHaven, Dockable: IsDockableHaven(body));
@@ -203,6 +203,20 @@ public partial class Map
 
         return new ScopeView.Target(ScopeView.TargetKind.None, "", null, Vector2d.Zero, Vector2d.Zero, 0, default, false);
     }
+
+    /// <summary>
+    /// #241 · WHAT THE GLASS IS LOOKING AT. Every ephemeris body used to arrive at the scope as
+    /// <c>TargetKind.Body</c>, and <c>KindLabel</c>'s only question of a body was its radius — so the
+    /// Derelict Roadster, three metres of dead car on its own rail round the sun, wore the corner tag
+    /// <b>PLANET</b> and was drawn as a lit disc with a terminator on it.
+    ///
+    /// <para>A wreck is its own class of thing and now says so: <see cref="Derelict.IsWreckBody"/> is the
+    /// one question (the generated <c>wreck-</c> hulls and the scenario's own roadster), and the seam is a
+    /// kind-per-class rather than a special case, so the next oddity that deserves a portrait gets one
+    /// without new plumbing.</para>
+    /// </summary>
+    private static ScopeView.TargetKind ScopeKindOf(CelestialBody body) =>
+        Derelict.IsWreckBody(body.Id) ? ScopeView.TargetKind.Derelict : ScopeView.TargetKind.Body;
 
     private ScopeView.Target? ResolveScopeTarget(string id)
     {
@@ -240,7 +254,7 @@ public partial class Map
                 const double h = 1.0;
                 Vector2d velocity = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
                 return new ScopeView.Target(
-                    ScopeView.TargetKind.Body, body.Name, null,
+                    ScopeKindOf(body), body.Name, null,
                     position, velocity, body.BodyRadius, BodyColor(body.Id), InPlasmaAt(position),
                     IsHaven: body.IsHaven, Dockable: IsDockableHaven(body));
             }
