@@ -88,37 +88,9 @@
         }
         else
         {
-            <div class="fw-bold mb-1">Tracked targets (@_ledger.Entries.Count / @_ledger.MaxTracks)</div>
-            @if (_ledger.Entries.Count == 0)
-            {
-                <div class="text-secondary">Nothing on the ledger yet — sweep a region to find contacts.</div>
-            }
-            else
-            {
-                <table class="table table-sm table-dark mb-0">
-                    <tbody>
-                        @foreach (TrackedTarget entry in OrderedTracks())
-                        {
-                            double quality = entry.EffectiveQuality(SimTime);
-                            double daysAgo = (SimTime - entry.LastConfirmedTime) / 86400.0;
-                            TrackingCandidate? candidate = FindCandidate(entry.ShipId);
-                            <tr>
-                                <td>
-                                    @(candidate?.Callsign ?? entry.ShipId)@(_aware.Contains(entry.ShipId) ? " aware ⚠" : "")
-                                    <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
-                                </td>
-                                <td class="text-end align-middle">@daysAgo.ToString("F1")d</td>
-                                <td class="text-end align-middle text-nowrap">
-                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" disabled="@(candidate is null)"
-                                            title="Take a fresh fix on this contact now — a zero-age observation tightens the prediction cone"
-                                            @onclick="() => ConfirmNow(entry.ShipId)">Confirm</button>
-                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Drop this track from the ledger and free the telescope slot" @onclick="() => Drop(entry.ShipId)">Drop</button>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            }
+            <LedgerTable _ledger="_ledger" _aware="_aware" SimTime="@SimTime"
+                         OrderedTracks="OrderedTracks" FindCandidate="FindCandidate"
+                         ConfirmNow="ConfirmNow" Drop="Drop" />
         }
     </div>
 </div>
