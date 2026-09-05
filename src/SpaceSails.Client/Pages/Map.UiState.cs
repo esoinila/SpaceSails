@@ -234,9 +234,17 @@ public partial class Map
 
     // #203 item 3: the arm action's consequence in one sentence, harbor-aware, for the context menu
     // and the nav-target arm button (extends #197's tooltip standard to the map menus).
-    private string ArmMenuHint(string? bodyId) => HarborClassOf(bodyId) == HarborClass.Dock
-        ? "The autopilot flies the approach, matches speed, and brings you into the dock envelope — you press ⚓ Dock at the end"
-        : "The autopilot flies the approach and slips into orbit here when the capture window opens";
+    //
+    // #244 item 3, follow-up · A WRECK IS ASKED FIRST, and it is asked with the same predicate the two arm
+    // buttons above it ask (Derelict.IsWreckBody) rather than with the harbour class. #1125 moved the VERB
+    // on those buttons to HarborVocabulary.PickupArmVerb and this tooltip kept promising the ship would slip
+    // into orbit here — the button and the sentence under it saying two different things about one press,
+    // which is the bug class #938 D3a opened when it took the dock words off a wreck and left the orbit ones.
+    private string ArmMenuHint(string? bodyId) =>
+        Derelict.IsWreckBody(bodyId) ? HarborVocabulary.PickupArmHint
+        : HarborClassOf(bodyId) == HarborClass.Dock
+            ? "The autopilot flies the approach, matches speed, and brings you into the dock envelope — you press ⚓ Dock at the end"
+            : "The autopilot flies the approach and slips into orbit here when the capture window opens";
 
     // #203 item 3: each disambiguation-picker entry states what opening it will do.
     private static string PickHint(PickCandidate pick) => pick.Kind switch

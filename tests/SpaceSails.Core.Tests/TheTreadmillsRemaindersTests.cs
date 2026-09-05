@@ -309,22 +309,23 @@ public class TheTreadmillsRemaindersTests
     }
 
     /// <summary>
-    /// #316 law 2 · WHAT A CAPTAIN WHO LOOKS CAN TELL. Owner's own words are the only prose — <i>"'still
+    /// #316 law 2 · WHAT A CAPTAIN WHO LOOKS CAN TELL. The two ends are the owner's own words — <i>"'still
     /// smoking' vs 'regolith-dusted, weeks old'"</i> — and the band is read off the SIM CLOCK against the
     /// moment in the ledger, so the sentence is a fact about the world rather than about the session.
     ///
-    /// <para>The middle band says NOTHING on purpose: the owner wrote two lines and this is the third case,
-    /// and a sentence invented here would be a line in the house voice he never wrote (there is a
-    /// <c>FABLE: line needed</c> at the band). Asserted at every boundary, because a threshold that selects
-    /// everything is a known bug class here.</para>
+    /// <para>THE MIDDLE AGE now has its own sentence (#316, 2026-09-03), so there is no silent band left and
+    /// every husk in reach answers. Asserted verbatim at every boundary, because a threshold that selects
+    /// EVERYTHING is a known bug class here — a middle line that also came back at nought seconds, or at
+    /// forty days, would pass a test that only asked "is it non-null".</para>
     ///
     /// <para><b>Proven RED</b> by widening the fresh band to a week: a six-day-old husk claims to be
-    /// smoking.</para>
+    /// smoking, and the middle band is never reached.</para>
     /// </summary>
     [Fact]
     public void AHusksAgeReadsOffTheSimClockAndPicksTheRightBand()
     {
         const string smoking = "Still smoking.";
+        const string middling = "Dusted over. Days old.";
         const string dusted = "Regolith-dusted. Weeks old.";
         const double now = 1_000_000.0;
 
@@ -334,27 +335,35 @@ public class TheTreadmillsRemaindersTests
         Assert.Equal(smoking, GroundMemory.AgeLine(At(0), now));
         Assert.Equal(smoking, GroundMemory.AgeLine(At(GroundMemory.FreshWithinSeconds - 1), now));
 
-        // THE MIDDLE — a day old to a week old, and no line for any of it.
-        Assert.Null(GroundMemory.AgeLine(At(GroundMemory.FreshWithinSeconds), now));
-        Assert.Null(GroundMemory.AgeLine(At(3 * GroundMemory.DaySeconds), now));
-        Assert.Null(GroundMemory.AgeLine(At(GroundMemory.OldAfterSeconds - 1), now));
+        // THE MIDDLE — a day old to a week old, at both boundaries and in between.
+        Assert.Equal(middling, GroundMemory.AgeLine(At(GroundMemory.FreshWithinSeconds), now));
+        Assert.Equal(middling, GroundMemory.AgeLine(At(3 * GroundMemory.DaySeconds), now));
+        Assert.Equal(middling, GroundMemory.AgeLine(At(GroundMemory.OldAfterSeconds - 1), now));
 
         // OLD — a week or more.
         Assert.Equal(dusted, GroundMemory.AgeLine(At(GroundMemory.OldAfterSeconds), now));
         Assert.Equal(dusted, GroundMemory.AgeLine(At(40 * GroundMemory.DaySeconds), now));
 
-        // The bands are the sim clock's, not the wall clock's: the same husk read at two moments reads
-        // differently, which is the whole of "recency is legible".
+        // The bands are the sim clock's, not the wall clock's: the same husk read at three moments reads
+        // three different ways, which is the whole of "recency is legible".
         GroundMemory.Husk shot = new(3.0, -5.0, now);
         Assert.Equal(smoking, GroundMemory.AgeLine(shot, now + 3_600));
-        Assert.Null(GroundMemory.AgeLine(shot, now + (2 * GroundMemory.DaySeconds)));
+        Assert.Equal(middling, GroundMemory.AgeLine(shot, now + (2 * GroundMemory.DaySeconds)));
         Assert.Equal(dusted, GroundMemory.AgeLine(shot, now + (30 * GroundMemory.DaySeconds)));
 
-        // Two strings, and neither borrows the reserved word (worldbuilding-notes §8).
-        foreach (string line in new[] { smoking, dusted })
+        // Three strings, all distinct, and none borrows the reserved word (worldbuilding-notes §8).
+        string[] bands = [smoking, middling, dusted];
+        Assert.Equal(3, bands.Distinct(StringComparer.Ordinal).Count());
+        foreach (string line in bands)
         {
             Assert.DoesNotContain("monolith", line, StringComparison.OrdinalIgnoreCase);
         }
+
+        // And the marker is gone from the band it stood at: the line is authored, not deferred.
+        Assert.DoesNotContain(
+            "FABLE: line needed",
+            TheCardCarriesItsOwnStoryTests.ReadRepoFile("src/SpaceSails.Core/GroundMemory.cs"),
+            StringComparison.Ordinal);
     }
 
     /// <summary>ONE HUSK'S ROW IS ONLY THAT HUSK'S ROW. The key carries the body, the site salt, the tile,

@@ -145,11 +145,25 @@ public static partial class UndergroundComplex
             return $"Lift code, lower band: {CodeFor(bodyId)}. Do not write this down.";
         }
 
-        /// <summary>#602 · What the sheet is called in a pocket. The paper's own first clause, verbatim off
-        /// <see cref="PaperLine"/> and without the digits — a satchel row that shouted the code would put the
-        /// answer in the inventory, where the captain never had to find it.</summary>
-        // FABLE: line needed — a pocket title for the code paper, if this verbatim fragment is not wanted.
-        public const string PaperTitle = "Lift code, lower band";
+        /// <summary>#602 · <b>WHAT THE SHEET IS CALLED IN A POCKET.</b> Authored, verbatim (#602's canon pass
+        /// of 2026-09-05) — until it was, this was the paper's own first clause sliced off
+        /// <see cref="PaperLine"/> behind a deferral marker, which is a title borrowed from a sentence
+        /// rather than one written for a row.
+        ///
+        /// <para>The digits are not in it, and that is the point: a satchel row that shouted the code would
+        /// put the answer in the inventory, where the captain never had to find it.</para></summary>
+        public const string PaperTitle = "A lift code, lower band";
+
+        /// <summary>#602 · …and the one flat line of what is on the page, authored verbatim in the same pass.
+        /// The <see cref="PaperHeads"/> idiom exactly (#1100): the head says what the paper IS and keeps no
+        /// opinion about it, and the certainty behind it is not branched and still rolls off the id.
+        ///
+        /// <para><b>It does not quote the number.</b> The head is the book's description of the sheet, not a
+        /// transcript of it — <see cref="PaperLine"/> is the handwriting, and that is read on the works floor
+        /// where the paper is lying. A book entry that spelled the code would hand a captain who never went
+        /// down there the one thing #602 makes him go down there for.</para></summary>
+        public const string PaperDocument =
+            "Four digits somebody was told not to write down. They wrote them down.";
 
         /// <summary>#602 · Is this find the code paper, and whose site's? Asked of the id, so the readers
         /// that meet a paper away from its room (<c>FieldClue.Title</c>, <c>FieldClue.Document</c>) never
