@@ -363,7 +363,16 @@ public partial class TrackingPost
     }
 
     /// <summary>PRIORITIZE REDISCOVERY: the search pass runs as soon as the current look ends.</summary>
-    public void PrioritizeSearch(string shipId) => _schedule.PrioritizeNext($"search:{shipId}");
+    /// <remarks>#1135 · The button is on <c>LostLockBoard</c> and it is an <c>@onclick</c> LAMBDA, so the
+    /// receiver of the press is that surface — while what this reorders is the QUEUE, which the surface next
+    /// door draws. Before #1134 cut the desk into eleven files the button was ON the desk and pressing it
+    /// repainted the desk; <c>StateHasChanged</c> is that, restored, and it is what
+    /// <c>NoSurfaceSwallowsARerenderTests</c> holds every lambda-reached handler to.</remarks>
+    public void PrioritizeSearch(string shipId)
+    {
+        _schedule.PrioritizeNext($"search:{shipId}");
+        StateHasChanged();
+    }
 
     /// <summary>Owner: "LOST CONTACT is big news — the ship should do all it can to re-acquire."
     /// The moment a shadowed target falls off our live fix, jump any open search for her (or her

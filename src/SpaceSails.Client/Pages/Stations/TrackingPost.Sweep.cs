@@ -124,6 +124,10 @@ public partial class TrackingPost
         return null;
     }
 
+    /// <remarks>#1135 · Confirm is pressed from a LAMBDA on the card wall, so the card wall is the receiver
+    /// — and every branch below writes <c>_lastSweepMessage</c>, which the SWEEP READOUT STRIP draws, a
+    /// different surface entirely. The early <c>return</c>s are folded into one <c>else</c> so there is a
+    /// single exit and the desk repaints on all of them; nothing else about the method moved.</remarks>
     private void ConfirmNow(string shipId)
     {
         if (Ephemeris is null)
@@ -135,14 +139,23 @@ public partial class TrackingPost
         if (candidate is null)
         {
             _lastSweepMessage = "Can't confirm — contact isn't in range of the sim right now";
-            return;
+        }
+        else
+        {
+            bool ok = _ledger.TryConfirm(shipId, Ephemeris, _telescope, ShipPosition, candidate.Value.State, SimTime);
+            _lastSweepMessage = ok
+                ? $"Reconfirmed {candidate.Value.Callsign}"
+                : $"Lost the fix on {candidate.Value.Callsign} — try a fresh sweep";
         }
 
-        bool ok = _ledger.TryConfirm(shipId, Ephemeris, _telescope, ShipPosition, candidate.Value.State, SimTime);
-        _lastSweepMessage = ok
-            ? $"Reconfirmed {candidate.Value.Callsign}"
-            : $"Lost the fix on {candidate.Value.Callsign} — try a fresh sweep";
+        StateHasChanged();
     }
 
-    private void Drop(string shipId) => _ledger.Drop(shipId);
+    /// <remarks>#1135 · Same lambda, same reason: the ledger this frees a slot in is drawn by the card wall
+    /// AND by the compact table, and the desk's own count in the header reads it too.</remarks>
+    private void Drop(string shipId)
+    {
+        _ledger.Drop(shipId);
+        StateHasChanged();
+    }
 }

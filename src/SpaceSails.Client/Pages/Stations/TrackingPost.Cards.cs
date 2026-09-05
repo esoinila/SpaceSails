@@ -66,12 +66,16 @@ public partial class TrackingPost
     }
 
     /// <summary>Let a lost track go: the search task leaves the queue and the case closes.</summary>
+    /// <remarks>#1135 · Pressed from a LAMBDA on <c>SensorTaskQueue</c>, so that surface is the receiver —
+    /// and this one line empties the cold-case board next door and rewrites the sweep readout below it. The
+    /// desk repaints itself, as it did when the ✕ was still on it (<c>NoSurfaceSwallowsARerenderTests</c>).</remarks>
     private void AbandonSearch(string shipId)
     {
         _schedule.Remove($"search:{shipId}");
         _lostTracks.Drop(shipId);
         _lostCenters.Remove(shipId);
         _lastSweepMessage = $"Case closed on {FindCandidate(shipId)?.Callsign ?? shipId} — let her go";
+        StateHasChanged();
     }
 
     private void TogglePassiveWatch()
