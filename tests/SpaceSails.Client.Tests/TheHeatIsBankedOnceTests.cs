@@ -149,7 +149,26 @@ public sealed class TheHeatIsBankedOnceTests
             perVisit >= 0 && filedIt > perVisit,
             "the signer's report is banked outside the once-per-visit latch — four glasses, four reports.");
 
-        // …and there is no eighth banker anywhere in the client. One seam, or the count above proves nothing.
+        // #417 · …and the NINTH, which is the only crossing in the game the captain WALKS INTO WITH HIS EYES
+        // OPEN. Every other one on this list is something done to him — a machine refusing his card, a man
+        // walking him out, a bang somebody heard, a woman who set him up. This one is a button he presses
+        // knowing the price: the man in the next berth pays him to be missed, and the port he was tied up in
+        // is the port that finds out. Banked through the one seam, owed to whoever runs THAT berth.
+        //
+        // ONCE, because the settling is once: the arm is behind `_finderProgress.Settled` still reading
+        // `Outcome.Open`, and pressing the card's second verb after the first changes nothing. That latch is
+        // asserted here rather than left to the reader, because a bribe that could be taken twice would be a
+        // band of heat per press.
+        string finder = Read("src", "SpaceSails.Client", "Pages", "Map.Finder.cs");
+        Assert.Equal(1, Count(finder, "BankTheCrossing(new UndergroundComplex.HeatCharge("));
+        Assert.Contains("_finderProgress.Settled != FinderCase.Outcome.Open", finder, StringComparison.Ordinal);
+        int settledGate = finder.IndexOf("_finderProgress.Settled != FinderCase.Outcome.Open", StringComparison.Ordinal);
+        int bribeBanked = finder.IndexOf("BankTheCrossing(new UndergroundComplex.HeatCharge(", StringComparison.Ordinal);
+        Assert.True(
+            settledGate >= 0 && bribeBanked > settledGate,
+            "the bribe's charge is banked outside the once-per-case latch — two presses, two bands.");
+
+        // …and there is no TENTH banker anywhere in the client. One seam, or the count above proves nothing.
         // The seam's own DECLARATION is not a call — `private void BankTheCrossing(…)` in Map.IllegalHeat.cs
         // is the door, and counting the door as somebody walking through it would put a phantom crossing in
         // this list every time the file is read.
@@ -169,8 +188,12 @@ public sealed class TheHeatIsBankedOnceTests
             // #973 L5b · THE EIGHTH BANKER, and it is the femme fatale's. One walk-in in three is a setup, and
             // paying for it is a customs post that was waiting at the berth the errand was flown back to —
             // owed to whoever runs THAT berth, through the one seam, like every other crossing in this list.
-            ["Map.Combat.Remote.cs×1", "Map.IllegalHeat.cs×1", "Map.OldCrew.cs×1", "Map.Scan.cs×1",
-             "Map.Surface.Hive.cs×1", "Map.WalkIn.cs×1", "Patrol.Floor.cs×1", "Patrol.Run.cs×1"],
+            // #417 · THE NINTH BANKER, and it is the finder's. Taking the bribe at the confrontation berth
+            // costs one whole band of heat — IllegalHeat.ABand, the meter's own step — owed to whoever runs
+            // THAT berth, through the one seam, like every other crossing in this list.
+            ["Map.Combat.Remote.cs×1", "Map.Finder.cs×1", "Map.IllegalHeat.cs×1", "Map.OldCrew.cs×1",
+             "Map.Scan.cs×1", "Map.Surface.Hive.cs×1", "Map.WalkIn.cs×1", "Patrol.Floor.cs×1",
+             "Patrol.Run.cs×1"],
             bankers);
     }
 
