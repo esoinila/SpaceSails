@@ -355,13 +355,9 @@ public partial class Map
             return;
         }
 
-        // A middle-aged husk has no sentence yet (GroundMemory.AgeLine returns null, and the marker there
-        // says why). It is still MARKED read: the silence is the reading, and asking again every frame for a
-        // line that does not exist would be a poll with no end.
-        if (GroundMemory.AgeLine(read, SimTime) is { } line)
-        {
-            ShowPulseMessage($"☠ {line}");
-        }
+        // All three bands have a sentence now (#316, 2026-09-03), so every husk in reach answers once. The
+        // latch above is what keeps it to once: asking again every frame would be a poll with no end.
+        ShowPulseMessage($"☠ {GroundMemory.AgeLine(read, SimTime)}");
     }
 
     /// <summary>Where this tile's hut stands, resolved once and remembered for the visit. A cache of a pure

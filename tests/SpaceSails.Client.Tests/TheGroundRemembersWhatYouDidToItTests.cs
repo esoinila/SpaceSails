@@ -131,7 +131,7 @@ public class TheGroundRemembersWhatYouDidToItTests
         // Core's own rather than a second copy of them here.
         Assert.Contains("CheckHusksUnderfoot();", Pages("Map.Surface.Frame.cs"), StringComparison.Ordinal);
         Assert.Contains("GroundMemory.AgeLine(read, SimTime)", tiles, StringComparison.Ordinal);
-        foreach (string prose in new[] { "Still smoking", "Regolith-dusted" })
+        foreach (string prose in new[] { "Still smoking", "Dusted over", "Regolith-dusted" })
         {
             Assert.DoesNotContain(prose, tiles, StringComparison.Ordinal);
         }

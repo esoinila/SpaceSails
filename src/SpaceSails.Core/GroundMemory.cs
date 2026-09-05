@@ -181,15 +181,16 @@ public sealed class GroundMemory
     }
 
     /// <summary>
-    /// WHAT A CAPTAIN WHO LOOKS CAN TELL, and it is the whole of #316 law 2: recency is legible. Owner's own
-    /// words, and the only prose here — <i>"remains render with age-graded flavor in the house voice —
-    /// 'still smoking' vs 'regolith-dusted, weeks old'"</i>.
+    /// WHAT A CAPTAIN WHO LOOKS CAN TELL, and it is the whole of #316 law 2: recency is legible. The two ends
+    /// are the owner's own words — <i>"remains render with age-graded flavor in the house voice — 'still
+    /// smoking' vs 'regolith-dusted, weeks old'"</i> — and the middle age is authored to sit between them
+    /// (#316, 2026-09-03): the band where a captain can still tell somebody was here THIS trip, but not this
+    /// hour. The dust has started and it is not yet weeks of it.
     ///
-    /// <para>Null in the middle band, deliberately: see the note below. A husk between a day and a week old
-    /// draws its mark and says nothing, which is honest — the game has no sentence for it yet, and inventing
-    /// one here would put a line in the house voice that the owner never wrote.</para>
+    /// <para>THREE BANDS AND NO SILENCE. Every husk answers now; the band is read off the SIM CLOCK against
+    /// the moment in the ledger, so the sentence is a fact about the world rather than about the session.</para>
     /// </summary>
-    public static string? AgeLine(Husk husk, double nowSimTime)
+    public static string AgeLine(Husk husk, double nowSimTime)
     {
         double age = nowSimTime - husk.FellAtSimTime;
         if (age < FreshWithinSeconds)
@@ -197,12 +198,7 @@ public sealed class GroundMemory
             return "Still smoking.";
         }
 
-        // FABLE: line needed — the middle age. Between a sim day and a week there is no sentence, because
-        // the owner wrote two and this is the third case. It wants to be the band where a captain can still
-        // tell somebody was here THIS trip but not this hour: something about the dust having started, or
-        // the frost, without either of the two lines above being nearly true. Left silent rather than
-        // guessed at.
-        return age >= OldAfterSeconds ? "Regolith-dusted. Weeks old." : null;
+        return age >= OldAfterSeconds ? "Regolith-dusted. Weeks old." : "Dusted over. Days old.";
     }
 
     private static string Fixed(double v) =>
