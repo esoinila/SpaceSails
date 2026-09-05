@@ -127,12 +127,12 @@
     [Parameter] public string? _shipScuttleMessage { get; set; }
     [Parameter] public ShipScuttle.SecondKey? _shipScuttleSecondKey { get; set; }
     [Parameter] public bool _shipScuttleWordGiven { get; set; }
-    [Parameter] public Action AskTheCrewForTheSecondKey { get; set; } = default!;
-    [Parameter] public Action BackTheKeysOut { get; set; } = default!;
+    [Parameter] public EventCallback AskTheCrewForTheSecondKey { get; set; }
+    [Parameter] public EventCallback BackTheKeysOut { get; set; }
     [Parameter] public Action CloseShipScuttlePanel { get; set; } = default!;
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    [Parameter] public Action GiveTheWordAgainstHer { get; set; } = default!;
-    [Parameter] public Action TurnBothKeys { get; set; } = default!;
+    [Parameter] public EventCallback GiveTheWordAgainstHer { get; set; }
+    [Parameter] public EventCallback TurnBothKeys { get; set; }
 
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

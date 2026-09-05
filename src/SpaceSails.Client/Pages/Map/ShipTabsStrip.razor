@@ -88,7 +88,7 @@
     [Parameter] public Func<ShipDesk, string> DeskLabel { get; set; } = default!;
     [Parameter] public Func<ShipDesk, Task> SwitchDeskFromClick { get; set; } = default!;
     [Parameter] public ShipDesk[] TabBarOrder { get; set; } = default!;
-    [Parameter] public Func<Task> TogglePeekMapFromClick { get; set; } = default!;
+    [Parameter] public EventCallback TogglePeekMapFromClick { get; set; }
 
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

@@ -503,8 +503,8 @@
     [Parameter] public int _reactionMassPulses { get; set; }
     [Parameter] public Action<NpcState> Board { get; set; } = default!;
     [Parameter] public Action<string> BustedBoliviaChoose { get; set; } = default!;
-    [Parameter] public Action BustedBribe { get; set; } = default!;
-    [Parameter] public Action BustedResist { get; set; } = default!;
+    [Parameter] public EventCallback BustedBribe { get; set; }
+    [Parameter] public EventCallback BustedResist { get; set; }
     [Parameter] public Action BustedResistLostConfirm { get; set; } = default!;
     [Parameter] public Action BustedResurrect { get; set; } = default!;
     /// <summary>#535 · Whether the fifth exit is drawn at all — the page's own <c>CarryingABlackOpsKey</c>.</summary>

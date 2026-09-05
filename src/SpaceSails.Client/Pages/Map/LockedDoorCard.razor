@@ -69,7 +69,7 @@
     [Parameter] public List<Core.Satchel.Item> _satchel { get; set; } = default!;
     [Parameter] public Action CloseLockedDoor { get; set; } = default!;
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    [Parameter] public Action OpenSatchelAtTheDoor { get; set; } = default!;
+    [Parameter] public EventCallback OpenSatchelAtTheDoor { get; set; }
     [Parameter] public LockedDoorLook door { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

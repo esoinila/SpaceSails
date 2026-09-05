@@ -1029,9 +1029,9 @@
     [Parameter] public Func<Core.Satchel.Item, bool> CanWriteUp { get; set; } = default!;
     [Parameter] public bool CaptainIsSeatedAnywhere { get; set; }
     [Parameter] public bool CaseHasBegun { get; set; }
-    [Parameter] public Action ClearTheSpread { get; set; } = default!;
+    [Parameter] public EventCallback ClearTheSpread { get; set; }
     [Parameter] public Action CloseSatchel { get; set; } = default!;
-    [Parameter] public Action CloseTheLoadChooser { get; set; } = default!;
+    [Parameter] public EventCallback CloseTheLoadChooser { get; set; }
     [Parameter] public Func<IReadOnlyList<CompassLine>> CompassOnFoot { get; set; } = default!;
     [Parameter] public Func<Quest, (MissionStep Step, string StatusKind)> CurrentStepOf { get; set; } = default!;
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
@@ -1071,7 +1071,7 @@
     [Parameter] public string SpreadDoorHint { get; set; } = default!;
     [Parameter] public string? SpreadRefusal { get; set; }
     [Parameter] public Func<Core.Satchel.Item, string> SpreadRowVerb { get; set; } = default!;
-    [Parameter] public Action TakeUpTheRedPen { get; set; } = default!;
+    [Parameter] public EventCallback TakeUpTheRedPen { get; set; }
     [Parameter] public Func<Core.Satchel.Item, (SatchelTry.Target Target, string? Context, string Label)?> TargetFor { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<Core.CaseSubjects.SubjectThread>> TheBookThreads { get; set; } = default!;
     [Parameter] public Func<(Core.Satchel.Item Rounds, int Pocket, string KindName, List<SentryHandLoad.Pick> Picks)?> TheLoadChooser { get; set; } = default!;
@@ -1081,7 +1081,7 @@
     [Parameter] public Action<HeldMemory.Theory?> TheThreadsFilterTurnsTo { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<Core.FieldNote>> TheWholeCase { get; set; } = default!;
     [Parameter] public Action<Core.Satchel.Item> TryItem { get; set; } = default!;
-    [Parameter] public Action TryTheWholeWallet { get; set; } = default!;
+    [Parameter] public EventCallback TryTheWholeWallet { get; set; }
     [Parameter] public Func<IReadOnlyList<Core.Satchel.Item>> Wallet { get; set; } = default!;
     [Parameter] public Func<(SatchelTry.Target Target, string? Context, string Label)?> WalletTarget { get; set; } = default!;
     [Parameter] public Action<Core.Satchel.Item> WriteItUp { get; set; } = default!;

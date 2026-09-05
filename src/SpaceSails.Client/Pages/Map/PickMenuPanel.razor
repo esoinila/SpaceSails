@@ -89,7 +89,7 @@
     [Parameter] public Action ClosePickMenu { get; set; } = default!;
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
     [Parameter] public Func<(double X, double Y), string> MenuAnchorStyle { get; set; } = default!;
-    [Parameter] public Action OpenLayersFromPick { get; set; } = default!;
+    [Parameter] public EventCallback OpenLayersFromPick { get; set; }
     [Parameter] public Action<PickCandidate> OpenPickCandidate { get; set; } = default!;
     [Parameter] public Func<PickCandidate, string> PickHint { get; set; } = default!;
     [Parameter] public List<PickCandidate> pickList { get; set; } = default!;

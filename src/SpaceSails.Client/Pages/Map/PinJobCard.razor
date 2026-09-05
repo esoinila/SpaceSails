@@ -84,12 +84,12 @@
 
     [Parameter] public DeckPlan.ConsoleSpot? _pinHatch { get; set; }
     [Parameter] public string? _pinOutcome { get; set; }
-    [Parameter] public Action CancelPin { get; set; } = default!;
+    [Parameter] public EventCallback CancelPin { get; set; }
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    [Parameter] public Action PinClear { get; set; } = default!;
+    [Parameter] public EventCallback PinClear { get; set; }
     [Parameter] public string PinDisplay { get; set; } = default!;
     [Parameter] public Action<string> PinPush { get; set; } = default!;
-    [Parameter] public Action SubmitPin { get; set; } = default!;
+    [Parameter] public EventCallback SubmitPin { get; set; }
 
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

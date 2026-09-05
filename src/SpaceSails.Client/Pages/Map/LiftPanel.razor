@@ -200,7 +200,7 @@
     [Parameter] public string? _liftOutcome { get; set; }
     [Parameter] public Action CloseLiftPanel { get; set; } = default!;
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    [Parameter] public Action LiftPadClear { get; set; } = default!;
+    [Parameter] public EventCallback LiftPadClear { get; set; }
     [Parameter] public string LiftPadDisplay { get; set; } = default!;
     [Parameter] public bool LiftPadIsDark { get; set; }
     [Parameter] public Action<string> LiftPadPush { get; set; } = default!;

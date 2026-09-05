@@ -640,9 +640,9 @@
     [Parameter] public Action<string> BribeShip { get; set; } = default!;
     [Parameter] public Action<OrdnanceKind> BuyAmmo { get; set; } = default!;
     [Parameter] public Action<int> BuyFuel { get; set; } = default!;
-    [Parameter] public Action BuyNetJammer { get; set; } = default!;
+    [Parameter] public EventCallback BuyNetJammer { get; set; }
     [Parameter] public Action<string> BuyUpgrade { get; set; } = default!;
-    [Parameter] public Action CallInFavorAtPump { get; set; } = default!;
+    [Parameter] public EventCallback CallInFavorAtPump { get; set; }
     [Parameter] public Action CancelFiringSolution { get; set; } = default!;
     [Parameter] public Action CancelRenameCaptain { get; set; } = default!;
     [Parameter] public Func<bool> CanWarnInterest { get; set; } = default!;
@@ -721,13 +721,13 @@
     [Parameter] public Action<string> ReadTheGreyPage { get; set; } = default!;
     [Parameter] public Action<KeyboardEventArgs> RenameKeyDown { get; set; } = default!;
     [Parameter] public Action ReopenStartPicker { get; set; } = default!;
-    [Parameter] public Action RestockSentries { get; set; } = default!;
+    [Parameter] public EventCallback RestockSentries { get; set; }
     [Parameter] public Func<NpcShip, string> RouteLabel { get; set; } = default!;
     [Parameter] public Action ScanFiringWindows { get; set; } = default!;
     [Parameter] public Func<string, ScopeIntel?> ScopeIntelById { get; set; } = default!;
     [Parameter] public Action<string> SelectCommsShip { get; set; } = default!;
     [Parameter] public Func<NpcState?> SelectedTrackedTarget { get; set; } = default!;
-    [Parameter] public Action SellCargo { get; set; } = default!;
+    [Parameter] public EventCallback SellCargo { get; set; }
     [Parameter] public Func<int> SentryRestockCost { get; set; } = default!;
     [Parameter] public Func<int> SentryRoundsMissing { get; set; } = default!;
     [Parameter] public Action<double> SetFireAimOffset { get; set; } = default!;
@@ -745,7 +745,7 @@
     [Parameter] public Func<ShipDesk, Task> SwitchDeskFromClick { get; set; } = default!;
     [Parameter] public Action ToggleDamageControlAuthority { get; set; } = default!;
     [Parameter] public Action ToggleFireAtWill { get; set; } = default!;
-    [Parameter] public Action TogglePin { get; set; } = default!;
+    [Parameter] public EventCallback TogglePin { get; set; }
     [Parameter] public Func<IReadOnlyList<Stations.Captain.TutorialItem>> TutorialCards { get; set; } = default!;
     [Parameter] public Func<int, int> UpgradePrice { get; set; } = default!;
     [Parameter] public Action<string> ViewMapFromLedger { get; set; } = default!;

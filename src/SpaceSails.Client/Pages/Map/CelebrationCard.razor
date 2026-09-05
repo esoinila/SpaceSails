@@ -73,7 +73,7 @@
 
     [Parameter] public int _credits { get; set; }
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    [Parameter] public Action DismissCelebration { get; set; } = default!;
+    [Parameter] public EventCallback DismissCelebration { get; set; }
     [Parameter] public Action PayCompletedQuests { get; set; } = default!;
     [Parameter] public MissionCelebration party { get; set; } = default!;
 

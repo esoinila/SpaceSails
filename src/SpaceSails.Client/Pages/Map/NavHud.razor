@@ -1278,13 +1278,13 @@
     [Parameter] public Func<string, Quest?> ActiveCargoRunTo { get; set; } = default!;
     [Parameter] public Func<int> ActiveTutorialIndex { get; set; } = default!;
     [Parameter] public Action<ArrivalStepRule.ArrivalKind> AddArriveAtScrub { get; set; } = default!;
-    [Parameter] public Action AddBurnAtScrub { get; set; } = default!;
-    [Parameter] public Action AddCastOffAtTop { get; set; } = default!;
-    [Parameter] public Action AddSkimBurn { get; set; } = default!;
-    [Parameter] public Action AddSlingBurn { get; set; } = default!;
+    [Parameter] public EventCallback AddBurnAtScrub { get; set; }
+    [Parameter] public EventCallback AddCastOffAtTop { get; set; }
+    [Parameter] public EventCallback AddSkimBurn { get; set; }
+    [Parameter] public EventCallback AddSlingBurn { get; set; }
     [Parameter] public Action<PlanNode, int> ApplyPulses { get; set; } = default!;
     [Parameter] public double ArcChargeThreshold { get; set; }
-    [Parameter] public Action ArmArriveStep { get; set; } = default!;
+    [Parameter] public EventCallback ArmArriveStep { get; set; }
     [Parameter] public bool ArmedArrivalStillAhead { get; set; }
     [Parameter] public double? ArmedInsertionSimTime { get; set; }
     [Parameter] public Func<ArrivalStepRule.ArrivalKind, string> ArriveButtonLabel { get; set; } = default!;
@@ -1296,7 +1296,7 @@
     [Parameter] public Func<string, ClosestApproach.Pass?> ArrivePassFor { get; set; } = default!;
     [Parameter] public Func<string?> ArrivePlanCompleteLine { get; set; } = default!;
     [Parameter] public Func<string?> ArriveRibbonTooShortLine { get; set; } = default!;
-    [Parameter] public Action AuthorizePlunder { get; set; } = default!;
+    [Parameter] public EventCallback AuthorizePlunder { get; set; }
     [Parameter] public bool AutopilotFlyingApproach { get; set; }
     [Parameter] public Action<NpcState> Board { get; set; } = default!;
     [Parameter] public Func<string, string> BodyName { get; set; } = default!;
@@ -1307,7 +1307,7 @@
     [Parameter] public double CircularSpeedHere { get; set; }
     [Parameter] public Func<PlanNode, string> ClearanceEtaLine { get; set; } = default!;
     [Parameter] public double CurrentPlotHorizonSeconds { get; set; }
-    [Parameter] public Action DeclinePlunder { get; set; } = default!;
+    [Parameter] public EventCallback DeclinePlunder { get; set; }
     [Parameter] public Action<PlanNode> DeleteNode { get; set; } = default!;
     [Parameter] public Func<string?> DestinationEta { get; set; } = default!;
     [Parameter] public bool DockFocusLive { get; set; }
@@ -1320,8 +1320,8 @@
     [Parameter] public Func<OrbitAssistInfo, string> EmergencyDescentTip { get; set; } = default!;
     [Parameter] public Func<OrbitAssistInfo, string> EmergencyInsertionTip { get; set; } = default!;
     [Parameter] public Func<string> EmergencyUndockTip { get; set; } = default!;
-    [Parameter] public Func<Task> EngageLongHaul { get; set; } = default!;
-    [Parameter] public Action EnterOrbit { get; set; } = default!;
+    [Parameter] public EventCallback EngageLongHaul { get; set; }
+    [Parameter] public EventCallback EnterOrbit { get; set; }
     [Parameter] public Func<FlightPlanStatus> FlightNowNext { get; set; } = default!;
     [Parameter] public Func<int> FlightPlanCurrentStep { get; set; } = default!;
     [Parameter] public Func<int> FlightPlanStepCount { get; set; } = default!;
@@ -1342,7 +1342,7 @@
     [Parameter] public string LongCoastAheadReadout { get; set; } = default!;
     [Parameter] public Func<LongHaul.Departure?, CelestialBody, string?, string?> LongHaulOfferBlock { get; set; } = default!;
     [Parameter] public Func<string?, CelestialBody?> LongHaulTargetPlanet { get; set; } = default!;
-    [Parameter] public Action MatchAndClamp { get; set; } = default!;
+    [Parameter] public EventCallback MatchAndClamp { get; set; }
     [Parameter] public int MaxNodePulses { get; set; }
     [Parameter] public int MinNodePulses { get; set; }
     [Parameter] public bool NavLockedByDock { get; set; }
@@ -1352,11 +1352,11 @@
     [Parameter] public Action<PlanNode, int> NudgeNodeAim { get; set; } = default!;
     [Parameter] public Action<PlanNode, int, bool> NudgeNodeEpoch { get; set; } = default!;
     [Parameter] public Action<PlanNode, int, bool> NudgeNodePulses { get; set; } = default!;
-    [Parameter] public Action<ChangeEventArgs> OnFramePicked { get; set; } = default!;
-    [Parameter] public Action<ChangeEventArgs> OnHorizonSliderInput { get; set; } = default!;
-    [Parameter] public Action<ChangeEventArgs> OnSkimAltInput { get; set; } = default!;
-    [Parameter] public Action<ChangeEventArgs> OnSlingRadiiInput { get; set; } = default!;
-    [Parameter] public Action<ChangeEventArgs> OnWarpSliderInput { get; set; } = default!;
+    [Parameter] public EventCallback<ChangeEventArgs> OnFramePicked { get; set; }
+    [Parameter] public EventCallback<ChangeEventArgs> OnHorizonSliderInput { get; set; }
+    [Parameter] public EventCallback<ChangeEventArgs> OnSkimAltInput { get; set; }
+    [Parameter] public EventCallback<ChangeEventArgs> OnSlingRadiiInput { get; set; }
+    [Parameter] public EventCallback<ChangeEventArgs> OnWarpSliderInput { get; set; }
     [Parameter] public Func<string?> OpenPlanEditorKey { get; set; } = default!;
     [Parameter] public Func<OrbitAssistInfo?> OrbitInfo { get; set; } = default!;
     [Parameter] public Func<OrbitAssistInfo, string> OrbitStatusLine { get; set; } = default!;
@@ -1372,22 +1372,22 @@
     [Parameter] public bool PlotMode { get; set; }
     [Parameter] public Func<Action, Task> PressAndRefocus { get; set; } = default!;
     [Parameter] public int ReactionMassCapacity { get; set; }
-    [Parameter] public Action RemoveArriveStep { get; set; } = default!;
-    [Parameter] public Action RemoveTheCastOff { get; set; } = default!;
+    [Parameter] public EventCallback RemoveArriveStep { get; set; }
+    [Parameter] public EventCallback RemoveTheCastOff { get; set; }
     [Parameter] public Action<PlanNode> RetimeToScrub { get; set; } = default!;
     [Parameter] public Func<(string Text, bool Warn)?> RibbonHorizonNote { get; set; } = default!;
-    [Parameter] public Func<Task> RunSkimSolveAsync { get; set; } = default!;
-    [Parameter] public Func<Task> RunSlingSolveAsync { get; set; } = default!;
+    [Parameter] public EventCallback RunSkimSolveAsync { get; set; }
+    [Parameter] public EventCallback RunSlingSolveAsync { get; set; }
     [Parameter] public Action<bool, string> Say { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<TransferPlanner.BurnStep>> ScheduledAutopilotBurns { get; set; } = default!;
     [Parameter] public Func<TransferPlanner.BurnStep, string> ScheduledBurnGlanceLine { get; set; } = default!;
     [Parameter] public double ScrubTime { get; set; }
-    [Parameter] public Action ScrubToArrive { get; set; } = default!;
+    [Parameter] public EventCallback ScrubToArrive { get; set; }
     [Parameter] public Func<NpcState?> SelectedCaptureTarget { get; set; } = default!;
     [Parameter] public Func<PlanNode, double> SeparationFromHarbour { get; set; } = default!;
     [Parameter] public Action<string?> SetDestination { get; set; } = default!;
     [Parameter] public Action<PlanNode, ChangeEventArgs> SetHeading { get; set; } = default!;
-    [Parameter] public Action SetHorizonAuto { get; set; } = default!;
+    [Parameter] public EventCallback SetHorizonAuto { get; set; }
     [Parameter] public Action<PlanNode, NodeDirection> SetNodeDirection { get; set; } = default!;
     [Parameter] public Action<PlanNode, ChangeEventArgs> SetPercent { get; set; } = default!;
     [Parameter] public Action<string?> SetPlotFrame { get; set; } = default!;
@@ -1407,24 +1407,24 @@
     [Parameter] public Func<string> SlingNodeNoteNow { get; set; } = default!;
     [Parameter] public Func<SlingPlanner.Result, string> SlingOutcomeLine { get; set; } = default!;
     [Parameter] public Func<SlingPlanner.Result, string> SlingPassLine { get; set; } = default!;
-    [Parameter] public Func<Task> StartSkip { get; set; } = default!;
+    [Parameter] public EventCallback StartSkip { get; set; }
     [Parameter] public Action<string> ToggleArmedInsertion { get; set; } = default!;
-    [Parameter] public Action ToggleArriveEditor { get; set; } = default!;
+    [Parameter] public EventCallback ToggleArriveEditor { get; set; }
     [Parameter] public Action<PlanNode> ToggleBurnEditor { get; set; } = default!;
-    [Parameter] public Action ToggleDock { get; set; } = default!;
-    [Parameter] public Action ToggleFollow { get; set; } = default!;
-    [Parameter] public Action ToggleFollowDest { get; set; } = default!;
-    [Parameter] public Action ToggleInsertionEditor { get; set; } = default!;
+    [Parameter] public EventCallback ToggleDock { get; set; }
+    [Parameter] public EventCallback ToggleFollow { get; set; }
+    [Parameter] public EventCallback ToggleFollowDest { get; set; }
+    [Parameter] public EventCallback ToggleInsertionEditor { get; set; }
     [Parameter] public Action ToggleNavHelp { get; set; } = default!;
-    [Parameter] public Action TogglePause { get; set; } = default!;
-    [Parameter] public Action TogglePlotMode { get; set; } = default!;
-    [Parameter] public Action ToggleSkimPanel { get; set; } = default!;
-    [Parameter] public Func<Task> ToggleSkip { get; set; } = default!;
-    [Parameter] public Action ToggleSlingPanel { get; set; } = default!;
-    [Parameter] public Action ToggleTutorial { get; set; } = default!;
+    [Parameter] public EventCallback TogglePause { get; set; }
+    [Parameter] public EventCallback TogglePlotMode { get; set; }
+    [Parameter] public EventCallback ToggleSkimPanel { get; set; }
+    [Parameter] public EventCallback ToggleSkip { get; set; }
+    [Parameter] public EventCallback ToggleSlingPanel { get; set; }
+    [Parameter] public EventCallback ToggleTutorial { get; set; }
     [Parameter] public Func<double, (string? FrameId, string FrameName, string DestinationName)?> TripFrameOffer { get; set; } = default!;
-    [Parameter] public Action Undock { get; set; } = default!;
-    [Parameter] public Action UseAncientsPilot { get; set; } = default!;
+    [Parameter] public EventCallback Undock { get; set; }
+    [Parameter] public EventCallback UseAncientsPilot { get; set; }
     [Parameter] public int Warp { get; set; }
     [Parameter] public string WarpReadout { get; set; } = default!;
     [Parameter] public int WarpSliderValue { get; set; }

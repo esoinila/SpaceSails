@@ -86,9 +86,9 @@
     [Parameter] public SaveSlotMeta? _importPreview { get; set; }
     [Parameter] public Func<Task> ApplyPendingImport { get; set; } = default!;
     [Parameter] public Action<NpcState> Board { get; set; } = default!;
-    [Parameter] public Action CancelImport { get; set; } = default!;
-    [Parameter] public Func<Task> ConfirmImportBankingFirst { get; set; } = default!;
-    [Parameter] public Func<Task> ConfirmImportReplace { get; set; } = default!;
+    [Parameter] public EventCallback CancelImport { get; set; }
+    [Parameter] public EventCallback ConfirmImportBankingFirst { get; set; }
+    [Parameter] public EventCallback ConfirmImportReplace { get; set; }
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

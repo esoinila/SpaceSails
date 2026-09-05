@@ -92,9 +92,9 @@
 
     [Parameter] public bool _docked { get; set; }
     [Parameter] public int _reactionMassPulses { get; set; }
-    [Parameter] public Action AcceptRescue { get; set; } = default!;
+    [Parameter] public EventCallback AcceptRescue { get; set; }
     [Parameter] public bool Adrift { get; set; }
-    [Parameter] public Func<Task> CloseRescueOffer { get; set; } = default!;
+    [Parameter] public EventCallback CloseRescueOffer { get; set; }
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
     [Parameter] public string HotGlossTitle { get; set; } = default!;
     [Parameter] public int ReactionMassCapacity { get; set; }

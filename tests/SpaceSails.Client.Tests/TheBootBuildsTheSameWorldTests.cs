@@ -651,7 +651,12 @@ public sealed class TheBootBuildsTheSameWorldTests
 
     // ── The services the page injects ────────────────────────────────────────────────────────────────
 
-    internal static void NeverRender(Pages.Map map)
+    /// <summary>#1135 · Widened from <c>Pages.Map</c> to any <c>ComponentBase</c>. It was never about the
+    /// page: what it turns off is a base-class early-out, and the tracking post now needs it for the same
+    /// reason the page always did — a bench that reaches a desk method by name is driving a component no
+    /// renderer has ever attached, and the desk's own <c>StateHasChanged</c> (#1135's fix for the handlers
+    /// pressed through a lambda) throws there exactly as the boot's five calls did.</summary>
+    internal static void NeverRender(ComponentBase component)
     {
         // A ComponentBase that was never attached to a renderer throws out of StateHasChanged, and the boot
         // calls it five times. Telling the component it already has a render queued is the framework's own
@@ -660,7 +665,7 @@ public sealed class TheBootBuildsTheSameWorldTests
             "_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException(
                 "ComponentBase has no _hasPendingQueuedRender — the render early-out this bench rides on has moved.");
-        pending.SetValue(map, true);
+        pending.SetValue(component, true);
     }
 
     internal static void Hand(Pages.Map map, string property, object service) =>
