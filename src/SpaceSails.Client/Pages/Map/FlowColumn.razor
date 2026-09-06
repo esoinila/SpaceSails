@@ -9,11 +9,15 @@
     one piece of LAYOUT — the window-tall box #992 built so the Plotting panel's cap could be measured
     instead of guessed, with the masthead at its head (#195), the desks in its greedy middle (#236), and the
     story plate (#994) and the navigation-target panel (#1037) taking their own measured heights off its
-    foot. Five children inside two nested divs, and ninety lines of prose saying why each one stands where
-    it stands.
+    foot. Five children, and ninety lines of prose saying why each one stands where it stands.
 
     That prose is about the COLUMN, so it lives in the column's own file now, and Map.razor is left a flat
     list of invocations with no nesting in it at all.
+
+    The head of the column is a BOX rather than a single gated surface — a div with the desk tabs and the
+    pilot banner in it — so it is `TopStackBox.razor` beside this file and the column invokes it. The other
+    four children are one existing surface behind one gate each; a wrapper around any of those would be a
+    second copy of that surface's parameter list and no new boundary, so they stand here.
 
     Moved by PURE MOTION: the gates came with the invocations, the comments came with the boxes they
     explain, and every page member the block reads is a [Parameter] with the SAME NAME — the fields keep
@@ -23,7 +27,7 @@
     EIGHT members the moved markup ASSIGNS cross as PAIRS (the value in, the page's own setter out, behind
     a private property that keeps the field's own name), because the column is where they meet: the Nav
     HUD's `_burnAngleAbsolute` and `_scrubOffsetSeconds`, the sensors desk's captured `_trackingPost`, and
-    the four the desks write — `_captainTab`, `_commsSelectedId`, `_credits`, `_localSpace`, `_renameDraft`.
+    the five the desks write — `_captainTab`, `_commsSelectedId`, `_credits`, `_localSpace`, `_renameDraft`.
     Two of the eight are ALSO read one-way further down the column (`_credits` by the Nav HUD,
     `_trackingPost` by the War Room); they read the private property, so both ends see one value.
 
@@ -32,8 +36,8 @@
     exactly what they dispatched from the page, which is nothing.
 
     The .razor.css beside this file carries no rules; it exists to give the component Map.razor.css's scope
-    (pinned in SpaceSails.Client.csproj), so `.map-flowcolumn`, `.map-topstack` and the peek-passthrough
-    rules go on matching the two boxes below exactly as they matched them in the page.
+    (pinned in SpaceSails.Client.csproj), so `.map-flowcolumn` and its peek-passthrough rule go on matching
+    the column exactly as they matched it in the page.
 *@
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────── *@
     @* #195 (owner ruling: the NOW/NEXT banner covered the toolbar's 'checklist' and '?' buttons):
@@ -66,25 +70,15 @@
        .map-peek rule in app.css — the classes are the contract, the nesting is not. *@
     <div class="map-flowcolumn peek-passthrough">
 
-    <div class="map-topstack peek-passthrough">
-
-    @if (_surface is null)
-    {
-        <ShipTabsStrip _activeDesk="@_activeDesk" _peekMap="@_peekMap" DeskKeyLabel="@DeskKeyLabel"
-                       DeskLabel="@DeskLabel" SwitchDeskFromClick="@SwitchDeskFromClick" TabBarOrder="@TabBarOrder"
-                       TogglePeekMapFromClick="@TogglePeekMapFromClick" />
-    }
-
-    @if (_worldReady && !_deckMode)
-    {
-        <TopBannerStack _armedOrbitBodyId="@_armedOrbitBodyId" _bannerRowOffset="@_bannerRowOffset"
-                        _dockReadyStatus="@_dockReadyStatus" _shipAlerts="@_shipAlerts"
-                        AcknowledgeAlert="@AcknowledgeAlert" AuthorizePlunder="@AuthorizePlunder"
-                        AutopilotStoodDown="@AutopilotStoodDown" BannerPageDown="@BannerPageDown"
-                        BannerPageUp="@BannerPageUp" Board="@Board" DeclinePlunder="@DeclinePlunder"
-                        FlightNowNext="@FlightNowNext" SwitchDeskFromClick="@SwitchDeskFromClick" />
-    }
-    </div>@* /.map-topstack — tabs · banner · alert strip; the Nav HUD (.map-hud) flows below it *@
+    <TopStackBox _activeDesk="@_activeDesk" _armedOrbitBodyId="@_armedOrbitBodyId"
+                 _bannerRowOffset="@_bannerRowOffset" _deckMode="@_deckMode"
+                 _dockReadyStatus="@_dockReadyStatus" _peekMap="@_peekMap" _shipAlerts="@_shipAlerts"
+                 _surface="@_surface" _worldReady="@_worldReady" AcknowledgeAlert="@AcknowledgeAlert"
+                 AuthorizePlunder="@AuthorizePlunder" AutopilotStoodDown="@AutopilotStoodDown"
+                 BannerPageDown="@BannerPageDown" BannerPageUp="@BannerPageUp" Board="@Board"
+                 DeclinePlunder="@DeclinePlunder" DeskKeyLabel="@DeskKeyLabel" DeskLabel="@DeskLabel"
+                 FlightNowNext="@FlightNowNext" SwitchDeskFromClick="@SwitchDeskFromClick"
+                 TabBarOrder="@TabBarOrder" TogglePeekMapFromClick="@TogglePeekMapFromClick" />
 
     @if (_activeDesk == ShipDesk.Nav)
     {
