@@ -359,22 +359,36 @@ public class TheFalseIdTests
     // ── The prose, and what there is none of ──────────────────────────────────────────────────────────
 
     /// <summary>
-    /// <b>THIS FEATURE AUTHORS NO SENTENCE.</b> Not a nicety — a canon rule for this lane: the plate a found
-    /// pass wears is the MINTING SITE'S OWN (<see cref="PatrolBeat.BadgeTitle"/>, #590's grammar), and a
-    /// sentence composed here would be a second voice describing a piece of paper that already says what it
-    /// is.
+    /// <b>THIS FEATURE AUTHORS EXACTLY ONE SENTENCE.</b> #1143 shipped with none and a
+    /// <c>// FABLE: line needed</c> over the plate; the canon pass of 2026-09-06 wrote the one line the
+    /// marker asked for — the moment the paper goes into the wallet — and the count is held at ONE for the
+    /// reason that was a canon rule before there were any: the plate a found pass wears is the MINTING
+    /// SITE'S OWN (<see cref="PatrolBeat.BadgeTitle"/>, #590's grammar), and a second authored sentence
+    /// would be a second voice describing a piece of paper that already says what it is.
     ///
-    /// <para><b>RED</b> by adding any <c>const string</c> to <see cref="FoundPass"/>, or by composing the
-    /// plate out of anything but the pass's own face.</para>
+    /// <para>Asked by REFLECTION rather than by reading the file, so the number cannot drift behind a
+    /// comment: every static string this class declares is enumerated, there is one, it is
+    /// <see cref="FoundPass.TakenLine"/>, and it is the owner-facing text VERBATIM.</para>
+    ///
+    /// <para><b>RED</b> three ways, all watched: add a second <c>const string</c> to
+    /// <see cref="FoundPass"/>; change one character of the line; or compose the plate out of anything but
+    /// the pass's own face.</para>
     /// </summary>
     [Fact]
-    public void ItAuthorsNoSentenceOfItsOwn()
+    public void ItAuthorsExactlyOneSentenceOfItsOwn()
     {
         FieldInfo[] strings = [.. typeof(FoundPass)
             .GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)
             .Where(f => f.FieldType == typeof(string))];
-        Assert.Empty(strings);
 
+        FieldInfo only = Assert.Single(strings);
+        Assert.Equal(nameof(FoundPass.TakenLine), only.Name);
+        Assert.Equal(
+            "Somebody's old site pass, still warm from a locker. The photograph is not you. Nobody has ever checked.",
+            (string?)only.GetValue(null));
+
+        // …and the plate is still the site's own face and nothing composed beside it: the sentence is said
+        // at the find, never wrapped around the row the wallet keeps.
         string[] world = ["false-id-prose-a", "false-id-prose-b"];
         Satchel.Item pass = FoundPass.MintedElsewhere(world[0], world, 2)!.Value;
         string site = PatrolBeat.SiteOfBadge(pass.Id)!;
@@ -388,8 +402,11 @@ public class TheFalseIdTests
     }
 
     /// <summary>§8's reserved word and the fifteen beside it: nothing this feature can put on a screen says
-    /// what any of this place was FOR. Nearly free here, because the only thing it can put on a screen is a
-    /// site code and a tier.</summary>
+    /// what any of this place was FOR. It used to be nearly free, because the only thing this feature could
+    /// put on a screen was a site code and a tier; it costs something now that there is an authored
+    /// sentence, and the sentence is exactly where a line about a stolen pass would reach for an
+    /// explanation. It reaches for none — the reason the card works is <i>nobody has ever checked</i>, which
+    /// names no system and no one upstairs (#649's comprehension without acceptance).</summary>
     [Fact]
     public void NothingItSaysExplainsWhatThePlaceWasFor()
     {
@@ -405,7 +422,21 @@ public class TheFalseIdTests
         foreach (string bad in forbidden)
         {
             Assert.DoesNotContain(bad, plate, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(bad, FoundPass.TakenLine, StringComparison.OrdinalIgnoreCase);
         }
+    }
+
+    /// <summary>THE MARKER IS GONE. <c>FoundPass</c> shipped in #1143 with one
+    /// <c>// FABLE: line needed</c> standing in for the sentence this file now has. A marker left behind a
+    /// written line is a request nobody will read twice, and the file is read here rather than reasoned
+    /// about.</summary>
+    [Fact]
+    public void TheLineNeededMarkerIsGone()
+    {
+        string source = TheCardCarriesItsOwnStoryTests.ReadRepoFile("src/SpaceSails.Core/FoundPass.cs");
+
+        Assert.DoesNotContain("FABLE: line needed", source, StringComparison.Ordinal);
+        Assert.Contains(FoundPass.TakenLine, source, StringComparison.Ordinal);
     }
 
     private static IEnumerable<string> Grounds()

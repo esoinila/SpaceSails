@@ -211,18 +211,39 @@ public static class FoundPass
     // ── WHAT IS SAID ABOUT IT ────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
+    /// <b>THE MOMENT IT GOES INTO THE WALLET</b>, and the only sentence this feature authors.
+    ///
+    /// <para>Canon pass, Fable 2026-09-06, for the marker #1143 shipped this file with — it asked for
+    /// <i>the room a working man's old site pass is lying in, and the moment it goes into the wallet</i>,
+    /// and this is that moment and nothing else.</para>
+    ///
+    /// <para>Three statements, and the horror is that every one of them is ADMINISTRATIVE. It is somebody's
+    /// — a real person on a real rota, not a prop. It is <i>still warm from a locker</i>, which is the whole
+    /// of the theft: the room was in use this watch. The photograph is not you, said flat, because the
+    /// captain can see that. And then the reason the thing works anyway, which is the only sentence in it
+    /// that is about the world rather than the paper: <b>nobody has ever checked.</b> No system is named, no
+    /// conspiracy is implied and nothing is explained (#649's comprehension-without-acceptance, §8's
+    /// reserved word nowhere near it) — a laminated card gets waved through because waving it through is the
+    /// job, exactly as the man on the rota in this same issue is a tired employee and not a villain.</para>
+    ///
+    /// <para><b>It is said ONCE, on the pulse, at the take</b> (<c>Map.TheDrawerHandsOverAFalseId</c>), and
+    /// it is never repeated: the wallet row afterwards wears <see cref="Plate"/> and only that, so a captain
+    /// who opens the satchel a month later reads the paper's own face rather than this sentence again.</para>
+    /// </summary>
+    public const string TakenLine =
+        "Somebody's old site pass, still warm from a locker. The photograph is not you. Nobody has ever checked.";
+
+    /// <summary>
     /// <b>THE PLATE, AND IT IS THE MINTING SITE'S OWN.</b> The glyph a pass wears in a wallet and the face
     /// that is printed on it — <see cref="PatrolBeat.BadgeTitle"/>, #590's grammar — and not one word
     /// besides.
     ///
-    /// <para>Nothing is authored here, deliberately. A sentence composed at a find would be a second voice
-    /// describing a pass, and the pass already says what it is in the one register that matters: the site
-    /// code and the tier a man on a rota is about to read out loud. The captain does the reading, exactly as
-    /// they do in the chooser (<see cref="WalletChoice.Claims"/>), which is composed off the same call.</para>
-    ///
-    /// <para>// FABLE: line needed — the room a working man's old site pass is lying in, and the moment it
-    /// goes into the wallet. Until there is one, the plate IS the telling (#528's caption-only idiom), which
-    /// is honest and says nothing this feature has not been ruled on.</para>
+    /// <para>Nothing is authored HERE, deliberately, and <see cref="TakenLine"/> does not change that: the
+    /// sentence is said once at the moment of the find and the plate is what the row wears for ever after. A
+    /// sentence composed into the plate would be a second voice describing a pass every time the satchel is
+    /// opened, and the pass already says what it is in the one register that matters: the site code and the
+    /// tier a man on a rota is about to read out loud. The captain does the reading, exactly as they do in
+    /// the chooser (<see cref="WalletChoice.Claims"/>), which is composed off the same call.</para>
     /// </summary>
     public static string Plate(Satchel.Item pass) =>
         PatrolBeat.SiteOfBadge(pass.Id) is { Length: > 0 } site
