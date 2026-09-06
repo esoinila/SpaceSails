@@ -292,8 +292,13 @@ Canon (Fable), binding:
    before anything comes through it — and never breaks a locked one: it waits on the far side, or goes round
    by the way a walker would. What it could do to the door instead is never shown (§8's parental law; the
    gramophone is the point).
-2. **They do not see through a closed door** (the #442 ruling, shipped in #1154). Together: a shut door is a
-   real refuge from sight and a real delay, and a locked one is a wall to them by choice.
+2. **They do not see through a closed door** (the #442 ruling, shipped in #1154 for a hull and widened to
+   every ground by the owner's ruling of 2026-09-06 — *on the moon either*). Together: a shut door is a real
+   refuge from sight and a real delay, and a locked one is a wall to them by choice. It holds on a moon
+   exactly as it holds aboard, which is what makes a hut out on the regolith the refuge #563 asked for in the
+   first place — *"rooms with doors we can hide behind while we reload our guns safe from reevers"*. Their
+   eye and their legs read one list, on every ground; two lists is the arrangement every bug in this family
+   came out of.
 3. **The found halls have doors** (the seamless leafs of #716/#1082) for the same reason — legacy; that is
    why a leaf down there opens at all, and why nothing down there ever needed to.
 4. Nothing states any of this; the door opening slowly on its own, with nothing visible behind it yet, is the
