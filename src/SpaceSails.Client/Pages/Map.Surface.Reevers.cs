@@ -51,7 +51,7 @@ public partial class Map
         }
         for (int i = 0; i < doors.Length; i++)
         {
-            bool shut = IsDoorShut(doors[i]);
+            bool shut = IsDoorShut(doors[i], i);
             if (_sightDoorShut[i] != shut)
             {
                 _sightDoorShut[i] = shut;
@@ -84,11 +84,23 @@ public partial class Map
 
     // The same rule DeckView draws with (Core Airlock), so what blocks a shot is exactly what the player
     // sees closed — one door open at a time, the far end of an interlocked tube always shut.
-    private bool IsDoorShut(DeckPlan.Door d)
+    private bool IsDoorShut(DeckPlan.Door d, int index)
     {
         if (d.Locked)
         {
             return true;
+        }
+
+        // #563 · …AND A LEAF SOMETHING HAULED OVER STAYS OVER. Owner ruling, 2026-09-06: the Old Ones use
+        // doors — an unlocked leaf opens for them over a beat, and they do not close it behind them.
+        //
+        // This is the second opener the paragraph below warns about, and it is legal for the one reason that
+        // paragraph gives: the RENDERER learns it in the same instant. The state is not held here; it is on
+        // the plan (DeckPlan.Leafs), and DrawTheDoors reads that same field on the same frame. One source of
+        // truth, so a leaf can never be shut to the pen and open to a round, or the other way about.
+        if (_deckPlan.LeafHeldOpen(index))
+        {
+            return false;
         }
         double mx = (d.X1 + d.X2) / 2.0, my = (d.Y1 + d.Y2) / 2.0;
         double toDoor = Math.Sqrt(((_avatarX - mx) * (_avatarX - mx)) + ((_avatarY - my) * (_avatarY - my)));
@@ -102,6 +114,11 @@ public partial class Map
         //
         // What blocks a shot must be exactly what the player sees closed. If Reevers are ever to work
         // doors, the RENDERER has to learn it at the same moment — one source of truth or none.
+        //
+        // #563 · THEY DO NOW, AND THAT IS THE SHAPE THIS PARAGRAPH ASKED FOR. The captain's distance is
+        // still the only thing decided HERE; the leaf they hauled is decided ONCE, on the plan, and read
+        // from there by this method and by the pen alike (see the clause above). What was rejected was a
+        // second opener with its own private answer — not the Old Ones having a door.
         double nearestPartner = double.PositiveInfinity;
         if (d.Interlock != 0)
         {
@@ -587,14 +604,23 @@ public partial class Map
         // wedged on a wall, or already on target. Tied to the tracker's own motion floor: sub-floor motion
         // this frame is "still" by the same law the fan reads, so we hold it and let it shiver in place.
         double idleProgress = MotionTracker.StillSpeed * dt;
+        // #563 · THE LEAFS THEY ARE HAULING, STEPPED FIRST. Owner ruling, 2026-09-06 — the Old Ones use
+        // doors. A leaf that comes over on this frame has to be over for this frame's legs, sight and
+        // rounds, never a frame behind the picture, so the hauling is banked before any list is taken.
+        StepLeafWork(dt);
         // #324: the maze is law for the many too — the Reevers bump-and-slide on the SAME wall segments
         // the captain does, and can only see the captain when no wall stands between.
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
         const double reeverRadius = DeckPlan.AvatarRadius;
+        // #563 · …AND THE OLD ONES' OWN LIST: stone PLUS whatever is shut this instant (TheirLegs, which is
+        // SightBlockers itself). `walls` above is the CAPTAIN's list and stays exactly what it was — a leaf
+        // never stops his boot, because it opens for him. It stops theirs, because it does not.
+        IReadOnlyList<SurfaceCollision.Segment> theirLegs = TheirLegs();
         // Sight for DRAWING is not the same list as sight for WALKING: a shut door stops the eye and not
         // the shamble, so the visibility test below uses the blockers (walls + shut doors) rather than the
-        // collision field.
-        IReadOnlyList<SurfaceCollision.Segment>? sight = OnWreck ? SightBlockers() : null;
+        // collision field. #563: for THEM the two lists are now the same list, which is the point — a leaf
+        // that stops the boot and not the eye is the exact asymmetry #442 was filed about.
+        IReadOnlyList<SurfaceCollision.Segment>? sight = OnWreck ? theirLegs : null;
         foreach (Reever r in _reevers)
         {
             // #488 · THE ONES THAT HAVE NOT WOKEN YET. They do not move, so they cost nothing here and the
@@ -672,7 +698,7 @@ public partial class Map
                 }
                 r.Vx = 0;
                 r.Vy = 0;
-                ApplyIdleShiver(r, walls, reeverRadius, now,
+                ApplyIdleShiver(r, theirLegs, reeverRadius, now,
                     Math.Atan2(_avatarY - r.AnchorY, _avatarX - r.AnchorX));
                 if (onSurface && ReeverChase.Caught(r.X, r.Y, _avatarX, _avatarY))
                 {
@@ -739,7 +765,7 @@ public partial class Map
                 // (the same expression a sentry-pinned one already uses); an unaware one keeps its own
                 // facing, exactly as before. Nothing else about it changes: it holds its ground, it shivers,
                 // and it has not committed — which is what makes backing behind stone still work.
-                ApplyIdleShiver(r, walls, reeverRadius, now,
+                ApplyIdleShiver(r, theirLegs, reeverRadius, now,
                     r.Stirred ? Math.Atan2(_avatarY - r.AnchorY, _avatarX - r.AnchorX) : r.Facing);
                 if (onSurface && ReeverChase.Caught(r.X, r.Y, _avatarX, _avatarY))
                 {
@@ -820,7 +846,7 @@ public partial class Map
             // work a slab left, half right, and the two streams meet you around its ends.
             int wallSide = (r.JitterSeed & 1) == 0 ? 1 : -1;
             (double nx, double ny) = ReeverChase.Step(
-                baseX, baseY, aimX, aimY, step * VacuumDrag(r), barrier, walls, reeverRadius, wallSide);
+                baseX, baseY, aimX, aimY, step * VacuumDrag(r), barrier, theirLegs, reeverRadius, wallSide);
 
             // #585 · AND OUT OF THE SHELTERS. Owner, playing: "lol I saw one reever get into a shelter :-D",
             // then "3 reevers waiting in the shelter :-D". A doorway has to be a real gap or the captain
@@ -844,7 +870,14 @@ public partial class Map
             //
             // So: if a contact is standing IN stone, walk it out along the shortest way. Cheap — the test is
             // one collision query that says "no" for every Old One on an ordinary frame.
-            (nx, ny) = ExtricateFromStone(nx, ny, walls, reeverRadius);
+            //
+            // #563 · AND IT IS ASKED OF THEIR LIST, WHICH NOW INCLUDES A LEAF. There is a second way to end
+            // up inside a barrier and it arrived with this lane: a contact standing in a doorway while the
+            // captain walks out of the leaf's own radius has the leaf close on it. Slide is a bump-and-slide
+            // and has nothing to say about a body that is ALREADY inside a segment — both axes are refused
+            // and it would stand there for good, wedged in a hatch. Same law, same call, same shortest way
+            // out; the only change is which list is asked.
+            (nx, ny) = ExtricateFromStone(nx, ny, theirLegs, reeverRadius);
 
             double progressed = Math.Sqrt(((nx - baseX) * (nx - baseX)) + ((ny - baseY) * (ny - baseY)));
 
@@ -861,7 +894,7 @@ public partial class Map
                 }
                 r.Vx = 0;
                 r.Vy = 0;
-                ApplyIdleShiver(r, walls, reeverRadius, now,
+                ApplyIdleShiver(r, theirLegs, reeverRadius, now,
                     Math.Atan2(_avatarY - r.AnchorY, _avatarX - r.AnchorX));
             }
             else
@@ -913,11 +946,11 @@ public partial class Map
             {
                 spread[i] = (_reevers[i].X, _reevers[i].Y);
             }
-            ReeverPack.KeepApart(spread, walls, reeverRadius);
+            ReeverPack.KeepApart(spread, theirLegs, reeverRadius);
             // #453: and off the captain's own dot, on the same law. Safe here because every Reever's catch
             // test has already run this frame — reaching you still catches you; this only stops the drawn
             // dots from merging into one once that verdict is in.
-            ReeverPack.KeepClearOfCaptain(spread, _avatarX, _avatarY, walls, reeverRadius);
+            ReeverPack.KeepClearOfCaptain(spread, _avatarX, _avatarY, theirLegs, reeverRadius);
             for (int i = 0; i < _reevers.Count; i++)
             {
                 Reever moved = _reevers[i];

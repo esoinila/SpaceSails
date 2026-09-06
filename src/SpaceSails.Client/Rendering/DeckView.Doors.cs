@@ -22,8 +22,11 @@ public sealed partial class DeckView
     {
         // Automatic airlock doors (the docking tube): shut across the passage until you near them,
         // then they retract to a stub at each jamb. Purely visual — the passage is always walkable.
-        foreach (DeckPlan.Door d in plan.Doors)
+        // #563 · BY INDEX, because a leaf now has a state of its own on the plan (DeckPlan.Leafs) and the
+        // index is its name. Nothing else about this loop moved.
+        for (int leafIndex = 0; leafIndex < plan.Doors.Length; leafIndex++)
         {
+            DeckPlan.Door d = plan.Doors[leafIndex];
             // #563 slice 2 · OFF THE GLASS IS NOT DRAWN — the same conservative reject slice 1 gave the
             // ground, walls and unseen falloff, and for the same reason: the regolith is a lattice and the
             // frame carries nine tiles, every one of which now hangs doors in its buildings. Eight of those
@@ -117,11 +120,32 @@ public sealed partial class DeckView
             // which is exactly why its own paragraph can promise that it still retracts.
             bool open = Airlock.MayOpen(toDoor, nearestPartner, DoorOpenRadius)
                         && !plan.DoorwayIsWalledUp(d);
-            if (open)
+
+            // #563 · …AND A LEAF SOMETHING IS HAULING IS DRAWN PART-WAY OVER. Owner ruling, 2026-09-06: the
+            // Old Ones use doors, and they open one the slow way — <i>a beat: the leaf moves before anything
+            // comes through it</i>. THIS IS THE WHOLE TELLING. Nothing is ever said about it, no card is
+            // raised and no mark is drawn on the far side; a leaf sliding on its own, with an empty doorway
+            // behind it, is the only sentence the feature has.
+            //
+            // The state is the plan's (DeckPlan.Leafs), written by the sim in the same frame this reads it,
+            // which is the one condition IsDoorShut's own warning sets for a second opener existing at all.
+            //
+            // The slide reuses the retracted idiom rather than inventing a picture: the two jamb stubs grow
+            // from half the span each (which is the shut leaf, drawn as two halves) to a quarter each (which
+            // is the open one). So `hauled == 0` and `hauled == 1` are byte-for-byte the frames that were
+            // drawn before this lane, and only a leaf actually in motion is a picture the game did not have.
+            double hauled = open ? 1 : plan.LeafOpening(leafIndex);
+            if (open || hauled >= 1)
             {
                 // Retracted: a short leaf at each jamb (25% in from each end).
                 DrawSeg(project(d.X1, d.Y1), project(d.X1 + (d.X2 - d.X1) * 0.25f, d.Y1 + (d.Y2 - d.Y1) * 0.25f), leaf, weight - 1f);
                 DrawSeg(project(d.X2, d.Y2), project(d.X2 - (d.X2 - d.X1) * 0.25f, d.Y2 - (d.Y2 - d.Y1) * 0.25f), leaf, weight - 1f);
+            }
+            else if (hauled > 0)
+            {
+                float over = (float)(0.5 - (0.25 * hauled));   // 0.5 (shut) → 0.25 (open), each jamb
+                DrawSeg(project(d.X1, d.Y1), project(d.X1 + (d.X2 - d.X1) * over, d.Y1 + (d.Y2 - d.Y1) * over), leaf, weight - 1f);
+                DrawSeg(project(d.X2, d.Y2), project(d.X2 - (d.X2 - d.X1) * over, d.Y2 - (d.Y2 - d.Y1) * over), leaf, weight - 1f);
             }
             else
             {
