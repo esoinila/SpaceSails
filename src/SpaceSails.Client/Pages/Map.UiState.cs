@@ -890,7 +890,7 @@ public partial class Map
     // jump reuses the same select paths. Hidden = the Layers filter would keep it OFF the map even after
     // we jump there — true only for a layer-filtered contact/depot; a charted body's disc always draws,
     // and an UNCHARTED body is excluded from search entirely (see CollectSearchCandidates).
-    private readonly record struct NavSearchRow(char Kind, string Id, string Name, string Flavor, string Icon, bool Hidden);
+    public readonly record struct NavSearchRow(char Kind, string Id, string Name, string Flavor, string Icon, bool Hidden);
 
     private ElementReference _navSearchInput;
     private string _navSearchQuery = "";

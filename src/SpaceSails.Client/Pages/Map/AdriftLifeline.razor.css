@@ -1,0 +1,5 @@
+/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
+   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
+   here. It carries NO rules on purpose, and one of them could not have come anyway:
+   `.map-adrift-reopen` animates `adrift-pulse`, whose @keyframes are named in Pages/Map.razor.css and
+   are scoped PER FILE — #1109's first named trap, and the reason it kept that animation there. */
