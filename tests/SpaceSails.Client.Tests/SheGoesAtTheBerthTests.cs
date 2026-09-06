@@ -9,6 +9,7 @@ using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 using SpaceSails.Core.Interior;
 using Xunit;
+using static SpaceSails.Client.Tests.CastawayBench;
 
 namespace SpaceSails.Client.Tests;
 
@@ -38,13 +39,6 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class SheGoesAtTheBerthTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
-
-    /// <summary>The port everything below happens at: a station with an interior to walk and a roster with
-    /// more than one slot in it. Both are ASSERTED in <see cref="ClampAtThePort"/> rather than assumed — a
-    /// one-collar outpost would make the neighbour guards green and empty.</summary>
-    private const string Port = "selene-gate";
 
     // ══ 1 · ARMING AT A BERTH IS PUBLIC ══════════════════════════════════════════════════════════════════
 
@@ -308,34 +302,11 @@ public sealed class SheGoesAtTheBerthTests
 
     // ── THE WORLD ─────────────────────────────────────────────────────────────────────────────────────
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol = new(() =>
-        ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol.json")));
-
     /// <summary>A live component over the shipping scenario, walking her own deck — the posture the charge
     /// panel is reached from, because it is a console on her deck plan and nowhere else. The same boot
-    /// <c>SheGoesWhetherHeIsAboardOrNotTests</c> uses, so the two files are asking one game.</summary>
-    private static Pages.Map Boot()
-    {
-        var map = new Pages.Map();
-        new ARendererThatDrawsNothing().Attach(map);
-        typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .SetValue(map, true);
-
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
-        Set(map, "_ephemeris", ephemeris);
-        Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
-        Set(map, "_npcSimulator", new Simulator(ephemeris, TrafficSchedule.NpcTimeStep));
-        Set(map, "_ship", Invoke(map, "InitializeShipState")!);
-        Set(map, "_renderer", new CanvasRenderer("berth-canvas"));
-        var pen = new APenThatDrawsNothing();
-        Set(map, "_deckView", new DeckView(pen));
-        Set(map, "_shuttleView", new ShuttleFlightView(pen));
-        Set(map, "_deckMode", true);
-        Set(map, "Warp", 1);
-        Invoke(map, "ReprojectTrajectory");
-        return map;
-    }
+    /// <c>SheGoesWhetherHeIsAboardOrNotTests</c> and the claim's own guards use, so all three files are
+    /// asking one game — it lives in <see cref="CastawayBench"/> now.</summary>
+    private static Pages.Map Boot() => CastawayBench.Boot("berth-canvas");
 
     /// <summary>
     /// TIE HER UP, through the clamp the game actually uses — <c>ClampOntoHaven</c>, which is what welds the
@@ -362,43 +333,6 @@ public sealed class SheGoesAtTheBerthTests
         int slot = (int)(Read(map, "_berthSlot") ?? throw new InvalidOperationException("no slot was kept."));
         Assert.InRange(slot, 0, berths - 1);
         return (slot, berths);
-    }
-
-    /// <summary>Past the tube and into the station room — the one signal the berth scene reads, through the
-    /// page's own <c>RefreshAshore</c> rather than by writing the flag, so a world where the walk cannot be
-    /// made goes red here instead of quietly proving nothing.</summary>
-    private static void WalkHimAshore(Pages.Map map)
-    {
-        Set(map, "_avatarY", 40.0);
-        Invoke(map, "RefreshAshore");
-        Assert.True((bool)Read(map, "_ashore")!, "the captain never got past the tube.");
-    }
-
-    /// <summary>The captain away in the boat — the dark version's own way of being clear of her, so the
-    /// open-space guard ends in the castaway card rather than in a death. Launched off the page's own
-    /// launcher at a live, selected, authorized target, exactly as <c>SheGoesWhetherHeIsAboardOrNotTests</c>
-    /// does: without the word the window shuts on the first frame and the boat is recovered.</summary>
-    private static void PutHimInTheShuttle(Pages.Map map)
-    {
-        Set(map, "_deckMode", false);
-
-        var eph = (ICelestialEphemeris)Read(map, "_ephemeris")!;
-        NpcShip hull = TrafficSchedule.Generate(eph, seed: 42, count: 1)[0];
-        Type stateType = typeof(Pages.Map).GetNestedType("NpcState", Hidden | BindingFlags.Public)!;
-        object prey = Activator.CreateInstance(stateType, nonPublic: true)!;
-        stateType.GetField("Ship", Hidden)!.SetValue(prey, hull);
-        stateType.GetField("State", Hidden)!.SetValue(prey, (ShipState)Read(map, "_ship")!);
-        stateType.GetField("Active", Hidden)!.SetValue(prey, true);
-        stateType.GetField("CurrentlyObserved", Hidden)!.SetValue(prey, true);
-
-        Array roster = Array.CreateInstance(stateType, 1);
-        roster.SetValue(prey, 0);
-        Set(map, "_npcStates", roster);
-        Set(map, "_selectedTargetId", hull.Id);
-        Set(map, "_plunderAuthorizedTargetId", hull.Id);
-
-        Invoke(map, "LaunchShuttleRun", prey);
-        Assert.NotNull(Read(map, "_shuttleRun"));
     }
 
     /// <summary>One heat-hunter, flying her own intercept — built the way the roster holds them, off the
@@ -451,147 +385,4 @@ public sealed class SheGoesAtTheBerthTests
             "four hundred seconds of frames and her ninety-second overload never reached zero — it reads "
             + $"{Read(map, "_shipChargesSeconds") ?? "null"}. The clock is not being spent in this view.");
     }
-
-    private static void RunFrames(Pages.Map map, double seconds)
-    {
-        for (int i = 0; i < (int)(seconds / FrameSeconds); i++)
-        {
-            Frame(map);
-        }
-    }
-
-    private const double FrameSeconds = 0.1;
-
-    private static void Frame(Pages.Map map)
-    {
-        double at = Convert.ToDouble(Read(map, "_lastTimestampMs") ?? 0.0) + FrameSeconds * 1000;
-        try
-        {
-            Invoke(map, "OnTick", at);
-        }
-        catch (PlatformNotSupportedException)
-        {
-            // The canvas flush — the one line of the frame that crosses into JavaScript.
-        }
-    }
-
-    // ── PLUMBING ──────────────────────────────────────────────────────────────────────────────────────
-
-    private static string TheCastawayMarkup() =>
-        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
-
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new InvalidOperationException("could not find the repository root from the test assembly.");
-    }
-
-    private static object? Get(object owner, string name) =>
-        owner.GetType().GetProperty(name, Hidden)?.GetValue(owner)
-        ?? owner.GetType().GetField(name, Hidden)?.GetValue(owner);
-
-    private static object? Read(Pages.Map map, string name) =>
-        typeof(Pages.Map).GetField(name, Hidden)?.GetValue(map)
-        ?? typeof(Pages.Map).GetProperty(name, Hidden)?.GetValue(map);
-
-    private static void Set(Pages.Map map, string name, object? value)
-    {
-        FieldInfo? field = typeof(Pages.Map).GetField(name, Hidden);
-        if (field is not null)
-        {
-            field.SetValue(map, value);
-            return;
-        }
-        typeof(Pages.Map).GetProperty(name, Hidden)!.SetValue(map, value);
-    }
-
-    private static object? Invoke(Pages.Map map, string name, params object?[] args)
-    {
-        try
-        {
-            return typeof(Pages.Map).GetMethod(name, Hidden)!.Invoke(map, args);
-        }
-        catch (TargetInvocationException ex) when (ex.InnerException is not null)
-        {
-            throw ex.InnerException;
-        }
-    }
-
-    /// <summary>A renderer that records nothing and crosses into no JavaScript.</summary>
-    private sealed class APenThatDrawsNothing : IRenderer
-    {
-        public void BeginFrame(int widthPx, int heightPx, RgbaColor background) { }
-
-        public void DrawCircle(float x, float y, float r, RgbaColor? fill, RgbaColor stroke, float w = 1f) { }
-
-        public void DrawPolyline(ReadOnlySpan<float> pointsXY, RgbaColor stroke, float w = 1f) { }
-
-        public void DrawPolygon(ReadOnlySpan<float> pointsXY, RgbaColor? fill, RgbaColor stroke, float w = 1f) { }
-
-        public void DrawText(float x, float y, string text, RgbaColor color,
-            string font = "12px sans-serif", TextAlign align = TextAlign.Left) { }
-
-        public int RegisterImage(string url) => 0;
-
-        public void DrawImage(int imageId, float x, float y, float w, float h, float alpha = 1f) { }
-
-        public void DrawImageSlice(int imageId, float sx, float sy, float sw, float sh,
-            float dx, float dy, float dw, float dh, float alpha = 1f) { }
-
-        public void EndFrame() { }
-    }
-
-#pragma warning disable BL0006 // the framework's own seam: a component needs a renderer to have a dispatcher
-    private sealed class ARendererThatDrawsNothing : Microsoft.AspNetCore.Components.RenderTree.Renderer
-    {
-        public ARendererThatDrawsNothing()
-            : base(NoServices.Instance, Microsoft.Extensions.Logging.Abstractions.NullLoggerFactory.Instance) { }
-
-        public override Dispatcher Dispatcher { get; } = new RightHere();
-
-        public void Attach(IComponent component) => AssignRootComponentId(component);
-
-        protected override void HandleException(Exception exception) =>
-            throw new InvalidOperationException("the frame threw inside the renderer", exception);
-
-        protected override System.Threading.Tasks.Task UpdateDisplayAsync(
-            in Microsoft.AspNetCore.Components.RenderTree.RenderBatch batch) =>
-            System.Threading.Tasks.Task.CompletedTask;
-
-        private sealed class RightHere : Dispatcher
-        {
-            public override bool CheckAccess() => true;
-
-            public override System.Threading.Tasks.Task InvokeAsync(Action workItem)
-            {
-                workItem();
-                return System.Threading.Tasks.Task.CompletedTask;
-            }
-
-            public override System.Threading.Tasks.Task InvokeAsync(Func<System.Threading.Tasks.Task> workItem) =>
-                workItem();
-
-            public override System.Threading.Tasks.Task<TResult> InvokeAsync<TResult>(Func<TResult> workItem) =>
-                System.Threading.Tasks.Task.FromResult(workItem());
-
-            public override System.Threading.Tasks.Task<TResult> InvokeAsync<TResult>(
-                Func<System.Threading.Tasks.Task<TResult>> workItem) => workItem();
-        }
-
-        private sealed class NoServices : IServiceProvider
-        {
-            public static readonly NoServices Instance = new();
-
-            public object? GetService(Type serviceType) => null;
-        }
-    }
-#pragma warning restore BL0006
 }

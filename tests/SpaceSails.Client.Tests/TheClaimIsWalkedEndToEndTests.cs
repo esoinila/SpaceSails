@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Components;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 using Xunit;
+using static SpaceSails.Client.Tests.CastawayBench;
 
 namespace SpaceSails.Client.Tests;
 
@@ -30,13 +31,6 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed partial class TheClaimIsWalkedEndToEndTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
-
-    /// <summary>The port everything ashore happens at. It is a WORKING BERTH that the deal gave a machine
-    /// to — both facts asserted rather than assumed in <see cref="TheKiosksSquare"/>, because a port with no
-    /// kiosk would make every press guard below green about a console that is not there.</summary>
-    private const string Port = "selene-gate";
 
     // ══ 1 · THE PRESENCE LAW ═════════════════════════════════════════════════════════════════════════════
 

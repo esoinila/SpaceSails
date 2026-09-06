@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Components;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 using Xunit;
+using static SpaceSails.Client.Tests.CastawayBench;
 
 namespace SpaceSails.Client.Tests;
 
