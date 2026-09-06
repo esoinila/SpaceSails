@@ -15,7 +15,7 @@
 # SIX WORLDS × FIVE INPUT SEQUENCES — everything one frame after another writes on Pages.Map.
 # Taken on the PRE-SPLIT code (#870 lane 7c): the first twenty on b19ef16, the plasma world's four
 # on 04bb219, the warp slider's six on the commit that put the unsplit method back to capture them.
-# Probes: `stopped-at` and the thirty-eight named LEDGER readings say WHERE; `sweep` says NOTHING
+# Probes: `stopped-at` and the thirty-nine named LEDGER readings say WHERE; `sweep` says NOTHING
 # ESCAPED (a count and a hash over every instance field of the page); `sweep roster` names those
 # fields one per row, so a field joining the page reddens by name; `walked-view pen` and
 # `map-frame buffer` are the picture, which is the half a state fingerprint cannot see.

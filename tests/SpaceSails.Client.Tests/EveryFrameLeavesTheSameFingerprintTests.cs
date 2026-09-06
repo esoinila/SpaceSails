@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -29,7 +30,7 @@ namespace SpaceSails.Client.Tests;
 ///
 /// <para>The text has three parts, and each one closes a different way of getting this wrong:</para>
 /// <list type="number">
-///   <item><b>THE LEDGER</b> — thirty-eight named readings (avatar, sim clock, accumulator, warp, the pulse
+///   <item><b>THE LEDGER</b> — thirty-nine named readings (avatar, sim clock, accumulator, warp, the pulse
 ///   slot and the words in it, the nerve, the tracker, the guards' positions, the FrameGap clock, the camera,
 ///   the passes, the trail). Committed as readable rows in <c>Ledgers/Fingerprints.ledger.txt</c>, so a
 ///   red run names the ROW that moved instead of printing two hashes that differ.</item>
@@ -119,17 +120,61 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     private const string PenProbe = "walked-view pen";
     private const string BufferProbe = "map-frame buffer";
 
-    /// <summary>What the ledger's own header says about where these numbers came from.</summary>
-    internal const string Preamble =
+    /// <summary>
+    /// What the ledger's own header says about where these numbers came from.
+    ///
+    /// <para><b>The count of LEDGER readings is COUNTED, not typed, and #1174 is why.</b> It said
+    /// <i>thirty-eight</i> while <see cref="TheLedger"/> held thirty-nine — a probe had been added and the
+    /// sentence describing the probes had not been re-read. #1169's stale-fact sweep caught it and could not
+    /// fix it, because this text is written byte for byte into <c>Ledgers/Fingerprints.ledger.txt</c> and
+    /// correcting a word here is a RE-PIN, which a documentation lane may not do. So rather than typing the
+    /// right number and leaving the next one to go wrong, it is read off the array it describes: add a
+    /// reading and the header says so on the next re-pin, without anybody remembering to.</para>
+    ///
+    /// <para>A property and not a field, deliberately — Appendix E3's lesson. A static field initialiser
+    /// reading <see cref="TheLedger"/>, which is declared in the OTHER half of this partial class, would be
+    /// at the mercy of the order the compiler reads the two files in; a property is evaluated when it is
+    /// asked, by which time the class is initialised. It is asked once, by
+    /// <c>ThePinsAreRewrittenOnlyWhenAskedTests</c>.</para>
+    /// </summary>
+    internal static string Preamble =>
         "SIX WORLDS × FIVE INPUT SEQUENCES — everything one frame after another writes on Pages.Map.\n"
         + "Taken on the PRE-SPLIT code (#870 lane 7c): the first twenty on b19ef16, the plasma world's four\n"
         + "on 04bb219, the warp slider's six on the commit that put the unsplit method back to capture them.\n"
-        + "Probes: `stopped-at` and the thirty-eight named LEDGER readings say WHERE; `sweep` says NOTHING\n"
+        + $"Probes: `stopped-at` and the {Spelled(TheLedger.Length)} named LEDGER readings say WHERE; "
+        + "`sweep` says NOTHING\n"
         + "ESCAPED (a count and a hash over every instance field of the page); `sweep roster` names those\n"
         + "fields one per row, so a field joining the page reddens by name; `walked-view pen` and\n"
         + "`map-frame buffer` are the picture, which is the half a state fingerprint cannot see.\n"
         + "The re-pin history — which lane moved which probe, and the arithmetic that proved it — is in the\n"
         + "docs on EveryFrameLeavesTheSameFingerprintTests.EveryFrameItRunsFingerprintsTheSame.";
+
+    /// <summary>A small cardinal in the words this header is written in, because "the 39 named LEDGER
+    /// readings" would change the register of a line whose whole job is to be read by a person. Above
+    /// ninety-nine it hands back digits rather than inventing prose nobody has proof-read — a ledger with a
+    /// hundred probes in it is a different document and should be re-worded by hand.</summary>
+    private static string Spelled(int count)
+    {
+        string[] ones =
+        [
+            "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
+            "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen",
+        ];
+
+        string[] tens =
+        [
+            "", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety",
+        ];
+
+        if (count is < 0 or > 99)
+        {
+            return count.ToString(CultureInfo.InvariantCulture);
+        }
+
+        return count < 20 ? ones[count]
+            : count % 10 == 0 ? tens[count / 10]
+            : $"{tens[count / 10]}-{ones[count % 10]}";
+    }
 
     /// <summary>One row of the matrix, named the way the ledger names it.</summary>
     private static string SceneName(World world, Sequence sequence) => $"{world}.{sequence}";
