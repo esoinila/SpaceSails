@@ -271,7 +271,7 @@ public sealed class TheBinTakesTheKeyTests
         Assert.True(press < dispatch, "the bin is asked after the console switch, where it can never answer.");
 
         string bin = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Bin.cs"));
+            TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Bin.cs"));
         int claim = bin.IndexOf("private RipAndBin.Bin? TheBinTakingYourPress()", StringComparison.Ordinal);
         Assert.True(claim > 0, "the claim has no method this guard can see.");
         string body = bin[claim..bin.IndexOf("\n    }", claim, StringComparison.Ordinal)];
@@ -477,12 +477,12 @@ public sealed class TheBinTakesTheKeyTests
     /// all of them — exactly the text it read out of one file before the split.</summary>
     private static string Deck() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
     private static string Razor() =>
-        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
 
     // ── PLUMBING ──────────────────────────────────────────────────────────────────────────────────────
 
@@ -494,18 +494,4 @@ public sealed class TheBinTakesTheKeyTests
 
     private static void SetProp(object o, string property, object? value) =>
         o.GetType().GetProperty(property)!.SetValue(o, value);
-
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 }

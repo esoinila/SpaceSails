@@ -20,22 +20,9 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class ThePanelReadIsToldAsACardTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Pages(string file) =>
-        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     private static string Between(string text, string from, string to)
     {
@@ -79,7 +66,7 @@ public sealed class ThePanelReadIsToldAsACardTests
             "the panel's read is not handed the satchel — it is judging a copy (#684).");
 
         foreach (string file in Directory.EnumerateFiles(
-                     Path.Combine(RepoRoot(), "src", "SpaceSails.Client"), "*.*", SearchOption.AllDirectories))
+                     Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client"), "*.*", SearchOption.AllDirectories))
         {
             char s = Path.DirectorySeparatorChar;
             if (Path.GetExtension(file) is not (".cs" or ".razor")

@@ -30,22 +30,8 @@ public sealed class YouCanSitAtAnEmptyTableTests
         "titan", "enceladus", "miranda", "triton", "the-clinker",
     ];
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Source(params string[] parts) =>
-        MapMarkup.Read(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
     /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
@@ -64,7 +50,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
     private static string TheTablesOwnPartials()
     {
         string[] parts = System.IO.Directory.GetFiles(
-            System.IO.Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating"),
+            System.IO.Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating"),
             "Seating.Table*.cs");
         // Scene order, not alphabetical: `Seating.Table.cs` — the file that opens the scene and carries the
         // family's class summary — comes first, exactly where it was when it was the only one, and the rest
@@ -82,12 +68,11 @@ public sealed class YouCanSitAtAnEmptyTableTests
         return all.ToString();
     }
 
-
     /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
@@ -95,7 +80,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
     /// all of them — exactly the text it read out of one file before the split.</summary>
     private static string Deck() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
@@ -407,7 +392,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
         Assert.Contains(DevStarts.All, e => e.Url.Contains("tablescene=free", StringComparison.Ordinal));
         Assert.Contains(DevStarts.All, e => e.Url.Contains("approach=1", StringComparison.Ordinal));
 
-        string guide = File.ReadAllText(Path.Combine(RepoRoot(), "docs", "testing-guide.md"));
+        string guide = File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "docs", "testing-guide.md"));
         Assert.Contains("tablescene=free", guide, StringComparison.Ordinal);
         Assert.Contains("approach=1", guide, StringComparison.Ordinal);
         Assert.Contains("approach=0", guide, StringComparison.Ordinal);
@@ -467,7 +452,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
         // painting can be made to say anything at all.
         foreach (string art in new[] { SittingAlone.WaitingArtUrl, SittingAlone.RestingArtUrl })
         {
-            string file = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "wwwroot", art);
+            string file = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "wwwroot", art);
             Assert.True(File.Exists(file),
                 $"{art} is not in wwwroot/art — the panel would draw a hole and never say so.");
         }

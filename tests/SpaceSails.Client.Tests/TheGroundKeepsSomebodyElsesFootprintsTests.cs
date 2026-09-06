@@ -134,7 +134,7 @@ public class TheGroundKeepsSomebodyElsesFootprintsTests
 
         // …and the renderer actually paints them, in the ground vocabulary that is already there.
         string frame = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Rendering", "DeckView.Frame.Ground.cs"));
+            TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering", "DeckView.Frame.Ground.cs"));
         Assert.Contains("hud.Pits is { } pits", frame, StringComparison.Ordinal);
         Assert.Contains("\"✗\", PitInk", frame, StringComparison.Ordinal);
     }
@@ -276,23 +276,9 @@ public class TheGroundKeepsSomebodyElsesFootprintsTests
     }
 
     private static string[] ClientSources() =>
-        Directory.GetFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Client"), "*.cs",
+        Directory.GetFiles(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client"), "*.cs",
             SearchOption.AllDirectories);
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
-
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 }

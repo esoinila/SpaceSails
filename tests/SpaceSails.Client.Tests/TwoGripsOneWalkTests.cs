@@ -313,7 +313,7 @@ public sealed class TwoGripsOneWalkTests
 
         // …and nothing reads it. Not the gate, not a scene cheat, not a corner of the deck.
         foreach (string file in Directory.EnumerateFiles(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client"), "*.cs", SearchOption.AllDirectories))
+            Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client"), "*.cs", SearchOption.AllDirectories))
         {
             Assert.DoesNotContain("_autoWalkCheat", File.ReadAllText(file), StringComparison.Ordinal);
         }
@@ -491,28 +491,14 @@ public sealed class TwoGripsOneWalkTests
 
     private static DeckPlan ThePlan(Pages.Map map) => (DeckPlan)Get(map, "_deckPlan")!;
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string ClientSource(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 

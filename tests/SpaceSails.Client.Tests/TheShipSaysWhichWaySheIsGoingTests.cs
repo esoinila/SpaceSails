@@ -268,7 +268,7 @@ public sealed class TheShipSaysWhichWaySheIsGoingTests
     public void TheGuideTeachesTheTwoShapesApart()
     {
         string guide = System.Text.RegularExpressions.Regex.Replace(
-            File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Guide.razor")),
+            File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Guide.razor")),
             @"\s+", " ");
         Assert.Contains(
             "the arrowhead is where she is going in the frame you are reading; the nose at a node is where the burn pushes",
@@ -408,7 +408,7 @@ public sealed class TheShipSaysWhichWaySheIsGoingTests
     // ── DRIVING A REAL MAP ─────────────────────────────────────────────────────────────────────────────
 
     private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol = new(() =>
-        ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol.json")));
+        ScenarioLoader.LoadFile(Path.Combine(TestTree.RepoRoot(), "scenarios", "sol.json")));
 
     /// <summary>A live component over the shipping scenario — the shipping ephemeris, the shipping simulator,
     /// the ship laid down by the page's own <c>InitializeShipState</c>, and the REAL command buffer.</summary>
@@ -467,7 +467,7 @@ public sealed class TheShipSaysWhichWaySheIsGoingTests
         var ship = (ShipState)Read(map, "_ship")!;
         Set(map, "_ship", ship with { Charge = threshold * 2 });
         Set(map, "_plasma", PlasmaEnvironment.FromScenario(
-            ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol-eu.json")),
+            ScenarioLoader.LoadFile(Path.Combine(TestTree.RepoRoot(), "scenarios", "sol-eu.json")),
             (ICelestialEphemeris)Read(map, "_ephemeris")!));
         Assert.True(Read(map, "_plasma") is not null,
             "sol-eu.json handed the page no PlasmaEnvironment — the plume would never be drawn.");
@@ -509,20 +509,6 @@ public sealed class TheShipSaysWhichWaySheIsGoingTests
     }
 
     // ── PLUMBING ───────────────────────────────────────────────────────────────────────────────────────
-
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static object? Read(Pages.Map map, string member)
     {

@@ -347,7 +347,7 @@ public sealed class TheScopeGoesWhereTheCaptainPointsItTests
     /// rewiring the button to anything else fails here rather than passing on a method a test picked.</summary>
     private static void PressSharpenFixOnTheDossier(Pages.Map map)
     {
-        string razor = MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
+        string razor = MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
         // The button's own LABEL, closing tag and all — not the bare words, which the card's status lines
         // and comments are free to repeat and which would otherwise walk this search onto a neighbour's
         // @onclick (they did, the day the card learned to say the scope was already ordered onto her).
@@ -377,20 +377,6 @@ public sealed class TheScopeGoesWhereTheCaptainPointsItTests
     {
         double deg = rad * 180.0 / Math.PI % 360;
         return deg < 0 ? deg + 360 : deg;
-    }
-
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
     }
 
     private static object? Get(object o, string field) =>

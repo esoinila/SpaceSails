@@ -27,24 +27,9 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheWallsAreHungAndReadTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-
-            at = at.Parent;
-        }
-
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Pages(params string[] file) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", "Pages", .. file]));
+        File.ReadAllText(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", .. file]));
 
     /// <summary>The traffic's source — ALL of it, as a glob rather than a written list. `Map.Npc.cs` was
     /// split by concern (#251) and the two methods this class audits ended up in two different partials; a
@@ -52,7 +37,7 @@ public sealed class TheWallsAreHungAndReadTests
     /// turn it red for a reason that is not in the ship. Ordinal order, so the read is the same everywhere.</summary>
     private static string Npc() =>
         string.Join("\n", Directory
-            .EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Npc*.cs")
+            .EnumerateFiles(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Npc*.cs")
             .OrderBy(path => path, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 

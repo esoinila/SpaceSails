@@ -83,25 +83,10 @@ public sealed class EveryStoryBeatHasACallerTests
         // TheHailIsHostedByTheCardItArrivesOnTests.
     };
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     /// <summary>Every beat some <c>RaiseStoryBeat(…)</c> call can actually produce.</summary>
     private static HashSet<StoryBeats.Beat> BeatsWithACaller()
     {
-        string repo = RepoRoot();
+        string repo = TestTree.RepoRoot();
         string clientDir = Path.Combine(repo, "src", "SpaceSails.Client");
         string coreDir = Path.Combine(repo, "src", "SpaceSails.Core");
 

@@ -33,22 +33,8 @@ public sealed class TheTableSceneIsOneRoomTests
         "titan", "enceladus", "miranda", "triton", "the-clinker",
     ];
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Source(params string[] parts) =>
-        MapMarkup.Read(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
     /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
@@ -67,7 +53,7 @@ public sealed class TheTableSceneIsOneRoomTests
     private static string TheTablesOwnPartials()
     {
         string[] parts = System.IO.Directory.GetFiles(
-            System.IO.Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating"),
+            System.IO.Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating"),
             "Seating.Table*.cs");
         // Scene order, not alphabetical: `Seating.Table.cs` — the file that opens the scene and carries the
         // family's class summary — comes first, exactly where it was when it was the only one, and the rest
@@ -85,12 +71,11 @@ public sealed class TheTableSceneIsOneRoomTests
         return all.ToString();
     }
 
-
     /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
@@ -98,7 +83,7 @@ public sealed class TheTableSceneIsOneRoomTests
     /// counts over is all of them — exactly the text it read out of one file before the split.</summary>
     private static string Surface() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Surface*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Surface*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
@@ -106,7 +91,7 @@ public sealed class TheTableSceneIsOneRoomTests
     /// all of them — exactly the text it read out of one file before the split.</summary>
     private static string Deck() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
@@ -464,7 +449,7 @@ public sealed class TheTableSceneIsOneRoomTests
         Assert.Contains("_startingFloorCheat = -1", branch, StringComparison.Ordinal);
 
         // …and the testing guide documents both, because a cheat nobody knows about is a cheat nobody uses.
-        string guide = File.ReadAllText(Path.Combine(RepoRoot(), "docs", "testing-guide.md"));
+        string guide = File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "docs", "testing-guide.md"));
         Assert.Contains("tablescene=1", guide, StringComparison.Ordinal);
         Assert.Contains("roll=hi", guide, StringComparison.Ordinal);
     }
@@ -493,10 +478,10 @@ public sealed class TheTableSceneIsOneRoomTests
             surface, StringComparison.Ordinal);
         Assert.Single(System.Text.RegularExpressions.Regex.Matches(surface, @"ex\.CanteenWatch = "));
 
-        string guide = File.ReadAllText(Path.Combine(RepoRoot(), "docs", "testing-guide.md"));
+        string guide = File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "docs", "testing-guide.md"));
         Assert.Contains("?watch=N", guide, StringComparison.Ordinal);
 
-        string hive = File.ReadAllText(Path.Combine(RepoRoot(), "docs", "testing-links-the-hive.md"));
+        string hive = File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "docs", "testing-links-the-hive.md"));
         Assert.Contains("watch=2", hive, StringComparison.Ordinal);
         Assert.Contains("watch=5", hive, StringComparison.Ordinal);
     }

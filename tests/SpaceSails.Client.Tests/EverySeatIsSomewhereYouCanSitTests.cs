@@ -69,22 +69,8 @@ public sealed class EverySeatIsSomewhereYouCanSitTests
     /// changes, this guard should be the thing that notices the step-off no longer clears the plank.</summary>
     private const double StandoffDu = DeckPlan.AvatarRadius + 1.0;
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        File.ReadAllText(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
     /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
@@ -103,7 +89,7 @@ public sealed class EverySeatIsSomewhereYouCanSitTests
     private static string TheTablesOwnPartials()
     {
         string[] parts = System.IO.Directory.GetFiles(
-            System.IO.Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating"),
+            System.IO.Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating"),
             "Seating.Table*.cs");
         // Scene order, not alphabetical: `Seating.Table.cs` — the file that opens the scene and carries the
         // family's class summary — comes first, exactly where it was when it was the only one, and the rest
@@ -129,7 +115,6 @@ public sealed class EverySeatIsSomewhereYouCanSitTests
 
     private static string Chair() =>
         Source("Pages", "Map.OfficeChair.cs") + Source("Pages", "Seating", "Seating.OfficeChair.cs");
-
 
     // ── (a) THE BENCH · SOLID TO SIT ON, AND A WAY OFF IT ────────────────────────────────────────────
 

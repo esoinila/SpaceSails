@@ -451,23 +451,8 @@ public sealed class ThePlayerIsToldTests
 
     // ── READING THE SHIPPED SOURCE ─────────────────────────────────────────────────────────────────────
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string PagesDir() =>
-        Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
+        Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages");
 
     private static string ReadPage(string relative) =>
         MapMarkup.Read(Path.Combine(PagesDir(), relative.Replace('/', Path.DirectorySeparatorChar)));

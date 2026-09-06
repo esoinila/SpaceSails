@@ -39,22 +39,8 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         "titan", "enceladus", "miranda", "triton", "the-clinker",
     ];
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        File.ReadAllText(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
     /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
@@ -73,7 +59,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     private static string TheTablesOwnPartials()
     {
         string[] parts = System.IO.Directory.GetFiles(
-            System.IO.Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating"),
+            System.IO.Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating"),
             "Seating.Table*.cs");
         // Scene order, not alphabetical: `Seating.Table.cs` — the file that opens the scene and carries the
         // family's class summary — comes first, exactly where it was when it was the only one, and the rest
@@ -97,12 +83,11 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     private static string Bench() =>
         Source("Pages", "Map.Bench.cs") + Source("Pages", "Seating", "Seating.Bench.cs");
 
-
     /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
     /// all of them — exactly the text it read out of one file before the split.</summary>
     private static string Deck() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
@@ -111,7 +96,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     /// split. The count is asserted, so a seventh part can never go unread.</summary>
     private static string Patrol()
     {
-        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
+        string dir = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages");
         string[] order =
         [
             // #870 lane 6′c · RE-PATHED. The verbs moved onto Patrol's own partials, so the page's half
@@ -148,10 +133,10 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     }
 
     private static string CoreSource(string name) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Core", name));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Core", name));
 
     private static string Doc(string name) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "docs", name));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "docs", name));
 
     private static IEnumerable<(string Body, int Level, UndergroundComplex.Park Park)> EveryPark()
     {
@@ -718,7 +703,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         // #870 · The module is one partial class spread over PatrolBeat*.cs. Same needle, same code, new
         // path — the source read here is the concatenation of every part, in ordinal order.
         string patrol = string.Concat(Directory
-            .EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Core"), "PatrolBeat*.cs")
+            .EnumerateFiles(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Core"), "PatrolBeat*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
         Assert.Contains(

@@ -112,25 +112,6 @@ public sealed class NoSourceFileIsTooLongTests
         };
 
     /// <summary>
-    /// The repo root, found by walking up from the test assembly until <c>src/SpaceSails.Core</c> is under
-    /// foot — the same way every other source-shape guard in this project finds it, and the reason none of
-    /// them depend on the working directory.
-    /// </summary>
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Core")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
-    /// <summary>
     /// #251 item 1 · EVERY HAND-WRITTEN FILE WE SHIP — all three kinds of it. C# was all this gate could
     /// see on the day it landed, and the 2026-09-03 audit of #251 found out what that cost: Map.razor at
     /// 8,771 lines and Map.razor.css at 6,613 — the two files that issue names FIRST — were invisible to the
@@ -146,7 +127,7 @@ public sealed class NoSourceFileIsTooLongTests
     /// </summary>
     private static IEnumerable<(string Path, int Lines)> EverySourceFile()
     {
-        string root = RepoRoot();
+        string root = TestTree.RepoRoot();
         string src = Path.Combine(root, "src");
 
         foreach (string full in Directory

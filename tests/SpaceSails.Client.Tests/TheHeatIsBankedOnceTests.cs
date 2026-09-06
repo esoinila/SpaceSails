@@ -23,22 +23,9 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class TheHeatIsBankedOnceTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Read(params string[] parts) =>
-        MapMarkup.Read(Path.Combine([RepoRoot(), .. parts]));
+        MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), .. parts]));
 
     private static int Count(string haystack, string needle)
     {
@@ -55,7 +42,7 @@ public sealed class TheHeatIsBankedOnceTests
     /// <summary>Every file in the client, with the build leftovers left out.</summary>
     private static IEnumerable<(string Path, string Text)> ClientFiles()
     {
-        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client");
+        string dir = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client");
         char sep = Path.DirectorySeparatorChar;
         foreach (string file in Directory.EnumerateFiles(dir, "*.*", SearchOption.AllDirectories))
         {

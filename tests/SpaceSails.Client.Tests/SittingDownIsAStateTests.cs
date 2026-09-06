@@ -29,22 +29,8 @@ public sealed class SittingDownIsAStateTests
 {
     private const int WidthPx = 1200, HeightPx = 700;
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Source(params string[] parts) =>
-        MapMarkup.Read(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
     /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
@@ -63,7 +49,7 @@ public sealed class SittingDownIsAStateTests
     private static string TheTablesOwnPartials()
     {
         string[] parts = System.IO.Directory.GetFiles(
-            System.IO.Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating"),
+            System.IO.Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating"),
             "Seating.Table*.cs");
         // Scene order, not alphabetical: `Seating.Table.cs` — the file that opens the scene and carries the
         // family's class summary — comes first, exactly where it was when it was the only one, and the rest
@@ -84,14 +70,13 @@ public sealed class SittingDownIsAStateTests
     private static string Seated() =>
         Source("Pages", "Map.Seated.cs") + Source("Pages", "Seating", "Seating.Seated.cs");
 
-
     /// <summary>#870 · The deck view is six partials by subject now, so "the pen" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split. Concatenated rather than
     /// narrowed to one part on purpose: the claim below is a <c>DoesNotContain</c> over the WHOLE pen, and
     /// pointing it at a single partial would be a silent weakening.</summary>
     private static string DeckViewSource() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Rendering"), "DeckView*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering"), "DeckView*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
@@ -99,7 +84,7 @@ public sealed class SittingDownIsAStateTests
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
@@ -109,12 +94,12 @@ public sealed class SittingDownIsAStateTests
     /// them at a single partial would be a silent weakening.</summary>
     private static string Deck() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
     private static string Doc(string name) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "docs", name));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "docs", name));
 
     // ── (a) THE SEATED DRAWING ────────────────────────────────────────────────────────────────────────
 

@@ -173,7 +173,7 @@ public sealed class TheBootStopsWhenYouLeaveTests
         public Task NavigateAwayAsync() => Dispatcher.InvokeAsync(Map.Dispose);
 
         public void LetTheScenarioLand() =>
-            _scenario.TrySetResult(File.ReadAllText(Path.Combine(RepoRoot(), "scenarios", "sol.json")));
+            _scenario.TrySetResult(File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "scenarios", "sol.json")));
 
         protected override void HandleException(Exception exception) => _unhandled.Add(exception);
 
@@ -184,20 +184,6 @@ public sealed class TheBootStopsWhenYouLeaveTests
             // Never leave the handler parked on a fetch no test is going to release.
             _scenario.TrySetCanceled();
             base.Dispose(disposing);
-        }
-
-        private static string RepoRoot()
-        {
-            DirectoryInfo? at = new(AppContext.BaseDirectory);
-            while (at is not null)
-            {
-                if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-                {
-                    return at.FullName;
-                }
-                at = at.Parent;
-            }
-            throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
         }
 
         /// <summary>The two services Map injects, plus the logging the base renderer asks for.</summary>
