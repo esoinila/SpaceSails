@@ -89,25 +89,15 @@
                            ConfirmImportReplace="@ConfirmImportReplace" Dismiss="@Dismiss" />
     }
 
-    @if (_jumpActive)
-    {
-        <JumpCard _jumpDestName="@_jumpDestName" _jumpFlavor="@_jumpFlavor" _jumpTotalYears="@_jumpTotalYears"
-                  _jumpYear="@_jumpYear" _voidCardTuckedValue="@_voidCardTucked" _voidCardTuckedSet="@(v => _voidCardTucked = v)" Dismiss="@Dismiss" />
-    }
-
-    @if (_coastSkipActive)
-    {
-        <CoastSkipCard _coastSkipDays="@_coastSkipDays" _coastSkipLabel="@_coastSkipLabel"
-                       _voidCardTuckedValue="@_voidCardTucked" _voidCardTuckedSet="@(v => _voidCardTucked = v)" Dismiss="@Dismiss" />
-    }
-
-    @if (_worldReady && !_deckMode && _brakeGate.Asking)
-    {
-        <BrakeGateCard _brakeDestName="@_brakeDestName" _brakeGate="@_brakeGate"
-                       ArrivalBrakeAskText="@ArrivalBrakeAskText" BrakeIsAerobrake="@BrakeIsAerobrake"
-                       DeclineArrivalBrake="@DeclineArrivalBrake" Dismiss="@Dismiss"
-                       FireArrivalBrake="@FireArrivalBrake" />
-    }
+    <TimePassingCardRack _brakeDestName="@_brakeDestName" _brakeGate="@_brakeGate"
+                         _coastSkipActive="@_coastSkipActive" _coastSkipDays="@_coastSkipDays"
+                         _coastSkipLabel="@_coastSkipLabel" _deckMode="@_deckMode" _jumpActive="@_jumpActive"
+                         _jumpDestName="@_jumpDestName" _jumpFlavor="@_jumpFlavor"
+                         _jumpTotalYears="@_jumpTotalYears" _jumpYear="@_jumpYear"
+                         _voidCardTuckedSet="@(v => _voidCardTucked = v)" _voidCardTuckedValue="@_voidCardTucked"
+                         _worldReady="@_worldReady" ArrivalBrakeAskText="@ArrivalBrakeAskText"
+                         BrakeIsAerobrake="@BrakeIsAerobrake" DeclineArrivalBrake="@DeclineArrivalBrake"
+                         Dismiss="@Dismiss" FireArrivalBrake="@FireArrivalBrake" />
 
     <HullBoardsRack _archiveCard="@_archiveCard" _chargeBoardMessage="@_chargeBoardMessage"
                     _contactorOn="@_contactorOn" _plasma="@_plasma" _pressureDoor="@_pressureDoor"
