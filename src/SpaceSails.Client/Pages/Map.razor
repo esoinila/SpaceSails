@@ -185,51 +185,16 @@
                           ToggleContactor="@ToggleContactor" VentCharge="@VentCharge" />
     }
 
-    @if (_storyCard is { } told)
-    {
-        <StoryCard CloseStoryCard="@CloseStoryCard" Dismiss="@Dismiss" StoryBeatCopy="@StoryBeatCopy" told="@told" />
-    }
-
-    @if (_repCard is { } pitch)
-    {
-        <RepCard _repSaid="@_repSaid" AnswerTheRep="@AnswerTheRep" CloseTheRepsCard="@CloseTheRepsCard"
-                 Dismiss="@Dismiss" pitch="@pitch"
-                 LodgeItWithHim="@LodgeItWithHim" PressTheClaim="@PressTheClaim"
-                 TheClaimAsks="@TheClaimAsks" TheDeskSays="@TheDeskSays"
-                 TheLodgingOfferIsUp="@TheLodgingOfferIsUp" />
-    }
-
-    @if (_hardcaseCard is { } koltOffers)
-    {
-        <HardcaseCard AnswerTheHardcase="@AnswerTheHardcase" Dismiss="@Dismiss" TellKoltNo="@TellKoltNo"
-                      koltOffers="@koltOffers"
-                      LodgeItWithHim="@LodgeItWithHim" PressTheClaim="@PressTheClaim"
-                      TheClaimAsks="@TheClaimAsks" TheDeskSays="@TheDeskSays"
-                      TheLodgingOfferIsUp="@TheLodgingOfferIsUp" />
-    }
-
-    @if (_walkInCard is { } sheAsks)
-    {
-        <WalkInCard AnswerTheWalkIn="@AnswerTheWalkIn" Dismiss="@Dismiss" sheAsks="@sheAsks" />
-    }
-
-    @* #417 · Ilse Varga at the table, and the fourth name at the berth. Two surfaces, one feature: the
-       first is a woman standing at your elbow with a case, the second is a card with nobody behind it. *@
-    @if (_finderCard is { } finderAsks)
-    {
-        <FinderCard AnswerTheFinder="@AnswerTheFinder" Dismiss="@Dismiss" sheAsks="@finderAsks" />
-    }
-
-    @if (_finderReveal is not null)
-    {
-        <FinderRevealCard CloseTheReveal="@CloseTheReveal" Dismiss="@Dismiss"
-                          SettleTheCase="@SettleTheCase" _finderOutcome="@_finderOutcome" />
-    }
-
-    @if (_shipEpitaph is { } castaway)
-    {
-        <ShipEpitaphCard CloseShipEpitaph="@CloseShipEpitaph" Dismiss="@Dismiss" castaway="@castaway" />
-    }
+    <CallersCardRack _finderCard="@_finderCard" _finderOutcome="@_finderOutcome" _finderReveal="@_finderReveal"
+                     _hardcaseCard="@_hardcaseCard" _repCard="@_repCard" _repSaid="@_repSaid"
+                     _shipEpitaph="@_shipEpitaph" _storyCard="@_storyCard" _walkInCard="@_walkInCard"
+                     AnswerTheFinder="@AnswerTheFinder" AnswerTheHardcase="@AnswerTheHardcase"
+                     AnswerTheRep="@AnswerTheRep" AnswerTheWalkIn="@AnswerTheWalkIn"
+                     CloseShipEpitaph="@CloseShipEpitaph" CloseStoryCard="@CloseStoryCard"
+                     CloseTheRepsCard="@CloseTheRepsCard" CloseTheReveal="@CloseTheReveal" Dismiss="@Dismiss"
+                     LodgeItWithHim="@LodgeItWithHim" PressTheClaim="@PressTheClaim" SettleTheCase="@SettleTheCase"
+                     StoryBeatCopy="@StoryBeatCopy" TellKoltNo="@TellKoltNo" TheClaimAsks="@TheClaimAsks"
+                     TheDeskSays="@TheDeskSays" TheLodgingOfferIsUp="@TheLodgingOfferIsUp" />
 
     @if (_showShipScuttlePanel)
     {
