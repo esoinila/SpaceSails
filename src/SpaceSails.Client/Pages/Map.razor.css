@@ -48,8 +48,10 @@
        (behind their own state classes), .save-warming-spin (its keyframes has a second user here), and
        six card skins — the celebration, the expedition reveal, the busted card, the first-ground lesson,
        the operating log and the table — every one of them held by the #735 family law below, which sets
-       the same max-height they set and is meant to lose to them.
-       TheBundleIsTheSameCascadeTests is what would say so if one of them moved.
+       the same max-height at the same specificity and, being written LATER in this file, is the cap in
+       force today. That is the whole reason a skin cannot move: the bundle would append it AFTER the
+       family law, the skin would start winning, and the family cap each of them is meant to take would
+       quietly stop applying. TheBundleIsTheSameCascadeTests is what would say so if one of them moved.
 
        (Written as English rather than as selectors on purpose. EveryTextReadsTests finds the #735 family
        by the FIRST place in this file where the busted card's class is followed by a comma, so a comment

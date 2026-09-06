@@ -16,7 +16,11 @@ about forty seconds. A green fast run means the rules hold, not that the ship fl
 why. CI always runs the whole suite. If your new guard installs one of Core's process-wide
 registers, read
 [Appendix D](#appendix-d--the-process-wide-registers-and-why-some-suites-run-alone-1108) first — it
-is the difference between a suite that is correct and a suite that is correct most afternoons.
+is the difference between a suite that is correct and a suite that is correct most afternoons. And if
+you are about to SPLIT a file rather than change one, read
+[Appendix E](#appendix-e--structural-work-what-a-split-lane-measures-before-it-lands-251): what a pure
+move has to prove, why a static class does not split where its concerns are, and the two helpers the
+house keeps so that a repo path or a bench is not written out a seventy-ninth time.
 
 **Before you start:** run `./run.ps1` (Release build) and open the printed localhost URL.
 Debug WASM runs on the IL interpreter and is roughly **100× slower** — choppy frames, sluggish
@@ -1945,6 +1949,13 @@ re-renders each committed file from its own rows and demands it come back byte f
 
 ### Re-pinning
 
+**First: is this a lane that may re-pin at all?** A refactor lane may not. A pure move is precisely the
+change these ledgers exist to be blind to, so a red one in a split lane is the finding and the fix is the
+cut, never the pin — see
+[Appendix E2](#e2-the-ledgers-are-the-gate--0-moved-0-new-0-gone--and-a-split-lane-never-re-pins). What
+follows is for a lane that has *legitimately moved a number* and can say in its PR body which change moved
+it.
+
 When a change legitimately moves a pinned number, run the measurement — never a text editor:
 
 ```bash
@@ -2235,3 +2246,241 @@ boots a page with `?stopped=` / `?buried=` / `?preserved=`, nor loads a vault wh
 non-empty. An empty register replaced by an empty register moves nobody's world. What moves a world is a
 **non-empty** install, and that only ever happens in the dozen suites the law names — which is why
 serialising them costs a dozen classes and not the half of the Client suite that boots a page.
+
+---
+
+## Appendix E — structural work: what a split lane measures before it lands (#251)
+
+#251's second half is a refactor phase, and a refactor phase in this repo is held to the same standard as
+a feature: **prove it, do not assert it.** Everything below was learned by doing it — five files in
+#1163, three in #1160, two test files and a bench in #1165, six stylesheet moves in #1166 — and each rule
+here is written because a lane paid for the absence of it.
+
+The house laws for a structural lane live in
+[coding-helpers.md § House laws for structural work](coding-helpers.md#house-laws-for-structural-work-870).
+This appendix is the *measurement* half: the commands, the gates, and the three ways a "pure move" turns
+out not to be one.
+
+### E1. The pure-split proof — concatenate the bodies and diff (#1160, #1163, #1165)
+
+A split by concern is a **pure move**: every member keeps its name, its visibility and its signature, and
+not a line of behaviour is touched. That claim is checkable, and a split lane is expected to check it
+rather than say it.
+
+The proof is mechanical. Concatenate the class bodies of the new partials **in the order the cut made
+them** and diff the result against the file as it stood on the base commit. A pure move produces exactly
+one kind of difference:
+
+> **blank lines, and nothing else** — the separators that stood *between* the sections, now the gaps
+> between files.
+
+Quote the arithmetic in the PR body, in this shape:
+
+```
+every line of the base class body, 23–1230, is placed in exactly one partial with its text
+unchanged: 1,201 of 1,208 lines placed, 7 dropped, all seven blank, 0 changed.
+```
+
+Landed examples, all the same shape: `Map.Npc.cs` (1,347 of 1,351, 4 dropped, all blank),
+`Map.Sim.Tick.cs` (1,201 of 1,208, 7 blank), `HavenInterior.cs` (1,189 of 1,191, 2 blank),
+`SurfaceLayout.cs` (1,199 of 1,202, 3 blank), `Map.BarWalkers.cs` (1,119 of 1,124, 5 blank), and in the
+test tree `EveryFrameLeavesTheSameFingerprintTests.cs` (three blank lines) and
+`TheClaimIsWalkedEndToEndTests.cs` (four).
+
+**`0 changed` is the number that matters.** A line that moved and was also re-wrapped, re-indented or
+"tidied on the way past" makes the whole diff unreviewable, and the reason to insist on the arithmetic is
+that a reviewer cannot see it any other way once a 1,400-line file has become five.
+
+**And the guards that read a family by name have to learn a glob.** A split moves method bodies between
+files, and a guard that opened one file by name now reads half its subject. The answer is
+`Directory.EnumerateFiles(dir, "Map.Sim.Tick*.cs")` in ordinal order, concatenated — never a written list
+of the parts, because *a written list one file behind the next split narrows a sweep without saying so.*
+That matters most for `DoesNotContain` claims over a whole subject: pointing one at a single partial does
+not turn it red, it just quietly stops asking. When you re-path a guard this way, say in the PR that no
+assertion changed.
+
+### E2. The ledgers are the gate — 0 moved, 0 new, 0 gone — and a split lane never re-pins
+
+The three snapshot ledgers of [Appendix B](#appendix-b--the-pin-ledgers-and-the-one-sanctioned-way-to-re-pin-1055)
+are what a structural lane is actually measured by, because a pure move is precisely the change they must
+not be able to see. Run them **with `SPACESAILS_REPIN` unset**:
+
+```bash
+dotnet test tests/SpaceSails.Client.Tests -c Release \
+  --filter "FullyQualifiedName~EveryFrameHashesTheSame|FullyQualifiedName~EveryFrameLeavesTheSameFingerprint|FullyQualifiedName~EverySeatTheCaptainTakesFingerprintsTheSame"
+```
+
+then prove the files themselves did not move under you:
+
+```bash
+git diff --stat <base> -- tests/SpaceSails.Client.Tests/Ledgers/
+```
+
+The line the PR body has to carry is:
+
+> `EveryFrameHashesTheSameTests`, `EveryFrameLeavesTheSameFingerprintTests` and
+> `EverySeatTheCaptainTakesFingerprintsTheSameTests`: **0 moved, 0 new, 0 gone**, `SPACESAILS_REPIN`
+> unset; the three ledgers under `tests/SpaceSails.Client.Tests/Ledgers/` are byte-identical to `<base>`.
+
+**A split lane never re-pins.** Appendix B's `SPACESAILS_REPIN=1` recipe is for a lane that *legitimately
+moved a number* — and by definition a pure move has not. If a ledger reddens in a split lane, that is the
+finding: something in the cut changed the game, and the fix is the cut, never the pin. #1163's
+`HavenInterior` split is the case in point, and E3 is what it found.
+
+### E3. A partial split of a static class is not free (#1163)
+
+**Static field initializers of a partial class run in the order the compiler reads the FILES**, not the
+order a reader sees. The SDK hands `csc` a glob, so a declaration moved into an alphabetically earlier
+partial is initialised *before* the thing it is measured off.
+
+`HavenInterior.cs` reads as five clean concerns, and splitting it that way **moved 33 pinned frames and
+reddened 14 guards.** Almost every coordinate in that class is written `HallTopY + n`, and `HallTopY` is
+a `static readonly` — it is `Math.Cos` of the twelve-gon's apothem, so it cannot be a `const`. Move the
+bar's tops into `HavenInterior.Bar.cs` and every one of them initialises against `HallTopY == 0`: a
+station built with its furniture stacked on the hall floor. **Nothing warns. The build is clean.**
+
+So, for a static class:
+
+* **Everything that DECLARES a static field stays in the opening file, in its original order.** Only the
+  parts that declare none may be carved off. `HavenInterior.Build.cs` is two methods and not one field,
+  which is exactly why it is the half that could move.
+* **The cut is where the initializers allow, not where the concerns are** — and when those two differ,
+  write the reason into the class docblock so the next person who reaches for the concern-shaped cut reads
+  why it is not one. `HavenInterior`'s does.
+* `SurfaceLayout` is the other outcome, and worth knowing as the contrast: it has exactly one static field
+  and nothing initialises against it, so there the concern-shaped cut and the initializer-safe cut are the
+  same cut.
+
+`EveryFrameHashesTheSameTests` caught this on the first run, which is what that ledger is for and the
+reason a split of this kind is attempted at all.
+
+### E4. A `@keyframes` travels with its only user (#1166)
+
+The scoped-CSS rewriter suffixes a `@keyframes` NAME with the component's scope and rewrites the
+`animation:` shorthands that name it — **but only the ones in the same file.** Move a rule into a
+surface's sheet and leave its keyframes behind and the compiled rule names something that resolves to
+nothing: no build error, no test, the animation simply never runs. It happened to the alarm banner's
+pulse, and it was found by diffing the generated bundle.
+
+#1109 read that trap as "these rules can never leave", and left two carrier sheets empty because of it.
+The move it did not see is the one #1166 made:
+
+> **A `@keyframes` may move wherever ALL of its users can follow.**
+
+`adrift-pulse` and `story-plate-in` each have exactly one user in the whole client, so each left with its
+user and both carriers became real sheets. Stated that way, the rule also explains the three that stayed:
+`pilot-banner-pulse` is named by the banner AND by NavHud's flying step, `save-warming-turn` by
+SaveLoadRack's spinner AND by the page's own boot gear, and `wait-shuttle-fly`'s only user is
+`.wait-shuttle`, which is `Map.razor`'s own markup with nowhere to go.
+
+**And four reasons a CSS block stays in `Map.razor.css`.** The page sheet's own header states them with
+the counts the tooling returns — 28 + 49 + 3 + 11 = 91 blocks in 1,105 lines — and a lane proposing to
+move a block should be able to say which of the four it is not:
+
+1. **The page's own markup** (28) — `Map.razor` and its partials render it; there is no surface to file
+   it under.
+2. **The cross-cutting kit** (49) — a class two or more surfaces render. Filing one of these under a
+   single surface hands a lane editing that surface the power to restyle five others without knowing it.
+3. **Keyframes that cannot travel** (3) — and every rule naming one. See the rule above.
+4. **Anything that would change who wins** (11) — one owner each, and still stuck. The bundle appends the
+   surface sheets AFTER the page's, so a rule that leaves lands *later* than it was; where two rules of
+   equal specificity both match an element, that reverses the cascade. Six of the eleven are card skins
+   held by the #735 family law, which sets the same `max-height` and — being written later in the page
+   sheet — is the cap actually in force.
+
+`TheBundleIsTheSameCascadeTests` is the guard for all of this, and it holds four laws: nothing lost, no
+pair that could win or lose against each other changed places, every `animation:` in the same file as the
+`@keyframes` it names, and the reader's sheet order checked against the real generated bundle in `obj/`.
+Run it on any lane that touches a `.razor.css`.
+
+> **A prose list is not a safe place for a selector.** The first draft of that page header listed the six
+> stuck card skins as selectors and reddened `EveryTextReadsTests`, which finds the #735
+> capped-and-scrolling family by the FIRST place in the file where the busted card's class is followed by
+> a comma — the paragraph got there first. Guards read stylesheets as text; write comment lists in
+> English.
+
+### E5. The tree is LF and UTF-8, and `.gitattributes` says so (#1163)
+
+`git ls-files --eol src` had two files out of 1,506 that git would not call text. The cause was not the
+line endings: both carried a **literal NUL byte inside a string literal** — written as `\0` and collapsed
+into a raw byte by whatever tool wrote the file — and git's heuristic calls any blob with a NUL in its
+first 8k binary.
+
+The cost is that those two files **cannot be code-reviewed.** `grep -rn … src` prints *"Binary file …
+matches"* instead of the line; `git diff` prints *"Bin 28862 -> 28302 bytes"* instead of the change. And
+being called binary, they were exempt from every end-of-line convention too — one of them had drifted to
+CRLF while all 1,504 others were LF. CI is Linux and cannot see that; a Windows checkout can, and #1160
+lost an hour to the far end of it, because `TheTableSceneIsOneRoomTests.MethodBodyAround` matches with a
+verbatim-string regex that **begins with the test file's own line break**. One source file with the other
+kind of break reddens a guard for a reason that is not in the code.
+
+So there is a `.gitattributes` at the repo root now. It pins every hand-written kind to `text eol=lf` and
+names what ships `binary`, so the next file cannot drift the same way.
+
+**Two checks worth running on any lane that adds files:**
+
+```bash
+# Nothing under src/ or tests/ should be -text, and nothing should be CRLF in the index.
+git ls-files --eol src tests | grep -v 'w/lf'
+
+# Should print nothing at all.
+git add --renormalize . && git status --short
+```
+
+`"\0"` and a raw NUL compile to the same one-character string, so writing the escape costs nothing and
+buys back `grep` and `git diff`. The same goes for the rest of the character set: write `·` and `…` as
+UTF-8, not as a stray high byte — one comment in the Client suite carried a lone `0xB7` for months, which
+made that file the only one in `src/` or `tests/` that a UTF-8 reader could not decode.
+
+### E6. Two helpers the house keeps, and why you use them (#1165)
+
+Both are the same finding — **one law transcribed at its call sites** — which is the shape this repo has
+now paid for five times.
+
+**`TestTree.RepoRoot()`.** "Walk up from `AppContext.BaseDirectory` until the source tree is under foot"
+had **28 distinct implementations** across the test tree, and its dominant form was copied byte for byte
+into 71 files in `SpaceSails.Client.Tests` and 6 in `SpaceSails.Core.Tests`. Seventy-eight copies of one
+sentence: the day the layout moves, seventy-eight files have to agree about it, and nothing in the
+compiler says so if seventy-seven of them do. It is declared **once per assembly** —
+`tests/SpaceSails.Client.Tests/TestTree.cs`, anchored on `src/SpaceSails.Client`, and its Core twin
+anchored on `src/SpaceSails.Core` — because the two assemblies cannot see each other, exactly as
+`SlowGateAttribute` is declared twice. What travels between them is the RULE, not the type.
+
+A new guard that needs a repo-relative path calls `TestTree.RepoRoot()`. It throws if it runs out of
+parents rather than falling back, because a guard that silently got the wrong root would read no files,
+find no offenders and pass for ever — the fifth bug class arriving through a path helper.
+
+There is still a written-down backlog of *different* helpers with the same name: ones anchored on
+`scenarios/`, `SpaceSails.slnx`, `docs/`, `wwwroot/art`. **A helper that looks for a different landmark is
+a different helper however similar its name**, and folding one in would be a behaviour change wearing a
+refactor's clothes. The measured list is in `TestTree`'s own docblock and in #1165's PR body.
+
+**The benches — `CastawayBench`, and the house idiom.** Three classes were each building the castaway's
+world with the same fifteen steps: the same boot over `scenarios/sol.json`, the same walk past the tube,
+the same shuttle at the same seed-42 hull, the same 0.1 s frame through the page's own `OnTick`. Not
+similar steps — identical ones, normalised and hashed member by member.
+
+`CastawayBench.cs` is that world once, beside `DeskBench` and `ShellBench` where the house keeps its
+benches, and a file reaches it with
+
+```csharp
+using static SpaceSails.Client.Tests.CastawayBench;
+```
+
+so **not one call site changed.** That is the point of the idiom: a `using static` lift is reviewable
+because every line that used to read `Boot(…)` still reads `Boot(…)`.
+
+Two rules for putting something on a bench:
+
+* **Only the steps that were IDENTICAL in the files that had them.** Everything a file does its own way
+  stays in that file, where a reader can see it — `ClampAtThePort`, `ArmHerCharges`, `RunUntilSheGoes`
+  and each file's own hunter all stayed put for that reason. A harness that swallowed those differences
+  would be a harness that quietly changed what a guard asks.
+* **It is a bench, not a fake.** Every step goes through a shipping door — `ClampOntoHaven`,
+  `RefreshAshore`, `LaunchShuttleRun`, `OnTick`. The only stand-ins are the off-browser render handles
+  `DeskBench` documents from the other side.
+
+And because a lifted guard is a guard whose world somebody else now builds: **re-prove a sample of them
+RED.** #1165 reverted the production rule under three of the lifted tests one at a time and quoted each
+failure message in the PR body, file and line included — which is also how you show that the split file
+really carries the test.
