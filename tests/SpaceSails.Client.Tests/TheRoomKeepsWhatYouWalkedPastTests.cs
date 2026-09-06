@@ -201,7 +201,10 @@ public sealed class TheRoomKeepsWhatYouWalkedPastTests
     [Fact]
     public void TheSearchVerbOffersTheDecisionBeforeItAsksThePocket()
     {
-        string hive = File.ReadAllText(
+        // #251 · Through MapMarkup, because the Hive surface is four partials now: the claim below is a
+        // DoesNotContain over the WHOLE surface, and reading one part of it would not turn this red — it
+        // would quietly stop looking at the three quarters of the room the search verb is not typed in.
+        string hive = MapMarkup.Read(
             Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.Hive.cs"));
 
         int offer = hive.IndexOf("OfferKeepOrLeave(", StringComparison.Ordinal);

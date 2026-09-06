@@ -265,8 +265,11 @@ public sealed class TheRoundIsWalkableTests
     // Source-shape guards, exactly as #752's own file argues for them: what must never come back is a guard
     // drawn through a wall, a fan that cannot hear one, and a band that falls off the end of a deck.
 
+    /// <summary>#251 · Through <see cref="MapMarkup"/> rather than straight off disk, because the Hive
+    /// surface is four partials now and this guard slices the ride out of it. Every other path this helper
+    /// is handed still comes back as <c>File.ReadAllText</c>.</summary>
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>#870 · The round is five partials by subject now, so the page this guard reads is all five —
     /// concatenated in the order the one file laid them out, which is exactly the text it read before the

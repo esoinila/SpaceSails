@@ -221,7 +221,7 @@ public sealed class ThePlayerIsToldTests
         // The card is accepted and a band of the building opens. The arrival's sayings are HELD (#768) so
         // the card cannot eat them, and the gate's own moment gets a card of its own.
         new("your card opens a floor that was shut",
-            Surface.RaisedCard, "Map.Surface.Hive.cs", "RideTheLiftTo",
+            Surface.RaisedCard, "Map.Surface.Hive.Ride.cs", "RideTheLiftTo",
             "_viewObject = new DeckPlan.ConsoleSpot("),
 
         // ── SOMEBODY WHO WILL NOW REMEMBER, AND IT IS NOT A PERSON ─────────────────────────────────────
@@ -324,7 +324,7 @@ public sealed class ThePlayerIsToldTests
         // to nine sentences in one breath — #768's hold releases ONE winner, so this one uses #736's law
         // instead and puts the whole debrief on the card.
         new("the papers assemble into somebody with a name and a next of kin",
-            Surface.RaisedCard, "Map.Surface.Hive.cs", "AssembleSomebody",
+            Surface.RaisedCard, "Map.Surface.Hive.SecretLab.cs", "AssembleSomebody",
             "_viewObject = new DeckPlan.ConsoleSpot("),
 
         // ── ENDINGS ────────────────────────────────────────────────────────────────────────────────────
