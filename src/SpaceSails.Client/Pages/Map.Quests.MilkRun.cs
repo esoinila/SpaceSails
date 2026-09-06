@@ -205,11 +205,12 @@ public partial class Map
     /// parking in its orbit and has no ⚓ to clamp and nobody behind a desk to pay you (#175), and step 7's
     /// line says "Dock, and the contract pays at the counter".
     ///
-    /// <para>// FABLE: line needed — step 1 names "Drums from Enceladus to Titan", and that pair cannot be
-    /// flown: Enceladus is a moon haven with no berth to take a contract at, and Titan is neither a haven
-    /// nor clampable, so the run would end in an orbit with no counter in it. The lesson issues the real
-    /// board's nearest berth-to-berth haul instead — the offer card names the true address — but line 1's
-    /// two place-names are the one thing in this lane the world cannot make true.</para></summary>
+    /// <para>Line 1 used to name a pair — "Drums from Enceladus to Titan" — that could not be flown:
+    /// Enceladus is a moon haven with no berth to take a contract at, and Titan is neither a haven nor
+    /// clampable, so the run would have ended in an orbit with no counter in it. The owner ratified the
+    /// correction and the canon pass (Fable, 2026-09-05, on #160) re-authored the line to name no places at
+    /// all — <i>"Drums, one berth to the next"</i> — which is exactly what this method issues: the real
+    /// board's nearest berth-to-berth haul, with the offer card naming the true address.</para></summary>
     private Quest? TheMilkRunContractFor(string berthId)
     {
         if (NearestOtherBerth(berthId) is not { } dest)

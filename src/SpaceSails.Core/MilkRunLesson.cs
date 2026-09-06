@@ -32,7 +32,7 @@ public static class MilkRunLesson
     public static readonly string[] Lines =
     [
         // 1 · Take the contract.
-        "A milk run. Drums from Enceladus to Titan; nobody shoots at drums. Take it from the board.",
+        "A milk run. Drums, one berth to the next; nobody shoots at drums. Take it from the board.",
         // 2 · Plan dock to dock.
         "Plan the whole trip, dock to dock. The plan is a list of steps; the autopilot flies the list.",
         // 3 · Top off (#157).

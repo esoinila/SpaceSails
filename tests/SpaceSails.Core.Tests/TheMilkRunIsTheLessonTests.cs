@@ -31,7 +31,7 @@ public sealed class TheMilkRunIsTheLessonTests
     /// and unable to tell pass from fail.</summary>
     private static readonly string[] TheCanonPass =
     [
-        "A milk run. Drums from Enceladus to Titan; nobody shoots at drums. Take it from the board.",
+        "A milk run. Drums, one berth to the next; nobody shoots at drums. Take it from the board.",
         "Plan the whole trip, dock to dock. The plan is a list of steps; the autopilot flies the list.",
         "Top her off before you leave. The autopilot quotes fuel honestly, and it cannot quote what you did not load.",
         "Arm it. The rehearsal flies the plan on paper first and tells you what it will cost. Believe the number.",
@@ -71,7 +71,7 @@ public sealed class TheMilkRunIsTheLessonTests
     public void THE_PICKER_CARD_IsTheFirstLineCutInTwoAndNotANinthString()
     {
         Assert.Equal("A milk run", MilkRunLesson.Title);
-        Assert.Equal("Drums from Enceladus to Titan; nobody shoots at drums. Take it from the board.",
+        Assert.Equal("Drums, one berth to the next; nobody shoots at drums. Take it from the board.",
             MilkRunLesson.Blurb);
 
         // …and the two halves ARE the line: title, the full stop the title trimmed, a space, then the rest.

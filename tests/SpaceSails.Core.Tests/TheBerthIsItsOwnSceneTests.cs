@@ -356,4 +356,83 @@ public sealed class TheBerthIsItsOwnSceneTests
         Assert.DoesNotContain("collarCleared", quiet, StringComparison.OrdinalIgnoreCase);
         Assert.Null(VaultSerializer.Load(quiet).Progress?.CollarCleared);
     }
+
+    // ══ THE WIRE'S OWN CLERICAL HEADLINE ═════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// #525 · <b>THE THIRD SENTENCE, AND IT IS NOT THIS TYPE'S.</b> The canon pass of 2026-09-06 wrote the
+    /// wire's own headline for a hull lost inside a harbour — the one <c>// FABLE: line needed</c> #1138
+    /// shipped with, which until now rode <see cref="NewsWire.NewsEventKind.HunterDispatched"/>.
+    ///
+    /// <para><b>It lives on the wire and not in <see cref="BerthScuttle.AllProse"/> on purpose.</b> The PA
+    /// and the castaway card are the PORT talking, and their law is that the port names nobody at all
+    /// (<see cref="ThePortNamesTheBerthAndNobodyAtAll"/> forbids "master" among fifteen others). This is a
+    /// different voice on a different channel: a filing clerk, after the fact, saying the paperwork has a
+    /// name on it. Sweeping it into the port's own prose would either break that law or water it down, and
+    /// the law is the better thing to keep.</para>
+    /// </summary>
+    [Fact]
+    public void TheWireFilesTheHullWithTheBracesTakenOffTheRecord()
+    {
+        var filed = new NewsWire.NewsEvent(
+            NewsWire.NewsEventKind.HullLostAtABerth, 12 * NewsWire.SecondsPerDay, "9", "Selene Gate");
+
+        Assert.Equal(
+            "Berth 9, Selene Gate: hull lost to a declared reactor overload. "
+            + "The operator has a name for the master.",
+            NewsWire.Headline(filed));
+
+        // The braces really are the record's: change either half and the sentence follows.
+        Assert.Equal(
+            "Berth 3, Cinder Roost: hull lost to a declared reactor overload. "
+            + "The operator has a name for the master.",
+            NewsWire.Headline(filed with { Subject = "3", Detail = "Cinder Roost" }));
+    }
+
+    /// <summary>…AND IT IS ITS OWN KIND, WHICH IS THE HALF A VERBATIM PIN CANNOT SEE. A headline with no row
+    /// of its own falls through to "Static on the wire." — so this asks the registry for every kind the enum
+    /// declares, and the moment one is added without a line it is this test that says so, not a player
+    /// reading static off a ticker.</summary>
+    [Fact]
+    public void EveryKindTheWireCanCarryHasAHeadlineOfItsOwn()
+    {
+        foreach (NewsWire.NewsEventKind kind in Enum.GetValues<NewsWire.NewsEventKind>())
+        {
+            string said = NewsWire.Headline(
+                new NewsWire.NewsEvent(kind, 0, "SUBJECTNAME", "DETAILNAME"));
+            Assert.NotEqual("Static on the wire.", said);
+            Assert.False(string.IsNullOrWhiteSpace(said));
+        }
+
+        // The borrowed kind is given back: what the hunt files and what a harbour files are different facts.
+        Assert.NotEqual(
+            NewsWire.Headline(new NewsWire.NewsEvent(
+                NewsWire.NewsEventKind.HunterDispatched, 0, "9", "Selene Gate")),
+            NewsWire.Headline(new NewsWire.NewsEvent(
+                NewsWire.NewsEventKind.HullLostAtABerth, 0, "9", "Selene Gate")));
+    }
+
+    /// <summary>§8'S RESERVED WORD IS ABSENT FROM THE WIRE'S LINE TOO, and so are the disclosure clock's
+    /// neighbours. A clerical entry about a reactor is the last place any of them belongs, and NOBODY
+    /// INFORMED ON HIM — the sentence says a thing was declared and that the harbour has paperwork, never
+    /// that anybody told it.</summary>
+    [Fact]
+    public void TheWiresLineKeepsTheReservedWordOut()
+    {
+        string said = NewsWire.Headline(new NewsWire.NewsEvent(
+            NewsWire.NewsEventKind.HullLostAtABerth, 0, "9", "Selene Gate"));
+
+        string[] forbidden =
+        [
+            "monolith", "old one", "old ones", "reever", "restore", "backup", "revive", "resurrect",
+            "clone", "slave", "brain", "kaamos", "minister", "ancient", "alien", "experiment", "specimen",
+            // …and nobody informed on him: the harbour has paperwork, not a witness.
+            "informant", "witness", "reported", "informed", "sabotage",
+        ];
+
+        foreach (string bad in forbidden)
+        {
+            Assert.DoesNotContain(bad, said, StringComparison.OrdinalIgnoreCase);
+        }
+    }
 }
