@@ -141,6 +141,68 @@ internal static class MapMarkup
             .OrderBy(path => path, StringComparer.Ordinal)
             .Select(Read));
 
+    /// <summary>
+    /// #251 · A FAMILY IN THE ORDER THE ONE FILE LAID IT OUT — <see cref="PagesFamily"/>'s twin for the
+    /// guards whose claim is about SEQUENCE and not only about presence.
+    ///
+    /// <para>Ordinal filename order is the wrong order for those, and quietly so: <c>Map.X.Approach.cs</c>
+    /// sorts BEFORE <c>Map.X.cs</c>, so a sweep that reads a family alphabetically reads the class's own
+    /// sections in an order no reader ever saw. That is this repo's fourth named bug class — one source
+    /// consumed in the wrong order — and it would land here as a guard that still passes on a tree where
+    /// the thing it pins has moved.</para>
+    ///
+    /// <para>So the order is DECLARED, one row per file, in the order the base file laid the sections out;
+    /// and <paramref name="censusPattern"/>/<paramref name="censusCount"/> hold the whole naming family to a
+    /// written size, so a new partial cannot join it unread — either it goes in the list, or the comment
+    /// beside the count says why it is a different subject.</para>
+    /// </summary>
+    internal static string PagesInOrder(string censusPattern, int censusCount, params string[] order)
+    {
+        string dir = PagesDirectory();
+        string[] census = Directory.GetFiles(dir, censusPattern, SearchOption.TopDirectoryOnly);
+        if (census.Length != censusCount)
+        {
+            throw new InvalidOperationException(
+                $"#251 · `{censusPattern}` is {census.Length} file(s), and the guard that reads this family " +
+                $"was written against {censusCount}. A partial joined or left the family: put it in the " +
+                "declared order beside this count (and update the count), or say beside the count why it is " +
+                "a different subject. Do NOT just move the number — a family read that skips a partial is a " +
+                "guard that has quietly stopped looking.");
+        }
+
+        return string.Join("\n", order.Select(f => Read(Path.Combine(dir, f))));
+    }
+
+    /// <summary>
+    /// #251 · THE ARMED AUTOPILOT AS ONE SUBJECT — <c>Map.Autopilot.cs</c> and the five partials cut out of
+    /// it, in the order the one file laid them out.
+    ///
+    /// <para>Five source guards read this text: the refusal's numbers and the FIVE TANK DEBITS IN ORDER
+    /// (<c>TheTenthIsQuotedAndOnlyTheAutopilotsTests</c>), the station fork of <c>CheckArmedInsertion</c>
+    /// sliced structurally (<c>TheArrivalEndsWhereTheErrandIsTests</c>), #286's clamped park named exactly
+    /// once (<c>TheKeptParkIsOneRadiusTests</c>), and the FABLE marker that must not survive
+    /// (<c>TheWreckHasItsOwnArrivalTests</c>). The debit ledger is why this family is read in DECLARED order
+    /// and not alphabetically.</para>
+    ///
+    /// <para><b>The other five <c>Map.Autopilot.*</c> partials are deliberately NOT in this list</b>, and
+    /// that is not tidiness. <c>ParkWatch</c>, <c>OrbitAssist</c>, <c>ArrivalWindow</c>, <c>Ancients</c> and
+    /// <c>FlightPlan</c> were cut off under #870, long before these guards were written, and every one of
+    /// those guards was measured against <c>Map.Autopilot.cs</c> ALONE. Folding them in now would change
+    /// what the guards claim rather than where they look — <c>Map.Autopilot.OrbitAssist.cs</c> carries a
+    /// second, unclamped <c>OrbitRule.ParkingRadius(</c> call in a coaching line, so the "named at exactly
+    /// one site" count would become 2 and would have to be re-asserted rather than re-pathed. This lane
+    /// re-paths; it does not re-assert. The second site is reported in the PR as noticed, not fixed.</para>
+    /// </summary>
+    internal static string TheArmedAutopilot() => PagesInOrder(
+        // 11 = the six below plus ParkWatch, OrbitAssist, ArrivalWindow, Ancients and FlightPlan (#870).
+        "Map.Autopilot*.cs", 11,
+        "Map.Autopilot.cs",
+        "Map.Autopilot.Budget.cs",
+        "Map.Autopilot.StandDown.cs",
+        "Map.Autopilot.Arm.cs",
+        "Map.Autopilot.Approach.cs",
+        "Map.Autopilot.Keep.cs");
+
     private static bool IsThePage(string path) =>
         Path.GetFileName(path).Equals(PageFileName, StringComparison.Ordinal)
         && Path.GetFileName(Path.GetDirectoryName(path) ?? "").Equals("Pages", StringComparison.Ordinal);

@@ -61,7 +61,7 @@ public sealed class TheTenthIsQuotedAndOnlyTheAutopilotsTests
     [Fact]
     public void TheRefusalTheArmLineAndThePanelAllQuoteTheChargedNumber()
     {
-        string autopilot = PageSource("Map.Autopilot.cs");
+        string autopilot = MapMarkup.TheArmedAutopilot();   // #251 · six partials, read in declared order
 
         // The refusal the owner read off the screen, now in charged pulses.
         Assert.Contains(
@@ -102,7 +102,10 @@ public sealed class TheTenthIsQuotedAndOnlyTheAutopilotsTests
     [Fact]
     public void TheThreeAutopilotBurnsChargeTheTenth_AndTheTwoHandSpentSitesDoNot()
     {
-        string autopilot = PageSource("Map.Autopilot.cs");
+        // #251 · the five debits are spread over ApplyTransferBurn, CheckArmedInsertion, StationKeep and
+        // EnterOrbit, which is now four files. THE ORDER IS THE ASSERTION, so the family is read in the
+        // order the one file laid it out — never alphabetically, which would put .Approach before .cs.
+        string autopilot = MapMarkup.TheArmedAutopilot();
 
         // Exactly the five debits, in order, spelled the way the ledger above says.
         List<string> debits = Regex.Matches(autopilot, @"_reactionMassPulses -= ([^;]+);")

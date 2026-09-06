@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -102,8 +102,9 @@ public sealed class TheKeptParkIsOneRadiusTests
     [Fact]
     public void TheClientsAutopilotSpellsTheClampedParkAtExactlyOneSite()
     {
-        string source = File.ReadAllText(
-            Path.Combine(RepoDir("src", "SpaceSails.Client"), "Pages", "Map.Autopilot.cs"));
+        // #251 · the arm and the loop that flies it are six files now. Read as one subject, in declared
+        // order, so "named at exactly one site" is still a claim about the whole autopilot.
+        string source = MapMarkup.TheArmedAutopilot();
 
         Assert.Equal(1, Count(source, "OrbitRule.MaxKeptRadiusUnderParent("));
         Assert.Equal(1, Count(source, "OrbitRule.ParkingRadius("));
