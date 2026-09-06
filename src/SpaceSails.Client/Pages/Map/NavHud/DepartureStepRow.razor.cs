@@ -37,21 +37,21 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class DepartureStepRow
 {
-    /// <summary>the plan step this row draws — the page's `@foreach (PlanNode node in _planNodes)` variable.</summary>
-    [Parameter] public PlanNode node { get; set; } = default!;
-    /// <summary>the row's state, computed by the page beside the `@foreach`.</summary>
-    [Parameter] public FlightStepState _ds { get; set; } = default!;
-    /// <summary>is this departure's editor the open one.</summary>
-    [Parameter] public bool _dopen { get; set; }
-    [Parameter] public PlanNode? _selectedPlanNode { get; set; }
-    [Parameter] public Func<PlanNode, string> ClearanceEtaLine { get; set; } = default!;
-    [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
-    [Parameter] public Action<PlanNode, int, bool> NudgeDepartureEpoch { get; set; } = default!;
-    [Parameter] public Action<PlanNode, int, bool> NudgeNodePulses { get; set; } = default!;
-    [Parameter] public Func<PlanNode, string> PlanStepGlanceLine { get; set; } = default!;
-    [Parameter] public EventCallback RemoveTheCastOff { get; set; }
-    [Parameter] public Func<PlanNode, double> SeparationFromHarbour { get; set; } = default!;
-    [Parameter] public Action<PlanNode> ToggleBurnEditor { get; set; } = default!;
+    /// <summary>the plan step this row draws — the page's `@foreach (PlanNode node in _planNodes)` variable.</summary>
+    [Parameter] public PlanNode node { get; set; } = default!;
+    /// <summary>the row's state, computed by the page beside the `@foreach`.</summary>
+    [Parameter] public FlightStepState _ds { get; set; } = default!;
+    /// <summary>is this departure's editor the open one.</summary>
+    [Parameter] public bool _dopen { get; set; }
+    [Parameter] public PlanNode? _selectedPlanNode { get; set; }
+    [Parameter] public Func<PlanNode, string> ClearanceEtaLine { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
+    [Parameter] public Action<PlanNode, int, bool> NudgeDepartureEpoch { get; set; } = default!;
+    [Parameter] public Action<PlanNode, int, bool> NudgeNodePulses { get; set; } = default!;
+    [Parameter] public Func<PlanNode, string> PlanStepGlanceLine { get; set; } = default!;
+    [Parameter] public EventCallback RemoveTheCastOff { get; set; }
+    [Parameter] public Func<PlanNode, double> SeparationFromHarbour { get; set; } = default!;
+    [Parameter] public Action<PlanNode> ToggleBurnEditor { get; set; } = default!;
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

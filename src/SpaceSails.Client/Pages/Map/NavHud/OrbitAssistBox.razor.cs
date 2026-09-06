@@ -37,25 +37,25 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class OrbitAssistBox
 {
-    /// <summary>the page's `@if (OrbitInfo() is { } oi)` binding, under the name the `@if` gave it.</summary>
-    [Parameter] public OrbitAssistInfo oi { get; set; } = default!;
-    [Parameter] public string? _disarmConfirmBodyId { get; set; }
-    [Parameter] public Func<string, Quest?> ActiveCargoRunTo { get; set; } = default!;
-    [Parameter] public Func<CelestialBody, string> CargoNextAction { get; set; } = default!;
-    [Parameter] public Func<string?> DestinationEta { get; set; } = default!;
-    [Parameter] public double DockMatchSpeedMps { get; set; }
-    [Parameter] public string DockNavLockTip { get; set; } = default!;
-    [Parameter] public double DockReachMeters { get; set; }
-    [Parameter] public Func<OrbitAssistInfo, string> DockStatusLine { get; set; } = default!;
-    [Parameter] public Func<OrbitAssistInfo, string> EmergencyCaptureTip { get; set; } = default!;
-    [Parameter] public Func<OrbitAssistInfo, string> EmergencyDescentTip { get; set; } = default!;
-    [Parameter] public Func<OrbitAssistInfo, string> EmergencyInsertionTip { get; set; } = default!;
-    [Parameter] public EventCallback EnterOrbit { get; set; }
-    [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
-    [Parameter] public Func<CelestialBody, bool> IsDockableHaven { get; set; } = default!;
-    [Parameter] public bool NavLockedByDock { get; set; }
-    [Parameter] public Func<OrbitAssistInfo, string> OrbitStatusLine { get; set; } = default!;
-    [Parameter] public Action<string?> SetDestination { get; set; } = default!;
+    /// <summary>the page's `@if (OrbitInfo() is { } oi)` binding, under the name the `@if` gave it.</summary>
+    [Parameter] public OrbitAssistInfo oi { get; set; } = default!;
+    [Parameter] public string? _disarmConfirmBodyId { get; set; }
+    [Parameter] public Func<string, Quest?> ActiveCargoRunTo { get; set; } = default!;
+    [Parameter] public Func<CelestialBody, string> CargoNextAction { get; set; } = default!;
+    [Parameter] public Func<string?> DestinationEta { get; set; } = default!;
+    [Parameter] public double DockMatchSpeedMps { get; set; }
+    [Parameter] public string DockNavLockTip { get; set; } = default!;
+    [Parameter] public double DockReachMeters { get; set; }
+    [Parameter] public Func<OrbitAssistInfo, string> DockStatusLine { get; set; } = default!;
+    [Parameter] public Func<OrbitAssistInfo, string> EmergencyCaptureTip { get; set; } = default!;
+    [Parameter] public Func<OrbitAssistInfo, string> EmergencyDescentTip { get; set; } = default!;
+    [Parameter] public Func<OrbitAssistInfo, string> EmergencyInsertionTip { get; set; } = default!;
+    [Parameter] public EventCallback EnterOrbit { get; set; }
+    [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
+    [Parameter] public Func<CelestialBody, bool> IsDockableHaven { get; set; } = default!;
+    [Parameter] public bool NavLockedByDock { get; set; }
+    [Parameter] public Func<OrbitAssistInfo, string> OrbitStatusLine { get; set; } = default!;
+    [Parameter] public Action<string?> SetDestination { get; set; } = default!;
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

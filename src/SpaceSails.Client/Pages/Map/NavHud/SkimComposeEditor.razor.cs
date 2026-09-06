@@ -37,20 +37,20 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class SkimComposeEditor
 {
-    [Parameter] public FlightEditorKind _openEditor { get; set; } = default!;
-    [Parameter] public double _skimAltKm { get; set; }
-    [Parameter] public string? _skimFailure { get; set; }
-    [Parameter] public ClosestApproach.Pass? _skimmablePass { get; set; }
-    [Parameter] public SkimGauge? _skimResult { get; set; }
-    [Parameter] public bool _skimSolving { get; set; }
-    [Parameter] public EventCallback AddSkimBurn { get; set; }
-    [Parameter] public EventCallback<ChangeEventArgs> OnSkimAltInput { get; set; }
-    [Parameter] public EventCallback RunSkimSolveAsync { get; set; }
-    [Parameter] public Func<SkimGauge, string> SkimDepthLine { get; set; } = default!;
-    [Parameter] public Func<string> SkimFinePrint { get; set; } = default!;
-    [Parameter] public Func<SkimGauge, string> SkimOutcomeLine { get; set; } = default!;
-    [Parameter] public Func<SkimGauge, string> SkimShedLine { get; set; } = default!;
-    [Parameter] public Func<double> SkimShellTopKm { get; set; } = default!;
+    [Parameter] public FlightEditorKind _openEditor { get; set; } = default!;
+    [Parameter] public double _skimAltKm { get; set; }
+    [Parameter] public string? _skimFailure { get; set; }
+    [Parameter] public ClosestApproach.Pass? _skimmablePass { get; set; }
+    [Parameter] public SkimGauge? _skimResult { get; set; }
+    [Parameter] public bool _skimSolving { get; set; }
+    [Parameter] public EventCallback AddSkimBurn { get; set; }
+    [Parameter] public EventCallback<ChangeEventArgs> OnSkimAltInput { get; set; }
+    [Parameter] public EventCallback RunSkimSolveAsync { get; set; }
+    [Parameter] public Func<SkimGauge, string> SkimDepthLine { get; set; } = default!;
+    [Parameter] public Func<string> SkimFinePrint { get; set; } = default!;
+    [Parameter] public Func<SkimGauge, string> SkimOutcomeLine { get; set; } = default!;
+    [Parameter] public Func<SkimGauge, string> SkimShedLine { get; set; } = default!;
+    [Parameter] public Func<double> SkimShellTopKm { get; set; } = default!;
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

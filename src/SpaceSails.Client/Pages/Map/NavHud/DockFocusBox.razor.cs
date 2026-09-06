@@ -37,9 +37,9 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class DockFocusBox
 {
-    [Parameter] public DockAffordance _dockAffordance { get; set; } = default!;
-    [Parameter] public bool DockFocusLive { get; set; }
-    [Parameter] public int EffectiveDockTankPulses { get; set; }
+    [Parameter] public DockAffordance _dockAffordance { get; set; } = default!;
+    [Parameter] public bool DockFocusLive { get; set; }
+    [Parameter] public int EffectiveDockTankPulses { get; set; }
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

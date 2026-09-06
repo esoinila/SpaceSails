@@ -37,24 +37,24 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class SlingComposeEditor
 {
-    [Parameter] public FlightEditorKind _openEditor { get; set; } = default!;
-    [Parameter] public ClosestApproach.Pass? _slingablePass { get; set; }
-    [Parameter] public string? _slingFailure { get; set; }
-    [Parameter] public double _slingPassRadii { get; set; }
-    [Parameter] public SlingPlanner.Result? _slingResult { get; set; }
-    [Parameter] public SlingPlanner.PassSide _slingSide { get; set; } = default!;
-    [Parameter] public bool _slingSolving { get; set; }
-    [Parameter] public EventCallback AddSlingBurn { get; set; }
-    [Parameter] public EventCallback<ChangeEventArgs> OnSlingRadiiInput { get; set; }
-    [Parameter] public EventCallback RunSlingSolveAsync { get; set; }
-    [Parameter] public Action<SlingPlanner.PassSide> SetSlingSide { get; set; } = default!;
-    [Parameter] public Func<SlingPlanner.Result, string> SlingBurnLine { get; set; } = default!;
-    [Parameter] public Func<SlingPlanner.Result, string> SlingLeverLine { get; set; } = default!;
-    [Parameter] public double SlingMaxRadii { get; set; }
-    [Parameter] public double SlingMinRadii { get; set; }
-    [Parameter] public Func<string> SlingNodeNoteNow { get; set; } = default!;
-    [Parameter] public Func<SlingPlanner.Result, string> SlingOutcomeLine { get; set; } = default!;
-    [Parameter] public Func<SlingPlanner.Result, string> SlingPassLine { get; set; } = default!;
+    [Parameter] public FlightEditorKind _openEditor { get; set; } = default!;
+    [Parameter] public ClosestApproach.Pass? _slingablePass { get; set; }
+    [Parameter] public string? _slingFailure { get; set; }
+    [Parameter] public double _slingPassRadii { get; set; }
+    [Parameter] public SlingPlanner.Result? _slingResult { get; set; }
+    [Parameter] public SlingPlanner.PassSide _slingSide { get; set; } = default!;
+    [Parameter] public bool _slingSolving { get; set; }
+    [Parameter] public EventCallback AddSlingBurn { get; set; }
+    [Parameter] public EventCallback<ChangeEventArgs> OnSlingRadiiInput { get; set; }
+    [Parameter] public EventCallback RunSlingSolveAsync { get; set; }
+    [Parameter] public Action<SlingPlanner.PassSide> SetSlingSide { get; set; } = default!;
+    [Parameter] public Func<SlingPlanner.Result, string> SlingBurnLine { get; set; } = default!;
+    [Parameter] public Func<SlingPlanner.Result, string> SlingLeverLine { get; set; } = default!;
+    [Parameter] public double SlingMaxRadii { get; set; }
+    [Parameter] public double SlingMinRadii { get; set; }
+    [Parameter] public Func<string> SlingNodeNoteNow { get; set; } = default!;
+    [Parameter] public Func<SlingPlanner.Result, string> SlingOutcomeLine { get; set; } = default!;
+    [Parameter] public Func<SlingPlanner.Result, string> SlingPassLine { get; set; } = default!;
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

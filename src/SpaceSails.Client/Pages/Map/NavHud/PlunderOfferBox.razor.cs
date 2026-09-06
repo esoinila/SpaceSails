@@ -37,11 +37,10 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class PlunderOfferBox
 {
-    [Parameter] public string? _captureTargetCallsign { get; set; }
-    [Parameter] public string? _plunderOpportunityTargetId { get; set; }
-    [Parameter] public EventCallback AuthorizePlunder { get; set; }
-    [Parameter] public Action<NpcState> Board { get; set; } = default!;
-    [Parameter] public EventCallback DeclinePlunder { get; set; }
+    [Parameter] public string? _captureTargetCallsign { get; set; }
+    [Parameter] public string? _plunderOpportunityTargetId { get; set; }
+    [Parameter] public EventCallback AuthorizePlunder { get; set; }
+    [Parameter] public EventCallback DeclinePlunder { get; set; }
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

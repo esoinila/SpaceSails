@@ -37,9 +37,9 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class PlanShapeNotes
 {
-    [Parameter] public bool NavLockedByDock { get; set; }
-    [Parameter] public bool PlanListIsEmpty { get; set; }
-    [Parameter] public Func<string?> PlanShapeWarningLine { get; set; } = default!;
+    [Parameter] public bool NavLockedByDock { get; set; }
+    [Parameter] public bool PlanListIsEmpty { get; set; }
+    [Parameter] public Func<string?> PlanShapeWarningLine { get; set; } = default!;
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

@@ -37,13 +37,13 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class BoardingProgressBox
 {
-    [Parameter] public bool _captureEngaged { get; set; }
-    [Parameter] public double _captureProgress { get; set; }
-    [Parameter] public double _captureRequiredSeconds { get; set; }
-    [Parameter] public string? _captureTargetCallsign { get; set; }
-    [Parameter] public int _cargoUnits { get; set; }
-    [Parameter] public int CargoCapacity { get; set; }
-    [Parameter] public Func<NpcState?> SelectedCaptureTarget { get; set; } = default!;
+    [Parameter] public bool _captureEngaged { get; set; }
+    [Parameter] public double _captureProgress { get; set; }
+    [Parameter] public double _captureRequiredSeconds { get; set; }
+    [Parameter] public string? _captureTargetCallsign { get; set; }
+    [Parameter] public int _cargoUnits { get; set; }
+    [Parameter] public int CargoCapacity { get; set; }
+    [Parameter] public Func<NpcState?> SelectedCaptureTarget { get; set; } = default!;
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

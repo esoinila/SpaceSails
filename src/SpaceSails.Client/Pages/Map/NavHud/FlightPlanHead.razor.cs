@@ -37,9 +37,9 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class FlightPlanHead
 {
-    [Parameter] public Func<FlightPlanStatus> FlightNowNext { get; set; } = default!;
-    [Parameter] public Func<int> FlightPlanCurrentStep { get; set; } = default!;
-    [Parameter] public Func<int> FlightPlanStepCount { get; set; } = default!;
+    [Parameter] public Func<FlightPlanStatus> FlightNowNext { get; set; } = default!;
+    [Parameter] public Func<int> FlightPlanCurrentStep { get; set; } = default!;
+    [Parameter] public Func<int> FlightPlanStepCount { get; set; } = default!;
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

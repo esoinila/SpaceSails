@@ -37,12 +37,12 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class FrameSelector
 {
-    [Parameter] public string? _plotFrameBodyId { get; set; }
-    [Parameter] public Func<List<FrameOption>> FrameOptions { get; set; } = default!;
-    [Parameter] public Func<List<(string Label, List<CelestialBody> Members)>> FramePickerGroups { get; set; } = default!;
-    [Parameter] public Func<string> FrameSpeedReadout { get; set; } = default!;
-    [Parameter] public EventCallback<ChangeEventArgs> OnFramePicked { get; set; }
-    [Parameter] public Action<string?> SetPlotFrame { get; set; } = default!;
+    [Parameter] public string? _plotFrameBodyId { get; set; }
+    [Parameter] public Func<List<FrameOption>> FrameOptions { get; set; } = default!;
+    [Parameter] public Func<List<(string Label, List<CelestialBody> Members)>> FramePickerGroups { get; set; } = default!;
+    [Parameter] public Func<string> FrameSpeedReadout { get; set; } = default!;
+    [Parameter] public EventCallback<ChangeEventArgs> OnFramePicked { get; set; }
+    [Parameter] public Action<string?> SetPlotFrame { get; set; } = default!;
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

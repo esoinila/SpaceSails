@@ -37,27 +37,27 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class ArmedOrbitStepRow
 {
-    [Parameter] public int _armedBudgetPulses { get; set; }
+    [Parameter] public int _armedBudgetPulses { get; set; }
     /// <summary>#1107 found-not-fixed #4, met a second time: FLOW NARROWING DOES NOT CROSS A COMPONENT
     /// BOUNDARY. NavHud's `@if (_armedOrbitBodyId is not null &amp;&amp; !ArriveCoversArmed)` is what made
     /// `string _armedId = _armedOrbitBodyId;` legal in the block below. The gate stays in the HUD — 63
     /// lines a ship not arriving anywhere never draws — so the compiler in here can no longer see the
     /// promise, and the parameter is declared `string` instead. The `@if` is what holds it.</summary>
-    [Parameter] public string _armedOrbitBodyId { get; set; } = default!;
-    [Parameter] public string? _armedTransferSummary { get; set; }
-    [Parameter] public string? _disarmConfirmBodyId { get; set; }
-    [Parameter] public int _keepTrimPulsesPerDay { get; set; }
-    [Parameter] public FlightEditorKind _openEditor { get; set; } = default!;
-    [Parameter] public bool _orbitKept { get; set; }
-    [Parameter] public double? ArmedInsertionSimTime { get; set; }
-    [Parameter] public bool AutopilotFlyingApproach { get; set; }
-    [Parameter] public Func<string, string> BodyName { get; set; } = default!;
-    [Parameter] public string DockNavLockTip { get; set; } = default!;
-    [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
-    [Parameter] public Func<string?, HarborClass> HarborClassOf { get; set; } = default!;
-    [Parameter] public bool NavLockedByDock { get; set; }
-    [Parameter] public Action<string> ToggleArmedInsertion { get; set; } = default!;
-    [Parameter] public EventCallback ToggleInsertionEditor { get; set; }
+    [Parameter] public string _armedOrbitBodyId { get; set; } = default!;
+    [Parameter] public string? _armedTransferSummary { get; set; }
+    [Parameter] public string? _disarmConfirmBodyId { get; set; }
+    [Parameter] public int _keepTrimPulsesPerDay { get; set; }
+    [Parameter] public FlightEditorKind _openEditor { get; set; } = default!;
+    [Parameter] public bool _orbitKept { get; set; }
+    [Parameter] public double? ArmedInsertionSimTime { get; set; }
+    [Parameter] public bool AutopilotFlyingApproach { get; set; }
+    [Parameter] public Func<string, string> BodyName { get; set; } = default!;
+    [Parameter] public string DockNavLockTip { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
+    [Parameter] public Func<string?, HarborClass> HarborClassOf { get; set; } = default!;
+    [Parameter] public bool NavLockedByDock { get; set; }
+    [Parameter] public Action<string> ToggleArmedInsertion { get; set; } = default!;
+    [Parameter] public EventCallback ToggleInsertionEditor { get; set; }
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

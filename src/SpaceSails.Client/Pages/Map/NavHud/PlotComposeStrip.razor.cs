@@ -37,21 +37,21 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class PlotComposeStrip
 {
-    [Parameter] public ArriveStep? _arrive { get; set; }
-    [Parameter] public FlightEditorKind _openEditor { get; set; } = default!;
-    [Parameter] public int _reactionMassPulses { get; set; }
-    [Parameter] public ClosestApproach.Pass? _skimmablePass { get; set; }
-    [Parameter] public ClosestApproach.Pass? _slingablePass { get; set; }
-    [Parameter] public Action<ArrivalStepRule.ArrivalKind> AddArriveAtScrub { get; set; } = default!;
-    [Parameter] public EventCallback AddBurnAtScrub { get; set; }
-    [Parameter] public EventCallback AddCastOffAtTop { get; set; }
-    [Parameter] public Func<ArrivalStepRule.ArrivalKind, string> ArriveButtonLabel { get; set; } = default!;
-    [Parameter] public Func<ArrivalStepRule.ArrivalKind, ClosestApproach.Pass?> ArriveCandidate { get; set; } = default!;
-    [Parameter] public bool NavLockedByDock { get; set; }
-    [Parameter] public bool PlanBeginsWithCastOff { get; set; }
-    [Parameter] public Func<int> PlannedPulseTotal { get; set; } = default!;
-    [Parameter] public EventCallback ToggleSkimPanel { get; set; }
-    [Parameter] public EventCallback ToggleSlingPanel { get; set; }
+    [Parameter] public ArriveStep? _arrive { get; set; }
+    [Parameter] public FlightEditorKind _openEditor { get; set; } = default!;
+    [Parameter] public int _reactionMassPulses { get; set; }
+    [Parameter] public ClosestApproach.Pass? _skimmablePass { get; set; }
+    [Parameter] public ClosestApproach.Pass? _slingablePass { get; set; }
+    [Parameter] public Action<ArrivalStepRule.ArrivalKind> AddArriveAtScrub { get; set; } = default!;
+    [Parameter] public EventCallback AddBurnAtScrub { get; set; }
+    [Parameter] public EventCallback AddCastOffAtTop { get; set; }
+    [Parameter] public Func<ArrivalStepRule.ArrivalKind, string> ArriveButtonLabel { get; set; } = default!;
+    [Parameter] public Func<ArrivalStepRule.ArrivalKind, ClosestApproach.Pass?> ArriveCandidate { get; set; } = default!;
+    [Parameter] public bool NavLockedByDock { get; set; }
+    [Parameter] public bool PlanBeginsWithCastOff { get; set; }
+    [Parameter] public Func<int> PlannedPulseTotal { get; set; } = default!;
+    [Parameter] public EventCallback ToggleSkimPanel { get; set; }
+    [Parameter] public EventCallback ToggleSlingPanel { get; set; }
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

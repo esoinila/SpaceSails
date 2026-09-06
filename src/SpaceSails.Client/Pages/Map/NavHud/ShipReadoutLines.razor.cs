@@ -37,27 +37,27 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class ShipReadoutLines
 {
-    [Parameter] public Camera _camera { get; set; } = default!;
-    [Parameter] public int _cargoUnits { get; set; }
-    [Parameter] public int _cargoValue { get; set; }
-    [Parameter] public int _credits { get; set; }
-    [Parameter] public int _effectiveWarp { get; set; }
-    [Parameter] public PlasmaEnvironment? _plasma { get; set; }
-    [Parameter] public int _reactionMassPulses { get; set; }
-    [Parameter] public string _scenarioName { get; set; } = default!;
-    [Parameter] public ShipState _ship { get; set; } = default!;
-    [Parameter] public bool _skipActive { get; set; }
-    [Parameter] public double _skipTargetEpoch { get; set; }
-    [Parameter] public string _skipTargetLabel { get; set; } = default!;
-    [Parameter] public int CargoCapacity { get; set; }
-    [Parameter] public double CircularSpeedHere { get; set; }
-    [Parameter] public Func<double, string> FormatDuration { get; set; } = default!;
-    [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
-    [Parameter] public Func<double, string> FormatZoom { get; set; } = default!;
-    [Parameter] public bool Paused { get; set; }
-    [Parameter] public int ReactionMassCapacity { get; set; }
-    [Parameter] public double SimTime { get; set; }
-    [Parameter] public int Warp { get; set; }
+    [Parameter] public Camera _camera { get; set; } = default!;
+    [Parameter] public int _cargoUnits { get; set; }
+    [Parameter] public int _cargoValue { get; set; }
+    [Parameter] public int _credits { get; set; }
+    [Parameter] public int _effectiveWarp { get; set; }
+    [Parameter] public PlasmaEnvironment? _plasma { get; set; }
+    [Parameter] public int _reactionMassPulses { get; set; }
+    [Parameter] public string _scenarioName { get; set; } = default!;
+    [Parameter] public ShipState _ship { get; set; } = default!;
+    [Parameter] public bool _skipActive { get; set; }
+    [Parameter] public double _skipTargetEpoch { get; set; }
+    [Parameter] public string _skipTargetLabel { get; set; } = default!;
+    [Parameter] public int CargoCapacity { get; set; }
+    [Parameter] public double CircularSpeedHere { get; set; }
+    [Parameter] public Func<double, string> FormatDuration { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatZoom { get; set; } = default!;
+    [Parameter] public bool Paused { get; set; }
+    [Parameter] public int ReactionMassCapacity { get; set; }
+    [Parameter] public double SimTime { get; set; }
+    [Parameter] public int Warp { get; set; }
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

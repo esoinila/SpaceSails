@@ -37,24 +37,24 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class PlotScrubControls
 {
-    [Parameter] public ClosestApproach.Pass? _closestPass { get; set; }
-    [Parameter] public string _horizonChoice { get; set; } = default!;
-    /// <summary>the page's `double _scrubOffsetSeconds` — and this markup WRITES it, so it crosses as a pair: the
-    /// value in, the page's own setter out. The private property below keeps the member's own name, so
-    /// the moved block still assigns to `_scrubOffsetSeconds` and the assignment still lands on the page.</summary>
-    [Parameter] public double _scrubOffsetSecondsValue { get; set; }
-    /// <summary>The page's `_scrubOffsetSeconds = value`, handed down so the write survives the move.</summary>
-    [Parameter] public Action<double> _scrubOffsetSecondsSet { get; set; } = default!;
-    [Parameter] public double CurrentPlotHorizonSeconds { get; set; }
-    [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
-    [Parameter] public Func<double, string> FormatHorizon { get; set; } = default!;
-    [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
-    [Parameter] public int HorizonSliderValue { get; set; }
-    [Parameter] public EventCallback<ChangeEventArgs> OnHorizonSliderInput { get; set; }
-    [Parameter] public Func<(string Text, bool Warn)?> RibbonHorizonNote { get; set; } = default!;
-    [Parameter] public double ScrubTime { get; set; }
-    [Parameter] public EventCallback SetHorizonAuto { get; set; }
-    private double _scrubOffsetSeconds { get => _scrubOffsetSecondsValue; set { _scrubOffsetSecondsValue = value; _scrubOffsetSecondsSet(value); } }
+    [Parameter] public ClosestApproach.Pass? _closestPass { get; set; }
+    [Parameter] public string _horizonChoice { get; set; } = default!;
+    /// <summary>the page's `double _scrubOffsetSeconds` — and this markup WRITES it, so it crosses as a pair: the
+    /// value in, the page's own setter out. The private property below keeps the member's own name, so
+    /// the moved block still assigns to `_scrubOffsetSeconds` and the assignment still lands on the page.</summary>
+    [Parameter] public double _scrubOffsetSecondsValue { get; set; }
+    /// <summary>The page's `_scrubOffsetSeconds = value`, handed down so the write survives the move.</summary>
+    [Parameter] public Action<double> _scrubOffsetSecondsSet { get; set; } = default!;
+    [Parameter] public double CurrentPlotHorizonSeconds { get; set; }
+    [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatHorizon { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
+    [Parameter] public int HorizonSliderValue { get; set; }
+    [Parameter] public EventCallback<ChangeEventArgs> OnHorizonSliderInput { get; set; }
+    [Parameter] public Func<(string Text, bool Warn)?> RibbonHorizonNote { get; set; } = default!;
+    [Parameter] public double ScrubTime { get; set; }
+    [Parameter] public EventCallback SetHorizonAuto { get; set; }
+    private double _scrubOffsetSeconds { get => _scrubOffsetSecondsValue; set { _scrubOffsetSecondsValue = value; _scrubOffsetSecondsSet(value); } }
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

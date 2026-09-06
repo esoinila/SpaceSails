@@ -37,19 +37,19 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class NearestSpaceLines
 {
-    [Parameter] public bool _activeRadar { get; set; }
-    [Parameter] public string? _dockedHavenId { get; set; }
-    [Parameter] public Vector2d _nearestBodyPosition { get; set; } = default!;
-    [Parameter] public Vector2d _nearestBodyVelocity { get; set; } = default!;
-    [Parameter] public CelestialBody? _nearestHaven { get; set; }
-    [Parameter] public PlasmaEnvironment? _plasma { get; set; }
-    [Parameter] public PulseSlot _pulse { get; set; } = default!;
-    [Parameter] public ShipState _ship { get; set; } = default!;
-    [Parameter] public double ArcChargeThreshold { get; set; }
-    [Parameter] public double DockMatchSpeedMps { get; set; }
-    [Parameter] public double DockReachMeters { get; set; }
-    [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
-    [Parameter] public Func<string> NearestReadoutName { get; set; } = default!;
+    [Parameter] public bool _activeRadar { get; set; }
+    [Parameter] public string? _dockedHavenId { get; set; }
+    [Parameter] public Vector2d _nearestBodyPosition { get; set; } = default!;
+    [Parameter] public Vector2d _nearestBodyVelocity { get; set; } = default!;
+    [Parameter] public CelestialBody? _nearestHaven { get; set; }
+    [Parameter] public PlasmaEnvironment? _plasma { get; set; }
+    [Parameter] public PulseSlot _pulse { get; set; } = default!;
+    [Parameter] public ShipState _ship { get; set; } = default!;
+    [Parameter] public double ArcChargeThreshold { get; set; }
+    [Parameter] public double DockMatchSpeedMps { get; set; }
+    [Parameter] public double DockReachMeters { get; set; }
+    [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
+    [Parameter] public Func<string> NearestReadoutName { get; set; } = default!;
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

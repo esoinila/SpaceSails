@@ -37,28 +37,28 @@ namespace SpaceSails.Client.Pages;
 // the markup move out of NavHud.razor without a single character of it changing.
 public partial class ArriveStepRow
 {
-    /// <summary>the arrive step this row draws — the page's `@if (_arrive is { } _ar)` binding, under the name the `@if` gave it.</summary>
-    [Parameter] public ArriveStep _ar { get; set; } = default!;
-    [Parameter] public string? _disarmConfirmBodyId { get; set; }
-    [Parameter] public FlightEditorKind _openEditor { get; set; } = default!;
-    [Parameter] public EventCallback ArmArriveStep { get; set; }
-    [Parameter] public bool ArmedArrivalStillAhead { get; set; }
-    [Parameter] public Func<ArrivalStepRule.ArrivalCheck?> ArriveCheck { get; set; } = default!;
-    [Parameter] public bool ArriveCoversArmed { get; set; }
-    [Parameter] public Func<ArriveStep, string> ArriveGlanceLine { get; set; } = default!;
-    [Parameter] public Func<ArriveStep, bool> ArriveIsAThen { get; set; } = default!;
-    [Parameter] public Func<string, ClosestApproach.Pass?> ArrivePassFor { get; set; } = default!;
-    [Parameter] public Func<string?> ArrivePlanCompleteLine { get; set; } = default!;
-    [Parameter] public Func<string?> ArriveRibbonTooShortLine { get; set; } = default!;
-    [Parameter] public bool AutopilotFlyingApproach { get; set; }
-    [Parameter] public Func<string, string> BodyName { get; set; } = default!;
-    [Parameter] public string DockNavLockTip { get; set; } = default!;
-    [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
-    [Parameter] public bool NavLockedByDock { get; set; }
-    [Parameter] public bool PlanBeginsWithCastOff { get; set; }
-    [Parameter] public EventCallback RemoveArriveStep { get; set; }
-    [Parameter] public EventCallback ScrubToArrive { get; set; }
-    [Parameter] public EventCallback ToggleArriveEditor { get; set; }
+    /// <summary>the arrive step this row draws — the page's `@if (_arrive is { } _ar)` binding, under the name the `@if` gave it.</summary>
+    [Parameter] public ArriveStep _ar { get; set; } = default!;
+    [Parameter] public string? _disarmConfirmBodyId { get; set; }
+    [Parameter] public FlightEditorKind _openEditor { get; set; } = default!;
+    [Parameter] public EventCallback ArmArriveStep { get; set; }
+    [Parameter] public bool ArmedArrivalStillAhead { get; set; }
+    [Parameter] public Func<ArrivalStepRule.ArrivalCheck?> ArriveCheck { get; set; } = default!;
+    [Parameter] public bool ArriveCoversArmed { get; set; }
+    [Parameter] public Func<ArriveStep, string> ArriveGlanceLine { get; set; } = default!;
+    [Parameter] public Func<ArriveStep, bool> ArriveIsAThen { get; set; } = default!;
+    [Parameter] public Func<string, ClosestApproach.Pass?> ArrivePassFor { get; set; } = default!;
+    [Parameter] public Func<string?> ArrivePlanCompleteLine { get; set; } = default!;
+    [Parameter] public Func<string?> ArriveRibbonTooShortLine { get; set; } = default!;
+    [Parameter] public bool AutopilotFlyingApproach { get; set; }
+    [Parameter] public Func<string, string> BodyName { get; set; } = default!;
+    [Parameter] public string DockNavLockTip { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
+    [Parameter] public bool NavLockedByDock { get; set; }
+    [Parameter] public bool PlanBeginsWithCastOff { get; set; }
+    [Parameter] public EventCallback RemoveArriveStep { get; set; }
+    [Parameter] public EventCallback ScrubToArrive { get; set; }
+    [Parameter] public EventCallback ToggleArriveEditor { get; set; }
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
