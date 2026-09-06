@@ -18,136 +18,37 @@ using SpaceSails.Core.Interior;
 namespace SpaceSails.Client.Pages;
 
 // Map.Autopilot — the pilot's hands: rehearsal and promise, arm and stand-down, the transfer
-// burns, and the station-keeping that holds a KEPT orbit. The ancients' pyramid pilot-grants
-// ride here too. Lifted whole from Map.razor for #251.
+// burns, and the station-keeping that holds a KEPT orbit. Lifted whole from Map.razor for #251.
+//
+// #251 · WHY THE FILE WAS CUT, and what "pure motion" is holding across the family. At 1,442 lines this
+// was the longest hand-written file in `src/`, and it was the file that set the size gate's daylight
+// (`NoSourceFileIsTooLongTests`, the line at 1,500): the next section anybody added here would have had to
+// be shoved somewhere else first. So it is cut along the seams it already had — one subject per partial,
+// every line moved VERBATIM, no rename, no signature change, no statement reordered inside a method. A
+// `partial` is the same class, so the page's field roster is untouched by construction.
+//
+// THE FAMILY (1,442 lines → six files, largest 960):
+//   · Map.Autopilot.cs               — the arm, the promise, and the loop that flies it: the rehearsal and
+//                                      its refusal, arm and stand-down, the transfer burns, the approach
+//                                      and the insertion, and the keeping that holds a KEPT orbit.
+//   · Map.Autopilot.ParkWatch.cs     — which body the ship is bound to, and the #180 degradation alert.
+//   · Map.Autopilot.OrbitAssist.cs   — the M20 panel's readout and its one line of approach coaching.
+//   · Map.Autopilot.ArrivalWindow.cs — #957's refusal arithmetic and #969's promise coming round.
+//   · Map.Autopilot.Ancients.cs      — the M28 pyramid grants and the course one charge buys.
+//   · Map.Autopilot.FlightPlan.cs    — PR-D1's read-only derivations for the banner and the Nav header.
+//
+// WHAT STAYED HERE, and why it is not "the leftovers": five source guards read THIS PATH and assert
+// literals in it — `TheArrivalEndsWhereTheErrandIsTests` (the `BodyKind.Station` fork of
+// `CheckArmedInsertion`, sliced structurally down to the `#146 the moon run` comment that follows it),
+// `TheTenthIsQuotedAndOnlyTheAutopilotsTests` (the refusal's numbers, and the five `_reactionMassPulses -=`
+// debits IN ORDER — `charge`, `approachCharge`, `insertCharge`, `cost`, `oi.Cost`, which pins
+// `ApplyTransferBurn`, `CheckArmedInsertion`, `StationKeep` and `EnterOrbit` to this file in that order),
+// `TheWallsAreHungAndReadTests` (both `TheArrivalIsRemembered` arrival edges, counted), and
+// `TheWreckHasItsOwnArrivalTests` (`AutopilotStandInEnvelope`, and the FABLE marker that must not be in
+// it). Every seam below was chosen to leave those literals where their guard reads them, so not one guard
+// was edited for the cut — the alternative is a guard whose world can no longer tell pass from fail.
 public partial class Map
 {
-
-    // ===== PR-D1: the burn list read AS a flight plan (docs/WednesdayPlan/UnifiedNavListNotes.md) =====
-    // Read-only derivation over existing state — NO flight-logic changes. Armed auto-orbit gains list
-    // presence as a step; the owner's NOW/next status line and the step counter are derived once, here,
-    // so the pilot banner and the Nav-desk header never disagree. FlightPlanStatusBuilder (Core, unit-
-    // tested) owns the state + now/next decisions; this only feeds it facts already on screen elsewhere.
-
-    // The autopilot is FLYING THE APPROACH (vs merely armed and waiting for the window) when it is armed
-    // AND already within capture range — the same gate OrbitStatusLine reports as "flying the approach".
-    // #969: …and never while a PLAN-TIME arm is still waiting for its pass. Mars's capture range is five
-    // Hill radii wide, so a ship that has not left Earth can already be "in range" of the encounter it is
-    // nine months from — and the banner would have claimed the autopilot was flying an approach through the
-    // whole cruise while it was, correctly, doing nothing at all.
-    private bool AutopilotFlyingApproach =>
-        _armedOrbitBodyId is not null && !_orbitKept && !ArmedArrivalStillAhead
-        && OrbitInfo() is { Armed: true, InCaptureRange: true };
-
-    // The armed insertion's time when the plotted destination pass pins it; null = "at window" (unknown).
-    // #969: a plan-time arm always knows its own moment — the pass it was rehearsed FOR — so it falls back
-    // to that when the destination pass isn't the one talking (the projection is rebuilt on a cadence; the
-    // pinned epoch never blinks).
-    private double? ArmedInsertionSimTime =>
-        _armedOrbitBodyId is not null && _destinationPass is { } dp
-            && dp.BodyId == _armedOrbitBodyId && dp.SimTime > SimTime
-            ? dp.SimTime
-            : _armedArrivalPassSimTime is { } armedPass && armedPass > SimTime ? armedPass : null;
-
-    private void ToggleInsertionEditor()
-    {
-        _openEditor = _openEditor == FlightEditorKind.Insertion ? FlightEditorKind.None : FlightEditorKind.Insertion;
-        _selectedPlanNode = null;
-    }
-    // The body the ship is gravitationally bound to right now (M20 orbit rules) — ground truth
-    // for CommerceRule's "same orbit" case, independent of the orbit-assist UI's armed/nearest
-    // framing. Cached alongside its position/Hill radius so DrawNpcs can ring-highlight co-orbiting
-    // contacts without recomputing them.
-    private string? _orbitedBodyId;
-    private Vector2d _orbitedBodyPosition;
-    private double _orbitedBodyHillRadius;
-
-    // #265 — the period (s) of the ship's currently-achieved bound orbit about its dominant body, or null
-    // when the ship is on a transfer/hyperbolic leg (not captured). Reads the SAME body + Hill the orbit
-    // panel judges capture against (OrbitInfo), so "bound" here and the panel's "bound — parked" never
-    // disagree. Cheap: a finite-difference body velocity and one energy/√ in OrbitRule.BoundOrbitPeriod.
-    private double? BoundOrbitPeriodSeconds()
-    {
-        if (_ephemeris is null || OrbitInfo() is not { Bound: true } oi)
-        {
-            return null;
-        }
-        Vector2d pos = _ephemeris.Position(oi.Body.Id, SimTime);
-        const double h = 1.0;
-        Vector2d vel = (_ephemeris.Position(oi.Body.Id, SimTime + h) - _ephemeris.Position(oi.Body.Id, SimTime - h)) / (2 * h);
-        return OrbitRule.BoundOrbitPeriod(_ship, pos, vel, oi.Body, oi.Hill);
-    }
-
-    // ---- M28 (Sunday PR-D): the Ancients' pilot — pyramid satellites & auto-plot charges ----
-    private int _ancientCharges;
-    private readonly double[] _ancientLastGrant =
-        [double.NegativeInfinity, double.NegativeInfinity];
-    private static readonly RgbaColor PyramidColor = new(255, 215, 120);
-
-    /// <summary>Runs on the sensor cadence: a pyramid close enough to touch grants charges.</summary>
-    private void CheckPyramids()
-    {
-        for (int i = 0; i < AncientsRule.PyramidCount; i++)
-        {
-            if (SimTime - _ancientLastGrant[i] < AncientsRule.GrantCooldownSeconds
-                || !AncientsRule.InGrantRange(i, _ship.Position, SimTime))
-            {
-                continue;
-            }
-
-            _ancientLastGrant[i] = SimTime;
-            _ancientCharges += AncientsRule.ChargesPerVisit;
-            ShowPulseMessage($"◬ The pyramid regards you. {AncientsRule.ChargesPerVisit} plottings are granted.");
-            RendererInterop.PlayCue("board");
-            StateHasChanged();
-        }
-    }
-
-    /// <summary>Spends a charge: the ancient pilot replaces the maneuver plan with a course
-    /// to the current destination — the same Simulator-evaluated search that plans NPC
-    /// routes, offered as scarce alien assistance. Manual flight stays the taught skill.</summary>
-    private void UseAncientsPilot()
-    {
-        if (_ancientCharges <= 0 || _destinationBodyId is null || _ephemeris is null)
-        {
-            return;
-        }
-
-        ShowPulseMessage("◬ The ancient pilot considers the sky…");
-        if (AncientsRule.AutoPlot(_ephemeris, _ship, _destinationBodyId) is not { } result)
-        {
-            return;
-        }
-
-        _ancientCharges--;
-        _planNodes.Clear();
-        foreach (ManeuverNode node in result.Plan.Nodes)
-        {
-            _planNodes.Add(new PlanNode { SimTime = node.SimTime, Action = node.Action, Pulses = node.Pulses });
-        }
-
-        RebuildPlan();
-        ReprojectTrajectory();
-        ShowPulseMessage($"◬ Course laid — closest approach {FormatDistance(result.MissDistance)} at {FormatSimTime(result.ClosestApproachSimTime)}. Mind HOW it flies.");
-        StateHasChanged();
-    }
-    // The pilot's most-wanted number (owner, M16): the speed that holds a circular sun orbit
-    // at the ship's CURRENT distance. Match it (tangentially) and you coast forever — the
-    // difference between "matching the radius" and "matching the orbit".
-    private double CircularSpeedHere
-    {
-        get
-        {
-            double r = _ship.Position.Length;
-            if (r <= 0 || _ephemeris is null) return 0;
-            double mu = 0;
-            foreach (CelestialBody body in _ephemeris.Bodies)
-            {
-                if (body.ParentId is null && body.Mu > mu) mu = body.Mu;
-            }
-            return Math.Sqrt(mu / r);
-        }
-    }
 
     // ---- M22: planned insertion — "it is part of flight planning" (owner) ----
     private string? _armedOrbitBodyId;
@@ -225,15 +126,6 @@ public partial class Map
     private string? _disarmConfirmBodyId;        // body whose disarm is pending a confirming second click
     private double _disarmConfirmExpiresMs;      // rAF-clock deadline for that second click
     private const double DisarmConfirmWindowMs = 4000;
-
-    // ---- #180 orbit-degradation alert. Edge-triggered off OrbitRule.ParkStability for the bound
-    // body: on a transition INTO the tide-chaotic band (amber) or a surface-grazing orbit (red) we
-    // raise a persistent pilot-banner warning, drop warp to 1×, and log it; it clears when stability
-    // returns. TODO(#166): migrate this into the ShipAlerts channel (+🦜) when that lands. ----
-    private string? _orbitDegradeWarning;                 // persistent amber/red "orbit degrading" line
-    private int _orbitDegradeSeverity;                    // 0 none · 1 TideRisk (amber) · 2 Subsurface (red)
-    private OrbitRule.ParkStabilityVerdict _lastParkStability = OrbitRule.ParkStabilityVerdict.NotBound;
-    private string? _parkStabilityBodyId;                 // body _lastParkStability refers to (fresh watch on change)
 
     // ---- Friday §0 (owner ruling): "armed auto-orbit ends in a KEPT orbit, not an achieved one."
     // When the autopilot inserts, it does NOT hand the ship back — it enters STATION-KEEPING for
@@ -688,90 +580,6 @@ public partial class Map
         ShowPulseMessage($"Insertion armed — budgeted ≈{_armedBudgetPulses} p at the autopilot's tenth; the ship will {arrival} when the window opens{trimQuote} 🛰");
     }
 
-    // #957 — the ship's arrival geometry RIGHT NOW, judged by the same Core law the arrive step's row is
-    // judged by (ArrivalStepRule reads its thresholds off OrbitRule / DockRule). This is what turns "can't
-    // verify a capture from here — no clear window within range" into a sentence with numbers in it: how
-    // far out, how fast, and against which limits. Null for a body with no parent (the sun).
-    private ArrivalStepRule.ArrivalCheck? ArrivalCheckNow(string bodyId)
-    {
-        if (_ephemeris is null
-            || BodyById(bodyId) is not { ParentId: not null } body
-            || BodyById(body.ParentId) is not { } parent)
-        {
-            return null;
-        }
-
-        Vector2d bodyPos = _ephemeris.Position(bodyId, SimTime);
-        Vector2d bodyVel = TransferMath.BodyVelocity(_ephemeris, bodyId, SimTime);
-        ArrivalStepRule.ArrivalKind kind = IsDockableHaven(body)
-            ? ArrivalStepRule.ArrivalKind.Dock
-            : ArrivalStepRule.ArrivalKind.Orbit;
-        return ArrivalStepRule.Check(
-            kind, body.Name,
-            (_ship.Position - bodyPos).Length,
-            (_ship.Velocity - bodyVel).Length,
-            OrbitRule.HillRadius(body, parent.Mu));
-    }
-
-    // #957 — "how far off is the nearest usable window". The plotted course already knows where it comes
-    // nearest this body; say it, so a refusal points at a moment the captain can scrub to rather than at a
-    // shrug. Empty when the course has no future pass by it (nothing honest to name).
-    private string NearestWindowNote(string bodyId)
-    {
-        if (ArrivePassFor(bodyId) is not { } pass || pass.SimTime <= SimTime)
-        {
-            return string.Empty;
-        }
-        return $"; this course's own closest pass by {BodyName(bodyId)} is {FormatDistance(pass.Distance)} at {FormatSimTime(pass.SimTime)}";
-    }
-
-    // #957 — how far each candidate correction is flown before it is given up on. This runs on a button in
-    // WASM and every candidate is a real rehearsed flight, so the search is bounded by the encounter's own
-    // clock: a few times the plotted time-to-pass, floored at five days so a near encounter still gets a
-    // fair look and capped at the rehearsal's own horizon. A candidate that would only pay off months later
-    // is not the answer to "I am right next to it, dock" — and a shortened horizon can only MISS a
-    // solution, never invent one (CaptureBrake believes nothing it has not flown).
-    private double BrakeSearchHorizon(string bodyId)
-    {
-        double toPass = ArrivePassFor(bodyId) is { } pass && pass.SimTime > SimTime
-            ? pass.SimTime - SimTime
-            : 0;
-        return Math.Clamp(3 * toPass, 5 * 86400.0, AutopilotRehearsal.DefaultMaxHorizonSeconds);
-    }
-
-    // #969 — THE PROMISE COMES ROUND. The plan-time arm held its hands off for the whole cruise; this is the
-    // one frame where it takes the controls. Two things happen and only two: the hold is released (so the
-    // arm is from here on an ordinary armed arrival, indistinguishable from one pressed at the door), and
-    // the #148/#196/#219 pair — the drawn INTENDED path and the collision alarm's plan pass — is filled in
-    // from a rehearsal flown at the ship's REAL state, because only now is there an approach to draw.
-    //
-    // What deliberately does NOT happen: a refusal. The promise was settled at plan time, and #147's ruling
-    // ("dropping from autopilot should never happen when there was nothing external to cause it") forbids
-    // discovering a change of mind at the far end of a nine-month coast. If the fresh rehearsal cannot be
-    // promised, the pair simply stays null — the ballistic ribbon and the ballistic alarm keep the watch, the
-    // arrive row's own ✓/✗ has been speaking the whole way, and the loop below flies what it can with the
-    // reserve floor underneath it, exactly as it would for any other arm.
-    private void OpenTheArrivalWindow(CelestialBody body)
-    {
-        _armedArrivalPassSimTime = null;
-        ResetApproachTracking(); // the convergence watchdog starts counting from the arrival, not the plot
-        if (_ephemeris is not null && _simulator is not null)
-        {
-            int budget = Math.Max(0, _reactionMassPulses - AutopilotRehearsal.ReservePulses(ReactionMassCapacity));
-            AutopilotRehearsal.RehearsalResult r = AutopilotRehearsal.Rehearse(
-                _ship, _ephemeris, _simulator, body.Id, budget, capturePath: true,
-                schedule: _armedTransferSchedule);
-            if (r.Deliverable)
-            {
-                CachePlanForAlarm(body.Id, r);
-            }
-        }
-
-        string verb = IsDockableHaven(body) ? "brings her in to dock" : "flies the insertion";
-        LogAutopilotEvent($"the plan's arrival at {body.Name} has come round — the autopilot has the ship and {verb}");
-        ShowPulseMessage($"🛰 {body.Name} — the arrival step is live; the autopilot {verb}.");
-    }
-
     // M25: the armed autopilot. Inside capture range it flies the "point at it and throttle"
     // approach the owner asked for — an approach burn, tidal trim burns as needed, and the
     // insertion once safely deep in the Hill sphere. Every burn is Δv-priced in pulses.
@@ -1076,107 +884,6 @@ public partial class Map
         ShowPulseMessage($"🛰 orbit trim at {body.Name} ({cost} p) — holding the park");
     }
 
-    // ---- M20: the bus stop in space ----
-    public readonly record struct OrbitAssistInfo(
-        CelestialBody Body, double Distance, double RelSpeed, double Hill, int Cost,
-        bool WindowOpen, bool TooFast, bool CanEngage, bool IsDestination,
-        double CaptureRange, bool InCaptureRange, bool Armed, int ApproachCost,
-        bool Bound, bool RadiusInStableBand);
-
-    private OrbitAssistInfo? OrbitInfo()
-    {
-        // The chosen destination owns the panel, then an armed target: "Orbit Earth?" while
-        // sailing for Mars was exactly the confusion the owner reported. Nearest is the
-        // fallback for players who haven't picked anywhere yet.
-        string? focusId = _destinationBodyId ?? _armedOrbitBodyId;
-        CelestialBody? preferred = null;
-        if (focusId is not null && _ephemeris is not null)
-        {
-            foreach (CelestialBody candidate in _ephemeris.Bodies)
-            {
-                if (candidate.Id == focusId) { preferred = candidate; break; }
-            }
-        }
-
-        if (preferred is not null && preferred.ParentId is not null)
-        {
-            Vector2d pos = _ephemeris!.Position(preferred.Id, SimTime);
-            double h = 1.0;
-            Vector2d vel = (_ephemeris.Position(preferred.Id, SimTime + h) - _ephemeris.Position(preferred.Id, SimTime - h)) / (2 * h);
-            return BuildOrbitInfo(preferred, pos, vel);
-        }
-
-        if (_nearestBody is not CelestialBody body || body.ParentId is null || _ephemeris is null)
-        {
-            return null; // the sun is not a bus stop; you already orbit it
-        }
-
-        return BuildOrbitInfo(body, _nearestBodyPosition, _nearestBodyVelocity);
-    }
-
-    private OrbitAssistInfo? BuildOrbitInfo(CelestialBody body, Vector2d bodyPos, Vector2d bodyVel)
-    {
-        CelestialBody? parent = null;
-        foreach (CelestialBody candidate in _ephemeris!.Bodies)
-        {
-            if (candidate.Id == body.ParentId) { parent = candidate; break; }
-        }
-        if (parent is null) return null;
-
-        double hill = OrbitRule.HillRadius(body, parent.Mu);
-        double distance = (_ship.Position - bodyPos).Length;
-        bool destination = _destinationBodyId == body.Id;
-        bool focused = destination || _armedOrbitBodyId == body.Id;
-        if (!focused && distance > Math.Max(OrbitRule.IndicatorRangeHillRadii * hill, 2e9))
-        {
-            return null;
-        }
-
-        double relSpeed = (_ship.Velocity - bodyVel).Length;
-        bool open = OrbitRule.WindowOpen(_ship, bodyPos, bodyVel, body, hill);
-        int cost = OrbitRule.PulseCost(_ship, bodyPos, bodyVel, body);
-        bool bound = OrbitRule.IsBound(_ship, bodyPos, bodyVel, body, hill);
-        double captureRange = OrbitRule.CaptureRange(hill);
-        // #180: is the ship's CURRENT radius inside the tide-stable park band? The manual press
-        // circularizes here, so this decides whether Enter-orbit parks now or hands to the autopilot.
-        bool radiusInBand = OrbitRule.RadiusInStableBand(distance, body, hill);
-        return new OrbitAssistInfo(body, distance, relSpeed, hill, cost,
-            open && !bound, relSpeed >= OrbitRule.MaxRelativeSpeed,
-            open && !bound && cost <= _reactionMassPulses, destination,
-            captureRange, distance <= captureRange && !bound,
-            _armedOrbitBodyId == body.Id,
-            OrbitRule.ApproachPulseCost(_ship, bodyPos, bodyVel),
-            bound, radiusInBand);
-    }
-
-    // One line of approach coaching: what to fix first, with a ballpark number on it.
-    private string OrbitStatusLine(OrbitAssistInfo oi)
-    {
-        string inv(double v) => v.ToString("F1", CultureInfo.InvariantCulture);
-        // #176: once bound the panel used to fall through to the "inside capture range" line and the
-        // button greyed out mute — say plainly that we're already parked so nobody reads it as "off".
-        if (oi.Bound) return $"bound — parked at {FormatDistance(oi.Distance)}";
-        // #180: inside the window but above the tide-stable band — say the press won't park HERE.
-        if (oi.WindowOpen)
-            return oi.RadiusInStableBand
-                ? "window OPEN"
-                : "window open — this radius is tide-chaotic (Lab 16); autopilot parks you deeper";
-        if (oi.Armed && oi.InCaptureRange)
-            // #203: altitude above the surface, unit-labelled — the SAME number the banner's
-            // "orbit-insert (alt N km)" row shows, never the raw orbital radius the panel used to quote.
-            return $"autopilot flying the approach — insertion at ≈{FormatAltitude(OrbitRule.ParkingRadius(oi.Body, oi.Hill) - oi.Body.BodyRadius)}";
-        if (oi.InCaptureRange) return "in capture range — auto-orbit can park you";
-        // #153: once inside the capture range (e.g. already bound/orbiting) the gap goes NEGATIVE —
-        // the old line printed "close in -2,982,642 km to capture range". Read it honestly instead:
-        // report the distance to the body, not a nonsensical negative closing distance.
-        string closing = oi.Distance < oi.CaptureRange
-            ? $"inside capture range — {FormatDistance(oi.Distance)} from {oi.Body.Name}"
-            : $"close in {FormatDistance(oi.Distance - oi.CaptureRange)} to capture range";
-        return oi.TooFast
-            ? $"{closing} (autopilot sheds the {inv((oi.RelSpeed - OrbitRule.MaxRelativeSpeed) / 1000)} km/s there)"
-            : closing;
-    }
-
     private void EnterOrbit()
     {
         if (RejectNavWhileDocked())
@@ -1260,183 +967,4 @@ public partial class Map
 
     private float[] _autopilotPlanScratch = [];
 
-    // Recomputed every frame from ground truth (OrbitRule.IsBound), same math UpdateEffectiveWarp
-    // already relies on — not the orbit-assist UI's armed/nearest framing, which can point at a
-    // different body than the one the ship is actually bound to.
-    private void UpdateOrbitedBody()
-    {
-        _orbitedBodyId = null;
-        CelestialBody? boundBody = null;
-        Vector2d boundBodyPos = default, boundBodyVel = default;
-        double boundHill = 0;
-        if (_ephemeris is not null)
-        {
-            foreach (CelestialBody body in _ephemeris.Bodies)
-            {
-                if (body.ParentId is null)
-                {
-                    continue; // the sun: everyone "orbits" it, not a bus stop
-                }
-
-                CelestialBody? parent = null;
-                foreach (CelestialBody candidate in _ephemeris.Bodies)
-                {
-                    if (candidate.Id == body.ParentId) { parent = candidate; break; }
-                }
-                if (parent is null)
-                {
-                    continue;
-                }
-
-                Vector2d bodyPos = _ephemeris.Position(body.Id, SimTime);
-                const double h = 1.0;
-                Vector2d bodyVel = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
-                double hill = OrbitRule.HillRadius(body, parent.Mu);
-                if (OrbitRule.IsBound(_ship, bodyPos, bodyVel, body, hill))
-                {
-                    _orbitedBodyId = body.Id;
-                    _orbitedBodyPosition = bodyPos;
-                    _orbitedBodyHillRadius = hill;
-                    boundBody = body;
-                    boundBodyPos = bodyPos;
-                    boundBodyVel = bodyVel;
-                    boundHill = hill;
-                    break;
-                }
-            }
-        }
-
-        // #180: watch the bound orbit's tide-stability every tick (cheap — one bound body at most)
-        // and alert on the edge into decay. Ground truth, independent of the orbit-assist UI.
-        UpdateParkStability(boundBody, boundBodyPos, boundBodyVel, boundHill);
-
-        // PR-11 deviation: this used to auto-pop the (small, floating) Local Space panel on the
-        // rising edge of a bind (vision par. 10). Now that Trade is a full-screen desk, yanking
-        // the player's whole view there mid-flight would be jarring rather than helpful — the
-        // Trade chip (TradeChip()) already updates live so the player notices the new contact,
-        // and switching desks stays a deliberate action (number key / tab / chip click).
-        // (The haven news + lesson advance moved to the "hidden at a haven" rising edge in
-        // UpdateEncounters, so a mass-less dock — which never orbit-binds — triggers them too.)
-    }
-
-    // #180: edge-triggered orbit-degradation alert. Evaluate the bound body's ParkStability each
-    // tick and fire ONLY on a transition into a risk verdict (TideRisk / Subsurface), or clear when
-    // stability returns. Losing an orbit must never be discovered by looking — the owner's Enceladus
-    // strand. TODO(#166): route this through the ShipAlerts channel (+🦜) when it lands.
-    private void UpdateParkStability(CelestialBody? body, Vector2d bodyPos, Vector2d bodyVel, double hill)
-    {
-        OrbitRule.ParkStabilityVerdict verdict = body is null
-            ? OrbitRule.ParkStabilityVerdict.NotBound
-            : OrbitRule.ParkStability(_ship, bodyPos, bodyVel, body, hill);
-
-        // WHICH SHIP THIS WATCHDOG IS ALLOWED TO JUDGE — Friday §0 + #962, settled in Core against
-        // concrete numbers (OrbitDegradeAlertRule). A KEPT park's between-trim brush at the band ceiling
-        // is the keeper working, not decay; and a ship the autopilot is FLYING along a rehearsed path
-        // that cleared this very body has no park to degrade at all — her osculating conic is a
-        // prediction about a coast the next approach burn is about to erase. Both deferrals stay
-        // falsifiable: a plan that did not itself clear the floor here, or a ship gone deeper toward the
-        // body than the plan ever went, is judged raw and shouts.
-        // (The plan question is only ASKED on a risk verdict, and AutopilotFlyingApproach — which walks
-        // the body list through OrbitInfo — is the last term of it, so the quiet tick stays a comparison.)
-        bool risk = verdict is OrbitRule.ParkStabilityVerdict.TideRisk or OrbitRule.ParkStabilityVerdict.Subsurface;
-        verdict = OrbitDegradeAlertRule.Evaluate(
-            verdict,
-            keepingHoldsOrbit: _orbitKept,
-            autopilotFlyingRehearsedPath: risk && body is not null
-                && _autopilotPlanPath is { Count: >= 2 } && AutopilotFlyingApproach,
-            planClosestApproach: body is not null && _autopilotPlanBodyClearance is { } cleared
-                && cleared.TryGetValue(body.Id, out double planPass)
-                    ? planPass
-                    : double.NaN,
-            shipDistanceNow: body is null ? 0 : (_ship.Position - bodyPos).Length,
-            surfaceFloor: body is null ? 0 : OrbitRule.SurfaceParkRadii * body.BodyRadius);
-
-        bool IsRisk(OrbitRule.ParkStabilityVerdict v) =>
-            v is OrbitRule.ParkStabilityVerdict.TideRisk or OrbitRule.ParkStabilityVerdict.Subsurface;
-
-        // A change of bound body resets the watch — a fresh park is a fresh baseline. Warn straight
-        // away if we arrive already in a risk state; otherwise clear any stale warning.
-        if (body?.Id != _parkStabilityBodyId)
-        {
-            _parkStabilityBodyId = body?.Id;
-            _lastParkStability = verdict;
-            if (body is not null && IsRisk(verdict))
-            {
-                RaiseOrbitDegrade(body, bodyPos, bodyVel, verdict);
-            }
-            else
-            {
-                ClearOrbitDegrade();
-            }
-            return;
-        }
-
-        if (verdict == _lastParkStability)
-        {
-            return; // no transition — nothing to do (edge-triggered, not continuous)
-        }
-
-        if (IsRisk(verdict))
-        {
-            // Into a risk state, or an escalation/de-escalation between the two risk verdicts.
-            if (body is not null)
-            {
-                RaiseOrbitDegrade(body, bodyPos, bodyVel, verdict);
-            }
-        }
-        else if (IsRisk(_lastParkStability))
-        {
-            ClearOrbitDegrade(); // stability returned (or the ship left the well)
-        }
-
-        _lastParkStability = verdict;
-    }
-
-    private void RaiseOrbitDegrade(CelestialBody body, Vector2d bodyPos, Vector2d bodyVel, OrbitRule.ParkStabilityVerdict verdict)
-    {
-        bool subsurface = verdict == OrbitRule.ParkStabilityVerdict.Subsurface;
-        string reason = subsurface
-            ? "periapsis under the surface — impact coming"
-            : "drifting past the tide-stable band (Lab 16) — it strips over hours";
-        // Ballpark corrective-burn cost from the current state — a hint for the "re-park or leave"
-        // choice; the orbit/autopilot button recomputes the exact bill when pressed.
-        int reparkCost = OrbitRule.PulseCost(_ship, bodyPos, bodyVel, body);
-
-        // #962, second half: the offer must be a choice the captain HAS. The owner was shown
-        // "re-park (≈48 p) or leave" while the banner one line above read "AUTOPILOT HAS THE SHIP" —
-        // a manual insertion there is a burn that fights the plan still being flown. A ship under the
-        // autopilot is told what has the helm instead. "Under the autopilot" means at the HELM — flying
-        // the approach, or holding the park. A #969 plan-time arm still waiting for its pass is not that
-        // (the captain's own plotted burns fly the ship through the hold), so there she keeps the bill.
-        bool autopilotHasTheShip = AutopilotFlyingApproach || _orbitKept;
-        string offer = OrbitDegradeAlertRule.Offer(autopilotHasTheShip, reparkCost);
-
-        _orbitDegradeSeverity = subsurface ? 2 : 1;
-        _orbitDegradeWarning = $"⚠ orbit degrading at {body.Name} — {reason}; {offer}";
-        Warp = 1; // auto-drop so the decay isn't blown past at warp
-        LogAutopilotEvent(_orbitDegradeWarning);
-        ShowPulseMessage(_orbitDegradeWarning);
-
-        // #166: the third founding alert now speaks through the shared channel too. Raise fires only on
-        // the rising edge / an escalation to red — so the parrot squawks once per crossing, not per tick.
-        if (_shipAlerts.Raise(AlertKind.OrbitDegrade, subsurface ? AlertSeverity.Red : AlertSeverity.Amber,
-                _orbitDegradeWarning, SimTime))
-        {
-            SquawkNow(Parrot.Squawk.OrbitDecay, _lastTimestampMs ?? 0, force: true);
-        }
-    }
-
-    private void ClearOrbitDegrade()
-    {
-        _shipAlerts.Clear(AlertKind.OrbitDegrade);
-
-        if (_orbitDegradeWarning is null)
-        {
-            return;
-        }
-
-        LogAutopilotEvent("orbit stable again — tide-risk cleared");
-        _orbitDegradeWarning = null;
-        _orbitDegradeSeverity = 0;
-    }
 }
