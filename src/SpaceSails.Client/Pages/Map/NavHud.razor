@@ -87,21 +87,9 @@
                                  _captureRequiredSeconds="@_captureRequiredSeconds"
                                  _captureTargetCallsign="@_captureTargetCallsign" _cargoUnits="@_cargoUnits"
                                  CargoCapacity="@CargoCapacity" SelectedCaptureTarget="@SelectedCaptureTarget" />
-            @* #177/#178 — a boardable hull is in range, but piracy is never automatic. Offer it;
-               the shuttles do not move until the captain says so. Standing down is free and silent. *@
-            @if (_plunderOpportunityTargetId is not null)
-            {
-                <hr />
-                <div class="fw-bold text-warning">🏴 PLUNDER OPPORTUNITY — @_captureTargetCallsign in boarding range</div>
-                <div class="small text-secondary mb-1">
-                    Boarding @_captureTargetCallsign is PIRACY — you'll take their cargo and carry the heat.
-                    Hostile acts need the captain's word.
-                </div>
-                <div class="d-flex gap-2">
-                    <button type="button" class="btn btn-sm btn-danger" title="Send the shuttles across and board her — this is piracy" @onclick="AuthorizePlunder">🏴 Board her — commit piracy</button>
-                    <button type="button" class="btn btn-sm btn-outline-light" title="Stand the shuttles down — leave her be" @onclick="DeclinePlunder">Stand down</button>
-                </div>
-            }
+            <PlunderOfferBox _captureTargetCallsign="@_captureTargetCallsign"
+                             _plunderOpportunityTargetId="@_plunderOpportunityTargetId"
+                             AuthorizePlunder="@AuthorizePlunder" Board="@Board" DeclinePlunder="@DeclinePlunder" />
         </div>
 
         @* #135/#143 — reference-frame selector. Near a gas giant a moon-to-moon course is useless in
