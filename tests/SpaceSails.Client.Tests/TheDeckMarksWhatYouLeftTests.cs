@@ -175,7 +175,7 @@ public sealed class TheDeckMarksWhatYouLeftTests
 
     // ── The wiring ────────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>#870 · The surface page is fifteen partials by subject now, so the text this guard reads is
+    /// <summary>#870 · The surface page is thirty-one partials by subject now, so the text this guard reads is
     /// all of them — exactly the source it read out of one file before the split.</summary>
     private static string SurfaceSource() => string.Concat(
         Directory.EnumerateFiles(

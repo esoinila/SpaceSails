@@ -639,7 +639,7 @@ public sealed class TheParkIsWalkableTests
     public void ThereIsAOneUrlRouteIntoThePark()
     {
         string root = TestTree.RepoRoot();
-        // #870 · the sim page is nine partials by subject now; "the sim" here is all of them.
+        // #870 · the sim page is twenty partials by subject now; "the sim" here is all of them.
         string sim = string.Concat(
             Directory.EnumerateFiles(
                     Path.Combine(root, "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")

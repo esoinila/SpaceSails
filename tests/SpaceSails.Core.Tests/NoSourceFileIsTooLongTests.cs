@@ -57,8 +57,9 @@ namespace SpaceSails.Core.Tests;
 /// that a pure move may not split — and lane 7a took that one too, behind a fingerprint of the world every boot
 /// URL builds. The list was EMPTY until #251 item 1 taught the sweep to see <c>*.razor</c> and
 /// <c>*.razor.css</c> too, at which point exactly one already-written file was over the line and could not be
-/// split in the same lane: <c>Map.razor.css</c>, which was #251 item 3. Item 3 landed, the sheet is 1,452
-/// lines, and its row went with it. <b>The list is EMPTY again</b>, and the first row anybody writes will be
+/// split in the same lane: <c>Map.razor.css</c>, which was #251 item 3. Item 3 landed, the sheet came down
+/// to 1,452 lines, and its row went with it; #1166 then walked the last two <c>@keyframes</c> out to their
+/// only user and left it at <b>1,105</b>. <b>The list is EMPTY again</b>, and the first row anybody writes will be
 /// a new debt rather than an inherited one.</para>
 ///
 /// <para><b>Proven able to fail three ways</b> before it was trusted — grow a listed file past its row, push
@@ -97,8 +98,9 @@ public sealed class NoSourceFileIsTooLongTests
             // #251 item 1 taught the sweep to see razor and its stylesheets, and exactly one file was over
             // the line the moment it could be seen: Map.razor.css, at 6,613. #251 item 3 then did the lane
             // that row was written for — 642 of its 780 rule blocks moved into the seventy-six surface
-            // sheets that had been sitting there empty since item 1 — and the page's own stylesheet is 1,452
-            // lines now, so ITS ROW IS GONE, in the PR that shrank it, exactly as law 3 asks. The proof that
+            // sheets that had been sitting there empty since item 1 — and the page's own stylesheet came
+            // down to 1,452 lines (1,105 today, after #1166 moved the last two @keyframes out to their only
+            // user), so ITS ROW IS GONE, in the PR that shrank it, exactly as law 3 asks. The proof that
             // the move changed nothing a browser can see is next door in TheBundleIsTheSameCascadeTests:
             // the same rules, and no pair that could ever fight over an element changed which one wins.
 

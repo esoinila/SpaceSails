@@ -70,7 +70,7 @@ public sealed class SittingDownIsAStateTests
     private static string Seated() =>
         Source("Pages", "Map.Seated.cs") + Source("Pages", "Seating", "Seating.Seated.cs");
 
-    /// <summary>#870 · The deck view is six partials by subject now, so "the pen" a guard reads over is all
+    /// <summary>#870 · The deck view is ten partials by subject now, so "the pen" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split. Concatenated rather than
     /// narrowed to one part on purpose: the claim below is a <c>DoesNotContain</c> over the WHOLE pen, and
     /// pointing it at a single partial would be a silent weakening.</summary>
@@ -80,7 +80,7 @@ public sealed class SittingDownIsAStateTests
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
-    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// <summary>#870 · The sim page is twenty partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
         Directory.EnumerateFiles(

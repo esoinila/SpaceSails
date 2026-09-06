@@ -11,8 +11,10 @@ namespace SpaceSails.Client.Tests;
 /// <summary>
 /// #870 lane 6′a/6′b · THE PATROL KEEPS ITS OWN STATE.
 ///
-/// <para>The round is six partials of <c>Map</c> — <c>Map.Patrol.cs</c> and its <c>.Round</c>,
-/// <c>.Challenge</c>, <c>.Escort</c>, <c>.Hide</c> and <c>.Run</c> — and between them they used to hold
+/// <para>The round was six partials of <c>Map</c> when this lane opened — <c>Map.Patrol.cs</c> and its
+/// <c>.Round</c>, <c>.Challenge</c>, <c>.Escort</c>, <c>.Hide</c> and <c>.Run</c>; 6′c took <c>.Round</c>
+/// and <c>.Escort</c> away entirely (see below), so the page's half is four of them today — and between
+/// them they used to hold
 /// <b>twenty-two loose fields</b>: the guards themselves, the beat they walk, the escort's five, what the
 /// watch remembers, the kick-out's three, the Fletch wallet's three, the hide's one line, and two dev
 /// cheats. Four times the seat's five, which is why #870's 6′ ladder exists at all.</para>

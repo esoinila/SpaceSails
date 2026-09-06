@@ -60,7 +60,7 @@ public sealed class SeatsAreDrawnTests
             .OrderBy(path => path, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
-    /// <summary>#870 · The deck view is six partials by subject now, so "the pen" a guard reads over is all
+    /// <summary>#870 · The deck view is ten partials by subject now, so "the pen" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split. Concatenated rather than
     /// narrowed to one part on purpose: the claims below are <c>DoesNotContain</c> over the WHOLE pen, and
     /// pointing them at a single partial would be a silent weakening.</summary>

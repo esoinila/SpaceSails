@@ -17,7 +17,8 @@ namespace SpaceSails.Core;
 //
 // WHAT IS NOT IN THIS FILE, by law. The bible's account of the decent ship — what she carried, who
 // opened a pod, what was inside — is WRITERS' BIBLE and appears in no game text anywhere. The word for
-// what the clinic actually does never appears either (`NoGameTextNamesTheThingTests` holds both).
+// what the clinic actually does never appears either
+// (`TheOldCrewTests.NoGameTextInThisLaneNamesTheThing` holds both).
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
 
 /// <summary>#973 L5a · The pool of old shipmates, the bonds-before-play table, the postings, and every

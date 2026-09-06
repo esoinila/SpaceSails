@@ -31,14 +31,15 @@ namespace SpaceSails.Client.Tests;
 /// </list>
 ///
 /// <para><b>The scope groups are read off the compiler, not assumed.</b> #251 item 1 pinned one scope across
-/// <c>Pages/Map.razor</c> and its 76 surfaces under <c>Pages/Map/</c>, so "this sheet's scope" is a GROUP of
-/// components and not one file. That mapping is taken from the generated <c>*.rz.scp.css</c> in
+/// <c>Pages/Map.razor</c> and its 103 surfaces under <c>Pages/Map/</c> — 84, plus the 19 that <c>NavHud</c>
+/// was cut into in its turn — so "this sheet's scope" is a GROUP of components and not one file. That
+/// mapping is taken from the generated <c>*.rz.scp.css</c> in
 /// <c>obj/</c> — the same source of truth <c>TheBundleIsTheSameCascadeTests</c> checks its bundle order
 /// against — so a change to the pin re-groups this law automatically instead of quietly invalidating it.</para>
 ///
 /// <para><b>Reading the markup: loose for names, strict for stems.</b> A class counts as written if it is a
 /// word on a <c>class=</c> line or inside any string literal of a component's own sources (its
-/// <c>.razor</c>, plus every <c>partial class</c> file of the same component — this page is eighty files).
+/// <c>.razor</c>, plus every <c>partial class</c> file of the same component — this page is 227 files).
 /// That over-approximates, deliberately: over-counting names can only make this law MISS a dead rule, never
 /// invent one, and a guard that reddens on a live rule is deleted within a week rather than obeyed. But
 /// half the state classes here are ASSEMBLED —
@@ -375,7 +376,7 @@ public sealed class NoRuleIsWrittenForMarkupItCanNeverReachTests
 
     /// <summary>Scope id → every class name the components wearing that scope write. A component's sources
     /// are its own <c>.razor</c> and every <c>partial class</c> file of the same type — the Map page is one
-    /// component and eighty files, and a law that read only the <c>.razor</c> would call most of its own
+    /// component and 227 files, and a law that read only the <c>.razor</c> would call most of its own
     /// classes unwritten.</summary>
     private static IReadOnlyDictionary<string, Written> BuildByScope()
     {

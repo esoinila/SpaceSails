@@ -47,9 +47,9 @@
        .deck-offer-blurb), ::deep .map-tutorial (behind ::deep .map-scope), .pilot-banner and .ship-alert
        (behind their own state classes), .save-warming-spin (its keyframes has a second user here), and
        six card skins — the celebration, the expedition reveal, the busted card, the first-ground lesson,
-       the operating log and the table — every one of them held by the #735 family law below, which sets
-       the same max-height they set and is meant to lose to them.
-       TheBundleIsTheSameCascadeTests is what would say so if one of them moved.
+       the operating log and the table — held by the #735 family law below, which sets the same max-height
+       at the same specificity and, written LATER, is the cap in force: move a skin out and the bundle
+       appends it AFTER that law, so it starts winning. TheBundleIsTheSameCascadeTests would say so.
 
        (Written as English rather than as selectors on purpose. EveryTextReadsTests finds the #735 family
        by the FIRST place in this file where the busted card's class is followed by a comma, so a comment

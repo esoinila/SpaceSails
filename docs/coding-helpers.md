@@ -105,7 +105,7 @@ the guard can get away with — the boot sweep names nothing (it diffs a booted 
 one and takes whatever differs) and survived four lanes landing under it without a line of change.
 
 **Source-shape guards are ratchets, and each has an anti-vacuous half.** The size gate
-(`NoSourceFileIsTooLongTests`), the two host-interface member counts (28 and 21), and "no file outside
+(`NoSourceFileIsTooLongTests`), the two host-interface member counts (32 and 21), and "no file outside
 the family names its fields" are all written as a number or a list that may only come down.
 Every one of them also asserts that the world it is stated against can tell pass from fail: the sweep
 must find hundreds of files, not zero; the family files must exist at the paths it exempts; the field
@@ -138,3 +138,12 @@ more — **run it full before you push**, and never re-pin off a fast run. CI is
 runs the whole suite; the roster of what is skipped is checked in beside the tags and guarded
 against drift in both directions. Full instructions, the measured distribution and the reasoning
 behind the ten-second cut are in [docs/testing-guide.md, Appendix C](testing-guide.md).
+
+**#251's refactor phase added six more, and they are written up next door.** The pure-split proof by
+concatenation (blank lines and nothing else), the ledgers as the gate at *0 moved, 0 new, 0 gone*, the
+rule that a split lane NEVER re-pins, the static-partial-split bug class (initializers run in file read
+order, so everything declaring a static field stays in the opening file), a `@keyframes` travelling
+with its only user, and the two helpers the house now keeps so a repo path or a bench is not written
+out a seventy-ninth time — `TestTree.RepoRoot()` per assembly and `using static … CastawayBench;`. All
+six, with the commands and the evidence, are in
+[docs/testing-guide.md, Appendix E](testing-guide.md#appendix-e--structural-work-what-a-split-lane-measures-before-it-lands-251).

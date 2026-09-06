@@ -4,13 +4,14 @@ using SpaceSails.Core;
 namespace SpaceSails.Client.Pages;
 
 // Map.Npc — THE TRAFFIC, AND THE TICK THAT MOVES IT. Carved off Map.razor for #251 (motion only) and
-// split by concern at 1,376 lines; the other four partials are Map.Npc.Tasking/Dossier/Draw/Selection
-// and every one of them reads the fields declared here. This file is what a contact IS — `NpcState`, one
-// mutable client-side wrapper per scheduled hull, mirroring PlanNode's role over Core's records — and the
-// four things done to the whole sky each tick: `StepNpcs` integrates everybody who is flying by now,
-// `SweepSensors` is the honour-system visibility pass (the server enforces it from M9), `RefillTraffic`
-// keeps the owner's law that the sky must never empty, and `UpdatePrediction`/`BuildPinnedPlan` re-solve
-// the pinned contact's brake-at hypothesis when the cone has gone stale.
+// split by concern at 1,376 lines; the other five partials are Map.Npc.Tasking/Dossier/Draw/Selection and
+// #534's Map.Npc.QShip, and every one of them reads the fields declared here. This file is what a contact
+// IS — `NpcState`, one mutable client-side wrapper per scheduled hull, mirroring PlanNode's role over
+// Core's records — and the four things done to the whole sky each tick: `StepNpcs` integrates everybody
+// who is flying by now, `SweepSensors` is the honour-system visibility pass (the server enforces it from
+// M9), `RefillTraffic` keeps the owner's law that the sky must never empty, and
+// `UpdatePrediction`/`BuildPinnedPlan` re-solve the pinned contact's brake-at hypothesis when the cone has
+// gone stale.
 public partial class Map
 {
     private int _telescopeLevel;                       // MaxTracks: 1 + level, cap 4 (3 upgrades)

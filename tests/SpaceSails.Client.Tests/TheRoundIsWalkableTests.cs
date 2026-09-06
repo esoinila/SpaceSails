@@ -268,9 +268,9 @@ public sealed class TheRoundIsWalkableTests
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
-    /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
+    /// <summary>#870 · The round is five partials by subject now, so the page this guard reads is all five —
     /// concatenated in the order the one file laid them out, which is exactly the text it read before the
-    /// split. The count is asserted, so a seventh part can never go unread.</summary>
+    /// split. The count is asserted, so a sixth part can never go unread.</summary>
     private static string Patrol()
     {
         string dir = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages");

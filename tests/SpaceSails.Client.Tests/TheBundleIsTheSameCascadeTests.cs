@@ -19,7 +19,8 @@ namespace SpaceSails.Client.Tests;
 /// <para><b>Where the order comes from.</b> The Razor SDK's <c>ConcatenateCssFiles</c> writes every
 /// <c>*.rz.scp.css</c> into <c>SpaceSails.Client.styles.css</c> sorted by project-relative path, compared
 /// WITHOUT REGARD TO CASE. So <c>Pages/Map.razor.css</c> comes first (<c>'.'</c> sorts under <c>'/'</c>) and
-/// the 76 surfaces follow it alphabetically. A rule that moved out of the page's sheet therefore lands
+/// the surface sheets follow it alphabetically (76 of them on the day of the cut; 103 today, the 84 under
+/// <c>Pages/Map/</c> plus the 19 <c>NavHud</c> was cut into). A rule that moved out of the page's sheet lands
 /// LATER in the cascade than it was, and a rule that moved into an alphabetically earlier surface lands
 /// earlier than a rule that moved into a later one. That is the entire risk surface of this refactor, and
 /// it is invisible: no build error, no exception, just a colour that is now somebody else's.</para>
