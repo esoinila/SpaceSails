@@ -31,9 +31,6 @@ public sealed class TheFalseIdIsInTheDrawerTests
     private const BindingFlags Hidden =
         BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol.json")));
-
     private static string RepoRoot()
     {
         DirectoryInfo? at = new(AppContext.BaseDirectory);
@@ -52,7 +49,7 @@ public sealed class TheFalseIdIsInTheDrawerTests
     /// own roster uses (<c>Map.TheGroundsThisWorldHas</c>), asked of the scenario rather than of a list typed
     /// in here.</summary>
     private static List<string> ShippedGrounds() =>
-        [.. Sol.Value.Bodies
+        [.. TestTree.Sol.Bodies
             .Where(b => Enum.TryParse(b.Kind, ignoreCase: true, out BodyKind kind)
                         && ShuttleExcursion.IsLandableSurface(kind)
                         && !Derelict.TryParseWreckId(b.Id, out _))
@@ -335,8 +332,8 @@ public sealed class TheFalseIdIsInTheDrawerTests
             .GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", ephemeris);
 
         Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Static)!;

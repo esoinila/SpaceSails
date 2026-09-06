@@ -47,9 +47,6 @@ public sealed class TheStoriedGroundIsNotAPlanetTests
     /// <summary>docs/worldbuilding-notes.md §8: "There is ONE monolith … the word is reserved."</summary>
     private const string TheReservedWord = "monolith";
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
-
     // ── THE PREMISE ───────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>THE WORLD CAN TELL PASS FROM FAIL. The scenario really carries the storied ground, it really
@@ -60,7 +57,7 @@ public sealed class TheStoriedGroundIsNotAPlanetTests
     [Fact]
     public void ThePremise_OneStoriedGround_SmallEnoughThatTheOldTagCouldOnlySayPlanet()
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
         var storied = eph.Bodies.Where(b => Landmarks.HasNamedSite(b.Id)).Select(b => b.Id).ToList();
         Assert.Equal([Monolith.BodyId], storied);
@@ -89,7 +86,7 @@ public sealed class TheStoriedGroundIsNotAPlanetTests
     public void ThePageHandsTheGlassALandmark_AndNeverMistakesAWorldForOne()
     {
         Pages.Map map = Booted();
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
         var wrong = new List<string>();
         int landmarksSeen = 0;
@@ -124,7 +121,7 @@ public sealed class TheStoriedGroundIsNotAPlanetTests
     [Fact]
     public void TheStoriedGround_ReadsLandmark_AndNoRadiusClass()
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         CelestialBody ground = eph.Bodies.First(b => b.Id == Monolith.BodyId);
 
         Pages.Map map = Booted();
@@ -147,7 +144,7 @@ public sealed class TheStoriedGroundIsNotAPlanetTests
     [Fact]
     public void TheStoriedGround_IsGivenNoOrbitLine_EvenOnTheAutoBranch()
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         CelestialBody ground = eph.Bodies.First(b => b.Id == Monolith.BodyId);
         CelestialBody parent = eph.Bodies.First(b => b.Id == ground.ParentId);
         CelestialBody ordinary = eph.Bodies.First(
@@ -178,7 +175,7 @@ public sealed class TheStoriedGroundIsNotAPlanetTests
     [Fact]
     public void TheGlassStillNeverSpeaksTheReservedWord()
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         Pages.Map map = Booted();
         var said = new List<string>();
 
@@ -262,8 +259,8 @@ public sealed class TheStoriedGroundIsNotAPlanetTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
         Set(map, "_ship", new ShipState(Vector2d.Zero, Vector2d.Zero, 0.0));
@@ -280,16 +277,4 @@ public sealed class TheStoriedGroundIsNotAPlanetTests
          ?? throw new InvalidOperationException($"no method {method} on Map — this bench has drifted"))
         .Invoke(o, args);
 
-    private static string ScenarioPath(string file)
-    {
-        var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !System.IO.Directory.Exists(System.IO.Path.Combine(dir.FullName, "scenarios")))
-        {
-            dir = dir.Parent;
-        }
-
-        return dir is null
-            ? throw new InvalidOperationException("no scenarios/ folder above the test binary")
-            : System.IO.Path.Combine(dir.FullName, "scenarios", file);
-    }
 }

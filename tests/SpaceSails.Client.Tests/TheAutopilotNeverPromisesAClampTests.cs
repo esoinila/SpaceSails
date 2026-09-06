@@ -42,9 +42,6 @@ public sealed class TheAutopilotNeverPromisesAClampTests
     /// telling the captain to press ⚓ Dock.</summary>
     private const string TheClampPromise = "⚓ Dock";
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
-
     /// <summary>
     /// THE PREMISE. The world can tell pass from fail: sol.json really does carry μ=0 stations that are
     /// not dockable havens, which is the exact gap the old <c>Mu: &lt;= 0</c> test fell through.
@@ -52,7 +49,7 @@ public sealed class TheAutopilotNeverPromisesAClampTests
     [Fact]
     public void ThePremise_TheScenarioReallyCarriesStationsYouCannotClampOnto()
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
         var disagree = eph.Bodies
             .Where(b => b.Mu <= 0 && !DockableHavens.IsDockable(b))
@@ -77,7 +74,7 @@ public sealed class TheAutopilotNeverPromisesAClampTests
     [Fact]
     public void No_surface_promises_the_clamp_at_a_body_you_cannot_clamp_onto()
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         Assert.True(eph.Bodies.Count >= 10, $"only {eph.Bodies.Count} bodies loaded — the scan proved nothing");
 
         var offences = new List<string>();
@@ -143,8 +140,8 @@ public sealed class TheAutopilotNeverPromisesAClampTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
         Set(map, "_ship", new ShipState(Vector2d.Zero, Vector2d.Zero, 0.0));
@@ -166,16 +163,4 @@ public sealed class TheAutopilotNeverPromisesAClampTests
          ?? throw new InvalidOperationException($"no method {method} on Map — this bench has drifted"))
         .Invoke(o, args);
 
-    private static string ScenarioPath(string file)
-    {
-        var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !System.IO.Directory.Exists(System.IO.Path.Combine(dir.FullName, "scenarios")))
-        {
-            dir = dir.Parent;
-        }
-
-        return dir is null
-            ? throw new InvalidOperationException("no scenarios/ directory above the test binary")
-            : System.IO.Path.Combine(dir.FullName, "scenarios", file);
-    }
 }

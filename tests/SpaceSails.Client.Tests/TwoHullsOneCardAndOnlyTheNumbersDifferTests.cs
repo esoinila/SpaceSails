@@ -32,9 +32,6 @@ public sealed class TwoHullsOneCardAndOnlyTheNumbersDifferTests
 {
     private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol.json")));
-
     /// <summary>The captain's own range and closing speed, well inside sensor reach and well outside the
     /// boarding envelope — the pre-commit distance the whole mechanic is about.</summary>
     private const double Range = 2.0e9;
@@ -234,7 +231,7 @@ public sealed class TwoHullsOneCardAndOnlyTheNumbersDifferTests
 
         // Four hours of sim time, flown for real: the captain coasts and each hull flies her own plan.
         const int Minutes = 240;
-        var sim = new Simulator(CircularOrbitEphemeris.FromScenario(Sol.Value), TrafficSchedule.NpcTimeStep);
+        var sim = new Simulator(CircularOrbitEphemeris.FromScenario(TestTree.Sol), TrafficSchedule.NpcTimeStep);
         ShipState captain = ship;
         for (int i = 0; i < Minutes; i++)
         {
@@ -318,8 +315,8 @@ public sealed class TwoHullsOneCardAndOnlyTheNumbersDifferTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
         Set(map, "_npcSimulator", new Simulator(ephemeris, TrafficSchedule.NpcTimeStep));

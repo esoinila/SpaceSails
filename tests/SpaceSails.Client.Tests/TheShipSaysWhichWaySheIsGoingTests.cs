@@ -407,9 +407,6 @@ public sealed class TheShipSaysWhichWaySheIsGoingTests
 
     // ── DRIVING A REAL MAP ─────────────────────────────────────────────────────────────────────────────
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol = new(() =>
-        ScenarioLoader.LoadFile(Path.Combine(TestTree.RepoRoot(), "scenarios", "sol.json")));
-
     /// <summary>A live component over the shipping scenario — the shipping ephemeris, the shipping simulator,
     /// the ship laid down by the page's own <c>InitializeShipState</c>, and the REAL command buffer.</summary>
     private static Pages.Map Boot()
@@ -419,8 +416,8 @@ public sealed class TheShipSaysWhichWaySheIsGoingTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
         Set(map, "_npcSimulator", new Simulator(ephemeris, TrafficSchedule.NpcTimeStep));

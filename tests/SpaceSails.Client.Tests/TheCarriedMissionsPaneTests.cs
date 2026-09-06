@@ -48,9 +48,10 @@ public sealed class TheCarriedMissionsPaneTests
         MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>The shipping scenario, off the canonical copy at the repo root — the same JSON the client
-    /// fetches. Cached: the ephemeris is read-only here and every case wants the same sky.</summary>
-    private static readonly Lazy<ICelestialEphemeris> Sol = new(() => CircularOrbitEphemeris.FromScenario(
-        ScenarioLoader.LoadFile(Path.Combine(TestTree.RepoRoot(), "scenarios", "sol.json"))));
+    /// fetches, parsed once for the whole assembly (<see cref="TestTree.Sol"/>). The EPHEMERIS is still this
+    /// class's own: it is read-only here and every case wants the same sky.</summary>
+    private static readonly Lazy<ICelestialEphemeris> Sol =
+        new(() => CircularOrbitEphemeris.FromScenario(TestTree.Sol));
 
     private static Type Nested(string name) =>
         typeof(Pages.Map).GetNestedType(name, Hidden | BindingFlags.Static)

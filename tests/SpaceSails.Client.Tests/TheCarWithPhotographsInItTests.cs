@@ -32,9 +32,6 @@ public sealed class TheCarWithPhotographsInItTests
     private const string TheFind = "You found your CAAAR!";
     private const int TheContract = 4200;
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
-
     // ── BEAT ONE · THE SCOPE GOES HUNTING ─────────────────────────────────────────────────────────────
 
     /// <summary>The bird asks where the car is when the hunt starts — once per hunt, however many times the
@@ -62,7 +59,7 @@ public sealed class TheCarWithPhotographsInItTests
     [Fact]
     public void NoOtherIntelFix_EverAsksWhereTheCarIs()
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
         foreach (CelestialBody body in eph.Bodies.Where(b => !Derelict.IsWreckBody(b.Id)))
         {
@@ -390,7 +387,7 @@ public sealed class TheCarWithPhotographsInItTests
     private static (Pages.Map Map, Pages.Map.Quest Job) AFetchJobAtTheWreck(double metresOut, bool chip)
     {
         Pages.Map map = Booted();
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
         Vector2d wreck = eph.Position(Derelict.RoadsterBodyId, 0);
         Set(map, "_ship", new ShipState(wreck + new Vector2d(metresOut, 0), Vector2d.Zero, 0));
@@ -422,7 +419,7 @@ public sealed class TheCarWithPhotographsInItTests
     /// where a fetch's drop is anyway. Returns the berth's body id.</summary>
     private static string DockTheShipWhereTheDeskWorks(Pages.Map map)
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         CelestialBody haven = eph.Bodies.First(b => b.IsHaven && SpaceSails.Client.Rendering.HavenInterior.HasInterior(b.Id));
 
         Set(map, "_docked", true);
@@ -438,8 +435,8 @@ public sealed class TheCarWithPhotographsInItTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
         Set(map, "_ship", new ShipState(Vector2d.Zero, Vector2d.Zero, 0.0));
@@ -481,5 +478,4 @@ public sealed class TheCarWithPhotographsInItTests
         return dir?.FullName ?? throw new InvalidOperationException("no repo root above the test binary");
     }
 
-    private static string ScenarioPath(string file) => Path.Combine(RepoRoot(), "scenarios", file);
 }

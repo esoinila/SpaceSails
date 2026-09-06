@@ -220,8 +220,7 @@ public sealed class TheShipLanesAreArchivedTests
     [Fact]
     public void TheLaneSweepsAreKeptBecauseTheyPutRealContactsInTheLedger()
     {
-        ICelestialEphemeris sol = CircularOrbitEphemeris.FromScenario(
-            ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol.json")));
+        ICelestialEphemeris sol = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
         CorridorRegion lane = TradeCorridors.Regions(sol, 0)
             .Single(r => r is { AId: "earth", BId: "mars" } or { AId: "mars", BId: "earth" });

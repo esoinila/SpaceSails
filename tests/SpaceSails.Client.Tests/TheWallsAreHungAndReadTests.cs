@@ -327,24 +327,12 @@ public sealed class TheWallsAreHungAndReadTests
     // lie: hung at the wrong tiers, saying something other than what was authored, or standing close enough
     // to the lifeboat muster that [E] reads the wrong fixture.
 
-    private static string ScenarioPath(string file)
-    {
-        DirectoryInfo? dir = new(AppContext.BaseDirectory);
-        while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "scenarios")))
-        {
-            dir = dir.Parent;
-        }
-
-        return dir is null
-            ? throw new InvalidOperationException("no scenarios/ directory above the test binary")
-            : Path.Combine(dir.FullName, "scenarios", file);
-    }
-
     /// <summary>The SHIPPING scenario, not a fixture: the whole claim of the tube module is that the tier is
     /// derived from traffic somebody already wrote down, and a fixture would let the desk and the economy
-    /// drift apart.</summary>
+    /// drift apart. Parsed once for the whole assembly (<see cref="TestTree.Sol"/>); the ephemeris built
+    /// over it is this class's own.</summary>
     private static readonly Lazy<ICelestialEphemeris> Sol =
-        new(() => CircularOrbitEphemeris.FromScenario(ScenarioLoader.LoadFile(ScenarioPath("sol.json"))));
+        new(() => CircularOrbitEphemeris.FromScenario(TestTree.Sol));
 
     private static DeckPlan.ConsoleSpot? CustomsAt(DeckPlan deck)
     {

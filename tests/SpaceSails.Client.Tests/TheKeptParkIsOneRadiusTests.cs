@@ -48,9 +48,6 @@ public sealed class TheKeptParkIsOneRadiusTests
     private const BindingFlags Hidden =
         BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
-
     /// <summary>A roomy moon with a real parent, so #286's cap and the tide-stable park are both defined.</summary>
     private const string Moon = "luna";
 
@@ -64,7 +61,7 @@ public sealed class TheKeptParkIsOneRadiusTests
     [Fact]
     public void TheInsertionAndTheKeeperSizeTheirCadenceOffOneAndTheSameParkRadius()
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         CelestialBody moon = eph.Bodies.First(b => b.Id == Moon);
         CelestialBody parent = eph.Bodies.First(b => b.Id == moon.ParentId);
 
@@ -137,7 +134,7 @@ public sealed class TheKeptParkIsOneRadiusTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        Set(map, "_scenarioName", Sol.Value.Name);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", eph);
         Set(map, "_simulator", new Simulator(eph, timeStepSeconds: 1.0));
 
@@ -168,8 +165,6 @@ public sealed class TheKeptParkIsOneRadiusTests
         (o.GetType().GetMethod(method, Hidden)
          ?? throw new InvalidOperationException($"no method {method} on Map — this bench has drifted"))
         .Invoke(o, args);
-
-    private static string ScenarioPath(string file) => Path.Combine(RepoDir("scenarios"), file);
 
     private static string RepoDir(params string[] parts)
     {

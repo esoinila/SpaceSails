@@ -73,9 +73,6 @@ public sealed class TheDirectNavActionsAreEmergenciesTests
     /// <summary>A berth to be cast off from — the same world <see cref="EveryDeskBootsTests"/> uses.</summary>
     private const string ABerth = "/map?dock=selene-gate&body=luna&site=1";
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol.json")));
-
     /// <summary>Each emergency press, found in the markup by the words a player READS on it — never by the
     /// tooltip helper this file is also asserting, which would make the guard chase its own tail.</summary>
     public static TheoryData<string, string> TheEmergencyPresses => new()
@@ -241,8 +238,8 @@ public sealed class TheDirectNavActionsAreEmergenciesTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
 

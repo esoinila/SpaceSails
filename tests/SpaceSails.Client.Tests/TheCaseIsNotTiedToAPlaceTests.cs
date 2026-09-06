@@ -395,7 +395,7 @@ public sealed class TheCaseIsNotTiedToAPlaceTests
         // The real Sol ephemeris, because the BOOK names the place off the berth's own body
         // (`DockedStationName`) — a bench with no bodies in it would file every entry under "ashore" and the
         // place assertion below would be agreeing with a hole rather than with the room.
-        Set(map, "_ephemeris", CircularOrbitEphemeris.FromScenario(Sol.Value));
+        Set(map, "_ephemeris", CircularOrbitEphemeris.FromScenario(TestTree.Sol));
         Set(map, "_dockedHavenId", TheRedEye);
         Set(map, "_deckMode", true);
         Set(map, "_activeThreadId", ThreadId);
@@ -432,9 +432,6 @@ public sealed class TheCaseIsNotTiedToAPlaceTests
 
     private static IReadOnlyCollection<string> Register(Pages.Map map) =>
         (HashSet<string>)Field(map, "_workedUp")!;
-
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(Path.Combine(TestTree.RepoRoot(), "scenarios", "sol.json")));
 
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
