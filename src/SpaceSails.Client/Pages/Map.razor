@@ -196,62 +196,27 @@
                      StoryBeatCopy="@StoryBeatCopy" TellKoltNo="@TellKoltNo" TheClaimAsks="@TheClaimAsks"
                      TheDeskSays="@TheDeskSays" TheLodgingOfferIsUp="@TheLodgingOfferIsUp" />
 
-    @if (_showShipScuttlePanel)
-    {
-        <ShipScuttlePanel _cargoUnits="@_cargoUnits" _cargoValue="@_cargoValue" _credits="@_credits"
-                          _shipChargesSeconds="@_shipChargesSeconds" _shipScuttleMessage="@_shipScuttleMessage"
-                          _shipScuttleSecondKey="@_shipScuttleSecondKey"
-                          _shipScuttleWordGiven="@_shipScuttleWordGiven"
-                          AskTheCrewForTheSecondKey="@AskTheCrewForTheSecondKey" BackTheKeysOut="@BackTheKeysOut"
-                          CloseShipScuttlePanel="@CloseShipScuttlePanel" Dismiss="@Dismiss"
-                          GiveTheWordAgainstHer="@GiveTheWordAgainstHer" TurnBothKeys="@TurnBothKeys" />
-    }
-
-    @if (_wreckLook is { } look)
-    {
-        <WreckLookCard CloseWreckLook="@CloseWreckLook" Dismiss="@Dismiss" look="@look" />
-    }
-
-    @* #664 · THE SECOND REVEAL CARD USED TO BE HERE, and it is gone. The fork answered #528 twice on the
-       same day; the merge (#633) kept both and named the duplication rather than picking a winner inside a
-       conflict-bearing merge. The winner is the one above: same markup, same onerror-hide, same discipline —
-       and, unlike this one, a CADENCE and a DEFERRAL, which is the half of the owner's sentence ("as long as
-       it does not block the playing too much or be too repetitive") a client-only card could never keep. *@
-
-    @if (_showWreckChoice && _wreck is { } salvageWreck)
-    {
-        <WreckChoiceCard _wreckExamined="@_wreckExamined" _wreckReportedValue="@_wreckReported" _wreckReportedSet="@(v => _wreckReported = v)"
-                         CanFileWreckReport="@CanFileWreckReport" CloseWreckChoice="@CloseWreckChoice"
-                         Dismiss="@Dismiss" ResolveWreck="@ResolveWreck"
-                         WreckCandidateCauses="@WreckCandidateCauses" salvageWreck="@salvageWreck" />
-    }
-
-    @if (_wreckOutcome is { } salvageOutcome)
-    {
-        <WreckOutcomeCard _wreckContact="@_wreckContact" Dismiss="@Dismiss"
-                          DismissWreckOutcome="@DismissWreckOutcome" TheClauseNonAnswer="@TheClauseNonAnswer"
-                          salvageOutcome="@salvageOutcome" />
-    }
-
-    @if (_kioskCard is { } buy)
-    {
-        <KioskCard CloseKioskCard="@CloseKioskCard" Dismiss="@Dismiss" buy="@buy" />
-    }
-
-    @if (_showLiftPanel && _surface is { } liftEx)
-    {
-        <LiftPanel _liftOutcome="@_liftOutcome" CloseLiftPanel="@CloseLiftPanel" Dismiss="@Dismiss"
-                   LiftPadClear="@LiftPadClear" LiftPadDisplay="@LiftPadDisplay" LiftPadIsDark="@LiftPadIsDark"
-                   LiftPadPush="@LiftPadPush" LiftPadSaid="@LiftPadSaid" LiftPadSubmit="@LiftPadSubmit"
-                   LiftPanelLine="@LiftPanelLine" LiftStops="@LiftStops" PressLiftButton="@PressLiftButton"
-                   TheCarIsStopped="@TheCarIsStopped" liftEx="@liftEx" />
-    }
-
-    @if (_lockedDoor is { } door)
-    {
-        <LockedDoorCard _satchel="@_satchel" CloseLockedDoor="@CloseLockedDoor" Dismiss="@Dismiss"
-                        OpenSatchelAtTheDoor="@OpenSatchelAtTheDoor" door="@door" />
-    }
+    <SalvageCardRack _cargoUnits="@_cargoUnits" _cargoValue="@_cargoValue" _credits="@_credits"
+                     _kioskCard="@_kioskCard" _liftOutcome="@_liftOutcome" _lockedDoor="@_lockedDoor"
+                     _satchel="@_satchel" _shipChargesSeconds="@_shipChargesSeconds"
+                     _shipScuttleMessage="@_shipScuttleMessage" _shipScuttleSecondKey="@_shipScuttleSecondKey"
+                     _shipScuttleWordGiven="@_shipScuttleWordGiven" _showLiftPanel="@_showLiftPanel"
+                     _showShipScuttlePanel="@_showShipScuttlePanel" _showWreckChoice="@_showWreckChoice"
+                     _surface="@_surface" _wreck="@_wreck" _wreckContact="@_wreckContact"
+                     _wreckExamined="@_wreckExamined" _wreckLook="@_wreckLook" _wreckOutcome="@_wreckOutcome"
+                     _wreckReportedSet="@(v => _wreckReported = v)" _wreckReportedValue="@_wreckReported"
+                     AskTheCrewForTheSecondKey="@AskTheCrewForTheSecondKey" BackTheKeysOut="@BackTheKeysOut"
+                     CanFileWreckReport="@CanFileWreckReport" CloseKioskCard="@CloseKioskCard"
+                     CloseLiftPanel="@CloseLiftPanel" CloseLockedDoor="@CloseLockedDoor"
+                     CloseShipScuttlePanel="@CloseShipScuttlePanel" CloseWreckChoice="@CloseWreckChoice"
+                     CloseWreckLook="@CloseWreckLook" Dismiss="@Dismiss" DismissWreckOutcome="@DismissWreckOutcome"
+                     GiveTheWordAgainstHer="@GiveTheWordAgainstHer" LiftPadClear="@LiftPadClear"
+                     LiftPadDisplay="@LiftPadDisplay" LiftPadIsDark="@LiftPadIsDark" LiftPadPush="@LiftPadPush"
+                     LiftPadSaid="@LiftPadSaid" LiftPadSubmit="@LiftPadSubmit" LiftPanelLine="@LiftPanelLine"
+                     LiftStops="@LiftStops" OpenSatchelAtTheDoor="@OpenSatchelAtTheDoor"
+                     PressLiftButton="@PressLiftButton" ResolveWreck="@ResolveWreck"
+                     TheCarIsStopped="@TheCarIsStopped" TheClauseNonAnswer="@TheClauseNonAnswer"
+                     TurnBothKeys="@TurnBothKeys" WreckCandidateCauses="@WreckCandidateCauses" />
 
     @if (SeatedTable is { } tab)
     {
