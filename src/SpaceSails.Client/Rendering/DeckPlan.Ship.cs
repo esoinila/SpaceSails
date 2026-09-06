@@ -208,10 +208,16 @@ public sealed partial class DeckPlan
             // depth to the world"). Walk up and [E] pops the plate + her service history (Koski &
             // Daughters, Hull No. 77; the Victoria-I "she used to be something" beat). Kept clear of the
             // VENT PANEL (−20, −4.5) so E never grabs the wrong console. Text/art from Core Plaques.Ship.
+            //
+            // #1151 · AND WHAT WAS DONE TO IT. Owner ruling, 2026-09-06: the plate is discoverable, and the
+            // cover-up over her old name varies per hull, dealt from her seed. The card's caption is composed
+            // in Core (Plaques.BuildersPlateLore) off HER OWN record, so the bulkhead the captain looks at and
+            // the dossier the claims counter reads cannot disagree about whether she was ever renamed.
             new(ConsoleKind.ViewObject,
                 (float)ShipLayout.BuildersPlateStation.X, (float)ShipLayout.BuildersPlateStation.Y,
                 Core.Interior.Plaques.Ship.ConsoleLabel,
-                Core.Interior.Plaques.Ship.ArtUrl, Core.Interior.Plaques.Ship.Lore),
+                Core.Interior.Plaques.Ship.ArtUrl,
+                Core.Interior.Plaques.BuildersPlateLore(Core.ShipHistories.Hers)),
             new(ConsoleKind.Head, 16.25f, -6.5f, "HEAD 🚽"), // the space toilet (3D-reno Phase 3)
 
             // MED BAY (owner's Evening-wind ruling, 2026-07-18: "change one cabin into med bay where

@@ -182,28 +182,33 @@ public sealed class TheClaimIsTheSceneTests
     }
 
     /// <summary>
-    /// <b>A FINDING, RATCHETED RATHER THAN PAPERED OVER.</b> The counter reads the captain's own dossier, and
-    /// the captain's own dossier deals him <b>no former name at all</b>: <c>ShipHistories.Hers</c> is
-    /// <c>Seeded("ship")</c>, and that seed's rename count came up zero. So the refusal press two is built
-    /// around — a name she used to answer to, on the counter, refused — is a rule with nothing to exercise it
-    /// in the shipping world, and press two is one row.
+    /// <b>THE RATCHET CAME OFF, AND HERE IS THE SCENE IT WAS HOLDING.</b> Slice 1 filed
+    /// <c>HER_OWN_DOSSIER_HasNoFormerNameYet_WhichIsFiledRatherThanFixed</c> because the counter reads the
+    /// captain's own dossier and that dossier dealt him no former name — so press two was ONE row and the
+    /// refusal it is built around had nothing in the shipping world to exercise it. Owner ruling,
+    /// 2026-09-06: <i>"she gets her glory name."</i>
     ///
-    /// <para>It is left alone on purpose. Her plate's own prose says she HAD a glory name (<i>"her name lit
-    /// on every departures board from Selene Gate to the Roadstead"</i>) and #426's docblock says her past
-    /// comes off the same pools every hull is dealt from, so the two disagree — but the fix is an authored
-    /// override on <c>Hers</c>, and that would give her <c>GloryName</c>, which widens
-    /// <c>ChainOfCustody.Which</c>'s candidate set and changes what #426's worry line says about her. That is
-    /// another feature's output and another lane's call.</para>
-    ///
-    /// <para>This is the ratchet in #663's shape: the day her dossier grows a name, this goes red and
-    /// whoever did it deletes this test and gets a scene back.</para>
+    /// <para>So this is the same assertion turned the right way up: on the counter the shipping game puts
+    /// in front of the captain, at HER dossier and not a hull picked out of the generator, there are two
+    /// rows — the name she answers to, taken, and the name she used to answer to, refused.</para>
     /// </summary>
     [Fact]
-    public void HER_OWN_DOSSIER_HasNoFormerNameYet_WhichIsFiledRatherThanFixed()
+    public void HER_OWN_DOSSIER_PutsAGloryNameOnTheCounterForPressTwoToRefuse()
     {
-        Assert.Empty(ShipHistories.Hers.BareFormerNames);
-        Assert.Null(ShipHistories.Hers.GloryName);
-        Assert.Single(NebulaClaims.TheNamesOnFile("THIS SHIP", ShipHistories.Hers.BareFormerNames));
+        const string hers = "THIS SHIP";
+        Assert.NotNull(ShipHistories.Hers.GloryName);
+
+        IReadOnlyList<NebulaClaims.Ask> rows =
+            NebulaClaims.TheNamesOnFile(hers, ShipHistories.Hers.BareFormerNames);
+
+        Assert.Equal(2, rows.Count);
+        Assert.Equal(hers, rows[0].Offer);
+        Assert.Equal(ShipHistories.Hers.GloryName, rows[1].Offer);
+
+        Assert.True(NebulaClaims.TheNameIsHers(rows[0].Offer, hers));
+        Assert.False(
+            NebulaClaims.TheNameIsHers(rows[1].Offer, hers),
+            "the desk took her glory name, which is a name this hull has not answered to for two owners.");
     }
 
     /// <summary>

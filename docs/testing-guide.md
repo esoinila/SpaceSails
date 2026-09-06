@@ -1561,8 +1561,16 @@ own hull's** service record rather than an NPC's. **Walk her own deck** (no have
 the first `〰` toast of a fresh rough patch: the tremor that OPENS a storm window speaks a chain-of-custody
 line instead of the ordinary pool line — *"Something aft settles into a new shape. Koski & Daughters Orbital
 Yards (Rauma Crater, Luna) laid her down in 2341, and every owner since has trusted that."* The yard and the
-year are her **builder's plate's** (#392); the rest of her record (two owners deep, no rename) is seeded off
-the same pools every hull is dealt from.
+year are her **builder's plate's** (#392); the rest of her record (two owners deep, renamed once) is seeded
+off the same pools every hull is dealt from.
+
+**She has a glory name now** (owner ruling, 2026-09-06, #1151): her plate always said in prose that she had
+one, and her seed's rename count had come up zero, so the two disagreed. The count comes off the plate and
+the name still comes off the pools — so **all three** worries are now reachable on her own deck, including
+the one that says it: *"A frame ticks under the load. She was HALYARD once; whoever signed her last survey
+under that name is not answering the radio either."* The same name is the row the claims counter's second
+press refuses (#1151), and her builder's plate in the engine room now carries the cover-up her seed dealt
+her — *"Her name is on a plate bolted over another plate. The old bolts are a different thread."*
 
 What a tester should see, and what should never happen:
 
@@ -1570,6 +1578,9 @@ What a tester should see, and what should never happen:
   pool again. A fresh run (the storm blew over, or the caution PA announced it) may worry again.
 - **Her hull only.** A shudder in a haven bar or on a moon never says it — a station settling on its clamps
   is somebody else's paperwork.
+- **The plate never reads the old name out.** Walk to `⚜ BUILDER'S PLATE` in the engine room and press `[E]`:
+  the card says she was renamed and does not say what to. What she was called is the claims counter's
+  question, and the storm's own third worry.
 - **Nothing resolves, and nothing is charged.** No yard can inspect the weld, no dossier field says
   UNSURVEYED, no nerve pip moves, and there is no maintenance debt anywhere (the issue's optional hook is
   deliberately **not** built). If a mechanic ever offers to settle it, the beat has been broken.

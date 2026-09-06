@@ -347,8 +347,9 @@ public sealed partial class Map
     /// this uses is the one the game already models for talking to ONE named thing without shouting at the
     /// whole sky — <see cref="ActiveSensors.TightBeamMaxRangeMeters"/>, a directed point-to-point link, far
     /// shorter than the telescope's passive reach. It is measured from the ship, because the ship is what
-    /// carries the set. <b>FLAGGED for the owner:</b> if a claims call ought to cost the captain the same
-    /// exposure a laser ping does, that is a ruling this lane did not make.</para>
+    /// carries the set. <b>RULED, 2026-09-06:</b> <i>"a claims call from the captain's remote costs the same
+    /// exposure a laser ping does — the tight-beam is the tight-beam, whoever is on the other end"</i> — so
+    /// raising the counter pays through <see cref="TheBeamIsKeyed"/>, the same till the laser pays at.</para>
     ///
     /// <para>Null when no kiosk is inside it, so the switch is simply not on the handset — unlike SEND
     /// STANDING, which is live in order to refuse, because a refusal there teaches the captain what would fix
@@ -387,16 +388,26 @@ public sealed partial class Map
     /// answer so the markup asks one thing.</summary>
     private bool TheRemoteReachesAKiosk() => TheKioskTheRemoteReaches() is not null;
 
-    /// <summary>#1151 · The switch: the same counter, raised over the beam instead of walked to. The claim
-    /// state is the page's and not the fixture's, so a claim begun at a machine on a concourse is the claim
-    /// the handset picks up.</summary>
+    /// <summary>
+    /// #1151 · The switch: the same counter, raised over the beam instead of walked to. The claim state is
+    /// the page's and not the fixture's, so a claim begun at a machine on a concourse is the claim the
+    /// handset picks up.
+    ///
+    /// <para><b>And it costs.</b> Owner ruling, 2026-09-06: the beam is the beam whoever is on the other end,
+    /// so keying it at a company's machine is paid for at the same till a laser ping pays at
+    /// (<see cref="TheBeamIsKeyed"/>) — the far end is the port whose kiosk took the call, and it now knows
+    /// where the ship was when the captain lodged. Charged where the beam is actually keyed rather than at
+    /// <see cref="TheRemoteReachesAKiosk"/>, which is only the handset asking itself whether to draw a
+    /// switch; a captain is not lit up by looking at his own remote.</para>
+    /// </summary>
     private void RaiseTheClaimsDesk()
     {
-        if (!TheRemoteReachesAKiosk())
+        if (TheKioskTheRemoteReaches() is not { } farEnd)
         {
             return;
         }
 
+        TheBeamIsKeyed(ActiveSensors.Ping(farEnd, _ship.Position, SimTime));
         OpenTheCounter(ClaimHost.Kiosk);
         RaiseTheClaimsCard();
         StateHasChanged();

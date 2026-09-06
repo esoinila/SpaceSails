@@ -22,19 +22,36 @@ public static class ActiveSensors
     public const double TightBeamMaxRangeMeters = 5e10;
 
     /// <summary>
+    /// #1151 · <b>THE PRICE OF KEYING THE SET, ON ITS OWN.</b> Owner ruling, 2026-09-06: <i>"a claims call
+    /// from the captain's remote costs the same exposure a laser ping does — the tight-beam is the
+    /// tight-beam, whoever is on the other end."</i>
+    ///
+    /// <para>The exposure used to exist only as half of <see cref="LaserRange"/>'s tuple, so anything that
+    /// keyed the set WITHOUT asking for a fix — a call to a company's machine on a concourse — could only
+    /// build its own <see cref="PingEvent"/> beside it or go uncharged. It is built here now, and
+    /// <see cref="LaserRange"/> builds its price by calling this, so there is exactly ONE construction of
+    /// what a keyed beam costs and no second one to drift away from it.</para>
+    ///
+    /// <para>The event is the price, not the paying: the caller (UI) applies it — the thing on the other end
+    /// becomes "aware", and your position at the moment of the ping is knowable to it and to anyone else
+    /// watching.</para>
+    /// </summary>
+    public static PingEvent Ping(string targetId, Vector2d playerPosition, double simTime) =>
+        new(targetId, playerPosition, simTime);
+
+    /// <summary>
     /// An active laser ping against a known target's true state: exact position and velocity,
     /// zero uncertainty age as of <paramref name="simTime"/> — no range limit of its own, since a
     /// laser only gets fired at something already found (the UI restricts this to tracked
-    /// targets). The returned <see cref="PingEvent"/> is the price: the caller (UI) must apply
-    /// it — the target becomes "aware", and your position at the moment of the ping is knowable
-    /// to it and anyone else watching.
+    /// targets). The returned <see cref="PingEvent"/> is the price — <see cref="Ping"/>'s, the same
+    /// one every other user of the beam pays: the caller (UI) must apply it — the target becomes
+    /// "aware", and your position at the moment of the ping is knowable to it and anyone else watching.
     /// </summary>
     public static (Observation Observation, PingEvent Ping) LaserRange(
         string targetId, Vector2d playerPosition, Vector2d targetPosition, Vector2d targetVelocity, double simTime)
     {
         var observation = new Observation(targetId, simTime, targetPosition, targetVelocity);
-        var ping = new PingEvent(targetId, playerPosition, simTime);
-        return (observation, ping);
+        return (observation, Ping(targetId, playerPosition, simTime));
     }
 
     /// <summary>True if a tight-beam link can reach the target from here.</summary>

@@ -261,6 +261,153 @@ public class HerChainOfOwnersTests
         }
     }
 
+    // ── #1151 · HER GLORY NAME, AND THE THIRD WORRY IT UNLOCKS ───────────────────────────────────────
+
+    [Fact]
+    public void HerOwnHull_DealsTheGloryNameHerPlateClaims_OffThePoolsAndNotOutOfAnAuthorsHead()
+    {
+        // Owner ruling, 2026-09-06: "she gets her glory name." Her plate says in prose that she had one —
+        // "her name lit on every departures board from Selene Gate to the Roadstead" — and her seed's rename
+        // count had come up zero, so the plate and the record disagreed. The COUNT comes off the plate now.
+        Assert.NotNull(ShipHistories.Hers.GloryName);
+        Assert.True(ShipHistories.Hers.HasFormerNames);
+        Assert.Single(ShipHistories.Hers.FormerNames);
+
+        // …and the NAME is still dealt, not typed: a name and a fate out of the pools every other hull is
+        // dealt from. (A guard that only asked for non-null would pass on a typed-in glory name.)
+        string entry = ShipHistories.Hers.FormerNames[0];
+        Assert.Contains(Pool("FormerNamePool"), name => entry.Contains(name, StringComparison.Ordinal));
+        string fate = Pool("Fates").First(f => entry.Contains(f, StringComparison.Ordinal));
+        Assert.Equal($"ex-{ShipHistories.Hers.GloryName} ({fate})", entry);
+
+        // Nothing else about her moved. Her plate is as specific about her owners ("sold on, and sold on
+        // again") as it is about her name, and a rename may not quietly re-roll the rest of her record.
+        Assert.Equal(ShipHistories.KoskiAndDaughters, ShipHistories.Hers.Yard);
+        Assert.Equal(Interior.Plaques.ShipLaidDownYear, ShipHistories.Hers.Year);
+        Assert.Equal(2, ShipHistories.Hers.OwnersDeep);
+        Assert.True(
+            ShipHistories.Hers.OwnersDeep >= ShipHistories.Hers.FormerNames.Count,
+            "a rename is a re-registration: she cannot be fewer owners deep than the names she has worn.");
+    }
+
+    [Fact]
+    public void HerOwnHull_NowCarriesTheNameWorryToo_AndItNamesHerOwnGloryName()
+    {
+        // THE WIDENING the ratchet was filed for. Her candidate set was two lines; it is three now, and the
+        // third one says HER name — read off her record, never a pool name and never another hull's.
+        var seen = Windows.Select(w => ChainOfCustody.Which(ShipHistories.Hers, w)).Distinct().ToList();
+        Assert.Contains(ChainOfCustody.Doubt.TheSurvey, seen);
+        Assert.Contains(ChainOfCustody.Doubt.TheName, seen);
+        Assert.Contains(ChainOfCustody.Doubt.TheYard, seen);
+
+        ulong window = Windows.First(w => ChainOfCustody.Which(ShipHistories.Hers, w) == ChainOfCustody.Doubt.TheName);
+        string line = ChainOfCustody.Line(ShipHistories.Hers, window)!;
+        Assert.Contains($"She was {ShipHistories.Hers.GloryName} once", line, StringComparison.Ordinal);
+        Assert.DoesNotContain("ex-", line, StringComparison.Ordinal);
+    }
+
+    // ── #1151 · THE COVER-UP ON THE BULKHEAD ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public void TheCoverUp_IsDealtPerHull_AndBothWaysComeUpAcrossTheHullsTheGameDeals()
+    {
+        // Owner ruling, 2026-09-06: the plate stays discoverable and the METHOD varies, dealt from her seed.
+        // A deal that always answered the same way would be a house style with a switch in front of it, so
+        // both arms are asserted to occur among the hulls the generator really deals.
+        var dealt = Enumerable.Range(0, 400)
+            .Select(i => ShipHistories.HowThePlateIsHidden(ShipHistories.For($"npc-{i}")))
+            .ToList();
+
+        Assert.Contains(ShipHistories.PlateConcealment.Plastered, dealt);
+        Assert.Contains(ShipHistories.PlateConcealment.Bolted, dealt);
+        Assert.Contains(ShipHistories.PlateConcealment.None, dealt); // maiden hulls, with nothing to cover
+
+        // Deterministic (repo agreement §9).
+        foreach (string id in new[] { "npc-3", "npc-17", Interior.Plaques.Ship.Id })
+        {
+            Assert.Equal(
+                ShipHistories.HowThePlateIsHidden(ShipHistories.For(id)),
+                ShipHistories.HowThePlateIsHidden(ShipHistories.For(id)));
+        }
+    }
+
+    [Fact]
+    public void TheCoverUp_FollowsTheNameItCovers_AndAMaidenHullHasNoneAtAll()
+    {
+        // The variant is dealt off the former-name entry, so the cover and the thing it covers can never
+        // come from two different hulls: change her old name and the cover-up is re-dealt with it.
+        Assert.Equal(ShipHistories.PlateConcealment.None, ShipHistories.HowThePlateIsHidden(NeverRenamed));
+        Assert.Equal(ShipHistories.PlateConcealment.None, ShipHistories.HowThePlateIsHidden(NoChain));
+        Assert.NotEqual(ShipHistories.PlateConcealment.None, ShipHistories.HowThePlateIsHidden(FullChain));
+
+        var byName = Pool("FormerNamePool")
+            .Select(name => ShipHistories.HowThePlateIsHidden(
+                FullChain with { FormerNames = [$"ex-{name} (impounded, renamed)"] }))
+            .Distinct()
+            .ToList();
+        Assert.Equal(2, byName.Count);
+    }
+
+    [Fact]
+    public void ThePlateCard_CarriesOneCoverUpLine_ItsOwn_AndNeverTheNameUnderIt()
+    {
+        // Each arm shows its own line and only its own — the card is the captain's whole find, and two
+        // cover-ups on one bulkhead would be the plate telling him it does not know what happened to it.
+        ShipHistory plastered = FirstHullDealt(ShipHistories.PlateConcealment.Plastered);
+        ShipHistory bolted = FirstHullDealt(ShipHistories.PlateConcealment.Bolted);
+
+        string plasteredCard = Interior.Plaques.BuildersPlateLore(plastered);
+        string boltedCard = Interior.Plaques.BuildersPlateLore(bolted);
+
+        Assert.Contains(Interior.Plaques.PlateSkimmedWithFiller, plasteredCard, StringComparison.Ordinal);
+        Assert.DoesNotContain(Interior.Plaques.PlateBoltedOverAnother, plasteredCard, StringComparison.Ordinal);
+        Assert.Contains(Interior.Plaques.PlateBoltedOverAnother, boltedCard, StringComparison.Ordinal);
+        Assert.DoesNotContain(Interior.Plaques.PlateSkimmedWithFiller, boltedCard, StringComparison.Ordinal);
+
+        // The bronze itself is untouched underneath, and a hull with nothing to hide gets nothing appended.
+        Assert.StartsWith(Interior.Plaques.Ship.Lore, plasteredCard, StringComparison.Ordinal);
+        Assert.StartsWith(Interior.Plaques.Ship.Lore, boltedCard, StringComparison.Ordinal);
+        Assert.Equal(Interior.Plaques.Ship.Lore, Interior.Plaques.BuildersPlateLore(NeverRenamed));
+
+        // AND THE PLATE NEVER READS THE NAME OUT. Both lines say she had a name before this one; WHAT it was
+        // is the claims counter's second press, and a plate that answered it would spend that scene.
+        foreach (string line in new[] { Interior.Plaques.PlateSkimmedWithFiller, Interior.Plaques.PlateBoltedOverAnother })
+        {
+            foreach (string name in Pool("FormerNamePool"))
+            {
+                Assert.DoesNotContain(name, line, StringComparison.OrdinalIgnoreCase);
+            }
+
+            Assert.DoesNotContain(ShipHistories.Hers.GloryName!, line, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("monolith", line, StringComparison.OrdinalIgnoreCase); // §8's reserved word
+        }
+    }
+
+    [Fact]
+    public void HerOwnPlate_TellsTheCaptainSheWasRenamed_WithoutTellingHimTheName()
+    {
+        // The shipping case, on her own bulkhead: whichever arm her seed dealt her, the card carries it.
+        string card = Interior.Plaques.BuildersPlateLore(ShipHistories.Hers);
+        Assert.NotEqual(Interior.Plaques.Ship.Lore, card);
+        Assert.DoesNotContain(ShipHistories.Hers.GloryName!, card, StringComparison.Ordinal);
+    }
+
+    /// <summary>The first hull the shipping generator deals with this cover-up — asked of the generator so
+    /// the cards above are about hulls the game really has, and asserted to exist.</summary>
+    private static ShipHistory FirstHullDealt(ShipHistories.PlateConcealment how)
+    {
+        for (int i = 0; i < 400; i++)
+        {
+            ShipHistory hull = ShipHistories.For($"npc-{i}");
+            if (ShipHistories.HowThePlateIsHidden(hull) == how)
+            {
+                return hull;
+            }
+        }
+
+        throw new InvalidOperationException($"the generator deals no hull in four hundred a {how} plate.");
+    }
+
     private static string[] Pool(string field) =>
         (string[])(typeof(ShipHistories).GetField(field, Constants)
                    ?? throw new InvalidOperationException($"ShipHistories has no {field} pool."))

@@ -236,12 +236,68 @@ public static class ShipHistories
     /// seed fills in the rest.</b> Her yard and her year are her builder's plate's (#392) and are not
     /// rolled; her former names, how many owners deep she runs and her condition come off the same seeded
     /// pools every other hull is dealt from. No new authored content — a hull, read the way hulls are read.</para>
+    ///
+    /// <para>#1151 · <b>AND HER GLORY NAME, WHICH THE SEED HAD NOT DEALT HER.</b> Owner ruling, 2026-09-06:
+    /// <i>"she gets her glory name."</i> <c>Seeded("ship")</c> rolled a rename count of ZERO, and her plate
+    /// says the opposite in prose — <i>"her name lit on every departures board from Selene Gate to the
+    /// Roadstead"</i> — so the plate and the record disagreed, and the kiosk's second press (a former name,
+    /// on the counter, refused) had nothing in the shipping world to exercise it.</para>
+    ///
+    /// <para><b>The count comes off the plate; the name still comes off the seed.</b> Her plate claims one
+    /// glory name, so she is dealt exactly one — the one her OWN seed deals when the count is one, out of the
+    /// same pool of names and fates every other hull is dealt from. Nothing is typed: no name, no fate, no
+    /// second authored sentence. And only the names move — her owners-deep and her condition are left as her
+    /// seed dealt them, because her plate is as specific about those (<i>"sold on, and sold on again"</i>) as
+    /// it is about the name, and a rename that quietly re-rolled the rest of her record would make the plate
+    /// and the record disagree about something else instead.</para>
     /// </summary>
     public static ShipHistory Hers { get; } = Seeded(Interior.Plaques.Ship.Id) with
     {
         Yard = KoskiAndDaughters,
         Year = Interior.Plaques.ShipLaidDownYear,
+        FormerNames = Seeded(Interior.Plaques.Ship.Id, renames: 1).FormerNames,
     };
+
+    /// <summary>
+    /// #1151 · <b>HOW A HULL'S OLD NAME IS COVERED UP.</b> Owner ruling, 2026-09-06: <i>"the builder's plate
+    /// stays discoverable, but the method of concealment varies — one ship had the original plastered over,
+    /// another had the new plate bolted on top. The variant is dealt from her own seed, and it is what the
+    /// captain finds when he looks."</i>
+    ///
+    /// <para><see cref="None"/> is not a third way of hiding it: a hull that has never been renamed has
+    /// nothing on her bulkhead to hide, and the card says nothing rather than inventing a cover-up for her.</para>
+    /// </summary>
+    public enum PlateConcealment
+    {
+        /// <summary>She has never been renamed — there is no old name under anything.</summary>
+        None = 0,
+
+        /// <summary>Filler skimmed over the old plate and the bulkhead painted to match.</summary>
+        Plastered = 1,
+
+        /// <summary>A new plate bolted straight over the old one.</summary>
+        Bolted = 2,
+    }
+
+    /// <summary>
+    /// #1151 · Which cover-up this hull wears — dealt, never chosen, and dealt off HER OWN NAME: the seed is
+    /// the former-name entry the hull's own seed already dealt her, so the cover and the thing it covers can
+    /// never come from two different hulls, and an authored record (<see cref="TheOldShip"/>) is dealt one
+    /// the same way a rolled record is. Both arms come up across the hulls the game deals; neither is a
+    /// house style.
+    /// </summary>
+    public static PlateConcealment HowThePlateIsHidden(ShipHistory history)
+    {
+        ArgumentNullException.ThrowIfNull(history);
+
+        if (!history.HasFormerNames)
+        {
+            return PlateConcealment.None;
+        }
+
+        uint state = Seed(history.FormerNames[0]);
+        return Next(ref state) % 2u == 0u ? PlateConcealment.Plastered : PlateConcealment.Bolted;
+    }
 
     /// <summary>Is this the captain's own hull, keyed the way her builder's plate is keyed (#392)?</summary>
     public static bool IsHerOwnHull(string? shipId) =>
@@ -271,8 +327,11 @@ public static class ShipHistories
         return Seeded(shipId);
     }
 
-    // The seeded story every hull without an authored record is dealt.
-    private static ShipHistory Seeded(string shipId)
+    // The seeded story every hull without an authored record is dealt. `renames` is the ONE thing a caller
+    // may hand it (#1151, for the captain's own hull, whose plate says in prose how many times she has been
+    // renamed): the count is taken as given, and the names, the fates and everything after them are still
+    // dealt off the hull's own seed. Null means the count is rolled like everything else.
+    private static ShipHistory Seeded(string shipId, int? renames = null)
     {
         uint state = Seed(shipId);
 
@@ -283,7 +342,10 @@ public static class ShipHistories
         int year = 2270 + (int)(Next(ref state) % 50u);
 
         // 0..3 former names, distinct within the hull (a rename to a name she already wore is no rename).
-        int formerCount = (int)(Next(ref state) % 4u);
+        // The roll is DRAWN either way, so a hull whose count came off her plate still deals the same
+        // names, owners and condition the pools would have given her — one stream, one story.
+        int rolled = (int)(Next(ref state) % 4u);
+        int formerCount = renames ?? rolled;
         var formerNames = new List<string>(formerCount);
         var usedNames = new HashSet<int>();
         for (int i = 0; i < formerCount; i++)
