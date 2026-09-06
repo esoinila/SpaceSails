@@ -128,8 +128,9 @@ of one, which is the shape the cut was aiming for:
 `Rendering/DeckView.*` (10 files, 3,036) is the same shape one layer down: `DeckView.Frame.cs` holds
 `Draw`, which is a conductor over named passes rather than one 1,058-line method, and it has since been
 cut in its turn (`.Frame.Ground` `.Frame.Figures` `.Frame.OverTheDark`, and `.Doors` off it for #563);
-`.Hud` `.Seats` `.Inks` `.Dark` are the rest. `Rendering/DeckPlan.*` (7 files, 1,666) and
-`Rendering/HavenInterior.*` (3 files, 1,268) went the same way.
+`.Hud` `.Seats` `.Inks` `.Dark` are the rest. `Rendering/DeckPlan.*` (7 files, 1,666),
+`Rendering/HavenInterior.*` (3 files, 1,268) and `Rendering/HiveInterior.*` (5 files, 1,804 — #1164
+turned a 1,106-line `FloorDeck` into forty named passes) went the same way.
 
 ### Core
 
@@ -183,7 +184,7 @@ stays cut.
 offenders; a listed file must be at or below its written allowance; and a listed file that has fallen
 back under the line must have its row *deleted* (a list of permissions nobody revokes is how a gate
 stops being a gate). A fourth fact is the anti-vacuous half — the sweep must actually find the tree
-(200+ files; it finds 1,037), `obj/` and `bin/` must stay out, and the line must sit clear of the
+(200+ files; it finds 1,041), `obj/` and `bin/` must stay out, and the line must sit clear of the
 largest file beneath it by at least 25 lines. #251 item 1 taught it to see `*.razor` and `*.razor.css`
 as well as `*.cs`: `Map.razor` at 8,771 lines and `Map.razor.css` at 6,613 — the two files that issue
 class names FIRST — had been invisible to the one law that exists to stop a file getting that long,
@@ -195,11 +196,11 @@ behind a fingerprint of the world every boot URL builds. #251 item 1 then put on
 `Map.razor.css`, and item 3 retired it in the PR that shrank the sheet — 6,613 lines to 1,452, and to
 1,105 after #1166 walked the last two `@keyframes` out to their only user.
 
-The longest source file in the repo at `1cb7bb4c` is `Rendering/HiveInterior.cs` at **1,236 lines**,
-which is 264 lines of daylight under the line, with `Pages/Map.razor` (1,204),
-`Pages/Map.Walkers.cs` (1,161) and `Core/UndergroundComplex.Block.cs` (1,156) behind it. From here,
-law 1 is the whole gate, laws 2 and 3 are vacuously green, and the first row anybody writes will be a
-new debt rather than an inherited one.
+The longest source file in the repo at `25593360` is `Pages/Map.razor` itself at **1,204 lines**,
+which is 296 lines of daylight under the line, with `Pages/Map.Walkers.cs` (1,161) and
+`Core/UndergroundComplex.Block.cs` (1,156) behind it. From here, law 1 is the whole gate, laws 2 and 3
+are vacuously green, and the first row anybody writes will be a new debt rather than an inherited
+one.
 
 The number is not about a compiler. It is about a reader: fifteen hundred lines is roughly where
 "what is this file about?" stops having an answer.
