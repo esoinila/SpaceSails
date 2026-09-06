@@ -84,33 +84,35 @@ public static partial class UndergroundComplex
     public static bool RefugeHolds(double cx, double cy, double x, double y) =>
         Math.Abs(x - cx) <= RefugeHalfWidth && Math.Abs(y - cy) <= RefugeHalfHeight;
 
-    // ── #608 · AND WHAT DECADES DID TO IT ───────────────────────────────────────────────────────────────
+    // ── #608/#1149 · AND WHAT DECADES DID TO IT: ALMOST NOTHING ─────────────────────────────────────────
     //
     // The regulation above says what was BUILT, and it is not in question: every airless floor has a refuge
-    // and the plan still marks it. What the plan does not carry is whether the thing still works, and the
-    // owner said so in the same breath he asked for them: "their state after decades is the story. The ones
+    // and the plan still marks it. What the plan does not carry is whether the thing still works — and the
+    // owner ruled on that twice, the second time reversing the first.
+    //
+    // #608, in the same breath he asked for the refuges: "their state after decades is the story. The ones
     // that still hold are the ones somebody maintained; the ones that do not are the ones somebody stopped
-    // being paid to" — and, sharper, the warning against the version of this feature that costs nothing:
-    // "If every ADMINISTRATION floor is safe, deep ADMINISTRATION floors stop costing anything. The state of
-    // the seal is what keeps it honest."
+    // being paid to." That shipped as #1087's seeded split — a fifth holding, and a maintenance line the
+    // department either kept or lost.
     //
-    // So the room is a fact and the SEAL is a story, in three states:
+    // #1149, 2026-09-06, is the correction, and it is the world's answer rather than ours: "On a failed
+    // floor the emergency station most probably still works decades or centuries after everything else
+    // stopped — robustness and reliability were the metrics it was built to ... They almost never fail from
+    // old age; something happened, and we tell it." Safety equipment is not a service a department buys. It
+    // is a REGULATION, built to a spec written by people who assumed nobody would be maintaining it on the
+    // day it mattered, and a fire extinguisher in an abandoned office block still discharges.
     //
-    //   HOLDING · the door cycles, the room holds, and the rack still has bottles in it. This is what the
-    //             whole feature shipped as, and it is now the minority case.
-    //   EMPTY   · the door cycles and the room holds. Nothing to refill from. It is still the thing the
-    //             owner asked for — "otherwise the elevator being busy could kill employees" is answered by
-    //             a room you can wait in, not by a rack — so it buys TIME and never range.
-    //   FAILED  · the door will not cycle. It is on the plan, the tracker paints it, and it is dead.
+    // So the room is a fact, the SEAL is still a story, and all three states survive with new causes — see
+    // UndergroundComplex.Inspection.cs, which holds the whole of the new law and the reasoning for it:
+    //
+    //   HOLDING · the default, on every floor, whatever the department. Nothing is rolled for it.
+    //   EMPTY   · not decay: somebody DREW on it (#573's reservoir idiom, a visitor's footprint), rare, and
+    //             it comes back on the rack's own clock. It costs a captain TIME, never range.
+    //   FAILED  · an EVENT and never age: at most one per site, on a minority of sites, never the first
+    //             refuge a captain reaches, and told by a card with its own painting.
     //             Owner, on the fan (#604): "A refuge whose seal has failed must still paint, and must read
     //             as failed. Walking to one and finding it dead is a real beat; walking to one that was
     //             never marked is just a bad map."
-    //
-    // WHICH FLOORS KEPT THEIRS is #601's answer and not a roll: the refuge that works is on the floor whose
-    // department could still get a maintenance line approved. A captain who has learnt the livery (#605) has
-    // therefore learnt where the air is — gold and blue — which is the colour language doing real work
-    // instead of decorating, and it is knowledge earned off the lift panel before the ride rather than off a
-    // corpse afterwards.
 
     /// <summary>What a refuge's seal has done with the decades since anybody paid for it.</summary>
     public enum RefugeState
@@ -118,22 +120,13 @@ public static partial class UndergroundComplex
         /// <summary>The door cycles, the room holds, and there is air in the rack.</summary>
         Holding,
 
-        /// <summary>The door cycles and the room holds. The fill line is empty: shelter, never resupply.</summary>
+        /// <summary>The door cycles and the room holds. The rack is drawn down: somebody was here before you,
+        /// and it is coming back on its own clock.</summary>
         Empty,
 
         /// <summary>The seal went. The room is on the plan and holds nothing.</summary>
         Failed,
     }
-
-    /// <summary>#601 · The departments whose maintenance line survived — the ones whose refuge still has air
-    /// in it. Read out of <see cref="Departments"/> rather than typed as new words, so a floor's plate, its
-    /// livery and its air can never come to mean three different things.
-    ///
-    /// <para>Two, and not four. ARCHIVE and ISOLATION are just as much fine-motor work by the owner's own
-    /// test, and adding them would put working air on half of every site's dead floors — which is precisely
-    /// the "deep floors stop costing anything" he warned about in the same comment. Two of eight is a
-    /// quarter, which is often enough to be worth learning and rare enough to still be a plan.</para></summary>
-    public static readonly string[] DepartmentsThatKeptTheLine = ["ADMINISTRATION", "LABORATORIES"];
 
     /// <summary>Is a pressure refuge marked on this floor's plan? The LAW, not a count taken off a built
     /// floor — the lift panel asks it about floors it has not generated and the card asks it about the one
@@ -154,11 +147,12 @@ public static partial class UndergroundComplex
     /// instead of carrying it down through the deck plan: there is one refuge per floor, its state is decided
     /// here, and one ask is one answer.</para>
     ///
-    /// <para>The head office keeps every one of its seals, and that is the rank difference again (#411)
-    /// rather than a kindness — its livery "is still being kept up, by nobody, on a schedule", and a building
-    /// that repaints its corridors has not let its compressors go. The band nobody listed (#592) keeps none
-    /// of them for the mirror-image reason: a maintenance line is a budget code, and there is no budget code
-    /// for a floor the building refuses to admit it has.</para></summary>
+    /// <para><b>#1149 · It holds, unless something happened to it.</b> No department is consulted and no coin
+    /// is tossed over decay — the owner's ruling is that a refuge is built to a robustness spec and outlasts
+    /// the building around it. Two things can still be true of one: the site's one FAILED refuge happened
+    /// here (<see cref="FailedRefugeFloorOf"/>), or somebody drew the rack down before you got to it
+    /// (<see cref="SomebodyDrewTheRackDown"/>). Neither is age, and the order is the order of severity: a
+    /// room that will not cycle does not care what is in its bottles.</para></summary>
     public static RefugeState? StateOfTheRefugeOn(string bodyId, int level)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
@@ -166,22 +160,11 @@ public static partial class UndergroundComplex
         {
             return null;
         }
-        if (IsHeadOffice(bodyId))
+        if (FailedRefugeFloorOf(bodyId) == level)
         {
-            return RefugeState.Holding;
+            return RefugeState.Failed;
         }
-        if (!IsUnlisted(bodyId, level)
-            && Array.IndexOf(DepartmentsThatKeptTheLine, DepartmentOf(bodyId, level)) >= 0)
-        {
-            return RefugeState.Holding;
-        }
-
-        // The rest is what an unpaid invoice does over decades, and it is a coin rather than a rule because
-        // there is nothing left to read it off: the department that stopped being funded stopped keeping
-        // records too. Seeded, so a captain who learns a building learns it for good.
-        return DiceRule.Roll(DiceRule.Seed($"hive:refuge-seal:{bodyId}:{level}"), 2).Face == 1
-            ? RefugeState.Empty
-            : RefugeState.Failed;
+        return SomebodyDrewTheRackDown(bodyId, level) ? RefugeState.Empty : RefugeState.Holding;
     }
 
     /// <summary>Does the refuge on this floor hold pressure at all — the one question the suit asks. Empty
