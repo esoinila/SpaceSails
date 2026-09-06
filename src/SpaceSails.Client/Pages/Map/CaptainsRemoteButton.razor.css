@@ -1,5 +1,26 @@
-/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. It carries NO rules on purpose: #1109 already partitioned the stylesheet, and moving a rule
-   now would move it in the cascade too — this lane moves markup only, so `.captains-remote-btn` stays
-   exactly where #1109 left it and the shipped bundle does not change. */
+/* #251 · CaptainsRemoteButton's OWN RULE, moved verbatim out of Map.razor.css.
+
+   1 rule block, comment included. Nothing was retyped. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so the selector compiles to the
+   string it compiled to before the move. `.captains-remote-btn` is on this surface's markup and on no
+   other in the client, so no rule anywhere in the bundle can win or lose against it. */
+
+/* #538 · the captain's remote — a small handheld affordance on the deck HUD. It stays visible while an excursion
+   is live, because the order it carries is the one whose absence gets a captain shot.
+
+   IT SITS BOTTOM-LEFT, AND THE FIRST PLACEMENT WAS WRONG. Owner, on seeing it: "look at the sanity and health
+   meters now overlap" — and they did, because I put this at top 3.2rem, which is directly on the nerve readout
+   AND on the five condition pips beneath it. Both meters, buried by a button.
+
+   The rule was already written down forty lines up (and is still there, now that the deck-view toggle it was
+   first written for has gone): on a surface excursion the enlarged SANITY gauge owns the top-left corner, so a
+   deck control steps down and to the right — nothing buries the gauge, and the control stays plainly pressable
+   (#212 affordances-never-hide). I added a control to that corner without reading the rule that corner already
+   had; this now follows the precedent it should have followed first time. */
+.captains-remote-btn {
+    position: absolute;
+    left: 0.75rem;
+    bottom: 5.2rem;
+    z-index: calc(var(--z-desks-popups) + 30);
+    opacity: 0.92;
+}

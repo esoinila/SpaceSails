@@ -3,33 +3,59 @@
    This file was 6,613 lines: every rule for every card, panel, desk and overlay the page ever grew, in
    one place because the markup was in one place too. #251 item 1 cut the markup into 76 components under
    Pages/Map/ and left each of them a rules-free .razor.css carrying the page's own CSS scope — 'the file
-   its rules will land in'. This is the pass that landed them: 642 of 780 rule blocks moved, character for
-   character, comments included, into the sheet of the surface that renders them.
+   its rules will land in'. #1109 landed them: 642 of 780 rule blocks moved, character for character,
+   comments included, into the sheet of the surface that renders them.
 
-   WHAT IS STILL HERE, and why each kind had to be:
+   A SECOND PASS took twenty-eight more, and the interesting ones are the five that #1109's own carrier
+   comments had written off. AdriftLifeline.razor.css and StoryPlate.razor.css were empty because
+   `.map-adrift-reopen` animates `adrift-pulse` and `.story-plate` animates `story-plate-in`, and a
+   @keyframes NAME is scoped per FILE — so the rules were pinned to whichever file held the keyframes.
+   The move #1109 did not make is to take the @keyframes WITH them: both of those names have exactly one
+   user in the whole client, so both left with their user and neither file is a comment any more.
+   1,359 lines to 1,105, and 119 rule blocks to 91.
 
-     * THE HOST'S OWN SURFACES. .map-page and its measured variables, the canvas, the flow column, the
-       top stack, the perf line, the parrot's perch, the nav search box, the story plate, the seated table
-       and the adrift lifeline are markup Map.razor still renders itself.
+   WHAT IS STILL HERE, and why each of the 91 had to be. The four counts below are measured, not
+   estimated: 28 + 49 + 3 + 11 = 91.
 
-     * THE CROSS-CUTTING KIT. A rule whose class several surfaces render, where no one of them is the
-       family's namesake: the #735 overlay laws that name ten card families in one selector list, the
-       .deck-offer-* family the page shares with seven cards, .rescue-*, the .desk-layer-passthrough rules
-       that reach into the Stations desks. Filing one of these under a single surface would hand a lane
+     * THE PAGE'S OWN MARKUP — 28 blocks. .map-page and its measured variables, the canvas, the flow
+       column and the top stack, the perf line, the parrot's perch, the console quip toast, the bar
+       contact's offer rows, the two honest-wait glyphs, the illegal-heat line, the old-crew history,
+       and the corridor's clock (.vent-spine-tag, built by Map.ShipAtmosphere.cs and Map.Venting.Pumps.cs).
+       Map.razor and its partials render every one of these themselves; there is no surface to file them
+       under.
+
+     * THE CROSS-CUTTING KIT — 49 blocks. A rule whose class TWO OR MORE surfaces render, where no one of
+       them is the family's namesake: the #735 overlay laws that name eleven card families in one selector
+       list, the .deck-offer-* family the page shares with eight cards, .rescue-* (LoudPlanAlarmCard and
+       RescueOfferCard), .view-object-* (thirty-odd surfaces), .satchel-item and .table-showable
+       (SeatedDockedStrip renders them too). Filing one of these under a single surface would hand a lane
        editing that surface the power to restyle five others without knowing it.
 
-     * ANYTHING THAT WOULD HAVE CHANGED WHO WINS. Twenty-two blocks could have moved by ownership and did
-       not, because the bundle appends the surfaces AFTER this file: a rule that left here would land
-       behind one it used to come before, and where the two can both match an element at the same
-       specificity that reverses the cascade. The #735 family law is the common cause — every card's own
-       block is written above it and has to stay above it. TheBundleIsTheSameCascadeTests counts them.
+     * KEYFRAMES THAT CANNOT TRAVEL — 3 blocks. The scoped-css rewriter suffixes a keyframes NAME with the
+       scope and rewrites the `animation:` shorthands naming it — but only inside the SAME file. Move the
+       rule and leave the keyframes and the reference resolves to nothing: no build error, no test, the
+       animation simply never runs. It happened, to the alarm banner's pulse, and was caught by diffing the
+       generated bundle. A keyframes may only move where ALL its users can follow, and these three have
+       nowhere: pilot-banner-pulse is named by the banner AND by NavHud's flying step, save-warming-turn by
+       SaveLoadRack's spinner AND by the page's own boot gear, and wait-shuttle-fly's only user is
+       `.wait-shuttle`, which is the page's own markup. All three stayed — and so did every rule naming one.
 
-     * EVERY KEYFRAMES BLOCK NAMED FROM BOTH SIDES OF THE CUT. The scoped-css rewriter suffixes a
-       keyframes NAME with the scope and rewrites the `animation:` shorthands naming it — but only inside
-       the SAME file. Move the rule and leave the keyframes and the reference resolves to nothing: no
-       build error, no test, the animation simply never runs. It happened, to the alarm banner's pulse,
-       and was caught by diffing the generated bundle. pilot-banner-pulse, save-warming-turn,
-       adrift-pulse, wait-shuttle-fly and story-plate-in have users on both sides, so they all stayed.
+     * ANYTHING THAT WOULD HAVE CHANGED WHO WINS — 11 blocks. These have exactly one surface to their
+       name and still could not go, because the bundle appends the surfaces AFTER this file: a rule that
+       left here would land behind one it used to come before, and where the two can both match an element
+       at the same specificity that reverses the cascade. They are .oracle-backstory (behind
+       .deck-offer-blurb), ::deep .map-tutorial (behind ::deep .map-scope), .pilot-banner and .ship-alert
+       (behind their own state classes), .save-warming-spin (its keyframes has a second user here), and
+       six card skins — the celebration, the expedition reveal, the busted card, the first-ground lesson,
+       the operating log and the table — every one of them held by the #735 family law below, which sets
+       the same max-height they set and is meant to lose to them.
+       TheBundleIsTheSameCascadeTests is what would say so if one of them moved.
+
+       (Written as English rather than as selectors on purpose. EveryTextReadsTests finds the #735 family
+       by the FIRST place in this file where the busted card's class is followed by a comma, so a comment
+       that spells that pair anywhere above the family steals the guard's anchor and it reads a paragraph
+       instead. It did, on the first draft of this note: "the #735 family lists 9 card(s) — there were
+       ten, so this guard is reading the wrong block". A prose list is not a safe place for a selector.)
 
      * SELECTORS NO MARKUP CLAIMS — GONE, in #1110. Fifteen rules named classes that appear in no source
        file at all (.map-traffic, .map-dock, .comms-traffic-table, .map-plot-horizon, .save-scenarios,
@@ -184,10 +210,6 @@
     box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
     pointer-events: auto;
     z-index: calc(var(--z-desks-popups) + 50);
-}
-
-.oracle-card .deck-offer-giver {
-    color: #c9b6ff;
 }
 
 .oracle-backstory {
@@ -362,49 +384,6 @@
     pointer-events: auto;
 }
 
-/* #266: the adrift re-open affordance. The old strip sat at top:0.75rem behind .map-topstack (z-index
-   24) — buried under the masthead, the button a stranded captain needs occluded by the ship's own
-   nameplate (#262). It now lives at the BOTTOM centre, clear of the masthead and the toolbar, above the
-   canvas but below every modal, and viewport-clamped (#253). Not the banner's no-button zone (#236).
-
-   #293 (Lab 34): the lifeline sits in a RESERVED distress band — z-index 1340, above every non-rescue
-   overlay the state machine can raise (desk/deck pop-ups top out at 1320), just below the rescue modal
-   it opens (.rescue-backdrop, z-index 1360). z-30 merely cleared the base HUD known at #266 time; the
-   reserved band makes "nothing may bury the stranded captain's button" an INVARIANT, not an accident of
-   hand-tuned values re-checked by eye. The RescueLifeline registry + OverlayLayout law assert it in CI;
-   keep this number in sync with SpaceSails.Core.RescueLifeline.LifelineZIndex. */
-.map-adrift {
-    position: absolute;
-    bottom: 4.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: calc(100% - 1.5rem);
-    pointer-events: auto;
-    z-index: var(--z-distress-lifeline);
-}
-
-.map-adrift-reopen {
-    border: 1px solid rgba(255, 120, 120, 0.7);
-    border-radius: 999px;
-    padding: 0.45rem 1.1rem;
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: #fff;
-    background: linear-gradient(180deg, rgba(190, 40, 40, 0.96), rgba(130, 20, 20, 0.98));
-    box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.6), 0 0 1rem rgba(255, 70, 70, 0.35);
-    cursor: pointer;
-    animation: adrift-pulse 1.8s ease-in-out infinite;
-}
-
-.map-adrift-reopen:hover {
-    background: linear-gradient(180deg, rgba(220, 60, 60, 0.98), rgba(160, 30, 30, 1));
-}
-
-@keyframes adrift-pulse {
-    0%, 100% { box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.6), 0 0 0.6rem rgba(255, 70, 70, 0.3); }
-    50% { box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.6), 0 0 1.4rem rgba(255, 90, 90, 0.6); }
-}
-
 /* #266: the rescue offer modal — the piracy-pop-up family (reuses the .busted card grammar). A real
    gate: the terms are read before the hold is surrendered. */
 .rescue-backdrop {
@@ -558,53 +537,6 @@
     font-size: 0.8rem;
     font-weight: 600;
     max-width: 16rem;
-}
-
-/* #406 Nav search — a compact find-and-jump box seated on the same top-left row as the 🗺 Layers
-   toggle, just to its right, so the two map controls read as a pair. The input sits at the Layers
-   BUTTON's height (above where the Layers panel drops), and its own results drop straight down. In the
-   rare case both dropdowns are open they can overlap in the 7.5–14rem band, so the search sits a layer
-   higher (chrome+40 > the panel's +30) and is never buried. */
-.nav-search {
-    position: absolute;
-    top: var(--map-control-top);
-    left: 7.5rem;
-    width: 15rem;
-    max-width: calc(100% - 8.25rem);
-    z-index: calc(var(--z-map-chrome) + 40);
-    pointer-events: auto;
-}
-
-.nav-search-input {
-    height: var(--map-control-height);
-    background-color: rgba(33, 37, 41, 0.9);
-    color: #dee2e6;
-    border-color: #495057;
-}
-
-.nav-search-input::placeholder {
-    color: #adb5bd;
-}
-
-.nav-search-results {
-    position: absolute;
-    top: 2.15rem;
-    left: 0;
-    right: 0;
-    max-height: 60vh;
-    overflow-y: auto;
-    display: grid;
-    gap: 0.15rem;
-}
-
-/* rows wrap rather than clip — a body's flavor tail ("· 🛬 landable — shuttle range") can be long */
-.nav-search-row {
-    white-space: normal;
-    line-height: 1.15;
-}
-
-.nav-search-name {
-    font-weight: 600;
 }
 
 /* #997 wave 6 · ::deep, and the reason it reaches BOTH the shelled and the un-shelled surfaces on this one
@@ -931,21 +863,6 @@
     text-align: center;
 }
 
-/* #603 · THE SATCHEL. */
-::deep .satchel {
-    width: min(32rem, 94vw);
-    max-height: 92vh;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    padding: 1rem;
-    background: #0c1017;
-    border: 1px solid rgba(200, 170, 120, 0.35);
-    border-radius: 0.6rem;
-    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
-    cursor: default;
-}
-
 .satchel-empty { padding: 0.8rem 0; }
 
 /* #680/#686/#736 · The last act's answer, said inside the pop-up that was acted on — the one layer the
@@ -1002,133 +919,6 @@
     border-color: rgba(200, 170, 120, 0.5);
 }
 
-/* #528 · THE STORY PLATE — the non-blocking half of the reveal idiom (owner: the pop-up "should happen
-   universally … as long as it does not block the playing too much"). Bottom-left, above the deck HUD and below
-   the modals, pointer-events NONE so it can never eat a click during a fight.
-
-   #994 · "does not block the playing" was a claim about CLICKS, and the plate kept it — it has never eaten
-   one. It was not keeping it about PIXELS. Absolutely positioned at bottom 5.5rem it lay on top of whatever
-   the left column had grown into: measured at 1280x720 with a four-step plan open, plate y 465…633 against
-   Plotting panel y 520…720, i.e. 480 x 113 px of the step list and its open editor behind an opaque card for
-   the whole of StoryBeats.PlateSeconds.
-
-   It is the LAST ITEM IN .map-flowcolumn now (see Map.razor), so the two can no longer share a pixel: the
-   plate takes its own measured height off the bottom of the column and .map-hud — `flex: 1 1 auto` — gets
-   what is left, which is #992's arithmetic exactly. `margin-top: auto` is for the seven desks that raise no
-   .map-hud at all: with nothing above it to grow, the plate would otherwise ride up under the tab bar
-   instead of sitting at the foot of the window. `position: relative` keeps its z-index working from inside
-   the column, and the column makes no stacking context of its own, so the plate stacks against .map-page's
-   children exactly as it did while it was one of them. */
-/* #1037 · …AND IT GIVES, LIKE EVERYTHING ELSE IN THE COLUMN. #994 made it `flex: 0 0 auto` when it was the
-   LAST item and the only other one was the HUD; with the navigation-target panel at the foot of the column
-   too, a plate that never shrinks is a plate that pushes that panel off the bottom of the glass. Measured
-   at 390x700 with the great port's own three-line caption: the plate lays out 832 px tall (the words wrap
-   to a ~75 px column beside the art), which is 132 px more than the whole window — #735's law, on the one
-   card its gate was never pointed at. `min-height: 0` + `overflow-y: auto` is that law's own answer: the
-   card is capped by what the window has and scrolls inside itself, instead of every panel below it paying
-   for its caption. */
-::deep .story-plate {
-    position: relative;
-    align-self: flex-start;
-    flex: 0 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    margin: auto 0 5.5rem 1rem;
-    z-index: calc(var(--z-desks-popups) + 40);
-    display: flex;
-    gap: 0.6rem;
-    align-items: stretch;
-    width: min(30rem, 66vw);
-    padding: 0.5rem;
-    background: rgba(8, 11, 17, 0.92);
-    border: 1px solid rgba(255, 180, 90, 0.35);
-    border-radius: 0.5rem;
-    box-shadow: 0 0.6rem 2rem rgba(0, 0, 0, 0.55);
-    pointer-events: none;
-    animation: story-plate-in 260ms ease-out;
-}
-
-/* #1037 · the 5.5 rem was CLEARANCE FROM THE WINDOW'S OWN FOOT — the deck HUD the plate has stood above
-   since #528. With the navigation-target panel below it in the column, that clearance IS the panel, and
-   5.5 rem of nothing between them is 88 px the Plotting panel above would rather have. */
-::deep .story-plate:not(:last-child) {
-    margin-bottom: 0.5rem;
-}
-
-@keyframes story-plate-in {
-    from { opacity: 0; transform: translateY(0.5rem); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-/* #992 · THE ONE PART OF THE PLATE THAT TAKES A CLICK (owner ruling 2026-08-24: no pop-up without a way
-   out). The panel above keeps pointer-events: none — the plate has never eaten a click and must not start
-   — so exactly one child re-enables its own, which is the same "the gaps pass clicks to the canvas; each
-   child re-enables its own" idiom .map-topstack has used since #402. It sits INSIDE the plate's own box
-   rather than hanging off a corner of it: a control that overhangs its surface is a control that can be
-   pushed off the viewport edge, and this plate is already anchored 1rem from the left wall. */
-::deep .story-plate-close {
-    flex: 0 0 auto;
-    align-self: flex-start;
-    padding: 0 0.3rem;
-    color: rgba(232, 236, 244, 0.75);
-    font: 600 0.8rem/1.4 monospace;
-    background: transparent;
-    border: 1px solid rgba(255, 180, 90, 0.35);
-    border-radius: 0.25rem;
-    cursor: pointer;
-    pointer-events: auto;
-}
-
-::deep .story-plate-close:hover,
-::deep .story-plate-close:focus-visible {
-    color: #ffd9a0;
-    border-color: rgba(255, 180, 90, 0.75);
-}
-
-.story-plate-art {
-    width: 8.5rem;
-    height: 5.4rem;
-    object-fit: cover;
-    border-radius: 0.35rem;
-    background: #05070c;
-    flex: 0 0 auto;
-}
-
-.story-plate-words { min-width: 0; }
-
-.story-plate-title {
-    color: #ffd9a0;
-    font: 600 0.82rem/1.2 monospace;
-    letter-spacing: 0.03em;
-    margin-bottom: 0.25rem;
-}
-
-.story-plate-caption {
-    color: rgba(232, 236, 244, 0.92);
-    font-size: 0.78rem;
-    line-height: 1.3;
-}
-
-/* #538 · the captain's remote — a small handheld affordance on the deck HUD. It stays visible while an excursion
-   is live, because the order it carries is the one whose absence gets a captain shot.
-
-   IT SITS BOTTOM-LEFT, AND THE FIRST PLACEMENT WAS WRONG. Owner, on seeing it: "look at the sanity and health
-   meters now overlap" — and they did, because I put this at top 3.2rem, which is directly on the nerve readout
-   AND on the five condition pips beneath it. Both meters, buried by a button.
-
-   The rule was already written down forty lines up (and is still there, now that the deck-view toggle it was
-   first written for has gone): on a surface excursion the enlarged SANITY gauge owns the top-left corner, so a
-   deck control steps down and to the right — nothing buries the gauge, and the control stays plainly pressable
-   (#212 affordances-never-hide). I added a control to that corner without reading the rule that corner already
-   had; this now follows the precedent it should have followed first time. */
-.captains-remote-btn {
-    position: absolute;
-    left: 0.75rem;
-    bottom: 5.2rem;
-    z-index: calc(var(--z-desks-popups) + 30);
-    opacity: 0.92;
-}
-
 /* ── #746 · THE TABLE SCENE ───────────────────────────────────────────────────────────────────────────
    The barkeep card's family (deck-offer-card), with a cooler edge: a company canteen is not a bar, and the
    warm amber of a berth's counter would say the wrong thing about a room where everybody is on somebody
@@ -1150,33 +940,6 @@
     cursor: auto;
 }
 
-.table-card .deck-offer-giver {
-    color: #bfe0f0;
-}
-
-.table-seats {
-    color: #8fa4b8;
-    margin-bottom: 0.6rem;
-}
-
-/* #783 — the table you are sitting at, on the panel you are sitting at it through. The counter's own
-   .bar-desk-art shape (capped band, object-fit crop, so a 16:9 plate is cropped rather than squashed), as
-   its OWN class because the two pictures frame differently: everything that matters in both of these — the
-   empty chair, the boots, the glass, the papers — sits in the lower half of the frame, so the crop is pulled
-   down where the counter's sits near the middle. Sharing one class and tuning it for the desk would silently
-   re-frame the table. #782: the image is in flow ABOVE the prose and nothing is ever written over it, so
-   there is no text here that could fail to read. */
-.table-art {
-    display: block;
-    width: 100%;
-    max-height: 9.5rem;
-    object-fit: cover;
-    object-position: center 72%;
-    border-radius: 0.3rem;
-    margin: 0.3rem 0 0.5rem;
-    border: 1px solid rgba(160, 200, 220, 0.35);
-}
-
 /* #680 · THE ANSWER, INSIDE THE DIALOG. Styled like the satchel's own outcome row for the reason #680's
    guard states out loud: an unstyled answer in a styled dialog is a bug report waiting to be filed. */
 .table-outcome {
@@ -1189,19 +952,6 @@
     padding: 0.55rem 0.75rem;
     margin-bottom: 0.6rem;
     white-space: pre-wrap;
-}
-
-/* The dice, spelled out. Quiet — the sum is evidence, not the event. */
-.table-math {
-    color: #9fb4c8;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    margin-bottom: 0.6rem;
-}
-
-/* The moves wrap: five or six of them will not sit on one line in a 40rem card, and a row that overflows
-   its own card is how a control becomes unreachable on a laptop. */
-.table-actions {
-    flex-wrap: wrap;
 }
 
 .table-showables {
@@ -1269,10 +1019,6 @@
    so it takes the family cap instead. */
 ::deep .deck-offer-card {
     max-height: calc(100vh - 11rem);
-}
-
-::deep .deck-offer-card.table-card {
-    max-height: min(92vh, 100%);
 }
 
 /* THE ACTION ROW, PINNED. Sticky rather than a flex footer because these cards have no footer element to

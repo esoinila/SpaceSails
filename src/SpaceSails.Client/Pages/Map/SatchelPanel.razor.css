@@ -1,6 +1,7 @@
 ﻿/* #251 item 3 · SatchelPanel's OWN RULES, moved verbatim out of Map.razor.css.
 
-   59 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   60 rule block(s) — fifty-nine from #1109, and the satchel's own `::deep .satchel` from #251's
+   second pass — in the order Map.razor.css wrote them. Nothing here was retyped: this file
    is the same characters, in the same order, under a different name. The scope is still the PAGE's
    (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
    exactly the string it compiled to before the move and matches exactly the elements it matched.
@@ -36,6 +37,21 @@
    the distress lifeline. The pocket may cover a flavour card; it may never cover the rescue button. */
 .satchel-backdrop {
     z-index: calc(var(--z-desks-popups) + 130);
+}
+
+/* #603 · THE SATCHEL. */
+::deep .satchel {
+    width: min(32rem, 94vw);
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1rem;
+    background: #0c1017;
+    border: 1px solid rgba(200, 170, 120, 0.35);
+    border-radius: 0.6rem;
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
+    cursor: default;
 }
 
 .satchel-sub, .satchel-empty {
