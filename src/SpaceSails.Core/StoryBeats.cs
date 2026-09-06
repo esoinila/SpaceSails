@@ -123,6 +123,12 @@ public static class StoryBeats
         /// because the cadence is once per subject and the subject of this moment is a person — two women is
         /// two moments; the same woman twice is not one.</summary>
         WalkIn,
+
+        /// <summary>#1149 · THE ONE REFUGE THAT DID NOT HOLD. A pressure refuge, on the plan, marked on the
+        /// fan, and dead — and the room says why. The subject is the SITE (<c>ex.Stop.Body.Id</c>): a
+        /// building has at most one of these and it is that building's story, so a second moon's dead refuge
+        /// is a second moment and not a repeat.</summary>
+        RefugeFailed,
     }
 
     /// <summary>How often a beat is allowed to speak.</summary>
@@ -207,8 +213,12 @@ public static class StoryBeats
         // about the captain. A second KAAMOS shard is a different painting and different words; a second
         // moon's buried door is a different moon. OnceEver would show one and silently swallow the rest,
         // which is the exact failure the arrival tube was written to stop.
+        // #1149 · …and the refuge that failed with them, for the same clause exactly: it is about a PLACE.
+        // A site carries at most one, so once per subject IS once per building — and OnceEver would show the
+        // first one a captain ever walked into and silently swallow every other site's.
         Beat.KaamosShardFound or Beat.NebulaShardFound or Beat.OutpostEffectsRead
-            or Beat.SecretLabDoorFound or Beat.TheDormantThingWakes => Cadence.OncePerSubject,
+            or Beat.SecretLabDoorFound or Beat.TheDormantThingWakes
+            or Beat.RefugeFailed => Cadence.OncePerSubject,
 
         // #973 L5b · …and the walk-in with them, for the same clause and one more. It is about a PERSON, and
         // a person who has already crossed a room to ask you for something does not do it again — the ask is
@@ -444,6 +454,9 @@ public static class StoryBeats
         Beat.BerthGreatPort => ArrivalTube.ArtFile(ArrivalTube.Tier.GreatPort),
         Beat.BerthWorkingBerth => ArrivalTube.ArtFile(ArrivalTube.Tier.WorkingBerth),
         Beat.BerthOutpost => ArrivalTube.ArtFile(ArrivalTube.Tier.Outpost),
+        // #1149 · One canvas for every failed refuge in the game, and fixed rather than keyed by the site:
+        // what the picture shows is not a moon, it is a room and what was done to its door.
+        Beat.RefugeFailed => "art/refuge-failed.jpg",
 
         _ => PlateOf(beat, subject)?.ArtFile ?? "",
     };
@@ -470,6 +483,8 @@ public static class StoryBeats
         Beat.BerthGreatPort => ArrivalTube.Title(ArrivalTube.Tier.GreatPort),
         Beat.BerthWorkingBerth => ArrivalTube.Title(ArrivalTube.Tier.WorkingBerth),
         Beat.BerthOutpost => ArrivalTube.Title(ArrivalTube.Tier.Outpost),
+        // #1149 · Authored canon (2026-09-06), verbatim, behind the refuge family's own glyph.
+        Beat.RefugeFailed => "🫁 THE REFUGE THAT FAILED",
 
         // #664 · The one adopted beat whose stamp names its subject: "🕷 DEEP HOLD — IT OPENS BOTH WAYS". The
         // two halves are joined in NestPlates so they cannot drift apart in two files, exactly as the after-
@@ -557,6 +572,15 @@ public static class StoryBeats
                 "Forty years, and a pocket of her atmosphere was still shut in with something that would burn. " +
                 "The light of it comes down the spine ahead of the heat, and every hatch anybody left open is a " +
                 "road it already knows.",
+
+            // #1149 · Authored canon (2026-09-06), verbatim and entire. Three flat observations in the order
+            // a captain standing in the doorway would make them, and the last one is the only verdict the
+            // card is allowed: what did NOT happen. It never says what came through, it never names the
+            // inspector, and it never says which way anybody went afterwards — the Scully law, at the one
+            // door in the building where the temptation to explain is worst.
+            Beat.RefugeFailed =>
+                "The rack is full; nobody ever drew on it. The seal was cut from the inside, cleanly, and " +
+                "closed again from the outside. It did not fail from age.",
 
             // #664 · The adopted eleven read their caption off the same Core plate their title and their
             // painting come from. Not one word of these was retyped here: `KaamosLore.PlateFor` and the nine

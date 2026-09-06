@@ -4,7 +4,7 @@ using System.Collections.Generic;
 namespace SpaceSails.Core;
 
 /// <summary>
-/// #1074/#1063 · <b>WHAT FIVE PAPERS ARE, READ AWAY FROM THE ROOM THEY CAME OUT OF.</b>
+/// #1074/#1063/#1149 · <b>WHAT SIX PAPERS ARE, READ AWAY FROM THE ROOM THEY CAME OUT OF.</b>
 ///
 /// <para>Every paper in this game is anonymous by design and is titled by a seeded roll off its find id
 /// (<see cref="FieldClue.Title"/>, #613) — which is right for the six generic forms and wrong for the five
@@ -19,23 +19,24 @@ namespace SpaceSails.Core;
 /// instruction, and the reader does the rest. That is the same discipline the papers themselves keep in
 /// <see cref="Burial"/>, <see cref="StopOrder"/> and <see cref="MoneyTrail"/>.</para>
 ///
-/// <para><b>CANON.</b> All ten strings are authored in #1074's canon pass of 2026-09-03 and lifted character
-/// for character. Nothing here is composed, and there is no eleventh string: a paper this arc has not
-/// authored a head for keeps the seeded one it has always had.</para>
+/// <para><b>CANON.</b> All twelve strings are authored — ten in #1074's canon pass of 2026-09-03, the
+/// refuge's two in #1149's of 2026-09-06 — and lifted character for character. Nothing here is composed, and
+/// there is no thirteenth string: a paper no arc has authored a head for keeps the seeded one it has always
+/// had.</para>
 ///
-/// <para><b>WHY A TABLE OF ITS OWN.</b> The five papers come from three different beats and three different
+/// <para><b>WHY A TABLE OF ITS OWN.</b> The six papers come from four different beats and three different
 /// types, and each of those types already ships a canon sweep that counts its own strings — a head folded
 /// into <see cref="Burial.AllProse"/> would be counted as one of the burial's own documents, which it is
-/// not. What joins these ten is the SEAM they are read through and not the beat that dealt them, so they
+/// not. What joins these twelve is the SEAM they are read through and not the beat that dealt them, so they
 /// are listed where that seam can find them. Which find id is which paper is the building's question and
 /// is answered by <see cref="UndergroundComplex.AuthoredPaperOf"/>, beside the room designations that
 /// settle it.</para>
 /// </summary>
 public static class PaperHeads
 {
-    /// <summary>Which authored paper this is. Five named papers rather than a list index, for
-    /// <see cref="MoneyTrail.Item"/>'s reason: a caller is choosing between five THINGS somebody wrote and
-    /// not between five positions in an array somebody may reorder.</summary>
+    /// <summary>Which authored paper this is. Named papers rather than a list index, for
+    /// <see cref="MoneyTrail.Item"/>'s reason: a caller is choosing between THINGS somebody wrote and not
+    /// between positions in an array somebody may reorder.</summary>
     public enum Paper
     {
         /// <summary>#1063 · The plant's maintenance ledger, on a ground somebody filled in.</summary>
@@ -52,6 +53,12 @@ public static class PaperHeads
 
         /// <summary>#1074 beat 3 · The site watch's line item.</summary>
         Rota,
+
+        /// <summary>#1149 · The inspection tag on a pressure refuge. The one paper in this table that is not
+        /// evidence of anything, which is exactly why it belongs in it: every refuge in the building carries
+        /// one, and the reader learns the form by heart before they ever meet the one with a line too
+        /// many.</summary>
+        InspectionTag,
     }
 
     // ── THE MAINTENANCE LEDGER (#1063) ──────────────────────────────────────────────────────────────────
@@ -107,6 +114,22 @@ public static class PaperHeads
     /// because it is the word the whole item turns on.</summary>
     public const string RotaDocument = "Two hands, continuous, charged to Preservation.";
 
+    // ── THE INSPECTION TAG (#1149) ──────────────────────────────────────────────────────────────────────
+
+    /// <summary>#1149 · What the tag is called. Authored (canon, 2026-09-06), verbatim. <b>No count in the
+    /// title</b>, unlike its two clerical siblings, and that is the whole difference between them: a ledger
+    /// and a valve-book are read by counting citations, and this one is read by noticing that nobody signed
+    /// it. A title saying <i>two entries</i> would be the book pointing at the number, which on this paper
+    /// is not where the tell is.</summary>
+    public const string TagTitle = "An inspection tag";
+
+    /// <summary>#1149 · …and what is on it: <b>the paper's own second entry, set down without its date</b>.
+    /// Not a description of the tag — a description would be an eleventh authored string, and this table's
+    /// oldest law is that it invents none. The entry IS what is on the page, and read in the sleeve away
+    /// from the room it does the same work it does on the valve: it states the house style, and the house
+    /// style is that nobody's name goes on anything.</summary>
+    public const string TagDocument = UndergroundComplex.InspectionTagEntry;
+
     // ── THE TWO QUESTIONS THE SEAM ASKS ─────────────────────────────────────────────────────────────────
 
     /// <summary>What this paper is called, and the one place any caller may get it from. There is no default
@@ -119,6 +142,7 @@ public static class PaperHeads
         Paper.Pour => PourTitle,
         Paper.Rail => RailTitle,
         Paper.Rota => RotaTitle,
+        Paper.InspectionTag => TagTitle,
         _ => throw new ArgumentOutOfRangeException(nameof(paper)),
     };
 
@@ -134,11 +158,12 @@ public static class PaperHeads
         Paper.Pour => PourDocument,
         Paper.Rail => RailDocument,
         Paper.Rota => RotaDocument,
+        Paper.InspectionTag => TagDocument,
         _ => throw new ArgumentOutOfRangeException(nameof(paper)),
     };
 
-    /// <summary>Every player-facing string this table publishes — ten, and they are the ten the canon pass
-    /// authored. The same <c>AllProse</c> discipline every prose-bearing type in Core keeps, and the list
+    /// <summary>Every player-facing string this table publishes — twelve now (#1149 added the tag's two),
+    /// and they are the ones the canon passes authored. The same <c>AllProse</c> discipline every prose-bearing type in Core keeps, and the list
     /// the reserved-word sweep and the no-eleventh-string sweep both walk.</summary>
     public static IEnumerable<string> AllProse()
     {
@@ -152,11 +177,16 @@ public static class PaperHeads
         yield return RailDocument;
         yield return RotaTitle;
         yield return RotaDocument;
+        yield return TagTitle;
+        yield return TagDocument;
     }
 
-    /// <summary>The five, in the order the arc dealt them. A private-shaped constant published for the
+    /// <summary>The six, in the order the arcs dealt them. A private-shaped constant published for the
     /// sweeps, which is the same arrangement <c>UndergroundComplex.TheItems</c> keeps: an
     /// <c>Enum.GetValues</c> on every row of every satchel draw would allocate for nothing.</summary>
     public static readonly Paper[] All =
-        [Paper.MaintenanceLedger, Paper.ValveBook, Paper.Pour, Paper.Rail, Paper.Rota];
+    [
+        Paper.MaintenanceLedger, Paper.ValveBook, Paper.Pour, Paper.Rail, Paper.Rota,
+        Paper.InspectionTag,
+    ];
 }

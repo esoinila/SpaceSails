@@ -71,6 +71,17 @@ public static partial class UndergroundComplex
             return PaperHeads.Paper.ValveBook;
         }
 
+        // #1149 · …and the inspection tag, which no room designates: it hangs on the valve inside the
+        // pressure refuge, and a refuge is not one of the floor's rooms — CarveRefuges takes it OUT of the
+        // list before the plan publishes it. So it answers on the reserved index RefugeTagRoom, which is
+        // negative and therefore an index no floor's room list can ever reach: it cannot collide with any of
+        // the five above however deep a building is dug, and every ordinary room still answers exactly what
+        // it answered before.
+        if (roomIndex == RefugeTagRoom && RefugeOnThePlan(bodyId, level))
+        {
+            return PaperHeads.Paper.InspectionTag;
+        }
+
         return MoneyTrailPaperIn(bodyId, level, roomIndex) switch
         {
             MoneyTrail.Item.Pour => PaperHeads.Paper.Pour,

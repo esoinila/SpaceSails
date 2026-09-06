@@ -199,10 +199,26 @@ public sealed class TheSealOnTheRefugeTests
                     break;
 
                 case UndergroundComplex.RefugeState.Empty:
-                    Assert.True(Math.Abs(air - Start) < 1e-6,
-                        $"{body} B{-level}: an empty refuge moved the tank by {air - Start:F1} s. It holds "
-                        + "pressure and it has nothing to give — the drain stops and the gauge does not "
-                        + "climb.");
+                    // #1149 · THIS ASSERTION USED TO BE `air == Start`, and that was #1087's mechanic: an
+                    // empty rack meant a department that stopped being funded, so there was nothing behind
+                    // the fill line and never would be. Under the owner's ruling an empty rack is a
+                    // FOOTPRINT — the cracker is fine, somebody drew it right down — so it gives the air
+                    // back on its own clock, and the clock is the price.
+                    //
+                    // The number is the arithmetic and not a wish: the reservoir starts at nothing, so
+                    // every frame the rack makes ProductionPerSecond and the transfer moves all of it,
+                    // which is thirty seconds × 2 = 60 s of tank. Pinned as a WINDOW round that, with the
+                    // maintained rack's own gain as the ceiling — a build where the empty one fills like a
+                    // full one is exactly as red as one where it fills not at all.
+                    double madeByTheCracker = 30 * SurfaceShelter.ProductionPerSecond;
+                    Assert.True(Math.Abs(air - Start - madeByTheCracker) < 1.0,
+                        $"{body} B{-level}: thirty seconds in a drawn-down refuge put back {air - Start:F1} "
+                        + $"s, and the cracker makes {madeByTheCracker:F0}. The rack is not a tap and it is "
+                        + "not a wall — it is a machine, running at its own rate, giving back what a "
+                        + "stranger took.");
+                    Assert.True(air - Start < SurfaceShelter.TransferPerSecond * 30,
+                        $"{body} B{-level}: the drawn-down rack filled at the maintained rack's rate. The "
+                        + "reservoir is what a captain buys range with, and this one has not got one.");
                     break;
 
                 default:
@@ -281,6 +297,148 @@ public sealed class TheSealOnTheRefugeTests
         }
     }
 
+    // ── (d) #1149 · THE ONE THAT FAILED, AND THE PAPER ON EVERY VALVE ───────────────────────────────────
+
+    [Fact]
+    public void WalkingIntoTheRefugeThatFailedRaisesTheCardWithItsPainting()
+    {
+        // Owner, 2026-09-06: "If for dramatic suspense we need one that does not work, that is narrated,
+        // with a gen-AI image: something scary or weird happened to the shelter." The card IS the telling
+        // (#761), so the assertion is on the card and on all three things it puts on the screen.
+        (string body, int level) = AFloorWhoseRefugeIs(UndergroundComplex.RefugeState.Failed);
+        Pages.Map map = StandingInTheRefugeOn(body, level);
+        object ex = Get(map, "_surface")!;
+
+        Assert.Null(FieldOn(map, "_storyCard"));
+        Invoke(map, "StepSuitAir", 1.0);
+
+        object? card = FieldOn(map, "_storyCard");
+        Assert.True(card is not null,
+            $"{body} B{-level}: the captain is standing in the refuge that failed and no card went up. The "
+            + "room holds nothing, says nothing and is on the plan — without the card the whole beat is a "
+            + "walk to a locked door.");
+
+        var told = ((StoryBeats.Beat Beat, string? Subject, string? Outcome))card!;
+        Assert.Equal(StoryBeats.Beat.RefugeFailed, told.Beat);
+        Assert.Equal(body, told.Subject);
+
+        // Nothing is appended to it. #736's outcome row is for a moment that SETTLED something — a fee, a
+        // count, a receipt — and this one settles nothing: the room is what it is and the card may not do
+        // arithmetic over it.
+        Assert.Null(told.Outcome);
+
+        // The copy the shipped card actually renders, off the component's own seam.
+        var copy = ((string Title, string Art, string Caption))Invoke(
+            map, "StoryBeatCopy", StoryBeats.Beat.RefugeFailed, body)!;
+        Assert.Equal("art/refuge-failed.jpg", copy.Art);
+        Assert.Contains("THE REFUGE THAT FAILED", copy.Title, StringComparison.Ordinal);
+        Assert.Equal(
+            "The rack is full; nobody ever drew on it. The seal was cut from the inside, cleanly, and "
+            + "closed again from the outside. It did not fail from age.",
+            copy.Caption);
+
+        // …and the painting is on disk under the name the card asks for, because a beat that names a canvas
+        // nobody painted degrades to a title over an empty box and nothing on screen says why.
+        Assert.True(System.IO.File.Exists(System.IO.Path.Combine(ArtRoot, "refuge-failed.jpg")),
+            "the card names art/refuge-failed.jpg and the folder has not got it.");
+
+        // ONCE. The captain steps out and steps back in — the door line re-arms, the card does not.
+        SetOn(ex, "RefugeBreathNoted", false);
+        Set(map, "_storyCard", null);
+        Invoke(map, "StepSuitAir", 1.0);
+        Assert.Null(FieldOn(map, "_storyCard"));
+    }
+
+    [Fact]
+    public void AWorkingRefugeFillsTheTankAndSaysNothingAboutIt()
+    {
+        // The other half, and the half that makes the one above mean anything: the ordinary case — which is
+        // now four refuges in five — is a room that works, and a working room is not a story. A build that
+        // raised the card in every refuge would pass the guard above and would have destroyed the feature.
+        (string body, int level) = AFloorWhoseRefugeIs(UndergroundComplex.RefugeState.Holding);
+        Pages.Map map = StandingInTheRefugeOn(body, level);
+        object ex = Get(map, "_surface")!;
+
+        SetOn(ex, "AirSeconds", 300.0);
+        for (int frame = 0; frame < 10; frame++)
+        {
+            Invoke(map, "StepSuitAir", 1.0);
+        }
+
+        Assert.True((double)GetOn(ex, "AirSeconds")! > 300.0,
+            $"{body} B{-level}: the maintained rack put nothing back — this bench is not in a working "
+            + "refuge and proves nothing about the silence below.");
+        Assert.Null(FieldOn(map, "_storyCard"));
+        Assert.Null(FieldOn(map, "_deferredBeat"));
+    }
+
+    [Fact]
+    public void EveryRefugeHandsOverItsInspectionTagOnceAndTheSleeveKnowsWhatItIs()
+    {
+        // #1149 · The paper is on EVERY refuge, whatever its seal, because a tag that appeared only on the
+        // interesting room would be the game pointing at the interesting room. All three states are walked
+        // for that reason, and the assertion is the same in all three.
+        foreach (UndergroundComplex.RefugeState state in Enum.GetValues<UndergroundComplex.RefugeState>())
+        {
+            (string body, int level) = AFloorWhoseRefugeIs(state);
+            Pages.Map map = StandingInTheRefugeOn(body, level);
+            object ex = Get(map, "_surface")!;
+
+            var before = (IReadOnlyList<Satchel.Item>)Get(map, "_satchel")!;
+            Invoke(map, "HiveRefugeInteract");
+            var after = (IReadOnlyList<Satchel.Item>)Get(map, "_satchel")!;
+
+            Assert.True(after.Count == before.Count + 1,
+                $"{body} B{-level} ({state}): the press at the rack took {after.Count - before.Count} "
+                + "thing(s) out of the room. Every refuge in this building carries an inspection tag.");
+
+            Satchel.Item tag = after[^1];
+            Assert.Equal(Satchel.Kind.Paper, tag.Kind);
+            Assert.Equal(
+                UndergroundComplex.FindId(body, level, UndergroundComplex.RefugeTagRoom), tag.Id);
+
+            // The sleeve names it off the same table the other five authored papers are named off — the
+            // whole reason the tag rides a room index instead of an id of its own.
+            Assert.Equal("An inspection tag", FieldClue.Title(tag.Id));
+            Assert.Equal(
+                "Refuge inspected. Rack full, seals within tolerance. No signature — none required.",
+                FieldClue.Document(tag.Id));
+
+            // ONCE, and the register that says so is the durable one — so it survives the flight home in
+            // exactly the way an emptied room does.
+            Invoke(map, "HiveRefugeInteract");
+            Assert.Equal(after.Count, ((IReadOnlyList<Satchel.Item>)Get(map, "_satchel")!).Count);
+
+            var turned = (HashSet<string>)Get(map, "_roomsTurnedOver")!;
+            Assert.Contains(
+                KeepOrLeave.RoomKey(body, level, UndergroundComplex.RefugeTagRoom), turned);
+
+            // …and the press that follows is the rack's own, not a second helping of paper: on a room that
+            // holds it reads the gauge, and on the one that failed it says the door will not cycle.
+            Assert.Equal(level, (int)GetOn(ex, "Floor")!);
+        }
+    }
+
+    /// <summary>Where the paintings live, from the test binary.</summary>
+    private static string ArtRoot
+    {
+        get
+        {
+            string? dir = AppContext.BaseDirectory;
+            while (dir is not null)
+            {
+                string art = System.IO.Path.Combine(
+                    dir, "src", "SpaceSails.Client", "wwwroot", "art");
+                if (System.IO.Directory.Exists(art))
+                {
+                    return art;
+                }
+                dir = System.IO.Path.GetDirectoryName(dir);
+            }
+            throw new System.IO.DirectoryNotFoundException("Could not find wwwroot/art above the tests.");
+        }
+    }
+
     // ── PLUMBING ────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>A live component standing INSIDE the refuge on a real floor of a real site. The room is the
@@ -327,6 +485,13 @@ public sealed class TheSealOnTheRefugeTests
             + "they are not in it — this bench is standing somewhere else.");
         return map;
     }
+
+    /// <summary>A private FIELD by name, even when it is holding null — which <see cref="Get"/> cannot do,
+    /// because its <c>?.</c> falls through to the property lookup the moment the field's value is null. A
+    /// card that has not gone up is exactly that case, and it is the case the guard is about.</summary>
+    private static object? FieldOn(object o, string name) =>
+        (o.GetType().GetField(name, Hidden)
+         ?? throw new InvalidOperationException($"the component has no field `{name}`.")).GetValue(o);
 
     private static object? Get(object o, string member) =>
         o.GetType().GetField(member, Hidden)?.GetValue(o)

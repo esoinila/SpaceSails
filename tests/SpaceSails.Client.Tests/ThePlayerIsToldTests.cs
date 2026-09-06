@@ -354,6 +354,15 @@ public sealed class ThePlayerIsToldTests
         new("the port has your name — the castaway who is standing on their concourse",
             Surface.RaisedCard, "Map.ShipScuttleBoard.cs", "SheGoesWithoutHim",
             "_shipEpitaph = new ShipEpitaph("),
+
+        // #1149 · Owner: "If for dramatic suspense we need one that does not work, that is narrated, with a
+        // gen-AI image: something scary or weird happened to the shelter." A refuge that will not cycle is
+        // the one room in the building a captain may have crossed a dead floor on a half tank to reach, and
+        // the CARD is the whole telling — the pulse at the door says what the room is doing and the card
+        // says what the room turns out to be.
+        new("the refuge on the plan is dead, and you are standing in it",
+            Surface.RaisedCard, "Map.Surface.Tank.cs", "StepSuitAir",
+            "RaiseStoryBeat(StoryBeats.Beat.RefugeFailed, ex.Stop.Body.Id);"),
     ];
 
     /// <summary>

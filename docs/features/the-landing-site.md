@@ -1412,46 +1412,69 @@ is the standing lesson that a reachability test is only as honest as its endpoin
 straight line. Every one of these was watched go **red** on a deliberately broken generator before it
 shipped.)*
 
-13.12a **The room is a fact; the seal is a story** (#608). Owner, in the same comment that asked for the
-refuges: *"their state after decades is the story. The ones that still hold are the ones somebody maintained;
-the ones that do not are the ones somebody stopped being paid to"* — and the warning that makes it worth
-building: *"If every ADMINISTRATION floor is safe, deep ADMINISTRATION floors stop costing anything. The state
-of the seal is what keeps it honest."* So every airless floor still has its refuge (13.12 is untouched) and
-`UndergroundComplex.StateOfTheRefugeOn` decides what the decades did to it. Measured over 815 dead floors of
-100 sites:
+13.12a **The room is a fact; the seal is a story — and it almost never fails from age** (#608 · #1149).
+Owner ruling 2026-09-06, reversing the seeded split #1087 shipped: *"emergency air stations are built as part
+of standard safety rules — like bomb shelters in every big enough house in Finland, fire extinguishers and
+cabin evacuation cards on a ship — built and monitored to exist by inspectors ... On a failed floor the
+emergency station most probably still works decades or centuries after everything else stopped — robustness
+and reliability were the metrics it was built to ... They almost never fail from old age; something happened,
+and we tell it."* So every airless floor still has its refuge (13.12 is untouched) and
+`UndergroundComplex.StateOfTheRefugeOn` now answers HOLDING unless something *happened* to the room. Measured
+over 816 dead floors of 100 sites:
 
 | seal | what happens at the door | share |
 | --- | --- | --- |
-| **HOLDING** | the door cycles, the rack has bottles, the tank fills | 21.2 % |
-| **EMPTY** | the door cycles and the room holds; nothing to fill from | 38.5 % |
-| **FAILED** | the seal went. On the plan, on the tracker, and dead | 40.2 % |
+| **HOLDING** | the door cycles, the rack has bottles, the tank fills | 80.9 % |
+| **EMPTY** | the door cycles, the rack was drawn down by a visitor, the cracker gives it back | 16.3 % |
+| **FAILED** | the seal went, and not from age. On the plan, on the tracker, and dead | 2.8 % |
 
-- **Which floors kept theirs is #601's answer, not a roll.** The departments whose maintenance line survived
-  (`DepartmentsThatKeptTheLine` — ADMINISTRATION, LABORATORIES) still have air; the head office keeps *all* of
-  its seals, because its livery is "still being kept up, by nobody, on a schedule" (#411's rank difference);
-  the band nobody listed (§13.7) keeps none, because a maintenance line is a budget code and that floor has no
-  budget. Empty-versus-failed on the rest is a seeded coin, because the department that stopped being funded
-  stopped keeping records too. **A captain who has learnt the livery has learnt where the air is** — which is
-  #605's colour language doing real work rather than decorating.
-- **EMPTY is not a consolation prize.** The owner's reason for the whole feature is staffing — *"otherwise the
-  elevator being busy could kill employees"* — and a room you can wait a busy car out in answers that exactly.
-  It buys **time**; only a maintained rack buys **range**.
-- **The lift panel row says `REFUGE` where the plan carries one, and never which state it is in.** The plan is
-  a drawing made when the building was new; finding out whether the compressor still turns is the walk. The
-  honest hint is the department already printed beside it.
+- **`DepartmentsThatKeptTheLine` is retired, and the reason is the ruling.** The old law — a refuge holds if
+  and only if its department could still get a maintenance line approved — was *our* mechanic, not the
+  world's. A refuge is not a service a department buys; it is a spec an inspectorate makes the owners pay for,
+  written by people who assumed nobody would be maintaining it on the day it mattered. A fire extinguisher in
+  an abandoned office block still discharges. (The sweep also found that half the old law was decoration:
+  a branch cycles eight plates on a period of eight while pressure runs on a period of four, so
+  **ADMINISTRATION and ARCHIVE are the lobby plates and never carry a refuge at all** — the old
+  "ADMINISTRATION floors keep their air" named a department with no refuge in it on any floor of any site.)
+- **EMPTY is a footprint, not decay** (#573's reservoir idiom). Somebody drew this rack right down before the
+  captain got to it, so the rack starts at nothing and the cracker refills it at `ProductionPerSecond` while
+  the captain stands there. It costs **time** and never buys **range** — which is the same sentence the old
+  EMPTY told, arriving now off a machine that is running rather than off one that is dead. The plate at range
+  still reads `REFUGE · DRY`, and pressing [E] reads the gauge (the trickle line) rather than refusing.
+- **FAILED is an event.** At most one per site, on 23 sites in 100, and **never the first refuge a captain can
+  reach on that ground** — "first" read off the order the plan already has (`FloorsOf`), because a captain's
+  first refuge is where they learn what a refuge IS and a first one that will not cycle teaches the opposite
+  of the truth. Arriving raises `StoryBeats.Beat.RefugeFailed`, once per site, with `art/refuge-failed.jpg`
+  and one line: *"The rack is full; nobody ever drew on it. The seal was cut from the inside, cleanly, and
+  closed again from the outside. It did not fail from age."* The card never says what came through.
+- **The inspection tag, on every refuge** — the covert organisation's paradox on paper. Owner, in the same
+  ruling: a secret lab's eternal struggle is *"not to asphyxiate from unmaintained safety equipment, to keep
+  secrets, to trust employees to bend the law only as much as the company approves, while avoiding traceable
+  bureaucracy that could prove complicity if leaked."* The tag is complete, current and unsigned, and it says
+  so itself as a house rule: *"Refuge inspected. Rack full, seals within tolerance. No signature — none
+  required."* — twice, stamped a year apart off the site's own clock (2270–2319, the era `ShipHistory`
+  already keeps). On the one that failed there is a third entry, **undated**: *"Refuge inspected. Rack full.
+  Seal replaced."* It is on every refuge on purpose: a tag only on the interesting room would be the game
+  pointing at the interesting room. It rides the existing paper seam
+  (`PaperHeads.Paper.InspectionTag`) on the reserved room index `RefugeTagRoom` = −1, because a refuge is not
+  one of the floor's rooms — `CarveRefuges` takes it out of the list — and a negative index is one no floor
+  can ever hold.
+- **The lift panel row still says `REFUGE` where the plan carries one, and never which state it is in.** The
+  plan is a drawing made when the building was new; finding out is the walk.
 - **A failed refuge still paints on the tracker, and reads as failed.** Owner: *"a refuge whose seal has failed
-  must still paint, and must read as failed. Walking to one and finding it dead is a real beat; walking to one
-  that was never marked is just a bad map."* Grey, hollow and not breathing — the calm ring has meant *air you
-  can reach* since #573 and may not be spent on a room with none. The plate over the door loses the word AIR
-  and takes the dead ink the plate by the lift already uses (§13.13's tone 2).
+  must still paint, and must read as failed."* Grey, hollow and not breathing; the plate over the door loses
+  the word AIR and takes the dead ink the plate by the lift already uses (§13.13's tone 2).
 
-*(Enforced: `TheRefugesUndergroundTests` pins the three shares, proves the biconditional between a surviving
-maintenance line and a working rack in both directions, proves the carved room carries the law's own answer,
-and proves no drawable field of a panel row differs between the three seals. `TheSealOnTheRefugeTests` stands
-the shipping component in the generator's own refuge on one floor per seal and drives `StepSuitAir`: the rack
-fills a tank and is spent doing it, an empty room stops the drain and adds nothing, a failed one spends tank —
-with the gauge asserted against the drain each time. Every one of them was watched go **red** on a
-deliberately broken build.)*
+*(Enforced: `TheRefugesUndergroundTests` pins the three shares with a ceiling as well as a floor on each,
+proves HOLDING is the default on all six branch plates a refuge can wear and in the head office and the band
+nobody listed, proves at most one FAILED per site and never the first one reached, proves the tag's two
+entries verbatim on the site's own clock and the third entry undated, proves the carved room carries the law's
+own answer, and proves no drawable field of a panel row differs between the three seals. `TheSealOnTheRefuge‐
+Tests` stands the shipping component in the generator's own refuge on one floor per seal and drives
+`StepSuitAir`: the maintained rack fills a tank and is spent doing it, the drawn-down one gives back exactly
+what the cracker makes and no more, a failed one spends tank and raises the card once with its painting, a
+working one raises nothing, and every refuge hands over its tag once with the head the sleeve reads it by.
+Every one of them was watched go **red** on a deliberately broken build.)*
 
 13.13 **The plate by the lift says the depth, the department, and whether you can breathe** (#612) — three
 lines, one eye-line, on the wall you face when the doors open. The atmosphere line is `SuitAir.PlateLine` off

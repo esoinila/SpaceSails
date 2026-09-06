@@ -83,12 +83,13 @@ public partial class Map
             // reads all three off the one Core answer, never off a second opinion:
             //
             //   HOLDING · what this always did: the drain stops and the rack pumps.
-            //   EMPTY   · the drain stops and NOTHING pumps. Still exactly the thing the owner asked for —
-            //             "otherwise the elevator being busy could kill employees" is answered by a room you
-            //             can wait in — so it buys time to think and never a metre of range.
-            //   FAILED  · nothing at all. The line is said, once, at the door, and then this falls straight
-            //             through to the drain below: standing in a room whose seal went is standing on a
-            //             dead floor, and the tank knows it even if the plan does not.
+            //   EMPTY   · #1149 · the drain stops and the rack pumps from EMPTY. Somebody drew this one
+            //             right down before the captain got to it (the #573 footprint), and a cracker that
+            //             always produces is the whole of that idiom — so the room costs a captain TIME
+            //             instead of buying them range, and standing there is a real, grim, valid decision.
+            //   FAILED  · nothing at all. The line is said, once, at the door, the card goes up, and then
+            //             this falls straight through to the drain below: standing in a room whose seal went
+            //             is standing on a dead floor, and the tank knows it even if the plan does not.
             int refuge = RefugeUnderfoot(ex);
             UndergroundComplex.RefugeState? seal = refuge >= 0
                 ? UndergroundComplex.StateOfTheRefugeOn(ex.Stop.Body.Id, ex.Floor)
@@ -102,10 +103,14 @@ public partial class Map
                     ShowPulseMessage(
                         UndergroundComplex.RefugeEntryLine(seal ?? UndergroundComplex.RefugeState.Failed));
 
-                    // #573's idiom, and only where there is a rack to have been drawn on. On an empty or a
-                    // failed one "somebody was here before you" would be a sentence about a reservoir that
-                    // does not exist — the game telling a story off a number it is not running.
-                    string found = seal == UndergroundComplex.RefugeState.Holding
+                    // #573's idiom, and only where there is a rack to have been drawn on. On a FAILED one
+                    // "somebody was here before you" would be a sentence about a reservoir that does not
+                    // exist — the game telling a story off a number it is not running.
+                    //
+                    // #1149 · EMPTY is now the loudest case of it rather than an exclusion. An empty rack is
+                    // not decay, it is a footprint: the reservoir reads zero, PartialLine's first rung says
+                    // so and says who, and the cracker is already refilling it while the captain reads.
+                    string found = holds
                         ? SurfaceShelter.PartialLine(
                             RefugeReservoirNow(ex, refuge) / SurfaceShelter.ReservoirSeconds)
                         : "";
@@ -116,9 +121,21 @@ public partial class Map
                         // drawn on, and the building has been shut for decades.
                         ShowAndFile(found, "🫁");
                     }
+
+                    // #1149 · AND THE ONE ROOM IN THE BUILDING THAT IS A STORY. Owner: "If for dramatic
+                    // suspense we need one that does not work, that is narrated, with a gen-AI image:
+                    // something scary or weird happened to the shelter." The card is the whole of the
+                    // telling (#761) — the pulse above is what a captain SEES standing in the doorway, and
+                    // the card is what the room turns out to be — and it is raised from HERE rather than
+                    // from a verb because arriving IS the event: there is nothing to press and nothing to
+                    // decide. Once per site, because a building has at most one of these.
+                    if (seal == UndergroundComplex.RefugeState.Failed)
+                    {
+                        RaiseStoryBeat(StoryBeats.Beat.RefugeFailed, ex.Stop.Body.Id);
+                    }
                 }
 
-                if (seal == UndergroundComplex.RefugeState.Holding)
+                if (holds)
                 {
                     ex.RefugeReservoir[RefugeKey(ex.Floor, refuge)] = DrawFromRack(
                         ex, RefugeReservoirNow(ex, refuge), dtRealSeconds, out double intoTheTank);
@@ -742,10 +759,13 @@ public partial class Map
             return 0;
         }
 
-        // #608 · A rack only exists where the maintenance line did. On an empty or a failed refuge this is
-        // zero at the source rather than zero by the caller remembering to ask — a reservoir that could be
-        // read out of a room with no bottles in it is one refactor away from filling a tank from one.
-        if (RefugeSealHere(ex) != UndergroundComplex.RefugeState.Holding)
+        // #608 · A rack only exists behind a door that cycles. On a FAILED refuge this is zero at the
+        // source rather than zero by the caller remembering to ask — a reservoir that could be read out of a
+        // room nobody can get into is one refactor away from filling a tank from one.
+        //
+        // #1149 · …and EMPTY is no longer on that list. The rack in an empty refuge is a real, working,
+        // producing rack; what it has not got is anything IN it, because a visitor took the lot.
+        if (RefugeSealHere(ex) is not { } seal || !UndergroundComplex.RefugeStillHolds(seal))
         {
             return 0;
         }
@@ -758,10 +778,17 @@ public partial class Map
         // #573's idiom, underground: a rack that is not full means SOMEBODY WAS HERE. Down here that is a
         // colder sentence than it is on the regolith — the building has been shut for decades and the seals
         // on this room have not — and it costs nothing but a seeded roll.
-        double start = SurfaceShelter.SomebodyWasHere(
-                ex.Stop.Body.Id, $"{ex.Site.LayoutSalt}:hive{ex.Floor}", index)
-            ? SurfaceShelter.ReservoirSeconds * 0.42
-            : SurfaceShelter.ReservoirSeconds;
+        //
+        // #1149 · THREE RUNGS, and the deepest one is Core's. An EMPTY refuge is the floor's own state
+        // (UndergroundComplex.StateOfTheRefugeOn) and starts the rack at nothing: somebody drew it right
+        // down, the plate at range says DRY, and the cracker starts giving it back the moment the captain
+        // walks in. The shallower rung is the surface shelter's own roll, unchanged.
+        double start = seal == UndergroundComplex.RefugeState.Empty
+            ? 0
+            : SurfaceShelter.SomebodyWasHere(
+                    ex.Stop.Body.Id, $"{ex.Site.LayoutSalt}:hive{ex.Floor}", index)
+                ? SurfaceShelter.ReservoirSeconds * 0.42
+                : SurfaceShelter.ReservoirSeconds;
         ex.RefugeReservoir[key] = start;
         return start;
     }

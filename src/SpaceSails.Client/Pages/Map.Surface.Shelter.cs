@@ -571,11 +571,22 @@ public partial class Map
             return;
         }
 
-        // #608 · …AND ON MOST FLOORS THERE IS NOTHING TO READ, which the verb has to say out loud rather
-        // than answer with a gauge quoting zero. The state line IS the answer: an empty rack has a valve
-        // with a date on it and a failed one has a door that will not cycle, and either of those is worth
-        // more to a captain deciding whether to walk back than a needle resting on the pin.
-        if (RefugeSealHere(ex) is { } seal && seal != UndergroundComplex.RefugeState.Holding)
+        // #1149 · THE PAPER ON THE VALVE COMES FIRST, ONCE. Every refuge in the building carries an
+        // inspection tag and the press that reads the rack is the press that takes it — a second console at
+        // the same centre would be a second thing to walk to and would crowd the one the fan points at.
+        if (TryTheInspectionTag(ex))
+        {
+            return;
+        }
+
+        // #608 · …AND ON A DEAD ONE THERE IS NOTHING TO READ, which the verb has to say out loud rather than
+        // answer with a gauge quoting zero. The state line IS the answer: a door that will not cycle is
+        // worth more to a captain deciding whether to walk back than a needle resting on the pin.
+        //
+        // #1149 · EMPTY comes off this branch and goes back to the gauge below, because an empty rack is no
+        // longer a rack with nothing behind it — it is a working cracker somebody drew right down, and
+        // RackGaugeLine's own trickle line is exactly and already the sentence for that.
+        if (RefugeSealHere(ex) is { } seal && seal == UndergroundComplex.RefugeState.Failed)
         {
             ShowPulseMessage(UndergroundComplex.RefugeEntryLine(seal));
             return;

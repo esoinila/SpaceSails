@@ -96,6 +96,14 @@ public sealed class ThePapersOwnHeadsTests
         (PaperHeads.Paper.Rota,
             "A line item: site watch",
             "Two hands, continuous, charged to Preservation."),
+
+        // #1149's canon pass of 2026-09-06, retyped the same way. The sixth paper is the odd one twice
+        // over: it is on EVERY pressure refuge rather than in one designated room, and its document is the
+        // paper's OWN second entry rather than a line about the paper — which is why the count of authored
+        // strings went up by two and the count of authored SENTENCES did not.
+        (PaperHeads.Paper.InspectionTag,
+            "An inspection tag",
+            "Refuge inspected. Rack full, seals within tolerance. No signature — none required."),
     ];
 
     /// <summary>#613's six seeded forms, retyped, because the control is <b>an ordinary paper still reads as
@@ -198,11 +206,12 @@ public sealed class ThePapersOwnHeadsTests
     // ══ AND THE TWO SWEEPS OVER THE TABLE ITSELF ═════════════════════════════════════════════════════════
 
     /// <summary>
-    /// #1074 · THE TEN STRINGS ARE THE CANON'S WORDS, CHARACTER FOR CHARACTER, AND THERE IS NO ELEVENTH.
+    /// #1074/#1149 · THE AUTHORED STRINGS ARE THE CANON'S WORDS, CHARACTER FOR CHARACTER, AND THERE IS
+    /// NO EXTRA ONE.
     ///
     /// <para>The reflection half is the one that matters over time: every public constant string the table
-    /// publishes must be one of the ten <see cref="PaperHeads.AllProse"/> yields, so a helpful sentence added
-    /// later cannot escape the canon grep by not being in the list. That is beat 1's own arrangement and it
+    /// publishes must be one <see cref="PaperHeads.AllProse"/> yields, so a helpful sentence added later
+    /// cannot escape the canon grep by not being in the list. That is beat 1's own arrangement and it
     /// is kept for beat 1's own reason.</para>
     ///
     /// <para><b>Reverts that reddened it:</b> <c>TitleOf</c>'s rail arm returning <c>RotaTitle</c> —
@@ -212,7 +221,7 @@ public sealed class ThePapersOwnHeadsTests
     /// naming the string no canon grep could see.</para>
     /// </summary>
     [Fact]
-    public void TheTenHeadsAreTheCanonsWordsAndThereIsNoEleventh()
+    public void TheAuthoredHeadsAreTheCanonsWordsAndThereIsNoExtraOne()
     {
         foreach ((PaperHeads.Paper paper, string title, string document) in Authored)
         {
