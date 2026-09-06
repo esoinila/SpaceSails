@@ -16,6 +16,7 @@ namespace SpaceSails.Core.Tests;
 /// what they prove is that a world now deals the paper the judgement was written for, that the paper is
 /// always somebody else's, and that the two roads to it (the drawer and the cheat) are one road.</para>
 /// </summary>
+[Collection(StopRegisterCollection.Name)]
 public class TheFalseIdTests
 {
     // ── The rarity, measured rather than asserted ─────────────────────────────────────────────────────
@@ -30,8 +31,9 @@ public class TheFalseIdTests
     /// silently dead — this repo's fifth named bug class, a world that cannot tell pass from fail.</para>
     ///
     /// <para>The band is wide because the number is the owner's to tune; what is pinned is that the
-    /// COMPOSITION still bites — <see cref="FoundPass.OneInSites"/> through the works floor's own haul roll,
-    /// which is why the measured rate (~8%) is nothing like one in <see cref="FoundPass.OneInSites"/>.</para>
+    /// COMPOSITION still bites — <see cref="FoundPass.OneInSites"/> through whether the building has a mess
+    /// floor at all and through that floor's own haul roll, which is why the measured rate (~19%, about one
+    /// ground in five) is nothing like one in <see cref="FoundPass.OneInSites"/>.</para>
     ///
     /// <para><b>RED</b> by making <see cref="FoundPass.RoomFor"/> return the room unconditionally (every
     /// ground carries one) or by returning null (none does).</para>
@@ -48,9 +50,9 @@ public class TheFalseIdTests
             }
         }
 
-        Assert.True(with > 40, $"only {with} of {Probes} grounds keep a foreign pass — the feature is dead.");
-        Assert.True(with < Probes / 3,
-            $"{with} of {Probes} grounds keep one — a pass in every third building is not a find, it is a "
+        Assert.True(with > 100, $"only {with} of {Probes} grounds keep a foreign pass — the feature is dead.");
+        Assert.True(with < Probes / 2,
+            $"{with} of {Probes} grounds keep one — a pass in every other building is not a find, it is a "
             + "supply.");
     }
 
@@ -101,26 +103,35 @@ public class TheFalseIdTests
     // ── Where it lies ─────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// <b>THE DRAWER IS ON THE WORKS FLOOR, IT IS NEVER ROOM 0, AND IT TAKES NOTHING ELSE'S ROOM.</b>
+    /// <b>THE DRAWER IS ON THE MESS FLOOR, IT IS AN INDEX EVERY FLOOR HAS, AND IT TAKES NOTHING ELSE'S
+    /// ROOM.</b>
     ///
-    /// <para>A collision would silently replace one of the five designated papers this ground already keeps
-    /// and nothing on screen would ever say which one the captain did not get. Asked on the grounds that
-    /// actually carry a pass, with the two registers installed so the other papers really exist — a guard
-    /// handed a floor with no other papers on it would prove nothing at all.</para>
+    /// <para>A collision would silently replace one of the seven designated finds this ground already keeps
+    /// and nothing on screen would ever say which one the captain did not get. Asked with both registers
+    /// installed so the papers that only exist on a stopped or filled ground really exist — a guard handed a
+    /// floor with no other finds on it would prove nothing at all.</para>
     ///
-    /// <para><b>RED</b> by moving <see cref="FoundPass.Room"/> to 0 (the maintenance ledger's), to 4 (the
-    /// code paper's), or to 1–3 (the cost-centre line items').</para>
+    /// <para>The index bound is the other half: <see cref="FoundPass.Room"/> plus
+    /// <see cref="FoundPass.RoomsWalked"/> must stay inside the three rooms a floor is guaranteed to have,
+    /// because this file has no field to count with. Room 5 passed every other guard in this file and does
+    /// not exist on Enceladus.</para>
+    ///
+    /// <para><b>RED</b> by pointing <see cref="FoundPass.RoomFor"/> at
+    /// <c>UndergroundComplex.TopPressurisedFloor</c> (the ledger's and the cost-centre papers' own floor),
+    /// or by widening <see cref="FoundPass.RoomsWalked"/> past the guaranteed three.</para>
     /// </summary>
     [Fact]
     public void TheDrawerCollidesWithNothingElseTheFloorKeeps()
     {
-        string[] grounds = [.. Grounds().Take(400)];
+        Assert.True(FoundPass.Room + FoundPass.RoomsWalked <= 3,
+            "the drawer may be walked to a room index no floor is guaranteed to have.");
+
+        string[] grounds = [.. Grounds().Take(600)];
         StopOrder.Install([.. grounds]);
         PreservationZone.Install([.. grounds]);
         try
         {
             int seen = 0;
-            int lineItemsSeen = 0;
 
             foreach (string body in grounds)
             {
@@ -130,10 +141,12 @@ public class TheFalseIdTests
                 }
                 seen++;
 
-                Assert.Equal(UndergroundComplex.TopPressurisedFloor(body), at.Level);
-                Assert.NotEqual(0, at.RoomIndex);
+                Assert.Equal(UndergroundComplex.StaffCanteenFloor(body), at.Level);
+                Assert.InRange(at.RoomIndex, FoundPass.Room, FoundPass.Room + FoundPass.RoomsWalked - 1);
 
-                // It may only ever stand in a room the haul table has already called empty.
+                // It may only ever stand in a room the haul table has already called empty — which is what
+                // makes every clause below true by construction rather than by seven conditions somebody has
+                // to keep agreeing.
                 Assert.Equal(
                     UndergroundComplex.Haul.Nothing,
                     UndergroundComplex.InRoom(body, at.Level, at.RoomIndex));
@@ -154,21 +167,26 @@ public class TheFalseIdTests
                     UndergroundComplex.RelicRoomFor(body) is { } relic
                     && relic.Level == at.Level && relic.RoomIndex == at.RoomIndex,
                     $"{body}: the pass is standing on the pallet.");
+                Assert.False(
+                    UndergroundComplex.FoundKeyRoomFor(body) is { } halls
+                    && halls.Level == at.Level && halls.RoomIndex == at.RoomIndex,
+                    $"{body}: the pass took the way down to the halls.");
+                Assert.False(
+                    UndergroundComplex.ValveBookRoomFor(body) is { } valves
+                    && valves.Level == at.Level && valves.RoomIndex == at.RoomIndex,
+                    $"{body}: the pass took the valve-book's room.");
+                Assert.Null(UndergroundComplex.MoneyTrailPaperIn(body, at.Level, at.RoomIndex));
 
-                for (int room = 0; room < 8; room++)
-                {
-                    if (UndergroundComplex.MoneyTrailPaperIn(body, at.Level, room) is not null)
-                    {
-                        lineItemsSeen++;
-                        Assert.NotEqual(at.RoomIndex, room);
-                    }
-                }
+                // …and #701's shelf, which is the one thing that shares this drawer's own "the room is
+                // empty" test and would otherwise answer the same press twice.
+                Assert.False(OddBooks.HoldsOne(body, at.Level, at.RoomIndex),
+                    $"{body}: a book and a pass are both lying in {at.Level}/{at.RoomIndex}.");
+                Assert.False(OddBooks.CouldHoldOne(body, at.Level, at.RoomIndex),
+                    $"{body}: the shelf roll can still reach the drawer at {at.Level}/{at.RoomIndex}, so "
+                    + "which of the two the captain gets depends on the order two files are asked in.");
             }
 
-            Assert.True(seen > 20, $"only {seen} grounds carried a pass at all; this proves little.");
-            Assert.True(lineItemsSeen > 20,
-                $"only {lineItemsSeen} cost-centre line items were anywhere near the pass's floor — the "
-                + "collision this guard is about was never actually possible.");
+            Assert.True(seen > 40, $"only {seen} grounds carried a pass at all; this proves little.");
         }
         finally
         {

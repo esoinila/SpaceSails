@@ -216,9 +216,31 @@ public static class OddBooks
     public static bool HoldsOne(string bodyId, int level, int roomIndex)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
+        return CouldHoldOne(bodyId, level, roomIndex)
+            && DiceRule.Roll(DiceRule.Seed($"hive:oddbook:{bodyId}:{level}:{roomIndex}"), Rate).Face == 1;
+    }
+
+    /// <summary>#804 · IS THIS A ROOM A SHELF COULD STAND IN AT ALL — the floor has shelves, the haul table
+    /// says the room is empty, <b>and nothing else authored is already lying in it</b>.
+    ///
+    /// <para>The third clause is this method's whole reason for existing. The docblock above has said since
+    /// #701 that a book is what a would-be-empty room has INSTEAD of the empty line, "never a second find
+    /// laid on top of a pallet or a file" — and #804's found pass is exactly such a find, dealt beside the
+    /// haul table rather than inside it (<see cref="FoundPass.RoomFor"/>, which is designated at the same
+    /// "this room is empty" test this one makes). Without it, one drawer on the works floor of the sites
+    /// that keep a pass would answer twice, and which of the two the captain got would depend on the order
+    /// two unrelated files happened to be asked in.</para>
+    ///
+    /// <para>Asked in ONE place, for <see cref="ShelvesStandHere"/>'s own reason: <see cref="Search"/>'s
+    /// cheat path bypasses <see cref="HoldsOne"/> entirely, so two copies of this test would be two answers
+    /// and the one that got missed would be the one a tester typing <c>?book=6</c> walked straight
+    /// through.</para></summary>
+    public static bool CouldHoldOne(string bodyId, int level, int roomIndex)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
         return ShelvesStandHere(bodyId, level)
             && UndergroundComplex.InRoom(bodyId, level, roomIndex) == UndergroundComplex.Haul.Nothing
-            && DiceRule.Roll(DiceRule.Seed($"hive:oddbook:{bodyId}:{level}:{roomIndex}"), Rate).Face == 1;
+            && !FoundPass.IsHere(bodyId, level, roomIndex);
     }
 
     /// <summary>#677 · IS THERE A SHELF ON THIS FLOOR AT ALL — the one question both the roll and the cheat
@@ -264,8 +286,7 @@ public static class OddBooks
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
-        bool wouldBeEmpty = ShelvesStandHere(bodyId, level)
-            && UndergroundComplex.InRoom(bodyId, level, roomIndex) == UndergroundComplex.Haul.Nothing;
+        bool wouldBeEmpty = CouldHoldOne(bodyId, level, roomIndex);
         bool here = forced is { } f
             ? wouldBeEmpty && (f == 0 || (f >= 1 && f <= Catalog.Count))
             : HoldsOne(bodyId, level, roomIndex);

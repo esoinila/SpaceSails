@@ -63,18 +63,39 @@ public static class FoundPass
     /// <summary>One site in this many has somebody else's pass lying in it. FLAGGED for the owner's tuning,
     /// and the only rarity number in this file.
     ///
-    /// <para>It is a gate on top of <see cref="Room"/> being empty rather than the whole rate, so what a
-    /// captain actually meets is this number THROUGH the works floor's own haul roll — measured by
-    /// <c>TheFalseIdTests</c> rather than assumed, the discipline <see cref="BlackOpsKey.OneInEligibleHulls"/>
-    /// keeps.</para></summary>
-    public const int OneInSites = 4;
+    /// <para>It is a gate on top of the mess floor existing and <see cref="Room"/> being empty rather than
+    /// the whole rate, so what a captain actually meets is this number THROUGH the building's own shape and
+    /// its own haul roll — measured by <c>TheFalseIdTests</c> rather than assumed, the discipline
+    /// <see cref="BlackOpsKey.OneInEligibleHulls"/> keeps.</para></summary>
+    public const int OneInSites = 3;
 
-    /// <summary>Which room of the works floor it is in. <b>NOT ROOM 0</b> — the standing rule for a paper on
-    /// this ground (see <c>UndergroundComplex.LiftCode.PaperRoom</c>): a find the first search on the floor
-    /// is guaranteed to turn up is not a find. Room 0 is #1063's maintenance ledger, 1–3 are #1074's
-    /// cost-centre line items and 4 is #602's code paper, so this takes the next one along and can collide
-    /// with none of them.</summary>
-    public const int Room = 5;
+    /// <summary>
+    /// Which room of the mess floor it is in.
+    ///
+    /// <para><b>Room 0, and it is the only index this may safely be</b> — the designation law
+    /// <see cref="UndergroundComplex.RelicRoomFor"/> writes out in full: this file is pure of the field, so
+    /// it cannot know how many rooms a floor actually has, and the count varies wildly (a generated ground's
+    /// mess floor carries seventeen; Enceladus's carries five). Room 0 is the one index every floor has.
+    /// A room further along looked safer and was measured: room 5 does not exist on a real scenario body,
+    /// so the whole feature would have been silently absent from a shipped moon with every test green.</para>
+    ///
+    /// <para>It cannot collide with the four other room-0 designations, because none of them is ever on this
+    /// floor: #1063's maintenance ledger is on the TOP pressurised floor, #592's Key on the listed bottom,
+    /// #614's relic on the unlisted bottom and #677's found key at the unlisted shaft head. Where the mess
+    /// floor IS the listed bottom, room 0 there holds that Key rather than nothing, and
+    /// <see cref="RoomFor"/> walks past it — the emptiness clause doing the work rather than a second
+    /// rule.</para>
+    /// </summary>
+    public const int Room = 0;
+
+    /// <summary>How far along the mess floor the drawer may be — <see cref="Room"/>, then the next two.
+    ///
+    /// <para><b>Three, and not more</b>, for <see cref="Room"/>'s own reason: the four-room floor law is
+    /// asserted for the scenario's own bodies and a generated site can produce a floor with three, so 0, 1
+    /// and 2 are the indices this file may name without a field to count with. It walks them in order and
+    /// takes the first the haul table calls empty — which is what makes the drawer FINDABLE on a floor whose
+    /// first room happens to hold a crate, instead of the feature quietly not existing there.</para></summary>
+    public const int RoomsWalked = 3;
 
     /// <summary>Does this building keep one at all? A fact about the ground, seeded off its id and nothing
     /// else, so it survives a reload, a re-entry and a rumour.</summary>
@@ -87,27 +108,44 @@ public static class FoundPass
     /// <summary>
     /// <b>WHERE IT IS LYING</b>, or null on the sites that keep none.
     ///
-    /// <para>The works floor — <see cref="UndergroundComplex.TopPressurisedFloor"/>, the floor with the plant
-    /// and the canteen on it — because that is where the people are, and a pass is a thing a person carries.
-    /// #608's air law is met without being asked: the only floor a wallet gets left on a desk is the floor
-    /// somebody worked out of their suit on.</para>
+    /// <para><b>THE MESS FLOOR</b> — <see cref="UndergroundComplex.StaffCanteenFloor"/>, the deepest floor
+    /// the building admits to that still holds pressure, the one #707 put the staff canteen on. That is where
+    /// a wallet gets left: it is the floor the people who work here eat on and keep their lockers on, it
+    /// breathes by construction (#608's air law is met without having to be asked — nobody empties their
+    /// pockets in a suit), and it is as far from the door strangers walk in through as the building goes.
+    /// Null on a site too shallow to have a second canteen, which is honest: a three-floor annex has one
+    /// room where people take their coats off and it is the one on the way in.</para>
     ///
     /// <para><b>And only where the room holds nothing else.</b> That is not tidiness, it is the one thing
     /// that keeps this feature from being a second answer to what a room contains: the pass is dealt beside
     /// <see cref="UndergroundComplex.InRoom"/> rather than inside it — the idiom <see cref="OddBooks"/>
-    /// already uses on this exact floor, and for this exact reason — so it may only ever occupy a room the
-    /// haul table has already said is empty. A designated room that overwrote a haul would delete a find and
+    /// already uses on this ground, and for this exact reason — so it may only ever occupy a room the haul
+    /// table has already said is empty. A designated room that overwrote a haul would delete a find and
     /// nothing on screen would ever say which one, which is this repo's quietest bug class.</para>
+    ///
+    /// <para><b>And that clause is stable</b>, which matters more than it looks. Every designation that can
+    /// arrive or leave DURING a game — #1063's ledger, #1074's cost-centre papers — sits on the top
+    /// pressurised floor, not this one, so no ground grows a paper into this drawer halfway through an
+    /// evening and no pass is ever quietly deleted by an office filing a form.</para>
     /// </summary>
     public static (int Level, int RoomIndex)? RoomFor(string bodyId)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
-        return ASiteKeepsOne(bodyId)
-               && UndergroundComplex.TopPressurisedFloor(bodyId) is { } works
-               && UndergroundComplex.InRoom(bodyId, works, Room) == UndergroundComplex.Haul.Nothing
-            ? (works, Room)
-            : null;
+        if (!ASiteKeepsOne(bodyId) || UndergroundComplex.StaffCanteenFloor(bodyId) is not { } mess)
+        {
+            return null;
+        }
+
+        for (int room = Room; room < Room + RoomsWalked; room++)
+        {
+            if (UndergroundComplex.InRoom(bodyId, mess, room) == UndergroundComplex.Haul.Nothing)
+            {
+                return (mess, room);
+            }
+        }
+
+        return null;
     }
 
     /// <summary>Is THIS room the one? Asked by the search, so the client never re-states the designation.</summary>
