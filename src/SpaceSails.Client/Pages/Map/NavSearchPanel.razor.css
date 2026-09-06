@@ -1,0 +1,5 @@
+/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
+   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
+   here. It carries NO rules on purpose: #1109 already partitioned the stylesheet, and moving a rule
+   now would move it in the cascade too — this lane moves markup only, so `.nav-search` and its rows
+   stay exactly where #1109 left them and the shipped bundle does not change. */

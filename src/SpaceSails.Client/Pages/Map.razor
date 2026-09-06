@@ -527,47 +527,14 @@
                         ToggleLayerGroup="@ToggleLayerGroup" ToggleLayerGroupCollapsed="@ToggleLayerGroupCollapsed" />
     }
 
-    @* #406 Nav search — type a name to find & jump to a target instead of zoom-hunting. Sits beside
-       🗺 Layers on the same map desks (Nav/Sensors/WarRoom); the results drop straight down. Reuses the
-       pick-row idiom (icon · name · kind/flavor); a row jumps by framing + centring the target (its menu
-       is one more click). / focuses it, ↑↓ move, Enter jumps, Esc closes. The input stops keydown
-       propagation so typing a name never drives the ship. *@
     @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors or ShipDesk.WarRoom)
     {
-        <div class="nav-search" @onclick:stopPropagation="true">
-            <input @ref="_navSearchInput" type="search" class="form-control form-control-sm nav-search-input"
-                   placeholder="🔍 find a target… ( / )" value="@_navSearchQuery" aria-label="Search the map for a target"
-                   title="Type a name to find &amp; jump to a body, depot, or contact — / focuses, ↑↓ move, Enter jumps, Esc closes"
-                   @oninput="OnNavSearchInput" @onfocus="() => _navSearchOpen = true"
-                   @onkeydown="OnNavSearchKeyDown" @onkeydown:stopPropagation="true" />
-            @if (_navSearchOpen && _navSearchRows.Count > 0)
-            {
-                <div class="nav-search-results bg-dark bg-opacity-75 rounded p-1 small shadow text-light">
-                    @for (int i = 0; i < _navSearchRows.Count; i++)
-                    {
-                        NavSearchRow row = _navSearchRows[i];
-                        bool sel = i == _navSearchIndex;
-                        @* #963: the row already SAYS "🛬 landable" in its flavor; the hover spells out what
-                           landable buys you, since that was the owner's actual question about the glyph. *@
-                        <button type="button" class="btn btn-sm text-start py-0 nav-search-row @(sel ? "btn-info" : "btn-outline-info")"
-                                title="@NavSearchRowTip(row)"
-                                @onclick="() => JumpToSearchResult(row)">
-                            <span class="nav-search-name">@row.Icon @row.Name</span>
-                            <span class="text-secondary"> · @row.Flavor</span>@if (row.Hidden)
-                            {
-                                <span class="text-warning"> · hidden by your layer filter</span>
-                            }
-                        </button>
-                    }
-                </div>
-            }
-            else if (_navSearchOpen && !string.IsNullOrWhiteSpace(_navSearchQuery))
-            {
-                <div class="nav-search-results bg-dark bg-opacity-75 rounded p-1 small shadow text-secondary">
-                    nothing on the charts by that name
-                </div>
-            }
-        </div>
+        <NavSearchPanel _navSearchIndex="@_navSearchIndex"
+                        _navSearchInputValue="@_navSearchInput" _navSearchInputSet="@(v => _navSearchInput = v)"
+                        _navSearchOpenValue="@_navSearchOpen" _navSearchOpenSet="@(v => _navSearchOpen = v)"
+                        _navSearchQuery="@_navSearchQuery" _navSearchRows="@_navSearchRows"
+                        JumpToSearchResult="@JumpToSearchResult" NavSearchRowTip="@NavSearchRowTip"
+                        OnNavSearchInput="@OnNavSearchInput" OnNavSearchKeyDown="@OnNavSearchKeyDown" />
     }
 
     @* #195 (owner ruling, Friday playtest): the Captain's-desk tutorial pop-up is gone. It floated over

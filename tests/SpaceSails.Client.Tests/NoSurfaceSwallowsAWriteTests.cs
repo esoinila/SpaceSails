@@ -41,6 +41,14 @@ namespace SpaceSails.Client.Tests;
 /// "SaveLoadRack.razor writes `_renameDraft`, which is a one-way [Parameter] — the page will never hear
 /// it."</para>
 ///
+/// <para>#251 · <b>And a THIRD spelling, found by the lane that cut the last surfaces out of the host.</b>
+/// <c>@ref="_navSearchInput"</c> is an assignment the compiler writes, exactly as <c>@bind</c> is, and it
+/// had no <c>=</c> for the first pattern and no <c>@bind</c> for the second. Hand a captured member down
+/// one-way and the capture lands on the component's copy: the page's <c>ElementReference</c> stays default,
+/// and <c>FocusNavSearch</c>'s <c>await _navSearchInput.FocusAsync()</c> — what <c>/</c> does — throws in the
+/// browser with every xUnit suite green. Three surfaces capture this way and all three were already paired
+/// when the sweep was added, which is the point: the law is here for the fourth.</para>
+///
 /// <para>#251 · <b>The law is stated over EVERY decomposed page</b>, not over one directory. The sensors
 /// desk's markup came out into <c>Pages/Stations/TrackingPost/</c> the same way and is swept by the same
 /// pass — a law that knew about one surfaces directory would be a law that a second decomposition walks
@@ -75,8 +83,8 @@ public sealed class NoSurfaceSwallowsAWriteTests
             .SelectMany(d => Directory.EnumerateFiles(d, "*.razor", SearchOption.TopDirectoryOnly))
             .OrderBy(p => p, StringComparer.Ordinal);
 
-    /// <summary>Everything the moved block of one surface writes: an assignment it spells out, and an
-    /// assignment <c>@bind</c> spells for it.</summary>
+    /// <summary>Everything the moved block of one surface writes: an assignment it spells out, an
+    /// assignment <c>@bind</c> spells for it, and one <c>@ref</c> spells for it.</summary>
     internal static IReadOnlyList<string> WhatItWrites(string markup)
     {
         var written = new List<string>();
@@ -92,6 +100,21 @@ public sealed class NoSurfaceSwallowsAWriteTests
         // …and the assignment @bind writes for it. `@bind="_x"` on an element and `@bind-Foo="_x"` on a
         // component both compile to a setter that assigns to `_x`.
         foreach (Match m in Regex.Matches(markup, @"@bind(?:-[A-Za-z]\w*)?=""@?([A-Za-z_]\w*)"))
+        {
+            written.Add(m.Groups[1].Value);
+        }
+
+        // …and the THIRD spelling. `@ref="_x"` compiles to
+        // `AddElementReferenceCapture(seq, __value => { _x = __value; })` (or the component twin) — an
+        // assignment to the page's member with no `=` in the markup for the first pattern to find and no
+        // `@bind` for the second. It is the same hole with the same silence: hand the member down one-way
+        // and the capture lands on the component's own copy while the page's field stays a default
+        // ElementReference, so the code that USES the capture — Map's FocusNavSearch awaits
+        // `_navSearchInput.FocusAsync()` when the captain presses `/` — throws into the browser console
+        // with nothing in any xUnit suite able to say so. Three surfaces capture this way today
+        // (NavSearchPanel's input, SensorsDeskLayer's TrackingPost, DeskPanels' LocalSpace) and all three
+        // were already paired; this sweep is what stops the fourth from not being.
+        foreach (Match m in Regex.Matches(markup, @"@ref=""@?([A-Za-z_]\w*)"))
         {
             written.Add(m.Groups[1].Value);
         }
@@ -162,6 +185,9 @@ public sealed class NoSurfaceSwallowsAWriteTests
         Assert.Contains("_scrubOffsetSeconds", WhatItWrites(
             """<input type="range" @bind="_scrubOffsetSeconds" @bind:event="oninput" />"""));
         Assert.Contains("_credits", WhatItWrites("""<DarkWeb @bind-Credits="_credits" />"""));
+        // …and the one the compiler writes for `@ref`, on an element and on a component alike.
+        Assert.Contains("_navSearchInput", WhatItWrites("""<input @ref="_navSearchInput" type="search" />"""));
+        Assert.Contains("_trackingPost", WhatItWrites("""<TrackingPost @ref="_trackingPost" Visible="true" />"""));
 
         // …and it does NOT call an attribute an assignment, or a comparison one.
         Assert.DoesNotContain("class", WhatItWrites("""<div class="satchel-page">"""));
