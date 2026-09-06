@@ -142,10 +142,20 @@ public sealed class AnOldOneOpensTheDoorTheSlowWayTests
         Assert.True(crossedOn > openedOn,
             "it never came through a door it had just opened.");
 
-        // …and it stays open. The captain leaves, the thing that opened it leaves, and the doorway keeps
-        // standing open — which is the sentence the player is meant to read off an empty room.
-        ((IList)Get(map, "_reevers")!).Clear();
-        StandTheCaptainAt(map, leaf.CaptainX + 400, leaf.CaptainY + 400);
+        // …and it stays open. The captain walks off, the thing that opened it walks off, and the doorway
+        // keeps standing open — which is the sentence the player is meant to read off an empty room.
+        //
+        // The pack is MOVED, never emptied: StepReevers returns on its first line with an empty pack, so a
+        // version of this that cleared it ran no frames at all and passed on a build that shut every leaf
+        // the moment nobody was holding it. (It did. That is why it is written this way.)
+        StandTheCaptainAt(map, leaf.CaptainX + 300, leaf.CaptainY + 300);
+        Set(one, "X", leaf.CaptainX + 340);
+        Set(one, "Y", leaf.CaptainY + 340);
+        Set(one, "AnchorX", leaf.CaptainX + 340);
+        Set(one, "AnchorY", leaf.CaptainY + 340);
+        Set(one, "LastSeenX", leaf.CaptainX + 300);
+        Set(one, "LastSeenY", leaf.CaptainY + 300);
+        Assert.NotEmpty((IList)Get(map, "_reevers")!);
         for (int i = 0; i < 300; i++)
         {
             OneFrame(map);
