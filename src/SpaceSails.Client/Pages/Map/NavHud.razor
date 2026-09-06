@@ -171,79 +171,15 @@
                             {
                                 FlightStepState _ds = FlightPlanStatusBuilder.BurnState(node.Stale, node.Executed);
                                 bool _dopen = _openEditor == FlightEditorKind.Burn && ReferenceEquals(node, _selectedPlanNode);
-                                <div class="mb-1 map-plan-step map-plan-step-@_ds.ToString().ToLowerInvariant() @(node.Stale ? "text-decoration-line-through text-secondary" : "") @(_dopen ? "map-plan-step-open" : "") @(ReferenceEquals(node, _selectedPlanNode) ? "map-plot-node-selected" : "")">
-                                    <div class="map-plan-step-line" role="button" tabindex="0"
-                                         title="Click to @(_dopen ? "collapse" : "open") this departure step"
-                                         @onclick="() => ToggleBurnEditor(node)">
-                                        <span class="map-plan-step-pip" title="@_ds" aria-hidden="true"></span>
-                                        <span class="map-plan-step-caret" aria-hidden="true">@(_dopen ? "▾" : "▸")</span>
-                                        <span class="flex-grow-1">@PlanStepGlanceLine(node)</span>
-                                        <span class="text-secondary small text-nowrap">@FormatSimTime(node.SimTime)</span>
-                                    </div>
-                                    @if (_dopen)
-                                    {
-                                        @* The modifier class is not decoration: the burn editor's own guards
-                                           (TheNumbersNudgeTooTests, ThePlannerPlansInTheVectorViewTests) bound
-                                           their slice by the bare `map-plan-step-edit` opening tag, and a
-                                           second panel wearing the identical tag would silently widen what
-                                           they judge. Same styling, its own name. *@
-                                        <div class="map-plan-step-edit map-departure-step-edit">
-                                            @if (node.Kind == PlanStepKind.ClearHarbour)
-                                            {
-                                                <div class="small mb-1 text-secondary">@CastOffRule.ClearanceWhy(SeparationFromHarbour(node)) · @ClearanceEtaLine(node)</div>
-                                                <div class="map-burn-steps" role="group" aria-label="Step the clearance thrust in pulses">
-                                                    <button type="button" class="btn btn-sm btn-outline-info"
-                                                            title="@NodeFrame.NudgeMagnitudeHint(-1, true)"
-                                                            @onclick="() => NudgeNodePulses(node, -1, true)">@NodeFrame.NudgeMagnitudeLabel(-1, true)</button>
-                                                    <button type="button" class="btn btn-sm btn-outline-info"
-                                                            title="@NodeFrame.NudgeMagnitudeHint(-1, false)"
-                                                            @onclick="() => NudgeNodePulses(node, -1, false)">@NodeFrame.NudgeMagnitudeLabel(-1, false)</button>
-                                                    <span class="map-burn-epoch-readout text-nowrap" title="What this thrust spends">@node.Pulses p</span>
-                                                    <button type="button" class="btn btn-sm btn-outline-info"
-                                                            title="@NodeFrame.NudgeMagnitudeHint(1, false)"
-                                                            @onclick="() => NudgeNodePulses(node, 1, false)">@NodeFrame.NudgeMagnitudeLabel(1, false)</button>
-                                                    <button type="button" class="btn btn-sm btn-outline-info"
-                                                            title="@NodeFrame.NudgeMagnitudeHint(1, true)"
-                                                            @onclick="() => NudgeNodePulses(node, 1, true)">@NodeFrame.NudgeMagnitudeLabel(1, true)</button>
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                @* #989 · WHEN SHE LEAVES IS THE ONE THING A DEPARTURE HAS TO SET.
-                                                   Owner, docked at The Red Eye with the scrub 33 h out: "Cast off
-                                                   time says in zero hours here even though the scrub is in 33
-                                                   hours?" The pair is laid AT the scrub now, and these are the
-                                                   standard ±d/±h faces every other step's time buttons wear —
-                                                   except that they move the whole ACT: the clearance rides along
-                                                   at its own gap behind and is re-solved against the berth's new
-                                                   place (NudgeDepartureEpoch). *@
-                                                <div class="small mb-1 text-secondary">The clamp lets go at the hour below — nothing else to set. She leaves with the berth's own shove and the thrust that follows carries her clear.</div>
-                                                <div class="map-burn-steps" role="group" aria-label="Step the departure's hour along the plan">
-                                                    <button type="button" class="btn btn-sm btn-outline-info"
-                                                            title="@NodeFrame.NudgeEpochHint(-1, true)"
-                                                            @onclick="() => NudgeDepartureEpoch(node, -1, true)">@NodeFrame.NudgeEpochLabel(-1, true)</button>
-                                                    <button type="button" class="btn btn-sm btn-outline-info"
-                                                            title="@NodeFrame.NudgeEpochHint(-1, false)"
-                                                            @onclick="() => NudgeDepartureEpoch(node, -1, false)">@NodeFrame.NudgeEpochLabel(-1, false)</button>
-                                                    <span class="map-burn-epoch-readout text-nowrap" title="When the clamp lets go">@FormatSimTime(node.SimTime)</span>
-                                                    <button type="button" class="btn btn-sm btn-outline-info"
-                                                            title="@NodeFrame.NudgeEpochHint(1, false)"
-                                                            @onclick="() => NudgeDepartureEpoch(node, 1, false)">@NodeFrame.NudgeEpochLabel(1, false)</button>
-                                                    <button type="button" class="btn btn-sm btn-outline-info"
-                                                            title="@NodeFrame.NudgeEpochHint(1, true)"
-                                                            @onclick="() => NudgeDepartureEpoch(node, 1, true)">@NodeFrame.NudgeEpochLabel(1, true)</button>
-                                                </div>
-                                            }
-                                            @* #989 · THE PAIR COMES OFF AS ONE. One press laid both rows; one
-                                               press takes both away. Half a departure is not a plan anybody
-                                               meant to have — and the owner's second sighting is what a plan
-                                               that quietly lost half of one looks like. *@
-                                            <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-1"
-                                                    title="Take the cast off off the plan — the clamp release and the clearance come off together"
-                                                    @onclick="RemoveTheCastOff">✖ remove the cast off (both rows)</button>
-                                        </div>
-                                    }
-                                </div>
+                                <DepartureStepRow node="@node" _ds="@_ds" _dopen="@_dopen"
+                                                  _selectedPlanNode="@_selectedPlanNode"
+                                                  ClearanceEtaLine="@ClearanceEtaLine" FormatSimTime="@FormatSimTime"
+                                                  NudgeDepartureEpoch="@NudgeDepartureEpoch"
+                                                  NudgeNodePulses="@NudgeNodePulses"
+                                                  PlanStepGlanceLine="@PlanStepGlanceLine"
+                                                  RemoveTheCastOff="@RemoveTheCastOff"
+                                                  SeparationFromHarbour="@SeparationFromHarbour"
+                                                  ToggleBurnEditor="@ToggleBurnEditor" />
                                 continue;
                             }
 
