@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Threading;
+using SpaceSails.Contracts;
 
 namespace SpaceSails.Core.Tests;
 
@@ -35,4 +37,26 @@ internal static class TestTree
         }
         throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
     }
+
+    /// <summary>
+    /// #251 · THE SHIPPING SKY, PARSED ONCE PER ASSEMBLY — the Core twin of
+    /// <c>SpaceSails.Client.Tests.TestTree.Sol</c>, whose docblock carries the immutability argument that
+    /// makes ONE shared instance safe across classes xUnit runs in parallel.
+    ///
+    /// <para>This suite's habit was worse than the Client's, because its shared loader was a METHOD rather
+    /// than a <c>Lazy</c>: <c>SimulatorTests.LoadSol()</c> was called from seventy-one places across
+    /// forty-two files, several of them per-test helpers called once per <c>[Fact]</c>, and every single
+    /// call read <c>scenarios/sol.json</c> off the disk and parsed it again. Six more classes held their own
+    /// loader beside it, two of them as <c>=&gt;</c> properties that re-parsed on every access.</para>
+    ///
+    /// <para>The path is <see cref="AppContext.BaseDirectory"/>, not <see cref="RepoRoot"/>: this project's
+    /// <c>.csproj</c> copies <c>scenarios/*.json</c> beside the test binary on every build, and that copy is
+    /// what all of those loaders read. Reading the same file by the same path is what keeps this a move.</para>
+    /// </summary>
+    private static readonly Lazy<ScenarioDefinition> TheShippingSky = new(
+        () => ScenarioLoader.LoadFile(Path.Combine(AppContext.BaseDirectory, "scenarios", "sol.json")),
+        LazyThreadSafetyMode.ExecutionAndPublication);
+
+    /// <summary><c>scenarios/sol.json</c>, the sky the game ships, parsed once for the whole assembly.</summary>
+    internal static ScenarioDefinition Sol => TheShippingSky.Value;
 }
