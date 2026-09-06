@@ -36,6 +36,21 @@ public sealed class TheTableSceneIsOneRoomTests
     private static string Source(params string[] parts) =>
         MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#1164 · The Hive floor's source — ALL of it, as a glob rather than a written list.
+    /// <c>HiveInterior.FloorDeck</c> was 31 <c>// ── banner ──</c> sections inside one 1,106-line method
+    /// and is now one named pass per section across several partials (#251), so the text this guard has
+    /// always read over is spread across <c>HiveInterior*.cs</c>. Concatenated rather than narrowed to one
+    /// part on purpose: claims here are <c>DoesNotContain</c> over the WHOLE subject, and pointing one at a
+    /// single partial would quietly stop it looking at most of the floor. Ordinal order, so the read is the
+    /// same on every machine.</summary>
+    private static string Hive() =>
+        string.Concat(Directory
+            .EnumerateFiles(
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering"),
+                "HiveInterior*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(MapMarkup.Read));
+
     /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
     /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
     /// the seat's own verbs, which moved onto <c>Map.Seating</c> behind <c>ISeatHost</c>. The source a guard
@@ -178,7 +193,7 @@ public sealed class TheTableSceneIsOneRoomTests
         // Source-shape, and it has to be: the behavioural guard above is green on BOTH shapes today, because
         // two readings of one rota agree right up until the day one of them changes. What is actually under
         // test is that there is only one reading left to change.
-        string hive = Source("Rendering", "HiveInterior.cs");
+        string hive = Hive();
 
         Assert.Contains("CanteenRegulars.Tables(", hive, StringComparison.Ordinal);
         Assert.DoesNotContain("CanteenRegulars.Sitting(", hive,

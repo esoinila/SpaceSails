@@ -33,6 +33,21 @@ public sealed class YouCanSitAtAnEmptyTableTests
     private static string Source(params string[] parts) =>
         MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#1164 · The Hive floor's source — ALL of it, as a glob rather than a written list.
+    /// <c>HiveInterior.FloorDeck</c> was 31 <c>// ── banner ──</c> sections inside one 1,106-line method
+    /// and is now one named pass per section across several partials (#251), so the text this guard has
+    /// always read over is spread across <c>HiveInterior*.cs</c>. Concatenated rather than narrowed to one
+    /// part on purpose: claims here are <c>DoesNotContain</c> over the WHOLE subject, and pointing one at a
+    /// single partial would quietly stop it looking at most of the floor. Ordinal order, so the read is the
+    /// same on every machine.</summary>
+    private static string Hive() =>
+        string.Concat(Directory
+            .EnumerateFiles(
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering"),
+                "HiveInterior*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(MapMarkup.Read));
+
     /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
     /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
     /// the seat's own verbs, which moved onto <c>Map.Seating</c> behind <c>ISeatHost</c>. The source a guard
@@ -188,7 +203,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
     {
         // #603 · A dot with no words on it is a dot nobody presses. The label is Core's — one place says
         // what a free table is called, and the renderer does not invent a second name for it.
-        Assert.Contains("SittingAlone.FreeTablePlate", Source("Rendering", "HiveInterior.cs"),
+        Assert.Contains("SittingAlone.FreeTablePlate", Hive(),
             StringComparison.Ordinal);
 
         DeckPlan deck = DeckFor("luna", UndergroundComplex.TopPressurisedFloor("luna") ?? -1, 5);

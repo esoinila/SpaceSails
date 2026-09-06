@@ -45,6 +45,21 @@ public sealed class SeatsAreDrawnTests
     private static string Source(params string[] parts) =>
         File.ReadAllText(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
+    /// <summary>#1164 · The Hive floor's source — ALL of it, as a glob rather than a written list.
+    /// <c>HiveInterior.FloorDeck</c> was 31 <c>// ── banner ──</c> sections inside one 1,106-line method
+    /// and is now one named pass per section across several partials (#251), so the text this guard has
+    /// always read over is spread across <c>HiveInterior*.cs</c>. Concatenated rather than narrowed to one
+    /// part on purpose: claims here are <c>DoesNotContain</c> over the WHOLE subject, and pointing one at a
+    /// single partial would quietly stop it looking at most of the floor. Ordinal order, so the read is the
+    /// same on every machine.</summary>
+    private static string Hive() =>
+        string.Concat(Directory
+            .EnumerateFiles(
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering"),
+                "HiveInterior*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     /// <summary>#870 · The deck view is six partials by subject now, so "the pen" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split. Concatenated rather than
     /// narrowed to one part on purpose: the claims below are <c>DoesNotContain</c> over the WHOLE pen, and
@@ -516,7 +531,7 @@ public sealed class SeatsAreDrawnTests
 
         // …and the room that owns the answers is the one that fills them in — off the SAME frozen watch the
         // [E] press asks, which is #709's law and the reason a drawn room and a pressed room are one room.
-        string hive = Source("Rendering", "HiveInterior.cs");
+        string hive = Hive();
         Assert.Contains("TheStools.Taken(bodyId, level, s, canteenWatch)", hive, StringComparison.Ordinal);
         // #731 · …and WHO HAS ALREADY STOOD UP AND WALKED OFF rides down in the same call. A regular
         // crossing the hall on real legs must not ALSO be drawn in the chair they left, and the one place

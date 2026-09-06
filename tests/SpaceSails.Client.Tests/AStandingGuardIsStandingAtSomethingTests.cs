@@ -813,6 +813,20 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
         return string.Concat(parts);
     }
 
+    /// <summary>#1164 · The Hive floor's source — ALL of it, as a glob rather than a written list.
+    /// <c>HiveInterior.FloorDeck</c> was 31 <c>// ── banner ──</c> sections inside one 1,106-line method
+    /// and is now one named pass per section across four partials (#251), so the block this guard cuts —
+    /// from #831's banner to the cars' first line — spans two adjacent passes rather than two adjacent
+    /// sections of one method. Concatenated in Ordinal order, which is the order the compiler reads them
+    /// and the order they were written in, so the cut is the same text it always was.</summary>
+    private static string Hive() =>
+        string.Concat(Directory
+            .EnumerateFiles(
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering"),
+                "HiveInterior*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     private static string Between(string text, string from, string to)
     {
         int start = text.IndexOf(from, StringComparison.Ordinal);
@@ -859,8 +873,7 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
     [Fact]
     public void TheStationsAreDrawnFromCoreAndCarryNoVerb()
     {
-        string hive = File.ReadAllText(
-            Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering", "HiveInterior.cs"));
+        string hive = Hive();
         string block = Between(hive, "#831 · AND THE WATCHCLOCK STATIONS", "// The cars, on every floor");
 
         Assert.Contains("PatrolBeat.IsPatrolled(bodyId, level)", block, StringComparison.Ordinal);
