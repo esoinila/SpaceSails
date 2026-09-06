@@ -388,6 +388,63 @@ public sealed class TheClaimIsTheSceneTests
         Assert.EndsWith("try not to read the third page.", NebulaClaims.RepAtThePayout, StringComparison.Ordinal);
     }
 
+    // ══ 5 · #1151 SLICE 4 · THE TERMS THE WRIT WAS WRITTEN ON ═══════════════════════════════════════════
+
+    /// <summary>
+    /// <b>A WRIT THAT WAITED IS SERVED ON THE TERMS IT HAD ON THE DAY</b>, so the two things a boarding
+    /// demand is cut from ride the FILE and not the moment of service — and a file is only worth writing if
+    /// it comes back. The heat the contract was worth and the pursuer's own id survive the vault's own
+    /// serializer, through the envelope a reload actually reads, checksum and all.
+    ///
+    /// <para>Asked with values nothing else in the record could supply: a heat of 3 against a callsign, a
+    /// haven and a moment that are all of other types, so a round trip that dropped the terms and answered
+    /// with a zero would go red rather than agree with a default.</para>
+    /// </summary>
+    [Fact]
+    public void THE_WRITS_TermsSurviveTheReloadThatHasToServeIt()
+    {
+        var filed = new PendingWritRecord(
+            "GRIMHOLD", "selene-gate", 1234.5, HeatWhenFiled: 3, HunterId: "hunter-7");
+        var saved = new Vault { Progress = new ProgressSection { WritPending = filed } };
+
+        Vault reread = VaultSerializer.Load(VaultSerializer.Save(saved));
+
+        Assert.False(reread.Tampered);
+        PendingWritRecord back = reread.Progress?.WritPending
+            ?? throw new InvalidOperationException("the writ did not survive its own serializer.");
+        Assert.Equal(filed, back);
+        Assert.Equal(3, back.HeatWhenFiled);
+        Assert.Equal("hunter-7", back.HunterId);
+    }
+
+    /// <summary>
+    /// <b>AND A WRIT FILED BEFORE THE TERMS EXISTED IS STILL A WRIT.</b> Slice 1 shipped this record with
+    /// three fields, and a voyage saved between then and now can have one on the file right this minute. It
+    /// loads as what it is — the callsign, the berth and the moment — with no terms, and the demand it opens
+    /// falls back on the floor every demand in the game already has rather than on a file that says nothing.
+    ///
+    /// <para>Read through the wire's own naming, because a naming policy is exactly the kind of thing that
+    /// makes a "forward compatible" record quietly deserialize into nothing at all.</para>
+    /// </summary>
+    [Fact]
+    public void A_WRIT_FiledBeforeTheTermsExistedStillLoadsAsAWrit()
+    {
+        const string asSliceOneWroteIt =
+            """{"callsign":"GRIMHOLD","havenId":"selene-gate","filedAtSimTime":1234.5}""";
+
+        PendingWritRecord old = System.Text.Json.JsonSerializer.Deserialize<PendingWritRecord>(
+            asSliceOneWroteIt,
+            new System.Text.Json.JsonSerializerOptions(System.Text.Json.JsonSerializerDefaults.Web))
+            ?? throw new InvalidOperationException("a slice-1 writ no longer reads as a writ at all.");
+
+        Assert.Equal("GRIMHOLD", old.Callsign);
+        Assert.Equal("selene-gate", old.HavenId);
+        Assert.Equal(1234.5, old.FiledAtSimTime);
+        Assert.Equal(0, old.HeatWhenFiled);                // no terms on the file…
+        Assert.Null(old.HunterId);
+        Assert.Equal(1, Math.Max(1, old.HeatWhenFiled));   // …and the demand's own floor is what it gets
+    }
+
     /// <summary>
     /// THE RESERVED WORD IS ABSENT (docs/worldbuilding-notes.md §8: <i>"there is one monolith … the word is
     /// reserved"</i>). Swept over the whole of this lane's authored prose rather than eyeballed, because the

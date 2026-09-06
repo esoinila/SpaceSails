@@ -142,12 +142,20 @@ public sealed partial class Map
     /// <para>The file is cleared BEFORE the demand opens, because at that instant the writ is not pending any
     /// more, it is being served: the ledger row is gone and the card is up, which is the flip the whole slice
     /// is about. Nothing is authored — a served writ shows what a served writ has always shown.</para>
+    ///
+    /// <para><b>AND NEVER OVER THE TOP OF THE ENDING THAT FILED IT.</b> The castaway's own wake sets him down
+    /// at the nearest haven, and for a moon whose harbour is also its nearest haven that is THIS berth: he is
+    /// aboard a rustbucket at their port on the very frame the epitaph card goes up. They are still there and
+    /// he is still served — the writ was never going to be outrun, and the tug delivering him to their door
+    /// is the scene rather than a bug — but not with the ending's own card still on the screen. That is the
+    /// same law <c>_busted is not null</c> states one line up, said about the other card, and it costs the
+    /// writ nothing: the terms are on the file, so a beat's wait is not a discount.</para>
     /// </summary>
     private void TheWaitingWritIsServed()
     {
-        if (_busted is not null || _writPending is not { } filed)
+        if (_busted is not null || _shipEpitaph is not null || _writPending is not { } filed)
         {
-            return;   // one reckoning at a time, and nothing to serve
+            return;   // one card at a time, and nothing to serve
         }
 
         if (_dockedHavenId != filed.HavenId || !TheMasterIsAboardHer())
