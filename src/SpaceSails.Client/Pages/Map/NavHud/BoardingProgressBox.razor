@@ -1,0 +1,63 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using ArriveStep = SpaceSails.Client.Pages.Map.ArriveStep
+@using FlightEditorKind = SpaceSails.Client.Pages.Map.FlightEditorKind
+@using FrameOption = SpaceSails.Client.Pages.Map.FrameOption
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using OrbitAssistInfo = SpaceSails.Client.Pages.Map.OrbitAssistInfo
+@using PlanNode = SpaceSails.Client.Pages.Map.PlanNode
+@using Quest = SpaceSails.Client.Pages.Map.Quest
+@using SkimGauge = SpaceSails.Client.Pages.Map.SkimGauge
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 · THE BOARDING PROGRESS BOX, ON ITS OWN FILE.
+
+    Moved out of NavHud.razor by PURE MOTION — the block between the two fences below is the block that
+    was in the HUD, character for character. Every member it reads is a [Parameter] with the SAME NAME
+    (fields keep their underscore, methods come across as delegates under their own names), which is what
+    lets the markup move without a rewrite and lets MapMarkup splice it straight back where it came from.
+
+    IHandleEvent repeats NavHud's own override, which repeats Map.Sim.cs's: the HUD's refresh belongs to
+    OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render back on
+    every event in here. The .razor.css beside this file carries no rules; it exists to give the component
+    Map.razor.css's scope (pinned in SpaceSails.Client.csproj), so every rule that styled these elements
+    goes on matching them.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from NavHud.razor ──────────────────────────────────────────────────── *@
+            @if (_captureEngaged)
+            {
+                <hr />
+                <div class="fw-bold text-success">🚀 SHUTTLES AWAY — boarding @_captureTargetCallsign</div>
+                <div class="progress my-1" role="progressbar" aria-label="Boarding progress" style="height: 1.1rem;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                         style="width: @(((int)(_captureProgress * 100)))%">@((int)(_captureProgress * 100))%</div>
+                </div>
+                @* Owner ("let's make it more clear"): the autosteal crawls because boarding runs on
+                   WALL-CLOCK, not sim time — cranking warp does nothing. Say the ETA, say warp won't
+                   help, and say how to hurry it (a tighter, slower match cuts RequiredSecondsFor). *@
+                <div class="small">
+                    ≈ @(Math.Max(0, (1 - _captureProgress) * _captureRequiredSeconds).ToString("F0", CultureInfo.InvariantCulture)) s left ·
+                    <span class="text-warning">real-time — warp won't hurry it</span>
+                    <span class="text-secondary">· hold the match; closer &amp; slower boards faster</span>
+                </div>
+                @* #202: show what is being taken AS it transfers — no more forensic accounting. The
+                   take is the hull's cargo capped by our free hold; priced through the same fence market
+                   the loot line and the credited value read. *@
+                @if (SelectedCaptureTarget() is { } prey && prey.Ship.CargoUnits > 0)
+                {
+                    int hold = CargoCapacity - _cargoUnits;
+                    int take = Math.Max(0, Math.Min(prey.Ship.CargoUnits, hold));
+                    <div class="small text-warning">
+                        📦 Prising loose @take units of @prey.Ship.CargoClass — est.
+                        @((take * CargoMarket.UnitValue(prey.Ship.CargoClass)).ToString("N0", CultureInfo.InvariantCulture)) cr
+                        @(take < prey.Ship.CargoUnits ? "(hold's filling — the rest stays with her)" : "")
+                    </div>
+                }
+            }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
