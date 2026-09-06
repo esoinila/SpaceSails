@@ -9,7 +9,7 @@ namespace SpaceSails.Core.Tests;
 public class EncounterRuleTests
 {
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     private static NpcShip Ship(string id, string cargo = "He3", int cargoUnits = 10, bool isPod = false) =>
         new(id, "Test Hauler", cargo, "saturn", "earth", RoutePersonality.Economical,

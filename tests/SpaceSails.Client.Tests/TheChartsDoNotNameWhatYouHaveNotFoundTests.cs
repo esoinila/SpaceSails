@@ -139,7 +139,7 @@ public sealed class TheChartsDoNotNameWhatYouHaveNotFoundTests
                 "ComponentBase has no _hasPendingQueuedRender — the render early-out this bench rides on has moved.");
         pending.SetValue(map, true);
 
-        Invoke(map, "BuildTheEphemerisAndAnnounceTheBerths", Sol.Value);
+        Invoke(map, "BuildTheEphemerisAndAnnounceTheBerths", TestTree.Sol);
 
         var ephemeris = Get<CircularOrbitEphemeris>(map, "_ephemeris");
         Assert.Contains(ephemeris.Bodies, b => b.Id == WreckId);
@@ -197,22 +197,6 @@ public sealed class TheChartsDoNotNameWhatYouHaveNotFoundTests
 
     private static object Item(object tuple, string field) =>
         tuple.GetType().GetField(field)!.GetValue(tuple)!;
-
-    private static readonly Lazy<ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
-
-    private static string ScenarioPath(string file)
-    {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "scenarios")))
-        {
-            dir = dir.Parent;
-        }
-
-        return dir is null
-            ? throw new InvalidOperationException("no scenarios/ directory above the test binary")
-            : Path.Combine(dir.FullName, "scenarios", file);
-    }
 
     private static T Get<T>(object o, string field) =>
         (T)(o.GetType().GetField(field, Hidden)

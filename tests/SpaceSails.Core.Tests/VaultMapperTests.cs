@@ -283,7 +283,7 @@ public class VaultMapperTests
         // one bar while pointing at another. Select derives BOTH from one HavenLocus, so for every
         // dockable haven in the shipped scenario the resume's name must be the id's true name — no
         // resume can ever wake the captain at the wrong bar.
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var havens = eph.Bodies
             .Where(b => b.IsHaven && b.Mu <= 0)
             .Select(b => new VaultResume.HavenLocus(b.Id, b.Name, eph.Position(b.Id, 0)))

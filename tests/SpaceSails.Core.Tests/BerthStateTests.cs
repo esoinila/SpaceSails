@@ -9,7 +9,7 @@ namespace SpaceSails.Core.Tests;
 public class BerthStateTests
 {
     private static ICelestialEphemeris SolEphemeris() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     [Fact]
     public void CoMoving_PlacesShipAtBerthOffset_MatchingBodyDrift()

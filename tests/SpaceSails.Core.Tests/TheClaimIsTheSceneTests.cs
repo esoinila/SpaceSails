@@ -16,9 +16,7 @@ namespace SpaceSails.Core.Tests;
 /// </summary>
 public sealed class TheClaimIsTheSceneTests
 {
-    private static ICelestialEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(ScenarioLoader.LoadFile(
-            Path.Combine(AppContext.BaseDirectory, "scenarios", "sol.json")));
+    private static ICelestialEphemeris Sol() => CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     private static PirateInsurance Basic(double through) => new(InsuranceTier.Basic, through);
 

@@ -27,23 +27,6 @@ public sealed class TheBrakeCardKnowsSheIsClampedTests
     private const BindingFlags Hidden =
         BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
-
-    private static string ScenarioPath(string file)
-    {
-        // Walk up from the test binary to the repo root, where scenarios/ lives beside src/ and tests/.
-        var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !System.IO.Directory.Exists(System.IO.Path.Combine(dir.FullName, "scenarios")))
-        {
-            dir = dir.Parent;
-        }
-
-        return dir is null
-            ? throw new InvalidOperationException("no scenarios/ directory above the test binary")
-            : System.IO.Path.Combine(dir.FullName, "scenarios", file);
-    }
-
     private static void Set(object o, string field, object? value) =>
         (o.GetType().GetField(field, Hidden)
          ?? throw new InvalidOperationException($"no field {field} on Map — this bench has drifted"))
@@ -77,8 +60,8 @@ public sealed class TheBrakeCardKnowsSheIsClampedTests
             "_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!;
         pending.SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
 

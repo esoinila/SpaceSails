@@ -340,7 +340,7 @@ public sealed class TheDossierIsReadOnItsOwnCardTests
         var strangers = new List<string>();
         int rooms = 0;
 
-        foreach (CelestialBody body in CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol()).Bodies)
+        foreach (CelestialBody body in CircularOrbitEphemeris.FromScenario(TestTree.Sol).Bodies)
         {
             foreach (LandingSite site in LandingSites.For(body.Id))
             {

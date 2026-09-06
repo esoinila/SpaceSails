@@ -32,9 +32,6 @@ public sealed class TheKeysOfNavigationAreTheLoudOnesTests
     private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
     private const double AU = 1.495978707e11;
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol.json")));
-
     // ─────────────────────────── #963 · the scope's switch lives on the scope ───────────────────────────
 
     /// <summary>THE BUTTON THE OWNER SENT AWAY. "Why have the scope enable/disable button competing for
@@ -406,8 +403,8 @@ public sealed class TheKeysOfNavigationAreTheLoudOnesTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
 

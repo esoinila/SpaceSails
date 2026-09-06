@@ -41,9 +41,6 @@ public sealed class AWreckIsNotAPlanetTests
     /// instrument that starts calling slabs by it is how a class of object gets born.</summary>
     private const string TheReservedWord = "monolith";
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
-
     // ── THE PREMISE ───────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -55,7 +52,7 @@ public sealed class AWreckIsNotAPlanetTests
     [Fact]
     public void ThePremise_TheScenarioCarriesExactlyOneDeadHullAndTheRestAreNotWrecks()
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         Assert.True(eph.Bodies.Count >= 10, $"only {eph.Bodies.Count} bodies loaded — nothing was proved");
 
         var wrecks = eph.Bodies.Where(b => Derelict.IsWreckBody(b.Id)).Select(b => b.Id).ToList();
@@ -127,7 +124,7 @@ public sealed class AWreckIsNotAPlanetTests
     [Fact]
     public void AMoonStillReadsItsOwnKindAndSoDoesAStar()
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         CelestialBody moon = eph.Bodies.First(b => b.Kind == BodyKind.Moon);
         CelestialBody sun = eph.Bodies.First(b => b.BodyRadius > 1e8);
 
@@ -153,7 +150,7 @@ public sealed class AWreckIsNotAPlanetTests
     public void ThePageHandsTheGlassAWreckAndNeverMistakesAWorldForOne()
     {
         Pages.Map map = Booted();
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
         var wrong = new List<string>();
         int wrecksSeen = 0;
@@ -190,7 +187,7 @@ public sealed class AWreckIsNotAPlanetTests
     [Fact]
     public void TheGlassNeverSpeaksTheReservedWord()
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var said = new List<string>();
 
         foreach (CelestialBody body in eph.Bodies)
@@ -274,8 +271,8 @@ public sealed class AWreckIsNotAPlanetTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
         Set(map, "_ship", new ShipState(Vector2d.Zero, Vector2d.Zero, 0.0));
@@ -292,16 +289,4 @@ public sealed class AWreckIsNotAPlanetTests
          ?? throw new InvalidOperationException($"no method {method} on Map — this bench has drifted"))
         .Invoke(o, args);
 
-    private static string ScenarioPath(string file)
-    {
-        var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !System.IO.Directory.Exists(System.IO.Path.Combine(dir.FullName, "scenarios")))
-        {
-            dir = dir.Parent;
-        }
-
-        return dir is null
-            ? throw new InvalidOperationException("no scenarios/ directory above the test binary")
-            : System.IO.Path.Combine(dir.FullName, "scenarios", file);
-    }
 }

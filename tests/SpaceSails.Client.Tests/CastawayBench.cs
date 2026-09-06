@@ -53,11 +53,6 @@ internal static class CastawayBench
     /// kiosk would make every press guard green about a console that is not there.</summary>
     internal const string Port = "selene-gate";
 
-    /// <summary>The shipping scenario, loaded once for the whole assembly: every world below is the game's
-    /// own sky, not a sky a test invented.</summary>
-    internal static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol = new(() =>
-        ScenarioLoader.LoadFile(Path.Combine(TestTree.RepoRoot(), "scenarios", "sol.json")));
-
     // ── THE WORLD ─────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -79,8 +74,8 @@ internal static class CastawayBench
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
         Set(map, "_npcSimulator", new Simulator(ephemeris, TrafficSchedule.NpcTimeStep));

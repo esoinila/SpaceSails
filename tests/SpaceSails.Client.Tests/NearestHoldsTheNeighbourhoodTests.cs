@@ -41,9 +41,6 @@ public sealed class NearestHoldsTheNeighbourhoodTests
     private const BindingFlags Hidden =
         BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
-
     /// <summary>Where the ship is held while the family turns: a planet, and how far off it to park.
     /// The ranges are the ones the flicker was found at — from a long approach down to close aboard.</summary>
     private static IEnumerable<(string Planet, double Metres)> Posts()
@@ -70,19 +67,6 @@ public sealed class NearestHoldsTheNeighbourhoodTests
         return data;
     }
 
-    private static string ScenarioPath(string file)
-    {
-        var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !System.IO.Directory.Exists(System.IO.Path.Combine(dir.FullName, "scenarios")))
-        {
-            dir = dir.Parent;
-        }
-
-        return dir is null
-            ? throw new InvalidOperationException("no scenarios/ directory above the test binary")
-            : System.IO.Path.Combine(dir.FullName, "scenarios", file);
-    }
-
     private static void Set(object o, string field, object? value) =>
         (o.GetType().GetField(field, Hidden)
          ?? throw new InvalidOperationException($"no field {field} on Map — this bench has drifted"))
@@ -104,8 +88,8 @@ public sealed class NearestHoldsTheNeighbourhoodTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
         Set(map, "_ship", new ShipState(Vector2d.Zero, Vector2d.Zero, 0.0));
@@ -115,7 +99,7 @@ public sealed class NearestHoldsTheNeighbourhoodTests
     /// <summary>How long the family takes to come round: five orbits of the planet's slowest satellite, so
     /// every member of it has been near the ship and far from it several times over.</summary>
     private static double WatchWindow(string planet) =>
-        5.0 * Sol.Value.Bodies.Where(b => b.ParentId == planet)
+        5.0 * TestTree.Sol.Bodies.Where(b => b.ParentId == planet)
             .Select(b => Math.Abs(b.OrbitPeriodS)).DefaultIfEmpty(1.0e5).Max();
 
     private const int Samples = 2000;
@@ -207,7 +191,7 @@ public sealed class NearestHoldsTheNeighbourhoodTests
         // …and every planet that keeps more than one thing in its Hill sphere blinks SOMEWHERE among its
         // posts. Without this the whole bench could quietly decay into thirty-two of the boring kind and
         // still pass while reporting nothing.
-        foreach (string planet in Sol.Value.Bodies
+        foreach (string planet in TestTree.Sol.Bodies
             .Where(b => b.ParentId is not null && b.ParentId != "sun")
             .GroupBy(b => b.ParentId!, StringComparer.Ordinal)
             .Where(g => g.Count() > 1)

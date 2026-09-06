@@ -1,5 +1,8 @@
 using System;
 using System.IO;
+using System.Threading;
+using SpaceSails.Contracts;
+using SpaceSails.Core;
 
 namespace SpaceSails.Client.Tests;
 
@@ -52,4 +55,40 @@ internal static class TestTree
         }
         throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
     }
+
+    /// <summary>
+    /// #251 · THE SHIPPING SKY, PARSED ONCE PER ASSEMBLY.
+    ///
+    /// <para>The same measurement that found seventy-one copies of <see cref="RepoRoot"/> found the second
+    /// half of the same habit: thirty classes in this project each held their own
+    /// <c>Lazy&lt;ScenarioDefinition&gt;</c> over <c>scenarios/sol.json</c>, and each one read and parsed
+    /// that file from disk. Nothing in it changes between them — it is the file the game ships — so every
+    /// parse after the first bought exactly the object the previous one had already built.</para>
+    ///
+    /// <para><b>Why one shared object is safe.</b> Sharing a parse across classes xUnit runs in PARALLEL is
+    /// only a refactor if the thing shared cannot be written to, and this one cannot:
+    /// <see cref="ScenarioDefinition"/> and every type reachable from it —
+    /// <see cref="TrafficDefinition"/>, <see cref="RouteDefinition"/>,
+    /// <see cref="PodLauncherDefinition"/>, <see cref="StreamDefinition"/>,
+    /// <see cref="BodyDefinition"/>, <see cref="AtmosphereDefinition"/> — is a <c>sealed record</c> whose
+    /// every property is <c>init</c>-only and whose every collection is exposed as
+    /// <see cref="System.Collections.Generic.IReadOnlyList{T}"/>. Neither suite nor <c>src/</c> holds a cast
+    /// or a reflective write that would reach past that; the client's own cheat bodies are appended with a
+    /// <c>with</c> expression over a fresh list (<c>Map.Sim.World.Build.AppendTheBodiesTheCheatsAskFor</c>),
+    /// which is a copy and leaves this instance untouched. The full audit is in the lane's pull request.</para>
+    ///
+    /// <para><see cref="LazyThreadSafetyMode.ExecutionAndPublication"/> is named rather than left to the
+    /// default because that is the whole point: one parse, whichever class gets here first, and every other
+    /// class blocked until it is done rather than racing it.</para>
+    ///
+    /// <para>The path is the CHECKOUT's copy, via <see cref="RepoRoot"/>, because that is what all thirty
+    /// copies read: this project — unlike the Core suite next door — does not copy <c>scenarios/</c> beside
+    /// its test binary, so there is no other copy to read.</para>
+    /// </summary>
+    private static readonly Lazy<ScenarioDefinition> TheShippingSky = new(
+        () => ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol.json")),
+        LazyThreadSafetyMode.ExecutionAndPublication);
+
+    /// <summary><c>scenarios/sol.json</c>, the sky the game ships, parsed once for the whole assembly.</summary>
+    internal static ScenarioDefinition Sol => TheShippingSky.Value;
 }

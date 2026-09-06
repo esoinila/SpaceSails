@@ -148,8 +148,7 @@ public class AerobrakeTests
     public void SolJson_NowCarriesTheSkimShells_ForTheGiantsEarthAndMars()
     {
         // #290 ships Lab 32's proposed ice-giant + Mars shells so the aerobrake has air to brake against.
-        var scenario = ScenarioLoader.LoadFile(
-            System.IO.Path.Combine(System.AppContext.BaseDirectory, "scenarios", "sol.json"));
+        var scenario = TestTree.Sol;
         var eph = CircularOrbitEphemeris.FromScenario(scenario);
 
         foreach (string id in new[] { "uranus", "neptune", "mars", "jupiter", "saturn", "earth" })

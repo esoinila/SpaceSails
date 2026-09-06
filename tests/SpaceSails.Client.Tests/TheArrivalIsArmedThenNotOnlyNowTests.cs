@@ -299,7 +299,7 @@ public sealed class TheArrivalIsArmedThenNotOnlyNowTests
                 "ComponentBase has no _hasPendingQueuedRender — the render early-out this bench rides on has moved.");
         pending.SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
 
@@ -389,22 +389,6 @@ public sealed class TheArrivalIsArmedThenNotOnlyNowTests
     }
 
     // ── Reflection plumbing (the TheBerthEndsTheVoyageTests / TheBrakeCardKnowsSheIsClamped idiom) ──────
-
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
-
-    private static string ScenarioPath(string file)
-    {
-        var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !System.IO.Directory.Exists(System.IO.Path.Combine(dir.FullName, "scenarios")))
-        {
-            dir = dir.Parent;
-        }
-
-        return dir is null
-            ? throw new InvalidOperationException("no scenarios/ directory above the test binary")
-            : System.IO.Path.Combine(dir.FullName, "scenarios", file);
-    }
 
     private static void Set(object o, string field, object? value) => SetField(o, field, value);
 

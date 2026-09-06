@@ -246,10 +246,6 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     private static int TheFloor => UndergroundComplex.TopPressurisedFloor(Body)
         ?? throw new InvalidOperationException($"{Body} has no pressurised floor to walk about on.");
 
-    /// <summary>The shipping scenario, off the canonical copy at the repo root — the same JSON the client
-    /// fetches out of <c>wwwroot/scenarios</c> (the csproj mirrors this file into it).</summary>
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol = new(() => Scenario("sol"));
-
     /// <summary>…and the Electric Universe cut of it, which is the only scenario in the game that hands the
     /// page a <see cref="PlasmaEnvironment"/> — so it is the only world where the charge lane of the frame is
     /// anything but an early return.</summary>
@@ -262,7 +258,7 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     /// cost seconds and every world wants the same sky.</summary>
     private static readonly Lazy<IReadOnlyList<NpcShip>> Traffic = new(() =>
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         return
         [
             .. TrafficSchedule.GeneratePods(eph, seed: 43, count: 3),
@@ -320,7 +316,7 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
         pending.SetValue(map, true);
 
         SpaceSails.Contracts.ScenarioDefinition scenario =
-            world == World.TheElectricUniverse ? SolEu.Value : Sol.Value;
+            world == World.TheElectricUniverse ? SolEu.Value : TestTree.Sol;
         ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
         PlasmaEnvironment? plasma = PlasmaEnvironment.FromScenario(scenario, ephemeris);
         Set(map, "_scenarioName", scenario.Name);

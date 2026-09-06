@@ -265,7 +265,7 @@ public sealed class TheBerthIsItsOwnSceneTests
     [Fact]
     public void AskingTheRosterForTheSlotAndThenTheBearingIsTheSameBearing()
     {
-        var sol = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var sol = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
         // A ground whose harbour keeps more than one berth — derived, never typed, because a one-collar port
         // cannot reassign anybody and a sweep that found only those would be green and empty.

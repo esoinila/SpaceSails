@@ -166,7 +166,7 @@ public sealed class EveryJobSaysWhatItTakesTests
     [Fact]
     public void TheLaneTimeIsAHohmannOverTheShippedEphemeris()
     {
-        var sol = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var sol = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         CelestialBody sun = sol.Bodies.Single(b => b.ParentId is null);
         CelestialBody earth = sol.Bodies.Single(b => b.Id == "earth");
         CelestialBody mars = sol.Bodies.Single(b => b.Id == "mars");
@@ -188,7 +188,7 @@ public sealed class EveryJobSaysWhatItTakesTests
     [Fact]
     public void ALocalHopIsReadAboutItsOwnPlanetAndComesOutInDays()
     {
-        var sol = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var sol = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         CelestialBody sun = sol.Bodies.Single(b => b.ParentId is null);
         CelestialBody mars = sol.Bodies.Single(b => b.Id == "mars");
 
@@ -229,7 +229,7 @@ public sealed class EveryJobSaysWhatItTakesTests
     [Fact]
     public void TheSharedPrimaryIsThePlanetWhenBothEndsAreInItsSystem()
     {
-        var sol = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var sol = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         CelestialBody sun = sol.Bodies.Single(b => b.ParentId is null);
 
         // Every body that rides Mars round the Sun — a moon, a haven, a depot berth. If the scenario ever
@@ -255,7 +255,7 @@ public sealed class EveryJobSaysWhatItTakesTests
     [Fact]
     public void ThePlanetLevelWalkStopsBelowTheSun()
     {
-        var sol = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var sol = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         CelestialBody sun = sol.Bodies.Single(b => b.ParentId is null);
 
         Assert.Equal("mars", JobEffort.PlanetLevelAncestor(sol, "mars")?.Id);
@@ -276,7 +276,7 @@ public sealed class EveryJobSaysWhatItTakesTests
     [Fact]
     public void TheShippedSystemHasExactlyOneRoot()
     {
-        var sol = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var sol = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         Assert.Single(sol.Bodies, b => b.ParentId is null);
         Assert.Equal(sol.Bodies.Single(b => b.ParentId is null).Id, JobEffort.Root(sol)?.Id);
     }

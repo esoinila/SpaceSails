@@ -25,8 +25,7 @@ public sealed class TheTripHasItsOwnFrameTests
 {
     /// <summary>The shipped solar system — the one the owner was flying when he hit this.</summary>
     private static readonly CircularOrbitEphemeris Sol =
-        CircularOrbitEphemeris.FromScenario(ScenarioLoader.LoadFile(
-            Path.Combine(AppContext.BaseDirectory, "scenarios", "sol.json")));
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     /// <summary>The root of the hierarchy — the body <c>TripFrame</c> reports as <c>null</c>, because a
     /// null plot frame IS the inertial frame the root sits still in.</summary>

@@ -49,9 +49,6 @@ public sealed class TheMilkRunWalksTheWholeLoopTests
     private const BindingFlags Hidden =
         BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
-
     /// <summary>The berth the bench starts ashore at — a clampable station haven, which is the only kind of
     /// place a contract is taken at and the only kind that has a counter to be paid over.</summary>
     private const string HomeBerth = "selene-gate";
@@ -390,7 +387,7 @@ public sealed class TheMilkRunWalksTheWholeLoopTests
             .SetValue(map, true);
 
         ICelestialEphemeris sky = TheSky();
-        Set(map, "_scenarioName", Sol.Value.Name);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", sky);
         Set(map, "_simulator", new Simulator(sky, timeStepSeconds: 1.0));
         Set(map, "_ship", new ShipState(sky.Position(berth, 0), Vector2d.Zero, 0));
@@ -485,7 +482,7 @@ public sealed class TheMilkRunWalksTheWholeLoopTests
     private static void WindTheClock(Pages.Map map) =>
         Set(map, "_frameNowMs", Get<double>(map, "_frameNowMs") + PulseSlot.MinDwellMs + 1);
 
-    private static ICelestialEphemeris TheSky() => CircularOrbitEphemeris.FromScenario(Sol.Value);
+    private static ICelestialEphemeris TheSky() => CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     private static string[] TutorialSteps() => (string[])StaticField("TutorialSteps");
 
@@ -537,8 +534,6 @@ public sealed class TheMilkRunWalksTheWholeLoopTests
         Path.Combine(RepoDir("src", "SpaceSails.Client"), "Pages", name);
 
     private static string CorePath(string name) => Path.Combine(RepoDir("src", "SpaceSails.Core"), name);
-
-    private static string ScenarioPath(string file) => Path.Combine(RepoDir("scenarios"), file);
 
     private static string RepoDir(params string[] parts)
     {

@@ -4,7 +4,7 @@ public class NewsWireTests
 {
     private const double Day = NewsWire.SecondsPerDay;
 
-    private static CircularOrbitEphemeris SolEphemeris() => CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+    private static CircularOrbitEphemeris SolEphemeris() => CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     // ---- Ambient: determinism ----
 

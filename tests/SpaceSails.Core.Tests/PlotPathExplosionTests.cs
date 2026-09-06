@@ -113,8 +113,7 @@ public class PlotPathExplosionTests
     [Fact]
     public void FullSol_RetrogradeTitanGraze_ProjectionStaysLocal()
     {
-        var scenario = ScenarioLoader.LoadFile(FindRepoFile(Path.Combine("scenarios", "sol.json")));
-        var eph = CircularOrbitEphemeris.FromScenario(scenario);
+        var eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var sim = new Simulator(eph, timeStepSeconds: 1.0);
 
         double t0 = 44 * (1.377648e6 / 48.0); // the exploding Titan phase
@@ -136,8 +135,7 @@ public class PlotPathExplosionTests
     [Fact]
     public void FullSol_AllTitanPhasesAndSenses_NeverRunAway()
     {
-        var scenario = ScenarioLoader.LoadFile(FindRepoFile(Path.Combine("scenarios", "sol.json")));
-        var eph = CircularOrbitEphemeris.FromScenario(scenario);
+        var eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var sim = new Simulator(eph, timeStepSeconds: 1.0);
         double titanPeriod = 1.377648e6;
 

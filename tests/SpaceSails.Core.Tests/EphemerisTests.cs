@@ -5,7 +5,7 @@ public class EphemerisTests
     [Fact]
     public void SolScenario_LoadsAllBodies()
     {
-        var scenario = SimulatorTests.LoadSol();
+        var scenario = TestTree.Sol;
 
         Assert.Equal("Sol", scenario.Name);
         // Sun + 8 planets + Luna (M6) + outer moons, stations and havens (PR-3, vision par. 8):
@@ -36,7 +36,7 @@ public class EphemerisTests
     [Fact]
     public void Earth_ReturnsToStart_AfterOnePeriod()
     {
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         double period = ephemeris.Bodies.Single(b => b.Id == "earth").OrbitPeriod;
 
         Vector2d start = ephemeris.Position("earth", 0);
@@ -80,7 +80,7 @@ public class EphemerisTests
     [Fact]
     public void Eccentricity0_ByteIdenticalToLegacyCircularFormula()
     {
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         double[] times = [0, 1, 12345.678, 3.7e5, 2.5e6, 4.4e7, 9.3e8, -5e6];
 
         foreach (double t in times)

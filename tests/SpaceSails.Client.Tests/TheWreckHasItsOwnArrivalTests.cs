@@ -50,9 +50,6 @@ public sealed class TheWreckHasItsOwnArrivalTests
     /// follow-up this crew noted when the verb moved and the tooltip under it did not.</summary>
     private const string TheHint = "No orbit to slip into. She closes to pickup range and holds.";
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
-
     // ── THE WORDS THEMSELVES ──────────────────────────────────────────────────────────────────────────
 
     /// <summary>VERBATIM. All three strings, as canon authored them — the whole point of pinning them in a
@@ -117,7 +114,7 @@ public sealed class TheWreckHasItsOwnArrivalTests
     [Fact]
     public void ThePremise_TheScenarioCarriesAWreckThatIsNotAClampBerth()
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
         var wrecks = eph.Bodies.Where(b => Derelict.IsWreckBody(b.Id)).Select(b => b.Id).ToList();
         Assert.Equal([Derelict.RoadsterBodyId], wrecks);
@@ -185,7 +182,7 @@ public sealed class TheWreckHasItsOwnArrivalTests
     [Fact]
     public void NoOtherBerth_EverSpeaksTheWrecksLine()
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var wrong = new List<string>();
 
         foreach (CelestialBody body in eph.Bodies)
@@ -250,7 +247,7 @@ public sealed class TheWreckHasItsOwnArrivalTests
         Assert.Equal(TheHint, HarborVocabulary.PickupArmHint);
 
         Pages.Map map = Booted();
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
         int wrecksSeen = 0;
         int others = 0;
@@ -284,7 +281,7 @@ public sealed class TheWreckHasItsOwnArrivalTests
     private static Pages.Map StoodOffFrom(string bodyId, out CelestialBody body)
     {
         Pages.Map map = Booted();
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         body = eph.Bodies.First(b => b.Id == bodyId);
         Set(map, "_plunderAuthorizedTargetId", bodyId);
         return map;
@@ -312,8 +309,8 @@ public sealed class TheWreckHasItsOwnArrivalTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
         Set(map, "_ship", new ShipState(Vector2d.Zero, Vector2d.Zero, 0.0));
@@ -346,5 +343,4 @@ public sealed class TheWreckHasItsOwnArrivalTests
         return dir?.FullName ?? throw new InvalidOperationException("no repo root above the test binary");
     }
 
-    private static string ScenarioPath(string file) => Path.Combine(RepoRoot(), "scenarios", file);
 }

@@ -95,8 +95,7 @@ public sealed class Lab31BeanstalkTests
     [Fact]
     public void TheGameBodiesConstantsAreTheGamesOwn()
     {
-        ScenarioDefinition sol = ScenarioLoader.LoadFile(
-            Path.Combine(AppContext.BaseDirectory, "scenarios", "sol.json"));
+        ScenarioDefinition sol = TestTree.Sol;
 
         (string Lab, string Scenario)[] fromTheGame =
             [("Earth", "earth"), ("Mars", "mars"), ("Luna", "luna"), ("Phobos", "phobos")];
