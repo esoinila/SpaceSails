@@ -689,8 +689,22 @@ public sealed record LodgedClaimRecord(string HullName, int PayoutCr, double Lod
 /// <summary>#1151 — <see cref="ProgressSection.WritPending"/>'s row: whose contract it is, and the berth they
 /// are waiting at (<see cref="QuietHands.PortFor"/>'s harbour, or the port she was clamped to). A BERTH
 /// rather than a ground, because a ground has no berths to let and a pursuer waits where a captain has to
-/// come back to.</summary>
-public sealed record PendingWritRecord(string Callsign, string HavenId, double FiledAtSimTime);
+/// come back to.
+///
+/// <para><b>#1151 slice 4 · AND THE TERMS THE WRIT WAS WRITTEN ON.</b> A writ that waited is served on the
+/// terms it had at the moment of filing — no discount for the wait, and no penalty for it — so the demand it
+/// opens cannot be re-priced off a heat gauge that has decayed since, or been raised again by something the
+/// contract was never about. The two things a boarding demand is cut from are STORED rather than recomputed:
+/// the heat the contract was worth (<paramref name="HeatWhenFiled"/>) and the pursuer's own id, which
+/// together with <paramref name="FiledAtSimTime"/> is the whole of that demand's seed. Asking the world
+/// again at service time would be a second opinion about a bill that was already written, which is
+/// <see cref="LodgedClaimRecord"/>'s own reason one docblock up.</para>
+///
+/// <para>Both are OPTIONAL, so a vault written before slice 4 — a writ filed and not yet served — loads as
+/// what it is rather than as a broken file. Such a writ is served at heat 1, the floor every demand in the
+/// game already has.</para></summary>
+public sealed record PendingWritRecord(
+    string Callsign, string HavenId, double FiledAtSimTime, int HeatWhenFiled = 0, string? HunterId = null);
 
 /// <summary>#525 — <see cref="ProgressSection.CollarCleared"/>'s row: the port, the slot the ship that
 /// declared the overload was tied up in, the neighbouring slots the roster emptied, and <b>why</b>.

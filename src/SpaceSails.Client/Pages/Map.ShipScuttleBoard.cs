@@ -407,11 +407,12 @@ public sealed partial class Map
                 // voided by the arming or by the ending, it is the same contract and it is still owed a
                 // captain.
                 //
-                // One writ: TheWritWaitsForHim keeps the first and ignores the rest. A queue of people
-                // waiting at ports is a later slice's save format.
+                // One writ: TheWritWaitsForHim keeps the first and ignores the rest, through the same
+                // `ThereIsRoomOnTheFile` the sky asks before letting anybody board (#1151 slice 4) — so a
+                // roster of pursuers cannot become a roster of writs at either of the two doors.
                 if (!hunter.CaughtPlayer)
                 {
-                    TheWritWaitsForHim(theGround, null, hunter.Callsign);
+                    TheWritWaitsForHim(theGround, null, hunter);
                 }
             }
         }

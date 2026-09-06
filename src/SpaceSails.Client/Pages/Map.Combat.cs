@@ -549,12 +549,23 @@ public partial class Map
         // all three signals (TheMasterIsAboardHer, Map.Claims.Presence.cs). On `_surface is null` alone a
         // hunter could still reach a hull whose master was standing in a bar past a mated gangway, which is
         // #1138's own reading of what being aboard means, applied to the people who want her.
-        bool captainIsAboard = TheMasterIsAboardHer();
+        //
+        // #1151 slice 4 · …AND THE MAN ALREADY WAITING GOES FIRST. Two lines, in this order, and the order is
+        // the law. A writ that waited is served the moment its own conditions are met — he is back at their
+        // berth, on her — and only then is the sky asked whether anybody else may proceed, because serving
+        // clears the file and the answer changes on the same frame. Ask the other way round and the collector
+        // who has been standing on that ramp since the ending would be made to defer to his own writ.
+        TheWaitingWritIsServed();
+
+        // ONE WRIT, NOT A QUEUE. `TheProcessMayProceed` is the presence law AND the file: a second collector
+        // who runs the same hull down while a writ is out does not open a second process over the top of the
+        // first — he holds station, the shape this sim already gives a pursuer who cannot proceed.
+        bool anybodyMayProceed = TheProcessMayProceed();
 
         for (int i = _hunters.Count - 1; i >= 0; i--)
         {
             HunterState hunter = _hunters[i];
-            if (!captainIsAboard)
+            if (!anybodyMayProceed)
             {
                 _hunters[i] = EncounterRule.HoldStation(hunter, SimTime);
                 continue;
