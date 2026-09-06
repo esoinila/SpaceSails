@@ -1,0 +1,64 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SpaceSails.Core
+@using System.Globalization
+@*
+    #251 · THE THREE MENUS THE CHART OPENS, ON ONE FILE.
+
+    Click a body, click a ship, click empty sky: three panels, three gates, forty-one consecutive lines of
+    Map.razor, and one subject — what a click on the chart offers you, and at which desk. The per-lane menu
+    that used to be a fourth is gone (#953) and the paragraph saying so came with the block, because it is
+    about this run of the page and nowhere else.
+
+    Moved by PURE MOTION: the gates came with the invocations — a gate is what decides whether a menu is
+    open AND which desk may open it — and every page member the block reads is a [Parameter] with the SAME
+    NAME, so not one character between the fences changed. The rack renders nothing when all three gates are
+    shut, so the page's paint order is exactly what it was.
+
+    IHandleEvent repeats the page's own override (Map.Sim.cs). The .razor.css beside this file carries no
+    rules; it exists to give the component Map.razor.css's scope (pinned in SpaceSails.Client.csproj), and
+    the three panels keep their own sheets.
+*@
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────── *@
+    @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors && _bodyMenuBody is { } menuBody)
+    {
+        <BodyMenuPanel _activeDesk="@_activeDesk" _aerobrakeArmedBodyId="@_aerobrakeArmedBodyId"
+                       _armedOrbitBodyId="@_armedOrbitBodyId" _destinationBodyId="@_destinationBodyId"
+                       _ephemeris="@_ephemeris" _ship="@_ship" AerobrakeMenuQuote="@AerobrakeMenuQuote"
+                       ArmMenuHint="@ArmMenuHint" ClampMenu="@ClampMenu" CloseBodyMenu="@CloseBodyMenu"
+                       Dismiss="@Dismiss" DockNavLockTip="@DockNavLockTip"
+                       EngageAerobrakeFromMenu="@EngageAerobrakeFromMenu"
+                       EngageLongHaulFromMenu="@EngageLongHaulFromMenu" FormatSimTime="@FormatSimTime"
+                       HarborClassOf="@HarborClassOf" KaamosCyclerBlock="@KaamosCyclerBlock"
+                       KaamosCyclerLabel="@KaamosCyclerLabel" KaamosCyclerRowVisible="@KaamosCyclerRowVisible"
+                       LongHaulClearanceBlock="@LongHaulClearanceBlock" LongHaulOfferBlock="@LongHaulOfferBlock"
+                       LongHaulTargetPlanet="@LongHaulTargetPlanet" MenuAnchorStyle="@MenuAnchorStyle"
+                       NavLockedByDock="@NavLockedByDock" RideTheCyclerWindow="@RideTheCyclerWindow"
+                       ScanAreaFromMenu="@ScanAreaFromMenu" ScanCostText="@ScanCostText"
+                       SetDestination="@SetDestination" SimTime="@SimTime"
+                       ToggleArmedInsertionFromMenu="@ToggleArmedInsertionFromMenu" menuBody="@menuBody" _bodyMenuX="@_bodyMenuX" _bodyMenuY="@_bodyMenuY" />
+    }
+
+    @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors or ShipDesk.WarRoom && _shipMenuId is { } menuShipId && FindNpc(menuShipId) is { } menuNpc)
+    {
+        <ShipMenuPanel _activeDesk="@_activeDesk" _ship="@_ship" ClampMenu="@ClampMenu"
+                       CloseShipMenu="@CloseShipMenu" Dismiss="@Dismiss" FormatDistance="@FormatDistance"
+                       InterestFromMenu="@InterestFromMenu" MenuAnchorStyle="@MenuAnchorStyle"
+                       ScanAreaFromMenu="@ScanAreaFromMenu" SimTime="@SimTime"
+                       TrackShipFromMenu="@TrackShipFromMenu" menuNpc="@menuNpc" menuShipId="@menuShipId" _shipMenuX="@_shipMenuX" _shipMenuY="@_shipMenuY" />
+    }
+
+    @* #953 — the per-lane menu is GONE with the click target that opened it (owner: "At least the routes
+       as a whole should not even be selectable, since they just colour the page in that option"), and the
+       drawn corridor went with it on the archive ruling ("we have never used them to find anything"). Its
+       two actions — sweep once, standing watch — kept their jobs: they aim the telescope and the pass they
+       book puts real contacts in the ledger. They live in the open-sky menu below, under the lane it names. *@
+
+    @if (_activeDesk == ShipDesk.Sensors && _skyMenuWorld is { } skyPoint)
+    {
+        <SkyMenuPanel _ship="@_ship" ClampMenu="@ClampMenu" CloseSkyMenu="@CloseSkyMenu" Dismiss="@Dismiss"
+                      FormatDistance="@FormatDistance" MenuAnchorStyle="@MenuAnchorStyle" NearLaneFor="@NearLaneFor"
+                      ScanAreaFromMenu="@ScanAreaFromMenu" ScanCostText="@ScanCostText" SkyScanLabel="@SkyScanLabel"
+                      OnSweepCorridorFromMenu="@((CorridorRegion lane, bool standing) => SweepCorridorFromMenu(lane, standing))" skyPoint="@skyPoint" _skyMenuX="@_skyMenuX" _skyMenuY="@_skyMenuY" _skyMenuRadius="@_skyMenuRadius" />
+    }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────── *@

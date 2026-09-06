@@ -583,47 +583,27 @@
                     ToggleWeaponsTight="@ToggleWeaponsTight" WarmCutSecondsLeft="@WarmCutSecondsLeft"
                     WorkTheDoor="@WorkTheDoor" WorstSweeperState="@WorstSweeperState" />
 
-    @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors && _bodyMenuBody is { } menuBody)
-    {
-        <BodyMenuPanel _activeDesk="@_activeDesk" _aerobrakeArmedBodyId="@_aerobrakeArmedBodyId"
-                       _armedOrbitBodyId="@_armedOrbitBodyId" _destinationBodyId="@_destinationBodyId"
-                       _ephemeris="@_ephemeris" _ship="@_ship" AerobrakeMenuQuote="@AerobrakeMenuQuote"
-                       ArmMenuHint="@ArmMenuHint" ClampMenu="@ClampMenu" CloseBodyMenu="@CloseBodyMenu"
-                       Dismiss="@Dismiss" DockNavLockTip="@DockNavLockTip"
-                       EngageAerobrakeFromMenu="@EngageAerobrakeFromMenu"
-                       EngageLongHaulFromMenu="@EngageLongHaulFromMenu" FormatSimTime="@FormatSimTime"
-                       HarborClassOf="@HarborClassOf" KaamosCyclerBlock="@KaamosCyclerBlock"
-                       KaamosCyclerLabel="@KaamosCyclerLabel" KaamosCyclerRowVisible="@KaamosCyclerRowVisible"
-                       LongHaulClearanceBlock="@LongHaulClearanceBlock" LongHaulOfferBlock="@LongHaulOfferBlock"
-                       LongHaulTargetPlanet="@LongHaulTargetPlanet" MenuAnchorStyle="@MenuAnchorStyle"
-                       NavLockedByDock="@NavLockedByDock" RideTheCyclerWindow="@RideTheCyclerWindow"
-                       ScanAreaFromMenu="@ScanAreaFromMenu" ScanCostText="@ScanCostText"
-                       SetDestination="@SetDestination" SimTime="@SimTime"
-                       ToggleArmedInsertionFromMenu="@ToggleArmedInsertionFromMenu" menuBody="@menuBody" _bodyMenuX="@_bodyMenuX" _bodyMenuY="@_bodyMenuY" />
-    }
-
-    @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors or ShipDesk.WarRoom && _shipMenuId is { } menuShipId && FindNpc(menuShipId) is { } menuNpc)
-    {
-        <ShipMenuPanel _activeDesk="@_activeDesk" _ship="@_ship" ClampMenu="@ClampMenu"
-                       CloseShipMenu="@CloseShipMenu" Dismiss="@Dismiss" FormatDistance="@FormatDistance"
-                       InterestFromMenu="@InterestFromMenu" MenuAnchorStyle="@MenuAnchorStyle"
-                       ScanAreaFromMenu="@ScanAreaFromMenu" SimTime="@SimTime"
-                       TrackShipFromMenu="@TrackShipFromMenu" menuNpc="@menuNpc" menuShipId="@menuShipId" _shipMenuX="@_shipMenuX" _shipMenuY="@_shipMenuY" />
-    }
-
-    @* #953 — the per-lane menu is GONE with the click target that opened it (owner: "At least the routes
-       as a whole should not even be selectable, since they just colour the page in that option"), and the
-       drawn corridor went with it on the archive ruling ("we have never used them to find anything"). Its
-       two actions — sweep once, standing watch — kept their jobs: they aim the telescope and the pass they
-       book puts real contacts in the ledger. They live in the open-sky menu below, under the lane it names. *@
-
-    @if (_activeDesk == ShipDesk.Sensors && _skyMenuWorld is { } skyPoint)
-    {
-        <SkyMenuPanel _ship="@_ship" ClampMenu="@ClampMenu" CloseSkyMenu="@CloseSkyMenu" Dismiss="@Dismiss"
-                      FormatDistance="@FormatDistance" MenuAnchorStyle="@MenuAnchorStyle" NearLaneFor="@NearLaneFor"
-                      ScanAreaFromMenu="@ScanAreaFromMenu" ScanCostText="@ScanCostText" SkyScanLabel="@SkyScanLabel"
-                      OnSweepCorridorFromMenu="@((CorridorRegion lane, bool standing) => SweepCorridorFromMenu(lane, standing))" skyPoint="@skyPoint" _skyMenuX="@_skyMenuX" _skyMenuY="@_skyMenuY" _skyMenuRadius="@_skyMenuRadius" />
-    }
+    <ChartMenusRack _activeDesk="@_activeDesk" _aerobrakeArmedBodyId="@_aerobrakeArmedBodyId"
+                    _armedOrbitBodyId="@_armedOrbitBodyId" _bodyMenuBody="@_bodyMenuBody" _bodyMenuX="@_bodyMenuX"
+                    _bodyMenuY="@_bodyMenuY" _destinationBodyId="@_destinationBodyId" _ephemeris="@_ephemeris"
+                    _ship="@_ship" _shipMenuId="@_shipMenuId" _shipMenuX="@_shipMenuX" _shipMenuY="@_shipMenuY"
+                    _skyMenuRadius="@_skyMenuRadius" _skyMenuWorld="@_skyMenuWorld" _skyMenuX="@_skyMenuX"
+                    _skyMenuY="@_skyMenuY" AerobrakeMenuQuote="@AerobrakeMenuQuote" ArmMenuHint="@ArmMenuHint"
+                    ClampMenu="@ClampMenu" CloseBodyMenu="@CloseBodyMenu" CloseShipMenu="@CloseShipMenu"
+                    CloseSkyMenu="@CloseSkyMenu" Dismiss="@Dismiss" DockNavLockTip="@DockNavLockTip"
+                    EngageAerobrakeFromMenu="@EngageAerobrakeFromMenu"
+                    EngageLongHaulFromMenu="@EngageLongHaulFromMenu" FindNpc="@FindNpc"
+                    FormatDistance="@FormatDistance" FormatSimTime="@FormatSimTime" HarborClassOf="@HarborClassOf"
+                    InterestFromMenu="@InterestFromMenu" KaamosCyclerBlock="@KaamosCyclerBlock"
+                    KaamosCyclerLabel="@KaamosCyclerLabel" KaamosCyclerRowVisible="@KaamosCyclerRowVisible"
+                    LongHaulClearanceBlock="@LongHaulClearanceBlock" LongHaulOfferBlock="@LongHaulOfferBlock"
+                    LongHaulTargetPlanet="@LongHaulTargetPlanet" MenuAnchorStyle="@MenuAnchorStyle"
+                    NavLockedByDock="@NavLockedByDock" NearLaneFor="@NearLaneFor"
+                    RideTheCyclerWindow="@RideTheCyclerWindow" ScanAreaFromMenu="@ScanAreaFromMenu"
+                    ScanCostText="@ScanCostText" SetDestination="@SetDestination" SimTime="@SimTime"
+                    SkyScanLabel="@SkyScanLabel" SweepCorridorFromMenu="@SweepCorridorFromMenu"
+                    ToggleArmedInsertionFromMenu="@ToggleArmedInsertionFromMenu"
+                    TrackShipFromMenu="@TrackShipFromMenu" />
 
     @* #195 (owner ruling: the NOW/NEXT banner covered the toolbar's 'checklist' and '?' buttons):
        the desk tabs, the pilot banner and the ship-alert strip live in ONE in-FLOW column now (was three
