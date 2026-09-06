@@ -56,7 +56,7 @@ internal static class CastawayBench
     /// <summary>The shipping scenario, loaded once for the whole assembly: every world below is the game's
     /// own sky, not a sky a test invented.</summary>
     internal static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol = new(() =>
-        ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol.json")));
+        ScenarioLoader.LoadFile(Path.Combine(TestTree.RepoRoot(), "scenarios", "sol.json")));
 
     // ── THE WORLD ─────────────────────────────────────────────────────────────────────────────────────
 
@@ -170,23 +170,8 @@ internal static class CastawayBench
 
     /// <summary>The page's own markup, for the guards that read the castaway card as text.</summary>
     internal static string TheCastawayMarkup() =>
-        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
 
-    /// <summary>The repo root, found by walking up from the test assembly — the same way every other guard
-    /// in this project finds it, and the reason none of them depend on the working directory.</summary>
-    internal static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new InvalidOperationException("could not find the repository root from the test assembly.");
-    }
 
     internal static object? Get(object owner, string name) =>
         owner.GetType().GetProperty(name, Hidden)?.GetValue(owner)

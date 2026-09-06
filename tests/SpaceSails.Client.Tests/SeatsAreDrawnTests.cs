@@ -42,22 +42,8 @@ public sealed class SeatsAreDrawnTests
 
     private static SurfaceLayout.Field Field => MoonSurface.ExpeditionField();
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        File.ReadAllText(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     /// <summary>#870 · The deck view is six partials by subject now, so "the pen" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split. Concatenated rather than
@@ -65,12 +51,12 @@ public sealed class SeatsAreDrawnTests
     /// pointing them at a single partial would be a silent weakening.</summary>
     private static string DeckViewSource() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Rendering"), "DeckView*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering"), "DeckView*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
     private static string Doc(string name) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "docs", name));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "docs", name));
 
     // ── THE PEN THAT REMEMBERS ────────────────────────────────────────────────────────────────────────
 

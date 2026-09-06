@@ -325,7 +325,7 @@ public class TheBlackmailTwinTests
     [Fact]
     public void EachSentenceIsWrittenDownExactlyOnceInTheSource()
     {
-        string src = Path.Combine(RepoRoot(), "src");
+        string src = Path.Combine(TestTree.RepoRoot(), "src");
 
         foreach (string sentence in CompromisingChip.EveryLine())
         {
@@ -412,21 +412,5 @@ public class TheBlackmailTwinTests
         return (chips, total);
     }
 
-    private static string CoreSource() => Path.Combine(RepoRoot(), "src", "SpaceSails.Core");
-
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Core")))
-            {
-                return at.FullName;
-            }
-
-            at = at.Parent;
-        }
-
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
+    private static string CoreSource() => Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Core");
 }

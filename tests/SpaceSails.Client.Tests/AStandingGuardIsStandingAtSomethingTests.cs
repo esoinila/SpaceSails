@@ -769,29 +769,15 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
 
     // ── THE PAGE ITSELF ───────────────────────────────────────────────────────────────────────────────
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
     /// concatenated in the order the one file laid them out, which is exactly the text it read before the
     /// split. The count is asserted, so a seventh part can never go unread.</summary>
     private static string Patrol()
     {
-        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
+        string dir = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages");
         string[] order =
         [
             // #870 lane 6′c · RE-PATHED. The verbs moved onto Patrol's own partials, so the page's half
@@ -874,7 +860,7 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
     public void TheStationsAreDrawnFromCoreAndCarryNoVerb()
     {
         string hive = File.ReadAllText(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Rendering", "HiveInterior.cs"));
+            Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering", "HiveInterior.cs"));
         string block = Between(hive, "#831 · AND THE WATCHCLOCK STATIONS", "// The cars, on every floor");
 
         Assert.Contains("PatrolBeat.IsPatrolled(bodyId, level)", block, StringComparison.Ordinal);

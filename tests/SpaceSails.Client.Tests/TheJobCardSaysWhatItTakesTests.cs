@@ -27,22 +27,9 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class TheJobCardSaysWhatItTakesTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Source(params string[] parts) =>
-        MapMarkup.Read(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     private static string Flat(string s) => Regex.Replace(s, @"\s+", " ");
 
@@ -288,7 +275,6 @@ public sealed class TheJobCardSaysWhatItTakesTests
         Assert.True(b >= 0, $"'{second}' is not on this card at all");
         Assert.True(a < b, because);
     }
-
 
     /// <summary>
     /// The bar stranger's contract card, sliced out of Map.razor the way #838's guards slice a panel.

@@ -445,7 +445,7 @@ public sealed class NothingComesBetweenTheCaptainAndTheShuttleTests
     [Fact]
     public void TheTwoFilesThisLaneAddedSayNothingElseAtAll()
     {
-        string root = RepoRoot();
+        string root = TestTree.RepoRoot();
         string[] added =
         [
             Path.Combine(root, "src", "SpaceSails.Core", "SentryDoctrine.cs"),
@@ -495,19 +495,5 @@ public sealed class NothingComesBetweenTheCaptainAndTheShuttleTests
                 Assert.DoesNotContain(bad, said, StringComparison.OrdinalIgnoreCase);
             }
         }
-    }
-
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Core")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
     }
 }

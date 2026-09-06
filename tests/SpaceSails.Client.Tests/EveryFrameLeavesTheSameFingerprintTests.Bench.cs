@@ -256,7 +256,7 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> SolEu = new(() => Scenario("sol-eu"));
 
     private static SpaceSails.Contracts.ScenarioDefinition Scenario(string name) =>
-        ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", $"{name}.json"));
+        ScenarioLoader.LoadFile(Path.Combine(TestTree.RepoRoot(), "scenarios", $"{name}.json"));
 
     /// <summary>The traffic the shipping boot generates, off the shipping seeds. Cached because the planners
     /// cost seconds and every world wants the same sky.</summary>

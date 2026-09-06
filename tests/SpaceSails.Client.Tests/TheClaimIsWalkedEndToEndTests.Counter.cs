@@ -189,7 +189,7 @@ public sealed partial class TheClaimIsWalkedEndToEndTests
         Assert.Equal(NebulaClaims.DeskArt, StoryBeats.ArtFile(which));
         Assert.Equal(NebulaClaims.DeskCaption, StoryBeats.Caption(which));
         Assert.True(File.Exists(Path.Combine(
-                        RepoRoot(), "src", "SpaceSails.Client", "wwwroot", NebulaClaims.DeskArt)),
+                        TestTree.RepoRoot(), "src", "SpaceSails.Client", "wwwroot", NebulaClaims.DeskArt)),
                     "the beat names a painting that is not in the folder.");
     }
 

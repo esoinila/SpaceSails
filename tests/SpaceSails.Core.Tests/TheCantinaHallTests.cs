@@ -47,20 +47,6 @@ public sealed class TheCantinaHallTests
         return null;
     }
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Core")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     // ── (a) THE SEAT COUNT ────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -729,7 +715,7 @@ public sealed class TheCantinaHallTests
         // #870 · The module is one partial class spread over UndergroundComplex*.cs. Same needles, same
         // code, new paths — the source read here is the concatenation of every part.
         string core = string.Concat(Directory
-            .EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Core"), "UndergroundComplex*.cs")
+            .EnumerateFiles(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Core"), "UndergroundComplex*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 

@@ -58,7 +58,7 @@ public static class PinLedger
     // ── WHERE THE LEDGERS LIVE ────────────────────────────────────────────────────────────────────────
 
     public static string DirectoryPath =>
-        Path.Combine(RepoRoot(), "tests", "SpaceSails.Client.Tests", "Ledgers");
+        Path.Combine(TestTree.RepoRoot(), "tests", "SpaceSails.Client.Tests", "Ledgers");
 
     public static string PathOf(string suite) => Path.Combine(DirectoryPath, suite + ".ledger.txt");
 
@@ -318,19 +318,5 @@ public static class PinLedger
             return bare + "<" + string.Join(", ", t.GetGenericArguments().Select(TypeLabel)) + ">";
         }
         return t.Name;
-    }
-
-    public static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
     }
 }

@@ -20,23 +20,10 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheVoidFinallyHasALaneTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Pages(string file)
     {
-        string path = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file);
+        string path = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file);
         Assert.True(File.Exists(path), $"{file} is not where this guard reads it ({path}).");
         string src = File.ReadAllText(path);
         Assert.True(src.Length > 400, $"{file} is suspiciously empty — this guard would be reading nothing.");

@@ -145,8 +145,6 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     private static string Sha256(string text) =>
         Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text))).ToLowerInvariant();
 
-    private static string RepoRoot() => PinLedger.RepoRoot();
-
     /// <summary>#870 lane 6′b · The twenty-two patrol fields live on the page's <c>_patrol</c>
     /// object now, so the lookup follows them there (<see cref="PatrolState"/>); every assertion and
     /// every pinned line below still asks for the state by the name it was written with.</summary>

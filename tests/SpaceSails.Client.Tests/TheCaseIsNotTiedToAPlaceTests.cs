@@ -434,33 +434,19 @@ public sealed class TheCaseIsNotTiedToAPlaceTests
         (HashSet<string>)Field(map, "_workedUp")!;
 
     private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol.json")));
+        new(() => ScenarioLoader.LoadFile(Path.Combine(TestTree.RepoRoot(), "scenarios", "sol.json")));
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>The frame's source — all of it. `Map.Sim.Tick.cs` was split by concern (#251) and the walked
     /// frame moved to `Map.Sim.Tick.Views.cs`, so this reads the family as a glob in ordinal order rather
     /// than naming one partial the next split could empty.</summary>
     private static string Tick() =>
         string.Join("\n", Directory
-            .EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim.Tick*.cs")
+            .EnumerateFiles(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim.Tick*.cs")
             .OrderBy(path => path, StringComparer.Ordinal)
             .Select(File.ReadAllText));
-
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     // ── Reflection plumbing ──────────────────────────────────────────────────────────────────────────
 

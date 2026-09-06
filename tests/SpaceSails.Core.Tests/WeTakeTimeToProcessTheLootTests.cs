@@ -29,22 +29,9 @@ namespace SpaceSails.Core.Tests;
 /// </summary>
 public sealed class WeTakeTimeToProcessTheLootTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Core")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string CoreSource(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Core", file));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Core", file));
 
     /// <summary>Everything but the prose. A law about what a file may MENTION has to be a law about its
     /// code, or the comment explaining why the two systems never meet would itself break the rule.</summary>

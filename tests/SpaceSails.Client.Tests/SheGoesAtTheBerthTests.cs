@@ -200,7 +200,7 @@ public sealed class SheGoesAtTheBerthTests
     public void THE_LINE_THAT_WAS_NEEDED_IsWrittenAndTheStandInIsGone()
     {
         string source = File.ReadAllText(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.BerthScuttle.cs"));
+            Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.BerthScuttle.cs"));
 
         Assert.DoesNotContain("FABLE: line needed", source, StringComparison.Ordinal);
 

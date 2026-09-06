@@ -499,22 +499,8 @@ public sealed class TheDeskServesItsWholeLengthTests
     [Fact]
     public void THE_GUIDE_RowsTellATesterToWalkTheWholeDesk()
     {
-        string guide = File.ReadAllText(Path.Combine(RepoRoot(), "docs", "testing-guide.md"));
+        string guide = File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "docs", "testing-guide.md"));
         Assert.Contains("#791", guide, StringComparison.Ordinal);
         Assert.Contains("E-bus", guide, StringComparison.Ordinal);
-    }
-
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
     }
 }

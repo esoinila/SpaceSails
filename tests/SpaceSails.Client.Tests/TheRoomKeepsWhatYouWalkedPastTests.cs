@@ -185,23 +185,8 @@ public sealed class TheRoomKeepsWhatYouWalkedPastTests
 
     // ── The wiring ────────────────────────────────────────────────────────────────────────────────────
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Pages(string glob) => string.Concat(
-        Directory.EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), glob)
+        Directory.EnumerateFiles(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), glob)
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
@@ -217,7 +202,7 @@ public sealed class TheRoomKeepsWhatYouWalkedPastTests
     public void TheSearchVerbOffersTheDecisionBeforeItAsksThePocket()
     {
         string hive = File.ReadAllText(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.Hive.cs"));
+            Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.Hive.cs"));
 
         int offer = hive.IndexOf("OfferKeepOrLeave(", StringComparison.Ordinal);
         int pocket = hive.IndexOf("WhatGoesInThePocket(", StringComparison.Ordinal);
@@ -317,7 +302,7 @@ public sealed class TheRoomKeepsWhatYouWalkedPastTests
     public void TheCardRendersBothVerbsAndNothingElse()
     {
         string razor = MapMarkup.Read(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
+            Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
 
         // THE GATE ITSELF, and not merely the two controls behind it. The first version of this guard read
         // only the labels and the handlers, and stayed green against a card whose region had been switched
@@ -341,7 +326,7 @@ public sealed class TheRoomKeepsWhatYouWalkedPastTests
     public void ClosingTheCardIsTheSameAnswerAsLeaving()
     {
         string fixtures = File.ReadAllText(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Deck.Fixtures.cs"));
+            Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Deck.Fixtures.cs"));
 
         Assert.Contains("_pendingFind = null",
             MethodBody(fixtures, "private void CloseViewObject()"), StringComparison.Ordinal);

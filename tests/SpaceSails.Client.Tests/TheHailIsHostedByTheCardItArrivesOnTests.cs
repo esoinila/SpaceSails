@@ -31,24 +31,10 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheHailIsHostedByTheCardItArrivesOnTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static IEnumerable<(string File, string Text)> ClientSource()
     {
-        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client");
+        string dir = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client");
         foreach (string file in Directory.EnumerateFiles(dir, "*.*", SearchOption.AllDirectories))
         {
             char s = Path.DirectorySeparatorChar;
@@ -64,7 +50,7 @@ public sealed class TheHailIsHostedByTheCardItArrivesOnTests
     }
 
     private static string Pages(string file) =>
-        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>One member's body, from the <c>private</c> that opens it to the next one at the same indent —
     /// the cut <see cref="TheHallCardsAreRaisedOnceTests"/> makes, so a body read here is a body read
