@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace SpaceSails.Client.Tests;
 
@@ -71,6 +72,7 @@ internal static class MapMarkup
         IsThePage(path) ? TheComposedPage.Value
         : MapStylesheet.IsThePageSheet(path) ? MapStylesheet.Text
         : IsAComponent(path) ? SurfaceComposition.ComponentText(path)
+        : IsTheHiveSurface(path) ? TheHiveSurface.Value
         : File.ReadAllText(path);
 
     /// <summary><see cref="File.ReadAllLines(string)"/>'s twin of <see cref="Read"/>, with the same
@@ -85,6 +87,11 @@ internal static class MapMarkup
         if (IsThePage(path))
         {
             return SurfaceComposition.AsLines(TheComposedPage.Value);
+        }
+
+        if (IsTheHiveSurface(path))
+        {
+            return SurfaceComposition.AsLines(TheHiveSurface.Value);
         }
 
         return IsAComponent(path)
@@ -112,6 +119,58 @@ internal static class MapMarkup
     /// <summary>#1107 · a razor file that is not the page — read it with its code-behind.</summary>
     private static bool IsAComponent(string path) =>
         path.EndsWith(".razor", StringComparison.Ordinal);
+
+    // ── #251 · THE HIVE SURFACE IS FOUR PARTIALS, AND FOURTEEN GUARDS READ IT AS ONE FILE ────────────────
+    //
+    // Map.Surface.Hive.cs was 1,122 lines and the size gate's next case. It is now the shaft and its panel,
+    // plus Ride (arriving on a floor), Search (turning a room over, reading a sign) and SecretLab (the
+    // assembled person, the detector, the monolith's foot). Fourteen test classes in this suite open it as
+    // TEXT — six of them slice a region out with Between(from, to), three count occurrences, and several
+    // assert DoesNotContain over the WHOLE subject, which is the claim that goes quietly blind rather than
+    // red when the code it is about moves into a file nobody opened.
+    //
+    // So they stop reading a FILE and start reading the SURFACE, exactly as they stopped reading Map.razor
+    // and started reading the composed page. ORDER IS PART OF THE ANSWER: three of these guards assert on
+    // the ORDER of two indices in the text (the book is asked for before the pocket, the decision is
+    // offered before the pocket), so the parts are concatenated in the order the ONE FILE laid them out —
+    // which Ordinal filename order does NOT give, since "Map.Surface.Hive.Ride.cs" sorts before
+    // "Map.Surface.Hive.cs". The order is spelled out, and a part missing from disk throws rather than
+    // being silently left out of the text.
+
+    /// <summary>The Hive surface's partials, in the order the one file declared them.</summary>
+    private static readonly string[] HiveSurfaceParts =
+    [
+        "Map.Surface.Hive.cs",
+        "Map.Surface.Hive.Ride.cs",
+        "Map.Surface.Hive.Search.cs",
+        "Map.Surface.Hive.SecretLab.cs",
+    ];
+
+    private static readonly Lazy<string> TheHiveSurface = new(ComposeHiveSurface, isThreadSafe: true);
+
+    /// <summary>The first of <see cref="HiveSurfaceParts"/> — the path every guard still names.</summary>
+    private static bool IsTheHiveSurface(string path) =>
+        Path.GetFileName(path).Equals(HiveSurfaceParts[0], StringComparison.Ordinal)
+        && Path.GetFileName(Path.GetDirectoryName(path) ?? "").Equals("Pages", StringComparison.Ordinal);
+
+    private static string ComposeHiveSurface()
+    {
+        var text = new StringBuilder();
+        foreach (string part in HiveSurfaceParts)
+        {
+            string path = Path.Combine(PagesDirectory(), part);
+            if (!File.Exists(path))
+            {
+                throw new InvalidOperationException(
+                    $"Pages/{part} is not on disk — the Hive surface has been re-cut and every guard that "
+                    + "reads it is about to go blind rather than red. Fix this list.");
+            }
+
+            text.Append(File.ReadAllText(path));
+        }
+
+        return text.ToString();
+    }
 
     private static string PagesDirectory() =>
         Path.Combine(SurfaceComposition.RepoRoot(), "src", "SpaceSails.Client", "Pages");

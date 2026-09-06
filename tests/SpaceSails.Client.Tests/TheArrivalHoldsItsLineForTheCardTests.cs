@@ -29,8 +29,11 @@ namespace SpaceSails.Client.Tests;
 public sealed class TheArrivalHoldsItsLineForTheCardTests
 {
 
+    /// <summary>#251 · Through <see cref="MapMarkup"/> rather than straight off disk, because the Hive
+    /// surface is four partials now and this guard slices a region out of it. Every other path this helper
+    /// is handed still comes back as <c>File.ReadAllText</c>.</summary>
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     private static string Between(string text, string from, string to)
     {

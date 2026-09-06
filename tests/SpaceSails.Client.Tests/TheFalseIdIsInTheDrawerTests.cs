@@ -373,8 +373,11 @@ public sealed class TheFalseIdIsInTheDrawerTests
         return passes[0];
     }
 
+    /// <summary>#251 · Through <see cref="MapMarkup"/> rather than straight off disk: the Hive surface is
+    /// four partials now, and a Contains over one of them would stop looking at three quarters of the
+    /// drawer. Every other path this helper is handed still comes back as <c>File.ReadAllText</c>.</summary>
     private static string Source(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     private static void Set(object o, string field, object? value) =>
         (o.GetType().GetField(field, Hidden)
