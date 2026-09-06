@@ -64,11 +64,17 @@ public sealed partial class Map
     ///
     /// <para><b>One writ, not a roster.</b> Whoever was closest to serving it is the one the file keeps; a
     /// list of people waiting at ports would be a feature this slice does not have and a save format the next
-    /// one would have to migrate.</para>
+    /// one would have to migrate. <see cref="ThereIsRoomOnTheFile"/> is that sentence said once, so the
+    /// filing door and the boarding door cannot come to two different answers about how many writs a captain
+    /// can owe at a time.</para>
+    ///
+    /// <para><b>#1151 slice 4 · AND THE TERMS GO ON THE FILE WITH IT</b>, off the pursuer this is being filed
+    /// for and the gauge as it stands now — see <see cref="PendingWritRecord"/> for why they are stored
+    /// rather than asked again on the day it is served.</para>
     /// </summary>
-    private void TheWritWaitsForHim(string? groundBodyId, string? berthHavenId, string callsign)
+    private void TheWritWaitsForHim(string? groundBodyId, string? berthHavenId, HunterState pursuer)
     {
-        if (_writPending is not null || string.IsNullOrEmpty(callsign))
+        if (!ThereIsRoomOnTheFile || string.IsNullOrEmpty(pursuer.Callsign))
         {
             return;
         }
@@ -84,23 +90,112 @@ public sealed partial class Map
             return;
         }
 
-        _writPending = new PendingWritRecord(callsign, port!, SimTime);
+        _writPending = new PendingWritRecord(
+            pursuer.Callsign, port!, SimTime, Math.Max(1, _heat.Level), pursuer.Id);
+    }
+
+    /// <summary>#1151 slice 4 · <b>ONE WRIT, NOT A QUEUE.</b> A captain owes one process at a time, and while
+    /// one is out there unserved there is no room on the file for a second — whether the second would arrive
+    /// by an ending (<see cref="TheWritWaitsForHim"/>) or by somebody running him down
+    /// (<see cref="TheProcessMayProceed"/>).</summary>
+    private bool ThereIsRoomOnTheFile => _writPending is null;
+
+    /// <summary>
+    /// #1151 slice 4 · <b>MAY ANYBODY IN THE SKY ACTUALLY PROCEED AGAINST HIM RIGHT NOW?</b> Two questions,
+    /// and a pursuer needs a yes to both.
+    ///
+    /// <para>The first is the presence law: the master has to be aboard her, or there is no ship-and-captain
+    /// for anybody's process to be about.</para>
+    ///
+    /// <para>The second is the one this slice adds. <b>A writ already on the file stands</b>, and a second
+    /// collector who catches the same hull does not open a second one over the top of it — he DEFERS, which
+    /// in this sim is a thing that already has a shape: he holds station, exactly as every pursuer does when
+    /// the process cannot proceed (<see cref="EncounterRule.HoldStation"/>, position and velocity untouched,
+    /// the clock carried forward). Nothing new is invented for him, and nothing is said, because the second
+    /// man on the ramp has no line and never had one.</para>
+    ///
+    /// <para>It is deliberately asked BEFORE the pursuit is stepped rather than after a catch has latched: a
+    /// catch that has to be un-caught is a state the rest of the game can already read on a frame it should
+    /// not have existed on, and <c>CaughtPlayer</c> is exactly the kind of latch three other files ask about.
+    /// A pursuer who is never allowed to close never has to be talked out of it.</para>
+    /// </summary>
+    private bool TheProcessMayProceed() => TheMasterIsAboardHer() && ThereIsRoomOnTheFile;
+
+    /// <summary>
+    /// #1151 slice 4 · <b>THE WAITING WRIT IS SERVED.</b> The scene the file was written for: he comes back
+    /// to the port he was never going to be able to avoid forever, and the man who has been standing there
+    /// since the ending walks up the ramp.
+    ///
+    /// <para><b>Three conditions, and every one of them is the ruling.</b> The collector is still on station
+    /// — the file IS that, there is nobody else to be. The captain is at THAT port, clamped to the berth the
+    /// writ was filed against, because a writ does not follow a man about the system: leave without ever
+    /// coming back aboard where he is standing and it simply keeps waiting. And the master is ABOARD HER, the
+    /// #525 law entire — walking that same concourse three hundred metres from the machine is not being
+    /// aboard, and the writ waits through it with the plate still on the ledger.</para>
+    ///
+    /// <para><b>On the terms it had on the day.</b> It opens the demand a catch has always opened, and the
+    /// number on it is the number it would have carried at the moment of filing — the heat that bought the
+    /// contract and the seed that moment cut — so waiting is neither a discount nor a fine. A writ priced at
+    /// service time would let a captain choose his own bill by loitering until the gauge cooled, and would
+    /// bill him for a heat he earned afterwards doing something else.</para>
+    ///
+    /// <para>The file is cleared BEFORE the demand opens, because at that instant the writ is not pending any
+    /// more, it is being served: the ledger row is gone and the card is up, which is the flip the whole slice
+    /// is about. Nothing is authored — a served writ shows what a served writ has always shown.</para>
+    ///
+    /// <para><b>AND NEVER OVER THE TOP OF THE ENDING THAT FILED IT.</b> The castaway's own wake sets him down
+    /// at the nearest haven, and for a moon whose harbour is also its nearest haven that is THIS berth: he is
+    /// aboard a rustbucket at their port on the very frame the epitaph card goes up. They are still there and
+    /// he is still served — the writ was never going to be outrun, and the tug delivering him to their door
+    /// is the scene rather than a bug — but not with the ending's own card still on the screen. That is the
+    /// same law <c>_busted is not null</c> states one line up, said about the other card, and it costs the
+    /// writ nothing: the terms are on the file, so a beat's wait is not a discount.</para>
+    /// </summary>
+    private void TheWaitingWritIsServed()
+    {
+        if (_busted is not null || _shipEpitaph is not null || _writPending is not { } filed)
+        {
+            return;   // one card at a time, and nothing to serve
+        }
+
+        if (_dockedHavenId != filed.HavenId || !TheMasterIsAboardHer())
+        {
+            return;   // he is not back at their berth, or he is not on her
+        }
+
+        _writPending = null;
+
+        TheDemandGoesUp(
+            new HunterState(
+                Id: filed.HunterId ?? filed.Callsign,
+                Callsign: filed.Callsign,
+                OriginBodyId: filed.HavenId,
+                SpawnedAtSimTime: filed.FiledAtSimTime,
+                ActivationSimTime: filed.FiledAtSimTime,
+                State: _ship,                 // alongside: they were here before he was
+                CaughtPlayer: true,
+                BrokenOff: false),
+            onTheTermsOf: filed);
+
+        RequestVaultSave();
     }
 
     /// <summary>
     /// #1151 · <b>THE PLATE, ON THE CAPTAIN'S OWN LEDGER.</b> A row for as long as something is waiting on
     /// the master, and no row at all otherwise — this is a state of paperwork, not a standing note.
     ///
-    /// <para>Two ways to be waiting, one plate. A pursuer holding station in the sky is only pending while
-    /// the master is off her; a pursuer on the file is pending until somebody serves it, which is a later
-    /// slice's scene. The lines are the two names the world can be asked for — whose writ it is, and where —
-    /// and nothing on the row is a sentence, because nobody authored one.</para>
+    /// <para>Two ways to be waiting, one plate. A pursuer holding station in the sky is pending for exactly
+    /// as long as the sim is actually holding him — which after slice 4 is two reasons and not one, so the
+    /// row asks <see cref="TheProcessMayProceed"/>, the same question the pursuit loop asks, rather than a
+    /// copy of half of it. A pursuer on the file is pending until <see cref="TheWaitingWritIsServed"/> serves
+    /// him. The lines are the two names the world can be asked for — whose writ it is, and where — and
+    /// nothing on the row is a sentence, because nobody authored one.</para>
     /// </summary>
     private Stations.Captain.LedgerTip? PendingWritTip()
     {
         List<string> lines = [];
 
-        if (!TheMasterIsAboardHer())
+        if (!TheProcessMayProceed())
         {
             foreach (HunterState held in _hunters)
             {

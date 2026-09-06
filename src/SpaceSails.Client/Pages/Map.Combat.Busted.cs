@@ -25,20 +25,36 @@ public partial class Map
     // inert — it OPENS the boarding pop-up. Warp yanks to 1×, the ship is grappled, and the collector
     // hails with a demand and three options (SUBMIT / BRIBE / RESIST). The seed is folded from the
     // hunter's identity and the sim moment, so every roll in this encounter is reproducible.
-    private void ApplyHunterCatch(HunterState hunter)
+    private void ApplyHunterCatch(HunterState hunter) => TheDemandGoesUp(hunter, onTheTermsOf: null);
+
+    /// <summary>
+    /// The body of the catch, and the one place a boarding demand is built. <see cref="ApplyHunterCatch"/> is
+    /// still the door every ordinary catch comes through, unchanged and one-armed — a second parameter with a
+    /// default on it looks free and is not: three other files reach this method by reflection, where an
+    /// optional argument is a missing argument.
+    /// </summary>
+    /// <param name="onTheTermsOf">#1151 slice 4 · A WRIT THAT WAITED, or null on every ordinary catch. The
+    /// demand's two numbers — the heat it is worth and the moment its seed is cut from — are the FILE's and
+    /// not today's when a writ is being served, so a captain who kept a collector waiting is charged neither
+    /// less nor more for the wait. Everything else about the beat is identical, because it is the same beat:
+    /// the same panel, the same three options, the same dice.</param>
+    private void TheDemandGoesUp(HunterState hunter, PendingWritRecord? onTheTermsOf)
     {
         Warp = 1;
         _effectiveWarp = 1;
         RendererInterop.PlayCue("board");
 
-        ulong seed = DiceRule.Seed("busted", HunterSeqOf(hunter.Id), (long)SimTime);
+        int heat = Math.Max(1, onTheTermsOf?.HeatWhenFiled ?? _heat.Level);
+        double moment = onTheTermsOf?.FiledAtSimTime ?? SimTime;
+
+        ulong seed = DiceRule.Seed("busted", HunterSeqOf(hunter.Id), (long)moment);
         _busted = new BustedEncounter
         {
             HunterId = hunter.Id,
             HunterCallsign = hunter.Callsign,
-            Heat = Math.Max(1, _heat.Level),
+            Heat = heat,
             Seed = seed,
-            Bribe = BustedRule.BribeDemand(Math.Max(1, _heat.Level), seed),
+            Bribe = BustedRule.BribeDemand(heat, seed),
             Cause = DeathCause.Collector,          // #380: a catch that ends in the volley is a collector death
             DeathBodyName = _nearestBody?.Name,    // the place the last stand happened, for the wake card
         };
@@ -59,7 +75,10 @@ public partial class Map
         // markup was never the same as raising it; that is what left this one an orphan through #663.
         RaiseStoryBeat(StoryBeats.Beat.CollectorHail, hunter.Callsign);
 
-        SquawkNow(Parrot.Squawk.Busted, _lastTimestampMs ?? 0, BustedRule.ExposurePhrase(Math.Max(1, _heat.Level)), force: true);
+        // …and the bird reads the SAME number the card does — #1151 slice 4. It was `_heat.Level` written out
+        // a third time, which on a served writ would have had the parrot quoting an exposure the demand it is
+        // squawking about is not priced on.
+        SquawkNow(Parrot.Squawk.Busted, _lastTimestampMs ?? 0, BustedRule.ExposurePhrase(heat), force: true);
         StateHasChanged();
     }
 
