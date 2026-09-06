@@ -458,7 +458,10 @@ public sealed class TheClaimIsWalkedEndToEndTests
         Assert.Equal(0, PressesTaken(map));       // out of order, and refused exactly as at a wall
         PressTheWholeCounter(map);
 
-        // ── LODGED. His card now carries the machine's receipt, and the purse has not moved.
+        // ── LODGED. His card now carries the machine's receipt, and the purse has not moved. And still no
+        // ViewObject: three presses at his elbow raise no console card over him, which is the half of the
+        // #777 law a check taken before the first press could not see.
+        Assert.Null(Read(map, "_viewObject"));
         Assert.Equal(NebulaClaims.Presses, PressesTaken(map));
         Assert.Equal(NebulaClaims.LodgedLine, (string?)Read(map, "TheDeskSays"));
         Assert.Equal(1, (int)Read(map, "_claimsLodged")!);
