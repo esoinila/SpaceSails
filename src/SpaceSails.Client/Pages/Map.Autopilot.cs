@@ -330,8 +330,6 @@ public partial class Map
         // Derelict Roadster, Mercury Compute Farms and Highport Satellite Works are μ=0 stations with no
         // haven flag: the autopilot flew you to a wreck and told you to clamp onto it. The clamp clause is
         // now spoken only where a clamp exists; alongside a wreck the line stops at the truth.
-        // The clamp clause is spoken only where a clamp exists; alongside a wreck the line stops at the
-        // truth.
         string clamp = IsDockableHaven(station) ? " — hit ⚓ Dock to clamp on" : "";
         _dockReadyStatus = $"🛰 in the dock envelope at {station.Name}{clamp}";
         LogAutopilotEvent($"autopilot delivered {station.Name} — matched inside the dock envelope{(clamp.Length > 0 ? "; hit ⚓ Dock to clamp on" : "")}");
