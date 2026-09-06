@@ -27,6 +27,13 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
     private static readonly float BootTimeoutMs = 180_000;
     private static readonly float ActionTimeoutMs = 60_000;
 
+    // #1148 · The test-only latch that holds STORY CARDS while this canary drives a board — spelled here
+    // exactly as SpaceSails.Core's StoryBeats.HoldQueryFlag spells it, and see the note at canary #1 for the
+    // sixty-second click that bought it. This project's gate does not reference Core, so the one word is
+    // typed rather than imported; a rename on the Core side leaves this URL inert and the gate goes back to
+    // racing the story, which is why the note names the constant it is a copy of.
+    private const string TheBeatLatch = "holdbeats=1";
+
     // Console noise that is NOT a boot failure. Anything else on the error channel fails the gate.
     private static readonly string[] BenignConsole =
     [
@@ -191,6 +198,23 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
             // --- 1. Front page → Launch the Sol scenario (the maiden voyage's front door). ------
             await GotoWithRetry(_host.BaseUrl + "/");
             ILocator launch = _page.Locator("a.btn-primary[href*='scenario=sol']");
+
+            // #1148 · HOLD THE STORY BEATS FOR THE WHOLE OF THIS CANARY. Steps 9, 10 and 11 open a board
+            // and press its way out, and nothing in this file quiesces the story seam: a beat whose
+            // presentation is a CARD and whose cadence lands mid-script paints its `.view-object-backdrop`
+            // over the button the next line is about to press. That is not a hypothesis — a loaded serial
+            // run of this project's gate classes (#1146) put a card over the open charge board and
+            // Playwright waited SIXTY SECONDS for *Step away*, while this same class passed alone at the
+            // base (35 s) and alone at that head (29 s). The latch DEFERS such a beat rather than dropping
+            // it, and leaves plates alone (see StoryBeats.HoldQueryFlag).
+            //
+            // It goes on the LINK'S DESTINATION rather than into a `Goto` of our own, because canary #1 is
+            // the shipping Launch button and this gate exists to press it: the element, its position, what
+            // is covering it and its enabled state are all untouched, and only the query it resolves to
+            // gains a key. Blazor's router reads `href` at click time, so the SPA navigation carries it —
+            // and the boot milestone below still measures one boot, from this one press.
+            await launch.EvaluateAsync($"a => a.href += '&{TheBeatLatch}'");
+
             await launch.ClickAsync(); // canary #1: the Launch button lands
             // MILESTONE (a): front page interactive — nav + parse + Launch actionable + clicked.
             _frontPageMs = _clock.ElapsedMilliseconds;

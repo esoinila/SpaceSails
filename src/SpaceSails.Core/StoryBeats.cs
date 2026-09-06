@@ -352,6 +352,81 @@ public static class StoryBeats
     public const double PlateSeconds = 7.0;
 
     /// <summary>
+    /// #1148 · <b>HOLD THE BEATS WHILE A GATE IS DRIVING A BOARD.</b> The URL key, named once so the parse,
+    /// the docs table and the browser gate cannot drift about how it is spelled: <c>?holdbeats=1</c>.
+    ///
+    /// <para><b>What went wrong.</b> The UiGate's canaries script <i>open a board, press its way out</i>, and
+    /// nothing in them quiesces this seam. In a loaded 13-minute serial run a card's cadence came due while
+    /// the charge board was open, the card's <c>.view-object-backdrop</c> went over the board's own
+    /// <i>Step away</i>, and Playwright waited sixty seconds for a button a modal was standing on. The same
+    /// class passed alone at the base (35 s) and alone at that head (29 s): the gate was measuring the
+    /// story's timing rather than the board.</para>
+    ///
+    /// <para><b>What it does, and the one thing it must never do.</b> Held, a CARD is DEFERRED — into the
+    /// same one-at-a-time queue #865's sit-beat hold and the danger hold already use, and for the same
+    /// reason: the cadence is unspent until the beat actually speaks, so nothing is dropped and the beat is
+    /// still owed. #761's law is that a plot-significant moment reaches the player, and a test flag that
+    /// could DELETE one would be a gate quietly editing the game it is measuring. Deferral, never a drop.</para>
+    ///
+    /// <para><b>Cards only, deliberately.</b> A PLATE eats no click (<c>pointer-events: none</c>) and steals
+    /// no keyboard, so it never blocked anything; and the gate next door
+    /// (<c>HudCollisionTests.The_story_plate_never_covers_the_plotting_panel</c>) exists to catch one lying
+    /// on the plotting panel, which a hold would silently un-test.</para>
+    /// </summary>
+    public const string HoldQueryFlag = "holdbeats";
+
+    /// <summary>
+    /// #1148 · Does this URL carry <see cref="HoldQueryFlag"/>? Asked of the LIVE address rather than read
+    /// into the boot's <c>BootQuery</c> holder, for the reason <c>?perf=1</c> (#841) is read the same way one
+    /// file over: it changes nothing about the world — no body, no berth, no cheat — so it has no business in
+    /// the holder that pins what the parse ANSWERED, and a field for it on the page would move thirty pinned
+    /// frame fingerprints (#905) to carry a value that is <c>False</c> in every one of them.
+    ///
+    /// <para>Takes a whole URL or a bare query; a fragment is not the query. Values are the <c>1|true|yes</c>
+    /// the client's own dev cheats accept, so the key spelled with any other value is NOT a hold — a flag
+    /// that held on anything at all could not tell its own pass from its own fail.</para>
+    ///
+    /// <para>Allocation-free on purpose: while a beat is held this is asked on every frame.</para>
+    /// </summary>
+    public static bool HeldIn(string? url)
+    {
+        if (string.IsNullOrEmpty(url))
+        {
+            return false;
+        }
+
+        int question = url.IndexOf('?', StringComparison.Ordinal);
+        ReadOnlySpan<char> query = question < 0 ? url.AsSpan() : url.AsSpan(question + 1);
+        int fragment = query.IndexOf('#');
+        if (fragment >= 0)
+        {
+            query = query[..fragment];
+        }
+
+        while (!query.IsEmpty)
+        {
+            int amp = query.IndexOf('&');
+            ReadOnlySpan<char> pair = amp < 0 ? query : query[..amp];
+            query = amp < 0 ? default : query[(amp + 1)..];
+
+            if (!pair.StartsWith(HoldQueryFlag + "=", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            ReadOnlySpan<char> said = pair[(HoldQueryFlag.Length + 1)..];
+            if (said.Equals("1", StringComparison.OrdinalIgnoreCase)
+                || said.Equals("true", StringComparison.OrdinalIgnoreCase)
+                || said.Equals("yes", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// #664 · THE NOISE THE SURFACE MAKES, decided here for the same reason the picture and the cadence are.
     ///
     /// <para>The seam used to chime <c>"reveal"</c> for every card and plate it raised, which was right while

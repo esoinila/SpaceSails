@@ -57,7 +57,13 @@ public sealed class TheCaptainsIdentRowIsStyledTests : IAsyncLifetime
     [Fact]
     public async Task The_captains_ident_row_wears_the_rules_written_for_it()
     {
-        await _page.GotoAsync($"{_host.BaseUrl}/map?dock={BerthId}", new() { Timeout = BootTimeoutMs });
+        // #1148 · `&holdbeats=1` — this canary presses a desk tab and reads what comes up, and nothing
+        // in it quiesces the story seam: a CARD whose cadence lands mid-script paints its
+        // `.view-object-backdrop` over the tab. Not a hypothesis — this lane's own loaded serial run
+        // caught THIS class with `<div class="view-object-backdrop"> intercepts pointer events` on
+        // the Captain tab, and it passed alone in 27 s. The latch DEFERS such a beat rather than
+        // dropping it, and leaves plates alone. See StoryBeats.HoldQueryFlag.
+        await _page.GotoAsync($"{_host.BaseUrl}/map?dock={BerthId}&holdbeats=1", new() { Timeout = BootTimeoutMs });
         await _page.WaitForSelectorAsync(".map-loading",
             new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
 
