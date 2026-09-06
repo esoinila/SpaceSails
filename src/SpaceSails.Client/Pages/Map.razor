@@ -992,58 +992,25 @@
         <SpaceSails.Client.Pages.Stations.DeskChips Chips="BuildDeskChips()" OnSelect="SwitchDeskFromClick" />
     }
 
-    @if (_celebration is { } party)
-    {
-        <CelebrationCard _credits="@_credits" Dismiss="@Dismiss" DismissCelebration="@DismissCelebration"
-                         PayCompletedQuests="@PayCompletedQuests" party="@party" />
-    }
-
-    @if (_busted is { } bust && !_showSaveDrawer)
-    {
-        <BustedCard _credits="@_credits" _hasNetJammer="@_hasNetJammer" _hotCargo="@_hotCargo"
-                    _reactionMassPulses="@_reactionMassPulses" Board="@Board"
-                    BustedBoliviaChoose="@BustedBoliviaChoose" BustedBribe="@BustedBribe"
-                    BustedResist="@BustedResist" BustedResistLostConfirm="@BustedResistLostConfirm"
-                    BustedResurrect="@BustedResurrect" CarryingABlackOpsKey="@CarryingABlackOpsKey"
-                    PresentTheBlackOpsKey="@PresentTheBlackOpsKey"
-                    OnBustedSubmit="@((bool harsher) => BustedSubmit(harsher))" CloseBusted="@CloseBusted"
-                    DeathNerveLedgerLines="@DeathNerveLedgerLines" Dismiss="@Dismiss" HeatFlames="@HeatFlames"
-                    HotGlossTitle="@HotGlossTitle" OpenLogbookFromDeath="@OpenLogbookFromDeath"
-                    PressAndRefocus="@PressAndRefocus" bust="@bust" />
-    }
-
-    @if (_convergenceRevealOpen)
-    {
-        <ConvergenceRevealCard CloseConvergenceReveal="@CloseConvergenceReveal" Dismiss="@Dismiss" />
-    }
-
-    @if (_groundLessonOpen)
-    {
-        <GroundLessonCard CloseGroundLesson="@CloseGroundLesson" Dismiss="@Dismiss" />
-    }
-
-    @if (_groundGrewOpen)
-    {
-        <GroundGrewCard CloseGroundGrew="@CloseGroundGrew" Dismiss="@Dismiss"
-                        _groundGrewWhere="@_groundGrewWhere" />
-    }
-
-    @if (_tubeRearmOpen)
-    {
-        <TubeRearmCard CloseTubeRearm="@CloseTubeRearm" Dismiss="@Dismiss" />
-    }
-
-    @if (_airCardOpen)
-    {
-        <AirNoticeCard CloseAirCard="@CloseAirCard" Dismiss="@Dismiss" />
-    }
-
-    @if (_faceScene is { } faceGiver && OldCrew.ById(faceGiver[OldCrew.LedgerPrefix.Length..]) is { } faceWho)
-    {
-        <FaceSceneCard _faceSceneReply="@_faceSceneReply" AnswerTheFace="@AnswerTheFace"
-                       CloseTheFaceScene="@CloseTheFaceScene" Dismiss="@Dismiss"
-                       OldCrewHistoryLine="@OldCrewHistoryLine" Say="@Say" faceGiver="@faceGiver" faceWho="@faceWho" />
-    }
+    <AftermathCardRack _airCardOpen="@_airCardOpen" _busted="@_busted" _celebration="@_celebration"
+                       _convergenceRevealOpen="@_convergenceRevealOpen" _credits="@_credits"
+                       _faceScene="@_faceScene" _faceSceneReply="@_faceSceneReply"
+                       _groundGrewOpen="@_groundGrewOpen" _groundGrewWhere="@_groundGrewWhere"
+                       _groundLessonOpen="@_groundLessonOpen" _hasNetJammer="@_hasNetJammer" _hotCargo="@_hotCargo"
+                       _reactionMassPulses="@_reactionMassPulses" _showSaveDrawer="@_showSaveDrawer"
+                       _tubeRearmOpen="@_tubeRearmOpen" AnswerTheFace="@AnswerTheFace" Board="@Board"
+                       BustedBoliviaChoose="@BustedBoliviaChoose" BustedBribe="@BustedBribe"
+                       BustedResist="@BustedResist" BustedResistLostConfirm="@BustedResistLostConfirm"
+                       BustedResurrect="@BustedResurrect" BustedSubmit="@BustedSubmit"
+                       CarryingABlackOpsKey="@CarryingABlackOpsKey" CloseAirCard="@CloseAirCard"
+                       CloseBusted="@CloseBusted" CloseConvergenceReveal="@CloseConvergenceReveal"
+                       CloseGroundGrew="@CloseGroundGrew" CloseGroundLesson="@CloseGroundLesson"
+                       CloseTheFaceScene="@CloseTheFaceScene" CloseTubeRearm="@CloseTubeRearm"
+                       DeathNerveLedgerLines="@DeathNerveLedgerLines" Dismiss="@Dismiss"
+                       DismissCelebration="@DismissCelebration" HeatFlames="@HeatFlames"
+                       HotGlossTitle="@HotGlossTitle" OldCrewHistoryLine="@OldCrewHistoryLine"
+                       OpenLogbookFromDeath="@OpenLogbookFromDeath" PayCompletedQuests="@PayCompletedQuests"
+                       PresentTheBlackOpsKey="@PresentTheBlackOpsKey" PressAndRefocus="@PressAndRefocus" Say="@Say" />
 
     @* M28: the ship's parrot — a small perch visible on every desk, one squawk at a time. *@
     <div class="parrot-perch" aria-live="polite" title="the ship's parrot">

@@ -1,0 +1,78 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SpaceSails.Core
+@using System.Globalization
+@using BustedEncounter = SpaceSails.Client.Pages.Map.BustedEncounter
+@*
+    #251 · WHAT THE GAME PUTS IN FRONT OF YOU AFTERWARDS, ON ONE FILE.
+
+    Eight gates in a row at the foot of Map.razor, and every one of them is a thing the game says once the
+    doing is over: the mission paid (CelebrationCard), the arrest (BustedCard), the convergence you were
+    never told about, the lesson the ground taught, what grew on it while you were away, the tube rearmed,
+    the tank running low, and the face out of the old crew that knows yours. Fifty-two consecutive lines,
+    and the same fifty-two lines here.
+
+    Moved by PURE MOTION: the gates came with the invocations — a gate is what says WHEN a card is on the
+    glass — and every page member the block reads is a [Parameter] with the SAME NAME, so not one character
+    between the fences changed and MapMarkup splices it straight back where it came from. The rack renders
+    nothing when every gate is shut, so the page's paint order is exactly what it was.
+
+    IHandleEvent repeats the page's own override (Map.Sim.cs): the HUD's refresh belongs to OnTick's 200 ms
+    throttle, not to every event in here. The .razor.css beside this file carries no rules; it exists to
+    give the component Map.razor.css's scope (pinned in SpaceSails.Client.csproj), and the eight cards keep
+    their own sheets.
+*@
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────── *@
+    @if (_celebration is { } party)
+    {
+        <CelebrationCard _credits="@_credits" Dismiss="@Dismiss" DismissCelebration="@DismissCelebration"
+                         PayCompletedQuests="@PayCompletedQuests" party="@party" />
+    }
+
+    @if (_busted is { } bust && !_showSaveDrawer)
+    {
+        <BustedCard _credits="@_credits" _hasNetJammer="@_hasNetJammer" _hotCargo="@_hotCargo"
+                    _reactionMassPulses="@_reactionMassPulses" Board="@Board"
+                    BustedBoliviaChoose="@BustedBoliviaChoose" BustedBribe="@BustedBribe"
+                    BustedResist="@BustedResist" BustedResistLostConfirm="@BustedResistLostConfirm"
+                    BustedResurrect="@BustedResurrect" CarryingABlackOpsKey="@CarryingABlackOpsKey"
+                    PresentTheBlackOpsKey="@PresentTheBlackOpsKey"
+                    OnBustedSubmit="@((bool harsher) => BustedSubmit(harsher))" CloseBusted="@CloseBusted"
+                    DeathNerveLedgerLines="@DeathNerveLedgerLines" Dismiss="@Dismiss" HeatFlames="@HeatFlames"
+                    HotGlossTitle="@HotGlossTitle" OpenLogbookFromDeath="@OpenLogbookFromDeath"
+                    PressAndRefocus="@PressAndRefocus" bust="@bust" />
+    }
+
+    @if (_convergenceRevealOpen)
+    {
+        <ConvergenceRevealCard CloseConvergenceReveal="@CloseConvergenceReveal" Dismiss="@Dismiss" />
+    }
+
+    @if (_groundLessonOpen)
+    {
+        <GroundLessonCard CloseGroundLesson="@CloseGroundLesson" Dismiss="@Dismiss" />
+    }
+
+    @if (_groundGrewOpen)
+    {
+        <GroundGrewCard CloseGroundGrew="@CloseGroundGrew" Dismiss="@Dismiss"
+                        _groundGrewWhere="@_groundGrewWhere" />
+    }
+
+    @if (_tubeRearmOpen)
+    {
+        <TubeRearmCard CloseTubeRearm="@CloseTubeRearm" Dismiss="@Dismiss" />
+    }
+
+    @if (_airCardOpen)
+    {
+        <AirNoticeCard CloseAirCard="@CloseAirCard" Dismiss="@Dismiss" />
+    }
+
+    @if (_faceScene is { } faceGiver && OldCrew.ById(faceGiver[OldCrew.LedgerPrefix.Length..]) is { } faceWho)
+    {
+        <FaceSceneCard _faceSceneReply="@_faceSceneReply" AnswerTheFace="@AnswerTheFace"
+                       CloseTheFaceScene="@CloseTheFaceScene" Dismiss="@Dismiss"
+                       OldCrewHistoryLine="@OldCrewHistoryLine" Say="@Say" faceGiver="@faceGiver" faceWho="@faceWho" />
+    }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────── *@
