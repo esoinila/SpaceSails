@@ -356,6 +356,28 @@ public sealed class TheMilkRunWalksTheWholeLoopTests
         Assert.DoesNotContain(' ', MilkRunLesson.QuestId);
     }
 
+    /// <summary>THE MARKER IS GONE, AND SO ARE THE TWO PLACE-NAMES IT WAS ABOUT. #160 shipped with one
+    /// <c>// FABLE: line needed</c> on the contract method, because line 1 named a haul — Enceladus to Titan
+    /// — the world could not fly: neither end is a berth a contract is taken at or paid over, and the
+    /// destination this method actually issues is the nearest OTHER clampable berth. The owner ratified the
+    /// correction on the issue's closing pass and the canon pass (Fable, 2026-09-05) re-authored line 1 to
+    /// name no place at all. So the marker must be gone AND the reason for it must be gone with it: neither
+    /// place-name may be anywhere in the lesson's own prose, or the marker was merely deleted.</summary>
+    [Fact]
+    public void THE_LINE_THAT_WAS_NEEDED_IsWrittenAndTheMarkerIsGone()
+    {
+        foreach (string file in new[] { PagesPath("Map.Quests.MilkRun.cs"), CorePath("MilkRunLesson.cs") })
+        {
+            Assert.DoesNotContain("FABLE: line needed", File.ReadAllText(file), StringComparison.Ordinal);
+        }
+
+        foreach (string line in MilkRunLesson.Lines.Append(MilkRunLesson.Title).Append(MilkRunLesson.Blurb))
+        {
+            Assert.DoesNotContain("Enceladus", line, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("Titan", line, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     // ── The bench ────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>A page in Sol, clamped to a station berth with the captain walking its concourse — the one
