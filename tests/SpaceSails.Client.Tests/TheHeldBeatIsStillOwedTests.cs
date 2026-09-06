@@ -232,14 +232,23 @@ public sealed class TheHeldBeatIsStillOwedTests
         string[] canaries = Directory.GetFiles(gate, "*.cs", SearchOption.TopDirectoryOnly);
         Assert.True(canaries.Length >= 10, $"only {canaries.Length} gate file(s) read — the sweep proved nothing.");
 
-        // Every canary that opens a panel and presses its way out. Named rather than inferred: a gate that
-        // stopped asking for the latch would otherwise leave this bench green and go back to racing a card.
+        // Every canary that presses something and reads what comes up. Named rather than inferred: a gate
+        // that stopped asking for the latch would otherwise leave this bench green and go back to racing a
+        // card.
+        //
+        // The last two joined the roster on EVIDENCE, not on symmetry: this lane's own loaded serial run
+        // caught `TheCaptainsIdentRowIsStyledTests` with `<div class="view-object-backdrop"> intercepts
+        // pointer events` on the Captain tab, and it passed alone in 27 s — #1148's exact signature, found
+        // a second time, in a gate the first pass had not thought to latch. `TheTradeDeskRendersTests` is
+        // the same berth and the same press one file over.
         string[] mustHold =
         [
             "BootAndReachabilityTests.cs",          // the three boards, and the one that raced
             "HudCollisionTests.cs",                 // the bar contact's card, driven through its rows
             "PlotPanelFitsTheWindowTests.cs",       // the plan, built through its own buttons
+            "TheCaptainsIdentRowIsStyledTests.cs",  // the Captain tab, caught under a backdrop by this lane
             "TheDestinationPanelIsNeverPaintedOverTests.cs",
+            "TheTradeDeskRendersTests.cs",          // the same berth, the same press, one file over
             "ThePeekLeavesAWayOutTests.cs",
         ];
 

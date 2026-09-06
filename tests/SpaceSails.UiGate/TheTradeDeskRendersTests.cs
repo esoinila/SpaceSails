@@ -72,7 +72,13 @@ public sealed class TheTradeDeskRendersTests : IAsyncLifetime
     [Fact]
     public async Task The_trade_desk_at_a_berth_paints_the_sentry_rearm_button_without_crashing()
     {
-        await _page.GotoAsync($"{_host.BaseUrl}/map?dock={BerthId}", new() { Timeout = BootTimeoutMs });
+        // #1148 · `&holdbeats=1` — this canary presses a desk tab and reads what comes up, and nothing
+        // in it quiesces the story seam: a CARD whose cadence lands mid-script paints its
+        // `.view-object-backdrop` over the tab. Not a hypothesis — this lane's own loaded serial run
+        // caught the sister gate next door (TheCaptainsIdentRowIsStyledTests, the same berth and the
+        // same press) with `<div class="view-object-backdrop"> intercepts pointer events` on its tab. The latch DEFERS such a beat rather than
+        // dropping it, and leaves plates alone. See StoryBeats.HoldQueryFlag.
+        await _page.GotoAsync($"{_host.BaseUrl}/map?dock={BerthId}&holdbeats=1", new() { Timeout = BootTimeoutMs });
         await _page.WaitForSelectorAsync(".map-loading",
             new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
 
