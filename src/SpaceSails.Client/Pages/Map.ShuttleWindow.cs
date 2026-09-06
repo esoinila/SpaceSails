@@ -121,7 +121,7 @@ public partial class Map
     /// scan itself re-runs only once its own promise has come due (or gone stale).</summary>
     private double? AwayFlipSeconds(string bodyId, bool wantInRange)
     {
-        string key = wantInRange ? bodyId : bodyId + " close";
+        string key = wantInRange ? bodyId : bodyId + "\0close";
         bool fresh = _awayWindowScans.TryGetValue(key, out var cached)
             && SimTime - cached.ScannedAt <= AwayWindowRescanSeconds
             && SimTime - cached.ScannedAt >= 0

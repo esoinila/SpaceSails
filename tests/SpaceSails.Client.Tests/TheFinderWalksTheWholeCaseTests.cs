@@ -332,7 +332,7 @@ public sealed class TheFinderWalksTheWholeCaseTests
 
         // …and she is stepped by the room's own metabolism, and the reveal by the walked frame.
         Assert.Contains("AdvanceTheFinder(bar)", Page("Map.BarWalkers.cs"), StringComparison.Ordinal);
-        Assert.Contains("TheRevealAtTheBerth()", Page("Map.Sim.Tick.cs"), StringComparison.Ordinal);
+        Assert.Contains("TheRevealAtTheBerth()", Page("Map.Sim.Tick.Views.cs"), StringComparison.Ordinal);
 
         // …and the vault carries both halves.
         Assert.Contains("Finder = BuildFinderSection()", Page("Map.Vault.cs"), StringComparison.Ordinal);
