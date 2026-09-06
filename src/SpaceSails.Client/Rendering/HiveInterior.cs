@@ -17,6 +17,26 @@ namespace SpaceSails.Client.Rendering;
 /// we don't need to go out of the border on normal level."</i> A floor is laid inside the SURFACE'S OWN
 /// envelope, so a facility the size of the entire field costs no new coordinate space. The renderer shows one
 /// level at a time, which is the same deck swap the ship ↔ haven ↔ surface switch has always done.</para>
+///
+/// <para>#1164 · THE FLOOR IS BUILT IN NAMED PASSES, AND THE PASSES LIVE IN PARTIALS.
+/// <see cref="FloorDeck"/> was 1,106 lines in one method carrying 31 of its own <c>// ── banner ──</c>
+/// sections, all sharing four accumulators; #1163's pure-move lane could not touch it, because a partial
+/// cannot hold half a method. It is a driver now — it asks Core for the plan, opens the four lists, and
+/// calls one pass per section IN THE ORDER THE BANNERS STOOD IN. The passes are in
+/// <c>HiveInterior.Floor.Structure.cs</c> (what is built), <c>.Hall.cs</c> (the one room with people in
+/// it), <c>.Rooms.cs</c> (the park, the ring, the core, the chambers) and <c>.Signage.cs</c> (what is
+/// written on the walls).</para>
+///
+/// <para>TWO RULES HOLD THAT SPLIT TOGETHER, and both are the reason it is safe.
+/// <b>Order.</b> The lists are read in the order they were filled, so a wall appended after a door is a
+/// leaf with a partition behind it and a plate appended before a fixture is a plate under it — which is
+/// why the split was made under a snapshot (<c>EveryFrameHashesTheSameTests</c> pins the ordered
+/// draw-call transcript of thirty-three real frames by sha256, and two fingerprint ledgers stand beside
+/// it). <b>Fields.</b> This class declares no static field and no pass declares one: a static field
+/// moved out of the opening file initialises in the order the compiler reads the FILES rather than the
+/// order a reader sees, which is #1163's named bug class — it stood a station's whole bar on the hall
+/// floor with a clean build and no warning. Every accumulator a pass appends to is handed in as a
+/// parameter, spelled the way the section always spelled it.</para>
 /// </summary>
 public static partial class HiveInterior
 {
@@ -113,6 +133,17 @@ public static partial class HiveInterior
         // the seam drawn in the wrong place, which is the one geometric fact this feature has.
         bool pastTheSeam = UndergroundComplex.IsFound(bodyId, level);
 
+        // ── #1164 · THE ORDER IS THE DECK ──────────────────────────────────────────────────────────────
+        //
+        //    A floor is built the way a building is: the structure, then the ways through it, then what
+        //    was carved out of it, then the rooms it was cut into, then the writing on the walls. NOT ONE
+        //    LINE OF THIS MAY BE REORDERED, and that is not a style note — every list below is read in
+        //    the order it was filled, so a wall appended after a door is a partition behind that leaf,
+        //    and a plate appended before the fixture it names is a plate underneath it.
+        //
+        //    This list IS the 31 banner sections that used to be inside this method, in their own order.
+        //    Each pass keeps the comments it was written with; what is new is only its name, its
+        //    docblock, and the fact that its inputs have to be said out loud.
         PourTheStructure(walls, in floor, pastTheSeam);
         GlazeTheOpenings(walls, in floor, pastTheSeam);
         KeepTheSpecimen(walls, doors, in floor);
