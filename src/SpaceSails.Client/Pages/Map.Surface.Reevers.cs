@@ -603,9 +603,20 @@ public partial class Map
             // is drawn exactly as it is — folded down, not moving, and about to stop being either.
             if (r.Dormant)
             {
+                // #442 · A SLEEPER IS BEHIND THE DOOR TOO. Owner ruling 2026-09-06: <i>"the Reevers should
+                // not see through a closed door."</i> This read `walls` — the LEGS' list — while every awake
+                // contact eighteen lines down reads `sight`, the eye's list of stone PLUS whatever is shut.
+                // Opacity is not solidity, which is the whole of #442, and a shut hatch is opaque: a sleeper
+                // folded down behind a dogged leaf was drawn straight through it. Worse, the lamp that DRAWS
+                // it is the same lamp that WAKES it (three lines down), so a captain who had shut a hatch
+                // roused what was on the far side of it without ever laying eyes on the thing.
+                //
+                // `sight ?? walls` is the awake path's own expression, verbatim: aboard a wreck it is stone
+                // plus this instant's shut doors, and off a wreck `sight` is null and this is the old
+                // walls-only test exactly, unchanged.
                 double lampDx = r.X - _avatarX, lampDy = r.Y - _avatarY;
                 bool inLamp = (lampDx * lampDx) + (lampDy * lampDy) <= DormantSightRange * DormantSightRange
-                              && SurfaceCollision.HasLineOfSight(_avatarX, _avatarY, r.X, r.Y, walls);
+                              && SurfaceCollision.HasLineOfSight(_avatarX, _avatarY, r.X, r.Y, sight ?? walls);
                 r.VisibleOnMap = inLamp;
                 r.Vx = 0;
                 r.Vy = 0;
