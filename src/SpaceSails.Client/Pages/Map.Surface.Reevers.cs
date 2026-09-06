@@ -616,11 +616,25 @@ public partial class Map
         // SightBlockers itself). `walls` above is the CAPTAIN's list and stays exactly what it was — a leaf
         // never stops his boot, because it opens for him. It stops theirs, because it does not.
         IReadOnlyList<SurfaceCollision.Segment> theirLegs = TheirLegs();
-        // Sight for DRAWING is not the same list as sight for WALKING: a shut door stops the eye and not
-        // the shamble, so the visibility test below uses the blockers (walls + shut doors) rather than the
-        // collision field. #563: for THEM the two lists are now the same list, which is the point — a leaf
-        // that stops the boot and not the eye is the exact asymmetry #442 was filed about.
-        IReadOnlyList<SurfaceCollision.Segment>? sight = OnWreck ? theirLegs : null;
+        // #563 · …AND THE EYE READS THAT SAME LIST, ON EVERY GROUND. Owner ruling, 2026-09-06: the Reevers
+        // do not see through a closed door on the moon either.
+        //
+        // There used to be a second local here — `sight` — which was `theirLegs` aboard a wreck and NULL
+        // anywhere else, so every reader below fell back on `walls`, the captain's bare stone. #1154 built
+        // that fallback deliberately conservative (it fixed the sleeper's lamp aboard and left every regolith
+        // byte-identical), and #1157 then handed their LEGS the shut leaf on every ground. The two together
+        // left a hut door stopping an Old One's boot and not its eye: you could shut a leaf in its face,
+        // watch it stand there, and still be hunted through the picture of a closed door.
+        //
+        // That is the last hiding place of the one asymmetry this whole row of fixes is about — #465 the
+        // round, #466 the swing, #1099 the beam, #1154 the sleeper's lamp, #1157 the legs — and the ruling
+        // ends it. So there is NO second list any more, on any ground: everything below asks `theirLegs`,
+        // which IS SightBlockers() — one object, one indexed grid, one memoization, not a copied predicate
+        // and not a second list kept in step by hand. Aboard a wreck this is byte-for-byte what `sight` was;
+        // on a moon it is the ruling, and on a site with nothing shut it is the old stone exactly.
+        //
+        // `walls` above stays the CAPTAIN's own list and does not move — a leaf never stops HIS boot,
+        // because it opens for him.
         foreach (Reever r in _reevers)
         {
             // #488 · THE ONES THAT HAVE NOT WOKEN YET. They do not move, so they cost nothing here and the
@@ -631,18 +645,18 @@ public partial class Map
             {
                 // #442 · A SLEEPER IS BEHIND THE DOOR TOO. Owner ruling 2026-09-06: <i>"the Reevers should
                 // not see through a closed door."</i> This read `walls` — the LEGS' list — while every awake
-                // contact eighteen lines down reads `sight`, the eye's list of stone PLUS whatever is shut.
+                // contact eighteen lines down reads the eye's list of stone PLUS whatever is shut.
                 // Opacity is not solidity, which is the whole of #442, and a shut hatch is opaque: a sleeper
                 // folded down behind a dogged leaf was drawn straight through it. Worse, the lamp that DRAWS
                 // it is the same lamp that WAKES it (three lines down), so a captain who had shut a hatch
                 // roused what was on the far side of it without ever laying eyes on the thing.
                 //
-                // `sight ?? walls` is the awake path's own expression, verbatim: aboard a wreck it is stone
-                // plus this instant's shut doors, and off a wreck `sight` is null and this is the old
-                // walls-only test exactly, unchanged.
+                // #563 · AND THE SAME ON A MOON. This said `sight ?? walls`, and off a wreck that fallback
+                // WAS the bare stone — so a sleeper folded down in a hut was roused through a shut hut door
+                // exactly as one aboard used to be. One list now, on every ground.
                 double lampDx = r.X - _avatarX, lampDy = r.Y - _avatarY;
                 bool inLamp = (lampDx * lampDx) + (lampDy * lampDy) <= DormantSightRange * DormantSightRange
-                              && SurfaceCollision.HasLineOfSight(_avatarX, _avatarY, r.X, r.Y, sight ?? walls);
+                              && SurfaceCollision.HasLineOfSight(_avatarX, _avatarY, r.X, r.Y, theirLegs);
                 r.VisibleOnMap = inLamp;
                 r.Vx = 0;
                 r.Vy = 0;
@@ -662,7 +676,7 @@ public partial class Map
             if (OnWreck)
             {
                 bool wasSeen = r.VisibleOnMap;
-                r.VisibleOnMap = SurfaceCollision.HasLineOfSight(_avatarX, _avatarY, r.X, r.Y, sight);
+                r.VisibleOnMap = SurfaceCollision.HasLineOfSight(_avatarX, _avatarY, r.X, r.Y, theirLegs);
 
                 // THE AMBUSH JOLT. Owner: "the surprise was there … but it had zero effect on my sanity?"
                 // The #379 sighting spell charges only the first fright of a spell, which is right for a
@@ -716,8 +730,10 @@ public partial class Map
             // body walking out that is news, and even that gets a beat: nothing may notice the captain, by
             // eye OR by ear, until the grace has run. It is what makes stepping out of the door possible.
             // #488: aboard, a SHUT DOOR breaks their look as well as a wall — otherwise a hull full of
-            // dogged hatches is no cover at all, and closing one behind you buys nothing. `sight` is walls
-            // plus shut doors; off a wreck it is null and this is the old walls-only test exactly.
+            // dogged hatches is no cover at all, and closing one behind you buys nothing. #563, 2026-09-06:
+            // AND ON A MOON. `theirLegs` is walls plus whatever is shut on every ground now, so the hut door
+            // the owner asked #563 for — "rooms with doors we can hide behind while we reload our guns safe
+            // from reevers" — finally breaks the look it always stopped the boot at.
             // #436 · AND THE SIGHTLINE IS NOW PERMISSION TO ROLL, NOT KNOWLEDGE. Owner, 2026-07-26: "There
             // needs to be a reevers observation roll to its line of sight environment… Then the moment reever
             // discovers becomes special." This used to be the latch flipping in the same frame the geometry
@@ -729,7 +745,7 @@ public partial class Map
             // Called with the answer either way, deliberately: a look with no sightline is how the head goes
             // back DOWN, and an un-stirring is as much of the fear window as a stirring.
             TakeALook(r, SurfaceArrival.CanBeSpotted(((_lastTimestampMs ?? 0) - (_surface?.LandedAtMs ?? 0)) / 1000.0)
-                && SurfaceCollision.HasLineOfSight(r.X, r.Y, _avatarX, _avatarY, sight ?? walls));
+                && SurfaceCollision.HasLineOfSight(r.X, r.Y, _avatarX, _avatarY, theirLegs));
 
             // Owner, 2026-07-26: "make sure reevers behind walls can be unaware of the player being there
             // if they have not seen the player." An Old One that has NEVER laid eyes on the captain does
