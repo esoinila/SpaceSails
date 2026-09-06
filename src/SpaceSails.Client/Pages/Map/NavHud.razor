@@ -53,32 +53,14 @@
                     OnZoomStep="@OnZoomStep" />
 
         <div class="map-readouts bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
-            <div class="mb-1">
-                <span class="fw-bold">@_scenarioName</span>
-                @if (_plasma is not null)
-                {
-                    <span class="badge bg-info text-dark ms-1">EU ⚡</span>
-                }
-            </div>
-            <div>Sim time: @FormatSimTime(SimTime)</div>
-            @if (_skipActive)
-            {
-                @* #172: while skipping, the roomy line states the whole thing — where we're headed and the ETA. *@
-                <div class="text-info">⏭ skipping to @_skipTargetLabel — ETA @FormatDuration(Math.Max(0, _skipTargetEpoch - SimTime)) @(_effectiveWarp < Warp ? $"(held at {_effectiveWarp}× near a body)" : $"({_effectiveWarp}×)")</div>
-            }
-            else
-            {
-                <div>Warp: @(Paused ? "paused" : $"{_effectiveWarp}×") @(Warp != _effectiveWarp ? $"(auto-drop from {Warp}×)" : "")</div>
-            }
-            <div>Zoom: @FormatZoom(_camera.MetersPerPixel)</div>
-            <hr />
-            <div>
-                Ship speed: @(((_ship.Velocity.Length) / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
-                <span class="text-secondary">(circular here: @((CircularSpeedHere / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s)</span>
-            </div>
-            <div>Mass pulses: @_reactionMassPulses / @ReactionMassCapacity</div>
-            <div>Credits: @_credits.ToString("N0", CultureInfo.InvariantCulture)</div>
-            <div>Cargo: @_cargoUnits / @CargoCapacity units@(_cargoValue > 0 ? $" (worth {_cargoValue:N0} cr)" : "")</div>
+            <ShipReadoutLines _camera="@_camera" _cargoUnits="@_cargoUnits" _cargoValue="@_cargoValue"
+                              _credits="@_credits" _effectiveWarp="@_effectiveWarp" _plasma="@_plasma"
+                              _reactionMassPulses="@_reactionMassPulses" _scenarioName="@_scenarioName" _ship="@_ship"
+                              _skipActive="@_skipActive" _skipTargetEpoch="@_skipTargetEpoch"
+                              _skipTargetLabel="@_skipTargetLabel" CargoCapacity="@CargoCapacity"
+                              CircularSpeedHere="@CircularSpeedHere" FormatDuration="@FormatDuration"
+                              FormatSimTime="@FormatSimTime" FormatZoom="@FormatZoom" Paused="@Paused"
+                              ReactionMassCapacity="@ReactionMassCapacity" SimTime="@SimTime" Warp="@Warp" />
             @if (OrbitInfo() is { } oi)
             {
                 <div class="mt-1 small">
