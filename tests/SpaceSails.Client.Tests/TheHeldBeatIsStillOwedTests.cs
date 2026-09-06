@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
 using SpaceSails.Core;
@@ -206,6 +208,90 @@ public sealed class TheHeldBeatIsStillOwedTests
         Pages.Map map = APageAt(url);
         Raise(map, TheBeat);
         Assert.Equal(held, Card(map) is null);
+    }
+
+    // ── LAW 5 · AND THE GATE ASKS FOR IT, IN THE WORD THE GAME READS ─────────────────────────────────
+
+    /// <summary>
+    /// THE CANARIES THAT DRIVE A BOARD CARRY THE LATCH — and spell it the way Core spells it.
+    ///
+    /// <para><c>SpaceSails.UiGate</c> deliberately references no project of ours: it drives the PUBLISHED
+    /// artifact through a browser, which is the whole of its value, so the key it puts on a URL is a word
+    /// TYPED rather than a constant imported. A word typed is a word that can drift, and the drift is
+    /// silent in the worst way — the URL still boots, the gate still passes, and the beats are simply not
+    /// held any more until the day a card lands on a button again. This is the one place the two spellings
+    /// are made to meet.</para>
+    ///
+    /// <para><b>Proven RED</b> by misspelling the key in one canary (<c>holdbeat=1</c>): the sweep names the
+    /// file and the line.</para>
+    /// </summary>
+    [Fact]
+    public void TheBoardDrivingCanariesAskForTheLatchInCoresOwnWord()
+    {
+        string gate = Path.Combine(RepoRoot(), "tests", "SpaceSails.UiGate");
+        string[] canaries = Directory.GetFiles(gate, "*.cs", SearchOption.TopDirectoryOnly);
+        Assert.True(canaries.Length >= 10, $"only {canaries.Length} gate file(s) read — the sweep proved nothing.");
+
+        // Every canary that opens a panel and presses its way out. Named rather than inferred: a gate that
+        // stopped asking for the latch would otherwise leave this bench green and go back to racing a card.
+        string[] mustHold =
+        [
+            "BootAndReachabilityTests.cs",          // the three boards, and the one that raced
+            "HudCollisionTests.cs",                 // the bar contact's card, driven through its rows
+            "PlotPanelFitsTheWindowTests.cs",       // the plan, built through its own buttons
+            "TheDestinationPanelIsNeverPaintedOverTests.cs",
+            "ThePeekLeavesAWayOutTests.cs",
+        ];
+
+        var offences = new List<string>();
+        foreach (string path in canaries)
+        {
+            string src = File.ReadAllText(path);
+            string name = Path.GetFileName(path);
+
+            // Anything that looks like the latch has to BE the latch. `holdbeat=1`, `holdbeats=2`,
+            // `heldbeats=1` — every near miss reads as an ordinary unknown key and is silently ignored by
+            // the boot, which is exactly the failure that cannot be seen from a green gate.
+            foreach (string spelling in Spellings(src))
+            {
+                if (!string.Equals(spelling, StoryBeats.HoldQueryFlag + "=1", StringComparison.Ordinal))
+                {
+                    offences.Add($"  {name}: asks for `{spelling}`, which the boot reads as nothing. "
+                                 + $"Core's own word is `{StoryBeats.HoldQueryFlag}=1`.");
+                }
+            }
+
+            if (mustHold.Contains(name, StringComparer.Ordinal)
+                && !src.Contains(StoryBeats.HoldQueryFlag + "=1", StringComparison.Ordinal))
+            {
+                offences.Add($"  {name}: opens a panel and presses its way out, and does not hold the story "
+                             + "beats — a card whose cadence lands mid-script will stand on the button.");
+            }
+        }
+
+        Assert.True(offences.Count == 0,
+                    "the browser gate and the story seam disagree about the latch:\n" + string.Join("\n", offences));
+    }
+
+    /// <summary>Every spelling in a gate file that was MEANT to be the latch — near misses included, which
+    /// is the whole point: an exact-match search for the right word can only ever find the files that are
+    /// already correct.</summary>
+    private static IEnumerable<string> Spellings(string src) =>
+        System.Text.RegularExpressions.Regex.Matches(src, @"\b[Hh]old[A-Za-z]*[Bb]eats?[A-Za-z]*=[A-Za-z0-9]*")
+            .Select(m => m.Value);
+
+    private static string RepoRoot()
+    {
+        string? at = AppContext.BaseDirectory;
+        while (at is not null)
+        {
+            if (Directory.Exists(Path.Combine(at, "tests", "SpaceSails.UiGate")))
+            {
+                return at;
+            }
+            at = Path.GetDirectoryName(at);
+        }
+        throw new DirectoryNotFoundException("Could not find the repository root above the test assembly.");
     }
 
     // ── The bench ─────────────────────────────────────────────────────────────────────────────────────
