@@ -362,52 +362,25 @@
                       WalletTarget="@WalletTarget" WriteItUp="@WriteItUp" WriteUpHint="@WriteUpHint" />
     }
 
-    @if (_galleyCardOpen)
-    {
-        <GalleyCard _lastRumLine="@_lastRumLine" _rumTots="@_rumTots" _tenderLine="@_tenderLine"
-                    CloseGalleyCard="@CloseGalleyCard" Dismiss="@Dismiss"
-                    GalleyFeedAmbientDays="@GalleyFeedAmbientDays" GalleyFeedItemCount="@GalleyFeedItemCount"
-                    NewsFeed="@((int ambientCount) => NewsFeed(ambientCount))" PourRumFromGalley="@PourRumFromGalley" RumWobbleActive="@RumWobbleActive"
-                    SimTime="@SimTime" />
-    }
-
-    @if (_navHelpOpen)
-    {
-        <NavHelpCard CloseNavHelp="@CloseNavHelp" Dismiss="@Dismiss" />
-    }
-
-    @if (WalletFanIsUp && _surface is { } fanEx && TheWalletFan is { Count: > 1 } fanPapers)
-    {
-        <WalletFanCard ChooseThePaper="@ChooseThePaper" CloseTheWalletFan="@CloseTheWalletFan" Dismiss="@Dismiss"
-                       NameOnYourOwnPapers="@NameOnYourOwnPapers" TheBookOn="@TheBookOn"
-                       ThePaperInYourHandIs="@ThePaperInYourHandIs" fanEx="@fanEx" fanPapers="@fanPapers" />
-    }
-
-    @if (_viewObject is { } vo)
-    {
-        <ViewObjectCard CloseViewObject="@CloseViewObject" Dismiss="@Dismiss" KeepTheFind="@KeepTheFind"
-                        LeaveTheFind="@LeaveTheFind" PressTheClaim="@PressTheClaim" PressTheHit="@PressTheHit"
-                        TheClaimAsks="@TheClaimAsks" TheClaimDeskIsUp="@TheClaimDeskIsUp"
-                        TheFindIsWaitingOnAnAnswer="@TheFindIsWaitingOnAnAnswer" TheKitsCardIsUp="@TheKitsCardIsUp"
-                        TheKitSweeps="@TheKitSweeps" vo="@vo" />
-    }
-
-    @if (_selfieShot is { } shot)
-    {
-        <SelfieShotCard CloseSelfieShot="@CloseSelfieShot" Dismiss="@Dismiss" shot="@shot" />
-    }
-
-    @if (_selfieOffer is { } selfieOffer)
-    {
-        <SelfieOfferCard _selfieOffer="@_selfieOffer" AcceptSelfieOffer="@AcceptSelfieOffer"
-                         DeclineSelfieOffer="@DeclineSelfieOffer" Dismiss="@Dismiss" selfieOffer="@selfieOffer" />
-    }
-
-    @if (_pinJob is { } pinJob)
-    {
-        <PinJobCard _pinHatch="@_pinHatch" _pinOutcome="@_pinOutcome" CancelPin="@CancelPin" Dismiss="@Dismiss"
-                    PinClear="@PinClear" PinDisplay="@PinDisplay" PinPush="@PinPush" SubmitPin="@SubmitPin" />
-    }
+    <AtArmsLengthRack _galleyCardOpen="@_galleyCardOpen" _lastRumLine="@_lastRumLine" _navHelpOpen="@_navHelpOpen"
+                      _pinHatch="@_pinHatch" _pinJob="@_pinJob" _pinOutcome="@_pinOutcome" _rumTots="@_rumTots"
+                      _selfieOffer="@_selfieOffer" _selfieShot="@_selfieShot" _surface="@_surface"
+                      _tenderLine="@_tenderLine" _viewObject="@_viewObject" AcceptSelfieOffer="@AcceptSelfieOffer"
+                      CancelPin="@CancelPin" ChooseThePaper="@ChooseThePaper" CloseGalleyCard="@CloseGalleyCard"
+                      CloseNavHelp="@CloseNavHelp" CloseSelfieShot="@CloseSelfieShot"
+                      CloseTheWalletFan="@CloseTheWalletFan" CloseViewObject="@CloseViewObject"
+                      DeclineSelfieOffer="@DeclineSelfieOffer" Dismiss="@Dismiss"
+                      GalleyFeedAmbientDays="@GalleyFeedAmbientDays" GalleyFeedItemCount="@GalleyFeedItemCount"
+                      KeepTheFind="@KeepTheFind" LeaveTheFind="@LeaveTheFind"
+                      NameOnYourOwnPapers="@NameOnYourOwnPapers"
+                      NewsFeed="@((int ambientCount) => NewsFeed(ambientCount))" PinClear="@PinClear"
+                      PinDisplay="@PinDisplay" PinPush="@PinPush" PourRumFromGalley="@PourRumFromGalley"
+                      PressTheClaim="@PressTheClaim" PressTheHit="@PressTheHit" RumWobbleActive="@RumWobbleActive"
+                      SimTime="@SimTime" SubmitPin="@SubmitPin" TheBookOn="@TheBookOn" TheClaimAsks="@TheClaimAsks"
+                      TheClaimDeskIsUp="@TheClaimDeskIsUp" TheFindIsWaitingOnAnAnswer="@TheFindIsWaitingOnAnAnswer"
+                      TheKitsCardIsUp="@TheKitsCardIsUp" TheKitSweeps="@TheKitSweeps"
+                      ThePaperInYourHandIs="@ThePaperInYourHandIs" TheWalletFan="@TheWalletFan"
+                      WalletFanIsUp="@WalletFanIsUp" />
 
     <AshoreCardRack _bankSession="@_bankSession" _barMenu="@_barMenu" _barNotice="@_barNotice"
                     _contacts="@_contacts" _credits="@_credits" _deckMode="@_deckMode" _heat="@_heat"
