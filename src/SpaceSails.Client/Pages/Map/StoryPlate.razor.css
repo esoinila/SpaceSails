@@ -1,6 +1,124 @@
-/* #251 item 1 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
-   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
-   here. It carries NO rules on purpose, and one of them could not have come anyway: `.story-plate`
-   is animated by the `story-plate-in` keyframes, and a @keyframes name is scoped PER FILE — #1109's
-   first named trap. Rules and keyframes stay together in Pages/Map.razor.css and the shipped bundle
-   does not change. */
+/* #251 · StoryPlate's OWN RULES, moved verbatim out of Map.razor.css.
+
+   9 rule block(s), in the order Map.razor.css wrote them, comments included — the plate itself, its
+   `:not(:last-child)` clearance, the close button and its focus state, the art, the words, the title,
+   the caption, and the keyframes that raise the plate. Nothing was retyped. The scope is still the
+   PAGE's (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector
+   compiles to the string it compiled to before the move.
+
+   "RULES AND KEYFRAMES STAY TOGETHER" — the sentence this file's carrier comment used to end on — is
+   still the law. What has changed is where together IS. `story-plate-in` is named by exactly one rule
+   in the whole client, `::deep .story-plate`, and that rule is in this file now, so the keyframes came
+   with it rather than pinning it to the page's sheet. EveryAnimationIsInTheFileThatDefinesItsKeyframes
+   is what holds that; move one of these two out and it reddens instead of the plate quietly refusing
+   to animate.
+
+   Nothing left in Map.razor.css, and nothing in a sheet the bundle appends after this one, can win or
+   lose against these nine — TheBundleIsTheSameCascadeTests holds the whole partition to that. */
+
+/* #528 · THE STORY PLATE — the non-blocking half of the reveal idiom (owner: the pop-up "should happen
+   universally … as long as it does not block the playing too much"). Bottom-left, above the deck HUD and below
+   the modals, pointer-events NONE so it can never eat a click during a fight.
+
+   #994 · "does not block the playing" was a claim about CLICKS, and the plate kept it — it has never eaten
+   one. It was not keeping it about PIXELS. Absolutely positioned at bottom 5.5rem it lay on top of whatever
+   the left column had grown into: measured at 1280x720 with a four-step plan open, plate y 465…633 against
+   Plotting panel y 520…720, i.e. 480 x 113 px of the step list and its open editor behind an opaque card for
+   the whole of StoryBeats.PlateSeconds.
+
+   It is the LAST ITEM IN .map-flowcolumn now (see Map.razor), so the two can no longer share a pixel: the
+   plate takes its own measured height off the bottom of the column and .map-hud — `flex: 1 1 auto` — gets
+   what is left, which is #992's arithmetic exactly. `margin-top: auto` is for the seven desks that raise no
+   .map-hud at all: with nothing above it to grow, the plate would otherwise ride up under the tab bar
+   instead of sitting at the foot of the window. `position: relative` keeps its z-index working from inside
+   the column, and the column makes no stacking context of its own, so the plate stacks against .map-page's
+   children exactly as it did while it was one of them. */
+/* #1037 · …AND IT GIVES, LIKE EVERYTHING ELSE IN THE COLUMN. #994 made it `flex: 0 0 auto` when it was the
+   LAST item and the only other one was the HUD; with the navigation-target panel at the foot of the column
+   too, a plate that never shrinks is a plate that pushes that panel off the bottom of the glass. Measured
+   at 390x700 with the great port's own three-line caption: the plate lays out 832 px tall (the words wrap
+   to a ~75 px column beside the art), which is 132 px more than the whole window — #735's law, on the one
+   card its gate was never pointed at. `min-height: 0` + `overflow-y: auto` is that law's own answer: the
+   card is capped by what the window has and scrolls inside itself, instead of every panel below it paying
+   for its caption. */
+::deep .story-plate {
+    position: relative;
+    align-self: flex-start;
+    flex: 0 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    margin: auto 0 5.5rem 1rem;
+    z-index: calc(var(--z-desks-popups) + 40);
+    display: flex;
+    gap: 0.6rem;
+    align-items: stretch;
+    width: min(30rem, 66vw);
+    padding: 0.5rem;
+    background: rgba(8, 11, 17, 0.92);
+    border: 1px solid rgba(255, 180, 90, 0.35);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.6rem 2rem rgba(0, 0, 0, 0.55);
+    pointer-events: none;
+    animation: story-plate-in 260ms ease-out;
+}
+
+/* #1037 · the 5.5 rem was CLEARANCE FROM THE WINDOW'S OWN FOOT — the deck HUD the plate has stood above
+   since #528. With the navigation-target panel below it in the column, that clearance IS the panel, and
+   5.5 rem of nothing between them is 88 px the Plotting panel above would rather have. */
+::deep .story-plate:not(:last-child) {
+    margin-bottom: 0.5rem;
+}
+
+@keyframes story-plate-in {
+    from { opacity: 0; transform: translateY(0.5rem); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* #992 · THE ONE PART OF THE PLATE THAT TAKES A CLICK (owner ruling 2026-08-24: no pop-up without a way
+   out). The panel above keeps pointer-events: none — the plate has never eaten a click and must not start
+   — so exactly one child re-enables its own, which is the same "the gaps pass clicks to the canvas; each
+   child re-enables its own" idiom .map-topstack has used since #402. It sits INSIDE the plate's own box
+   rather than hanging off a corner of it: a control that overhangs its surface is a control that can be
+   pushed off the viewport edge, and this plate is already anchored 1rem from the left wall. */
+::deep .story-plate-close {
+    flex: 0 0 auto;
+    align-self: flex-start;
+    padding: 0 0.3rem;
+    color: rgba(232, 236, 244, 0.75);
+    font: 600 0.8rem/1.4 monospace;
+    background: transparent;
+    border: 1px solid rgba(255, 180, 90, 0.35);
+    border-radius: 0.25rem;
+    cursor: pointer;
+    pointer-events: auto;
+}
+
+::deep .story-plate-close:hover,
+::deep .story-plate-close:focus-visible {
+    color: #ffd9a0;
+    border-color: rgba(255, 180, 90, 0.75);
+}
+
+.story-plate-art {
+    width: 8.5rem;
+    height: 5.4rem;
+    object-fit: cover;
+    border-radius: 0.35rem;
+    background: #05070c;
+    flex: 0 0 auto;
+}
+
+.story-plate-words { min-width: 0; }
+
+.story-plate-title {
+    color: #ffd9a0;
+    font: 600 0.82rem/1.2 monospace;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.25rem;
+}
+
+.story-plate-caption {
+    color: rgba(232, 236, 244, 0.92);
+    font-size: 0.78rem;
+    line-height: 1.3;
+}
