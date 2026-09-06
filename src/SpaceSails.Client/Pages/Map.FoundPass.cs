@@ -11,8 +11,8 @@ namespace SpaceSails.Client.Pages;
 /// <para>Owner, in the issue's own point 4: <i>"THE BADGE, kept in the Fletch wallet: our own badge once we
 /// get a gig, or FALSE IDs we discovered."</i></para>
 ///
-/// <para>This file exists so that the two places a foreign pass can arrive — the drawer on a works floor
-/// and the <c>?badge=1</c> dev start — reach the same producer through the same list. Core owns the
+/// <para>This file exists so that the two places a foreign pass can arrive — the drawer on a mess
+/// floor and the <c>?badge=1</c> dev start — reach the same producer through the same list. Core owns the
 /// question (<see cref="FoundPass.MintedElsewhere"/>); it does not own the answer to <i>which places exist
 /// in this world</i>, and neither does either caller. If the cheat built its own roster it would be
 /// playtesting a wallet the game cannot deal, which is the whole reason the audit found the WrongSite rung

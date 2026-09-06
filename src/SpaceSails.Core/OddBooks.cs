@@ -227,7 +227,7 @@ public static class OddBooks
     /// #701 that a book is what a would-be-empty room has INSTEAD of the empty line, "never a second find
     /// laid on top of a pallet or a file" — and #804's found pass is exactly such a find, dealt beside the
     /// haul table rather than inside it (<see cref="FoundPass.RoomFor"/>, which is designated at the same
-    /// "this room is empty" test this one makes). Without it, one drawer on the works floor of the sites
+    /// "this room is empty" test this one makes). Without it, one drawer on the mess floor of the sites
     /// that keep a pass would answer twice, and which of the two the captain got would depend on the order
     /// two unrelated files happened to be asked in.</para>
     ///
