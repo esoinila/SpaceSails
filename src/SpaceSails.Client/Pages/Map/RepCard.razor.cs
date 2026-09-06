@@ -34,7 +34,12 @@ public partial class RepCard
     // whether he is offering, the door that accepts, what the counter is saying, the rows it deals and the
     // press that takes one. Every one of them is the seam the kiosk's card reads (Map.Claims.Kiosk.cs /
     // Map.Claims.Rep.cs), under the member's own name.
-    [Parameter] public Action LodgeItWithHim { get; set; } = default!;
+    //
+    // #1135 · The accept is an EventCallback and the press is not, and the difference is real: the accept is
+    // bound STRAIGHT to @onclick, so a plain delegate would make this surface the receiver and leave the page
+    // — which owns the counter the press changed — unrendered. The press is called from inside a lambda (it
+    // carries a row), which is the shape that law exempts, and it is the shape the kiosk's own card uses.
+    [Parameter] public EventCallback LodgeItWithHim { get; set; }
     [Parameter] public Action<NebulaClaims.Ask> PressTheClaim { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<NebulaClaims.Ask>> TheClaimAsks { get; set; } = default!;
     [Parameter] public string? TheDeskSays { get; set; }
