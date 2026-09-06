@@ -12,7 +12,7 @@
    @keyframes NAME is scoped per FILE — so the rules were pinned to whichever file held the keyframes.
    The move #1109 did not make is to take the @keyframes WITH them: both of those names have exactly one
    user in the whole client, so both left with their user and neither file is a comment any more.
-   1,359 lines to 1,104, and 119 rule blocks to 91.
+   1,359 lines to 1,105, and 119 rule blocks to 91.
 
    WHAT IS STILL HERE, and why each of the 91 had to be. The four counts below are measured, not
    estimated: 28 + 49 + 3 + 11 = 91.
@@ -31,13 +31,14 @@
        (SeatedDockedStrip renders them too). Filing one of these under a single surface would hand a lane
        editing that surface the power to restyle five others without knowing it.
 
-     * KEYFRAMES NAMED FROM BOTH SIDES OF THE CUT — 3 blocks. The scoped-css rewriter suffixes a keyframes
-       NAME with the scope and rewrites the `animation:` shorthands naming it — but only inside the SAME
-       file. Move the rule and leave the keyframes and the reference resolves to nothing: no build error,
-       no test, the animation simply never runs. It happened, to the alarm banner's pulse, and was caught
-       by diffing the generated bundle. pilot-banner-pulse (the banner and NavHud's flying step),
-       save-warming-turn (SaveLoadRack's spinner and the page's own boot gear) and wait-shuttle-fly still
-       have users on both sides, so all three stayed — and so did every rule that names them.
+     * KEYFRAMES THAT CANNOT TRAVEL — 3 blocks. The scoped-css rewriter suffixes a keyframes NAME with the
+       scope and rewrites the `animation:` shorthands naming it — but only inside the SAME file. Move the
+       rule and leave the keyframes and the reference resolves to nothing: no build error, no test, the
+       animation simply never runs. It happened, to the alarm banner's pulse, and was caught by diffing the
+       generated bundle. A keyframes may only move where ALL its users can follow, and these three have
+       nowhere: pilot-banner-pulse is named by the banner AND by NavHud's flying step, save-warming-turn by
+       SaveLoadRack's spinner AND by the page's own boot gear, and wait-shuttle-fly's only user is
+       `.wait-shuttle`, which is the page's own markup. All three stayed — and so did every rule naming one.
 
      * ANYTHING THAT WOULD HAVE CHANGED WHO WINS — 11 blocks. These have exactly one surface to their
        name and still could not go, because the bundle appends the surfaces AFTER this file: a rule that
