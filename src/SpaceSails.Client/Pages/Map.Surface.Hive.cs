@@ -587,6 +587,27 @@ public partial class Map
 
         UndergroundComplex.Haul haul = UndergroundComplex.InRoom(ex.Stop.Body.Id, ex.Floor, which);
 
+        // ── #804 · SOMEBODY ELSE'S SITE PASS, IN A DRAWER ────────────────────────────────────────────────
+        //
+        // Owner, in the issue's own point 4: "our own badge once we get a gig, or FALSE IDs we DISCOVERED."
+        // The wallet has judged a foreign pass properly since #836 (WalletChoice.Outcome.WrongSite) and
+        // nothing authored has ever dealt one, so the rung has been unreachable outside a dev cheat.
+        //
+        // ONE CALL, and the take itself lives in Map.FoundPass.cs beside the mint — the black-ops key's own
+        // shape (TakeTheBlackOpsKey), and it is a law here rather than a preference: this file may not add to
+        // the satchel and may not strike a room off, because every HAUL has to go through the KEEP/LEAVE
+        // decision to reach either (#615/#678, pinned by TheRoomKeepsWhatYouWalkedPastTests and
+        // TheShelfIsReadWhereItStandsTests). A pass is not a haul — it goes to the wallet, which has no
+        // ceiling and nothing to weigh — so it takes the key's road and not the sleeve's.
+        //
+        // It sits BEFORE the odd book because both are things a would-be-empty room has instead of the empty
+        // line — but they cannot both be here, and that is enforced in Core rather than by this ordering
+        // (OddBooks.CouldHoldOne asks FoundPass.IsHere). Order here is legibility, not law.
+        if (TheDrawerHandsOverAFalseId(ex, which))
+        {
+            return;
+        }
+
         // ── #701 · THE ODD BOOK ─────────────────────────────────────────────────────────────────────────
         //
         // Owner: "a better alternative to finding an empty room. You look around but only one book catches

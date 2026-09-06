@@ -227,10 +227,11 @@ public partial class Map
                       $"band {string.Join(", ", has)}.");
             }
 
-            // #804 · …and ?badge=1 mints THIS SITE'S own pass, before the car moves, so the guard the ride
-            // is about to walk you into has something to read. Site-scoped like the card above and minted
-            // the same way — into the real wallet, with the real id, so what the guard says is what he
-            // would have said about a pass that was earned.
+            // #804 · …and ?badge=1 mints THIS SITE'S own pass, the cage chit and a FALSE ID, before the car
+            // moves, so the guard the ride is about to walk you into has all four rungs of his read
+            // available. Site-scoped like the card above and minted the same way — into the real wallet,
+            // with the real ids, through the real producers, so what the guard says is what he would have
+            // said about papers that were earned and found.
             if (TheSitePassIsMintedAtTheLanding)
             {
                 string passBody = landedOn.Stop.Body.Id;
@@ -248,8 +249,23 @@ public partial class Map
                     _satchel = [.. Core.Satchel.Add(_satchel, CanteenTable.Chit(underAnotherName: true))];
                 }
 
+                // #804 · …and the FALSE ID, which is the fourth rung of the read and the one the wallet has
+                // been able to judge since #836 without any world ever dealing it. THROUGH THE PRODUCER, and
+                // that is the whole point of this line rather than a badge for some other body composed here:
+                // a cheat that minted its own foreign pass would be a second answer to what a false ID is,
+                // and the dev path would drift off the real one the first afternoon somebody tuned either.
+                // Null on a world with nowhere else to have issued one, and then the cheat simply deals it
+                // not — a wallet nobody could ever have is exactly what this cheat is written against.
+                Satchel.Item? falseId = AFalseIdFoundAt(passBody, DiceRule.Seed($"false-id:dev:{passBody}"));
+                if (falseId is { } elsewhere && !PatrolBeat.BadgeHeld(
+                        PatrolBeat.SiteOfBadge(elsewhere.Id) ?? string.Empty, _satchel))
+                {
+                    _satchel = [.. Core.Satchel.Add(_satchel, elsewhere)];
+                }
+
                 ShowPulseMessage(
-                    $"🧪 DEV ?badge=1: {PatrolBeat.BadgeGlyph} {PatrolBeat.BadgeTitle(passBody)} and " +
+                    $"🧪 DEV ?badge=1: {PatrolBeat.BadgeGlyph} {PatrolBeat.BadgeTitle(passBody)}, " +
+                    (falseId is { } shown ? $"{FoundPass.Plate(shown)}, " : "") +
                     $"{CanteenTable.ChitGlyph} the cage chit are in the wallet — 🎒 I to read them, then " +
                     "let a round find you and pick which one of you he meets.");
             }
