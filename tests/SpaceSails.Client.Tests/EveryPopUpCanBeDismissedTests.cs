@@ -57,7 +57,7 @@ namespace SpaceSails.Client.Tests;
 /// offers is itself a close — a decision is a dismissal. That is a real exception and the BUSTED demand, the
 /// arrival brake and the walk-in all live in it. But "all its buttons close it" is a claim about behaviour,
 /// and the way this repository has been burned before is by a guard that took such a claim from a list. So
-/// <see cref="Verdict.EveryControlCloses"/> is not read from the register — the register says only which
+/// <see cref="Exit.EveryControlCloses"/> is not read from the register — the register says only which
 /// surfaces are ALLOWED to earn it — it is established by pressing every control in turn and watching.</para>
 ///
 /// <h3>What this law does not reach, said out loud</h3>
