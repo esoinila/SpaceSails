@@ -18,8 +18,25 @@ using SpaceSails.Core.Interior;
 namespace SpaceSails.Client.Pages;
 
 // Map.Autopilot — the pilot's hands: rehearsal and promise, arm and stand-down, the transfer
-// burns, and the station-keeping that holds a KEPT orbit. The ancients' pyramid pilot-grants
-// ride here too. Lifted whole from Map.razor for #251.
+// burns, and the station-keeping that holds a KEPT orbit. Lifted whole from Map.razor for #251.
+//
+// #251 · WHY THE FILE WAS CUT, and what "pure motion" is holding across the family. At 1,442 lines this
+// was the longest hand-written file in `src/`, and it was the file that set the size gate's daylight
+// (`NoSourceFileIsTooLongTests`, the line at 1,500): the next section anybody added here would have had to
+// be shoved somewhere else first. So it is cut along the seams it already had — one subject per partial,
+// every line moved VERBATIM, no rename, no signature change, no statement reordered inside a method. A
+// `partial` is the same class, so the page's field roster is untouched by construction.
+//
+// WHAT STAYED HERE, and why it is not "the leftovers": five source guards read THIS PATH and assert
+// literals in it — `TheArrivalEndsWhereTheErrandIsTests` (the `BodyKind.Station` fork of
+// `CheckArmedInsertion`, sliced structurally down to the `#146 the moon run` comment that follows it),
+// `TheTenthIsQuotedAndOnlyTheAutopilotsTests` (the refusal's numbers, and the five `_reactionMassPulses -=`
+// debits IN ORDER — `charge`, `approachCharge`, `insertCharge`, `cost`, `oi.Cost`, which pins
+// `ApplyTransferBurn`, `CheckArmedInsertion`, `StationKeep` and `EnterOrbit` to this file in that order),
+// `TheWallsAreHungAndReadTests` (both `TheArrivalIsRemembered` arrival edges, counted), and
+// `TheWreckHasItsOwnArrivalTests` (`AutopilotStandInEnvelope`, and the FABLE marker that must not be in
+// it). Every seam below was chosen to leave those literals where their guard reads them, so not one guard
+// was edited for the cut — the alternative is a guard whose world can no longer tell pass from fail.
 public partial class Map
 {
 
@@ -78,59 +95,6 @@ public partial class Map
         return OrbitRule.BoundOrbitPeriod(_ship, pos, vel, oi.Body, oi.Hill);
     }
 
-    // ---- M28 (Sunday PR-D): the Ancients' pilot — pyramid satellites & auto-plot charges ----
-    private int _ancientCharges;
-    private readonly double[] _ancientLastGrant =
-        [double.NegativeInfinity, double.NegativeInfinity];
-    private static readonly RgbaColor PyramidColor = new(255, 215, 120);
-
-    /// <summary>Runs on the sensor cadence: a pyramid close enough to touch grants charges.</summary>
-    private void CheckPyramids()
-    {
-        for (int i = 0; i < AncientsRule.PyramidCount; i++)
-        {
-            if (SimTime - _ancientLastGrant[i] < AncientsRule.GrantCooldownSeconds
-                || !AncientsRule.InGrantRange(i, _ship.Position, SimTime))
-            {
-                continue;
-            }
-
-            _ancientLastGrant[i] = SimTime;
-            _ancientCharges += AncientsRule.ChargesPerVisit;
-            ShowPulseMessage($"◬ The pyramid regards you. {AncientsRule.ChargesPerVisit} plottings are granted.");
-            RendererInterop.PlayCue("board");
-            StateHasChanged();
-        }
-    }
-
-    /// <summary>Spends a charge: the ancient pilot replaces the maneuver plan with a course
-    /// to the current destination — the same Simulator-evaluated search that plans NPC
-    /// routes, offered as scarce alien assistance. Manual flight stays the taught skill.</summary>
-    private void UseAncientsPilot()
-    {
-        if (_ancientCharges <= 0 || _destinationBodyId is null || _ephemeris is null)
-        {
-            return;
-        }
-
-        ShowPulseMessage("◬ The ancient pilot considers the sky…");
-        if (AncientsRule.AutoPlot(_ephemeris, _ship, _destinationBodyId) is not { } result)
-        {
-            return;
-        }
-
-        _ancientCharges--;
-        _planNodes.Clear();
-        foreach (ManeuverNode node in result.Plan.Nodes)
-        {
-            _planNodes.Add(new PlanNode { SimTime = node.SimTime, Action = node.Action, Pulses = node.Pulses });
-        }
-
-        RebuildPlan();
-        ReprojectTrajectory();
-        ShowPulseMessage($"◬ Course laid — closest approach {FormatDistance(result.MissDistance)} at {FormatSimTime(result.ClosestApproachSimTime)}. Mind HOW it flies.");
-        StateHasChanged();
-    }
     // The pilot's most-wanted number (owner, M16): the speed that holds a circular sun orbit
     // at the ship's CURRENT distance. Match it (tangentially) and you coast forever — the
     // difference between "matching the radius" and "matching the orbit".
