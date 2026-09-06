@@ -227,69 +227,18 @@
                            bit on it) — so this one stands down rather than say it twice. *@
                         @if (_armedOrbitBodyId is not null && !ArriveCoversArmed)
                         {
-                            string _armedId = _armedOrbitBodyId;
-                            FlightStepState _is = FlightPlanStatusBuilder.InsertionState(AutopilotFlyingApproach);
-                            bool _active = _is == FlightStepState.Active;
-                            bool _insOpen = _openEditor == FlightEditorKind.Insertion;
-                            <div class="mb-1 map-plan-step map-plan-step-@_is.ToString().ToLowerInvariant() @(_insOpen ? "map-plan-step-open" : "")">
-                                <div class="map-plan-step-line" role="button" tabindex="0"
-                                     title="Click to @(_insOpen ? "collapse" : "manage")the insertion"
-                                     @onclick="ToggleInsertionEditor">
-                                    <span class="map-plan-step-pip" title="@_is" aria-hidden="true"></span>
-                                    <span class="map-plan-step-caret" aria-hidden="true">@(_insOpen ? "▾" : "▸")</span>
-                                    <span class="flex-grow-1">
-                                        🛰 @(_orbitKept ? "Holding orbit at" : HarborVocabulary.ArmedStepVerb(HarborClassOf(_armedId))) @BodyName(_armedId)
-                                        <span class="text-secondary">— @(_orbitKept ? (_keepTrimPulsesPerDay > 0 ? $"keeping · trim ≈{_keepTrimPulsesPerDay} p/day" : "keeping the park") : _active ? "flying the approach" : "armed · waiting for the window")</span>
-                                        @* The promise the autopilot quoted at arm time (#146): the whole-journey
-                                           budget it proved affordable before committing. #928: the number is the
-                                           CHARGED one — the autopilot's tenth — which is also what the tank is
-                                           really billed as the burns fire, so this line and the expellant gauge
-                                           can never tell two stories. *@
-                                        @if (_armedBudgetPulses > 0)
-                                        {
-                                            <span class="text-info small">· budgeted ≈@(_armedBudgetPulses) p</span>
-                                            <span class="text-secondary small d-block">💸 the autopilot flies at a tenth of the tank a hand would spend</span>
-                                        }
-                                        @* #146: the in-well transfer plan riding under this arm — the
-                                           planner's one-line quote while the cheap Lambert arc is active. *@
-                                        @if (_armedTransferSummary is not null)
-                                        {
-                                            <span class="text-info small d-block">🛰 @_armedTransferSummary</span>
-                                        }
-                                    </span>
-                                    @if (ArmedInsertionSimTime is { } _it)
-                                    {
-                                        <span class="text-secondary small text-nowrap">@FormatSimTime(_it)</span>
-                                    }
-                                    <span class="badge @(_orbitKept ? "bg-success" : _active ? "bg-info text-dark" : "bg-secondary")">@(_orbitKept ? "KEEPING" : _active ? "ACTIVE" : "ARMED")</span>
-                                </div>
-                                @if (_insOpen)
-                                {
-                                    <div class="map-plan-step-edit">
-                                        @* #950 ROOT CAUSE — "the disarm auto-insertion button does nothing here."
-                                           It was doing exactly what #179 asks: the FIRST click only arms a
-                                           four-second confirm and says so in a pulse toast. On a Nav panel
-                                           clipped from below the toast was never seen and the button's own face
-                                           never changed, so a correct double-confirm read as a dead control.
-                                           The orbit panel already showed the pending state on the button
-                                           (Map.razor "Disarm? click again"); this row now does the same, and
-                                           says it IN the step's sub-panel where the finger already is. *@
-                                        <button type="button" class="btn btn-sm w-100 @(_disarmConfirmBodyId == _armedId ? "btn-warning" : "btn-outline-warning")"
-                                                disabled="@NavLockedByDock" title="@(NavLockedByDock ? DockNavLockTip : "Stand the autopilot down and fly the ship by hand")"
-                                                @onclick="() => ToggleArmedInsertion(_armedId)">
-                                            @if (_disarmConfirmBodyId == _armedId)
-                                            {
-                                                <text>🛰 Click again to confirm — @(_orbitKept ? "hand the ship back from" : "disarm at") @BodyName(_armedId)</text>
-                                            }
-                                            else
-                                            {
-                                                <text>🛰 @(_orbitKept ? "Hand back the ship — release the kept orbit at" : HarborClassOf(_armedId) == HarborClass.Dock ? "Disarm the dock approach to" : "Disarm auto-orbit at") @BodyName(_armedId)</text>
-                                            }
-                                        </button>
-                                        <div class="text-secondary small mt-1">@(_orbitKept ? "The autopilot is HOLDING this orbit with trims. Release it and you fly by hand — it takes a confirming second click (#179)." : $"Target: {BodyName(_armedId)} — set from the navigation-target panel below; disarm here, then arm a different body.")</div>
-                                    </div>
-                                }
-                            </div>
+                            <ArmedOrbitStepRow _armedBudgetPulses="@_armedBudgetPulses"
+                                               _armedOrbitBodyId="@_armedOrbitBodyId"
+                                               _armedTransferSummary="@_armedTransferSummary"
+                                               _disarmConfirmBodyId="@_disarmConfirmBodyId"
+                                               _keepTrimPulsesPerDay="@_keepTrimPulsesPerDay"
+                                               _openEditor="@_openEditor" _orbitKept="@_orbitKept"
+                                               ArmedInsertionSimTime="@ArmedInsertionSimTime"
+                                               AutopilotFlyingApproach="@AutopilotFlyingApproach" BodyName="@BodyName"
+                                               DockNavLockTip="@DockNavLockTip" FormatSimTime="@FormatSimTime"
+                                               HarborClassOf="@HarborClassOf" NavLockedByDock="@NavLockedByDock"
+                                               ToggleArmedInsertion="@ToggleArmedInsertion"
+                                               ToggleInsertionEditor="@ToggleInsertionEditor" />
                         }
                         @* #952/#955 — THE ARRIVE STEP. The plan's last row, and the owner's "cherry on top":
                            visually identical to the burn rows above it (pip · caret · glance line · time),
