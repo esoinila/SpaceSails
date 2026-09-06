@@ -79,7 +79,7 @@ public sealed class RipItAndBinItIsAVerbTests
     private static string Seated() =>
         Source("Pages", "Map.Seated.cs") + Source("Pages", "Seating", "Seating.Seated.cs");
 
-    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// <summary>#870 · The sim page is twenty partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
         Directory.EnumerateFiles(

@@ -30,7 +30,7 @@ public sealed class ProcessingTheLootTakesTimeTests
     private static string Pages(string file) =>
         MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
-    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// <summary>#870 · The sim page is twenty partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
         Directory.EnumerateFiles(
@@ -38,7 +38,7 @@ public sealed class ProcessingTheLootTakesTimeTests
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
-    /// <summary>#870 · The surface page is fifteen partials by subject now, so "the surface" a guard counts
+    /// <summary>#870 · The surface page is thirty-one partials by subject now, so "the surface" a guard counts
     /// over is all of them — exactly the text it read out of one file before the split.</summary>
     private static string Surface() => string.Concat(
         Directory.EnumerateFiles(
