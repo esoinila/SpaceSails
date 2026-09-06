@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -121,6 +121,9 @@ public sealed class NoSurfaceSwallowsARerenderTests
     private static IReadOnlyList<string> AllSurfaceDirs =>
     [
         Path.Combine(Client, "Pages", "Map"),
+        // #251 · the surfaces of a surface. NavHud.razor is Map's own markup one file out, and its
+        // markup is cut into Pages/Map/NavHud/ in its turn — under NavHud's dispatch, which is Map's.
+        Path.Combine(Client, "Pages", "Map", "NavHud"),
         Path.Combine(Client, "Pages", "Stations", "TrackingPost"),
     ];
 

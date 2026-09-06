@@ -1,0 +1,145 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using ArriveStep = SpaceSails.Client.Pages.Map.ArriveStep
+@using FlightEditorKind = SpaceSails.Client.Pages.Map.FlightEditorKind
+@using FrameOption = SpaceSails.Client.Pages.Map.FrameOption
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using OrbitAssistInfo = SpaceSails.Client.Pages.Map.OrbitAssistInfo
+@using PlanNode = SpaceSails.Client.Pages.Map.PlanNode
+@using Quest = SpaceSails.Client.Pages.Map.Quest
+@using SkimGauge = SpaceSails.Client.Pages.Map.SkimGauge
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 · THE ORBIT / CAPTURE ASSIST BOX, ON ITS OWN FILE.
+
+    Moved out of NavHud.razor by PURE MOTION — the block between the two fences below is the block that
+    was in the HUD, character for character. Every member it reads is a [Parameter] with the SAME NAME
+    (fields keep their underscore, methods come across as delegates under their own names), which is what
+    lets the markup move without a rewrite and lets MapMarkup splice it straight back where it came from.
+
+    IHandleEvent repeats NavHud's own override, which repeats Map.Sim.cs's: the HUD's refresh belongs to
+    OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render back on
+    every event in here. The .razor.css beside this file carries no rules; it exists to give the component
+    Map.razor.css's scope (pinned in SpaceSails.Client.csproj), so every rule that styled these elements
+    goes on matching them.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and
+    a code block is where its first statements are legal. It is outside the fences, so what the source
+    guards read is still exactly the lines that were in the HUD.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from NavHud.razor ──────────────────────────────────────────────────── *@
+                <div class="mt-1 small">
+                    @* #175: this body is a cargo run's destination — say the delivery next action right
+                       in the nav-target box so the parcel's last step is never invisible. *@
+                    @if (ActiveCargoRunTo(oi.Body.Id) is not null)
+                    {
+                        <div class="map-cargo-deliver">📦 @CargoNextAction(oi.Body)</div>
+                    }
+                    @if (IsDockableHaven(oi.Body))
+                    {
+                        @* A mass-less haven has no Hill sphere — you clamp its ⚓ dock, you don't orbit.
+                           Same panel slot, dock language, so the capture-range math never lies here. *@
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>⚓ Dock at @oi.Body.Name — @DockStatusLine(oi)</span>
+                        </div>
+                        @if (oi.IsDestination)
+                        {
+                            <div class="text-secondary">
+                                @FormatDistance(oi.Distance) out · clamp within @((DockReachMeters / 1000).ToString("N0", CultureInfo.InvariantCulture)) km ·
+                                rel @((oi.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                                (match ≤ @((DockMatchSpeedMps / 1000).ToString("N0", CultureInfo.InvariantCulture)))
+                                @if (DestinationEta() is { } eta)
+                                {
+                                    <text> · @eta</text>
+                                }
+                                <a role="button" class="text-info text-decoration-none ms-1" title="Drop this destination — stop tracking it"
+                                   @onclick="() => SetDestination(null)">clear</a>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span>
+                                @(oi.IsDestination ? "🎯" : "🛰") Orbit @oi.Body.Name — @OrbitStatusLine(oi)
+                            </span>
+                            @if (oi.WindowOpen && oi.RadiusInStableBand)
+                            {
+                                @* #963 · a sibling of the bare undock: this circularizes AT THIS RADIUS this
+                                   instant, which is not what the plan's arrive-orbit step (#965) would fly.
+                                   Emergency dress, unchanged behaviour. *@
+                                <button type="button" class="btn btn-sm py-0 @(oi.CanEngage && !NavLockedByDock ? "btn-outline-danger" : "btn-outline-secondary")"
+                                        disabled="@(!oi.CanEngage || NavLockedByDock)"
+                                        title="@(NavLockedByDock ? DockNavLockTip : EmergencyInsertionTip(oi))" @onclick="EnterOrbit">
+                                    Enter orbit (@oi.Cost p / O)
+                                </button>
+                            }
+                            else if (oi.WindowOpen)
+                            {
+                                @* #180 moon-grade orbit: this radius is in the tide-chaotic band (Lab 16 — the
+                                   owner's ≈0.53-Hill Enceladus park that silently stripped). NEVER circularize
+                                   here silently; the button hands the descent to the autopilot, which parks at
+                                   the tide-stable radius. The O-key (EnterOrbit) follows the same logic. *@
+                                <button type="button" class="btn btn-sm py-0 @(!NavLockedByDock ? "btn-outline-danger" : "btn-outline-secondary")"
+                                        disabled="@NavLockedByDock"
+                                        title="@(NavLockedByDock ? DockNavLockTip : EmergencyDescentTip(oi))"
+                                        @onclick="EnterOrbit">
+                                    🛰 Autopilot to stable park (≈@oi.ApproachCost p)
+                                </button>
+                            }
+                            else if (oi.Bound)
+                            {
+                                @* #176: already in orbit — the button isn't "off", there's just nothing to arm.
+                                   Say so instead of a mute grey "Auto-orbit" that reads like a dead control. *@
+                                <button type="button" class="btn btn-sm py-0 btn-outline-success" disabled
+                                        title="already orbiting — burn prograde to leave, or ⚓ Dock if it's a haven">
+                                    In orbit ✓
+                                </button>
+                            }
+                            else
+                            {
+                                @* #963 · the ARM press is the emergency (it points the autopilot from wherever
+                                   she is, instead of from where the plan puts her). Standing an armed
+                                   autopilot back down is the safe direction and keeps its own green dress. *@
+                                <button type="button" class="btn btn-sm py-0 @(!NavLockedByDock && oi.Armed ? "btn-success" : !NavLockedByDock && oi.InCaptureRange ? "btn-outline-danger" : "btn-outline-secondary")"
+                                        disabled="@((!oi.InCaptureRange && !oi.Armed) || NavLockedByDock)"
+                                        title="@(NavLockedByDock ? DockNavLockTip : oi.Armed ? "Arm the autopilot to capture into orbit when she's in range" : EmergencyCaptureTip(oi))" @onclick="EnterOrbit">
+                                    @(oi.Armed
+                                        ? (_disarmConfirmBodyId == oi.Body.Id
+                                            ? "Disarm? click again"
+                                            : oi.InCaptureRange ? "Autopilot ON — flying" : "Autopilot ON — disarm")
+                                        : $"Auto-orbit (≈{oi.ApproachCost} p / O)")
+                                </button>
+                            }
+                        </div>
+                        <div class="progress map-orbit-bar" title="distance vs capture range">
+                            <div class="progress-bar @(oi.InCaptureRange ? "bg-success" : "bg-info")"
+                                 style="width: @(Math.Clamp(100 * oi.CaptureRange / Math.Max(oi.Distance, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
+                        </div>
+                        <div class="progress map-orbit-bar" title="relative speed vs 5 km/s limit">
+                            <div class="progress-bar @(oi.RelSpeed < OrbitRule.MaxRelativeSpeed ? "bg-success" : "bg-danger")"
+                                 style="width: @(Math.Clamp(100 * OrbitRule.MaxRelativeSpeed / Math.Max(oi.RelSpeed, 1), 2, 100).ToString("F0", CultureInfo.InvariantCulture))%"></div>
+                        </div>
+                        @if (oi.IsDestination)
+                        {
+                            <div class="text-secondary">
+                                @FormatDistance(oi.Distance) out · capture ≤ @FormatDistance(oi.CaptureRange) ·
+                                rel @((oi.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                                (max @((OrbitRule.MaxRelativeSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)))
+                                @if (DestinationEta() is { } eta)
+                                {
+                                    <text> · @eta</text>
+                                }
+                                <a role="button" class="text-info text-decoration-none ms-1" title="Drop this destination — stop tracking it"
+                                   @onclick="() => SetDestination(null)">clear</a>
+                            </div>
+                        }
+                    }
+                </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

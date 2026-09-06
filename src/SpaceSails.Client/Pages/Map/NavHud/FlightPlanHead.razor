@@ -1,0 +1,60 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using ArriveStep = SpaceSails.Client.Pages.Map.ArriveStep
+@using FlightEditorKind = SpaceSails.Client.Pages.Map.FlightEditorKind
+@using FrameOption = SpaceSails.Client.Pages.Map.FrameOption
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using OrbitAssistInfo = SpaceSails.Client.Pages.Map.OrbitAssistInfo
+@using PlanNode = SpaceSails.Client.Pages.Map.PlanNode
+@using Quest = SpaceSails.Client.Pages.Map.Quest
+@using SkimGauge = SpaceSails.Client.Pages.Map.SkimGauge
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 · THE FLIGHT PLAN'S HEAD ROW, ON ITS OWN FILE.
+
+    Moved out of NavHud.razor by PURE MOTION — the block between the two fences below is the block that
+    was in the HUD, character for character. Every member it reads is a [Parameter] with the SAME NAME
+    (fields keep their underscore, methods come across as delegates under their own names), which is what
+    lets the markup move without a rewrite and lets MapMarkup splice it straight back where it came from.
+
+    IHandleEvent repeats NavHud's own override, which repeats Map.Sim.cs's: the HUD's refresh belongs to
+    OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render back on
+    every event in here. The .razor.css beside this file carries no rules; it exists to give the component
+    Map.razor.css's scope (pinned in SpaceSails.Client.csproj), so every rule that styled these elements
+    goes on matching them.
+*@
+@* ── MARKUP BEGINS · verbatim from NavHud.razor ──────────────────────────────────────────────────── *@
+                @* PR-D2 · the flight plan OWNS the step editors (docs/WednesdayPlan/UnifiedNavListNotes.md,
+                   GeminiUINotes.md). The burn list IS the plan; the old floating sling/skim panels are now
+                   scratchpad COMPOSE rows (FMS pattern — solve→preview→commit); every committed step
+                   expands in place (accordion — one open at a time), so each step's buttons live inside
+                   its own row, not loose on the HUD. The NOW/NEXT line is derived through the same Core
+                   helper the pilot banner reads, so the two never disagree. *@
+                @{
+                    FlightPlanStatus _fp = FlightNowNext();
+                    int _fpCount = FlightPlanStepCount();
+                }
+                <div class="map-flightplan-head mb-2">
+                    <div class="d-flex justify-content-between align-items-baseline">
+                        <span class="fw-bold">🗺 Flight plan</span>
+                        @if (_fpCount > 0)
+                        {
+                            <span class="text-secondary">step @FlightPlanCurrentStep() of @_fpCount</span>
+                        }
+                    </div>
+                    @* #168: NowLine wraps 1↔3 lines and NextLine toggles as the autopilot text changes.
+                       Reserve the common 2-line case (now + next) so the frequent 1↔2 flicker can't shove
+                       the burn steps below mid-click; a rare 3+-line NowLine may still grow (acceptable). *@
+                    <div class="map-flightplan-status">
+                        <div class="map-flightplan-now">@_fp.NowLine</div>
+                        @if (_fp.NextLine is { } _nextLine)
+                        {
+                            <div class="map-flightplan-next">@_nextLine</div>
+                        }
+                    </div>
+                </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@

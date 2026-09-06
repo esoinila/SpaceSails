@@ -1,0 +1,78 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using ArriveStep = SpaceSails.Client.Pages.Map.ArriveStep
+@using FlightEditorKind = SpaceSails.Client.Pages.Map.FlightEditorKind
+@using FrameOption = SpaceSails.Client.Pages.Map.FrameOption
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using OrbitAssistInfo = SpaceSails.Client.Pages.Map.OrbitAssistInfo
+@using PlanNode = SpaceSails.Client.Pages.Map.PlanNode
+@using Quest = SpaceSails.Client.Pages.Map.Quest
+@using SkimGauge = SpaceSails.Client.Pages.Map.SkimGauge
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 · THE REFERENCE-FRAME SELECTOR, ON ITS OWN FILE.
+
+    Moved out of NavHud.razor by PURE MOTION — the block between the two fences below is the block that
+    was in the HUD, character for character. Every member it reads is a [Parameter] with the SAME NAME
+    (fields keep their underscore, methods come across as delegates under their own names), which is what
+    lets the markup move without a rewrite and lets MapMarkup splice it straight back where it came from.
+
+    IHandleEvent repeats NavHud's own override, which repeats Map.Sim.cs's: the HUD's refresh belongs to
+    OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render back on
+    every event in here. The .razor.css beside this file carries no rules; it exists to give the component
+    Map.razor.css's scope (pinned in SpaceSails.Client.csproj), so every rule that styled these elements
+    goes on matching them.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and
+    a code block is where its first statements are legal. It is outside the fences, so what the source
+    guards read is still exactly the lines that were in the HUD.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from NavHud.razor ──────────────────────────────────────────────────── *@
+        @* #135/#143 — reference-frame selector. Near a gas giant a moon-to-moon course is useless in
+           the solar frame: the primary's ~10 km/s solar orbit drowns the interesting motion. Pick the
+           body every time-parameterized draw is expressed co-moving with. Default Sun (inertial); inside
+           a giant's Hill sphere that giant is suggested (✦) but never auto-selected — the owner asked for
+           a CHOICE. The v-readout is quoted in, and labelled with, the chosen frame. #143: this ONE
+           selection governs BOTH the Play-view ribbon/scrub path and the Plot curves, so the chip lives
+           OUTSIDE the Plot panel and is visible in both views — the ruler is never silent. *@
+        <div class="map-frame bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
+            <div class="map-plot-frame d-flex flex-wrap align-items-center gap-1">
+                <span class="text-secondary">frame:</span>
+                @foreach (FrameOption opt in FrameOptions())
+                {
+                    bool active = opt.Id == _plotFrameBodyId;
+                    <button type="button"
+                            class="btn btn-sm py-0 @(active ? "btn-info" : opt.Suggested ? "btn-outline-warning" : "btn-outline-light")"
+                            title="@opt.Title"
+                            @onclick="() => SetPlotFrame(opt.Id)">@opt.Label@(opt.Suggested && !active ? " ✦" : "")</button>
+                }
+                @* #206 — the compact chips above are contextual (Sun · local giant · target); this overflow
+                   makes EVERY body pickable as origin from anywhere (owner: "All planets and moons need it"),
+                   grouped by parent. The pick gives it an active chip; #144's law holds (one frame rules map
+                   + plotting ribbon + readouts). *@
+                <select class="form-select form-select-sm py-0 map-frame-picker"
+                        value="@(_plotFrameBodyId ?? "")" @onchange="OnFramePicked"
+                        title="Pick ANY planet, moon, or station as the map/plot origin — the choice rules both views (#206)">
+                    @* value="" (Sun / inertial) shows this placeholder; an exotic frame shows its own name,
+                       so the picker always reads the live origin and pairs with its chip. *@
+                    <option value="">frame… ▾</option>
+                    @foreach ((string groupLabel, List<CelestialBody> members) in FramePickerGroups())
+                    {
+                        <optgroup label="@groupLabel">
+                            @foreach (CelestialBody b in members)
+                            {
+                                <option value="@b.Id">@b.Name</option>
+                            }
+                        </optgroup>
+                    }
+                </select>
+                <span class="text-secondary ms-1" title="Ship speed in the selected frame">@FrameSpeedReadout()</span>
+            </div>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

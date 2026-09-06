@@ -1,0 +1,55 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using ArriveStep = SpaceSails.Client.Pages.Map.ArriveStep
+@using FlightEditorKind = SpaceSails.Client.Pages.Map.FlightEditorKind
+@using FrameOption = SpaceSails.Client.Pages.Map.FrameOption
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using OrbitAssistInfo = SpaceSails.Client.Pages.Map.OrbitAssistInfo
+@using PlanNode = SpaceSails.Client.Pages.Map.PlanNode
+@using Quest = SpaceSails.Client.Pages.Map.Quest
+@using SkimGauge = SpaceSails.Client.Pages.Map.SkimGauge
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 · THE AUTOPILOT'S OWN BURN ROWS, ON ITS OWN FILE.
+
+    Moved out of NavHud.razor by PURE MOTION — the block between the two fences below is the block that
+    was in the HUD, character for character. Every member it reads is a [Parameter] with the SAME NAME
+    (fields keep their underscore, methods come across as delegates under their own names), which is what
+    lets the markup move without a rewrite and lets MapMarkup splice it straight back where it came from.
+
+    IHandleEvent repeats NavHud's own override, which repeats Map.Sim.cs's: the HUD's refresh belongs to
+    OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render back on
+    every event in here. The .razor.css beside this file carries no rules; it exists to give the component
+    Map.razor.css's scope (pinned in SpaceSails.Client.csproj), so every rule that styled these elements
+    goes on matching them.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and
+    a code block is where its first statements are legal. It is outside the fences, so what the source
+    guards read is still exactly the lines that were in the HUD.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from NavHud.razor ──────────────────────────────────────────────────── *@
+                        @* #957 — THE AUTOPILOT'S OWN BURNS ARE STEPS. Owner, after it finally accepted the
+                           Roadstead: "it accepted the autopilot but it does [not] add it as navigation step to
+                           the list." The armed transfer schedule (the #146 in-well arc, and the braking step
+                           laid instead of a refusal) fires impulses at fixed epochs; before this they had no
+                           list presence at all, so part of the plan the ship was flying was invisible. Read
+                           only — the autopilot owns them; disarming is how you take them back. *@
+                        @foreach (TransferPlanner.BurnStep _sched in ScheduledAutopilotBurns())
+                        {
+                            <div class="mb-1 map-plan-step map-plan-step-armed">
+                                <div class="map-plan-step-line" title="The autopilot fires this burn itself, at its own epoch — disarm the arrival to take it back">
+                                    <span class="map-plan-step-pip" title="Armed" aria-hidden="true"></span>
+                                    <span class="map-plan-step-caret" aria-hidden="true">·</span>
+                                    <span class="flex-grow-1">@ScheduledBurnGlanceLine(_sched)</span>
+                                    <span class="text-secondary small text-nowrap">@FormatSimTime(_sched.SimTime)</span>
+                                    <span class="badge bg-secondary">AUTOPILOT</span>
+                                </div>
+                            </div>
+                        }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

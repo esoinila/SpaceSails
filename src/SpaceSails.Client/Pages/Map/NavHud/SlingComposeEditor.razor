@@ -1,0 +1,77 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using ArriveStep = SpaceSails.Client.Pages.Map.ArriveStep
+@using FlightEditorKind = SpaceSails.Client.Pages.Map.FlightEditorKind
+@using FrameOption = SpaceSails.Client.Pages.Map.FrameOption
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using OrbitAssistInfo = SpaceSails.Client.Pages.Map.OrbitAssistInfo
+@using PlanNode = SpaceSails.Client.Pages.Map.PlanNode
+@using Quest = SpaceSails.Client.Pages.Map.Quest
+@using SkimGauge = SpaceSails.Client.Pages.Map.SkimGauge
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 · THE SLING COMPOSE EDITOR, ON ITS OWN FILE.
+
+    Moved out of NavHud.razor by PURE MOTION — the block between the two fences below is the block that
+    was in the HUD, character for character. Every member it reads is a [Parameter] with the SAME NAME
+    (fields keep their underscore, methods come across as delegates under their own names), which is what
+    lets the markup move without a rewrite and lets MapMarkup splice it straight back where it came from.
+
+    IHandleEvent repeats NavHud's own override, which repeats Map.Sim.cs's: the HUD's refresh belongs to
+    OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render back on
+    every event in here. The .razor.css beside this file carries no rules; it exists to give the component
+    Map.razor.css's scope (pinned in SpaceSails.Client.csproj), so every rule that styled these elements
+    goes on matching them.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and
+    a code block is where its first statements are legal. It is outside the fences, so what the source
+    guards read is still exactly the lines that were in the HUD.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from NavHud.razor ──────────────────────────────────────────────────── *@
+                @* PR-G · the sling compose editor — SOLVE previews against the real integrator (labs 19/20's
+                   crank); "Add the burn" COMMITS the solved node into the plan below. *@
+                @if (_openEditor == FlightEditorKind.Sling && _slingablePass is { } slp)
+                {
+                    <div class="map-step-editor map-sling-body bg-dark bg-opacity-50 rounded p-2 mb-2">
+                        <div class="fw-bold small mb-1">⤴ Compose sling past @slp.BodyName</div>
+                        <div class="btn-group btn-group-sm w-100 mb-2" role="group" aria-label="Sling side">
+                            <button type="button" class="btn @(_slingSide == SlingPlanner.PassSide.Lead ? "btn-success" : "btn-outline-secondary")"
+                                    title="Pass on the leading side — steal speed, boost outward" @onclick="() => SetSlingSide(SlingPlanner.PassSide.Lead)">Lead — boost</button>
+                            <button type="button" class="btn @(_slingSide == SlingPlanner.PassSide.Trail ? "btn-warning" : "btn-outline-secondary")"
+                                    title="Pass on the trailing side — shed speed, brake" @onclick="() => SetSlingSide(SlingPlanner.PassSide.Trail)">Trail — brake</button>
+                        </div>
+                        <div class="mb-1">Pass distance:
+                            <strong>@_slingPassRadii.ToString("0.#", CultureInfo.InvariantCulture) planet radii</strong>
+                            <span class="text-secondary">(point-mass floor @SlingMinRadii.ToString("0", CultureInfo.InvariantCulture) R)</span>
+                        </div>
+                        @* stopPropagation: arrow keys adjust the slider, not fire live ship pulses. *@
+                        <input type="range" class="form-range" min="@SlingMinRadii" max="@SlingMaxRadii" step="0.5"
+                               value="@_slingPassRadii.ToString(CultureInfo.InvariantCulture)"
+                               title="Set how close the flyby skims the planet, in radii"
+                               @oninput="OnSlingRadiiInput" @onkeydown:stopPropagation="true" />
+                        <div class="text-secondary mb-2">@SlingNodeNoteNow() — solver may propose its own node</div>
+                        <button type="button" class="btn btn-sm btn-outline-info w-100 mb-2" disabled="@_slingSolving"
+                                title="Fly the sling through the real integrator and preview it" @onclick="RunSlingSolveAsync">@(_slingSolving ? "solving…" : "SOLVE the sling")</button>
+                        @if (_slingFailure is { } fail)
+                        {
+                            <div class="text-warning">⚠ @fail</div>
+                        }
+                        else if (_slingResult is { Ok: true } r)
+                        {
+                            <div class="map-sling-verdict">
+                                <div>@SlingPassLine(r)</div>
+                                <div>@SlingBurnLine(r)</div>
+                                <div class="@(r.SpeedGain >= 0 ? "text-success" : "text-warning")">@SlingOutcomeLine(r)</div>
+                                <div class="text-warning">@SlingLeverLine(r)</div>
+                                <button type="button" class="btn btn-sm btn-success w-100 mt-1" title="Commit this solved sling as a burn on the plan" @onclick="AddSlingBurn">Add the burn → commit step</button>
+                            </div>
+                        }
+                    </div>
+                }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

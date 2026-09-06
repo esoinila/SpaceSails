@@ -64,6 +64,11 @@ public sealed class EverySurfaceWearsThePagesCssScopeTests
     [
         ("Pages/Map/", Path.Combine(ClientDir, "Pages", "Map"),
             "Pages/Map.razor.css", "Pages/Map/*.razor.css"),
+        // #251 · a glob does not cross a directory separator, so the entry above does NOT reach the
+        // surfaces NavHud.razor was cut into. They wear the page's identifier by their own pin or they
+        // wear one of their own and lose Map.razor.css AND NavHud.razor.css in the same silence.
+        ("Pages/Map/NavHud/", Path.Combine(ClientDir, "Pages", "Map", "NavHud"),
+            "Pages/Map.razor.css", "Pages/Map/NavHud/*.razor.css"),
         ("Pages/Stations/TrackingPost/", Path.Combine(ClientDir, "Pages", "Stations", "TrackingPost"),
             "Pages/Stations/TrackingPost.razor.css", "Pages/Stations/TrackingPost/*.razor.css"),
     ];

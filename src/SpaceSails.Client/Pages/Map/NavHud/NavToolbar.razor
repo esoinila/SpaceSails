@@ -1,0 +1,169 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using ArriveStep = SpaceSails.Client.Pages.Map.ArriveStep
+@using FlightEditorKind = SpaceSails.Client.Pages.Map.FlightEditorKind
+@using FrameOption = SpaceSails.Client.Pages.Map.FrameOption
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using OrbitAssistInfo = SpaceSails.Client.Pages.Map.OrbitAssistInfo
+@using PlanNode = SpaceSails.Client.Pages.Map.PlanNode
+@using Quest = SpaceSails.Client.Pages.Map.Quest
+@using SkimGauge = SpaceSails.Client.Pages.Map.SkimGauge
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 · THE TIME-WARP AND NAV TOOLBAR, ON ITS OWN FILE.
+
+    Moved out of NavHud.razor by PURE MOTION — the block between the two fences below is the block that
+    was in the HUD, character for character. Every member it reads is a [Parameter] with the SAME NAME
+    (fields keep their underscore, methods come across as delegates under their own names), which is what
+    lets the markup move without a rewrite and lets MapMarkup splice it straight back where it came from.
+
+    IHandleEvent repeats NavHud's own override, which repeats Map.Sim.cs's: the HUD's refresh belongs to
+    OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render back on
+    every event in here. The .razor.css beside this file carries no rules; it exists to give the component
+    Map.razor.css's scope (pinned in SpaceSails.Client.csproj), so every rule that styled these elements
+    goes on matching them.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and
+    a code block is where its first statements are legal. It is outside the fences, so what the source
+    guards read is still exactly the lines that were in the HUD.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from NavHud.razor ──────────────────────────────────────────────────── *@
+        <div class="btn-toolbar bg-dark bg-opacity-75 rounded p-2 gap-2 align-items-center" role="toolbar" aria-label="Time warp controls">
+            <div class="d-flex align-items-center gap-1 me-2 map-warp-control">
+                <span class="text-light small">warp</span>
+                <input type="range" class="form-range" min="0" max="100" step="1"
+                       value="@WarpSliderValue" title="Time warp (log scale)"
+                       @oninput="OnWarpSliderInput" @onkeydown:stopPropagation="true" />
+                <span class="text-light small text-nowrap map-warp-readout">@WarpReadout</span>
+            </div>
+            @* #172 — ⏭ skip to next event, beside the warp slider (#236: a button, in the toolbar band).
+               Jumps time forward to the next burn/arrival; anything important still pulls you back to 1×.
+               Disabled when nothing is armed (no next event to skip to). Becomes ■ stop skip while running. *@
+            <button type="button" class="btn btn-sm @(_skipActive ? "btn-warning" : "btn-outline-info") me-2"
+                    title="Jump time forward to the next burn/arrival — anything important (a burn, an arrival, an alert) still pulls you back to 1×"
+                    disabled="@(!_skipActive && !_skipNext.Found)" @onclick="ToggleSkip">
+                @(_skipActive ? "■ stop skip" : "⏭ next event")
+            </button>
+            @* The long-coast advert: on a >1-day dead coast the ship OFFERS the cheap ride. A button, so
+               it lives in the toolbar band, never the banner. The coast is free — the skip spends only time. *@
+            @if (ShowLongCoastAdvert)
+            {
+                <button type="button" class="btn btn-sm btn-outline-warning me-2"
+                        title="The coast costs nothing — the skip spends only time. Jump to the next event."
+                        @onclick="StartSkip">
+                    @* #989 clock: through the plan's own ladder, not a private whole-days rounding. The
+                       advert opens at 24 h, so LongCoastDays said "1 d" for every coast up to a day and a
+                       half — sitting one toolbar row above a plan whose every step now reads "in 33 h". *@
+                    ⏭ Long coast ahead (@LongCoastAheadReadout) — skip it
+                </button>
+            }
+            @* #246/#249 🚀 the long haul as a toolbar chip — a SECONDARY surface (the map context menu is
+               the primary entry) mirroring the offer while a long destination is set. Placement per #236,
+               beside the ⏭ advert. Visible-but-disabled with the reason (#212). *@
+            @if (LongHaulTargetPlanet(_destinationBodyId) is { } lhChipPlanet && _longHaulDeparture is { Ok: true } lhChipDep)
+            {
+                string? lhChipBlock = LongHaulOfferBlock(_longHaulDeparture, lhChipPlanet, _longHaulClearanceBlock);
+                <button type="button" class="btn btn-sm @(lhChipBlock is null ? "btn-warning" : "btn-outline-secondary") me-2"
+                        disabled="@(lhChipBlock is not null)"
+                        title="@(lhChipBlock ?? $"Autopilot the whole void to {lhChipPlanet.Name} vicinity in one jump — wake at the capture gate; the last mile stays premium")"
+                        @onclick="EngageLongHaul">
+                    🚀 Long haul (@lhChipDep.DeparturePulses p)
+                </button>
+            }
+            <button type="button" class="btn btn-sm @(Paused ? "btn-warning" : "btn-outline-light") me-2" title="Pause or resume the flow of sim time" @onclick="TogglePause">
+                @(Paused ? "Resume" : "Pause")
+            </button>
+            <button type="button" class="btn btn-sm @(FollowShip ? "btn-info" : "btn-outline-light")" title="Keep the camera locked on the ship as she flies" @onclick="ToggleFollow">
+                Follow Ship
+            </button>
+            @* #956 — …or on where she is GOING. Owner: "Let's have a follow nav destination option here in
+               addition to follow ship." Mutually exclusive with Follow Ship (one camera), and visible-but-
+               disabled with the reason when no destination is set (#212). *@
+            <button type="button" class="btn btn-sm @(_followDest && CanFollowDestination ? "btn-info" : "btn-outline-light") me-2"
+                    disabled="@(!CanFollowDestination)" title="@FollowDestTip()" @onclick="ToggleFollowDest">
+                Follow dest
+            </button>
+            @* #237 — clickable zoom: not every captain has a mouse wheel (and automation drives one
+               poorly). One real step per press, zooming toward the viewport centre. *@
+            <button type="button" class="btn btn-sm btn-outline-light" title="Zoom the map in one step — no mouse wheel needed" @onclick="() => ZoomStep(zoomIn: true)">
+                🔍+
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-light me-2" title="Zoom the map out one step — no mouse wheel needed" @onclick="() => ZoomStep(zoomIn: false)">
+                🔍−
+            </button>
+            @* #962 · THE HEART OF NAVIGATION IS DRESSED AS SUCH. Owner: "Here the smallest button is the most
+               important one… Plot. Plot should stand out among the buttons here. It is the heart of the
+               navigation process. Now it is too well hidden." So it wears the solid primary look the Dock
+               button wears (not an outline like its neighbours), a size up, and #963's live hover that names
+               what a press would plot right now. *@
+            <button type="button" class="btn @(PlotMode ? "btn-success" : "btn-warning") btn-sm map-key-action me-2"
+                    title="@PlotButtonTip()" @onclick="TogglePlotMode">
+                @(PlotMode ? "▶ Play" : "🗺 Plot")
+            </button>
+            @* Berth at a grey-market dock (a station haven) — clamps on, no steering, the heat bleeds
+               off. #212: the button reads the ONE dock truth (_dockAffordance), the nearest DOCKABLE
+               haven passing DockRule — never the raw nearest body — so it can never disagree with the
+               envelope line. #211: latched so it doesn't blink as the drift phases. #213: when in range
+               but too hot it becomes ⚓ Match & clamp, quoting the terminal-match burn (visible paused). *@
+            @if (_dockedHavenId is not null)
+            {
+                @* #963 · EMERGENCY GEAR, DRESSED AS SUCH. Owner, 2026-08-25: the bare undock is "archaic
+                   compared to the combo of undock + harbour speed"; he cast off with this press once and died
+                   colliding, and "it made perfect sense"; "flying adrift in formation is kind of crazy
+                   maneuver". It stays, and it stays unconfirmed — an emergency you must confirm is not one,
+                   and dying honestly is the point. It is quiet red instead of amber, and it says what it is.
+                   See Map.NavToolbar for the ruling and for which siblings share the dress. *@
+                <button type="button" class="btn btn-sm btn-outline-danger me-2" @onclick="Undock"
+                        title="@EmergencyUndockTip()">🚀 Undock</button>
+            }
+            else if (_dockAffordance.CanClampNow)
+            {
+                <button type="button" class="btn btn-sm btn-outline-info me-2" @onclick="ToggleDock"
+                        title="Clamp onto the dock and lie low — the heat bleeds off while you're berthed">⚓ Dock</button>
+            }
+            else if (_dockAffordance.NeedsMatch)
+            {
+                @* Alongside but coasting too hot to clamp — one press flies the terminal match (the same
+                   burn the armed autopilot flies), then leaves the plain ⚓ Dock. *@
+                <button type="button" class="btn btn-sm btn-info me-2" @onclick="MatchAndClamp"
+                        title="@($"Fly the terminal match — nulls the {(_dockAffordance.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)} km/s drift into the clamp window, then hit ⚓ Dock")">
+                    ⚓ Match &amp; clamp — ≈@(_dockAffordance.MatchPulses) p
+                </button>
+            }
+            else if (_dockAffordance.Phase == DockPhase.TooHot)
+            {
+                @* In range but the match is unaffordable — refuse with the numbers, greyed so it teaches. *@
+                <button type="button" class="btn btn-sm btn-outline-secondary me-2" disabled
+                        title="@($"Too hot to clamp — the terminal match needs ≈{_dockAffordance.MatchPulses} p, only {_reactionMassPulses} aboard")">
+                    ⚓ Match &amp; clamp — needs ≈@(_dockAffordance.MatchPulses) p
+                </button>
+            }
+            @* #963: the Scope toggle used to sit here and the owner asked why — "that functionality should
+               stay at the scope position". It did: the scope window minimises into a tile in its own corner
+               (see .map-scope-tile below), which is also what stops this row from drowning out Plot. *@
+            @* #949 — the ? opens the plotting card OVER the map: how a trip is planned, the scrub, the ±
+               buttons and the arrival badge, with the panel still underneath it and Escape to put it away.
+               It used to open /help/nav in a second tab; that page is still the long version and the card's
+               foot still hands the reader on to it. The reasoning is in Map.NavHelp.cs — in one line, the ?
+               is pressed mid-plan, and a full page in another tab answers a question about the panel by
+               taking the panel off the screen. ONE LINE; the rest of this toolbar row is lane/nav-ui's. *@
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => PressAndRefocus(ToggleNavHelp)" title="How a trip is planned — the plan, the scrub, the ± buttons and the arrival badge (? or Esc to close)">?</button>
+            @* #292: the nav screen is not a billboard. The checklist toggle is a minimal pointer that
+               appears ONLY while a lesson is actually in hand (or its card is open) — no persistent
+               tutorial chrome for a veteran. Starting or replaying a lesson lives at the Captain's desk
+               (0) → Tutorials, the quieter room where the picker already moved. *@
+            @if (ActiveTutorialIndex() >= 0 || _showTutorial)
+            {
+                <a class="btn btn-sm @(_showTutorial ? "btn-info" : "btn-outline-light")" role="button" @onclick="ToggleTutorial" title="Show/hide the current lesson's checklist — pick or replay lessons at the Captain's desk (0) → Tutorials">
+                    🏴 checklist
+                </a>
+            }
+            @* SATURDAY-ANCHOR: toolbar — parallel lanes append one button line each below *@
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

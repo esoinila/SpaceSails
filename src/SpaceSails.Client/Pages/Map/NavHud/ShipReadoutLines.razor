@@ -1,0 +1,63 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using ArriveStep = SpaceSails.Client.Pages.Map.ArriveStep
+@using FlightEditorKind = SpaceSails.Client.Pages.Map.FlightEditorKind
+@using FrameOption = SpaceSails.Client.Pages.Map.FrameOption
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using OrbitAssistInfo = SpaceSails.Client.Pages.Map.OrbitAssistInfo
+@using PlanNode = SpaceSails.Client.Pages.Map.PlanNode
+@using Quest = SpaceSails.Client.Pages.Map.Quest
+@using SkimGauge = SpaceSails.Client.Pages.Map.SkimGauge
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 · THE READOUT BLOCK'S OWN LINES, ON ITS OWN FILE.
+
+    Moved out of NavHud.razor by PURE MOTION — the block between the two fences below is the block that
+    was in the HUD, character for character. Every member it reads is a [Parameter] with the SAME NAME
+    (fields keep their underscore, methods come across as delegates under their own names), which is what
+    lets the markup move without a rewrite and lets MapMarkup splice it straight back where it came from.
+
+    IHandleEvent repeats NavHud's own override, which repeats Map.Sim.cs's: the HUD's refresh belongs to
+    OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render back on
+    every event in here. The .razor.css beside this file carries no rules; it exists to give the component
+    Map.razor.css's scope (pinned in SpaceSails.Client.csproj), so every rule that styled these elements
+    goes on matching them.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and
+    a code block is where its first statements are legal. It is outside the fences, so what the source
+    guards read is still exactly the lines that were in the HUD.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from NavHud.razor ──────────────────────────────────────────────────── *@
+            <div class="mb-1">
+                <span class="fw-bold">@_scenarioName</span>
+                @if (_plasma is not null)
+                {
+                    <span class="badge bg-info text-dark ms-1">EU ⚡</span>
+                }
+            </div>
+            <div>Sim time: @FormatSimTime(SimTime)</div>
+            @if (_skipActive)
+            {
+                @* #172: while skipping, the roomy line states the whole thing — where we're headed and the ETA. *@
+                <div class="text-info">⏭ skipping to @_skipTargetLabel — ETA @FormatDuration(Math.Max(0, _skipTargetEpoch - SimTime)) @(_effectiveWarp < Warp ? $"(held at {_effectiveWarp}× near a body)" : $"({_effectiveWarp}×)")</div>
+            }
+            else
+            {
+                <div>Warp: @(Paused ? "paused" : $"{_effectiveWarp}×") @(Warp != _effectiveWarp ? $"(auto-drop from {Warp}×)" : "")</div>
+            }
+            <div>Zoom: @FormatZoom(_camera.MetersPerPixel)</div>
+            <hr />
+            <div>
+                Ship speed: @(((_ship.Velocity.Length) / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
+                <span class="text-secondary">(circular here: @((CircularSpeedHere / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s)</span>
+            </div>
+            <div>Mass pulses: @_reactionMassPulses / @ReactionMassCapacity</div>
+            <div>Credits: @_credits.ToString("N0", CultureInfo.InvariantCulture)</div>
+            <div>Cargo: @_cargoUnits / @CargoCapacity units@(_cargoValue > 0 ? $" (worth {_cargoValue:N0} cr)" : "")</div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

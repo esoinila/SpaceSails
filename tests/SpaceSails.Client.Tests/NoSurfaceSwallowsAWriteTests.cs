@@ -75,6 +75,10 @@ public sealed class NoSurfaceSwallowsAWriteTests
     private static IReadOnlyList<string> AllSurfaceDirs =>
     [
         SurfacesDir,
+        // #251 · the surfaces of a surface: NavHud.razor's own markup, cut into Pages/Map/NavHud/. Two
+        // of the writes this law exists to catch (`_scrubOffsetSeconds` through @bind, `_burnAngleAbsolute`
+        // through a spelled assignment) crossed INTO NavHud that way and cross out of it again here.
+        Path.Combine(SurfacesDir, "NavHud"),
         Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Stations", "TrackingPost"),
     ];
 

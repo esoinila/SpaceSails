@@ -75,6 +75,14 @@
   <ItemGroup>
     <None Update="Pages\Map.razor.css" CssScope="b-4dqsdx4p75" />
     <None Update="Pages\Map\*.razor.css" CssScope="b-4dqsdx4p75" />
+    <!-- #251 · …AND ONE DIRECTORY DEEPER. NavHud.razor was the largest surface #1107 left (1,197 lines),
+         and its own markup is now cut into Pages/Map/NavHud/<Surface>.razor. A glob does not cross a
+         directory separator, so `Pages\Map\*.razor.css` above does NOT reach them: without this line every
+         sub-surface would take an identifier of its own and lose Map.razor.css's rules AND NavHud.razor.css's
+         480 lines with them — the warp toolbar, the plan steps and the burn editor all unstyled, with no
+         build error and no test. Same identifier, because it is the same page's markup one file further
+         out. -->
+    <None Update="Pages\Map\NavHud\*.razor.css" CssScope="b-4dqsdx4p75" />
   </ItemGroup>
 
   <!-- #251 · THE SAME LAW FOR THE TRACKING POST, WHERE IT BITES HARDER.
