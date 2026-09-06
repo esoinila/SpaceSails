@@ -315,7 +315,23 @@ public sealed partial class Map
             WalletFanOpen = false;
             Satchel.Item? handed = ThePaperHandedOver(bodyId);
 
-            PatrolBeat.Read read = PatrolBeat.TheGuardReads(bodyId, g.Plate, handed);
+            // #1149 · …AND WHERE THE CAPTAIN IS STANDING, AND WHICH WATCH IT IS. One paper in the wallet is
+            // judged by the floor and the roster rather than by whose building this is (Inspectorate), and
+            // both facts are read off the excursion the read is happening on — the FROZEN watch (ex.
+            // CanteenWatch), never a live clock, so a roster cannot turn over while a man walks towards you.
+            WalletChoice.Outcome how = WalletChoice.WhatHappens(bodyId, ex.Floor, ex.CanteenWatch, handed);
+
+            PatrolBeat.Read read = PatrolBeat.TheGuardReads(
+                bodyId, ex.Floor, ex.CanteenWatch, g.Plate, handed, ex.InspectionRunning);
+
+            // #1149 · THE INSPECTION IS ON, from this read until the shuttle lifts. It is set BEFORE the card
+            // goes up, and that ordering is load-bearing in one direction only: the sentence on the card was
+            // composed off the flag's OLD value (the read above), so the authored line is said exactly once
+            // and the gates open from this instant. Nothing else in the game writes this.
+            if (how == WalletChoice.Outcome.Inspection)
+            {
+                ex.InspectionRunning = true;
+            }
 
             // #684's idiom, one building along: the read is TOLD on a card, with the outcome in the card's own
             // amber row (#736) rather than pulsed under a backdrop nobody can see through. #804 shipped it
@@ -334,7 +350,7 @@ public sealed partial class Map
             // the one that had to change, because a paper that worked here is exactly the thing the next chooser
             // row has to be able to say. It is the escort note's idiom (a fact, never a mechanic), and it is the
             // ONLY thing the hint on a row is ever derived from.
-            FileTheNameYouGave(bodyId, ex.Floor, handed);
+            FileTheNameYouGave(bodyId, ex.Floor, handed, how);
 
             // A PASS THAT WORKS COSTS NOTHING. Encounter.NervePipsFor's own arithmetic — the band that lands is
             // free and the two that hurt cost a pip — and it has to be, or the badge is worth nothing: a captain
@@ -380,9 +396,13 @@ public sealed partial class Map
         /// <para>An empty hand is filed too. <i>Nothing came out of the wallet</i> is a thing that happened to
         /// you, and a book that only kept the interesting nights would be a book that flattered its owner.</para>
         /// </summary>
-        private void FileTheNameYouGave(string bodyId, int level, Satchel.Item? handed)
+        /// <param name="how">#1149 · The outcome the CARD was composed off, handed in rather than asked a
+        /// second time. It used to re-ask <see cref="WalletChoice.WhatHappens"/> here, which was harmless
+        /// while the ladder was a pure function of the paper and the site — and is not harmless now that one
+        /// rung depends on the floor and the watch. One read, one answer, one line in the book.</param>
+        private void FileTheNameYouGave(
+            string bodyId, int level, Satchel.Item? handed, WalletChoice.Outcome how)
         {
-            WalletChoice.Outcome how = WalletChoice.WhatHappens(bodyId, handed);
             string name = _host.NameOnYourOwnPapers;
 
             if (handed is { } paper)

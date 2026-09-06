@@ -161,6 +161,13 @@ public partial class DeskPanels
     // #233 · The chip's row on the dark-web desk: what the buyer pays (null while the captain carries no
     // chip) and the press that sells it. Both are Map's — the desk does no arithmetic and keeps no state.
     [Parameter] public Func<int?> ChipFencePrice { get; set; } = default!;
+
+    /// <summary>#1149 · What the dark-web fence wants for a set of inspectorate credentials, or null when
+    /// there is nothing to sell — Map's own <c>InspectorCardPrice</c>, derived and never typed.</summary>
+    [Parameter] public Func<int?> InspectorCardPrice { get; set; } = default!;
+
+    /// <summary>#1149 · Buy it. Map moves the coin and puts the laminate in the wallet.</summary>
+    [Parameter] public Action BuyTheInspectorCard { get; set; } = default!;
     [Parameter] public Action SellTheChipToTheFence { get; set; } = default!;
     [Parameter] public Func<NpcShip, string> DepartureLabel { get; set; } = default!;
     [Parameter] public Action DismissCrashNote { get; set; } = default!;

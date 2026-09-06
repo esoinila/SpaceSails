@@ -682,11 +682,11 @@ public sealed class ThePadOnTheCarPanelTests
         const string body = "pad-ground-1";
         Assert.Equal("GENERAL HANDS", PatrolBeat.BadgeTier);
 
-        PatrolBeat.Read passes = PatrolBeat.TheGuardReads(body, "◈ A PLATE", PatrolBeat.Badge(body));
+        PatrolBeat.Read passes = PatrolBeat.TheGuardReads(body, -2, 0L, "◈ A PLATE", PatrolBeat.Badge(body), false);
         Assert.True(passes.Satisfied, "this site's own pass no longer satisfies the round.");
         Assert.Equal(PatrolBeat.ChallengeLabel, passes.Label);
 
-        PatrolBeat.Read nothing = PatrolBeat.TheGuardReads(body, "◈ A PLATE", null);
+        PatrolBeat.Read nothing = PatrolBeat.TheGuardReads(body, -2, 0L, "◈ A PLATE", null, false);
         Assert.False(nothing.Satisfied);
         Assert.Equal(PatrolBeat.ChallengeLabel, nothing.Label);
         Assert.NotNull(nothing.Consequence);

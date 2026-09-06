@@ -127,7 +127,14 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     {
         string read = Method(Round("Patrol.Challenge.cs"), "private void TheRoundStopsAtYou(");
         Assert.Contains("ThePaperHandedOver(", read, StringComparison.Ordinal);
-        Assert.Contains("PatrolBeat.TheGuardReads(bodyId, g.Plate, handed)", read, StringComparison.Ordinal);
+        // #1149 · …and he reads it WHERE THE CAPTAIN IS STANDING, on the watch the floor was drawn on and
+        // with the excursion's own inspection latch: one rung of the ladder is a fact about the floor and
+        // the site's roster rather than about the wallet, and a read that could not see them would be a
+        // world that cannot tell that rung from a refusal.
+        Assert.Contains("PatrolBeat.TheGuardReads(", read, StringComparison.Ordinal);
+        Assert.Contains(
+            "bodyId, ex.Floor, ex.CanteenWatch, g.Plate, handed, ex.InspectionRunning)",
+            read, StringComparison.Ordinal);
         Assert.DoesNotContain("TheGuardReads(bodyId, g.Plate, _host.Satchel", read, StringComparison.Ordinal);
 
         string handed = Method(Round("Patrol.Challenge.cs"), "private Satchel.Item? ThePaperHandedOver(");
@@ -155,7 +162,12 @@ public sealed class TheWalletFansWhileHeWalksOverTests
 
         // …and the line and the row are composed off the SAME outcome the card was.
         string file = Method(Round("Patrol.Challenge.cs"), "private void FileTheNameYouGave(");
-        Assert.Contains("WalletChoice.WhatHappens(", file, StringComparison.Ordinal);
+        // #1149 · …and the outcome is asked ONCE, at the read, and HANDED to the filing. Asking it a second
+        // time here was harmless while the ladder was a pure function of the paper and the site, and stopped
+        // being harmless the moment one rung started depending on the floor and the watch.
+        string stops = Method(Round("Patrol.Challenge.cs"), "private void TheRoundStopsAtYou(");
+        Assert.Contains("WalletChoice.WhatHappens(", stops, StringComparison.Ordinal);
+        Assert.DoesNotContain("WalletChoice.WhatHappens(", file, StringComparison.Ordinal);
         Assert.Contains("WalletChoice.ShownNote(", file, StringComparison.Ordinal);
         Assert.Contains("WalletChoice.Remember(", file, StringComparison.Ordinal);
     }

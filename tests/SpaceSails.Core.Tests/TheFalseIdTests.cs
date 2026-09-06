@@ -293,13 +293,13 @@ public class TheFalseIdTests
                 Assert.NotEqual(here, mintedFor);
                 judged++;
 
-                Assert.Equal(WalletChoice.Outcome.WrongSite, WalletChoice.WhatHappens(here, pass));
-                Assert.Equal(WalletChoice.Outcome.Worked, WalletChoice.WhatHappens(mintedFor, pass));
+                Assert.Equal(WalletChoice.Outcome.WrongSite, WalletChoice.WhatHappens(here, -2, 0L, pass));
+                Assert.Equal(WalletChoice.Outcome.Worked, WalletChoice.WhatHappens(mintedFor, -2, 0L, pass));
 
                 // …and the card the man's read is told on says the same thing, because it is composed off
                 // that one ladder and nothing else.
-                Assert.False(PatrolBeat.TheGuardReads(here, "A ROUND", pass).Satisfied);
-                Assert.True(PatrolBeat.TheGuardReads(mintedFor, "A ROUND", pass).Satisfied);
+                Assert.False(PatrolBeat.TheGuardReads(here, -2, 0L, "A ROUND", pass, false).Satisfied);
+                Assert.True(PatrolBeat.TheGuardReads(mintedFor, -2, 0L, "A ROUND", pass, false).Satisfied);
             }
         }
 
@@ -353,7 +353,7 @@ public class TheFalseIdTests
         Assert.True(Satchel.Item.TryParse(stored, out Satchel.Item back));
         Assert.Equal(pass, back);
         Assert.Equal(
-            WalletChoice.Outcome.WrongSite, WalletChoice.WhatHappens(world[0], back));
+            WalletChoice.Outcome.WrongSite, WalletChoice.WhatHappens(world[0], -2, 0L, back));
     }
 
     // ── The prose, and what there is none of ──────────────────────────────────────────────────────────

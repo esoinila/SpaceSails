@@ -58,6 +58,18 @@ public static class CarriedObject
 
             Satchel.Kind.Relic => RelicReveal(item.Id),
 
+            // #1149 · THE INSPECTOR'S CARD, and it is the ONE pass in the wallet worth a card of its own.
+            // Every other badge is a site vouching for a person and its whole face is already legible on the
+            // satchel row (the site code, the tier); this one's face is a single word, and the thing worth
+            // looking at is the object rather than the print. #614's law kept to the letter: it says what the
+            // laminate IS, and not one word about which doors it has ever been through.
+            //
+            // The face is the INSPECTORATE office's own painting — #695's law (one office, one face), so the
+            // letterhead the game has been printing on authority cards since #679 and this card are looking
+            // at the same photograph rather than at two answers about one office.
+            Satchel.Kind.Badge when Inspectorate.IsTheCard(item)
+                => new Reveal(Inspectorate.ArtUrl, Inspectorate.CardLabel, Inspectorate.LookCardLine),
+
             // #535 · THE KEY, and this card is the whole of what the object ever says about itself. Caption
             // only (#528's deliberate no-picture idiom, the same call the cutting rig makes two arms down):
             // there is no painting of a code. It says what the thing IS and never who issued it — the canon

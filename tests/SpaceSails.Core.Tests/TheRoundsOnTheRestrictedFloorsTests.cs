@@ -597,7 +597,7 @@ public class TheRoundsOnTheRestrictedFloorsTests
     [Fact]
     public void ThePassSatisfiesAndNothingElseHappens()
     {
-        PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", Plate, PatrolBeat.Badge("luna"));
+        PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", -2, 0L, Plate, PatrolBeat.Badge("luna"), false);
         Assert.True(read.Satisfied);
         Assert.Equal(PatrolBeat.SatisfiedLine, read.Line);
         Assert.Null(read.Consequence);
@@ -626,7 +626,7 @@ public class TheRoundsOnTheRestrictedFloorsTests
 
         foreach ((string what, Satchel.Item? handed, string expect) in cases)
         {
-            PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", Plate, handed);
+            PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", -2, 0L, Plate, handed, false);
             Assert.False(read.Satisfied, $"{what} satisfied a guard.");
             Assert.Equal(expect, read.Line);
             Assert.Equal(PatrolBeat.EscortLine, read.Consequence);
@@ -648,11 +648,11 @@ public class TheRoundsOnTheRestrictedFloorsTests
         Assert.True(PatrolBeat.BadgeHeld("luna", luna));
         Assert.False(PatrolBeat.BadgeHeld("europa", luna));
 
-        Assert.True(PatrolBeat.TheGuardReads("luna", Plate, luna[0]).Satisfied);
-        Assert.False(PatrolBeat.TheGuardReads("europa", Plate, luna[0]).Satisfied);
+        Assert.True(PatrolBeat.TheGuardReads("luna", -2, 0L, Plate, luna[0], false).Satisfied);
+        Assert.False(PatrolBeat.TheGuardReads("europa", -2, 0L, Plate, luna[0], false).Satisfied);
         Assert.Contains(
             BodyNames.Designation("luna"),
-            PatrolBeat.TheGuardReads("europa", Plate, luna[0]).Line,
+            PatrolBeat.TheGuardReads("europa", -2, 0L, Plate, luna[0], false).Line,
             StringComparison.Ordinal);
 
         // The id round-trips, and nothing else in the wallet is mistaken for one.
@@ -790,7 +790,7 @@ public class TheRoundsOnTheRestrictedFloorsTests
                      CanteenTable.Chit(underAnotherName: true),
                  })
         {
-            PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", Plate, handed);
+            PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", -2, 0L, Plate, handed, false);
             consequences.Add(read.Consequence ?? "<nothing at all>");
         }
         Assert.Equal(
