@@ -654,6 +654,11 @@ public partial class Map
         // hold lifts at the pass epoch OR the moment the ship is honestly near the body, whichever comes
         // first — after which this is an ordinary armed arrival and the unchanged insertion/dock path below
         // finishes the trip with no further input. That is the owner's "absolutely no steps needed".
+        //
+        // …and this is HOW FAR OUT SHE IS, for the whole rest of the method: #969's hold, #146's moon-run
+        // gate and #136's convergence watchdog each used to recompute it under its own name from the same
+        // two unchanged operands. `_ship` is a readonly record struct and `bodyPos` a local fixed above, and
+        // nothing between here and the switch reassigns either, so the three reads were one number.
         double distanceToTarget = (_ship.Position - bodyPos).Length;
         if (ArrivalStepRule.ArrivalPromiseIsStillAhead(
                 _armedArrivalPassSimTime, SimTime, distanceToTarget, ArrivalNearRange(body, hill)))
@@ -711,8 +716,7 @@ public partial class Map
             double tof = sched.Burns.Count > 0 ? sched.ArrivalTime - sched.Burns[0].SimTime : 0;
             double gateTime = sched.ArrivalTime - Math.Max(60.0, 0.01 * tof);
             double honestRange = OrbitRule.CaptureRangeHillRadii * hill;
-            double distTarget = (_ship.Position - bodyPos).Length;
-            if (SimTime < gateTime && distTarget >= honestRange)
+            if (SimTime < gateTime && distanceToTarget >= honestRange)
             {
                 return; // the arc is still in flight — coast, do not touch AutopilotDecision
             }
@@ -729,13 +733,12 @@ public partial class Map
         switch (OrbitRule.AutopilotDecision(_ship, bodyPos, bodyVel, body, hill, keptRadiusCap))
         {
             case OrbitRule.AutopilotAction.Approach:
-                double distance = (_ship.Position - bodyPos).Length;
                 // Convergence watchdog: a burn that beats our closest-ever pass is progress; a run of
                 // burns that don't means the approach is stuck. Stand down and keep the fuel rather
                 // than firing forever with no feedback (issue #136, the owner's live complaint).
-                if (distance < _approachMinDistance * (1 - 1e-3))
+                if (distanceToTarget < _approachMinDistance * (1 - 1e-3))
                 {
-                    _approachMinDistance = distance;
+                    _approachMinDistance = distanceToTarget;
                     _approachStalledBurns = 0;
                 }
                 else
