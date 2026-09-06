@@ -1,0 +1,158 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using ArriveStep = SpaceSails.Client.Pages.Map.ArriveStep
+@using FlightEditorKind = SpaceSails.Client.Pages.Map.FlightEditorKind
+@using FrameOption = SpaceSails.Client.Pages.Map.FrameOption
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using OrbitAssistInfo = SpaceSails.Client.Pages.Map.OrbitAssistInfo
+@using PlanNode = SpaceSails.Client.Pages.Map.PlanNode
+@using Quest = SpaceSails.Client.Pages.Map.Quest
+@using SkimGauge = SpaceSails.Client.Pages.Map.SkimGauge
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 · THE ARRIVE ROW, ON ITS OWN FILE.
+
+    Moved out of NavHud.razor by PURE MOTION — the block between the two fences below is the block that
+    was in the HUD, character for character. Every member it reads is a [Parameter] with the SAME NAME
+    (fields keep their underscore, methods come across as delegates under their own names), which is what
+    lets the markup move without a rewrite and lets MapMarkup splice it straight back where it came from.
+
+    IHandleEvent repeats NavHud's own override, which repeats Map.Sim.cs's: the HUD's refresh belongs to
+    OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render back on
+    every event in here. The .razor.css beside this file carries no rules; it exists to give the component
+    Map.razor.css's scope (pinned in SpaceSails.Client.csproj), so every rule that styled these elements
+    goes on matching them.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and
+    a code block is where its first statements are legal. It is outside the fences, so what the source
+    guards read is still exactly the lines that were in the HUD.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from NavHud.razor ──────────────────────────────────────────────────── *@
+                            ArrivalStepRule.ArrivalCheck? _ac = ArriveCheck();
+                            bool _avalid = _ac?.Valid ?? false;
+                            // #952: a course too short to reach the body yields no verdict at all — the row
+                            // must read NOT JUDGED, never INVALID, because "invalid" is a claim about a plan
+                            // and this is a confession about the picture.
+                            string? _ashortLine = ArriveRibbonTooShortLine();
+                            bool _aunjudged = _ac is null;
+                            bool _aarmed = ArriveCoversArmed;
+                            bool _aactive = _aarmed && AutopilotFlyingApproach;
+                            bool _aopen = _openEditor == FlightEditorKind.Arrive;
+                            string _astate = _aarmed ? (_aactive ? "active" : "armed") : "planned";
+                            <div class="mb-1 map-plan-step map-plan-step-@_astate @(_avalid || _aunjudged ? "" : "map-plan-step-invalid") @(_aopen ? "map-plan-step-open" : "")">
+                                <div class="map-plan-step-line" role="button" tabindex="0"
+                                     title="Click to @(_aopen ? "collapse" : "manage") the arrival that ends this plan"
+                                     @onclick="ToggleArriveEditor">
+                                    <span class="map-plan-step-pip" title="@(_avalid ? "ends safely" : _aunjudged ? "not judged yet" : "does NOT end safely")" aria-hidden="true"></span>
+                                    <span class="map-plan-step-caret" aria-hidden="true">@(_aopen ? "▾" : "▸")</span>
+                                    <span class="flex-grow-1">@ArriveGlanceLine(_ar)</span>
+                                    @if (!_aunjudged && ArrivePassFor(_ar.BodyId) is { } _ap2)
+                                    {
+                                        <span class="text-secondary small text-nowrap">@FormatSimTime(_ap2.SimTime)</span>
+                                    }
+                                    @* #949 · The glyph and the five words are Core's constants now, so the
+                                       help card's "what ✓ / ✗ / ⌛ NOT JUDGED mean" section is printing the
+                                       same strings this badge is and cannot describe a badge that no longer
+                                       exists. Nothing about what it says or when has changed. *@
+                                    <span class="badge @(_avalid ? "bg-success" : _aunjudged ? "bg-secondary" : "bg-danger")" title="@(_ac is { } _b ? ArrivalStepRule.Verdict(_b) : _ashortLine ?? "no projection yet")">@(_ac is { } _b2 ? ArrivalStepRule.Badge(_b2) : ArrivalStepRule.PendingBadge) @(_aarmed ? (_aactive ? ArrivalStepRule.StatusActive : ArrivalStepRule.StatusArmed) : _avalid ? ArrivalStepRule.StatusValid : _aunjudged ? ArrivalStepRule.StatusNotJudged : ArrivalStepRule.StatusInvalid)</span>
+                                </div>
+                                @* #952: INVALID explains itself, on the row, in numbers — distance AND relative
+                                   speed against the real thresholds (Core ArrivalStepRule reads them off
+                                   OrbitRule / DockRule, so the sentence and the sim cannot disagree). *@
+                                @* …and (#952) when there is no verdict to give at all because the plotted
+                                   course stops short of the body, say THAT — never a fabricated ✗ whose
+                                   numbers point the captain the wrong way round the iterate loop. *@
+                                @if (_ac is { } _acx && !_acx.Valid)
+                                {
+                                    <div class="map-arrive-why text-danger small">@ArrivalStepRule.Verdict(_acx)</div>
+                                }
+                                @if (_ashortLine is { } _ashort)
+                                {
+                                    <div class="map-arrive-why text-warning small">@_ashort</div>
+                                }
+                                @if (_aopen)
+                                {
+                                    <div class="map-plan-step-edit">
+                                        @if (_ac is { } _ace)
+                                        {
+                                            <div class="small mb-1 @(_ace.Valid ? "text-success" : "text-danger")">@ArrivalStepRule.Verdict(_ace)</div>
+                                        }
+                                        @if (_ashortLine is { } _ashortEdit)
+                                        {
+                                            <div class="small mb-1 text-warning">@_ashortEdit</div>
+                                        }
+                                        @* #969: the finished trip, in one line — "3 burns · arrive in 9 mo — the autopilot
+                                           will orbit Mars (≈3 p) · nothing more needed". This is the owner's own sentence
+                                           read back to him once the plan-time arm is accepted. *@
+                                        @if (ArrivePlanCompleteLine() is { } _aplan)
+                                        {
+                                            <div class="small mb-1 text-success">@_aplan</div>
+                                        }
+                                        @* #955 NAV-1: a clamped ship may arm a THEN — but only once the plan starts by
+                                           casting her off, and the button says which of those two it is instead of
+                                           standing there dead. A NOW arm from a berth is still a live nav act and
+                                           still refused by the lock. *@
+                                        @{
+                                            bool _armIsAThen = ArriveIsAThen(_ar);
+                                            bool _armBlocked = NavLockedByDock && !_armIsAThen;
+                                        }
+                                        <button type="button" class="btn btn-sm w-100 mb-1 @(_aarmed ? (_disarmConfirmBodyId == _ar.BodyId ? "btn-warning" : "btn-outline-warning") : _avalid ? "btn-success" : "btn-outline-secondary")"
+                                                disabled="@_armBlocked"
+                                                title="@(_armBlocked ? DockNavLockTip
+                                                    : NavLockedByDock && !PlanBeginsWithCastOff ? $"{DockNavLockTip} — {CastOffRule.ArmNeedsCastOff}"
+                                                    : $"Arm the autopilot for {BodyName(_ar.BodyId)} at THIS pass — never the panel's current target (#950)")"
+                                                @onclick="ArmArriveStep">
+                                            @if (_aarmed && _disarmConfirmBodyId == _ar.BodyId)
+                                            {
+                                                <text>🛰 Click again to confirm — disarm at @BodyName(_ar.BodyId)</text>
+                                            }
+                                            else if (_aarmed)
+                                            {
+                                                <text>🛰 Disarm the arrival at @BodyName(_ar.BodyId)</text>
+                                            }
+                                            else if (_armIsAThen)
+                                            {
+                                                @* #949 · The face is Core's; only the THEN clause is this
+                                                   branch's own. The help card prints the same face. *@
+                                                <text>@ArrivalStepRule.ArmButtonLabel(BodyName(_ar.BodyId)) — finish the trip @(NavLockedByDock ? "from this berth" : "from here")</text>
+                                            }
+                                            else
+                                            {
+                                                <text>@ArrivalStepRule.ArmButtonLabel(BodyName(_ar.BodyId))</text>
+                                            }
+                                        </button>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-sm btn-outline-info flex-grow-1"
+                                                    title="Jump the scrub clock to this arrival's own pass" @onclick="ScrubToArrive">scrub to it</button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    title="Take the arrival off the end of the plan" @onclick="RemoveArriveStep">✖ remove</button>
+                                        </div>
+                                        <div class="text-secondary small mt-1">
+                                            @if (_aarmed && ArmedArrivalStillAhead)
+                                            {
+                                                @* #949 · Core's sentence (ArrivalStepRule.ArmedAndNothingMore),
+                                                   because the help card promises it and must promise the
+                                                   words the step actually says. *@
+                                                <text>@ArrivalStepRule.ArmedAndNothingMore</text>
+                                            }
+                                            else
+                                            {
+                                                <text>
+                                                    The plan ends here. @(_avalid
+                                                        ? "Arm it now and the ship finishes the trip by itself — burns first, arrival last."
+                                                        : _aunjudged
+                                                        ? "Stretch Path length above (or press auto) until the pass is on the line — then the numbers say which way to iterate."
+                                                        : "Iterate the burns above (±p / ±d / ±h) until this row turns ✓ — the numbers say which way.")
+                                                </text>
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
