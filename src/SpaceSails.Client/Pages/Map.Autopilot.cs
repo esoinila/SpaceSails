@@ -330,8 +330,6 @@ public partial class Map
         // Derelict Roadster, Mercury Compute Farms and Highport Satellite Works are μ=0 stations with no
         // haven flag: the autopilot flew you to a wreck and told you to clamp onto it. The clamp clause is
         // now spoken only where a clamp exists; alongside a wreck the line stops at the truth.
-        // The clamp clause is spoken only where a clamp exists; alongside a wreck the line stops at the
-        // truth.
         string clamp = IsDockableHaven(station) ? " — hit ⚓ Dock to clamp on" : "";
         _dockReadyStatus = $"🛰 in the dock envelope at {station.Name}{clamp}";
         LogAutopilotEvent($"autopilot delivered {station.Name} — matched inside the dock envelope{(clamp.Length > 0 ? "; hit ⚓ Dock to clamp on" : "")}");
@@ -580,6 +578,25 @@ public partial class Map
         ShowPulseMessage($"Insertion armed — budgeted ≈{_armedBudgetPulses} p at the autopilot's tenth; the ship will {arrival} when the window opens{trimQuote} 🛰");
     }
 
+    /// <summary>#286 · THE PARK IS SPELLED ONCE. The kept-orbit radius is a single quantity with two
+    /// readers — <see cref="CheckArmedInsertion"/> parks at it, <c>StationKeep</c> trims back to it — and
+    /// for years each one built it from its own expression. They agreed; nothing made them agree, and a
+    /// change to one would have silently split the radius the autopilot arrives at from the radius the
+    /// keeper holds. Both now ask here, so the two sites agree by construction.
+    ///
+    /// <para><see cref="KeptRadiusCap"/> is #286's cap alone (the widest park whose swept circle still
+    /// clears the moon's PARENT planet); <see cref="KeptParkRadius"/> is the tide-stable park under it.
+    /// They are separate because the insertion gate wants the raw cap —
+    /// <c>OrbitRule.AutopilotDecision</c> applies the same <c>Math.Min</c> itself.</para></summary>
+    private double KeptRadiusCap(CelestialBody body, CelestialBody parent) =>
+        OrbitRule.MaxKeptRadiusUnderParent(_ephemeris!.InstantaneousOrbitRadius(body.Id, SimTime), parent);
+
+    /// <summary>#286 · The clamped park: the tide-stable radius, bounded by <see cref="KeptRadiusCap"/> so
+    /// the circularized orbit clears the parent. Inert for every shipped moon (the tide-stable park is far
+    /// tighter than the cap).</summary>
+    private static double KeptParkRadius(CelestialBody body, double hill, double keptRadiusCap) =>
+        Math.Min(OrbitRule.ParkingRadius(body, hill), keptRadiusCap);
+
     // M25: the armed autopilot. Inside capture range it flies the "point at it and throttle"
     // approach the owner asked for — an approach burn, tidal trim burns as needed, and the
     // insertion once safely deep in the Hill sphere. Every burn is Δv-priced in pulses.
@@ -611,9 +628,8 @@ public partial class Map
         // #286: the kept-orbit radius is bounded so the circularized park clears the moon's PARENT planet.
         // Inert for every shipped moon (the tide-stable park is far tighter than this cap); the guard that
         // an inner moon with a small Hill sphere can never be circled through the world beside it.
-        double keptRadiusCap = OrbitRule.MaxKeptRadiusUnderParent(
-            _ephemeris.InstantaneousOrbitRadius(body.Id, SimTime), parent);
-        double keptPark = Math.Min(OrbitRule.ParkingRadius(body, hill), keptRadiusCap);
+        double keptRadiusCap = KeptRadiusCap(body, parent);
+        double keptPark = KeptParkRadius(body, hill, keptRadiusCap);
 
         // Friday §0: once parked, the autopilot HOLDS the orbit — station-keeping owns the tick, not
         // the approach/insert loop below. It stays here until the captain disarms or the tank runs dry.
@@ -638,6 +654,11 @@ public partial class Map
         // hold lifts at the pass epoch OR the moment the ship is honestly near the body, whichever comes
         // first — after which this is an ordinary armed arrival and the unchanged insertion/dock path below
         // finishes the trip with no further input. That is the owner's "absolutely no steps needed".
+        //
+        // …and this is HOW FAR OUT SHE IS, for the whole rest of the method: #969's hold, #146's moon-run
+        // gate and #136's convergence watchdog each used to recompute it under its own name from the same
+        // two unchanged operands. `_ship` is a readonly record struct and `bodyPos` a local fixed above, and
+        // nothing between here and the switch reassigns either, so the three reads were one number.
         double distanceToTarget = (_ship.Position - bodyPos).Length;
         if (ArrivalStepRule.ArrivalPromiseIsStillAhead(
                 _armedArrivalPassSimTime, SimTime, distanceToTarget, ArrivalNearRange(body, hill)))
@@ -695,8 +716,7 @@ public partial class Map
             double tof = sched.Burns.Count > 0 ? sched.ArrivalTime - sched.Burns[0].SimTime : 0;
             double gateTime = sched.ArrivalTime - Math.Max(60.0, 0.01 * tof);
             double honestRange = OrbitRule.CaptureRangeHillRadii * hill;
-            double distTarget = (_ship.Position - bodyPos).Length;
-            if (SimTime < gateTime && distTarget >= honestRange)
+            if (SimTime < gateTime && distanceToTarget >= honestRange)
             {
                 return; // the arc is still in flight — coast, do not touch AutopilotDecision
             }
@@ -713,13 +733,12 @@ public partial class Map
         switch (OrbitRule.AutopilotDecision(_ship, bodyPos, bodyVel, body, hill, keptRadiusCap))
         {
             case OrbitRule.AutopilotAction.Approach:
-                double distance = (_ship.Position - bodyPos).Length;
                 // Convergence watchdog: a burn that beats our closest-ever pass is progress; a run of
                 // burns that don't means the approach is stuck. Stand down and keep the fuel rather
                 // than firing forever with no feedback (issue #136, the owner's live complaint).
-                if (distance < _approachMinDistance * (1 - 1e-3))
+                if (distanceToTarget < _approachMinDistance * (1 - 1e-3))
                 {
-                    _approachMinDistance = distance;
+                    _approachMinDistance = distanceToTarget;
                     _approachStalledBurns = 0;
                 }
                 else
@@ -841,9 +860,7 @@ public partial class Map
 
         // #286: trim back to the CLAMPED park (bounded so the kept orbit clears the parent), not the raw
         // tide-stable radius — otherwise a clamped orbit would be trimmed back out toward the planet.
-        double park = Math.Min(
-            OrbitRule.ParkingRadius(body, hill),
-            OrbitRule.MaxKeptRadiusUnderParent(_ephemeris!.InstantaneousOrbitRadius(body.Id, SimTime), parent));
+        double park = KeptParkRadius(body, hill, KeptRadiusCap(body, parent));
         if (SimTime < _keepNextCheckTime)
         {
             return; // between cadence points — let the reversible oscillation reverse itself
