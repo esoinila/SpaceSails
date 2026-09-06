@@ -2428,9 +2428,31 @@ git add --renormalize . && git status --short
 ```
 
 `"\0"` and a raw NUL compile to the same one-character string, so writing the escape costs nothing and
-buys back `grep` and `git diff`. The same goes for the rest of the character set: write `·` and `…` as
-UTF-8, not as a stray high byte — one comment in the Client suite carried a lone `0xB7` for months, which
-made that file the only one in `src/` or `tests/` that a UTF-8 reader could not decode.
+buys back `grep` and `git diff`.
+
+**The other half of "this is text" is WHICH BYTES, and it now has a law of its own.** A file can be
+perfectly LF, perfectly non-binary to git, and still not be UTF-8 — and one was: a comment in
+`TheHudSaysWhereTheAirComesFromTests.cs` carried a lone `0xB7` at byte 1,589, a Latin-1 middle dot that
+had lost its `0xC2` lead, two bytes in front of a correctly-encoded ellipsis. Nothing in the toolchain
+said so. Roslyn assumes UTF-8 and substitutes U+FFFD rather than failing; git's heuristic only looks for
+NULs; and a lone high byte in a comment changes no behaviour anybody would notice. What it costs is
+exactly what a wrong line ending costs: **a source-shape guard reads a text its author never wrote**, and
+the red says the needle is missing rather than that the file is mis-encoded.
+
+`EverySourceFileDecodesAsUtf8Tests` (beside the size gate in `tests/SpaceSails.Core.Tests`) sweeps every
+`.cs`, `.razor`, `.razor.css`, `.md` and `.json` under `src/`, `tests/` and `docs/` — 1,846 files — and
+decodes each with `Utf8.ToUtf16(…, replaceInvalidSequences: false)`, which hands back the **exact byte
+offset** of the first sequence it could not read. A BOM is fine: those three bytes are U+FEFF like any
+other character. It was shown RED by putting the `0xB7` back:
+
+```
+#251 · 1 file(s) under src/, tests/ or docs/ are not valid UTF-8:
+  tests/SpaceSails.Client.Tests/TheHudSaysWhereTheAirComesFromTests.cs — first bad byte 0xB7 at
+  offset 1589, in: "riton", "the-clinker",¶¶        // #677 · â¦and the one roc"
+```
+
+So: write `·`, `…`, `—` and curly quotes as UTF-8, never as the stray high byte a Latin-1 tool leaves
+behind.
 
 ### E6. Two helpers the house keeps, and why you use them (#1165)
 
