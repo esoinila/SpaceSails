@@ -131,46 +131,15 @@
                                   NavLockedByDock="@NavLockedByDock" PlanBeginsWithCastOff="@PlanBeginsWithCastOff"
                                   PlannedPulseTotal="@PlannedPulseTotal" ToggleSkimPanel="@ToggleSkimPanel"
                                   ToggleSlingPanel="@ToggleSlingPanel" />
-                @* PR-G · the sling compose editor — SOLVE previews against the real integrator (labs 19/20's
-                   crank); "Add the burn" COMMITS the solved node into the plan below. *@
-                @if (_openEditor == FlightEditorKind.Sling && _slingablePass is { } slp)
-                {
-                    <div class="map-step-editor map-sling-body bg-dark bg-opacity-50 rounded p-2 mb-2">
-                        <div class="fw-bold small mb-1">⤴ Compose sling past @slp.BodyName</div>
-                        <div class="btn-group btn-group-sm w-100 mb-2" role="group" aria-label="Sling side">
-                            <button type="button" class="btn @(_slingSide == SlingPlanner.PassSide.Lead ? "btn-success" : "btn-outline-secondary")"
-                                    title="Pass on the leading side — steal speed, boost outward" @onclick="() => SetSlingSide(SlingPlanner.PassSide.Lead)">Lead — boost</button>
-                            <button type="button" class="btn @(_slingSide == SlingPlanner.PassSide.Trail ? "btn-warning" : "btn-outline-secondary")"
-                                    title="Pass on the trailing side — shed speed, brake" @onclick="() => SetSlingSide(SlingPlanner.PassSide.Trail)">Trail — brake</button>
-                        </div>
-                        <div class="mb-1">Pass distance:
-                            <strong>@_slingPassRadii.ToString("0.#", CultureInfo.InvariantCulture) planet radii</strong>
-                            <span class="text-secondary">(point-mass floor @SlingMinRadii.ToString("0", CultureInfo.InvariantCulture) R)</span>
-                        </div>
-                        @* stopPropagation: arrow keys adjust the slider, not fire live ship pulses. *@
-                        <input type="range" class="form-range" min="@SlingMinRadii" max="@SlingMaxRadii" step="0.5"
-                               value="@_slingPassRadii.ToString(CultureInfo.InvariantCulture)"
-                               title="Set how close the flyby skims the planet, in radii"
-                               @oninput="OnSlingRadiiInput" @onkeydown:stopPropagation="true" />
-                        <div class="text-secondary mb-2">@SlingNodeNoteNow() — solver may propose its own node</div>
-                        <button type="button" class="btn btn-sm btn-outline-info w-100 mb-2" disabled="@_slingSolving"
-                                title="Fly the sling through the real integrator and preview it" @onclick="RunSlingSolveAsync">@(_slingSolving ? "solving…" : "SOLVE the sling")</button>
-                        @if (_slingFailure is { } fail)
-                        {
-                            <div class="text-warning">⚠ @fail</div>
-                        }
-                        else if (_slingResult is { Ok: true } r)
-                        {
-                            <div class="map-sling-verdict">
-                                <div>@SlingPassLine(r)</div>
-                                <div>@SlingBurnLine(r)</div>
-                                <div class="@(r.SpeedGain >= 0 ? "text-success" : "text-warning")">@SlingOutcomeLine(r)</div>
-                                <div class="text-warning">@SlingLeverLine(r)</div>
-                                <button type="button" class="btn btn-sm btn-success w-100 mt-1" title="Commit this solved sling as a burn on the plan" @onclick="AddSlingBurn">Add the burn → commit step</button>
-                            </div>
-                        }
-                    </div>
-                }
+                <SlingComposeEditor _openEditor="@_openEditor" _slingablePass="@_slingablePass"
+                                    _slingFailure="@_slingFailure" _slingPassRadii="@_slingPassRadii"
+                                    _slingResult="@_slingResult" _slingSide="@_slingSide"
+                                    _slingSolving="@_slingSolving" AddSlingBurn="@AddSlingBurn"
+                                    OnSlingRadiiInput="@OnSlingRadiiInput" RunSlingSolveAsync="@RunSlingSolveAsync"
+                                    SetSlingSide="@SetSlingSide" SlingBurnLine="@SlingBurnLine"
+                                    SlingLeverLine="@SlingLeverLine" SlingMaxRadii="@SlingMaxRadii"
+                                    SlingMinRadii="@SlingMinRadii" SlingNodeNoteNow="@SlingNodeNoteNow"
+                                    SlingOutcomeLine="@SlingOutcomeLine" SlingPassLine="@SlingPassLine" />
                 @* PR-I · the skim compose editor — SOLVE flies the pass through the real drag model; the
                    three-zone corridor gauge shows what actually flies; "Add the burn" COMMITS the step. *@
                 @if (_openEditor == FlightEditorKind.Skim && _skimmablePass is { } skp)
