@@ -852,12 +852,21 @@ public sealed class TheRefugesUndergroundTests
                     // THE THIRD ENTRY, AND IT HAS NO DATE ON IT. That is the beat's second half and it is
                     // delivered by an absence: a book that has never once failed to stamp a line did not
                     // stamp this one.
-                    Assert.EndsWith(" " + Replaced, tag, StringComparison.Ordinal);
-                    string third = tag[tag.LastIndexOf(Replaced, StringComparison.Ordinal)..];
-                    for (int y = year - 1; y <= year + 2; y++)
+                    //
+                    // The assertion is that the second entry runs STRAIGHT into the third with one space
+                    // between them, which is the only shape that leaves nowhere for a stamp to be. This was
+                    // first written as "no year appears after the third entry begins", and that read the
+                    // wrong side of the join: a stamp sits BEFORE its entry, so a dated third entry sailed
+                    // through it. A guard handed a world that cannot tell pass from fail is a bug class this
+                    // repo has a name for, and it was this one.
+                    Assert.EndsWith(Entry + " " + Replaced, tag, StringComparison.Ordinal);
+                    for (int y = year - 1; y <= year + 3; y++)
                     {
-                        Assert.DoesNotContain(
-                            y.ToString(System.Globalization.CultureInfo.InvariantCulture), third);
+                        Assert.Equal(
+                            state == UndergroundComplex.RefugeState.Failed && (y == year || y == year + 1),
+                            tag.Contains(
+                                y.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                                StringComparison.Ordinal));
                     }
                 }
                 else
