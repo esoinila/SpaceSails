@@ -86,6 +86,14 @@ public partial class Map
                 return;
             }
 
+            // #1151 · …and the claims kiosk, which is not a plate at all: the machine takes three things off
+            // the captain in order and keeps what it has been given. Recognised by its plate the way the two
+            // above are, so the concourse builder still never learns what any fixture is FOR.
+            if (TryTheClaimsKiosk(spot.Label))
+            {
+                return;
+            }
+
             _viewObject = MaybeAppendPlaqueGratitude(spot); // #394: Ringside's plaque grows a line once saved
 
             // #411: reading the whole dedication plate that NAMES PROJEKTI KAAMOS (Ringside's, the one place

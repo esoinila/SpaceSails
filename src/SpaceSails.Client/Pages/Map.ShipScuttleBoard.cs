@@ -264,9 +264,15 @@ public sealed partial class Map
     ///
     /// <para><see cref="_ashore"/> is the signal and not <see cref="_dockedHavenId"/>, because sitting at his
     /// own nav board with the gangway mated is still sitting on her.</para>
+    ///
+    /// <para><b>#1151 · AND IT IS NOT THIS SCENE'S QUESTION ANY MORE.</b> The owner's ruling on #525 makes
+    /// "is the master on her" a law the collectors read too, so the three signals moved to
+    /// <see cref="TheMasterIsAboardHer"/> and this asks that. Not a rename: the ending kept its own name for
+    /// the question because the ending is asking it in the past tense, about the frame the charges reached
+    /// zero on. Two copies of the predicate is the mirrored-constant bug class said about a fact rather than
+    /// a number, and the copy that would have drifted is the one nobody was looking at.</para>
     /// </summary>
-    private bool CaptainWasAboardHer() =>
-        _surface is null && _shuttleRun is null && !(HerChargesAreAtABerth && _ashore);
+    private bool CaptainWasAboardHer() => TheMasterIsAboardHer();
 
     /// <summary>
     /// He stayed. Through the SAME brain-backup death the collector, the impact and the regolith all use — the
@@ -347,6 +353,12 @@ public sealed partial class Map
         // the way the shuttle's own lift-off folds it (Map.Surface.cs), including the writ that followed his
         // heat down: a collector party is a body ON THAT GROUND, and the ground is gone.
         bool wasOnSurface = _surface is not null;
+
+        // #1151 · WHICH GROUND HE DID IT OVER, read here or never — one statement later `_surface` is null
+        // and the ground the pursuers are about to be told to wait for him at is unaskable. It is the port
+        // that SERVES this ground they wait at, not the ground; QuietHands.PortFor answers that.
+        string? theGround = _surface?.Stop.Body.Id;
+
         if (wasOnSurface)
         {
             _surface = null;
@@ -379,6 +391,14 @@ public sealed partial class Map
                 if (!hunter.BrokenOff && !hunter.CaughtPlayer)
                 {
                     _hunters[h] = hunter with { BrokenOff = true };
+
+                    // #1151 · …AND THE BREAK-OFF IS NOT THE END OF THE PROCESS. The owner's ruling on #525
+                    // says the pursuers cannot proceed without the captain, which is a different sentence
+                    // from "the pursuers stop caring". The chase ends here exactly as #1090 built it — the
+                    // ending is untouched, the roster empties, no line is said — and the contract goes onto
+                    // the file, waiting at the port that serves the ground he did it over. One writ: whoever
+                    // was first on the roster is the one who waits, and a queue of them is a later slice.
+                    TheWritWaitsForHim(theGround, null, hunter.Callsign);
                 }
             }
         }

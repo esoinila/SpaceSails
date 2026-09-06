@@ -380,7 +380,8 @@
     @if (_viewObject is { } vo)
     {
         <ViewObjectCard CloseViewObject="@CloseViewObject" Dismiss="@Dismiss" KeepTheFind="@KeepTheFind"
-                        LeaveTheFind="@LeaveTheFind" PressTheHit="@PressTheHit"
+                        LeaveTheFind="@LeaveTheFind" PressTheClaim="@PressTheClaim" PressTheHit="@PressTheHit"
+                        TheClaimAsks="@TheClaimAsks" TheClaimDeskIsUp="@TheClaimDeskIsUp"
                         TheFindIsWaitingOnAnAnswer="@TheFindIsWaitingOnAnAnswer" TheKitsCardIsUp="@TheKitsCardIsUp"
                         TheKitSweeps="@TheKitSweeps" vo="@vo" />
     }
@@ -571,7 +572,9 @@
                              CloseCaptainsRemote="@CloseCaptainsRemote" DesignatableGuns="@DesignatableGuns"
                              Dismiss="@Dismiss" FireOnTheLock="@FireOnTheLock" OnWreck="@OnWreck"
                              OpenDesignate="@OpenDesignate" PickTheGun="@PickTheGun"
+                             RaiseTheClaimsDesk="@RaiseTheClaimsDesk"
                              SendTheStanding="@SendTheStanding" SoundingGear="@SoundingGear"
+                             TheRemoteReachesAKiosk="@TheRemoteReachesAKiosk"
                              ToggleBoatPower="@ToggleBoatPower" ToggleQuietSearch="@ToggleQuietSearch"
                              ToggleWeaponsTight="@ToggleWeaponsTight" />
     }

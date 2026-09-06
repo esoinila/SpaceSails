@@ -140,6 +140,21 @@
                             @RemoteSend.OpenLabel
                         </button>
                     }
+
+                    @* #1151 · THE SIXTH SWITCH, and the only one that reaches a machine nobody set down.
+                       Owner ruling on #525: the claims kiosks are "contactable from the captain's remote in
+                       range". So it is here when a kiosk's port is inside the tight beam and gone when it is
+                       not — deliberately unlike the switch above it, which is live in order to REFUSE: a
+                       handset with nothing to send answers with the sentence that says what would fix it,
+                       and a kiosk four AU away has nothing to teach. It wears the machine's own plate. *@
+                    @if (TheRemoteReachesAKiosk())
+                    {
+                        <button type="button" class="btn btn-sm btn-outline-warning"
+                                title="@NebulaClaims.OnApproach"
+                                @onclick="RaiseTheClaimsDesk">
+                            @NebulaClaims.KioskPlate
+                        </button>
+                    }
                 </div>
 
                 <div class="vent-readout">@SilentRunning.SpinUpLabel(_boatWarmth, _boatOrderedCold)</div>

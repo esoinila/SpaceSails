@@ -29,7 +29,12 @@ public partial class ViewObjectCard
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
     [Parameter] public EventCallback KeepTheFind { get; set; }
     [Parameter] public EventCallback LeaveTheFind { get; set; }
+    // #1151 · The claims counter's three presses — the kit's own row shape above it: a gate, a list
+    // recomputed from the world at every render, and one door back to the page.
+    [Parameter] public Action<NebulaClaims.Ask> PressTheClaim { get; set; } = default!;
     [Parameter] public Action<SdrScanner.Hit> PressTheHit { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<NebulaClaims.Ask>> TheClaimAsks { get; set; } = default!;
+    [Parameter] public bool TheClaimDeskIsUp { get; set; }
     [Parameter] public bool TheFindIsWaitingOnAnAnswer { get; set; }
     [Parameter] public bool TheKitsCardIsUp { get; set; }
     [Parameter] public Func<IReadOnlyList<SdrScanner.Hit>> TheKitSweeps { get; set; } = default!;

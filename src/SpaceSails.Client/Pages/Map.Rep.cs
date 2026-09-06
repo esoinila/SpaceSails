@@ -645,6 +645,14 @@ public sealed partial class Map
         _repSaid = null;
         _repCard = NebulaRep.PitchFor(_insurance.Tier, _repNameOnFile, _repBleeding);
 
+        // #1151 · …AND IF THERE IS A CLAIM ON THE FILE, THIS IS THE MEETING IT IS PAID AT. The owner's
+        // ruling: everything that is not a death is a claim, and the claim's money arrives when a
+        // representative next finds you. Here, after the pitch is built and not before — the payout writes
+        // `_repSaid`, which the line above clears, so the two statements in the other order would pay the
+        // captain and say nothing. This is the clinic bill's idiom run backwards: a bill turns up at the
+        // wake-up you did not ask for, and a payout turns up in a bar you did not go to for it.
+        PayWhatTheClaimIsWorth();
+
         // He is a relationship, not a vending machine: the book knows him from the first hello.
         _contacts.AddGoodwill(NebulaRep.ContactId, NebulaRep.DisplayName, 0);
         RendererInterop.PlayCue("reveal");
