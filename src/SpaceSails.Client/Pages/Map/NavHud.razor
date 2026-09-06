@@ -123,60 +123,14 @@
                                    ScrubTime="@ScrubTime" SetHorizonAuto="@SetHorizonAuto" />
                 <FlightPlanHead FlightNowNext="@FlightNowNext" FlightPlanCurrentStep="@FlightPlanCurrentStep"
                                 FlightPlanStepCount="@FlightPlanStepCount" />
-                @* Compose new steps (scratchpad). Add-burn seeds a step at the scrub and opens it; a
-                   slingable / skimmable pass offers its own solver as a compose editor that COMMITS a step. *@
-                @* #168: the sling / skim compose buttons appear only when the current plot has a
-                   slingable / skimmable pass — they toggle at plot cadence and can wrap this row 1↔2
-                   lines. Reserve the tallest state so the burn steps below never jump under a click. *@
-                <div class="map-plot-compose d-flex flex-wrap align-items-center mb-2 gap-2">
-                    @* #963: "This should help us highlight the NAV button and the Add Burn buttons as the keys
-                       to navigation. Them and the scrub handle are really underrepresented now." Same primary
-                       dress as Plot — these two are the navigation, everything else on the plan is trim. *@
-                    @* #955 NAV-1 · THE PLAN CAN START AT THE BERTH. Owner's test story for the unified nav list
-                       (2026-08-23): "plan while docked, then the plan starts with an undock step recorded
-                       topmost in the nav-burn list, then safe-harbour out-thrust to clear the vicinity of the
-                       station, then the actual burns." One press lays BOTH rows — a cast-off that leaves her
-                       drifting in the harbour's traffic is not a cast-off — and it is offered only where it
-                       means anything: at a berth, before the plan already has one. *@
-                    @if (NavLockedByDock && !PlanBeginsWithCastOff)
-                    {
-                        <button type="button" class="btn btn-sm btn-warning map-key-action"
-                                title="@CastOffRule.ComposeHint" @onclick="AddCastOffAtTop">@CastOffRule.ComposeButton</button>
-                    }
-                    @* #949 · Face and tooltip both Core's now (NodeFrame), so the help card that teaches
-                       this button reads it rather than retyping it. *@
-                    <button type="button" class="btn btn-sm btn-warning map-key-action" title="@NodeFrame.AddBurnAtScrubHint" @onclick="AddBurnAtScrub">@NodeFrame.AddBurnAtScrubButton</button>
-                    @if (_slingablePass is { } sp)
-                    {
-                        <button type="button" class="btn btn-sm @(_openEditor == FlightEditorKind.Sling ? "btn-info" : "btn-outline-info")"
-                                title="Open the sling solver for this flyby" @onclick="ToggleSlingPanel">⤴ Add sling past @sp.BodyName</button>
-                    }
-                    @if (_skimmablePass is { } kp)
-                    {
-                        <button type="button" class="btn btn-sm @(_openEditor == FlightEditorKind.Skim ? "btn-danger" : "btn-outline-danger")"
-                                title="Open the skim solver for this atmosphere pass" @onclick="ToggleSkimPanel">🔥 Add skim @kp.BodyName</button>
-                    }
-                    @* #952/#955 THE CHERRY ON TOP — the plan can finally END somewhere. The owner: "the cherry
-                       on top of the cake is missing when I cannot add the step to the end of the plan to orbit
-                       Mars here. It feels incomplete." These sit beside "+ Add burn at scrub" because that is
-                       where he looked for them, and each NAMES the body it would add so the step is never a
-                       surprise (#950). An arrival that does not currently work is still addable — its row says
-                       in numbers how far the course is from ending safely, and the ±p / ±d / ±h buttons are how
-                       the captain closes the gap. *@
-                    @if (ArriveCandidate(ArrivalStepRule.ArrivalKind.Orbit) is not null)
-                    {
-                        <button type="button" class="btn btn-sm @(_openEditor == FlightEditorKind.Arrive && _arrive?.Kind == ArrivalStepRule.ArrivalKind.Orbit ? "btn-info" : "btn-outline-info")"
-                                title="End the plan here: insert into orbit at the pass nearest the scrub"
-                                @onclick="() => AddArriveAtScrub(ArrivalStepRule.ArrivalKind.Orbit)">@ArriveButtonLabel(ArrivalStepRule.ArrivalKind.Orbit)</button>
-                    }
-                    @if (ArriveCandidate(ArrivalStepRule.ArrivalKind.Dock) is not null)
-                    {
-                        <button type="button" class="btn btn-sm @(_openEditor == FlightEditorKind.Arrive && _arrive?.Kind == ArrivalStepRule.ArrivalKind.Dock ? "btn-warning" : "btn-outline-warning")"
-                                title="End the plan here: coast into the dock envelope and clamp on at the haven nearest the scrub"
-                                @onclick="() => AddArriveAtScrub(ArrivalStepRule.ArrivalKind.Dock)">@ArriveButtonLabel(ArrivalStepRule.ArrivalKind.Dock)</button>
-                    }
-                    <span class="ms-auto text-nowrap">Planned: @PlannedPulseTotal() / @_reactionMassPulses</span>
-                </div>
+                <PlotComposeStrip _arrive="@_arrive" _openEditor="@_openEditor"
+                                  _reactionMassPulses="@_reactionMassPulses" _skimmablePass="@_skimmablePass"
+                                  _slingablePass="@_slingablePass" AddArriveAtScrub="@AddArriveAtScrub"
+                                  AddBurnAtScrub="@AddBurnAtScrub" AddCastOffAtTop="@AddCastOffAtTop"
+                                  ArriveButtonLabel="@ArriveButtonLabel" ArriveCandidate="@ArriveCandidate"
+                                  NavLockedByDock="@NavLockedByDock" PlanBeginsWithCastOff="@PlanBeginsWithCastOff"
+                                  PlannedPulseTotal="@PlannedPulseTotal" ToggleSkimPanel="@ToggleSkimPanel"
+                                  ToggleSlingPanel="@ToggleSlingPanel" />
                 @* PR-G · the sling compose editor — SOLVE previews against the real integrator (labs 19/20's
                    crank); "Add the burn" COMMITS the solved node into the plan below. *@
                 @if (_openEditor == FlightEditorKind.Sling && _slingablePass is { } slp)
