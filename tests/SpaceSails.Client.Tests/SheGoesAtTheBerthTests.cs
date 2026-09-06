@@ -138,7 +138,7 @@ public sealed class SheGoesAtTheBerthTests
     public void SHE_GoesAtTheBerthAndTheStationFilesItBeforeHeIsAcrossTheConcourse()
     {
         Pages.Map map = Boot();
-        ClampAtThePort(map);
+        (int slot, _) = ClampAtThePort(map);
         ArmHerCharges(map);
         WalkHimAshore(map);
 
@@ -165,6 +165,29 @@ public sealed class SheGoesAtTheBerthTests
         Assert.NotEmpty(wire);
         Assert.All(wire, e => Assert.NotEqual("Static on the wire.", NewsWire.Headline(e)));
 
+        // The ledger is newest-first (PushNewsEvent inserts at the head), so the harbour's filing — the last
+        // thing pushed before he was across the concourse — is the entry at the top of the wire. Taken by
+        // position rather than searched for by kind, because "it is the freshest thing on the wire" is
+        // itself part of the claim: this is filed AT ONCE, not eventually.
+        NewsWire.NewsEvent filed = wire[0];
+
+        // …AND IT IS THE HARBOUR'S OWN KIND, WITH THE BRACES OFF THE RECORD. #1138 left this entry riding
+        // HunterDispatched under a `FABLE: line needed`; the canon pass of 2026-09-06 wrote the line, so the
+        // beat has its own kind and the two names in the sentence are the two the world can be asked for —
+        // the berth number the PA announced (not the roster's zero-based index) and this port.
+        Assert.Equal(NewsWire.NewsEventKind.HullLostAtABerth, filed.Kind);
+        Assert.Equal(BerthScuttle.BerthNumber(slot).ToString(System.Globalization.CultureInfo.InvariantCulture),
+            filed.Subject);
+        string port = (string)Invoke(map, "BodyName", Port)!;
+        Assert.Equal(port, filed.Detail);
+        Assert.Contains($"Berth {BerthScuttle.BerthNumber(slot)}", NewsWire.Headline(filed), StringComparison.Ordinal);
+        Assert.Contains(port, NewsWire.Headline(filed), StringComparison.Ordinal);
+
+        // The PA and the wire agree about which slot this was — a harbour that announced berth 9 and then
+        // filed berth 3 is this ground's named class of the sim saying one thing and a sentence another.
+        Assert.StartsWith($"Berth {BerthScuttle.BerthNumber(slot)}",
+            BerthScuttle.PaCall(BerthScuttle.BerthNumber(slot)), StringComparison.Ordinal);
+
         // ── THE PORT'S OPERATOR, AT THE CEILING BAND — the meter's own top, and what it buys is the round
         // starting every watch at the end of its patience. That IS the fugitive on foot.
         var book = (ContactLedger)Read(map, "_contacts")!;
@@ -172,6 +195,27 @@ public sealed class SheGoesAtTheBerthTests
         Assert.True(BerthScuttle.AFugitiveOnTheirFloor(IllegalHeat.HeatAtSite(book, Port)));
 
         Assert.True(askedTheVault, "the frame that ended her did not ask the vault for anything.");
+    }
+
+    /// <summary>THE MARKER IS GONE, AND THE BORROWED KIND WITH IT. #1138 shipped this beat with a
+    /// <c>// FABLE: line needed</c> over a <see cref="NewsWire.NewsEventKind.HunterDispatched"/> push,
+    /// honestly flagged as a stand-in. The canon pass of 2026-09-06 wrote the line, so both the marker and
+    /// the borrowed kind must be out of the file — deleting the marker while the entry still rode somebody
+    /// else's headline would be the flag removed and the problem kept.</summary>
+    [Fact]
+    public void THE_LINE_THAT_WAS_NEEDED_IsWrittenAndTheStandInIsGone()
+    {
+        string source = File.ReadAllText(
+            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.BerthScuttle.cs"));
+
+        Assert.DoesNotContain("FABLE: line needed", source, StringComparison.Ordinal);
+
+        // The CODE, with every comment taken off first — the header note explains what the stand-in was and
+        // names it, and a guard that read prose would go red on the explanation instead of on the bug.
+        string code = string.Join('\n', source.Split('\n')
+            .Select(l => l.Split("//", StringSplitOptions.None)[0]));
+        Assert.DoesNotContain("NewsWire.NewsEventKind.HunterDispatched", code, StringComparison.Ordinal);
+        Assert.Contains("NewsWire.NewsEventKind.HullLostAtABerth", code, StringComparison.Ordinal);
     }
 
     /// <summary>

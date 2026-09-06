@@ -204,20 +204,28 @@ public partial class Map
     /// still standing on it.</item>
     /// </list>
     ///
-    /// <para><b>THE JUDGEMENT CALL, AND IT IS FLAGGED.</b> The wire has no headline of its own for a hull
-    /// that went at a station, and this lane may author only its two sentences, so the entry goes on as the
-    /// one existing kind that is TRUE of what just happened: somebody is now coming for you, named as the
-    /// outfit that runs this port and dated at this port. See the marker below for the line this beat would
-    /// take if the owner would rather it had one.</para>
+    /// <para><b>THE JUDGEMENT CALL IS ANSWERED.</b> #1138 shipped this entry riding
+    /// <see cref="NewsWire.NewsEventKind.HunterDispatched"/> under an authoring marker, because the wire had
+    /// no headline for a hull that went off inside a harbour and the lane could author only its
+    /// two sentences. The canon pass of 2026-09-06 wrote one, so the beat has its own kind now
+    /// (<see cref="NewsWire.NewsEventKind.HullLostAtABerth"/>) and the borrowed one is given back — "somebody
+    /// is fitting out and the hunt is on" was true, but it is a different fact from "a hull is gone and the
+    /// paperwork has a name on it".</para>
+    ///
+    /// <para><b>The berth number is the one the PA said</b>, taken off the collar record filed at arming
+    /// rather than re-asked of the roster ninety seconds later — the same reason <see cref="_berthSlot"/>
+    /// exists at all. A wire that filed a different slot from the one the concourse heard announced would be
+    /// this repo's named class of the sim doing one thing while a sentence reports another.</para>
     /// </summary>
     private void TheStationFilesIt(string havenId)
     {
-        // FABLE: line needed — the wire's own headline for a hull that went off inside a harbour, in the
-        // flat clerical voice NewsWire.NewsEventKind.ArcBeatBreaks takes (the subject IS the sentence). Until
-        // there is one, the entry rides the existing "somebody is now coming for you" kind, which is true.
+        int slot = _collarCleared is { } filed && filed.HavenId == havenId
+            ? filed.Berth
+            : _berthSlot ?? TheSlotTheRosterGives(havenId);
+
         PushNewsEvent(
-            NewsWire.NewsEventKind.HunterDispatched,
-            SiteOperator.Of(havenId).Name,
+            NewsWire.NewsEventKind.HullLostAtABerth,
+            BerthScuttle.BerthNumber(slot).ToString(System.Globalization.CultureInfo.InvariantCulture),
             BodyName(havenId));
 
         BankTheCrossing(BerthScuttle.Charge(havenId));
