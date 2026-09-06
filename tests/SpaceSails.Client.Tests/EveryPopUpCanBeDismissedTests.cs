@@ -236,6 +236,12 @@ public sealed class EveryPopUpCanBeDismissedTests
     private const string Docked = "/map?dock=selene-gate&body=luna&site=1";
     private const string Ashore = "/map?dock=the-tilt&site=0&land=1";
 
+    /// <summary>#997 wave 12 · The oracle's corner, as one URL. <c>?oracle=1</c> seats Static Marsh whatever
+    /// her rota says AND defaults the berth to a bar; <c>?ashore=1</c> walks the last leg, which is what
+    /// puts <c>_deckMode</c> true — and her card is gated on the deck. Both cheats are the documented pair
+    /// (Map.Sim.World.QueryArcs: <i>"the rant, one URL and one [E]"</i>).</summary>
+    private const string HerCorner = "/map?oracle=1&ashore=1";
+
     private static readonly PopUp[] TheRegister =
     [
         // ── The three #992 fixed: the surfaces that had NO way out at all ────────────────────────────
@@ -353,6 +359,28 @@ public sealed class EveryPopUpCanBeDismissedTests
         // TheHelpCardTeachesTodaysPanelTests.
         new("the plotting help card", "view-object-backdrop", Docked, Exit.AControl,
             b => b.CallOnTheDispatcher("OpenNavHelp"), At: ShipDesk.Nav),
+
+        // #997 wave 12 · THE STATION ORACLE'S CARD — the surface #1170 found had no row of its own.
+        //
+        // It was never unregistered: it wears `deck-offer-card`, which the arrival-brake row registers, so
+        // both completeness guards have always covered it. What it had never been was ASKED — the pressing
+        // law had no row to raise it from, and unlike the eleven undriven rows nothing SAID so, because a
+        // reason is a field on a row and there was no row. #1170 found it while re-running #992's audit,
+        // through the paren-aware class scan: her root class is one arm of a ternary (the hush is a class
+        // on the ROOT), which is the shape the old regex could not read.
+        //
+        // Raised through the SHIPPING verb, and it is the E-key's own: TalkToOracle is where the BarPatron
+        // console routes, so a fork that stopped opening her corner fails here rather than nowhere. It is
+        // also idempotent in the way this law needs (the galley's discipline, #1021): it sets `_oracleOpen`
+        // true and draws her opening rant only when `_oracleLine` is null, so re-raising between presses
+        // cannot shut the card the way a toggle would.
+        //
+        // Exit.AControl and NOT EveryControlCloses, established by pressing rather than assumed: 🌀 Keep
+        // listening turns the dial one line on and 🥃 Buy her a drink widens the channel, and both leave
+        // her card standing. `Done` — the shell's own dismiss (#997 wave 9) — is the way out.
+        new("the station oracle's card (Solenne \"Static\" Marsh)", "deck-offer-card", HerCorner,
+            Exit.AControl,
+            b => b.CallOnTheDispatcher("TalkToOracle")),
 
         new("the ship's own atmosphere board", "view-object-backdrop", Docked, Exit.AControl,
             b => b.Poke("_showShipBoard", true)),
