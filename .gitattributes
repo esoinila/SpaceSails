@@ -1,0 +1,45 @@
+# Every hand-written source file in this repository is stored LF, and is checked
+# out LF on every platform, whatever `core.autocrlf` says locally. Two files
+# (Pages/Map.OldCrew.cs, Pages/Map.ShuttleWindow.cs) once escaped this because a
+# literal NUL inside a string literal made git call them binary; a Windows lane
+# that rewrote one of them with LF then reddened a source-reading test whose
+# regex was written against the other kind of break. Pin it here instead.
+* text=auto eol=lf
+
+*.cs      text eol=lf
+*.razor   text eol=lf
+*.css     text eol=lf
+*.js      text eol=lf
+*.mjs     text eol=lf
+*.json    text eol=lf
+*.md      text eol=lf
+*.txt     text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.csproj  text eol=lf
+*.slnx    text eol=lf
+*.props   text eol=lf
+*.html    text eol=lf
+*.svg     text eol=lf
+*.tex     text eol=lf
+*.py      text eol=lf
+*.ps1     text eol=lf
+*.sh      text eol=lf
+
+# What the game ships that is not text. Only .jpg, .png and .pdf are in the tree
+# today; the rest are the shapes art and audio arrive in, listed so the first one
+# committed does not arrive line-ending-mangled.
+*.jpg   binary
+*.jpeg  binary
+*.png   binary
+*.webp  binary
+*.gif   binary
+*.ico   binary
+*.mp3   binary
+*.ogg   binary
+*.wav   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.pdf   binary
