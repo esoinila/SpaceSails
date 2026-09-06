@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using SpaceSails.Client.Components;
 using SpaceSails.Client.Pages;
 using SpaceSails.Core;
 using Xunit;
@@ -14,10 +15,12 @@ namespace SpaceSails.Client.Tests;
 /// #992 · <b>EVERY POP-UP CAN BE DISMISSED.</b> Owner ruling, 2026-08-24, verbatim:
 /// <i>"As a general ruling there should not be a pop-up that cannot be closed or minimized."</i>
 ///
-/// <para>A ruling that reads like one sentence and touches eighty-nine surfaces is a ruling that needs a law
-/// rather than a sweep, because the sweep is right on the afternoon it is run and wrong by the next feature.
-/// This file is the law, and it is three assertions that do three different jobs. None of them is the other
-/// two, and the third one is the only one that is expensive.</para>
+/// <para>A ruling that reads like one sentence and touched eighty-nine surfaces on the afternoon it was made
+/// is a ruling that needs a law rather than a sweep, because the sweep is right on that afternoon and wrong
+/// by the next feature. (It was: #1169 caught #992's own tally, left in <c>OverlayDismiss</c>'s docblock,
+/// counting a client that had moved. The docblock points here now and carries no number of its own.) This
+/// file is the law, and it is four assertions that do four different jobs. None of them is any of the
+/// others, and the third one is the only one that is expensive.</para>
 ///
 /// <list type="number">
 /// <item><b><see cref="NoSurfaceInTheSourceEscapesTheRegister"/> — the completeness guard.</b> It reads the
@@ -32,6 +35,13 @@ namespace SpaceSails.Client.Tests;
 /// <item><b><see cref="EveryPopUpTheBenchCanRaiseOffersAWayOut"/> — the law itself, proved by pressing.</b>
 /// It raises each surface, finds every control inside it, and <b>presses them</b> through the renderer's own
 /// event channel to see which ones make the surface go away.</item>
+/// <item><b><see cref="NoSurfaceOnTheShellSitsOutsideTheRecognisersSight"/> — the guard on the recogniser
+/// itself.</b> Guards 1 and 2 find a pop-up by the class it wears, so a surface that follows neither the
+/// house naming nor a written-down family name is not caught by them — it is not SEEN by them. This one
+/// answers that with the fact that is not a matter of naming: a file rendering an <see cref="OverlayShell"/>
+/// is a pop-up, because the shell exists for nothing else, and it must wear a root the recogniser knows.
+/// Added when #992's audit was re-run (#1174), which is also when the ternary-classed surfaces guard 1 had
+/// never been able to read turned up — see <see cref="ClassListsIn"/>.</item>
 /// </list>
 ///
 /// <h3>Why the third one presses instead of reading</h3>
@@ -64,7 +74,7 @@ namespace SpaceSails.Client.Tests;
 /// <see cref="TheUndrivenListOnlyEverGetsShorter"/> pins how many there are. The number can go down without
 /// anybody's permission and cannot go up without a deliberate edit to a written-down count.</para>
 /// </summary>
-[SlowGate] // #251 · 152 s over 5 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
+[SlowGate] // #251 · 152 s over 6 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class EveryPopUpCanBeDismissedTests
 {
     // ── What the law calls a pop-up ───────────────────────────────────────────────────────────────────
@@ -531,6 +541,73 @@ public sealed class EveryPopUpCanBeDismissedTests
             + string.Join("\n  - ", strangers.Select(s => $"{s.Key}  ({s.Value})")));
     }
 
+    /// <summary>
+    /// EVERY SURFACE BUILT ON THE SHELL SITS UNDER A ROOT THIS LAW CAN SEE — the recogniser's own blind spot,
+    /// closed from the tree rather than from a list.
+    ///
+    /// <para>Guard 1 finds a pop-up by the class its root wears: <c>*-backdrop</c>, <c>*-overlay</c>,
+    /// <c>*-modal</c>, or a name in <see cref="TheFamiliesThatPredateTheNaming"/>. That is a good recogniser
+    /// and it has one hole, which is the shape of every recogniser's hole: a surface that follows NEITHER the
+    /// house naming NOR a name somebody remembered to write down is not reported as a stranger — it is not
+    /// seen at all, and the law passes without having asked it anything.</para>
+    ///
+    /// <para>This guard closes that hole with the one fact about a surface that cannot be a matter of naming:
+    /// <b>a file that renders an <see cref="OverlayShell"/> is a pop-up, because the shell exists for nothing
+    /// else.</b> So every such file must also contain a class the recogniser SEES and the law KNOWS — its own
+    /// root, or the backdrop it is drawn in, which is where the <c>.view-object</c> family and the convergence
+    /// band carry theirs. Sixty-eight files render a shell today and every one of them is anchored; the day a
+    /// crew extracts a sixty-ninth wearing a wholly new name, this fails naming the file, and the fix is a row
+    /// in <see cref="TheRegister"/> or a name in the families list — not an edit here.</para>
+    ///
+    /// <para>It is derived from the tree on every run, so it counts surfaces that did not exist when it was
+    /// written. That is deliberate: #992's audit was a count on a page, it went stale inside a fortnight
+    /// (#1169 found the numbers it left in <c>OverlayDismiss</c>'s docblock wrong and could not correct them),
+    /// and a number nobody re-derives is a number that quietly stops being true. This asks the tree instead.
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void NoSurfaceOnTheShellSitsOutsideTheRecognisersSight()
+    {
+        var known = TheRegister.Select(p => p.RootClass)
+            .Concat(NotPopUpsAndWhy.Keys)
+            .ToHashSet(StringComparer.Ordinal);
+
+        var unanchored = new SortedSet<string>(StringComparer.Ordinal);
+        int anchored = 0;
+
+        foreach (string file in RazorFiles())
+        {
+            string markup = File.ReadAllText(file);
+            if (!markup.Contains("<OverlayShell", StringComparison.Ordinal)
+                || Path.GetFileName(file) == "OverlayShell.razor")
+            {
+                continue;
+            }
+
+            if (ClassListsIn(markup).SelectMany(c => c).Any(c => IsAPopUpRoot(c) && known.Contains(c)))
+            {
+                anchored++;
+            }
+            else
+            {
+                unanchored.Add(Path.GetFileName(file));
+            }
+        }
+
+        Assert.True(anchored > 0,
+            "not one file in the client renders an OverlayShell, which cannot be true while the shell is the "
+            + "one mechanism #997 made it. This guard has been handed the wrong tree and would pass on "
+            + "anything — see ClientSource().");
+
+        Assert.True(unanchored.Count == 0,
+            $"{unanchored.Count} of {anchored + unanchored.Count} file(s) draw a pop-up on the OverlayShell "
+            + "and wear no class this law's recogniser can see, so the completeness guards have never asked "
+            + "them the owner's question (2026-08-24: \"there should not be a pop-up that cannot be closed or "
+            + "minimized\"). Give the surface a `-backdrop`/`-overlay`/`-modal` root, or name its family in "
+            + "TheFamiliesThatPredateTheNaming and enter it in TheRegister:\n  - "
+            + string.Join("\n  - ", unanchored));
+    }
+
     /// <summary>The register may not carry a row nobody can act on: a row with no driver must say why, and a
     /// row with a driver must not pretend it has a reason not to.</summary>
     [Fact]
@@ -771,12 +848,56 @@ public sealed class EveryPopUpCanBeDismissedTests
 
     // ── Plumbing ──────────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Every <c>class="…"</c> in a run of text, as its own token list. Used on the source and on the
-    /// static-markup blobs the render tree hands out, which are the same shape.</summary>
-    private static IEnumerable<string[]> ClassListsIn(string text) =>
-        Regex.Matches(text, "class=\"([^\"]*)\"")
-            .Select(m => m.Groups[1].Value
-                .Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries));
+    /// <summary>
+    /// Every <c>class="…"</c> in a run of text, as its own token list. Used on the source and on the
+    /// static-markup blobs the render tree hands out, which are the same shape.
+    ///
+    /// <para><b>The scan is PAREN-AWARE, and that is the difference between a law that reads the file and a
+    /// law that reads most of it.</b> The first build matched the attribute with <c>class="([^"]*)"</c>,
+    /// which is right for HTML and wrong for Razor: a class CHOSEN BY AN EXPRESSION carries double quotes
+    /// inside its own value, so that regex stopped at the first of them and handed this guard a token list
+    /// made of C# fragments. The station oracle's card is written exactly that way — its root class is one
+    /// arm of a ternary — and it had been invisible to guard 1 since the day the guard was written. Nothing
+    /// was WRONG (the class it wears is registered, by another row), but the guard was not covering it, and
+    /// the next ternary-classed pop-up would have escaped in the same silence. Found by re-running #992's
+    /// audit rather than by anything failing, which is the whole reason an audit gets re-run.</para>
+    ///
+    /// <para>So the value's end is found by scanning rather than by matching: a <c>"</c> closes it only at
+    /// paren depth zero, which leaves every quote inside an <c>@@( … )</c> where it belongs. The value is
+    /// then split on quotes as well as on whitespace, so BOTH arms of a ternary come out as tokens and a
+    /// class named in either one is read. The C# fragments that come out with them are harmless: they match
+    /// no root and are in no register.</para>
+    /// </summary>
+    private static IEnumerable<string[]> ClassListsIn(string text)
+    {
+        foreach (Match opening in Regex.Matches(text, "class=\""))
+        {
+            int at = opening.Index + opening.Length;
+            int depth = 0;
+            int end = at;
+            while (end < text.Length)
+            {
+                char here = text[end];
+                if (here == '(')
+                {
+                    depth++;
+                }
+                else if (here == ')')
+                {
+                    depth--;
+                }
+                else if (here == '"' && depth <= 0)
+                {
+                    break;
+                }
+
+                end++;
+            }
+
+            yield return text[at..end]
+                .Split([' ', '\t', '\r', '\n', '"'], StringSplitOptions.RemoveEmptyEntries);
+        }
+    }
 
     private static IEnumerable<string> RazorFiles() =>
         Directory.EnumerateFiles(ClientSource(), "*.razor", SearchOption.AllDirectories);
