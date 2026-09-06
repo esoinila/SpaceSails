@@ -341,6 +341,11 @@ public sealed class AJambIsNotASealedDoorTests
         //     errands go through (a regular leaving, the visitor arriving, the visitor going). Three call
         //     sites naming the gait three times would be three chances to name a different one.
         //
+        //     #251 · RE-PATHED. The band is six partials by subject now, so the prefix names the FAMILY
+        //     rather than one file of it — `Map.Walkers.` is exactly those files, and `OnFoot` sits in
+        //     `Map.Walkers.Plotting.cs` with the rest of the plotting. Still ONE claim across all of them,
+        //     which is the whole content of the count: one planner, naming the gait once.
+        //
         // ReeverChase.cs and ReeverPack.cs are unchanged and are still checked line by line above. Nothing an
         // Old One steps through was touched by any of this, and NpcWalk cannot be handed one at all.
         // #326 · AND THE EIGHTH CLAIM IS A MACHINE THE CAPTAIN PAID FOR — this guard forcing its ruling and
@@ -366,7 +371,7 @@ public sealed class AJambIsNotASealedDoorTests
         Assert.Contains(claims, c => c.StartsWith("DeckPlan.cs:", StringComparison.Ordinal));
         Assert.Contains(claims, c => c.StartsWith("Map.SweepTeam.cs:", StringComparison.Ordinal));
         Assert.Equal(2, claims.FindAll(c => c.StartsWith("NpcWalk.cs:", StringComparison.Ordinal)).Count);
-        Assert.Single(claims.FindAll(c => c.StartsWith("Map.Walkers.cs:", StringComparison.Ordinal)));
+        Assert.Single(claims.FindAll(c => c.StartsWith("Map.Walkers.", StringComparison.Ordinal)));
 
         // Three times, and every one of them a contract guard: the round's own stride, #835's run, and #831's
         // two paces to the wall he has decided to read.
