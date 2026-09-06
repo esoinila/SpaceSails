@@ -277,6 +277,43 @@ Details: `features/the-landing-site.md` §13.30.
 
 **Still open and deliberately unbuilt: any inhabitant content.**
 
+### The Old Ones use doors (owner ruling, 2026-09-06 — #563 question 2)
+
+*Recorded because it is the answer to "why is there a door leaf down there at all?", and it is the reason
+the code that came out of it is deliberately slow. Documentation only: none of this is ever a line, a card
+or a plate.*
+
+Owner, verbatim in spirit: **they still have doors a bit like we still have nostalgic gramophones; for them
+it is legacy and nostalgia, and it lets them not reveal their true capabilities, which might scare people.**
+
+Canon (Fable), binding:
+
+1. **A door is a door to them.** An Old One opens an unlocked leaf the slow way — a beat: the leaf moves
+   before anything comes through it — and never breaks a locked one: it waits on the far side, or goes round
+   by the way a walker would. What it could do to the door instead is never shown (§8's parental law; the
+   gramophone is the point).
+2. **They do not see through a closed door** (the #442 ruling, shipped in #1154). Together: a shut door is a
+   real refuge from sight and a real delay, and a locked one is a wall to them by choice.
+3. **The found halls have doors** (the seamless leafs of #716/#1082) for the same reason — legacy; that is
+   why a leaf down there opens at all, and why nothing down there ever needed to.
+4. Nothing states any of this; the door opening slowly on its own, with nothing visible behind it yet, is the
+   whole telling.
+
+**§10 addendum — THE BIG DOORS** (owner lore, 2026-09-06, filed from #1074). In the lore-collector (the
+VennsRabbitHole repo) the Old Ones' forbidden places read as REFUGES: places to keep the people they choose
+to spare from a large event on the surface — the zone in the Grand Canyon the old maps mark forbidden; the
+Hopi telling that survivors of the earlier three civilizations are kept there as caretakers, woken when great
+change is coming. So the big doors on Earth make sense and are part of the looming threat: nice that there
+are tunnels with fresh flowing air to keep people safe — and the question the doctrine keeps open: are all
+the endings of civilizations coincidence, or did the Old Ones sometimes (the great flood) trigger them? The
+doors would serve to collect some before the meteorite hits the Greenland glacier, survivors to start the
+fifth cycle. It feeds Lovecraftian lore without deriving from it; he drank from the same older stories. The
+Elves leaving is the bright student civilization leaving the classroom; the Tartarian-empire lore fits that
+well — not every change is the whole class leaving the room; some leave mid-semester. **In space**, where
+tech is absolutely necessary to survive, the really big survivor-doors make little sense unless there was
+terraforming that later faded — so out here the doors are legacy and nostalgia still (the gramophone rule,
+#563). The game states none of this.
+
 ## Suggested landing spots
 
 | Theme | Milestone | First concrete step |
