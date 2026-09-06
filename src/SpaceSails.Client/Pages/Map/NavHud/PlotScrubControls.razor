@@ -1,0 +1,75 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using ArriveStep = SpaceSails.Client.Pages.Map.ArriveStep
+@using FlightEditorKind = SpaceSails.Client.Pages.Map.FlightEditorKind
+@using FrameOption = SpaceSails.Client.Pages.Map.FrameOption
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using OrbitAssistInfo = SpaceSails.Client.Pages.Map.OrbitAssistInfo
+@using PlanNode = SpaceSails.Client.Pages.Map.PlanNode
+@using Quest = SpaceSails.Client.Pages.Map.Quest
+@using SkimGauge = SpaceSails.Client.Pages.Map.SkimGauge
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 · THE PLOT PANEL'S SCRUB, PATH LENGTH AND CLOSEST-PASS LINE, ON ITS OWN FILE.
+
+    Moved out of NavHud.razor by PURE MOTION — the block between the two fences below is the block that
+    was in the HUD, character for character. Every member it reads is a [Parameter] with the SAME NAME
+    (fields keep their underscore, methods come across as delegates under their own names), which is what
+    lets the markup move without a rewrite and lets MapMarkup splice it straight back where it came from.
+
+    IHandleEvent repeats NavHud's own override, which repeats Map.Sim.cs's: the HUD's refresh belongs to
+    OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render back on
+    every event in here. The .razor.css beside this file carries no rules; it exists to give the component
+    Map.razor.css's scope (pinned in SpaceSails.Client.csproj), so every rule that styled these elements
+    goes on matching them.
+*@
+@* ── MARKUP BEGINS · verbatim from NavHud.razor ──────────────────────────────────────────────────── *@
+                <div class="fw-bold mb-1">Plotting</div>
+                @* #949 · The label is Core's (NodeFrame.ScrubLabel) so the help card can print the same
+                   word. The clock beside it is the client's own ladder and stays here. *@
+                <div class="mb-1">@(NodeFrame.ScrubLabel): @FormatSimTime(ScrubTime)</div>
+                @* stopPropagation: arrow keys must adjust the control, not fire live ship pulses. *@
+                <input type="range" class="form-range" min="0" max="@CurrentPlotHorizonSeconds" step="3600"
+                       title="Scrub the plot clock forward and back along the course"
+                       @bind="_scrubOffsetSeconds" @bind:event="oninput" @onkeydown:stopPropagation="true" />
+                <div class="mb-1 d-flex justify-content-between align-items-center">
+                    <span>Path length: @FormatHorizon(CurrentPlotHorizonSeconds)</span>
+                    <button type="button" class="btn btn-sm py-0 @(_horizonChoice == "auto" ? "btn-info" : "btn-outline-light")"
+                            title="Let the nav line pick its own length automatically"
+                            @onclick="SetHorizonAuto">auto</button>
+                </div>
+                @* Same full-width form-range as the scrub slider above it. *@
+                <input type="range" class="form-range" min="0" max="100" step="1"
+                       value="@HorizonSliderValue" title="Length of the navigation line (log scale)"
+                       @oninput="OnHorizonSliderInput" @onkeydown:stopPropagation="true" />
+                @* #209 — say the state: when a frame crop or the projection cap makes the drawn ribbon
+                   shorter than the full picture, name why (never a silently short path). *@
+                @{ var _ribbonNote = RibbonHorizonNote(); }
+                @if (_ribbonNote is { } _rn)
+                {
+                    <div class="small map-ribbon-note @(_rn.Warn ? "text-warning fw-bold" : "text-info")"
+                         title="How long a stretch of the plotted course the ribbon actually draws, and why">@_rn.Text</div>
+                }
+                @* #168: this pass/insertion block appears and vanishes at plot cadence (a closest pass
+                   comes and goes as the sim ticks / the scrub moves) and its text reflows. Reserve its
+                   tallest state (pass line + insert button) in an always-rendered fixed-height container
+                   so the burn steps below never jump under a repeated ±15° click. *@
+                <div class="map-plot-passline">
+                    @if (_closestPass is { } cp)
+                    {
+                        <div class="small mb-1 @(cp.Impact ? "text-danger fw-bold" : cp.Severity < 5 ? "text-warning" : "text-secondary")">
+                            Closest pass: @cp.BodyName @FormatDistance(cp.Distance) (@cp.Severity.ToString("0.0", CultureInfo.InvariantCulture) R)
+                            @(cp.Impact ? "— IMPACT, captain! 🦜" : "")
+                        </div>
+                        @* #950/#952: the old "✈ Insert at X pass" chip stood HERE, above the plan, and armed
+                           whatever body happened to be nearest — which, parked at Earth, offered to orbit
+                           EARTH while the captain was plotting Mars. It is gone. The arrival is now a STEP at
+                           the end of the flight plan (docs/WednesdayPlan/UnifiedNavListNotes.md PR-D1), added
+                           by the compose buttons below and armed from inside its own row. One fact, one UI. *@
+                    }
+                </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
