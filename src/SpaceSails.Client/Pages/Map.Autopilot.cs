@@ -578,6 +578,25 @@ public partial class Map
         ShowPulseMessage($"Insertion armed — budgeted ≈{_armedBudgetPulses} p at the autopilot's tenth; the ship will {arrival} when the window opens{trimQuote} 🛰");
     }
 
+    /// <summary>#286 · THE PARK IS SPELLED ONCE. The kept-orbit radius is a single quantity with two
+    /// readers — <see cref="CheckArmedInsertion"/> parks at it, <c>StationKeep</c> trims back to it — and
+    /// for years each one built it from its own expression. They agreed; nothing made them agree, and a
+    /// change to one would have silently split the radius the autopilot arrives at from the radius the
+    /// keeper holds. Both now ask here, so the two sites agree by construction.
+    ///
+    /// <para><see cref="KeptRadiusCap"/> is #286's cap alone (the widest park whose swept circle still
+    /// clears the moon's PARENT planet); <see cref="KeptParkRadius"/> is the tide-stable park under it.
+    /// They are separate because the insertion gate wants the raw cap —
+    /// <c>OrbitRule.AutopilotDecision</c> applies the same <c>Math.Min</c> itself.</para></summary>
+    private double KeptRadiusCap(CelestialBody body, CelestialBody parent) =>
+        OrbitRule.MaxKeptRadiusUnderParent(_ephemeris!.InstantaneousOrbitRadius(body.Id, SimTime), parent);
+
+    /// <summary>#286 · The clamped park: the tide-stable radius, bounded by <see cref="KeptRadiusCap"/> so
+    /// the circularized orbit clears the parent. Inert for every shipped moon (the tide-stable park is far
+    /// tighter than the cap).</summary>
+    private static double KeptParkRadius(CelestialBody body, double hill, double keptRadiusCap) =>
+        Math.Min(OrbitRule.ParkingRadius(body, hill), keptRadiusCap);
+
     // M25: the armed autopilot. Inside capture range it flies the "point at it and throttle"
     // approach the owner asked for — an approach burn, tidal trim burns as needed, and the
     // insertion once safely deep in the Hill sphere. Every burn is Δv-priced in pulses.
@@ -609,9 +628,8 @@ public partial class Map
         // #286: the kept-orbit radius is bounded so the circularized park clears the moon's PARENT planet.
         // Inert for every shipped moon (the tide-stable park is far tighter than this cap); the guard that
         // an inner moon with a small Hill sphere can never be circled through the world beside it.
-        double keptRadiusCap = OrbitRule.MaxKeptRadiusUnderParent(
-            _ephemeris.InstantaneousOrbitRadius(body.Id, SimTime), parent);
-        double keptPark = Math.Min(OrbitRule.ParkingRadius(body, hill), keptRadiusCap);
+        double keptRadiusCap = KeptRadiusCap(body, parent);
+        double keptPark = KeptParkRadius(body, hill, keptRadiusCap);
 
         // Friday §0: once parked, the autopilot HOLDS the orbit — station-keeping owns the tick, not
         // the approach/insert loop below. It stays here until the captain disarms or the tank runs dry.
@@ -839,9 +857,7 @@ public partial class Map
 
         // #286: trim back to the CLAMPED park (bounded so the kept orbit clears the parent), not the raw
         // tide-stable radius — otherwise a clamped orbit would be trimmed back out toward the planet.
-        double park = Math.Min(
-            OrbitRule.ParkingRadius(body, hill),
-            OrbitRule.MaxKeptRadiusUnderParent(_ephemeris!.InstantaneousOrbitRadius(body.Id, SimTime), parent));
+        double park = KeptParkRadius(body, hill, KeptRadiusCap(body, parent));
         if (SimTime < _keepNextCheckTime)
         {
             return; // between cadence points — let the reversible oscillation reverse itself
