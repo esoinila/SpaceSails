@@ -45,20 +45,3 @@
             </OverlayShell>
         </div>
 @* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
-
-@code {
-    /// <summary>The sentence the ship's end wrote, bound out of the page's `_scuttleEpitaph`.</summary>
-    [Parameter] public string epitaph { get; set; } = "";
-
-    /// <summary>Was anything still alive aboard when she went. Names the page's own field.</summary>
-    [Parameter] public bool _scuttleHeardIt { get; set; }
-
-    /// <summary>The page's `Dismiss(Action)` — the one way out every card in this game uses.</summary>
-    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-
-    /// <summary>The page's `CloseScuttleEpitaph()`, handed on as the action `Dismiss` runs.</summary>
-    [Parameter] public Action CloseScuttleEpitaph { get; set; } = default!;
-
-    // The page's own event dispatch, repeated: no automatic re-render per event. See the header.
-    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
-}

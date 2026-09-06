@@ -29,6 +29,29 @@ internal static class SurfaceComposition
     /// <summary>Closes the sliceable region of an extracted surface.</summary>
     internal const string MarkupEnds = "MARKUP ENDS";
 
+    /// <summary>
+    /// #1107 · A COMPONENT IS TWO FILES NOW, AND A GUARD THAT OPENS ONE OF THEM IS HALF BLIND.
+    ///
+    /// <para>Every <c>@code { … }</c> block in this project moved into a <c>&lt;Name&gt;.razor.cs</c> partial
+    /// beside its component, because the razor generator's output is not analysed and a finding inside an
+    /// <c>@code</c> block is a finding nobody is ever shown. That move is invisible to the compiler and to a
+    /// player — and it is NOT invisible to the guards in this suite that read a component as TEXT and look
+    /// for a method, a <c>[Parameter]</c>, a field. Four of them went red the moment the code moved, and
+    /// they went red saying "0 of these exist", which is the fifth bug class one step from being shipped: a
+    /// guard whose world can no longer tell pass from fail.</para>
+    ///
+    /// <para>So a guard stops opening a FILE and starts reading the COMPONENT: the razor, plus the
+    /// code-behind beside it if there is one. That is the same text those guards were reading before the
+    /// move, in the same order — the markup first, then the members — so not one of them had to change what
+    /// it asserts.</para>
+    /// </summary>
+    internal static string ComponentText(string razorPath)
+    {
+        string razor = File.ReadAllText(razorPath);
+        string behind = razorPath + ".cs";
+        return File.Exists(behind) ? razor + "\n" + File.ReadAllText(behind) : razor;
+    }
+
     internal static string RepoRoot()
     {
         for (DirectoryInfo? at = new(AppContext.BaseDirectory); at is not null; at = at.Parent)

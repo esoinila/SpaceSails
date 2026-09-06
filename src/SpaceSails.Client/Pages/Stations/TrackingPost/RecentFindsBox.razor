@@ -31,11 +31,3 @@
                     }
                 </div>
 @* ── MARKUP ENDS ──────────────────────────────────────────────────────────────────────────────────── *@
-
-@code {
-    // #251 · Every [Parameter] below is a member of TrackingPost under the member's own name.
-    // A parameter that needs saying more than that says it on its own line.
-
-    [Parameter] public IReadOnlyList<Discovery> _recentFinds { get; set; } = [];
-    [Parameter] public Func<DiscoveryKind, string> FindIcon { get; set; } = default!;
-}

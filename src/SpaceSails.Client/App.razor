@@ -25,9 +25,3 @@
         </ErrorBoundary>
     </Found>
 </Router>
-
-@code {
-    // Recording happens HERE, at the moment the boundary renders the failure, rather than in a lifecycle
-    // hook — ErrorContent is the one callback that is handed the exception itself.
-    private static string Note(Exception thrown) => CrashLog.Report("component", thrown).DescribeFully();
-}

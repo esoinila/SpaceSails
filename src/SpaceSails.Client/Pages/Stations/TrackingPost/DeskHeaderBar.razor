@@ -36,13 +36,3 @@
         }
     </div>
 @* ── MARKUP ENDS ──────────────────────────────────────────────────────────────────────────────────── *@
-
-@code {
-    // #251 item 1 · Every [Parameter] below is a member of TrackingPost under the member's own name.
-    // A parameter that needs saying more than that says it on its own line.
-
-    [Parameter] public bool FullScreen { get; set; }
-    [Parameter] public EventCallback<double> OnZoomMap { get; set; }
-    [Parameter] public EventCallback OnCenterShip { get; set; }
-    [Parameter] public EventCallback OnClose { get; set; }
-}

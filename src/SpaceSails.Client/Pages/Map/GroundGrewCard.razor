@@ -65,25 +65,3 @@
         </div>
 @* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
 }
-
-@code {
-    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
-    //
-    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
-    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
-    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
-    // refactor: it is what let the markup above move out of Map.razor without a single character of it
-    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
-    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
-
-    [Parameter] public Action CloseGroundGrew { get; set; } = default!;
-    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-
-    // #584 · WHERE the ground grew, composed by GroundGrows.Where out of the floor's own plate, the SDR
-    // compass and the fan's own "N du". It keeps the page field's own name, underscore and all, per the
-    // note above — this surface renders the page's member, it does not own a second copy of the fact.
-    [Parameter] public string _groundGrewWhere { get; set; } = "";
-
-    // The page's own event dispatch, repeated: no automatic re-render per event.
-    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
-}

@@ -54,17 +54,3 @@
                 </table>
             }
 @* ── MARKUP ENDS ──────────────────────────────────────────────────────────────────────────────────── *@
-
-@code {
-    // #251 · Every [Parameter] below is a member of TrackingPost under the member's own name.
-    // A parameter that needs saying more than that says it on its own line.
-
-    [Parameter] public TrackedTargetLedger _ledger { get; set; } = default!;
-    /// <summary>the desk's `HashSet&lt;string&gt; _aware` — the SAME set, not a copy.</summary>
-    [Parameter] public HashSet<string> _aware { get; set; } = default!;
-    [Parameter] public double SimTime { get; set; }
-    [Parameter] public Func<List<TrackedTarget>> OrderedTracks { get; set; } = default!;
-    [Parameter] public Func<string, TrackingCandidate?> FindCandidate { get; set; } = default!;
-    [Parameter] public Action<string> ConfirmNow { get; set; } = default!;
-    [Parameter] public Action<string> Drop { get; set; } = default!;
-}

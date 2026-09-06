@@ -174,7 +174,8 @@ public sealed class NoSurfaceSwallowsARerenderTests
             foreach (string path in Directory.EnumerateFiles(dir, "*.razor", SearchOption.TopDirectoryOnly)
                                              .OrderBy(p => p, StringComparer.Ordinal))
             {
-                string text = File.ReadAllText(path);
+                // #1107 · the COMPONENT, not the file: a surface's `@code` block lives in <Name>.razor.cs now.
+                string text = SurfaceComposition.ComponentText(path);
                 int begins = text.IndexOf(MapMarkup.MarkupBegins, StringComparison.Ordinal);
                 int ends = text.IndexOf(MapMarkup.MarkupEnds, StringComparison.Ordinal);
                 yield return new Surface(path, text, begins >= 0 && ends > begins ? text[begins..ends] : "", page);

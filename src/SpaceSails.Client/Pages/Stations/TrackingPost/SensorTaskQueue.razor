@@ -83,15 +83,3 @@
                     }
                 </div>
 @* ── MARKUP ENDS ──────────────────────────────────────────────────────────────────────────────────── *@
-
-@code {
-    // #251 · Every [Parameter] below is a member of TrackingPost under the member's own name.
-    // A parameter that needs saying more than that says it on its own line.
-
-    [Parameter] public TelescopeSchedule _schedule { get; set; } = default!;
-    [Parameter] public double SimTime { get; set; }
-    [Parameter] public Func<SensorTaskKind, string> KindIcon { get; set; } = default!;
-    [Parameter] public Func<SensorTaskState, string> StateChipClass { get; set; } = default!;
-    [Parameter] public Func<SensorTask, string> TaskCostText { get; set; } = default!;
-    [Parameter] public Action<string> AbandonSearch { get; set; } = default!;
-}
