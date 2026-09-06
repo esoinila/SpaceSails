@@ -3,11 +3,28 @@ namespace SpaceSails.Client.Components;
 /// <summary>
 /// #997 · HOW A SURFACE IS ALLOWED TO END. The owner's ruling of 2026-08-24 — <i>"there should not be a
 /// pop-up that cannot be closed or minimized"</i> — has exactly three shapes in this client, and #992's
-/// audit of all 89 surfaces found no fourth.
+/// audit of every positioned surface in it found no fourth.
+///
+/// <para><b>HOW MANY SURFACES TAKE EACH SHAPE IS NOT WRITTEN DOWN HERE ANY MORE, AND THAT IS THE REPAIR
+/// (#1174).</b> This docblock used to carry #992's own tally — so many of the surfaces close, so many decide
+/// — from the afternoon in August the audit was made. A fortnight later it was wrong: #1169's stale-fact sweep
+/// could prove the split had moved and could not say what it had moved to, because an audit is not a grep
+/// and re-running one is a lane of its own. It was re-run, and what came back is the reason there is no
+/// number in its place. On the day #992 counted, one shape was declared by a boolean here and a hand-rolled
+/// ✕ there; today it is declared once, on <see cref="OverlayShell"/>, by every surface that has one — so the
+/// split is not a fact about a comment, it is a fact about the tree, and the tree can be asked.</para>
+///
+/// <para><b>What asks it is <c>EveryPopUpCanBeDismissedTests</c></b>, the law #992 shipped instead of a
+/// sweep. It derives the surfaces from the source and from the render tree on every run, raises each one it
+/// can reach and PRESSES its controls to see which of them is a way out — and its fourth guard holds the
+/// recogniser itself honest, by requiring every file that draws a shell to wear a root the law can see. A
+/// count in a comment is right on the afternoon it is typed. A law is right on the morning somebody adds the
+/// next surface, which is the morning this matters.</para>
 /// </summary>
 public enum OverlayDismiss
 {
-    /// <summary>A ✕ takes it off the screen. The ordinary case: 47 of the 89.</summary>
+    /// <summary>A ✕ takes it off the screen. The ordinary case, by a distance — and by how far is the law's
+    /// question, not this line's.</summary>
     Close,
 
     /// <summary>A – tucks it into a tile in its own corner, and the tile brings it back. The scope (#963)
@@ -15,8 +32,8 @@ public enum OverlayDismiss
     Minimize,
 
     /// <summary>The critical-decision exception: no ✕, because every answer it offers is itself a close.
-    /// Eleven of the 89. <see cref="OverlayShell"/> audits the claim in DEBUG rather than believing it.
-    /// </summary>
+    /// <see cref="OverlayShell"/> audits the claim in DEBUG rather than believing it, and the law proves it
+    /// the only honest way — by pressing every answer and watching which of them ends the surface.</summary>
     ByDecision,
 }
 
