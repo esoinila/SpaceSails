@@ -954,35 +954,10 @@
 
        It is still a pointer-events:none card whose ✕ re-enables its own, so it can sit inside a
        pointer-events:none column without losing the one control #992 gave it. *@
-        @* The plate: same picture, same words, no keyboard stolen and no world stopped. The PANEL is still not
-           clickable — a thing you must dismiss is a thing that blocked you — but #992 gives it the one control
-           the owner's ruling asks of every surface in this file: "there should not be a pop-up that cannot be
-           closed or minimized" (owner ruling 2026-08-24). The ✕ re-enables its own pointer-events and nothing
-           else does, so the plate goes on passing every other click through to the room behind it. The great
-           port's own plate is what made the case: ArrivalTube.Title(GreatPort) is "🛬 THE LONG WALK IN", it
-           carries the longest of the three captions, and it lands bottom-left across the captain's-remote
-           button for the whole of StoryBeats.PlateSeconds. *@
         @if (_storyPlate is { } flash)
         {
-            var flashCopy = StoryBeatCopy(flash.Beat, flash.Subject);
-            @* #997 · the plate is an OverlayShell in its BARE frame: no head row, no body wrapper, and the
-               way out is the LAST child — which is exactly the geometry #996 measured and #992 gave it. The
-               plate is one flex row of [art][words][✕], so the shell puts nothing between them. *@
-            <OverlayShell class="story-plate" aria-live="polite"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="story-plate-close" DismissFace="✕" DismissLabel="Close"
-                          DismissTitle="Take it down now — it would go on its own in a few seconds"
-                          OnClose="() => Dismiss(CloseStoryPlate)">
-                @if (flashCopy.Art is { Length: > 0 })
-                {
-                    <img class="story-plate-art" src="@flashCopy.Art" alt=""
-                         onerror="this.style.display='none'" />
-                }
-                <div class="story-plate-words">
-                    <div class="story-plate-title">@flashCopy.Title</div>
-                    <div class="story-plate-caption">@flashCopy.Caption</div>
-                </div>
-            </OverlayShell>
+            <StoryPlate CloseStoryPlate="@CloseStoryPlate" Dismiss="@Dismiss"
+                        StoryBeatCopy="@StoryBeatCopy" flash="@flash" />
         }
 
     @* #1037 · …AND THE NAVIGATION TARGET IS THE FOOT OF THE COLUMN, not a second layout system beside it.
