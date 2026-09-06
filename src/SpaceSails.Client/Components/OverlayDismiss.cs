@@ -6,7 +6,7 @@ namespace SpaceSails.Client.Components;
 /// audit of every positioned surface in it found no fourth.
 ///
 /// <para><b>HOW MANY SURFACES TAKE EACH SHAPE IS NOT WRITTEN DOWN HERE ANY MORE, AND THAT IS THE REPAIR
-/// (#1174).</b> This docblock used to carry #992's own tally — so many of the surfaces close, so many decide
+/// (#1170).</b> This docblock used to carry #992's own tally — so many of the surfaces close, so many decide
 /// — from the afternoon in August the audit was made. A fortnight later it was wrong: #1169's stale-fact sweep
 /// could prove the split had moved and could not say what it had moved to, because an audit is not a grep
 /// and re-running one is a lane of its own. It was re-run, and what came back is the reason there is no

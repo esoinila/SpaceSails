@@ -377,7 +377,7 @@ public sealed class TheOverlayShellIsOneMechanismTests
     }
 
     /// <summary>
-    /// #1174 · <b>THE THREE SHAPES ARE COUNTED FROM THE ENUM, AND NOTHING ELSE IN THAT DOCBLOCK IS A NUMBER.</b>
+    /// #1170 · <b>THE THREE SHAPES ARE COUNTED FROM THE ENUM, AND NOTHING ELSE IN THAT DOCBLOCK IS A NUMBER.</b>
     ///
     /// <para><c>OverlayDismiss</c>'s docblock carried #992's audit — <i>47 of the 89</i>, <i>Eleven of the
     /// 89</i> — for a fortnight after it stopped being true. #1169's stale-fact sweep caught it and could not
@@ -422,7 +422,7 @@ public sealed class TheOverlayShellIsOneMechanismTests
         Assert.True(counted.Count == 0,
             $"OverlayDismiss.cs has grown {counted.Count} number(s) again — [{string.Join(" · ", counted)}]. "
             + "It carried #992's tally of which surfaces take which shape for a fortnight after it stopped "
-            + "being true (#1169 found it, #1174 took it out). The split is a fact about the tree and "
+            + "being true (#1169 found it, #1170 took it out). The split is a fact about the tree and "
             + "EveryPopUpCanBeDismissedTests derives it there on every run; point at the law instead of "
             + "quoting a count that is right for one afternoon.");
     }

@@ -123,7 +123,7 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     /// <summary>
     /// What the ledger's own header says about where these numbers came from.
     ///
-    /// <para><b>The count of LEDGER readings is COUNTED, not typed, and #1174 is why.</b> It said
+    /// <para><b>The count of LEDGER readings is COUNTED, not typed, and #1170 is why.</b> It said
     /// <i>thirty-eight</i> while <see cref="TheLedger"/> held thirty-nine — a probe had been added and the
     /// sentence describing the probes had not been re-read. #1169's stale-fact sweep caught it and could not
     /// fix it, because this text is written byte for byte into <c>Ledgers/Fingerprints.ledger.txt</c> and

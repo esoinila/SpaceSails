@@ -40,7 +40,7 @@ namespace SpaceSails.Client.Tests;
 /// house naming nor a written-down family name is not caught by them — it is not SEEN by them. This one
 /// answers that with the fact that is not a matter of naming: a file rendering an <see cref="OverlayShell"/>
 /// is a pop-up, because the shell exists for nothing else, and it must wear a root the recogniser knows.
-/// Added when #992's audit was re-run (#1174), which is also when the ternary-classed surfaces guard 1 had
+/// Added when #992's audit was re-run (#1170), which is also when the ternary-classed surfaces guard 1 had
 /// never been able to read turned up — see <see cref="ClassListsIn"/>.</item>
 /// </list>
 ///
