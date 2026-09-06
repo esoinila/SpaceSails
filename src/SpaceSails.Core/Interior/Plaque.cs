@@ -58,6 +58,38 @@ public static class Plaques
         "little less. She shows her age now, but the history is still in her frames. Her keel plate — " +
         "every scratch since the last owner is yours.");
 
+    // ── #1151 THE COVER-UP ON HER OWN BULKHEAD ────────────────────────────────────────────────────────
+    //    Owner ruling, 2026-09-06: the builder's plate stays DISCOVERABLE, but the method of concealment
+    //    VARIES per ship, dealt from her seed (ShipHistories.HowThePlateIsHidden) — one hull had the
+    //    original plastered over, another had the new plate bolted on top. Two authored lines, Fable's
+    //    canon pass, verbatim, one per variant.
+    //
+    //    Both say the same fact — SHE HAD A NAME BEFORE THIS ONE — without saying what it was. The name
+    //    itself is what the claims counter's second press asks for (NebulaClaims), and a plate that read it
+    //    out would hand the captain the answer to the only question that desk ever asks him.
+
+    /// <summary>The filler-and-paint cover-up (<see cref="ShipHistories.PlateConcealment.Plastered"/>).</summary>
+    public const string PlateSkimmedWithFiller =
+        "Someone skimmed filler over the builder's plate and painted the bulkhead to match. The letters "
+        + "still stand proud under the paint.";
+
+    /// <summary>The plate-over-a-plate cover-up (<see cref="ShipHistories.PlateConcealment.Bolted"/>).</summary>
+    public const string PlateBoltedOverAnother =
+        "Her name is on a plate bolted over another plate. The old bolts are a different thread.";
+
+    /// <summary>
+    /// #1151 · The builder's plate as it should READ for a hull with this record: <see cref="Ship"/>'s own
+    /// bronze, plus the cover-up her seed dealt her — and nothing appended at all for a hull that has never
+    /// been renamed, because there is nothing over her name to find.
+    /// </summary>
+    public static string BuildersPlateLore(ShipHistory history) =>
+        ShipHistories.HowThePlateIsHidden(history) switch
+        {
+            ShipHistories.PlateConcealment.Plastered => $"{Ship.Lore} {PlateSkimmedWithFiller}",
+            ShipHistories.PlateConcealment.Bolted => $"{Ship.Lore} {PlateBoltedOverAnother}",
+            _ => Ship.Lore,
+        };
+
     // The haven dedication plaques. All seven now carry delivered Grok plate art at their easel path;
     // each still falls back to the dedication text alone if its image is missing (the souvenir
     // onerror-hide fallback idiom). BUILD ORIGIN is stated plainly for the locally-built ports so The

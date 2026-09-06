@@ -1351,9 +1351,26 @@ public partial class Map
             return;
         }
 
-        (Observation obs, PingEvent _) = ActiveSensors.LaserRange(shipId, _ship.Position, npc.State.Position, npc.State.Velocity, SimTime);
+        (Observation obs, PingEvent ping) = ActiveSensors.LaserRange(shipId, _ship.Position, npc.State.Position, npc.State.Velocity, SimTime);
         _trackingPost.ApplyObservation(obs);
-        _trackingPost.MarkAware(shipId);
+        TheBeamIsKeyed(ping);
         ShowPulseMessage($"Laser ranged {npc.Ship.Callsign} — exact fix, but you're lit up ⚠");
     }
+
+    /// <summary>
+    /// #1151 · <b>THE BEAM IS THE BEAM, WHOEVER IS ON THE OTHER END</b> — owner ruling, 2026-09-06: <i>"a
+    /// claims call from the captain's remote costs the same exposure a laser ping does."</i>
+    ///
+    /// <para>The one place a keyed tight-beam is ever <b>paid for</b>. A laser ping pays it here, and so does
+    /// a claims call raised over the same link from the handset (<c>Map.Claims.Kiosk.cs</c>) — one
+    /// implementation, so the exposure cannot be charged twice over, differently, by two bookkeeping paths
+    /// that were meant to say the same thing. What the price IS comes from Core
+    /// (<see cref="ActiveSensors.Ping"/>); what paying it means is this line: the thing on the other end now
+    /// knows where the beam came from, which is the captain's position at the moment he keyed it.</para>
+    ///
+    /// <para>Nothing here is about a ship in particular. <see cref="Stations.TrackingPost.MarkAware"/> takes
+    /// the id of whatever was on the far end — a hull, a hunter, or the port whose machine took the call —
+    /// and the ledger paints the ⚠ for the ones it is also tracking.</para>
+    /// </summary>
+    private void TheBeamIsKeyed(PingEvent ping) => _trackingPost?.MarkAware(ping.TargetId);
 }
