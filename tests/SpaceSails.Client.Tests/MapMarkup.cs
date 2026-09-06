@@ -112,6 +112,35 @@ internal static class MapMarkup
     internal static IReadOnlyList<(string Name, string Path, string Markup)> Surfaces() =>
         SurfaceComposition.SurfacesIn(SurfacesDirectory(), "Pages/Map/");
 
+    /// <summary>
+    /// #251 · A SPLIT FAMILY, READ AS ONE SUBJECT — every file under <c>Pages/</c> matching
+    /// <paramref name="pattern"/>, joined in ORDINAL FILENAME ORDER so the read is the same on every machine
+    /// and in CI.
+    ///
+    /// <para>This is the other half of <see cref="Read"/>'s promise. <c>Read</c> keeps a guard from being
+    /// half-blind when one SUBJECT is two files by construction (a page and its surfaces, a component and
+    /// its code-behind); this keeps a guard from going half-blind when the refactor phase turns one file
+    /// into six. #1163's crew wrote the warning down after the fifth time: a guard that sweeps a whole file
+    /// with <c>DoesNotContain</c> and is then re-pathed at ONE partial does not go red — <b>it quietly stops
+    /// looking at four fifths of the room</b>, which is the fifth bug class wearing a tidy diff.</para>
+    ///
+    /// <para>So: a guard whose claim is about a SUBJECT (<i>"nothing in the docking code names the
+    /// autopilot's economy"</i>) reads the family; a guard whose claim is about ONE MEMBER may name the one
+    /// partial that member lives in, and will fail loudly if it moves. The pattern is a glob, so an exact
+    /// filename is a family of one and this is safe to use for both.</para>
+    ///
+    /// <para><b>Proven RED</b> in the PR that added it, by appending a canary line to a partial that did not
+    /// exist before the split and watching the sweeps that read the family fail on it.</para>
+    /// </summary>
+    internal static string PagesFamily(string pattern) => ReadFamily(PagesDirectory(), pattern);
+
+    /// <summary><see cref="PagesFamily"/> for a family that does not live under <c>Pages/</c>.</summary>
+    internal static string ReadFamily(string directory, string pattern) =>
+        string.Join("\n", Directory
+            .EnumerateFiles(directory, pattern, SearchOption.TopDirectoryOnly)
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(Read));
+
     private static bool IsThePage(string path) =>
         Path.GetFileName(path).Equals(PageFileName, StringComparison.Ordinal)
         && Path.GetFileName(Path.GetDirectoryName(path) ?? "").Equals("Pages", StringComparison.Ordinal);

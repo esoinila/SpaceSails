@@ -104,7 +104,7 @@ public sealed class TheDockingNumbersHaveTheirOwnPanelTests
     [Fact]
     public void ThePanelInheritsTheClampsOwnGateAndTheClampsOwnTank()
     {
-        string docking = Pages("Map.Docking.cs");
+        string docking = MapMarkup.PagesFamily("Map.Docking*.cs");   // #251 · six partials, read as one subject
         Assert.Contains("private void UpdateDockAffordance()", docking, StringComparison.Ordinal); // the right file
 
         Assert.Contains("private bool DockFocusLive => DockFocus.IsLive(_dockAffordance);", docking, StringComparison.Ordinal);
@@ -128,7 +128,7 @@ public sealed class TheDockingNumbersHaveTheirOwnPanelTests
     [Fact]
     public void TheCoachingSentencesAreSpokenFromOneCopy()
     {
-        string docking = Pages("Map.Docking.cs");
+        string docking = MapMarkup.PagesFamily("Map.Docking*.cs");   // #251 · six partials, read as one subject
         Assert.Contains("private string DockStatusLine(OrbitAssistInfo oi)", docking, StringComparison.Ordinal);
 
         Assert.Contains("DockFocus.ClampedOnLine", docking, StringComparison.Ordinal);

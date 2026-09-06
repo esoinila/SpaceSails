@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -230,26 +230,29 @@ public sealed class TheWallsAreHungAndReadTests
     [Fact]
     public void EveryArrivalEdgeInTheGameTellsTheBook()
     {
-        (string File, string Signature)[] edges =
+        // #251 · the docking code and the autopilot are families of partials now, so the edge is named by
+        // the GLOB its subject spans rather than by whichever file the last cut happened to leave it in.
+        // Read in declared (ordinal) order through MapMarkup.PagesFamily.
+        (string Family, string Signature)[] edges =
         [
-            ("Map.Docking.cs", "TheArrivalIsRemembered(dest.Id)"),    // the shuttle hop between havens
-            ("Map.Docking.cs", "TheArrivalIsRemembered(dock.Id)"),    // the clamp
-            ("Map.Autopilot.cs", "TheArrivalIsRemembered(body.Id)"),  // the autopilot's park
-            ("Map.Autopilot.cs", "TheArrivalIsRemembered(oi.Body.Id)"), // the manual insertion
+            ("Map.Docking*.cs", "TheArrivalIsRemembered(dest.Id)"),    // the shuttle hop between havens
+            ("Map.Docking*.cs", "TheArrivalIsRemembered(dock.Id)"),    // the clamp
+            ("Map.Autopilot*.cs", "TheArrivalIsRemembered(body.Id)"),  // the autopilot's park
+            ("Map.Autopilot*.cs", "TheArrivalIsRemembered(oi.Body.Id)"), // the manual insertion
             ("Map.Surface.cs", "TheArrivalIsRemembered(stop.Body.Id)"), // the boat setting down
         ];
 
-        foreach ((string file, string call) in edges)
+        foreach ((string family, string call) in edges)
         {
-            Assert.Contains(call, Pages(file), StringComparison.Ordinal);
+            Assert.Contains(call, MapMarkup.PagesFamily(family), StringComparison.Ordinal);
         }
 
         // …and every arrival edge stands beside the `ArrivedAt` hook that already marks one, or (the landing)
         // at the one place a boat is mated. Counted, so a new edge cannot be added without noticing this.
         int wired = 0;
-        foreach (string file in new[] { "Map.Docking.cs", "Map.Autopilot.cs", "Map.Surface.cs" })
+        foreach (string family in new[] { "Map.Docking*.cs", "Map.Autopilot*.cs", "Map.Surface.cs" })
         {
-            string source = Pages(file);
+            string source = MapMarkup.PagesFamily(family);
             int at = 0;
             while ((at = source.IndexOf("TheArrivalIsRemembered(", at, StringComparison.Ordinal)) >= 0)
             {

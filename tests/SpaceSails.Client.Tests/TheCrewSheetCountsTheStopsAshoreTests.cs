@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -114,7 +114,10 @@ public sealed class TheCrewSheetCountsTheStopsAshoreTests
     [Fact]
     public void TheLedgerLineAndTheEstablishingShotComeOffOneTierRead()
     {
-        string src = ClientSource("Pages", "Map.Docking.cs");
+        // #251 · the docking code is SIX partials now, and the two statements this test measures the
+        // distance between live in Map.Docking.Berth.cs. Read as a family, in declared (ordinal) order, so
+        // the next cut cannot move them out from under the guard.
+        string src = MapMarkup.PagesFamily("Map.Docking*.cs");
 
         Assert.Contains("ArrivalTube.Tier tier = ArrivalTube.TierFor(", src, StringComparison.Ordinal);
         Assert.Contains("NoteTheBerthTheCrewGot(tier)", src, StringComparison.Ordinal);

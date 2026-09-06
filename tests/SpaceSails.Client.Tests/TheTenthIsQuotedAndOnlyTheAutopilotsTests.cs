@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -139,7 +139,7 @@ public sealed class TheTenthIsQuotedAndOnlyTheAutopilotsTests
         "Map.Plot.Nodes.cs",        // plotted burns, fired at their epoch
         "Map.Plot.Skim.cs",         // the aerobrake plan's pulses
         "Map.Plot.Sling.cs",        // the slingshot plan's pulses
-        "Map.Docking.cs",           // the terminal match
+        "Map.Docking*.cs",          // the terminal match (#251 · six partials, swept as one)
         "Map.LongHaul.cs",          // a long-haul departure / mid-course
         "Map.Combat.FireControl.cs",// weapons
         "Map.ChargeBoard.cs",       // the contactor's draw
@@ -154,7 +154,7 @@ public sealed class TheTenthIsQuotedAndOnlyTheAutopilotsTests
         string[] economyWords = ["EconomyFactor", "ChargeForBurn", "PulsesCharged", "AutopilotRehearsal.Charged("];
         foreach (string file in HandSpentFiles)
         {
-            string src = PageSource(file);
+            string src = MapMarkup.PagesFamily(file);
             foreach (string word in economyWords)
             {
                 Assert.False(src.Contains(word, StringComparison.Ordinal),
