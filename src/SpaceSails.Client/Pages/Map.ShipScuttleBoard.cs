@@ -391,13 +391,26 @@ public sealed partial class Map
                 if (!hunter.BrokenOff && !hunter.CaughtPlayer)
                 {
                     _hunters[h] = hunter with { BrokenOff = true };
+                }
 
-                    // #1151 · …AND THE BREAK-OFF IS NOT THE END OF THE PROCESS. The owner's ruling on #525
-                    // says the pursuers cannot proceed without the captain, which is a different sentence
-                    // from "the pursuers stop caring". The chase ends here exactly as #1090 built it — the
-                    // ending is untouched, the roster empties, no line is said — and the contract goes onto
-                    // the file, waiting at the port that serves the ground he did it over. One writ: whoever
-                    // was first on the roster is the one who waits, and a queue of them is a later slice.
+                // #1151 · …AND THE BREAK-OFF IS NOT THE END OF THE PROCESS. The owner's ruling on #525 says
+                // the pursuers cannot proceed without the captain, which is a different sentence from "the
+                // pursuers stop caring". The chase ends here exactly as #1090 built it — the ending is
+                // untouched, the roster empties, no line is said — and the contract goes onto the file,
+                // waiting at the port that serves the ground he did it over.
+                //
+                // ASKED OF EVERY PURSUER WHO IS NOT HOLDING HIM, and not only of the ones this loop has just
+                // let go — which is a bug the narrower condition really had. The DETERRENT breaks them off
+                // ninety seconds earlier (the note comes up half a tone and nobody boards a ship that is
+                // about to stop existing), so by the time the clock reaches zero the roster is usually
+                // already all flags, and the filing would never have happened at all. Whether a contract was
+                // voided by the arming or by the ending, it is the same contract and it is still owed a
+                // captain.
+                //
+                // One writ: TheWritWaitsForHim keeps the first and ignores the rest. A queue of people
+                // waiting at ports is a later slice's save format.
+                if (!hunter.CaughtPlayer)
+                {
                     TheWritWaitsForHim(theGround, null, hunter.Callsign);
                 }
             }
