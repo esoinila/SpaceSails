@@ -822,7 +822,8 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
     private static string Hive() =>
         string.Concat(Directory
             .EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Rendering"), "HiveInterior*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering"),
+                "HiveInterior*.cs")
             .OrderBy(path => path, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
