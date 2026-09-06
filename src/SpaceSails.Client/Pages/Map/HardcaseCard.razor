@@ -50,6 +50,31 @@
                           OnClose="() => Dismiss(TellKoltNo)">
                 <div class="view-object-title">@SpaceSails.Core.HardcaseRep.DisplayName</div>
                 <div class="rep-desk">@SpaceSails.Core.HardcaseRep.Desk</div>
+                @* #1151 slice 2 · THE CLAIM, BEFORE THE PITCH — the same block RepCard draws, character for
+                   character, on this panel's own stated argument: he is a salesman from Nebula Mutual and
+                   drawing him differently would be the page claiming a difference the fiction does not have.
+                   Everything behind it is one implementation and not two: one offer rule, one set of rows,
+                   one press, one counter, one flashback. He is not the man who PAYS — the money arrives when
+                   a representative next finds you, and that is Fess's meeting. *@
+                @if (TheLodgingOfferIsUp)
+                {
+                    <div class="rep-said">@SpaceSails.Core.NebulaClaims.LodgeWithMe</div>
+                    <div class="rep-offers">
+                        <button type="button" class="rep-offer"
+                                @onclick="LodgeItWithHim">@SpaceSails.Core.NebulaClaims.KioskPlate</button>
+                    </div>
+                }
+                @if (TheDeskSays is { Length: > 0 } deskSays)
+                {
+                    <div class="rep-said">@deskSays</div>
+                    <div class="rep-offers">
+                        @foreach (SpaceSails.Core.NebulaClaims.Ask claimAsk in TheClaimAsks())
+                        {
+                            <button type="button" class="rep-offer"
+                                    @onclick="() => PressTheClaim(claimAsk)">@claimAsk.Label</button>
+                        }
+                    </div>
+                }
                 <div class="view-object-caption rep-pitch">@SpaceSails.Core.HardcaseRep.Opener</div>
                 <div class="view-object-caption rep-pitch">@SpaceSails.Core.HardcaseRep.Pitch</div>
                 <div class="rep-offers">

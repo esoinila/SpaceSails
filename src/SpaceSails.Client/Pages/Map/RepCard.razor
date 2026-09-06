@@ -61,6 +61,35 @@
                 <img class="view-object-img rep-portrait" src="@SpaceSails.Core.NebulaRep.PortraitArt"
                      alt="@SpaceSails.Core.NebulaRep.RepName" onerror="this.style.display='none'" />
                 <div class="rep-desk">@SpaceSails.Core.NebulaRep.Desk</div>
+                @* #1151 slice 2 · THE CLAIM, BEFORE THE PITCH — and drawn in HardcaseCard character for
+                   character, because Fess and Kolt are one firm and drawing the same form two ways would be
+                   the page claiming a difference the fiction does not have (that card's own argument, one
+                   panel down). The offer is one authored sentence and one button whose face is the PLATE off
+                   the machine: his line is that the machine and he file the same form, so what the captain
+                   presses says what it would say on a wall. Accepting swaps the sentence for the counter —
+                   the same rows `TheClaimAsks` deals a kiosk, pressed through the same `PressTheClaim`, in
+                   this card's own row shape, because a form on a table is not a new kind of surface.
+                   `TheDeskSays` is the MACHINE's standing demand and then its receipt: no line in here is
+                   his, and this slice wrote him none. *@
+                @if (TheLodgingOfferIsUp)
+                {
+                    <div class="rep-said">@SpaceSails.Core.NebulaClaims.LodgeWithMe</div>
+                    <div class="rep-offers">
+                        <button type="button" class="rep-offer"
+                                @onclick="LodgeItWithHim">@SpaceSails.Core.NebulaClaims.KioskPlate</button>
+                    </div>
+                }
+                @if (TheDeskSays is { Length: > 0 } deskSays)
+                {
+                    <div class="rep-said">@deskSays</div>
+                    <div class="rep-offers">
+                        @foreach (SpaceSails.Core.NebulaClaims.Ask claimAsk in TheClaimAsks())
+                        {
+                            <button type="button" class="rep-offer"
+                                    @onclick="() => PressTheClaim(claimAsk)">@claimAsk.Label</button>
+                        }
+                    </div>
+                }
                 <div class="view-object-caption rep-pitch">@pitch.Line</div>
                 @if (_repSaid is { Length: > 0 } saidBack)
                 {

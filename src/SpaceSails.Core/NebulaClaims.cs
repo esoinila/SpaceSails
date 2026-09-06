@@ -55,6 +55,19 @@ public static class NebulaClaims
     /// (#1138's <c>SOMETHING · SOMETHING</c>), because what is being shown is a state of paperwork.</summary>
     public const string PendingWritPlate = "WRIT · AWAITING THE MASTER";
 
+    /// <summary>
+    /// #1151 slice 2 · <b>THE REP'S OFFER — and the one string this slice authored.</b> Said at a table
+    /// before he pitches, when there is a loss on the wire the captain has not put in yet.
+    ///
+    /// <para>It is the whole of the slice in one sentence: lodging in person is not a better deal, it is the
+    /// SAME form, and the only difference is that a man is watching you fill it in. That is why the three
+    /// presses are shared below rather than written twice, and why the payout is the same number at the same
+    /// next meeting whichever host took the third press.</para>
+    /// </summary>
+    public const string LodgeWithMe =
+        "Lodge it with me, then. The machine and I file the same form; I just get to watch your face "
+        + "while you do it.";
+
     /// <summary>The flashback card's stamp, from the second lodged claim onward.</summary>
     public const string DeskTitle = "THE CLAIM";
 
@@ -174,6 +187,52 @@ public static class NebulaClaims
     /// </summary>
     public static bool IsAReceipt(NewsWire.NewsEventKind kind) =>
         kind is NewsWire.NewsEventKind.HullLostAtABerth or NewsWire.NewsEventKind.HunterBrokeOff;
+
+    // ══ THE OFFER AT THE TABLE ═══════════════════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// #1151 slice 2 · The loss a captain sitting at a table could still put in — the most recent entry on
+    /// the wire that <see cref="IsAReceipt"/> would take, or null when there is nothing to claim on.
+    ///
+    /// <para>The wire is kept newest-first, so the FIRST receipt is the freshest hull. One function, asked by
+    /// the rep's seam and by nothing else: the counter's own wire press validates a subject the captain
+    /// pointed at, which is a different question and stays where it is.</para>
+    /// </summary>
+    public static string? TheLossOnTheWire(IEnumerable<NewsWire.NewsEvent> wire)
+    {
+        ArgumentNullException.ThrowIfNull(wire);
+
+        foreach (NewsWire.NewsEvent entry in wire)
+        {
+            if (IsAReceipt(entry.Kind))
+            {
+                return entry.Subject;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// #1151 slice 2 · <b>DOES HE OFFER TO TAKE IT?</b> Three clauses and no fourth.
+    ///
+    /// <list type="number">
+    /// <item>There is a loss on the wire (<paramref name="lossOnTheWire"/>) — the same receipt the third
+    /// press wants, because there is no claim without one.</item>
+    /// <item>Nothing is already lodged and waiting to be paid (<paramref name="aClaimIsOwed"/>). A man whose
+    /// firm already owes you for a hull does not offer to file for it again; that meeting is the PAYOUT.</item>
+    /// <item>The offer has not been spent on this loss already (<paramref name="offerSpentOn"/>) — the line
+    /// is said <b>once per loss</b>. It is spent when he makes it, and equally when a claim is lodged against
+    /// that loss anywhere, because a machine on a concourse and the man at the table file the same form.</item>
+    /// </list>
+    ///
+    /// <para>Nothing here asks WHICH rep is at the table. Harlan Fess and Brem Kolt are the same firm, and a
+    /// second opinion about who may take a form would be the mirrored constant said about a person.</para>
+    /// </summary>
+    public static bool TheOfferStands(string? lossOnTheWire, bool aClaimIsOwed, string? offerSpentOn) =>
+        !string.IsNullOrEmpty(lossOnTheWire)
+        && !aClaimIsOwed
+        && !string.Equals(lossOnTheWire, offerSpentOn, StringComparison.Ordinal);
 
     // ══ THE UNEASE ═══════════════════════════════════════════════════════════════════════════════════════
 

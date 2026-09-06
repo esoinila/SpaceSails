@@ -638,6 +638,22 @@ public sealed record ProgressSection
     public int? ClaimsLodged { get; init; }
 
     /// <summary>
+    /// #1151 slice 2 · <b>THE LOSS THE REP'S OFFER HAS BEEN SPENT ON</b>, or null while he has said nothing.
+    ///
+    /// <para><see cref="NebulaClaims.LodgeWithMe"/> is said ONCE PER LOSS — the canon's own word — and it is
+    /// spent either by his saying it or by a claim being lodged against that loss at a machine, because the
+    /// two hosts file the same form. It rides the file for <see cref="ClaimOwed"/>'s exact reason: a latch a
+    /// reload forgot would be a salesman offering to file a hull that has already been filed, and paid for.</para>
+    ///
+    /// <para><b>Written only when he has spent it</b>, the #1057/#1066/#1074 law: the checksum is taken over
+    /// the payload, so an eager <c>"lodgingOfferedFor": null</c> would change the digest of every vault ever
+    /// written and hang the 📛 tampered marker on an honest voyage.</para>
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? LodgingOfferedFor { get; init; }
+
+    /// <summary>
     /// #1151 · <b>THE CLAIM THAT IS LODGED AND NOT YET PAID</b>, or null when the captain is owed nothing.
     ///
     /// <para>It rides the file for the reason the whole beat exists: the payout does not arrive at the desk,
