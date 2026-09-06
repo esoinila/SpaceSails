@@ -382,6 +382,6 @@ public sealed class AGuardOnlyRunsWhenYouGiveHimAReasonTests
         // #836 · …and what he is handed is what a captain with that wallet would be holding: the default,
         // which is now europa's pass, because luna's is in somebody's breast pocket.
         Assert.False(
-            PatrolBeat.TheGuardReads("luna", Plate, WalletChoice.DefaultFor("luna", after, null)).Satisfied);
+            PatrolBeat.TheGuardReads("luna", -2, 0L, Plate, WalletChoice.DefaultFor("luna", after, null), false).Satisfied);
     }
 }

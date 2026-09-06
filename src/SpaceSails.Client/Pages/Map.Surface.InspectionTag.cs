@@ -72,9 +72,48 @@ public partial class Map
         TheRoomHasBeenGoneThrough(ex, ex.Floor, room);
         ShowAndFile(
             UndergroundComplex.InspectionTagLine(ex.Stop.Body.Id, ex.Floor)
-            + UndergroundComplex.PaperPocketLine,
+            + UndergroundComplex.PaperPocketLine
+            + TheRackDrawerAlsoHoldsTheCard(ex),
             "📋");
         RequestVaultSave();
         return true;
+    }
+
+    // ── #1149 slice 2 · THE OTHER THING IN THE RACK DRAWER ───────────────────────────────────────────────
+    //
+    // Design pass (Fable, 2026-09-06), the first of the card's two roads: "on a site whose failed refuge has
+    // been reached, the failed refuge holds the card in its rack drawer: the inspector who replaced the seal
+    // (the tag's undated third entry) never left; the card is his, and the room says nothing more."
+    //
+    // AND THE ROOM SAYS NOTHING MORE, literally. There is no sentence here and none is authored: what the
+    // captain is shown is the PLATE that is printed on the laminate, appended to the tag's own line, in the
+    // idiom FoundPass.Plate already reads a pass with. The whole beat is the paper — a complete, unsigned,
+    // on-time inspection with one undated line too many in it — and a sentence explaining who the card
+    // belonged to would be the building narrating the thing §13.8 forbids it from narrating.
+    //
+    // WHY IT RIDES THE TAG'S PRESS. The refuge is ONE room with ONE console (Map.Surface.Shelter.cs's own
+    // note, four lines up), and a second press bolted to the same coordinates would either be unreachable or
+    // would steal the one that reads the rack. The tag is on the valve and the card is in the drawer under
+    // it; the hand that takes one takes both.
+
+    /// <summary>#1149 · The plate of the inspector's card, if this refuge is the one whose seal went and the
+    /// wallet has room for it — appended to the tag's own line, so one press says one thing. Empty on every
+    /// other refuge in the game, which is nearly all of them.
+    ///
+    /// <para>Nothing is consumed and nothing is struck off for it: the card rides the TAG's once-flag
+    /// (<c>RefugeTagRoom</c>), because the drawer is emptied by the press that empties it. And a pocket that
+    /// cannot take it leaves it there — #678's law, the same insurance <c>TheDrawerHandsOverAFalseId</c>
+    /// carries: a find must never be destroyed by the act of looking at it.</para></summary>
+    private string TheRackDrawerAlsoHoldsTheCard(SurfaceExcursion ex)
+    {
+        if (!UndergroundComplex.RefugeThatFailedIsOn(ex.Stop.Body.Id, ex.Floor)
+            || Inspectorate.Held(_satchel)
+            || !Satchel.CanTake(_satchel, Inspectorate.Card))
+        {
+            return string.Empty;
+        }
+
+        _satchel = [.. Satchel.Add(_satchel, Inspectorate.Card)];
+        return " " + FoundPass.Plate(Inspectorate.Card);
     }
 }

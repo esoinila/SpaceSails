@@ -75,6 +75,16 @@ public partial class DarkWeb
     /// pocket, banks the band of heat and lets the fence speak; the desk only carries the press.</summary>
     [Parameter] public EventCallback OnSellChip { get; set; }
 
+    /// <summary>#1149 · What this desk's fence wants for a set of inspectorate credentials, or null when
+    /// there is nothing here to sell the captain — he is carrying the one there is, or the desk is not open
+    /// for business. Priced by Map off <see cref="Inspectorate.FencePrice"/>; this component never does
+    /// arithmetic about it, exactly as it never does any about the chip.</summary>
+    [Parameter] public int? InspectorCardPrice { get; set; }
+
+    /// <summary>#1149 · Raised when the captain buys it. Map moves the coin and puts the laminate in the
+    /// wallet; the desk only carries the press.</summary>
+    [Parameter] public EventCallback OnBuyInspectorCard { get; set; }
+
     private IEnumerable<TrackedShipInfo> SellableTracks =>
         TrackedShips.Where(t => IntelMarket.CanSellTrack(t.Quality));
 

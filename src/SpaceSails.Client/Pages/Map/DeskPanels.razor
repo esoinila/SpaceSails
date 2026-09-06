@@ -357,7 +357,7 @@
                             </div>
                             @if (_commsSelectedId == "darkweb")
                             {
-                                <SpaceSails.Client.Pages.Stations.DarkWeb Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" Ledger="_intelLedger" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" WireContacts="DarkWebWireContacts()" OnOpenWireBank="id => OpenBank(id, viaWire: true)" OnIntelPurchased="(string cs) => PushNewsEvent(NewsWire.NewsEventKind.IntelPurchased, cs)" ChipPrice="ChipFencePrice()" OnSellChip="SellTheChipToTheFence" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
+                                <SpaceSails.Client.Pages.Stations.DarkWeb Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" Ledger="_intelLedger" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" WireContacts="DarkWebWireContacts()" OnOpenWireBank="id => OpenBank(id, viaWire: true)" OnIntelPurchased="(string cs) => PushNewsEvent(NewsWire.NewsEventKind.IntelPurchased, cs)" ChipPrice="ChipFencePrice()" OnSellChip="SellTheChipToTheFence" InspectorCardPrice="InspectorCardPrice()" OnBuyInspectorCard="BuyTheInspectorCard" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
                             }
                             else
                             {

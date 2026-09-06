@@ -341,9 +341,15 @@ public static partial class UndergroundComplex
     /// already read the paper and is asking for a FACE the outfit remembers. A code there would be a second
     /// road past a heat gate, which is a question nobody has ruled on. Never on a SECTOR door or a stop
     /// order's seal either — see <see cref="Signs.HasNoReader"/>, which carries that argument.</para></param>
+    /// <param name="OpenedByInspection">#1149 · WHICH paper is doing it, third answer. Set only when the
+    /// thing opening this gate is the inspector's card (<see cref="Inspectorate"/>) rather than a
+    /// countersignature or a timesheet — because the ARRIVAL is narrated differently for each, and a ride the
+    /// inspection opened must never tell the captain that an office vouched for him. Exactly
+    /// <paramref name="OpenedByChit"/>'s reason, one paper along.</param>
     public readonly record struct LiftStop(
         int Level, string Name, bool Pressurised, bool IsCurrent, string? Refusal, string? OpenedBy = null,
-        bool OpenedByChit = false, bool HasRefuge = false, bool HasPad = false);
+        bool OpenedByChit = false, bool HasRefuge = false, bool HasPad = false,
+        bool OpenedByInspection = false);
 
     /// <summary>
     /// #600 · What this car's panel offers, standing on <paramref name="level"/>.
@@ -384,11 +390,18 @@ public static partial class UndergroundComplex
     ///
     /// <para>Null is a captain who has typed nothing, which is every older caller and the panel exactly as it
     /// was.</para></param>
+    /// <param name="inspectionRunning">#1149 · Whether an inspection is running on this excursion — the
+    /// inspector's card was presented at the front and a man on the rota accepted it
+    /// (<see cref="WalletChoice.Outcome.Inspection"/>). While it is, the ID CHECK row defers and the SEALED
+    /// row opens; when the shuttle lifts it is over, exactly as #602's typed code is. False is every older
+    /// caller and the panel exactly as it was.</param>
     public static IReadOnlyList<LiftStop> LiftPanel(
         string bodyId, int level, IReadOnlyCollection<string> heldCardIds,
         IReadOnlyList<Satchel.Item>? carried = null, int heatAtThisOperator = 0,
-        IReadOnlyCollection<int>? padOpened = null) =>
-        LiftPanel(bodyId, level, ShaftKind.Cage, heldCardIds, carried, heatAtThisOperator, padOpened);
+        IReadOnlyCollection<int>? padOpened = null, bool inspectionRunning = false) =>
+        LiftPanel(
+            bodyId, level, ShaftKind.Cage, heldCardIds, carried, heatAtThisOperator, padOpened,
+            inspectionRunning);
 
     /// <summary>
     /// #801 · The same panel, asked of a CAR rather than of a building.
@@ -409,7 +422,7 @@ public static partial class UndergroundComplex
     public static IReadOnlyList<LiftStop> LiftPanel(
         string bodyId, int level, ShaftKind car, IReadOnlyCollection<string> heldCardIds,
         IReadOnlyList<Satchel.Item>? carried = null, int heatAtThisOperator = 0,
-        IReadOnlyCollection<int>? padOpened = null)
+        IReadOnlyCollection<int>? padOpened = null, bool inspectionRunning = false)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(heldCardIds);
@@ -533,7 +546,13 @@ public static partial class UndergroundComplex
         // ONE PREDICATE, and the read at the card asks the same one (TheGateWantsAFaceHere) — a panel that
         // refused while the story card said the gate opened would be the sim and the sentence describing two
         // different buildings.
-        bool wantsAFace = papered && TheGateWantsAFaceHere(bodyId, carried, heatAtThisOperator);
+        // #1149 · …AND THE HEAT GATE DEFERS TO AN INSPECTION, ONCE. An outfit that remembers this captain
+        // wants the pass with his face on it — and it wants it less than it wants to not be the site that
+        // turned an inspector away at the door. The deferral is for the excursion the inspection is running
+        // on and no longer, which is the same line #602's pad draws between a code and a card: the paper is
+        // durable, the visit is an afternoon.
+        bool wantsAFace =
+            papered && !inspectionRunning && TheGateWantsAFaceHere(bodyId, carried, heatAtThisOperator);
 
         // ── #602 · AND THE PAD, WHICH IS THE THIRD WAY THROUGH THIS ROW ─────────────────────────────────
         //
@@ -555,7 +574,13 @@ public static partial class UndergroundComplex
         bool padHere = !papered && next == LiftCode.PadBand;
         bool padOpen = padHere && padOpened is not null && padOpened.Contains(next);
 
-        bool opens = (papered && !wantsAFace) || padOpen;
+        // #1149 · …AND THE SEALED ROW OPENS FOR AN INSPECTION IN PROGRESS. It is the third road through this
+        // row and it is the pad's road exactly: it lasts the trip and nothing is written down. It cannot
+        // reach either of the two silences above — the undeclared band and a stop order's seal have both
+        // already returned empty-handed — so an inspection never confesses a shaft the building denies
+        // having, which is #592's rule kept by construction rather than by a clause.
+        bool inspectionOpens = inspectionRunning;
+        bool opens = (papered && !wantsAFace) || padOpen || inspectionOpens;
 
         stops.Add(new(
             BandTop(next),
@@ -584,15 +609,23 @@ public static partial class UndergroundComplex
             // #715 · …and it names nothing when the gate is asking for a face: the paper in the wallet did
             // not open this door, and a row printing the card that would have opened it is a row telling the
             // captain the read went the other way.
+            // #1149 · …and last, the inspection, in the plate that is printed on the card. Last because the
+            // precedence above is a ladder of PERMISSIONS and this is not one: a captain carrying the
+            // countersignature is through this gate whatever anybody is inspecting, and the row should tell
+            // him about the paper he will still be holding tomorrow.
             wantsAFace ? null
                 : carded && !IsHeadOffice(bodyId) ? CardTitle(readCard!.Value)
-                : chitOpens ? $"{CanteenTable.ChitGlyph} {CanteenTable.ChitTitle}" : null,
+                : chitOpens ? $"{CanteenTable.ChitGlyph} {CanteenTable.ChitTitle}"
+                : inspectionOpens ? $"{PatrolBeat.BadgeGlyph} {Inspectorate.Plate}" : null,
             OpenedByChit: chitOpens && !wantsAFace,
             HasRefuge: RefugeOnThePlan(bodyId, BandTop(next)),
             // #602 · …and the pad comes off the row the moment the code has worked. A keypad still bolted to
             // an open gate is an affordance with nothing behind it (#212), and a captain who typed the right
             // number should not be able to spend a wrong one on a lock that is already open.
-            HasPad: padHere && !padOpen));
+            //
+            // #1149 · …and for the identical reason it comes off a row an inspection has opened.
+            HasPad: padHere && !padOpen && !inspectionOpens,
+            OpenedByInspection: inspectionOpens && !carded && !chitOpens));
         return stops;
     }
 
@@ -630,7 +663,12 @@ public static partial class UndergroundComplex
             // #752 · …and it is a CARD that is being read, not the day-labour chit. Both papers put a title
             // in OpenedBy, and only one of them is a countersignature; a ride the chit opened must not
             // narrate an office vouching for the captain, because no office did.
-            if (stop.Level == toLevel && stop.OpenedBy is not null && !stop.OpenedByChit)
+            // #1149 · …and it is not the inspector's card either. Three papers put a title in OpenedBy now
+            // and exactly one of them is a countersignature; a ride an inspection opened must not narrate an
+            // office vouching for the captain, because no office did — the building simply got out of the
+            // way of a man with a clipboard.
+            if (stop.Level == toLevel && stop.OpenedBy is not null
+                && !stop.OpenedByChit && !stop.OpenedByInspection)
             {
                 return new AuthorityCard(bodyId, BandOf(toLevel));
             }

@@ -116,6 +116,34 @@
                 </table>
             }
 
+            @* #1149 · The one thing on this desk the fence SELLS rather than buys. Like the chip's row it
+               exists only while it applies — the captain is not already carrying one, and the desk is open
+               — so there is no verb here to refuse. What the row says about the object is the object's own
+               plate and its own look-card line, read off Core: the desk never describes a thing it does not
+               own, and the price is Map's (Inspectorate.FencePrice), never composed here. *@
+            @if (InspectorCardPrice is { } cardPrice)
+            {
+                <div class="text-secondary mb-1">Papers, if you have the coin:</div>
+                <table class="table table-sm table-dark mb-2">
+                    <tbody>
+                        <tr>
+                            <td>
+                                @Inspectorate.Plate
+                                <div class="text-secondary">@Inspectorate.LookCardLine</div>
+                            </td>
+                            <td class="text-end align-middle text-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                        disabled="@(Credits < cardPrice)"
+                                        title="Buy a set of inspectorate credentials — an office that sits above the sites, and a bet on somebody's inspection roster"
+                                        @onclick="() => OnBuyInspectorCard.InvokeAsync()">
+                                    Buy @cardPrice.ToString("N0", CultureInfo.InvariantCulture) cr
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            }
+
             <div class="text-secondary mb-1">Your sellable tracks (quality ≥ 50%):</div>
             @if (!SellableTracks.Any())
             {

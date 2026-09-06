@@ -151,17 +151,17 @@ public sealed class TheFalseIdIsInTheDrawerTests
         Assert.Equal(pass, shownHere);
         Assert.Equal(pass, shownThere);
 
-        Assert.Equal(WalletChoice.Outcome.WrongSite, WalletChoice.WhatHappens(here, shownHere));
-        Assert.Equal(WalletChoice.Outcome.Worked, WalletChoice.WhatHappens(mintedFor, shownThere));
+        Assert.Equal(WalletChoice.Outcome.WrongSite, WalletChoice.WhatHappens(here, -2, 0L, shownHere));
+        Assert.Equal(WalletChoice.Outcome.Worked, WalletChoice.WhatHappens(mintedFor, -2, 0L, shownThere));
 
-        Assert.False(PatrolBeat.TheGuardReads(here, "A ROUND", shownHere).Satisfied);
-        Assert.True(PatrolBeat.TheGuardReads(mintedFor, "A ROUND", shownThere).Satisfied);
+        Assert.False(PatrolBeat.TheGuardReads(here, -2, 0L, "A ROUND", shownHere, false).Satisfied);
+        Assert.True(PatrolBeat.TheGuardReads(mintedFor, -2, 0L, "A ROUND", shownThere, false).Satisfied);
 
         // …and the wrong-site arm's consequence is the one that was already written. Nothing new is added to
         // what a refusal costs — the issue's own scope for this lane.
         Assert.Equal(
             PatrolBeat.EscortLine,
-            PatrolBeat.TheGuardReads(here, "A ROUND", shownHere).Consequence);
+            PatrolBeat.TheGuardReads(here, -2, 0L, "A ROUND", shownHere, false).Consequence);
     }
 
     /// <summary>

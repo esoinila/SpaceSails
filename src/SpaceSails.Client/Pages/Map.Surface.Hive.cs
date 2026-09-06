@@ -115,7 +115,11 @@ public partial class Map
                 // #602 · …and which bands the KEYPAD has been talked into on this trip. The excursion's own
                 // set, never the vault's: a code opens a gate for the afternoon and the card opens it
                 // forever, which is the whole line between the two papers.
-                ex.LiftCodeOpened)
+                ex.LiftCodeOpened,
+                // #1149 · …and whether an inspection is running on this trip — the excursion's own flag, on
+                // the excursion for the pad's reason exactly. While it is, the ID CHECK row defers and the
+                // SEALED row opens.
+                ex.InspectionRunning)
             : [];
 
     /// <summary>#801 · Which of the two cars the open panel belongs to — set by the press that opened it,

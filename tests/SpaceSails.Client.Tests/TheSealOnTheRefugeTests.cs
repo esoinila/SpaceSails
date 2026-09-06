@@ -388,11 +388,25 @@ public sealed class TheSealOnTheRefugeTests
             Invoke(map, "HiveRefugeInteract");
             var after = (IReadOnlyList<Satchel.Item>)Get(map, "_satchel")!;
 
-            Assert.True(after.Count == before.Count + 1,
+            // #1149 slice 2 · …and on the ONE refuge in the building whose seal went, the same press also
+            // hands over what was in the rack drawer under the tag: the inspector's card. That is the whole
+            // of the feature's first road, and it is why this count is asked of the STATE rather than typed.
+            int expected = state == UndergroundComplex.RefugeState.Failed ? 2 : 1;
+            Assert.True(after.Count == before.Count + expected,
                 $"{body} B{-level} ({state}): the press at the rack took {after.Count - before.Count} "
-                + "thing(s) out of the room. Every refuge in this building carries an inspection tag.");
+                + $"thing(s) out of the room, and {expected} was owed. Every refuge in this building "
+                + "carries an inspection tag; the failed one also holds the card.");
 
-            Satchel.Item tag = after[^1];
+            bool failed = state == UndergroundComplex.RefugeState.Failed;
+            Assert.Equal(failed, Inspectorate.Held(after));
+
+            // …and the captain is TOLD, on the surface they are looking at (#761), in the only register this
+            // road authors anything in: the plate that is printed on the laminate, on the tag's own pulse.
+            // The room says nothing more, which is the design pass's own word for it.
+            string said = ((PulseSlot)Get(map, "_pulse")!).Message ?? "";
+            Assert.Equal(failed, said.Contains(Inspectorate.Plate, StringComparison.Ordinal));
+
+            Satchel.Item tag = after[before.Count];
             Assert.Equal(Satchel.Kind.Paper, tag.Kind);
             Assert.Equal(
                 UndergroundComplex.FindId(body, level, UndergroundComplex.RefugeTagRoom), tag.Id);

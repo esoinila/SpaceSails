@@ -361,6 +361,22 @@ public partial class Map
         // arithmetic there: OPEN is not a thing the pad remembers, it is a thing the pad answered.
         public string? LiftPadSaid { get; set; }
 
+        // ── #1149 · THE INSPECTION, WHICH LASTS EXACTLY AS LONG AS THIS TRIP ────────────────────────────
+        //
+        // Whether a man on the rota has read the inspector's card and accepted that an inspection is
+        // happening here (Inspectorate; WalletChoice.Outcome.Inspection). While it is true the ID CHECK row
+        // defers and the SEALED row opens; when the shuttle lifts, it is over.
+        //
+        // ON THE EXCURSION AND NOT IN THE VAULT, and that is #602's own ruling directly above rather than a
+        // new one: the CARD is durable and stays durable — it is a possession, and a possession that
+        // evaporated when the shuttle lifted would not be one — while the VISIT is an afternoon. An
+        // inspection that survived a launch would be a building that never stopped expecting somebody.
+        //
+        // It is also the once-per-excursion latch for the one authored sentence: the line is said on the
+        // read that SETS this, and a man who has already been told there is an inspection on does not
+        // announce it to the captain a second time (PatrolBeat.TheGuardReads).
+        public bool InspectionRunning { get; set; }
+
         // #609 · Whether this excursion has had the DEAD AIR card. Once: after that the pulse line is
         // enough, because by then it is knowledge rather than news.
         public bool HiveVacuumWarned { get; set; }

@@ -132,21 +132,21 @@ public sealed class TheFletchWalletTests
         Satchel.Item[] wallet = [TheRealOne, TheOtherSitesPass, TheCageChit];
         Assert.True(PatrolBeat.BadgeHeld(Here, wallet), "the good paper is in this wallet the whole time.");
 
-        PatrolBeat.Read good = PatrolBeat.TheGuardReads(Here, Plate, TheRealOne);
+        PatrolBeat.Read good = PatrolBeat.TheGuardReads(Here, -2, 0L, Plate, TheRealOne, false);
         Assert.True(good.Satisfied);
         Assert.Equal(PatrolBeat.SatisfiedLine, good.Line);
         Assert.Null(good.Consequence);
 
-        PatrolBeat.Read wrongPaper = PatrolBeat.TheGuardReads(Here, Plate, TheCageChit);
+        PatrolBeat.Read wrongPaper = PatrolBeat.TheGuardReads(Here, -2, 0L, Plate, TheCageChit, false);
         Assert.False(wrongPaper.Satisfied, "the chit was chosen and the good pass answered for it.");
         Assert.Equal(PatrolBeat.WrongPaperLine, wrongPaper.Line);
         Assert.Equal(PatrolBeat.EscortLine, wrongPaper.Consequence);
 
-        PatrolBeat.Read wrongSite = PatrolBeat.TheGuardReads(Here, Plate, TheOtherSitesPass);
+        PatrolBeat.Read wrongSite = PatrolBeat.TheGuardReads(Here, -2, 0L, Plate, TheOtherSitesPass, false);
         Assert.False(wrongSite.Satisfied, "the other site's pass was chosen and the good pass answered for it.");
         Assert.Equal(PatrolBeat.WrongSiteLine(Elsewhere), wrongSite.Line);
 
-        PatrolBeat.Read nothing = PatrolBeat.TheGuardReads(Here, Plate, null);
+        PatrolBeat.Read nothing = PatrolBeat.TheGuardReads(Here, -2, 0L, Plate, null, false);
         Assert.False(nothing.Satisfied);
         Assert.Equal(PatrolBeat.NothingLine, nothing.Line);
     }
@@ -161,9 +161,9 @@ public sealed class TheFletchWalletTests
         var answers = new HashSet<string>(StringComparer.Ordinal);
         foreach (Satchel.Item paper in WalletChoice.Fan(Here, wallet))
         {
-            answers.Add(PatrolBeat.TheGuardReads(Here, Plate, paper).Line);
+            answers.Add(PatrolBeat.TheGuardReads(Here, -2, 0L, Plate, paper, false).Line);
         }
-        answers.Add(PatrolBeat.TheGuardReads(Here, Plate, null).Line);
+        answers.Add(PatrolBeat.TheGuardReads(Here, -2, 0L, Plate, null, false).Line);
 
         Assert.Equal(
             new HashSet<string>(StringComparer.Ordinal)
@@ -185,8 +185,8 @@ public sealed class TheFletchWalletTests
         foreach (Satchel.Item? handed in new Satchel.Item?[]
                  { null, TheRealOne, TheOtherSitesPass, TheCageChit })
         {
-            WalletChoice.Outcome how = WalletChoice.WhatHappens(Here, handed);
-            PatrolBeat.Read read = PatrolBeat.TheGuardReads(Here, Plate, handed);
+            WalletChoice.Outcome how = WalletChoice.WhatHappens(Here, -2, 0L, handed);
+            PatrolBeat.Read read = PatrolBeat.TheGuardReads(Here, -2, 0L, Plate, handed, false);
             Assert.Equal(how == WalletChoice.Outcome.Worked, read.Satisfied);
         }
     }
@@ -298,7 +298,7 @@ public sealed class TheFletchWalletTests
     {
         foreach (Satchel.Item paper in new[] { TheRealOne, TheOtherSitesPass, TheCageChit })
         {
-            WalletChoice.Outcome how = WalletChoice.WhatHappens(Here, paper);
+            WalletChoice.Outcome how = WalletChoice.WhatHappens(Here, -2, 0L, paper);
             string note = WalletChoice.ShownNote(paper, Here, -2, how, "HALVORSEN");
 
             Assert.Contains(WalletChoice.NameOn(paper, "HALVORSEN"), note, StringComparison.Ordinal);

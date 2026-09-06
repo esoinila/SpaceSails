@@ -182,6 +182,17 @@ public static class WalletChoice
         /// <summary>A real paper and real cover — for somewhere else. The chit, on a floor that is not the
         /// cage.</summary>
         WrongPaper = 3,
+
+        /// <summary>#1149 · The inspector's card, on a floor and a watch that honour it — a floor carrying a
+        /// refuge, or a site with an inspection on its roster (<see cref="Inspectorate.HonouredAt"/>). He
+        /// reads it and walks on, and for the rest of the excursion the building's gates treat the captain as
+        /// the inspection that is happening.</summary>
+        Inspection = 4,
+
+        /// <summary>#1149 · The same card, read properly, on a site that is not expecting anybody.
+        /// <see cref="WrongSite"/>'s cousin: the paper is genuine and the man is unmoved, because the process
+        /// is strict and nobody inspects unannounced.</summary>
+        NoInspectionDue = 5,
     }
 
     /// <summary>
@@ -193,8 +204,14 @@ public static class WalletChoice
     /// guard reads what you give him.</para>
     /// </summary>
     /// <param name="bodyId">The site whose floor you are standing on.</param>
+    /// <param name="level">#1149 · The floor you are standing on. It decides exactly one rung — the
+    /// inspector's card, which is honoured on a floor that carries a refuge whatever the roster says — and it
+    /// is REQUIRED rather than defaulted, because a caller that could quietly omit it would be a caller
+    /// handed a world that cannot tell that rung from a refusal.</param>
+    /// <param name="watch">#1149 · The frozen watch, for the site's inspection roster
+    /// (<see cref="Inspectorate.InspectionIsDue"/>). Every other rung ignores it.</param>
     /// <param name="shown">The paper handed over, or null when nothing was.</param>
-    public static Outcome WhatHappens(string bodyId, Satchel.Item? shown)
+    public static Outcome WhatHappens(string bodyId, int level, long watch, Satchel.Item? shown)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
@@ -206,6 +223,16 @@ public static class WalletChoice
         if (paper.Kind == Satchel.Kind.Chit)
         {
             return Outcome.WrongPaper;
+        }
+
+        // #1149 · THE ONE PAPER THAT IS NOT ABOUT A BUILDING. Asked before the site code is read, because
+        // there is no site code on it to read: the INSPECTORATE issues above the complexes, so the question
+        // is not WHOSE building this is but whether this floor and this watch will honour an inspector.
+        if (Inspectorate.IsTheCard(paper))
+        {
+            return Inspectorate.HonouredAt(bodyId, level, watch)
+                ? Outcome.Inspection
+                : Outcome.NoInspectionDue;
         }
 
         if (paper.Kind != Satchel.Kind.Badge || PatrolBeat.SiteOfBadge(paper.Id) is not { Length: > 0 } site)
@@ -310,11 +337,15 @@ public static class WalletChoice
                 continue;
             }
 
-            if (row.How == Outcome.Worked)
+            // #1149 · An inspection that was honoured is a read that WORKED — he read it and walked on — and
+            // one that was not is a refusal. Two rungs added to the ladder, and the hint counts them on the
+            // side they actually landed on rather than falling through to "never shown", which would be the
+            // captain's own book quietly forgetting an evening.
+            if (row.How is Outcome.Worked or Outcome.Inspection)
             {
                 worked++;
             }
-            else if (row.How is Outcome.WrongSite or Outcome.WrongPaper)
+            else if (row.How is Outcome.WrongSite or Outcome.WrongPaper or Outcome.NoInspectionDue)
             {
                 refused = row;   // the LATEST one — the floor a captain would actually name.
             }
@@ -356,6 +387,12 @@ public static class WalletChoice
         Outcome.WrongSite => "wrong site code",
         Outcome.WrongPaper => "wrong paper for this floor",
         Outcome.Worked => "read and handed back",
+
+        // #1149 · The shorthand for the two inspection rungs is the card's own PLATE, composed rather than
+        // authored: what a row has to be able to say is WHICH paper it is about, and the plate is the only
+        // thing printed on that one. No new sentence is invented for a book that is a list of shorthands.
+        Outcome.Inspection or Outcome.NoInspectionDue => Inspectorate.Plate,
+
         _ => "nothing to show",
     };
 
@@ -390,6 +427,15 @@ public static class WalletChoice
             Outcome.WrongPaper =>
                 $"Showed {face} to a man on the security rota on {where}. Real paper, and for somewhere " +
                 "else entirely. He wrote it down anyway.",
+
+            // #1149 · THE BOOK QUOTES HIM, and that is the whole of what it can honestly keep about an
+            // inspection: the two rungs are indistinguishable at the moment they happen — he says the same
+            // sentence to a man he is about to wave past and to a man he is about to walk out — and a note
+            // that told the captain which one it had been would be the book knowing the roster. The opener
+            // is this file's own clerical form, unchanged; the sentence inside the quotes is canon.
+            Outcome.Inspection or Outcome.NoInspectionDue =>
+                $"Showed {face} to a man on the security rota on {where}. \"{Inspectorate.HonouredLine}\"",
+
             _ =>
                 $"Nothing came out of the wallet for a man on the security rota on {where}, and he waited " +
                 "the whole time you were looking.",

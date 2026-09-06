@@ -83,8 +83,8 @@ public sealed class TheFourLinesTheGuardWasGivenTests
                     who++;
 
                     // 2 · THE CHALLENGE — said before anything is read, so it is on the card BOTH arms carry.
-                    PatrolBeat.Read shown = PatrolBeat.TheGuardReads(site, plate, PatrolBeat.Badge(site));
-                    PatrolBeat.Read empty = PatrolBeat.TheGuardReads(site, plate, null);
+                    PatrolBeat.Read shown = PatrolBeat.TheGuardReads(site, -2, 0L, plate, PatrolBeat.Badge(site), false);
+                    PatrolBeat.Read empty = PatrolBeat.TheGuardReads(site, -2, 0L, plate, null, false);
                     reads += 2;
 
                     foreach ((string arm, PatrolBeat.Read r) in
@@ -186,7 +186,7 @@ public sealed class TheFourLinesTheGuardWasGivenTests
                 string plate = PatrolBeat.PlateOf(site, level, 0, 0);
 
                 // HE BELONGS: this site's own pass, on a floor this site patrols.
-                PatrolBeat.Read ok = PatrolBeat.TheGuardReads(site, plate, PatrolBeat.Badge(site));
+                PatrolBeat.Read ok = PatrolBeat.TheGuardReads(site, -2, 0L, plate, PatrolBeat.Badge(site), false);
                 if (!ok.Satisfied)
                 {
                     bad.Add($"  {site} B{-level}: a man on the site's own books was refused.");
@@ -202,7 +202,7 @@ public sealed class TheFourLinesTheGuardWasGivenTests
                 }
 
                 // HE DOES NOT: nothing in the wallet a palm is for.
-                PatrolBeat.Read no = PatrolBeat.TheGuardReads(site, plate, null);
+                PatrolBeat.Read no = PatrolBeat.TheGuardReads(site, -2, 0L, plate, null, false);
                 if (no.Satisfied)
                 {
                     bad.Add($"  {site} B{-level}: an empty wallet satisfied him.");
@@ -224,9 +224,9 @@ public sealed class TheFourLinesTheGuardWasGivenTests
 
         // …and the two arms are DIFFERENT sentences. A build where both said the same thing would pass every
         // count above.
-        string one = PatrolBeat.TheGuardReads("luna", "◈ A CONTRACT GUARD, WALKING THE ROUND",
-            PatrolBeat.Badge("luna")).Told;
-        string other = PatrolBeat.TheGuardReads("luna", "◈ A CONTRACT GUARD, WALKING THE ROUND", null).Told;
+        string one = PatrolBeat.TheGuardReads("luna", -2, 0L, "◈ A CONTRACT GUARD, WALKING THE ROUND",
+            PatrolBeat.Badge("luna"), false).Told;
+        string other = PatrolBeat.TheGuardReads("luna", -2, 0L, "◈ A CONTRACT GUARD, WALKING THE ROUND", null, false).Told;
         Assert.NotEqual(one, other);
     }
 }
