@@ -46,13 +46,3 @@
                 }
             </div>
 @* ── MARKUP ENDS ──────────────────────────────────────────────────────────────────────────────────── *@
-
-@code {
-    // #251 · Every [Parameter] below is a member of TrackingPost under the member's own name.
-    // A parameter that needs saying more than that says it on its own line.
-
-    [Parameter] public Vector2d ShipPosition { get; set; }
-    [Parameter] public Vector2d ShipVelocity { get; set; }
-    [Parameter] public Func<List<TrackingCandidate>> RadarReturns { get; set; } = default!;
-    [Parameter] public Func<double, string> FormatWallDistance { get; set; } = default!;
-}

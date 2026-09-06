@@ -44,19 +44,3 @@
         </OverlayShell>
     </div>
 }
-
-@code {
-    /// <summary>The cast dice to show, or null when the tray is closed.</summary>
-    [Parameter] public DiceEvent? Event { get; set; }
-
-    /// <summary>Raised when the captain dismisses the tray (or clicks off it).</summary>
-    [Parameter] public EventCallback OnDismiss { get; set; }
-
-    private async Task Dismiss()
-    {
-        if (OnDismiss.HasDelegate)
-        {
-            await OnDismiss.InvokeAsync();
-        }
-    }
-}

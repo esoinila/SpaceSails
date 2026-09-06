@@ -47,12 +47,3 @@
         </div>
 @* ── MARKUP ENDS ───────────────────────────────────────────────────── *@
 }
-
-@code {
-    [Parameter] public Action<FinderCase.Outcome> SettleTheCase { get; set; } = default!;
-    [Parameter] public Action CloseTheReveal { get; set; } = default!;
-    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    [Parameter] public string? _finderOutcome { get; set; }
-
-    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
-}

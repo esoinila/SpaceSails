@@ -102,39 +102,3 @@
         </div>
 @* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
 }
-
-@code {
-    // ── WHAT THESE PARAMETERS ARE ────────────────────────────────────────────────────────────────────
-    //
-    // #251 item 1 · Every [Parameter] below carries a member of the page under THE MEMBER'S OWN NAME —
-    // a field keeps its underscore, a method arrives as a delegate with its own signature, a variable the
-    // page's `@if` binds arrives under the name the `@if` gave it. That is the whole trick of this
-    // refactor: it is what let the markup above move out of Map.razor without a single character of it
-    // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
-    // when it lived in the page. A parameter that needs saying more than that says it on its own line.
-
-    /// <summary>the page's `string _bankNote` — and this markup WRITES it, so it crosses as a pair: the
-    /// value in, the page's own setter out. The private property below keeps the member's own name, so
-    /// the moved block still assigns to `_bankNote` and the assignment still lands on the page.</summary>
-    [Parameter] public string _bankNoteValue { get; set; } = default!;
-    /// <summary>The page's `_bankNote = value`, handed down so the write survives the move.</summary>
-    [Parameter] public Action<string> _bankNoteSet { get; set; } = default!;
-    private string _bankNote { get => _bankNoteValue; set { _bankNoteValue = value; _bankNoteSet(value); } }
-    [Parameter] public BankPromptKind? _bankPrompt { get; set; }
-    [Parameter] public string _bankSlotId { get; set; } = default!;
-    /// <summary>the page's `string _bankTitle` — and this markup WRITES it, so it crosses as a pair: the
-    /// value in, the page's own setter out. The private property below keeps the member's own name, so
-    /// the moved block still assigns to `_bankTitle` and the assignment still lands on the page.</summary>
-    [Parameter] public string _bankTitleValue { get; set; } = default!;
-    /// <summary>The page's `_bankTitle = value`, handed down so the write survives the move.</summary>
-    [Parameter] public Action<string> _bankTitleSet { get; set; } = default!;
-    private string _bankTitle { get => _bankTitleValue; set { _bankTitleValue = value; _bankTitleSet(value); } }
-    [Parameter] public string BankPromptHeading { get; set; } = default!;
-    [Parameter] public EventCallback CancelBankPrompt { get; set; }
-    [Parameter] public EventCallback CommitBankPrompt { get; set; }
-    [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
-    [Parameter] public BankPromptKind bankKind { get; set; } = default!;
-
-    // The page's own event dispatch, repeated: no automatic re-render per event.
-    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
-}

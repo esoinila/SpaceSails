@@ -1382,46 +1382,4 @@
             </div>
         }
     </text>;
-
-    private void DrawPyramids()
-    {
-        for (int i = 0; i < AncientsRule.PyramidCount; i++)
-        {
-            if (!AncientsRule.Revealed(i, _ship.Position, SimTime))
-            {
-                continue;
-            }
-
-            Vector2d position = AncientsRule.PyramidPosition(i, SimTime);
-            (float sx, float sy) = _camera.WorldToScreen(position);
-            Span<float> triangle = stackalloc float[8];
-            triangle[0] = sx; triangle[1] = sy - 6;
-            triangle[2] = sx - 5; triangle[3] = sy + 4;
-            triangle[4] = sx + 5; triangle[5] = sy + 4;
-            triangle[6] = sx; triangle[7] = sy - 6;
-            _renderer!.DrawPolyline(triangle, PyramidColor, 1.6f);
-            _renderer.DrawText(sx + 8, sy - 6, "◬ ???", PyramidColor);
-        }
-    }
-
-    private void DrawOrdnance()
-    {
-        foreach (OrdnanceState round in _ordnance)
-        {
-            if (round.Spent)
-            {
-                continue;
-            }
-
-            (float sx, float sy) = _camera.WorldToScreen(round.State.Position);
-            _renderer!.DrawCircle(sx, sy, round.Round.Kind == OrdnanceKind.Missile ? 2.5f : 1.8f,
-                OrdnanceColor, OrdnanceColor);
-            // A short streak along the velocity so a round reads as MOVING at map zoom.
-            Vector2d tail = round.State.Position - round.State.Velocity.Normalized() * (_camera.MetersPerPixel * 6);
-            (float tx, float ty) = _camera.WorldToScreen(tail);
-            Span<float> streak = stackalloc float[4];
-            streak[0] = sx; streak[1] = sy; streak[2] = tx; streak[3] = ty;
-            _renderer.DrawPolyline(streak, OrdnanceColor with { A = 120 }, 1f);
-        }
-    }
 }

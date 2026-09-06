@@ -40,14 +40,3 @@
                 }
             </div>
 @* ── MARKUP ENDS ──────────────────────────────────────────────────────────────────────────────────── *@
-
-@code {
-    // #251 · Every [Parameter] below is a member of TrackingPost under the member's own name.
-    // A parameter that needs saying more than that says it on its own line.
-
-    [Parameter] public IReadOnlyList<CourseOpportunity> Opportunities { get; set; } = [];
-    [Parameter] public double SimTime { get; set; }
-    [Parameter] public Func<double, string> FormatWallDistance { get; set; } = default!;
-    [Parameter] public Func<double, string> FormatOppDuration { get; set; } = default!;
-    [Parameter] public EventCallback<string> OnSetInterest { get; set; }
-}

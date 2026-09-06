@@ -114,7 +114,8 @@ public sealed class NoSurfaceSwallowsAWriteTests
 
         foreach (string path in EverySurfaceFile())
         {
-            string text = File.ReadAllText(path);
+            // #1107 · the COMPONENT, not the file: a surface's `@code` block lives in <Name>.razor.cs now.
+            string text = SurfaceComposition.ComponentText(path);
             int begins = text.IndexOf(MapMarkup.MarkupBegins, StringComparison.Ordinal);
             int ends = text.IndexOf(MapMarkup.MarkupEnds, StringComparison.Ordinal);
             if (begins < 0 || ends <= begins)
@@ -180,7 +181,7 @@ public sealed class NoSurfaceSwallowsAWriteTests
 
         int writers = surfaces.Count(p =>
         {
-            string t = File.ReadAllText(p);
+            string t = SurfaceComposition.ComponentText(p);
             int b = t.IndexOf(MapMarkup.MarkupBegins, StringComparison.Ordinal);
             int e = t.IndexOf(MapMarkup.MarkupEnds, StringComparison.Ordinal);
             return b >= 0 && e > b && WhatItWrites(t[b..e])

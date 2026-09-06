@@ -61,10 +61,16 @@ internal static class MapMarkup
     /// build bundles them. The stylesheet was split along the same seams as the markup, for the same reason,
     /// and the guards that read it are the same guards — so this stays their one entry point and neither half
     /// of the split can quietly blind them.</para>
+    ///
+    /// <para>#1107 · and handed ANY OTHER <c>.razor</c> it returns the whole COMPONENT — the razor plus the
+    /// <c>.razor.cs</c> code-behind its <c>@code</c> block moved into. Same reason a third time, said in
+    /// <see cref="SurfaceComposition.ComponentText"/>: a guard that opens one of a component's two files is
+    /// half blind, and it fails by finding nothing rather than by finding something wrong.</para>
     /// </summary>
     internal static string Read(string path) =>
         IsThePage(path) ? TheComposedPage.Value
         : MapStylesheet.IsThePageSheet(path) ? MapStylesheet.Text
+        : IsAComponent(path) ? SurfaceComposition.ComponentText(path)
         : File.ReadAllText(path);
 
     /// <summary><see cref="File.ReadAllLines(string)"/>'s twin of <see cref="Read"/>, with the same
@@ -76,7 +82,14 @@ internal static class MapMarkup
             return SurfaceComposition.AsLines(MapStylesheet.Text);
         }
 
-        return IsThePage(path) ? SurfaceComposition.AsLines(TheComposedPage.Value) : File.ReadAllLines(path);
+        if (IsThePage(path))
+        {
+            return SurfaceComposition.AsLines(TheComposedPage.Value);
+        }
+
+        return IsAComponent(path)
+            ? SurfaceComposition.AsLines(SurfaceComposition.ComponentText(path))
+            : File.ReadAllLines(path);
     }
 
     /// <summary>The composed page, for guards that want it without a path.</summary>
@@ -96,11 +109,17 @@ internal static class MapMarkup
         Path.GetFileName(path).Equals(PageFileName, StringComparison.Ordinal)
         && Path.GetFileName(Path.GetDirectoryName(path) ?? "").Equals("Pages", StringComparison.Ordinal);
 
+    /// <summary>#1107 · a razor file that is not the page — read it with its code-behind.</summary>
+    private static bool IsAComponent(string path) =>
+        path.EndsWith(".razor", StringComparison.Ordinal);
+
     private static string PagesDirectory() =>
         Path.Combine(SurfaceComposition.RepoRoot(), "src", "SpaceSails.Client", "Pages");
 
-    /// <summary>Map.razor with every surface spliced in where the page invokes it.</summary>
-    private static string Compose() => ComposeFrom(File.ReadAllText(PagePath), Surfaces());
+    /// <summary>Map.razor with every surface spliced in where the page invokes it — and, since #1107, with
+    /// the page's own code-behind on the end, because two of its <c>@code</c> members live there now.</summary>
+    private static string Compose() =>
+        ComposeFrom(SurfaceComposition.ComponentText(PagePath), Surfaces());
 
     /// <summary>The composition itself, stated over a page text and a set of surfaces rather than over the
     /// disk — so the guard can hand it a doctored page and watch it go red.</summary>
