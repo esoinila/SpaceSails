@@ -103,7 +103,7 @@ public class TheGroundRemembersWhatYouDidToItTests
     {
         // ONE WRITER. Both guns come through AHuskFallsAt, and nothing else in the client builds a husk row:
         // a second writer is a second place to forget the ledger, which is this bug exactly.
-        foreach (string file in new[] { "Map.Surface.Reevers.cs", "Map.SweepTeam.cs" })
+        foreach (string file in new[] { "Map.Surface.Reevers.Sentries.cs", "Map.SweepTeam.cs" })
         {
             Assert.Contains("AHuskFallsAt(ex,", Pages(file), StringComparison.Ordinal);
             Assert.DoesNotContain(".Husks.Add(", Pages(file), StringComparison.Ordinal);

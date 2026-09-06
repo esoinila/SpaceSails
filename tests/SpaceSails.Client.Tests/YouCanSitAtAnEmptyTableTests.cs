@@ -55,7 +55,32 @@ public sealed class YouCanSitAtAnEmptyTableTests
     /// are <c>DoesNotContain</c> over the whole subject, and pointing one at a single file would be a silent
     /// weakening.</summary>
     private static string Table() =>
-        Source("Pages", "Map.Table.cs") + Source("Pages", "Seating", "Seating.Table.cs");
+        Source("Pages", "Map.Table.cs") + TheTablesOwnPartials();
+
+    /// <summary>#251 · The table scene is FIVE partials now (opening, the moves, #757's wait, #758's
+    /// cabinet, #680's one ending) — read as a GLOB and not as a written list, because several claims over
+    /// this text are <c>DoesNotContain</c> over the whole subject and a list that fell one file behind the
+    /// next split would narrow them without a word. Ordinal by path so the concatenation is stable.</summary>
+    private static string TheTablesOwnPartials()
+    {
+        string[] parts = System.IO.Directory.GetFiles(
+            System.IO.Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating"),
+            "Seating.Table*.cs");
+        // Scene order, not alphabetical: `Seating.Table.cs` — the file that opens the scene and carries the
+        // family's class summary — comes first, exactly where it was when it was the only one, and the rest
+        // follow it ordinal. Several claims over this text cut a method body FORWARD to the next thing, and
+        // a sort that put the opening file last would have them cutting across a file trailer.
+        System.Array.Sort(parts, (a, b) =>
+            System.StringComparer.Ordinal.Compare(
+                System.IO.Path.GetFileName(a) == "Seating.Table.cs" ? "" : a,
+                System.IO.Path.GetFileName(b) == "Seating.Table.cs" ? "" : b));
+        var all = new System.Text.StringBuilder();
+        foreach (string part in parts)
+        {
+            all.Append(System.IO.File.ReadAllText(part));
+        }
+        return all.ToString();
+    }
 
 
     /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
