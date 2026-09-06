@@ -353,6 +353,11 @@ public sealed class TheRefugesUndergroundTests
         [
             "old one", "old ones", "reever", "restore", "backup", "brain", "kaamos", "minister",
             "ancient", "alien", "experiment", "specimen",
+
+            // #1149 · §8's reserved word, on the family that now carries a CARD. The card is the one place
+            // in this arc where explaining would be easiest and worst: a captain standing in a room whose
+            // seal was cut open from the inside will supply their own answer, and the game may not.
+            "monolith",
         ];
 
         var prose = new List<string>
@@ -366,6 +371,18 @@ public sealed class TheRefugesUndergroundTests
             UndergroundComplex.RefugeRowTag,
             UndergroundComplex.VacuumCard("miranda", -2, 600),
             UndergroundComplex.VacuumCard("miranda", -7, 90),
+
+            // #1149 · The dry plate, the tag's two entries, and the card that tells the one that failed.
+            // Every string this arc added, in the one sweep that already knows what a refuge may not say.
+            UndergroundComplex.RefugeDryGlyph,
+            UndergroundComplex.InspectionTagEntry,
+            UndergroundComplex.InspectionTagSealReplaced,
+            PaperHeads.TagTitle,
+            PaperHeads.TagDocument,
+            UndergroundComplex.InspectionTagLine("miranda", -2),
+            UndergroundComplex.InspectionTagLine("miranda", -3),
+            StoryBeats.Title(StoryBeats.Beat.RefugeFailed),
+            StoryBeats.Caption(StoryBeats.Beat.RefugeFailed),
         };
         for (int i = 0; i < 12; i++)
         {
@@ -559,17 +576,21 @@ public sealed class TheRefugesUndergroundTests
     // anything. The state of the seal is what keeps it honest."
 
     [Fact]
-    public void MostDeadFloorsHaveNothingLeftToRefillFrom()
+    public void ARefugeHoldsUnlessSomebodyDidSomethingToIt()
     {
-        // THE RARITY PIN, and it is a measurement rather than a wish. Every one of these rooms was built and
-        // paid for; a fifth of them still has air in the rack, and the rest is what an unpaid maintenance
-        // line does over decades.
+        // #1149 · THE RARITY PIN, RE-MEASURED, and it is the owner's ruling turned into three numbers.
+        // #1087 pinned 21.2 / 38.5 / 40.2 off a maintenance line that either survived or did not; that was
+        // our mechanic. The world's answer is that a refuge is built to a robustness spec and holds — so
+        // HOLDING is now the overwhelming majority, EMPTY is a visitor's footprint, and FAILED is an event
+        // that most buildings simply do not have.
         //
         // WHAT MAKES THIS ABLE TO FAIL, which is the house rule this repo names out loud: it counts all
-        // THREE states and demands all three in quantity. An assertion that "few floors refill" would pass
-        // beautifully on a build where no refuge anywhere works, and one that "most floors do not" would
-        // pass on a build with no refuges at all. Both ends are nailed down, so the only build that goes
-        // green is one that actually deals three states.
+        // THREE states and demands all three in quantity, with a ceiling as well as a floor on each. An
+        // assertion that "most refuges hold" would pass beautifully on a build where every refuge in the
+        // game holds — which is the version of this feature that costs nothing and is exactly what the
+        // owner's "if for dramatic suspense we need one that does not work" forbids. Both ends are nailed
+        // down on all three, so the only build that goes green is one that deals all three states at these
+        // rates.
         int holding = 0, empty = 0, failed = 0;
         foreach (string body in ManySites())
         {
@@ -588,38 +609,45 @@ public sealed class TheRefugesUndergroundTests
         int dead = holding + empty + failed;
         Assert.True(dead > 500, $"only {dead} dead floor(s) swept — this net proves nothing.");
 
-        // Measured at this commit over 100 sites: 815 dead floors — 173 holding (21.2%), 314 empty (38.5%),
-        // 328 failed (40.2%). The bands are wide enough to survive a site being added and narrow enough that
-        // making every refuge work, or none of them, is red.
+        // Measured at this commit over 100 sites: 816 dead floors — 660 holding (80.9%), 133
+        // drawn down (16.3%), 23 failed (2.8%), the last of those on 23 of the 100 sites.
         double works = 100.0 * holding / dead;
-        Assert.True(works is > 12 and < 32,
-            $"{holding} of {dead} dead floors ({works:F1}%) still have air in the rack. Pinned at 21.2%: "
-            + "well under half is the whole of #585 surviving this feature, and well over none is the whole "
-            + "of the owner's 'at least one ... for pure safety' surviving it.");
+        Assert.True(works is > 72 and < 90,
+            $"{holding} of {dead} refuges ({works:F1}%) still have air in the rack. Pinned at 80.9 %: "
+            + "the owner's ruling is that these things almost never fail, and a build that put working air "
+            + "on only half of them would be back to #1087's mechanic by a different route.");
 
-        double waits = 100.0 * empty / dead;
-        Assert.True(waits is > 25 and < 50,
-            $"{empty} of {dead} refuges hold and cannot refill ({waits:F1}%) — pinned at 38.5%. This is the "
-            + "state that keeps the owner's staffing argument true: a room you can wait out a busy lift in, "
-            + "which is not the same thing as a tank of air.");
+        double drawn = 100.0 * empty / dead;
+        Assert.True(drawn is > 9 and < 25,
+            $"{empty} of {dead} racks were drawn down before the captain arrived ({drawn:F1}%) — pinned at "
+            + "16.3 %. It is #573's footprint and not decay: rare enough that finding one still means "
+            + "somebody was here, common enough that a captain meets one.");
 
         double gone = 100.0 * failed / dead;
-        Assert.True(gone is > 25 and < 50,
-            $"{failed} of {dead} seals have gone ({gone:F1}%) — pinned at 40.2%.");
+        Assert.True(gone is > 1 and < 7,
+            $"{failed} of {dead} seals have gone ({gone:F1}%) — pinned at 2.8 %. It is an EVENT and the "
+            + "card with the painting is the whole of it; at this rate a captain who works a dozen sites "
+            + "meets it a few times, which is a story rather than weather.");
     }
 
     [Fact]
-    public void TheAirIsOnlyWhereTheMaintenanceLineSurvived()
+    public void HoldingIsTheDefaultOnEveryDepartmentInEveryBand()
     {
-        // #601, stated as a law rather than as a roll: "the refuge that works is on the floor whose
-        // department could get the funding line approved". Both directions, because only the biconditional
-        // is learnable — the owner's whole argument for the livery (#605) is that "a captain who has learnt
-        // the livery has learnt where the air is", and a rule that is true one way round teaches nothing.
+        // #1149 · THE GUARD THAT REDDENS #1087. The old law was a biconditional — a refuge holds if and only
+        // if its department kept a maintenance line (ADMINISTRATION and LABORATORIES, plus the head office,
+        // minus the band nobody listed). This asserts the opposite, in the shape that can tell pass from
+        // fail: every one of the eight departments, the head office, the branch offices AND the band nobody
+        // listed all deal HOLDING refuges in quantity.
         //
-        // The head office keeps all of its seals, which is the rank difference (#411) and not a kindness:
-        // its corridors are "still being kept up, by nobody, on a schedule". The band nobody listed (#592)
-        // keeps none, because a maintenance line is a budget code and that floor has no budget.
-        int funded = 0, unfunded = 0, head = 0, hidden = 0;
+        // Restore DepartmentsThatKeptTheLine and this goes red on six departments at once — and on the
+        // unlisted band, which under the old law kept none of its seals because "a maintenance line is a
+        // budget code and there is no budget code for a floor the building refuses to admit it has". That
+        // sentence was good and it was ours; the inspectorate that made them build the room does not read
+        // the org chart.
+        var holdingBy = new Dictionary<string, int>(StringComparer.Ordinal);
+        var seenBy = new Dictionary<string, int>(StringComparer.Ordinal);
+        int unlistedHolding = 0, unlisted = 0, headHolding = 0, head = 0, branchHolding = 0, branch = 0;
+
         foreach (string body in ManySites())
         {
             bool headOffice = UndergroundComplex.IsHeadOffice(body);
@@ -629,32 +657,231 @@ public sealed class TheRefugesUndergroundTests
                 {
                     continue;
                 }
+                bool holds = state == UndergroundComplex.RefugeState.Holding;
+                string department = UndergroundComplex.DepartmentOf(body, level);
 
-                bool unlisted = UndergroundComplex.IsUnlisted(body, level);
-                bool kept = headOffice
-                    || (!unlisted && Array.IndexOf(
-                        UndergroundComplex.DepartmentsThatKeptTheLine,
-                        UndergroundComplex.DepartmentOf(body, level)) >= 0);
+                seenBy[department] = seenBy.GetValueOrDefault(department) + 1;
+                if (holds)
+                {
+                    holdingBy[department] = holdingBy.GetValueOrDefault(department) + 1;
+                }
 
-                Assert.True(kept == (state == UndergroundComplex.RefugeState.Holding),
-                    $"{body} B{-level} ({UndergroundComplex.DepartmentOf(body, level)}"
-                    + $"{(unlisted ? ", unlisted" : "")}): the department "
-                    + $"{(kept ? "kept" : "lost")} its line and the rack is {state}. The livery is the only "
-                    + "advance warning a captain gets about the air, and it has just stopped being true.");
-
-                if (headOffice) { head++; }
-                else if (unlisted) { hidden++; }
-                else if (kept) { funded++; }
-                else { unfunded++; }
+                if (UndergroundComplex.IsUnlisted(body, level))
+                {
+                    unlisted++;
+                    if (holds) { unlistedHolding++; }
+                }
+                else if (headOffice)
+                {
+                    head++;
+                    if (holds) { headHolding++; }
+                }
+                else
+                {
+                    branch++;
+                    if (holds) { branchHolding++; }
+                }
             }
         }
 
-        // …and the world can tell pass from fail: all four cases really occur in the sweep. Without this the
-        // biconditional above is satisfiable by a build where every floor is unfunded.
-        Assert.True(funded > 100, $"only {funded} funded dead floor(s) — the working case is untested.");
-        Assert.True(unfunded > 300, $"only {unfunded} unfunded dead floor(s) — the failing case is untested.");
-        Assert.True(head > 10, $"only {head} head-office dead floor(s) — the rank exception is untested.");
-        Assert.True(hidden > 20, $"only {hidden} unlisted dead floor(s) — the hidden band is untested.");
+        // The world can tell pass from fail, and the shape of "every department" is not the whole plate
+        // list — which is worth writing down because it is the sharpest thing this sweep found.
+        //
+        // A branch cycles eight plates (DepartmentsFor) and the top floor of every four-floor band holds
+        // pressure (HoldsPressure), so the two plates at indices 0 and 4 — ADMINISTRATION and ARCHIVE — are
+        // the LOBBY plates and never carry a refuge at all. #1087's law gave working air to
+        // "ADMINISTRATION and LABORATORIES"; half of that was a department with no refuge in it on any
+        // floor of any site in the game. Six branch plates are the ones a refuge can wear, and all six have
+        // to be here.
+        var expected = new List<string>();
+        for (int i = 0; i < UndergroundComplex.Departments.Length; i++)
+        {
+            if (i % UndergroundComplex.FloorsPerShaft != 0)
+            {
+                expected.Add(UndergroundComplex.Departments[i]);
+            }
+        }
+        Assert.Equal(6, expected.Count);
+
+        Assert.True(unlisted > 20, $"only {unlisted} floor(s) of the band nobody listed — untested.");
+        Assert.True(head > 10, $"only {head} head-office floor(s) — untested.");
+        Assert.True(branch > 300, $"only {branch} branch-office floor(s) — untested.");
+
+        foreach (string department in expected)
+        {
+            int seen = seenBy.GetValueOrDefault(department);
+            Assert.True(seen > 30,
+                $"{department}: only {seen} refuge(s) swept over a hundred sites — this says nothing.");
+            int kept = holdingBy.GetValueOrDefault(department);
+            Assert.True(100.0 * kept / seen > 60,
+                $"{department}: {kept} of {seen} refuges hold ({100.0 * kept / seen:F1}%). A refuge is a "
+                + "regulation and not a maintenance line — no department in this building may be a "
+                + "department whose safety equipment does not work.");
+        }
+
+        // …and the head office's own un-repeated plates are in here too, so the rule is proved blind to
+        // twenty-four more words and not merely to six.
+        Assert.True(seenBy.Count > 20,
+            $"only {seenBy.Count} distinct plates over a hundred sites — the head office is not in this "
+            + "sweep and the rank exception is therefore untested.");
+
+        Assert.True(100.0 * unlistedHolding / unlisted > 60,
+            $"{unlistedHolding} of {unlisted} refuges on the band nobody listed hold "
+            + $"({100.0 * unlistedHolding / unlisted:F1}%). The floor the building will not admit to still "
+            + "had people working on it in suits, and the same inspectorate made somebody pay for the room.");
+        Assert.True(100.0 * headHolding / head > 60, "the head office's refuges stopped holding.");
+        Assert.True(100.0 * branchHolding / branch > 60, "a branch office's refuges stopped holding.");
+    }
+
+    [Fact]
+    public void AtMostOneRefugeFailedPerSiteAndNeverTheFirstOneReached()
+    {
+        // #1149 · The owner's word is that a failed refuge is a thing that HAPPENED, and a thing that
+        // happened happens once. Two on one site would be weather.
+        //
+        // And never the first one a captain reaches, which is the half that makes the beat work: a captain's
+        // first refuge is where they learn what a refuge IS, and a first one that will not cycle teaches the
+        // opposite of the truth. "First" is read off the order the plan already has (FloorsOf), so it is the
+        // first door on any route rather than a second idea of first.
+        //
+        // WHAT MAKES IT ABLE TO FAIL: it counts the sites that HAVE one and the sites that do not, and
+        // demands both in quantity. "At most one per site" is satisfied trivially by a build with none.
+        int sitesWithOne = 0, sitesWithNone = 0, reached = 0;
+
+        foreach (string body in ManySites())
+        {
+            int failedFloors = 0;
+            int? first = UndergroundComplex.FirstRefugeFloorOf(body);
+            Assert.NotNull(first);
+
+            foreach (int level in UndergroundComplex.FloorsOf(body))
+            {
+                if (UndergroundComplex.StateOfTheRefugeOn(body, level)
+                    != UndergroundComplex.RefugeState.Failed)
+                {
+                    continue;
+                }
+                failedFloors++;
+                Assert.True(level != first,
+                    $"{body} B{-level}: the FIRST refuge a captain can reach on this site is the one that "
+                    + "failed. That is the one room in the building that has to work — it is where the rule "
+                    + "is taught, and the beat only lands against a rule the captain has already learnt.");
+                reached++;
+
+                // …and the site's own answer agrees with the floor's, which is what stops the card, the
+                // plate, the fan and the suit reading two different rooms.
+                Assert.Equal(level, UndergroundComplex.FailedRefugeFloorOf(body));
+                Assert.True(UndergroundComplex.RefugeThatFailedIsOn(body, level));
+            }
+
+            Assert.True(failedFloors <= 1,
+                $"{body}: {failedFloors} refuges failed on one site. It is an event, not a rate.");
+            if (failedFloors == 1) { sitesWithOne++; } else { sitesWithNone++; }
+        }
+
+        Assert.True(sitesWithOne is > 10 and < 45,
+            $"{sitesWithOne} of 100 sites carry the one that failed — pinned at one site in four. Rare is "
+            + "measured against the thing it is rare among, and a captain works a site, not a floor.");
+        Assert.True(sitesWithNone > 50,
+            $"only {sitesWithNone} sites have no failed refuge at all — most buildings a captain walks are "
+            + "buildings where the safety equipment simply works, which is the whole ruling.");
+        Assert.True(reached > 10, "no failed refuge was ever reached — this guard proved nothing.");
+    }
+
+    [Fact]
+    public void TheInspectionTagIsTheCanonsEntriesOnTheSitesOwnClock()
+    {
+        // #1149 · THE COVERT ORGANISATION'S PARADOX, ON PAPER. Owner: a secret lab's eternal struggle is
+        // "not to asphyxiate from unmaintained safety equipment ... while avoiding traceable bureaucracy
+        // that could prove complicity if leaked". So: complete, current, unsigned — and the paper says so
+        // itself, as a house rule, which is the whole of the characterisation.
+        //
+        // The two entries are RETYPED from the issue here rather than read off the constants, for the reason
+        // ThePapersOwnHeadsTests states: a guard asserting InspectionTagEntry == InspectionTagEntry passes
+        // on any sentence anybody ever writes into it.
+        const string Entry =
+            "Refuge inspected. Rack full, seals within tolerance. No signature — none required.";
+        const string Replaced = "Refuge inspected. Rack full. Seal replaced.";
+        Assert.Equal(Entry, UndergroundComplex.InspectionTagEntry);
+        Assert.Equal(Replaced, UndergroundComplex.InspectionTagSealReplaced);
+
+        int ordinary = 0, failed = 0;
+        var years = new HashSet<int>();
+
+        foreach (string body in ManySites())
+        {
+            int year = UndergroundComplex.InspectionYearOf(body);
+            int month = UndergroundComplex.InspectionMonthOf(body);
+            years.Add(year);
+
+            // The two stamps are a year apart to the month, off the site's own clock, and the clock sits in
+            // the era the rest of the game keeps (ShipHistory lays hulls down 2270..2319 against a present
+            // of roughly 2341) — so an inspection on this tag is decades old, which is the sentence every
+            // other surface down here is already telling in words.
+            Assert.InRange(year, 2270, 2319);
+            Assert.InRange(month, 1, 12);
+            string first = UndergroundComplex.InspectionTagStamp(year, month);
+            string second = UndergroundComplex.InspectionTagStamp(year + 1, month);
+            Assert.NotEqual(first, second);
+
+            foreach (int level in UndergroundComplex.FloorsOf(body))
+            {
+                if (UndergroundComplex.StateOfTheRefugeOn(body, level) is not { } state)
+                {
+                    // No refuge on the plan, no tag: the paper is a property of the room and there is no
+                    // room. (A floor that breathes IS the refuge and carries no valve to hang one on.)
+                    Assert.Null(UndergroundComplex.AuthoredPaperOf(
+                        UndergroundComplex.FindId(body, level, UndergroundComplex.RefugeTagRoom)));
+                    continue;
+                }
+
+                string tag = UndergroundComplex.InspectionTagLine(body, level);
+
+                // Every tag in the game: the same entry twice, stamped a year apart, in that order.
+                Assert.Contains(first + Entry, tag, StringComparison.Ordinal);
+                Assert.Contains(second + Entry, tag, StringComparison.Ordinal);
+                Assert.True(
+                    tag.IndexOf(first, StringComparison.Ordinal)
+                        < tag.IndexOf(second, StringComparison.Ordinal),
+                    $"{body} B{-level}: the tag reads back to front.");
+
+                if (state == UndergroundComplex.RefugeState.Failed)
+                {
+                    failed++;
+
+                    // THE THIRD ENTRY, AND IT HAS NO DATE ON IT. That is the beat's second half and it is
+                    // delivered by an absence: a book that has never once failed to stamp a line did not
+                    // stamp this one.
+                    Assert.EndsWith(" " + Replaced, tag, StringComparison.Ordinal);
+                    string third = tag[tag.LastIndexOf(Replaced, StringComparison.Ordinal)..];
+                    for (int y = year - 1; y <= year + 2; y++)
+                    {
+                        Assert.DoesNotContain(
+                            y.ToString(System.Globalization.CultureInfo.InvariantCulture), third);
+                    }
+                }
+                else
+                {
+                    ordinary++;
+                    Assert.DoesNotContain(Replaced, tag, StringComparison.Ordinal);
+                    Assert.EndsWith(Entry, tag, StringComparison.Ordinal);
+                }
+
+                // …and the paper is reachable through the one seam every other authored paper is read
+                // through, on a room index no floor's room list can hold.
+                string findId = UndergroundComplex.FindId(body, level, UndergroundComplex.RefugeTagRoom);
+                Assert.Equal(PaperHeads.Paper.InspectionTag, UndergroundComplex.AuthoredPaperOf(findId));
+                Assert.Equal("An inspection tag", FieldClue.Title(findId));
+                Assert.Equal(Entry, FieldClue.Document(findId));
+            }
+        }
+
+        // The world can tell pass from fail: both kinds of tag really occur, and the clock really is the
+        // SITE'S — one year for every site would be a constant wearing a function's clothes.
+        Assert.True(ordinary > 500, $"only {ordinary} ordinary tag(s) swept.");
+        Assert.True(failed > 10, $"only {failed} failed refuge(s) swept — the third entry is untested.");
+        Assert.True(years.Count > 20,
+            $"only {years.Count} distinct inspection years over 100 sites — this is not a site's own clock.");
     }
 
     [Fact]

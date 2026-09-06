@@ -244,6 +244,10 @@ public sealed class StoryBeatsTests
                 StoryBeats.Beat.SecretLabDoorFound,
                 StoryBeats.Beat.TheDormantThingWakes,
                 StoryBeats.Beat.WalkIn,
+
+                // #1149 · …and the refuge that failed, which is about a PLACE in the plainest sense the
+                // cadence has: a site carries at most one, so once per subject is once per building.
+                StoryBeats.Beat.RefugeFailed,
             ],
             perSubject);
     }
