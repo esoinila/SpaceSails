@@ -809,7 +809,7 @@ public sealed class OneWallOneTruthTests
     [Fact]
     public void EverySentrySightCall_IsHandedTheStoneThatIncludesShutDoors()
     {
-        string page = ClientSource("Pages", "Map.Surface.Reevers.cs");
+        string page = ClientSource("Pages", "Map.Surface.Reevers.Sentries.cs");
         var bad = new List<string>();
         int calls = 0;
 
@@ -824,7 +824,7 @@ public sealed class OneWallOneTruthTests
                 if (!args.Contains("SightBlockers()", StringComparison.Ordinal))
                 {
                     int line = page.Take(at).Count(c => c == '\n') + 1;
-                    bad.Add($"  Map.Surface.Reevers.cs:{line} · {method}…) is handed "
+                    bad.Add($"  Map.Surface.Reevers.Sentries.cs:{line} · {method}…) is handed "
                             + $"`{args.Split(',').Last().Trim()}` — not SightBlockers(). A shut door stops "
                             + "the round and this reader has never heard of it.");
                 }
