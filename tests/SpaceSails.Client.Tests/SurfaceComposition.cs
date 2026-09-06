@@ -74,11 +74,50 @@ internal static class SurfaceComposition
             .Select(p => (Path.GetFileNameWithoutExtension(p), p, MarkupOf(p, surfacesLabel)))
     ];
 
+    /// <summary>
+    /// #251 · A SURFACE CAN BE DECOMPOSED IN ITS TURN, AND THE COMPOSITION HAS TO FOLLOW IT DOWN.
+    ///
+    /// <para><c>NavHud.razor</c> was the largest surface #1107 left — 1,197 lines, a page's worth of HUD
+    /// living inside one of Map's own surfaces — and its markup is now cut into
+    /// <c>Pages/Map/NavHud/&lt;Surface&gt;.razor</c>. Read flat, <c>NavHud.razor</c>'s fenced block would be
+    /// nineteen invocation tags where a thousand lines of toolbar, readouts and flight plan used to be, and
+    /// Map's composed page — which fifty-eight source guards read — would quietly lose all of it. That is the
+    /// fifth bug class arriving through a door the composition already had open.</para>
+    ///
+    /// <para>So a surface's text is itself composed first: where a directory sits beside a surface WEARING
+    /// ITS NAME (<c>Pages/Map/NavHud.razor</c> ↔ <c>Pages/Map/NavHud/</c>), that directory's surfaces are
+    /// spliced into it before its own block is cut out. The recursion terminates because each step goes one
+    /// directory deeper, and every way it can lie is the same three the flat splice already throws on. The
+    /// consequence is the point: <b>Map's composed page does not change by a byte</b> when one of its
+    /// surfaces is decomposed further, because what gets spliced in is what was always there.</para>
+    /// </summary>
+    internal static string RazorText(string razorPath)
+    {
+        string text = File.ReadAllText(razorPath);
+        string nested = Path.Combine(
+            Path.GetDirectoryName(razorPath)!, Path.GetFileNameWithoutExtension(razorPath));
+        return Directory.Exists(nested)
+            ? ComposeFrom(text, SurfacesIn(nested, LabelOf(nested) + "/"), LabelOf(razorPath))
+            : text;
+    }
+
+    /// <summary>How a file under the client project names itself in an error message: its project-relative
+    /// path with forward slashes, so the message reads the way the repo's own prose writes it.</summary>
+    internal static string LabelOf(string path)
+    {
+        string client = Path.Combine(RepoRoot(), "src", "SpaceSails.Client") + Path.DirectorySeparatorChar;
+        return path.StartsWith(client, StringComparison.Ordinal)
+            ? path[client.Length..].Replace('\\', '/')
+            : Path.GetFileName(path);
+    }
+
     /// <summary>The block between the two sentinels of a surface file — the markup, and nothing else: not the
-    /// directives above it, not the <c>@code</c> plumbing below it.</summary>
+    /// directives above it, not the <c>@code</c> plumbing below it. Read through <see cref="RazorText"/>, so
+    /// a surface decomposed in its turn hands back the whole block it was cut from rather than the
+    /// invocations that replaced it.</summary>
     internal static string MarkupOf(string surfacePath, string surfacesLabel)
     {
-        string[] lines = File.ReadAllText(surfacePath).Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        string[] lines = RazorText(surfacePath).Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
 
         int begins = Array.FindIndex(lines, l => l.Contains(MarkupBegins, StringComparison.Ordinal));
         int ends = Array.FindIndex(lines, l => l.Contains(MarkupEnds, StringComparison.Ordinal));

@@ -68,14 +68,26 @@ internal static class MapStylesheet
             ("Pages/Map.razor.css", File.ReadAllText(PageSheetPath))
         ];
 
+        // #251 · ALL DIRECTORIES, not just this one. NavHud.razor was decomposed in its turn, so its
+        // sub-surfaces' carriers live one folder deeper (Pages/Map/NavHud/) — and the SDK bundles them
+        // among the rest, by project-relative path. `TheReaderPutsTheSheetsInTheOrderTheBuildDoes` reads
+        // the generated bundle and found them there the moment the first one existed: a reader that had
+        // gone on looking only at the top directory would have been describing a cascade nobody ships.
+        // The ordering is unchanged and needs no special case — '.' sorts under '/', so
+        // Pages/Map/NavHud.razor.css still comes before Pages/Map/NavHud/… and both before Pages/Map/Nav…
         sheets.AddRange(Directory
-            .EnumerateFiles(SurfacesDirectory(), "*.razor.css", SearchOption.TopDirectoryOnly)
-            .Select(p => (RelativePath: "Pages/Map/" + Path.GetFileName(p), FullPath: p))
+            .EnumerateFiles(SurfacesDirectory(), "*.razor.css", SearchOption.AllDirectories)
+            .Select(p => (RelativePath: Relative(p), FullPath: p))
             .OrderBy(e => e.RelativePath, StringComparer.OrdinalIgnoreCase)
             .Select(e => (e.RelativePath, File.ReadAllText(e.FullPath))));
 
         return sheets;
     }
+
+    /// <summary>A surface sheet's project-relative path with forward slashes — the name the SDK writes into
+    /// the bundle above each sheet, and the key the order is taken on.</summary>
+    private static string Relative(string fullPath) =>
+        "Pages/" + Path.GetRelativePath(PagesDirectory(), fullPath).Replace('\\', '/');
 
     private static string Compose()
     {
