@@ -76,37 +76,13 @@
             }
             <DockFocusBox _dockAffordance="@_dockAffordance" DockFocusLive="@DockFocusLive"
                           EffectiveDockTankPulses="@EffectiveDockTankPulses" />
-            <div>
-                @* #954: one line for a fact that needs two — the neighbourhood and the thing in it, and the
-                   ⚓ hint follows the neighbourhood's haven rather than blinking with the nearest slot. *@
-                Nearest: @NearestReadoutName() (@FormatDistance((_ship.Position - _nearestBodyPosition).Length), @(((_ship.Velocity - _nearestBodyVelocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s rel)@if (_nearestHaven is not null && _dockedHavenId is null)
-                {
-                    <span class="text-info"> · ⚓ dockable haven — coast within @((DockReachMeters / 1000).ToString("N0", CultureInfo.InvariantCulture)) km, ≤@((DockMatchSpeedMps / 1000).ToString("N0", CultureInfo.InvariantCulture)) km/s to clamp on</span>
-                }
-            </div>
-            @if (_activeRadar)
-            {
-                <div class="text-danger">📡 ACTIVE RADAR — loud; everyone in earshot knows where we are</div>
-            }
-            @if (_plasma is not null)
-            {
-                int chargePct = (int)Math.Round(_ship.Charge * 100);
-                string chargeClass = _ship.Charge >= ArcChargeThreshold ? "bg-danger"
-                    : _ship.Charge >= 0.6 ? "bg-warning" : "bg-info";
-                <hr />
-                <div>Charge: @chargePct% @(_ship.Charge >= ArcChargeThreshold ? "— ARCING RISK" : "")</div>
-                <div class="progress" role="progressbar" aria-label="Hull charge">
-                    <div class="progress-bar @chargeClass" style="width: @chargePct%"></div>
-                </div>
-                @if (_ship.Charge >= ArcChargeThreshold)
-                {
-                    <div class="text-danger fw-bold">⚡ ARCING — visible system-wide</div>
-                }
-            }
-            @if (_pulse.Message is not null)
-            {
-                <div class="text-warning">@_pulse.Message</div>
-            }
+            <NearestSpaceLines _activeRadar="@_activeRadar" _dockedHavenId="@_dockedHavenId"
+                               _nearestBodyPosition="@_nearestBodyPosition"
+                               _nearestBodyVelocity="@_nearestBodyVelocity" _nearestHaven="@_nearestHaven"
+                               _plasma="@_plasma" _pulse="@_pulse" _ship="@_ship"
+                               ArcChargeThreshold="@ArcChargeThreshold" DockMatchSpeedMps="@DockMatchSpeedMps"
+                               DockReachMeters="@DockReachMeters" FormatDistance="@FormatDistance"
+                               NearestReadoutName="@NearestReadoutName" />
             @if (_captureEngaged)
             {
                 <hr />

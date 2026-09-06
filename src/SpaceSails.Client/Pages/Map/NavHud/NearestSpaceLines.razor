@@ -1,0 +1,64 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using ArriveStep = SpaceSails.Client.Pages.Map.ArriveStep
+@using FlightEditorKind = SpaceSails.Client.Pages.Map.FlightEditorKind
+@using FrameOption = SpaceSails.Client.Pages.Map.FrameOption
+@using NpcState = SpaceSails.Client.Pages.Map.NpcState
+@using OrbitAssistInfo = SpaceSails.Client.Pages.Map.OrbitAssistInfo
+@using PlanNode = SpaceSails.Client.Pages.Map.PlanNode
+@using Quest = SpaceSails.Client.Pages.Map.Quest
+@using SkimGauge = SpaceSails.Client.Pages.Map.SkimGauge
+@using System.Globalization
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Contracts
+@using SpaceSails.Core
+@using SpaceSails.Core.Interior
+@*
+    #251 · THE NEAREST-BODY, RADAR, PLASMA AND PULSE LINES, ON ITS OWN FILE.
+
+    Moved out of NavHud.razor by PURE MOTION — the block between the two fences below is the block that
+    was in the HUD, character for character. Every member it reads is a [Parameter] with the SAME NAME
+    (fields keep their underscore, methods come across as delegates under their own names), which is what
+    lets the markup move without a rewrite and lets MapMarkup splice it straight back where it came from.
+
+    IHandleEvent repeats NavHud's own override, which repeats Map.Sim.cs's: the HUD's refresh belongs to
+    OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render back on
+    every event in here. The .razor.css beside this file carries no rules; it exists to give the component
+    Map.razor.css's scope (pinned in SpaceSails.Client.csproj), so every rule that styled these elements
+    goes on matching them.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from NavHud.razor ──────────────────────────────────────────────────── *@
+            <div>
+                @* #954: one line for a fact that needs two — the neighbourhood and the thing in it, and the
+                   ⚓ hint follows the neighbourhood's haven rather than blinking with the nearest slot. *@
+                Nearest: @NearestReadoutName() (@FormatDistance((_ship.Position - _nearestBodyPosition).Length), @(((_ship.Velocity - _nearestBodyVelocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s rel)@if (_nearestHaven is not null && _dockedHavenId is null)
+                {
+                    <span class="text-info"> · ⚓ dockable haven — coast within @((DockReachMeters / 1000).ToString("N0", CultureInfo.InvariantCulture)) km, ≤@((DockMatchSpeedMps / 1000).ToString("N0", CultureInfo.InvariantCulture)) km/s to clamp on</span>
+                }
+            </div>
+            @if (_activeRadar)
+            {
+                <div class="text-danger">📡 ACTIVE RADAR — loud; everyone in earshot knows where we are</div>
+            }
+            @if (_plasma is not null)
+            {
+                int chargePct = (int)Math.Round(_ship.Charge * 100);
+                string chargeClass = _ship.Charge >= ArcChargeThreshold ? "bg-danger"
+                    : _ship.Charge >= 0.6 ? "bg-warning" : "bg-info";
+                <hr />
+                <div>Charge: @chargePct% @(_ship.Charge >= ArcChargeThreshold ? "— ARCING RISK" : "")</div>
+                <div class="progress" role="progressbar" aria-label="Hull charge">
+                    <div class="progress-bar @chargeClass" style="width: @chargePct%"></div>
+                </div>
+                @if (_ship.Charge >= ArcChargeThreshold)
+                {
+                    <div class="text-danger fw-bold">⚡ ARCING — visible system-wide</div>
+                }
+            }
+            @if (_pulse.Message is not null)
+            {
+                <div class="text-warning">@_pulse.Message</div>
+            }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
