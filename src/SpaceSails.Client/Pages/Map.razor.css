@@ -186,10 +186,6 @@
     z-index: calc(var(--z-desks-popups) + 50);
 }
 
-.oracle-card .deck-offer-giver {
-    color: #c9b6ff;
-}
-
 .oracle-backstory {
     font-size: 0.85em;
     opacity: 0.72;
@@ -839,21 +835,6 @@
 ::deep .vent-read-card {
     max-width: 42rem;
     text-align: center;
-}
-
-/* #603 · THE SATCHEL. */
-::deep .satchel {
-    width: min(32rem, 94vw);
-    max-height: 92vh;
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    padding: 1rem;
-    background: #0c1017;
-    border: 1px solid rgba(200, 170, 120, 0.35);
-    border-radius: 0.6rem;
-    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
-    cursor: default;
 }
 
 .satchel-empty { padding: 0.8rem 0; }
