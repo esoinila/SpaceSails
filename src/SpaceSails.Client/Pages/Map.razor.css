@@ -3,33 +3,58 @@
    This file was 6,613 lines: every rule for every card, panel, desk and overlay the page ever grew, in
    one place because the markup was in one place too. #251 item 1 cut the markup into 76 components under
    Pages/Map/ and left each of them a rules-free .razor.css carrying the page's own CSS scope — 'the file
-   its rules will land in'. This is the pass that landed them: 642 of 780 rule blocks moved, character for
-   character, comments included, into the sheet of the surface that renders them.
+   its rules will land in'. #1109 landed them: 642 of 780 rule blocks moved, character for character,
+   comments included, into the sheet of the surface that renders them.
 
-   WHAT IS STILL HERE, and why each kind had to be:
+   A SECOND PASS took twenty-eight more, and the interesting ones are the five that #1109's own carrier
+   comments had written off. AdriftLifeline.razor.css and StoryPlate.razor.css were empty because
+   `.map-adrift-reopen` animates `adrift-pulse` and `.story-plate` animates `story-plate-in`, and a
+   @keyframes NAME is scoped per FILE — so the rules were pinned to whichever file held the keyframes.
+   The move #1109 did not make is to take the @keyframes WITH them: both of those names have exactly one
+   user in the whole client, so both left with their user and neither file is a comment any more.
+   1,359 lines to 1,104, and 119 rule blocks to 91.
 
-     * THE HOST'S OWN SURFACES. .map-page and its measured variables, the canvas, the flow column, the
-       top stack, the perf line, the parrot's perch, the nav search box, the story plate, the seated table
-       and the adrift lifeline are markup Map.razor still renders itself.
+   WHAT IS STILL HERE, and why each of the 91 had to be. The four counts below are measured, not
+   estimated: 28 + 49 + 3 + 11 = 91.
 
-     * THE CROSS-CUTTING KIT. A rule whose class several surfaces render, where no one of them is the
-       family's namesake: the #735 overlay laws that name ten card families in one selector list, the
-       .deck-offer-* family the page shares with seven cards, .rescue-*, the .desk-layer-passthrough rules
-       that reach into the Stations desks. Filing one of these under a single surface would hand a lane
+     * THE PAGE'S OWN MARKUP — 28 blocks. .map-page and its measured variables, the canvas, the flow
+       column and the top stack, the perf line, the parrot's perch, the console quip toast, the bar
+       contact's offer rows, the two honest-wait glyphs, the illegal-heat line, the old-crew history,
+       and the corridor's clock (.vent-spine-tag, built by Map.ShipAtmosphere.cs and Map.Venting.Pumps.cs).
+       Map.razor and its partials render every one of these themselves; there is no surface to file them
+       under.
+
+     * THE CROSS-CUTTING KIT — 49 blocks. A rule whose class TWO OR MORE surfaces render, where no one of
+       them is the family's namesake: the #735 overlay laws that name eleven card families in one selector
+       list, the .deck-offer-* family the page shares with eight cards, .rescue-* (LoudPlanAlarmCard and
+       RescueOfferCard), .view-object-* (thirty-odd surfaces), .satchel-item and .table-showable
+       (SeatedDockedStrip renders them too). Filing one of these under a single surface would hand a lane
        editing that surface the power to restyle five others without knowing it.
 
-     * ANYTHING THAT WOULD HAVE CHANGED WHO WINS. Twenty-two blocks could have moved by ownership and did
-       not, because the bundle appends the surfaces AFTER this file: a rule that left here would land
-       behind one it used to come before, and where the two can both match an element at the same
-       specificity that reverses the cascade. The #735 family law is the common cause — every card's own
-       block is written above it and has to stay above it. TheBundleIsTheSameCascadeTests counts them.
+     * KEYFRAMES NAMED FROM BOTH SIDES OF THE CUT — 3 blocks. The scoped-css rewriter suffixes a keyframes
+       NAME with the scope and rewrites the `animation:` shorthands naming it — but only inside the SAME
+       file. Move the rule and leave the keyframes and the reference resolves to nothing: no build error,
+       no test, the animation simply never runs. It happened, to the alarm banner's pulse, and was caught
+       by diffing the generated bundle. pilot-banner-pulse (the banner and NavHud's flying step),
+       save-warming-turn (SaveLoadRack's spinner and the page's own boot gear) and wait-shuttle-fly still
+       have users on both sides, so all three stayed — and so did every rule that names them.
 
-     * EVERY KEYFRAMES BLOCK NAMED FROM BOTH SIDES OF THE CUT. The scoped-css rewriter suffixes a
-       keyframes NAME with the scope and rewrites the `animation:` shorthands naming it — but only inside
-       the SAME file. Move the rule and leave the keyframes and the reference resolves to nothing: no
-       build error, no test, the animation simply never runs. It happened, to the alarm banner's pulse,
-       and was caught by diffing the generated bundle. pilot-banner-pulse, save-warming-turn,
-       adrift-pulse, wait-shuttle-fly and story-plate-in have users on both sides, so they all stayed.
+     * ANYTHING THAT WOULD HAVE CHANGED WHO WINS — 11 blocks. These have exactly one surface to their
+       name and still could not go, because the bundle appends the surfaces AFTER this file: a rule that
+       left here would land behind one it used to come before, and where the two can both match an element
+       at the same specificity that reverses the cascade. They are .oracle-backstory (behind
+       .deck-offer-blurb), ::deep .map-tutorial (behind ::deep .map-scope), .pilot-banner and .ship-alert
+       (behind their own state classes), .save-warming-spin (its keyframes has a second user here), and
+       six card skins — the celebration, the expedition reveal, the busted card, the first-ground lesson,
+       the operating log and the table — every one of them held by the #735 family law below, which sets
+       the same max-height they set and is meant to lose to them.
+       TheBundleIsTheSameCascadeTests is what would say so if one of them moved.
+
+       (Written as English rather than as selectors on purpose. EveryTextReadsTests finds the #735 family
+       by the FIRST place in this file where the busted card's class is followed by a comma, so a comment
+       that spells that pair anywhere above the family steals the guard's anchor and it reads a paragraph
+       instead. It did, on the first draft of this note: "the #735 family lists 9 card(s) — there were
+       ten, so this guard is reading the wrong block". A prose list is not a safe place for a selector.)
 
      * SELECTORS NO MARKUP CLAIMS — GONE, in #1110. Fifteen rules named classes that appear in no source
        file at all (.map-traffic, .map-dock, .comms-traffic-table, .map-plot-horizon, .save-scenarios,
