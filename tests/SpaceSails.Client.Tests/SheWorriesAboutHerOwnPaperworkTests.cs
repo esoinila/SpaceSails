@@ -91,8 +91,9 @@ public sealed class SheWorriesAboutHerOwnPaperworkTests
         return Get<PulseSlot>(map, "_pulse");
     }
 
-    /// <summary>Every sentence her own record can honestly compose, over a wide spread of windows. Three
-    /// at most, and for her (never renamed, two owners deep, her plate's yard) exactly two.</summary>
+    /// <summary>Every sentence her own record can honestly compose, over a wide spread of windows. Three at
+    /// most — and for her, since #1151's ruling dealt her the glory name her builder's plate had always
+    /// claimed in prose (renamed once, two owners deep, her plate's yard), all three.</summary>
     private static HashSet<string> HerLines { get; } =
         [.. Enumerable.Range(0, 500)
             .Select(i => ChainOfCustody.Line(ShipHistories.Hers, DiceRule.Seed(0xABCDEFUL, $"w:{i}")))

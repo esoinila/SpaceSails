@@ -209,7 +209,20 @@ public sealed class TheClaimIsWalkedEndToEndTests
         // ── PRESS TWO. A name she has not answered to is refused; the name she answers to is taken.
         Press(map, new NebulaClaims.Ask(NebulaClaims.Press.Hull, "AURORA QUEEN", "AURORA QUEEN"));
         Assert.Equal(1, PressesTaken(map));
-        NebulaClaims.Ask hers = TheRows(map).Single(r => r.Offer == (string)Invoke(map, "ShipNameNow")!);
+
+        // …and the refusal that matters is the one he can actually make: #1151's glory-name ruling puts HER
+        // OWN former name on the counter, so the wrong row is a row he can press. It is pressed here, off the
+        // counter's own rows, and the machine does not move. (Slice 1 could only refuse a name that was not
+        // on the counter at all — the desk's whole second press was one row and untestable in the shipping
+        // world; the ratchet that said so is deleted with this.)
+        string trueName = (string)Invoke(map, "ShipNameNow")!;
+        NebulaClaims.Ask wasHers = TheRows(map).Single(r => r.Offer != trueName);
+        Assert.Equal(ShipHistories.Hers.GloryName, wasHers.Offer);
+        Press(map, wasHers);
+        Assert.Equal(1, PressesTaken(map));
+        Assert.Equal(NebulaClaims.OnApproach, (string?)Get(Read(map, "_viewObject")!, "Caption"));
+
+        NebulaClaims.Ask hers = TheRows(map).Single(r => r.Offer == trueName);
         Press(map, hers);
         Assert.Equal(2, PressesTaken(map));
 
@@ -368,6 +381,148 @@ public sealed class TheClaimIsWalkedEndToEndTests
         Assert.True(NebulaClaims.AKioskStands(ArrivalTube.TierFor(sky, Port), Port),
                     $"{Port} has no kiosk, so every press guard in this file is about a console that is not there.");
         Assert.Equal(ArrivalTube.Tier.WorkingBerth, ArrivalTube.TierFor(sky, Port));
+    }
+
+    // ══ 5 · THE BEAM IS THE BEAM, WHOEVER IS ON THE OTHER END ════════════════════════════════════════════
+
+    /// <summary>
+    /// <b>A CLAIMS CALL COSTS WHAT A LASER PING COSTS.</b> Owner ruling, 2026-09-06: <i>"the tight-beam is
+    /// the tight-beam, whoever is on the other end."</i>
+    ///
+    /// <para><b>The two are compared BY CONSTRUCTION, not by a typed expectation.</b> The laser ping is fired
+    /// first and its trace is MEASURED; the trace the claims call must leave is then that same measured
+    /// trace with the far end swapped for the port whose machine took the call. So a guard written this way
+    /// cannot pass a version that charges the claim its own private price: the only thing it is allowed to
+    /// differ in is who was on the other end.</para>
+    ///
+    /// <para>And the claim buys nothing with the beam it lights itself up with — a laser ping comes home with
+    /// a fix on the ledger, a phone call does not.</para>
+    /// </summary>
+    [Fact]
+    public void A_CLAIMS_CallOverTheRemoteCostsTheSameExposureALaserPingDoes()
+    {
+        Pages.Map lit = Boot();
+        ClampAtThePort(lit);
+        object post = PlantTheTrackingPost(lit);
+        string hull = PutAHullInTheSky(lit);
+
+        Assert.Empty(WhoLearnedWhereWeAre(post));
+        Invoke(lit, "LaserRangeTarget", hull);
+
+        IReadOnlyList<string> afterThePing = WhoLearnedWhereWeAre(post);
+        Assert.Equal(new[] { hull }, afterThePing);
+        Assert.NotEmpty(TheFixesOnTheLedger(post));      // the ping's own return: a track
+
+        // ── THE SAME WORLD, THE SAME BEAM, A COMPANY'S MACHINE ON THE OTHER END.
+        Pages.Map handset = Boot();
+        ClampAtThePort(handset);
+        object handsetPost = PlantTheTrackingPost(handset);
+
+        string farEnd = (string)Invoke(handset, "TheKioskTheRemoteReaches")!;
+        Assert.Equal(Port, farEnd);
+
+        List<string> owed = [.. afterThePing
+            .Select(who => string.Equals(who, hull, StringComparison.Ordinal) ? farEnd : who)
+            .OrderBy(who => who, StringComparer.Ordinal)];
+
+        Invoke(handset, "RaiseTheClaimsDesk");
+
+        Assert.True((bool)Read(handset, "TheClaimDeskIsUp")!, "the switch did not raise the counter.");
+        Assert.Equal(owed, WhoLearnedWhereWeAre(handsetPost));
+        Assert.Empty(TheFixesOnTheLedger(handsetPost));
+    }
+
+    /// <summary>
+    /// <b>AND A HANDSET THAT REACHES NOTHING LIGHTS NOTHING UP.</b> Out of range there is no switch, so there
+    /// is no call — the charge is paid where the beam is actually keyed and not where the handset asks itself
+    /// whether to draw a button. A captain is not lit up by looking at his own remote.
+    /// </summary>
+    [Fact]
+    public void A_HANDSET_OutOfRangeOfEveryKioskKeysNothingAndCostsNothing()
+    {
+        Pages.Map map = Boot();
+        ClampAtThePort(map);
+        object post = PlantTheTrackingPost(map);
+
+        var here = (ShipState)Read(map, "_ship")!;
+        Set(map, "_ship", here with
+        {
+            Position = here.Position + new Vector2d(ActiveSensors.TightBeamMaxRangeMeters * 40, 0),
+        });
+
+        Assert.False((bool)Invoke(map, "TheRemoteReachesAKiosk")!);
+        Assert.False((bool)Invoke(map, "TheRemoteReachesAKiosk")!);   // asked twice: asking is not keying
+
+        Invoke(map, "RaiseTheClaimsDesk");
+        Assert.Empty(WhoLearnedWhereWeAre(post));
+        Assert.Null(Read(map, "_claimDesk"));
+    }
+
+    /// <summary>
+    /// <b>THE PLATE ON HER OWN BULKHEAD SAYS SHE WAS RENAMED.</b> Owner ruling, 2026-09-06: the builder's
+    /// plate stays discoverable and the cover-up varies per hull, dealt from her seed. Read off the deck the
+    /// game builds for her, not off Core — the card the captain gets is the console's caption, and Core being
+    /// right about the sentence proves nothing about the bulkhead carrying it.
+    /// </summary>
+    [Fact]
+    public void HER_BUILDERS_PlateCarriesTheCoverUpHerSeedDealtHer()
+    {
+        Pages.Map map = Boot();
+        var plan = (DeckPlan)Read(map, "_deckPlan")!;
+        DeckPlan.ConsoleSpot plate = plan.Consoles.First(c => c.Label == Core.Interior.Plaques.Ship.ConsoleLabel);
+
+        string card = plate.Caption ?? throw new InvalidOperationException("the builder's plate has no card.");
+        Assert.Equal(Core.Interior.Plaques.BuildersPlateLore(ShipHistories.Hers), card);
+        Assert.Contains(Core.Interior.Plaques.Ship.Lore, card, StringComparison.Ordinal);
+        Assert.NotEqual(Core.Interior.Plaques.Ship.Lore, card);
+
+        // One cover-up, hers, and never the name under it — that name is the claims counter's second press.
+        string covered = ShipHistories.HowThePlateIsHidden(ShipHistories.Hers) == ShipHistories.PlateConcealment.Plastered
+            ? Core.Interior.Plaques.PlateSkimmedWithFiller
+            : Core.Interior.Plaques.PlateBoltedOverAnother;
+        string other = ReferenceEquals(covered, Core.Interior.Plaques.PlateSkimmedWithFiller)
+            ? Core.Interior.Plaques.PlateBoltedOverAnother
+            : Core.Interior.Plaques.PlateSkimmedWithFiller;
+        Assert.Contains(covered, card, StringComparison.Ordinal);
+        Assert.DoesNotContain(other, card, StringComparison.Ordinal);
+        Assert.DoesNotContain(ShipHistories.Hers.GloryName!, card, StringComparison.Ordinal);
+    }
+
+    /// <summary>A real tracking post on the page, because the exposure is bookkeeping ON one: with the field
+    /// left null the charge is a no-op and every guard above would be green about nothing.</summary>
+    private static object PlantTheTrackingPost(Pages.Map map)
+    {
+        var post = new Pages.Stations.TrackingPost();
+        Set(map, "_trackingPost", post);
+        return post;
+    }
+
+    /// <summary>Who has been told where we are — the tracking post's own aware set, which is what the game
+    /// charges an active beam against. Ordered, so two traces can be compared as they are.</summary>
+    private static IReadOnlyList<string> WhoLearnedWhereWeAre(object post) =>
+        [.. ((HashSet<string>)(post.GetType().GetField("_aware", Hidden)
+             ?? throw new InvalidOperationException("the tracking post has no _aware set — the charge has moved."))
+            .GetValue(post)!).OrderBy(who => who, StringComparer.Ordinal)];
+
+    /// <summary>The fixes on the ledger — what a laser ping BUYS, as opposed to what it costs.</summary>
+    private static IReadOnlyCollection<TrackedTarget> TheFixesOnTheLedger(object post) =>
+        (IReadOnlyCollection<TrackedTarget>)Get(post, "Entries")!;
+
+    /// <summary>One hull in the sky, live and observed, for the laser to be pointed at.</summary>
+    private static string PutAHullInTheSky(Pages.Map map)
+    {
+        var eph = (ICelestialEphemeris)Read(map, "_ephemeris")!;
+        NpcShip hull = TrafficSchedule.Generate(eph, seed: 42, count: 1)[0];
+        Type stateType = typeof(Pages.Map).GetNestedType("NpcState", Hidden | BindingFlags.Public)!;
+        object npc = Activator.CreateInstance(stateType, nonPublic: true)!;
+        stateType.GetField("Ship", Hidden)!.SetValue(npc, hull);
+        stateType.GetField("State", Hidden)!.SetValue(npc, (ShipState)Read(map, "_ship")!);
+        stateType.GetField("Active", Hidden)!.SetValue(npc, true);
+
+        Array roster = Array.CreateInstance(stateType, 1);
+        roster.SetValue(npc, 0);
+        Set(map, "_npcStates", roster);
+        return hull.Id;
     }
 
     /// <summary>
