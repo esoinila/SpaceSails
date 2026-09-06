@@ -50,6 +50,14 @@ public partial class Map
     /// <c>_deckPlan.CollisionField</c> everywhere they were, because a door he walks up to opens for him —
     /// that is what an automatic door IS, and #465's law that a leaf never stops a boot is his law. This
     /// changes what walks on the far side of it.</para>
+    ///
+    /// <para><b>And it is the list on EVERY ground</b> (owner ruling, 2026-09-06 — <i>the Reevers do not see
+    /// through a closed door on the moon either</i>). When this was written, <c>StepReevers</c> still kept a
+    /// second local for the eye that was this list aboard a wreck and the bare stone anywhere else, so a hut
+    /// door stopped their boot and not their look. That local is gone: <c>StepReevers</c> takes THIS list
+    /// once and hands it to the legs, the sleeper's lamp and the observation roll alike. A regolith site with
+    /// nothing shut on it answers exactly what the stone answered, which is why no moon moved by an
+    /// inch.</para>
     /// </summary>
     private IReadOnlyList<SurfaceCollision.Segment> TheirLegs() => SightBlockers();
 
