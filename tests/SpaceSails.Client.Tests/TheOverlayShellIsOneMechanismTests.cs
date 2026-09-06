@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
@@ -373,6 +374,57 @@ public sealed class TheOverlayShellIsOneMechanismTests
         {
             OverlayShell.DesignFault = was;
         }
+    }
+
+    /// <summary>
+    /// #1170 · <b>THE THREE SHAPES ARE COUNTED FROM THE ENUM, AND NOTHING ELSE IN THAT DOCBLOCK IS A NUMBER.</b>
+    ///
+    /// <para><c>OverlayDismiss</c>'s docblock carried #992's audit — <i>47 of the 89</i>, <i>Eleven of the
+    /// 89</i> — for a fortnight after it stopped being true. #1169's stale-fact sweep caught it and could not
+    /// correct it (an audit is not a grep), so re-running it was a lane of its own, and this is what came out
+    /// of that lane instead of fresher numbers: <b>the numbers are gone</b>, and the docblock points at
+    /// <see cref="EveryPopUpCanBeDismissedTests"/>, which derives the surfaces from the tree on every run.
+    /// </para>
+    ///
+    /// <para>Three assertions, and each one holds a different half of that.</para>
+    ///
+    /// <list type="number">
+    /// <item><b>The pointer resolves.</b> The docblock names the law, and the law is a type in this assembly.
+    /// A docblock naming a test class that does not exist is not a hypothetical — #1169 found two of them in
+    /// <c>Core/</c> the same afternoon it found this.</item>
+    /// <item><b>The "no fourth shape" claim is derived.</b> The prose says THREE and the enum is asked how
+    /// many it has. A fourth shape reddens this rather than quietly making the sentence a lie.</item>
+    /// <item><b>No other number may be typed in there.</b> Strip the issue references and the date of the
+    /// ruling and there is not a digit left in the file — because the digit that comes back will be a count
+    /// of surfaces somebody measured once, which is precisely what went stale. This is the assertion that
+    /// makes the repair permanent rather than merely done.</item>
+    /// </list>
+    /// </summary>
+    [Fact]
+    public void TheDismissEnumPointsAtTheLawAndStatesNoCountItCannotKeep()
+    {
+        string source = File.ReadAllText(Path.Combine(ClientSource(), "Components", "OverlayDismiss.cs"));
+
+        Assert.Contains(nameof(EveryPopUpCanBeDismissedTests), source, StringComparison.Ordinal);
+
+        int shapes = Enum.GetValues<OverlayDismiss>().Length;
+        Assert.True(shapes == 3,
+            $"OverlayDismiss has {shapes} shapes and its docblock says the ruling has exactly three. Say the "
+            + "new one out loud in the prose — and in EveryPopUpCanBeDismissedTests, which knows two Exits "
+            + "and would go on judging the new shape as one of them.");
+        Assert.Contains("exactly three shapes", source, StringComparison.Ordinal);
+
+        // #\d+ is an issue and 2026-08-24 is the day of the ruling; both are dated facts that cannot rot.
+        // Anything else numeric in this file is a measurement, and a measurement in a comment is the bug.
+        string prose = Regex.Replace(Regex.Replace(source, @"#\d+", ""), @"\d{4}-\d{2}-\d{2}", "");
+        var counted = Regex.Matches(prose, @"\d+").Select(m => m.Value).ToList();
+
+        Assert.True(counted.Count == 0,
+            $"OverlayDismiss.cs has grown {counted.Count} number(s) again — [{string.Join(" · ", counted)}]. "
+            + "It carried #992's tally of which surfaces take which shape for a fortnight after it stopped "
+            + "being true (#1169 found it, #1170 took it out). The split is a fact about the tree and "
+            + "EveryPopUpCanBeDismissedTests derives it there on every run; point at the law instead of "
+            + "quoting a count that is right for one afternoon.");
     }
 
     // ── Plumbing ──────────────────────────────────────────────────────────────────────────────────────
