@@ -1,25 +1,10 @@
-﻿using System.Net.Http;
-using System.Net.Http.Json;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Forms;
-using Microsoft.AspNetCore.Components.Routing;
-using Microsoft.AspNetCore.Components.Web;
-using Microsoft.AspNetCore.Components.Web.Virtualization;
-using Microsoft.AspNetCore.Components.WebAssembly.Http;
-using Microsoft.JSInterop;
-using SpaceSails.Client;
-using SpaceSails.Client.Components;
-using SpaceSails.Client.Layout;
+﻿using Microsoft.AspNetCore.Components;
 using AwayWindow = SpaceSails.Client.Pages.Map.AwayWindow;
 using NpcState = SpaceSails.Client.Pages.Map.NpcState;
 using RouteWindowRow = SpaceSails.Client.Pages.Map.RouteWindowRow;
 using ShuttleFarStop = SpaceSails.Client.Pages.Map.ShuttleFarStop;
 using ShuttleStop = SpaceSails.Client.Pages.Map.ShuttleStop;
-using System.Globalization;
-using SpaceSails.Client.Rendering;
-using SpaceSails.Contracts;
 using SpaceSails.Core;
-using SpaceSails.Core.Interior;
 
 namespace SpaceSails.Client.Pages;
 

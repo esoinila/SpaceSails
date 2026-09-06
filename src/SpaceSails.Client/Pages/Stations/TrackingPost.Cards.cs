@@ -1,4 +1,4 @@
-// #251 item 1 · THE TRACKING POST'S CODE-BEHIND, ON ITS OWN FILE.
+﻿// #251 item 1 · THE TRACKING POST'S CODE-BEHIND, ON ITS OWN FILE.
 //
 // THE LIVE SCOPE BOXES (PR-D): one ScopeView per tracked slot, riding the shared FrameTick.
 // With them the small readers the tracked-target cards are drawn from — the chip colour, the
@@ -11,12 +11,6 @@
 // code came out into 155 `Map.*.cs` partials in 2026-07 for exactly this reason; the tracking post
 // is the desk that never got the same treatment, which is how it reached 1,473 lines.)
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Components;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 

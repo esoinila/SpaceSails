@@ -165,11 +165,16 @@ public sealed class TheFalseIdIsInTheDrawerTests
     }
 
     /// <summary>
-    /// <b>THE PLATE IS THE MINTING SITE'S OWN FACE</b>, and it is the whole of what the game says about the
-    /// find. #590's grammar, read off the pass that really came out of the drawer — so a captain looking at
-    /// the row can tell whose building it is, which is the entire informed-choice law (#836).
+    /// <b>THE PLATE IS THE MINTING SITE'S OWN FACE</b>, and it is what the captain's own record keeps about
+    /// the find. #590's grammar, read off the pass that really came out of the drawer — so a captain looking
+    /// at the row can tell whose building it is, which is the entire informed-choice law (#836).
     ///
-    /// <para><b>RED</b> by composing the drawer's line out of anything but <c>FoundPass.Plate</c>.</para>
+    /// <para>The canon pass of 2026-09-06 moved the plate off the PULSE and left it on the book, because the
+    /// authored sentence takes the one slot (#693) — <see cref="TheLineIsSaidOnceWhenItGoesIntoTheWallet"/>
+    /// is that half. Both halves are still measured off the live page, not off the source.</para>
+    ///
+    /// <para><b>RED</b> by composing the drawer's filed line out of anything but <c>FoundPass.Plate</c>.
+    /// </para>
     /// </summary>
     [Fact]
     public void ThePlateSaysWhoseBuildingItIs()
@@ -185,13 +190,66 @@ public sealed class TheFalseIdIsInTheDrawerTests
             BodyNames.Designation(PatrolBeat.SiteOfBadge(pass.Id)), plate, StringComparison.Ordinal);
         Assert.DoesNotContain(BodyNames.Designation(here), plate, StringComparison.Ordinal);
 
-        // …and the pulse the press produced is that plate and nothing composed beside it — read off the
-        // page's own slot, so a sentence quietly wrapped around the plate would redden this.
-        Assert.Equal(plate, ((PulseSlot)Read(map, "_pulse")!).Message);
-
-        // …and the captain's book keeps the same words. One sentence, two registers, never two sentences.
+        // …and the captain's book keeps the plate WORD FOR WORD, once — nothing composed around it.
         var filed = (IReadOnlyList<FieldNote>)Read(map, "_fieldNotes")!;
-        Assert.Contains(filed, n => n.Text == plate);
+        Assert.Single(filed, n => n.Text == plate);
+    }
+
+    /// <summary>
+    /// <b>THE ONE AUTHORED SENTENCE, SAID ONCE, WHERE THE PAPER GOES INTO THE WALLET.</b>
+    ///
+    /// <para>#1143 shipped this feature with a <c>// FABLE: line needed</c> and no sentence at all; the canon
+    /// pass of 2026-09-06 wrote one, and this is where the shipped game is asked whether it says it. The page
+    /// is DRIVEN — the verb is pressed in the drawer's own room — and the pulse slot is then read off the
+    /// page, so the text asserted here is the text a captain gets.</para>
+    ///
+    /// <para><b>VERBATIM</b> against the sentence as the issue authored it, spelled out in this file rather
+    /// than referred to through <c>FoundPass.TakenLine</c>: a guard that compares a constant with itself is
+    /// green whatever the constant says (this repo's fifth named bug class), so the words are written out
+    /// here and the constant has to match THEM.</para>
+    ///
+    /// <para><b>ONCE</b>, and both meanings: one line in the pulse slot for the one press, and one call in
+    /// the whole client — a sentence a second seam could also say is a sentence that can arrive twice.</para>
+    ///
+    /// <para><b>RED</b> by changing a character of the line, by saying it anywhere else, or by putting the
+    /// plate back on the pulse.</para>
+    /// </summary>
+    [Fact]
+    public void TheLineIsSaidOnceWhenItGoesIntoTheWallet()
+    {
+        const string authored =
+            "Somebody's old site pass, still warm from a locker. The photograph is not you. Nobody has ever checked.";
+
+        Assert.Equal(authored, FoundPass.TakenLine);
+
+        string here = GroundsThatKeepOne()[0];
+        (Pages.Map map, object _) = InTheDrawersRoom(here);
+        Invoke(map, "HiveHaulInteract");
+
+        Assert.Equal(authored, ((PulseSlot)Read(map, "_pulse")!).Message);
+
+        var filed = (IReadOnlyList<FieldNote>)Read(map, "_fieldNotes")!;
+        Assert.Single(filed, n => n.Text == authored);
+
+        // …and §8's reserved word and the fifteen beside it are nowhere near it. A line about a stolen pass
+        // is exactly where an explanation would creep in; the reason it works is "nobody has ever checked",
+        // which names nothing and nobody (#649, comprehension without acceptance).
+        foreach (string bad in new[]
+                 {
+                     "monolith", "old one", "reever", "restore", "backup", "revive", "resurrect", "clone",
+                     "slave", "brain", "kaamos", "minister", "ancient", "alien", "experiment", "specimen",
+                 })
+        {
+            Assert.DoesNotContain(bad, authored, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // …and it is said in ONE place in the whole client. The take is the only seam that may say it.
+        Assert.Single(Calls(
+            string.Concat(Directory.EnumerateFiles(
+                    Path.Combine(RepoRoot(), "src", "SpaceSails.Client"), "*.cs", SearchOption.AllDirectories)
+                .OrderBy(p => p, StringComparer.Ordinal)
+                .Select(File.ReadAllText)),
+            "ShowAndFile(FoundPass.TakenLine"));
     }
 
     // ── One producer, two roads ───────────────────────────────────────────────────────────────────────

@@ -96,11 +96,18 @@ public sealed partial class Map
         TheRoomHasBeenGoneThrough(ex, ex.Floor, roomIndex);
         RendererInterop.PlayCue("board");
 
-        // The plate is the whole of the telling, and it is the MINTING SITE'S OWN face (#590's grammar,
-        // FoundPass.Plate) — the caption-only idiom #528 established, here because the paper already says
-        // what it is in the one register that matters. A sentence composed at this seam would be a second
-        // voice describing a pass, and the captain does the reading, exactly as they do in the chooser.
-        ShowAndFile(FoundPass.Plate(pass), PatrolBeat.BadgeGlyph);
+        // #804's canon pass (Fable, 2026-09-06) · THE ONE SENTENCE, SAID ONCE, ON THE PULSE. This is the
+        // moment the `FABLE: line needed` in FoundPass.Plate asked for — the paper going into the wallet —
+        // and FoundPass.TakenLine is the whole of what is authored about it. Nothing is composed at this
+        // seam: the constant is SAID, so the guard that reads it verbatim is reading the shipped words.
+        //
+        // The PLATE is the clerical half, and it goes straight to the book rather than to the pulse. Two
+        // sentences in one breath would contest #693's single slot, and the site code would win nothing by
+        // beating the sentence; filed, it keeps the captain's own record naming whose building this is
+        // (#836's informed choice) — and it is what the row in the satchel wears for ever after, which is
+        // why the sentence is not repeated there.
+        ShowAndFile(FoundPass.TakenLine, PatrolBeat.BadgeGlyph);
+        FileNote(FoundPass.Plate(pass), PatrolBeat.BadgeGlyph);
 
         RebuildSurfaceDeck();
         RequestVaultSave();
