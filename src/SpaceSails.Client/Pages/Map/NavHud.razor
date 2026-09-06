@@ -155,27 +155,8 @@
                     </button>
                 }
 
-                @* #989 · THE PLAN'S SHAPE, SAID AT THE DESK. Owner: "2 cast-off in sequence sounds kind of
-                   silly — we should have some logic check." The check is Core's (CastOffRule.CheckShape),
-                   and it is the SAME call that refuses a second pair at the button and that wakes the
-                   captain once when a plan on the board goes bad. Here it is simply readable: a plan that
-                   cannot be flown as written says so above the steps, in the rule's own words.
-
-                   #997 · IT AND THE EMPTY LINE ARE BOTH HEAD, and that is the whole of the restructuring
-                   this migration asked of the panel: what is above the plan does not scroll, the plan does.
-                   The empty state is a head row for a reason a body element would have got wrong — a body
-                   drawn on an empty plan would stand its own 6rem floor of blank scroller under a sentence
-                   that says there is nothing to scroll. *@
-                @if (PlanListIsEmpty)
-                {
-                    <div class="text-secondary">@(NavLockedByDock
-                        ? "No steps yet. Press ⚓ + Cast off to start the plan at this berth, then add the burns and end it with an orbit or a dock."
-                        : "No maneuver nodes. Scrub to a future time and add a burn — then end the plan with an orbit or a dock.")</div>
-                }
-                else if (PlanShapeWarningLine() is { } _shapeWarning)
-                {
-                    <div class="text-warning small mb-1">✗ @_shapeWarning</div>
-                }
+                <PlanShapeNotes NavLockedByDock="@NavLockedByDock" PlanListIsEmpty="@PlanListIsEmpty"
+                                PlanShapeWarningLine="@PlanShapeWarningLine" />
                 </Header>
                 <ChildContent>
                         @foreach (PlanNode node in _planNodes)
