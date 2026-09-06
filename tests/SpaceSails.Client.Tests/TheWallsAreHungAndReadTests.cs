@@ -46,6 +46,16 @@ public sealed class TheWallsAreHungAndReadTests
     private static string Pages(params string[] file) =>
         File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", "Pages", .. file]));
 
+    /// <summary>The traffic's source — ALL of it, as a glob rather than a written list. `Map.Npc.cs` was
+    /// split by concern (#251) and the two methods this class audits ended up in two different partials; a
+    /// guard naming one file reads whatever the last split happened to leave in it, and the next split would
+    /// turn it red for a reason that is not in the ship. Ordinal order, so the read is the same everywhere.</summary>
+    private static string Npc() =>
+        string.Join("\n", Directory
+            .EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Npc*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
     /// <summary>One method body, from its signature to the next member at the same indent — the same cut the
     /// sibling client guards make, so a body read here is a body read there.</summary>
     private static string Method(string source, string signature)
@@ -301,7 +311,7 @@ public sealed class TheWallsAreHungAndReadTests
     [Fact]
     public void SheIsBerthedOnTheSweepAndBothWaysOfMeetingHerReachOneWriter()
     {
-        string npc = Pages("Map.Npc.cs");
+        string npc = Npc();
         Assert.Contains("EnsureTheOldShipIsBerthed();", Method(npc, "private void SweepSensors()"),
             StringComparison.Ordinal);
         Assert.Contains("TheOldShipIsSeen(id);", Method(npc, "private void TrackShipFromMenu(string id)"),
