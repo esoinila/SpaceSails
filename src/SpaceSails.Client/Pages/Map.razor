@@ -409,76 +409,40 @@
                     PinClear="@PinClear" PinDisplay="@PinDisplay" PinPush="@PinPush" SubmitPin="@SubmitPin" />
     }
 
-    @* Deck pulse toast: the Nav HUD that normally hosts the pulse line is hidden while
-       you're walking the ship, so console quips (the HEAD 🚽 gag, cargo tally, vent report, shuttle
-       standby) would render nowhere. Surface them over the canvas here, centred near the top. *@
-    @if (_deckMode && _pulse.Message is not null)
-    {
-        <div class="deck-pulse-toast">@_pulse.Message</div>
-    }
-
-    @if (_deckMode && _pendingOffer is { } offer)
-    {
-        <PendingOfferCard _pendingOffer="@_pendingOffer" AcceptOffer="@AcceptOffer"
-                          ContactDrinkOffer="@ContactDrinkOffer" CurrentKeep="@CurrentKeep"
-                          DeclineOffer="@DeclineOffer" Dismiss="@Dismiss" GiverDisplay="@GiverDisplay"
-                          JobPlainBlock="@JobPlainBlock" PresentBarContacts="@PresentBarContacts" offer="@offer" />
-    }
-
-    @if (_deckMode && _patronDrink is { } patron && CurrentKeep is { } patronKeep)
-    {
-        <PatronDrinkCard _barNotice="@_barNotice" _credits="@_credits" _patronDrinkBlurb="@_patronDrinkBlurb"
-                         ClosePatronTable="@ClosePatronTable" ContactDrinkOffer="@ContactDrinkOffer"
-                         Dismiss="@Dismiss" GiverDisplay="@GiverDisplay" patron="@patron" patronKeep="@patronKeep" />
-    }
-
-    @if (_bankSession is { } bank)
-    {
-        <BankSessionCard _contacts="@_contacts" _credits="@_credits" _heat="@_heat" BankAmounts="@BankAmounts"
-                         BankDeposit="@BankDeposit" BankLoanPrincipal="@BankLoanPrincipal" BankRepay="@BankRepay"
-                         BankWithdraw="@BankWithdraw" BorrowFavorFromBank="@BorrowFavorFromBank"
-                         CloseBank="@CloseBank" Dismiss="@Dismiss" bank="@bank" />
-    }
-
-    @if (_deckMode && _barMenu is { } keep)
-    {
-        <BarMenuCard _barNotice="@_barNotice" _credits="@_credits" _showBarMenu="@_showBarMenu"
-                     AskAboutKaamos="@AskAboutKaamos" AskAboutNebula="@AskAboutNebula"
-                     AskBarkeepForRumor="@AskBarkeepForRumor" BookARoom="@BookARoom" BookingHint="@BookingHint"
-                     BuyDrink="@BuyDrink" BuyHouseSpecial="@BuyHouseSpecial" BuyRoundForRoom="@BuyRoundForRoom"
-                     BuyTheCutter="@BuyTheCutter" BuyTheKit="@BuyTheKit" CaptainIsOnAStool="@CaptainIsOnAStool"
-                     CloseBarkeep="@CloseBarkeep" ContactDrinkOffer="@ContactDrinkOffer"
-                     CounterHasStools="@CounterHasStools" Dismiss="@Dismiss"
-                     KaamosBarSeamAvailable="@KaamosBarSeamAvailable" KaamosBarSeamLabel="@KaamosBarSeamLabel"
-                     KaamosBarSeamTitle="@KaamosBarSeamTitle" NebulaBarSeamAvailable="@NebulaBarSeamAvailable"
-                     NebulaBarSeamLabel="@NebulaBarSeamLabel" NebulaBarSeamTitle="@NebulaBarSeamTitle"
-                     PresentBarContacts="@PresentBarContacts" SeatedStoolPlate="@SeatedStoolPlate"
-                     StoolMoveClicked="@StoolMoveClicked" StoolMoveOnOffer="@StoolMoveOnOffer"
-                     StoolMoveRefusal="@StoolMoveRefusal" StoolMovesOnTheTable="@StoolMovesOnTheTable"
-                     TakeAStool="@TakeAStool" TheBackCounterIsOpen="@TheBackCounterIsOpen"
-                     TheCounterRentsRooms="@TheCounterRentsRooms" TheKeepsTell="@TheKeepsTell"
-                     TheOverheardBlock="@TheOverheardBlock" ToggleBarMenu="@ToggleBarMenu"
-                     WhoIsInTonight="@WhoIsInTonight" keep="@keep" />
-    }
-
-    @if (_deckMode && _oracleOpen && _oracleLine is { } oline)
-    {
-        <OracleCard _credits="@_credits" _oracleDrinks="@_oracleDrinks" _oracleNotice="@_oracleNotice"
-                    BuyOracleDrink="@BuyOracleDrink" CloseOracle="@CloseOracle" CurrentKeep="@CurrentKeep"
-                    Dismiss="@Dismiss" NextOracleLine="@NextOracleLine" oline="@oline" />
-    }
-
-    @if (_deckMode && _shuttleBayStops is { } shuttleStops)
-    {
-        <ShuttleBayCard _shuttleBayFarStops="@_shuttleBayFarStops" AwayReopenSeconds="@AwayReopenSeconds"
-                        AwayWindowWord="@AwayWindowWord" Board="@Board" CloseShuttleBayDoor="@CloseShuttleBayDoor"
-                        Dismiss="@Dismiss" FormatDistance="@FormatDistance" FormatDuration="@FormatDuration"
-                        OpenBoardingPanel="@OpenBoardingPanel" RouteReturnBySimTime="@RouteReturnBySimTime"
-                        RouteWindowRowText="@RouteWindowRowText" ShuttleReachText="@ShuttleReachText"
-                        ShuttleRouteWindowRows="@ShuttleRouteWindowRows"
-                        ShuttleSeparationText="@ShuttleSeparationText" ShuttleTrendWord="@ShuttleTrendWord"
-                        TakeShuttleTo="@TakeShuttleTo" WindowOn="@WindowOn" shuttleStops="@shuttleStops" />
-    }
+    <AshoreCardRack _bankSession="@_bankSession" _barMenu="@_barMenu" _barNotice="@_barNotice"
+                    _contacts="@_contacts" _credits="@_credits" _deckMode="@_deckMode" _heat="@_heat"
+                    _oracleDrinks="@_oracleDrinks" _oracleLine="@_oracleLine" _oracleNotice="@_oracleNotice"
+                    _oracleOpen="@_oracleOpen" _patronDrink="@_patronDrink" _patronDrinkBlurb="@_patronDrinkBlurb"
+                    _pendingOffer="@_pendingOffer" _pulse="@_pulse" _showBarMenu="@_showBarMenu"
+                    _shuttleBayFarStops="@_shuttleBayFarStops" _shuttleBayStops="@_shuttleBayStops"
+                    AcceptOffer="@AcceptOffer" AskAboutKaamos="@AskAboutKaamos" AskAboutNebula="@AskAboutNebula"
+                    AskBarkeepForRumor="@AskBarkeepForRumor" AwayReopenSeconds="@AwayReopenSeconds"
+                    AwayWindowWord="@AwayWindowWord" BankAmounts="@BankAmounts" BankDeposit="@BankDeposit"
+                    BankLoanPrincipal="@BankLoanPrincipal" BankRepay="@BankRepay" BankWithdraw="@BankWithdraw"
+                    Board="@Board" BookARoom="@BookARoom" BookingHint="@BookingHint"
+                    BorrowFavorFromBank="@BorrowFavorFromBank" BuyDrink="@BuyDrink"
+                    BuyHouseSpecial="@BuyHouseSpecial" BuyOracleDrink="@BuyOracleDrink"
+                    BuyRoundForRoom="@BuyRoundForRoom" BuyTheCutter="@BuyTheCutter" BuyTheKit="@BuyTheKit"
+                    CaptainIsOnAStool="@CaptainIsOnAStool" CloseBank="@CloseBank" CloseBarkeep="@CloseBarkeep"
+                    CloseOracle="@CloseOracle" ClosePatronTable="@ClosePatronTable"
+                    CloseShuttleBayDoor="@CloseShuttleBayDoor" ContactDrinkOffer="@ContactDrinkOffer"
+                    CounterHasStools="@CounterHasStools" CurrentKeep="@CurrentKeep" DeclineOffer="@DeclineOffer"
+                    Dismiss="@Dismiss" FormatDistance="@FormatDistance" FormatDuration="@FormatDuration"
+                    GiverDisplay="@GiverDisplay" JobPlainBlock="@JobPlainBlock"
+                    KaamosBarSeamAvailable="@KaamosBarSeamAvailable" KaamosBarSeamLabel="@KaamosBarSeamLabel"
+                    KaamosBarSeamTitle="@KaamosBarSeamTitle" NebulaBarSeamAvailable="@NebulaBarSeamAvailable"
+                    NebulaBarSeamLabel="@NebulaBarSeamLabel" NebulaBarSeamTitle="@NebulaBarSeamTitle"
+                    NextOracleLine="@NextOracleLine" OpenBoardingPanel="@OpenBoardingPanel"
+                    PresentBarContacts="@PresentBarContacts" RouteReturnBySimTime="@RouteReturnBySimTime"
+                    RouteWindowRowText="@RouteWindowRowText" SeatedStoolPlate="@SeatedStoolPlate"
+                    ShuttleReachText="@ShuttleReachText" ShuttleRouteWindowRows="@ShuttleRouteWindowRows"
+                    ShuttleSeparationText="@ShuttleSeparationText" ShuttleTrendWord="@ShuttleTrendWord"
+                    StoolMoveClicked="@StoolMoveClicked" StoolMoveOnOffer="@StoolMoveOnOffer"
+                    StoolMoveRefusal="@StoolMoveRefusal" StoolMovesOnTheTable="@StoolMovesOnTheTable"
+                    TakeAStool="@TakeAStool" TakeShuttleTo="@TakeShuttleTo"
+                    TheBackCounterIsOpen="@TheBackCounterIsOpen" TheCounterRentsRooms="@TheCounterRentsRooms"
+                    TheKeepsTell="@TheKeepsTell" TheOverheardBlock="@TheOverheardBlock"
+                    ToggleBarMenu="@ToggleBarMenu" WhoIsInTonight="@WhoIsInTonight" WindowOn="@WindowOn" />
 
     <ExpeditionCardRack _boardBots="@_boardBots" _boardCoin="@_boardCoin"
                         _boardEmptyConfirmSet="@(v => _boardEmptyConfirm = v)"
