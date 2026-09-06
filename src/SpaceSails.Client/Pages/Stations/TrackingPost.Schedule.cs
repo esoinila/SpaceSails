@@ -1,4 +1,4 @@
-// #251 item 1 · THE TRACKING POST'S CODE-BEHIND, ON ITS OWN FILE.
+﻿// #251 item 1 · THE TRACKING POST'S CODE-BEHIND, ON ITS OWN FILE.
 //
 // THE SCHEDULED INSTRUMENT (SundaySecondPlan PR-B): one telescope, worked top to bottom.
 // Where a task points the scope, what a completed pass does to the ledger, how a lost lock
@@ -11,13 +11,6 @@
 // code came out into 155 `Map.*.cs` partials in 2026-07 for exactly this reason; the tracking post
 // is the desk that never got the same treatment, which is how it reached 1,473 lines.)
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Components;
-using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages.Stations;
