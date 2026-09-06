@@ -554,16 +554,9 @@
        and walked away: "I expect to see the pumping here now as we have on the reever infested salvage ship."
        Same strip, same classes — a run you can only infer from a sentence on a panel is a run you will forget
        you started, and hers take the best part of a minute. *@
-    @* #538 · THE CAPTAIN'S REMOTE. Owner: "Maybe small button to open the sentry settings pop-up 😎" and then the
-       better name for it — "Captain's remote". A small button on the deck HUD, because this is a handheld thing a
-       captain thumbs while crouched behind a bulkhead, not a settings menu on a console somewhere else. *@
     @if (_deckMode && _surface is not null)
     {
-        <button type="button" class="btn btn-sm btn-outline-warning captains-remote-btn"
-                title="@SilentRunning.PanelTitle — hold your bots, and put the boat to sleep"
-                @onclick="OpenCaptainsRemote">
-            📻 Remote
-        </button>
+        <CaptainsRemoteButton OpenCaptainsRemote="@OpenCaptainsRemote" />
     }
 
     @if (_showCaptainsRemote)
@@ -1008,47 +1001,15 @@
     @if (_activeDesk == ShipDesk.Nav)
     {
 
-    @* #952 — THE WAKE-UP CALL. Owner: "if we ruin it mid flight it would say so in the list and as a
-       pop-up that we no longer have safely ending flight plan but will need input at some point. That
-       nobody is flying the ship moment is important — say our pirate captain is asleep, there needs to be
-       a visual wake-up call about the ship going off the plan." Fires ONCE on the valid → invalid
-       transition (ArrivalStepRule.ShouldWarn owns that law and is unit-tested), never frame after frame,
-       and re-arms only by the plan ending safely again. It reuses the rescue offer's modal shell so it
-       lands in the established modal z-band rather than inventing another one. *@
-    @* #989 folds the plan's SHAPE into the same wake-up call, through the same shell and the same
-       one-shot law: a plan that cannot be flown as written (a cast off that is no longer the plan's first
-       step, a second one behind it) is the same "nobody is flying the ship" moment as a plan that no
-       longer ends safely, and a captain asleep at warp has no other way to learn it. One modal, two
-       reasons — never a second pop-up inventing its own z-band. *@
     @if (LoudPlanAlarm is { } _planBreak)
     {
-        <div class="rescue-backdrop" @onclick="DismissLoudPlanAlarm">
-            <OverlayShell class="rescue-card" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="btn btn-warning mt-2" DismissFace="I have the ship"
-                          OnClose="DismissLoudPlanAlarm">
-                <div class="rescue-hail">@LoudPlanAlarmHail</div>
-                <div class="rescue-quote">@LoudPlanAlarmQuote</div>
-                <div class="rescue-terms">
-                    <div class="rescue-fee">@_planBreak</div>
-                </div>
-            </OverlayShell>
-        </div>
+        <LoudPlanAlarmCard DismissLoudPlanAlarm="@DismissLoudPlanAlarm" LoudPlanAlarmHail="@LoudPlanAlarmHail"
+                           LoudPlanAlarmQuote="@LoudPlanAlarmQuote" _planBreak="@_planBreak" />
     }
 
-    @* #266: the adrift lifeline. The old strip rendered UNDER the masthead (z-order behind .map-topstack)
-       and hid the one button a stranded captain needs — the #262 stranding proved it. Now the state
-       SAYS itself on the shared #166 alert strip (above), the parrot proposes the tow, and the rescue is
-       a real pop-up (below) with the terms visible. What remains inline is a clear, viewport-clamped
-       re-open affordance (#253) that lives clear of the banner's no-button zone (#236) — shown only while
-       adrift with the offer dismissed, so a captain who declined can always call the tug back. *@
     @if (Adrift && !_showRescueOffer)
     {
-        <div class="map-adrift">
-            <button type="button" class="map-adrift-reopen" title="Adrift — out of reaction mass. Open the rescue offer and read its terms." @onclick="OpenRescueOffer">
-                🛟 Adrift — request rescue
-            </button>
-        </div>
+        <AdriftLifeline OpenRescueOffer="@OpenRescueOffer" />
     }
 
     @if (_showRescueOffer && Adrift)
