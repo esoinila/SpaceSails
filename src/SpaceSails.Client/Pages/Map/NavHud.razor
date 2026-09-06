@@ -140,52 +140,13 @@
                                     SlingLeverLine="@SlingLeverLine" SlingMaxRadii="@SlingMaxRadii"
                                     SlingMinRadii="@SlingMinRadii" SlingNodeNoteNow="@SlingNodeNoteNow"
                                     SlingOutcomeLine="@SlingOutcomeLine" SlingPassLine="@SlingPassLine" />
-                @* PR-I · the skim compose editor — SOLVE flies the pass through the real drag model; the
-                   three-zone corridor gauge shows what actually flies; "Add the burn" COMMITS the step. *@
-                @if (_openEditor == FlightEditorKind.Skim && _skimmablePass is { } skp)
-                {
-                    <div class="map-step-editor map-skim-body bg-dark bg-opacity-50 rounded p-2 mb-2">
-                        <div class="fw-bold small mb-1">🔥 Compose skim @skp.BodyName</div>
-                        <div class="mb-1">Periapsis depth:
-                            <strong>@_skimAltKm.ToString("0", CultureInfo.InvariantCulture) km</strong>
-                            <span class="text-secondary">(shell top @SkimShellTopKm().ToString("0", CultureInfo.InvariantCulture) km)</span>
-                        </div>
-                        @* stopPropagation: arrow keys move the slider, not fire live ship pulses. *@
-                        <input type="range" class="form-range" min="1" max="@SkimShellTopKm().ToString("0", CultureInfo.InvariantCulture)" step="1"
-                               value="@_skimAltKm.ToString("0", CultureInfo.InvariantCulture)"
-                               title="Set the periapsis depth of the skim, in km"
-                               @oninput="OnSkimAltInput" @onkeydown:stopPropagation="true" />
-                        <button type="button" class="btn btn-sm btn-outline-danger w-100 mb-2" disabled="@_skimSolving"
-                                title="Fly the skim through the drag model and preview it" @onclick="RunSkimSolveAsync">@(_skimSolving ? "flying the pass…" : "SOLVE the skim")</button>
-                        @if (_skimFailure is { } fail)
-                        {
-                            <div class="text-warning">⚠ @fail</div>
-                        }
-                        else if (_skimResult is { } g)
-                        {
-                            @* The corridor gauge: three labeled zones read off the flown DragReport. *@
-                            <div class="map-skim-gauge">
-                                <div class="map-skim-zone @(g.TooShallow ? "fw-bold" : "text-secondary")">
-                                    @(g.ArrivalHyperbolic ? "▲ skip — she bounces" : "▲ too shallow") @(g.TooShallow ? "◀" : "")
-                                </div>
-                                <div class="map-skim-zone @(g.InCorridor ? "text-success fw-bold" : "text-secondary")">
-                                    ● the corridor @(g.InCorridor ? "◀" : "")
-                                </div>
-                                <div class="map-skim-zone @(g.TooDeep ? "text-danger fw-bold" : "text-secondary")">
-                                    ▼ too deep — would hole the sail @(g.TooDeep ? "◀" : "")
-                                </div>
-                            </div>
-                            <div class="map-skim-verdict mt-1">
-                                <div>@SkimDepthLine(g)</div>
-                                <div class="@(g.TooDeep ? "text-danger" : g.InCorridor ? "text-success" : "text-secondary")">@SkimShedLine(g)</div>
-                                <div>@SkimOutcomeLine(g)</div>
-                                <div class="text-secondary map-skim-fineprint">@SkimFinePrint()</div>
-                                <button type="button" class="btn btn-sm @(g.TooDeep ? "btn-danger" : "btn-success") w-100 mt-1"
-                                        title="Commit this solved skim as a burn on the plan" @onclick="AddSkimBurn">@(g.TooDeep ? "Add the burn anyway — fly into the red" : "Add the burn → commit step")</button>
-                            </div>
-                        }
-                    </div>
-                }
+                <SkimComposeEditor _openEditor="@_openEditor" _skimAltKm="@_skimAltKm" _skimFailure="@_skimFailure"
+                                   _skimmablePass="@_skimmablePass" _skimResult="@_skimResult"
+                                   _skimSolving="@_skimSolving" AddSkimBurn="@AddSkimBurn"
+                                   OnSkimAltInput="@OnSkimAltInput" RunSkimSolveAsync="@RunSkimSolveAsync"
+                                   SkimDepthLine="@SkimDepthLine" SkimFinePrint="@SkimFinePrint"
+                                   SkimOutcomeLine="@SkimOutcomeLine" SkimShedLine="@SkimShedLine"
+                                   SkimShellTopKm="@SkimShellTopKm" />
                 @if (_destinationBodyId is not null && _ancientCharges > 0)
                 {
                     @* M28: the Ancients' pilot — scarce alien auto-plot, found at the pyramids. *@
