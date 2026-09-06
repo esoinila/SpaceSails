@@ -542,7 +542,14 @@ public partial class Map
         // catch her. See EncounterRule.HoldStation for the owner's ruling; the short of it is that heat is
         // the CAPTAIN's, and a game where a good long excursion means coming home to a boarding party is a
         // game about guarding a parking lot.
-        bool captainIsAboard = _surface is null;
+        //
+        // #1151 · …AND AN EXCURSION IS ONLY ONE OF THE THREE WAYS HE IS NOT ON HER. The owner's ruling on
+        // #525 makes the paragraph above the general law rather than one case of it — the process demands a
+        // ship and a captain in one place — so the question is asked through the one predicate that knows
+        // all three signals (TheMasterIsAboardHer, Map.Claims.Presence.cs). On `_surface is null` alone a
+        // hunter could still reach a hull whose master was standing in a bar past a mated gangway, which is
+        // #1138's own reading of what being aboard means, applied to the people who want her.
+        bool captainIsAboard = TheMasterIsAboardHer();
 
         for (int i = _hunters.Count - 1; i >= 0; i--)
         {

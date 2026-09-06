@@ -61,6 +61,33 @@ public static class InsuranceRule
             _ => defaultOutcome,
         };
     }
+
+    /// <summary>
+    /// #1151 · <b>WHAT A NON-FATAL LOSS OF HULL PAYS</b>, once the claim has been lodged at a kiosk and a
+    /// representative has signed it off (<see cref="NebulaClaims"/>). Zero for an uninsured or lapsed captain
+    /// — and the client pays it on the rep's next meeting and never on the loss, because paying on the loss
+    /// would be the automatic processing the owner's ruling reserves for a death.
+    ///
+    /// <para><b>The number is quoted, never invented</b>, which is the discipline <see cref="NebulaRep"/>
+    /// already prices its premiums with: <b>a claim pays exactly what a death would have been forgiven.</b>
+    /// Basic halves the clinic bill, so a Basic claim pays that half; Premium waives the whole bill, so a
+    /// Premium claim pays the whole of it; uninsured is forgiven nothing and paid nothing. It is read off
+    /// <see cref="ApplyToRebirth"/> at the moment of asking rather than restated as a table, so a tier is
+    /// worth something in exactly one place in the game and #227's vendor lane re-prices one function.</para>
+    ///
+    /// <para>The wake tank does not enter into it — <see cref="RebirthOutcome.ClinicBillCr"/> is not a
+    /// function of <see cref="RebirthOutcome.Kit"/> — so the default is asked for with none, and that is said
+    /// here rather than left as a bare zero for somebody to later "fix".</para>
+    /// </summary>
+    public static int HullClaimPayoutCr(PirateInsurance policy, double simTime)
+    {
+        RebirthOutcome uninsured = DefaultRebirth(TheTankIsNotInThisNumber);
+        return uninsured.ClinicBillCr - ApplyToRebirth(policy, simTime, uninsured).ClinicBillCr;
+    }
+
+    /// <summary>See <see cref="HullClaimPayoutCr"/>: the tank the default is asked for with, because a clinic
+    /// bill does not depend on one and a claim is not a rebirth.</summary>
+    private const int TheTankIsNotInThisNumber = 0;
 }
 
 /// <summary>The player's standing pirate-insurance policy — a small, saveable thing of personal value

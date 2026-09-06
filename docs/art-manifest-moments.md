@@ -245,3 +245,23 @@ grand gangways are at **Ringside Exchange** and **The Red Eye**, and **Selene Ga
 - **Negative list:** house rules (no sea, no sky, no daylight, no horizon). **No text, no lettering, no
   signage** — the plate over this door is drawn by the deck renderer and must not be doubled in pixels. No
   creature, no body, no tool left in shot, and nothing that says which way anybody went.
+
+## 16. `art/claim-desk.jpg` — THE CLAIM ✅ PAINTED
+- **Beat:** `TheClaim` · **every time** (rationed by the world, not by the seam — a lodging costs a hull) ·
+  **CARD**
+- **Fires:** `Map.Claims.Kiosk.LodgeTheClaim`, on the **second and every later** claim this captain lodges
+  (`NebulaClaims.TheDeskComesBack`). The first one gets no card: one claim is a thing that happened to you and
+  two is a pattern, and a card on the first would be the game telling the captain what to feel about it.
+- **Composition:** a company claims office remembered rather than seen, in the flashback family's bleach but
+  colder and further back than `flashback.jpg` — a whole room instead of one object. A broad veneered desk seen
+  slightly from above and from the claimant's side; on it a **thick multi-page form fanned open, the third page
+  half lifted**, and a pen laid across it. Behind the desk an adjuster in a Nebula Mutual uniform coat, seated,
+  **face lost to the blown-out light from a window behind them** — present, unreadable, not sinister. Filing
+  banks receding into white on both sides. Colour drained nearly to monochrome with a surviving cold blue-grey
+  cast; heavy bloom, painterly, grimy lived-in used-future sci-fi.
+- **Rule it illustrates:** the claim is a process the captain keeps agreeing to and cannot reconstruct. The
+  third page is the only object in the frame given any emphasis, and nothing in the picture says what is on it
+  — the card's own caption stops in the same place, and the rep never names it either.
+- **Negative list:** house rules (no sea, no sky, no daylight, no horizon). **No text, no lettering, no
+  signage, no legible print on the form** — a readable third page would answer the one question the whole beat
+  exists to leave open.

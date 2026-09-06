@@ -47,8 +47,12 @@ public partial class CaptainsRemotePanel
     [Parameter] public bool OnWreck { get; set; }
     [Parameter] public EventCallback OpenDesignate { get; set; }
     [Parameter] public Action<string> PickTheGun { get; set; } = default!;
+    // #1151 · The sixth switch: the claims counter, raised over the tight beam. The reach is a predicate
+    // rather than a bool because it is a distance to a moving body and stale by the next frame.
+    [Parameter] public EventCallback RaiseTheClaimsDesk { get; set; }
     [Parameter] public EventCallback SendTheStanding { get; set; }
     [Parameter] public HullSounding.Method SoundingGear { get; set; } = default!;
+    [Parameter] public Func<bool> TheRemoteReachesAKiosk { get; set; } = default!;
     [Parameter] public EventCallback ToggleBoatPower { get; set; }
     [Parameter] public EventCallback ToggleQuietSearch { get; set; }
     [Parameter] public EventCallback ToggleWeaponsTight { get; set; }

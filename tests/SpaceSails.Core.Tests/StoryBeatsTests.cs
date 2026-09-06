@@ -187,6 +187,16 @@ public sealed class StoryBeatsTests
     /// is wrong for one reason: a rebirth RE-GREYS the book, so the same page read by a later captain is a
     /// different captain reaching for a different stranger's afternoon — and filing under (beat, page id)
     /// would silently un-illustrate every flashback after the first death.</para>
+    ///
+    /// <para>#1151 · And the seventh, which is the edit-and-say-why paid again. <c>TheClaim</c> is rationed
+    /// by the WORLD rather than by this file: it is raised on a lodging and a lodging costs a hull, three
+    /// presses at a machine somebody has to walk to, and a wire entry that only exists because a ship stopped
+    /// existing. A captain who saw this card twice in one evening lost two hulls in one evening, and
+    /// suppressing the second one would be the game declining to notice. <see cref="StoryBeats.Cadence.Cooled"/>
+    /// was the near miss and it is wrong for exactly that reason — the cooldown would be a clock on how often
+    /// the game is allowed to acknowledge a disaster. The rationing that DOES exist is
+    /// <see cref="NebulaClaims.TheDeskComesBack"/>, which is the caller's and is about the first claim rather
+    /// than about repetition.</para>
     /// </summary>
     [Fact]
     public void OnlyRareMomentsFireEveryTime()
@@ -201,6 +211,7 @@ public sealed class StoryBeatsTests
                 StoryBeats.Beat.FireAboard,
                 StoryBeats.Beat.CollectorsSetDown,
                 StoryBeats.Beat.Flashback,
+                StoryBeats.Beat.TheClaim,
             ],
             everyTime);
     }

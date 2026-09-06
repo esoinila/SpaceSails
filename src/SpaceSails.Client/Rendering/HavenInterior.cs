@@ -991,6 +991,31 @@ public static class HavenInterior
                 ArrivalTube.CustomsLabel, null, stamped));
         }
 
+        // ── #1151 · THE CLAIMS KIOSK ───────────────────────────────────────────────────────────────────
+        //
+        // Owner ruling, 2026-09-06 on #525: insurance does not know automatically unless we die — everything
+        // else is a claim, and claims are lodged at "automatic kiosks scattered through the system".
+        //
+        // Scattered is the word, and it is why this is not at every port. Every great port has one because
+        // that is where the traffic is; a dealt share of the working berths have one because the company
+        // decided once whether that wall was worth it and has not revisited it since; an outpost has none for
+        // the customs desk's own reason — there is no concourse there to stand a machine in. The rule is
+        // NebulaClaims.AKioskStands, asked here and by every guard, so the concourse and the tests read one
+        // answer rather than two that agree today.
+        //
+        // What it raises is not a wall plate. The machine takes three things off the captain, in order, so
+        // this places the fixture wearing its plate and the page owns the press (Map.Claims.Kiosk.cs, routed
+        // by the label exactly as the head office's two consoles are).
+        //
+        // Clearance: port side and mid-hall, over an interact radius from the plaque (−3.5, 35), the poster
+        // (−8.5, 46), the northern ad plates and the tube path (x 1..4), and well inside the 12-gon's
+        // apothem — asserted at the square itself in the guards, never trusted from this comment.
+        if (tier is { } claimBerth && NebulaClaims.AKioskStands(claimBerth, spec.BodyId))
+        {
+            consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, HallCenterX - 11, HallCenterY - 1,
+                NebulaClaims.KioskPlate, null, NebulaClaims.OnApproach));
+        }
+
         // PIRATE INSURANCE — the Gen-AI dock poster (#380 item 1: pre-seed the brain-backup / Pirate
         // Insurance premise with port advertising, so a new player meets the fiction BEFORE the death card,
         // not on it; owner 2026-07-19: "we should explain Pirate insurance … advertisements about it as Gen

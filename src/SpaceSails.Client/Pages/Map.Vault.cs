@@ -73,6 +73,14 @@ public partial class Map
         _monolithSeen = false;
         _insurance = PirateInsurance.Uninsured;
 
+        // #1151 · …and the claims file with them. This method's contract is that it is the exact inverse of
+        // BuildVault, and a counter that survived into a new universe would hand a fresh captain somebody
+        // else's unease — the flashback card on his FIRST claim, off a number he never earned.
+        _claimsLodged = 0;
+        _claimOwed = null;
+        _writPending = null;
+        _claimDesk = null;
+
         // #563 · The once-per-captain teaching cards. This method's contract is that it is "the exact
         // inverse of BuildVault (so a new game equals a blank vault)", and _groundLessonSeen was quietly
         // missing from it — a new captain in the same session inherited "already taught" from the previous
@@ -232,6 +240,12 @@ public partial class Map
                 HallsPreserved = PreserveRows(),
                 // #525 · …and the one collar a harbour has cleared with a reason on it (Map.BerthScuttle.cs).
                 CollarCleared = ClearedCollarRow(),
+                // #1151 · …and the file the captain is building on himself: how many claims he has lodged,
+                // the one that is lodged and not yet paid, and the writ waiting for him at a port. All three
+                // null while there is nothing to say — the same checksum law as every row above it.
+                ClaimsLodged = _claimsLodged > 0 ? _claimsLodged : null,
+                ClaimOwed = _claimOwed,
+                WritPending = _writPending,
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
@@ -462,6 +476,11 @@ public partial class Map
         RestorePreserve(vault.Progress);
         // #525: and the one collar a harbour has cleared with a reason on it (Map.BerthScuttle.cs).
         RestoreClearedCollar(vault.Progress);
+        // #1151: and the claims file — the counter, the claim awaiting a representative, and the writ
+        // awaiting the master (Map.Claims.Presence.cs / Map.Claims.Kiosk.cs).
+        _claimsLodged = vault.Progress?.ClaimsLodged ?? 0;
+        _claimOwed = vault.Progress?.ClaimOwed;
+        _writPending = vault.Progress?.WritPending;
 
         // …and Core is told at once, rather than waiting for the next descent: a save loaded straight onto a
         // ground must come back to a shaft that already ends where the burial left it, to the same one

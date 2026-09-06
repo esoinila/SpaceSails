@@ -57,6 +57,24 @@
                         </div>
                     }
                 }
+                @* #1151 · THE CLAIMS COUNTER'S OWN ROWS, in the kit's press idiom one region up and for the
+                   kit's own stated reason: "a press that is going to be refused still has to be pressable,
+                   because the refusal is the thing worth learning." A lapsed policy is on the counter; every
+                   name the hull has ever answered to is on the counter and one of them is hers. Not a word of
+                   any row is authored — a policy row wears its tier's own name, a hull row a name off the
+                   dossier, a wire row the headline the wire already wrote when the hull was lost. *@
+                @if (TheClaimDeskIsUp)
+                {
+                    @foreach (SpaceSails.Core.NebulaClaims.Ask ask in TheClaimAsks())
+                    {
+                        <div class="satchel-row">
+                            <span class="satchel-item-name">@ask.Label</span>
+                            <button type="button" class="satchel-load"
+                                    title="@SpaceSails.Core.NebulaClaims.OnApproach"
+                                    @onclick="() => PressTheClaim(ask)">@SpaceSails.Core.KeepOrLeave.KeepLabel</button>
+                        </div>
+                    }
+                }
                 @* #774 · WHAT THE ACT ACTUALLY FOUND, on the card the act raised — the reveal card's row
                    (#736) on the other full-screen card, because the surface raises this one. The
                    dossier is the case it was grown for: the assembly said two to four sentences and fired

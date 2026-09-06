@@ -129,6 +129,12 @@ public static class StoryBeats
         /// building has at most one of these and it is that building's story, so a second moon's dead refuge
         /// is a second moment and not a repeat.</summary>
         RefugeFailed,
+
+        /// <summary>#1151 · THE DESK COMES BACK. A claim is lodged at a kiosk and, from the second one
+        /// onward, the captain is somewhere else for a moment: an office, a pen, a page he did not read. No
+        /// subject — the memory is not about WHICH hull he lost, it is about the process he keeps agreeing
+        /// to, and a subject here would be the seam filing the very thing the card is uneasy about.</summary>
+        TheClaim,
     }
 
     /// <summary>How often a beat is allowed to speak.</summary>
@@ -480,6 +486,11 @@ public static class StoryBeats
         Beat.ShelterIsNotSanctuary => CollectorLanding.SiegePlate,
         Beat.CollectorsSetDown => CollectorLanding.ArrivalPlate,
         Beat.SealedDoorReleased => NestPlates.Released,
+
+        // #1151 · …and the claim's own desk, through the same door. Its three strings are authored beside the
+        // rule that decides a claim happened, exactly as the eleven above are, so this file learns the
+        // sentence rather than keeping a second copy of it.
+        Beat.TheClaim => NebulaClaims.DeskPlate,
 
         _ => null,
     };

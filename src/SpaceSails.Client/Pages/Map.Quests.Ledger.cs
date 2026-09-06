@@ -377,6 +377,14 @@ public partial class Map
             tips.Insert(0, nebula);
         }
 
+        // #1151 · …and above both, the one row that is about something happening RIGHT NOW rather than about
+        // something the captain is collecting: a process that has stopped because he is not where it needs
+        // him. It leads when it exists, and it does not exist otherwise.
+        if (PendingWritTip() is { } writ)
+        {
+            tips.Insert(0, writ);
+        }
+
         return tips.ToArray();
     }
 }
