@@ -620,7 +620,61 @@ public sealed record ProgressSection
     [System.Text.Json.Serialization.JsonIgnore(
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public ClearedCollarRecord? CollarCleared { get; init; }
+
+    /// <summary>
+    /// #1151 · <b>HOW MANY CLAIMS THIS CAPTAIN HAS LODGED</b> — the counter the unease is measured on, and
+    /// the Nebula arc's (#422) on-ramp: the file the captain is building on himself.
+    ///
+    /// <para>Per thread and never put back by a rebirth, because that is the whole point of it: a file does
+    /// not forget you died. <see cref="NebulaClaims.TheDeskComesBack"/> reads it counting the lodging that is
+    /// happening, so the second claim is the first one that comes with a memory.</para>
+    ///
+    /// <para><b>Written only when somebody has claimed</b>, the #1057/#1066/#1074 law: the checksum is taken
+    /// over the payload, so an eager <c>"claimsLodged": 0</c> on every save would change the digest of every
+    /// vault ever written and hang the 📛 tampered marker on an honest voyage.</para>
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public int? ClaimsLodged { get; init; }
+
+    /// <summary>
+    /// #1151 · <b>THE CLAIM THAT IS LODGED AND NOT YET PAID</b>, or null when the captain is owed nothing.
+    ///
+    /// <para>It rides the file for the reason the whole beat exists: the payout does not arrive at the desk,
+    /// it arrives when a representative next finds you, and "next" can be a week of play and a reload away. A
+    /// claim a reload forgot would be a claim the company forgot, which is the one thing this company never
+    /// does.</para>
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public LodgedClaimRecord? ClaimOwed { get; init; }
+
+    /// <summary>
+    /// #1151 · <b>THE WRIT THAT CANNOT PROCEED WITHOUT THE MASTER</b>, or null when nobody is waiting.
+    ///
+    /// <para>#1090's break-off used to be the end of a pursuer: the ship stopped existing, so the arithmetic
+    /// of chasing her stopped working and the roster was emptied. It is not the end of the PROCESS — a
+    /// collector's process demands a ship and a captain in one place, and a captain who got clear is a thing
+    /// that process is still waiting for. So the pursuer comes off the sky and goes onto the file, at the
+    /// port that serves the ground it happened over.</para>
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public PendingWritRecord? WritPending { get; init; }
 }
+
+/// <summary>#1151 — <see cref="ProgressSection.ClaimOwed"/>'s row: the hull that was named at the counter and
+/// what the claim is worth. The payout is STORED rather than recomputed when the rep arrives, because it was
+/// quoted off the policy the captain held on the day: a premium that lapses between the kiosk and the
+/// salesman does not un-lodge a claim, and a claim re-priced at payout time would be a second opinion about
+/// <see cref="InsuranceRule.HullClaimPayoutCr"/>.</summary>
+public sealed record LodgedClaimRecord(string HullName, int PayoutCr, double LodgedAtSimTime);
+
+/// <summary>#1151 — <see cref="ProgressSection.WritPending"/>'s row: whose contract it is, and the berth they
+/// are waiting at (<see cref="QuietHands.PortFor"/>'s harbour, or the port she was clamped to). A BERTH
+/// rather than a ground, because a ground has no berths to let and a pursuer waits where a captain has to
+/// come back to.</summary>
+public sealed record PendingWritRecord(string Callsign, string HavenId, double FiledAtSimTime);
 
 /// <summary>#525 — <see cref="ProgressSection.CollarCleared"/>'s row: the port, the slot the ship that
 /// declared the overload was tied up in, the neighbouring slots the roster emptied, and <b>why</b>.
