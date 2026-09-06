@@ -26,6 +26,10 @@
     every event in here. The .razor.css beside this file carries no rules; it exists to give the component
     Map.razor.css's scope (pinned in SpaceSails.Client.csproj), so every rule that styled these elements
     goes on matching them.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and
+    a code block is where its first statements are legal. It is outside the fences, so what the source
+    guards read is still exactly the lines that were in the HUD.
 *@
 @{
 @* ── MARKUP BEGINS · verbatim from NavHud.razor ──────────────────────────────────────────────────── *@
