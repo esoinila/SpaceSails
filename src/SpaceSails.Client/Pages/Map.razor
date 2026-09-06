@@ -109,81 +109,47 @@
                        FireArrivalBrake="@FireArrivalBrake" />
     }
 
-    @if (_showScuttlePanel && _wreck is { } scWreck)
-    {
-        <ScuttlePanel _scuttleSecondsLeft="@_scuttleSecondsLeft" AbortTheOverload="@AbortTheOverload"
-                      ArmTheOverload="@ArmTheOverload" CloseScuttlePanel="@CloseScuttlePanel" Dismiss="@Dismiss"
-                      ScuttleMethods="@ScuttleMethods" scWreck="@scWreck" />
-    }
-
-    @if (_scuttleEpitaph is { } epitaph)
-    {
-        <ScuttleEpitaphCard epitaph="@epitaph" _scuttleHeardIt="_scuttleHeardIt"
-                            Dismiss="Dismiss" CloseScuttleEpitaph="CloseScuttleEpitaph" />
-    }
-
-    @if (_ventReadCard is { } readRoom && _ventReads.TryGetValue(readRoom, out var readShown))
-    {
-        <VentReadCard CloseVentReadCard="@CloseVentReadCard" Dismiss="@Dismiss" readRoom="@readRoom"
-                      readShown="@readShown" />
-    }
-
-    @if (_pressureDoor is { } pdName && _ventSpaces.TryGetValue(pdName, out var pdSpace))
-    {
-        <PressureDoorCard _refillCharges="@_refillCharges" _spinePressurised="@_spinePressurised"
-                          ClosePressureDoorCard="@ClosePressureDoorCard" Dismiss="@Dismiss"
-                          EqualiseAtDoor="@EqualiseAtDoor" ToggleSealAtHand="@ToggleSealAtHand" pdName="@pdName"
-                          pdSpace="@pdSpace" />
-    }
-
-    @if (_showVentPanel && _wreck is { } ventWreck)
-    {
-        <VentPanel _refillCharges="@_refillCharges" _shipPumpOrder="@_shipPumpOrder"
-                   _spinePressurised="@_spinePressurised" _spineVacuumSeconds="@_spineVacuumSeconds"
-                   _surface="@_surface" _ventLog="@_ventLog" _ventMessage="@_ventMessage" _ventReads="@_ventReads"
-                   _ventSelected="@_ventSelected" AtmosphereAt="@AtmosphereAt"
-                   CaptainCompartment="@CaptainCompartment" CloseVentPanel="@CloseVentPanel" Dismiss="@Dismiss"
-                   Du="@Du" FloodCost="@FloodCost" FloodTheShip="@FloodTheShip"
-                   OrderWholeShipPumped="@OrderWholeShipPumped" PumpableRooms="@PumpableRooms"
-                   PumpEverySealedRoom="@PumpEverySealedRoom" PumpOn="@PumpOn" ReadLifeSigns="@ReadLifeSigns"
-                   RefillCompartment="@RefillCompartment" RescueSurvivor="@RescueSurvivor"
-                   SealTheShip="@SealTheShip" SelectVentSpace="@SelectVentSpace" SpaceNow="@SpaceNow"
-                   SpinePumpable="@SpinePumpable" SpineTag="@SpineTag" StartPumpDown="@StartPumpDown"
-                   StartSpinePump="@StartSpinePump" StopPump="@StopPump" ToggleVentDoor="@ToggleVentDoor"
-                   UnsealTheShip="@UnsealTheShip" OnVentAreaLabelSvg="@((string l, float cx, float cy, float w, (string Text, string Class) t, float h) => VentAreaLabelSvg(l, cx, cy, w, t, h))" VentAreaTag="@VentAreaTag"
-                   VentCompartment="@VentCompartment" VentDoorX="@VentDoorX" VentHullOutline="@VentHullOutline"
-                   VentViewBox="@VentViewBox" YearsOfVacuumSeconds="@YearsOfVacuumSeconds" ventWreck="@ventWreck" />
-    }
-
-    @if (_archiveCard is { } vision)
-    {
-        <ArchiveVisionCard CloseArchiveCard="@CloseArchiveCard" Dismiss="@Dismiss" vision="@vision" />
-    }
-
-    @if (_showShipBoard)
-    {
-        <ShipBoardPanel _shipBoardLog="@_shipBoardLog" _shipBoardMessage="@_shipBoardMessage"
-                        _shipReserve="@_shipReserve" _shipSelected="@_shipSelected" CloseShipBoard="@CloseShipBoard"
-                        Dismiss="@Dismiss" Du="@Du" GiveTheCaptainsWord="@GiveTheCaptainsWord"
-                        RefillShipCompartment="@RefillShipCompartment" SealHerUp="@SealHerUp"
-                        SelectShipSpace="@SelectShipSpace" ShipAreaTag="@ShipAreaTag"
-                        ShipAuthorityNow="@ShipAuthorityNow" ShipBreathingLine="@ShipBreathingLine"
-                        ShipCompartment="@ShipCompartment" ShipCorridorPressurised="@ShipCorridorPressurised"
-                        ShipCorridorTagSvg="@ShipCorridorTagSvg" ShipHullOutline="@ShipHullOutline"
-                        ShipPumpOn="@ShipPumpOn" ShipSpaceNow="@ShipSpaceNow" ShipSpacesNow="@ShipSpacesNow"
-                        ShipViewBox="@ShipViewBox" StartShipPump="@StartShipPump" StopShipPump="@StopShipPump"
-                        ToggleShipDoor="@ToggleShipDoor" UnsealHer="@UnsealHer" OnVentAreaLabelSvg="@((string l, float cx, float cy, float w, (string Text, string Class) t, float h) => VentAreaLabelSvg(l, cx, cy, w, t, h))"
-                        VentShipCompartment="@VentShipCompartment"
-                        WithdrawTheCaptainsWord="@WithdrawTheCaptainsWord" />
-    }
-
-    @if (_showChargeBoard)
-    {
-        <ChargeBoardPanel _chargeBoardMessage="@_chargeBoardMessage" _contactorOn="@_contactorOn" _plasma="@_plasma"
-                          _reactionMassPulses="@_reactionMassPulses" AmbientChargeNow="@AmbientChargeNow"
-                          CloseChargeBoard="@CloseChargeBoard" Dismiss="@Dismiss" HullChargeNow="@HullChargeNow"
-                          ToggleContactor="@ToggleContactor" VentCharge="@VentCharge" />
-    }
+    <HullBoardsRack _archiveCard="@_archiveCard" _chargeBoardMessage="@_chargeBoardMessage"
+                    _contactorOn="@_contactorOn" _plasma="@_plasma" _pressureDoor="@_pressureDoor"
+                    _reactionMassPulses="@_reactionMassPulses" _refillCharges="@_refillCharges"
+                    _scuttleEpitaph="@_scuttleEpitaph" _scuttleHeardIt="@_scuttleHeardIt"
+                    _scuttleSecondsLeft="@_scuttleSecondsLeft" _shipBoardLog="@_shipBoardLog"
+                    _shipBoardMessage="@_shipBoardMessage" _shipPumpOrder="@_shipPumpOrder"
+                    _shipReserve="@_shipReserve" _shipSelected="@_shipSelected" _showChargeBoard="@_showChargeBoard"
+                    _showScuttlePanel="@_showScuttlePanel" _showShipBoard="@_showShipBoard"
+                    _showVentPanel="@_showVentPanel" _spinePressurised="@_spinePressurised"
+                    _spineVacuumSeconds="@_spineVacuumSeconds" _surface="@_surface" _ventLog="@_ventLog"
+                    _ventMessage="@_ventMessage" _ventReadCard="@_ventReadCard" _ventReads="@_ventReads"
+                    _ventSelected="@_ventSelected" _ventSpaces="@_ventSpaces" _wreck="@_wreck"
+                    AbortTheOverload="@AbortTheOverload" AmbientChargeNow="@AmbientChargeNow"
+                    ArmTheOverload="@ArmTheOverload" AtmosphereAt="@AtmosphereAt"
+                    CaptainCompartment="@CaptainCompartment" CloseArchiveCard="@CloseArchiveCard"
+                    CloseChargeBoard="@CloseChargeBoard" ClosePressureDoorCard="@ClosePressureDoorCard"
+                    CloseScuttleEpitaph="@CloseScuttleEpitaph" CloseScuttlePanel="@CloseScuttlePanel"
+                    CloseShipBoard="@CloseShipBoard" CloseVentPanel="@CloseVentPanel"
+                    CloseVentReadCard="@CloseVentReadCard" Dismiss="@Dismiss" Du="@Du"
+                    EqualiseAtDoor="@EqualiseAtDoor" FloodCost="@FloodCost" FloodTheShip="@FloodTheShip"
+                    GiveTheCaptainsWord="@GiveTheCaptainsWord" HullChargeNow="@HullChargeNow"
+                    OrderWholeShipPumped="@OrderWholeShipPumped" PumpableRooms="@PumpableRooms"
+                    PumpEverySealedRoom="@PumpEverySealedRoom" PumpOn="@PumpOn" ReadLifeSigns="@ReadLifeSigns"
+                    RefillCompartment="@RefillCompartment" RefillShipCompartment="@RefillShipCompartment"
+                    RescueSurvivor="@RescueSurvivor" ScuttleMethods="@ScuttleMethods" SealHerUp="@SealHerUp"
+                    SealTheShip="@SealTheShip" SelectShipSpace="@SelectShipSpace" SelectVentSpace="@SelectVentSpace"
+                    ShipAreaTag="@ShipAreaTag" ShipAuthorityNow="@ShipAuthorityNow"
+                    ShipBreathingLine="@ShipBreathingLine" ShipCompartment="@ShipCompartment"
+                    ShipCorridorPressurised="@ShipCorridorPressurised" ShipCorridorTagSvg="@ShipCorridorTagSvg"
+                    ShipHullOutline="@ShipHullOutline" ShipPumpOn="@ShipPumpOn" ShipSpaceNow="@ShipSpaceNow"
+                    ShipSpacesNow="@ShipSpacesNow" ShipViewBox="@ShipViewBox" SpaceNow="@SpaceNow"
+                    SpinePumpable="@SpinePumpable" SpineTag="@SpineTag" StartPumpDown="@StartPumpDown"
+                    StartShipPump="@StartShipPump" StartSpinePump="@StartSpinePump" StopPump="@StopPump"
+                    StopShipPump="@StopShipPump" ToggleContactor="@ToggleContactor"
+                    ToggleSealAtHand="@ToggleSealAtHand" ToggleShipDoor="@ToggleShipDoor"
+                    ToggleVentDoor="@ToggleVentDoor" UnsealHer="@UnsealHer" UnsealTheShip="@UnsealTheShip"
+                    VentAreaLabelSvg="@((string l, float cx, float cy, float w, (string Text, string Class) t, float h) => VentAreaLabelSvg(l, cx, cy, w, t, h))"
+                    VentAreaTag="@VentAreaTag" VentCharge="@VentCharge" VentCompartment="@VentCompartment"
+                    VentDoorX="@VentDoorX" VentHullOutline="@VentHullOutline"
+                    VentShipCompartment="@VentShipCompartment" VentViewBox="@VentViewBox"
+                    WithdrawTheCaptainsWord="@WithdrawTheCaptainsWord" YearsOfVacuumSeconds="@YearsOfVacuumSeconds" />
 
     <CallersCardRack _finderCard="@_finderCard" _finderOutcome="@_finderOutcome" _finderReveal="@_finderReveal"
                      _hardcaseCard="@_hardcaseCard" _repCard="@_repCard" _repSaid="@_repSaid"

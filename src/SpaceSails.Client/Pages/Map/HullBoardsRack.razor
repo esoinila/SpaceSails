@@ -1,0 +1,99 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SpaceSails.Core
+@using System.Globalization
+@*
+    #251 · THE BOARDS YOU OPEN INSIDE A HULL — eight panels on one file.
+
+    Seventy-five consecutive lines of Map.razor and one subject: what a captain standing inside a pressure
+    hull can open, and what those boards raise. The overload panel and the epitaph it writes, the life-sign
+    read, the pressure door at your hand, the wreck's whole vent board, the archive vision a wreck gives up,
+    OUR OWN ship's board, and the charge board. Two hulls, one idiom — and the two vent boards are the
+    reason the room-label helper crosses this rack twice under one name.
+
+    Moved by PURE MOTION: the gates came with the invocations — a gate is what says WHEN a board is on the
+    glass — and every page member the block reads is a [Parameter] with the SAME NAME, so not one character
+    between the fences changed and MapMarkup splices it straight back where it came from. The rack renders
+    nothing when every gate is shut, so the page's paint order is exactly what it was.
+
+    IHandleEvent repeats the page's own override (Map.Sim.cs). The .razor.css beside this file carries no
+    rules; it exists to give the component Map.razor.css's scope (pinned in SpaceSails.Client.csproj), and
+    the eight panels keep their own sheets.
+*@
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────── *@
+    @if (_showScuttlePanel && _wreck is { } scWreck)
+    {
+        <ScuttlePanel _scuttleSecondsLeft="@_scuttleSecondsLeft" AbortTheOverload="@AbortTheOverload"
+                      ArmTheOverload="@ArmTheOverload" CloseScuttlePanel="@CloseScuttlePanel" Dismiss="@Dismiss"
+                      ScuttleMethods="@ScuttleMethods" scWreck="@scWreck" />
+    }
+
+    @if (_scuttleEpitaph is { } epitaph)
+    {
+        <ScuttleEpitaphCard epitaph="@epitaph" _scuttleHeardIt="_scuttleHeardIt"
+                            Dismiss="Dismiss" CloseScuttleEpitaph="CloseScuttleEpitaph" />
+    }
+
+    @if (_ventReadCard is { } readRoom && _ventReads.TryGetValue(readRoom, out var readShown))
+    {
+        <VentReadCard CloseVentReadCard="@CloseVentReadCard" Dismiss="@Dismiss" readRoom="@readRoom"
+                      readShown="@readShown" />
+    }
+
+    @if (_pressureDoor is { } pdName && _ventSpaces.TryGetValue(pdName, out var pdSpace))
+    {
+        <PressureDoorCard _refillCharges="@_refillCharges" _spinePressurised="@_spinePressurised"
+                          ClosePressureDoorCard="@ClosePressureDoorCard" Dismiss="@Dismiss"
+                          EqualiseAtDoor="@EqualiseAtDoor" ToggleSealAtHand="@ToggleSealAtHand" pdName="@pdName"
+                          pdSpace="@pdSpace" />
+    }
+
+    @if (_showVentPanel && _wreck is { } ventWreck)
+    {
+        <VentPanel _refillCharges="@_refillCharges" _shipPumpOrder="@_shipPumpOrder"
+                   _spinePressurised="@_spinePressurised" _spineVacuumSeconds="@_spineVacuumSeconds"
+                   _surface="@_surface" _ventLog="@_ventLog" _ventMessage="@_ventMessage" _ventReads="@_ventReads"
+                   _ventSelected="@_ventSelected" AtmosphereAt="@AtmosphereAt"
+                   CaptainCompartment="@CaptainCompartment" CloseVentPanel="@CloseVentPanel" Dismiss="@Dismiss"
+                   Du="@Du" FloodCost="@FloodCost" FloodTheShip="@FloodTheShip"
+                   OrderWholeShipPumped="@OrderWholeShipPumped" PumpableRooms="@PumpableRooms"
+                   PumpEverySealedRoom="@PumpEverySealedRoom" PumpOn="@PumpOn" ReadLifeSigns="@ReadLifeSigns"
+                   RefillCompartment="@RefillCompartment" RescueSurvivor="@RescueSurvivor"
+                   SealTheShip="@SealTheShip" SelectVentSpace="@SelectVentSpace" SpaceNow="@SpaceNow"
+                   SpinePumpable="@SpinePumpable" SpineTag="@SpineTag" StartPumpDown="@StartPumpDown"
+                   StartSpinePump="@StartSpinePump" StopPump="@StopPump" ToggleVentDoor="@ToggleVentDoor"
+                   UnsealTheShip="@UnsealTheShip" OnVentAreaLabelSvg="@((string l, float cx, float cy, float w, (string Text, string Class) t, float h) => VentAreaLabelSvg(l, cx, cy, w, t, h))" VentAreaTag="@VentAreaTag"
+                   VentCompartment="@VentCompartment" VentDoorX="@VentDoorX" VentHullOutline="@VentHullOutline"
+                   VentViewBox="@VentViewBox" YearsOfVacuumSeconds="@YearsOfVacuumSeconds" ventWreck="@ventWreck" />
+    }
+
+    @if (_archiveCard is { } vision)
+    {
+        <ArchiveVisionCard CloseArchiveCard="@CloseArchiveCard" Dismiss="@Dismiss" vision="@vision" />
+    }
+
+    @if (_showShipBoard)
+    {
+        <ShipBoardPanel _shipBoardLog="@_shipBoardLog" _shipBoardMessage="@_shipBoardMessage"
+                        _shipReserve="@_shipReserve" _shipSelected="@_shipSelected" CloseShipBoard="@CloseShipBoard"
+                        Dismiss="@Dismiss" Du="@Du" GiveTheCaptainsWord="@GiveTheCaptainsWord"
+                        RefillShipCompartment="@RefillShipCompartment" SealHerUp="@SealHerUp"
+                        SelectShipSpace="@SelectShipSpace" ShipAreaTag="@ShipAreaTag"
+                        ShipAuthorityNow="@ShipAuthorityNow" ShipBreathingLine="@ShipBreathingLine"
+                        ShipCompartment="@ShipCompartment" ShipCorridorPressurised="@ShipCorridorPressurised"
+                        ShipCorridorTagSvg="@ShipCorridorTagSvg" ShipHullOutline="@ShipHullOutline"
+                        ShipPumpOn="@ShipPumpOn" ShipSpaceNow="@ShipSpaceNow" ShipSpacesNow="@ShipSpacesNow"
+                        ShipViewBox="@ShipViewBox" StartShipPump="@StartShipPump" StopShipPump="@StopShipPump"
+                        ToggleShipDoor="@ToggleShipDoor" UnsealHer="@UnsealHer" OnVentAreaLabelSvg="@((string l, float cx, float cy, float w, (string Text, string Class) t, float h) => VentAreaLabelSvg(l, cx, cy, w, t, h))"
+                        VentShipCompartment="@VentShipCompartment"
+                        WithdrawTheCaptainsWord="@WithdrawTheCaptainsWord" />
+    }
+
+    @if (_showChargeBoard)
+    {
+        <ChargeBoardPanel _chargeBoardMessage="@_chargeBoardMessage" _contactorOn="@_contactorOn" _plasma="@_plasma"
+                          _reactionMassPulses="@_reactionMassPulses" AmbientChargeNow="@AmbientChargeNow"
+                          CloseChargeBoard="@CloseChargeBoard" Dismiss="@Dismiss" HullChargeNow="@HullChargeNow"
+                          ToggleContactor="@ToggleContactor" VentCharge="@VentCharge" />
+    }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────── *@
