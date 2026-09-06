@@ -80,6 +80,10 @@ public partial class Map
         _claimOwed = null;
         _writPending = null;
         _claimDesk = null;
+        // #1151 slice 2 · …and the offer's latch, for the same reason: a fresh captain whose salesman has
+        // already spent the line on a hull he never lost is a scene the new universe silently owes him.
+        _lodgingOfferedFor = null;
+        _repOffersToLodge = false;
 
         // #563 · The once-per-captain teaching cards. This method's contract is that it is "the exact
         // inverse of BuildVault (so a new game equals a blank vault)", and _groundLessonSeen was quietly
@@ -246,6 +250,9 @@ public partial class Map
                 ClaimsLodged = _claimsLodged > 0 ? _claimsLodged : null,
                 ClaimOwed = _claimOwed,
                 WritPending = _writPending,
+                // #1151 slice 2 · …and the loss the rep has already offered to take, so the line stays
+                // once-per-loss across a reload (Map.Claims.Rep.cs).
+                LodgingOfferedFor = _lodgingOfferedFor,
             },
             Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
@@ -481,6 +488,8 @@ public partial class Map
         _claimsLodged = vault.Progress?.ClaimsLodged ?? 0;
         _claimOwed = vault.Progress?.ClaimOwed;
         _writPending = vault.Progress?.WritPending;
+        // #1151 slice 2: …and the loss the rep's offer has already been spent on (Map.Claims.Rep.cs).
+        _lodgingOfferedFor = vault.Progress?.LodgingOfferedFor;
 
         // …and Core is told at once, rather than waiting for the next descent: a save loaded straight onto a
         // ground must come back to a shaft that already ends where the burial left it, to the same one

@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 
 namespace SpaceSails.Core.Tests;
 
@@ -358,6 +358,10 @@ public sealed class TheClaimIsTheSceneTests
             NebulaClaims.KioskPlate, NebulaClaims.OnApproach, NebulaClaims.LodgedLine,
             NebulaClaims.RepAtThePayout, NebulaClaims.PendingWritPlate,
             NebulaClaims.DeskTitle, NebulaClaims.DeskArt, NebulaClaims.DeskCaption,
+            // #1151 slice 2 · the seventh, and the only string that slice authored. It is asserted word for
+            // word in TheClaimIsLodgedWithHimTests; here it is simply admitted to the canon, which is the
+            // whole point of this sweep — a constant is either in the issue or it is not shipped.
+            NebulaClaims.LodgeWithMe,
         ];
 
         List<string> loose = [];
@@ -391,7 +395,7 @@ public sealed class TheClaimIsTheSceneTests
         [
             NebulaClaims.KioskPlate, NebulaClaims.OnApproach, NebulaClaims.LodgedLine,
             NebulaClaims.RepAtThePayout, NebulaClaims.PendingWritPlate,
-            NebulaClaims.DeskTitle, NebulaClaims.DeskCaption,
+            NebulaClaims.DeskTitle, NebulaClaims.DeskCaption, NebulaClaims.LodgeWithMe,
             StoryBeats.Title(StoryBeats.Beat.TheClaim), StoryBeats.Caption(StoryBeats.Beat.TheClaim),
         ];
 

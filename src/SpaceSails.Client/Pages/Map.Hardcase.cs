@@ -587,6 +587,13 @@ public sealed partial class Map
     private void KoltsPitchGoesUp()
     {
         _hardcasePitched = true;
+
+        // #1151 slice 2 · The offer goes before the pitch here for the same reason it does at Fess's table,
+        // and through the same seam (Map.Claims.Rep.cs): they are one firm, and a rule about WHICH of them
+        // may take a form would be the mirrored constant said about a person. He is not paid at — the money
+        // arrives when a representative next finds you, and that is Harlan Fess's meeting, not this one.
+        OfferToLodgeIt();
+
         _hardcaseCard = HardcaseRep.OffersFor(_insurance.Tier);
         RememberHeWasFoundHere();
 
@@ -622,6 +629,7 @@ public sealed partial class Map
     private void CloseTheHardcasesCard()
     {
         _hardcaseCard = null;
+        TheRepsCounterCloses();   // #1151 slice 2 · the offer and a finished form go with the conversation
         StateHasChanged();
     }
 

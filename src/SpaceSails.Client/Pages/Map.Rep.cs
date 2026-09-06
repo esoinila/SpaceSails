@@ -643,6 +643,13 @@ public sealed partial class Map
             _activeThreadId ?? "", _repMeetings, RetiredCaptainCount);
         _repNameOnFile = RepNameOnFile(_repBleeding);
         _repSaid = null;
+
+        // #1151 slice 2 · …AND IF THERE IS A LOSS ON THE WIRE HE HAS NOT ALREADY OFFERED ON, HE OFFERS TO
+        // TAKE IT — before the pitch, which is where it goes on the card as well (Map.Claims.Rep.cs). Ahead
+        // of the payout below, and the order is load bearing: at the meeting a claim is PAID the offer must
+        // not stand, and the payout is what clears the claim the offer reads.
+        OfferToLodgeIt();
+
         _repCard = NebulaRep.PitchFor(_insurance.Tier, _repNameOnFile, _repBleeding);
 
         // #1151 · …AND IF THERE IS A CLAIM ON THE FILE, THIS IS THE MEETING IT IS PAID AT. The owner's
@@ -666,6 +673,7 @@ public sealed partial class Map
         _repCard = null;
         _repSaid = null;
         _repBleeding = false;
+        TheRepsCounterCloses();   // #1151 slice 2 · the offer and a finished form go with the conversation
         StateHasChanged();
     }
 

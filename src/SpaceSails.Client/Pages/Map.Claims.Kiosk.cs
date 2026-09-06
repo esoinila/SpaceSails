@@ -50,7 +50,27 @@ public sealed partial class Map
     /// <param name="Tier">The tier on the policy that was accepted.</param>
     /// <param name="HullName">The name that was accepted for the hull.</param>
     /// <param name="Receipt">The wire entry's subject — what the machine filed the loss against.</param>
-    private sealed record ClaimDesk(int Presses, InsuranceTier Tier, string HullName, string Receipt);
+    /// <param name="Host">#1151 slice 2 · Which surface the counter is standing on. The state is the PAGE's
+    /// and never the fixture's, so a form begun at a machine on a concourse is the form the man at the table
+    /// picks up, and the other way about.</param>
+    private sealed record ClaimDesk(
+        int Presses, InsuranceTier Tier, string HullName, string Receipt, ClaimHost Host);
+
+    /// <summary>
+    /// #1151 slice 2 · <b>THE TWO HOSTS OF ONE COUNTER.</b> The rep's own line is the argument for this
+    /// enum being the only difference between them: <i>"the machine and I file the same form"</i>. Everything
+    /// downstream of a press — the order, the validation, the counter on the vault, the flashback, the
+    /// payout — is written once and reads this for nothing except where to draw the rows.
+    /// </summary>
+    private enum ClaimHost
+    {
+        /// <summary>A <see cref="NebulaClaims.KioskPlate"/> console on a concourse, or the same machine
+        /// raised over the handset's beam.</summary>
+        Kiosk,
+
+        /// <summary>A man at your table who has offered to take it, and who is watching your face.</summary>
+        Rep,
+    }
 
     // ── THE FIXTURE ────────────────────────────────────────────────────────────────────────────────────
 
@@ -69,7 +89,7 @@ public sealed partial class Map
             return false;
         }
 
-        OpenTheCounter();
+        OpenTheCounter(ClaimHost.Kiosk);
         RaiseTheClaimsCard();
         return true;
     }
@@ -77,13 +97,16 @@ public sealed partial class Map
     /// <summary>Stand at the counter. A claim part-way through is picked up where it was left — walking away
     /// and coming back does not lose two presses, because the machine has them and a machine does not forget
     /// — but a claim that has already been LODGED is finished business, and a captain standing here again
-    /// with a second hull to mourn starts a fresh one.</summary>
-    private void OpenTheCounter()
+    /// with a second hull to mourn starts a fresh one.
+    ///
+    /// <para>#1151 slice 2 · A half-filled form is RE-HOSTED rather than restarted: the same two presses,
+    /// now in front of whoever the captain is standing at. That is the one implementation the slice is built
+    /// around — the man and the machine file the same form, so they cannot hold two of them.</para></summary>
+    private void OpenTheCounter(ClaimHost host)
     {
-        if (_claimDesk is not { } open || NebulaClaims.IsLodged(open.Presses))
-        {
-            _claimDesk = new ClaimDesk(0, InsuranceTier.None, "", "");
-        }
+        _claimDesk = _claimDesk is { } open && !NebulaClaims.IsLodged(open.Presses)
+            ? open with { Host = host }
+            : new ClaimDesk(0, InsuranceTier.None, "", "", host);
     }
 
     /// <summary>The card the counter is looking at right now. The label is the plate on the machine, the
@@ -91,7 +114,10 @@ public sealed partial class Map
     /// the outcome region is what it has taken — facts, in the order it took them, never a sentence.</summary>
     private void RaiseTheClaimsCard()
     {
-        if (_claimDesk is not { } desk)
+        // #1151 slice 2 · Only the MACHINE has a card of its own to raise. When the host is a man at a table
+        // his card is already on the screen and the rows are drawn on it — putting a ViewObject up over him
+        // would be the stacked card #777 named, and would take the pitch off the glass mid-sentence.
+        if (_claimDesk is not { Host: ClaimHost.Kiosk } desk)
         {
             return;
         }
@@ -125,9 +151,10 @@ public sealed partial class Map
     }
 
     /// <summary>Is the claims counter the surface the captain is looking at? The card's own gate, so the
-    /// press rows appear on this card and on no other <c>ViewObject</c> in the game.</summary>
+    /// press rows appear on this card and on no other <c>ViewObject</c> in the game — and, since slice 2,
+    /// only while the MACHINE is the host: the same three rows on a rep's card are his card's business.</summary>
     private bool TheClaimDeskIsUp =>
-        _claimDesk is not null
+        _claimDesk is { Host: ClaimHost.Kiosk }
         && _viewObject is { Label: { } label }
         && string.Equals(label, NebulaClaims.KioskPlate, StringComparison.Ordinal);
 
@@ -269,6 +296,11 @@ public sealed partial class Map
         _claimOwed ??= new LodgedClaimRecord(
             desk.HullName, InsuranceRule.HullClaimPayoutCr(_insurance, SimTime), SimTime);
 
+        // #1151 slice 2 · …and the rep's offer is spent on this loss, whichever host took the third press.
+        // Shared by construction rather than by two seams agreeing: a salesman who offered to file a hull
+        // the captain had already filed at a machine would be the firm not knowing its own paperwork.
+        _lodgingOfferedFor = desk.Receipt;
+
         RequestVaultSave();
 
         if (NebulaClaims.TheDeskComesBack(_claimsLodged))
@@ -365,7 +397,7 @@ public sealed partial class Map
             return;
         }
 
-        OpenTheCounter();
+        OpenTheCounter(ClaimHost.Kiosk);
         RaiseTheClaimsCard();
         StateHasChanged();
     }

@@ -29,6 +29,21 @@ public partial class HardcaseCard
     [Parameter] public Action TellKoltNo { get; set; } = default!;
     [Parameter] public IReadOnlyList<NebulaRep.RepOffer> koltOffers { get; set; } = default!;
 
+    // #1151 slice 2 · THE CLAIM AT THE TABLE. Five doors back to the page and not one rule of its own:
+    // whether he is offering, the door that accepts, what the counter is saying, the rows it deals and the
+    // press that takes one. Every one of them is the seam the kiosk's card reads (Map.Claims.Kiosk.cs /
+    // Map.Claims.Rep.cs), under the member's own name.
+    //
+    // #1135 · The accept is an EventCallback and the press is not, and the difference is real: the accept is
+    // bound STRAIGHT to @onclick, so a plain delegate would make this surface the receiver and leave the page
+    // — which owns the counter the press changed — unrendered. The press is called from inside a lambda (it
+    // carries a row), which is the shape that law exempts, and it is the shape the kiosk's own card uses.
+    [Parameter] public EventCallback LodgeItWithHim { get; set; }
+    [Parameter] public Action<NebulaClaims.Ask> PressTheClaim { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<NebulaClaims.Ask>> TheClaimAsks { get; set; } = default!;
+    [Parameter] public string? TheDeskSays { get; set; }
+    [Parameter] public bool TheLodgingOfferIsUp { get; set; }
+
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
 }

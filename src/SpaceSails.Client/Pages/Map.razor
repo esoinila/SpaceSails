@@ -193,13 +193,19 @@
     @if (_repCard is { } pitch)
     {
         <RepCard _repSaid="@_repSaid" AnswerTheRep="@AnswerTheRep" CloseTheRepsCard="@CloseTheRepsCard"
-                 Dismiss="@Dismiss" pitch="@pitch" />
+                 Dismiss="@Dismiss" pitch="@pitch"
+                 LodgeItWithHim="@LodgeItWithHim" PressTheClaim="@PressTheClaim"
+                 TheClaimAsks="@TheClaimAsks" TheDeskSays="@TheDeskSays"
+                 TheLodgingOfferIsUp="@TheLodgingOfferIsUp" />
     }
 
     @if (_hardcaseCard is { } koltOffers)
     {
         <HardcaseCard AnswerTheHardcase="@AnswerTheHardcase" Dismiss="@Dismiss" TellKoltNo="@TellKoltNo"
-                      koltOffers="@koltOffers" />
+                      koltOffers="@koltOffers"
+                      LodgeItWithHim="@LodgeItWithHim" PressTheClaim="@PressTheClaim"
+                      TheClaimAsks="@TheClaimAsks" TheDeskSays="@TheDeskSays"
+                      TheLodgingOfferIsUp="@TheLodgingOfferIsUp" />
     }
 
     @if (_walkInCard is { } sheAsks)
