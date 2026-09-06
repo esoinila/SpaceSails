@@ -45,6 +45,10 @@ public sealed class TheSlowGateRosterTests
         {
             // ── The boot sweeps: every dev-start URL, booted for real ──
             { nameof(EveryDeskBootsTests), 300 },
+            // #997 wave 12 emptied the undriven list, so the pressing guard raises 39 surfaces where it
+            // raised 27. The number below is NOT re-pinned: it is a reading off the 09-02 baseline run, and
+            // a run on another machine is a different measurement, not a fresher one. Measured in a full
+            // Client run on 2026-09-07 for the record — 93 s, comfortably inside the row it already had.
             { nameof(EveryPopUpCanBeDismissedTests), 152 },
             { nameof(TheBootBuildsTheSameWorldTests), 148 },
             { nameof(TheBootStopsWhenYouLeaveTests), 14 },

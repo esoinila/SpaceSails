@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
@@ -427,7 +428,143 @@ public sealed class TheOverlayShellIsOneMechanismTests
             + "quoting a count that is right for one afternoon.");
     }
 
+    /// <summary>
+    /// #997 wave 12 · <b>EVERY <c>&lt;see cref&gt;</c> IN THE DISMISSIBILITY LAW POINTS AT SOMETHING THAT
+    /// EXISTS.</b>
+    ///
+    /// <para>#1170 noticed it and did not fix it: the law's own class docblock said
+    /// <c>&lt;see cref="Verdict.EveryControlCloses"/&gt;</c> and the type is called <c>Exit</c> — a claim
+    /// that resolves to nothing, in the file that holds a law about claims that resolve to nothing. It had
+    /// survived every build because <b>nothing in this repository asks</b>: the compiler checks crefs only
+    /// when <c>GenerateDocumentationFile</c> is on, and no project here turns it on, so <c>CS1574</c> is
+    /// never raised for <c>TreatWarningsAsErrors</c> to catch.</para>
+    ///
+    /// <para>So the question is asked by reflection instead, off the file's own text: every name in a
+    /// <c>cref</c> is walked — a member or nested type of the law itself, else a type by name in this
+    /// assembly, the client's or Core's — and every segment after it must be a member or a nested type of
+    /// what came before. A pointer into the void fails here naming itself.</para>
+    ///
+    /// <para><b>The negative control is the bug.</b> <c>Verdict.EveryControlCloses</c> is asserted NOT to
+    /// resolve, in the same test that asserts the file's real ones do — because a guard on a resolver is
+    /// worth exactly as much as its resolver's ability to say no, and this repository has shipped guards
+    /// whose world could not tell pass from fail. (<c>Verdict</c> IS a type here —
+    /// <c>SpreadReconcile.Verdict</c> — so the control proves the walk, not merely the first hop.)</para>
+    ///
+    /// <para><b>Why it lives here and not in the law.</b> Same reason
+    /// <see cref="TheDismissEnumPointsAtTheLawAndStatesNoCountItCannotKeep"/> does:
+    /// <see cref="EveryPopUpCanBeDismissedTests"/> is <c>[SlowGate]</c>-tagged, and a cheap guard inside it
+    /// would be skipped by every fast loop. It reads one file by name today; widening it over the whole
+    /// test tree is a sweep of its own and is not smuggled in here.</para>
+    /// </summary>
+    [Fact]
+    public void EveryCrefInTheDismissibilityLawResolvesToSomethingThatExists()
+    {
+        string source = File.ReadAllText(
+            Path.Combine(TestSource(), nameof(EveryPopUpCanBeDismissedTests) + ".cs"));
+
+        List<string> named = Regex.Matches(source, "cref=\"([^\"]+)\"")
+            .Select(m => m.Groups[1].Value)
+            .Distinct(StringComparer.Ordinal)
+            .OrderBy(n => n, StringComparer.Ordinal)
+            .ToList();
+
+        Assert.True(named.Count > 0,
+            $"{nameof(EveryPopUpCanBeDismissedTests)}.cs names nothing in a cref at all, which cannot be "
+            + "true of the file that documents four guards by pointing at each other. This guard has been "
+            + "handed the wrong file and would pass on anything — see TestSource().");
+
+        Assert.False(Resolves("Verdict.EveryControlCloses"),
+            "the resolver says a cref this repository KNOWS is dangling resolves — #1170 found "
+            + "`Verdict.EveryControlCloses` in the law's docblock and the type is `Exit`. A resolver that "
+            + "cannot say no would pass this file however it was written.");
+
+        List<string> dangling = named.Where(n => !Resolves(n)).ToList();
+
+        Assert.True(dangling.Count == 0,
+            $"{dangling.Count} of {named.Count} cref(s) in {nameof(EveryPopUpCanBeDismissedTests)}.cs point "
+            + "at nothing that exists — a claim in the prose that a reader cannot follow and a compiler "
+            + "never checked (no project here sets GenerateDocumentationFile, so CS1574 is never raised):"
+            + "\n  - " + string.Join("\n  - ", dangling));
+    }
+
     // ── Plumbing ──────────────────────────────────────────────────────────────────────────────────────
+
+    private const BindingFlags Anything =
+        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+
+    /// <summary>Walk one cref: the first name is a member or nested type of the law, or a type by name;
+    /// every name after it is a member or a nested type of what the last one resolved to. A parameter list
+    /// (<c>Landmarks.For(string)</c>) is not read — the name is the claim this guard is about.</summary>
+    private static bool Resolves(string cref)
+    {
+        string[] steps = cref.Split('(')[0].Split('.', StringSplitOptions.RemoveEmptyEntries);
+        if (steps.Length == 0)
+        {
+            return false;
+        }
+
+        Type at = typeof(EveryPopUpCanBeDismissedTests);
+        int step = 0;
+        if (!NamesSomethingOn(at, steps[0]))
+        {
+            if (TypeNamed(steps[0]) is not { } found)
+            {
+                return false;
+            }
+
+            at = found;
+            step = 1;
+        }
+
+        for (; step < steps.Length; step++)
+        {
+            if (at.GetNestedType(steps[step], Anything) is { } deeper)
+            {
+                at = deeper;
+                continue;
+            }
+
+            // A member is where the walk ENDS: `Exit.EveryControlCloses.Something` names nothing.
+            return NamesSomethingOn(at, steps[step]) && step == steps.Length - 1;
+        }
+
+        return true;
+    }
+
+    private static bool NamesSomethingOn(Type type, string name) =>
+        type.GetNestedType(name, Anything) is not null || type.GetMember(name, Anything).Length > 0;
+
+    /// <summary>A type by its simple or full name, in the three assemblies this file's prose can name:
+    /// the test assembly, the shipping client, and Core.</summary>
+    private static Type? TypeNamed(string name) =>
+        new[]
+        {
+            typeof(TheOverlayShellIsOneMechanismTests).Assembly,
+            typeof(OverlayDismiss).Assembly,
+            typeof(SpaceSails.Core.ArrivalBrake).Assembly,
+        }
+        .SelectMany(assembly => assembly.GetTypes())
+        .FirstOrDefault(t => string.Equals(t.Name, name, StringComparison.Ordinal)
+                             || string.Equals(t.FullName, name, StringComparison.Ordinal));
+
+    /// <summary>This test project's own source, found the way <see cref="ClientSource"/> finds the
+    /// client's — up out of bin/ and across — because a guard that reads prose needs the prose.</summary>
+    internal static string TestSource()
+    {
+        var at = new DirectoryInfo(AppContext.BaseDirectory);
+        while (at is not null)
+        {
+            string candidate = Path.Combine(at.FullName, "tests", "SpaceSails.Client.Tests");
+            if (Directory.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            at = at.Parent;
+        }
+
+        throw new DirectoryNotFoundException("tests/SpaceSails.Client.Tests is not above the test binary.");
+    }
 
     private static RenderFragment Shell(params (string Name, object? Value)[] parameters) => builder =>
     {

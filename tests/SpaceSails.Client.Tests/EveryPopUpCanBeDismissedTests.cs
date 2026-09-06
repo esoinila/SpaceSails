@@ -57,7 +57,7 @@ namespace SpaceSails.Client.Tests;
 /// offers is itself a close — a decision is a dismissal. That is a real exception and the BUSTED demand, the
 /// arrival brake and the walk-in all live in it. But "all its buttons close it" is a claim about behaviour,
 /// and the way this repository has been burned before is by a guard that took such a claim from a list. So
-/// <see cref="Verdict.EveryControlCloses"/> is not read from the register — the register says only which
+/// <see cref="Exit.EveryControlCloses"/> is not read from the register — the register says only which
 /// surfaces are ALLOWED to earn it — it is established by pressing every control in turn and watching.</para>
 ///
 /// <h3>What this law does not reach, said out loud</h3>
@@ -68,11 +68,20 @@ namespace SpaceSails.Client.Tests;
 /// subtree (so it cannot be a ✕ belonging to the panel behind), and it is not <c>d-none</c>. The pixels are
 /// <c>SpaceSails.UiGate</c>'s job and are noted in the PR as the follow-up.</para>
 ///
-/// <para><b>Reach.</b> Some surfaces need a world this bench cannot build — a wreck alongside, a demand from a
-/// collector, a keypad mid-crack. Those rows are in the register (so guard 1 and guard 2 cover them) with
-/// <see cref="PopUp.Raise"/> null and a stated reason, and
-/// <see cref="TheUndrivenListOnlyEverGetsShorter"/> pins how many there are. The number can go down without
-/// anybody's permission and cannot go up without a deliberate edit to a written-down count.</para>
+/// <para><b>Reach — and as of #997 wave 12 there is none left unreached.</b> A row whose surface needs a world
+/// this bench cannot build may sit in the register with <see cref="PopUp.Raise"/> null and a stated reason:
+/// guards 1 and 2 still cover it, but the ruling has not been PROVED of it. <b>The list is empty today</b> —
+/// every surface in the register is raised and pressed — and <see cref="TheUndrivenListOnlyEverGetsShorter"/>
+/// holds it there. The number can go down without anybody's permission and cannot go up without a deliberate
+/// edit to a written-down count.</para>
+///
+/// <para>The eleven rows that emptied out of that list are worth one sentence, because their reasons all
+/// failed the same way: ten of the eleven named the right GATE and the wrong OBSTACLE. "Needs Adrift, a
+/// fuel-and-velocity verdict on a live sim" described two fields; "needs shuttle stops in reach" described a
+/// card built to report an empty reach; "needs LoudPlanAlarm, a read against sim time" described a string.
+/// A reason written on the day a row is added is a guess about the future, and nothing contradicts it while
+/// nothing presses it — which is the same shape as the two false <see cref="Exit.EveryControlCloses"/> claims
+/// this wave also found sitting on undriven rows.</para>
 /// </summary>
 [SlowGate] // #251 · 152 s over 6 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class EveryPopUpCanBeDismissedTests
@@ -236,6 +245,12 @@ public sealed class EveryPopUpCanBeDismissedTests
     private const string Docked = "/map?dock=selene-gate&body=luna&site=1";
     private const string Ashore = "/map?dock=the-tilt&site=0&land=1";
 
+    /// <summary>#997 wave 12 · The oracle's corner, as one URL. <c>?oracle=1</c> seats Static Marsh whatever
+    /// her rota says AND defaults the berth to a bar; <c>?ashore=1</c> walks the last leg, which is what
+    /// puts <c>_deckMode</c> true — and her card is gated on the deck. Both cheats are the documented pair
+    /// (Map.Sim.World.QueryArcs: <i>"the rant, one URL and one [E]"</i>).</summary>
+    private const string HerCorner = "/map?oracle=1&ashore=1";
+
     private static readonly PopUp[] TheRegister =
     [
         // ── The three #992 fixed: the surfaces that had NO way out at all ────────────────────────────
@@ -354,6 +369,28 @@ public sealed class EveryPopUpCanBeDismissedTests
         new("the plotting help card", "view-object-backdrop", Docked, Exit.AControl,
             b => b.CallOnTheDispatcher("OpenNavHelp"), At: ShipDesk.Nav),
 
+        // #997 wave 12 · THE STATION ORACLE'S CARD — the surface #1170 found had no row of its own.
+        //
+        // It was never unregistered: it wears `deck-offer-card`, which the arrival-brake row registers, so
+        // both completeness guards have always covered it. What it had never been was ASKED — the pressing
+        // law had no row to raise it from, and unlike the eleven undriven rows nothing SAID so, because a
+        // reason is a field on a row and there was no row. #1170 found it while re-running #992's audit,
+        // through the paren-aware class scan: her root class is one arm of a ternary (the hush is a class
+        // on the ROOT), which is the shape the old regex could not read.
+        //
+        // Raised through the SHIPPING verb, and it is the E-key's own: TalkToOracle is where the BarPatron
+        // console routes, so a fork that stopped opening her corner fails here rather than nowhere. It is
+        // also idempotent in the way this law needs (the galley's discipline, #1021): it sets `_oracleOpen`
+        // true and draws her opening rant only when `_oracleLine` is null, so re-raising between presses
+        // cannot shut the card the way a toggle would.
+        //
+        // Exit.AControl and NOT EveryControlCloses, established by pressing rather than assumed: 🌀 Keep
+        // listening turns the dial one line on and 🥃 Buy her a drink widens the channel, and both leave
+        // her card standing. `Done` — the shell's own dismiss (#997 wave 9) — is the way out.
+        new("the station oracle's card (Solenne \"Static\" Marsh)", "deck-offer-card", HerCorner,
+            Exit.AControl,
+            b => b.CallOnTheDispatcher("TalkToOracle")),
+
         new("the ship's own atmosphere board", "view-object-backdrop", Docked, Exit.AControl,
             b => b.Poke("_showShipBoard", true)),
 
@@ -416,7 +453,15 @@ public sealed class EveryPopUpCanBeDismissedTests
         new("the help / lesson checklist", "map-tutorial", Docked, Exit.AControl,
             b => b.Poke("_showTutorial", true), At: ShipDesk.Nav),
 
-        // ── In the register, not yet driven. Each names the world this bench cannot build. ───────────
+        // ── The rows that were named and not asked, and are asked now. ───────────────────────────
+        // #997 wave 12 · THIS SECTION USED TO BE HEADED "in the register, not yet driven". It is not any
+        // more, and the story of how it emptied is the one thing worth keeping from it: ELEVEN rows sat
+        // here, each with a sentence naming the world this bench could not build, and TEN of those eleven
+        // sentences named the right gate and the wrong obstacle. What they had in common is that nobody had
+        // gone and looked — a reason written on the day a row is added is a guess about the future, and it
+        // is believed for exactly as long as nothing presses it. That is the same shape as the false
+        // EveryControlCloses claims this wave also found: the register is where claims go to be proved, and
+        // a claim that a row cannot be proved is still a claim.
         // #997 wave 3 · DRIVEN NOW — and it is entered at the COLLECTOR'S TERMS rather than at the demand,
         // which is a finding rather than a dodge.
         //
@@ -434,9 +479,33 @@ public sealed class EveryPopUpCanBeDismissedTests
         new("the BUSTED / death panel (the collector's terms)", "busted-backdrop", FreeFlying,
             Exit.EveryControlCloses,
             b => TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTests.StageTheDemand(b, "Confiscated")),
-        new("the arrival-brake card", "deck-offer-card", FreeFlying, Exit.EveryControlCloses, null,
-            "needs _brakeGate.Asking, which is ArrivalBrake.Advance's own timing verdict on a ship that is "
-            + "coming in hot — a sim state, not a field."),
+        // #997 wave 12 · DRIVEN NOW, and the old reason was half right in the way that matters. The GATE
+        // is a field (`_brakeGate`), so poking it to Asking always drew the card — that was never the
+        // problem. The problem was the ANSWER: FireArrivalBrake returns early when BrakeWindowBody() is
+        // null, so under a poked gate "🔥 Fire the brake" LOOKS like a control that is not a way out, and
+        // this row's EveryControlCloses would have failed on a world that was simply wrong rather than on a
+        // bug. The guard next door says exactly that and asks the Fire half in SOURCE instead
+        // (TheDossiersFileScrollsUnderItsHeadAndTheDeckCardsTakeTheShellTests).
+        //
+        // What nobody had looked at is what BrakeWindowBody() actually reads: `_brakeArrivalBodyId`, a plain
+        // string field that the arrival writes, resolved against the ephemeris the boot already built. Name
+        // a body that IS in that ephemeris and Fire runs its whole path — so the window is reachable, and
+        // the ByDecision claim can be held the only honest way, by pressing both answers.
+        //
+        // The gate is set through the SHIPPING transition rather than by constructing a Phase:
+        // ArrivalBrake.Advance(Closed, windowOpen: true) is the per-frame law's own answer to "the window
+        // just opened", so a rule change that stopped opening the ask fails here rather than nowhere.
+        //
+        // At Nav, because the card is gated on `!_deckMode` and SwitchDesk(Deck) — this register's default
+        // — puts the captain on the walkable deck. Found by running it: at the Deck the driver raised
+        // nothing at all, which is the wrong-world complaint doing its job.
+        new("the arrival-brake card", "deck-offer-card", FreeFlying, Exit.EveryControlCloses,
+            b =>
+            {
+                b.Poke("_brakeArrivalBodyId", "luna");   // a body the FreeFlying ephemeris really carries
+                b.Poke("_brakeDestName", "Luna");
+                b.Poke("_brakeGate", ArrivalBrake.Advance(ArrivalBrake.Gate.Closed, windowOpen: true));
+            }, At: ShipDesk.Nav),
         // #997 wave 2 · DRIVEN NOW, and the reason it could not be before was half right. Walking her across
         // a floor is genuinely out of reach off-browser — but her CARD is gated on one field, and the law's
         // question is about the card. So the row raises the card the same way the walk-in guard raises her
@@ -445,24 +514,117 @@ public sealed class EveryPopUpCanBeDismissedTests
         // dismiss, which is a way out that is not one of her two answers.
         new("the walk-in HOSTED card", "view-object-backdrop", Docked, Exit.AControl,
             b => b.Poke("_walkInCard", (WalkIn.Who?)WalkIn.Who.Ilse)),
-        new("the rep's pitch (Harlan Fess)", "view-object-backdrop", Docked, Exit.EveryControlCloses, null,
-            "same room, same reason — his card is raised on the landing frame of a crossing."),
-        new("the rescue / tow offer", "rescue-backdrop", FreeFlying, Exit.EveryControlCloses, null,
-            "needs Adrift, which is a fuel-and-velocity verdict on a live sim."),
-        new("the loud plan alarm", "rescue-backdrop", FreeFlying, Exit.AControl, null,
-            "needs LoudPlanAlarm, a read of a plan's own break against sim time."),
-        new("the hatch keypad", "pin-backdrop", Ashore, Exit.AControl, null,
-            "needs a staged crack job with a hatch and a pin."),
+        // #997 wave 12 · DRIVEN NOW — and driving it settles a claim that has been FALSE IN THIS REGISTER
+        // SINCE #997 FIXED IT IN THE MARKUP. RepCard.razor's own comment says so out loud: "#992's register
+        // has this card down as a critical-DECISION modal … and that row was never driven, so nothing ever
+        // pressed it. Read AnswerTheRep: THREE of his six moves leave the card up." #997 gave him a `Step
+        // away` — the shell's Close — and nobody came back to move the row off EveryControlCloses, because
+        // an undriven row is a row nothing can contradict.
+        //
+        // Pressed, it is exactly what that comment predicted: `Not today` and `Step away` end the card;
+        // buying a tier refreshes the pitch to the tier you now hold, and "I already have a policy" sets his
+        // reply beside it — both leave him standing. So the honest Exit is AControl, which is the same
+        // correction the walk-in's row took in wave 2, for the same reason.
+        //
+        // Raised the walk-in's way: the card is a field, and this law's question is about the card. The
+        // CONTENT is still the shipping content — NebulaRep.PitchFor is the one place a pitch is built and
+        // all three of his seams call it. His crossing of the floor is proved next door, on its own legs
+        // (TheRepCrossesTheFloorTests, TheSalesmanWorksTheRoomTests).
+        new("the rep's pitch (Harlan Fess)", "view-object-backdrop", Docked, Exit.AControl,
+            b => b.Poke("_repCard",
+                        (NebulaRep.RepPitch?)NebulaRep.PitchFor(InsuranceTier.Basic, "Vane"))),
+        // #997 wave 12 · DRIVEN NOW. `Adrift` is not a verdict on a live sim at all — it is
+        // `_reactionMassPulses == 0 && !_docked` (Map.Sim.cs), two fields; and a guard next door has been
+        // emptying the tank of a flying ship to raise this very card since wave 5
+        // (TheShellOwnsTheBeatCardsTests.TheTowOfferOffersNoWayOutButAnAnswerAndBothAnswersAreOne). The
+        // reason on this row was never re-read against the code it described.
+        //
+        // At Nav, because the whole block it lives in is gated on `_activeDesk == ShipDesk.Nav`.
+        new("the rescue / tow offer", "rescue-backdrop", FreeFlying, Exit.EveryControlCloses,
+            b =>
+            {
+                b.Poke("_reactionMassPulses", 0);   // …and FreeFlying is not docked: that is Adrift
+                b.Poke("_showRescueOffer", true);
+            }, At: ShipDesk.Nav),
+        // #997 wave 12 · DRIVEN NOW. `LoudPlanAlarm` reads no clock: it is the standing shape alarm or the
+        // standing arrive alarm, whichever is undismissed (Map.Plot.CastOff.cs) — four fields, with the
+        // shape one outranking the other, and the shape one is the arm this row raises. What is a live read
+        // is the PLAN CHECK that sets `_shapeAlarm`; what this law asks about is the card the alarm draws.
+        //
+        // The alarm's own voice is the page's and not this test's: LoudPlanAlarmHail and LoudPlanAlarmQuote
+        // are chosen by which arm is standing, so what is poked here is only the break's summary line.
+        new("the loud plan alarm", "rescue-backdrop", FreeFlying, Exit.AControl,
+            b =>
+            {
+                b.Poke("_shapeAlarm", "step 2 · a burn this ship cannot make");
+                b.Poke("_shapeAlarmDismissed", false);
+            }, At: ShipDesk.Nav),
+        // #997 wave 12 · DRIVEN NOW. The staging the old reason asked for is real — KnockOnHatch wants the
+        // captain standing at the ONE hatch a crack job named, at the station that gave it — but all of that
+        // is the ROAD to the pad, and the pad is gated on `_pinJob` alone. Its header reads
+        // `_pinHatch?.Label ?? "LOCKED HATCH"`, which is the markup itself saying that the hatch is
+        // decoration to this question and the job is not.
+        //
+        // The pin is set and the entry cleared on every raise, so pressing a digit key cannot leave four of
+        // them behind and pop the hatch out from under a later press.
+        new("the hatch keypad", "pin-backdrop", Ashore, Exit.AControl,
+            b =>
+            {
+                b.Poke("_pinJob", new Map.Quest("pop-up-law", Map.QuestKind.Crack, "the Fixer", "V-06", "",
+                                                "crack the bonded stores", "key it in", 0, Pin: "1234"));
+                b.Poke("_pinEntry", "");
+            }),
+        // #997 wave 12 · DRIVEN NOW, through the celebration — the member of the family whose whole content
+        // is Core data (MissionCelebration + Celebrations.GiverThanks), so nothing past the gate is invented
+        // here. The old reason counted the gates correctly and drew the wrong conclusion from the count: a
+        // root class shared by several surfaces is a reason to raise exactly ONE of them, which is what the
+        // convergence band's rows have done since day one — never a reason to raise none.
+        //
+        // The siblings need no putting down, and that is a fact about the world rather than an omission:
+        // nothing in the Ashore boot raises any of them, so a fresh bench has the root class to itself. The
+        // family's other surfaces are pressed one by one next door (TheShellOwnsTheBeatCardsTests).
         new("the mission celebrations, briefs and reveals", "mission-celebration-backdrop", Ashore,
-            Exit.AControl, null,
-            "five gates on one root class, each fed by a completed contract, an expedition or a wreck."),
-        new("the expedition reveal", "expedition-reveal-backdrop", Ashore, Exit.AControl, null,
-            "raised by an expedition region resolving; needs the away lane run."),
-        new("the operating-log card", "vent-read-backdrop", FreeFlying, Exit.AControl, null,
-            "needs a wreck alongside with a read room in _ventReads."),
+            Exit.AControl,
+            b => b.Poke("_celebration", (MissionCelebration?)new MissionCelebration(
+                "THE ICE RUN", "Madam Coil", Celebrations.GiverThanks("Madam Coil"), 4_200, 3,
+                "the bird sings the payday"))),
+        // #997 wave 12 · DRIVEN NOW. The away lane is what FILLS this card; it is not what DRAWS it —
+        // `_expeditionRevealCard` is a record of four values and the gate is that field being non-null. The
+        // panel wears BOTH `mission-celebration-backdrop` and its own root, which is why the family is
+        // registered twice over and why each row raises its own surface on its own bench.
+        new("the expedition reveal", "expedition-reveal-backdrop", Ashore, Exit.AControl,
+            b => b.Poke("_expeditionRevealCard", (Map.ExpeditionRevealCard?)new Map.ExpeditionRevealCard(
+                ExpeditionSiteKind.MysticalRuins, "THE LEANING MAST",
+                "it was never a mast", "the ground remembers what stood on it"))),
+        // #997 wave 12 · DRIVEN NOW, and this is the one row whose old reason was TRUE and still left it
+        // sitting: FreeFlying IS a wreck alongside, and `_ventReads` is a dictionary a driver may write. The
+        // reading itself is Core's own HullVenting.Read of a Space, so what the card prints is a real roll
+        // against a real compartment rather than a hand-made LifeSign.
+        new("the operating-log card", "vent-read-backdrop", FreeFlying, Exit.AControl,
+            b =>
+            {
+                const string room = "THE PUMP ROOM";
+                var reads = (Dictionary<string, (DiceRoll Roll, HullVenting.LifeSign Sign)>)
+                    b.Peek("_ventReads")!;
+                reads[room] = HullVenting.Read(
+                    7, new HullVenting.Space(room, DoorShut: true, Vented: false, Infested: true,
+                                             HoldsSurvivor: false));
+                b.Poke("_ventReadCard", room);
+            }),
+        // #997 wave 12 · DRIVEN NOW, through the CHOOSER — the member of this family whose gate is a list
+        // the page hands itself. A pointer hit is how that list gets BUILT in play; it is not what the menu
+        // is drawn on, and the law's question is about the menu. The candidate is the page's own sky row,
+        // character for character (Map.Sim.Controls.cs).
+        //
+        // Its rows are answers that do end it, and its ✕ is the shell's — which is the distinction
+        // PickMenuPanel's own comment argues at length: a menu is not a question, so "none of them" has to
+        // stay sayable. Exit.AControl, and pressing finds all three controls ending it, which reads that
+        // comment's rule the strong way round rather than the weak one.
         new("the pick-candidate chooser and the three context menus", "map-body-menu", Docked,
-            Exit.AControl, null,
-            "needs a pointer hit against a drawn body, contact or patch of sky."),
+            Exit.AControl,
+            b => b.Poke("_pickMenu",
+                        new List<Map.PickCandidate> { new('K', "", "scan this patch of sky", "🔭") }),
+            At: ShipDesk.Nav),
         // #997 wave 11 · DRIVEN NOW. The reason this row carried was true about the CARD and wrong about the
         // road to it: the tray is gated on a DiceEvent handed down from a roll, and #305 wrote exactly one
         // seam for handing one down — RaiseDiceEvent, the entry every dice-scripted system is meant to
@@ -476,10 +638,45 @@ public sealed class EveryPopUpCanBeDismissedTests
         new("the dice tray", "dice-tray", Docked, Exit.AControl,
             b => b.Call("RaiseDiceEvent",
                         TheChecklistAndTheTrayTakeTheShellAndEscapeClosesTheMenusTests.ARoll())),
-        new("the shuttle-bay hatch and the load-out", "deck-shuttle-card", Ashore, Exit.AControl, null,
-            "needs shuttle stops in reach of the berth — the bench's own documented horizon (see DeskBench)."),
-        new("the selfie offer", "selfie-offer", Ashore, Exit.EveryControlCloses, null,
-            "raised by walking into a view worth a photograph."),
+        // #997 wave 12 · DRIVEN NOW, and the old reason had the horizon right and the gate wrong. The board
+        // is drawn on `_shuttleBayStops is { }` — a LIST, possibly an EMPTY one — and not on that list
+        // holding anything: ShuttleBayCard's own note says the hatch reports its reach honestly and that
+        // nothing in range does not keep the door shut. The bench's documented empty reach is therefore a
+        // thing this card exists to say, not a wall in front of it.
+        //
+        // Raised through the SHIPPING verb: OpenShuttleBayDoor is where the bay hatch's interaction lands,
+        // so a fork that stopped opening the door fails here rather than nowhere — and it asks
+        // ShuttleDestinationsInRange for real, so whatever the reach is at this berth is what the card gets.
+        // (At the Tilt it comes back with Miranda in it, which is worth knowing: the bench's horizon is
+        // `?land=1` with no `?dock=`, and this row names its berth.)
+        //
+        // THE LOAD-OUT IS PUT DOWN FIRST, and that is the start-picker's lesson arriving at a second family
+        // rather than a tidiness. Two surfaces wear `.deck-shuttle-card` — the board and the load-out — and
+        // BOARDING one of the board's rows is what raises the other (`_shuttleBayStops = null; _boardTarget
+        // = stop` — the panel replaces the board). So the law pressed "🛸 Board for Miranda", re-raised,
+        // pressed "Close hatch", and reported a hatch that would not close, when what was left on the screen
+        // was the load-out the earlier press had opened. Read that failure the way the logbook's row says to
+        // read its own: the law was right that something wearing that class was still up.
+        new("the shuttle-bay hatch and the load-out", "deck-shuttle-card", Ashore, Exit.AControl,
+            b =>
+            {
+                b.Poke("_boardTarget", null);   // the OTHER surface on this root — see above
+                b.CallOnTheDispatcher("OpenShuttleBayDoor");
+            }),
+        // #997 wave 12 · DRIVEN NOW. Walking into the view is out of reach off-browser and always will be;
+        // the NUDGE it leaves behind is `_selfieOffer`, three strings, and that nudge is the surface the
+        // ruling is about.
+        //
+        // Its EveryControlCloses survives the pressing, and one detail is said out loud here rather than
+        // discovered later: `Take the shot` ends in RendererInterop.PlayCue, a [JSImport] and therefore
+        // DeskBench's documented browser gate — but it throws AFTER `_selfieOffer` is cleared, so the card
+        // really is gone, and this law reads the render, which is the whole of its question. The throw lands
+        // in the renderer's error channel, which this law does not read; the guard that DOES read it names
+        // this same press as the one it cannot make
+        // (TheDossiersFileScrollsUnderItsHeadAndTheDeckCardsTakeTheShellTests).
+        new("the selfie offer", "selfie-offer", Ashore, Exit.EveryControlCloses,
+            b => b.Poke("_selfieOffer",
+                        (Map.SelfieOffer?)new Map.SelfieOffer("beat-the-long-fall", "the long fall", ""))),
         // #997 wave 10 · DRIVEN NOW, and by a URL rather than by a poke. The reason this row sat undriven
         // was true when it was written — the dossier is gated on a tactical target, and the only two roads
         // to one were a contact in sensor reach or a collector bought by a robbery, neither of which a URL
@@ -657,11 +854,26 @@ public sealed class EveryPopUpCanBeDismissedTests
         // bookkeeping. The dice tray's reason named the right gate and the wrong obstacle: a DiceEvent is
         // pure Core data and #305 shipped one seam for handing one to the tray, so the road was there all
         // along and nobody had walked it. Still TIGHT — undrive any single row and this goes red.
+        //
+        // #997 wave 12 · ELEVEN BECAME ZERO, in one wave, and that is not eleven achievements. It is one
+        // finding repeated eleven times: the dice tray's diagnosis was not special to the dice tray. Ten of
+        // the eleven remaining reasons named the right gate and the wrong obstacle — Adrift is two fields,
+        // LoudPlanAlarm is a string, the shuttle board draws on an EMPTY list, the keypad's hatch is a `??`
+        // fallback in its own header — and the eleventh (the operating log) was simply true and still left
+        // the row sitting, because a reason nobody re-reads is a reason nobody acts on. Every one of them
+        // was found by opening the file the reason was about.
+        //
+        // ZERO IS THE STRONGEST THIS NUMBER HAS EVER BEEN AND THE EASIEST TO BREAK, which is the point.
+        // There is no slack left at all: a single row added with a `null` Raise fails this on the day it is
+        // typed, and the fix is either a driver or a deliberate edit to this number with the reason in the
+        // commit. That is the trade wave 10 argued for when it pulled the ceiling down onto its count.
         int undriven = TheRegister.Count(p => p.Raise is null);
-        Assert.True(undriven <= 11,
-            $"{undriven} register rows have no driver, and the written-down ceiling is 11. If a row genuinely "
-            + "cannot be raised off-browser, lower the ceiling is wrong — raise it deliberately and say so in "
-            + "the commit; the point of the number is that it cannot creep.");
+        Assert.True(undriven <= 0,
+            $"{undriven} register row(s) have no driver, and the written-down ceiling is 0 — since #997 wave "
+            + "12 every surface in this register is raised and pressed. If a row genuinely cannot be raised "
+            + "off-browser, lowering the ceiling is wrong: raise it deliberately, say so in the commit, and "
+            + "make the row's reason a sentence about the CODE somebody has just read — ten of the eleven "
+            + "reasons this ceiling used to count were describing gates that had moved.");
     }
 
     // ── Guard 2 · the same question, asked of what was drawn ──────────────────────────────────────────
