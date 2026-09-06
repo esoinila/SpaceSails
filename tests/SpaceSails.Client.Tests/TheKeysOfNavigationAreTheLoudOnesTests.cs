@@ -97,7 +97,7 @@ public sealed class TheKeysOfNavigationAreTheLoudOnesTests
     [Fact]
     public void AMinimisedScopeIsNotDrawn()
     {
-        string phase = Between(Client("Pages", "Map.Sim.Tick.cs"),
+        string phase = Between(Client("Pages", "Map.Sim.Tick.Views.cs"),
             "private void DrawTheScopeInsetIfItIsUp()", "_scopeView.Draw(");
 
         Assert.Contains("!_scopeMinimized", phase);

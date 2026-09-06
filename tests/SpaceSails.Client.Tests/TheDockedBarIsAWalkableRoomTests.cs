@@ -419,10 +419,14 @@ public sealed class TheDockedBarIsAWalkableRoomTests
     [Fact]
     public void TheWalkedFrameStepsTheBar()
     {
-        string tick = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Sim.Tick.cs"));
+        // The frame's source — all of it. `Map.Sim.Tick.cs` was split by concern (#251) and the walked frame
+        // moved to `Map.Sim.Tick.Views.cs`; read the family as a glob rather than naming one partial.
+        string tick = string.Join("\n", Directory
+            .EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim.Tick*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
         int walked = tick.IndexOf("private bool TheWalkedViewOwnsThisFrame", StringComparison.Ordinal);
-        Assert.True(walked >= 0, "Map.Sim.Tick.cs no longer has a walked frame — this guard reads a dead name.");
+        Assert.True(walked >= 0, "Map.Sim.Tick*.cs no longer has a walked frame — this guard reads a dead name.");
 
         string body = tick[walked..];
         Assert.Contains("AdvanceBarWalkers(dtRealSeconds);", body, StringComparison.Ordinal);

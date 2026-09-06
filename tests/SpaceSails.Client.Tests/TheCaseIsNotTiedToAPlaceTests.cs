@@ -346,9 +346,9 @@ public sealed class TheCaseIsNotTiedToAPlaceTests
     [Fact]
     public void THE_WALKED_FRAME_StepsTheDigWhereTheSurfaceClockCannotReach()
     {
-        string tick = Pages("Map.Sim.Tick.cs");
+        string tick = Tick();
         int walked = tick.IndexOf("private bool TheWalkedViewOwnsThisFrame", StringComparison.Ordinal);
-        Assert.True(walked >= 0, "Map.Sim.Tick.cs no longer has a walked frame — this guard reads a dead name.");
+        Assert.True(walked >= 0, "Map.Sim.Tick*.cs no longer has a walked frame — this guard reads a dead name.");
 
         string body = tick[walked..];
         int branch = body.IndexOf("if (_surface is null)", StringComparison.Ordinal);
@@ -438,6 +438,15 @@ public sealed class TheCaseIsNotTiedToAPlaceTests
 
     private static string Pages(string file) =>
         File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+
+    /// <summary>The frame's source — all of it. `Map.Sim.Tick.cs` was split by concern (#251) and the walked
+    /// frame moved to `Map.Sim.Tick.Views.cs`, so this reads the family as a glob in ordinal order rather
+    /// than naming one partial the next split could empty.</summary>
+    private static string Tick() =>
+        string.Join("\n", Directory
+            .EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim.Tick*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     private static string RepoRoot()
     {
