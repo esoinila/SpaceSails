@@ -301,105 +301,11 @@
     }
     else
     {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseTable)">
-            <OverlayShell class="deck-offer-card table-card" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="Close"
-                          DismissTitle="Stand up. It costs nothing and it never will."
-                          OnClose="() => Dismiss(CloseTable)">
-                <div class="deck-offer-giver">@tab.Plate</div>
-
-                @* #783 · THE TABLE YOU ARE AT, DRAWN ON THE PANEL YOU ARE AT IT THROUGH. Owner, live at a
-                   taken table: "the pop up could have Gen AI here." Same seam #756 put the counter's own desk
-                   on the barkeep card through — an image in the card's own flow, ABOVE the prose and never
-                   behind it, which is how #782's contrast law is kept by construction here: no text sits on
-                   the picture at all, so there is nothing to be unreadable over.
-
-                   TWO STATES, TWO PICTURES. The empty chair opposite IS the wait beat; boots up on that same
-                   chair with a cold glass is the other thing sitting down can be (#783's relaxation
-                   register). Which one shows is SittingAlone's own answer, off the same flag the opening
-                   line is chosen with — a panel that picked its own would be free to draw an empty chair
-                   under a sentence about your feet being on it. *@
-                @if (tab.ArtUrl is { } tableArt)
-                {
-                    <img class="table-art" src="@tableArt" alt="" aria-hidden="true" />
-                }
-
-                @* The seats are the reason you may sit here at all (#746/#739), so the panel says them.
-                   Core's numbers, not the renderer's — the same call that drew the top. *@
-                <div class="table-seats small">
-                    @tab.Scene.Setting — seats @tab.Seats, @(tab.Free == 1 ? "one chair free" : $"{tab.Free} chairs free")
-                </div>
-
-                @* #680 · THE ANSWER, INSIDE THE DIALOG. *@
-                @if (tab.Outcome is { Length: > 0 } saidAtTable)
-                {
-                    <div class="table-outcome">@saidAtTable</div>
-                }
-                @* §5.0's homage: the player watches the numbers add up. Shown only when dice actually
-                   decided something — a modifier stack printed under a fixed outcome would be theatre. *@
-                @if (tab.Math is { Length: > 0 } tableMath)
-                {
-                    <div class="table-math small">🎲 @tableMath</div>
-                }
-
-                <div class="deck-offer-reward">Purse: @_credits.ToString("N0", CultureInfo.InvariantCulture) cr</div>
-
-                <div class="deck-offer-actions table-actions">
-                    @* #746 · ASKING TO SIT IS ITS OWN BEAT — the one the owner said was missing. Until it is
-                       pressed, the only two things a stranger standing at somebody's table may do are ask
-                       for the chair and walk away. *@
-                    @if (!tab.Joined)
-                    {
-                        <button type="button" class="btn btn-sm btn-warning"
-                                title="Ask for the empty chair"
-                                @onclick="() => TableMoveClicked(SpaceSails.Core.CanteenTable.Join)">@SpaceSails.Core.CanteenTable.AskToJoin</button>
-                        <button type="button" class="btn btn-sm btn-outline-light"
-                                title="Think better of it. It costs nothing."
-                                @onclick="() => Dismiss(CloseTable)">@SpaceSails.Core.CanteenTable.LabelOf(SpaceSails.Core.CanteenTable.Leave)</button>
-                    }
-                    @* #749 · ONLY WHAT IS ON THE TABLE. A move you have not earned is still drawn and still
-                       refused out loud (#603); a move that is an ANSWER to a sentence nobody has spoken yet
-                       is not drawn at all, because you cannot decline an offer that was never made. Core's
-                       own call, so a checkpoint rendering through this block gets the same law. *@
-                    @foreach (SpaceSails.Core.Encounter.Move move in tab.Joined ? TableMovesOnTheTable() : [])
-                    {
-                        SpaceSails.Core.Encounter.Move m = move;
-                        bool open = TableMoveOnOffer(m);
-                        @* The fitter's ask is HIGHLIGHTED once the hand has waved you toward it — the
-                           NO-AND's second effect, and the only thing in this panel that is styling rather
-                           than state. *@
-                        <button type="button"
-                                class="btn btn-sm @(TableMoveIsUrged(m) ? "btn-warning" : "btn-outline-light")"
-                                disabled="@(!open)"
-                                title="@(open ? m.Label : TableMoveRefusal(m))"
-                                @onclick="() => TableMoveClicked(m.Id)">@m.Label</button>
-                    }
-                </div>
-
-                @* Putting something on the table fans the pocket open right here — a second press, never a
-                   mode, for #614's reason: a captain deciding WHAT to put down must not be one mis-click
-                   from having put something down. *@
-                @if (tab.Joined && tab.Showing)
-                {
-                    <div class="table-showables">
-                        @if (_satchel.Count == 0)
-                        {
-                            <div class="satchel-empty">Nothing in your pockets to put down.</div>
-                        }
-                        @foreach (SpaceSails.Core.Satchel.Item carried in TableShowables())
-                        {
-                            SpaceSails.Core.Satchel.Item show = carried;
-                            <button type="button" class="satchel-item table-showable"
-                                    title="Put it on the table where everyone can see it"
-                                    @onclick="() => TableShow(show)">
-                                <span class="satchel-item-name">@SatchelLabel(show)</span>
-                            </button>
-                        }
-                    </div>
-                }
-            </OverlayShell>
-        </div>
+        <TableCard _credits="@_credits" _satchel="@_satchel" CloseTable="@CloseTable" Dismiss="@Dismiss"
+                   SatchelLabel="@SatchelLabel" TableMoveClicked="@TableMoveClicked"
+                   TableMoveIsUrged="@TableMoveIsUrged" TableMoveOnOffer="@TableMoveOnOffer"
+                   TableMoveRefusal="@TableMoveRefusal" TableMovesOnTheTable="@TableMovesOnTheTable"
+                   TableShow="@TableShow" TableShowables="@TableShowables" tab="@tab" />
     }
     }   @* …and the seated region closes. Two frames, one occupation of one table. *@
 
