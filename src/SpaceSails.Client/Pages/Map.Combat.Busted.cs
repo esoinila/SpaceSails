@@ -25,12 +25,20 @@ public partial class Map
     // inert — it OPENS the boarding pop-up. Warp yanks to 1×, the ship is grappled, and the collector
     // hails with a demand and three options (SUBMIT / BRIBE / RESIST). The seed is folded from the
     // hunter's identity and the sim moment, so every roll in this encounter is reproducible.
+    private void ApplyHunterCatch(HunterState hunter) => TheDemandGoesUp(hunter, onTheTermsOf: null);
+
+    /// <summary>
+    /// The body of the catch, and the one place a boarding demand is built. <see cref="ApplyHunterCatch"/> is
+    /// still the door every ordinary catch comes through, unchanged and one-armed — a second parameter with a
+    /// default on it looks free and is not: three other files reach this method by reflection, where an
+    /// optional argument is a missing argument.
+    /// </summary>
     /// <param name="onTheTermsOf">#1151 slice 4 · A WRIT THAT WAITED, or null on every ordinary catch. The
     /// demand's two numbers — the heat it is worth and the moment its seed is cut from — are the FILE's and
     /// not today's when a writ is being served, so a captain who kept a collector waiting is charged neither
     /// less nor more for the wait. Everything else about the beat is identical, because it is the same beat:
     /// the same panel, the same three options, the same dice.</param>
-    private void ApplyHunterCatch(HunterState hunter, PendingWritRecord? onTheTermsOf = null)
+    private void TheDemandGoesUp(HunterState hunter, PendingWritRecord? onTheTermsOf)
     {
         Warp = 1;
         _effectiveWarp = 1;

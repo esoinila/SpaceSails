@@ -876,6 +876,12 @@ public sealed class TheClaimIsWalkedEndToEndTests
         Assert.Equal(berth, (string?)Read(map, "_dockedHavenId"));
         Assert.True((bool)Invoke(map, "TheMasterIsAboardHer")!);
 
+        // …and it stays waiting for as long as that card is up. Fifty frames of the running game with every
+        // other condition already met, and nothing opens over the top of the ending that filed it.
+        RunFrames(map, seconds: 5);
+        Assert.Null(Read(map, "_busted"));
+        Assert.NotNull(Read(map, "_writPending"));
+
         Invoke(map, "CloseShipEpitaph");
         RunFrames(map, seconds: 1);
 
@@ -970,6 +976,32 @@ public sealed class TheClaimIsWalkedEndToEndTests
         // …and that is not what the gauge in front of him would have bought.
         ulong today = DiceRule.Seed("busted", 0, (long)(double)Read(map, "SimTime")!);
         Assert.NotEqual(BustedRule.BribeDemand(1, today).Total, ((DiceRoll)Get(demand, "Bribe")!).Total);
+    }
+
+    /// <summary>
+    /// <b>AND A WRIT FILED BEFORE THE TERMS EXISTED IS SERVED AT THE DEMAND'S OWN FLOOR.</b> Slice 1 shipped
+    /// this record with three fields and no terms on it, and a voyage saved between then and now can have one
+    /// on the file right this minute. It is served — a file that could not be served would be a captain stuck
+    /// owing a process nobody can close — at heat 1, the floor every demand in the game already has, and
+    /// <b>not</b> off the gauge in front of him, which is set to 3 here precisely so the two answers differ.
+    /// </summary>
+    [Fact]
+    public void A_WRIT_FiledBeforeTheTermsExistedIsServedAtTheDemandsOwnFloor()
+    {
+        Pages.Map map = ACastawayWithAWritWaitingForHim(out string berth);
+        object filed = Read(map, "_writPending")!;
+
+        // The file as slice 1 wrote it: whose contract, which berth, when — and nothing else.
+        Set(map, "_writPending", new PendingWritRecord(
+            (string)Get(filed, "Callsign")!, berth, (double)Get(filed, "FiledAtSimTime")!));
+        Set(map, "_heat", new HeatState(3, (double)Read(map, "SimTime")!));
+
+        Invoke(map, "CloseShipEpitaph");
+        RunFrames(map, seconds: 1);
+
+        object demand = Read(map, "_busted") ?? throw new InvalidOperationException(
+            "a writ from before the terms existed can never be served, and the captain owes it forever.");
+        Assert.Equal(1, (int)Get(demand, "Heat")!);
     }
 
     /// <summary>

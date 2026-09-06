@@ -109,8 +109,12 @@ public sealed class ThePlayerIsToldTests
 
         // The grapples land: the demand panel IS the hail's card (#777 hosted), so the beat is raised
         // through the one door and the panel carries the painting. What the captain now OWES.
+        //
+        // #1151 slice 4 · The method named is `TheDemandGoesUp` rather than `ApplyHunterCatch`, because a
+        // WRIT THAT WAITED opens this same panel on the terms it was filed on. `ApplyHunterCatch` is still
+        // the one-armed door every ordinary catch comes through; the body — and this beat — is one for both.
         new("a collector has you, and names a price",
-            Surface.RaisedCard, "Map.Combat.Busted.cs", "ApplyHunterCatch",
+            Surface.RaisedCard, "Map.Combat.Busted.cs", "TheDemandGoesUp",
             "RaiseStoryBeat(StoryBeats.Beat.CollectorHail, hunter.Callsign);"),
 
         // ── WHAT YOU OWE, AND WHAT YOU ARE OWED ────────────────────────────────────────────────────────

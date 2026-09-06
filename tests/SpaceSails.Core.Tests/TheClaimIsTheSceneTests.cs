@@ -440,9 +440,11 @@ public sealed class TheClaimIsTheSceneTests
         Assert.Equal("GRIMHOLD", old.Callsign);
         Assert.Equal("selene-gate", old.HavenId);
         Assert.Equal(1234.5, old.FiledAtSimTime);
-        Assert.Equal(0, old.HeatWhenFiled);                // no terms on the file…
+        // …and no terms on it. What a writ with no terms is SERVED at is next door in the Client's own
+        // A_WRIT_FiledBeforeTheTermsExistedIsServedAtTheDemandsOwnFloor, where a live demand is opened on
+        // one — restating the floor here would only be this file agreeing with its own arithmetic.
+        Assert.Equal(0, old.HeatWhenFiled);
         Assert.Null(old.HunterId);
-        Assert.Equal(1, Math.Max(1, old.HeatWhenFiled));   // …and the demand's own floor is what it gets
     }
 
     /// <summary>
