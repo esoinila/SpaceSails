@@ -16,7 +16,7 @@ public class ZubrinTrafficTests
     private static readonly string[] Giants = ["jupiter", "saturn", "uranus", "neptune"];
 
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     /// <summary>The top-level planet a body ultimately orbits (a moon/station borrows its planet).</summary>
     private static string SystemOf(ICelestialEphemeris ephemeris, string bodyId)

@@ -47,7 +47,7 @@ public class HiddenBodyTests
     [Fact]
     public void SolScenario_MarksTheDerelictRoadsterHidden()
     {
-        ScenarioDefinition sol = SimulatorTests.LoadSol();
+        ScenarioDefinition sol = TestTree.Sol;
         BodyDefinition roadster = sol.Bodies.First(b => b.Id == "derelict-roadster");
 
         Assert.True(roadster.Hidden);

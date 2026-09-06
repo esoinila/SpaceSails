@@ -23,7 +23,7 @@ public class ShuttleWindowOnTheRouteTests
     private const string Moon = "ganymede";
 
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     private static CelestialBody Body(ICelestialEphemeris eph, string id) =>
         eph.Bodies.First(b => b.Id == id);

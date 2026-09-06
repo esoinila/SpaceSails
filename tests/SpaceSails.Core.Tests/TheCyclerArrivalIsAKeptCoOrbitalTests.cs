@@ -60,7 +60,7 @@ public class TheCyclerArrivalIsAKeptCoOrbitalTests
     };
 
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     /// <summary>The epoch of an arrival phase, paced by the body's OWN orbit — the live function the
     /// <c>?arrivalphase=</c> cheat calls, so the sweep and the demo door walk the same grid.</summary>

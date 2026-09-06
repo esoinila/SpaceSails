@@ -5,7 +5,7 @@ public class LostTrackTests
     private const double Day = 86400;
 
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     private static TrackedTarget StaleTrack(string id, Vector2d position, Vector2d velocity, double confirmedAt) =>
         new(id, new Observation(id, confirmedAt, position, velocity), confirmedAt, TrackedTargetLedger.InitialQuality);

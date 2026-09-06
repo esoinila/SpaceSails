@@ -17,7 +17,7 @@ namespace SpaceSails.Core.Tests;
 public class DockedStartSweepTests
 {
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     // The outer giants (#289 audits Jupiter and everything beyond); Saturn is the "beyond Saturn" fence.
     private const double JupiterOrbitRadius = 7.7857e11;

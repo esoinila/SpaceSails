@@ -10,7 +10,7 @@ public class TrafficAndPredictionTests
     private const double EarthOrbitRadius = 1.496e11;
 
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     [Fact]
     public void TrafficSchedule_IsDeterministic()
@@ -457,7 +457,7 @@ public class TrafficAndPredictionTests
         // day 82; it passes inside Saturn's 1e10 m port zone around day 278 — comfortably
         // within the client's 730-day plotting horizon, using the client's own coarse ribbon
         // settings (maxTimeStep 3 h).
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var simulator = new Simulator(ephemeris, timeStepSeconds: 1.0);
 
         Vector2d earth0 = ephemeris.Position("earth", 0);
@@ -485,7 +485,7 @@ public class TrafficAndPredictionTests
     {
         // A ship placed on a line that passes 1000 km over Venus's cloud tops: the planner
         // must call Venus the most severe pass, and a path through the planet must say Impact.
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var samples = new List<TrajectorySample>();
         for (int i = 0; i <= 100; i++)
         {
@@ -520,7 +520,7 @@ public class TrafficAndPredictionTests
         // time they sit exactly on their circular orbit, moving under the boarding speed limit
         // relative to their planet. PR-3: also one per named station and pirate haven — the
         // outer reaches get their own bus stops too.
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         IReadOnlyList<NpcShip> depots = TrafficSchedule.GenerateDepots(ephemeris, seed: 44);
 
         // One depot per qualifying body, computed the same way GenerateDepots decides: planets, named

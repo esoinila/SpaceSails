@@ -7,7 +7,7 @@ namespace SpaceSails.Core.Tests;
 public class CommerceRuleTests
 {
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     private static ShipState At(Vector2d position, Vector2d velocity) =>
         new(position, velocity, SimTime: 0);

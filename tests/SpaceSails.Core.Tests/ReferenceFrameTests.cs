@@ -53,7 +53,7 @@ public class ReferenceFrameTests
     [Fact]
     public void CoMoving_SaturnFrame_RemovesSolarDrift()
     {
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         double now = 0;
         double later = 20 * 86400.0; // twenty days out — Saturn's solar drift dwarfs Titan's orbit by then
 

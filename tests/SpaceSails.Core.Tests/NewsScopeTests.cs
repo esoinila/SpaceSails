@@ -19,7 +19,7 @@ public class NewsScopeTests
 {
     private const double Day = NewsWire.SecondsPerDay;
 
-    private static CircularOrbitEphemeris SolEphemeris() => CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+    private static CircularOrbitEphemeris SolEphemeris() => CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     // ─────────────────────────────────────────────────────────────────────────────────────────────
     // The system wire did not move

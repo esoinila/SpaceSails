@@ -33,7 +33,7 @@ namespace SpaceSails.Core.Tests;
 public sealed class ThePeopleWhoDoNotKnowWhyTests
 {
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     private static void WithHands(IReadOnlyList<QuietHands.Hand> hands, Action body)
     {

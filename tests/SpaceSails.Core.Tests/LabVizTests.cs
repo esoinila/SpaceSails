@@ -163,7 +163,7 @@ public class LabVizTests
     [Fact]
     public void EphemerisParity_FullSolSystem_MatchesCircularOrbitEphemeris()
     {
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         Assert.True(ephemeris.Bodies.Count >= 20, "expected the full sol.json body set");
 
         var scene = new VizScene("parity-sol", "Parity (Sol)");

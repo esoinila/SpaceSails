@@ -5,7 +5,7 @@ public class TrackingStationTests
     private const double Day = 86400;
 
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     // ---- TelescopeModel range envelope ----
 

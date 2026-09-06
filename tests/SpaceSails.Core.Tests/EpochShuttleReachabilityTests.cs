@@ -47,7 +47,7 @@ namespace SpaceSails.Core.Tests;
 public class EpochShuttleReachabilityTests
 {
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     /// <summary>The shuttle-bay board for a docked start at <paramref name="stationId"/> at epoch t=0,
     /// built through the real production filter (<see cref="ShuttleExcursion.Destinations"/>) from the

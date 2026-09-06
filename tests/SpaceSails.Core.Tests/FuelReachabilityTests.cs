@@ -229,7 +229,7 @@ public class FuelReachabilityTests
     {
         // #157 / Lab 28's recommendation, implemented: the sol.json Selene Gate (an Earth-well fuel port
         // co-orbiting with Luna) turns the "stranded at Luna" verdict into a finite, reachable pump.
-        var eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var sim = new Simulator(eph, timeStepSeconds: 60);
         double earthMu = eph.Bodies.First(b => b.Id == "earth").Mu;
 
@@ -244,7 +244,7 @@ public class FuelReachabilityTests
     [Fact]
     public void G13_SeleneGate_IsAPumpHost_InTheRealSolDepotMap()
     {
-        var eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var hosts = TrafficSchedule.GenerateDepots(eph, seed: 1).Select(d => d.DepotBodyId).ToHashSet();
 
         Assert.Contains("selene-gate", hosts); // the Luna-vicinity port now carries a depot/pump

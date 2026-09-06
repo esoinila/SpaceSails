@@ -24,9 +24,6 @@ namespace SpaceSails.Core.Tests;
 /// </summary>
 public class TheCyclerWindowTests
 {
-    private static ScenarioDefinition Sol =>
-        ScenarioLoader.LoadFile(Path.Combine(AppContext.BaseDirectory, "scenarios", "sol.json"));
-
     private const double Day = 86_400.0;
 
     // ── 1 · The timetable is a timetable ─────────────────────────────────────────────────────────────────
@@ -183,7 +180,7 @@ public class TheCyclerWindowTests
     [Fact]
     public void TheRideLetsHerGoWhereTheShuttleCanFinishTheJob()
     {
-        BodyDefinition ice = Sol.Bodies.Single(b => b.Id == KaamosLore.IceMoonBodyId);
+        BodyDefinition ice = TestTree.Sol.Bodies.Single(b => b.Id == KaamosLore.IceMoonBodyId);
 
         Assert.True(CyclerWindow.ArrivalOffsetMeters < ShuttleRange.RangeMeters,
             $"the ride lets her go {CyclerWindow.ArrivalOffsetMeters:E2} m out, past the shuttle's " +
@@ -199,7 +196,7 @@ public class TheCyclerWindowTests
     [Fact]
     public void TheIceMoonIsAnOrdinaryCharedHavenMoonSoTheRunSettlesItself()
     {
-        BodyDefinition ice = Sol.Bodies.Single(b => b.Id == KaamosLore.IceMoonBodyId);
+        BodyDefinition ice = TestTree.Sol.Bodies.Single(b => b.Id == KaamosLore.IceMoonBodyId);
 
         Assert.Equal("moon", ice.Kind);
         Assert.True(ice.Haven, "the run completes by parking in its orbit; that path only runs at a haven");

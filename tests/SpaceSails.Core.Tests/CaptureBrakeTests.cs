@@ -38,7 +38,7 @@ public class CaptureBrakeTests
 
     private static (Simulator Sim, ICelestialEphemeris Eph) Sol()
     {
-        var eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         return (new Simulator(eph, timeStepSeconds: 60), eph);
     }
 

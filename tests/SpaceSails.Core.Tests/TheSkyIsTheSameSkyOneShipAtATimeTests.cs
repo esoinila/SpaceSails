@@ -32,7 +32,7 @@ public class TheSkyIsTheSameSkyOneShipAtATimeTests
     private const int BootCount = 8;
 
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     [Fact]
     public void TheSameEightShipsEitherWay()

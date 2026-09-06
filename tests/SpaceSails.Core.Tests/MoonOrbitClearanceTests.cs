@@ -68,7 +68,7 @@ public class MoonOrbitClearanceTests
     {
         // A concrete evidence sample the owner asked for: Miranda (the Uranus stranding moon) and Phobos
         // (Mars' close-in deep well) both keep a wide margin from their parent. Numbers land in the PR body.
-        var eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
         MoonOrbitClearance.Verdict miranda = MoonOrbitClearance.Solve(eph, eph.Bodies.First(b => b.Id == "miranda"))!.Value;
         Assert.False(miranda.Clamped);
@@ -84,7 +84,7 @@ public class MoonOrbitClearanceTests
     [Fact]
     public void Solve_ReturnsNull_ForNonOrbitableBodies()
     {
-        var eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         Assert.Null(MoonOrbitClearance.Solve(eph, eph.Bodies.First(b => b.Id == "sun")));      // parentless
         Assert.Null(MoonOrbitClearance.Solve(eph, eph.Bodies.First(b => b.Id == "earth")));    // a planet, not a moon
         Assert.Null(MoonOrbitClearance.Solve(eph, eph.Bodies.First(b => b.Id == "the-tilt"))); // a μ=0 station

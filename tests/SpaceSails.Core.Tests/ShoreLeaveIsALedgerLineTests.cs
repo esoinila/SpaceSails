@@ -96,8 +96,7 @@ public sealed class ShoreLeaveIsALedgerLineTests
     [Fact]
     public void TheShippedSystemHasBothARunAshoreAndAWorkingStop()
     {
-        ICelestialEphemeris sol = CircularOrbitEphemeris.FromScenario(ScenarioLoader.LoadFile(
-            System.IO.Path.Combine(System.AppContext.BaseDirectory, "scenarios", "sol.json")));
+        ICelestialEphemeris sol = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
         var ashore = new System.Collections.Generic.List<string>();
         var working = new System.Collections.Generic.List<string>();

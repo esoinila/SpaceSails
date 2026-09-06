@@ -9,7 +9,7 @@ namespace SpaceSails.Core.Tests;
 /// </summary>
 public class SurfaceClearanceTests
 {
-    private static ICelestialEphemeris Sol() => CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+    private static ICelestialEphemeris Sol() => CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     // A path holding a fixed world offset off a body's rail across a few sample times (co-moving with it,
     // the way the #219 subsurface fixture builds its samples — the body moves between samples).

@@ -37,7 +37,7 @@ namespace SpaceSails.Core.Tests;
 public class TheParkedShipIsNotRunDownByTheMoonTests
 {
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     /// <summary>Every standoff this game actually parks a free-flying ship at beside a moon, named. Both
     /// are quoted from the constants the live code quotes, so retuning either one re-runs this sweep for
