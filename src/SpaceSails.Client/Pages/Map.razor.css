@@ -912,26 +912,6 @@
     border-color: rgba(200, 170, 120, 0.5);
 }
 
-/* #538 · the captain's remote — a small handheld affordance on the deck HUD. It stays visible while an excursion
-   is live, because the order it carries is the one whose absence gets a captain shot.
-
-   IT SITS BOTTOM-LEFT, AND THE FIRST PLACEMENT WAS WRONG. Owner, on seeing it: "look at the sanity and health
-   meters now overlap" — and they did, because I put this at top 3.2rem, which is directly on the nerve readout
-   AND on the five condition pips beneath it. Both meters, buried by a button.
-
-   The rule was already written down forty lines up (and is still there, now that the deck-view toggle it was
-   first written for has gone): on a surface excursion the enlarged SANITY gauge owns the top-left corner, so a
-   deck control steps down and to the right — nothing buries the gauge, and the control stays plainly pressable
-   (#212 affordances-never-hide). I added a control to that corner without reading the rule that corner already
-   had; this now follows the precedent it should have followed first time. */
-.captains-remote-btn {
-    position: absolute;
-    left: 0.75rem;
-    bottom: 5.2rem;
-    z-index: calc(var(--z-desks-popups) + 30);
-    opacity: 0.92;
-}
-
 /* ── #746 · THE TABLE SCENE ───────────────────────────────────────────────────────────────────────────
    The barkeep card's family (deck-offer-card), with a cooler edge: a company canteen is not a bar, and the
    warm amber of a berth's counter would say the wrong thing about a room where everybody is on somebody
@@ -953,33 +933,6 @@
     cursor: auto;
 }
 
-.table-card .deck-offer-giver {
-    color: #bfe0f0;
-}
-
-.table-seats {
-    color: #8fa4b8;
-    margin-bottom: 0.6rem;
-}
-
-/* #783 — the table you are sitting at, on the panel you are sitting at it through. The counter's own
-   .bar-desk-art shape (capped band, object-fit crop, so a 16:9 plate is cropped rather than squashed), as
-   its OWN class because the two pictures frame differently: everything that matters in both of these — the
-   empty chair, the boots, the glass, the papers — sits in the lower half of the frame, so the crop is pulled
-   down where the counter's sits near the middle. Sharing one class and tuning it for the desk would silently
-   re-frame the table. #782: the image is in flow ABOVE the prose and nothing is ever written over it, so
-   there is no text here that could fail to read. */
-.table-art {
-    display: block;
-    width: 100%;
-    max-height: 9.5rem;
-    object-fit: cover;
-    object-position: center 72%;
-    border-radius: 0.3rem;
-    margin: 0.3rem 0 0.5rem;
-    border: 1px solid rgba(160, 200, 220, 0.35);
-}
-
 /* #680 · THE ANSWER, INSIDE THE DIALOG. Styled like the satchel's own outcome row for the reason #680's
    guard states out loud: an unstyled answer in a styled dialog is a bug report waiting to be filed. */
 .table-outcome {
@@ -992,19 +945,6 @@
     padding: 0.55rem 0.75rem;
     margin-bottom: 0.6rem;
     white-space: pre-wrap;
-}
-
-/* The dice, spelled out. Quiet — the sum is evidence, not the event. */
-.table-math {
-    color: #9fb4c8;
-    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    margin-bottom: 0.6rem;
-}
-
-/* The moves wrap: five or six of them will not sit on one line in a 40rem card, and a row that overflows
-   its own card is how a control becomes unreachable on a laptop. */
-.table-actions {
-    flex-wrap: wrap;
 }
 
 .table-showables {
@@ -1072,10 +1012,6 @@
    so it takes the family cap instead. */
 ::deep .deck-offer-card {
     max-height: calc(100vh - 11rem);
-}
-
-::deep .deck-offer-card.table-card {
-    max-height: min(92vh, 100%);
 }
 
 /* THE ACTION ROW, PINNED. Sticky rather than a flex footer because these cards have no footer element to
