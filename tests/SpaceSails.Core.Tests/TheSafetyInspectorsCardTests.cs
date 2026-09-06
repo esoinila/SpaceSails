@@ -342,7 +342,14 @@ public sealed class TheSafetyInspectorsCardTests
                 UndergroundComplex.LiftStop during = TheGateRow(
                     UndergroundComplex.LiftPanel(
                         body, level, [cardId], wallet, heat, null, inspectionRunning: true))!.Value;
-                if (during.Refusal is null)
+
+                // …and the row NAMES THE PAPER THAT IS ACTUALLY GOOD, which is the half the row's own
+                // #715 clause is about: while the gate is asking for a face it names nothing, and the
+                // moment it stops asking, the captain is told about the countersignature he is holding —
+                // the deeper permission, and the one that will still be in his wallet tomorrow.
+                if (during.Refusal is null
+                    && during.OpenedBy == UndergroundComplex.CardTitle(
+                        new UndergroundComplex.AuthorityCard(body, band)))
                 {
                     deferred++;
                 }
