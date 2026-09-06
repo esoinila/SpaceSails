@@ -1,0 +1,81 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SpaceSails.Core
+@*
+    #251 · WHAT A SALVAGE AND A WALKED HULL PUT IN FRONT OF YOU — seven panels on one file.
+
+    Fifty-six consecutive lines of Map.razor: your OWN ship's scuttle keys, the look at a wreck, the choice
+    of what to file about it, the outcome that comes back, the kiosk you just bought from, the lift you are
+    standing in, and the locked door you are not getting through. The page's paragraph about the SECOND
+    reveal card that used to stand in this run and is gone (#664) came with the block, because it is a note
+    about this run's own history.
+
+    Moved by PURE MOTION: the gates came with the invocations — a gate is what says WHEN one of these is on
+    the glass — and every page member the block reads is a [Parameter] with the SAME NAME. One of them is
+    WRITTEN: the wreck-choice card's `_wreckReported` is assigned from the moved markup, so it crosses as a
+    PAIR (the value in, the page's own setter out) behind a private property that keeps the field's own
+    name, which is what stops the cause you picked landing on this component and stopping there
+    (NoSurfaceSwallowsAWriteTests). Not one character between the fences changed.
+
+    IHandleEvent repeats the page's own override (Map.Sim.cs). The .razor.css beside this file carries no
+    rules; it exists to give the component Map.razor.css's scope (pinned in SpaceSails.Client.csproj), and
+    the seven panels keep their own sheets.
+*@
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────── *@
+    @if (_showShipScuttlePanel)
+    {
+        <ShipScuttlePanel _cargoUnits="@_cargoUnits" _cargoValue="@_cargoValue" _credits="@_credits"
+                          _shipChargesSeconds="@_shipChargesSeconds" _shipScuttleMessage="@_shipScuttleMessage"
+                          _shipScuttleSecondKey="@_shipScuttleSecondKey"
+                          _shipScuttleWordGiven="@_shipScuttleWordGiven"
+                          AskTheCrewForTheSecondKey="@AskTheCrewForTheSecondKey" BackTheKeysOut="@BackTheKeysOut"
+                          CloseShipScuttlePanel="@CloseShipScuttlePanel" Dismiss="@Dismiss"
+                          GiveTheWordAgainstHer="@GiveTheWordAgainstHer" TurnBothKeys="@TurnBothKeys" />
+    }
+
+    @if (_wreckLook is { } look)
+    {
+        <WreckLookCard CloseWreckLook="@CloseWreckLook" Dismiss="@Dismiss" look="@look" />
+    }
+
+    @* #664 · THE SECOND REVEAL CARD USED TO BE HERE, and it is gone. The fork answered #528 twice on the
+       same day; the merge (#633) kept both and named the duplication rather than picking a winner inside a
+       conflict-bearing merge. The winner is the one above: same markup, same onerror-hide, same discipline —
+       and, unlike this one, a CADENCE and a DEFERRAL, which is the half of the owner's sentence ("as long as
+       it does not block the playing too much or be too repetitive") a client-only card could never keep. *@
+
+    @if (_showWreckChoice && _wreck is { } salvageWreck)
+    {
+        <WreckChoiceCard _wreckExamined="@_wreckExamined" _wreckReportedValue="@_wreckReported" _wreckReportedSet="@(v => _wreckReported = v)"
+                         CanFileWreckReport="@CanFileWreckReport" CloseWreckChoice="@CloseWreckChoice"
+                         Dismiss="@Dismiss" ResolveWreck="@ResolveWreck"
+                         WreckCandidateCauses="@WreckCandidateCauses" salvageWreck="@salvageWreck" />
+    }
+
+    @if (_wreckOutcome is { } salvageOutcome)
+    {
+        <WreckOutcomeCard _wreckContact="@_wreckContact" Dismiss="@Dismiss"
+                          DismissWreckOutcome="@DismissWreckOutcome" TheClauseNonAnswer="@TheClauseNonAnswer"
+                          salvageOutcome="@salvageOutcome" />
+    }
+
+    @if (_kioskCard is { } buy)
+    {
+        <KioskCard CloseKioskCard="@CloseKioskCard" Dismiss="@Dismiss" buy="@buy" />
+    }
+
+    @if (_showLiftPanel && _surface is { } liftEx)
+    {
+        <LiftPanel _liftOutcome="@_liftOutcome" CloseLiftPanel="@CloseLiftPanel" Dismiss="@Dismiss"
+                   LiftPadClear="@LiftPadClear" LiftPadDisplay="@LiftPadDisplay" LiftPadIsDark="@LiftPadIsDark"
+                   LiftPadPush="@LiftPadPush" LiftPadSaid="@LiftPadSaid" LiftPadSubmit="@LiftPadSubmit"
+                   LiftPanelLine="@LiftPanelLine" LiftStops="@LiftStops" PressLiftButton="@PressLiftButton"
+                   TheCarIsStopped="@TheCarIsStopped" liftEx="@liftEx" />
+    }
+
+    @if (_lockedDoor is { } door)
+    {
+        <LockedDoorCard _satchel="@_satchel" CloseLockedDoor="@CloseLockedDoor" Dismiss="@Dismiss"
+                        OpenSatchelAtTheDoor="@OpenSatchelAtTheDoor" door="@door" />
+    }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────── *@

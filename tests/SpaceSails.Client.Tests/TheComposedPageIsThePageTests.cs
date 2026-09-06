@@ -16,8 +16,10 @@ namespace SpaceSails.Client.Tests;
 /// unable to go quietly blind. A composer that silently dropped a surface would turn fifty-eight guards into
 /// fifty-eight tests of an empty world in one commit, which is the fifth bug class with the volume turned up.</para>
 ///
-/// <para><b>What is proved here.</b> Every surface is fenced and findable; every surface is hosted by the page
-/// exactly once; nothing that looks like a surface is left un-spliced in the composed text; the composed text
+/// <para><b>What is proved here.</b> Every surface is fenced and findable; every surface is hosted exactly
+/// once — by the page, or by a rack that is itself one of the page's surfaces, which is why the splice runs
+/// to a fixpoint rather than once down the alphabet; nothing that looks like a surface is left un-spliced in
+/// the composed text; the composed text
 /// really is bigger than the file on disk (so the splice is doing work rather than being a no-op that would
 /// pass forever); and the three ways the composition can be wrong — a surface nobody invokes, a surface invoked
 /// twice, a surface with no fence — each throw, demonstrated here on a doctored page rather than asserted in
@@ -41,10 +43,11 @@ public sealed class TheComposedPageIsThePageTests
         }
     }
 
-    /// <summary>The page hosts every surface, exactly once, and the composed text has no surface tag left in
-    /// it — the splice ran to completion rather than half of it.</summary>
+    /// <summary>Every surface is hosted exactly once — by the page, or (#251) by a RACK that is itself one of
+    /// the page's surfaces — and the composed text has no surface tag left in it, so the splice ran to
+    /// completion rather than half of it.</summary>
     [Fact]
-    public void ThePageHostsEverySurfaceExactlyOnceAndTheCompositionLeavesNoTagBehind()
+    public void EverySurfaceIsHostedExactlyOnceAndTheCompositionLeavesNoTagBehind()
     {
         string composed = MapMarkup.Text;
 
@@ -75,7 +78,12 @@ public sealed class TheComposedPageIsThePageTests
             $"({onDisk.Length}) even though {surfaces.Count} surface(s) moved out of it — the splice is not " +
             "putting them back, and every source guard reading this reader is reading a hole.");
 
-        (string Name, string Path, string Markup) one = surfaces[0];
+        // #251 · a surface THE PAGE ITSELF invokes, because the doctoring below edits the page's own text.
+        // Since the racks landed, most surfaces are hosted by another surface and their tag is nowhere in
+        // Map.razor to be removed or doubled — a fixed `surfaces[0]` would have made this stunt depend on
+        // which name happens to sort first.
+        (string Name, string Path, string Markup) one =
+            surfaces.First(s => TheInvocationLine(onDisk, s.Name) is not null);
 
         // A surface nobody invokes.
         string orphaned = RemoveTheInvocation(onDisk, one.Name);
@@ -89,6 +97,25 @@ public sealed class TheComposedPageIsThePageTests
         InvalidOperationException twice = Assert.Throws<InvalidOperationException>(
             () => MapMarkup.ComposeFrom(doubled, [one]));
         Assert.Contains("2 time(s)", twice.Message, StringComparison.Ordinal);
+
+        // #251 · A SURFACE HOSTED BY ANOTHER SURFACE, and the one whose name sorts FIRST at that. This is
+        // the case the single-pass composer could not do and the reason the splice runs to a fixpoint: read
+        // in filename order, <ACard> is looked for in a page that only says <ZRack>, and a well-formed
+        // decomposition throws "invokes <ACard> 0 time(s)". Here it lands, and the rack's tag goes with it.
+        string nested = MapMarkup.ComposeFrom(
+            "<div class=\"map-page\">\n    <ZRack Dismiss=\"@Dismiss\" />\n</div>\n",
+            [("ACard", "ACard.razor", "        <p>a card</p>"), ("ZRack", "ZRack.razor", "    <ACard />")]);
+        Assert.Contains("<p>a card</p>", nested, StringComparison.Ordinal);
+        Assert.DoesNotContain("<ACard", nested, StringComparison.Ordinal);
+        Assert.DoesNotContain("<ZRack", nested, StringComparison.Ordinal);
+
+        // …and the fixpoint does not turn "nobody invokes this" into an infinite wait: a surface no host
+        // mentions still ends the loop, by name, with the count the single pass reported.
+        InvalidOperationException stranded = Assert.Throws<InvalidOperationException>(
+            () => MapMarkup.ComposeFrom(
+                "<div class=\"map-page\">\n    <ZRack />\n</div>\n",
+                [("ACard", "ACard.razor", "        <p>a card</p>"), ("ZRack", "ZRack.razor", "    <p>no card</p>")]));
+        Assert.Contains("<ACard> 0 time(s)", stranded.Message, StringComparison.Ordinal);
 
         // A surface with no fence.
         string unfenced = Path.Combine(Path.GetTempPath(), $"spacesails-unfenced-{Guid.NewGuid():N}.razor");

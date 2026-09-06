@@ -286,19 +286,50 @@ public sealed partial class TheClaimIsWalkedEndToEndTests
         Assert.True(koltOffer >= 0 && koltOpener > koltOffer,
             "Brem Kolt opens on hazard before he mentions the hull you lost.");
 
-        // …and all three cards reach the counter through the page's OWN members — read off Map.razor itself,
-        // where the invocations are, because the composed text above has spliced each surface in over them.
-        // This is what makes the two hosts one implementation rather than two that agree today.
-        string invocations = File.ReadAllText(MapMarkup.PagePath);
-        foreach (string door in new[] { "PressTheClaim=\"@PressTheClaim\"", "TheClaimAsks=\"@TheClaimAsks\"" })
+        // …and all three cards reach the counter through the page's OWN members, UNDER THE PAGE'S OWN
+        // NAMES — read off whoever invokes each card, because the composed text above has spliced the
+        // surfaces in over their invocations. Since #251's racks that host may be a rack rather than the
+        // page (Fess and Kolt are hosted by CallersCardRack, the find by AtArmsLengthRack), and a rack
+        // takes the member under its own name and hands it on under that name — so the chain is unbroken
+        // from Map.razor to the counter, which is what makes the three hosts one implementation rather
+        // than three that agree today.
+        foreach (string card in new[] { "ViewObjectCard", "RepCard", "HardcaseCard" })  // the find, Fess, Kolt
         {
-            Assert.Equal(3, CountOf(invocations, door));   // the kiosk's card, Fess's card, Kolt's card
+            string invocation = TheInvocationOf(card);
+            foreach (string door in new[] { "PressTheClaim=\"@PressTheClaim\"", "TheClaimAsks=\"@TheClaimAsks\"" })
+            {
+                Assert.Contains(door, invocation, StringComparison.Ordinal);
+            }
         }
 
         // …and all three then draw the rows by CALLING those same members, rather than one of them growing a
         // list of its own that happens to look the same.
         Assert.Equal(3, CountOf(page, "in TheClaimAsks())"));
         Assert.Equal(3, CountOf(page, "PressTheClaim("));
+    }
+
+    /// <summary>The one <c>&lt;Component … /&gt;</c> element that hosts a surface, out of whichever source
+    /// file writes it: <c>Map.razor</c>, or — since #251's racks — one of the page's own surfaces. Throws
+    /// rather than returning empty, so a card that nothing invokes cannot pass this law by silence.</summary>
+    private static string TheInvocationOf(string component)
+    {
+        foreach (string path in new[] { MapMarkup.PagePath }
+            .Concat(Directory.EnumerateFiles(MapMarkup.SurfacesDirectory(), "*.razor")
+                             .OrderBy(p => p, StringComparer.Ordinal)))
+        {
+            string text = File.ReadAllText(path);
+            int at = text.IndexOf($"<{component} ", StringComparison.Ordinal);
+            if (at < 0)
+            {
+                continue;
+            }
+
+            int end = text.IndexOf("/>", at, StringComparison.Ordinal);
+            return end < 0 ? text[at..] : text[at..(end + 2)];
+        }
+
+        throw new InvalidOperationException(
+            $"nothing under Pages/ invokes <{component}> — this law is reading an empty room.");
     }
 
     private static int CountOf(string text, string needle)

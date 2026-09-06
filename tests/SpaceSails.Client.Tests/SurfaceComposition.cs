@@ -132,17 +132,56 @@ internal static class SurfaceComposition
         return string.Join("\n", lines[(begins + 1)..ends]);
     }
 
-    /// <summary>The composition itself, stated over a page text and a set of surfaces rather than over the
-    /// disk — so a guard can hand it a doctored page and watch it go red.</summary>
+    /// <summary>
+    /// The composition itself, stated over a page text and a set of surfaces rather than over the disk — so a
+    /// guard can hand it a doctored page and watch it go red.
+    ///
+    /// <para>#251 · A SURFACE IS HOSTED BY THE PAGE <b>OR BY ANOTHER SURFACE</b>, and the splice may not
+    /// depend on which. The first cut of this walked the directory ONCE, in filename order, which quietly
+    /// made the alphabet part of the contract: a RACK that gathers a run of the page's cards — the eight
+    /// aftermath cards, the eight boards you open inside a hull — hosts those cards itself, and every one of
+    /// them whose name sorts BEFORE the rack's would have been looked for in a page that does not mention it
+    /// yet. The composer would have thrown "invokes &lt;BoardTargetCard&gt; 0 time(s)" at a decomposition
+    /// that is perfectly well formed, and the way round it would have been to name a rack after the alphabet
+    /// rather than after what it owns.</para>
+    ///
+    /// <para>So the splice runs to a FIXPOINT instead: each pass places every surface whose tag is standing
+    /// in the text right now, a surface whose host has not landed yet waits for the next pass, and the loop
+    /// ends when a pass places nothing. What ends it is what the single pass used to say on the spot — a
+    /// surface nobody invokes, named, with the same "0 time(s)" message — and a surface invoked TWICE still
+    /// throws the moment it is looked at, because the count is taken at the splice and not at the end.</para>
+    /// </summary>
     internal static string ComposeFrom(
         string page, IReadOnlyList<(string Name, string Path, string Markup)> surfaces, string pageLabel)
     {
         bool crlf = page.Contains("\r\n", StringComparison.Ordinal);
         List<string> lines = [.. page.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n')];
 
-        foreach ((string name, string path, string markup) in surfaces)
+        List<(string Name, string Path, string Markup)> pending = [.. surfaces];
+        while (pending.Count > 0)
         {
-            Splice(lines, name, path, markup, pageLabel);
+            List<(string Name, string Path, string Markup)> waiting = [];
+            foreach ((string Name, string Path, string Markup) surface in pending)
+            {
+                if (Hosts(lines, surface.Name).Count == 0)
+                {
+                    // Not in the text YET — whatever hosts it may itself be a surface still waiting its turn.
+                    waiting.Add(surface);
+                    continue;
+                }
+
+                Splice(lines, surface.Name, surface.Path, surface.Markup, pageLabel);
+            }
+
+            if (waiting.Count == pending.Count)
+            {
+                // A pass that placed nothing is a pass that never will: there is nothing left to splice that
+                // could bring these tags into the text. Say it about the first of them, in the words the
+                // single-pass composer said it in.
+                throw NotHostedExactlyOnce(waiting[0].Name, waiting[0].Path, pageLabel, 0);
+            }
+
+            pending = waiting;
         }
 
         string composed = string.Join("\n", lines);
@@ -157,10 +196,8 @@ internal static class SurfaceComposition
         return split.Length > 0 && split[^1].Length == 0 ? split[..^1] : split;
     }
 
-    /// <summary>Replaces the one <c>&lt;Surface … /&gt;</c> element in the page with the surface's own markup.
-    /// Exactly one: none and the page has lost a surface, two and the composed text would double a region and
-    /// every order guard reading it would be reading a fiction.</summary>
-    private static void Splice(List<string> lines, string name, string path, string markup, string pageLabel)
+    /// <summary>Every line of the text that opens a <c>&lt;Surface …&gt;</c> element of this name.</summary>
+    private static List<int> Hosts(List<string> lines, string name)
     {
         List<int> opens = [];
         for (int i = 0; i < lines.Count; i++)
@@ -174,12 +211,26 @@ internal static class SurfaceComposition
             }
         }
 
+        return opens;
+    }
+
+    /// <summary>The one thing that can be wrong with where a surface is hosted, said the one way.</summary>
+    private static InvalidOperationException NotHostedExactlyOnce(
+        string name, string path, string pageLabel, int hosts) =>
+        new($"#251 · {pageLabel} invokes <{name}> {hosts} time(s); a surface is hosted exactly " +
+            "once. Composing the page's markup out of the file plus its surfaces only means anything while " +
+            $"that is true — see {Path.GetFileName(path)} and MapMarkup.");
+
+    /// <summary>Replaces the one <c>&lt;Surface … /&gt;</c> element in the text with the surface's own markup.
+    /// Exactly one: none and the page has lost a surface, two and the composed text would double a region and
+    /// every order guard reading it would be reading a fiction.</summary>
+    private static void Splice(List<string> lines, string name, string path, string markup, string pageLabel)
+    {
+        List<int> opens = Hosts(lines, name);
+
         if (opens.Count != 1)
         {
-            throw new InvalidOperationException(
-                $"#251 · {pageLabel} invokes <{name}> {opens.Count} time(s); a surface is hosted exactly " +
-                "once. Composing the page's markup out of the file plus its surfaces only means anything while " +
-                $"that is true — see {Path.GetFileName(path)} and MapMarkup.");
+            throw NotHostedExactlyOnce(name, path, pageLabel, opens.Count);
         }
 
         int start = opens[0];

@@ -89,244 +89,110 @@
                            ConfirmImportReplace="@ConfirmImportReplace" Dismiss="@Dismiss" />
     }
 
-    @if (_jumpActive)
-    {
-        <JumpCard _jumpDestName="@_jumpDestName" _jumpFlavor="@_jumpFlavor" _jumpTotalYears="@_jumpTotalYears"
-                  _jumpYear="@_jumpYear" _voidCardTuckedValue="@_voidCardTucked" _voidCardTuckedSet="@(v => _voidCardTucked = v)" Dismiss="@Dismiss" />
-    }
+    <TimePassingCardRack _brakeDestName="@_brakeDestName" _brakeGate="@_brakeGate"
+                         _coastSkipActive="@_coastSkipActive" _coastSkipDays="@_coastSkipDays"
+                         _coastSkipLabel="@_coastSkipLabel" _deckMode="@_deckMode" _jumpActive="@_jumpActive"
+                         _jumpDestName="@_jumpDestName" _jumpFlavor="@_jumpFlavor"
+                         _jumpTotalYears="@_jumpTotalYears" _jumpYear="@_jumpYear"
+                         _voidCardTuckedSet="@(v => _voidCardTucked = v)" _voidCardTuckedValue="@_voidCardTucked"
+                         _worldReady="@_worldReady" ArrivalBrakeAskText="@ArrivalBrakeAskText"
+                         BrakeIsAerobrake="@BrakeIsAerobrake" DeclineArrivalBrake="@DeclineArrivalBrake"
+                         Dismiss="@Dismiss" FireArrivalBrake="@FireArrivalBrake" />
 
-    @if (_coastSkipActive)
-    {
-        <CoastSkipCard _coastSkipDays="@_coastSkipDays" _coastSkipLabel="@_coastSkipLabel"
-                       _voidCardTuckedValue="@_voidCardTucked" _voidCardTuckedSet="@(v => _voidCardTucked = v)" Dismiss="@Dismiss" />
-    }
+    <HullBoardsRack _archiveCard="@_archiveCard" _chargeBoardMessage="@_chargeBoardMessage"
+                    _contactorOn="@_contactorOn" _plasma="@_plasma" _pressureDoor="@_pressureDoor"
+                    _reactionMassPulses="@_reactionMassPulses" _refillCharges="@_refillCharges"
+                    _scuttleEpitaph="@_scuttleEpitaph" _scuttleHeardIt="@_scuttleHeardIt"
+                    _scuttleSecondsLeft="@_scuttleSecondsLeft" _shipBoardLog="@_shipBoardLog"
+                    _shipBoardMessage="@_shipBoardMessage" _shipPumpOrder="@_shipPumpOrder"
+                    _shipReserve="@_shipReserve" _shipSelected="@_shipSelected" _showChargeBoard="@_showChargeBoard"
+                    _showScuttlePanel="@_showScuttlePanel" _showShipBoard="@_showShipBoard"
+                    _showVentPanel="@_showVentPanel" _spinePressurised="@_spinePressurised"
+                    _spineVacuumSeconds="@_spineVacuumSeconds" _surface="@_surface" _ventLog="@_ventLog"
+                    _ventMessage="@_ventMessage" _ventReadCard="@_ventReadCard" _ventReads="@_ventReads"
+                    _ventSelected="@_ventSelected" _ventSpaces="@_ventSpaces" _wreck="@_wreck"
+                    AbortTheOverload="@AbortTheOverload" AmbientChargeNow="@AmbientChargeNow"
+                    ArmTheOverload="@ArmTheOverload" AtmosphereAt="@AtmosphereAt"
+                    CaptainCompartment="@CaptainCompartment" CloseArchiveCard="@CloseArchiveCard"
+                    CloseChargeBoard="@CloseChargeBoard" ClosePressureDoorCard="@ClosePressureDoorCard"
+                    CloseScuttleEpitaph="@CloseScuttleEpitaph" CloseScuttlePanel="@CloseScuttlePanel"
+                    CloseShipBoard="@CloseShipBoard" CloseVentPanel="@CloseVentPanel"
+                    CloseVentReadCard="@CloseVentReadCard" Dismiss="@Dismiss" Du="@Du"
+                    EqualiseAtDoor="@EqualiseAtDoor" FloodCost="@FloodCost" FloodTheShip="@FloodTheShip"
+                    GiveTheCaptainsWord="@GiveTheCaptainsWord" HullChargeNow="@HullChargeNow"
+                    OrderWholeShipPumped="@OrderWholeShipPumped" PumpableRooms="@PumpableRooms"
+                    PumpEverySealedRoom="@PumpEverySealedRoom" PumpOn="@PumpOn" ReadLifeSigns="@ReadLifeSigns"
+                    RefillCompartment="@RefillCompartment" RefillShipCompartment="@RefillShipCompartment"
+                    RescueSurvivor="@RescueSurvivor" ScuttleMethods="@ScuttleMethods" SealHerUp="@SealHerUp"
+                    SealTheShip="@SealTheShip" SelectShipSpace="@SelectShipSpace" SelectVentSpace="@SelectVentSpace"
+                    ShipAreaTag="@ShipAreaTag" ShipAuthorityNow="@ShipAuthorityNow"
+                    ShipBreathingLine="@ShipBreathingLine" ShipCompartment="@ShipCompartment"
+                    ShipCorridorPressurised="@ShipCorridorPressurised" ShipCorridorTagSvg="@ShipCorridorTagSvg"
+                    ShipHullOutline="@ShipHullOutline" ShipPumpOn="@ShipPumpOn" ShipSpaceNow="@ShipSpaceNow"
+                    ShipSpacesNow="@ShipSpacesNow" ShipViewBox="@ShipViewBox" SpaceNow="@SpaceNow"
+                    SpinePumpable="@SpinePumpable" SpineTag="@SpineTag" StartPumpDown="@StartPumpDown"
+                    StartShipPump="@StartShipPump" StartSpinePump="@StartSpinePump" StopPump="@StopPump"
+                    StopShipPump="@StopShipPump" ToggleContactor="@ToggleContactor"
+                    ToggleSealAtHand="@ToggleSealAtHand" ToggleShipDoor="@ToggleShipDoor"
+                    ToggleVentDoor="@ToggleVentDoor" UnsealHer="@UnsealHer" UnsealTheShip="@UnsealTheShip"
+                    VentAreaLabelSvg="@((string l, float cx, float cy, float w, (string Text, string Class) t, float h) => VentAreaLabelSvg(l, cx, cy, w, t, h))"
+                    VentAreaTag="@VentAreaTag" VentCharge="@VentCharge" VentCompartment="@VentCompartment"
+                    VentDoorX="@VentDoorX" VentHullOutline="@VentHullOutline"
+                    VentShipCompartment="@VentShipCompartment" VentViewBox="@VentViewBox"
+                    WithdrawTheCaptainsWord="@WithdrawTheCaptainsWord" YearsOfVacuumSeconds="@YearsOfVacuumSeconds" />
 
-    @if (_worldReady && !_deckMode && _brakeGate.Asking)
-    {
-        <BrakeGateCard _brakeDestName="@_brakeDestName" _brakeGate="@_brakeGate"
-                       ArrivalBrakeAskText="@ArrivalBrakeAskText" BrakeIsAerobrake="@BrakeIsAerobrake"
-                       DeclineArrivalBrake="@DeclineArrivalBrake" Dismiss="@Dismiss"
-                       FireArrivalBrake="@FireArrivalBrake" />
-    }
+    <CallersCardRack _finderCard="@_finderCard" _finderOutcome="@_finderOutcome" _finderReveal="@_finderReveal"
+                     _hardcaseCard="@_hardcaseCard" _repCard="@_repCard" _repSaid="@_repSaid"
+                     _shipEpitaph="@_shipEpitaph" _storyCard="@_storyCard" _walkInCard="@_walkInCard"
+                     AnswerTheFinder="@AnswerTheFinder" AnswerTheHardcase="@AnswerTheHardcase"
+                     AnswerTheRep="@AnswerTheRep" AnswerTheWalkIn="@AnswerTheWalkIn"
+                     CloseShipEpitaph="@CloseShipEpitaph" CloseStoryCard="@CloseStoryCard"
+                     CloseTheRepsCard="@CloseTheRepsCard" CloseTheReveal="@CloseTheReveal" Dismiss="@Dismiss"
+                     LodgeItWithHim="@LodgeItWithHim" PressTheClaim="@PressTheClaim" SettleTheCase="@SettleTheCase"
+                     StoryBeatCopy="@StoryBeatCopy" TellKoltNo="@TellKoltNo" TheClaimAsks="@TheClaimAsks"
+                     TheDeskSays="@TheDeskSays" TheLodgingOfferIsUp="@TheLodgingOfferIsUp" />
 
-    @if (_showScuttlePanel && _wreck is { } scWreck)
-    {
-        <ScuttlePanel _scuttleSecondsLeft="@_scuttleSecondsLeft" AbortTheOverload="@AbortTheOverload"
-                      ArmTheOverload="@ArmTheOverload" CloseScuttlePanel="@CloseScuttlePanel" Dismiss="@Dismiss"
-                      ScuttleMethods="@ScuttleMethods" scWreck="@scWreck" />
-    }
+    <SalvageCardRack _cargoUnits="@_cargoUnits" _cargoValue="@_cargoValue" _credits="@_credits"
+                     _kioskCard="@_kioskCard" _liftOutcome="@_liftOutcome" _lockedDoor="@_lockedDoor"
+                     _satchel="@_satchel" _shipChargesSeconds="@_shipChargesSeconds"
+                     _shipScuttleMessage="@_shipScuttleMessage" _shipScuttleSecondKey="@_shipScuttleSecondKey"
+                     _shipScuttleWordGiven="@_shipScuttleWordGiven" _showLiftPanel="@_showLiftPanel"
+                     _showShipScuttlePanel="@_showShipScuttlePanel" _showWreckChoice="@_showWreckChoice"
+                     _surface="@_surface" _wreck="@_wreck" _wreckContact="@_wreckContact"
+                     _wreckExamined="@_wreckExamined" _wreckLook="@_wreckLook" _wreckOutcome="@_wreckOutcome"
+                     _wreckReportedSet="@(v => _wreckReported = v)" _wreckReportedValue="@_wreckReported"
+                     AskTheCrewForTheSecondKey="@AskTheCrewForTheSecondKey" BackTheKeysOut="@BackTheKeysOut"
+                     CanFileWreckReport="@CanFileWreckReport" CloseKioskCard="@CloseKioskCard"
+                     CloseLiftPanel="@CloseLiftPanel" CloseLockedDoor="@CloseLockedDoor"
+                     CloseShipScuttlePanel="@CloseShipScuttlePanel" CloseWreckChoice="@CloseWreckChoice"
+                     CloseWreckLook="@CloseWreckLook" Dismiss="@Dismiss" DismissWreckOutcome="@DismissWreckOutcome"
+                     GiveTheWordAgainstHer="@GiveTheWordAgainstHer" LiftPadClear="@LiftPadClear"
+                     LiftPadDisplay="@LiftPadDisplay" LiftPadIsDark="@LiftPadIsDark" LiftPadPush="@LiftPadPush"
+                     LiftPadSaid="@LiftPadSaid" LiftPadSubmit="@LiftPadSubmit" LiftPanelLine="@LiftPanelLine"
+                     LiftStops="@LiftStops" OpenSatchelAtTheDoor="@OpenSatchelAtTheDoor"
+                     PressLiftButton="@PressLiftButton" ResolveWreck="@ResolveWreck"
+                     TheCarIsStopped="@TheCarIsStopped" TheClauseNonAnswer="@TheClauseNonAnswer"
+                     TurnBothKeys="@TurnBothKeys" WreckCandidateCauses="@WreckCandidateCauses" />
 
-    @if (_scuttleEpitaph is { } epitaph)
-    {
-        <ScuttleEpitaphCard epitaph="@epitaph" _scuttleHeardIt="_scuttleHeardIt"
-                            Dismiss="Dismiss" CloseScuttleEpitaph="CloseScuttleEpitaph" />
-    }
-
-    @if (_ventReadCard is { } readRoom && _ventReads.TryGetValue(readRoom, out var readShown))
-    {
-        <VentReadCard CloseVentReadCard="@CloseVentReadCard" Dismiss="@Dismiss" readRoom="@readRoom"
-                      readShown="@readShown" />
-    }
-
-    @if (_pressureDoor is { } pdName && _ventSpaces.TryGetValue(pdName, out var pdSpace))
-    {
-        <PressureDoorCard _refillCharges="@_refillCharges" _spinePressurised="@_spinePressurised"
-                          ClosePressureDoorCard="@ClosePressureDoorCard" Dismiss="@Dismiss"
-                          EqualiseAtDoor="@EqualiseAtDoor" ToggleSealAtHand="@ToggleSealAtHand" pdName="@pdName"
-                          pdSpace="@pdSpace" />
-    }
-
-    @if (_showVentPanel && _wreck is { } ventWreck)
-    {
-        <VentPanel _refillCharges="@_refillCharges" _shipPumpOrder="@_shipPumpOrder"
-                   _spinePressurised="@_spinePressurised" _spineVacuumSeconds="@_spineVacuumSeconds"
-                   _surface="@_surface" _ventLog="@_ventLog" _ventMessage="@_ventMessage" _ventReads="@_ventReads"
-                   _ventSelected="@_ventSelected" AtmosphereAt="@AtmosphereAt"
-                   CaptainCompartment="@CaptainCompartment" CloseVentPanel="@CloseVentPanel" Dismiss="@Dismiss"
-                   Du="@Du" FloodCost="@FloodCost" FloodTheShip="@FloodTheShip"
-                   OrderWholeShipPumped="@OrderWholeShipPumped" PumpableRooms="@PumpableRooms"
-                   PumpEverySealedRoom="@PumpEverySealedRoom" PumpOn="@PumpOn" ReadLifeSigns="@ReadLifeSigns"
-                   RefillCompartment="@RefillCompartment" RescueSurvivor="@RescueSurvivor"
-                   SealTheShip="@SealTheShip" SelectVentSpace="@SelectVentSpace" SpaceNow="@SpaceNow"
-                   SpinePumpable="@SpinePumpable" SpineTag="@SpineTag" StartPumpDown="@StartPumpDown"
-                   StartSpinePump="@StartSpinePump" StopPump="@StopPump" ToggleVentDoor="@ToggleVentDoor"
-                   UnsealTheShip="@UnsealTheShip" OnVentAreaLabelSvg="@((string l, float cx, float cy, float w, (string Text, string Class) t, float h) => VentAreaLabelSvg(l, cx, cy, w, t, h))" VentAreaTag="@VentAreaTag"
-                   VentCompartment="@VentCompartment" VentDoorX="@VentDoorX" VentHullOutline="@VentHullOutline"
-                   VentViewBox="@VentViewBox" YearsOfVacuumSeconds="@YearsOfVacuumSeconds" ventWreck="@ventWreck" />
-    }
-
-    @if (_archiveCard is { } vision)
-    {
-        <ArchiveVisionCard CloseArchiveCard="@CloseArchiveCard" Dismiss="@Dismiss" vision="@vision" />
-    }
-
-    @if (_showShipBoard)
-    {
-        <ShipBoardPanel _shipBoardLog="@_shipBoardLog" _shipBoardMessage="@_shipBoardMessage"
-                        _shipReserve="@_shipReserve" _shipSelected="@_shipSelected" CloseShipBoard="@CloseShipBoard"
-                        Dismiss="@Dismiss" Du="@Du" GiveTheCaptainsWord="@GiveTheCaptainsWord"
-                        RefillShipCompartment="@RefillShipCompartment" SealHerUp="@SealHerUp"
-                        SelectShipSpace="@SelectShipSpace" ShipAreaTag="@ShipAreaTag"
-                        ShipAuthorityNow="@ShipAuthorityNow" ShipBreathingLine="@ShipBreathingLine"
-                        ShipCompartment="@ShipCompartment" ShipCorridorPressurised="@ShipCorridorPressurised"
-                        ShipCorridorTagSvg="@ShipCorridorTagSvg" ShipHullOutline="@ShipHullOutline"
-                        ShipPumpOn="@ShipPumpOn" ShipSpaceNow="@ShipSpaceNow" ShipSpacesNow="@ShipSpacesNow"
-                        ShipViewBox="@ShipViewBox" StartShipPump="@StartShipPump" StopShipPump="@StopShipPump"
-                        ToggleShipDoor="@ToggleShipDoor" UnsealHer="@UnsealHer" OnVentAreaLabelSvg="@((string l, float cx, float cy, float w, (string Text, string Class) t, float h) => VentAreaLabelSvg(l, cx, cy, w, t, h))"
-                        VentShipCompartment="@VentShipCompartment"
-                        WithdrawTheCaptainsWord="@WithdrawTheCaptainsWord" />
-    }
-
-    @if (_showChargeBoard)
-    {
-        <ChargeBoardPanel _chargeBoardMessage="@_chargeBoardMessage" _contactorOn="@_contactorOn" _plasma="@_plasma"
-                          _reactionMassPulses="@_reactionMassPulses" AmbientChargeNow="@AmbientChargeNow"
-                          CloseChargeBoard="@CloseChargeBoard" Dismiss="@Dismiss" HullChargeNow="@HullChargeNow"
-                          ToggleContactor="@ToggleContactor" VentCharge="@VentCharge" />
-    }
-
-    @if (_storyCard is { } told)
-    {
-        <StoryCard CloseStoryCard="@CloseStoryCard" Dismiss="@Dismiss" StoryBeatCopy="@StoryBeatCopy" told="@told" />
-    }
-
-    @if (_repCard is { } pitch)
-    {
-        <RepCard _repSaid="@_repSaid" AnswerTheRep="@AnswerTheRep" CloseTheRepsCard="@CloseTheRepsCard"
-                 Dismiss="@Dismiss" pitch="@pitch"
-                 LodgeItWithHim="@LodgeItWithHim" PressTheClaim="@PressTheClaim"
-                 TheClaimAsks="@TheClaimAsks" TheDeskSays="@TheDeskSays"
-                 TheLodgingOfferIsUp="@TheLodgingOfferIsUp" />
-    }
-
-    @if (_hardcaseCard is { } koltOffers)
-    {
-        <HardcaseCard AnswerTheHardcase="@AnswerTheHardcase" Dismiss="@Dismiss" TellKoltNo="@TellKoltNo"
-                      koltOffers="@koltOffers"
-                      LodgeItWithHim="@LodgeItWithHim" PressTheClaim="@PressTheClaim"
-                      TheClaimAsks="@TheClaimAsks" TheDeskSays="@TheDeskSays"
-                      TheLodgingOfferIsUp="@TheLodgingOfferIsUp" />
-    }
-
-    @if (_walkInCard is { } sheAsks)
-    {
-        <WalkInCard AnswerTheWalkIn="@AnswerTheWalkIn" Dismiss="@Dismiss" sheAsks="@sheAsks" />
-    }
-
-    @* #417 · Ilse Varga at the table, and the fourth name at the berth. Two surfaces, one feature: the
-       first is a woman standing at your elbow with a case, the second is a card with nobody behind it. *@
-    @if (_finderCard is { } finderAsks)
-    {
-        <FinderCard AnswerTheFinder="@AnswerTheFinder" Dismiss="@Dismiss" sheAsks="@finderAsks" />
-    }
-
-    @if (_finderReveal is not null)
-    {
-        <FinderRevealCard CloseTheReveal="@CloseTheReveal" Dismiss="@Dismiss"
-                          SettleTheCase="@SettleTheCase" _finderOutcome="@_finderOutcome" />
-    }
-
-    @if (_shipEpitaph is { } castaway)
-    {
-        <ShipEpitaphCard CloseShipEpitaph="@CloseShipEpitaph" Dismiss="@Dismiss" castaway="@castaway" />
-    }
-
-    @if (_showShipScuttlePanel)
-    {
-        <ShipScuttlePanel _cargoUnits="@_cargoUnits" _cargoValue="@_cargoValue" _credits="@_credits"
-                          _shipChargesSeconds="@_shipChargesSeconds" _shipScuttleMessage="@_shipScuttleMessage"
-                          _shipScuttleSecondKey="@_shipScuttleSecondKey"
-                          _shipScuttleWordGiven="@_shipScuttleWordGiven"
-                          AskTheCrewForTheSecondKey="@AskTheCrewForTheSecondKey" BackTheKeysOut="@BackTheKeysOut"
-                          CloseShipScuttlePanel="@CloseShipScuttlePanel" Dismiss="@Dismiss"
-                          GiveTheWordAgainstHer="@GiveTheWordAgainstHer" TurnBothKeys="@TurnBothKeys" />
-    }
-
-    @if (_wreckLook is { } look)
-    {
-        <WreckLookCard CloseWreckLook="@CloseWreckLook" Dismiss="@Dismiss" look="@look" />
-    }
-
-    @* #664 · THE SECOND REVEAL CARD USED TO BE HERE, and it is gone. The fork answered #528 twice on the
-       same day; the merge (#633) kept both and named the duplication rather than picking a winner inside a
-       conflict-bearing merge. The winner is the one above: same markup, same onerror-hide, same discipline —
-       and, unlike this one, a CADENCE and a DEFERRAL, which is the half of the owner's sentence ("as long as
-       it does not block the playing too much or be too repetitive") a client-only card could never keep. *@
-
-    @if (_showWreckChoice && _wreck is { } salvageWreck)
-    {
-        <WreckChoiceCard _wreckExamined="@_wreckExamined" _wreckReportedValue="@_wreckReported" _wreckReportedSet="@(v => _wreckReported = v)"
-                         CanFileWreckReport="@CanFileWreckReport" CloseWreckChoice="@CloseWreckChoice"
-                         Dismiss="@Dismiss" ResolveWreck="@ResolveWreck"
-                         WreckCandidateCauses="@WreckCandidateCauses" salvageWreck="@salvageWreck" />
-    }
-
-    @if (_wreckOutcome is { } salvageOutcome)
-    {
-        <WreckOutcomeCard _wreckContact="@_wreckContact" Dismiss="@Dismiss"
-                          DismissWreckOutcome="@DismissWreckOutcome" TheClauseNonAnswer="@TheClauseNonAnswer"
-                          salvageOutcome="@salvageOutcome" />
-    }
-
-    @if (_kioskCard is { } buy)
-    {
-        <KioskCard CloseKioskCard="@CloseKioskCard" Dismiss="@Dismiss" buy="@buy" />
-    }
-
-    @if (_showLiftPanel && _surface is { } liftEx)
-    {
-        <LiftPanel _liftOutcome="@_liftOutcome" CloseLiftPanel="@CloseLiftPanel" Dismiss="@Dismiss"
-                   LiftPadClear="@LiftPadClear" LiftPadDisplay="@LiftPadDisplay" LiftPadIsDark="@LiftPadIsDark"
-                   LiftPadPush="@LiftPadPush" LiftPadSaid="@LiftPadSaid" LiftPadSubmit="@LiftPadSubmit"
-                   LiftPanelLine="@LiftPanelLine" LiftStops="@LiftStops" PressLiftButton="@PressLiftButton"
-                   TheCarIsStopped="@TheCarIsStopped" liftEx="@liftEx" />
-    }
-
-    @if (_lockedDoor is { } door)
-    {
-        <LockedDoorCard _satchel="@_satchel" CloseLockedDoor="@CloseLockedDoor" Dismiss="@Dismiss"
-                        OpenSatchelAtTheDoor="@OpenSatchelAtTheDoor" door="@door" />
-    }
-
-    @if (SeatedTable is { } tab)
-    {
-    @if (SeatedIsDocked)
-    {
-        <SeatedDockedStrip _satchel="@_satchel" _seatedNewsOpen="@_seatedNewsOpen"
-                           ACabinetLeafToWork="@ACabinetLeafToWork" CabinetLeafHint="@CabinetLeafHint"
-                           CabinetLeafLabel="@CabinetLeafLabel" CanSpreadTheCaseHere="@CanSpreadTheCaseHere"
-                           OpenTheSpread="@OpenTheSpread" ProcessingFraction="@ProcessingFraction"
-                           ProcessingUnderway="@ProcessingUnderway" SatchelLabel="@SatchelLabel"
-                           SeatedCompanyLine="@SeatedCompanyLine" SeatedCustomerLine="@SeatedCustomerLine"
-                           SeatedOverheardLine="@SeatedOverheardLine" SpreadDoorHint="@SpreadDoorHint"
-                           SpreadDoorLabel="@SpreadDoorLabel" TableMoveClicked="@TableMoveClicked"
-                           TableMoveIsUrged="@TableMoveIsUrged" TableMoveOnOffer="@TableMoveOnOffer"
-                           TableMoveRefusal="@TableMoveRefusal" TableMovesOnTheTable="@TableMovesOnTheTable"
-                           TableShow="@TableShow" TableShowables="@TableShowables"
-                           ToggleSeatedNews="@ToggleSeatedNews" WorkTheCabinetLeaf="@WorkTheCabinetLeaf" tab="@tab" />
-    }
-    else
-    {
-        <TableCard _credits="@_credits" _satchel="@_satchel" CloseTable="@CloseTable" Dismiss="@Dismiss"
-                   SatchelLabel="@SatchelLabel" TableMoveClicked="@TableMoveClicked"
-                   TableMoveIsUrged="@TableMoveIsUrged" TableMoveOnOffer="@TableMoveOnOffer"
-                   TableMoveRefusal="@TableMoveRefusal" TableMovesOnTheTable="@TableMovesOnTheTable"
-                   TableShow="@TableShow" TableShowables="@TableShowables" tab="@tab" />
-    }
-    }   @* …and the seated region closes. Two frames, one occupation of one table. *@
-
-    @if (ThePaperIsOpen)
-    {
-        <ThePaperCard AlreadyClipped="@AlreadyClipped" ClipThisStory="@ClipThisStory"
-                      CloseSeatedNews="@CloseSeatedNews" Dismiss="@Dismiss" SeatedNewsFeed="@SeatedNewsFeed"
-                      SeatedNewsItemCount="@SeatedNewsItemCount" SimTime="@SimTime" />
-    }
-
-    @if (TheStandUpConfirmIsUp)
-    {
-        <StandUpConfirmCard Dismiss="@Dismiss" KeepYourSeat="@KeepYourSeat"
-                            StandingUpCostsARest="@StandingUpCostsARest" StandUpFromTable="@StandUpFromTable" />
-    }
+    <SeatedTableRack _credits="@_credits" _satchel="@_satchel" _seatedNewsOpen="@_seatedNewsOpen"
+                     ACabinetLeafToWork="@ACabinetLeafToWork" AlreadyClipped="@AlreadyClipped"
+                     CabinetLeafHint="@CabinetLeafHint" CabinetLeafLabel="@CabinetLeafLabel"
+                     CanSpreadTheCaseHere="@CanSpreadTheCaseHere" ClipThisStory="@ClipThisStory"
+                     CloseSeatedNews="@CloseSeatedNews" CloseTable="@CloseTable" Dismiss="@Dismiss"
+                     KeepYourSeat="@KeepYourSeat" OpenTheSpread="@OpenTheSpread"
+                     ProcessingFraction="@ProcessingFraction" ProcessingUnderway="@ProcessingUnderway"
+                     SatchelLabel="@SatchelLabel" SeatedCompanyLine="@SeatedCompanyLine"
+                     SeatedCustomerLine="@SeatedCustomerLine" SeatedIsDocked="@SeatedIsDocked"
+                     SeatedNewsFeed="@SeatedNewsFeed" SeatedNewsItemCount="@SeatedNewsItemCount"
+                     SeatedOverheardLine="@SeatedOverheardLine" SeatedTable="@SeatedTable" SimTime="@SimTime"
+                     SpreadDoorHint="@SpreadDoorHint" SpreadDoorLabel="@SpreadDoorLabel"
+                     StandingUpCostsARest="@StandingUpCostsARest" StandUpFromTable="@StandUpFromTable"
+                     TableMoveClicked="@TableMoveClicked" TableMoveIsUrged="@TableMoveIsUrged"
+                     TableMoveOnOffer="@TableMoveOnOffer" TableMoveRefusal="@TableMoveRefusal"
+                     TableMovesOnTheTable="@TableMovesOnTheTable" TableShow="@TableShow"
+                     TableShowables="@TableShowables" ThePaperIsOpen="@ThePaperIsOpen"
+                     TheStandUpConfirmIsUp="@TheStandUpConfirmIsUp" ToggleSeatedNews="@ToggleSeatedNews"
+                     WorkTheCabinetLeaf="@WorkTheCabinetLeaf" />
 
     @if (_showSatchel)
     {
@@ -362,162 +228,81 @@
                       WalletTarget="@WalletTarget" WriteItUp="@WriteItUp" WriteUpHint="@WriteUpHint" />
     }
 
-    @if (_galleyCardOpen)
-    {
-        <GalleyCard _lastRumLine="@_lastRumLine" _rumTots="@_rumTots" _tenderLine="@_tenderLine"
-                    CloseGalleyCard="@CloseGalleyCard" Dismiss="@Dismiss"
-                    GalleyFeedAmbientDays="@GalleyFeedAmbientDays" GalleyFeedItemCount="@GalleyFeedItemCount"
-                    NewsFeed="@((int ambientCount) => NewsFeed(ambientCount))" PourRumFromGalley="@PourRumFromGalley" RumWobbleActive="@RumWobbleActive"
-                    SimTime="@SimTime" />
-    }
+    <AtArmsLengthRack _galleyCardOpen="@_galleyCardOpen" _lastRumLine="@_lastRumLine" _navHelpOpen="@_navHelpOpen"
+                      _pinHatch="@_pinHatch" _pinJob="@_pinJob" _pinOutcome="@_pinOutcome" _rumTots="@_rumTots"
+                      _selfieOffer="@_selfieOffer" _selfieShot="@_selfieShot" _surface="@_surface"
+                      _tenderLine="@_tenderLine" _viewObject="@_viewObject" AcceptSelfieOffer="@AcceptSelfieOffer"
+                      CancelPin="@CancelPin" ChooseThePaper="@ChooseThePaper" CloseGalleyCard="@CloseGalleyCard"
+                      CloseNavHelp="@CloseNavHelp" CloseSelfieShot="@CloseSelfieShot"
+                      CloseTheWalletFan="@CloseTheWalletFan" CloseViewObject="@CloseViewObject"
+                      DeclineSelfieOffer="@DeclineSelfieOffer" Dismiss="@Dismiss"
+                      GalleyFeedAmbientDays="@GalleyFeedAmbientDays" GalleyFeedItemCount="@GalleyFeedItemCount"
+                      KeepTheFind="@KeepTheFind" LeaveTheFind="@LeaveTheFind"
+                      NameOnYourOwnPapers="@NameOnYourOwnPapers"
+                      NewsFeed="@((int ambientCount) => NewsFeed(ambientCount))" PinClear="@PinClear"
+                      PinDisplay="@PinDisplay" PinPush="@PinPush" PourRumFromGalley="@PourRumFromGalley"
+                      PressTheClaim="@PressTheClaim" PressTheHit="@PressTheHit" RumWobbleActive="@RumWobbleActive"
+                      SimTime="@SimTime" SubmitPin="@SubmitPin" TheBookOn="@TheBookOn" TheClaimAsks="@TheClaimAsks"
+                      TheClaimDeskIsUp="@TheClaimDeskIsUp" TheFindIsWaitingOnAnAnswer="@TheFindIsWaitingOnAnAnswer"
+                      TheKitsCardIsUp="@TheKitsCardIsUp" TheKitSweeps="@TheKitSweeps"
+                      ThePaperInYourHandIs="@ThePaperInYourHandIs" TheWalletFan="@TheWalletFan"
+                      WalletFanIsUp="@WalletFanIsUp" />
 
-    @if (_navHelpOpen)
-    {
-        <NavHelpCard CloseNavHelp="@CloseNavHelp" Dismiss="@Dismiss" />
-    }
+    <AshoreCardRack _bankSession="@_bankSession" _barMenu="@_barMenu" _barNotice="@_barNotice"
+                    _contacts="@_contacts" _credits="@_credits" _deckMode="@_deckMode" _heat="@_heat"
+                    _oracleDrinks="@_oracleDrinks" _oracleLine="@_oracleLine" _oracleNotice="@_oracleNotice"
+                    _oracleOpen="@_oracleOpen" _patronDrink="@_patronDrink" _patronDrinkBlurb="@_patronDrinkBlurb"
+                    _pendingOffer="@_pendingOffer" _pulse="@_pulse" _showBarMenu="@_showBarMenu"
+                    _shuttleBayFarStops="@_shuttleBayFarStops" _shuttleBayStops="@_shuttleBayStops"
+                    AcceptOffer="@AcceptOffer" AskAboutKaamos="@AskAboutKaamos" AskAboutNebula="@AskAboutNebula"
+                    AskBarkeepForRumor="@AskBarkeepForRumor" AwayReopenSeconds="@AwayReopenSeconds"
+                    AwayWindowWord="@AwayWindowWord" BankAmounts="@BankAmounts" BankDeposit="@BankDeposit"
+                    BankLoanPrincipal="@BankLoanPrincipal" BankRepay="@BankRepay" BankWithdraw="@BankWithdraw"
+                    Board="@Board" BookARoom="@BookARoom" BookingHint="@BookingHint"
+                    BorrowFavorFromBank="@BorrowFavorFromBank" BuyDrink="@BuyDrink"
+                    BuyHouseSpecial="@BuyHouseSpecial" BuyOracleDrink="@BuyOracleDrink"
+                    BuyRoundForRoom="@BuyRoundForRoom" BuyTheCutter="@BuyTheCutter" BuyTheKit="@BuyTheKit"
+                    CaptainIsOnAStool="@CaptainIsOnAStool" CloseBank="@CloseBank" CloseBarkeep="@CloseBarkeep"
+                    CloseOracle="@CloseOracle" ClosePatronTable="@ClosePatronTable"
+                    CloseShuttleBayDoor="@CloseShuttleBayDoor" ContactDrinkOffer="@ContactDrinkOffer"
+                    CounterHasStools="@CounterHasStools" CurrentKeep="@CurrentKeep" DeclineOffer="@DeclineOffer"
+                    Dismiss="@Dismiss" FormatDistance="@FormatDistance" FormatDuration="@FormatDuration"
+                    GiverDisplay="@GiverDisplay" JobPlainBlock="@JobPlainBlock"
+                    KaamosBarSeamAvailable="@KaamosBarSeamAvailable" KaamosBarSeamLabel="@KaamosBarSeamLabel"
+                    KaamosBarSeamTitle="@KaamosBarSeamTitle" NebulaBarSeamAvailable="@NebulaBarSeamAvailable"
+                    NebulaBarSeamLabel="@NebulaBarSeamLabel" NebulaBarSeamTitle="@NebulaBarSeamTitle"
+                    NextOracleLine="@NextOracleLine" OpenBoardingPanel="@OpenBoardingPanel"
+                    PresentBarContacts="@PresentBarContacts" RouteReturnBySimTime="@RouteReturnBySimTime"
+                    RouteWindowRowText="@RouteWindowRowText" SeatedStoolPlate="@SeatedStoolPlate"
+                    ShuttleReachText="@ShuttleReachText" ShuttleRouteWindowRows="@ShuttleRouteWindowRows"
+                    ShuttleSeparationText="@ShuttleSeparationText" ShuttleTrendWord="@ShuttleTrendWord"
+                    StoolMoveClicked="@StoolMoveClicked" StoolMoveOnOffer="@StoolMoveOnOffer"
+                    StoolMoveRefusal="@StoolMoveRefusal" StoolMovesOnTheTable="@StoolMovesOnTheTable"
+                    TakeAStool="@TakeAStool" TakeShuttleTo="@TakeShuttleTo"
+                    TheBackCounterIsOpen="@TheBackCounterIsOpen" TheCounterRentsRooms="@TheCounterRentsRooms"
+                    TheKeepsTell="@TheKeepsTell" TheOverheardBlock="@TheOverheardBlock"
+                    ToggleBarMenu="@ToggleBarMenu" WhoIsInTonight="@WhoIsInTonight" WindowOn="@WindowOn" />
 
-    @if (WalletFanIsUp && _surface is { } fanEx && TheWalletFan is { Count: > 1 } fanPapers)
-    {
-        <WalletFanCard ChooseThePaper="@ChooseThePaper" CloseTheWalletFan="@CloseTheWalletFan" Dismiss="@Dismiss"
-                       NameOnYourOwnPapers="@NameOnYourOwnPapers" TheBookOn="@TheBookOn"
-                       ThePaperInYourHandIs="@ThePaperInYourHandIs" fanEx="@fanEx" fanPapers="@fanPapers" />
-    }
-
-    @if (_viewObject is { } vo)
-    {
-        <ViewObjectCard CloseViewObject="@CloseViewObject" Dismiss="@Dismiss" KeepTheFind="@KeepTheFind"
-                        LeaveTheFind="@LeaveTheFind" PressTheClaim="@PressTheClaim" PressTheHit="@PressTheHit"
-                        TheClaimAsks="@TheClaimAsks" TheClaimDeskIsUp="@TheClaimDeskIsUp"
-                        TheFindIsWaitingOnAnAnswer="@TheFindIsWaitingOnAnAnswer" TheKitsCardIsUp="@TheKitsCardIsUp"
-                        TheKitSweeps="@TheKitSweeps" vo="@vo" />
-    }
-
-    @if (_selfieShot is { } shot)
-    {
-        <SelfieShotCard CloseSelfieShot="@CloseSelfieShot" Dismiss="@Dismiss" shot="@shot" />
-    }
-
-    @if (_selfieOffer is { } selfieOffer)
-    {
-        <SelfieOfferCard _selfieOffer="@_selfieOffer" AcceptSelfieOffer="@AcceptSelfieOffer"
-                         DeclineSelfieOffer="@DeclineSelfieOffer" Dismiss="@Dismiss" selfieOffer="@selfieOffer" />
-    }
-
-    @if (_pinJob is { } pinJob)
-    {
-        <PinJobCard _pinHatch="@_pinHatch" _pinOutcome="@_pinOutcome" CancelPin="@CancelPin" Dismiss="@Dismiss"
-                    PinClear="@PinClear" PinDisplay="@PinDisplay" PinPush="@PinPush" SubmitPin="@SubmitPin" />
-    }
-
-    @* Deck pulse toast: the Nav HUD that normally hosts the pulse line is hidden while
-       you're walking the ship, so console quips (the HEAD 🚽 gag, cargo tally, vent report, shuttle
-       standby) would render nowhere. Surface them over the canvas here, centred near the top. *@
-    @if (_deckMode && _pulse.Message is not null)
-    {
-        <div class="deck-pulse-toast">@_pulse.Message</div>
-    }
-
-    @if (_deckMode && _pendingOffer is { } offer)
-    {
-        <PendingOfferCard _pendingOffer="@_pendingOffer" AcceptOffer="@AcceptOffer"
-                          ContactDrinkOffer="@ContactDrinkOffer" CurrentKeep="@CurrentKeep"
-                          DeclineOffer="@DeclineOffer" Dismiss="@Dismiss" GiverDisplay="@GiverDisplay"
-                          JobPlainBlock="@JobPlainBlock" PresentBarContacts="@PresentBarContacts" offer="@offer" />
-    }
-
-    @if (_deckMode && _patronDrink is { } patron && CurrentKeep is { } patronKeep)
-    {
-        <PatronDrinkCard _barNotice="@_barNotice" _credits="@_credits" _patronDrinkBlurb="@_patronDrinkBlurb"
-                         ClosePatronTable="@ClosePatronTable" ContactDrinkOffer="@ContactDrinkOffer"
-                         Dismiss="@Dismiss" GiverDisplay="@GiverDisplay" patron="@patron" patronKeep="@patronKeep" />
-    }
-
-    @if (_bankSession is { } bank)
-    {
-        <BankSessionCard _contacts="@_contacts" _credits="@_credits" _heat="@_heat" BankAmounts="@BankAmounts"
-                         BankDeposit="@BankDeposit" BankLoanPrincipal="@BankLoanPrincipal" BankRepay="@BankRepay"
-                         BankWithdraw="@BankWithdraw" BorrowFavorFromBank="@BorrowFavorFromBank"
-                         CloseBank="@CloseBank" Dismiss="@Dismiss" bank="@bank" />
-    }
-
-    @if (_deckMode && _barMenu is { } keep)
-    {
-        <BarMenuCard _barNotice="@_barNotice" _credits="@_credits" _showBarMenu="@_showBarMenu"
-                     AskAboutKaamos="@AskAboutKaamos" AskAboutNebula="@AskAboutNebula"
-                     AskBarkeepForRumor="@AskBarkeepForRumor" BookARoom="@BookARoom" BookingHint="@BookingHint"
-                     BuyDrink="@BuyDrink" BuyHouseSpecial="@BuyHouseSpecial" BuyRoundForRoom="@BuyRoundForRoom"
-                     BuyTheCutter="@BuyTheCutter" BuyTheKit="@BuyTheKit" CaptainIsOnAStool="@CaptainIsOnAStool"
-                     CloseBarkeep="@CloseBarkeep" ContactDrinkOffer="@ContactDrinkOffer"
-                     CounterHasStools="@CounterHasStools" Dismiss="@Dismiss"
-                     KaamosBarSeamAvailable="@KaamosBarSeamAvailable" KaamosBarSeamLabel="@KaamosBarSeamLabel"
-                     KaamosBarSeamTitle="@KaamosBarSeamTitle" NebulaBarSeamAvailable="@NebulaBarSeamAvailable"
-                     NebulaBarSeamLabel="@NebulaBarSeamLabel" NebulaBarSeamTitle="@NebulaBarSeamTitle"
-                     PresentBarContacts="@PresentBarContacts" SeatedStoolPlate="@SeatedStoolPlate"
-                     StoolMoveClicked="@StoolMoveClicked" StoolMoveOnOffer="@StoolMoveOnOffer"
-                     StoolMoveRefusal="@StoolMoveRefusal" StoolMovesOnTheTable="@StoolMovesOnTheTable"
-                     TakeAStool="@TakeAStool" TheBackCounterIsOpen="@TheBackCounterIsOpen"
-                     TheCounterRentsRooms="@TheCounterRentsRooms" TheKeepsTell="@TheKeepsTell"
-                     TheOverheardBlock="@TheOverheardBlock" ToggleBarMenu="@ToggleBarMenu"
-                     WhoIsInTonight="@WhoIsInTonight" keep="@keep" />
-    }
-
-    @if (_deckMode && _oracleOpen && _oracleLine is { } oline)
-    {
-        <OracleCard _credits="@_credits" _oracleDrinks="@_oracleDrinks" _oracleNotice="@_oracleNotice"
-                    BuyOracleDrink="@BuyOracleDrink" CloseOracle="@CloseOracle" CurrentKeep="@CurrentKeep"
-                    Dismiss="@Dismiss" NextOracleLine="@NextOracleLine" oline="@oline" />
-    }
-
-    @if (_deckMode && _shuttleBayStops is { } shuttleStops)
-    {
-        <ShuttleBayCard _shuttleBayFarStops="@_shuttleBayFarStops" AwayReopenSeconds="@AwayReopenSeconds"
-                        AwayWindowWord="@AwayWindowWord" Board="@Board" CloseShuttleBayDoor="@CloseShuttleBayDoor"
-                        Dismiss="@Dismiss" FormatDistance="@FormatDistance" FormatDuration="@FormatDuration"
-                        OpenBoardingPanel="@OpenBoardingPanel" RouteReturnBySimTime="@RouteReturnBySimTime"
-                        RouteWindowRowText="@RouteWindowRowText" ShuttleReachText="@ShuttleReachText"
-                        ShuttleRouteWindowRows="@ShuttleRouteWindowRows"
-                        ShuttleSeparationText="@ShuttleSeparationText" ShuttleTrendWord="@ShuttleTrendWord"
-                        TakeShuttleTo="@TakeShuttleTo" WindowOn="@WindowOn" shuttleStops="@shuttleStops" />
-    }
-
-    @if (_boardTarget is { } boardStop)
-    {
-        <BoardTargetCard _boardBots="@_boardBots" _boardCoin="@_boardCoin" _boardEmptyConfirmValue="@_boardEmptyConfirm" _boardEmptyConfirmSet="@(v => _boardEmptyConfirm = v)"
-                         _boardSiteIndex="@_boardSiteIndex" _boardSites="@_boardSites" _cargoUnits="@_cargoUnits"
-                         _credits="@_credits" AdjustBoardBots="@AdjustBoardBots" AdjustBoardCoin="@AdjustBoardCoin"
-                         AvailableBots="@AvailableBots" Board="@Board" BoardingAWreck="@BoardingAWreck"
-                         BoardingHoldQuote="@BoardingHoldQuote" BoardingHoldSeverity="@BoardingHoldSeverity"
-                         BotMusterLine="@BotMusterLine" CancelBoarding="@CancelBoarding"
-                         ConfirmBoarding="@ConfirmBoarding" FormatDuration="@FormatDuration"
-                         HotHoldUnits="@HotHoldUnits" LoadedBotsSummary="@LoadedBotsSummary"
-                         SelectBoardSite="@SelectBoardSite" SetBoardCoin="@SetBoardCoin"
-                         SurfaceGroundInteract="@SurfaceGroundInteract" TryBoard="@TryBoard" boardStop="@boardStop" />
-    }
-
-    @if (_treasureMapCard is { } map)
-    {
-        <TreasureMapCard BodyName="@BodyName" Dismiss="@Dismiss" DismissMapCard="@DismissMapCard"
-                         TreasureMapArtCss="@TreasureMapArtCss" map="@map" />
-    }
-
-    @if (_expeditionBriefCard is { } brief)
-    {
-        <ExpeditionBriefPanel Dismiss="@Dismiss" DismissExpeditionBrief="@DismissExpeditionBrief"
-                              ExpeditionBriefArtCss="@ExpeditionBriefArtCss" brief="@brief" />
-    }
-
-    @if (_expeditionRevealCard is { } reveal)
-    {
-        <ExpeditionRevealPanel Dismiss="@Dismiss" DismissExpeditionReveal="@DismissExpeditionReveal"
-                               ExpeditionBriefArtCss="@ExpeditionBriefArtCss" reveal="@reveal" />
-    }
-
-    @if (_deflectionStory is { Count: > 0 } story && _deflectionStoryIndex < story.Count)
-    {
-        <DeflectionStoryCard _deflectionStoryIndex="@_deflectionStoryIndex"
-                             AdvanceDeflectionStory="@AdvanceDeflectionStory"
-                             DeflectionPanelArtCss="@DeflectionPanelArtCss" Dismiss="@Dismiss" story="@story" />
-    }
+    <ExpeditionCardRack _boardBots="@_boardBots" _boardCoin="@_boardCoin"
+                        _boardEmptyConfirmSet="@(v => _boardEmptyConfirm = v)"
+                        _boardEmptyConfirmValue="@_boardEmptyConfirm" _boardSiteIndex="@_boardSiteIndex"
+                        _boardSites="@_boardSites" _boardTarget="@_boardTarget" _cargoUnits="@_cargoUnits"
+                        _credits="@_credits" _deflectionStory="@_deflectionStory"
+                        _deflectionStoryIndex="@_deflectionStoryIndex" _expeditionBriefCard="@_expeditionBriefCard"
+                        _expeditionRevealCard="@_expeditionRevealCard" _treasureMapCard="@_treasureMapCard"
+                        AdjustBoardBots="@AdjustBoardBots" AdjustBoardCoin="@AdjustBoardCoin"
+                        AdvanceDeflectionStory="@AdvanceDeflectionStory" AvailableBots="@AvailableBots"
+                        Board="@Board" BoardingAWreck="@BoardingAWreck" BoardingHoldQuote="@BoardingHoldQuote"
+                        BoardingHoldSeverity="@BoardingHoldSeverity" BodyName="@BodyName"
+                        BotMusterLine="@BotMusterLine" CancelBoarding="@CancelBoarding"
+                        ConfirmBoarding="@ConfirmBoarding" DeflectionPanelArtCss="@DeflectionPanelArtCss"
+                        Dismiss="@Dismiss" DismissExpeditionBrief="@DismissExpeditionBrief"
+                        DismissExpeditionReveal="@DismissExpeditionReveal" DismissMapCard="@DismissMapCard"
+                        ExpeditionBriefArtCss="@ExpeditionBriefArtCss" FormatDuration="@FormatDuration"
+                        HotHoldUnits="@HotHoldUnits" LoadedBotsSummary="@LoadedBotsSummary"
+                        SelectBoardSite="@SelectBoardSite" SetBoardCoin="@SetBoardCoin"
+                        SurfaceGroundInteract="@SurfaceGroundInteract" TreasureMapArtCss="@TreasureMapArtCss"
+                        TryBoard="@TryBoard" />
 
     @if (_pickMenu is { Count: > 0 } pickList)
     {
@@ -553,141 +338,57 @@
        The walked view is the top-down deck plan and nothing else now; F is free, and deliberately left
        doing nothing rather than quietly remapped onto something else. *@
 
-    @* #488 · THE CLOCKS, WHERE YOU CAN SEE THEM WHILE YOU FIGHT. Owner: "I love that pressure waiting in a
-       hot spot with round counts dropping :-D" — which only works if the pump and the soak are legible from
-       OUT IN THE CORRIDOR, not just from the board you walked away from. Two clocks racing each other: the
-       one emptying a room, and the one on the sentry holding the lane while it does. *@
-    @* HER OWN CLOCKS, out where she can be read from the corridor. Owner, having started a pump on her board
-       and walked away: "I expect to see the pumping here now as we have on the reever infested salvage ship."
-       Same strip, same classes — a run you can only infer from a sentence on a panel is a run you will forget
-       you started, and hers take the best part of a minute. *@
-    @if (_deckMode && _surface is not null)
-    {
-        <CaptainsRemoteButton OpenCaptainsRemote="@OpenCaptainsRemote" />
-    }
+    <WalkedDeckRack _alarmOutcome="@_alarmOutcome" _boatOrderedCold="@_boatOrderedCold" _boatWarmth="@_boatWarmth"
+                    _deckMode="@_deckMode" _designateOpen="@_designateOpen" _designateTargets="@_designateTargets"
+                    _designateUnit="@_designateUnit" _doorBoardOutcome="@_doorBoardOutcome"
+                    _hasVantarCard="@_hasVantarCard" _labAlarm="@_labAlarm" _labDoors="@_labDoors"
+                    _labHackRoll="@_labHackRoll" _pumps="@_pumps" _remoteOutcome="@_remoteOutcome"
+                    _scuttleSecondsLeft="@_scuttleSecondsLeft" _shipChargesSeconds="@_shipChargesSeconds"
+                    _shipPumps="@_shipPumps" _showAlarmPanel="@_showAlarmPanel"
+                    _showCaptainsRemote="@_showCaptainsRemote" _showDoorBoard="@_showDoorBoard"
+                    _showSaveDrawer="@_showSaveDrawer" _showStartPicker="@_showStartPicker"
+                    _soundQuietly="@_soundQuietly" _surface="@_surface" _sweepers="@_sweepers"
+                    _weaponsTight="@_weaponsTight" _worldReady="@_worldReady" ActiveThreadInfo="@ActiveThreadInfo"
+                    AnyRoomSoaking="@AnyRoomSoaking" AnySweeperOnTheCaptain="@AnySweeperOnTheCaptain"
+                    AwayWindowRemoteLine="@AwayWindowRemoteLine" AwayWindowRemoteSubLine="@AwayWindowRemoteSubLine"
+                    BackToTheSwitches="@BackToTheSwitches" BoatClockWorthShowing="@BoatClockWorthShowing"
+                    BoatSecondsLeft="@BoatSecondsLeft" BoatState="@BoatState" CaptainInitial="@CaptainInitial"
+                    CaptainMonoColor="@CaptainMonoColor" CloseAlarmPanel="@CloseAlarmPanel"
+                    CloseCaptainsRemote="@CloseCaptainsRemote" CloseDoorBoard="@CloseDoorBoard"
+                    CurrentApproach="@CurrentApproach" CutSecondsLeft="@CutSecondsLeft"
+                    CutsLeftInTheCell="@CutsLeftInTheCell" DesignatableGuns="@DesignatableGuns" Dismiss="@Dismiss"
+                    FireOnTheLock="@FireOnTheLock" HackTheAlarm="@HackTheAlarm"
+                    LabAlarmSecondsLeft="@LabAlarmSecondsLeft" LabHackStack="@LabHackStack" OnWreck="@OnWreck"
+                    OpenCaptainsRemote="@OpenCaptainsRemote" OpenDesignate="@OpenDesignate" PickTheGun="@PickTheGun"
+                    RaiseTheClaimsDesk="@RaiseTheClaimsDesk" RoomsSoaking="@RoomsSoaking"
+                    SearchBandLine="@SearchBandLine" SendTheStanding="@SendTheStanding" SoundingGear="@SoundingGear"
+                    SoundingSecondsLeft="@SoundingSecondsLeft" SweepersAboard="@SweepersAboard"
+                    TheRemoteReachesAKiosk="@TheRemoteReachesAKiosk" TheyRememberYouHere="@TheyRememberYouHere"
+                    ToggleBoatPower="@ToggleBoatPower" ToggleQuietSearch="@ToggleQuietSearch"
+                    ToggleWeaponsTight="@ToggleWeaponsTight" WarmCutSecondsLeft="@WarmCutSecondsLeft"
+                    WorkTheDoor="@WorkTheDoor" WorstSweeperState="@WorstSweeperState" />
 
-    @if (_showCaptainsRemote)
-    {
-        <CaptainsRemotePanel _boatOrderedCold="@_boatOrderedCold" _boatWarmth="@_boatWarmth"
-                             _designateOpen="@_designateOpen" _designateTargets="@_designateTargets"
-                             _designateUnit="@_designateUnit" _remoteOutcome="@_remoteOutcome"
-                             _soundQuietly="@_soundQuietly" _surface="@_surface" _weaponsTight="@_weaponsTight"
-                             AwayWindowRemoteLine="@AwayWindowRemoteLine"
-                             AwayWindowRemoteSubLine="@AwayWindowRemoteSubLine"
-                             BackToTheSwitches="@BackToTheSwitches" BoatState="@BoatState"
-                             CloseCaptainsRemote="@CloseCaptainsRemote" DesignatableGuns="@DesignatableGuns"
-                             Dismiss="@Dismiss" FireOnTheLock="@FireOnTheLock" OnWreck="@OnWreck"
-                             OpenDesignate="@OpenDesignate" PickTheGun="@PickTheGun"
-                             RaiseTheClaimsDesk="@RaiseTheClaimsDesk"
-                             SendTheStanding="@SendTheStanding" SoundingGear="@SoundingGear"
-                             TheRemoteReachesAKiosk="@TheRemoteReachesAKiosk"
-                             ToggleBoatPower="@ToggleBoatPower" ToggleQuietSearch="@ToggleQuietSearch"
-                             ToggleWeaponsTight="@ToggleWeaponsTight" />
-    }
-
-    @if (_showDoorBoard)
-    {
-        <DoorBoardPanel _doorBoardOutcome="@_doorBoardOutcome" _hasVantarCard="@_hasVantarCard"
-                        _labDoors="@_labDoors" CloseDoorBoard="@CloseDoorBoard" Dismiss="@Dismiss"
-                        WorkTheDoor="@WorkTheDoor" />
-    }
-
-    @if (_showAlarmPanel)
-    {
-        <AlarmPanel _alarmOutcome="@_alarmOutcome" _labAlarm="@_labAlarm" _labHackRoll="@_labHackRoll"
-                    CloseAlarmPanel="@CloseAlarmPanel" CurrentApproach="@CurrentApproach" Dismiss="@Dismiss"
-                    HackTheAlarm="@HackTheAlarm" LabHackStack="@LabHackStack" />
-    }
-
-    @* #540 · ONE STRIP, EVERY CLOCK. This used to be three separate `.wreck-clocks` blocks — and since the CSS
-       pins the strip at a FIXED top/right, any two of them running at once drew exactly on top of each other.
-       Weapons tight plus a pump was already an unreadable pile; the boat's clocks would have made three. So they
-       are one list now, ordered by how much they should frighten you: the keel, then the way off her, then the
-       air, then the standing orders you might have forgotten. Which is also the owner's scene, in order —
-       "say self destruct tics down but shuttle still warms up". *@
-    @if (_deckMode && (_weaponsTight || BoatClockWorthShowing || SweepersAboard
-                       || LabAlarmSecondsLeft is not null
-                       || SoundingSecondsLeft is not null || SearchBandLine is not null
-                       || CutSecondsLeft is not null || WarmCutSecondsLeft is not null
-                       || (OnWreck
-                           ? _pumps.Count > 0 || AnyRoomSoaking || _scuttleSecondsLeft is not null
-                           : _shipPumps.Count > 0 || _shipChargesSeconds is not null)))
-    {
-        <DeckBannerStrip _hasVantarCard="@_hasVantarCard" _pumps="@_pumps"
-                         _scuttleSecondsLeft="@_scuttleSecondsLeft" _shipChargesSeconds="@_shipChargesSeconds"
-                         _shipPumps="@_shipPumps" _soundQuietly="@_soundQuietly" _sweepers="@_sweepers"
-                         _weaponsTight="@_weaponsTight" AnySweeperOnTheCaptain="@AnySweeperOnTheCaptain"
-                         BoatClockWorthShowing="@BoatClockWorthShowing" BoatSecondsLeft="@BoatSecondsLeft"
-                         BoatState="@BoatState" CutSecondsLeft="@CutSecondsLeft"
-                         CutsLeftInTheCell="@CutsLeftInTheCell" LabAlarmSecondsLeft="@LabAlarmSecondsLeft"
-                         OnWreck="@OnWreck" RoomsSoaking="@RoomsSoaking" SearchBandLine="@SearchBandLine"
-                         SoundingSecondsLeft="@SoundingSecondsLeft" SweepersAboard="@SweepersAboard"
-                         WarmCutSecondsLeft="@WarmCutSecondsLeft" WorstSweeperState="@WorstSweeperState" />
-    }
-
-    @if (_worldReady && _surface is null && !_showStartPicker && !_showSaveDrawer && ActiveThreadInfo is { } capThread)
-    {
-        <CaptainThreadStrip CaptainInitial="@CaptainInitial" CaptainMonoColor="@CaptainMonoColor"
-                            capThread="@capThread" />
-    }
-
-    @* #715 · THEY REMEMBER YOU HERE — the whole presentation of the illegal-heat meter, and it names nobody.
-
-       Owner's rulings: heat is owed to the ENTITY you crossed, never to the world, and there is no HEAT: 62%
-       banner (§13.8, the issue's own canon section). So this is one line, in the corner the captain chip
-       vacates the moment a captain goes down a hole, and it is drawn at the sites of the outfit that
-       remembers this captain AND NOWHERE ELSE — not aboard, not at a haven, and not at another company's
-       identical door however hot the captain is elsewhere.
-
-       It does not say WHOSE memory it is. That is the feature: a player who walks into a site they have never
-       visited and reads this line has just learned who owns it, which is the payoff #715 asks for. Naming the
-       company here would have done the inference for them. *@
-    @if (_worldReady && _surface is not null && !_showStartPicker && !_showSaveDrawer && TheyRememberYouHere)
-    {
-        <div class="heat-remembered">@SpaceSails.Core.IllegalHeat.TheyRememberYouHere</div>
-    }
-
-    @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors && _bodyMenuBody is { } menuBody)
-    {
-        <BodyMenuPanel _activeDesk="@_activeDesk" _aerobrakeArmedBodyId="@_aerobrakeArmedBodyId"
-                       _armedOrbitBodyId="@_armedOrbitBodyId" _destinationBodyId="@_destinationBodyId"
-                       _ephemeris="@_ephemeris" _ship="@_ship" AerobrakeMenuQuote="@AerobrakeMenuQuote"
-                       ArmMenuHint="@ArmMenuHint" ClampMenu="@ClampMenu" CloseBodyMenu="@CloseBodyMenu"
-                       Dismiss="@Dismiss" DockNavLockTip="@DockNavLockTip"
-                       EngageAerobrakeFromMenu="@EngageAerobrakeFromMenu"
-                       EngageLongHaulFromMenu="@EngageLongHaulFromMenu" FormatSimTime="@FormatSimTime"
-                       HarborClassOf="@HarborClassOf" KaamosCyclerBlock="@KaamosCyclerBlock"
-                       KaamosCyclerLabel="@KaamosCyclerLabel" KaamosCyclerRowVisible="@KaamosCyclerRowVisible"
-                       LongHaulClearanceBlock="@LongHaulClearanceBlock" LongHaulOfferBlock="@LongHaulOfferBlock"
-                       LongHaulTargetPlanet="@LongHaulTargetPlanet" MenuAnchorStyle="@MenuAnchorStyle"
-                       NavLockedByDock="@NavLockedByDock" RideTheCyclerWindow="@RideTheCyclerWindow"
-                       ScanAreaFromMenu="@ScanAreaFromMenu" ScanCostText="@ScanCostText"
-                       SetDestination="@SetDestination" SimTime="@SimTime"
-                       ToggleArmedInsertionFromMenu="@ToggleArmedInsertionFromMenu" menuBody="@menuBody" _bodyMenuX="@_bodyMenuX" _bodyMenuY="@_bodyMenuY" />
-    }
-
-    @if (_activeDesk is ShipDesk.Nav or ShipDesk.Sensors or ShipDesk.WarRoom && _shipMenuId is { } menuShipId && FindNpc(menuShipId) is { } menuNpc)
-    {
-        <ShipMenuPanel _activeDesk="@_activeDesk" _ship="@_ship" ClampMenu="@ClampMenu"
-                       CloseShipMenu="@CloseShipMenu" Dismiss="@Dismiss" FormatDistance="@FormatDistance"
-                       InterestFromMenu="@InterestFromMenu" MenuAnchorStyle="@MenuAnchorStyle"
-                       ScanAreaFromMenu="@ScanAreaFromMenu" SimTime="@SimTime"
-                       TrackShipFromMenu="@TrackShipFromMenu" menuNpc="@menuNpc" menuShipId="@menuShipId" _shipMenuX="@_shipMenuX" _shipMenuY="@_shipMenuY" />
-    }
-
-    @* #953 — the per-lane menu is GONE with the click target that opened it (owner: "At least the routes
-       as a whole should not even be selectable, since they just colour the page in that option"), and the
-       drawn corridor went with it on the archive ruling ("we have never used them to find anything"). Its
-       two actions — sweep once, standing watch — kept their jobs: they aim the telescope and the pass they
-       book puts real contacts in the ledger. They live in the open-sky menu below, under the lane it names. *@
-
-    @if (_activeDesk == ShipDesk.Sensors && _skyMenuWorld is { } skyPoint)
-    {
-        <SkyMenuPanel _ship="@_ship" ClampMenu="@ClampMenu" CloseSkyMenu="@CloseSkyMenu" Dismiss="@Dismiss"
-                      FormatDistance="@FormatDistance" MenuAnchorStyle="@MenuAnchorStyle" NearLaneFor="@NearLaneFor"
-                      ScanAreaFromMenu="@ScanAreaFromMenu" ScanCostText="@ScanCostText" SkyScanLabel="@SkyScanLabel"
-                      OnSweepCorridorFromMenu="@((CorridorRegion lane, bool standing) => SweepCorridorFromMenu(lane, standing))" skyPoint="@skyPoint" _skyMenuX="@_skyMenuX" _skyMenuY="@_skyMenuY" _skyMenuRadius="@_skyMenuRadius" />
-    }
+    <ChartMenusRack _activeDesk="@_activeDesk" _aerobrakeArmedBodyId="@_aerobrakeArmedBodyId"
+                    _armedOrbitBodyId="@_armedOrbitBodyId" _bodyMenuBody="@_bodyMenuBody" _bodyMenuX="@_bodyMenuX"
+                    _bodyMenuY="@_bodyMenuY" _destinationBodyId="@_destinationBodyId" _ephemeris="@_ephemeris"
+                    _ship="@_ship" _shipMenuId="@_shipMenuId" _shipMenuX="@_shipMenuX" _shipMenuY="@_shipMenuY"
+                    _skyMenuRadius="@_skyMenuRadius" _skyMenuWorld="@_skyMenuWorld" _skyMenuX="@_skyMenuX"
+                    _skyMenuY="@_skyMenuY" AerobrakeMenuQuote="@AerobrakeMenuQuote" ArmMenuHint="@ArmMenuHint"
+                    ClampMenu="@ClampMenu" CloseBodyMenu="@CloseBodyMenu" CloseShipMenu="@CloseShipMenu"
+                    CloseSkyMenu="@CloseSkyMenu" Dismiss="@Dismiss" DockNavLockTip="@DockNavLockTip"
+                    EngageAerobrakeFromMenu="@EngageAerobrakeFromMenu"
+                    EngageLongHaulFromMenu="@EngageLongHaulFromMenu" FindNpc="@FindNpc"
+                    FormatDistance="@FormatDistance" FormatSimTime="@FormatSimTime" HarborClassOf="@HarborClassOf"
+                    InterestFromMenu="@InterestFromMenu" KaamosCyclerBlock="@KaamosCyclerBlock"
+                    KaamosCyclerLabel="@KaamosCyclerLabel" KaamosCyclerRowVisible="@KaamosCyclerRowVisible"
+                    LongHaulClearanceBlock="@LongHaulClearanceBlock" LongHaulOfferBlock="@LongHaulOfferBlock"
+                    LongHaulTargetPlanet="@LongHaulTargetPlanet" MenuAnchorStyle="@MenuAnchorStyle"
+                    NavLockedByDock="@NavLockedByDock" NearLaneFor="@NearLaneFor"
+                    RideTheCyclerWindow="@RideTheCyclerWindow" ScanAreaFromMenu="@ScanAreaFromMenu"
+                    ScanCostText="@ScanCostText" SetDestination="@SetDestination" SimTime="@SimTime"
+                    SkyScanLabel="@SkyScanLabel" SweepCorridorFromMenu="@SweepCorridorFromMenu"
+                    ToggleArmedInsertionFromMenu="@ToggleArmedInsertionFromMenu"
+                    TrackShipFromMenu="@TrackShipFromMenu" />
 
     @* #195 (owner ruling: the NOW/NEXT banner covered the toolbar's 'checklist' and '?' buttons):
        the desk tabs, the pilot banner and the ship-alert strip live in ONE in-FLOW column now (was three
@@ -1056,58 +757,25 @@
         <SpaceSails.Client.Pages.Stations.DeskChips Chips="BuildDeskChips()" OnSelect="SwitchDeskFromClick" />
     }
 
-    @if (_celebration is { } party)
-    {
-        <CelebrationCard _credits="@_credits" Dismiss="@Dismiss" DismissCelebration="@DismissCelebration"
-                         PayCompletedQuests="@PayCompletedQuests" party="@party" />
-    }
-
-    @if (_busted is { } bust && !_showSaveDrawer)
-    {
-        <BustedCard _credits="@_credits" _hasNetJammer="@_hasNetJammer" _hotCargo="@_hotCargo"
-                    _reactionMassPulses="@_reactionMassPulses" Board="@Board"
-                    BustedBoliviaChoose="@BustedBoliviaChoose" BustedBribe="@BustedBribe"
-                    BustedResist="@BustedResist" BustedResistLostConfirm="@BustedResistLostConfirm"
-                    BustedResurrect="@BustedResurrect" CarryingABlackOpsKey="@CarryingABlackOpsKey"
-                    PresentTheBlackOpsKey="@PresentTheBlackOpsKey"
-                    OnBustedSubmit="@((bool harsher) => BustedSubmit(harsher))" CloseBusted="@CloseBusted"
-                    DeathNerveLedgerLines="@DeathNerveLedgerLines" Dismiss="@Dismiss" HeatFlames="@HeatFlames"
-                    HotGlossTitle="@HotGlossTitle" OpenLogbookFromDeath="@OpenLogbookFromDeath"
-                    PressAndRefocus="@PressAndRefocus" bust="@bust" />
-    }
-
-    @if (_convergenceRevealOpen)
-    {
-        <ConvergenceRevealCard CloseConvergenceReveal="@CloseConvergenceReveal" Dismiss="@Dismiss" />
-    }
-
-    @if (_groundLessonOpen)
-    {
-        <GroundLessonCard CloseGroundLesson="@CloseGroundLesson" Dismiss="@Dismiss" />
-    }
-
-    @if (_groundGrewOpen)
-    {
-        <GroundGrewCard CloseGroundGrew="@CloseGroundGrew" Dismiss="@Dismiss"
-                        _groundGrewWhere="@_groundGrewWhere" />
-    }
-
-    @if (_tubeRearmOpen)
-    {
-        <TubeRearmCard CloseTubeRearm="@CloseTubeRearm" Dismiss="@Dismiss" />
-    }
-
-    @if (_airCardOpen)
-    {
-        <AirNoticeCard CloseAirCard="@CloseAirCard" Dismiss="@Dismiss" />
-    }
-
-    @if (_faceScene is { } faceGiver && OldCrew.ById(faceGiver[OldCrew.LedgerPrefix.Length..]) is { } faceWho)
-    {
-        <FaceSceneCard _faceSceneReply="@_faceSceneReply" AnswerTheFace="@AnswerTheFace"
-                       CloseTheFaceScene="@CloseTheFaceScene" Dismiss="@Dismiss"
-                       OldCrewHistoryLine="@OldCrewHistoryLine" Say="@Say" faceGiver="@faceGiver" faceWho="@faceWho" />
-    }
+    <AftermathCardRack _airCardOpen="@_airCardOpen" _busted="@_busted" _celebration="@_celebration"
+                       _convergenceRevealOpen="@_convergenceRevealOpen" _credits="@_credits"
+                       _faceScene="@_faceScene" _faceSceneReply="@_faceSceneReply"
+                       _groundGrewOpen="@_groundGrewOpen" _groundGrewWhere="@_groundGrewWhere"
+                       _groundLessonOpen="@_groundLessonOpen" _hasNetJammer="@_hasNetJammer" _hotCargo="@_hotCargo"
+                       _reactionMassPulses="@_reactionMassPulses" _showSaveDrawer="@_showSaveDrawer"
+                       _tubeRearmOpen="@_tubeRearmOpen" AnswerTheFace="@AnswerTheFace" Board="@Board"
+                       BustedBoliviaChoose="@BustedBoliviaChoose" BustedBribe="@BustedBribe"
+                       BustedResist="@BustedResist" BustedResistLostConfirm="@BustedResistLostConfirm"
+                       BustedResurrect="@BustedResurrect" BustedSubmit="@BustedSubmit"
+                       CarryingABlackOpsKey="@CarryingABlackOpsKey" CloseAirCard="@CloseAirCard"
+                       CloseBusted="@CloseBusted" CloseConvergenceReveal="@CloseConvergenceReveal"
+                       CloseGroundGrew="@CloseGroundGrew" CloseGroundLesson="@CloseGroundLesson"
+                       CloseTheFaceScene="@CloseTheFaceScene" CloseTubeRearm="@CloseTubeRearm"
+                       DeathNerveLedgerLines="@DeathNerveLedgerLines" Dismiss="@Dismiss"
+                       DismissCelebration="@DismissCelebration" HeatFlames="@HeatFlames"
+                       HotGlossTitle="@HotGlossTitle" OldCrewHistoryLine="@OldCrewHistoryLine"
+                       OpenLogbookFromDeath="@OpenLogbookFromDeath" PayCompletedQuests="@PayCompletedQuests"
+                       PresentTheBlackOpsKey="@PresentTheBlackOpsKey" PressAndRefocus="@PressAndRefocus" Say="@Say" />
 
     @* M28: the ship's parrot — a small perch visible on every desk, one squawk at a time. *@
     <div class="parrot-perch" aria-live="polite" title="the ship's parrot">
