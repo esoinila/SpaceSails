@@ -2354,6 +2354,30 @@ So, for a static class:
 `EveryFrameHashesTheSameTests` caught this on the first run, which is what that ledger is for and the
 reason a split of this kind is attempted at all.
 
+**Since #1173 a guard says it, so you do not have to remember it.**
+`SpaceSails.Core.Tests.NoPartialClassSpreadsItsStaticFieldsTests` sweeps every `.cs` file under `src/` and
+goes red when **one static field initializer of a multi-file partial class reads a static field of the same
+class that is declared in another file.** That is the hazard exactly, and it is not the same thing as "the
+statics are spread": 22 files declare a static field of `Map`, and a private colour that reads nothing
+cannot be initialised in the wrong order. What may never cross a file boundary is the **chain**.
+
+The gate's second law is what makes the first one able to fail: a text scanner that stops recognising a
+declaration goes vacuously green, so the **twelve chains this tree has are written down by name** and the
+found set is compared with the written set in both directions. Add a computed static to a partial class and
+the guard makes you write the row — which is where you read why its two ends may not be split apart. Delete
+the field and its row goes with it, the way a stale size-gate row does.
+
+Two things worth knowing before you trust the compiler instead:
+
+* **A reference-typed chain sometimes stops the build; a value-typed one never does.** Moving
+  `CanteenRegulars.Faces` to a sibling partial fails with `CS8604: possible null reference argument` —
+  nullable analysis, and luck. Moving `HavenInterior.HallApothem` (a `float`) builds clean and silent: its
+  default is a perfectly legal `0`, and there is no diagnostic in the language for a value that is merely
+  wrong. Every coordinate, seat count and threshold in this game is a value type.
+* **A `const` is safe** — it is folded into every use at compile time, so no order can be wrong. Reaching
+  for `const` instead of `static readonly` is the real fix whenever the value permits it; `HallApothem` is
+  a `Math.Cos`, which is why it cannot be.
+
 ### E4. A `@keyframes` travels with its only user (#1166)
 
 The scoped-CSS rewriter suffixes a `@keyframes` NAME with the component's scope and rewrites the
