@@ -59,7 +59,7 @@ public sealed class EveryBurnIsFeltTests
     ///
     /// <para>RED PROOF: put the old <c>RendererInterop.PlayCue("pulse")</c> back beside the hand's burn and
     /// nothing here moves (it is a different name); put <c>PlayCue("burn")</c> back in
-    /// <c>ArrivalBrakeFire</c> and this row fails naming Map.LongHaul.cs as a second mouth.</para>
+    /// <c>ArrivalBrakeFire</c> and this row fails naming Map.LongHaul.Brake.cs as a second mouth.</para>
     /// </summary>
     [Fact]
     public void TheBurnCueIsFiredInExactlyOnePlace()

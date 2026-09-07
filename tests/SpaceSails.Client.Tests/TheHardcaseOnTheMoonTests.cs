@@ -441,7 +441,7 @@ public sealed class TheHardcaseOnTheMoonTests
         }
 
         string path = Path.Combine(
-            dir?.FullName ?? "", "src", "SpaceSails.Client", "Pages", "Map.Hardcase.cs");
+            dir?.FullName ?? "", "src", "SpaceSails.Client", "Pages", "Map.Hardcase.Step.cs");  // #251 · the eyes and the running
         Assert.True(File.Exists(path), $"this guard cannot find the source it is about ({path}).");
         return File.ReadAllText(path);
     }

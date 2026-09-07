@@ -38,7 +38,9 @@ public sealed class TheVoidFinallyHasALaneTests
     [Fact]
     public void TheDevDoorTakesTheRealLaneNow()
     {
-        string busted = Pages("Map.Combat.Busted.cs");
+        // #251 · four partials now, read as ONE subject: the DoesNotContain below is exactly the claim
+        // that goes quietly half-blind when it is pointed at one file of four.
+        string busted = MapMarkup.PagesFamily("Map.Combat.Busted*.cs");
         Assert.Contains("private void StageDeathCheat(DeathCause cause)", busted, StringComparison.Ordinal);   // the right file
 
         Assert.DoesNotContain("Void has no lane at all yet", busted, StringComparison.Ordinal);

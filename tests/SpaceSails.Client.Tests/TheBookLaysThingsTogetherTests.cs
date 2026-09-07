@@ -243,7 +243,7 @@ public sealed class TheBookLaysThingsTogetherTests
     [Fact]
     public void TheSigningSheetIsFiledOnTheSameEdgeAsThePlate()
     {
-        string rep = Method(Pages("Map.Rep.cs"), "private void TellHimYouAlreadyHaveOne()");
+        string rep = Method(Pages("Map.Rep.Pitch.cs"), "private void TellHimYouAlreadyHaveOne()");
 
         int latch = rep.IndexOf("_repSigningToldInLife = CaptainsLife", StringComparison.Ordinal);
         int filed = rep.IndexOf("FileTheSigningSheet()", StringComparison.Ordinal);

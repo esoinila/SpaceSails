@@ -395,7 +395,7 @@ public sealed class TheRoundIsNotStandingStillTests
     [Fact]
     public void TheSentenceAndTheSweepReadTheSameList()
     {
-        string hud = Pages("Map.Surface.Hud.cs");
+        string hud = MapMarkup.PagesFamily("Map.Surface.Hud*.cs"); // #251 · the DoesNotContain below is a subject claim
 
         Assert.Contains("MotionTracker.ReadoutOf(blips, closing)", hud, StringComparison.Ordinal);
         Assert.Contains("MotionTracker.CadenceOf(blips)", hud, StringComparison.Ordinal);

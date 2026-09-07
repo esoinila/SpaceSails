@@ -124,7 +124,7 @@ public sealed class TheCounterTakesOrdersTests
     {
         // (b) #736's law, for the verb this issue adds. BuyDrink is the one handler both counters share, so
         // its answer has to land in the slot the open card draws — and the card has to draw it.
-        string buy = Method("Map.Quests.Bar.cs", "private void BuyDrink(");
+        string buy = Method("Map.Quests.Bar.Drinks.cs", "private void BuyDrink(");
 
         Assert.Contains("_barNotice = receipt;", buy, StringComparison.Ordinal);
         Assert.Contains("_barNotice =", buy, StringComparison.Ordinal);
@@ -164,7 +164,7 @@ public sealed class TheCounterTakesOrdersTests
     {
         // Owner's standing rule: every new feature ships with a URL that demos it. And it must reach the
         // fixture by ASKING which one serves — a hand-typed square would drift the day the hall is recarved.
-        string stand = Method("Map.Surface.Cheats.cs", "private void StandAtTheCounterIfAsked(");
+        string stand = Method("Map.Surface.Cheats.Stand.cs", "private void StandAtTheCounterIfAsked(");
 
         Assert.Contains("CounterService.For(", stand, StringComparison.Ordinal);
         Assert.Contains("StandCaptainAt(a.X, a.Y", stand, StringComparison.Ordinal);
@@ -291,7 +291,7 @@ public sealed class TheCounterTakesOrdersTests
         // …and the route's last leg opens the card and takes the seat THROUGH THE VERY HANDLERS the player
         // reaches, so a tester lands in the scene a captain gets — including which stool is free, which is
         // the room's answer and never the cheat's.
-        string stand = Method("Map.Surface.Cheats.cs", "private void StandAtTheCounterIfAsked(");
+        string stand = Method("Map.Surface.Cheats.Stand.cs", "private void StandAtTheCounterIfAsked(");
         Assert.Contains("_stoolCheat", stand, StringComparison.Ordinal);
         // #781 · …through Core's own who-is-behind-it fork, which is the very call the real [E] press makes.
         // What this claim protects is unchanged — the card is opened by the shipped handler and the seat is

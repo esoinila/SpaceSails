@@ -209,7 +209,7 @@ public sealed class TheyKnewTheFaceBeforeTests
 
         // …and it is called at the succession, which is a routing claim and reads as one.
         Assert.Contains("ANewFaceHasNothingExplained();",
-            Pages("Map.Combat.Busted.cs"), StringComparison.Ordinal);
+            Pages("Map.Combat.Busted.Wake.cs"), StringComparison.Ordinal);
 
         // A NEW UNIVERSE forgets them entirely — driven too: the crew, the book and the latch all go.
         Invoke(map, "OpenTheFaceScene", giver);
@@ -446,7 +446,7 @@ public sealed class TheyKnewTheFaceBeforeTests
     [Fact]
     public void TheOldCrewJoinTheOneContactList()
     {
-        string body = Method(Pages("Map.Quests.Bar.cs"),
+        string body = Method(Pages("Map.Quests.Bar.Contacts.cs"),
             "private IReadOnlyList<(string Giver, string Display)> PresentBarContacts()");
 
         Assert.Contains("OldCrewHere", body, StringComparison.Ordinal);
@@ -459,7 +459,7 @@ public sealed class TheyKnewTheFaceBeforeTests
     [Fact]
     public void TheOfferAndTheGlassReadOneRoom()
     {
-        string body = Method(Pages("Map.Quests.Bar.cs"),
+        string body = Method(Pages("Map.Quests.Bar.Contacts.cs"),
             "private void BuyContactDrink(string giver, bool offeringUsual = false)");
 
         Assert.Contains("ContactDrink.TheRoom room = TheRoomFor(giver);", body, StringComparison.Ordinal);
