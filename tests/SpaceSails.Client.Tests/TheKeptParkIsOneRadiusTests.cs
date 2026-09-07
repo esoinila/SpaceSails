@@ -41,6 +41,17 @@ namespace SpaceSails.Client.Tests;
 /// <c>Math.Min(OrbitRule.ParkingRadius(body, hill) * 0.9, …)</c> — turns (a) red on the two cadences
 /// (64,898.75 s from the insertion vs 55,411.53 s from the keeper, at Luna) and (b) red on both counts:
 /// <c>MaxKeptRadiusUnderParent</c> and <c>ParkingRadius</c> are each named twice again.</para>
+///
+/// <para>#1177 · <b>and it was red the day it was widened.</b> (b) read six of the eleven
+/// <c>Map.Autopilot*</c> partials — <c>Map.Autopilot.cs</c> and the five #1175 cut out of it — so the
+/// second site, in a partial #870 had cut off years earlier, was never in the subject. Pointed at the whole
+/// family it failed at once, on today's tree, naming the line:</para>
+/// <code>
+/// #286 · `OrbitRule.ParkingRadius(` is named at 2 site(s) in the Map.Autopilot* family:
+///     Math.Min(OrbitRule.ParkingRadius(body, hill), keptRadiusCap);
+///     return $"autopilot flying the approach — insertion at ≈{FormatAltitude(
+///         OrbitRule.ParkingRadius(oi.Body, oi.Hill) - oi.Body.BodyRadius)}";
+/// </code>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheKeptParkIsOneRadiusTests
@@ -98,16 +109,26 @@ public sealed class TheKeptParkIsOneRadiusTests
     /// #286'S CAP IS NAMED ONCE ON THE PAGE. sol.json's cap is inert, so a second expression that dropped it
     /// would fly identically there; this is the half that catches that. Both readers ask the same two
     /// helpers, so they agree by construction rather than by coincidence.
+    ///
+    /// <para>#1177 · <b>THE SUBJECT IS THE WHOLE <c>Map.Autopilot*</c> FAMILY, NOT SIX ELEVENTHS OF IT.</b>
+    /// This claim was written against <c>Map.Autopilot.cs</c> alone and re-pathed by #1175 onto the six
+    /// files cut out of it — and the five partials #870 had cut off years earlier were never in either
+    /// subject. One of them, <c>Map.Autopilot.OrbitAssist.cs</c>, held the second site the whole time: the
+    /// approach coaching line quoted an UNCLAMPED <c>OrbitRule.ParkingRadius(</c> while the pilot flew the
+    /// clamped park. So this half stops reading a hand-declared list and reads the family by glob — a
+    /// partial that joins the autopilot tomorrow is in the subject the day it lands, rather than the day
+    /// somebody remembers to add it. Ordinal order is fine here where it is not for the debit ledger: this
+    /// claim is a COUNT and a PRESENCE, never a sequence.</para>
     /// </summary>
     [Fact]
     public void TheClientsAutopilotSpellsTheClampedParkAtExactlyOneSite()
     {
-        // #251 · the arm and the loop that flies it are six files now. Read as one subject, in declared
-        // order, so "named at exactly one site" is still a claim about the whole autopilot.
-        string source = MapMarkup.TheArmedAutopilot();
+        // #1177 · every Map.Autopilot* partial, so "named at exactly one site" is a claim about the whole
+        // autopilot and not about the subset of it a previous lane happened to list.
+        string source = MapMarkup.PagesFamily("Map.Autopilot*.cs");
 
-        Assert.Equal(1, Count(source, "OrbitRule.MaxKeptRadiusUnderParent("));
-        Assert.Equal(1, Count(source, "OrbitRule.ParkingRadius("));
+        NamedOnce(source, "OrbitRule.MaxKeptRadiusUnderParent(");
+        NamedOnce(source, "OrbitRule.ParkingRadius(");
 
         // …and the one site of each is the shared helper, not a call site that happens to be alone today.
         Assert.Contains(
@@ -116,12 +137,30 @@ public sealed class TheKeptParkIsOneRadiusTests
         Assert.Contains(
             "private static double KeptParkRadius(CelestialBody body, double hill, double keptRadiusCap) =>",
             source, StringComparison.Ordinal);
-        Assert.Equal(2, Count(source, "KeptRadiusCap(body, parent)"));   // the two readers, and nothing else
-        Assert.Equal(2, Count(source, "KeptParkRadius(body, hill, "));
+        // The three readers, and nothing else: the insertion loop, the keeper, and the panel that
+        // COACHES the insertion — the third joined them in #1177.
+        Assert.Equal(3, Count(source, "KeptRadiusCap(body, parent)"));
+        Assert.Equal(3, Count(source, "KeptParkRadius(body, hill, "));
     }
 
     private static int Count(string haystack, string needle) =>
         Regex.Matches(haystack, Regex.Escape(needle)).Count;
+
+    /// <summary>#1177 · the count, and — when it is wrong — the LINES, so the failure names the second
+    /// site instead of printing "expected 1, actual 2" about a family of eleven files.</summary>
+    private static void NamedOnce(string source, string needle)
+    {
+        string[] sites = source
+            .Split('\n')
+            .Where(line => line.Contains(needle, StringComparison.Ordinal))
+            .Select(line => "    " + line.Trim())
+            .ToArray();
+
+        Assert.True(sites.Length == 1,
+            $"#286 · `{needle}` is named at {sites.Length} site(s) in the Map.Autopilot* family; the clamped " +
+            "park is ONE quantity and every reader must ask the shared helper for it, or the panel can quote " +
+            "a radius the pilot does not fly (#1177):\n" + string.Join("\n", sites));
+    }
 
     // ── The bench ─────────────────────────────────────────────────────────────────────────────────────
 
