@@ -82,7 +82,7 @@ public sealed class TheKeepAtTheCounterTests
     {
         // The same fork, on the dev road. A cheat that opened the unforked card would be testing a counter
         // that does not ship — #693's own rule one turn on.
-        string stand = Method("Map.Surface.Cheats.cs", "private void StandAtTheCounterIfAsked(");
+        string stand = Method("Map.Surface.Cheats.Stand.cs", "private void StandAtTheCounterIfAsked(");
 
         Assert.Contains("CounterService.OnWatch(counter, ex.CanteenWatch)", stand, StringComparison.Ordinal);
         Assert.Contains("TheKeep.KeptWatch(ex.CanteenWatch)", stand, StringComparison.Ordinal);
