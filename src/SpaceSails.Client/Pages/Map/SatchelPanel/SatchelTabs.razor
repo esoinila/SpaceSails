@@ -1,0 +1,106 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SatchelPage = SpaceSails.Client.Pages.Map.SatchelPage
+@*
+    #251 · THE SATCHEL'S TAB BAR, ON ITS OWN FILE.
+
+    THE POCKETS, AS A ROW. Four tabs that are always drawn and two that follow the world: SPREAD
+    appears where there is a table under you and THE BIN where there is a bucket at your boots, because
+    on your feet neither is a page you are being refused — it is a page that does not apply. Every count
+    on them is the book's or the compass's own; this markup computes no badge.
+
+    Moved out of SatchelPanel.razor by PURE MOTION — the block between the two fences below is the block
+    that was in the panel, character for character. Every member it reads is a [Parameter] with the SAME
+    NAME (a field keeps its underscore, a method arrives as a delegate under its own name, a variable the
+    panel's `@if` bound arrives under the name that binding gave it), which is what lets the markup move
+    without a rewrite and lets the composition splice it straight back where it came from.
+
+    IHandleEvent repeats SatchelPanel's own override, which repeats Map.Sim.cs's: the HUD's refresh
+    belongs to OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render
+    back on every event in here. The .razor.css beside this file carries ONE of the four rule blocks
+    that only this markup renders — the strip; the sheet itself says why the three `.satchel-tab`
+    blocks could not follow it (#1166, and the cascade). Its scope is the PAGE's own (b-4dqsdx4p75,
+    pinned in SpaceSails.Client.csproj), so every rule — the one beside it and the three left behind
+    with the shared kit in SatchelPanel.razor.css — goes on matching this markup.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and a code
+    block is where its first statements are legal. It is outside the fences, so what the composition reads
+    is exactly the lines that stood in the panel.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from SatchelPanel.razor ────────────────────────────────────────────────── *@
+                @* #690 · A pocket and a notebook are both things a satchel holds. Owner: "should we have
+                   notes / clues section in our inventory ui?" — and on the register: "it's like our detective
+                   notepad :-D". The field book used to render only at a ship-brain desk, so the captain
+                   standing at a sealed door could not consult their own notes; #688's leave verb made that
+                   acute by filing a paper's gist to exactly that unreachable place. No second store here —
+                   the NOTES page reads _fieldNotes, the one book. *@
+                <div class="satchel-tabs">
+                    <button type="button"
+                            class="satchel-tab @(_satchelPage == SatchelPage.Carried ? "on" : "")"
+                            title="What is in the satchel"
+                            @onclick="() => _satchelPage = SatchelPage.Carried">
+                        🎒 CARRIED@(_satchel.Count > 0 ? $" ({_satchel.Count})" : "")
+                    </button>
+                    <button type="button"
+                            class="satchel-tab @(_satchelPage == SatchelPage.Notes ? "on" : "")"
+                            title="What the ground has told you"
+                            @onclick="() => _satchelPage = SatchelPage.Notes">
+                        📓 NOTES
+                    </button>
+                    @* #741 v1 · THREADS, beside the book and reading the same one. Owner's issue: "a third
+                       tab — THREADS — grouping existing entries by the entities they already name… the
+                       THREAD is just the stack of what you wrote about one name, and the captain draws the
+                       line." ALWAYS drawn, like the compass: an empty page here is an answer, and a tab
+                       that appeared only once a case was forming would be missing exactly while a captain
+                       wondered whether the game did this at all. The count is the book's, not a badge. *@
+                    <button type="button"
+                            class="satchel-tab @(_satchelPage == SatchelPage.Threads ? "on" : "")"
+                            title="@SpaceSails.Core.CaseSubjects.TabHint"
+                            @onclick="() => TheSatchelTurnsTo(SatchelPage.Threads)">
+                        @SpaceSails.Core.CaseSubjects.TabLabel@(TheBookThreads() is { Count: > 0 } stacks
+                            ? $" ({stacks.Count})" : "")
+                    </button>
+                    @* #727 · THE THIRD POCKET. What you learned (📓) and what you owe (🗺) are two different
+                       questions, and the book keeps its opinionless voice by not being asked the second one.
+                       Unlike SPREAD and THE BIN this tab is ALWAYS drawn: a compass that vanished when there
+                       was nothing on it would answer "why am I down here" with silence, and the whole point
+                       of the page is that the answer is never nothing — it is "nothing owed on foot", said
+                       out loud, on the page. *@
+                    <button type="button"
+                            class="satchel-tab @(_satchelPage == SatchelPage.Missions ? "on" : "")"
+                            title="What you took on, and what of it you can do standing here"
+                            @onclick="() => _satchelPage = SatchelPage.Missions">
+                        🗺 MISSIONS@(CompassOnFoot() is { Count: > 0 } owed ? $" ({owed.Count})" : "")
+                    </button>
+                    @* #784 · THE SPREAD, and the tab exists only when there is a table under it. Owner's law:
+                       "writing things down requires sitting down to be properly done" — and the tab follows
+                       the posture rather than standing there greyed out, because on your feet this is not a
+                       page you are being refused, it is a page that does not apply. The refusal a captain
+                       DOES need to meet (the bar desk) is inside the page, on the seat that has one. *@
+                    @if (CaptainIsSeatedAnywhere)
+                    {
+                        <button type="button"
+                                class="satchel-tab @(_satchelPage == SatchelPage.Spread ? "on" : "")"
+                                title="@SpreadDoorHint"
+                                @onclick="() => _satchelPage = SatchelPage.Spread">
+                            🗂 SPREAD
+                        </button>
+                    }
+                    @* #828 · THE BIN, and the tab follows the FIXTURE the way the spread tab follows the
+                       posture: standing at a bucket it is a page, three du away it is not a page you are
+                       being refused. It exists so the captain who opened the pocket by reflex ([I]) can
+                       still find the bin they are standing at, and so the one who came in through [E] can
+                       get back to their pockets and their book without walking away first. *@
+                    @if (BinWithinReach() is { } binTab)
+                    {
+                        <button type="button"
+                                class="satchel-tab @(_satchelPage == SatchelPage.Bin ? "on" : "")"
+                                title="@SpaceSails.Core.RipAndBin.Hint(binTab.Tier)"
+                                @onclick="() => _satchelPage = SatchelPage.Bin">
+                            @SpaceSails.Core.RipAndBin.Glyph THE BIN
+                        </button>
+                    }
+                </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

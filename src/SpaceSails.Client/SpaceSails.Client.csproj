@@ -83,6 +83,14 @@
          build error and no test. Same identifier, because it is the same page's markup one file further
          out. -->
     <None Update="Pages\Map\NavHud\*.razor.css" CssScope="b-4dqsdx4p75" />
+    <!-- #251 · …AND THE SECOND SURFACE TO BE CUT UP IN ITS TURN. SatchelPanel.razor was 983 lines — the
+         pocket, the field book, the threads, the spread, the bin and the compass, six pages behind one tab
+         bar — and each of them is a surface under Pages/Map/SatchelPanel/ now. The satchel's own sheet is
+         481 lines with a handful of ::deep rules in it, so a sub-surface that took an identifier of its own
+         would lose Map.razor.css AND SatchelPanel.razor.css together: the rows, the tabs, the note nodes
+         and the bin sleeve all unstyled, with no build error and no test. Same identifier again, because it
+         is the same page's markup two files out. -->
+    <None Update="Pages\Map\SatchelPanel\*.razor.css" CssScope="b-4dqsdx4p75" />
   </ItemGroup>
 
   <!-- #251 · THE SAME LAW FOR THE TRACKING POST, WHERE IT BITES HARDER.

@@ -69,6 +69,12 @@ public sealed class EverySurfaceWearsThePagesCssScopeTests
         // wear one of their own and lose Map.razor.css AND NavHud.razor.css in the same silence.
         ("Pages/Map/NavHud/", Path.Combine(ClientDir, "Pages", "Map", "NavHud"),
             "Pages/Map.razor.css", "Pages/Map/NavHud/*.razor.css"),
+        // #251 · and the satchel, cut up the same way and for the same reason. Its own sheet is 481
+        // lines with only a handful of ::deep rules in it, so a sub-surface with no carrier would lose
+        // Map.razor.css AND SatchelPanel.razor.css in the one silence: the rows, the tabs, the note
+        // nodes and the bin sleeve all unstyled, with no build error to say so.
+        ("Pages/Map/SatchelPanel/", Path.Combine(ClientDir, "Pages", "Map", "SatchelPanel"),
+            "Pages/Map.razor.css", "Pages/Map/SatchelPanel/*.razor.css"),
         ("Pages/Stations/TrackingPost/", Path.Combine(ClientDir, "Pages", "Stations", "TrackingPost"),
             "Pages/Stations/TrackingPost.razor.css", "Pages/Stations/TrackingPost/*.razor.css"),
     ];
