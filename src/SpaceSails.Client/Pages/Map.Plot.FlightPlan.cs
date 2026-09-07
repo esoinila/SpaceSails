@@ -299,13 +299,17 @@ public partial class Map
         string? holdingLine = null;
         if (_orbitKept && _armedOrbitBodyId is not null && _ephemeris is not null)
         {
-            // The steady park the keeper trims back to: ParkingRadius − surface, "alt N km" (#203). The
-            // kept body IS the bound body while keeping, so its Hill radius is UpdateOrbitedBody's cached
-            // one. If (defensively) that isn't available, fall back to the instantaneous radius so the
-            // NOW line never vanishes — but the park altitude is the value that stays steady on this line.
+            // The steady park the keeper trims back to — surface, "alt N km" (#203). The kept body IS the
+            // bound body while keeping, so its Hill radius is UpdateOrbitedBody's cached one. If
+            // (defensively) that isn't available, fall back to the instantaneous radius so the NOW line
+            // never vanishes — but the park altitude is the value that stays steady on this line.
+            // #1179: and it is the CLAMPED park, asked of the one helper StationKeep itself trims back to.
+            // This line names the radius the keeper is HOLDING; built off a raw OrbitRule.ParkingRadius it
+            // would, at an inner moon whose park #286's cap cuts off, have stated an altitude the autopilot
+            // was actively trimming AWAY from.
             CelestialBody? keptBody = BodyById(_armedOrbitBodyId);
             double parkAlt = keptBody is not null && _orbitedBodyId == _armedOrbitBodyId && _orbitedBodyHillRadius > 0
-                ? OrbitRule.ParkingRadius(keptBody, _orbitedBodyHillRadius) - keptBody.BodyRadius
+                ? KeptParkRadius(keptBody, _orbitedBodyHillRadius) - keptBody.BodyRadius
                 : 0;
             string alt = parkAlt > 0
                 ? FormatAltitude(parkAlt)
@@ -344,7 +348,12 @@ public partial class Map
         string? altitude = null;
         if (harbor == HarborClass.Orbit && OrbitInfo() is { } oi && oi.Body.Id == _armedOrbitBodyId)
         {
-            double parkAlt = OrbitRule.ParkingRadius(oi.Body, oi.Hill) - oi.Body.BodyRadius;
+            // #1179: the CLAMPED park (oi.KeptPark) — #286's cap and all — because this row is the banner's
+            // promise about where the autopilot is taking her, and the loop that takes her there parks at
+            // min(tide-stable, cap). It is also the row OrbitStatusLine says it matches, so until this lane
+            // an inner moon that clamps would have had the two sentences quote different altitudes for one
+            // arrival: the panel the clamped number (since #1177) and this banner the unclamped one.
+            double parkAlt = oi.KeptPark - oi.Body.BodyRadius;
             if (parkAlt > 0)
             {
                 altitude = FormatAltitude(parkAlt);

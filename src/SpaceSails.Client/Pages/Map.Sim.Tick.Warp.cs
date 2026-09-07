@@ -97,7 +97,14 @@ public partial class Map
         if (parent is null) return int.MaxValue;
 
         double hill = OrbitRule.HillRadius(_nearestBody, parent.Mu);
-        double park = OrbitRule.ParkingRadius(_nearestBody, hill);
+        // #1179 · THE BAND SHE IS CLOSING ON, NOT THE ONE THE TIDE ALONE WOULD ALLOW. Both uses of `park`
+        // below are about the ship's NEARNESS TO THE PARK SHE WILL FLY: the gate asks whether that band sits
+        // inside the grazing radius, and `room` is literally the distance still to close to it. The armed
+        // loop flies to #286's CLAMPED park, so the unclamped tide-stable radius was the wrong quantity for
+        // both. At an inner moon whose cap cuts the park down inside the grazing radius, the old expression
+        // read "roomy moon — the tiers suffice" and left warp at 10× while the ship was in fact closing on a
+        // band tens of km wide; and where it did cap, it sized `room` off a band the autopilot never aims at.
+        double park = KeptParkRadius(_nearestBody, hill, KeptRadiusCap(_nearestBody, parent));
         if (park >= _nearestBody.BodyRadius * 3 || distanceToNearest > OrbitRule.CaptureRange(hill))
         {
             return int.MaxValue; // roomy moon/planet, or not yet closing — the tiers suffice
