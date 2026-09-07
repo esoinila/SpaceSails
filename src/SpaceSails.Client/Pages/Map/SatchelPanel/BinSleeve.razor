@@ -1,0 +1,79 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@*
+    #251 · THE BIN PAGE, ON ITS OWN FILE.
+
+    THE BIN (#828) — the sleeve held open over the bucket the captain is standing at. Nothing here is
+    a second shredder: the rows are the sleeve's own papers and the verb is the one the row already had.
+
+    Moved out of SatchelPanel.razor by PURE MOTION — the block between the two fences below is the block
+    that was in the panel, character for character. Every member it reads is a [Parameter] with the SAME
+    NAME (a field keeps its underscore, a method arrives as a delegate under its own name, a variable the
+    panel's `@if` bound arrives under the name that binding gave it), which is what lets the markup move
+    without a rewrite and lets the composition splice it straight back where it came from.
+
+    IHandleEvent repeats SatchelPanel's own override, which repeats Map.Sim.cs's: the HUD's refresh
+    belongs to OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render
+    back on every event in here. The .razor.css beside this file carries no rules of its own, and its scope is the
+    PAGE's own (b-4dqsdx4p75, pinned in SpaceSails.Client.csproj), so every rule that styled this markup
+    goes on matching it.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and a code
+    block is where its first statements are legal. It is outside the fences, so what the composition reads
+    is exactly the lines that stood in the panel.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from SatchelPanel.razor ────────────────────────────────────────────────── *@
+                    @* #828 · THE BIN — the sleeve held open over the bucket the captain is standing at.
+                       Owner: "I think the trash could be an e-use ... where we select from inventory the
+                       processed items we rip and deposit into trash."
+
+                       Nothing on this page is a second shredder. The rows are the sleeve's own papers, the
+                       order is Core's (worked sheets lead), the words on them are Core's, and the press is
+                       RipItUp — the SAME act the spread row fires, which is why the filed fact reads the
+                       same whichever grip the captain took. No control is disabled (#212/#603): a sheet
+                       nothing has been dug out of yet carries a flag and a warning in its hint, and then
+                       does exactly what it is asked, because it is the captain's paper. *@
+
+                    @* The bet is spoken at the bin and nowhere else (RipAndBin.TierBet) — and when the
+                       captain has walked off mid-picker the page says THAT instead, rather than going on
+                       describing a bucket that is now down the corridor. *@
+                    @if (BinWithinReach() is { } overIt)
+                    {
+                        <div class="satchel-sub">@SpaceSails.Core.RipAndBin.TierBet(overIt.Tier)</div>
+                    }
+                    else
+                    {
+                        <div class="satchel-sub">@SpaceSails.Core.RipAndBin.NoBinLine</div>
+                    }
+
+                    @if (_satchelOutcome is { Length: > 0 } binSaid)
+                    {
+                        <div class="satchel-outcome">@binSaid</div>
+                    }
+
+                    @if (BinnableFinds() is { Count: > 0 } feed)
+                    {
+                        <div class="satchel-items">
+                            @foreach (SpaceSails.Core.Satchel.Item lying in feed)
+                            {
+                                SpaceSails.Core.Satchel.Item paper = lying;
+                                <div class="satchel-row">
+                                    <button type="button" class="satchel-item"
+                                            title="@BinRowHint(paper)"
+                                            @onclick="() => RipItUp(paper)">
+                                        <span class="satchel-item-name">@SatchelLabel(paper)</span>
+                                        <span class="satchel-item-try">
+                                            @SpaceSails.Core.RipAndBin.Glyph @BinRowFlag(paper)
+                                        </span>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.RipAndBin.NothingToBinLine</div>
+                    }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

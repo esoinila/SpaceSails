@@ -95,105 +95,13 @@
                 }
                 else if (_satchelPage == SatchelPage.Bin)
                 {
-                    @* #828 · THE BIN — the sleeve held open over the bucket the captain is standing at.
-                       Owner: "I think the trash could be an e-use ... where we select from inventory the
-                       processed items we rip and deposit into trash."
-
-                       Nothing on this page is a second shredder. The rows are the sleeve's own papers, the
-                       order is Core's (worked sheets lead), the words on them are Core's, and the press is
-                       RipItUp — the SAME act the spread row fires, which is why the filed fact reads the
-                       same whichever grip the captain took. No control is disabled (#212/#603): a sheet
-                       nothing has been dug out of yet carries a flag and a warning in its hint, and then
-                       does exactly what it is asked, because it is the captain's paper. *@
-
-                    @* The bet is spoken at the bin and nowhere else (RipAndBin.TierBet) — and when the
-                       captain has walked off mid-picker the page says THAT instead, rather than going on
-                       describing a bucket that is now down the corridor. *@
-                    @if (BinWithinReach() is { } overIt)
-                    {
-                        <div class="satchel-sub">@SpaceSails.Core.RipAndBin.TierBet(overIt.Tier)</div>
-                    }
-                    else
-                    {
-                        <div class="satchel-sub">@SpaceSails.Core.RipAndBin.NoBinLine</div>
-                    }
-
-                    @if (_satchelOutcome is { Length: > 0 } binSaid)
-                    {
-                        <div class="satchel-outcome">@binSaid</div>
-                    }
-
-                    @if (BinnableFinds() is { Count: > 0 } feed)
-                    {
-                        <div class="satchel-items">
-                            @foreach (SpaceSails.Core.Satchel.Item lying in feed)
-                            {
-                                SpaceSails.Core.Satchel.Item paper = lying;
-                                <div class="satchel-row">
-                                    <button type="button" class="satchel-item"
-                                            title="@BinRowHint(paper)"
-                                            @onclick="() => RipItUp(paper)">
-                                        <span class="satchel-item-name">@SatchelLabel(paper)</span>
-                                        <span class="satchel-item-try">
-                                            @SpaceSails.Core.RipAndBin.Glyph @BinRowFlag(paper)
-                                        </span>
-                                    </button>
-                                </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="satchel-empty">@SpaceSails.Core.RipAndBin.NothingToBinLine</div>
-                    }
+                    <BinSleeve _satchelOutcome="@_satchelOutcome" BinnableFinds="@BinnableFinds"
+                               BinRowFlag="@BinRowFlag" BinRowHint="@BinRowHint" BinWithinReach="@BinWithinReach"
+                               RipItUp="@RipItUp" SatchelLabel="@SatchelLabel" />
                 }
                 else if (_satchelPage == SatchelPage.Missions)
                 {
-                    @* ── #727 · THE CARRIED COMPASS ──────────────────────────────────────────────────────
-                       Owner, 2026-08-06: "Right now the tasks and missions have been ship-UI specific, so a
-                       mission that works outside the ship UI is something new… we should filter out /
-                       minimize ship-specific stuff to appropriate ('cannot do in this UI level, but high
-                       level: go to Moon X') type info in the carried mission UI."
-
-                       ONE MODEL, TWO PROJECTIONS. Every row here is the SAME contract the captain's own
-                       desk draws, read through the same CurrentStepOf and folded by Core
-                       (MissionProjection.OnFoot). The foot-level step is the desk's own words, byte for
-                       byte; everything else is one collapsed sentence naming where the ship must go.
-
-                       AND NO BUTTON IT CANNOT HONOUR. The carried view is READ-ONLY in v1 (the issue's own
-                       fence: signing on happens where people are), so this page renders no control at all
-                       — not a greyed one, not a hidden one. A dead affordance in a satchel would be the
-                       lift-that-only-went-down bug wearing a UI. The steps you CAN act on you act on by
-                       walking to the thing and pressing [E], exactly as you always did; this page only
-                       tells you which of them are here and which are a voyage. *@
-                    <div class="satchel-sub">@SpaceSails.Core.MissionProjection.CompassBlurb</div>
-
-                    @if (_satchelOutcome is { Length: > 0 } missionSaid)
-                    {
-                        <div class="satchel-outcome">@missionSaid</div>
-                    }
-
-                    @if (CompassOnFoot() is { Count: > 0 } compass)
-                    {
-                        <div class="satchel-notes">
-                            @foreach (SpaceSails.Core.CompassLine job in compass)
-                            {
-                                <div class="satchel-note mission-line">
-                                    <div class="mission-title">@job.Title</div>
-                                    <div class="mission-why">@job.Why</div>
-                                    @* The one place the fold shows: a step you can act on where you stand
-                                       reads in the desk's own hand, a step you cannot reads as DIRECTION.
-                                       The class is the only difference the markup makes — the words are
-                                       Core's either way. *@
-                                    <div class="mission-step @(job.Actionable ? "here" : "away")">@job.Step</div>
-                                </div>
-                            }
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="satchel-empty">@SpaceSails.Core.MissionProjection.NothingOwedOnFoot</div>
-                    }
+                    <CarriedCompass _satchelOutcome="@_satchelOutcome" CompassOnFoot="@CompassOnFoot" />
                 }
                 else
                 {
