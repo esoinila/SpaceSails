@@ -114,7 +114,7 @@ public class TheGroundKeepsSomebodyElsesFootprintsTests
         // Seeded where the husks are seeded, before the first frame. Matched as a STATEMENT rather than as
         // a substring: the way this wiring actually goes missing is somebody commenting the line out while
         // chasing something else, and a guard that a comment satisfies is a guard that cannot fail.
-        string surface = Pages("Map.Surface.cs");
+        string surface = Pages("Map.Surface.Boarding.cs"); // #251 · the one place an excursion is built
         Assert.Matches(@"(?m)^\s+SeedTheHusksLeftHere\(excursion\);", surface);
         Assert.Matches(@"(?m)^\s+SeedTheScarsLeftHere\(excursion\);", surface);
         Assert.Matches(@"(?m)^\s+foreach \(GroundMemory\.Scar scar in _groundMemory\.ScarsAt\(",
@@ -179,8 +179,8 @@ public class TheGroundKeepsSomebodyElsesFootprintsTests
         Assert.Contains("cache.SafetyWith(TheFightThisGroundCarries(cache))", dig, StringComparison.Ordinal);
         Assert.Contains("TheFightThisGroundCarries(ex)", dig, StringComparison.Ordinal);
 
-        Assert.Contains("open.SafetyWith(TheFightThisGroundCarries(open))",
-            Pages("Map.Surface.cs"), StringComparison.Ordinal);
+        Assert.Contains("open.SafetyWith(TheFightThisGroundCarries(open))",   // #251 · the liftoff line
+            Pages("Map.Surface.Liftoff.cs"), StringComparison.Ordinal);
         Assert.Contains("c.SafetyWith(TheFightThisGroundCarries(c))",
             Pages("Map.Quests.Ledger.cs"), StringComparison.Ordinal);
         Assert.Contains("TheFightThisGroundCarries(c)",

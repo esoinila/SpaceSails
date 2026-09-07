@@ -122,7 +122,7 @@ public class TheGroundRemembersWhatYouDidToItTests
 
         // SEEDED ON ARRIVAL, at the one place the excursion is built, beside the rooms it already seeds —
         // and out of Core's own reader, so the client never learns the key format.
-        Assert.Contains("SeedTheHusksLeftHere(excursion);", Pages("Map.Surface.cs"), StringComparison.Ordinal);
+        Assert.Contains("SeedTheHusksLeftHere(excursion);", Pages("Map.Surface.Boarding.cs"), StringComparison.Ordinal);
         Assert.Contains("_groundMemory.HusksAt(ex.Stop.Body.Id, ex.Site.LayoutSalt)", tiles,
             StringComparison.Ordinal);
 

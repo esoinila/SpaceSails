@@ -239,7 +239,7 @@ public sealed class TheWallsAreHungAndReadTests
             ("Map.Docking*.cs", "TheArrivalIsRemembered(dock.Id)"),    // the clamp
             ("Map.Autopilot*.cs", "TheArrivalIsRemembered(body.Id)"),  // the autopilot's park
             ("Map.Autopilot*.cs", "TheArrivalIsRemembered(oi.Body.Id)"), // the manual insertion
-            ("Map.Surface.cs", "TheArrivalIsRemembered(stop.Body.Id)"), // the boat setting down
+            ("Map.Surface.Boarding.cs", "TheArrivalIsRemembered(stop.Body.Id)"), // the boat setting down
         ];
 
         foreach ((string family, string call) in edges)
@@ -250,7 +250,7 @@ public sealed class TheWallsAreHungAndReadTests
         // …and every arrival edge stands beside the `ArrivedAt` hook that already marks one, or (the landing)
         // at the one place a boat is mated. Counted, so a new edge cannot be added without noticing this.
         int wired = 0;
-        foreach (string family in new[] { "Map.Docking*.cs", "Map.Autopilot*.cs", "Map.Surface.cs" })
+        foreach (string family in new[] { "Map.Docking*.cs", "Map.Autopilot*.cs", "Map.Surface.Boarding.cs" })
         {
             string source = MapMarkup.PagesFamily(family);
             int at = 0;
