@@ -258,4 +258,19 @@ public partial class Map
     /// tighter than the cap).</summary>
     private static double KeptParkRadius(CelestialBody body, double hill, double keptRadiusCap) =>
         Math.Min(OrbitRule.ParkingRadius(body, hill), keptRadiusCap);
+
+    /// <summary>#1179 · THE SAME PARK, FOR A CALLER THAT HAS NO PARENT IN HAND. The autopilot's own halves
+    /// have already looked the parent up by the time they want the park; the surfaces that merely SPEAK about
+    /// it — the flight-plan board's holding line, the warp tier — have the body and its Hill radius and
+    /// nothing else, and each of them used to reach past both helpers for a raw
+    /// <c>OrbitRule.ParkingRadius</c> rather than write the lookup out again. That is how four unclamped
+    /// quotes of a clamped quantity got written. So the lookup lives here, once, and there is still exactly
+    /// one spelling of the park on the client.
+    ///
+    /// <para>A body with no parent — a planet, the sun — has no parent to clear, so it has no cap and the
+    /// tide-stable park stands; that is the <c>AutopilotDecision</c> default (+∞) said again.</para></summary>
+    private double KeptParkRadius(CelestialBody body, double hill) =>
+        KeptParkRadius(body, hill, BodyById(body.ParentId) is { } parent
+            ? KeptRadiusCap(body, parent)
+            : double.PositiveInfinity);
 }
