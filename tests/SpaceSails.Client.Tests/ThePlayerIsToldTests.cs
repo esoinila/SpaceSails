@@ -122,12 +122,12 @@ public sealed class ThePlayerIsToldTests
         // SUBMIT: the debt is collected. The hold is emptied and the heat clears to zero, and both are read
         // off the panel's own record rather than pulsed under its backdrop (#736).
         new("you submit, and the collector takes the hold",
-            Surface.OnModalOutcome, "Map.Combat.Busted.cs", "BustedSubmit",
+            Surface.OnModalOutcome, "Map.Combat.Busted.Options.cs", "BustedSubmit",
             "b.Phase = BustedEncounter.Stage.Confiscated;"),
 
         // BRIBE: the coin moves and the law does not. Said on the card that asked for it.
         new("you buy this patrol, and not the law",
-            Surface.OnModalOutcome, "Map.Combat.Busted.cs", "BustedBribe",
+            Surface.OnModalOutcome, "Map.Combat.Busted.Options.cs", "BustedBribe",
             "b.ResultMessage = $\"{b.Bribe.Total:N0} cr changes hands."),
 
         // #535 · PRESENT THE KEY: the encounter never happened. This is the strangest row in the table and
@@ -136,7 +136,7 @@ public sealed class ThePlayerIsToldTests
         // ResultMessage under it: a sentence narrating the silence would be the game filing a report about
         // the report it did not file. The STAGE is the card, exactly as the confiscation's is.
         new("you present the key, and there is nothing to report",
-            Surface.OnModalOutcome, "Map.Combat.Busted.cs", "PresentTheBlackOpsKey",
+            Surface.OnModalOutcome, "Map.Combat.Busted.Options.cs", "PresentTheBlackOpsKey",
             "b.Phase = BustedEncounter.Stage.NoContactLogged;"),
 
         // #535 · BURN IT COLD: a band comes off a file that is not yours, and it is the only thing in the
@@ -152,7 +152,7 @@ public sealed class ThePlayerIsToldTests
         // been re-greyed at the filing line. Every one of those rides the card's own record (b.ClinicBillCr,
         // b.HullDescription, b.ClinicName, b.RebirthGlitch, b.FilingNotice) and the card is this stage.
         new("you wake in a clinic owing for the wake-up",
-            Surface.RaisedCard, "Map.Combat.Busted.cs", "BustedResurrect",
+            Surface.RaisedCard, "Map.Combat.Busted.Wake.cs", "BustedResurrect",
             "b.Phase = BustedEncounter.Stage.Resurrected;"),
 
         // A POLICY BOUGHT. He says nothing new about a sale — that is the character — so the telling is the

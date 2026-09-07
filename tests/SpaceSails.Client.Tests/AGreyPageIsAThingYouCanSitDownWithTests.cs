@@ -210,7 +210,7 @@ public sealed class AGreyPageIsAThingYouCanSitDownWithTests
         Assert.Equal(1, CountOf(map, @"bust\.FilingNotice"));
 
         // …and it is set once, at the succession seam, off Core's own sentence.
-        string busted = Pages("Map.Combat.Busted.cs");
+        string busted = MapMarkup.PagesFamily("Map.Combat.Busted*.cs"); // #251 · counted over the whole subject
         Assert.Contains("b.FilingNotice = MarkTheBookAtTheFilingLine();", busted, StringComparison.Ordinal);
         Assert.Equal(1, CountOf(busted, @"MarkTheBookAtTheFilingLine\(\)"));
     }
