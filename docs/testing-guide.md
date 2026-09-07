@@ -2354,7 +2354,7 @@ So, for a static class:
 `EveryFrameHashesTheSameTests` caught this on the first run, which is what that ledger is for and the
 reason a split of this kind is attempted at all.
 
-**Since #1173 a guard says it, so you do not have to remember it.**
+**Since #1175 a guard says it, so you do not have to remember it.**
 `SpaceSails.Core.Tests.NoPartialClassSpreadsItsStaticFieldsTests` sweeps every `.cs` file under `src/` and
 goes red when **one static field initializer of a multi-file partial class reads a static field of the same
 class that is declared in another file.** That is the hazard exactly, and it is not the same thing as "the
