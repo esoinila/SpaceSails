@@ -126,7 +126,9 @@ public class TheGroundKeepsSomebodyElsesFootprintsTests
 
         // The HUD publishes both marks, and the abandoned bot rides the SENTRY list — the #314 mark for a
         // counter frozen at 00 — rather than minting a second bot glyph nobody asked for.
-        string hud = Pages("Map.Surface.Hud.cs");
+        // #251 · five partials now: the refill writes the mark and the composer publishes it, so the
+        // claim spans two of them and is read as ONE subject.
+        string hud = MapMarkup.PagesFamily("Map.Surface.Hud*.cs");
         Assert.Contains("_hudPits.Add((scar.X, scar.Y))", hud, StringComparison.Ordinal);
         Assert.Contains("Pits: _hudPits", hud, StringComparison.Ordinal);
         Assert.Contains("SentryBot.Readout(0), true, false", hud, StringComparison.Ordinal);
