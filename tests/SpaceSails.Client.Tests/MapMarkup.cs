@@ -177,21 +177,26 @@ internal static class MapMarkup
     /// #251 · THE ARMED AUTOPILOT AS ONE SUBJECT — <c>Map.Autopilot.cs</c> and the five partials cut out of
     /// it, in the order the one file laid them out.
     ///
-    /// <para>Five source guards read this text: the refusal's numbers and the FIVE TANK DEBITS IN ORDER
+    /// <para>Source guards read this text: the refusal's numbers and the FIVE TANK DEBITS IN ORDER
     /// (<c>TheTenthIsQuotedAndOnlyTheAutopilotsTests</c>), the station fork of <c>CheckArmedInsertion</c>
-    /// sliced structurally (<c>TheArrivalEndsWhereTheErrandIsTests</c>), #286's clamped park named exactly
-    /// once (<c>TheKeptParkIsOneRadiusTests</c>), and the FABLE marker that must not survive
-    /// (<c>TheWreckHasItsOwnArrivalTests</c>). The debit ledger is why this family is read in DECLARED order
-    /// and not alphabetically.</para>
+    /// sliced structurally (<c>TheArrivalEndsWhereTheErrandIsTests</c>), and the FABLE marker that must not
+    /// survive (<c>TheWreckHasItsOwnArrivalTests</c>). The debit ledger is why this family is read in
+    /// DECLARED order and not alphabetically.</para>
     ///
     /// <para><b>The other five <c>Map.Autopilot.*</c> partials are deliberately NOT in this list</b>, and
     /// that is not tidiness. <c>ParkWatch</c>, <c>OrbitAssist</c>, <c>ArrivalWindow</c>, <c>Ancients</c> and
-    /// <c>FlightPlan</c> were cut off under #870, long before these guards were written, and every one of
-    /// those guards was measured against <c>Map.Autopilot.cs</c> ALONE. Folding them in now would change
-    /// what the guards claim rather than where they look — <c>Map.Autopilot.OrbitAssist.cs</c> carries a
-    /// second, unclamped <c>OrbitRule.ParkingRadius(</c> call in a coaching line, so the "named at exactly
-    /// one site" count would become 2 and would have to be re-asserted rather than re-pathed. This lane
-    /// re-paths; it does not re-assert. The second site is reported in the PR as noticed, not fixed.</para>
+    /// <c>FlightPlan</c> were cut off under #870, long before these guards were written, and each of the
+    /// three above was measured against <c>Map.Autopilot.cs</c> ALONE — folding them in would change what
+    /// those guards claim rather than where they look. #1175 re-pathed; it did not re-assert.</para>
+    ///
+    /// <para>#1177 · <b>and re-pathing was not enough for the fourth one.</b> #1175 noticed, and reported,
+    /// that <c>Map.Autopilot.OrbitAssist.cs</c> carried a second, UNCLAMPED <c>OrbitRule.ParkingRadius(</c>
+    /// call in the approach coaching line — so the panel quoted a park the pilot did not fly. That was not
+    /// a counting inconvenience, it was the bug, and the guard that should have caught it
+    /// (<c>TheKeptParkIsOneRadiusTests</c>) could not, because its subject was six elevenths of the family.
+    /// It no longer reads this list at all: it reads <c>PagesFamily("Map.Autopilot*.cs")</c>, the whole
+    /// family by glob, which is right for a claim that is a COUNT rather than a SEQUENCE and cannot go
+    /// half-blind when a twelfth partial lands.</para>
     /// </summary>
     internal static string TheArmedAutopilot() => PagesInOrder(
         // 11 = the six below plus ParkWatch, OrbitAssist, ArrivalWindow, Ancients and FlightPlan (#870).

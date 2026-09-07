@@ -32,11 +32,17 @@ namespace SpaceSails.Client.Pages;
 public partial class Map
 {
     // ---- M20: the bus stop in space ----
+    /// <param name="KeptPark">#1177 · THE RADIUS THE PILOT ACTUALLY FLIES — #286's clamped park for this
+    /// body, taken from <c>KeptParkRadius</c>, the one helper the insertion loop and the keeper already
+    /// ask. The panel used to build its own from <c>OrbitRule.ParkingRadius</c> and got the UNCLAMPED
+    /// number, so for an inner moon whose tide-stable park would thread its parent the coaching line
+    /// quoted an insertion the autopilot would never make. The panel is not allowed its own arithmetic
+    /// for a quantity the sim already owns.</param>
     public readonly record struct OrbitAssistInfo(
         CelestialBody Body, double Distance, double RelSpeed, double Hill, int Cost,
         bool WindowOpen, bool TooFast, bool CanEngage, bool IsDestination,
         double CaptureRange, bool InCaptureRange, bool Armed, int ApproachCost,
-        bool Bound, bool RadiusInStableBand);
+        bool Bound, bool RadiusInStableBand, double KeptPark);
 
     private OrbitAssistInfo? OrbitInfo()
     {
@@ -101,7 +107,10 @@ public partial class Map
             captureRange, distance <= captureRange && !bound,
             _armedOrbitBodyId == body.Id,
             OrbitRule.ApproachPulseCost(_ship, bodyPos, bodyVel),
-            bound, radiusInBand);
+            bound, radiusInBand,
+            // #1177: the park the panel may QUOTE is the park the loop will FLY — the same
+            // `KeptParkRadius` the insertion and the keeper read, clamp and all (#286).
+            KeptParkRadius(body, hill, KeptRadiusCap(body, parent)));
     }
 
     // One line of approach coaching: what to fix first, with a ballpark number on it.
@@ -119,7 +128,13 @@ public partial class Map
         if (oi.Armed && oi.InCaptureRange)
             // #203: altitude above the surface, unit-labelled — the SAME number the banner's
             // "orbit-insert (alt N km)" row shows, never the raw orbital radius the panel used to quote.
-            return $"autopilot flying the approach — insertion at ≈{FormatAltitude(OrbitRule.ParkingRadius(oi.Body, oi.Hill) - oi.Body.BodyRadius)}";
+            // #1177: and off the CLAMPED park (oi.KeptPark), which is the radius the loop below this
+            // sentence will actually park at — the panel quoted the unclamped one for as long as it existed.
+            // The banner row (InsertStepLabel) still builds its own from OrbitRule.ParkingRadius, so the two
+            // agree at every shipped body (#286's cap is inert there) and would part company at an inner moon
+            // that clamps. Three more quotes outside this family have the same shape; they are #1177's
+            // follow-up, not silently different numbers.
+            return $"autopilot flying the approach — insertion at ≈{FormatAltitude(oi.KeptPark - oi.Body.BodyRadius)}";
         if (oi.InCaptureRange) return "in capture range — auto-orbit can park you";
         // #153: once inside the capture range (e.g. already bound/orbiting) the gap goes NEGATIVE —
         // the old line printed "close in -2,982,642 km to capture range". Read it honestly instead:

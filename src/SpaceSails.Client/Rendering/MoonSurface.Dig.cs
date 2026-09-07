@@ -20,6 +20,10 @@ namespace SpaceSails.Client.Rendering;
 /// </summary>
 public static partial class MoonSurface
 {
+    /// <summary>#371 Phase 3 · the shared field envelope the surface geography (and now the appended
+    /// expedition regions + fog) are laid inside — the same one <see cref="BuildLayout"/> hands to
+    /// <see cref="SurfaceLayout.For"/>. Exposed so <c>Map.Surface</c> can resolve expedition door/region
+    /// geometry against the identical anchor and bounds.</summary>
     public static SurfaceLayout.Field ExpeditionField() =>
         // #681 · …and the column the way home stands in, so the generator can keep its buildings off the
         // square a landing puts the captain on. It could not see that spot before and built a hut through it.

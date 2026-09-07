@@ -16,16 +16,13 @@ namespace SpaceSails.Client.Rendering;
 /// invented its own answer and put him in a wall.</para>
 ///
 /// <para>Split out of <c>MoonSurface.cs</c> under #251 with no member renamed, re-scoped or
-/// re-ordered. <b>Note the mis-filed docblock at the head of this file:</b> it belongs to
-/// <c>ExpeditionField</c>, one file over — it was already sitting above <c>LiftHeadBox</c> before the
-/// cut, and moving it would have made this something other than a pure split. Reported, not fixed.</para>
+/// re-ordered. #1175 reported, and #1177 fixed, the mis-filed docblock that used to sit here:
+/// <c>ExpeditionField</c>'s <c>&lt;summary&gt;</c> had been stranded above <c>LiftHeadBox</c> since long
+/// before the cut, a hundred lines from its method, and is now filed with it in
+/// <c>MoonSurface.Dig.cs</c>.</para>
 /// </summary>
 public static partial class MoonSurface
 {
-    /// <summary>#371 Phase 3 · the shared field envelope the surface geography (and now the appended
-    /// expedition regions + fog) are laid inside — the same one <see cref="BuildLayout"/> hands to
-    /// <see cref="SurfaceLayout.For"/>. Exposed so <c>Map.Surface</c> can resolve expedition door/region
-    /// geometry against the identical anchor and bounds.</summary>
     /// <summary>#602 · THE LIFT HEAD'S SHED, as one object everybody reads.
     ///
     /// <para>Owner, stepping out of the car: <i>"Oh I emerged into the wall on the surface... I cannot move
