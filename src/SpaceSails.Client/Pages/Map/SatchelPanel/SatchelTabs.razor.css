@@ -1,0 +1,31 @@
+﻿/* #251 · SatchelTabs's OWN RULES, moved verbatim out of SatchelPanel.razor.css.
+
+   One rule block, kept as that sheet wrote it. Nothing here was retyped: these are the same
+   characters under a different name. The scope is still the PAGE's (`b-4dqsdx4p75`, pinned in
+   SpaceSails.Client.csproj), so every selector compiles to exactly the string it compiled to before the
+   move and matches exactly the elements it matched.
+
+   WHAT IS DOWN HERE AND WHAT IS NOT (#1166). A block moves with its markup only when EVERY user moves:
+   every rule below names a class that SatchelTabs.razor — and no other component in the client —
+   renders. The satchel's shared kit (the row, the item button, the leave control, the sub-line,
+   the empty line) is rendered by four or five of these surfaces at once and stays in
+   SatchelPanel.razor.css, filed under the surface it is named after.
+
+   The bundle appends this sheet AFTER SatchelPanel.razor.css, so a rule that moved here lands LATER in
+   the cascade than it was. TheBundleIsTheSameCascadeTests holds the whole partition to the law that says
+   no pair which can win or lose against each other changed places.
+
+   AND THAT IS WHY THE TAB ITSELF IS NOT HERE. `.satchel-tab`, `.satchel-tab:hover` and `.satchel-tab.on`
+   are rendered by this surface and by nothing else, and all three stayed in SatchelPanel.razor.css:
+   `.satchel-tab.on` and `.satchel-filter.on` are the same specificity and share background, border and
+   colour, and the tab's lit state is written FIRST today. Moved down here it would be written last and
+   the filter chip's lit state would lose to it. The law said so on the first run, by name.
+ */
+
+/* #690 · THE NOTES TAB. A pocket and a notebook are both things a satchel holds, so the notebook gets the
+   satchel's own frame rather than a second dialog — the whole point is reading your notes WHERE you are, and
+   a second modal on top of the door pop-up would be one layer further from the ground. */
+.satchel-tabs {
+    display: flex;
+    gap: 0.3rem;
+}

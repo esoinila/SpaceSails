@@ -26,32 +26,15 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class NearestDoesNotFlickerTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     private const double AU = 1.495978707e11;
-
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
 
     // sol.json: the-space-bar rides Mars at 12,000 km. #957 corrected its period from a hand-typed
     // 7,200 s to Kepler's 39,910 s — the sweep below wants ONE station orbit, whatever that is, so it
     // reads the rail rather than carrying a second copy of the number that was wrong in the first place.
     private static double RoadsteadPeriod =>
-        Math.Abs(Sol.Value.Bodies.Single(b => b.Id == "the-space-bar").OrbitPeriodS);
-
-    private static string ScenarioPath(string file)
-    {
-        var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !System.IO.Directory.Exists(System.IO.Path.Combine(dir.FullName, "scenarios")))
-        {
-            dir = dir.Parent;
-        }
-
-        return dir is null
-            ? throw new InvalidOperationException("no scenarios/ directory above the test binary")
-            : System.IO.Path.Combine(dir.FullName, "scenarios", file);
-    }
+        Math.Abs(TestTree.Sol.Bodies.Single(b => b.Id == "the-space-bar").OrbitPeriodS);
 
     private static void Set(object o, string field, object? value) =>
         (o.GetType().GetField(field, Hidden)
@@ -79,8 +62,8 @@ public sealed class NearestDoesNotFlickerTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
 

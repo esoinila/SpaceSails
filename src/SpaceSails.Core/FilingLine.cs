@@ -39,7 +39,8 @@ namespace SpaceSails.Core;
 //
 // WHAT IS NOT SAID ANYWHERE IN THIS FILE, by law (the same law the Reever origin keeps): the word for
 // what the clinic actually does. The rep says continuity; the ledger says pages you don't remember; no
-// surface in the game ever names the thing itself. `NoGameTextNamesTheThingTests` holds that.
+// surface in the game ever names the thing itself.
+// `ThePagesYouDontRememberWritingTests.NoGameTextInThisLaneNamesTheThing` holds that.
 // ─────────────────────────────────────────────────────────────────────────────────────────────────
 
 /// <summary>#973 L1 · The filing line: where a rebirth's memory stops, which pages of the Captain's ledger

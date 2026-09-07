@@ -53,6 +53,7 @@ namespace SpaceSails.Core.Tests;
 /// that a sweep which grew silently could shrink silently, and an absence is what a shrunken sweep reports
 /// too. So the bar floors are now COUNTED, and the count is asserted.</para>
 /// </summary>
+[SlowGate] // #251 · 11 s over 3 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheFreightSideIsNobodysRoundTests
 {
     /// <summary>A du of slack a computed coordinate is allowed to miss a poured wall by. The generator and

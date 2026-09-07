@@ -22,6 +22,7 @@ namespace SpaceSails.Client.Tests;
 /// A box a few du either side of the jamb can only be crossed by going through.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 14 s over 4 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheCirculationIsWalkableTests
 {
     private static readonly string[] Bodies =

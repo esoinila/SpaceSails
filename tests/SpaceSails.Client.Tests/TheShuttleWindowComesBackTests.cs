@@ -34,8 +34,7 @@ public sealed class TheShuttleWindowComesBackTests
     private readonly Xunit.Abstractions.ITestOutputHelper _out;
     public TheShuttleWindowComesBackTests(Xunit.Abstractions.ITestOutputHelper output) => _out = output;
 
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
     private const string Berth = "red-eye";
     private const string Moon = "ganymede";
 
@@ -320,7 +319,7 @@ public sealed class TheShuttleWindowComesBackTests
             ?? throw new InvalidOperationException("ComponentBase's render early-out has moved.");
         pending.SetValue(map, true);
 
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         Set(map, "_ephemeris", eph);
         Set(map, "_simulator", new Simulator(eph, timeStepSeconds: 1.0));
         Set(map, "SimTime", 0.0);
@@ -342,34 +341,18 @@ public sealed class TheShuttleWindowComesBackTests
     private static object AnExcursionOn(Pages.Map map, string bodyId)
     {
         ICelestialEphemeris eph = Get<ICelestialEphemeris>(map, "_ephemeris");
-        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", BindingFlags.NonPublic)
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException("Map.ShuttleStop is gone — this bench has drifted.");
         object stop = Activator.CreateInstance(
             stopType, Body(eph, bodyId), 0.0, 0.0, false, true, false)!;
 
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", BindingFlags.NonPublic)
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException("Map.SurfaceExcursion is gone — this bench has drifted.");
         object excursion = Activator.CreateInstance(exType, nonPublic: true)!;
         SetProp(excursion, "Stop", stop);
         SetProp(excursion, "RestoreHavenId", Berth);
         SetProp(excursion, "Expedition", true);
         return excursion;
-    }
-
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
-
-    private static string ScenarioPath(string file)
-    {
-        var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !System.IO.Directory.Exists(System.IO.Path.Combine(dir.FullName, "scenarios")))
-        {
-            dir = dir.Parent;
-        }
-
-        return dir is null
-            ? throw new InvalidOperationException("no scenarios/ directory above the test binary")
-            : System.IO.Path.Combine(dir.FullName, "scenarios", file);
     }
 
     private static void Set(object o, string field, object? value) =>

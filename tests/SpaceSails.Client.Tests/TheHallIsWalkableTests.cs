@@ -21,6 +21,7 @@ namespace SpaceSails.Client.Tests;
 /// it deliberately plugs a doorway and demands the audit go red.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 63 s over 7 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheHallIsWalkableTests
 {
     private static readonly string[] Bodies =

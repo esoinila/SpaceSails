@@ -58,6 +58,44 @@ public static partial class UndergroundComplex
         Relic,
     }
 
+    // ── #608 · PAPER NEEDS AIR ──────────────────────────────────────────────────────────────────────────
+    //
+    // The owner's ruling on why any floor down here is pressurised at all, quoted in full in Air.cs and
+    // load-bearing here: "the thought about the dead floors is that it is very difficult to work in the
+    // suit. So all work would happen out of it. So any room that would house like office work would be
+    // pressurized by that constraint" — "like writing with a pen ... reading documents etc.... that kind of
+    // thing would not happen at all in vacuum as a working environment" — "or any kind of fine motor skill
+    // stuff".
+    //
+    // That is a law about the WORLD and not about a suit's comfort, and this file was contradicting it in
+    // the plainest possible way: InRoom branched on designation, on IsFound and on IsUnlisted, and never
+    // once on air. There was no HoldsPressure in the file. So three floors in every four handed a captain
+    // "📋 Operational paper: rosters, routes, a shipping schedule" out of a room where, by the owner's own
+    // rule, nobody had ever sat down to write a roster — a building saying one thing about itself with its
+    // pressure plate and another with its drawers.
+    //
+    // The fix is the law, once, at the end of the roll rather than as an extra arm inside each weighting:
+    // a paperwork face on a floor that does not breathe was never paperwork. What is there instead is what
+    // the owner says an airless floor IS — "storage, hauling, plant, hard-vacuum process" — so it comes up
+    // as a crate or as nothing, which is the same two answers the rest of the building gives.
+
+    /// <summary>#608 · Does this haul require a floor that BREATHES?
+    ///
+    /// <para>True for the two paperwork hauls and nothing else. <see cref="Haul.Records"/> is rosters and
+    /// schedules and <see cref="Haul.Dirt"/> is a file on somebody: both are the output of a person sitting
+    /// at a desk with a pen, which is exactly the work the owner ruled cannot happen in a suit — so a room
+    /// that holds either is a room somebody worked in out of their suit, and that room is on a pressurised
+    /// floor by construction.</para>
+    ///
+    /// <para><b>What is deliberately NOT here.</b> <see cref="Haul.Equipment"/> is a crate nobody unpacked
+    /// and <see cref="Haul.Relic"/> is a band of alloy on a pallet — storage and hauling are what a vacuum
+    /// floor is FOR, and gating them would empty the very floors the rule says were staffed all day.
+    /// <see cref="Haul.Key"/> is the judgement call and it stays out: an authority card is a token on a
+    /// lanyard, carried by the person who works the doors, and a suit-work floor has doors too. It is also
+    /// the way DOWN (#585) — three of the four designated rooms in this file mint one — so air-gating it
+    /// would not be enforcing a rule about paper, it would be redesigning the descent.</para></summary>
+    public static bool NeedsAir(Haul haul) => haul is Haul.Records or Haul.Dirt;
+
     /// <summary>#614 · WHERE THE THING ON THE PALLET IS, and why it is not a roll.
     ///
     /// <para>Same reasoning as <see cref="KeyRoomFor"/>, for the same reason: a one-in-N object placed by
@@ -118,6 +156,27 @@ public static partial class UndergroundComplex
         return IsHeadOffice(bodyId) ? (StandingOrderLevel, 0) : null;
     }
 
+    /// <summary>
+    /// #1063 · THE MAINTENANCE LEDGER — <b>the DURING evidence</b>, and the only paper the burial leaves.
+    ///
+    /// <para>Designated for exactly the reason all four of its siblings are: it is the one surviving record
+    /// of the job, and a seeded one-in-nine would leave it absent forever on some worlds with nothing on
+    /// screen ever saying so. It is room 0 of the <b>top pressurised floor</b> — the floor the facility
+    /// actually works on, where its paperwork is kept, and the only floor #608's law lets paper exist on at
+    /// all (nobody wrote a roster in a suit). Not the listed bottom, which is <see cref="KeyRoomFor"/>'s;
+    /// not the unlisted bottom, which is <see cref="RelicRoomFor"/>'s; not the unlisted shaft head, which is
+    /// <see cref="FoundKeyRoomFor"/>'s. Five designations, five floors, no collision — and that is guarded
+    /// rather than asserted here.</para>
+    ///
+    /// <para>Only on a ground that has been filled in, because before the job there is nothing to have
+    /// recorded. On every site in every world nobody has buried anything in, this is null and the floor is
+    /// exactly the floor it always was.</para></summary>
+    public static (int Level, int RoomIndex)? MaintenanceLedgerRoomFor(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return Burial.IsFilled(bodyId) && TopPressurisedFloor(bodyId) is { } works ? (works, 0) : null;
+    }
+
     /// <summary>What is in this room. Weighted so the place feels stripped but worth walking: about a third
     /// empty, and DIRT is the rarest thing in the building because it is the most valuable.</summary>
     public static Haul InRoom(string bodyId, int level, int roomIndex)
@@ -159,6 +218,43 @@ public static partial class UndergroundComplex
             return Haul.Key;
         }
 
+        // #1063 · And, on a ground somebody has filled in, the room the maintenance ledger is kept in.
+        // Designated for the reason above and not for a new one — see MaintenanceLedgerRoomFor.
+        if (MaintenanceLedgerRoomFor(bodyId) is { } ledger
+            && level == ledger.Level && roomIndex == ledger.RoomIndex)
+        {
+            return Haul.Records;
+        }
+
+        // #1074 · And, on a ground whose deep working the Authority has closed, the room the plant's
+        // valve-book is kept in — on the listed bottom, a corridor's length from the seal. Designated for
+        // the reason above and not for a new one; it cannot collide with the Key room, which is room 0 of
+        // that same floor. See ValveBookRoomFor.
+        if (ValveBookRoomFor(bodyId) is { } valves
+            && level == valves.Level && roomIndex == valves.RoomIndex)
+        {
+            return Haul.Records;
+        }
+
+        // #1074 beat 3 · And, on the works floor of a closed working — plus the two further rooms a ground in
+        // official care carries — the cost-centre papers. Designated for the reason above and not for a new
+        // one. They cannot collide with #1063's ledger, which takes room 0 of this same floor and only ever
+        // exists on a ground that was filled in rather than stopped. See MoneyTrailRoomFor.
+        if (MoneyTrailPaperIn(bodyId, level, roomIndex) is not null)
+        {
+            return Haul.Records;
+        }
+
+        // #602 · And the room somebody wrote the lift code down in, on the works floor, one along from the
+        // three above. Designated for the reason above and not for a new one — and DESIGNATED IS THE WHOLE
+        // FEATURE here rather than an insurance policy against a bad roll: the pad on the panel upstairs is
+        // only allowed to exist because its answer is findable, and a site whose code was never written down
+        // anywhere would be a lock that can only be gambled at. See LiftCode.PaperRoomFor.
+        if (LiftCode.PaperRoomFor(bodyId) is { } code && level == code.Level && roomIndex == code.RoomIndex)
+        {
+            return Haul.Records;
+        }
+
         // ── #677 · AND THE HALLS, WHERE ALMOST NOTHING IS IN ALMOST EVERY ROOM ────────────────────────────
         //
         // The emptiness is load-bearing everywhere on this ground (§10.3) and down here it is the whole
@@ -190,26 +286,55 @@ public static partial class UndergroundComplex
         //
         // Deliberately NOT more Equipment. If the hidden floor paid in hardware it would be a loot room with
         // a story painted on it, and every captain would end up describing it as "the good level".
-        if (IsUnlisted(bodyId, level))
-        {
-            return face switch
+        Haul rolled = IsUnlisted(bodyId, level)
+            ? face switch
             {
                 1 or 2 => Haul.Nothing,       // still stripped. Somebody cleared this too, and in a hurry.
                 3 => Haul.Equipment,
                 4 or 5 => Haul.Records,
                 6 => Haul.Key,
                 _ => Haul.Dirt,               // a third of the floor is a file on somebody
+            }
+            : face switch
+            {
+                1 or 2 or 3 => Haul.Nothing,
+                4 or 5 => Haul.Equipment,
+                6 or 7 => Haul.Records,
+                8 => Haul.Key,
+                _ => Haul.Dirt,
             };
+
+        // ── #608 · AND THEN THE AIR HAS ITS SAY ──────────────────────────────────────────────────────────
+        //
+        // Both weightings above are the weightings of an OFFICE FLOOR, and they are kept exactly as they
+        // were, because on a floor that breathes they are right — including the hidden band's, whose whole
+        // point is that reaching it pays in information rather than in a bigger number (#592). What changes
+        // is that the roll is now asked against the floor it landed on.
+        //
+        // ONE gate at the end rather than paper faces removed from two tables, and that is the load-bearing
+        // choice: the day somebody adds a sixth thing a person makes with a pen, NeedsAir is the one place
+        // that has to be told, and it will be told in a sentence about what the thing IS rather than in two
+        // switch arms about where it is not.
+        //
+        // WHAT A SUIT-WORK FLOOR HAS INSTEAD is not invented — the owner named it: "storage, hauling, plant,
+        // hard-vacuum process". A crate or an empty room, in the same proportion the rest of the building
+        // uses, off its own seed so that changing this never re-rolls the haul table itself.
+        //
+        // THE FOUR DESIGNATED ROOMS ABOVE ARE NOT REACHED BY THIS, and that is deliberate rather than an
+        // oversight of ordering. They are authored placements that exist precisely because a roll can be
+        // silently absent forever, and #411's standing order sits on THE STANDING ORDER's own plate at B12
+        // of a head office where only every fourth floor breathes. Deleting the head office's one piece of
+        // evidence to enforce a rule about rosters would be trading a stated bug for the exact unstated one
+        // the designations were written against. That floor wanting air is real, and it is the airlock half
+        // of #608, which stays open.
+        if (NeedsAir(rolled) && !HoldsPressure(bodyId, level))
+        {
+            return DiceRule.Roll(DiceRule.Seed($"hive:suit-work:{bodyId}:{level}:{roomIndex}"), 2).Face == 1
+                ? Haul.Equipment
+                : Haul.Nothing;
         }
 
-        return face switch
-        {
-            1 or 2 or 3 => Haul.Nothing,
-            4 or 5 => Haul.Equipment,
-            6 or 7 => Haul.Records,
-            8 => Haul.Key,
-            _ => Haul.Dirt,
-        };
+        return rolled;
     }
 
     /// <summary>Whose file it is, and what is in it. The subject is one of the standing roles a captain
@@ -279,6 +404,28 @@ public static partial class UndergroundComplex
         // #411 · The head office's designated sheet reads as itself; everywhere else, operational paper.
         Haul.Records when StandingOrderRoomFor(bodyId) is { } o && level == o.Level && roomIndex == o.RoomIndex
             => StandingOrderLine,
+        // #1063 · …and on a ground somebody has filled in, the maintenance ledger, open at the three entries
+        // that bracket the job. The anomaly is the BREVITY and it is read off the numbering: instruction
+        // 2211, then an entry citing none, then 2213. See MaintenanceLedgerLine.
+        Haul.Records when MaintenanceLedgerRoomFor(bodyId) is { } l && level == l.Level && roomIndex == l.RoomIndex
+            => MaintenanceLedgerLine,
+        // #1074 · …and on a ground whose working the Authority has closed, the plant's valve-book, open at
+        // the three entries that bracket the closure. The anomaly is the BREVITY again and it is read off
+        // the numbering: instruction 2231, then an entry citing an ORDER and no number, then 2233. See
+        // PlantValveBookLine.
+        Haul.Records when ValveBookRoomFor(bodyId) is { } v && level == v.Level && roomIndex == v.RoomIndex
+            => PlantValveBookLine,
+        // #1074 beat 3 · …and on the works floor of that same ground, one of the cost-centre line items the
+        // closure is being paid for out of. One purchase, one line, one cost centre, and no remark: the
+        // paper is the whole of what it says. See MoneyTrailLine.
+        Haul.Records when MoneyTrailPaperIn(bodyId, level, roomIndex) is { } bought
+            => MoneyTrailLine(bought),
+        // #602 · …and the sheet with the pad's answer on it, in somebody's handwriting, on the works floor
+        // where the people who need the code are. Verbatim canon and the site's own four digits — see
+        // LiftCode.PaperLine, and see LiftCode's head for why a code that is FOUND and never derived is the
+        // load-bearing half of allowing a keypad on the panel at all.
+        Haul.Records when LiftCode.PaperRoomFor(bodyId) is { } c && level == c.Level && roomIndex == c.RoomIndex
+            => PaperGlyph + LiftCode.PaperLine(bodyId),
         Haul.Records =>
             "📋 Operational paper: rosters, routes, a shipping schedule with a column nobody has labelled. It " +
             "does not say what was moved. It says exactly how often, and to where.",

@@ -3,7 +3,7 @@ namespace SpaceSails.Core.Tests;
 public class PiracyTests
 {
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     [Fact]
     public void CaptureWindow_RequiresBothDistanceAndRelativeSpeed()

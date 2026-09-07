@@ -34,6 +34,7 @@ namespace SpaceSails.Client.Tests;
 ///
 /// <para><b>Red proofs, each run before this file shipped and written down beside its guard.</b></para>
 /// </summary>
+[SlowGate] // #251 · 71 s over 9 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheGalleyIsACardNotADeskTests
 {
     private const string FreeFlying = "/map?start=wreck";

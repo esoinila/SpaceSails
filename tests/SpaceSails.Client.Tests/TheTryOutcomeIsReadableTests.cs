@@ -23,22 +23,9 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheTryOutcomeIsReadableTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>The satchel block of Map.razor — from the modal's opening guard to the view-object block
     /// that follows it. Cut so the assertion is about THIS dialog's subtree, not the file at large.</summary>
@@ -113,8 +100,7 @@ public sealed class TheTryOutcomeIsReadableTests
     [Fact]
     public void TheOutcomeRowIsStyledLikeTheDialogItSitsIn()
     {
-        string css = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
         Assert.True(css.Contains(".satchel-outcome", StringComparison.Ordinal),
             "the satchel outcome row has no style of its own — an unstyled answer in a styled dialog is a " +
             "bug report waiting to be filed (#680).");

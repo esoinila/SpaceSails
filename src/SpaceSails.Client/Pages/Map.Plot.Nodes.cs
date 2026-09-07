@@ -458,6 +458,21 @@ public partial class Map
 
     private void SortNodes() => _planNodes.Sort((a, b) => a.SimTime.CompareTo(b.SimTime));
 
+    /// <summary>#167 - which way a retired node PUSHED her, in world space, for the flame off her stern.
+    /// A Vector node burns along its own world heading (ManeuverPlan's X-Pilot burn, 0 deg = +X, CCW); a
+    /// Factor node scales the velocity's magnitude without turning it, so it pushes along her track and a
+    /// Decelerate pushes back down it. Direction only - BurnFired never reads the length.</summary>
+    private Vector2d ThrustDirectionOf(PlanNode node)
+    {
+        if (node.Mode == BurnMode.Vector)
+        {
+            double radians = node.HeadingDegrees * Math.PI / 180.0;
+            return new Vector2d(Math.Cos(radians), Math.Sin(radians));
+        }
+
+        return node.Action == ManeuverAction.Accelerate ? _ship.Velocity : -_ship.Velocity;
+    }
+
     // After live stepping, settle mass for any node whose firing window has passed. The window rule
     // in Simulator.Step fires each node once; this mirrors that once for the mass budget/HUD.
     private void AccountForFiredNodes()
@@ -494,6 +509,11 @@ public partial class Map
 
             node.Executed = true;
             firedPulses += node.Pulses;
+            // #167 BURN KIND 2/9 - THE PLOTTED NODE. Retiring a node was pure book-keeping: the integrator
+            // had already applied the impulse inside Simulator.Step and this loop only settled the mass, so
+            // the one burn the captain PLANNED was the one burn that showed him nothing. Each node is its
+            // own burn and gets its own flame; nodes are minutes apart in any plan a hand wrote.
+            BurnFired(node.Pulses, ThrustDirectionOf(node));
         }
 
         if (heldByTheClamp > 0)

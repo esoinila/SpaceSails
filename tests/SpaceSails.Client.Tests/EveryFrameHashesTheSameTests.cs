@@ -179,7 +179,7 @@ public sealed class EveryFrameHashesTheSameTests
             Echoes: [(0.0, 5.0, 0.4)],
             StandingPrompt: "BURY THE CHEST — [G]",
             BloodSplash: 0.55,
-            Beacons: [(1.0, 20.0, true, false), (2.5, 33.0, false, true)],
+            Beacons: [(1.0, 20.0, true, false, false), (2.5, 33.0, false, true, false)],
             CacheBeacons: [(2.0, 15.0)],
             Rumours: [(3.0, 25.0, 0.4)],
             AirSeconds: 240,
@@ -554,7 +554,18 @@ public sealed class EveryFrameHashesTheSameTests
             + Environment.NewLine + "  " + PinLedger.Invocation);
 
         Assert.True(cases >= 20, $"only {cases} frame(s) were drawn — this sweep proves little.");
-        Assert.True(calls > 20_000, $"only {calls} mark(s) were laid in all — this sweep proves little.");
+        // #563 · The floor came down from 20,000 with the viewport cull, and this is a re-measurement rather
+        // than a nudge to get green: the sweep laid 25,062 marks and now lays 12,776, because every one of the
+        // missing ones was drawn past the edge of the glass. The floor's job is to catch a sweep that has
+        // stopped drawing anything, so it goes just under what the sweep genuinely lays.
+        //
+        // #563 slice 2 · …and down again, 12,776 → 9,420, for the same reason and by the same measurement:
+        // the cull reached the DOORS and the console PLATES, which it had never covered. Every mark it took
+        // was one drawn past the edge of the glass — a deck's view is 64 du across and a Hive floor is three
+        // hundred — so what is gone was never on a screen. Re-measured, never nudged: the floor sits just
+        // under what the sweep genuinely lays, and its job is unchanged (catch a sweep that has stopped
+        // drawing).
+        Assert.True(calls > 9_000, $"only {calls} mark(s) were laid in all — this sweep proves little.");
 
         // …and the ledger holds two rows for every case and not one row more: a pin for a case that is no
         // longer drawn is a number nothing measures, and it would sit there green forever.

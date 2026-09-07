@@ -1,0 +1,58 @@
+/* #251 · AdriftLifeline's OWN RULES, moved verbatim out of Map.razor.css.
+
+   4 rule block(s), in the order Map.razor.css wrote them, comments included. Nothing here was
+   retyped. The scope is still the PAGE's (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by
+   #251 item 1), so every selector compiles to the string it compiled to before the move and matches
+   exactly the elements it matched.
+
+   THE KEYFRAMES CAME WITH THEM, which is why this file was empty until now. #1109 left the lifeline
+   in the page's sheet because `.map-adrift-reopen` animates `adrift-pulse` and a @keyframes name is
+   scoped PER FILE: split the two and the reference resolves to nothing — no build error, no test, the
+   stranded captain's button simply stops pulsing. The answer was never to leave the rule behind; it is
+   to move the @keyframes WITH its users. `adrift-pulse` has exactly one user, and it is in this file.
+
+   Nothing left in Map.razor.css, and nothing in a sheet the bundle appends after this one, can win or
+   lose against these four — TheBundleIsTheSameCascadeTests holds the whole partition to that. */
+
+/* #266: the adrift re-open affordance. The old strip sat at top:0.75rem behind .map-topstack (z-index
+   24) — buried under the masthead, the button a stranded captain needs occluded by the ship's own
+   nameplate (#262). It now lives at the BOTTOM centre, clear of the masthead and the toolbar, above the
+   canvas but below every modal, and viewport-clamped (#253). Not the banner's no-button zone (#236).
+
+   #293 (Lab 34): the lifeline sits in a RESERVED distress band — z-index 1340, above every non-rescue
+   overlay the state machine can raise (desk/deck pop-ups top out at 1320), just below the rescue modal
+   it opens (.rescue-backdrop, z-index 1360). z-30 merely cleared the base HUD known at #266 time; the
+   reserved band makes "nothing may bury the stranded captain's button" an INVARIANT, not an accident of
+   hand-tuned values re-checked by eye. The RescueLifeline registry + OverlayLayout law assert it in CI;
+   keep this number in sync with SpaceSails.Core.RescueLifeline.LifelineZIndex. */
+.map-adrift {
+    position: absolute;
+    bottom: 4.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: calc(100% - 1.5rem);
+    pointer-events: auto;
+    z-index: var(--z-distress-lifeline);
+}
+
+.map-adrift-reopen {
+    border: 1px solid rgba(255, 120, 120, 0.7);
+    border-radius: 999px;
+    padding: 0.45rem 1.1rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #fff;
+    background: linear-gradient(180deg, rgba(190, 40, 40, 0.96), rgba(130, 20, 20, 0.98));
+    box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.6), 0 0 1rem rgba(255, 70, 70, 0.35);
+    cursor: pointer;
+    animation: adrift-pulse 1.8s ease-in-out infinite;
+}
+
+.map-adrift-reopen:hover {
+    background: linear-gradient(180deg, rgba(220, 60, 60, 0.98), rgba(160, 30, 30, 1));
+}
+
+@keyframes adrift-pulse {
+    0%, 100% { box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.6), 0 0 0.6rem rgba(255, 70, 70, 0.3); }
+    50% { box-shadow: 0 0.4rem 1.4rem rgba(0, 0, 0, 0.6), 0 0 1.4rem rgba(255, 90, 90, 0.6); }
+}

@@ -55,8 +55,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheStallSaysSoTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>The floor these guards drive. One site is enough to prove a law about a clock, and it is the
     /// GENERATOR's floor rather than a hand-typed room — a guard handed a world it built itself cannot tell
@@ -158,21 +157,21 @@ public sealed class TheStallSaysSoTests
         Serviced(map, 1.0 / 60.0);
 
         Serviced(map, 16.0);
-        Assert.True((bool)Invoke(map, "HandleDeckKey", "d")!, "the deck did not take the movement key.");
+        Assert.True((bool)Invoke(map, "HandleDeckKey", "d", false)!, "the deck did not take the movement key.");
         Assert.Equal(FrameGap.HeldLine, ThePulse(map));
 
         // Said once. Hammer the key: the stall has already been announced and nothing new is owed.
         Invoke(map, "ShowPulseMessage", "— nothing —", PulseRank.Status);
         for (int press = 0; press < 8; press++)
         {
-            Invoke(map, "HandleDeckKey", "d");
+            Invoke(map, "HandleDeckKey", "d", false);
         }
         Assert.Equal("— nothing —", ThePulse(map));
 
         // …and the next stall IS announced afresh, because a frame that arrived on time cleared the latch.
         Serviced(map, 1.0 / 60.0);
         Serviced(map, 16.0);
-        Invoke(map, "HandleDeckKey", "d");
+        Invoke(map, "HandleDeckKey", "d", false);
         Assert.Equal(FrameGap.HeldLine, ThePulse(map));
     }
 
@@ -365,8 +364,8 @@ public sealed class TheStallSaysSoTests
                 "has moved, and the deck verbs will throw instead of running.");
         pending.SetValue(map, true);
 
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Static)!;
-        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Static)!;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Public | BindingFlags.Static)!;
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Public | BindingFlags.Static)!;
         object ex = Activator.CreateInstance(exType, nonPublic: true)!;
         object stop = Activator.CreateInstance(stopType,
             new CelestialBody(Body, Body, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;

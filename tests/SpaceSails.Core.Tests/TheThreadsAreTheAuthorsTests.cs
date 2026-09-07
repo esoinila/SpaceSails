@@ -21,22 +21,9 @@ namespace SpaceSails.Core.Tests;
 /// </summary>
 public sealed class TheThreadsAreTheAuthorsTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Core")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string CoreSource(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Core", file));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Core", file));
 
     /// <summary>The bodies a sweep walks — the same set <c>LandingSiteTests</c> uses, so a body added to the
     /// game is added to both in one edit.</summary>

@@ -229,8 +229,95 @@ palette at all**, and its chambers get **bigger** the deeper you go — the game
 inverted, said by the room scale and by no prose. Almost every chamber is empty; about one in
 nine holds the record of a wall that cannot be brought back. The register is the owner's own —
 *"Horror served as smooth comfy pillow"*: the halls are comfortable, and a pillow means you were
-expected. Cheat `?found=1`. Details: `features/the-landing-site.md` §13.20. **Still open and
-deliberately unbuilt: the disclosure clock, and any inhabitant content.**
+expected. Cheat `?found=1`. Details: `features/the-landing-site.md` §13.20.
+
+**Shipped (#677, v1 — the clock).** The disclosure schedule above is a mechanic now, and only a
+mechanic: `DisclosureClock` starts on the seam, once per ground, and reads in the **same slow
+world-side windows the monolith's foot-offerings use** — asked of `Monolith.EpochAt` and never
+re-derived, because the issue names that clock by name. Its register (which grounds have been
+opened, and in which window) rides the vault, so it survives a reload. It is **never announced and
+never a progress bar**, and the proof is that the type publishes no prose at all — no label, no
+line, no percentage, not one string — which also settles §8 for free. It is **not farmable**:
+nothing in any signature is effort, and a hundred rides inside one window read what one ride reads.
+It **never runs backwards**: the first crossing is the one kept, and the reading is monotone. What
+is deliberately NOT published is a capped *stage* — a cap needs a cadence and a ceiling, and neither
+is derivable from anything in the world; they would be two invented facts about the schedule of a
+decision no card may state. **Nothing reads it yet**, which is the sequencing #1063, #1068 and #1074
+each asked for in their own words: the threshold is here, the consequences are theirs.
+
+**Shipped (#1063, slice 1 — THE BURIAL, and the clock's first customer).** Owner ruling 2026-09-01, on the
+watcher doctrine (§672): the creepiest reaction is not the world declining but *people hiding the truth
+themselves* — told so convincingly they obey like automatons, bury what was found, and forget they did it.
+Between two visits a ground the captain opened is GONE the way a street grade goes: filled, floored,
+resurfaced. **The threshold, and its written reason:** one whole world window since the opening (a work order
+takes a shift — a crew already standing there with the trucks would be a fact about THEM, and the Scully law
+is spent the moment one act is only explicable by them), **and** the captain not on that body (the neighbours
+do not fill a hall while he is standing in it). Evaluated once, on the descent, after the crossing's clock is
+spent and before one wall of the arriving ground is laid — so a ground can only ever be filled while he is in
+flight, and the burial LANDS on his return.
+
+The erasure procedure is the issue's four clauses and it is implemented as written. **(1) Remove the element**
+and **(2) remove its marks** are one gate: `UndergroundComplex.HasFoundBand` asks `Burial.IsFilled` first, and
+every question the game has about the halls already goes through it — so the shaft ends at the listed bottom,
+the found-key card room stops generating, the darkness stops being declared, the room scale stops growing, and
+the clock stops opening. **(3) The town above keeps living**: nothing else about the site changes, and a world
+where nothing has been buried is byte-identical to the world before this shipped. **(4) One specimen is kept**:
+on the listed bottom, a short recess off the corridor with a single old door at the back of it that does not
+open, drawn in the found band's **own** no-texture idiom on a floor that is otherwise entirely poured. It has
+no plate, no sign, no card and no line, because the object is the whole statement.
+
+The evidence lifecycle is four authored sentences and not one more, all of them ordinary facilities
+paperwork: the **works notice** on the canteen board while the job is on; the **maintenance ledger**, three
+lines with no instruction number where the ledger cites one for everything else; the **rag**, cheerful, once,
+about the drainage and the handsome course of old kerbs in the new wall; and, if pressed, **a mason** — *"and
+he means it, and he files it, and that is the whole testimony."* **LAW: THE BOOK NEVER LIES.** Nothing the
+burial does removes or rewrites one field-book note, clipped story, red thread or satchel row: the captain's
+record is the only witness and it stays correct, which is what the player stands on. Cheat `?buried=1`.
+Details: `features/the-landing-site.md` §13.30.
+
+**Still open and deliberately unbuilt: any inhabitant content.**
+
+### The Old Ones use doors (owner ruling, 2026-09-06 — #563 question 2)
+
+*Recorded because it is the answer to "why is there a door leaf down there at all?", and it is the reason
+the code that came out of it is deliberately slow. Documentation only: none of this is ever a line, a card
+or a plate.*
+
+Owner, verbatim in spirit: **they still have doors a bit like we still have nostalgic gramophones; for them
+it is legacy and nostalgia, and it lets them not reveal their true capabilities, which might scare people.**
+
+Canon (Fable), binding:
+
+1. **A door is a door to them.** An Old One opens an unlocked leaf the slow way — a beat: the leaf moves
+   before anything comes through it — and never breaks a locked one: it waits on the far side, or goes round
+   by the way a walker would. What it could do to the door instead is never shown (§8's parental law; the
+   gramophone is the point).
+2. **They do not see through a closed door** (the #442 ruling, shipped in #1154 for a hull and widened to
+   every ground by the owner's ruling of 2026-09-06 — *on the moon either*). Together: a shut door is a real
+   refuge from sight and a real delay, and a locked one is a wall to them by choice. It holds on a moon
+   exactly as it holds aboard, which is what makes a hut out on the regolith the refuge #563 asked for in the
+   first place — *"rooms with doors we can hide behind while we reload our guns safe from reevers"*. Their
+   eye and their legs read one list, on every ground; two lists is the arrangement every bug in this family
+   came out of.
+3. **The found halls have doors** (the seamless leafs of #716/#1082) for the same reason — legacy; that is
+   why a leaf down there opens at all, and why nothing down there ever needed to.
+4. Nothing states any of this; the door opening slowly on its own, with nothing visible behind it yet, is the
+   whole telling.
+
+**§10 addendum — THE BIG DOORS** (owner lore, 2026-09-06, filed from #1074). In the lore-collector (the
+VennsRabbitHole repo) the Old Ones' forbidden places read as REFUGES: places to keep the people they choose
+to spare from a large event on the surface — the zone in the Grand Canyon the old maps mark forbidden; the
+Hopi telling that survivors of the earlier three civilizations are kept there as caretakers, woken when great
+change is coming. So the big doors on Earth make sense and are part of the looming threat: nice that there
+are tunnels with fresh flowing air to keep people safe — and the question the doctrine keeps open: are all
+the endings of civilizations coincidence, or did the Old Ones sometimes (the great flood) trigger them? The
+doors would serve to collect some before the meteorite hits the Greenland glacier, survivors to start the
+fifth cycle. It feeds Lovecraftian lore without deriving from it; he drank from the same older stories. The
+Elves leaving is the bright student civilization leaving the classroom; the Tartarian-empire lore fits that
+well — not every change is the whole class leaving the room; some leave mid-semester. **In space**, where
+tech is absolutely necessary to survive, the really big survivor-doors make little sense unless there was
+terraforming that later faded — so out here the doors are legacy and nostalgia still (the gramophone rule,
+#563). The game states none of this.
 
 ## Suggested landing spots
 
@@ -245,4 +332,4 @@ deliberately unbuilt: the disclosure clock, and any inhabitant content.**
 | Shuttle boarding sequence | post-M12 | walk to bay → fly shuttle across (rel-velocity drift minigame) → prey interior |
 | Third-person deck camera | post-M12 | deck renderer + avatar-following camera |
 | Phobos, strangest port | after #225 arc | Lab 31 beanstalk numbers -> elevator haven pair at Phobos (#164/#231/#234) |
-| The found halls (fourth world) | **v1 SHIPPED (#677)** | the band itself: `UndergroundComplex` found band, dark, sealed, smooth-walled, chambers growing with depth, `?found=1`. Open: the disclosure clock, and the inhabitants (§10) |
+| The found halls (fourth world) | **v1 SHIPPED (#677)** | the band itself: `UndergroundComplex` found band, dark, sealed, smooth-walled, chambers growing with depth, `?found=1`; and the **disclosure clock** (`DisclosureClock` — the seam starts it, the monolith's windows measure it, nothing announces it, nothing reads it yet). Open: the inhabitants (§10) |

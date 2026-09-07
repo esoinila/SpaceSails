@@ -50,7 +50,7 @@ public sealed partial class Map
     /// <param name="Collar">What the jar's collar reads — present ONLY on the bands that got close enough to
     /// read it (<see cref="ArchiveNode.ReadsTheCollar"/>). The price of knowing whose pattern is in there is
     /// a bad throw, never a good one.</param>
-    private readonly record struct ArchiveCard(
+    public readonly record struct ArchiveCard(
         string Title, string Art, string BandLine, string Lore, string Dice, string? Collar);
 
     private void CloseArchiveCard() => _archiveCard = null;

@@ -344,7 +344,7 @@ public partial class Map
         SurfaceExcursion ex, UndergroundComplex.Amenity a, bool quietOnly = false)
     {
         foreach (CanteenRegulars.TableSeat top in
-            CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp))
+            CanteenRegulars.Tables(ex.Stop.Body.Id, ex.Floor, a, ex.CanteenWatch, ex.HallStoodUp, ex.HallCameIn))
         {
             if (!top.Taken && (!quietOnly || top.Quiet))
             {
@@ -355,7 +355,7 @@ public partial class Map
     }
 
     /// <summary>One conversation, with everything the panel needs to draw itself.</summary>
-    private sealed class TableTalk
+    public sealed class TableTalk
     {
         /// <summary>"watch:floor:tableIndex" — what every watch-scoped fact about this table is keyed on.</summary>
         public required string Key { get; init; }

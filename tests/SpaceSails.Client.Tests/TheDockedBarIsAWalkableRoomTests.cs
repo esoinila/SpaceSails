@@ -29,8 +29,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheDockedBarIsAWalkableRoomTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     /// <summary>The classy great-port tier, and the one the owner drinks in.</summary>
     private const string TheRedEye = "red-eye";
@@ -419,29 +418,17 @@ public sealed class TheDockedBarIsAWalkableRoomTests
     [Fact]
     public void TheWalkedFrameStepsTheBar()
     {
-        string tick = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Sim.Tick.cs"));
+        // The frame's source — all of it. `Map.Sim.Tick.cs` was split by concern (#251) and the walked frame
+        // moved to `Map.Sim.Tick.Views.cs`; read the family as a glob rather than naming one partial.
+        string tick = string.Join("\n", Directory
+            .EnumerateFiles(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim.Tick*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
         int walked = tick.IndexOf("private bool TheWalkedViewOwnsThisFrame", StringComparison.Ordinal);
-        Assert.True(walked >= 0, "Map.Sim.Tick.cs no longer has a walked frame — this guard reads a dead name.");
+        Assert.True(walked >= 0, "Map.Sim.Tick*.cs no longer has a walked frame — this guard reads a dead name.");
 
         string body = tick[walked..];
         Assert.Contains("AdvanceBarWalkers(dtRealSeconds);", body, StringComparison.Ordinal);
-    }
-
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-
-            at = at.Parent;
-        }
-
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
     }
 
     // ── The bench ────────────────────────────────────────────────────────────────────────────────────────

@@ -28,7 +28,7 @@ public partial class Map
 
     /// <summary>One pending peak-moment selfie offer — the beat it fires for, the vain label, and the vista
     /// backdrop the shot would compose onto (empty = the captain's own frame, no scene art).</summary>
-    private readonly record struct SelfieOffer(string BeatId, string Label, string VistaArt);
+    public readonly record struct SelfieOffer(string BeatId, string Label, string VistaArt);
 
     // The captain's face for a shot — the active universe's #368 avatar (the portrait that composites into
     // the frame). Falls back to a stable seeded face if the row isn't loaded yet (a pre-index legacy run).

@@ -105,6 +105,10 @@ public sealed partial class DeckView
     /// must not draw attention, because things are meant to hide in it.</summary>
     private static readonly RgbaColor FoamHatch = new(58, 66, 76, 105);
     private static readonly RgbaColor HuskColor = new(120, 70, 60, 150); // #314: a downed Old One's husk
+    // #316: a robbed hole. The ✗ that was gold while the chest was yours, gone the colour of the regolith it
+    // is lying in — the same glyph, dead — inside the divot ring a probed square already wears.
+    private static readonly RgbaColor PitInk = new(122, 114, 98, 195);
+    private static readonly RgbaColor PitRing = new(96, 90, 78, 140);
     private static readonly RgbaColor BotColor = new(120, 210, 160);     // #314: a live sentry, gun-green
     private static readonly RgbaColor BotDim = new(90, 100, 110);        // #314: a dry sentry, gone quiet
     private static readonly RgbaColor SegLit = new(255, 90, 70);         // #314: the 99-counter, seven-segment red

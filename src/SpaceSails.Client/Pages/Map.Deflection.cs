@@ -517,7 +517,7 @@ public partial class Map
     //  a full deflection is the 4-panel money shot; a graze and an impact each get 2. Per-panel gradient
     //  fallback, house-voice captions.
     // ─────────────────────────────────────────────────────────────────────────────────────────────
-    private readonly record struct DeflectionStoryPanel(string ArtFile, int Hue, string Caption);
+    public readonly record struct DeflectionStoryPanel(string ArtFile, int Hue, string Caption);
     private List<DeflectionStoryPanel>? _deflectionStory;
     private int _deflectionStoryIndex;
 

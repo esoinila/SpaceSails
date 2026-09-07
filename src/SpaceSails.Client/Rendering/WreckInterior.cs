@@ -51,6 +51,19 @@ public static class WreckInterior
     /// <param name="archivePurged">The handle has been pulled. The column stays exactly where it was and
     /// stays exactly as inert as every other dead thing on this ship: nothing is removed from the deck,
     /// because a purge is not a tidy-up. Only the labels change, and only to stop promising.</param>
+    /// <param name="plate">#537 · The false plate a sounding has FOUND on this boarding, or null on a hull
+    /// nobody has knocked on. The console for it used to be appended after the fact
+    /// (<c>AddVoidPlateConsole</c>), which meant any rebuild — dogging a hatch, running a pump, purging the
+    /// node — silently deleted the one find of the whole search. It is state, so it is built from state, the
+    /// same way the ✔ marks and the held doors are.</param>
+    /// <param name="voidOpen">The plate has been cut out. Only then does the pocket behind it become
+    /// geometry: walls, space, and a name on the map.</param>
+    /// <param name="plateShut">…and the captain is folded in behind it with the plate back in its hole. The
+    /// pressure hull closes over the gap, which is the entire hiding rule — walls are law for everyone
+    /// (#324), and nothing about a sweeper's eye needs to know a stowaway exists.</param>
+    /// <param name="keyAboard">#535 · This hull is carrying a black-ops key and it is still lying there
+    /// (<see cref="BlackOpsKey.IsAboard"/>, and the captain has not already been through her). The CALLER
+    /// decides — the deck never rolls, exactly as with <paramref name="archiveAboard"/>.</param>
     public static DeckPlan WreckDeck(
         in Derelict.Wreck wreck,
         System.Collections.Generic.IReadOnlySet<string> examined,
@@ -60,7 +73,11 @@ public static class WreckInterior
         System.Collections.Generic.IReadOnlySet<string>? heldDoors = null,
         System.Collections.Generic.IReadOnlySet<string>? blockedDoors = null,
         bool archiveAboard = false,
-        bool archivePurged = false)
+        bool archivePurged = false,
+        HullSounding.HiddenVoid? plate = null,
+        bool voidOpen = false,
+        bool plateShut = false,
+        bool keyAboard = false)
     {
         System.ArgumentNullException.ThrowIfNull(fillDroids);
         examined ??= new System.Collections.Generic.HashSet<string>();
@@ -69,13 +86,23 @@ public static class WreckInterior
         var consoles = new System.Collections.Generic.List<DeckPlan.ConsoleSpot>();
         var labels = new System.Collections.Generic.List<(float X, float Y, string Text)>();
 
+        // #537 slice 3 · A POCKET EXISTS ONLY WHEN IT IS BOTH OPEN AND BIG ENOUGH TO BE IN. A bulkhead run
+        // that has been cut open is still a hand's width of pipework: the plate comes off and the contents
+        // come out, and the geometry never changes, because there was never anywhere in there to stand.
+        HullStowage.OpenVoid? pocket =
+            voidOpen && plate is { } cut && HullStowage.RoomForACaptain(cut) == HullStowage.Fit.Fits
+                ? new HullStowage.OpenVoid(cut.X0, cut.X1, cut.Top, cut.PlateX, plateShut)
+                : null;
+
         // #537 · HER STRUCTURE, FILLED. Owner, reading the deck after the padding shipped: "we should cover
         // those narrow spaces … all of them … if we can see into them from the hall then they don't hide
         // anything", and then how: "some kind of fill there would make it look like the space is filled with
         // stuff." Right on both counts — a run drawn as two lines round a black gap reads as a SPACE, and a
         // hiding place drawn as a space is not one.
         var structures = new System.Collections.Generic.List<DeckPlan.Structure>();
-        foreach ((float sx0, float sy0, float sx1, float sy1) in WreckLayout.StructuralFills())
+        // #537 slice 3 · …and the one stretch of it a captain has already been inside is drawn as what he
+        // knows it is: space. The rest of the band stays hatched, because the rest of it is still a guess.
+        foreach ((float sx0, float sy0, float sx1, float sy1) in WreckLayout.StructuralFills(pocket))
         {
             structures.Add(new(sx0, sy0, sx1, sy1));
         }
@@ -83,7 +110,7 @@ public static class WreckInterior
         // ── The hull, the spine and the bulkheads — straight off Core's geometry, so what CI walks is
         //    exactly what the captain walks. IsWindow/IsHull are dressing the audit does not care about,
         //    so they are applied here by position rather than carried through Core.
-        foreach (SurfaceCollision.Segment s in WreckLayout.Walls(wreck.Cause))
+        foreach (SurfaceCollision.Segment s in WreckLayout.Walls(wreck.Cause, pocket))
         {
             bool hull = IsHullEdge(s);
             bool window = IsBridgeWindow(s) || IsBreach(s, wreck.Cause);
@@ -211,6 +238,32 @@ public static class WreckInterior
             (float)WreckLayout.PlacardStation.X, (float)WreckLayout.PlacardStation.Y,
             $"🪧 ATMOSPHERE CONTROL → {HullVenting.ValveCompartment}"));
 
+        // ── #537 · THE FALSE PLATE, ONCE SOMEBODY HAS KNOCKED ON IT ───────────────────────────────────
+        // It is on the deck only after a sounding has FOUND it — a console standing there from boarding
+        // would hand the whole search to anybody who walked past — and it is built HERE, from state, rather
+        // than appended after the fact, because an appended console does not survive a rebuild and the
+        // rebuilds are frequent (a dogged hatch, a pump, a purge).
+        //
+        // One console, three faces: knock-found, cut open, and shut with a captain behind it. Splitting it
+        // into three kinds would be three arms in the interact switch for one fixture the player only ever
+        // sees one of at a time.
+        if (plate is { } found)
+        {
+            consoles.Add(new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.SecretDoor, (float)found.PlateX, (float)found.PlateY,
+                HullStowage.PlateLabel(voidOpen, plateShut)));
+        }
+
+        // …and the pocket's own name, once it is space rather than a guess. Set outboard of the band so it
+        // does not collide with the compartment label sitting just inside the same wall.
+        if (pocket is { } named)
+        {
+            labels.Add((
+                (float)((named.X0 + named.X1) / 2.0),
+                named.Top ? WreckLayout.OuterTopY + 1.2f : WreckLayout.OuterBottomY - 0.6f,
+                HullStowage.PocketName));
+        }
+
         // ── The one warm thing aboard ─────────────────────────────────────────────────────────────────
         // Not a fitting and not evidence: freight nobody invoiced, strapped down in the deep hold. Two
         // controls on one housing — the column you go and look at, and the handle with the honest legend
@@ -237,6 +290,19 @@ public static class WreckInterior
                 archivePurged ? "NEBULA MUTUAL · SUBSTRATE SPAR" : "NEBULA MUTUAL · SUBSTRATE SPAR · ⚡"));
         }
 
+        // ── The one thing aboard that is worth more than her cargo ────────────────────────────────────
+        // #535 · A code in somebody's kit in the CREW SPACES, on a hull the black-ops sweep came aboard to
+        // make stop existing as evidence. Not a fitting and not evidence: it is what one of her people was
+        // carrying, and the plate over it is the object's own canon name and nothing else — a plate that
+        // said what it was FOR would answer the one question the whole object is interesting for.
+        if (keyAboard)
+        {
+            consoles.Add(new DeckPlan.ConsoleSpot(
+                DeckPlan.ConsoleKind.WreckKey,
+                (float)WreckLayout.KeyStation.X, (float)WreckLayout.KeyStation.Y,
+                BlackOpsKey.CardLabel));
+        }
+
         // ── The decision ──────────────────────────────────────────────────────────────────────────────
         // Amidships in the near hold, where the cargo actually is. You cannot decide what to do with her
         // from the bridge — you have to go and look at what she was carrying.
@@ -250,7 +316,11 @@ public static class WreckInterior
             [.. walls], [.. consoles], [.. labels], [],
             spawnX: SpawnX, spawnY: SpawnY,
             droidCount: droidCount, fillDroids: fillDroids,
-            location: LocationName,
+            location: pocket is { } inside
+                ? (x, y) => HullStowage.InThePocket(inside, x, y)
+                    ? HullStowage.PocketName
+                    : LocationName(x, y)
+                : LocationName,
             doors: [.. doors], shipFixtures: false, followCam: true, tables: [],
             structures: [.. structures]);
     }

@@ -24,22 +24,9 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheNotebookIsInTheSatchelTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>The satchel block of Map.razor — from the modal's opening guard to the view-object block that
     /// follows it, so every assertion is about THIS dialog's subtree and not the file at large. Same cut
@@ -136,7 +123,7 @@ public sealed class TheNotebookIsInTheSatchelTests
 
         var found = new List<string>();
         foreach (string file in Directory.EnumerateFiles(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client"), "*.*", SearchOption.AllDirectories))
+            Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client"), "*.*", SearchOption.AllDirectories))
         {
             if (file.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
                 || file.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
@@ -145,15 +132,30 @@ public sealed class TheNotebookIsInTheSatchelTests
                 continue;
             }
 
-            foreach (Match m in collections.Matches(File.ReadAllText(file)))
+            string text = File.ReadAllText(file);
+            foreach (Match m in collections.Matches(text))
             {
+                // #251 item 1 — A HAND-OFF IS NOT A STORE. Map.razor's surfaces live in their own
+                // components now, and a card that DRAWS the notebook is handed the page's one list as a
+                // [Parameter]. That is the opposite of a second store: it is the same list, arriving by
+                // name, owned by the same field this law is protecting. A store is a declaration nobody
+                // gave anything to, so the attribute is what tells the two apart. Delete the attribute
+                // from SatchelPanel's `_fieldNotes`, or give any surface a list of its own, and this
+                // goes red again naming it. PROVEN, with `private List<FieldNote> _mySecretNotes = [];`
+                // in SatchelPanel's @code: Found: Map.Surface.Satchel.cs:_fieldNotes,
+                // SatchelPanel.razor:_mySecretNotes.
+                int lineStart = text.LastIndexOf('\n', Math.Max(0, m.Index - 1)) + 1;
+                if (text[lineStart..m.Index].Contains("[Parameter]", StringComparison.Ordinal))
+                {
+                    continue;
+                }
                 found.Add($"{Path.GetFileName(file)}:{m.Groups[1].Value}");
             }
         }
 
         // Arrays of notes are the same store wearing a different type.
         Assert.DoesNotContain(
-            Directory.EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "*.cs"),
+            Directory.EnumerateFiles(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "*.cs"),
             f => Regex.IsMatch(File.ReadAllText(f),
                 @"(?:private|internal|public|protected)[^\n=;()]*\bFieldNote\s*\[\s*\]\s*\w+"));
 
@@ -266,8 +268,7 @@ public sealed class TheNotebookIsInTheSatchelTests
         Assert.False(satchel.Contains("ShowPulseMessage(", StringComparison.Ordinal),
             "the satchel dialog pulses a line from behind its own backdrop (#680).");
 
-        string css = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
         foreach (string rule in new[] { ".satchel-tab", ".satchel-note", ".satchel-filter" })
         {
             Assert.True(css.Contains(rule, StringComparison.Ordinal),

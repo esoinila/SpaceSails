@@ -37,8 +37,17 @@ public partial class Map
         }
         else
         {
-            PeekSavedVault(); // #225: surface a "Continue — docked at <haven>" lead if a vault exists.
-            _showStartPicker = true;
+            // #161 · NOTHING HAPPENS HERE ANY MORE, AND THAT IS THE POINT. This branch used to peek the
+            // vault and raise the front door; both now happen the moment the ephemeris exists
+            // (OpenTheFrontDoorAsync), thirteen seconds earlier, which is the whole of this lane.
+            //
+            // Neither line is missed. The door was already raised at the top of the boot for every start
+            // that ends here except ?sling= / ?skim=, and those two shut it again a few lines below — so
+            // the raise was a no-op on every URL even before this. Re-raising it now would be worse than
+            // a no-op: the captain can CHOOSE from this door while the traffic is still being plotted,
+            // and a choice made at second two is waiting on this very boot to return (see
+            // TheRestOfTheBootAsync). Putting the menu back over the voyage they just started is exactly
+            // the bug that would be.
         }
     }
 
@@ -156,7 +165,10 @@ public partial class Map
 
         if (q.CrewCheat is not null)
         {
-            SeedCrewCheat(); // #663: the voyage the crew send a deputation over — bodies, and no money to show for them
+            // #663 / #1066: the voyage the crew send a deputation over — bodies, and no money to show for
+            // them — or, one landing further down, that same voyage with nobody ashore in five berths,
+            // which is what convenes the meeting.
+            SeedCrewCheat(q.CrewCheat);
         }
 
         if (q.ConvergeCheat)
@@ -176,7 +188,7 @@ public partial class Map
         // also keeps ?start=wreck&fetch=active green.
         if (q.StartId == "wreck")
         {
-            RevealBody("derelict-roadster", "", announce: false);
+            RevealBody(Derelict.RoadsterBodyId, "", announce: false);
         }
 
         // ?reveal=<bodyId> (repeatable): chart any hidden body at boot for testing every downstream leg.

@@ -17,6 +17,18 @@ string, e.g. `/map?scenario=sol-eu`.
 The home page's Launch buttons just link to `map?scenario=<slug>` — there's nothing special about
 using the buttons versus typing the URL yourself.
 
+### Why the three alternate skies are not archived
+
+Issue #161 proposed moving `sol-eu.json`, `wheel.json` and `oops.json` to `archive/scenarios/`, on
+the guess that carrying them was slowing the load. Measured (#251 item 2, the boot's own phase log):
+a boot fetches **exactly one** scenario file, the one its `?scenario=` names, and that fetch plus
+its parse is **~0.18 s of a ~15 s boot**. The other three are never downloaded. Archiving them would
+save nothing at load time — and it would cost plenty elsewhere, because all three are live: the home
+page's Archived drawer launches them, the client `.csproj` mirrors `scenarios/*.json` into
+`wwwroot`, and they are the world under `ElectricUniverseTests`, `OopsScenarioTests`,
+`EveryBerthRidesAGravityRailTests`, the `sol-eu` scenes of the frame-fingerprint sweep and the
+`/map?scenario=sol-eu` row of the boot fingerprint. They stay where they are.
+
 ## The query string
 
 The map page reads three optional query parameters at load:

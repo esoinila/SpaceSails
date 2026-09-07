@@ -17,22 +17,9 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheLiftRefusalIsReadableTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     [Fact]
     public void TheRefusalIsSaidInsideThePanelItself()
@@ -75,8 +62,7 @@ public sealed class TheLiftRefusalIsReadableTests
     [Fact]
     public void TheOutcomeRowIsStyledLikeThePanelItSitsIn()
     {
-        string css = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
         Assert.True(css.Contains(".lift-outcome", StringComparison.Ordinal),
             "the lift panel's outcome row has no style of its own (#686).");
     }

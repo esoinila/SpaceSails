@@ -1,0 +1,162 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@using SpaceSails.Core
+@*
+    #251 · THE BURN STEP'S OPEN EDITOR, ON ITS OWN FILE.
+
+    Moved out of NavHud.razor by PURE MOTION — the block between the two fences below is the block that
+    was in the HUD, character for character. Every member it reads is a [Parameter] with the SAME NAME
+    (fields keep their underscore, methods come across as delegates under their own names), which is what
+    lets the markup move without a rewrite and lets MapMarkup splice it straight back where it came from.
+
+    IHandleEvent repeats NavHud's own override, which repeats Map.Sim.cs's: the HUD's refresh belongs to
+    OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render back on
+    every event in here. The .razor.css beside this file carries no rules; it exists to give the component
+    Map.razor.css's scope (pinned in SpaceSails.Client.csproj), so every rule that styled these elements
+    goes on matching them.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and
+    a code block is where its first statements are legal. It is outside the fences, so what the source
+    guards read is still exactly the lines that were in the HUD.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from NavHud.razor ──────────────────────────────────────────────────── *@
+                                    @* #838 · THE PLANNER PLANS IN THE VECTOR VIEW, AND IN FOUR WORDS. Owner:
+                                       "I almost always use those four directions in respect to our trajectory…
+                                       the intermediate angles are the exception." Ruling A (2026-08-17): the ±
+                                       idiom — the mode toggle, the prograde/retrograde pair AND the ±15° ↺/↻
+                                       nudges — leaves this panel for good and stays where it works, in reflex
+                                       flying (the live +/−/arrow keys). What stands here instead: four quick
+                                       selects solved in the GHOST'S frame at THIS node's epoch, and free aim
+                                       underneath as the exception. *@
+                                    <div class="map-plan-step-edit">
+                                        <div class="map-burn-quick" role="group" aria-label="Burn direction at this node">
+                                            @foreach (NodeDirection _dir in NodeFrame.QuickSelects)
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-sm @(NodeAimedAlong(node, _dir) ? "btn-info" : "btn-outline-info")"
+                                                        title="@NodeFrame.Hint(_dir, PlanningPrimaryName(node.SimTime))"
+                                                        @onclick="() => SetNodeDirection(node, _dir)">@NodeFrame.Label(_dir)</button>
+                                            }
+                                        </div>
+                                        @* #926 · FLYING WITH THE MOUSE ALONE. Owner (2026-08-17, playing): "Let's add
+                                           the plus and minus buttons to the burn scrub angle … the vector rotation is
+                                           good for flying with mouse alone, without inputting … like ±5 degrees." Five
+                                           degrees off whatever the node points at now — a quick select then a nudge or
+                                           two, and the aim is set without the keyboard ever coming into it. The face is
+                                           an ANGLE (a degree sign), because this is the vector view's own idiom and not
+                                           the reflex-flying control #916 sent back to the live keys. *@
+                                        <div class="map-burn-nudge" role="group" aria-label="Nudge this burn's aim five degrees">
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeHint(-1)"
+                                                    @onclick="() => NudgeNodeAim(node, -1)">@NodeFrame.NudgeLabel(-1)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeHint(1)"
+                                                    @onclick="() => NudgeNodeAim(node, 1)">@NodeFrame.NudgeLabel(1)</button>
+                                        </div>
+                                        @* #926 — the frame note now says BOTH frames the panel lives between: the one the
+                                           aim is solved in (the node's, #916) and the one the plan is READ in (the plot
+                                           frame). The second one is what the owner had to remember to switch by hand. *@
+                                        <div class="map-burn-frame-note text-secondary">
+                                            @NodeFrame.FrameNote(PlanningPrimaryName(node.SimTime)) · @TripFrame.ReadingNote(PlotFrameName())
+                                        </div>
+                                        @* #926 · ONE LINE, ONE PRESS. Owner (2026-08-17): "the real thrust amounts are
+                                           dependent on the coordinate origin. I had to remember to switch to Sun to get
+                                           the ship to really start moving from Earth towards Mars." Ruling A: name the
+                                           frame, offer the trip's — never switch by yourself. The press moves what the
+                                           captain JUDGES by (the ribbon, the numbers); the quick selects go on aiming in
+                                           the node's frame, because an escape burn is Earth-prograde either way. *@
+                                        @if (TripFrameOffer(node.SimTime) is { } _offer)
+                                        {
+                                            <div class="map-burn-frame-offer">
+                                                <div class="map-burn-frame-offer-line">@TripFrame.OfferLine(PlotFrameName(), _offer.DestinationName, _offer.FrameName)</div>
+                                                <button type="button" class="btn btn-sm btn-warning w-100"
+                                                        title="@TripFrame.OfferButtonHint(_offer.FrameName)"
+                                                        @onclick="() => SetPlotFrame(_offer.FrameId)">@TripFrame.OfferButton(_offer.FrameName)</button>
+                                            </div>
+                                        }
+                                        <div class="map-burn-aim d-flex flex-wrap align-items-center gap-1">
+                                            @* Free aim — the exception the vector view keeps. #201: the burn angle is
+                                               ship-heading-RELATIVE by default — 0 = straight ahead, +90 = starboard,
+                                               −90 = port. The rel/abs toggle keeps the world heading a click away; the
+                                               stored HeadingDegrees is always world-space (BurnHeadingConvention). *@
+                                            <div class="input-group input-group-sm map-plot-heading">
+                                                <input type="text" inputmode="decimal" class="form-control form-control-sm"
+                                                       value="@(_burnAngleAbsolute
+                                                           ? node.HeadingDegrees.ToString("0.#", CultureInfo.InvariantCulture)
+                                                           : BurnHeadingConvention.WorldToRelative(HeadingAlongCourseAt(node.SimTime), node.HeadingDegrees).ToString("+0.#;-0.#;0", CultureInfo.InvariantCulture))"
+                                                       title="@(_burnAngleAbsolute
+                                                           ? "Free aim — absolute nose heading in degrees (0° = +X, counter-clockwise)"
+                                                           : "Free aim — burn angle off the course at this node: 0 = straight ahead, +90 = starboard (right), −90 = port (left)")"
+                                                       @onchange="e => SetHeading(node, e)" @onkeydown:stopPropagation="true" />
+                                                <span class="input-group-text">°</span>
+                                                <button type="button" class="btn btn-outline-secondary"
+                                                        title="@(_burnAngleAbsolute ? "Reading absolute world heading — click for course-relative (the angle off the track)" : "Reading course-relative angle (0 ahead, +90 starboard, −90 port) — click for absolute world heading")"
+                                                        @onclick="() => _burnAngleAbsolute = !_burnAngleAbsolute">@(_burnAngleAbsolute ? "abs" : "rel")</button>
+                                            </div>
+                                            @* Text (not number) input so the 4-decimal padding actually shows —
+                                               browsers strip trailing zeros from type=number. Owner: at least
+                                               ".0000" must be visible for fine thrust trims. *@
+                                            <div class="input-group input-group-sm map-plot-percent">
+                                                <input type="text" inputmode="decimal" class="form-control form-control-sm"
+                                                       value="@(node.Percent.ToString("0.0000", CultureInfo.InvariantCulture))"
+                                                       title="Per-pulse thrust strength in percent — any decimal, shown to four places"
+                                                       @onchange="e => SetPercent(node, e)" @onkeydown:stopPropagation="true" />
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-info" title="Re-time to scrub"
+                                                    @onclick="() => RetimeToScrub(node)">@@</button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" title="Delete"
+                                                    @onclick="() => DeleteNode(node)">&times;</button>
+                                        </div>
+                                        @* #937 · NUDGE THE NUMBERS TOO. Owner (2026-08-18, flying the scrub): "we
+                                           could have the small + / − symbols also on the thrust amount number dialog
+                                           for iterating the scrub panel. Now writing a new number there I have to
+                                           switch to another input to see what the effect of numeric change is."
+                                           And the ruling the same sitting: "only the fine / ultra-fine tuning would
+                                           be the captain entering the numeric value to the field, but the rough
+                                           estimation with those + − buttons like the angle." So the buttons are the
+                                           front door and the field is the exception — the two typed fields stay
+                                           exactly where they were, and each press re-solves the ribbon on the spot
+                                           through the SAME act the typed value takes (ApplyPulses / the epoch
+                                           clamp), never a second solve path. Every face carries its UNIT (p, h, d),
+                                           because #916's law is that a bare ± means reflex flying and lives on the
+                                           live keys, not here. *@
+                                        <div class="map-burn-steps" role="group" aria-label="Step this burn's size in pulses">
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeMagnitudeHint(-1, true)"
+                                                    @onclick="() => NudgeNodePulses(node, -1, true)">@NodeFrame.NudgeMagnitudeLabel(-1, true)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeMagnitudeHint(-1, false)"
+                                                    @onclick="() => NudgeNodePulses(node, -1, false)">@NodeFrame.NudgeMagnitudeLabel(-1, false)</button>
+                                            @* stopPropagation: typing -/+/arrows here must edit the number, not fire live pulses. *@
+                                            <input type="number" class="form-control form-control-sm map-plot-pulses"
+                                                   min="@MinNodePulses" max="@MaxNodePulses" value="@node.Pulses"
+                                                   title="Pulses this burn spends — type here for the exact number; the buttons beside it are the rough shaping"
+                                                   @onchange="e => SetPulses(node, e)" @onkeydown:stopPropagation="true" />
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeMagnitudeHint(1, false)"
+                                                    @onclick="() => NudgeNodePulses(node, 1, false)">@NodeFrame.NudgeMagnitudeLabel(1, false)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeMagnitudeHint(1, true)"
+                                                    @onclick="() => NudgeNodePulses(node, 1, true)">@NodeFrame.NudgeMagnitudeLabel(1, true)</button>
+                                        </div>
+                                        <div class="map-burn-steps" role="group" aria-label="Step this burn's time along the course">
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeEpochHint(-1, true)"
+                                                    @onclick="() => NudgeNodeEpoch(node, -1, true)">@NodeFrame.NudgeEpochLabel(-1, true)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeEpochHint(-1, false)"
+                                                    @onclick="() => NudgeNodeEpoch(node, -1, false)">@NodeFrame.NudgeEpochLabel(-1, false)</button>
+                                            <span class="map-burn-epoch-readout text-nowrap" title="When this burn fires">@FormatSimTime(node.SimTime)</span>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeEpochHint(1, false)"
+                                                    @onclick="() => NudgeNodeEpoch(node, 1, false)">@NodeFrame.NudgeEpochLabel(1, false)</button>
+                                            <button type="button" class="btn btn-sm btn-outline-info"
+                                                    title="@NodeFrame.NudgeEpochHint(1, true)"
+                                                    @onclick="() => NudgeNodeEpoch(node, 1, true)">@NodeFrame.NudgeEpochLabel(1, true)</button>
+                                        </div>
+                                    </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

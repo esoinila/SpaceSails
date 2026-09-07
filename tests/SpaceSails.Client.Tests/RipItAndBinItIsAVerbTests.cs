@@ -22,22 +22,24 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class RipItAndBinItIsAVerbTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+
+    /// <summary>#1164 · The Hive floor's source — ALL of it, as a glob rather than a written list.
+    /// <c>HiveInterior.FloorDeck</c> was 31 <c>// ── banner ──</c> sections inside one 1,106-line method
+    /// and is now one named pass per section across several partials (#251), so the text this guard has
+    /// always read over is spread across <c>HiveInterior*.cs</c>. Concatenated rather than narrowed to one
+    /// part on purpose: claims here are <c>DoesNotContain</c> over the WHOLE subject, and pointing one at a
+    /// single partial would quietly stop it looking at most of the floor. Ordinal order, so the read is the
+    /// same on every machine.</summary>
+    private static string Hive() =>
+        string.Concat(Directory
+            .EnumerateFiles(
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering"),
+                "HiveInterior*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(MapMarkup.Read));
 
     /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
     /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
@@ -47,22 +49,46 @@ public sealed class RipItAndBinItIsAVerbTests
     /// are <c>DoesNotContain</c> over the whole subject, and pointing one at a single file would be a silent
     /// weakening.</summary>
     private static string Table() =>
-        Source("Pages", "Map.Table.cs") + Source("Pages", "Seating", "Seating.Table.cs");
+        Source("Pages", "Map.Table.cs") + TheTablesOwnPartials();
+
+    /// <summary>#251 · The table scene is FIVE partials now (opening, the moves, #757's wait, #758's
+    /// cabinet, #680's one ending) — read as a GLOB and not as a written list, because several claims over
+    /// this text are <c>DoesNotContain</c> over the whole subject and a list that fell one file behind the
+    /// next split would narrow them without a word. Ordinal by path so the concatenation is stable.</summary>
+    private static string TheTablesOwnPartials()
+    {
+        string[] parts = System.IO.Directory.GetFiles(
+            System.IO.Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating"),
+            "Seating.Table*.cs");
+        // Scene order, not alphabetical: `Seating.Table.cs` — the file that opens the scene and carries the
+        // family's class summary — comes first, exactly where it was when it was the only one, and the rest
+        // follow it ordinal. Several claims over this text cut a method body FORWARD to the next thing, and
+        // a sort that put the opening file last would have them cutting across a file trailer.
+        System.Array.Sort(parts, (a, b) =>
+            System.StringComparer.Ordinal.Compare(
+                System.IO.Path.GetFileName(a) == "Seating.Table.cs" ? "" : a,
+                System.IO.Path.GetFileName(b) == "Seating.Table.cs" ? "" : b));
+        var all = new System.Text.StringBuilder();
+        foreach (string part in parts)
+        {
+            all.Append(System.IO.File.ReadAllText(part));
+        }
+        return all.ToString();
+    }
 
     private static string Seated() =>
         Source("Pages", "Map.Seated.cs") + Source("Pages", "Seating", "Seating.Seated.cs");
 
-
-    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// <summary>#870 · The sim page is twenty partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
     private static string Doc(string name) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "docs", name));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "docs", name));
 
     /// <summary>The body of one method in <c>Map.Bin.cs</c>, from its signature to the closing brace at its
     /// own indent. Sliced rather than grepped over the whole file, because "does this FILE mention the
@@ -332,8 +358,7 @@ public sealed class RipItAndBinItIsAVerbTests
     [Fact]
     public void THE_RENDERER_PlatesTheBinsAndMeasuresNothing()
     {
-        string hive = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Rendering", "HiveInterior.cs"));
+        string hive = Hive();
 
         int at = hive.IndexOf("foreach (RipAndBin.Bin bin in floor.TheBins)", StringComparison.Ordinal);
         Assert.True(at > 0, "the bins are not drawn at all.");

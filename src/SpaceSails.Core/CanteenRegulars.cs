@@ -72,8 +72,25 @@ namespace SpaceSails.Core;
 ///
 /// <para>Pure and world-blind: the client asks who is sitting down and draws them, and never keeps an opinion
 /// of its own about whether a room has people in it.</para>
+///
+/// <para><b>#251 · THIS FILE IS THE REGISTERS; THE REST OF THE CLASS IS FIVE PARTIALS.</b> What is dealt
+/// FROM here — the cast and its plates, the seat counts, the watch's fill, the strangers' faces and their
+/// barks — stays in this file; what is decided WITH it moved out by concern:
+/// <c>CanteenRegulars.Sitting.cs</c> (who is at which bench this watch), <c>CanteenRegulars.Tops.cs</c>
+/// (what a top is and where its chairs are), <c>CanteenRegulars.Tables.cs</c> (how many tops a room gets
+/// and where they stand), <c>CanteenRegulars.Rota.cs</c> (the shift turning over) and
+/// <c>CanteenRegulars.Crowd.cs</c> (dealing the cover crowd).</para>
+///
+/// <para>The cut is where the initializers allow rather than where the concerns are, and that is #1163's
+/// static-class law: static field initializers of a partial class run in the order the compiler reads the
+/// FILES, not the order a reader sees. <see cref="StrangerPlates"/> is literally <c>PlatesOf(Faces)</c> —
+/// put those two in different files and the glob can hand one to the compiler before the other, with a
+/// clean build and no warning. So every <c>static readonly</c> in this class — <c>Cast</c>,
+/// <see cref="SeatCounts"/>, <see cref="WatchFill"/>, <c>Faces</c>, <see cref="StrangerPlates"/>,
+/// <see cref="Barks"/> — is declared HERE, in its original order, and no partial of it declares one at
+/// all.</para>
 /// </summary>
-public static class CanteenRegulars
+public static partial class CanteenRegulars
 {
     /// <summary>The glyph a regular's plate and their filed line both carry — a person, at console size.</summary>
     public const string Glyph = "◈";
@@ -136,11 +153,79 @@ public static class CanteenRegulars
 
         new("◈ A QUIET ONE, FACING THE DOOR",
             "..."),
+
+        // ── #1063 · AND THE ONE WHO IS NOT ALWAYS HERE ───────────────────────────────────────────────────
+        //
+        // THE MASON ON THE JOB. Last in this array and dealt out of a pool that stops one short of him, so on
+        // every ground nobody has been past a seam of — which is every ground in almost every world — this
+        // cast is the ten it has always been, dealt by the same dice against the same length, and not one
+        // person in the game moves seat.
+        //
+        // He is the dullest man in the room and he passes the register test hardest: he is a tradesman
+        // reciting what he wrote on a form. He is not mysterious, he is not hiding anything, and he is not
+        // lying — HE MEANS IT, AND HE FILED IT, AND THAT IS THE WHOLE TESTIMONY (#1063). The horror is
+        // entirely in the fact that a filing phrase is all there is, and he is the only man alive who was
+        // standing in front of the thing.
+        new(Burial.MasonPlate, Burial.MasonLine),
+
+        // ── #1074 beat 4 · …AND THE TWO WHO ARE ONLY HERE WHERE THE OFFICE HAS BEEN ──────────────────────
+        //
+        // CAREER-COST NPCs, on the mason's own law one rung further along the array: the ordinary deal stops
+        // THREE short of the end now rather than one, so a ground nobody has stopped seats the same ten
+        // people, dealt by the same dice against the same length, and the room does not move by one
+        // character. Their order here is the order they take chairs on a stopped ground (see Seating).
+        //
+        // They pass the register test as hard as he does, and neither is a quest-giver in a hat. One is a man
+        // who believes what he was told and is telling a stranger the truth as he has it; the other is a
+        // woman who has not moved a mug. Neither is mysterious, neither is hiding anything, and neither
+        // knows one thing the captain does not — which is the whole of it, because a working closed, a name
+        // went into a register, and this is the entire remainder.
+        new(CareerCost.ColleaguePlate, CareerCost.ColleagueLine),
+        new(CareerCost.MugPlate, CareerCost.MugLine),
     ];
 
     /// <summary>How many authored regulars exist. Public so a guard can pin the catalog's size without
     /// reaching into it.</summary>
     public static int CastSize => Cast.Length;
+
+    /// <summary>#1063/#1074 · How many of the cast the ORDINARY seeded rota may deal — everybody but the
+    /// mason and the two career-cost regulars, which is why a site nobody has opened or stopped seats exactly
+    /// the people it always seated. <b>This number must never change</b>: it is the length the dice are
+    /// rolled against, and moving it re-deals every canteen in every world. Public so a guard can pin it
+    /// without reaching into the array (the incidental "cast and catalogue are the same length" it replaces
+    /// stopped being true the day a regular arrived who pins no paper).</summary>
+    public static int OrdinaryCastSize => OrdinaryCast;
+
+    /// <summary>#1063 · Which of the cast is the mason — the first of the ones the ordinary deal stops short
+    /// of. Found by his plate rather than written as an index, for <c>CanteenBoard.RosterNotice</c>'s reason:
+    /// a beat pointed at a row that does not exist should throw at the first call rather than go quietly
+    /// missing on some worlds forever.</summary>
+    private static int Mason => IndexOfPlate(Burial.MasonPlate);
+
+    /// <summary>#1074 · …the colleague who was asked, and</summary>
+    private static int Colleague => IndexOfPlate(CareerCost.ColleaguePlate);
+
+    /// <summary>#1074 · …the one who keeps the mug. Same lookup, same reason.</summary>
+    private static int MugKeeper => IndexOfPlate(CareerCost.MugPlate);
+
+    /// <summary>#1063/#1074 · …and how many of them the ordinary seeded rota may deal. Everybody but the
+    /// mason and the two of #1074's, which is why a site nobody has opened seats exactly the people it always
+    /// seated.</summary>
+    private static int OrdinaryCast => Cast.Length - 3;
+
+    /// <summary>Which of the cast wears this plate. Throws rather than answering -1: every caller is a beat
+    /// that has just named somebody it must be able to seat.</summary>
+    private static int IndexOfPlate(string plate)
+    {
+        for (int i = 0; i < Cast.Length; i++)
+        {
+            if (string.Equals(Cast[i].Plate, plate, StringComparison.Ordinal))
+            {
+                return i;
+            }
+        }
+        throw new InvalidOperationException($"the canteen has nobody plated \"{plate}\"");
+    }
 
     /// <summary>Every authored plate and line, for the canon grep. Nothing in this list may explain the Old
     /// Ones, and the guard that checks it walks THIS, so a line added tomorrow is checked tomorrow.</summary>
@@ -151,38 +236,6 @@ public static class CanteenRegulars
             yield return c.Plate;
             yield return c.Line;
         }
-    }
-
-    /// <summary>
-    /// Who is sitting in this amenity, if anybody is.
-    ///
-    /// <para>Empty for every room that is not the upper canteen on the site's top pressurised floor — which
-    /// is the owner's B1 ruling, living in Core where a test can reach it rather than as an <c>if</c> in a
-    /// renderer.</para>
-    /// </summary>
-    /// <param name="bodyId">The site.</param>
-    /// <param name="level">The floor being built.</param>
-    /// <param name="amenity">The room, as Core carved it (#707) — its tables are the seats.</param>
-    /// <param name="watch">Which shift this is — <see cref="Interior.PatronRota.WatchIndex"/> of the sim
-    /// clock, and deliberately a WATCH rather than a raw time. See the class docs.</param>
-    /// <param name="stoodUp">#731 · The tops whose person has GOT UP AND WALKED OFF this watch, by table
-    /// ordinal. See <see cref="Tables"/> for why this exists and why it is not a second rota.</param>
-    public static IReadOnlyList<Seated> Sitting(
-        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch = 0,
-        IReadOnlySet<int>? stoodUp = null)
-    {
-        var sat = new List<Seated>();
-        foreach ((int table, int who) in Seating(bodyId, level, amenity, watch))
-        {
-            if (stoodUp?.Contains(table) == true)
-            {
-                continue;
-            }
-            (double tx, double ty) = amenity.Tables[table];
-            sat.Add(new Seated(tx, ty, Cast[who].Plate, Cast[who].Line));
-        }
-
-        return sat;
     }
 
     // ── #746 · THE TABLES HAVE SEATS, AND THE SAME LAW SAYS WHO IS IN THEM ────────────────────────────────
@@ -199,362 +252,6 @@ public static class CanteenRegulars
     /// <summary>How many a round top seats. Two, four or six — the owner's own three (#746), stated as a
     /// list so a guard can pin them without knowing the arithmetic that picks one.</summary>
     public static readonly IReadOnlyList<int> SeatCounts = [2, 4, 6];
-
-    /// <summary>One round top in an amenity: where it is, how many it seats, and who — if anybody — is in
-    /// one of those seats this watch.</summary>
-    /// <param name="Index">Its ordinal in the room's own table list, so a caller can key state off it.
-    /// Cabinet tops carry on from the hall floor's, so one ordinal names one top in one room.</param>
-    /// <param name="X">Centre, in the surface's own coordinates.</param>
-    /// <param name="Y">Centre.</param>
-    /// <param name="Seats">2, 4 or 6 — furniture, decided by the building and never by the shift.</param>
-    /// <param name="Plate">Who is at it, or null for an empty table.</param>
-    /// <param name="Line">What they say, or null.</param>
-    /// <param name="Stranger">#751 · Whether the person at it is a BACKGROUND PATRON — one of the crowd
-    /// that fills a hall — rather than one of the ten named regulars. A stranger's table is a thin scene
-    /// (small talk, the round, your leave) and the depth stays with the named cast.</param>
-    /// <param name="Cabinet">#751 · Which cabinet this top is in, or 0 for the hall floor. It is the fact
-    /// the QUIET RULE reads: the counter has eyes everywhere except in here.</param>
-    /// <param name="Talking">#792 · Are the people at this top IN A CONVERSATION WITH EACH OTHER? See
-    /// <see cref="StrangerTalks"/> for why this is authored rather than counted.</param>
-    /// <param name="Heads">#823 · HOW MANY PEOPLE ARE AT IT — 0 for an empty top, 1 for any of the ten named
-    /// regulars, and the crowd's own authored headcount (<see cref="StrangerHeads"/>) for a background
-    /// patron. Owner, playtest 2026-08-11: <i>"The number of people sitting at a table should match the
-    /// amount of seats that are taken."</i></param>
-    public readonly record struct TableSeat(
-        int Index, double X, double Y, int Seats, string? Plate, string? Line,
-        bool Stranger = false, int Cabinet = 0, bool Talking = false, int Heads = 0)
-    {
-        /// <summary>Somebody is at this table.</summary>
-        public bool Taken => Plate is not null;
-
-        /// <summary>
-        /// Chairs nobody is in — the seat count less the party's <see cref="Heads"/>, and the number "ask to
-        /// join" reads.
-        ///
-        /// <para>#823 · It was <c>Seats - (Taken ? 1 : 0)</c> until the owner counted the chairs: <i>"it says
-        /// there are two haulers eating at a table that seats four, yet there is visual indication of only one
-        /// seat out of four being taken? Does the other try sit in the others lap?"</i> A bool cannot seat a
-        /// crew, and the plates have held crews since #792. Clamped at zero because a table may be FULL, and
-        /// a full table refusing to offer a chair is the honest answer rather than a negative one.</para>
-        /// </summary>
-        public int Free => Math.Max(0, Seats - Heads);
-
-        /// <summary>#751 · Is this a table the counter cannot see? The one source for the quiet rule.</summary>
-        public bool Quiet => Cabinet > 0;
-
-        /// <summary>
-        /// #792 · SOMEBODY SITTING ON THEIR OWN — the other half of <see cref="Talking"/>, named so that a
-        /// caller asking the approachable question does not have to spell it as a negation.
-        ///
-        /// <para>Owner, playtest 2026-08-08: <i>"it determines whether there is anything to overhear as
-        /// discussion goes."</i> A lone sitter is #757's ask-to-join; a conversation already going is a
-        /// different affordance entirely, and a captain looking for one or the other must be able to tell
-        /// them apart across a room.</para>
-        /// </summary>
-        public bool Alone => Taken && !Talking;
-
-        /// <summary>Where one of this top's chairs stands. See <see cref="CanteenRegulars.ChairAt"/>, which
-        /// owns the ring; this only hands it the top's own numbers.</summary>
-        public (double X, double Y) Chair(int chair) => ChairAt(X, Y, Seats, chair);
-
-        /// <summary>Is the party in this chair? See <see cref="CanteenRegulars.PartyInChair"/> — the same
-        /// walk the deck draws bodies on, asked with this top's own headcount.</summary>
-        public bool PartyIn(int chair) =>
-            PartyInChair(chair, Seats, Taken ? Math.Clamp(Heads, 1, Math.Max(1, Seats)) : 0);
-
-        /// <summary>
-        /// #820 · THE CHAIR THE CAPTAIN TAKES, given where they were standing when they pressed [E] — null
-        /// at a top with nothing left to sit on.
-        ///
-        /// <para>The NEAREST FREE one, for a park bench's reason one room along (see
-        /// <c>ParkBenches.EndYouTake</c>): a sit that walked the captain round a six-top to the far side
-        /// would be moving them further from the chair they had already chosen with their feet. Which chairs
-        /// are free is not this method's opinion — it is <see cref="PartyIn"/>, which is the same arithmetic
-        /// the deck draws the party's bodies on, so the chair the press hands over is a chair the player can
-        /// see is empty.</para>
-        /// </summary>
-        public (double X, double Y)? ChairYouTake(double fromX, double fromY)
-        {
-            if (Seats <= 0)
-            {
-                return null;
-            }
-
-            (double X, double Y)? best = null;
-            double bestD = double.MaxValue;
-            for (int c = 0; c < Seats; c++)
-            {
-                if (PartyIn(c))
-                {
-                    continue;
-                }
-                (double cx, double cy) = Chair(c);
-                double d = ((cx - fromX) * (cx - fromX)) + ((cy - fromY) * (cy - fromY));
-                if (d < bestD)
-                {
-                    (bestD, best) = (d, (cx, cy));
-                }
-            }
-            return best;
-        }
-    }
-
-    // ── #820 · WHERE THE CHAIRS ROUND A TOP ACTUALLY ARE ──────────────────────────────────────────────
-    //
-    // Owner, evening playtest 2026-08-11: "I would move the avatar on top of the bench when I sit... just
-    // snap it into the correct position." A seat you can be snapped onto is a seat with a COORDINATE, and a
-    // canteen top's chairs had none: the deck drew them out of a radius and an angle it kept to itself, and
-    // the [E] press knew only where the TABLE was. Two authors for one piece of furniture is this repo's
-    // most expensive bug class, and the half that could not be checked was the half a body sits on.
-    //
-    // So the ring lives here, both callers ask it, and the chair a captain lands in is by construction the
-    // chair the room drew empty.
-
-    /// <summary>How far out from a top's centre its chairs stand. The deck has drawn them at this radius
-    /// since #792 (it was <c>DeckView.SeatRingDu</c>, and that constant now reads this one) — far enough
-    /// out to be clear of the top's own plate and close enough to read as belonging to it.</summary>
-    public const double ChairRingDu = 1.55;
-
-    /// <summary>
-    /// Where chair <paramref name="chair"/> of a <paramref name="seats"/>-seat top centred on
-    /// (<paramref name="topX"/>, <paramref name="topY"/>) stands, in the surface's own coordinates.
-    ///
-    /// <para>Evenly round the ring from due east, anticlockwise, which is the order the deck has drawn them
-    /// in since #792 — the ordinal is the drawing's and the sim's at once, so "the party is in chairs 0 and
-    /// 3" is one sentence about one room.</para>
-    /// </summary>
-    public static (double X, double Y) ChairAt(double topX, double topY, int seats, int chair)
-    {
-        if (seats <= 0)
-        {
-            return (topX, topY);
-        }
-        double ang = chair * 2 * Math.PI / seats;
-        return (topX + (Math.Cos(ang) * ChairRingDu), topY + (Math.Sin(ang) * ChairRingDu));
-    }
-
-    /// <summary>
-    /// #823 · Is the party sitting in this chair? A party sits SPREAD ROUND a top rather than stacked in
-    /// chair one — three on the same contract at a six-top leave a gap between each of them — and the even
-    /// walk below lands on exactly <paramref name="heads"/> chairs for any seat count the building has.
-    ///
-    /// <para>It was the deck's own loop until #820 needed the same answer for the [E] press: a captain
-    /// snapped into a chair the room had already drawn somebody in would be the drawn room and the pressed
-    /// room disagreeing about a lap.</para>
-    /// </summary>
-    public static bool PartyInChair(int chair, int seats, int heads) =>
-        seats > 0 && heads > 0 && (chair * heads) % seats < heads;
-
-    /// <summary>
-    /// #746/#751 · HOW MANY EACH ROUND TOP IN THIS ROOM SEATS — the one place the question is answered.
-    ///
-    /// <para>Two rooms, two laws, and they meet here so that nothing downstream has to know which it is
-    /// looking at:</para>
-    ///
-    /// <list type="bullet">
-    /// <item><b>An ordinary three-top canteen</b> rolls each top, seeded off the SITE, the room's use and
-    /// the top's ordinal — and deliberately NOT off the watch. A canteen does not re-furnish itself every
-    /// shift, and a table that seated six at breakfast and two at supper would be the picture and the sim
-    /// disagreeing about a thing the player can count.</item>
-    /// <item><b>A hall</b> reads <see cref="UndergroundComplex.HallSeatBill"/>, because a hall has a SEAT
-    /// TARGET to hit and twenty independent rolls miss it by seven on average (see that method's docs). The
-    /// caterer's stock is designed; only its arrangement is seeded.</item>
-    /// </list>
-    /// </summary>
-    public static IReadOnlyList<int> SeatBill(string bodyId, UndergroundComplex.Amenity amenity)
-    {
-        ArgumentNullException.ThrowIfNull(bodyId);
-
-        if (amenity.Hall is { } hall)
-        {
-            return UndergroundComplex.HallSeatBill(bodyId, amenity.Use, hall.SeatTarget);
-        }
-
-        var rolled = new List<int>(amenity.Tables.Count);
-        for (int i = 0; i < amenity.Tables.Count; i++)
-        {
-            ulong seed = DiceRule.Seed(
-                $"hive:canteen:seats:{bodyId}:{(int)amenity.Use}:{i}", 0);
-            rolled.Add(SeatCounts[DiceRule.Roll(seed, SeatCounts.Count).Face - 1]);
-        }
-        return rolled;
-    }
-
-    /// <summary>#746 · How many a given round top seats. <see cref="SeatBill"/>'s entry for it, and kept as
-    /// its own call because that is how the rest of the game asks.</summary>
-    public static int SeatsAt(string bodyId, UndergroundComplex.Amenity amenity, int tableIndex)
-    {
-        IReadOnlyList<int> bill = SeatBill(bodyId, amenity);
-        return tableIndex >= 0 && tableIndex < bill.Count ? bill[tableIndex] : SeatCounts[0];
-    }
-
-    /// <summary>
-    /// #746/#751 · EVERY ROUND TOP IN THE ROOM, with its seats and its occupancy — the one fact the
-    /// renderer draws and the one fact the [E] press asks. Same frozen watch (#709), so the chair on the
-    /// screen and the chair the game offers you are the same chair.
-    ///
-    /// <para>#751 · Three tiers come out of this one call, in one list, because they are one question:
-    /// the ten NAMED REGULARS keep their tables and their whole scene; BACKGROUND PATRONS fill whatever the
-    /// watch says the hall is holding and are pure data (a plate, a bark, a chair — no pathing, nothing per
-    /// frame); and the CABINET tops come last, empty, because #731's walkers are the ones who will sit in
-    /// them.</para>
-    /// </summary>
-    /// <param name="bodyId">The site.</param>
-    /// <param name="level">The floor.</param>
-    /// <param name="amenity">The room, as Core carved it (#707/#751).</param>
-    /// <param name="watch">The shift, frozen when the floor was drawn.</param>
-    /// <param name="stoodUp">
-    /// #731 · WHO HAS ALREADY GOT UP AND WALKED OFF, by table ordinal.
-    ///
-    /// <para>Owner, 2026-08-06: <i>"on the bar now they have to wait for us to leave before they can sit
-    /// up… or leave the bar."</i> A walker (<see cref="Interior.NpcWalk"/>) crossing the room on real legs
-    /// is one body, and a body cannot be in two places — so the moment somebody stands, their chair has to
-    /// come back empty HERE, in the one function that answers who is sitting where, or the drawn room and
-    /// the pressed room disagree about a person who is visibly walking past both of them. That is this
-    /// repo's third named bug class and it would arrive wearing the feature that caused it.</para>
-    ///
-    /// <para>It is deliberately NOT a second rota and it decides nothing: the shift still deals who was
-    /// there, and this only says which of them is no longer in the chair. Excursion-scoped and watch-scoped
-    /// in the caller, like every other thing the Hive remembers about a shift.</para>
-    /// </param>
-    public static IReadOnlyList<TableSeat> Tables(
-        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch = 0,
-        IReadOnlySet<int>? stoodUp = null)
-    {
-        ArgumentNullException.ThrowIfNull(bodyId);
-
-        var who = new Dictionary<int, int>();
-        foreach ((int table, int cast) in Seating(bodyId, level, amenity, watch))
-        {
-            who[table] = cast;
-        }
-
-        IReadOnlyList<int> bill = SeatBill(bodyId, amenity);
-        Dictionary<int, int> crowd = Crowd(bodyId, level, amenity, watch, who.Keys, bill);
-
-        var tops = new List<TableSeat>(amenity.Tables.Count + CabinetRoom(amenity));
-        for (int i = 0; i < amenity.Tables.Count; i++)
-        {
-            (double tx, double ty) = amenity.Tables[i];
-            int seats = i < bill.Count ? bill[i] : SeatCounts[0];
-
-            if (stoodUp?.Contains(i) == true)
-            {
-                // They stood up. The top is a top with nobody at it, which is exactly what it is.
-                tops.Add(new TableSeat(i, tx, ty, seats, null, null));
-            }
-            else if (who.TryGetValue(i, out int cast))
-            {
-                // #792 · A named regular is ONE PERSON at a top, every one of the ten, which is the whole
-                // premise of #757's ask-to-join: there is a chair, and somebody to ask. So they are never
-                // Talking, and the deck may draw them as the approachable thing they are.
-                tops.Add(new TableSeat(
-                    i, tx, ty, seats, Cast[cast].Plate, Cast[cast].Line, Heads: RegularHeads));
-            }
-            else if (crowd.TryGetValue(i, out int face))
-            {
-                tops.Add(new TableSeat(
-                    i, tx, ty, seats,
-                    StrangerPlates[face % StrangerPlates.Count],
-                    Barks[BarkIndex(bodyId, i, watch)],
-                    Stranger: true,
-                    Talking: StrangerTalks(face % StrangerPlates.Count),
-                    // #823 · …and the party's size, off the same one authored row. Crowd() has already
-                    // refused to deal a face this top cannot seat, so this arrives fitting.
-                    Heads: StrangerHeads(face % StrangerPlates.Count)));
-            }
-            else
-            {
-                tops.Add(new TableSeat(i, tx, ty, seats, null, null));
-            }
-        }
-
-        // …and the cabinets, which are tops in this room like any other and are simply nobody's this watch.
-        if (amenity.Hall is { } hall)
-        {
-            foreach (UndergroundComplex.Cabinet cabinet in hall.Cabinets)
-            {
-                tops.Add(new TableSeat(
-                    tops.Count, cabinet.Table.X, cabinet.Table.Y, UndergroundComplex.CabinetSeats,
-                    null, null, Cabinet: cabinet.Number));
-            }
-        }
-
-        return tops;
-    }
-
-    /// <summary>How many cabinet tops this room adds, for the list's capacity.</summary>
-    private static int CabinetRoom(UndergroundComplex.Amenity amenity) =>
-        amenity.Hall?.Cabinets.Count ?? 0;
-
-    /// <summary>
-    /// #709/#757 · IS THIS THE ROOM PEOPLE ARE IN? The owner's B1 ruling, as a question anybody may ask.
-    ///
-    /// <para>The upper canteen, on the top pressurised floor, and nowhere else. It was already the first two
-    /// clauses of <see cref="Seating"/> and of <see cref="Crowd"/> in longhand; #757 needed a THIRD caller,
-    /// because an empty top may only offer <i>take this table</i> in a room outsiders are admitted to — the
-    /// pass-only staff mess is hall-class as well, full of tops, and its whole identity is that the shift
-    /// has not come and nobody is ever in it. A third private copy of two clauses is how one rule stops
-    /// being one rule, so the copies became this.</para>
-    /// </summary>
-    /// <param name="bodyId">The site.</param>
-    /// <param name="level">The floor.</param>
-    /// <param name="amenity">The room, as Core carved it (#707).</param>
-    public static bool PeopleSitHere(string bodyId, int level, UndergroundComplex.Amenity amenity)
-    {
-        ArgumentNullException.ThrowIfNull(bodyId);
-        return amenity.Use == UndergroundComplex.Comfort.UpperCanteen
-            && UndergroundComplex.TopPressurisedFloor(bodyId) == level;
-    }
-
-    /// <summary>WHO IS AT WHICH TABLE, as indices — the one rota, called by <see cref="Sitting"/> and by
-    /// <see cref="Tables"/>. It was inlined in Sitting until #746 needed the table's ORDINAL as well as its
-    /// coordinates; matching a person back to a top by comparing two doubles would have been a second answer
-    /// to "who is sitting where", which is the thing this class's own docs warn about hardest.</summary>
-    private static List<(int Table, int Who)> Seating(
-        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch)
-    {
-        ArgumentNullException.ThrowIfNull(bodyId);
-
-        var seating = new List<(int Table, int Who)>();
-
-        // The washroom and the deep staff mess get nobody. The mess is pass-only and the people who would be
-        // in it are #618's question, not this one; the washroom is the one amenity nobody sits down in. And
-        // only on the floor the owner put them on — #757 lifted both clauses into PeopleSitHere so that the
-        // third caller could not become a second opinion.
-        if (!PeopleSitHere(bodyId, level, amenity))
-        {
-            return seating;
-        }
-
-        int seats = Math.Min(amenity.Tables.Count, MostAtOnce);
-        if (seats <= 0)
-        {
-            return seating;
-        }
-
-        // How many turned up THIS SHIFT. At least one — the owner asked for people in the bar, and an empty
-        // canteen is a thing this building already has twenty floors of.
-        ulong seed = DiceRule.Seed($"hive:canteen:{bodyId}", watch);
-        int here = DiceRule.Roll(seed, seats).Face;
-
-        var usedTables = new List<int>(here);
-        var usedCast = new List<int>(here);
-
-        for (int i = 0; i < here; i++)
-        {
-            int table = PickUnused(
-                DiceRule.Roll(DiceRule.Seed($"hive:canteen:table:{bodyId}:{i}", watch), amenity.Tables.Count).Face - 1,
-                amenity.Tables.Count, usedTables);
-            int cast = PickUnused(
-                DiceRule.Roll(DiceRule.Seed($"hive:canteen:who:{bodyId}:{i}", watch), Cast.Length).Face - 1,
-                Cast.Length, usedCast);
-
-            seating.Add((table, cast));
-        }
-
-        return seating;
-    }
 
     // ── #751 · THE CROWD, WHICH IS THE COVER ─────────────────────────────────────────────────────────────
     //
@@ -722,125 +419,5 @@ public static class CanteenRegulars
         {
             yield return b;
         }
-    }
-
-    /// <summary>#751 · Which bark this patron has this watch. Seeded on (site, top, watch) and nothing else,
-    /// so it is stable while you stand there, different next shift, and a guard can measure that every one
-    /// of the fourteen is actually reachable rather than assuming it.</summary>
-    public static int BarkIndex(string bodyId, int tableIndex, long watch)
-    {
-        ArgumentNullException.ThrowIfNull(bodyId);
-        return DiceRule.Roll(
-            DiceRule.Seed($"hive:hall:bark:{bodyId}:{tableIndex}", watch), Barks.Count).Face - 1;
-    }
-
-    /// <summary>#751 · How many of the hall's tops have somebody at them this watch — the named regulars
-    /// included. The number the room's whole mood comes out of.</summary>
-    public static int OccupiedTops(
-        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch = 0)
-    {
-        ArgumentNullException.ThrowIfNull(bodyId);
-        int taken = 0;
-        foreach (TableSeat top in Tables(bodyId, level, amenity, watch))
-        {
-            if (top.Taken)
-            {
-                taken++;
-            }
-        }
-        return taken;
-    }
-
-    /// <summary>WHICH TOPS THE CROWD IS AT, and which face each of them wears. Keyed by top ordinal, exactly
-    /// like <see cref="Seating"/>, and it skips whatever the named regulars already have.</summary>
-    /// <param name="bill">#823 · What each top SEATS, so the deal can respect the furniture. A whole crew of
-    /// four cannot be dealt to a two-top: the party would be sitting in each other's laps, which is the exact
-    /// picture the owner sent back from the canteen.</param>
-    private static Dictionary<int, int> Crowd(
-        string bodyId, int level, UndergroundComplex.Amenity amenity, long watch,
-        IEnumerable<int> takenByTheCast, IReadOnlyList<int> bill)
-    {
-        var crowd = new Dictionary<int, int>();
-
-        // Halls only, upper canteen only, top floor only. The middle clause is the one with teeth: the
-        // STAFF MESS is hall-class too (#751's second customer) and it must stay empty on every watch
-        // forever — its whole identity is #743's sentence at architectural scale, "the shift has not come".
-        if (amenity.Hall is null || !PeopleSitHere(bodyId, level, amenity))
-        {
-            return crowd;
-        }
-
-        int tops = amenity.Tables.Count;
-        if (tops <= 0)
-        {
-            return crowd;
-        }
-
-        double fill = WatchFill[(int)(((watch % WatchFill.Count) + WatchFill.Count) % WatchFill.Count)];
-        int want = (int)Math.Round(tops * fill, MidpointRounding.AwayFromZero);
-
-        var used = new List<int>(takenByTheCast);
-        int seatedByCast = used.Count;
-        want = Math.Clamp(want - seatedByCast, 0, tops - seatedByCast);
-
-        for (int i = 0; i < want; i++)
-        {
-            int table = PickUnused(
-                DiceRule.Roll(DiceRule.Seed($"hive:hall:top:{bodyId}:{i}", watch), tops).Face - 1,
-                tops, used);
-            int face = DiceRule.Roll(
-                DiceRule.Seed($"hive:hall:face:{bodyId}:{table}", watch), StrangerPlates.Count).Face - 1;
-
-            // #823 · THE FURNITURE HAS A VETO. The die names a face; the top says whether it will take it.
-            if (FaceThatFits(face, table < bill.Count ? bill[table] : SeatCounts[0]) is { } fits)
-            {
-                crowd[table] = fits;
-            }
-        }
-
-        return crowd;
-    }
-
-    /// <summary>
-    /// #823 · THE FIRST FACE AT OR AFTER THE ROLLED ONE THAT THIS TOP CAN SEAT, or null if none of them can.
-    ///
-    /// <para>Same skip-forward discipline as <see cref="PickUnused"/> and the hall's seat bill, and for the
-    /// same reason: a re-roll loop on a seeded die is how a generator stops being deterministic. A hall's
-    /// twos take the ones and the pairs; the fours and sixes take the crews. Null is the honest answer for a
-    /// top nobody could sit at — the caller leaves it empty rather than seating four people on two chairs —
-    /// and no top the game builds is that small today (SeatCounts starts at 2 and half the faces are one
-    /// person), which is a thing the guard measures rather than a thing this comment promises.</para>
-    /// </summary>
-    private static int? FaceThatFits(int wanted, int seats)
-    {
-        for (int step = 0; step < Faces.Length; step++)
-        {
-            int candidate = ((wanted + step) % Faces.Length + Faces.Length) % Faces.Length;
-            if (Faces[candidate].Heads <= seats)
-            {
-                return candidate;
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>Take the rolled index, or the next free one after it. Two people on one chair and one person
-    /// said twice are the same bug wearing different clothes, and a re-roll loop on a seeded die is how a
-    /// generator stops being deterministic.</summary>
-    private static int PickUnused(int wanted, int count, List<int> used)
-    {
-        for (int step = 0; step < count; step++)
-        {
-            int candidate = (wanted + step) % count;
-            if (!used.Contains(candidate))
-            {
-                used.Add(candidate);
-                return candidate;
-            }
-        }
-
-        used.Add(wanted);
-        return wanted;
     }
 }

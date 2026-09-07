@@ -1,4 +1,4 @@
-﻿namespace SpaceSails.Core;
+namespace SpaceSails.Core;
 
 /// <summary>
 /// The ship's news wire (PR-14, docs/SaturdayPlan/StationDesks.md #14): one deterministic feed
@@ -96,6 +96,14 @@ public static class NewsWire
         // event behind StoryBeats.Beat.ArcNewsBreaks, whose card caption is written for exactly this
         // moment ("one figure walks away from the screen instead of toward it").
         ArcBeatBreaks,
+
+        // #525 — a hull that went off INSIDE A HARBOUR. Its own kind rather than a borrowed one, because
+        // nothing else on this wire is a harbour's own clerical entry about a berth it no longer has:
+        // Subject = the berth NUMBER the plate carries (BerthScuttle.BerthNumber, not the roster's index),
+        // Detail = the port. #1138 shipped this entry riding HunterDispatched with a `// FABLE: line
+        // needed` on it — true, but "somebody is fitting out and the hunt is on" is a different fact from
+        // "a hull is gone and the paperwork has a name on it".
+        HullLostAtABerth,
     }
 
     /// <summary>One player-triggered event, dated and named. <paramref name="Subject"/> is the
@@ -447,6 +455,14 @@ public static class NewsWire
         // #411/#663 — the subject IS the headline. An arc beat arrives already written in the voice of
         // whoever filed it, because the alternative is the wire explaining a plot to the player.
         NewsEventKind.ArcBeatBreaks => evt.Subject,
+        // #525 — the wire's own clerical headline for a hull lost inside a harbour, authored verbatim in
+        // the canon pass of 2026-09-06. The two braces are the RECORD'S: {N} is Subject, the berth number
+        // off the plate, and {PORT} is Detail. No cause is named beyond the declaration itself and nobody
+        // is named at all — "the operator has a name for the master" is a harbour saying it has paperwork,
+        // not a harbour saying who told it. The fallback for an absent port is HunterDispatched's own
+        // existing words rather than a new sentence: this lane authors exactly one string.
+        NewsEventKind.HullLostAtABerth =>
+            $"Berth {evt.Subject}, {evt.Detail ?? "a policed port"}: hull lost to a declared reactor overload. The operator has a name for the master.",
         _ => "Static on the wire.",
     };
 

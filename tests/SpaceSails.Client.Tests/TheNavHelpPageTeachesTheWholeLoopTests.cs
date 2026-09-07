@@ -36,22 +36,9 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class TheNavHelpPageTeachesTheWholeLoopTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     private static string HelpPage() => Source("Pages", "HelpNav.razor");
 

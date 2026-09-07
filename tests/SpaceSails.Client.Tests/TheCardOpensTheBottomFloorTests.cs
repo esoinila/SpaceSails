@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -23,22 +23,9 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheCardOpensTheBottomFloorTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     private static string Between(string text, string from, string to)
     {
@@ -153,8 +140,7 @@ public sealed class TheCardOpensTheBottomFloorTests
         Assert.True(panel.Contains("the gate will read it", StringComparison.Ordinal),
             "the gated row never names what the held card will do (#689).");
 
-        string css = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
         Assert.True(css.Contains(".lift-stop-card", StringComparison.Ordinal),
             "the card's title has no style of its own on the button — an institutional string in a nowrap " +
             "air cell is a row that overflows its panel (#689).");

@@ -42,35 +42,36 @@ public sealed class SeatsAreDrawnTests
 
     private static SurfaceLayout.Field Field => MoonSurface.ExpeditionField();
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        File.ReadAllText(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
-    /// <summary>#870 · The deck view is six partials by subject now, so "the pen" a guard reads over is all
+    /// <summary>#1164 · The Hive floor's source — ALL of it, as a glob rather than a written list.
+    /// <c>HiveInterior.FloorDeck</c> was 31 <c>// ── banner ──</c> sections inside one 1,106-line method
+    /// and is now one named pass per section across several partials (#251), so the text this guard has
+    /// always read over is spread across <c>HiveInterior*.cs</c>. Concatenated rather than narrowed to one
+    /// part on purpose: claims here are <c>DoesNotContain</c> over the WHOLE subject, and pointing one at a
+    /// single partial would quietly stop it looking at most of the floor. Ordinal order, so the read is the
+    /// same on every machine.</summary>
+    private static string Hive() =>
+        string.Concat(Directory
+            .EnumerateFiles(
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering"),
+                "HiveInterior*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
+
+    /// <summary>#870 · The deck view is ten partials by subject now, so "the pen" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split. Concatenated rather than
     /// narrowed to one part on purpose: the claims below are <c>DoesNotContain</c> over the WHOLE pen, and
     /// pointing them at a single partial would be a silent weakening.</summary>
     private static string DeckViewSource() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Rendering"), "DeckView*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering"), "DeckView*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
     private static string Doc(string name) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "docs", name));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "docs", name));
 
     // ── THE PEN THAT REMEMBERS ────────────────────────────────────────────────────────────────────────
 
@@ -530,14 +531,19 @@ public sealed class SeatsAreDrawnTests
 
         // …and the room that owns the answers is the one that fills them in — off the SAME frozen watch the
         // [E] press asks, which is #709's law and the reason a drawn room and a pressed room are one room.
-        string hive = Source("Rendering", "HiveInterior.cs");
+        string hive = Hive();
         Assert.Contains("TheStools.Taken(bodyId, level, s, canteenWatch)", hive, StringComparison.Ordinal);
         // #731 · …and WHO HAS ALREADY STOOD UP AND WALKED OFF rides down in the same call. A regular
         // crossing the hall on real legs must not ALSO be drawn in the chair they left, and the one place
         // that can be made true is the one function that answers who is sitting where. The pen learns
         // nothing by it: it is still handed `top.Taken` and still only decides which glyph that is.
+        // #731 (B1 rota) · …AND WHO HAS WALKED IN OFF THE ONCOMING ROTA rides down beside them, for the
+        // mirror reason. The room fills as well as empties now, and a body the player watched cross the floor
+        // and sit down has to be drawn in that chair by the SAME one function — the two halves of the churn
+        // travel together in one call, or the drawn room and the pressed room part company over one chair.
         Assert.Contains(
-            "CanteenRegulars.Tables(bodyId, level, a, canteenWatch, stoodUp)", hive, StringComparison.Ordinal);
+            "CanteenRegulars.Tables(bodyId, level, a, canteenWatch, stoodUp, cameIn)",
+            hive, StringComparison.Ordinal);
         Assert.Contains("top.Seats, top.Taken, top.Talking, top.Heads", hive, StringComparison.Ordinal);
         Assert.Contains("counter.StoolRow", hive, StringComparison.Ordinal);
 

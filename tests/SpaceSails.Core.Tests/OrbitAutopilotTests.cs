@@ -46,7 +46,7 @@ public class OrbitAutopilotTests
     [Fact]
     public void Autopilot_DoesNothing_BeyondCaptureRange()
     {
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         CelestialBody earth = ephemeris.Bodies.First(b => b.Id == "earth");
         CelestialBody sun = ephemeris.Bodies.First(b => b.Id == "sun");
         double hill = OrbitRule.HillRadius(earth, sun.Mu);
@@ -65,7 +65,7 @@ public class OrbitAutopilotTests
         // The owner's actual failure: got within map-visible range of the planet but far too
         // fast and not aimed at the needle. Armed autopilot must take it from here — approach
         // burn(s), tidal trims, and an insertion deep enough inside the Hill sphere to hold.
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var simulator = new Simulator(ephemeris, timeStepSeconds: 60);
         CelestialBody earth = ephemeris.Bodies.First(b => b.Id == "earth");
         CelestialBody sun = ephemeris.Bodies.First(b => b.Id == "sun");
@@ -139,7 +139,7 @@ public class OrbitAutopilotTests
         // A straight fall aimed at Saturn's CENTER gravity-focuses into the disc (the bug). The
         // safe approach offsets the aim by the impact parameter that keeps the ballistic periapsis
         // at ~2 body radii — proven here by computing the two-body periapsis of the post-burn state.
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         CelestialBody saturn = ephemeris.Bodies.First(b => b.Id == "saturn");
         Vector2d saturnPos = ephemeris.Position("saturn", 0);
         Vector2d saturnVel = (ephemeris.Position("saturn", 1.0) - ephemeris.Position("saturn", -1.0)) / 2.0;
@@ -167,7 +167,7 @@ public class OrbitAutopilotTests
         // Enceladus (the owner's haven) sits ~4 Saturn-radii out. Approaching from the far side of
         // Saturn, a straight aim at Enceladus threads the planet. The safe approach heads for a
         // tangent that keeps Saturn clear — the heading's perpendicular miss of Saturn is ≥ safe R.
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         CelestialBody saturn = ephemeris.Bodies.First(b => b.Id == "saturn");
         Vector2d saturnPos = ephemeris.Position("saturn", 0);
         Vector2d saturnVel = (ephemeris.Position("saturn", 1.0) - ephemeris.Position("saturn", -1.0)) / 2.0;
@@ -208,7 +208,7 @@ public class OrbitAutopilotTests
     {
         // End to end: armed autopilot for Titan, started on the far side of Saturn. The approach
         // must round Saturn (never inside its body radius) and still park at Titan.
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var simulator = new Simulator(ephemeris, timeStepSeconds: 60);
         CelestialBody saturn = ephemeris.Bodies.First(b => b.Id == "saturn");
         CelestialBody titan = ephemeris.Bodies.First(b => b.Id == "titan");
@@ -260,7 +260,7 @@ public class OrbitAutopilotTests
     {
         // The planet case with the safe (b-plane-offset) approach: it must still capture Earth AND
         // never bring the ship below Earth's surface before the insertion fires.
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var simulator = new Simulator(ephemeris, timeStepSeconds: 60);
         CelestialBody earth = ephemeris.Bodies.First(b => b.Id == "earth");
         CelestialBody sun = ephemeris.Bodies.First(b => b.Id == "sun");
@@ -310,7 +310,7 @@ public class OrbitAutopilotTests
         // the approach periapsis must fall BELOW the insertion gate (so the ballistic fall crosses
         // it), the insert window must sit above the surface floor, and a circular orbit parked at
         // the gate must be bound, clear of the surface, and inside the tide-stable half-Hill.
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var bodies = ephemeris.Bodies.ToDictionary(b => b.Id);
 
         int checked_ = 0;
@@ -366,7 +366,7 @@ public class OrbitAutopilotTests
         // burned fuel forever without capturing. Mirrors the Titan e2e (#130) but on Enceladus, and
         // additionally counts approach burns: capture must happen with a BOUNDED number of them
         // (the fuel-waste guard, made testable).
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var simulator = new Simulator(ephemeris, timeStepSeconds: 60);
         CelestialBody saturn = ephemeris.Bodies.First(b => b.Id == "saturn");
         CelestialBody enceladus = ephemeris.Bodies.First(b => b.Id == "enceladus");

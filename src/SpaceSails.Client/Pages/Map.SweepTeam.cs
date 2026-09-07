@@ -23,7 +23,7 @@ public sealed partial class Map
 {
     /// <summary>One sweeper, walking. Mutable and client-side for the same reason the Reevers are: the rules are
     /// pure in Core and the list is the client's business.</summary>
-    private sealed class Sweeper
+    public sealed class Sweeper
     {
         public required string Callsign { get; init; }
 
@@ -187,7 +187,14 @@ public sealed partial class Map
             s.StateSeconds += dt;
 
             InspectionTeam.Member member = new(s.Callsign, s.X, s.Y, s.Facing, s.State, s.StateSeconds);
-            bool seesCaptain = !CaptainBeyondReach && InspectionTeam.Sees(member, _avatarX, _avatarY, sight);
+
+            // #537 slice 3 · WHAT THIS SWEEPER MAKES OF THE CAPTAIN. On a hull with no void this is exactly
+            // the sighting test it replaced — one call to InspectionTeam.Sees and nothing else. With a void
+            // cut into her it also asks the two questions a plate raises: did this one watch it close, and
+            // is the cut round it still bright. Being SEEN outranks both, so no arrangement of hiding state
+            // can make a visible captain invisible (HullStowage.WhatGivesYouAway asks it first).
+            HullStowage.Tell tell = WhatGivesTheStowawayAway(member, sight);
+            bool seesCaptain = !CaptainBeyondReach && HullStowage.Caught(tell);
 
             // THE PACK OUTRANKS THE CAPTAIN whenever it is actually there. Owner: "It might be sweet if they
             // fought off some reevers etc while the pirates hide." A sweeper busy with an Old One is a sweeper
@@ -228,6 +235,11 @@ public sealed partial class Map
                     s.LastSeenX = _avatarX;
                     s.LastSeenY = _avatarY;
                     EnterState(s, InspectionTeam.Awareness.Challenging);
+                    // #537 slice 3 · WHAT THEY SAW, before what they say. A captain taken out of a hole he
+                    // thought was safe is owed the reason, and the reason is a fact about the world — a lamp
+                    // that was on the plate as it closed, or a cut still warm enough to read.
+                    ShowPulseMessage(HullStowage.TellLine(tell, s.Callsign));
+                    LogAutopilotEvent(HullStowage.TellLine(tell, s.Callsign));
                     ShowPulseMessage(InspectionTeam.ChallengeLine(s.Callsign));
                     LogAutopilotEvent(InspectionTeam.ChallengeLine(s.Callsign));
                     RendererInterop.PlayCue("alarm");
@@ -358,7 +370,13 @@ public sealed partial class Map
             }
         }
 
-        double gx = WreckLayout.ShuttleLockX - Egress.DoorStandoffDu - (rank * InspectionTeam.FileSpacingDu);
+        // #731 (airlock egress) · The sum is Core's now — `Egress.PlaceInTheFile` — because the repo crew
+        // filing home to their own boat queues at a hatch the same way, and two copies of "a body-width
+        // behind the one in front" is the mirrored-constant bug with somebody standing in it. The numbers
+        // are unchanged: the head one standoff off the lock, everybody else a spacing further back down
+        // the spine (the file runs in -x, which is the way they came).
+        (double gx, _) = Egress.PlaceInTheFile(
+            WreckLayout.ShuttleLockX, 0, -1, 0, rank, InspectionTeam.FileSpacingDu);
         if (s.Walk is null || System.Math.Abs(s.Walk.For.X - gx) > 1e-9)
         {
             s.Walk = OnFoot(
@@ -603,7 +621,12 @@ public sealed partial class Map
         if (target.HitsTaken >= SentryBot.RoundsPerReever * 2)
         {
             _reevers.Remove(target);
-            _surface?.Husks.Add((target.X, target.Y));
+            if (_surface is { } ex)
+            {
+                // #316 · Through the one writer, exactly as the captain's own sentries go — a professional's
+                // kill leaves the same evidence in the regolith as an amateur's.
+                AHuskFallsAt(ex, target.X, target.Y);
+            }
         }
     }
 

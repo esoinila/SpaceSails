@@ -28,22 +28,12 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheArrivalHoldsItsLineForTheCardTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
+    /// <summary>#251 · Through <see cref="MapMarkup"/> rather than straight off disk, because the Hive
+    /// surface is four partials now and this guard slices a region out of it. Every other path this helper
+    /// is handed still comes back as <c>File.ReadAllText</c>.</summary>
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     private static string Between(string text, string from, string to)
     {
@@ -156,7 +146,7 @@ public sealed class TheArrivalHoldsItsLineForTheCardTests
             "CloseStoryCard does not free the held sayings (#768).");
 
         foreach (string file in Directory.EnumerateFiles(
-                     Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "*.cs"))
+                     Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "*.cs"))
         {
             foreach (string field in new[] { "_viewObject", "_storyCard" })
             {
@@ -180,7 +170,7 @@ public sealed class TheArrivalHoldsItsLineForTheCardTests
         // covered by this guard the moment it is written.
         var holders = new List<string>();
         foreach (string file in Directory.EnumerateFiles(
-                     Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "*.cs"))
+                     Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "*.cs"))
         {
             string src = File.ReadAllText(file);
 

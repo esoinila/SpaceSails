@@ -266,13 +266,25 @@ public partial class Map
         }
         RecomputeCargoTotals();
 
+        // #233 · …and what the captain is carrying ON HIM can go in the hole too, if it is the one thing in
+        // the game that is evidence rather than goods. Added AFTER the hold has been settled, because the
+        // chip was never in the hold and HoldAfterBurying must not be asked to subtract it from anything;
+        // added BEFORE the mint, because the manifest that goes into the ground is the one that comes back
+        // out of it. Nothing is said — see Map.Blackmail.
+        TheChipGoesInTheChest(ex.PendingCargo);
+
         int standing = WatchdogLevelAt(ex.Stop.Body.Id);
         int presence = Math.Max(standing, roll.Reevers);
         // #650 · The chest goes into THIS ground, not "somewhere on this moon": the site the shuttle set down
         // at rides the cache, so the ✗ is drawn — and dug — only here, and the map card names the place.
+        // #455 · THE CARRY, RECORDED. How far the captain walked this chest out from the pad is the term the
+        // whole issue turns on ("the same distance that makes the walk dangerous is what makes the cache
+        // safe"), and Core measures it — the client hands over the spot, never a distance of its own
+        // devising, because a geometry literal on this side of the wall is this repo's bug class 1.
         TreasureCache cache = _caches.Bury(
             ex.Stop.Body.Id, coin, ex.PendingCargo, SimTime, "you", playerOwned: true, presence, digX, digY,
-            siteIndex: ex.Site.Index);
+            siteIndex: ex.Site.Index,
+            buried: true, padDistance: CacheSafety.PadDistanceOf(digX, digY));
         SeedDiscoveryWatch();
 
         ex.Buried = true;
@@ -282,7 +294,62 @@ public partial class Map
         // #380 item 6 (owner ruling 2026-07-19: "new players are left mystified") — the discovery risk was
         // taught only at the moment of loss. One line at bury time: rivals may dig it up over the coming
         // days, and Reever-haunted ground keeps it safer.
-        ShowPulseMessage($"⛏ Chest buried — {cache.ContentsLine()} off the books. The ✗ marks this spot. Rivals may dig it up over the coming days; the more Reevers haunt this ground, the safer it stays. Now get back to the shuttle.");
+        //
+        // #455 · …and now that sentence has real numbers behind it. The rung read is the SAME call the
+        // return-trip roll makes (TreasureCache.Safety → CacheSafety.Read), so the promise made here is
+        // literally the threshold the dice will be compared against while the captain is away.
+        //
+        // #316 law 3 · WHICH MEANS IT HAS TO KNOW ABOUT THE MESS HE MADE GETTING HERE. The watch prices this
+        // chest against the husks lying on this ground; a bury line that read the chest alone would quote a
+        // safe he does not have — this repo's third named bug class, the sentence and the sim disagreeing —
+        // and would quote it in the one case the captain most needs told: the loud stand he just made.
+        ShowPulseMessage($"⛏ Chest buried — {cache.ContentsLine()} off the books. The ✗ marks this spot. {cache.SafetyWith(TheFightThisGroundCarries(cache)).Sentence} Rivals may dig it up over the coming days; the more Reevers haunt this ground, the safer it stays. Now get back to the shuttle.");
+    }
+
+    // ── #455 rule 2 · A CHEST YOU RAN AWAY FROM IS STILL A CHEST ──────────────────────────────────────
+    //
+    // Owner: "buried beats dropped, BY A LOT … on a return trip the buried one should usually still be
+    // there; the dropped one gets a harder roll — it is lying in the open where anyone can see it."
+    //
+    // Before this, a dropped chest was not a worse cache, it was not a cache at all: the pile was excursion-
+    // scoped and evaporated at liftoff with the coin and cargo still on the ship's books (the story-QA audit
+    // on this issue called it "a free sprint", and #648 at least made the liftoff line say so out loud).
+    // That left the whole "dropped" half of the safety oracle unreachable in play — a rule with no world
+    // behind it. So a chest left on the regolith now goes into the ledger EXACTLY as a bury does, with the
+    // same deductions and the same map card, and one difference: it is flagged as lying in the open, which
+    // is what buys it the harder roll for as long as it stays there.
+    //
+    // Returns the minted cache, or null when there was nothing left behind (or nothing in the chest).
+    private TreasureCache? LeaveTheDroppedChestInTheOpen(SurfaceExcursion ex)
+    {
+        if (!ex.ChestDropped || (ex.PendingCoin <= 0 && ex.PendingCargo.Count == 0))
+        {
+            return null;
+        }
+
+        int coin = Math.Clamp(ex.PendingCoin, 0, _credits);
+        _credits -= coin;
+
+        // The same law a bury obeys (ShuttleExcursion.HoldAfterBurying): only what is IN THE CHEST leaves
+        // the books — the hold went on living all the way down and the rest of it comes home.
+        var left = ShuttleExcursion.HoldAfterBurying(_cargoByClass, ex.PendingCargo);
+        _cargoByClass.Clear();
+        foreach (KeyValuePair<string, int> line in left)
+        {
+            _cargoByClass[line.Key] = line.Value;
+        }
+        RecomputeCargoTotals();
+
+        TreasureCache cache = _caches.Bury(
+            ex.Stop.Body.Id, coin, ex.PendingCargo, SimTime, "you", playerOwned: true,
+            reeverLevel: WatchdogLevelAt(ex.Stop.Body.Id),
+            digX: ex.DropX, digY: ex.DropY, siteIndex: ex.Site.Index,
+            // The two terms that make this the harder roll: no shovel went in, and no carry is credited —
+            // the chest was not placed anywhere, it fell where the captain's legs gave out.
+            buried: false, padDistance: CacheSafety.PadDistanceOf(ex.DropX, ex.DropY));
+        SeedDiscoveryWatch();
+        RequestVaultSave();
+        return cache;
     }
 
     // The beach-comber probe resolves (the fishing expedition's payoff, or its honest shrug). The D100
@@ -384,7 +451,16 @@ public partial class Map
         }
         RebuildSurfaceDeck();
         RendererInterop.PlayCue("alarm");
-        ShowPulseMessage("🪤 Chest dropped! Full sprint now — come back for it when the ground's clear.");
+        // #455 rule 3 · TELL HIM AT COMMIT TIME. A drop is a real hiding place now — lift off without it and
+        // it stays in the ground as an OPEN cache (Map.Surface, the liftoff seam) — so the same oracle that
+        // prices a bury prices this, read here for the chest as it would be LEFT: in the open, on this
+        // ground. He is deciding whether to come back for it, and this is the number that decides it.
+        // #316 law 3 · …priced against the fight this ground is already carrying, exactly as the bury line
+        // is. A chest abandoned in the middle of a firefight is the loudest hiding place in the game.
+        CacheSafetyRead read = CacheSafety.Read(
+            CacheSafety.PadDistanceOf(_avatarX, _avatarY), buried: false, WatchdogLevelAt(ex.Stop.Body.Id),
+            TheFightThisGroundCarries(ex));
+        ShowPulseMessage($"🪤 Chest dropped! {read.Sentence} Full sprint now — come back for it when the ground's clear.");
     }
 
     private void TryRecoverDroppedChest()

@@ -309,6 +309,42 @@ either way decides every lock in the game.
 - **Behind a door somebody shut is a room.** Bare floor, bare walls, bolt holes where shelving was taken
   out. Nothing that comes open ever explains the building (§13.8).
 
+5.8 **Nothing comes between the captain and the shuttle** (#326). Owner, live 2026-07-18: *"I think the
+securibots most important job is not let anything come between me and the shuttle :-D"*, and the second half
+of it the same day: *"I think the bot at surface should act a bit like a body guard. Protect the path to the
+ship at about half way so there is always a way to retreat back to safety (until bullets run out) :-D"*
+
+- **Target priority is the LINE, not the nearest.** A deployed bot shoots whatever is standing in the
+  corridor between the captain and the way home BEFORE whatever shambles closest to itself; nearest only
+  decides between two of the same class. It is the counter to the pack's own flanking bias (`EncircleBias`),
+  which aims them a little toward the way out — so the Old Ones that will actually corner you are exactly
+  the ones not walking at the gun, and a turret spends its 99 digits on the wrong ones. `SentryDoctrine.Pick`,
+  pure and deterministic; hand it no line and it picks the nearest visible target, bit for bit what #314
+  shipped.
+- **The corridor is 11 du to a side — half the bot's own arc** (`SentryBot.RangeDeckUnits / 2`). It has to be
+  derived from the arc, because that is the only measure of what this machine can do about a threat, and it
+  has to be strictly INSIDE it, or "threatens the line" becomes a synonym for "is in range" and the priority
+  selects everything. Half is also the last width at which the thing is still guarding a *road*: covered
+  length along the line is `2·√(R² − w²)`, so `w = R/2` keeps 87 % of the reach pointed down the corridor.
+- **Two stances, chosen at the press, in the owner's own two phrases.** `T` is **deploy here** — the #314
+  post, still the right object for guarding a hole in the ground. `⇧T` is **hold my line home** — the bot
+  becomes a bodyguard, walks to the MIDDLE of the captain→tube line, and keeps walking there as he moves.
+  Both are named on the surface plate whenever a bot rides the sling. The modifier is read off the event and
+  not off the letter's case, because a capital `T` arrives from a shifted press and from a caps-locked one
+  alike.
+- **No modal.** A question raised between a captain and the bot he needs on the ground, on a real-time field
+  with a pack closing, is the one shape this verb must never take.
+- **Walls respected, no formation AI.** The post is nudged along the line to the nearest legal point when the
+  middle of it is inside stone (sounded in quarter-bodies, bounded at about two arcs either way), and the
+  walk there is #324's own bump-and-slide at the captain's own pace — an escort that cannot keep up with the
+  man it is escorting is not an escort. Two bots in the escort stance both walk at the same middle and shove
+  past each other; that is a layered corridor by accident, which is all it was asked to be.
+- **The countdown IS the retreat timer.** Same magazine law for both stances, and at 00 the escort stops
+  where it stands. What is left on the retreat line is a bot with a frozen counter — the mark #316 already
+  reads and the write-off `SentryBot.AbandonLedgerLine` already prints. Nothing new was minted for it.
+- **Underground there is no line.** The way out down there is a lift on another map, so the doctrine has no
+  corridor to hold: an escort holds where it stands and the pick falls back to nearest.
+
 ## 6 · What the ship does NOT do down here
 
 **The captain is in a suit on a moon. The hull is docked and empty somewhere above.**
@@ -1362,7 +1398,9 @@ those honest criminal scientists are hard to recruit :-D"*
   toward. This is also how #608's hardest requirement is met without a map or a tutorial: *a refuge you
   discover after you needed it is a cruelty*, so the instrument the captain already watches has it on it.
 - **The dead-air card no longer says "there are no shelters down here".** It said so honestly when it was
-  written (#609) and it would now be the most dangerous sentence in the game.
+  written (#609) and it would now be the most dangerous sentence in the game. It ends instead on the one
+  sentence that is true of every band: *"The plan marks a refuge on this band. Whether it still holds is not
+  on the plan."*
 
 *(Enforced: `TheRefugesUndergroundTests` — one on every airless floor and none on a pressurised one, over
 1 100 floors of 100 sites; never beside the lift; never also a room to search; never emptying a floor or
@@ -1373,6 +1411,70 @@ is the standing lesson that a reachability test is only as honest as its endpoin
 `TheRefugeIsAWalkFromTheLiftAndNotAStepFromIt` measures the detour over the real corridors rather than in a
 straight line. Every one of these was watched go **red** on a deliberately broken generator before it
 shipped.)*
+
+13.12a **The room is a fact; the seal is a story — and it almost never fails from age** (#608 · #1149).
+Owner ruling 2026-09-06, reversing the seeded split #1087 shipped: *"emergency air stations are built as part
+of standard safety rules — like bomb shelters in every big enough house in Finland, fire extinguishers and
+cabin evacuation cards on a ship — built and monitored to exist by inspectors ... On a failed floor the
+emergency station most probably still works decades or centuries after everything else stopped — robustness
+and reliability were the metrics it was built to ... They almost never fail from old age; something happened,
+and we tell it."* So every airless floor still has its refuge (13.12 is untouched) and
+`UndergroundComplex.StateOfTheRefugeOn` now answers HOLDING unless something *happened* to the room. Measured
+over 816 dead floors of 100 sites:
+
+| seal | what happens at the door | share |
+| --- | --- | --- |
+| **HOLDING** | the door cycles, the rack has bottles, the tank fills | 80.9 % |
+| **EMPTY** | the door cycles, the rack was drawn down by a visitor, the cracker gives it back | 16.3 % |
+| **FAILED** | the seal went, and not from age. On the plan, on the tracker, and dead | 2.8 % |
+
+- **`DepartmentsThatKeptTheLine` is retired, and the reason is the ruling.** The old law — a refuge holds if
+  and only if its department could still get a maintenance line approved — was *our* mechanic, not the
+  world's. A refuge is not a service a department buys; it is a spec an inspectorate makes the owners pay for,
+  written by people who assumed nobody would be maintaining it on the day it mattered. A fire extinguisher in
+  an abandoned office block still discharges. (The sweep also found that half the old law was decoration:
+  a branch cycles eight plates on a period of eight while pressure runs on a period of four, so
+  **ADMINISTRATION and ARCHIVE are the lobby plates and never carry a refuge at all** — the old
+  "ADMINISTRATION floors keep their air" named a department with no refuge in it on any floor of any site.)
+- **EMPTY is a footprint, not decay** (#573's reservoir idiom). Somebody drew this rack right down before the
+  captain got to it, so the rack starts at nothing and the cracker refills it at `ProductionPerSecond` while
+  the captain stands there. It costs **time** and never buys **range** — which is the same sentence the old
+  EMPTY told, arriving now off a machine that is running rather than off one that is dead. The plate at range
+  still reads `REFUGE · DRY`, and pressing [E] reads the gauge (the trickle line) rather than refusing.
+- **FAILED is an event.** At most one per site, on 23 sites in 100, and **never the first refuge a captain can
+  reach on that ground** — "first" read off the order the plan already has (`FloorsOf`), because a captain's
+  first refuge is where they learn what a refuge IS and a first one that will not cycle teaches the opposite
+  of the truth. Arriving raises `StoryBeats.Beat.RefugeFailed`, once per site, with `art/refuge-failed.jpg`
+  and one line: *"The rack is full; nobody ever drew on it. The seal was cut from the inside, cleanly, and
+  closed again from the outside. It did not fail from age."* The card never says what came through.
+- **The inspection tag, on every refuge** — the covert organisation's paradox on paper. Owner, in the same
+  ruling: a secret lab's eternal struggle is *"not to asphyxiate from unmaintained safety equipment, to keep
+  secrets, to trust employees to bend the law only as much as the company approves, while avoiding traceable
+  bureaucracy that could prove complicity if leaked."* The tag is complete, current and unsigned, and it says
+  so itself as a house rule: *"Refuge inspected. Rack full, seals within tolerance. No signature — none
+  required."* — twice, stamped a year apart off the site's own clock (2270–2319, the era `ShipHistory`
+  already keeps). On the one that failed there is a third entry, **undated**: *"Refuge inspected. Rack full.
+  Seal replaced."* It is on every refuge on purpose: a tag only on the interesting room would be the game
+  pointing at the interesting room. It rides the existing paper seam
+  (`PaperHeads.Paper.InspectionTag`) on the reserved room index `RefugeTagRoom` = −1, because a refuge is not
+  one of the floor's rooms — `CarveRefuges` takes it out of the list — and a negative index is one no floor
+  can ever hold.
+- **The lift panel row still says `REFUGE` where the plan carries one, and never which state it is in.** The
+  plan is a drawing made when the building was new; finding out is the walk.
+- **A failed refuge still paints on the tracker, and reads as failed.** Owner: *"a refuge whose seal has failed
+  must still paint, and must read as failed."* Grey, hollow and not breathing; the plate over the door loses
+  the word AIR and takes the dead ink the plate by the lift already uses (§13.13's tone 2).
+
+*(Enforced: `TheRefugesUndergroundTests` pins the three shares with a ceiling as well as a floor on each,
+proves HOLDING is the default on all six branch plates a refuge can wear and in the head office and the band
+nobody listed, proves at most one FAILED per site and never the first one reached, proves the tag's two
+entries verbatim on the site's own clock and the third entry undated, proves the carved room carries the law's
+own answer, and proves no drawable field of a panel row differs between the three seals. `TheSealOnTheRefuge‐
+Tests` stands the shipping component in the generator's own refuge on one floor per seal and drives
+`StepSuitAir`: the maintained rack fills a tank and is spent doing it, the drawn-down one gives back exactly
+what the cracker makes and no more, a failed one spends tank and raises the card once with its painting, a
+working one raises nothing, and every refuge hands over its tag once with the head the sleeve reads it by.
+Every one of them was watched go **red** on a deliberately broken build.)*
 
 13.13 **The plate by the lift says the depth, the department, and whether you can breathe** (#612) — three
 lines, one eye-line, on the wall you face when the doors open. The atmosphere line is `SuitAir.PlateLine` off
@@ -1920,10 +2022,42 @@ the unlisted band's shaft head — correct for a building with ONE gap in it, an
 rock the day there were two. `NearestFloorTo` is the building's own answer now. This is §13.15's second cause
 for the third time.
 
-**Two things this v1 deliberately does NOT build**, both filed and neither snuck in: the **disclosure clock**
-(what a captain is shown riding the slow world-side windows, so what you find is a fact about *when you went*)
-and any **inhabitant** content. §13.19's judgement call applies again — a feature that ships its own second
-half unasked is a feature nobody reviewed.
+**And the clock, which is the other half of v1 and shipped after the band.** #677's second mechanic in the
+issue's own words: *what a captain is shown rides slow world-side windows, not search effort — what you find
+is a fact about **when you went**; later windows may show more; it is never a progress bar and never
+announced.* `DisclosureClock` is that sentence and nothing else. It starts on the seam beat, once per ground,
+and it reads in **the monolith's own foot-offering windows** (`Monolith.EpochAt`, asked and never re-derived —
+the issue names that clock by name, and two copies of a window length is the mirrored-constant bug this
+document keeps a table of). The register — which grounds this thread has been past the seam of, and the window
+each was opened in — rides the vault beside `SecretLabsFound`, because a clock that forgot across a reload
+would reset every threshold written against it and nothing on screen would ever say so.
+
+> **Five laws, each guarded and each watched go red.** (1) *One clock*: the window is the monolith's.
+> (2) *Only the band nobody dug starts it* — not §13.7's band, which is human all the way down: a captain who
+> reaches one has found somebody's SECRET, not somebody's SCHEDULE. (3) *Never announced, and the proof is
+> that there is nothing to say*: the type publishes **no prose at all** — no label, no line, no percentage,
+> not one string — which is the never-announced law in its strongest form and settles §8 for free, because a
+> type with no strings cannot contain the reserved word. (4) *Not farmable*: nothing in any signature is
+> effort, and a hundred rides inside one window read what one ride reads. (5) *Never runs backwards*: the
+> register keeps the FIRST crossing and the reading is monotone and floored at zero, because *later windows
+> may show more* is a promise about direction.
+
+> **What it deliberately is not: a stage, a level, or a bar.** The obvious shape is a small capped integer,
+> and it was written that way first and taken out. A cap needs a cadence and a ceiling, and neither is
+> derivable from anything in the world — they would be two invented facts about the schedule of a decision no
+> card may state, authored by an implementer in code where no canon review looks. And a capped counter is a
+> progress bar with the drawing left off. So what is published is the raw reading — **how many world windows
+> since this ground was opened** — and every beat that reads it picks its own threshold and writes that
+> threshold's reason beside its own words.
+
+**Nothing reads the clock yet, and that is the sequencing every downstream issue asked for in the same
+words**: #1063's burial needs *"a place worth burying"*, #1068's watcher channels wait for *"#677 giving the
+thresholds something to guard"*, and #1074's stop orders wait for *"#677 giving the world a threshold worth
+enforcing"*. The threshold is here; the consequences are theirs.
+
+**The one thing this v1 still deliberately does NOT build**, filed and not snuck in: any **inhabitant**
+content. §13.19's judgement call applies again — a feature that ships its own second half unasked is a
+feature nobody reviewed.
 
 *(Enforced. Core: `TheFoundBandTests` — the rate measured off a 4 000-site sweep and proved strictly rarer
 than §13.7's; the whole band of nothing, with every floor of it proved absent, unauthorisable and unofferable;
@@ -1951,6 +2085,25 @@ no card — the halls are unreachable`; the find id forgetting its prefix → th
 pallet's photograph; the reserved word transcribed into the empty line → `Found: "monolith" in: …`; and the
 wall flag plumbed and honoured by nobody → `secret-lab-site-halls-116 B17: 120 of 120 wall(s) drawn in the
 facility's material`, with `0 seamless stroke(s) drawn for 120 seamless wall(s)`.)*
+
+*(**And the clock is enforced too.** Core: `TheDisclosureClockTests` — the window proved to be the monolith's
+across twelve boundaries; the clock proved to start on every gallery of sixty ground-truth sites (240 gallery
+floors, on `probe-moon-116/170/176/245/421/459/641/704…` and the cheat rock) **and on nothing else**, with
+the vacuity twin sweeping 400 sites that have no halls and asking 2 400-odd floors for a clock none of them
+starts; the never-announced law swept by reflection over the whole public surface with a coverage floor under
+it; the not-farmable law driven by a hundred re-entries across three windows reading exactly what one reading
+reads; the monotone law walked over forty windows; null-is-not-zero; and one row per ground carrying that
+ground's own window. `VaultSerializerTests` round-trips the register with two grounds opened in two different
+windows, and `EveryVaultSectionReachesTheFileTests` reaches the new field by reflection like every other. —
+Watched go **RED**, eight reverts: the window typed as its own copy and the monolith re-timed → the sweep
+fails at the first boundary; `OpensOn` loosened to any deep floor → the no-halls sweep fails on the first
+ordinary rock; `OpensOn` to `false` → six guards fail together, naming zero galleries; a label added to the
+type → `the disclosure clock is never announced, so it publishes no prose. Found: field Label`; `Note` taking
+the latest crossing → the hundred re-entries read 0 where they should read 3; the zero floor removed from the
+reading → the pre-opening half goes negative; a never-opened ground reading 0 instead of null; and `Note`
+allocating unconditionally → the save is asked for on every ride in a familiar building. And the vault
+assertion proved non-vacuous by dropping the register from the fixture → `Assert.Equal() Failure: Collections
+differ`.)*
 
 13.21 **There are people in the bar, they are all outsiders, and they stop at B1** (#709, v1 of the social
 layer).
@@ -2511,6 +2664,215 @@ turns away, so the gravel and everything behind it stay the bench figure's.
 
 **Reaching it.** `/map?goodscar=1` — B1, standing at the second car. Then walk to the other one and see how
 far that is.
+
+13.30 **A ground you opened gets FILLED IN while you are away, and the neighbours do not remember doing it**
+(#1063, slice 1 — the disclosure clock's first customer).
+
+> Owner, 2026-09-01: *"suppose the people them selves were told really convincingly that they need to hide the
+> truth… all the people suddenly were told and obeyed like automatons them selves hiding the truth and then
+> just forgot they did it… all that mud."* And the register: *"the cheerful… of course we do a ton of work to
+> raise our streets for no apparent purpose is the cherry on the cake."*
+
+§13.20 gave the halls a clock and deliberately gave it no readers: *"every beat that reads it chooses its own
+threshold and writes that threshold's reason down beside its own words."* This is the first beat to read it,
+and these are those words.
+
+**THE THRESHOLD.** One whole world window since the ground was opened — `Burial.WindowsBeforeFilling`, read
+off `DisclosureClock.WindowsSince` and never re-derived, so the window stays the monolith's own. **The
+reason:** filling, flooring and resurfacing a set of galleries is a SHIFT of work, and a shift is the shortest
+thing the world's own clock measures; a burial inside the window a captain opened the ground in would be a
+crew already standing there with the trucks running, which is a fact about THEM — and #672's Scully law is
+spent the moment one act is only explicable by them. **The second condition:** the captain is not on that
+body. The neighbours do not fill a hall while he is standing in it; a crew that walked past him is a thing
+that happened TO him and therefore a thing he could describe, and a ground that closed under a captain eleven
+floors down would be a death by book-keeping.
+
+**Evaluated once, in one place**, in the descent (`Map.Burial.cs`, called from `BeginSurfaceExcursion` after
+`AdvanceShuttleClock`): after the crossing's time is spent and before one wall of the arriving ground is laid.
+`_surface` is null there, so "not while he is standing on it" is true **by construction** rather than by a
+check somebody has to remember — and it is also why the burial LANDS on a return: he comes back down and the
+shaft ends at the listed bottom, and nothing at any point said so.
+
+**THE ERASURE PROCEDURE, implemented as the issue writes it.**
+
+- **(1) remove the element** and **(2) remove its marks** are **one gate**. `UndergroundComplex.HasFoundBand`
+  asks `Burial.IsFilled` first, and every public question the game has about the halls already goes through
+  it: `IsFound`, `FoundKeyRoomFor`, `TrueDepthOf`, `FloorsOf`, `NextShaftBelow` (through `SiteHasBand`),
+  `DeclaresDarkness`, `RoomScaleOn`, and `DisclosureClock.OpensOn`, which delegates to `IsFound` by design. So
+  the shaft ends at the listed bottom, the found-key card room stops generating, the hall-record find id stops
+  being minted, the floor stops declaring darkness and the chambers stop growing — all of it from one line.
+  The alternative was thirty callers each taught what a burial is, which is §13.15's second cause said thirty
+  times. **The list is guarded for COMPLETENESS by reflection**, so a predicate added tomorrow cannot quietly
+  become a way to see a filled ground's halls with every guard still green.
+- **(3) the town above keeps living.** Nothing else about the site changes. The works notice and the mason are
+  dealt out of pools that stop one short of them (`OrdinaryNotices`, `OrdinaryCast`), so a ground nobody has
+  opened pins exactly the notices it always pinned and seats exactly the people it always seated — a room that
+  changed while a captain was away would be the world saying that something happened, and the whole beat is
+  that nothing did.
+- **(4) one specimen is kept** — the set-piece the owner's research kept finding: **a short stair down to a
+  single old door, preserved for display.** On the listed bottom, a recess off the spine at the blind end
+  (`SpecimenRecessAt`, measured with `ServiceShaftAt`'s own two numbers and cut into the upper face so the
+  goods car can never be beside it), five du deep — the lift alcove's own depth, because a pocket a captain
+  could stand three abreast in is a room and a room is a thing with a purpose. Its sides are ordinary poured
+  hull; **the leaf at the back is the one segment on any listed floor in the game drawn in the third idiom**
+  (`IsSeamless`, §13.20 — no palette, no texture, heaviest stroke), and it is a door drawn shut on a wall a
+  body cannot cross, which is what a display piece that does not open IS. It carries **no plate, no sign
+  console, no card and no line**: #1063 authored no words for it, the object is the whole statement, and a
+  caption would be the one helpful sentence that kills the feature. The rag's own line is the same sentence
+  and does not know it — *"the old kerbs make a handsome course of masonry in the new wall."*
+
+**THE EVIDENCE LIFECYCLE — four authored sentences and not one more.** Every one of them is ordinary
+facilities paperwork and every one is verbatim from the issue, checked character for character.
+
+| when | where | what |
+|---|---|---|
+| **before** | the canteen board (`CanteenBoard`), while the works are on and the job is not done | *"Resurfacing of the lower galleries begins Monday. Please use the upper walks."* |
+| **during** | the maintenance ledger, room 0 of the top pressurised floor (`MaintenanceLedgerRoomFor`) | *"Sub-level access no longer required. Filled and remediated per instruction."* — **no instruction number, where the ledger cites one for everything else** |
+| **after** | the wire, once (`NewsEventKind.ArcBeatBreaks`, filed under the site's own operator) | *"The concourse reopens a full meter higher, and the drainage is much improved. The old kerbs make a handsome course of masonry in the new wall."* |
+| **if pressed** | a regular at a table in the upper canteen | *"pre-existing masonry, origin undetermined"* — and he means it, and he files it, and that is the whole testimony |
+
+The gate the notice and the mason hang on says something the game never states out loud: **the work order
+exists because the captain went down there.** A player who notices the notice was not on the board last time
+has worked out the whole feature from a piece of paper about upper walks, which is the only way it may ever be
+worked out. The mundane reading is not even strained: a site that has just had somebody go down a shaft
+nobody listed is exactly a site about to have its lower levels looked at.
+
+**LAW — THE BOOK NEVER LIES.** Nothing the burial does removes or rewrites one field-book note, one clipped
+story, one red thread or one satchel row. `IsHallRecord` is asked of the find's own ID and never re-derived
+from the world, so a rubbing carried out of a gallery is still a rubbing out of a gallery after the gallery is
+gone. Without one fixed point the player has no floor to stand the horror on: **the captain's record is the
+only witness, and it stays the only witness.** The register rides the vault
+(`ProgressSection.HallsBuried`) for the same reason — a reload that un-buried a ground would make the book
+wrong about the one thing it is guaranteed right about, and nothing on screen would ever say which.
+
+**SCULLY PROTECTION.** Every burial reads as renovation. No card explains it, no stat is published, no sensor
+returns anything, there is no art of THEM, and the word §8 reserves appears in none of it — swept, along with
+every other word that would settle which reading of §10 is true, by `TheBurialTests`.
+
+**Reaching it.** `/map?buried=1` — `?found=1`'s rock with the ground already opened a window ago, so the
+burial fires on the way down. It seeds the clock's register and nothing else: the fill itself runs through the
+ordinary `Burial.Fill` on the ordinary descent, because a cheat that wrote a filled ground straight in would
+be testing a code path the game does not have. Compare with `/map?found=1`, which is the same ground before
+the job.
+
+*(Guarded by `TheBurialTests` (Core, 13) and `TheBurialKeepsOneSpecimenTests` (Client, 2). — Watched go
+**RED**, sixteen reverts: the burial clause dropped from `HasFoundBand`; a new public `HasFoundBandAnyway`
+added to the partial → the completeness roster names it; `IsFilled` answering true for everything → the sweep
+finds zero grounds with halls; the specimen kept on the unlisted bottom; the specimen kept on a ground nobody
+buried; the recess mouth never handed to the spine's sweep → *"the recess mouth is walled over on B8"*; the
+threshold set to zero windows; the `standingOn` clause dropped → *"the ground closed under a captain standing
+on it"*; `IsHallRecord` re-derived through the world → the book lies; the reserved word planted in the rag's
+line; a full stop moved in the ledger's line; the works notice dealt out of the ordinary pool; the mason dealt
+out of the ordinary rota; the ledger's `HaulLine` arm removed; the ledger designated on the listed bottom
+where the way down already is; the leaf never drawn → *"only 0 specimen(s) were drawn"*; the leaf drawn in the
+facility's own poured ink; and the register dropped from the vault fixture.)*
+
+**What is deliberately NOT in slice 1**, and is filed rather than half-built: the **missing middle** — the
+absence in the exact shape of the thing removed, as its own note kind, with the four clue tags the research
+offers — and the **spent-once "sealed ≠ full"** empty forced seal. Both are design calls about the field book
+and about a one-shot disappointment, and neither is a ten-line addition to a seam that exists.
+
+13.31 **A door that opened yesterday does not open today, and the scope's one-shot comes back with nothing**
+(#1068, slice 1 — the disclosure clock's second customer, and two of the watchers' three manifestation
+channels).
+
+> #672's doctrine, owner-blessed 2026-09-01: *"we may show wonders, but a Scully must always be able to
+> plausibly say no. Any single watcher act must have a mundane reading that a reasonable person can hold."*
+> The three channels are **subtraction** (a door that opened yesterday doesn't; the autopilot recomputes, no
+> fault logged), **structured instrument failure** (the scope's one-shot never completes on one contact only
+> — *"the sensor law survives because the sensor's failure IS the manifestation"*), and **people who don't
+> know why** — which is §13.30's burial and is already built. This is the other two.
+
+**THE THRESHOLD, AND ITS WRITTEN REASON.** `PoliteDecline.WindowsBeforeDeclining` — one whole world window
+since the ground was opened, read off `DisclosureClock.WindowsSince` and never re-derived. It is **the
+burial's own number, on purpose: the watchers act on the schedule the neighbours do.** Never on the visit
+that opened the ground, because a door that had stopped opening by the time the captain climbed back out of
+the seam he had just crossed would be an answer to what he had just done, arriving inside the hour, from
+something that was watching him do it — a sensor return by another name, and the one thing #672 forbids
+outright. A shift later it is a maintenance decision, and a maintenance decision is a thing a reasonable
+person can hold. Second condition, the burial's again: not while the captain is on that body.
+
+**Evaluated once, in the same breath as the burial** — `Map.Decline.cs`, called at the end of
+`BuryWhatWasOpened`, not from a second hook a few lines away in the descent. It is ONE moment, and both
+events want exactly the same three things out of it: the crossing's time already spent, no excursion standing
+on the ground, and not one wall of the arriving floor laid yet. Two call sites would be two places that have
+to be kept agreeing about when a shift is.
+
+**ONE REGISTER, TWO CHANNELS.** A ground has declined or it has not, and both acts are that same declining
+read in two rooms: the door is what the captain meets standing on it, the blank pass is what he meets looking
+at it from a hundred million kilometres away. It rides the vault as `HallsDeclined` — **with the window**,
+because the door is chosen against that number and a save that dropped it would re-open the shut leaf and
+shut a different one, which is a lock that moved by itself, which is an event, which is a fact about somebody
+deciding.
+
+**CHANNEL 1 · SUBTRACTION.** One leaf leaves `FloorPlan.Doorways`; an ordinary `LockedDoor` is appended in
+its place wearing the plate the room already had; the room loses that way out of `Room.Ways`. The client
+needed no change at all — it has drawn forty of these on every floor since §13.1: leaf shut, wall behind,
+`🔒` plate. **No new sign, no fault, no card, no line.**
+
+- **It is a POST-PASS, not a flag inside the carve.** The obvious place is beside `AddRoomsAlong`'s `shut`
+  seed, and it is the wrong place: a room that never opened is a room the amenity pass, the refuge pass and
+  the room-centre pool never saw, so shutting one there moves the canteen, moves the refuge, renumbers the
+  searchable rooms and re-seeds the furniture. The captain would come back to forty differences and no way to
+  tell which one was the world declining. Guarded: `NothingBUTTheLeafChanges` compares the declined floor
+  against the very floor it was made from — same walls, same room boxes, same centres in the same order, same
+  amenities, refuges, bins and specimen.
+- **THE FLOOR IS NOT CHOSEN. It is the one floor with a door to spare** — the concourse round the park. Every
+  other listed floor is ribs of two-way chambers (a corridor leaf and a fire recess), and a chamber that lost
+  either would be a room with one way out, which breaks §13.24's own law. The concourse is the only floor
+  whose rooms have three and four ways, because a suite round the green has street doors AND a gate onto the
+  gravel. **The world only ever takes a THIRD door.** Not `Room.MeetsFireCode`, which would let a
+  bedroom-small booth off with its LAST leaf — that exemption is about how far you are from your one exit and
+  has nothing to say about somebody taking it away. *(Watched: with the clause deleted, `'🚻 CUBICLE 3 · STEP
+  IN' was sealed shut`.)* **A captain is never shut out of anywhere; he is sent round the other way**, which
+  is what declining politely means said in geometry.
+- **Never** the refuge (§13.19's air rack), never an amenity, never the lift's alcove or the specimen recess
+  (neither is a room), never the found band (it publishes no doorways), and never a leaf with no plate.
+
+**CHANNEL 2 · STRUCTURED INSTRUMENT FAILURE.** The captain's own one-shot aimed at a declined ground —
+`SensorTask.AreaScan`, which is what the body menu's *scan the vicinity* queues — runs its full duration,
+leaves the carousel the way a finished one-shot does, and returns **nothing**: no fix, no ledger row, no
+reveal, no flash and **no message**. A desk that said *"pass returned no data"* would be the instrument
+reporting on itself, which makes the failure a datum, and a datum about them spends the Scully law. Standing
+custody passes are untouched, and so is a zero-radius look at a hull: what declines is a GROUND. Containment
+is the exact predicate the wreck reveal already uses, so "the scope was pointed at that moon" means one thing
+to both.
+
+**ZERO PLAYER-FACING STRINGS in the whole feature.** `PoliteDecline` publishes no prose at all — the
+strongest available form of *"no dialog explaining a declined door"*, and it settles §8's reserved word for
+free, since a type with no strings in it cannot contain it. The one thing on screen is the plate the room
+already wore, and that is swept for the reserved word anyway.
+
+**Guards:** `TheWorldDeclinesPolitelyTests` (Core, 14) and `TheDeclinedDoorIsStillAWayHomeTests` (Client, 3 —
+`[SlowGate]`, 30 s). *(**RED**, nineteen reverts: the threshold set to zero windows; the already-declined
+check dropped → the same ground declined twice in two windows; the `standingOn` clause dropped; the register
+ignored → *"luna declines in a world nobody has been anywhere in"*; the door seeded on wall-clock time; the
+doorway never removed → the leaf drawn both open and locked; the `Room.Ways` rewrite dropped → a room
+publishing a way out through a locked door; the third-door clause dropped → a WC sealed shut; the
+refuge/amenity containment dropped → *"the world shut an amenity's door"*; the declined room dropped from the
+published rooms; the blank pass not restricted to declined grounds → *"the one-shot over second-moon did not
+land"*; the `Recurring` clause dropped → the standing carousel stopped landing; containment replaced by
+`true`; a string const added to the channel type; the reserved word planted on the declined leaf; the locked
+door never appended → *"not drawn as a locked door on the deck"*; every candidate leaf of the picked room
+taken → *"the world took 4 leaves, not one"*; the room's remaining ways walled → *"1 of 20 places cannot be
+reached from the lift"*; and the register dropped from the vault fixture.)*
+
+**Two of those reverts found holes in the guards themselves**, which is the whole reason the house proves
+them red. The fire-code guard asked ONE window and stayed green on a rule that sealed a captain into a WC —
+which leaf the seed picks is a fact about the window, so one window is one of two dozen candidate doors; it
+sweeps 48 now. And *"exactly one leaf"* was a helper's precondition rather than a law: the helper skipped any
+window where two doors went, quietly excusing the very bug the law is about.
+
+**What is deliberately NOT in slice 1.** The **optional route re-plan** ("one plotted route to that body gets
+recomputed once with no fault logged") — the autopilot's re-plan has no seam that recomputes silently, and
+giving it one means either a new state field or a new sentence, and a sentence is the thing this feature
+dies of. Filed on #1068. The **ribbon ending early near one body** — the drawn ribbon and
+`RibbonHorizonNote` may never disagree (that guard exists), so honouring it needs a new sentence; the scope
+carries channel 2 alone and carries it cleanly. And the **spent-once exception** (the Reever crowd that parts
+around the captain) stays where #672 put it: at the end, once, and not here.
+
+**Reaching it.** `/map?buried=1` seeds an opening a whole window old, so the same descent that lands the
+burial lands the decline: come back down to the concourse and one leaf on it is shut.
 
 ## Working method
 

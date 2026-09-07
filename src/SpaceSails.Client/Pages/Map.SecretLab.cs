@@ -48,12 +48,21 @@ public partial class Map
                 return;
             }
 
-            ex.Lab = SecretLab.For(body, MoonSurface.ExpeditionField(), forcePresent: true);
+            ex.Lab = SecretLab.OnThisSite(body, ex.Site.LayoutSalt, MoonSurface.ExpeditionField(),
+                                          forcePresent: true);
             ex.SecretLabDoorRevealed = true;
             return;
         }
 
-        SecretLab.Placement placement = SecretLab.For(body, MoonSurface.ExpeditionField(), forcePresent: cheat);
+        // #1119 item 2 · ONE SPOT, ONE PUBLISHER. `SecretLab.For` answers about a BODY and knows nothing of
+        // the shelters, the outpost and the monolith standing on THIS site; `OnThisSite` is that answer after
+        // the site has had its say — the spot the shed is drawn at, the ground the ledger keeps clear, and
+        // the spot #625 already points the tracker's ring and its rumour wash at. The hidden-door console was
+        // the last reader of the raw seed, up to 235 du away from all of them, and rather than teach eight
+        // call sites a second function the excursion now HOLDS the resolved placement: console, chamber,
+        // alarm doors, card plate, detector needle and reveal square are one fact by construction.
+        SecretLab.Placement placement = SecretLab.OnThisSite(
+            body, ex.Site.LayoutSalt, MoonSurface.ExpeditionField(), forcePresent: cheat);
         if (!placement.HasLab)
         {
             ex.Lab = null;
@@ -339,7 +348,12 @@ public partial class Map
         // the room, and the card is a mechanics lesson about the map growing. Different jobs, so the card
         // rides on top the first time rather than replacing anything. (It may well be a captain's first
         // expansion ever: the lab is the ONLY way an ordinary moon can grow at all today.)
-        ShowGroundGrewCardOnce();
+        //
+        // #584 · Through the ONE writer, with the same spot the two lines above already used: the placement's
+        // own door, which is where AppendSecretLabGeometry grew the chamber from and where the hidden-door
+        // console stood until this line took it off the plan. So the card's plate and the fan's ring name the
+        // ground that actually appended, and not a second opinion about where the lab is.
+        TheGroundJustGrew(ex, placement.DoorX, placement.DoorY);
     }
 
     /// <summary>The small nerve chill of crossing into the lab (owner: "entering the lab … is a nerve hit").

@@ -5,244 +5,23 @@ using SpaceSails.Core.Interior;
 namespace SpaceSails.Client.Pages;
 
 // Part of Map.Surface (#870 split; the header note lives in Map.Surface.cs) — the kiosk, the droid buffer, the motion tracker and the surface HUD.
+
+/// <summary>
+/// THE SURFACE HUD ITSELF — the one method that composes everything the captain sees while he is on foot,
+/// out of the buffers the rest of this family fills.
+///
+/// <para>#251 · It stayed one method through the cut, for the reason <c>UndergroundComplex.Hall</c>'s
+/// carve did: its sections are passes over ONE running set of locals, so naming them is a
+/// behaviour-bearing split held to the snapshot-first standard rather than the pure-move standard this
+/// lane works to.</para>
+///
+/// <para>The other four partials are named for what they fill it with: <c>.Kiosk</c> (#313's amenity),
+/// <c>.Droids</c> (the buffer the renderer walks), <c>.Tracker</c> (the motion sweep and the prowl), and
+/// <c>.Prompts</c> (every word the HUD says — the standing line, the channel glyph, the keybar and the
+/// instrument column). No member is renamed, re-scoped or re-ordered by the cut.</para>
+/// </summary>
 public partial class Map
 {
-    // ── The lonely automated kiosk (#313 amenity): a PLACE has shops. Pulse receipts (#119 style),
-    //    house voice — last restocked before the war. ──
-
-    // Slot 0 is the souvenir tee — its item + gag are filled from the moon underfoot at buy time
-    // (SurfaceSouvenir), so Ganymede sells a Ganymede shirt, not Miranda's (#379). The placeholder
-    // strings below are never shown; they only hold slot 0's price and mark the seam.
-    // Owner, 2026-07-28: "The T-shirts etc everywhere where they are missing." Every HAVEN gift shop has
-    // painted a tee AND a magnet since #367; the GROUND kiosk sold both and showed neither — a pulse line
-    // and nothing to look at. The art column closes that: what you bought now gets held up.
-    private static readonly (string Item, int Price, string Line, string Art)[] KioskStock =
-    [
-        ("the local souvenir tee", 15, "(keyed to the walked body — see VisitKiosk)",
-            "art/souvenir-surface-tshirt.jpg"),
-        ("a fridge magnet", 8, "It clamps to your suit's chestplate and refuses to let go. Value: eternal.",
-            "art/souvenir-surface-magnet.jpg"),
-        ("a vacuum-sealed hot meal", 12, "The label promises 'MEAT-ADJACENT'. The heater still works. Mostly.",
-            ""), // no art — it is a ration pouch, and the joke is funnier unseen
-    ];
-
-    private int _kioskPicks;
-
-    /// <summary>What the kiosk just sold you, held up for a look — the ground's answer to the haven gift
-    /// shops' view-object cards. Null when nothing is being inspected.</summary>
-    private readonly record struct KioskBuy(string Item, string Line, string Art);
-
-    private KioskBuy? _kioskCard;
-
-    private void CloseKioskCard() => _kioskCard = null;
-
-    private void VisitKiosk()
-    {
-        if (_surface is not { } ex)
-        {
-            return; // the kiosk only sells on the ground it stands on
-        }
-        int slot = _kioskPicks % KioskStock.Length;
-        (string item, int price, string line, string art) = KioskStock[slot];
-        _kioskPicks++;
-        if (slot == 0)
-        {
-            // The souvenir tee, keyed to the moon actually underfoot (#379): Ganymede's kiosk prints a
-            // Ganymede shirt; Miranda keeps its canon line. Copy is generated, so any landable body works.
-            CelestialBody body = ex.Stop.Body;
-            item = SurfaceSouvenir.TeeItem(body.Name);
-            line = SurfaceSouvenir.TeeGag(body.Id, body.Name);
-        }
-        if (_credits < price)
-        {
-            ShowPulseMessage($"🛒 {item} — {price} cr. The slot blinks INSUFFICIENT FUNDS in a dead language. Empty pockets, captain.");
-            return;
-        }
-        _credits -= price;
-        RendererInterop.PlayCue("board");
-        ShowPulseMessage($"🧾 Bought {item} for {price} cr. {line} (The kiosk was last restocked before the war.)");
-        if (art.Length > 0)
-        {
-            // Hold it up. The img onerror-hides, so an unpainted slot still degrades to the caption alone.
-            _kioskCard = new KioskBuy(item, line, art);
-        }
-    }
-
-    // ── The droid buffer: the ship's crew, plus the live Old Ones on the surface. ──
-
-    private void FillSurfaceDroids(double simTime, DeckPlan.Droid[] buffer)
-    {
-        DeckPlan.Ship.FillDroids(simTime, buffer); // [0..3): the crew
-        // #633 · FOUR BANDS, NOT THREE, AND THEY MAY NOT OVERLAP. `main` put the sweep team at
-        // `3 + ReeverEngineCeiling` because on that branch nothing else lived there; this branch had already
-        // given those slots to the repo crew (#583). Reunited without this line the collectors' loop below
-        // would overwrite all three sweepers every frame — one buffer written by two fillers, which is the
-        // named bug class and exactly the thing a merge produces. The bands are stated ONCE, here and in
-        // SurfaceDroidCount, and every filler is offset from the one before it.
-        FillSweeperDroids(buffer, 3 + ReeverEngineCeiling + MaxCollectors);
-        // #804 · …and the rounds, in the band after the sweepers. Their filler applies the sightline gate
-        // itself: a guard the captain cannot see is parked off-map exactly as an unseen Old One is.
-        FillPatrolDroids(buffer, PatrolFirstSlot);
-        // #731 · …and the people who are leaving, or who have come out of a door to sit at your table. Their
-        // own band after the rounds, drawn with the ordinary NPC pen because they are ordinary people.
-        FillWalkerDroids(buffer, WalkerFirstSlot, _surface?.Walkers ?? []);
-        for (int i = 0; i < ReeverEngineCeiling; i++)
-        {
-            int slot = 3 + i;
-            // #371 Phase 3 (expedition fog): a behind-cover Old One is NOT drawn on the walked map — parked
-            // off-screen exactly like an empty slot. VisibleOnMap is always true off an expedition site, so
-            // Miranda and the moons draw every contact as before. The motion tracker (which reads _reevers
-            // directly, not this buffer) still hears it through the wall — untouched.
-            if (i < _reevers.Count && _reevers[i].VisibleOnMap)
-            {
-                Reever r = _reevers[i];
-                buffer[slot] = new DeckPlan.Droid(r.X, r.Y, r.Facing, "Reever");
-            }
-            else
-            {
-                buffer[slot] = new DeckPlan.Droid(-9999, -9999, 0, "Reever");
-            }
-        }
-
-        // #583 · And the repo crew, in their own slots after the Old Ones. Drawn as people, named so the
-        // renderer can give them their own ink — they are not hostiles of the same kind and should not read
-        // as more Reevers on the walked map.
-        for (int i = 0; i < MaxCollectors; i++)
-        {
-            int slot = 3 + ReeverEngineCeiling + i;
-            buffer[slot] = i < _collectors.Count
-                ? new DeckPlan.Droid(_collectors[i].X, _collectors[i].Y, _collectors[i].Facing, "Collector")
-                : new DeckPlan.Droid(-9999, -9999, 0, "Collector");
-        }
-    }
-
-    // ── The motion tracker HUD (#313): a crude corner sweep of MOVING contacts, built for the renderer.
-    //    Motion only — a wall-blocked, momentarily-still Old One drops off the fan. ──
-
-    /// <summary>The fuzzy returns painted on the deck for contacts the fan hears through steel. Held here
-    /// and refilled per frame, like every other HUD buffer.</summary>
-    private readonly List<(double X, double Y, double Radius)> _hudSmudges = [];
-
-    /// <summary>How wide a return is at point-blank, in deck units — already a REGION rather than a spot,
-    /// because a crude fan never knew better than that.</summary>
-    private const double SmudgeBaseRadius = 2.6;
-
-    /// <summary>And how much wider per unit of range: the further off the contact, the vaguer the ear.</summary>
-    private const double SmudgeRangeSpread = 0.12;
-
-    /// <summary>Where the fan last heard each contact, and when — the raw material for the ghosts.</summary>
-    private readonly Dictionary<Reever, (double X, double Y, double HeardAtMs)> _ghosts = [];
-
-    /// <summary>The fading "movement was here" marks handed to the renderer.</summary>
-    private readonly List<(double X, double Y, double Fade)> _hudGhosts = [];
-
-    /// <summary>The nest's own motion, for the fan's benefit. It goes nowhere; it is never still. Anything
-    /// above <see cref="MotionTracker.StillSpeed"/> reads as a live return, which is the truth about it.</summary>
-    private const double NestChurn = 0.6;
-
-    /// <summary>How wide the nest reads. Deliberately larger than any body smudge — the captain should be
-    /// able to tell "something is in there" from "THAT is what is in there" at a glance.</summary>
-    private const double NestSmudgeRadius = 4.2;
-
-    /// <summary>Where the nest is, while it is still producing. Null once her room has been blown — a vented
-    /// nest is off the tracker and off the map, and that silence is the reward for the soak.</summary>
-    private (double X, double Y)? LiveNestPosition()
-    {
-        if (_wreck is not { Cause: Derelict.WreckCause.Infested })
-        {
-            return null;
-        }
-        if (!_ventSpaces.TryGetValue(WreckLayout.NestCompartment, out HullVenting.Space nest)
-            || nest.Vented || !nest.Infested)
-        {
-            return null;
-        }
-
-        DeckReachability.Point at = WreckLayout.CauseStation(Derelict.WreckCause.Infested);
-        return (at.X, at.Y);
-    }
-
-    /// <summary>How long a fresh return takes to settle from bright to its resting glow — the phosphor
-    /// cooling, not the memory expiring. FLAGGED for tuning.</summary>
-    private const double GhostSettleSeconds = 5.0;
-
-    /// <summary>And the glow it never drops below. THE TRACKER REMEMBERS: a mark stays until the same
-    /// contact is heard somewhere else. It is only wiped by better information, never by time.</summary>
-    private const double GhostFloor = 0.45;
-
-    /// <summary>How close a contact has to appear, with no warning, to land the ambush fright. Tight on
-    /// purpose: this is "it was already in the room", not "I can see it down the corridor". FLAGGED.</summary>
-    private const double AmbushRange = 7.0;
-
-    /// <summary>
-    /// #488 · THE PROWL — how a woken Old One that has not found you yet moves about a dead ship.
-    ///
-    /// <para>Deliberately NOT the regolith behaviour: out on the ground an unaware contact keeps its own
-    /// deep and holds still, by the owner's own ruling, and that is untouched. Aboard, stillness would mean
-    /// a motion tracker that never hears anything until the moment something is on top of you — which
-    /// defeats the instrument the corridors were built around.</para>
-    ///
-    /// <para>Slow, aimless, and honest: it picks somewhere to be, walks there obeying the walls, and picks
-    /// again. It is not searching for the captain — it does not know there is one. It is just awake.</para>
-    /// </summary>
-    private void Prowl(Reever r, IReadOnlyList<SurfaceCollision.Segment> walls, double radius,
-                       double step, double now)
-    {
-        r.Idle = false;
-
-        if (now >= r.ProwlUntilMs)
-        {
-            // Somewhere else on this deck, chosen off its own seed so each one wanders its own way and the
-            // pack does not migrate as a blob.
-            ulong pick = r.JitterSeed + (ulong)(now / ProwlLegMs);
-            r.ProwlX = WreckLayout.AftX + 2 + ((pick % 53UL) / 53.0 * (WreckLayout.BowX - 8 - WreckLayout.AftX));
-            r.ProwlY = ((pick / 53UL) % 3UL) switch { 0 => -6.0, 1 => 0.0, _ => 6.0 };
-            r.ProwlUntilMs = now + ProwlLegMs;
-        }
-
-        double prowlStep = step * ProwlSpeedFraction;
-        (double nx, double ny) = ReeverChase.Step(
-            r.X, r.Y, r.ProwlX, r.ProwlY, prowlStep, double.PositiveInfinity, walls, radius,
-            (r.JitterSeed & 1) == 0 ? 1 : -1);
-
-        // Real velocity, because that is the entire point: the fan hears MOTION.
-        r.Vx = prowlStep > 0 ? (nx - r.X) / (step / ReeverSpeed) : 0;
-        r.Vy = prowlStep > 0 ? (ny - r.Y) / (step / ReeverSpeed) : 0;
-        r.X = nx;
-        r.Y = ny;
-        r.Facing = System.Math.Atan2(r.ProwlY - ny, r.ProwlX - nx);
-
-        // Wedged against something, or arrived: take a new bearing next frame rather than grinding.
-        if (System.Math.Abs(r.Vx) + System.Math.Abs(r.Vy) < 0.01)
-        {
-            r.ProwlUntilMs = 0;
-        }
-    }
-
-    /// <summary>How long a prowler holds one bearing before picking another.</summary>
-    private const double ProwlLegMs = 7_000;
-
-    /// <summary>A prowl is a wander, not a hunt — well under the chase so a contact that has actually SEEN
-    /// you is unmistakably faster. FLAGGED for tuning.</summary>
-    private const double ProwlSpeedFraction = 0.42;
-
-    /// <summary>Gather the deployed sentries for the renderer. Pulled out of the full HUD build so the
-    /// WRECK path can have them too: a bot on a steel deck is drawn exactly like a bot on regolith, and it
-    /// was only ever invisible aboard because the whole hud was suppressed to get rid of the tracker.</summary>
-    private void RefreshHudBots(SurfaceExcursion ex)
-    {
-        double nowMs = _lastTimestampMs ?? 0;
-        _hudBots.Clear();
-        foreach (SurfaceBot b in ex.Bots)
-        {
-            if (!b.Deployed)
-            {
-                continue;
-            }
-            _hudBots.Add((b.X, b.Y, SentryBot.Readout(b.Rounds), b.Rounds <= 0, b.FiringUntilMs > nowMs, b.AimX, b.AimY));
-        }
-    }
-
     private DeckView.SurfaceHud? BuildSurfaceHud()
     {
         if (_surface is not { } ex)
@@ -266,6 +45,17 @@ public partial class Map
         if (onWreck)
         {
             RefreshHudBots(ex);
+
+            // #316 · …and the husks THIS boarding made. The regolith's refill lives past the early return
+            // below, so a hull boarded after a moon walk was drawn with the MOON's husks still in the buffer
+            // — somebody else's dead scattered across her compartments. A wreck keeps no ground ledger
+            // (ex.Husks is this visit only, and nothing on a steel deck is ever written to one), so this is
+            // the honest list: what went down here, since the airlock.
+            _hudHusks.Clear();
+            foreach (GroundMemory.Husk husk in ex.Husks)
+            {
+                _hudHusks.Add((husk.X, husk.Y));
+            }
 
             // THE TRACKER COMES UP WHEN THERE IS SOMETHING TO TRACK, AND THAT IS THE POINT. Owner: "we
             // could really use the motion detector here … I think we need it activating to bring it up on
@@ -492,21 +282,30 @@ public partial class Map
             {
                 continue;
             }
-            (double mx, double my) = c is { DigX: { } dx, DigY: { } dy }
-                ? (dx, dy)
-                : MoonSurface.CachePosition(c.Id);
+            (double mx, double my) = MoonSurface.CacheSpot(c);
             _hudMarks.Add((mx, my, c.ReeverLevel > 0));
         }
 
         RefreshHudBots(ex);
 
         _hudHusks.Clear();
-        // 🗺 Layers (#405) Ground finds → Husks: the downed-Old-One marks left in the regolith (#316).
+        _hudPits.Clear();
+        // 🗺 Layers (#405) Ground finds → Husks: the downed-Old-One marks left in the regolith (#316) —
+        // and, on the same layer and for the same reason, the holes somebody else's shovel left (#316 law 1's
+        // second half). A robbed ✗ and the bodies around it are ONE piece of evidence; a captain who has
+        // turned the husk layer off is not asking to be shown half a crime scene.
         if (LayerVisible("finds.husks"))
         {
-            foreach ((double hx, double hy) in ex.Husks)
+            foreach (GroundMemory.Husk husk in ex.Husks)
             {
-                _hudHusks.Add((hx, hy));
+                _hudHusks.Add((husk.X, husk.Y));
+            }
+            foreach (GroundMemory.Scar scar in ex.Scars)
+            {
+                if (scar.What == GroundMemory.ScarKind.Pit)
+                {
+                    _hudPits.Add((scar.X, scar.Y));
+                }
             }
         }
 
@@ -581,6 +380,7 @@ public partial class Map
                 : null,
             Bots: _hudBots,
             Husks: _hudHusks,
+            Pits: _hudPits,                   // #316: the holes somebody else's shovel left at our ✗
             KeyHints: BuildSurfaceKeyHints(ex),
             OrbitComms: orbit?.Line,          // #327: the ship's calling-home line, never buried
             OrbitSeverity: orbit?.Severity ?? 0,
@@ -602,246 +402,4 @@ public partial class Map
             // like it is underground instead of one that has to be taught after the fact.
             Smudges: _hudSmudges);
     }
-
-    // #440 · The standing prompt: ONE bright line above the keybar for the thing this excursion hangs on.
-    // Owner, 2026-07-26: "the press T to bury treasure is not advertised clearly enough on surface… It is
-    // the key to survival there" — said while misremembering the key, which is the proof. A chest in hand is
-    // the whole reason you came and the whole thing you lose, so it gets a line that does not blend into
-    // chrome and does not go away until the chest is in the ground. It also answers WHERE, because "where
-    // you stand" is the rule and nothing on screen ever said so: out on the open regolith, past the pad.
-    private string? BuildStandingPrompt(SurfaceExcursion ex)
-    {
-        // #696 · A HOLD OUTRANKS THE CHEST. For the seconds it runs, the one thing on the screen that can
-        // still be decided is whether the captain keeps their boots where they are — and the prompt says the
-        // clock, because "hold position" without a number is an instruction to wait for an unknown length of
-        // time while something walks towards you.
-        if (_processing is { } paper)
-        {
-            return $"{Core.Processing.Glyph} PROCESSING — hold position " +
-                $"({Core.Processing.SecondsLeft(paper.Elapsed, ProcessingSeconds):F0} s). Step away and it is lost.";
-        }
-
-        if (!ex.Carrying)
-        {
-            return null; // nothing owed — the ground goes quiet again
-        }
-        // #723 · The floor rides along, so this line stops promising a burial on a Hive corridor. Underground
-        // it now reads "walk out onto the regolith" — which is the honest instruction down there, because the
-        // way to bury a chest 150 m under a facility is the lift.
-        return MoonSurface.IsDiggableGround(_avatarX, _avatarY, ex.Floor)
-            ? "⛏ CARRYING THE CHEST — press E to BURY IT HERE"
-            : "⛏ CARRYING THE CHEST — walk out onto the regolith, then E to bury it";
-    }
-
-    /// <summary>#562 + #696 · WHICH slow thing the one bar is showing. A ladder rather than four inline
-    /// conditions at the call site, because the glyph, the tint and the PROGRESS all have to pick the same
-    /// winner — and three copies of one precedence order is the shape that drifts.</summary>
-    /// <remarks>#1016 · The hold is handed in rather than read off the excursion — it left the excursion for
-    /// the page, because a captain digging at a top in a docked bar has no excursion to hang a clock on. Still
-    /// static and still pure: which winner it picks, and in what order, is untouched.</remarks>
-    private static string SurfaceChannelGlyph(SurfaceExcursion ex, ProcessingHold? hold) =>
-        ex.Channel is not null || ex.DoorChannel is not null ? "⛏"
-        // #784 · …and the seated register wears the PEN, not the camera. Core.Processing.GlyphFor is the one
-        // place that choice is made — the control, the bar and the book entry all read it, so the glyph over
-        // a captain's head can never say "photographing" while the sim writes into the field book (#562).
-        : hold is not null ? Core.Processing.GlyphFor(hold.Work)
-        : ex.RearmBotIndex is not null ? "🔫"
-        : "⛏";
-
-    /// <summary>#562 · Is the bar the ship HELPING you (cold green) or you exposing yourself (warning
-    /// amber)? Only the rearm is help. The darkroom is emphatically not: standing still in the open for
-    /// twenty seconds is the cost the whole mechanic is made of, and a soothing colour over it would be the
-    /// picture arguing with the sim.</summary>
-    /// <remarks>#1016 · The hold is handed in, for <see cref="SurfaceChannelGlyph"/>'s reason one method
-    /// along. The answer is the same answer.</remarks>
-    private static bool SurfaceChannelIsAid(SurfaceExcursion ex, ProcessingHold? hold) =>
-        ex.Channel is null && ex.DoorChannel is null && hold is null && ex.RearmBotIndex is not null;
-
-    // #324: the contextual surface keybar. The owner couldn't find the deploy key — so while a bot rides
-    // the sling it spells out [T] deploy, and a chest in hand spells [G] drop. Affordances never hide.
-    private string BuildSurfaceKeyHints(SurfaceExcursion ex)
-    {
-        // #488: aboard a derelict there is nothing to DIG. There is, however, very much somewhere to plant
-        // a sentry — a bot holding a corridor while a compartment pumps down is the loop this whole lane is
-        // for — and this bar used to say otherwise and then hide the key, which is how the owner ended up
-        // pressing T at a map that showed him nothing. Affordances never hide (#212).
-        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
-        {
-            var aboard = new List<string>
-            {
-                "WASD — move",
-                // #698 · What [E] will actually do, and the ground wins. The recovery runs ahead of console
-                // dispatch (#691), so standing in the ring with "E — examine / take" on the bar is the bar
-                // describing a press it is not going to get.
-                StandingOnWhatYouLeft() ? LeftBehind.ReachPrompt : "E — examine / take",
-            };
-
-            // #538 · the sentry remote lives on the HUD, and it never hides: an affordance you cannot see is an
-            // affordance you do not have (#212), and this is the one whose absence gets a captain shot.
-            if (ex.Bots.Count > 0)
-            {
-                aboard.Add(_weaponsTight ? "🤖 H — WEAPONS TIGHT (press to free)" : "🤖 H — weapons tight");
-            }
-
-            if (ex.Bots.Any(b => !b.Deployed))
-            {
-                aboard.Add("🤖 T — deploy a sentry");
-            }
-            else if (ex.Bots.Any(b => b.Deployed &&
-                     ((b.X - _avatarX) * (b.X - _avatarX)) + ((b.Y - _avatarY) * (b.Y - _avatarY))
-                         <= DeckPlan.InteractRadius * DeckPlan.InteractRadius))
-            {
-                aboard.Add("🤖 T — pick up the sentry");
-            }
-            if (_satchel.Count > 0)
-            {
-                aboard.Add($"🎒 I — items ({_satchel.Count})");
-            }
-
-            // #537 · A VERB NOBODY IS TOLD ABOUT IS A VERB NOBODY HAS. Caught by booting the scene and
-            // reading the hint bar, which is the owner's own method: the knock was bound, the clock ran, the
-            // sweep team heard it — and the strip along the bottom never mentioned K existed.
-            aboard.Add(IsSounding
-                ? (_soundQuietly ? "✊ K — stop knocking" : "📡 K — stop sounding")
-                : (_soundQuietly ? "✊ K — knock (quiet)" : "📡 K — sound the plating (loud)"));
-
-            aboard.Add(_audioEnabled ? "🔊 M — mute" : "🔇 M — unmute");
-            return string.Join(" ∙ ", aboard);
-        }
-
-        // #440: the bar must NAME the thing that matters. "E — dig / use" is honest but generic, and it was
-        // generic at the one moment it should shout — with the chest in your hands (owner, 2026-07-26: "the
-        // press T to bury treasure is not advertised clearly enough on surface… It is the key to survival
-        // there", having misremembered the key himself). Carrying → the bar says BURY, in the imperative.
-        // #698 · AND WHAT YOU PUT DOWN OUTRANKS BOTH OF THEM. Owner, on B12 of the clinic: "I dropped 3
-        // files on somebody here but there was nothing marked onto the map?" — the deck now carries the
-        // mark, and this is the other half: [E] answers your feet before it answers the walls (#691), so
-        // inside the recovery ring the press is the pickup, whatever else the captain is holding. A bar
-        // that promised BURY THE CHEST while the key handed back a folder would be the sim doing one thing
-        // and a sentence reporting another, which is a bug class this repo has named.
-        // #723 · …and that is precisely what this bar was doing underground. It offered "E — dig" on poured
-        // rockcrete, and with a chest in the sling it shouted BURY THE CHEST HERE over a corridor where the
-        // key now — correctly — does nothing at all. So the floor is asked first, of the same one fact the
-        // key is gated on. Above ground nothing moves: the pad is not diggable either, but it is one step
-        // from ground that is, so the chest keeps the imperative #440 asked for.
-        var parts = new List<string>
-        {
-            "WASD — move",
-            // #828 · …and the BIN says so, in the same ladder and the same order the [E] dispatch itself
-            // asks: your feet first, then the bucket you are standing at, then the ground. Underground this
-            // strip read "E — use" everywhere, which is exactly nothing at the one spot where the key opens
-            // the sleeve over a bin — and a verb nobody is told about is a verb nobody has (#212/#537).
-            StandingOnWhatYouLeft() ? LeftBehind.ReachPrompt
-                : TheBinTakingYourPress() is { } atTheBin ? RipAndBin.KeyPrompt(atTheBin.Tier)
-                : !MoonSurface.ShovelWorksOnThisFloor(ex.Floor) ? "E — use"
-                : ex.Carrying ? "⛏ E — BURY THE CHEST HERE"
-                : "E — dig / use",
-        };
-        bool carryingBot = ex.Bots.Any(b => !b.Deployed);
-        bool deployedUnderfoot = ex.Bots.Any(b => b.Deployed &&
-            ((b.X - _avatarX) * (b.X - _avatarX)) + ((b.Y - _avatarY) * (b.Y - _avatarY))
-                <= DeckPlan.InteractRadius * DeckPlan.InteractRadius);
-        if (carryingBot)
-        {
-            parts.Add("🤖 T — deploy a sentry");
-        }
-        else if (deployedUnderfoot)
-        {
-            parts.Add("🤖 T — pick up the sentry");
-        }
-        if (ex.Carrying)
-        {
-            parts.Add("G — drop the chest & sprint");
-        }
-
-        // #603 · The satchel, once there is anything in it. Owner: "the I key should be advertised in the
-        // hud also like we do now for the other keys." Shown WITH the count, because the useful question at
-        // a glance is not "do I have pockets" but "is there anything in them".
-        if (_satchel.Count > 0)
-        {
-            parts.Add($"🎒 I — items ({_satchel.Count})");
-        }
-        parts.Add(_audioEnabled ? "🔊 M — mute" : "🔇 M — unmute"); // #338: the first-sound switch, always spelled out
-        return string.Join(" ∙ ", parts);
-    }
-
-    // Lane-1 (owner, 2026-07-18: "advertise the dig and bot options in text under the motion detector"):
-    // the short contextual lines seated below the tracker readout in the left instrument column. They
-    // teach the two levers the surface offers — the DIG (the reason to come, the reason to hurry) and the
-    // SENTRY (the thing that buys time against the tide, never safety). Kept to a couple of lines so the
-    // column stays legible; empty entries are skipped by the renderer.
-    private List<string> BuildTrackerCaptions(SurfaceExcursion ex, int ownMarkCount)
-    {
-        var lines = new List<string>();
-
-        // #564 · The tank used to be the top line HERE, and the owner went looking for a meter under the
-        // tracker and found nothing — because a line of dim 10px text among the key hints is a footnote, not
-        // a gauge. It is a drawn BAR now (DeckView, fed by SurfaceHud.AirSeconds); this list is back to
-        // being what it always was, the affordances.
-
-        // #728 · …EXCEPT FOR THE OTHER CONSUMABLE, which had no line anywhere. The shelter's press has been
-        // announcing "N rounds into your magazines" into a stat that appeared on exactly one surface in the
-        // game — the two-digit counter painted over an already-deployed bot — so a captain who kept both in
-        // the sling could read a receipt and never see the account.
-        //
-        // It goes FIRST and directly under the air bar because it is an INSTRUMENT, not an affordance: the
-        // lines below teach keys, this one reports a quantity, and the two registers should not be shuffled
-        // together. Composed in Core off the same roster the counters read (SentryBot.MagazinesReadout), so
-        // the HUD and the bot over there cannot come to disagree about one number.
-        //
-        // First also settles what a SHORT SCREEN drops, and the answer is not arbitrary: DeckView stops
-        // drawing captions once they would reach the keybar, and every affordance below is ALSO spelled out
-        // along that keybar (BuildKeyBar names E, T, G and I). This line is told once, here, on the whole
-        // screen. Between two tellings and one telling, the one telling keeps the top of the column.
-        lines.Add(SentryBot.MagazinesReadout(TheSlingAsTheInstrumentReadsIt(ex)));
-
-        // The dig affordance, honest to the sling (playtest bug #1 / owner ruling #9: the ground must SAY
-        // what's possible). Carrying → bury anywhere you stand; empty → the beach-comber probe, a real
-        // fishing expedition, never a dead end. An own ✗ in this ground always earns its own lift line.
-        // #723 · …and it is only an affordance where the verb exists. This is the line that sent a captain
-        // pressing [E] on a spine corridor: teaching the shovel on a floor whose ground is poured rockcrete
-        // is teaching a key that will not answer. The same one fact the key and the bar are gated on.
-        if (MoonSurface.ShovelWorksOnThisFloor(ex.Floor))
-        {
-            lines.Add(ex.Carrying
-                ? "⛏ E on the regolith — bury the chest where you stand"
-                : "🪛 E on the regolith — probe for shallow treasure");
-        }
-        if (ownMarkCount > 0)
-        {
-            lines.Add("🗺 E at your ✗ — dig the cache back up");
-        }
-        // #409: once the hidden lab door is revealed, advertise it until it's forced.
-        if (ex.SecretLabDoorRevealed && !ex.SecretLabForced)
-        {
-            lines.Add("⚙ E at the ⚙ HIDDEN DOOR — force the secret lab open");
-        }
-
-        // The sentry affordance — spell out T while it matters (a bot in the sling to set, or ones holding
-        // the line). The tide never stops, so the caption tells the truth: they buy time, not safety.
-        //
-        // #440 (owner, live 2026-07-26: "The T key for sentry planting is not mentioned there now on the
-        // sentry line?"). It wasn't: once the LAST bot left the sling, this fell to the "N holding" line,
-        // which names no key at all — and the keybar only says [T] while you happen to be standing on a
-        // bot. So the moment you had committed both, the key that takes them back up vanished from the
-        // screen entirely. Now T is named in EVERY state that has a bot in it, planted or slung.
-        int carried = ex.Bots.Count(b => !b.Deployed);
-        int deployed = ex.Bots.Count(b => b.Deployed);
-        if (carried > 0)
-        {
-            lines.Add($"🤖 T — set a sentry ({carried} in the sling)");
-        }
-        if (deployed > 0)
-        {
-            lines.Add($"🤖 {deployed} sentry holding — T at one to lift it · buys time, not safety");
-        }
-
-        return lines;
-    }
-
-    /// <summary>#728 · This excursion's magazines, in the shape Core reads them — one projection, so the
-    /// instrument column and the shelter's press are asking about the same list rather than each building
-    /// their own view of the same bots.</summary>
-    private static IReadOnlyList<SentryBot.Carried> TheSlingAsTheInstrumentReadsIt(SurfaceExcursion ex) =>
-        [.. ex.Bots.Select(b => new SentryBot.Carried(b.Unit, b.Rounds, b.Deployed))];
 }

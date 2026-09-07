@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+﻿<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -55,6 +55,61 @@
        wiring proves nothing; this lets the audit ask the shipping one. -->
   <ItemGroup>
     <InternalsVisibleTo Include="SpaceSails.Client.Tests" />
+  </ItemGroup>
+
+  <!-- #251 item 1 · ONE CSS SCOPE FOR THE PAGE AND EVERY SURFACE CUT OUT OF IT.
+
+       Map.razor's markup is being taken apart into Pages/Map/<Surface>.razor components. Blazor's CSS
+       isolation would give each of those its own scope identifier, and `Map.razor.css`'s 1,700-odd rules
+       compile to `.selector[b-<map's scope>]` — so the instant a block moved out of the page, every rule
+       that styled it would stop matching, silently, with no build error and no test to catch it. (Only the
+       168 `::deep` rules would survive, because those compile to `[b-<map>] .selector` and the moved markup
+       is still a DOM descendant of `.map-page`.)
+
+       The fix is one line of build, not a thousand lines of moved CSS: the surfaces are given Map.razor.css's
+       OWN scope, so `b-4dqsdx4p75` is stamped on exactly the elements it was stamped on before the cut and
+       the shipped stylesheet does not change by a byte. The literal is what the SDK's ComputeCssScope task
+       already derives for `Pages/Map.razor.css` from the assembly name plus that path — pinning it here does
+       not change today's value, it just stops it being a secret. #251 item 3 splits the stylesheet itself
+       along these same seams, and each surface's `.razor.css` is the file its rules will land in. -->
+  <ItemGroup>
+    <None Update="Pages\Map.razor.css" CssScope="b-4dqsdx4p75" />
+    <None Update="Pages\Map\*.razor.css" CssScope="b-4dqsdx4p75" />
+    <!-- #251 · …AND ONE DIRECTORY DEEPER. NavHud.razor was the largest surface #1107 left (1,197 lines),
+         and its own markup is now cut into Pages/Map/NavHud/<Surface>.razor. A glob does not cross a
+         directory separator, so `Pages\Map\*.razor.css` above does NOT reach them: without this line every
+         sub-surface would take an identifier of its own and lose Map.razor.css's rules AND NavHud.razor.css's
+         480 lines with them — the warp toolbar, the plan steps and the burn editor all unstyled, with no
+         build error and no test. Same identifier, because it is the same page's markup one file further
+         out. -->
+    <None Update="Pages\Map\NavHud\*.razor.css" CssScope="b-4dqsdx4p75" />
+    <!-- #251 · …AND THE SECOND SURFACE TO BE CUT UP IN ITS TURN. SatchelPanel.razor was 983 lines — the
+         pocket, the field book, the threads, the spread, the bin and the compass, six pages behind one tab
+         bar — and each of them is a surface under Pages/Map/SatchelPanel/ now. The satchel's own sheet is
+         481 lines with a handful of ::deep rules in it, so a sub-surface that took an identifier of its own
+         would lose Map.razor.css AND SatchelPanel.razor.css together: the rows, the tabs, the note nodes
+         and the bin sleeve all unstyled, with no build error and no test. Same identifier again, because it
+         is the same page's markup two files out. -->
+    <None Update="Pages\Map\SatchelPanel\*.razor.css" CssScope="b-4dqsdx4p75" />
+  </ItemGroup>
+
+  <!-- #251 · THE SAME LAW FOR THE TRACKING POST, WHERE IT BITES HARDER.
+
+       Pages/Stations/TrackingPost.razor's markup is being taken apart into
+       Pages/Stations/TrackingPost/<Surface>.razor the same way. Map.razor.css at least had 168 `::deep`
+       rules that would have survived the cut on their own; TrackingPost.razor.css has FORTY rules and
+       NOT ONE `::deep` among them, so every rule in it is scope-dependent and every one of them would
+       have stopped matching the instant a block moved out — the rosette unstyled, the sensor-task chips
+       unstyled, the tracked-target cards unstyled, with no build error and no test to say so.
+
+       `b-9ekzcovohe` is what the SDK's ComputeCssScope task already derives for
+       `Pages/Stations/TrackingPost.razor.css` from the assembly name plus that path (read out of
+       obj/…/scopedcss/Pages/Stations/TrackingPost.razor.rz.scp.css at this lane's base). Pinning it here
+       does not change today's value — it stops it being a secret, and it hands every surface the desk's
+       own identifier so the shipped bundle does not change by a byte. -->
+  <ItemGroup>
+    <None Update="Pages\Stations\TrackingPost.razor.css" CssScope="b-9ekzcovohe" />
+    <None Update="Pages\Stations\TrackingPost\*.razor.css" CssScope="b-9ekzcovohe" />
   </ItemGroup>
 
   <ItemGroup>

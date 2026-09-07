@@ -31,22 +31,9 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheOutcomeIsOnThePopUpTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>One method's body, from its signature to the next member at the same indent. The same cut
     /// <see cref="TheTryOutcomeIsReadableTests"/> makes, so a body read here is a body read there.</summary>
@@ -269,8 +256,7 @@ public sealed class TheOutcomeIsOnThePopUpTests
     [Fact]
     public void TheOutcomeRowsAreStyledLikeThePopUpsTheySitIn()
     {
-        string css = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
 
         foreach (string rule in new[] { ".reveal-outcome", ".panel-outcome" })
         {

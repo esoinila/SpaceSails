@@ -29,7 +29,19 @@ namespace SpaceSails.Client.Rendering;
 /// a bar table one watch, gone behind a locked door the next, waiting in the opened back room after
 /// that.
 /// </summary>
-public static class HavenInterior
+/// <remarks><para>Split at 1,225 lines (#251) into <c>HavenInterior.Wings</c> and
+/// <c>HavenInterior.Build</c>. The cut is not where the concerns are — it is where the STATIC FIELD
+/// INITIALIZERS allow. Almost every coordinate in this class is measured off <c>HallTopY</c>, which is a
+/// <c>static readonly</c> (it is <c>Math.Cos</c> of the hall's apothem, so it cannot be a <c>const</c>);
+/// the bar's tops, the patron seats, the oracle's corner and the Magpie's posts are all written as
+/// <c>HallTopY + n</c>. Static initializers of a partial class run in the order the compiler READS THE
+/// FILES, not the order a reader sees, so moving those declarations into a partial that sorts before this
+/// one initialises them against <c>HallTopY == 0</c> and quietly builds a station whose furniture is
+/// stacked on the hall floor. That was measured here, not guessed: splitting this file by concern moved
+/// 33 pinned frames and reddened 14 guards. So everything that declares a static field stays in this file,
+/// in its original order — the catalogue, the memo, the shape of a station, the bar and its people — and
+/// only what declares none was carved off.</para></remarks>
+public static partial class HavenInterior
 {
     /// <summary>One walkable station: which body, what it's called, and its themed dressing.</summary>
     private sealed record StationSpec(
@@ -103,7 +115,20 @@ public static class HavenInterior
     // Found by an unrelated change to the surface renderer shifting the timing enough to lose the race. It
     // was always there. Building a deck is deterministic, so a racing double-build is pure waste and never a
     // wrong answer — only the dictionary itself ever needed protecting.
-    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, DeckPlan> Cache = new();
+    //
+    // #1112 · …and BOUNDED, which it was not. The key carries the docking watch, and the watch advances for
+    // ever: a long voyage left one built station in memory per watch, permanently, because nothing here ever
+    // took one out again. MoonSurface's twin memo has had a cap and a flush since #371 and this one never
+    // grew one — so the cap is not written here either. Both twins now hold the same BoundedMemo, whose whole
+    // reason for existing is that a cache policy kept in two call sites is a cache policy that drifts.
+    private static readonly BoundedMemo<string, DeckPlan> Cache = new(BoundedMemo.DefaultCap);
+
+    /// <summary>#1112 · How many built stations the memo is holding, for the guard that holds it to its cap.
+    /// Test-visible only — nothing in the game may care how warm a cache is.</summary>
+    internal static int DeckCacheCount => Cache.Count;
+
+    /// <summary>#1112 · …and the cap it is held to.</summary>
+    internal static int DeckCacheCap => Cache.Cap;
 
     /// <summary>Does this haven have a walkable interior (so docking should weld on a tube)?</summary>
     public static bool HasInterior(string bodyId) => System.Array.Exists(Specs, s => s.BodyId == bodyId);
@@ -150,9 +175,15 @@ public static class HavenInterior
     /// in and sat down (<see cref="RoomChurn"/>). Null, or a churn with nothing in it, is the rota's own
     /// answer. A churn that HAS something in it is part of the cache key, for the reason the watch is: two
     /// rooms with different people in them are two rooms.</param>
+    /// <param name="tier">#380 item 10 · Which tube this berth earned (<see cref="ArrivalTube.TierFor"/>), so the
+    /// customs desk at the immigration gate can say what the gate is for. It is a PARAMETER and not something
+    /// this file works out, because the tier is derived from the scenario's traffic and this renderer has no
+    /// ephemeris — passing the page's own answer in is what makes the desk and the arrival plate one reading of
+    /// one berth rather than two. Null is "nobody asked": the desk is left off, which is what every caller that
+    /// only wants the geometry has always got. Part of the cache key, for the reason the watch is.</param>
     public static DeckPlan? DockedDeck(string bodyId, IReadOnlySet<string>? unlockedHatchIds = null, double simTime = 0,
         bool forceOracle = false, System.Action<DeckPlan.Droid[], int>? fillWalkers = null,
-        RoomChurn? churn = null)
+        RoomChurn? churn = null, ArrivalTube.Tier? tier = null)
     {
         if (System.Array.Find(Specs, s => s.BodyId == bodyId) is not { } spec)
         {
@@ -163,20 +194,19 @@ public static class HavenInterior
             : DeckExpansions.ActiveWings(WingCatalog(bodyId), bodyId, unlockedHatchIds).ToList();
         if (fillWalkers is not null)
         {
-            return BuildComplex(spec, active, simTime, forceOracle, fillWalkers, churn);
+            return BuildComplex(spec, active, simTime, forceOracle, fillWalkers, churn, tier);
         }
         long watch = PatronRota.WatchIndex(simTime);
         string wingKey = active.Count == 0
             ? bodyId
             : bodyId + "|" + string.Join(",", active.Select(w => w.UnlockHatchId).OrderBy(s => s, System.StringComparer.Ordinal));
         string room = churn is { Anything: true } c ? "+" + c.Signature : "";
-        string key = $"{wingKey}@{watch}{(forceOracle ? "+oracle" : "")}{room}"; // the seated-regular rota re-rolls each watch, so it keys the cache
-        if (!Cache.TryGetValue(key, out DeckPlan? deck))
-        {
-            deck = BuildComplex(spec, active, simTime, forceOracle, null, churn);
-            Cache[key] = deck;
-        }
-        return deck;
+        string gate = tier is { } t ? "+" + t : "";
+        string key = $"{wingKey}@{watch}{(forceOracle ? "+oracle" : "")}{room}{gate}"; // the seated-regular rota re-rolls each watch, so it keys the cache
+        // #1112 · Held to a cap, and on overflow the memo starts fresh. A rebuilt deck is the deck that was
+        // thrown away — every input to BuildComplex here is in the key — so an eviction costs the few hundred
+        // objects of one build and nothing else.
+        return Cache.GetOrBuild(key, () => BuildComplex(spec, active, simTime, forceOracle, null, churn, tier));
     }
 
     // --- The docking-tube umbilical (deck units), mouthing at the ship's airlock vestibule hatch ---
@@ -192,6 +222,11 @@ public static class HavenInterior
     private static readonly float HallApothem = (float)(HallR * System.Math.Cos(System.Math.PI / HallSides));
     private static readonly float HallBottomY = HallCenterY - HallApothem; // the tube mates here (south edge)
     private static readonly float HallTopY = HallCenterY + HallApothem;    // the bar opens off here (north edge)
+
+    /// <summary>Where the customs officer stands, beside the immigration gate — the droid in
+    /// <see cref="FillComplexDroids"/> AND the card [E] raises at him (#380 item 10). One constant, because a
+    /// figure and the console that speaks for him standing a du apart is a man talking from the next square.</summary>
+    private static readonly (float X, float Y) CustomsDesk = (6.5f, HallBottomY + 7);
 
     // --- The bar, off the hall's north door — big and cavernous, a local-planet view along the back ---
     private const float BarLeft = -14f;
@@ -619,532 +654,5 @@ public static class HavenInterior
             h = (h ^ c) * 0x100000001B3UL;
         }
         return h ^ (ulong)watch;
-    }
-
-    // --- Runtime wings (Core DeckWing catalog) ------------------------------------------------------
-    // Authored per station against the hall geometry. v1 ships one: Cinder Roost's Bonded Stores back
-    // room (V-06). Rooms gate on quests (you must crack the hatch) and quests gate on rooms (the
-    // fence's package can only be lifted once the room exists) — see Map.razor.
-    private static readonly Dictionary<string, DeckWing[]> WingCatalogs = new()
-    {
-        ["cinder-roost"] = [DeckExpansions.Validate(BondedBackRoom("cinder-roost", "V-06"))],
-    };
-
-    /// <summary>The wings authored for a station (possibly none).</summary>
-    public static IReadOnlyList<DeckWing> WingCatalog(string bodyId) =>
-        WingCatalogs.TryGetValue(bodyId, out DeckWing[]? w) ? w : [];
-
-    /// <summary>Does cracking this hatch open a real room (rather than just blinking a lock green)?</summary>
-    public static bool HatchGrowsWing(string bodyId, string hatchId) =>
-        DeckExpansions.GrowsBehind(WingCatalog(bodyId), bodyId, hatchId);
-
-    private static (float X, float Y) HallVertex(int k)
-    {
-        double a = (15 + 30 * k) * System.Math.PI / 180.0;
-        return (HallCenterX + HallR * (float)System.Math.Cos(a), HallCenterY + HallR * (float)System.Math.Sin(a));
-    }
-
-    // The fence's back room behind a station's BONDED STORES hatch (edge 6 of the ring). The room is a
-    // funnel off the doorway (the doorway itself is carved by BuildComplex, so the wing carries only
-    // the walls beyond it), with the fence's stash on the back shelf and the Magpie's back-room booth.
-    private static DeckWing BondedBackRoom(string bodyId, string hatchId)
-    {
-        (float ax, float ay) = HallVertex(6);
-        (float bx, float by) = HallVertex(7);
-        (WingWall stubA, WingWall stubB, _) = DeckExpansions.CarveDoorway(ax, ay, bx, by, 0.30f, 0.70f);
-        double p30x = stubA.X2, p30y = stubA.Y2;  // doorway mouth, 30% along the edge
-        double p70x = stubB.X1, p70y = stubB.Y1;  // doorway mouth, 70% along the edge
-
-        // Outward-normal / edge-tangent frame, so the room sits squarely outside the hall.
-        double mx = (ax + bx) / 2, my = (ay + by) / 2;
-        double nx = mx - HallCenterX, ny = my - HallCenterY;
-        double nl = System.Math.Sqrt(nx * nx + ny * ny); nx /= nl; ny /= nl;
-        double tx = bx - ax, ty = by - ay;
-        double tl = System.Math.Sqrt(tx * tx + ty * ty); tx /= tl; ty /= tl;
-        const double d1 = 5, widen = 4, d2 = 12;
-        double s30x = p30x + nx * d1 - tx * widen, s30y = p30y + ny * d1 - ty * widen;   // left shoulder
-        double s70x = p70x + nx * d1 + tx * widen, s70y = p70y + ny * d1 + ty * widen;   // right shoulder
-        double bk30x = s30x + nx * d2, bk30y = s30y + ny * d2;                            // back-left corner
-        double bk70x = s70x + nx * d2, bk70y = s70y + ny * d2;                            // back-right corner
-        double rcx = (s30x + s70x + bk30x + bk70x) / 4, rcy = (s30y + s70y + bk30y + bk70y) / 4;
-        double stashx = (bk30x + bk70x) / 2 - nx * 2.5, stashy = (bk30y + bk70y) / 2 - ny * 2.5;
-
-        var walls = new List<WingWall>
-        {
-            new((float)p30x, (float)p30y, (float)s30x, (float)s30y),   // left flare
-            new((float)s30x, (float)s30y, (float)bk30x, (float)bk30y), // left side
-            new((float)bk30x, (float)bk30y, (float)bk70x, (float)bk70y), // back wall
-            new((float)bk70x, (float)bk70y, (float)s70x, (float)s70y), // right side
-            new((float)s70x, (float)s70y, (float)p70x, (float)p70y),   // right flare
-        };
-        var consoles = new List<WingConsole>
-        {
-            new(WingConsoleKind.Stash, (float)stashx, (float)stashy, "📦 FENCE'S STASH"),
-            new(WingConsoleKind.Patron, (float)MagpieBackPost.X, (float)MagpieBackPost.Y, "◈ THE MAGPIE"),
-        };
-        var labels = new List<WingLabel>
-        {
-            new((float)rcx, (float)rcy, "BONDED STORES · BACK ROOM"),
-        };
-        // No wing-owned doors: the doorway (an unlocked auto-door) is carved by BuildComplex.
-        return new DeckWing($"{bodyId}-bonded-backroom", bodyId, hatchId, "BONDED STORES BACK ROOM",
-            walls, [], consoles, labels);
-    }
-
-    private static DeckPlan.ConsoleKind MapConsoleKind(WingConsoleKind kind) => kind switch
-    {
-        WingConsoleKind.Hatch => DeckPlan.ConsoleKind.Hatch,
-        WingConsoleKind.Stash => DeckPlan.ConsoleKind.Stash,
-        WingConsoleKind.Patron => DeckPlan.ConsoleKind.BarPatron,
-        WingConsoleKind.ViewObject => DeckPlan.ConsoleKind.ViewObject,
-        _ => DeckPlan.ConsoleKind.None,
-    };
-
-    private static float Lerp(float a, float b, float t) => a + (b - a) * t;
-
-    private static DeckPlan BuildComplex(StationSpec spec, IReadOnlyList<DeckWing> activeWings, double simTime,
-        bool forceOracle = false, System.Action<DeckPlan.Droid[], int>? fillWalkers = null,
-        RoomChurn? churn = null)
-    {
-        DeckPlan ship = DeckPlan.Ship;
-        bool backRoomOpen = activeWings.Count > 0; // the Magpie's back-room stop is reachable once a wing is welded on
-
-        // Hatch ids whose edge has grown a wing — carve a doorway there instead of a sealed wall.
-        var openHatchIds = new HashSet<string>(activeWings.Select(w => w.UnlockHatchId));
-
-        // The bare ship seals its airlock hatch (x 1..4); the complex opens it and mates the tube.
-        var hatch = new DeckPlan.Wall(1, ShipHatchY, 4, ShipHatchY, false, true);
-
-        var walls = new List<DeckPlan.Wall>(ship.Walls.Where(w => !w.Equals(hatch)));
-        // Seed from the ship's own doors so the shuttle-bay airlock (#163) travels with the ship into
-        // every docked complex — that is the captain's ride home, so the return hop is never stranded.
-        var doors = new List<DeckPlan.Door>(ship.Doors);
-        var labels = new List<(float X, float Y, string Text)>(ship.RoomLabels);
-
-        // Tube: the umbilical from the ship's hatch up to the hall's south edge.
-        walls.Add(new(TubeLeft, ShipHatchY, TubeLeft, HallBottomY, false, true));
-        walls.Add(new(TubeRight, ShipHatchY, TubeRight, HallBottomY, false, true));
-        doors.Add(new(TubeLeft, ShipHatchY + 1, TubeRight, ShipHatchY + 1)); // ship-end auto door
-        doors.Add(new(TubeLeft, HallBottomY - 1, TubeRight, HallBottomY - 1)); // hall-end auto door
-
-        // The round hall ring. Vertices at (15 + 30k)°, so edges are centred on the compass points;
-        // edge 8 faces south (our tube) and edge 2 faces north (the bar). Every other edge is a
-        // sealed berth — a real wall with a cold "locked" hatch drawn on it and a BERTH sign inside.
-        var v = new (float X, float Y)[HallSides];
-        for (int k = 0; k < HallSides; k++)
-        {
-            v[k] = HallVertex(k);
-        }
-
-        // The ring's sealed edges: a few other captains' berths and the station's own departments,
-        // nearly all locked to us — so the concourse reads as one hub of a much bigger complex. Each
-        // is a numbered Hatch console: walk up and it names itself + shows locked; press E to knock.
-        // A cracked hatch that grows a wing is drawn open (📂) and its edge is a real doorway.
-        string[] ringTags =
-        [
-            "⚓ BERTH", "🔒 CUSTOMS", "🔒 HABITAT RING", "⚓ BERTH", "🔒 MEDBAY",
-            "🔒 BONDED STORES", "⚓ BERTH", "🔒 DOCKMASTER", "🔒 TRANSIT", "🔒 SECURITY",
-        ];
-        var hatches = new List<DeckPlan.ConsoleSpot>();
-        int sealedIdx = 0;
-        for (int k = 0; k < HallSides; k++)
-        {
-            (float X, float Y) a = v[k], b = v[(k + 1) % HallSides];
-            if (k == 8) // south edge: our tube mouth (gap x 1..4)
-            {
-                walls.Add(new(a.X, a.Y, TubeLeft, a.Y, false, true));
-                walls.Add(new(TubeRight, b.Y, b.X, b.Y, false, true));
-            }
-            else if (k == 2) // north edge: the wide door to the bar (gap x BarDoorLeft..BarDoorRight)
-            {
-                walls.Add(new(a.X, a.Y, BarDoorRight, a.Y, false, true));
-                walls.Add(new(BarDoorLeft, b.Y, b.X, b.Y, false, true));
-                doors.Add(new(BarDoorLeft, a.Y, BarDoorRight, a.Y)); // wide auto door
-            }
-            else // a sealed berth / department — or an opened expansion joint
-            {
-                string tag = ringTags[sealedIdx % ringTags.Length];
-                string id = $"{spec.Authority[0]}-{k:D2}"; // e.g. M-05: findable, distinct per station
-                sealedIdx++;
-                float px = HallCenterX + ((a.X + b.X) / 2 - HallCenterX) * 0.9f;
-                float py = HallCenterY + ((a.Y + b.Y) / 2 - HallCenterY) * 0.9f;
-                if (openHatchIds.Contains(id))
-                {
-                    // Cracked: carve a walkable doorway (two stubs + an unlocked auto-door), and draw
-                    // the panel open (📂). The wing's own walls, added below, close the room beyond.
-                    (WingWall stubA, WingWall stubB, WingDoor door) =
-                        DeckExpansions.CarveDoorway(a.X, a.Y, b.X, b.Y, 0.30f, 0.70f);
-                    walls.Add(new(stubA.X1, stubA.Y1, stubA.X2, stubA.Y2, false, true));
-                    walls.Add(new(stubB.X1, stubB.Y1, stubB.X2, stubB.Y2, false, true));
-                    doors.Add(new(door.X1, door.Y1, door.X2, door.Y2)); // unlocked — you walk through
-                    string dept = string.Join(' ', tag.Split(' ').Where(t => t.All(char.IsLetter)));
-                    hatches.Add(new(DeckPlan.ConsoleKind.Hatch, px, py, $"📂 {dept} · {id}"));
-                }
-                else
-                {
-                    // Sealed: a real wall with a cold locked hatch drawn on it and a knockable panel.
-                    walls.Add(new(a.X, a.Y, b.X, b.Y, false, true));
-                    doors.Add(new(Lerp(a.X, b.X, 0.25f), Lerp(a.Y, b.Y, 0.25f),
-                                  Lerp(a.X, b.X, 0.75f), Lerp(a.Y, b.Y, 0.75f), Locked: true));
-                    hatches.Add(new(DeckPlan.ConsoleKind.Hatch, px, py, $"{tag} · {id}"));
-                }
-            }
-        }
-
-        // Immigration desk (Total Recall): two counters with a central GATE aligned to the tube, so
-        // you walk straight off the umbilical through the checkpoint. Officer to one side.
-        float deskY = HallBottomY + 6;
-        walls.Add(new(-7, deskY, 1, deskY, false, false)); // counter, port of the gate
-        walls.Add(new(4, deskY, 9, deskY, false, false));  // counter, starboard of the gate (gate gap x 1..4)
-        labels.Add((HallCenterX, HallBottomY + 7.5f, $"{spec.Authority} IMMIGRATION"));
-        labels.Add((HallCenterX, HallBottomY + 2.5f, spec.Quip));
-        // A big lobby welcome poster so you know at a glance which port you're standing in.
-        labels.Add((HallCenterX, HallCenterY + 8, $"★  WELCOME TO {spec.Name}  ★"));
-        labels.Add((HallCenterX, HallCenterY + 3, $"⚓ {spec.Authority} ORBIT"));
-
-        // The bar, off the hall's north door.
-        walls.Add(new(BarLeft, HallTopY, BarDoorLeft, HallTopY, false, true));   // bar floor wall, port of the door
-        walls.Add(new(BarDoorRight, HallTopY, BarRight, HallTopY, false, true)); // bar floor wall, starboard of the door
-        walls.Add(new(BarLeft, HallTopY, BarLeft, BarTopY, false, true));
-        walls.Add(new(BarRight, HallTopY, BarRight, BarTopY, false, true));
-        walls.Add(new(BarLeft, BarTopY, BarRight, BarTopY, true, true)); // spinward window onto space
-        labels.Add((HallCenterX, BarTopY - 6.5f, spec.BarName));
-        labels.Add((8f, HallTopY + 1.5f, "🎁 GIFT SHOP")); // every place has one (owner)
-
-        // #247 — the bar counter, and the BARKEEP behind it. Owner ashore at the Rusty Roadstead: "How
-        // do I get a drink at the Rusty bar here? Did we forget to add the bar-keep :-D". The counter is
-        // a real wall (you belly up, you don't walk through it); the barkeep console sits on the players'
-        // side of it, so E leans in for the house special. The keep's name + drink come from Core.
-        //
-        // 2026-07-18 ("Evening wind" plan) — the per-image correction. The first pass shared ONE counter
-        // for all four bars and pinned it three du off the far wall (BarTopY − 3), which dropped the keep
-        // and the pacing droid up in the window/ceiling band of every backdrop. The owner ruled per-image:
-        // "the bar-keep service position … needs to be AT that desk … not the middle of the empty floor …
-        // Not on top of a window — and the bar to be on top of the bar in the picture." So each bar now
-        // reads its desk off its OWN art (Core BarDesks), and the counter is placed there — down the LEFT,
-        // mid-depth, where every backdrop actually draws it. The service point (S) is the [E] spot on the
-        // players' side; the counter wall sits just BEHIND it (toward the window) and the droid paces
-        // behind that (see FillComplexDroids). A safe fallback keeps any unlisted bar sane.
-        BarDesk desk = BarDesks.For(spec.BodyId) ?? DefaultBarDesk(spec.BodyId);
-        float serviceX = desk.ServiceX;
-        float serviceY = HallTopY + desk.ServiceYOffset;   // mid-depth on the desk, clear of the window
-        float counterY = serviceY + 1f;                     // the counter wall, one du behind the service line
-        walls.Add(new(serviceX - desk.CounterHalfWidth, counterY, serviceX + desk.CounterHalfWidth, counterY, false, false)); // waist-high bar counter, on the pictured desk
-        Barkeep? keep = Barkeeps.For(spec.BodyId);
-        string keepLabel = keep is { } bk ? $"🍺 BARKEEP · {bk.Name}" : "🍺 BARKEEP";
-
-        // Two locked back-room hatches off the bar — more of the place you can't get into (yet), and since
-        // #973 L0 the two leaves people come OUT of. The records are BarBackRoomLeaves' and not typed again
-        // here: a walker's plate and the plate the captain is refused at are one string, by construction.
-        UndergroundComplex.LockedDoor[] backRooms = BarBackRoomLeaves(spec.Authority[0]);
-        foreach (UndergroundComplex.LockedDoor leaf in backRooms)
-        {
-            doors.Add(new((float)leaf.X1, (float)leaf.Y1, (float)leaf.X2, (float)leaf.Y2, Locked: true));
-            // The knockable panel sits two du INTO the room from its leaf, on whichever side wall it hangs on.
-            float inward = leaf.X1 <= BarLeft ? 2f : -2f;
-            hatches.Add(new(DeckPlan.ConsoleKind.Hatch,
-                (float)leaf.X1 + inward, (float)((leaf.Y1 + leaf.Y2) / 2), leaf.Sign));
-        }
-
-        // The bar's regulars (issue #410): no longer four names nailed to four fixed chairs in every bar.
-        // The rota (ResolveRegulars → PatronRota) decides, for THIS station and THIS docking watch, which
-        // of the four are drinking here and which chair each took — so a present regular gets a BarPatron
-        // console at their seeded seat, and an absent one leaves an empty chair (no console: E finds
-        // nothing, they've drifted off — opportunity/dread, not a bug). Contacts stay keyed by the ◈ label
-        // id, never by seat, so the drink/rumor/pick systems work whichever chair fills. Drop the ship's ⚓.
-        // …and #731's churn over the top of it: a regular who stood up and walked out of the cellar door has
-        // no console at his chair any more, and one who came out of it and sat down has one at his. Asked
-        // once, here, so the consoles, the droids and the barkeep's line cannot come to three views.
-        IReadOnlyList<SeatedRegular> regulars = ResolveRegulars(spec.BodyId, simTime, churn);
-        var consoles = new List<DeckPlan.ConsoleSpot>(ship.Consoles.Where(c => c.Kind != DeckPlan.ConsoleKind.Airlock));
-        foreach (SeatedRegular r in regulars)
-        {
-            if (r.Present)
-            {
-                consoles.Add(new(DeckPlan.ConsoleKind.BarPatron, (float)r.X, (float)r.Y, r.Label));
-            }
-        }
-
-        // The station oracle (issue #425), if she's tuned to this bar this watch. A BarPatron console in
-        // the port-back corner; the client's E-router matches her by name (OracleRant.Nickname) and hands
-        // off to the oracle flow, never the generic quest-giver path. Absent watches leave the stool empty.
-        bool oracleHere = OraclePresent(spec.BodyId, simTime, forceOracle);
-        if (oracleHere)
-        {
-            consoles.Add(new(DeckPlan.ConsoleKind.BarPatron, OracleCorner.X, OracleCorner.Y,
-                SpaceSails.Core.OracleRant.ConsoleLabel));
-        }
-        consoles.AddRange(new DeckPlan.ConsoleSpot[]
-        {
-            // The Magpie's bar stop — a roaming patron (PR-F). They aren't always here; walk up and the
-            // game reads their rota, so an empty chair means they've drifted off (bar → gone → back room).
-            new(DeckPlan.ConsoleKind.BarPatron, (float)MagpieBarPost.X, (float)MagpieBarPost.Y, "◈ THE MAGPIE"),
-            // #247 — the barkeep service console, ON the desk drawn in this bar's art (owner 2026-07-18,
-            // "Evening wind": "the bar-keep service position … needs to be AT that desk … the bar to be on
-            // top of the bar in the picture"). It sits at the desk's service point (S) — down the LEFT,
-            // mid-depth — on the players' (hall-door) side of the counter wall, so the captain bellies up
-            // from below and the [E] radius leans in for the house special. Kept > InteractRadius from
-            // One-Eye Silas's stool (−9, HallTopY+6) so E never grabs the wrong regular.
-            new(DeckPlan.ConsoleKind.Barkeep, serviceX, serviceY, keepLabel),
-            // The gift shop: walk up, press E, view the Gen-AI souvenir + its location gag. Kept clear
-            // of the bar patrons (Coil at x14) so E doesn't grab the wrong console.
-            new(DeckPlan.ConsoleKind.ViewObject, 6, HallTopY + 3, "👕 SOUVENIR TEE", spec.TshirtArt, spec.Gag),
-            new(DeckPlan.ConsoleKind.ViewObject, 9.5f, HallTopY + 3, "🧲 FRIDGE MAGNET", spec.MagnetArt,
-                $"A little {spec.Name} to stick on the fridge back home."),
-            // The second PIRATE INSURANCE poster, in the BAR wing (#380 item 1 — the pair banked for this
-            // lane). Where a spacer nurses a drink and does the grim arithmetic, Nebula Mutual pitches the
-            // hard sell: "DIED BROKE? WALK IT OFF." On the starboard wall, clear of Coil's stool (x14, +6)
-            // and the back-room hatch. [E] pops the poster + the sales-voice caption. Grok-generated art.
-            new(DeckPlan.ConsoleKind.ViewObject, BarRight - 2.5f, HallTopY + 14, "📋 PIRATE INSURANCE",
-                "art/poster-pirate-insurance-2.jpg",
-                "“DIED BROKE? WALK IT OFF.” Nebula Mutual covers the clinic bill so the void doesn't keep "
-                + "you — one premium, and a shot nerve or a Reever's hand is just a bad night, not the last "
-                + "one. The hoards you buried outlive the hull; the policy outlives the captain. Underwritten "
-                + "by Nebula Mutual — “We Bring You Back Meaner.”"),
-        });
-        // 📸 THE SELFIE SPOT (issue #400, owner's cruise 2026-07-20: "the awesome-view places … should
-        // have a photo spot … the frame should place the CAPTAIN in the awesome view"). The scenic outer
-        // havens (Red Eye storm gallery, Ringside's ring-lip, Selene's Earthrise, The Deep's edge) each get
-        // a console at the bar's spinward window — walk up, press E, and the captain poses into the vista
-        // with a boastful house-voice caption, filed into the legend ledger. Reuses the ViewObject/plaque
-        // console idiom (#392); a dedicated kind routes E to the capture instead of the passive viewer.
-        // Placed at the starboard end of the big window — clear of the barkeep desk (down the left), the
-        // gift-shop consoles (x 6/9.5, +3), the STOREROOM hatch (BarRight−2, +11), and the second insurance
-        // poster (BarRight−2.5, +14) — so [E] never grabs the wrong console whichever chair the rota fills.
-        if (SpaceSails.Core.SelfieSpots.For(spec.BodyId) is { } selfieSpot)
-        {
-            consoles.Add(new(DeckPlan.ConsoleKind.SelfieSpot, BarRight - 5, BarTopY - 2,
-                selfieSpot.ConsoleLabel, selfieSpot.VistaArt));
-        }
-
-        consoles.AddRange(hatches); // the ring departments + bar back-rooms, as knockable locked hatches
-
-        // The station's DEDICATION PLAQUE (owner's cruise ruling, 2026-07-19, photographing their ship's
-        // Aker Finnyards builder's plate: "We could gen-AI the ships and docks some space-dock plaques …
-        // add some depth to the world (worldbuilding)"). One addition here seeds every port — walk off
-        // the tube, and it stands in the concourse on your port side, clear of the tube path (x 1..4), the
-        // immigration desk, and every ring hatch. [E] pops the plate + its dedication in the house voice
-        // (Core Plaques). Selene / Red Eye / Deep carry Grok plate art; the rest fall back to the text
-        // alone until their easel is painted (the souvenir onerror-hide fallback idiom).
-        if (Plaques.For(spec.BodyId) is { } plaque)
-        {
-            consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, HallCenterX - 6, HallCenterY - 5,
-                plaque.ConsoleLabel, plaque.ArtUrl, plaque.Lore));
-        }
-
-        // The LIFEBOAT STATION (owner worldbuilding addendum, 2026-07-19: "Safety equipment is also cool.
-        // Lifeboats at station maybe."). A battered muster point across the concourse from the plaque, on
-        // the starboard side — clear of the tube path (x 1..4), the immigration desk, the plaque, and every
-        // ring hatch. A wall label marks the muster; [E] pops the muster card (per-port stale inspection
-        // date, and an asterisk that does the work). Text-only for now — the art easel is a follow-up.
-        labels.Add((HallCenterX + 9, HallCenterY - 6.5f, Plaques.LifeboatLabel));
-        consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, HallCenterX + 9, HallCenterY - 5,
-            Plaques.LifeboatLabel, null, Plaques.LifeboatMuster(spec.BodyId)));
-
-        // PIRATE INSURANCE — the Gen-AI dock poster (#380 item 1: pre-seed the brain-backup / Pirate
-        // Insurance premise with port advertising, so a new player meets the fiction BEFORE the death card,
-        // not on it; owner 2026-07-19: "we should explain Pirate insurance … advertisements about it as Gen
-        // AI at every dockable port"). One addition here seeds all eight ports (the shared hall build, the
-        // ViewObject console idiom the plaque/souvenirs use). Port-side of the concourse, above the plaque,
-        // clear of the tube path (x 1..4), the immigration desk, the plaque, the lifeboat, and every ring
-        // hatch. [E] pops the poster ("OUR RATES ARE A STEAL") + the sales-voice caption. Art is Grok-made.
-        consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, HallCenterX - 11, HallCenterY + 6,
-            "📋 PIRATE INSURANCE", "art/poster-pirate-insurance-1.jpg",
-            "“OUR RATES ARE A STEAL.” Pirate Insurance from Nebula Mutual: brain-backup rebirth, a rustbucket "
-            + "gassed and waiting, no awkward questions at the clinic. Die uninsured and you still wake — just "
-            + "meaner and broker. Ask your dockmaster before the collectors ask about you. Underwritten by "
-            + "Nebula Mutual — “We Bring You Back Meaner.”"));
-
-        // #973 L4 · THE THREE SMALL PLATES, hung round the same concourse the poster hangs in. A text plate
-        // in the poster's own idiom — no canvas, exactly as the lifeboat muster above carries none: three
-        // more paintings for three one-line ads would be a pool of art bought to say very little.
-        //
-        // The captain reads the WHOLE of each one walking past (the label IS the advertising), and [E] gives
-        // it back on a card so the words can be read twice — which matters, because the third one read is
-        // the one that finishes a memory (`StationAds`). Detected by the ad's own text, so this file never
-        // learns what any of them is FOR.
-        //
-        // NO CAPTION, and that came out of looking at the card in a browser: a caption repeating the title
-        // word for word read as a stutter — the surface saying one thing twice and meaning it once. The
-        // plate is one sentence; the card is that sentence held closer, and there is nothing under it.
-        //
-        // Placed on the northern half of the concourse, where nothing else stands: the poster and the plaque
-        // are port-side and low, the lifeboat is starboard and low, the tube path is x 1..4 and southern.
-        // Every one is at least 5 du from every other console on this deck, so [E] can never grab the wrong
-        // fixture — the same clearance rule the second poster and the selfie spot are placed by.
-        (float X, float Y)[] adSites =
-        [
-            (HallCenterX + 8.5f, HallCenterY + 4),
-            (HallCenterX + 3, HallCenterY + 9),
-            (HallCenterX - 4, HallCenterY + 8),
-        ];
-        for (int adIdx = 0; adIdx < adSites.Length && adIdx < SpaceSails.Core.StationAds.Ads.Count; adIdx++)
-        {
-            SpaceSails.Core.StationAds.Ad ad = SpaceSails.Core.StationAds.Ads[adIdx];
-            consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, adSites[adIdx].X, adSites[adIdx].Y, ad.Label));
-        }
-
-        // Seven tables spread across the big room — the rota seats present regulars at some of them this
-        // watch, the rest stand open (an empty chair = someone's drifted off) — plus the ship's cantina.
-        var tables = new List<DeckPlan.TableTop>(ship.Tables);
-        foreach ((float X, float Y) top in BarTops)
-        {
-            tables.Add(new(top.X, top.Y));
-        }
-
-        var backdrops = new List<DeckPlan.Backdrop>(ship.Backdrops)
-        {
-            // Concourse art across the round hall — sized ~16:9 to match the image so the domed ceiling
-            // isn't stretched; fills the hall's width, floor showing at the very top/bottom.
-            new(spec.HallArt, HallCenterX - 16, HallCenterY + 9, 32, 18, 0.95f),
-            new(spec.BarArt, BarLeft, BarTopY, BarRight - BarLeft, BarTopY - HallTopY, 0.95f),
-        };
-
-        // Weld on each active wing's geometry (Wednesday plan §3 PR-F): walls, any doors, consoles
-        // (translated to deck console kinds), and floor labels. The doorway into each was already
-        // carved above; here the room itself grows.
-        foreach (DeckWing wing in activeWings)
-        {
-            foreach (WingWall w in wing.Walls)
-            {
-                walls.Add(new(w.X1, w.Y1, w.X2, w.Y2, w.IsWindow, w.IsHull));
-            }
-            foreach (WingDoor d in wing.Doors)
-            {
-                doors.Add(new(d.X1, d.Y1, d.X2, d.Y2, d.Locked));
-            }
-            foreach (WingConsole c in wing.Consoles)
-            {
-                consoles.Add(new(MapConsoleKind(c.Kind), c.X, c.Y, c.Label, c.ImageUrl, c.Caption));
-            }
-            foreach (WingLabel l in wing.Labels)
-            {
-                labels.Add((l.X, l.Y, l.Text));
-            }
-        }
-
-        // ── #973 L5b · A TOP THE CAPTAIN CAN TAKE ───────────────────────────────────────────────────────
-        //
-        // #973 L0 found the gap and wrote it down: every one of the seven ways to open a sitting in this game
-        // was gated on a SurfaceExcursion, a berth has none, and so "the bar's seven tops are drawn dressing
-        // with no chairs and no console" — [E] at one answered nothing, which is an absence rather than a
-        // refusal and is the one kind of no a player cannot read (#757's own lesson, in the other room).
-        //
-        // A console goes on every top the room has not already given to somebody: the regulars the rota
-        // seated this watch, the Magpie at their stop, the oracle in her corner. Asked of the console list
-        // ITSELF, after everything else is in it, so the answer cannot drift from the room — a second table
-        // of who is sitting where would be this file's oldest bug class with a stranger in the captain's
-        // chair. Within an interact radius of an existing console is "somebody's", because that is exactly
-        // the distance at which [E] would grab the wrong one.
-        foreach ((float X, float Y) top in BarTops)
-        {
-            bool somebodysAlready = false;
-            foreach (DeckPlan.ConsoleSpot spot in consoles)
-            {
-                double dx = spot.X - top.X;
-                double dy = spot.Y - top.Y;
-                if ((dx * dx) + (dy * dy) <= DeckPlan.InteractRadius * DeckPlan.InteractRadius)
-                {
-                    somebodysAlready = true;
-                    break;
-                }
-            }
-
-            if (!somebodysAlready)
-            {
-                consoles.Add(new(DeckPlan.ConsoleKind.BarTop, top.X, top.Y, BarTopLabel));
-            }
-        }
-
-        return new DeckPlan(walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(),
-            spawnX: 2.5, spawnY: 6, // aboard, in the airlock corridor, facing up the tube
-            // #973 L0 · …and the WALKER BAND after the room's own seated figures, when somebody is walking this
-            // deck. The offset is stated once (SeatedFigureCount) and the width once (Egress.BandSlots); the
-            // two times this game threw IndexOutOfRangeException at the renderer, it was because a band's
-            // width and a buffer's length were two opinions about one number.
-            droidCount: SeatedFigureCount + (fillWalkers is null ? 0 : Egress.BandSlots),
-            fillDroids: (simTime, buffer) =>
-            {
-                FillComplexDroids(simTime, buffer, backRoomOpen, serviceX, serviceY, regulars, oracleHere);
-                fillWalkers?.Invoke(buffer, SeatedFigureCount);
-            },
-            location: (x, y) => x < -14.5 && y is > 15 and < 37 ? "BONDED STORES · BACK ROOM"
-                              : y > HallTopY ? spec.BarName
-                              : y > HallBottomY ? $"{spec.Authority} IMMIGRATION"
-                              : y > ShipHatchY ? "GANGWAY"
-                              : DeckPlan.Ship.Location(x, y),
-            doors: doors.ToArray(), shipFixtures: true, followCam: true, tables: tables.ToArray(),
-            // #1040 · …AND THE SHIP'S OWN COUNTER TRAVELS WITH HER. A docked complex is her plan with a
-            // station welded onto it, and her walls, doors, consoles, labels, backdrops and tops are all
-            // seeded from it above. Her stool row and her counter's fill were the two she would have arrived
-            // without — so the moment she clamped on, the seats [E] still answers at would have stopped
-            // being drawn: the walked room and the drawn room disagreeing, which is this repository's third
-            // named bug class with a bar stool under it.
-            stools: ship.Stools, furniture: ship.Furniture);
-    }
-
-    // Ship's three droids, the immigration officer, the four seated bar regulars (issue #410, roved by the
-    // rota — each at their seeded seat this watch, or parked off-frame when they've drifted off), and —
-    // index 8 — the roaming Magpie, placed by their sim-time rota. Shared across every station (one
-    // geometry); deterministic in sim time, stateless. The <paramref name="regulars"/> seating is captured
-    // at build time (fixed for the visit), so the droids sit exactly where their consoles do; only the
-    // thermal jitter and the Magpie/barkeep pace read the live clock.
-    private static void FillComplexDroids(double simTime, DeckPlan.Droid[] buffer, bool backRoomOpen,
-        double barkeepX, double barkeepServiceY, IReadOnlyList<SeatedRegular> regulars, bool oracleHere)
-    {
-        DeckPlan.Ship.FillDroids(simTime, buffer); // fills [0..3)
-        double sway = 0.05 * System.Math.Sin(simTime * 0.0009);
-        buffer[3] = new DeckPlan.Droid(6.5, HallBottomY + 7, -System.Math.PI / 2, "Customs"); // officer beside the gate
-
-        // The four regulars sit at [4..8). A present one gets a tiny seeded thermal shuffle around their
-        // seated anchor + a look-around facing twitch (ReeverIdle, #390) so they read alive, not carved;
-        // an away one is parked far off-frame (their chair is simply empty this watch). Roster order is
-        // stable, so index 4+i is the i-th regular whether or not they're here.
-        for (int i = 0; i < 4; i++)
-        {
-            int slot = 4 + i;
-            if (i < regulars.Count && regulars[i].Present)
-            {
-                SeatedRegular r = regulars[i];
-                (double jx, double jy) = SpaceSails.Core.ReeverIdle.JitterAt(r.Seed, simTime);
-                double face = r.Facing + SpaceSails.Core.ReeverIdle.FacingTwitchAt(r.Seed, simTime);
-                buffer[slot] = new DeckPlan.Droid(r.X + jx, r.Y + jy, face, r.ShortName);
-            }
-            else
-            {
-                buffer[slot] = new DeckPlan.Droid(-9999, -9999, 0, i < regulars.Count ? regulars[i].ShortName : "Regular");
-            }
-        }
-
-        NpcPost m = ResolveMagpie(simTime, backRoomOpen);
-        buffer[8] = m.Present
-            ? new DeckPlan.Droid(m.X + sway, m.Y, m.FacingRad, "Magpie")
-            : new DeckPlan.Droid(-9999, -9999, 0, "Magpie"); // out of reach this watch — off-frame
-
-        // #247 — the barkeep, pacing their patch BEHIND the counter (owner: "a barkeep pacing their bar
-        // area is fine"; and 2026-07-18, "Evening wind": "in all bars that have a bar-desk in their
-        // graphics the barkeep is positioned behind the bar desk"). No rota (they don't leave the bar): a
-        // deterministic sine sweep, the same idiom as the seated regulars' sway. Centred on THIS bar's
-        // service point (BarDesks), one du further back than the counter wall — so the keep works the far
-        // side of the desk drawn in the art, never the window band the first pass parked them in. Facing
-        // south (−π/2), across the bar toward the captain.
-        double pace = 1.5 * System.Math.Sin(simTime * 0.00035);
-        buffer[9] = new DeckPlan.Droid(barkeepX + pace, barkeepServiceY + 2, -System.Math.PI / 2, "Barkeep");
-
-        // #425 — the station oracle, hunched over her corner drink when the rota has her here this watch.
-        // A seeded thermal shuffle + facing twitch (ReeverIdle) so she reads alive, muttering at the wall;
-        // parked far off-frame on the watches she's drifted off (her stool simply empty, no console). Index
-        // 10, the buffer's last complex slot (droidCount 11).
-        if (oracleHere)
-        {
-            ulong oseed = RegularSeed("STATION-ORACLE", PatronRota.WatchIndex(simTime));
-            (double ojx, double ojy) = SpaceSails.Core.ReeverIdle.JitterAt(oseed, simTime);
-            double oface = -System.Math.PI / 2 + SpaceSails.Core.ReeverIdle.FacingTwitchAt(oseed, simTime);
-            buffer[10] = new DeckPlan.Droid(OracleCorner.X + ojx, OracleCorner.Y + ojy, oface, "Oracle");
-        }
-        else
-        {
-            buffer[10] = new DeckPlan.Droid(-9999, -9999, 0, "Oracle");
-        }
     }
 }

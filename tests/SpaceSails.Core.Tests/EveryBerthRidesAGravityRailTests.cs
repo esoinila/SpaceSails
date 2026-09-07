@@ -164,7 +164,7 @@ public class EveryBerthRidesAGravityRailTests
         // is closing at 2.6 km/s in its frame — the two numbers off the owner's own panel in the
         // screenshot where the press was refused with "can't verify a capture from here". The plain
         // arm-time rehearsal must now promise the dock outright: no correction burn, no phase luck.
-        var eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var sim = new Simulator(eph, timeStepSeconds: 60);
         double t = (178 * 86400.0) + (10 * 3600.0) + (48 * 60.0);
 

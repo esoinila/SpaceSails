@@ -119,7 +119,7 @@ public partial class Map
     // A pocket and a notebook are both things a satchel holds. There is NO second store here: the tab reads
     // _fieldNotes, the one book (#587's law — one place that can never be forgotten about), through the same
     // Core projection the ledger renders.
-    private enum SatchelPage
+    public enum SatchelPage
     {
         /// <summary>What you are carrying. Always where an open lands — the pocket is the primary tool.</summary>
         Carried,
@@ -158,7 +158,7 @@ public partial class Map
     private SatchelPage _satchelPage = SatchelPage.Carried;
 
     /// <summary>#690/#741 · WHICH READING OF THE BOOK the NOTES tab is showing.</summary>
-    private enum NotesView
+    public enum NotesView
     {
         /// <summary>#690 · This ground alone, and where an open always lands: a captain at a door wants what
         /// THIS building has told them, not the memoirs.</summary>
@@ -336,8 +336,17 @@ public partial class Map
     /// <para>The table below is that law, in one place, read TOP-DOWN in z-order: the pop-up nearest the
     /// captain's eye owns the answer, because that is the one their eye is on and the one whose subtree the
     /// backdrop cannot blur. Nothing in front of them at all, and the HUD's pulse is exactly right — a line
-    /// about the world, said on the world.</para></summary>
-    private void SayItWhereTheyAreLooking(string line)
+    /// about the world, said on the world.</para>
+    ///
+    /// <para>#761 · <paramref name="rank"/> is for the last row only, and it is the owner's law arriving at
+    /// the one exit that has a contest in it. Every pop-up row above returns into a surface that is already
+    /// the captain's whole screen — nothing races there — but the fall-through writes into the HUD's single
+    /// slot, where #693's ranks decide who is standing when the frame ends. A plot-significant sentence sent
+    /// down that road at <see cref="PulseRank.Status"/> can be displaced by the next instrument reading, and
+    /// then the moment was told to nobody. It defaults to Status because that is what nearly every line in
+    /// the game is; see <see cref="Telling"/> for what the top two ranks mean and the warning that goes with
+    /// them.</para></summary>
+    private void SayItWhereTheyAreLooking(string line, PulseRank rank = PulseRank.Status)
     {
         // #774 · The object card, and it is FIRST because it is on top: both full-screen cards are drawn
         // with the same backdrop class, and this one is written later in Map.razor, so when an event raises
@@ -417,7 +426,7 @@ public partial class Map
             _barNotice = line;          // the counter-example #736 was filed against — the keep answers on his card
             return;
         }
-        ShowPulseMessage(line);
+        ShowPulseMessage(line, rank);
     }
 
     /// <summary>#688 · What is at your feet, answered before what is in the walls. Returns true when the press
@@ -574,6 +583,18 @@ public partial class Map
     {
         ShowPulseMessage(text, rank);
         FileNote(text, glyph);
+    }
+
+    /// <summary>#1074 · <see cref="ShowAndFile"/> for a find whose AUTHOR knows what its sentence is about —
+    /// the same relationship <see cref="FileNoteAbout"/> has to <see cref="FileNote"/>, and it exists for the
+    /// identical reason. An empty <paramref name="subjects"/> is the ordinary case and is exactly what
+    /// <see cref="ShowAndFile"/> already files, so the two never disagree about a note that names
+    /// nothing.</summary>
+    private void ShowAndFileAbout(
+        string text, string glyph, string subjects, PulseRank rank = PulseRank.Status)
+    {
+        ShowPulseMessage(text, rank);
+        FileNoteAbout(text, glyph, subjects);
     }
 
     /// <summary>#774 · <see cref="ShowAndFile"/>'s sibling for a durable find announced in the same breath as

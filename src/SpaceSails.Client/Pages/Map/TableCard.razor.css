@@ -1,0 +1,67 @@
+/* #251 · TableCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   6 rule block(s), in the order Map.razor.css wrote them, comments included. Nothing was retyped. The
+   scope is still the PAGE's (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so
+   every selector compiles to the string it compiled to before the move.
+
+   WHAT DID NOT COME, and why, because the next lane will look for it here. `::deep .table-card` — the
+   skin itself — is still in Map.razor.css, and has to be. It declares `max-height: 100%`, and the #735
+   card-family law is written BELOW it in that file declaring `max-height: min(92vh, 100%)` for eleven
+   card families at once; both are (0,1,0) and both land on this one element, so the family's cap is the
+   one that wins TODAY — that is what "the table drops its anchor to take the family cap instead" means
+   in its own comment. Move the skin into this file and the bundle appends it after the family law, so
+   `100%` would start winning: the same two rules, the other way round. `.table-outcome`,
+   `.table-showables` and `.table-showable` stay for the plainer reason — SeatedDockedStrip and
+   StandUpConfirmCard render them too, and a rule two surfaces render is not this surface's to hold.
+
+   What DID come is the last block below: `::deep .deck-offer-card.table-card`, at (0,2,0), which no
+   rule left behind can outrank on this element. */
+
+.table-card .deck-offer-giver {
+    color: #bfe0f0;
+}
+
+.table-seats {
+    color: #8fa4b8;
+    margin-bottom: 0.6rem;
+}
+
+/* #783 — the table you are sitting at, on the panel you are sitting at it through. The counter's own
+   .bar-desk-art shape (capped band, object-fit crop, so a 16:9 plate is cropped rather than squashed), as
+   its OWN class because the two pictures frame differently: everything that matters in both of these — the
+   empty chair, the boots, the glass, the papers — sits in the lower half of the frame, so the crop is pulled
+   down where the counter's sits near the middle. Sharing one class and tuning it for the desk would silently
+   re-frame the table. #782: the image is in flow ABOVE the prose and nothing is ever written over it, so
+   there is no text here that could fail to read. */
+.table-art {
+    display: block;
+    width: 100%;
+    max-height: 9.5rem;
+    object-fit: cover;
+    object-position: center 72%;
+    border-radius: 0.3rem;
+    margin: 0.3rem 0 0.5rem;
+    border: 1px solid rgba(160, 200, 220, 0.35);
+}
+
+/* The dice, spelled out. Quiet — the sum is evidence, not the event. */
+.table-math {
+    color: #9fb4c8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    margin-bottom: 0.6rem;
+}
+
+/* The moves wrap: five or six of them will not sit on one line in a 40rem card, and a row that overflows
+   its own card is how a control becomes unreachable on a laptop. */
+.table-actions {
+    flex-wrap: wrap;
+}
+
+/* The table is the exception to the bar-card family's ceiling, and this is the rule that makes it one.
+   `::deep .deck-offer-card` in Map.razor.css caps the family at `100vh - 11rem` because those cards hang
+   from a fixed anchor 9rem down the deck; the table drops that anchor (`position: static`, in the skin)
+   to sit inside a modal backdrop's own centring, so it takes the #735 family cap instead. Two classes,
+   so it outranks the one-class family rule wherever that rule sits in the bundle. */
+::deep .deck-offer-card.table-card {
+    max-height: min(92vh, 100%);
+}

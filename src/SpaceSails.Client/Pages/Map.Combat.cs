@@ -542,12 +542,30 @@ public partial class Map
         // catch her. See EncounterRule.HoldStation for the owner's ruling; the short of it is that heat is
         // the CAPTAIN's, and a game where a good long excursion means coming home to a boarding party is a
         // game about guarding a parking lot.
-        bool captainIsAboard = _surface is null;
+        //
+        // #1151 · …AND AN EXCURSION IS ONLY ONE OF THE THREE WAYS HE IS NOT ON HER. The owner's ruling on
+        // #525 makes the paragraph above the general law rather than one case of it — the process demands a
+        // ship and a captain in one place — so the question is asked through the one predicate that knows
+        // all three signals (TheMasterIsAboardHer, Map.Claims.Presence.cs). On `_surface is null` alone a
+        // hunter could still reach a hull whose master was standing in a bar past a mated gangway, which is
+        // #1138's own reading of what being aboard means, applied to the people who want her.
+        //
+        // #1151 slice 4 · …AND THE MAN ALREADY WAITING GOES FIRST. Two lines, in this order, and the order is
+        // the law. A writ that waited is served the moment its own conditions are met — he is back at their
+        // berth, on her — and only then is the sky asked whether anybody else may proceed, because serving
+        // clears the file and the answer changes on the same frame. Ask the other way round and the collector
+        // who has been standing on that ramp since the ending would be made to defer to his own writ.
+        TheWaitingWritIsServed();
+
+        // ONE WRIT, NOT A QUEUE. `TheProcessMayProceed` is the presence law AND the file: a second collector
+        // who runs the same hull down while a writ is out does not open a second process over the top of the
+        // first — he holds station, the shape this sim already gives a pursuer who cannot proceed.
+        bool anybodyMayProceed = TheProcessMayProceed();
 
         for (int i = _hunters.Count - 1; i >= 0; i--)
         {
             HunterState hunter = _hunters[i];
-            if (!captainIsAboard)
+            if (!anybodyMayProceed)
             {
                 _hunters[i] = EncounterRule.HoldStation(hunter, SimTime);
                 continue;
@@ -589,6 +607,15 @@ public partial class Map
         }
     }
 
+    /// <summary>This hunter is off you now — the one place in the game that means it.
+    ///
+    /// <para>#731 · And it means it on the GROUND too. A repo crew serves its writ on foot under an id of its
+    /// own (<see cref="CollectorLanding.GroundHunterIdPrefix"/>) and was never in <c>_hunters</c>, so every
+    /// caller here — the bribe, the resist, the Bolivia flee — removed nothing, and the captain who had just
+    /// been told the crew <i>"sheers off"</i> was served again by the same people on the next frame. They
+    /// walk back to their own boat now (<c>TheirBusinessHereIsDone</c>), which is #731's full stop and not a
+    /// despawn: the ONE call that ends an encounter ends it in both places, so a future caller cannot end
+    /// half of one.</para></summary>
     private void RemoveHunter(string hunterId)
     {
         for (int i = _hunters.Count - 1; i >= 0; i--)
@@ -598,6 +625,8 @@ public partial class Map
                 _hunters.RemoveAt(i);
             }
         }
+
+        TheirBusinessHereIsDone(hunterId);
     }
 
     private static readonly RgbaColor DriverReachColor = new(120, 210, 255, 170);

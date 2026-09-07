@@ -1,0 +1,38 @@
+/* #251 item 1/3 · FINDERCARD'S OWN RULES, and the scope carrier that makes them match.
+
+   The surface shares Map.razor.css's css scope (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by
+   the `Pages\Map\*.razor.css` line), so the .view-object / .rep-card / .rep-said / .rep-offer family
+   this card borrows wholesale keeps matching exactly as it does on the salesman's and the walk-in's
+   cards. Read RepCard.razor.css before changing any of those: it is the shared kit.
+
+   The two rules below are this card's own and nobody else renders them.
+
+   ══════════════════════════════════════════════════════════════════════════════════════════════════
+   #417 · THE LEAD, ON THE CARD.
+
+   The head and body of the case sit UNDER her hook, in a small filed block rather than in her voice,
+   because they are not something she says — they are what the captain writes down about what she said.
+   Same relationship the field book's entry has to the conversation, and drawn the same way: a rule, a
+   caps head, and one flat line under it.
+   ══════════════════════════════════════════════════════════════════════════════════════════════════ */
+.finder-lead {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    margin-top: 0.7rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(243, 226, 196, 0.28);
+}
+
+.finder-lead-title {
+    font-size: 0.9rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(243, 226, 196, 0.92);
+}
+
+.finder-lead-body {
+    font-size: 0.9rem;
+    line-height: 1.35;
+    color: rgba(232, 236, 244, 0.86);
+}

@@ -27,9 +27,36 @@ public static partial class UndergroundComplex
     //    can open, every one of them becomes a puzzle and the illusion of scale turns into a lock hunt.
     //    A card never opens a SECTOR door, and TheAuthorityCardTests pins that.
     //
-    // 3. NEVER A CODE THE PLAYER TYPES. You have the card or you do not. A keypad minigame would be out of
-    //    register with everything around it, and the owner's own phrasing — "allows us access" — is about
-    //    possession, not about a puzzle.
+    // 3. ~~NEVER A CODE THE PLAYER TYPES.~~ **OVERRULED BY THE OWNER, 2026-08-02 (#602), DELIBERATELY.**
+    //    This call read: "You have the card or you do not. A keypad minigame would be out of register with
+    //    everything around it." The reasoning behind it was sound and is worth keeping on the record — a lock
+    //    you can ATTEMPT turns a wall into a puzzle, and a building full of attemptable walls is a lock hunt
+    //    rather than a place. What it missed is the second half of the owner's own sentence: "getting that
+    //    wrong would bring security to the site."
+    //
+    //    THE AFFORDANCE STATES ITS OWN COST, which is how this game has always resolved these. A vicious
+    //    warning notice beside the pad (THREE WRONG ENTRIES CALL SECURITY. THE PAD REMEMBERS.) removes the
+    //    puzzle entirely: the building has told you exactly what happens, so entering a guess is not
+    //    problem-solving, it is gambling with a stated stake. Three tries is small enough to be uncrackable
+    //    by construction — nobody enumerates a keypad with three attempts — so the code can only ever come
+    //    from HAVING FOUND IT, which was the condition #602 set for allowing a pad at all. And the count is a
+    //    ninety-second DECAY WINDOW, not a ledger (owner, same day): a building whose staff idly try the pad
+    //    in passing cannot summon a patrol every third lifetime attempt, so it tolerates the curious and
+    //    reacts to the persistent. The two rules hold each other up — the code being FINDABLE ONLY is what
+    //    makes the reset harmless, and the reset is what makes the sticker fair rather than punitive. If
+    //    anyone ever makes the code deducible, the reset becomes an exploit.
+    //
+    //    WHAT THE PAD DOES NOT TOUCH. It is the gated FLOORS on the lift panel and nothing else. Call 2 above
+    //    stands unchanged — a SECTOR door has no reader, no pad and no way in — and so does the stop order's
+    //    seal (see UndergroundComplex.Signs.HasNoReader). The pad lives beside the panel, on a row that is
+    //    already drawn and already refusing; it never appears on a leaf somebody welded shut.
+    //
+    //    AND THE CARD IS NOT DEMOTED. A right code opens that band for THIS EXCURSION ONLY. The card remains
+    //    the durable way in — it is in the wallet and it is still there next visit — which is the whole
+    //    difference between the paper you earned and the paper you found in somebody's drawer.
+    //
+    //    Lives here rather than in a test comment because the ruling is about the CARD IDIOM's scope, and the
+    //    machinery it authorises is UndergroundComplex.LiftCode.
     //
     // Canon holds: a card may be countersigned by an office that denies existing. It never says what the
     // building was for.
@@ -420,22 +447,22 @@ public static partial class UndergroundComplex
     /// room searched — the find is still lying there.</param>
     public readonly record struct Pickup(Satchel.Item? Take, string Line, bool RoomEmptied);
 
-    /// <summary>#678 · What goes in the pocket, said in the same breath as the decision to put it there.</summary>
-    /// <param name="haul">What the room holds.</param>
-    /// <param name="hereBodyId">The site being searched — used only to tell a card for THIS building from a
-    /// card for another one, which is the one thing worth saying about an authority as it goes in.</param>
-    /// <param name="minted">For a <see cref="Haul.Key"/>, the card the caller actually minted. Null means no
-    /// card exists to hand over, and then the room says so rather than describing one.</param>
-    /// <param name="findId">The durable id of this find — the seed tag the prose is rebuilt from.</param>
-    /// <param name="carried">What is already in the pocket.</param>
-    public static Pickup WhatGoesInThePocket(
-        Haul haul, string hereBodyId, AuthorityCard? minted, string findId,
-        IReadOnlyList<Satchel.Item>? carried)
+    /// <summary>
+    /// #615 · <b>WHAT THIS ROOM WOULD HAND OVER, ASKED WITHOUT A POCKET IN THE ROOM.</b>
+    ///
+    /// <para>Lifted verbatim out of <see cref="WhatGoesInThePocket"/>, which still asks it and nothing else,
+    /// the day a find became a DECISION. The offer of KEEP or LEAVE has to name the thing being decided
+    /// about, and it has to do so for a captain whose sleeve is already full — that captain is the whole
+    /// point of the question — so the identity of a find and the capacity for it are two questions now
+    /// instead of one answer that goes null when the answer to the other is no.</para>
+    ///
+    /// <para>Null is most rooms: a stripped room hands over nothing, a crate is carried out and sold rather
+    /// than pocketed, and a Key room with no card left to mint describes no card.</para>
+    /// </summary>
+    public static Satchel.Item? WhatTheRoomHandsOver(Haul haul, AuthorityCard? minted, string findId)
     {
-        ArgumentNullException.ThrowIfNull(hereBodyId);
         ArgumentNullException.ThrowIfNull(findId);
-
-        Satchel.Item? take = haul switch
+        return haul switch
         {
             Haul.Records => new Satchel.Item(Satchel.Kind.Paper, findId),
             Haul.Dirt => new Satchel.Item(Satchel.Kind.Dirt, findId),
@@ -446,6 +473,28 @@ public static partial class UndergroundComplex
             Haul.Key when minted is { } card => new Satchel.Item(Satchel.Kind.Authority, card.Id),
             _ => null,
         };
+    }
+
+    /// <summary>#678 · What goes in the pocket, said in the same breath as the decision to put it there.</summary>
+    /// <param name="haul">What the room holds.</param>
+    /// <param name="hereBodyId">The site being searched — used only to tell a card for THIS building from a
+    /// card for another one, which is the one thing worth saying about an authority as it goes in.</param>
+    /// <param name="minted">For a <see cref="Haul.Key"/>, the card the caller actually minted. Null means no
+    /// card exists to hand over, and then the room says so rather than describing one.</param>
+    /// <param name="findId">The durable id of this find — the seed tag the prose is rebuilt from.</param>
+    /// <param name="carried">What is already in the pocket.</param>
+    /// <remarks>#615 · The identity of the find is <see cref="WhatTheRoomHandsOver"/>'s and no longer this
+    /// method's own switch — one source of truth, because the KEEP/LEAVE offer has to know WHAT is being
+    /// decided about at a moment when the pocket may well refuse it, and a second transcription of this
+    /// table is how a room would come to offer a decision over one object and hand over another.</remarks>
+    public static Pickup WhatGoesInThePocket(
+        Haul haul, string hereBodyId, AuthorityCard? minted, string findId,
+        IReadOnlyList<Satchel.Item>? carried)
+    {
+        ArgumentNullException.ThrowIfNull(hereBodyId);
+        ArgumentNullException.ThrowIfNull(findId);
+
+        Satchel.Item? take = WhatTheRoomHandsOver(haul, minted, findId);
 
         if (take is { } wanted && !Satchel.CanTake(carried, wanted))
         {
@@ -454,7 +503,7 @@ public static partial class UndergroundComplex
 
         string line = haul switch
         {
-            Haul.Records => "  🎒 Into your pocket: operational paper.",
+            Haul.Records => PaperPocketLine,
             Haul.Dirt => "  🎒 Into your pocket: a file on somebody.",
 
             // #677 · A record out of the halls is the SAME law as the pallet — what goes in the pocket is the
@@ -476,6 +525,14 @@ public static partial class UndergroundComplex
 
         return new Pickup(take, line, RoomEmptied: true);
     }
+
+    /// <summary>#678 · What the game says when a sheet of operational paper goes into the sleeve.
+    ///
+    /// <para>#1061 · Lifted out of the switch above, where it was a literal, the day a sheet that came off a
+    /// MOON rather than out of a room needed the same sentence. A pickup line may only be printed for
+    /// something that actually went in (#678's own law), and that law is much easier to keep when there is
+    /// one sentence to print rather than one per place a paper can be found.</para></summary>
+    public const string PaperPocketLine = "  🎒 Into your pocket: operational paper.";
 
     /// <summary>#678 · What a full pocket says. It is the only refusal in the game that leaves the world
     /// unchanged, and it has to be unmistakable about that: the find is still there.</summary>

@@ -34,7 +34,7 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class LoadItFromTheRowTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
     /// <summary>A gun on the ground, as the bench sets one up.</summary>
     private readonly record struct Gun(
@@ -356,7 +356,7 @@ public sealed class LoadItFromTheRowTests
         // client. Two places print a magazine into a sentence: the instrument, and this chooser. They are
         // the same call.
         string handLoad = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.HandLoad.cs"));
+            TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.HandLoad.cs"));
         Assert.DoesNotContain("MaxMagazine", handLoad, StringComparison.Ordinal);
         Assert.DoesNotContain("Readout(", handLoad, StringComparison.Ordinal);
     }
@@ -368,9 +368,9 @@ public sealed class LoadItFromTheRowTests
     public void THE_REACH_RuleIsAskedInOnePlace()
     {
         string surface = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.Darkroom.cs"));
+            TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.Darkroom.cs"));
         string handLoad = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.HandLoad.cs"));
+            TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.HandLoad.cs"));
 
         Assert.Contains("SentryHandLoad.WithinHands(", surface, StringComparison.Ordinal);
         Assert.DoesNotContain("SentryHandLoad.WithinHands(", handLoad, StringComparison.Ordinal);
@@ -392,8 +392,8 @@ public sealed class LoadItFromTheRowTests
     {
         var map = new Pages.Map();
 
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Static)!;
-        Type botType = typeof(Pages.Map).GetNestedType("SurfaceBot", Hidden | BindingFlags.Static)!;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Public | BindingFlags.Static)!;
+        Type botType = typeof(Pages.Map).GetNestedType("SurfaceBot", Hidden | BindingFlags.Public | BindingFlags.Static)!;
         object ex = Activator.CreateInstance(exType, nonPublic: true)!;
 
         var bots = (System.Collections.IList)exType.GetProperty("Bots")!.GetValue(ex)!;
@@ -523,7 +523,7 @@ public sealed class LoadItFromTheRowTests
     }
 
     private static string Razor() =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"));
 
     // ── PLUMBING ──────────────────────────────────────────────────────────────────────────────────────
 
@@ -538,18 +538,4 @@ public sealed class LoadItFromTheRowTests
 
     private static void SetProp(object o, string property, object? value) =>
         o.GetType().GetProperty(property)!.SetValue(o, value);
-
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 }

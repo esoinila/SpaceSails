@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -43,6 +43,7 @@ namespace SpaceSails.Client.Tests;
 /// wears two (<c>btn-light</c> and <c>btn-outline-light</c>) — repainting five buttons is a change to the
 /// screen. #1001 gave that second reason first; wave 7 keeps it.</para>
 /// </summary>
+[SlowGate] // #251 · 53 s over 18 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheShellOwnsTheDeathRowsAndTheShuttleHatchTests
 {
     /// <summary>The four panels a death can end on — #970's own list, and the four rows this wave moved.
@@ -332,7 +333,10 @@ public sealed class TheShellOwnsTheDeathRowsAndTheShuttleHatchTests
         Assert.Equal("<div", razor.Substring(line, 4));
 
         // …and the reason itself: a foot of more than one control, one of which walks BACK.
-        string loadOut = razor[at..razor.IndexOf("@* #223: the treasure-map card", at, StringComparison.Ordinal)];
+        // #251 item 1: the end anchor was #223's comment about the treasure-map card, and that paragraph
+        // has gone to live with the card (Pages/Map/TreasureMapCard.razor). The next surface's own guard
+        // is the same edge and is markup rather than prose.
+        string loadOut = razor[at..razor.IndexOf("@if (_treasureMapCard is { } map)", at, StringComparison.Ordinal)];
         Assert.Contains("Load something first", loadOut, StringComparison.Ordinal);
         Assert.Contains("_boardEmptyConfirm = false", loadOut, StringComparison.Ordinal);
         Assert.Contains("CancelBoarding", loadOut, StringComparison.Ordinal);
@@ -551,7 +555,7 @@ public sealed class TheShellOwnsTheDeathRowsAndTheShuttleHatchTests
     };
 
     private static string Razor(string relative)
-        => File.ReadAllText(Path.Combine(ClientSource(), "Pages", relative));
+        => MapMarkup.Read(Path.Combine(ClientSource(), "Pages", relative));
 
     private static IEnumerable<string> RazorFiles() =>
         Directory.EnumerateFiles(ClientSource(), "*.razor", SearchOption.AllDirectories);

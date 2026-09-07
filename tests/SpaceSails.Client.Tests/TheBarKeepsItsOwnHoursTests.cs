@@ -34,8 +34,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheBarKeepsItsOwnHoursTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     /// <summary>How many watches of every bar in the game the sweep walks. Eight watches is a day and a bit
     /// per berth, which across the shipped havens is enough evenings that a room with no metabolism in it
@@ -624,8 +623,7 @@ public sealed class TheBarKeepsItsOwnHoursTests
     [Fact]
     public void THE_ROOMS_HoursReadNoWallClock()
     {
-        string source = System.IO.File.ReadAllText(System.IO.Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.BarWalkers.cs"));
+        string source = BarWalkers();
 
         foreach (string forbidden in new[] { "DateTime", "DateTimeOffset", "Stopwatch", "new Random", "Guid.New" })
         {
@@ -641,8 +639,7 @@ public sealed class TheBarKeepsItsOwnHoursTests
     [Fact]
     public void NEVER_REEVERS_TheBarsWalksGoThroughTheOneGaitClaim()
     {
-        string source = System.IO.File.ReadAllText(System.IO.Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.BarWalkers.cs"));
+        string source = BarWalkers();
 
         Assert.DoesNotContain("SurfaceCollision.Gait", source, StringComparison.Ordinal);
         Assert.DoesNotContain("NpcWalk.Plan(", source, StringComparison.Ordinal);
@@ -807,6 +804,18 @@ public sealed class TheBarKeepsItsOwnHoursTests
         throw new System.IO.DirectoryNotFoundException(
             $"could not find the repo root above {AppContext.BaseDirectory}");
     }
+
+    /// <summary>The bar room's source — ALL of it. `Map.BarWalkers.cs` was split by concern (#251), and the
+    /// two claims below are `DoesNotContain` sweeps over the whole subject: pointing one of them at a single
+    /// partial would not turn it red, it would quietly stop looking at four fifths of the room. So the family
+    /// is read as a glob, in ordinal order, and a sixth partial is inside the sweep the day it lands.</summary>
+    private static string BarWalkers() =>
+        string.Join("\n", System.IO.Directory
+            .EnumerateFiles(
+                System.IO.Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"),
+                "Map.BarWalkers*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(System.IO.File.ReadAllText));
 
     // ── Reflection plumbing ──────────────────────────────────────────────────────────────────────────────
 

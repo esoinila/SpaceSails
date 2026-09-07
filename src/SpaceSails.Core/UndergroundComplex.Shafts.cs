@@ -46,7 +46,8 @@ public static partial class UndergroundComplex
     // gate, no way past the seam. A second car that could cross a band boundary would be a way to buy depth
     // without the paper, and depth past the first band is the one thing this game makes you earn.
 
-    /// <summary>#801 · Which of the two cars this is.</summary>
+    /// <summary>#801 · Which of the two cars this is. #719 · …and the one way out that is not a car at
+    /// all.</summary>
     public enum ShaftKind
     {
         /// <summary>The cage: the one the surface head sits on top of, the one the plate is beside, and the
@@ -56,29 +57,46 @@ public static partial class UndergroundComplex
         /// <summary>The goods car at the blind end of the corridor. Same four floors, no surface, no
         /// gate.</summary>
         Service,
+
+        /// <summary>#719 · The service stair, at the OTHER blind end. No motor, no call button, no panel and
+        /// no gate — a flight of steps a safety inspectorate made somebody build, which climbs out and is
+        /// paid for in air. See <see cref="UndergroundComplex.StairShaftAt"/>.</summary>
+        Stair,
     }
 
     /// <summary>#801 · A car, on the plan. Published from <see cref="ShaftsOn"/> so that a law about "every
     /// way off this floor" has a list to be written against — the same reason <see cref="Hall.Openings"/>
-    /// and <see cref="Park.Ways"/> exist, said about the thing a captain leaves by.</summary>
+    /// and <see cref="Park.Ways"/> exist, said about the thing a captain leaves by.
+    ///
+    /// <para>#719 · …and the stair is one of these too (<see cref="ExitsOn"/>), so that anything asking what
+    /// a way out IS gets one kind of answer whichever of the three it is holding.</para></summary>
     public readonly record struct Shaft(ShaftKind Kind, double X, double Y)
     {
-        /// <summary>What is painted at the car mouth.</summary>
-        public string Sign => Kind == ShaftKind.Cage ? CageSign : ServiceCarSign;
+        /// <summary>What is painted at the car mouth — or, for the stair, at its door.</summary>
+        public string Sign => Kind switch
+        {
+            ShaftKind.Cage => CageSign,
+            ShaftKind.Stair => StairSign,
+            _ => ServiceCarSign,
+        };
 
-        /// <summary>Does this one climb all the way out? Only the cage does, because only the cage has a
-        /// hut on the regolith over it (#606).</summary>
-        public bool ReachesTheSurface => Kind == ShaftKind.Cage;
+        /// <summary>Does this one climb all the way out? The cage does, because it has a hut on the regolith
+        /// over it (#606) — and, since #719, so does the stair, which comes up under that same lid. The goods
+        /// car does not, and that is still the whole of why the cage was ever the only way home.</summary>
+        public bool ReachesTheSurface => Kind != ShaftKind.Service;
 
         /// <summary>Does this one run the gate to the band below? Only the cage. §13.5 is a law about the
-        /// building, not about a car, and the second car may not be a way round it.</summary>
+        /// building, not about a car, and neither the second car nor the stair may be a way round it — the
+        /// stair least of all, because it does not open onto a floor at all (<see cref="CarveStair"/>).
+        /// </summary>
         public bool RunsTheGate => Kind == ShaftKind.Cage;
 
         /// <summary>Where a captain stands when the doors open — a pace out of the car, on the spine. The
         /// cage's alcove hangs off the spine's upper face and the service car's off the lower one, so the
-        /// pace is outward in opposite directions and neither of them is a typed sign.</summary>
+        /// pace is outward in opposite directions and neither of them is a typed sign. #719 · The stair's
+        /// pocket is on the upper face, like the cage's, so its doorstep is the cage's own way round.</summary>
         public (double X, double Y) Landing =>
-            (X, Kind == ShaftKind.Cage ? Y + 1.0 : Y - 1.0);
+            (X, Kind == ShaftKind.Service ? Y - 1.0 : Y + 1.0);
     }
 
     /// <summary>#801 · What is painted at the cage's mouth. The console has said this since #585.</summary>
@@ -244,7 +262,12 @@ public static partial class UndergroundComplex
     /// one.
     ///
     /// <para>Published so that "no floor of a clandestine site has exactly one way off it" is a law that
-    /// can be written down and can go red, instead of an arrangement two placers happen to agree on.</para></summary>
+    /// can be written down and can go red, instead of an arrangement two placers happen to agree on.</para>
+    ///
+    /// <para><b>#719 · CARS, and only cars.</b> This is the list a motor, a call button, a panel, a radio
+    /// emitter (<c>SdrScanner</c>) and a refuge's detour are all facts about, and the stair is none of those
+    /// things. A law about ESCAPE asks <see cref="ExitsOn"/>, which is this list with the stair on the end of
+    /// it.</para></summary>
     public static IReadOnlyList<Shaft> ShaftsOn(in SurfaceLayout.Field field)
     {
         (double cageX, double cageY) = ShaftAt(field);
@@ -296,9 +319,37 @@ public static partial class UndergroundComplex
     /// by the gate in completely different voices — one is an office still obeying an office nobody can find,
     /// the other is a tired man reading a timesheet. The row draws the same either way; the ARRIVAL does not,
     /// and the ride carries the stop with it, so the discrimination belongs on the stop.</param>
+    /// <param name="HasRefuge">#608 · Whether the plan for that floor carries a pressure refuge — the one
+    /// thing a captain can learn about the air BEFORE the doors open, which is the requirement the issue
+    /// states as an absolute: <i>"a refuge you discover AFTER you needed it is a cruelty"</i>. It says a
+    /// refuge is THERE and never what state it is in, because the panel is reading a drawing and a drawing
+    /// does not know which compressors are still turning. What the row does carry beside it — the
+    /// department's own plate — is the honest hint (#605, #601): the floors that kept their maintenance line
+    /// are the floors whose refuge still has air, and a captain who has learnt the livery has learnt that
+    /// without being told. Asked of <see cref="RefugeOnThePlan"/>, never counted off a built floor: a panel
+    /// that generated twenty floors to draw twenty buttons is a panel nobody presses twice.</param>
+    /// <param name="HasPad">#602 · Whether this refusing row has a KEYPAD bolted beside it, and therefore
+    /// whether <see cref="LiftCode.Sticker"/> is on the panel for the captain to read before the first press.
+    ///
+    /// <para>True on exactly one row of one panel per building — the gate into <see cref="LiftCode.PadBand"/>,
+    /// refusing for want of the paper — and false on every other button in the game. Core decides it, like
+    /// every other thing about a row (#600's rule: Core decides, the razor draws), because whether a lock has
+    /// a pad on it is a fact about the BUILDING and a client deciding it would be a second answer to the one
+    /// question <see cref="LiftCode.PadBand"/> owns.</para>
+    ///
+    /// <para>Never on an ID CHECK row (#715), and that is a ruling rather than an oversight: that gate has
+    /// already read the paper and is asking for a FACE the outfit remembers. A code there would be a second
+    /// road past a heat gate, which is a question nobody has ruled on. Never on a SECTOR door or a stop
+    /// order's seal either — see <see cref="Signs.HasNoReader"/>, which carries that argument.</para></param>
+    /// <param name="OpenedByInspection">#1149 · WHICH paper is doing it, third answer. Set only when the
+    /// thing opening this gate is the inspector's card (<see cref="Inspectorate"/>) rather than a
+    /// countersignature or a timesheet — because the ARRIVAL is narrated differently for each, and a ride the
+    /// inspection opened must never tell the captain that an office vouched for him. Exactly
+    /// <paramref name="OpenedByChit"/>'s reason, one paper along.</param>
     public readonly record struct LiftStop(
         int Level, string Name, bool Pressurised, bool IsCurrent, string? Refusal, string? OpenedBy = null,
-        bool OpenedByChit = false);
+        bool OpenedByChit = false, bool HasRefuge = false, bool HasPad = false,
+        bool OpenedByInspection = false);
 
     /// <summary>
     /// #600 · What this car's panel offers, standing on <paramref name="level"/>.
@@ -328,10 +379,29 @@ public static partial class UndergroundComplex
     /// </param>
     /// <param name="heatAtThisOperator">#715 · What the outfit running this site remembers about this captain
     /// (<see cref="IllegalHeat.HeatAtSite"/>). Zero is the default and the old panel exactly.</param>
+    /// <param name="padOpened">#602 · Which bands the KEYPAD has been talked into on this excursion — and it
+    /// is the excursion's own set, never the vault's.
+    ///
+    /// <para>A right code opens the gate for the trip you are on and no longer. That is the line between the
+    /// two papers, and it is the whole reason a pad does not demote the card: a countersignature is in your
+    /// wallet and is still there the next time you land, and a code you read off somebody's desk buys you
+    /// this afternoon. Owner's ruling made the pad findable-only; this is what stops it becoming the durable
+    /// way in.</para>
+    ///
+    /// <para>Null is a captain who has typed nothing, which is every older caller and the panel exactly as it
+    /// was.</para></param>
+    /// <param name="inspectionRunning">#1149 · Whether an inspection is running on this excursion — the
+    /// inspector's card was presented at the front and a man on the rota accepted it
+    /// (<see cref="WalletChoice.Outcome.Inspection"/>). While it is, the ID CHECK row defers and the SEALED
+    /// row opens; when the shuttle lifts it is over, exactly as #602's typed code is. False is every older
+    /// caller and the panel exactly as it was.</param>
     public static IReadOnlyList<LiftStop> LiftPanel(
         string bodyId, int level, IReadOnlyCollection<string> heldCardIds,
-        IReadOnlyList<Satchel.Item>? carried = null, int heatAtThisOperator = 0) =>
-        LiftPanel(bodyId, level, ShaftKind.Cage, heldCardIds, carried, heatAtThisOperator);
+        IReadOnlyList<Satchel.Item>? carried = null, int heatAtThisOperator = 0,
+        IReadOnlyCollection<int>? padOpened = null, bool inspectionRunning = false) =>
+        LiftPanel(
+            bodyId, level, ShaftKind.Cage, heldCardIds, carried, heatAtThisOperator, padOpened,
+            inspectionRunning);
 
     /// <summary>
     /// #801 · The same panel, asked of a CAR rather than of a building.
@@ -351,7 +421,8 @@ public static partial class UndergroundComplex
     /// </summary>
     public static IReadOnlyList<LiftStop> LiftPanel(
         string bodyId, int level, ShaftKind car, IReadOnlyCollection<string> heldCardIds,
-        IReadOnlyList<Satchel.Item>? carried = null, int heatAtThisOperator = 0)
+        IReadOnlyList<Satchel.Item>? carried = null, int heatAtThisOperator = 0,
+        IReadOnlyCollection<int>? padOpened = null, bool inspectionRunning = false)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(heldCardIds);
@@ -370,14 +441,18 @@ public static partial class UndergroundComplex
         var stops = new List<LiftStop>();
         if (car == ShaftKind.Cage)
         {
-            stops.Add(new(0, "SURFACE", HoldsPressure(bodyId, 0), IsCurrent: level >= 0, Refusal: null));
+            stops.Add(new(
+                0, "SURFACE", HoldsPressure(bodyId, 0), IsCurrent: level >= 0, Refusal: null,
+                HasRefuge: RefugeOnThePlan(bodyId, 0)));   // #608 · never, and it ASKS rather than typing false
         }
 
         int band = BandOf(Math.Min(level, -1));
         int deepest = BandFloor(bodyId, band);
         for (int f = BandTop(band); f >= deepest; f--)
         {
-            stops.Add(new(f, NameOf(bodyId, f), HoldsPressure(bodyId, f), f == level, null));
+            stops.Add(new(
+                f, NameOf(bodyId, f), HoldsPressure(bodyId, f), f == level, null,
+                HasRefuge: RefugeOnThePlan(bodyId, f)));
         }
 
         if (car != ShaftKind.Cage)
@@ -396,6 +471,20 @@ public static partial class UndergroundComplex
         if (NextShaftBelow(bodyId, level) is not { } next)
         {
             return stops;   // nothing under this shaft at all; the panel simply ends
+        }
+
+        // #1074 · …AND THE ORDER CLOSES ONE OF THEM. On a ground whose deep working the Authority has closed,
+        // the gate into the band nobody listed is not offered — to anybody, carded or not, because an order
+        // is not a clearance question and the paper in the wallet was never addressed to it.
+        //
+        // IT ENDS IN SILENCE AND NOT IN A REFUSING ROW, and that is #592's existing rule rather than a new
+        // one: the building does not admit that band exists, so its panel may not name it even to say no. A
+        // row reading SEALED here would be the directory confessing the shaft in the sentence it refuses it
+        // in. The world says it the other way, on the floor the shaft is on, with a plate — see
+        // UndergroundComplex.Stop.cs.
+        if (StopSealsTheGateTo(bodyId, next))
+        {
+            return stops;
         }
 
         // #411 · THE CAR ANSWERS. A branch office's card opens exactly one band, and the way down is a piece
@@ -457,8 +546,41 @@ public static partial class UndergroundComplex
         // ONE PREDICATE, and the read at the card asks the same one (TheGateWantsAFaceHere) — a panel that
         // refused while the story card said the gate opened would be the sim and the sentence describing two
         // different buildings.
-        bool wantsAFace = papered && TheGateWantsAFaceHere(bodyId, carried, heatAtThisOperator);
-        bool opens = papered && !wantsAFace;
+        // #1149 · …AND THE HEAT GATE DEFERS TO AN INSPECTION, ONCE. An outfit that remembers this captain
+        // wants the pass with his face on it — and it wants it less than it wants to not be the site that
+        // turned an inspector away at the door. The deferral is for the excursion the inspection is running
+        // on and no longer, which is the same line #602's pad draws between a code and a card: the paper is
+        // durable, the visit is an afternoon.
+        bool wantsAFace =
+            papered && !inspectionRunning && TheGateWantsAFaceHere(bodyId, carried, heatAtThisOperator);
+
+        // ── #602 · AND THE PAD, WHICH IS THE THIRD WAY THROUGH THIS ROW ─────────────────────────────────
+        //
+        // Owner's ruling, 2026-08-02, overruling #590's call 3 deliberately: a keypad, a vicious sticker
+        // beside it, three tries, and a ninety-second decay window. The argument is at LiftCode's head and at
+        // call 3 in UndergroundComplex.AuthorityCard.cs; what is arithmetic — and therefore here — is WHICH
+        // ROW carries one, and what a code that worked has bought.
+        //
+        // ONE ROW, AND ONLY WHERE THE PAPER IS MISSING. The pad hangs off the SEALED refusal — the gate that
+        // wants an authority nobody has issued in years — and never off the ID CHECK (#715), which has
+        // already read the paper and is asking for a face. A code there would be a second road past a heat
+        // gate, which is a ruling nobody has made. It is also only ever the gate into LiftCode.PadBand, which
+        // is the fiction rather than a scope cut: a pad exists where staff have to move, and stops existing
+        // the moment you are past them.
+        //
+        // AND IT CANNOT REACH EITHER SILENCE, for the chit's own reason: the undeclared band has already
+        // returned empty-handed above. A pad on a row the panel refuses to draw would be the directory
+        // confessing a shaft by bolting a keypad to it.
+        bool padHere = !papered && next == LiftCode.PadBand;
+        bool padOpen = padHere && padOpened is not null && padOpened.Contains(next);
+
+        // #1149 · …AND THE SEALED ROW OPENS FOR AN INSPECTION IN PROGRESS. It is the third road through this
+        // row and it is the pad's road exactly: it lasts the trip and nothing is written down. It cannot
+        // reach either of the two silences above — the undeclared band and a stop order's seal have both
+        // already returned empty-handed — so an inspection never confesses a shaft the building denies
+        // having, which is #592's rule kept by construction rather than by a clause.
+        bool inspectionOpens = inspectionRunning;
+        bool opens = (papered && !wantsAFace) || padOpen || inspectionOpens;
 
         stops.Add(new(
             BandTop(next),
@@ -487,10 +609,23 @@ public static partial class UndergroundComplex
             // #715 · …and it names nothing when the gate is asking for a face: the paper in the wallet did
             // not open this door, and a row printing the card that would have opened it is a row telling the
             // captain the read went the other way.
+            // #1149 · …and last, the inspection, in the plate that is printed on the card. Last because the
+            // precedence above is a ladder of PERMISSIONS and this is not one: a captain carrying the
+            // countersignature is through this gate whatever anybody is inspecting, and the row should tell
+            // him about the paper he will still be holding tomorrow.
             wantsAFace ? null
                 : carded && !IsHeadOffice(bodyId) ? CardTitle(readCard!.Value)
-                : chitOpens ? $"{CanteenTable.ChitGlyph} {CanteenTable.ChitTitle}" : null,
-            OpenedByChit: chitOpens && !wantsAFace));
+                : chitOpens ? $"{CanteenTable.ChitGlyph} {CanteenTable.ChitTitle}"
+                : inspectionOpens ? $"{PatrolBeat.BadgeGlyph} {Inspectorate.Plate}" : null,
+            OpenedByChit: chitOpens && !wantsAFace,
+            HasRefuge: RefugeOnThePlan(bodyId, BandTop(next)),
+            // #602 · …and the pad comes off the row the moment the code has worked. A keypad still bolted to
+            // an open gate is an affordance with nothing behind it (#212), and a captain who typed the right
+            // number should not be able to spend a wrong one on a lock that is already open.
+            //
+            // #1149 · …and for the identical reason it comes off a row an inspection has opened.
+            HasPad: padHere && !padOpen && !inspectionOpens,
+            OpenedByInspection: inspectionOpens && !carded && !chitOpens));
         return stops;
     }
 
@@ -528,7 +663,12 @@ public static partial class UndergroundComplex
             // #752 · …and it is a CARD that is being read, not the day-labour chit. Both papers put a title
             // in OpenedBy, and only one of them is a countersignature; a ride the chit opened must not
             // narrate an office vouching for the captain, because no office did.
-            if (stop.Level == toLevel && stop.OpenedBy is not null && !stop.OpenedByChit)
+            // #1149 · …and it is not the inspector's card either. Three papers put a title in OpenedBy now
+            // and exactly one of them is a countersignature; a ride an inspection opened must not narrate an
+            // office vouching for the captain, because no office did — the building simply got out of the
+            // way of a man with a clipboard.
+            if (stop.Level == toLevel && stop.OpenedBy is not null
+                && !stop.OpenedByChit && !stop.OpenedByInspection)
             {
                 return new AuthorityCard(bodyId, BandOf(toLevel));
             }

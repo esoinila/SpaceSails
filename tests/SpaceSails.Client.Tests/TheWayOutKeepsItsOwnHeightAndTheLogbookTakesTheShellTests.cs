@@ -132,7 +132,7 @@ public sealed class TheWayOutKeepsItsOwnHeightAndTheLogbookTakesTheShellTests
     [Fact]
     public void ThePageNoLongerHandsAnyWayOutItsButtonHeightBack()
     {
-        string css = File.ReadAllText(Path.Combine(ClientSource(), "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
 
         var restorations = RulesOf(css)
             .Where(rule => rule.Body.Contains("--bs-btn-line-height", StringComparison.Ordinal))
@@ -301,8 +301,8 @@ public sealed class TheWayOutKeepsItsOwnHeightAndTheLogbookTakesTheShellTests
     [Fact]
     public void TheTwoCappedScrollCandidatesAreNamedStragglersAndTheirReasonIsPinned()
     {
-        string css = WithoutComments(File.ReadAllText(Path.Combine(ClientSource(), "Pages", "Map.razor.css")));
-        string razor = File.ReadAllText(Path.Combine(ClientSource(), "Pages", "Map.razor"));
+        string css = WithoutComments(MapStylesheet.Text);
+        string razor = MapMarkup.Read(Path.Combine(ClientSource(), "Pages", "Map.razor"));
 
         // The readouts: the page's own rule owns the shrink, the floor and the scroll — one block, one
         // scroller, no head. If the panel is ever going to help here, this rule is what has to change first.

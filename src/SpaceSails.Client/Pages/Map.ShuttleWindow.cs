@@ -28,7 +28,7 @@ public partial class Map
     /// <summary>How the shuttle window to the ground the captain is standing on reads right now: the coarse
     /// status, the seconds left before it shuts, when it next opens if it is shut, and the RETURN BY the
     /// plotted route imposes when the ship is flying on without him.</summary>
-    private readonly record struct AwayWindow(
+    public readonly record struct AwayWindow(
         WindowStatus Status,
         double SecondsLeft,
         double? ReopenSeconds,
@@ -121,7 +121,7 @@ public partial class Map
     /// scan itself re-runs only once its own promise has come due (or gone stale).</summary>
     private double? AwayFlipSeconds(string bodyId, bool wantInRange)
     {
-        string key = wantInRange ? bodyId : bodyId + " close";
+        string key = wantInRange ? bodyId : bodyId + "\0close";
         bool fresh = _awayWindowScans.TryGetValue(key, out var cached)
             && SimTime - cached.ScannedAt <= AwayWindowRescanSeconds
             && SimTime - cached.ScannedAt >= 0
@@ -272,7 +272,7 @@ public partial class Map
 
     /// <summary>One shuttle window the ARMED plan opens on a body, ready to render: which ground, whether
     /// this is the first crossing or a later one (the owner's ingress / egress), and the window itself.</summary>
-    private readonly record struct RouteWindowRow(
+    public readonly record struct RouteWindowRow(
         CelestialBody Body, string Role, RouteShuttleWindow.Window Window);
 
     /// <summary>At most this many windows are listed per body. Two is the owner's case exactly — "a sensitive

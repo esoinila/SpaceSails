@@ -544,12 +544,26 @@ public sealed class TheDeskServesItsWholeLengthTests
         Assert.Equal(1, Occurrences(core, "ServiceRun? service = serves"));
 
         // …and the client asks rather than measures.
-        string hive = System.IO.File.ReadAllText(System.IO.Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Rendering", "HiveInterior.cs"));
+        string hive = Hive();
         Assert.Contains("a.Hall?.Service", hive, StringComparison.Ordinal);
         Assert.DoesNotContain("HallCounterBandDu", hive, StringComparison.Ordinal);
         Assert.DoesNotContain("HallServiceStandoffDu", hive, StringComparison.Ordinal);
     }
+
+    /// <summary>#1164 · The Hive floor's source — ALL of it, as a glob rather than a written list.
+    /// <c>HiveInterior.FloorDeck</c> was 31 <c>// ── banner ──</c> sections inside one 1,106-line method
+    /// and is now one named pass per section across several partials (#251), so the text this guard has
+    /// always read over is spread across <c>HiveInterior*.cs</c>. Concatenated rather than narrowed to one
+    /// part on purpose: the claims below are <c>DoesNotContain</c> over the WHOLE subject, and pointing one
+    /// at a single partial would quietly stop it looking at most of the floor. Ordinal order, so the read is
+    /// the same on every machine — the same glob this class already uses for Core's own side.</summary>
+    private static string Hive() =>
+        string.Concat(System.IO.Directory
+            .EnumerateFiles(
+                System.IO.Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Rendering"),
+                "HiveInterior*.cs")
+            .OrderBy(p => p, StringComparer.Ordinal)
+            .Select(System.IO.File.ReadAllText));
 
     private static int Occurrences(string haystack, string needle)
     {

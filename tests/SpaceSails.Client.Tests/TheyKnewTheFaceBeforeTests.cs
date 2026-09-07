@@ -25,23 +25,9 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheyKnewTheFaceBeforeTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Pages(params string[] file) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", "Pages", .. file]));
+        MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", .. file]));
 
     /// <summary>One method body, from its signature to the next member at the same indent — the same cut the
     /// sibling client guards make, so a body read here is a body read there.</summary>
@@ -223,7 +209,7 @@ public sealed class TheyKnewTheFaceBeforeTests
 
         // …and it is called at the succession, which is a routing claim and reads as one.
         Assert.Contains("ANewFaceHasNothingExplained();",
-            Pages("Map.Combat.Busted.cs"), StringComparison.Ordinal);
+            Pages("Map.Combat.Busted.Wake.cs"), StringComparison.Ordinal);
 
         // A NEW UNIVERSE forgets them entirely — driven too: the crew, the book and the latch all go.
         Invoke(map, "OpenTheFaceScene", giver);
@@ -460,7 +446,7 @@ public sealed class TheyKnewTheFaceBeforeTests
     [Fact]
     public void TheOldCrewJoinTheOneContactList()
     {
-        string body = Method(Pages("Map.Quests.Bar.cs"),
+        string body = Method(Pages("Map.Quests.Bar.Contacts.cs"),
             "private IReadOnlyList<(string Giver, string Display)> PresentBarContacts()");
 
         Assert.Contains("OldCrewHere", body, StringComparison.Ordinal);
@@ -473,7 +459,7 @@ public sealed class TheyKnewTheFaceBeforeTests
     [Fact]
     public void TheOfferAndTheGlassReadOneRoom()
     {
-        string body = Method(Pages("Map.Quests.Bar.cs"),
+        string body = Method(Pages("Map.Quests.Bar.Contacts.cs"),
             "private void BuyContactDrink(string giver, bool offeringUsual = false)");
 
         Assert.Contains("ContactDrink.TheRoom room = TheRoomFor(giver);", body, StringComparison.Ordinal);
@@ -484,8 +470,7 @@ public sealed class TheyKnewTheFaceBeforeTests
 
     // ── THE BENCH ────────────────────────────────────────────────────────────────────────────────────
 
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     private const string ThreadId = "9f3c71ab54d8402e8c17ba26d0e5391f";
     private const string TheRedEye = "red-eye";

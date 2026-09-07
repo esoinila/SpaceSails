@@ -5,6 +5,19 @@ using SpaceSails.Core.Interior;
 namespace SpaceSails.Client.Pages;
 
 // Part of Map.Surface (#870 split; the header note lives in Map.Surface.cs) — the suit tank, where the air is coming from, the tube rearm, and the one rack law both buildings obey.
+
+/// <summary>
+/// #564 · THE TANK — the resource the ground lesson has been warning every new captain about since #440,
+/// stepped once a frame.
+///
+/// <para>#251 · This file keeps the tank and the one method that spends it. The other three are named for
+/// what they answer about it: <c>.Supply</c> (#612 — where the air is coming from, said once at the
+/// crossing), <c>.Rearm</c> (#562 — the tube rearms you, and the cards that say so), and <c>.Rack</c>
+/// (#608 — one rack law, two buildings).</para>
+///
+/// <para>The family declares no static field, so the #1163 initializer hazard is absent by construction.
+/// No member is renamed, re-scoped or re-ordered by the cut.</para>
+/// </summary>
 public partial class Map
 {
     // ── #564 · THE TANK. ────────────────────────────────────────────────────────────────────────────────
@@ -46,9 +59,9 @@ public partial class Map
         //
         // The order inside SourceOf is this method's own order and must stay so: floor, then refuge, then
         // shelter, then ship.
-        int inside = ShelterUnderfoot(ex);
+        ShelterSpot inside = ShelterUnderfoot(ex);
         SuitAir.Supply supply = AirSupplyOf(ex);
-        AnnounceAirSupply(supply, roomSpeaksForItself: inside >= 0 || RefugeUnderfoot(ex) >= 0);
+        AnnounceAirSupply(supply, roomSpeaksForItself: inside.Found || RefugeUnderfoot(ex) >= 0);
 
         if (ex.Floor < 0)
         {
@@ -76,15 +89,44 @@ public partial class Map
             // What it does NOT do is make the floor free. It is one room, never beside the lift, and its
             // regulator stops at the same two thirds somebody set on the surface for the next person
             // through the door — so depth still costs air (#585), and the refuge buys RANGE.
+            //
+            // ── #608 · …AND ON MOST FLOORS IT BUYS LESS THAN THAT ───────────────────────────────────────
+            //
+            // The room is a fact and the SEAL is a story (StateOfTheRefugeOn). Three states and the branch
+            // reads all three off the one Core answer, never off a second opinion:
+            //
+            //   HOLDING · what this always did: the drain stops and the rack pumps.
+            //   EMPTY   · #1149 · the drain stops and the rack pumps from EMPTY. Somebody drew this one
+            //             right down before the captain got to it (the #573 footprint), and a cracker that
+            //             always produces is the whole of that idiom — so the room costs a captain TIME
+            //             instead of buying them range, and standing there is a real, grim, valid decision.
+            //   FAILED  · nothing at all. The line is said, once, at the door, the card goes up, and then
+            //             this falls straight through to the drain below: standing in a room whose seal went
+            //             is standing on a dead floor, and the tank knows it even if the plan does not.
             int refuge = RefugeUnderfoot(ex);
+            UndergroundComplex.RefugeState? seal = refuge >= 0
+                ? UndergroundComplex.StateOfTheRefugeOn(ex.Stop.Body.Id, ex.Floor)
+                : null;
             if (refuge >= 0)
             {
+                bool holds = seal is { } s && UndergroundComplex.RefugeStillHolds(s);
                 if (!ex.RefugeBreathNoted)
                 {
                     ex.RefugeBreathNoted = true;
-                    ShowPulseMessage(UndergroundComplex.RefugeBreathingLine);
-                    string found = SurfaceShelter.PartialLine(
-                        RefugeReservoirNow(ex, refuge) / SurfaceShelter.ReservoirSeconds);
+                    ShowPulseMessage(
+                        UndergroundComplex.RefugeEntryLine(seal ?? UndergroundComplex.RefugeState.Failed));
+
+                    // #573's idiom, and only where there is a rack to have been drawn on. On a FAILED one
+                    // "somebody was here before you" would be a sentence about a reservoir that does not
+                    // exist — the game telling a story off a number it is not running.
+                    //
+                    // #1149 · EMPTY is now the loudest case of it rather than an exclusion. An empty rack is
+                    // not decay, it is a footprint: the reservoir reads zero, PartialLine's first rung says
+                    // so and says who, and the cracker is already refilling it while the captain reads.
+                    string found = holds
+                        ? SurfaceShelter.PartialLine(
+                            RefugeReservoirNow(ex, refuge) / SurfaceShelter.ReservoirSeconds)
+                        : "";
                     if (found.Length > 0)
                     {
                         // The same fact told by state rather than by a card, and down here it is a colder
@@ -92,30 +134,52 @@ public partial class Map
                         // drawn on, and the building has been shut for decades.
                         ShowAndFile(found, "🫁");
                     }
-                }
 
-                ex.RefugeReservoir[RefugeKey(ex.Floor, refuge)] = DrawFromRack(
-                    ex, RefugeReservoirNow(ex, refuge), dtRealSeconds, out double intoTheTank);
-                if (intoTheTank > 0)
-                {
-                    if (ex.RefugePumpNoted.Add(refuge))
+                    // #1149 · AND THE ONE ROOM IN THE BUILDING THAT IS A STORY. Owner: "If for dramatic
+                    // suspense we need one that does not work, that is narrated, with a gen-AI image:
+                    // something scary or weird happened to the shelter." The card is the whole of the
+                    // telling (#761) — the pulse above is what a captain SEES standing in the doorway, and
+                    // the card is what the room turns out to be — and it is raised from HERE rather than
+                    // from a verb because arriving IS the event: there is nothing to press and nothing to
+                    // decide. Once per site, because a building has at most one of these.
+                    if (seal == UndergroundComplex.RefugeState.Failed)
                     {
-                        ShowPulseMessage(SurfaceShelter.PumpingLine);
+                        RaiseStoryBeat(StoryBeats.Beat.RefugeFailed, ex.Stop.Body.Id);
                     }
                 }
-                else if (ex.RefugePumpNoted.Contains(refuge) && ex.RefugePumpNoted.Add(-refuge - 1))
+
+                if (holds)
                 {
-                    ShowPulseMessage(SurfaceShelter.PumpDoneLine);
+                    ex.RefugeReservoir[RefugeKey(ex.Floor, refuge)] = DrawFromRack(
+                        ex, RefugeReservoirNow(ex, refuge), dtRealSeconds, out double intoTheTank);
+                    if (intoTheTank > 0)
+                    {
+                        if (ex.RefugePumpNoted.Add(refuge))
+                        {
+                            ShowPulseMessage(SurfaceShelter.PumpingLine);
+                        }
+                    }
+                    else if (ex.RefugePumpNoted.Contains(refuge) && ex.RefugePumpNoted.Add(-refuge - 1))
+                    {
+                        ShowPulseMessage(SurfaceShelter.PumpDoneLine);
+                    }
                 }
-                return;
+
+                if (holds)
+                {
+                    return;   // the room holds: the tank stops, with or without anything to fill it from
+                }
             }
-            ex.RefugeBreathNoted = false;
+            else
+            {
+                ex.RefugeBreathNoted = false;
+            }
 
             // Anywhere else on a dead floor drains exactly like open regolith: this is the price of going
             // deeper, and it is the only thing stopping the facility from being somewhere to live.
         }
 
-        if (inside >= 0)
+        if (inside.Found)
         {
             if (!ex.ShelterBreathNoted)
             {
@@ -137,16 +201,22 @@ public partial class Map
             // nasty failure he walked into: stranded beside an empty rack with nothing to do but die. A
             // cracker that always produces cannot strand anybody, and standing in a shed while the Old Ones
             // keep walking prices the top-up far better than an empty state ever did.
-            ex.ShelterReservoir[inside] = DrawFromRack(ex, ShelterReservoirNow(ex, inside),
+            //
+            // #563 slice 3 · Keyed on the RACK, which is a tile and an index rather than an index. A bare
+            // index was one site's list; a captain who crossed a tile boundary re-pointed every one of these
+            // at a rack somewhere else, and the one they were standing in front of would have reported the
+            // charge of the fourth shelter beside the tube.
+            string rack = ShelterRackKey(inside);
+            ex.ShelterReservoir[rack] = DrawFromRack(ex, ShelterReservoirNow(ex, inside),
                 dtRealSeconds, out double pumped);
             if (pumped > 0)
             {
-                if (ex.ShelterPumpNoted.Add(inside))
+                if (ex.ShelterPumpNoted.Add(rack))
                 {
                     ShowPulseMessage(SurfaceShelter.PumpingLine);
                 }
             }
-            else if (ex.ShelterPumpNoted.Contains(inside) && ex.ShelterPumpNoted.Add(-inside - 1))
+            else if (ex.ShelterPumpNoted.Contains(rack) && ex.ShelterPumpNoted.Add($"{rack}:done"))
             {
                 ShowPulseMessage(SurfaceShelter.PumpDoneLine);
             }
@@ -268,9 +338,31 @@ public partial class Map
 
     /// <summary>How far the captain is from the tube mouth — the way home, and the only distance the suit
     /// has any opinion about. A DISTANCE and never a coordinate, so a captain 400 du sideways and one 400 du
-    /// deep are priced identically (#453: depth is not a danger gradient).</summary>
+    /// deep are priced identically (#453: depth is not a danger gradient).
+    ///
+    /// <para>#719 slice 2 · <b>UNLESS SOMEBODY HAS STOPPED THE CAR</b>, in which case the way home is the
+    /// walk to the stair's door and then the climb, and the suit says so. This is #1115's one flagged
+    /// judgement call, paid off: the stair's price was real from the day it shipped and the readout would
+    /// not quote it, because underground the fan's HOME ring was the CAGE and
+    /// <c>TheWayBackIsAlwaysOnTheFanTests</c> holds the law that the ring and the readout measure ONE
+    /// journey — quoting a climb as "the walk home" with a free ride standing in the corridor would have
+    /// been two instruments disagreeing about where home is.</para>
+    ///
+    /// <para>The break settles it the right way round. With the car stopped there is no free ride left to
+    /// disagree with: the ring moves to the stair door (<c>BuildBeacons</c>) and this measures to the same
+    /// door and then up, off Core's own arithmetic — so the law holds BY the break rather than being broken
+    /// by it. <b>And every threshold the suit already owns moves with it</b>: the crossing line, the
+    /// reserve, the low-air card and the on-grid countdown are all written against this one number, so
+    /// nothing new has to warn anybody. The instruments that were already watching simply start telling the
+    /// truth about a longer journey — which is the owner's <i>going up would use more air</i>, arriving as
+    /// the price of a thing the captain did.</para></summary>
     private double DistanceToTheTube()
     {
+        if (_surface is { } stopped && TheCarIsStopped)
+        {
+            return TheClimbHomeDu(stopped);
+        }
+
         double dx = _avatarX - MoonSurface.SpawnX;
         double dy = _avatarY - MoonSurface.SpawnY;
         return Math.Sqrt((dx * dx) + (dy * dy));
@@ -281,480 +373,4 @@ public partial class Map
     // whole of the owner's "keep calm" rule.
     private double _airLastX;
     private double _airLastY;
-
-    // ── #612 · WHERE THE AIR IS COMING FROM. ────────────────────────────────────────────────────────────
-    //
-    // The last answer the predicate gave, kept ONLY so the crossing can be said once. It is deliberately not
-    // what anything DISPLAYS — a cached copy of a fact is a second source of that fact, and this is the one
-    // fact in the game that must not have two. Null before an excursion has ticked, which is also what stops
-    // the crossing line firing on the frame a captain lands.
-    private SuitAir.Supply? _airSupplyNoted;
-
-    /// <summary>#612 · THE CROSSING, SAID ONCE. Owner: <i>"maybe pop-up about you have air or you are in
-    /// vacuum type ... it is vital info :-D"</i>.
-    ///
-    /// <para>It fires only where the tank STARTS or STOPS, never on Room→Ship (both are free, and a line
-    /// about a change that costs nothing is the nag that turns a vital fact into wallpaper), and never on
-    /// the first tick of an excursion. A room with a DOOR is left to say it in its own voice —
-    /// <c>SurfaceShelter.BreathingLine</c> and <c>UndergroundComplex.RefugeBreathingLine</c> are already the
-    /// better sentences for those thresholds, and two lines for one door is exactly the noise the tank
-    /// mechanic was told not to become. What is left is the crossing nothing else narrates: stepping out of
-    /// the car onto a floor that holds or does not, and leaving her tube for the regolith.</para></summary>
-    private void AnnounceAirSupply(SuitAir.Supply supply, bool roomSpeaksForItself)
-    {
-        SuitAir.Supply? was = _airSupplyNoted;
-        _airSupplyNoted = supply;
-
-        if (was is null || SuitAir.Drawing(was.Value) == SuitAir.Drawing(supply) || roomSpeaksForItself)
-        {
-            return;
-        }
-
-        RendererInterop.PlayCue("blip");
-        ShowPulseMessage(SuitAir.SupplyChangedLine(supply));
-    }
-
-    /// <summary>How fast her tube refills a suit — several times real time, because standing in an airlock
-    /// watching a gauge is not the game. Getting home is the achievement; the top-up is a formality.</summary>
-    private const double TubeRefillRate = 12.0;
-
-    // ── #562 · THE TUBE REARMS YOU. ────────────────────────────────────────────────────────────────────
-    //
-    // Owner, playtesting Miranda with both sentries shouldered and dry: "The gun reload at airlock is not
-    // working here now… I carry both guns but they are not being reloaded." He was right twice over.
-    //
-    // The bug: boarding the shuttle REMOVES the bots from _shipBots and puts them in ex.Bots, and they only
-    // come back on liftoff. So for the whole excursion the roster is empty, and every rearm affordance — all
-    // of which read _shipBots — reported "No bots aboard… they're deployed on a surface, or written off."
-    // That is false in the one state it matters: the captain is carrying both of them, shouldered, in his own
-    // airlock. Worse, it was a trap. A dry bot could not be fed until liftoff, and the reason you walked back
-    // was that it went dry.
-    //
-    // The fix he asked for: "I expect them to be reloaded at that tube I was at." So the down-tube feeds
-    // them — automatically, cheaply, one magazine at a time, with a bar you can watch and a receipt that
-    // says what it cost.
-    //
-    // WHY A PLACE AND NOT A BUTTON — this is the design, in his words: "the reload forces the player to plan
-    // their routes … and keep their supply line safe for retreat to reload", and the tube is therefore "the
-    // invisible tether to players distance". Every excursion becomes a loop with a known anchor, and the
-    // interesting question is how far out you dare go before the walk back costs more than the rounds would.
-    // The retreat is the price; the credits deliberately are not (SentryBot.RestockPricePerRound, halved).
-    private void StepTubeRearm(double dtRealSeconds)
-    {
-        if (_surface is not { } ex)
-        {
-            return;
-        }
-
-        // Standing anywhere but inside the tube ends it. No penalty and nothing lost: rounds already racked
-        // are already in the magazine, and the bar simply starts over next time you come back.
-        if (!MoonSurface.IsInDownTube(_avatarX, _avatarY))
-        {
-            ex.RearmBotIndex = null;
-            ex.RearmProgress = 0;
-            return;
-        }
-
-        // Nothing to feed, or nothing to feed it with. Both are quiet — a captain walks through this tube on
-        // every single trip, and a tube that nags on the way out would be worse than one that never spoke.
-        if (ex.RearmBotIndex is not { } idx)
-        {
-            idx = NextBotWantingRounds(ex);
-            if (idx < 0 || _credits < SentryBot.RestockPricePerRound)
-            {
-                return;
-            }
-            ex.RearmBotIndex = idx;
-            ex.RearmProgress = 0;
-        }
-
-        // The bot may have been planted (or the list rebuilt) since the clock started.
-        if (idx >= ex.Bots.Count || ex.Bots[idx].Deployed)
-        {
-            ex.RearmBotIndex = null;
-            ex.RearmProgress = 0;
-            return;
-        }
-
-        ex.RearmProgress += dtRealSeconds / SentryBot.RearmSecondsPerMagazine;
-        if (ex.RearmProgress < 1.0)
-        {
-            return;
-        }
-
-        RackOneMagazine(ex, idx);
-        ex.RearmBotIndex = null;
-        ex.RearmProgress = 0;
-    }
-
-    /// <summary>The first SHOULDERED bot that is short of a full magazine, or -1. Deployed bots are skipped
-    /// on purpose: one standing out on the regolith is not in the tube being handed rounds, and pretending
-    /// otherwise would be exactly the sim-says-one-thing-sentence-says-another bug this whole lane fixes.
-    /// Fills in roster order, one at a time — a magazine is a timer, and one whole timer beats two short.</summary>
-    private static int NextBotWantingRounds(SurfaceExcursion ex)
-    {
-        for (int i = 0; i < ex.Bots.Count; i++)
-        {
-            if (!ex.Bots[i].Deployed && ex.Bots[i].Rounds < SentryBot.MaxMagazine)
-            {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    /// <summary>Rack one magazine as full as the purse allows, spend the credits, and say so. The quote is
-    /// the same pure Core law the haven armory uses (<see cref="SentryBot.QuoteRestock"/>) over a one-bot
-    /// list — the same price seen from another door, never a second economy.</summary>
-    private void RackOneMagazine(SurfaceExcursion ex, int idx)
-    {
-        SurfaceBot bot = ex.Bots[idx];
-        SentryBot.RestockQuote quote = SentryBot.QuoteRestock([bot.Rounds], _credits);
-        if (quote.RoundsBought <= 0)
-        {
-            return; // the purse ran dry between starting the clock and finishing it
-        }
-
-        bot.Rounds = quote.Magazines[0];
-        _credits -= quote.Cost;
-        RendererInterop.PlayCue("board");
-        RequestVaultSave();   // rounds and purse both moved — durable before the next thing happens
-
-        // The first time this ever happens to a captain, the card explains the tether. After that the
-        // receipt is the right register: you know where the ammo comes from now.
-        if (!ShowTubeRearmCardOnce())
-        {
-            ShowPulseMessage(
-                $"🔫 {bot.Unit} racked to {SentryBot.Readout(bot.Rounds)} — {quote.Cost:N0} cr. " +
-                (NextBotWantingRounds(ex) >= 0 ? "Feeding the next one." : "Both full. Back out you go."));
-        }
-    }
-
-    // #563 · The world grew and the captain has read why. Same seam as CloseGroundLesson — Dismiss() hands
-    // the keyboard back to the map div, which matters doubly here: this card can open mid-excursion with a
-    // pack already walking toward you, and a swallowed keypress would be a death.
-    private void CloseGroundGrew()
-    {
-        _groundGrewOpen = false;
-    }
-
-    /// <summary>#563 · Raise the map-just-grew card, but only ever once per captain. Called from every path
-    /// that appends real ground to the live plan (a forced expedition door, Vantar's concealed lab door).
-    ///
-    /// <para>Returns true when the card went up, so the caller can keep its toast for every later time —
-    /// the card explains the rule to someone who has never seen it, and the toast is exactly right for
-    /// someone who has. Saving immediately is deliberate: the one-time bit must be durable the instant it
-    /// is spent, the same habit the convergence reveal uses.</para></summary>
-    private bool ShowGroundGrewCardOnce()
-    {
-        if (_groundGrewSeen)
-        {
-            return false;
-        }
-        _groundGrewSeen = true;
-        _groundGrewOpen = true;
-        RequestVaultSave();
-        StateHasChanged();
-        return true;
-    }
-
-    // #562 · The captain has read what the tube does. Same Dismiss() seam — the keyboard goes back to the
-    // map div, which matters here because the card fires INSIDE the tube, i.e. the moment before a captain
-    // means to walk back out into whatever they retreated from.
-    private void CloseTubeRearm()
-    {
-        _tubeRearmOpen = false;
-    }
-
-    // #573 · The captain has read what the tank is doing. Dismiss() hands the keyboard back — and here that
-    // matters more than anywhere: this card opens while the air is already going, so a swallowed keypress
-    // is spent air.
-    private void CloseAirCard()
-    {
-        _airCardOpen = false;
-    }
-
-    /// <summary>Every shelter on this site, in the stable order everything else indexes by.</summary>
-    /// <summary>#585 · Every shelter on this site — computed ONCE per excursion and remembered.
-    ///
-    /// <para>Owner, after the rebuild: <i>"I think it felt a little sluggish at some points."</i> This was
-    /// the cost I had just added. <c>SurfaceShelter.SpecsFor</c> is pure but not free — it re-runs the
-    /// seeded placement, up to nine shelters over thirty hashed candidate spots each, with a separation
-    /// check against everything placed so far. That was fine when it was called twice a frame to draw
-    /// beacons. It stopped being fine the moment the threshold rule (#585) called it once PER OLD ONE PER
-    /// FRAME: twenty-four hunters × ~270 hash-and-lerp attempts, sixty times a second, to answer a question
-    /// whose answer cannot change for the whole excursion.</para>
-    ///
-    /// <para>Determinism is what makes the cache safe: same body, same salt, same field ⇒ same list, every
-    /// time. Cleared with the excursion, so a new site recomputes.</para></summary>
-    private IReadOnlyList<SurfaceStructure.Spec> SheltersOn(SurfaceExcursion ex)
-    {
-        if (ex.ShelterSpecs is { } cached)
-        {
-            return cached;
-        }
-        IReadOnlyList<SurfaceStructure.Spec> specs = Derelict.TryParseWreckId(ex.Stop.Body.Id, out _)
-            ? []
-            : SurfaceShelter.SpecsFor(ex.Stop.Body.Id, ex.Site.LayoutSalt, MoonSurface.ExpeditionField());
-        ex.ShelterSpecs = specs;
-        return specs;
-    }
-
-    /// <summary>#585 · Walk a body out of solid mass it has ended up inside — a wall that was built around
-    /// it rather than one it walked into. Tries short steps outward on a ring of bearings and takes the first
-    /// that is open ground; gives up rather than loop, because a contact stuck in stone is a curiosity and a
-    /// frame that never ends is a crash.</summary>
-    private static (double X, double Y) ExtricateFromStone(
-        double x, double y, IReadOnlyList<SurfaceCollision.Segment> walls, double radius)
-    {
-        if (!SurfaceCollision.Blocked(x, y, radius, walls))
-        {
-            return (x, y);
-        }
-
-        for (double reach = 1.5; reach <= 18.0; reach += 1.5)
-        {
-            for (int i = 0; i < 12; i++)
-            {
-                double a = i / 12.0 * Math.Tau;
-                double tx = x + (Math.Cos(a) * reach), ty = y + (Math.Sin(a) * reach);
-                if (!SurfaceCollision.Blocked(tx, ty, radius, walls))
-                {
-                    return (tx, ty);
-                }
-            }
-        }
-        return (x, y);
-    }
-
-    /// <summary>#585 · Push a body back out of any shelter it has ended up inside. The door reads a suit;
-    /// nothing else on this ground gets to be in there. Cheap: a site carries a handful of shelters and the
-    /// common case is a single Contains() that says no.</summary>
-    private (double X, double Y) HoldOutsideShelters(double x, double y)
-    {
-        if (_surface is not { } ex)
-        {
-            return (x, y);
-        }
-        foreach (SurfaceStructure.Spec spec in SheltersOn(ex))
-        {
-            (x, y) = SurfaceShelter.HoldAtTheThreshold(spec, x, y);
-        }
-        return (x, y);
-    }
-
-    /// <summary>Which shelter the captain is standing inside, or -1.</summary>
-    private int ShelterUnderfoot(SurfaceExcursion ex)
-    {
-        IReadOnlyList<SurfaceStructure.Spec> all = SheltersOn(ex);
-        for (int i = 0; i < all.Count; i++)
-        {
-            if (SurfaceShelter.Contains(all[i], _avatarX, _avatarY))
-            {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private bool StandingInTheShelter(SurfaceExcursion ex) => ShelterUnderfoot(ex) >= 0;
-
-    /// <summary>A rack's reservoir right now, in suit-seconds. A rack nobody in this run has touched is full
-    /// — unless somebody ELSE drew on it, which is the whole "finding one not full means somebody was here"
-    /// story, told by state rather than by a card.</summary>
-    private double ShelterReservoirNow(SurfaceExcursion ex, int index)
-    {
-        if (index < 0)
-        {
-            return 0;
-        }
-        if (ex.ShelterReservoir.TryGetValue(index, out double held))
-        {
-            return held;
-        }
-        double start = SurfaceShelter.SomebodyWasHere(ex.Stop.Body.Id, ex.Site.LayoutSalt, index)
-            ? SurfaceShelter.ReservoirSeconds * 0.42
-            : SurfaceShelter.ReservoirSeconds;
-        ex.ShelterReservoir[index] = start;
-        return start;
-    }
-
-    // ── #608 · ONE RACK LAW, TWO BUILDINGS ──────────────────────────────────────────────────────────────
-    //
-    // The underground refuges are the surface shelter's mechanic, underground — so they are the surface
-    // shelter's CODE, not a second copy of it. Everything that decides how much air moves lives in
-    // SurfaceShelter (Produce, Transfer, the two-thirds ceiling somebody set for the next person through the
-    // door) and both callers step through this one function.
-    //
-    // The reason it is a function rather than a comment saying "keep these in sync": this project's most
-    // expensive habit is two places that have to agree and only one being changed, and the two racks are a
-    // perfect candidate — they will be tuned by somebody reading one of them. #573's shelter and #608's
-    // refuge now cannot drift, because there is nothing to drift.
-
-    /// <summary>#612 + #608 · IS THE TANK RUNNING? ONE ANSWER, READ BY THE SIM AND BY THE GAUGE.
-    ///
-    /// <para>#612 shipped the <c>AIR: TANKS / ROOM</c> source on the hud because the owner asked <i>"where
-    /// here does it say if I consume tanks or have air?"</i> — and its own issue states the hard part: the
-    /// gauge <b>"has to agree with the plate by the lift on every floor. Two instruments disagreeing about
-    /// whether you can breathe is worse than one instrument saying nothing."</b></para>
-    ///
-    /// <para>It was computed as its own expression beside <c>StepSuitAir</c>'s branches, which is the exact
-    /// arrangement this project keeps paying for: two places that must agree, and only one gets changed. It
-    /// did not survive its first contact with a new way to breathe. A refuge (#608) stops the drain, and the
-    /// hud went on reading TANKS while the sim was not spending anything — a captain sitting in air being
-    /// told, in colour, that their tank was running out.</para>
-    ///
-    /// <para>So the drain is gated on this and the gauge is fed from this. Anything that ever becomes a new
-    /// place to breathe is added HERE, once, and both follow.</para>
-    ///
-    /// <para><b>And "here" is now Core</b>, because this client-side version could still only be read by a
-    /// client: the plate <c>HiveInterior</c> paints by the lift was calling
-    /// <c>UndergroundComplex.HoldsPressure</c> for itself and spelling its own words, which made a THIRD
-    /// answer to the same question. <see cref="SuitAir.SourceOf"/> is the predicate; this method is the one
-    /// place that gathers the four facts to hand it, and every surface reads what it says.</para></summary>
-    /// <para><b>#621 · and the third fact was answered with the wrong world's rule.</b> "Aboard" was
-    /// <c>MoonSurface.IsSafeAboard(_avatarY)</c> — the regolith's top rim at y = −20 — while a derelict's
-    /// whole deck runs −9 to +9, so every point aboard every wreck said YES. The gauge told a captain
-    /// standing in a hull that has held vacuum for years that they were on HER AIR and their tank was
-    /// FILLING, and the drain agreed with it. <see cref="AwayTeamSide.BackAtTheShuttle"/> is the one place
-    /// that knows which door you are on the far side of, and both the reach rule and this one now read
-    /// it.</para>
-    private SuitAir.Supply AirSupplyOf(SurfaceExcursion ex) =>
-        SuitAir.SourceOf(
-            ex.Stop.Body.Id,                                 // #677 which building — the halls breathe
-            ex.Floor,
-            StandingInTheShelter(ex),                        // #573 the deep shelter
-            CaptainBeyondReach,                              // her tube — or past a wreck's lock: breathing hers
-            ex.Floor < 0 && RefugeUnderfoot(ex) >= 0);       // #608 a pressure refuge on a dead floor
-
-    /// <summary>Is the tank running? The one bit of <see cref="AirSupplyOf"/>, for callers that want no
-    /// more than that.</summary>
-    private bool TankIsDrawing(SurfaceExcursion ex) => SuitAir.Drawing(AirSupplyOf(ex));
-
-    /// <summary>Run one rack for <paramref name="dt"/> seconds: it makes air, it moves what it can into the
-    /// suit, and the warnings re-arm if anything went in. Returns the reservoir it is left holding, and
-    /// reports how much reached the tank.</summary>
-    private double DrawFromRack(SurfaceExcursion ex, double held, double dt, out double pumped)
-    {
-        double made = SurfaceShelter.Produce(held, dt);
-        pumped = SurfaceShelter.Transfer(ex.AirSeconds, made, SuitAir.TankSeconds, dt);
-        if (pumped > 0)
-        {
-            ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, pumped);
-            ex.AirLowWarned = false;
-            ex.AirWarned = false;
-            ex.ReserveNoted = false;
-        }
-        return made - pumped;
-    }
-
-    /// <summary>#608 · The refuges on the floor the captain is standing on, read off the deck the renderer
-    /// actually drew.
-    ///
-    /// <para><b>Not rebuilt from Core.</b> <c>UndergroundComplex.Build</c> is pure but not free, and this is
-    /// asked every frame by the suit; more importantly, a second call would be a second answer. The consoles
-    /// on <c>_deckPlan</c> ARE the refuges — <see cref="HiveInterior.FloorDeck"/> put them there off the
-    /// floor plan — so the room the captain can see and the room that holds their air are the same object by
-    /// construction rather than by two functions agreeing.</para></summary>
-    private List<(double X, double Y)> RefugesOn()
-    {
-        var found = new List<(double, double)>();
-        foreach (DeckPlan.ConsoleSpot spot in _deckPlan.Consoles)
-        {
-            if (spot.Kind == DeckPlan.ConsoleKind.HiveRefuge)
-            {
-                found.Add((spot.X, spot.Y));
-            }
-        }
-        return found;
-    }
-
-    /// <summary>Which refuge the captain is standing inside, or -1. Never anything but -1 above ground.</summary>
-    private int RefugeUnderfoot(SurfaceExcursion ex)
-    {
-        if (ex.Floor >= 0)
-        {
-            return -1;
-        }
-        List<(double X, double Y)> all = RefugesOn();
-        for (int i = 0; i < all.Count; i++)
-        {
-            if (UndergroundComplex.RefugeHolds(all[i].X, all[i].Y, _avatarX, _avatarY))
-            {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    /// <summary>A refuge rack's reservoir, in suit-seconds — the shelter's own story, told about a room
-    /// under a moon. Keyed per FLOOR, so walking back into B7's refuge finds it as you left it and B3's is
-    /// somebody else's problem.</summary>
-    private double RefugeReservoirNow(SurfaceExcursion ex, int index)
-    {
-        if (index < 0)
-        {
-            return 0;
-        }
-        int key = RefugeKey(ex.Floor, index);
-        if (ex.RefugeReservoir.TryGetValue(key, out double held))
-        {
-            return held;
-        }
-
-        // #573's idiom, underground: a rack that is not full means SOMEBODY WAS HERE. Down here that is a
-        // colder sentence than it is on the regolith — the building has been shut for decades and the seals
-        // on this room have not — and it costs nothing but a seeded roll.
-        double start = SurfaceShelter.SomebodyWasHere(
-                ex.Stop.Body.Id, $"{ex.Site.LayoutSalt}:hive{ex.Floor}", index)
-            ? SurfaceShelter.ReservoirSeconds * 0.42
-            : SurfaceShelter.ReservoirSeconds;
-        ex.RefugeReservoir[key] = start;
-        return start;
-    }
-
-    /// <summary>One key per refuge per floor, so B2's rack is not B3's. Same shape as
-    /// <see cref="HiveInterior.RoomKey"/>, and deliberately a different dictionary.</summary>
-    private static int RefugeKey(int level, int index) => (level * 1000) - index;
-
-    /// <summary>#608 · What a rack — either rack — says when it is asked how it is doing. One reading of one
-    /// machine, so the shed on the regolith and the refuge eleven floors down can never describe the same
-    /// state in two different ways.</summary>
-    private static string RackGaugeLine(SurfaceExcursion ex, double held) =>
-        ex.AirSeconds >= SuitAir.TankSeconds * SurfaceShelter.FillToFraction
-            ? SurfaceShelter.PumpDoneLine
-            : held > SurfaceShelter.ReservoirSeconds * 0.1
-                ? SurfaceShelter.PumpingLine
-                : SurfaceShelter.TrickleLine;
-
-    /// <summary>#573 · Raise the tank-is-low card, once per captain ever. Returns true when it went up, so
-    /// the caller keeps its pulse line for every later trip.</summary>
-    private bool ShowAirCardOnce()
-    {
-        if (_airCardSeen)
-        {
-            return false;
-        }
-        _airCardSeen = true;
-        _airCardOpen = true;
-        RequestVaultSave();
-        StateHasChanged();
-        return true;
-    }
-
-    /// <summary>#562 · Raise the tube-feeds-you card, once per captain ever. Returns true when it went up,
-    /// so the caller keeps its receipt line for every later racking. The card teaches the shape of an
-    /// excursion — one anchor, plan the route home — and the receipt is right for a captain who knows.</summary>
-    private bool ShowTubeRearmCardOnce()
-    {
-        if (_tubeRearmSeen)
-        {
-            return false;
-        }
-        _tubeRearmSeen = true;
-        _tubeRearmOpen = true;
-        RequestVaultSave();
-        StateHasChanged();
-        return true;
-    }
 }

@@ -1,0 +1,365 @@
+@using SpaceSails.Core
+@using SpaceSails.Client.Rendering
+@implements IDisposable
+
+@* The tracking post (worldbuilding notes §5; vision ¶12/¶14/¶16): aim the ship's telescope at a
+   sky region, sweep it over sim time, and hold a ledger of found ships that don't advertise
+   themselves. Entirely self-contained: Map.razor only ever passes it the shared clock/geometry
+   and reads back the ledger for its own emphasis pass — no engine logic lives in Map.razor.
+
+   PR-12 (the scope wall): the specialist position shows every tracked target live at once
+   instead of one small inset — one ScopeView canvas per ledger slot (max 4), redrawn straight
+   off SpaceSails.Client.Rendering.RendererInterop.FrameTick, the exact same global rAF-driven
+   event Map.razor's own scope inset rides. No new timer, no new interop — just more canvases
+   subscribed to the render loop that's already running. *@
+
+<div class="tracking-post-card @(FullScreen ? "tracking-post-desk text-light" : "card bg-dark bg-opacity-75 text-light") @(Visible ? "" : "d-none")">
+    <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
+        <span class="fw-bold small">Tracking post 📡</span>
+        @if (FullScreen)
+        {
+            @* M27: the backdrop sun diagram is the live map — give the sensors chief its zoom. *@
+            <div class="btn-group btn-group-sm" role="group" aria-label="Backdrop map zoom">
+                <button type="button" class="btn btn-outline-light py-0" title="Zoom map out"
+                        @onclick="() => OnZoomMap.InvokeAsync(1.6)">🔍−</button>
+                <button type="button" class="btn btn-outline-light py-0" title="Zoom map in"
+                        @onclick="() => OnZoomMap.InvokeAsync(1 / 1.6)">🔍+</button>
+                <button type="button" class="btn btn-outline-light py-0" title="Center the ship"
+                        @onclick="() => OnCenterShip.InvokeAsync()">⌖ ship</button>
+            </div>
+        }
+        else
+        {
+            <button type="button" class="btn-close btn-close-white" aria-label="Close" title="Close the tracking post and stow the telescope panel" @onclick="() => OnClose.InvokeAsync()"></button>
+        }
+    </div>
+    <div class="card-body p-2 small @(FullScreen ? "tracking-post-desk-body" : "")">
+        <div class="d-flex gap-2 @(FullScreen ? "tracking-post-desk-top" : "")">
+            <div class="tracking-rosette flex-shrink-0 @(FullScreen ? "tracking-rosette-big" : "")">
+                <svg viewBox="0 0 200 200" class="tracking-rosette-svg" aria-label="Sun-relative detection range">
+                    <polygon points="@RosettePolygonPoints()" class="tracking-rosette-envelope" />
+                    <polygon points="@WedgePolygonPoints()" class="tracking-rosette-wedge @(_activeJob is not null ? "tracking-rosette-wedge-active" : "")" />
+                    @* M27: bearing vectors from the ship to every tracked target — threats dashed red. *@
+                    @foreach ((double x, double y, string color, bool threat) in TrackedTargetDots())
+                    {
+                        <line x1="100" y1="100" x2="@x" y2="@y"
+                              class="@(threat ? "tracking-vector tracking-vector-threat" : "tracking-vector")"
+                              stroke="@color" />
+                    }
+                    @foreach ((double x, double y, string color, bool threat) in TrackedTargetDots())
+                    {
+                        <circle cx="@x" cy="@y" r="@(threat ? 4 : 3)" fill="@color" />
+                    }
+                    @* M27: the prograde arrow — which way the ship is actually flying. *@
+                    @if (ProgradePoint() is { } fwd)
+                    {
+                        <line x1="100" y1="100" x2="@fwd.X" y2="@fwd.Y" class="tracking-prograde-line" />
+                        <circle cx="@fwd.X" cy="@fwd.Y" r="2.5" class="tracking-prograde-tip" />
+                    }
+                    <line x1="100" y1="100" x2="100" y2="14" class="tracking-rosette-sunline" />
+                    <text x="100" y="10" class="tracking-rosette-label" text-anchor="middle">☉</text>
+                    <circle cx="100" cy="100" r="4" class="tracking-rosette-ship" />
+                </svg>
+                <div class="text-secondary tracking-heading-line">@HeadingLine()</div>
+            </div>
+            <div class="flex-grow-1">
+                <label class="form-label mb-0 d-block">Bearing @((int)_centerBearingDeg)°</label>
+                <input type="range" class="form-range" min="0" max="359" step="1" value="@_centerBearingDeg"
+                       title="Swing the scope's aim around the sky — sets the center bearing of the manual sweep wedge"
+                       @oninput="OnBearingInput" @onkeydown:stopPropagation="true" />
+                <label class="form-label mb-0 d-block">Arc width @((int)_arcWidthDeg)°</label>
+                <input type="range" class="form-range" min="5" max="360" step="1" value="@_arcWidthDeg"
+                       title="Open or narrow the sweep — a wide arc searches more sky at once, a tight one drills a single bearing"
+                       @oninput="OnArcInput" @onkeydown:stopPropagation="true" />
+                @* PR-C: the corridor-watch dropdown is gone — trade lanes are clickable regions
+                   on the map itself now. The sliders remain for a truly manual aim. *@
+                @if (_activeJob is null)
+                {
+                    <button type="button" class="btn btn-sm btn-info w-100" title="Point the telescope at the aimed wedge and sweep it for ships that don't advertise themselves" @onclick="StartSweep">Start sweep</button>
+                }
+                else
+                {
+                    <button type="button" class="btn btn-sm btn-outline-warning w-100" title="Abort the running sweep and hand the telescope back to the queue" @onclick="StopSweep">Stop sweep</button>
+                }
+                @* M27: the eyes are open by default — a passive watch keeps a full-circle sweep
+                   running whenever nothing manual is queued. *@
+                <button type="button" class="btn btn-sm w-100 mt-1 @(_passiveWatch ? "btn-success" : "btn-outline-secondary")"
+                        title="Keep the eyes open — a full-circle survey runs itself whenever no manual sweep or task holds the scope"
+                        @onclick="TogglePassiveWatch">
+                    👁 Passive watch: @(_passiveWatch ? "ON — always scanning" : "off")
+                </button>
+                <button type="button" class="btn btn-sm w-100 mt-1 @(RadarActive ? "btn-danger" : "btn-outline-danger")"
+                        title="Light the active radar for exact close-range fixes — but every ship in earshot now knows exactly where you are"
+                        @onclick="() => OnRadarToggle.InvokeAsync(!RadarActive)">
+                    📡 @(RadarActive ? "ACTIVE RADAR ON — LOUD" : "Active radar (close range — loud)")
+                </button>
+                @* M29: the transponder — like ships on the ocean. Lit = honest traffic; dark =
+                   the click before the run; false colors = the ghost flies the declared course. *@
+                <div class="btn-group btn-group-sm w-100 mt-1" role="group" aria-label="Transponder">
+                    <button type="button" class="btn @(Transponder == TransponderMode.On ? "btn-success" : "btn-outline-secondary")"
+                            title="Broadcast our true position — honest traffic runs lit"
+                            @onclick="() => OnTransponderChange.InvokeAsync(TransponderMode.On)">📻 LIT</button>
+                    <button type="button" class="btn @(Transponder == TransponderMode.Dark ? "btn-dark border-light" : "btn-outline-secondary")"
+                            title="Broadcast nothing — they get only what their optics earn"
+                            @onclick="() => OnTransponderChange.InvokeAsync(TransponderMode.Dark)">🕶 DARK</button>
+                    <button type="button" class="btn @(Transponder == TransponderMode.Fake ? "btn-warning text-dark" : "btn-outline-secondary")"
+                            title="Broadcast the ghost of the course we abandoned — blown per observer whose own optics see the real us"
+                            @onclick="() => OnTransponderChange.InvokeAsync(TransponderMode.Fake)">🎭 FAKE</button>
+                </div>
+                <div class="text-secondary tracking-transponder-hint">@TransponderHint()</div>
+            </div>
+        </div>
+
+        @if (FullScreen && Opportunities.Count > 0)
+        {
+            @* M29: the cover-story instrument — what the CURRENT plotted course conveniently
+               brushes by. Fly somewhere innocent; the sensors quietly note who drifts close. *@
+            <div class="sensors-opportunity-box mt-2">
+                <div class="fw-bold">🧭 En-route passes — this course brushes by:</div>
+                @foreach (CourseOpportunity opp in Opportunities)
+                {
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>@(opp.Tracked ? "📡 " : "")@opp.Callsign</span>
+                        <span class="text-secondary">min @FormatWallDistance(opp.MinDistance) @FormatOppDuration(opp.MinSimTime - SimTime)</span>
+                        <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                title="War-room target of interest — intercept clock & firing solutions"
+                                @onclick="() => OnSetInterest.InvokeAsync(opp.Id)">🎯</button>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (FullScreen && RadarActive)
+        {
+            <div class="sensors-radar-box mt-2">
+                <div class="fw-bold text-danger">📡 Radar returns — exact fixes inside @FormatWallDistance(RadarRule.RangeMeters); every ship in earshot now knows where we are.</div>
+                @{ List<TrackingCandidate> returns = RadarReturns(); }
+                @if (returns.Count == 0)
+                {
+                    <div class="text-secondary">No returns — nothing inside radar range.</div>
+                }
+                else
+                {
+                    @foreach (TrackingCandidate c in returns)
+                    {
+                        double rd = (c.State.Position - ShipPosition).Length;
+                        double rv = (c.State.Velocity - ShipVelocity).Length;
+                        double rc = RelativeMotion.ClosingSpeed(ShipPosition, ShipVelocity, c.State.Position, c.State.Velocity);
+                        <div class="d-flex justify-content-between">
+                            <span>@(c.IsThreat ? "🐺 " : "")@c.Callsign</span>
+                            @* #210: one voice — the signed range-rate, not a bare magnitude. *@
+                            <span class="text-secondary">@FormatWallDistance(rd) · rel @((rv / 1000).ToString("F2")) km/s · @RelativeMotion.WordedBefore(rc, "F2")</span>
+                        </div>
+                    }
+                }
+            </div>
+        }
+
+        @if (_activeJob is not null)
+        {
+            <div class="progress tracking-progress mt-2" role="progressbar" aria-label="Sweep progress">
+                <div class="progress-bar bg-info" style="width:@(SweepProgressPercent.ToString("F0"))%"></div>
+            </div>
+        }
+        @if (_lastSweepMessage is not null)
+        {
+            <div class="text-secondary mt-1">@_lastSweepMessage</div>
+        }
+
+        <hr class="my-2" />
+
+        @if (FullScreen)
+        {
+            @* PR-D: the Sensor tasks list — the telescope's queue, visible and reorderable.
+               What the one instrument does next is never a mystery: it works this list top to
+               bottom and wraps around; one-shots leave after their pass. *@
+            @if (_schedule.Queue.Count > 0)
+            {
+                <div class="sensor-tasks-box mb-2">
+                    <div class="fw-bold">🔭 Sensor tasks — one telescope, worked top to bottom</div>
+                    @foreach (SensorTask task in _schedule.Queue)
+                    {
+                        @* #239: READ, never inferred — RUNNING at 0% and WAITING are one picture if the picture is a percentage. *@
+                        SensorTaskState state = _schedule.StateOf(task.Id) ?? SensorTaskState.Queued;
+                        <div class="d-flex align-items-center gap-1 @(state == SensorTaskState.Running ? "sensor-task-active" : "")" @key="task.Id">
+                            <span>@KindIcon(task.Kind)</span>
+                            <span class="flex-grow-1">@task.Label@(task.Recurring ? "" : " · once")</span>
+                            <span class="sensor-task-chip @StateChipClass(state)">@SensorTaskPlates.Chip(state)</span>
+                            @if (state == SensorTaskState.Running)
+                            {
+                                <span class="text-info">@((int)(_schedule.ActiveProgress(SimTime) * 100))%</span>
+                            }
+                            else
+                            {
+                                <span class="text-secondary">@TaskCostText(task)</span>
+                            }
+                            <button type="button" class="btn btn-sm btn-outline-light py-0 px-1" title="Earlier in the round"
+                                    @onclick="() => _schedule.MoveUp(task.Id)">▲</button>
+                            <button type="button" class="btn btn-sm btn-outline-light py-0 px-1" title="Later in the round"
+                                    @onclick="() => _schedule.MoveDown(task.Id)">▼</button>
+                            <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" title="Run as the very next pass"
+                                    @onclick="() => _schedule.PrioritizeNext(task.Id)">⏫</button>
+                            @if (task.Kind is SensorTaskKind.AreaScan or SensorTaskKind.CorridorSweep)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Cancel this task"
+                                        @onclick="() => _schedule.Remove(task.Id)">✕</button>
+                            }
+                            else if (task.Kind == SensorTaskKind.LostSearch)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Abandon the case — let her go"
+                                        @onclick="() => AbandonSearch(task.TargetShipId!)">✕</button>
+                            }
+                            else if (!task.Recurring)
+                            {
+                                @* #962: a one-shot look the captain ordered by hand is his to call off again.
+                                   A STANDING custody pass gets no ✕ on purpose — the ledger re-queues it every
+                                   tick, so the button would do nothing anyone could see. Drop the track. *@
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Call this look off"
+                                        @onclick="() => _schedule.Remove(task.Id)">✕</button>
+                            }
+                        </div>
+                    }
+                    @foreach (CompletedPass done in _schedule.RecentlyDone)
+                    {
+                        <div class="d-flex align-items-center gap-1 sensor-task-done" @key="@("done:" + done.Task.Id)">
+                            <span class="flex-grow-1">@KindIcon(done.Task.Kind) @done.Task.Label</span>
+                            <span class="sensor-task-chip @StateChipClass(SensorTaskState.Done)">@SensorTaskPlates.Chip(SensorTaskState.Done)</span>
+                        </div>
+                    }
+                </div>
+            }
+
+            @* PR-D: the cold-case board — every lost lock, its live search area, and the
+               PRIORITIZE REDISCOVERY button. Priority is a real trade: every other task waits. *@
+            @if (_lostTracks.Entries.Count > 0)
+            {
+                <div class="sensor-lost-box mb-2">
+                    <div class="fw-bold text-warning">🔍 Lost locks — search areas open on the map</div>
+                    @foreach (LostTrack lost in _lostTracks.Entries)
+                    {
+                        <div class="d-flex justify-content-between align-items-center gap-2">
+                            <span>@(FindCandidate(lost.ShipId)?.Callsign ?? lost.ShipId)</span>
+                            <span class="text-secondary">area @FormatWallDistance(lost.SearchRadius(SimTime)) and growing</span>
+                            <button type="button" class="btn btn-sm btn-warning py-0 px-1"
+                                    title="The search runs as the very next pass — tracked targets and scans wait"
+                                    @onclick="() => PrioritizeSearch(lost.ShipId)">⏫ PRIORITIZE REDISCOVERY</button>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (_recentFinds.Count > 0)
+            {
+                <div class="sensors-finds-box mb-2">
+                    <div class="fw-bold">✨ Last area scan resolved:</div>
+                    @foreach (Discovery find in _recentFinds.Take(5))
+                    {
+                        <div class="text-secondary">@FindIcon(find.Kind) @find.Description</div>
+                    }
+                    @if (_recentFinds.Count > 5)
+                    {
+                        <div class="text-secondary">… and @(_recentFinds.Count - 5) more</div>
+                    }
+                </div>
+            }
+
+            @* PR-D: the tracked-target boxes, one live scope image per slot (owner: "boxes with
+               images. Each has its own") — the M27 single cycling tile grew into a per-card
+               instrument; the card still carries the full nav-grade picture beside it. *@
+            <div class="fw-bold mb-1">Tracked targets (@_ledger.Entries.Count / @_ledger.MaxTracks)</div>
+            <div class="sensors-main">
+                <div class="sensors-cards flex-grow-1">
+                    @{
+                        List<TrackedTarget> orderedCards = OrderedTracks();
+                    }
+                    @if (orderedCards.Count == 0)
+                    {
+                        <div class="text-secondary">Track ledger empty — the passive watch is scanning; contacts land here as the sweep finds them, and lost tracks come back as cold cases.</div>
+                    }
+                    @foreach (TrackedTarget entry in orderedCards)
+                    {
+                        TrackingCandidate? candidate = FindCandidate(entry.ShipId);
+                        double quality = entry.EffectiveQuality(SimTime);
+                        double daysAgo = (SimTime - entry.LastConfirmedTime) / 86400.0;
+                        Vector2d position = candidate?.State.Position ?? entry.LastObservation.Position;
+                        Vector2d velocity = candidate?.State.Velocity ?? entry.LastObservation.Velocity;
+                        double distance = (position - ShipPosition).Length;
+                        double relSpeed = (velocity - ShipVelocity).Length;
+                        double closing = RelativeMotion.ClosingSpeed(ShipPosition, ShipVelocity, position, velocity);
+                        double bearingDeg = TrackingStation.Bearing(position - ShipPosition) * 180.0 / Math.PI;
+                        if (bearingDeg < 0) { bearingDeg += 360; }
+                        bool isThreat = candidate?.IsThreat ?? false;
+                        bool onScope = _schedule.Active?.TargetShipId == entry.ShipId;
+                        SightAdvantage sight = SensorModel.Default.Advantage(
+                            new ShipState(ShipPosition, ShipVelocity, SimTime, ShipCharge),
+                            new ShipState(position, velocity, SimTime));
+                        <div class="sensor-card sensor-card-row @(onScope ? "sensor-card-live" : "") @(isThreat ? "sensor-card-threat" : "")"
+                             @key="entry.ShipId">
+                            <canvas id="@CardCanvasId(entry.ShipId)" class="sensor-card-scope"></canvas>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold">@(isThreat ? "🐺 " : "")@(candidate?.Callsign ?? entry.ShipId)@(_aware.Contains(entry.ShipId) ? " · aware ⚠" : "")</span>
+                                    <span>@(onScope ? "● ON SCOPE" : "")</span>
+                                </div>
+                                <div>@FormatWallDistance(distance) · rel @((relSpeed / 1000).ToString("F2")) km/s ·
+                                     @RelativeMotion.WordedBefore(closing, "F2")</div>
+                                <div class="text-secondary">brg @((int)bearingDeg)° · @daysAgo.ToString("F1")d since fix@(candidate?.CargoDetail is { } cd ? $" · {cd}" : "")</div>
+                                <div class="@(sight.TheySeeUs ? "text-warning" : "text-info")">@SightLine(sight)</div>
+                                @if (BeaconLine(sight) is { } beaconLine)
+                                {
+                                    <div class="@(beaconLine.StartsWith("🚨") ? "text-danger fw-bold" : "text-secondary")">@beaconLine</div>
+                                }
+                                <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
+                                <div class="d-flex justify-content-end gap-1 mt-1">
+                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                            title="War-room target of interest — a DIFFERENT slot than the nav destination"
+                                            @onclick="() => OnSetInterest.InvokeAsync(entry.ShipId)">🎯</button>
+                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" disabled="@(candidate is null)"
+                                            title="Take a fresh fix on this contact now — a zero-age observation tightens the prediction cone"
+                                            @onclick="() => ConfirmNow(entry.ShipId)">Confirm</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1"
+                                            title="Drop this track from the ledger and free the telescope slot"
+                                            @onclick="() => Drop(entry.ShipId)">Drop</button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="fw-bold mb-1">Tracked targets (@_ledger.Entries.Count / @_ledger.MaxTracks)</div>
+            @if (_ledger.Entries.Count == 0)
+            {
+                <div class="text-secondary">Nothing on the ledger yet — sweep a region to find contacts.</div>
+            }
+            else
+            {
+                <table class="table table-sm table-dark mb-0">
+                    <tbody>
+                        @foreach (TrackedTarget entry in OrderedTracks())
+                        {
+                            double quality = entry.EffectiveQuality(SimTime);
+                            double daysAgo = (SimTime - entry.LastConfirmedTime) / 86400.0;
+                            TrackingCandidate? candidate = FindCandidate(entry.ShipId);
+                            <tr>
+                                <td>
+                                    @(candidate?.Callsign ?? entry.ShipId)@(_aware.Contains(entry.ShipId) ? " aware ⚠" : "")
+                                    <div class="tracking-quality-bar"><div class="tracking-quality-fill" style="width:@((int)(quality * 100))%"></div></div>
+                                </td>
+                                <td class="text-end align-middle">@daysAgo.ToString("F1")d</td>
+                                <td class="text-end align-middle text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-info py-0 px-1" disabled="@(candidate is null)"
+                                            title="Take a fresh fix on this contact now — a zero-age observation tightens the prediction cone"
+                                            @onclick="() => ConfirmNow(entry.ShipId)">Confirm</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1" title="Drop this track from the ledger and free the telescope slot" @onclick="() => Drop(entry.ShipId)">Drop</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        }
+    </div>
+</div>

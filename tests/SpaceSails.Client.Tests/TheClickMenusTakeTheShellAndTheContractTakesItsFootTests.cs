@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -38,6 +38,7 @@ namespace SpaceSails.Client.Tests;
 /// <para>§3 is <c>?target=</c>, the dev door onto #960's dossier. Three waves of this migration measured
 /// that card by hand because no URL could raise it; this is the URL.</para>
 /// </summary>
+[SlowGate] // #251 · 71 s over 13 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheClickMenusTakeTheShellAndTheContractTakesItsFootTests
 {
     // ══════════════════════════════════════════════════════════════════════════════════════════════════
@@ -54,7 +55,7 @@ public sealed class TheClickMenusTakeTheShellAndTheContractTakesItsFootTests
     [Fact]
     public void EveryClickMenuIsDrawnThroughTheShellAndNoneIsHandRolled()
     {
-        string map = File.ReadAllText(Path.Combine(ClientSource(), "Pages", "Map.razor"));
+        string map = MapMarkup.Read(Path.Combine(ClientSource(), "Pages", "Map.razor"));
         string[] lines = map.Split('\n');
 
         var handRolled = new List<string>();
@@ -234,8 +235,7 @@ public sealed class TheClickMenusTakeTheShellAndTheContractTakesItsFootTests
     [Fact]
     public void TheRuleForTheMenusRootIsWrittenWithDeep()
     {
-        string css = WithoutComments(File.ReadAllText(
-            Path.Combine(ClientSource(), "Pages", "Map.razor.css")));
+        string css = WithoutComments(MapStylesheet.Text);
 
         var reaching = Selectors(css)
             .Where(one => one.TrimEnd().EndsWith(".map-body-menu", StringComparison.Ordinal))
@@ -627,7 +627,7 @@ public sealed class TheClickMenusTakeTheShellAndTheContractTakesItsFootTests
     private static string TheContractAsTyped()
     {
         string map = Regex.Replace(
-            File.ReadAllText(Path.Combine(ClientSource(), "Pages", "Map.razor")),
+            MapMarkup.Read(Path.Combine(ClientSource(), "Pages", "Map.razor")),
             @"@\*.*?\*@", " ", RegexOptions.Singleline);
 
         int verb = map.IndexOf("OnClose=\"AcceptOffer\"", StringComparison.Ordinal);

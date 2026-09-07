@@ -30,10 +30,10 @@ namespace SpaceSails.Client.Tests;
 /// giving him a slot of his own; this is what would have caught it.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 43 s over 6 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheRepCrossesTheFloorTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     private const string Body = "luna";
     private const string ThreadId = "b71f4a0c39d24e5ba8027c6f1d3e5490";
@@ -56,8 +56,8 @@ public sealed class TheRepCrossesTheFloorTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden)!;
-        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden)!;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Public)!;
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Public)!;
         object ex = Activator.CreateInstance(exType, nonPublic: true)!;
         object stop = Activator.CreateInstance(stopType,
             new CelestialBody(Body, Body, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;

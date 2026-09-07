@@ -14,8 +14,8 @@ Every slot `onerror`-hides, so the code shipped first and the JPG dropped in beh
 
 ## 1. `art/oracle-rant.jpg` — THE CORNER, MID-RANT
 
-- **Slot:** `OracleRant.ArtFile`, rendered inside the existing oracle card in `Map.razor`
-  (`.oracle-art`, styled in `Map.razor.css`).
+- **Slot:** `OracleRant.ArtFile`, rendered inside the existing oracle card in `Pages/Map/OracleCard.razor`
+  (`.oracle-art`, styled in `Pages/Map/OracleCard.razor.css`).
 - **Reach it:** dock at any haven, walk the bar, press **E** on `◈ "STATIC" MARSH` on a watch she is present
   for (`PresenceChance` 0.55).
 - **A backdrop, not a plate.** This card is a **conversation the captain stays inside**, turning the dial

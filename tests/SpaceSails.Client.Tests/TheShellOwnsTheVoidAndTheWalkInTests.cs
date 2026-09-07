@@ -21,6 +21,7 @@ namespace SpaceSails.Client.Tests;
 /// child of the card — which is not a nicety but the relation
 /// <c>::deep .view-object &gt; .view-object-close</c> pins the family's sticky foot with.</para>
 /// </summary>
+[SlowGate] // #251 · 15 s over 4 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheShellOwnsTheVoidAndTheWalkInTests
 {
     private const string FreeFlying = "/map?start=wreck";

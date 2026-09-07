@@ -295,37 +295,23 @@ public sealed class TheRoundIsNotStandingStillTests
 
     // ── THE PAGE ITSELF ───────────────────────────────────────────────────────────────────────────────
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
     /// all of them — exactly the text it read out of one file before the split.</summary>
     private static string Deck() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
-    /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
+    /// <summary>#870 · The round is five partials by subject now, so the page this guard reads is all five —
     /// concatenated in the order the one file laid them out, which is exactly the text it read before the
-    /// split. The count is asserted, so a seventh part can never go unread.</summary>
+    /// split. The count is asserted, so a sixth part can never go unread.</summary>
     private static string Patrol()
     {
-        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
+        string dir = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages");
         string[] order =
         [
             // #870 lane 6′c · RE-PATHED. The verbs moved onto Patrol's own partials, so the page's half
@@ -409,7 +395,7 @@ public sealed class TheRoundIsNotStandingStillTests
     [Fact]
     public void TheSentenceAndTheSweepReadTheSameList()
     {
-        string hud = Pages("Map.Surface.Hud.cs");
+        string hud = MapMarkup.PagesFamily("Map.Surface.Hud*.cs"); // #251 · the DoesNotContain below is a subject claim
 
         Assert.Contains("MotionTracker.ReadoutOf(blips, closing)", hud, StringComparison.Ordinal);
         Assert.Contains("MotionTracker.CadenceOf(blips)", hud, StringComparison.Ordinal);

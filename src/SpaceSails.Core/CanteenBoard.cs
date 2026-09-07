@@ -58,6 +58,16 @@ public static class CanteenBoard
     /// that reading it is not a chore with a tank running.</summary>
     public const int PinnedAtOnce = 4;
 
+    /// <summary>#1074 · THE ROSTER'S OWN HEADING, named because two things have to agree about it now: the
+    /// notice in the catalogue below, and the one place that has to be able to FIND that notice
+    /// (<see cref="RosterNotice"/>). Two copies of a heading is the mirrored constant this ground keeps a
+    /// table of, and the day somebody re-words the rota the pin would silently go up over a lost toolbag.
+    ///
+    /// <para><b>The rota is not new and its words are not touched.</b> It has been on this board since #709,
+    /// pinned by an agency temp whose name was changed at the door. What #1074 adds is a reason it is
+    /// CERTAINLY up on one kind of ground — see <see cref="Pinned"/>.</para></summary>
+    public const string RosterHead = "ROTA — WEEK 31 (CORRECTED)";
+
     /// <summary>One authored notice.</summary>
     /// <param name="Head">Its heading, as it reads across the room.</param>
     /// <param name="Body">What it says when a captain stands and reads it.</param>
@@ -87,7 +97,7 @@ public static class CanteenBoard
             "has been given to us either.",
             "◈ A CARRIER, WAITING ON A SIGNATURE"),
 
-        new("ROTA — WEEK 31 (CORRECTED)",
+        new(RosterHead,
             "Nights, slot four: disregard the first name and use the second. Agency staff are listed under " +
             "the name we were given, not the one you use.",
             "◈ AN AGENCY TEMP, FIRST WEEK"),
@@ -123,10 +133,57 @@ public static class CanteenBoard
             "Drivers are not to be asked what they are carrying and are not to answer. This is for their " +
             "benefit as much as anyone else's.",
             "◈ A DRIVER, NOT SAYING WHO FOR"),
+
+        // ── #1063 · AND THE ONE THAT IS NOT ALWAYS THERE ─────────────────────────────────────────────────
+        //
+        // THE WORKS NOTICE. It is LAST in this array and it is dealt out of a pool that stops one short of
+        // it, so on every ground nobody has been past a seam of — which is every ground in almost every
+        // world — this array is the ten notices it has always been, dealt by the same dice against the same
+        // length, and no board in the game changes by one character.
+        //
+        // It goes up when the works go on (Burial.NoticeIsUp) and comes down when the job is done, which is
+        // what happens to a notice about a job. Its heading is the board's own form and its body is #1063's
+        // authored sentence, verbatim: the dullest possible piece of paper, about upper walks.
+        new(Burial.NoticeHead, Burial.NoticeLine, Burial.MasonPlate),
     ];
 
     /// <summary>How many notices are authored.</summary>
     public static int CatalogSize => Catalog.Length;
+
+    /// <summary>#1063 · Which entry is the works notice — the last, and the one the ordinary deal below stops
+    /// short of. Named rather than written as <c>Length - 1</c> at the two places that need it, because two
+    /// copies of "which one is special" is the mirrored constant this ground keeps a table of.</summary>
+    private static int WorksNotice => Catalog.Length - 1;
+
+    /// <summary>#1063 · …and how many notices the ordinary seeded deal may choose from. Everything but the
+    /// works notice, which is the whole reason a board that has never had works on it is byte-identical to
+    /// the board it was before this shipped.</summary>
+    private static int OrdinaryNotices => Catalog.Length - 1;
+
+    /// <summary>#1063/#1074 · How many notices the ordinary seeded deal may choose from, published so a guard
+    /// can pin it without reaching into the array. <b>This number must never change</b>: it is the length the
+    /// dice are rolled against, and moving it re-pins every board in every world.</summary>
+    public static int OrdinaryNoticeSize => OrdinaryNotices;
+
+    /// <summary>#1074 · Which entry is the ROSTER — found by its own heading rather than written down as an
+    /// index, for <see cref="RosterHead"/>'s reason and for <c>HeadOfficeLevelOf</c>'s: a beat pointed at a
+    /// row that does not exist should fail loudly at the first call rather than go quietly missing on some
+    /// worlds forever. Unlike the works notice it is an ORDINARY notice and stays in the ordinary pool: on
+    /// every board in the game it is dealt or not dealt exactly as it always was.</summary>
+    private static int RosterNotice
+    {
+        get
+        {
+            for (int i = 0; i < Catalog.Length; i++)
+            {
+                if (string.Equals(Catalog[i].Head, RosterHead, StringComparison.Ordinal))
+                {
+                    return i;
+                }
+            }
+            throw new InvalidOperationException("the board has no roster notice on it");
+        }
+    }
 
     /// <summary>Every authored heading and body, for the canon grep. The pairing is deliberately absent: it is
     /// never shown to anybody, and grepping it would only be grepping the cast's plates twice.</summary>
@@ -186,16 +243,59 @@ public static class CanteenBoard
         // slot machine, and would break the one thing it is for: matching a notice to a face in the room.
         var up = new List<Notice>(PinnedAtOnce);
         var used = new List<int>(PinnedAtOnce);
-        for (int i = 0; i < Math.Min(PinnedAtOnce, Catalog.Length); i++)
+
+        // #1063 · THE WORKS NOTICE GOES UP FIRST, and only while the works are on. It takes one of the four
+        // slots rather than making a fifth: a board that grew a row would say, in its own shape, that
+        // something new had happened here — and the whole beat is that nothing did. The three below it are
+        // dealt by the same dice, against the same length, in the same order they always were.
+        // ── #1074 · THE ROSTERED CREW WHO NEVER DUG ──────────────────────────────────────────────────────
+        //
+        // The canon pass authored NO LINE for this beat, and that is the beat: "the roster on the intranet
+        // still lists the shift, and the working is closed; THE GAP IS THE SENTENCE." So nothing is written
+        // here and nothing new is pinned. What happens on a stopped ground is that the rota the board has
+        // carried since #709 is CERTAINLY up — a shift listed for a working nobody can get to any more, on
+        // the same cork as a lost toolbag and a withdrawn stew, in an ordinary week's ordinary handwriting.
+        //
+        // It takes one of the four slots and never a fifth (#1063's rule, for its reason: a board that grew a
+        // row would say in its own shape that something new had happened here), and it goes into `used` so
+        // the deal below cannot pin it twice. On every ground nobody has stopped — which is every ground in
+        // almost every world — the rota is dealt or not dealt exactly as it always was.
+        //
+        // ── #1074 beat 4 · …AND THE REGISTER ROW UNDER IT ────────────────────────────────────────────────
+        //
+        // The rota lists the shift; this names one hand off it and says where they went, in a personnel
+        // system's own four words. It is pinned on a stopped ground only, beside the rota it belongs to, and
+        // it takes a third of the four slots rather than a fifth — the same rule, for the same reason.
+        //
+        // IT IS NOT IN THE CATALOGUE AT ALL. It carries a NAME, dealt off the ground (CareerCost.HandOn), so
+        // it is not a constant the array could hold; and keeping it out means the ordinary deal below runs
+        // against exactly the length it always ran against, with no index anybody could reach it by. The
+        // board a captain reads on a ground nobody has stopped is the board it was before this shipped, to
+        // the byte.
+        bool closed = StopOrder.On(bodyId);
+        if (closed)
+        {
+            up.Add(Catalog[RosterNotice]);
+            used.Add(RosterNotice);
+            up.Add(CareerCost.RegisterRow(bodyId));
+        }
+
+        bool works = Burial.NoticeIsUp(bodyId);
+        if (works)
+        {
+            up.Add(Catalog[WorksNotice]);
+        }
+
+        for (int i = 0; up.Count < Math.Min(PinnedAtOnce, OrdinaryNotices); i++)
         {
             int wanted =
-                DiceRule.Roll(DiceRule.Seed($"hive:board:{bodyId}:{i}"), Catalog.Length).Face - 1;
+                DiceRule.Roll(DiceRule.Seed($"hive:board:{bodyId}:{i}"), OrdinaryNotices).Face - 1;
 
             // Take the rolled notice, or the next free one after it. A re-roll loop on a seeded die is how a
             // generator stops being deterministic, and the same notice pinned twice is a board nobody wrote.
-            for (int step = 0; step < Catalog.Length; step++)
+            for (int step = 0; step < OrdinaryNotices; step++)
             {
-                int candidate = (wanted + step) % Catalog.Length;
+                int candidate = (wanted + step) % OrdinaryNotices;
                 if (!used.Contains(candidate))
                 {
                     used.Add(candidate);

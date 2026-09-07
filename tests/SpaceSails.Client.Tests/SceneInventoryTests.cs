@@ -249,6 +249,12 @@ public sealed class SceneInventoryTests
         [DeckPlan.ConsoleKind.HiveServiceLift] = "#801 the SECOND car — the goods lift at the blind end of " +
                                                  "the main corridor, on an appended underground floor " +
                                                  "wherever the ground takes one (?goodscar=1)",
+        [DeckPlan.ConsoleKind.HiveStair] = "#719 the SERVICE STAIR — the second way out, at the other " +
+                                           "blind end of the main corridor, on the appended underground " +
+                                           "floors the building ADMITS TO (UndergroundComplex.HasStairOn) " +
+                                           "and wherever the ground leaves a blind end free of the goods " +
+                                           "car and the preserved pocket. TheStairIsASecondWayOutTests " +
+                                           "walks every listed floor of every site for one",
         [DeckPlan.ConsoleKind.HiveHaul] = "#585 a room worth searching, on an appended underground floor",
         [DeckPlan.ConsoleKind.HiveSign] = "#600 department signage, on an appended underground floor",
         [DeckPlan.ConsoleKind.HiveRefuge] = "#608 the pressure refuge's rack, one per dead appended floor",
@@ -307,6 +313,9 @@ public sealed class SceneInventoryTests
         [DeckPlan.ConsoleKind.ArchiveNode] = "the column, aboard about one eligible hull in three " +
                                              "(ArchiveNode.IsAboard) — a fresh wreck plan carries none",
         [DeckPlan.ConsoleKind.ArchiveSwitch] = "the purge handle on that same housing, and only when it is there",
+        [DeckPlan.ConsoleKind.WreckKey] = "#535 the black-ops key in her crew spaces — only on the sweep's own " +
+                                          "kind of hull, one eligible hull in five (BlackOpsKey.IsAboard), and " +
+                                          "gone for good once this captain has been through her",
 
         // #698 · The one kind on this list that no GENERATOR could ever place, on any deck, under any seed:
         // it marks a square because the CAPTAIN put something down on it. Composed onto whichever deck the

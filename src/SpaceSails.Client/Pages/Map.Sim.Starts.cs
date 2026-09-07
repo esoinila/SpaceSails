@@ -28,7 +28,7 @@ public partial class Map
     // scenario data. Test:true starts are dev-only free-flying jumps (they exercise a free approach), hidden
     // from the picker. The picker itself no longer reads this list — it offers the live dockable-haven
     // registry (BerthStarts) — so this is now purely the /map?start= alias table with human labels.
-    private sealed record StartPoint(string Id, string Icon, string Label, string Blurb, bool Test = false);
+    public sealed record StartPoint(string Id, string Icon, string Label, string Blurb, bool Test = false);
 
     private static readonly StartPoint[] StartPoints =
     [
@@ -72,6 +72,7 @@ public partial class Map
     private void ApplyStart(string id)
     {
         _dockedHavenId = null;   // drop any prior clamp before the jump
+        _berthSlot = null;       // #525 · …and the slot it was in
         SetDeckForDock(null);    // back to the bare ship deck (pulls you aboard if you'd wandered ashore)
 
         // Owner ruling (2026-07-18): every start is a DOCKED start — clamp onto the haven the id names,
@@ -162,7 +163,7 @@ public partial class Map
             "jupiter" => CoOrbitalBy("europa", 2e7),           // clear of Europa's surface, amid the Galilean system
             "saturn" => CoOrbitalBy("ringside-exchange", 2e7), // by the ring station, Enceladus/Titan a burn away
             "enceladus" => CoOrbitalBy("enceladus", 5e6),      // (test) co-moving alongside Enceladus, ~5 Hill radii out (#136)
-            "wreck" => CoOrbitalBy("derelict-roadster", 2_000), // (test) alongside the wreck, inside fetch-pickup range
+            "wreck" => CoOrbitalBy(Derelict.RoadsterBodyId, 2_000), // (test) alongside the wreck, inside fetch-pickup range
             _ => InitializeShipState(),
         };
     }

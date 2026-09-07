@@ -35,7 +35,7 @@ public class TheWireNeverNamesTheCaptainTests
 {
     private const double Day = NewsWire.SecondsPerDay;
 
-    private static CircularOrbitEphemeris SolEphemeris() => CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+    private static CircularOrbitEphemeris SolEphemeris() => CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     // ── A ────────────────────────────────────────────────────────────────────────────────────────
 

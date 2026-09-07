@@ -141,7 +141,7 @@ public partial class Map
     // enum is the single source of truth for "which editor is open" (docs/WednesdayPlan/GeminiUINotes.md
     // "selection single-source-of-truth"); for a burn, the identity of the open node is _selectedPlanNode,
     // which a ribbon-node click and a list click both resolve to — map and list are two views of one plan.
-    private enum FlightEditorKind { None, Burn, Sling, Skim, Insertion, Arrive }
+    public enum FlightEditorKind { None, Burn, Sling, Skim, Insertion, Arrive }
     private FlightEditorKind _openEditor = FlightEditorKind.None;
 
     // PR-G · the sling — the plotting-desk panel that bends the track off a close planetary pass
@@ -195,7 +195,7 @@ public partial class Map
 
     // The flown skim gauge (one RunAdaptiveWithDrag pass of the quantized aim). Every number is measured
     // off the real drag flight, never the requested slider value — the slider is a target, the gauge is truth.
-    private readonly record struct SkimGauge(
+    public readonly record struct SkimGauge(
         int Pulses, double HeadingDeg, double BurnTime,
         double MinAltMeters, double ShedMps, double PeakG, double PulsesSaved,
         bool Captured, double ExitVinfMps, bool ArrivalHyperbolic,
@@ -346,7 +346,7 @@ public partial class Map
     // Editable client-side node. ManeuverNode is an immutable value type with no notion of
     // "stale"/"executed", so plotting mode tracks those flags here and rebuilds the immutable
     // ManeuverPlan from the non-stale nodes after every edit.
-    private sealed class PlanNode
+    public sealed class PlanNode
     {
         // #955 NAV-1 — WHICH KIND OF STEP THIS ROW IS. Every plotted row used to be a burn, and the type
         // said so by saying nothing; the owner's dock-to-dock story needs the plan to be able to START AT

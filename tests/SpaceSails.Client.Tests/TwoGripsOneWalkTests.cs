@@ -49,8 +49,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TwoGripsOneWalkTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>The floor these guards drive. The GENERATOR's floor, never a hand-typed room — a guard
     /// handed a world it built itself cannot tell pass from fail.</summary>
@@ -255,7 +254,7 @@ public sealed class TwoGripsOneWalkTests
             Invoke(map, "CancelAutoWalk", false);
             Set(map, "_avatarX", homeX);
             Set(map, "_avatarY", homeY);
-            Invoke(map, "HandleDeckKey", wayOut);
+            Invoke(map, "HandleDeckKey", wayOut, false);
             Invoke(map, "MoveAvatar", 1.0 / 60.0);
             bool byKey = Math.Abs(((double)Get(map, "_avatarX")!) - homeX)
                 + Math.Abs(((double)Get(map, "_avatarY")!) - homeY) > WalkedDu;
@@ -313,7 +312,7 @@ public sealed class TwoGripsOneWalkTests
 
         // …and nothing reads it. Not the gate, not a scene cheat, not a corner of the deck.
         foreach (string file in Directory.EnumerateFiles(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client"), "*.cs", SearchOption.AllDirectories))
+            Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client"), "*.cs", SearchOption.AllDirectories))
         {
             Assert.DoesNotContain("_autoWalkCheat", File.ReadAllText(file), StringComparison.Ordinal);
         }
@@ -338,7 +337,7 @@ public sealed class TwoGripsOneWalkTests
 
         (double x0, double y0) = Where(map);
         Set(map, "_pulse", PulseSlot.Empty);
-        Invoke(map, "HandleDeckKey", key);
+        Invoke(map, "HandleDeckKey", key, false);
         for (int frame = 0; frame < 60; frame++)
         {
             Invoke(map, "MoveAvatar", 1.0 / 60.0);
@@ -373,7 +372,7 @@ public sealed class TwoGripsOneWalkTests
     /// state: this bench is measuring who may steer, not what the man says on the way.</summary>
     private static void PutUnderEscort(Pages.Map map)
     {
-        Type guard = typeof(Pages.Map).GetNestedType("Guard", Hidden)
+        Type guard = typeof(Pages.Map).GetNestedType("Guard", Hidden | BindingFlags.Public)
             ?? throw new InvalidOperationException("Map has no nested Guard — #833's escort has moved.");
         Set(map, "_escort", RuntimeHelpers.GetUninitializedObject(guard));
         Assert.True((bool)Get(map, "CaptainIsUnderEscort")!,
@@ -400,8 +399,8 @@ public sealed class TwoGripsOneWalkTests
                 + "has moved, and the deck verbs will throw instead of running.");
         pending.SetValue(map, true);
 
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Static)!;
-        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Static)!;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Public | BindingFlags.Static)!;
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Public | BindingFlags.Static)!;
         object ex = Activator.CreateInstance(exType, nonPublic: true)!;
         object stop = Activator.CreateInstance(stopType,
             new CelestialBody(Body, Body, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;
@@ -491,28 +490,14 @@ public sealed class TwoGripsOneWalkTests
 
     private static DeckPlan ThePlan(Pages.Map map) => (DeckPlan)Get(map, "_deckPlan")!;
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string ClientSource(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
-    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// <summary>#870 · The sim page is twenty partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 

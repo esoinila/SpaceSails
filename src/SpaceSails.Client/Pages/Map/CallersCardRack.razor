@@ -1,0 +1,68 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@*
+    #251 · SOMEBODY AT YOUR ELBOW WITH A CASE — seven cards on one file.
+
+    Forty-five consecutive lines of Map.razor and one subject: a beat the game tells you, and six cards
+    about somebody arriving with something to settle — or about the answer to one who did. The story card,
+    the Nebula rep and his pitch, the hardcase and his offers, the walk-in, the finder standing at your
+    elbow with a case, the reveal that answers her (a card with nobody behind it), and the epitaph for a
+    ship that is not coming back. The page's own note about the finder pair — two surfaces,
+    one feature — came with the block, because it is about this run and nowhere else.
+
+    Moved by PURE MOTION: the gates came with the invocations — a gate is what says WHEN a card is on the
+    glass — and every page member the block reads is a [Parameter] with the SAME NAME, so not one character
+    between the fences changed and MapMarkup splices it straight back where it came from. The rack renders
+    nothing when every gate is shut, so the page's paint order is exactly what it was.
+
+    IHandleEvent repeats the page's own override (Map.Sim.cs). The .razor.css beside this file carries no
+    rules; it exists to give the component Map.razor.css's scope (pinned in SpaceSails.Client.csproj), and
+    the seven cards keep their own sheets.
+*@
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────── *@
+    @if (_storyCard is { } told)
+    {
+        <StoryCard CloseStoryCard="@CloseStoryCard" Dismiss="@Dismiss" StoryBeatCopy="@StoryBeatCopy" told="@told" />
+    }
+
+    @if (_repCard is { } pitch)
+    {
+        <RepCard _repSaid="@_repSaid" AnswerTheRep="@AnswerTheRep" CloseTheRepsCard="@CloseTheRepsCard"
+                 Dismiss="@Dismiss" pitch="@pitch"
+                 LodgeItWithHim="@LodgeItWithHim" PressTheClaim="@PressTheClaim"
+                 TheClaimAsks="@TheClaimAsks" TheDeskSays="@TheDeskSays"
+                 TheLodgingOfferIsUp="@TheLodgingOfferIsUp" />
+    }
+
+    @if (_hardcaseCard is { } koltOffers)
+    {
+        <HardcaseCard AnswerTheHardcase="@AnswerTheHardcase" Dismiss="@Dismiss" TellKoltNo="@TellKoltNo"
+                      koltOffers="@koltOffers"
+                      LodgeItWithHim="@LodgeItWithHim" PressTheClaim="@PressTheClaim"
+                      TheClaimAsks="@TheClaimAsks" TheDeskSays="@TheDeskSays"
+                      TheLodgingOfferIsUp="@TheLodgingOfferIsUp" />
+    }
+
+    @if (_walkInCard is { } sheAsks)
+    {
+        <WalkInCard AnswerTheWalkIn="@AnswerTheWalkIn" Dismiss="@Dismiss" sheAsks="@sheAsks" />
+    }
+
+    @* #417 · Ilse Varga at the table, and the fourth name at the berth. Two surfaces, one feature: the
+       first is a woman standing at your elbow with a case, the second is a card with nobody behind it. *@
+    @if (_finderCard is { } finderAsks)
+    {
+        <FinderCard AnswerTheFinder="@AnswerTheFinder" Dismiss="@Dismiss" sheAsks="@finderAsks" />
+    }
+
+    @if (_finderReveal is not null)
+    {
+        <FinderRevealCard CloseTheReveal="@CloseTheReveal" Dismiss="@Dismiss"
+                          SettleTheCase="@SettleTheCase" _finderOutcome="@_finderOutcome" />
+    }
+
+    @if (_shipEpitaph is { } castaway)
+    {
+        <ShipEpitaphCard CloseShipEpitaph="@CloseShipEpitaph" Dismiss="@Dismiss" castaway="@castaway" />
+    }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────── *@

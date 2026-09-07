@@ -22,12 +22,15 @@
             planets. Charge makes you visible and eventually arcs; vent it with <kbd>V</kbd>.</li>
         <li><strong>The Wheel</strong> — a rigid-spoke curiosity system with a plasma river,
             for pilots who want strange skies.</li>
-        <li><strong>Join the crew</strong> — multiplayer: enter a callsign and share a live
-            session. Warp runs at the <em>slowest</em> crew member's request (the min-warp rule),
-            and you only see what your own sensors can see.</li>
+        @* #938 D3b · Two bullets used to stand here advertising a "Join the crew" voyage: a shared live
+           session, a callsign, a min-warp rule, and the URL recipe &mp=1&callsign=YourName. None of it
+           exists. `git grep -n "multiplayer\|min-warp" -- src` returned those Guide lines and nothing else,
+           the home page has never offered such a voyage, and the boot's query reader (Map.Sim.World.Query)
+           has no `mp=` or `callsign=` key among the eighty-odd it does read. This guide's own opening
+           promises it "covers everything currently aboard", so the passage is gone rather than softened —
+           and nothing has been written in its place, because there is nothing to describe. *@
         <li>Any voyage loads straight from a link: <code>/map?scenario=sol</code>, <code>sol-eu</code>,
-            or <code>wheel</code>. Append <code>&amp;mp=1&amp;callsign=YourName</code> to join
-            multiplayer directly on that scenario, no home-page click needed.</li>
+            or <code>wheel</code> — no home-page click needed.</li>
     </ul>
 
     <h2 id="duty-stations">2. The duty stations</h2>

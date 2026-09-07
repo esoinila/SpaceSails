@@ -114,6 +114,101 @@ public static class SurfaceEdge
         return chain;
     }
 
+    // ── #563 law 7 · THE BACKSTOP ────────────────────────────────────────────────────────────────────────
+    //
+    //  The chain above was the edge of the world. It is not any more: the ground is an unbounded lattice of
+    //  addressed tiles (SurfaceTiles) and what stops a captain is the tether — the suit air, the magazine,
+    //  the walk back. But SOMETHING still has to catch a captain who points himself at the horizon and holds
+    //  W for an hour, or the tile lattice grows without end and the arithmetic eventually overflows into
+    //  nonsense. That is what a backstop is for: a limit that exists and is never met.
+    //
+    //  It is deliberately NOT stone. Putting a ring of segments 21,600 du across into the deck's wall index
+    //  (SurfaceCollision.WallIndex, #448) would blow the index's cell budget and coarsen its grid from four
+    //  deck units to five hundred — at which point every wall on the ground files into one cell and every
+    //  collision query sweeps the lot. The index exists because surface geometry cost once timed the shuttle
+    //  ride out; feeding it a boundary the size of a continent to enforce a limit nobody reaches would be
+    //  paying that price twice over for nothing. So the backstop is a RADIUS, answered in constant time.
+    //
+    //  And it is not a circle, for the same reason the field's bound stopped being a rectangle: two slow
+    //  waves beat against each other around the bearing, at integer harmonics so the loop closes exactly
+    //  where it started rather than by luck.
+
+    /// <summary>How far the backstop wanders off its nominal radius, as a fraction of it.</summary>
+    public const double BackstopWanderFraction = 0.08;
+
+    /// <summary>The backstop's radius at one bearing from the tube mouth (radians, the usual sense).</summary>
+    public static double BackstopRadiusAt(string bodyId, string siteSalt, double bearingRad)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        ArgumentNullException.ThrowIfNull(siteSalt);
+
+        double phase = Frac(bodyId, siteSalt, "backstop:phase") * Math.Tau;
+        double phase2 = Frac(bodyId, siteSalt, "backstop:phase2") * Math.Tau;
+        // Integer harmonics: periodic in the bearing, so r(θ) = r(θ + 2π) exactly and the loop is closed by
+        // construction rather than by a taper. Normalised to −0.5..+0.5.
+        double wave = (Math.Sin((3.0 * bearingRad) + phase) + Math.Sin((5.0 * bearingRad) + phase2)) / 4.0;
+        return SurfaceTiles.BackstopRadiusDu * (1.0 + (BackstopWanderFraction * wave));
+    }
+
+    /// <summary>Has this point walked past the backstop? Pure, constant time, and measured from the tube
+    /// mouth — which is what the suit measures from too (#453: the route, never the coordinate).</summary>
+    public static bool BeyondBackstop(string bodyId, string siteSalt, double x, double y)
+    {
+        (double cx, double cy) = SurfaceTiles.TubeMouth();
+        double dx = x - cx, dy = y - cy;
+        double r = Math.Sqrt((dx * dx) + (dy * dy));
+        if (r <= SurfaceTiles.BackstopRadiusDu * (1.0 - BackstopWanderFraction))
+        {
+            return false;   // inside the innermost the backstop can ever come — no trigonometry needed
+        }
+        return r > BackstopRadiusAt(bodyId, siteSalt, Math.Atan2(dy, dx));
+    }
+
+    /// <summary>
+    /// #563 law 7 · WHAT THE BACKSTOP SAYS, AND HOW OFTEN — one excursion's worth of "has the suit already
+    /// refused a step?".
+    ///
+    /// <para>The rule the whole air mechanic is built under is that <b>nothing may stop a captain in
+    /// silence</b> (#564: a countdown that quietly runs out is the same design failure as an invisible wall).
+    /// The backstop is the last place in the game that could still do that, so it speaks — and exactly once,
+    /// because the boundary is a place a captain can stand and lean against, and a sentence fired on every
+    /// frame of that would be a nag rather than a fact.</para>
+    ///
+    /// <para>The geometry is asked ONCE here and handed back with the line, so the caller never re-runs
+    /// <see cref="BeyondBackstop"/> to decide whether to hold — two calls are two chances to answer
+    /// differently, which is this project's most expensive habit.</para>
+    ///
+    /// <para>Deliberately NOT re-armed on coming back inside. A captain who walks out, is refused, walks in
+    /// and walks out again has learned the fact; repeating it would be the game explaining itself twice to
+    /// somebody who has demonstrably understood.</para>
+    /// </summary>
+    public sealed class BackstopVoice
+    {
+        private bool _said;
+
+        /// <summary>Whether this step is past the backstop, and the line to say if it is the first one that
+        /// was. <c>Line</c> is null on every step but that one.</summary>
+        public readonly record struct Refusal(bool Beyond, string? Line);
+
+        /// <summary>Has this excursion already been refused a step?</summary>
+        public bool HasSpoken => _said;
+
+        /// <summary>Ask the boundary about one step.</summary>
+        public Refusal Step(string bodyId, string siteSalt, double x, double y)
+        {
+            if (!BeyondBackstop(bodyId, siteSalt, x, y))
+            {
+                return new Refusal(false, null);
+            }
+            if (_said)
+            {
+                return new Refusal(true, null);
+            }
+            _said = true;
+            return new Refusal(true, SuitAir.BackstopRefusal);
+        }
+    }
+
     /// <summary>Walk one edge in steps of at most <see cref="SegmentDu"/>, joining consecutive samples.</summary>
     private static void AddRun(
         List<(double, double, double, double)> chain, double length, Func<double, (double X, double Y)> at)

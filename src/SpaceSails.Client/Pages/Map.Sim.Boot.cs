@@ -21,6 +21,45 @@ namespace SpaceSails.Client.Pages;
 public partial class Map
 {
 
+    // #161 · WHERE THE BOOT'S SECONDS ACTUALLY GO, SAID OUT LOUD.
+    //
+    // The issue's first instruction is "profile first", and every earlier attempt at this boot argued from
+    // the shape of the code instead of from a number. So the boot times ITSELF, on every run, in the one
+    // place that can see both the browser's clock and the stage boundaries — and prints one line per stage
+    // to the console the same way the berth roster does (#726). That is #161's "boot phases visible", and
+    // it is what the before/after table in the PR body is read off: nothing to arm, nothing to remember.
+    //
+    // STATIC, and that is not an accident. Every instance field of this page is swept by
+    // EveryFrameLeavesTheSameFingerprintTests (the 793-field roster) and diffed against a virgin component
+    // by TheBootBuildsTheSameWorldTests; a stopwatch field would join both ledgers and say nothing about
+    // the game. A static is invisible to both sweeps (`!f.IsStatic`, `BindingFlags.Instance`) — and one
+    // clock is the honest model anyway, because one page boots at a time.
+    private static readonly System.Diagnostics.Stopwatch BootClock = new();
+
+    /// <summary>Milliseconds on <see cref="BootClock"/> at the last phase line — so each line can quote
+    /// what ITS OWN stage cost as well as the running total.</summary>
+    private static long _bootClockMark;
+
+    /// <summary>#161 · Start the boot clock. Called once, at the top of the boot.</summary>
+    private static void StartTheBootClock()
+    {
+        BootClock.Restart();
+        _bootClockMark = 0;
+    }
+
+    /// <summary>#161 · Say what the stage that JUST FINISHED cost, and what the boot has cost so far. Kept
+    /// to the <c>[SpaceSails]</c> prefix the berth roster already uses, so one grep gathers the boot.
+    ///
+    /// <para>The name is always the work BEHIND the call, never the work ahead of it — a phase line that
+    /// named the next stage would attribute every stage's cost to its successor, which is exactly the kind
+    /// of number that sends a perf lane after the wrong file.</para></summary>
+    private static void SayTheBootStageCost(string stageJustFinished)
+    {
+        long now = BootClock.ElapsedMilliseconds;
+        Console.WriteLine($"[SpaceSails] boot · {stageJustFinished} — {now - _bootClockMark} ms (t+{now} ms)");
+        _bootClockMark = now;
+    }
+
     // #318 false-hang follow-up: announce a coarse boot phase and hand the frame back to the browser so
     // the queued render actually paints before the next synchronous planning block. Task.Delay(1) (vs a
     // bare Task.Yield) reliably parks on a browser timer, giving the compositor a chance to flush the

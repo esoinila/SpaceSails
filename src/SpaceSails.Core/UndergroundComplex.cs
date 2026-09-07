@@ -448,12 +448,46 @@ public static partial class UndergroundComplex
     /// the cheat and every one of those sweeps go red together and say why.</para></summary>
     public const string FoundBandCheatSiteId = "secret-lab-site-halls-116";
 
-    /// <summary>#677 · Does this site have a band nobody dug? Seeded off its own id, like everything else
-    /// about a site's shape, so it is a fact about the world and not about the visit.</summary>
+    /// <summary>#677/#1063 · Does this site have a band nobody dug? Seeded off its own id, like everything
+    /// else about a site's shape — <b>and no longer, once the neighbours have filled it in</b>.
+    ///
+    /// <para><b>#1063 · THE ONE GATE.</b> This is the single seam every question about the halls already goes
+    /// through — <see cref="IsFound"/>, <see cref="FoundBandOf"/>'s customers, <see cref="TrueDepthOf"/>,
+    /// <see cref="FloorsOf"/>, <see cref="NextShaftBelow"/> (through <c>SiteHasBand</c>),
+    /// <see cref="FoundKeyRoomFor"/>, <see cref="DeclaresDarkness"/>, and
+    /// <see cref="DisclosureClock.OpensOn"/>, which delegates to <see cref="IsFound"/> by design. So the
+    /// burial is asked HERE and nowhere else: after a fill, the shaft ends at the listed bottom and every one
+    /// of those predicates answers exactly as it would for a site that never had halls at all. The erasure
+    /// procedure's clauses (1) <i>remove the element</i> and (2) <i>remove its marks</i> are both this one
+    /// line, because the marks — the found-key card room, the hall record's find id, the darkness, the room
+    /// scale, the plateless name — are every one of them downstream of it.</para>
+    ///
+    /// <para>The alternative was thirty callers each taught what a burial is, which is §13.15's second cause
+    /// (a caller reasoning about the shape of a building it does not own) said thirty times.</para></summary>
     public static bool HasFoundBand(string bodyId)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
+        // #1063 · Filled in, floored over, resurfaced. Asked FIRST, and asked cheaply: on every world where
+        // nobody has been past a seam long enough ago — which is almost every world — this is one length
+        // check on an empty list and the site's shape is exactly what it always was.
+        if (Burial.IsFilled(bodyId))
+        {
+            return false;
+        }
+
+        return FoundBandSeeded(bodyId);
+    }
+
+    /// <summary>#677/#1063 · THE SEEDED FACT, asked BEFORE any burial: does this site's own id deal it a band
+    /// nobody dug?
+    ///
+    /// <para>Private on purpose and it must stay private. Exactly two things may ask it: the public predicate
+    /// above, which is the whole game's answer, and the specimen (<see cref="SpecimenFloorOf"/>), which is the
+    /// one souvenir the erasure keeps and therefore the one caller that has to know what was filled in. A
+    /// third caller would be a way to see the halls past the burial, which is the feature undone.</para></summary>
+    private static bool FoundBandSeeded(string bodyId)
+    {
         // It hangs off the band nobody listed, so a site with nothing to hide has nothing under that either.
         // (The head office is already excluded by HasUnlistedBand, and for the reason recorded there: the
         // directory is complete and the rank difference IS the absence.)

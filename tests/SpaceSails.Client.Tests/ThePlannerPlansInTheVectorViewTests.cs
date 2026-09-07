@@ -26,22 +26,9 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class ThePlannerPlansInTheVectorViewTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     /// <summary>The source with its comments taken out. A guard that says "the planner never calls
     /// NudgeHeading" must not be satisfied — or defeated — by a comment SAYING so: the prose that records
@@ -56,7 +43,7 @@ public sealed class ThePlannerPlansInTheVectorViewTests
     /// <summary>Everything the plotting panel is made of — the plot partials plus the page markup — read
     /// as one subject, the way it read out of one file before #870 split it.</summary>
     private static string Planner() => string.Concat(
-        Directory.EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Plot*.cs")
+        Directory.EnumerateFiles(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Plot*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 

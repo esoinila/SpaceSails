@@ -111,8 +111,9 @@ public static class IllegalHeat
         TheEscort,
 
         /// <summary>#835 · The round has spent its patience and walks you all the way to the sky, taking the
-        /// pass back on the way. The dearest thing on the list, because it is the only one where the outfit
-        /// stops treating you as a problem for this floor and starts treating you as a problem.</summary>
+        /// pass back on the way. The dearest thing a captain can do TO A FLOOR, because it is the only one
+        /// where the outfit stops treating you as a problem for this floor and starts treating you as a
+        /// problem.</summary>
         TheKickOut,
 
         /// <summary>#618 · A gun went off on a floor they have somebody on, close enough for him to hear it,
@@ -124,10 +125,36 @@ public static class IllegalHeat
         /// you are a problem, and a bang on a working floor is between the two — nobody has your name, and
         /// nobody is going to forget the evening either.</para></summary>
         ShotOnTheirFloor,
+
+        /// <summary>
+        /// #525 · <b>HE SET HIS OWN REACTOR TO RUN AWAY WITH ITSELF WHILE CLAMPED TO THEIR COLLAR, AND LET
+        /// IT.</b> Appended, like every member before it, because several switches name these arms by hand.
+        ///
+        /// <para><b>This is not a crossing of a floor and it is not on the same ladder as the five above
+        /// it.</b> Those are an evening going badly: a card refused, a man walked to his car, a bang someone
+        /// heard. Every one of them is written small on purpose, because the pressure in this meter is meant
+        /// to come from doing things again. This one cannot be done again — there is one ship — and no
+        /// number of refused cards adds up to a hull going off inside a harbour.</para>
+        ///
+        /// <para>So it is worth <see cref="Ceiling"/>: as hot as this outfit will ever get about one captain,
+        /// which is not a big number chosen to feel big but <b>the meter's own top, quoted</b>. A typed 12
+        /// beside it would be the mirrored constant this ground keeps a table of — retune the ceiling and a
+        /// hand-typed weight would silently stop reaching it, or start overshooting a clamp that hides the
+        /// bug. <see cref="Bank"/> clamps to the room that is left, so the answer at this outfit afterwards
+        /// is exactly <see cref="Ceiling"/> whatever was on the book a moment before.</para>
+        ///
+        /// <para><b>And what it buys is already built.</b> <see cref="StartingRung"/> at the ceiling is
+        /// <see cref="PatrolBeat.EscortsAWatchAllows"/> — the last rung — so their round begins every watch
+        /// at the end of its patience. He is not carrying a new flag around their concourse; he is carrying
+        /// their file.</para>
+        /// </summary>
+        SheWentAtTheirBerth,
     }
 
     /// <summary>What one crossing costs. Small numbers on purpose: the pressure in this meter comes from
-    /// doing things again, not from any single evening. FLAGGED for the owner's tuning.</summary>
+    /// doing things again, not from any single evening — with the one exception that cannot be done again
+    /// (<see cref="Crossing.SheWentAtTheirBerth"/>, which is worth the meter's own <see cref="Ceiling"/> and
+    /// says why beside itself). FLAGGED for the owner's tuning.</summary>
     public static int WeightOf(Crossing why) => why switch
     {
         Crossing.RefusedCardAtAGate => UndergroundComplex.RefusedCardHeat,
@@ -136,6 +163,7 @@ public static class IllegalHeat
         Crossing.TheEscort => 2,
         Crossing.ShotOnTheirFloor => 3,
         Crossing.TheKickOut => 4,
+        Crossing.SheWentAtTheirBerth => Ceiling,
         _ => 0,
     };
 
@@ -288,6 +316,67 @@ public static class IllegalHeat
     /// arriving at the end of its patience sooner.</summary>
     public static int StartingRung(int heat) =>
         Math.Clamp(heat / HeatPerRung, 0, PatrolBeat.EscortsAWatchAllows);
+
+    // ── #535/#938 · AND THE ONE WAY TO TAKE SOMETHING OFF IT THAT IS NOT TIME ───────────────────────────
+    //
+    // The 2026-09-03 audit's row on this file, in four words: `IllegalHeat` has `Cool` and no scrub path.
+    // Everything this meter could do was ADD, or wait. That was right while the only currency was hours —
+    // owner's word for cooling is "get out", and a second way to walk it off would have been a second answer
+    // to the question the whole meter asks.
+    //
+    // #535's key is the exception the fiction pays for, and the owner wrote the reason down himself: HEAT IS
+    // NOT A MOOD, IT IS A PAPER TRAIL. Nobody is warier at their gate because they feel wronged; they are
+    // warier because of what is filed. Delete the filings and the wariness loses its basis — which is why
+    // this is the only thing in the game that lowers heat without time, a haven or a bribe, and why it costs
+    // an object that cannot be bought.
+
+    /// <summary>
+    /// #535 · <b>ONE BAND OF THE METER</b>, and it is the meter's OWN step rather than a number somebody
+    /// typed beside it: <see cref="HeatPerRung"/> is what a band means everywhere else in this file — it is
+    /// the width <see cref="StartingRung"/> divides by to decide how far up the round's patience a captain
+    /// starts. So "drops by one whole band" and "starts one rung lower at their gate" are the same sentence,
+    /// and they cannot come apart the day the rung is retuned.
+    /// </summary>
+    public static int ABand => HeatPerRung;
+
+    /// <summary>
+    /// #535 · <b>SCRUB A BAND OFF ONE OUTFIT'S BOOK — an EDIT, not an hour.</b>
+    ///
+    /// <para>Takes <see cref="ABand"/> points off what this outfit remembers, or everything it remembers if
+    /// that is less. An outfit with nothing on the book is untouched and answers zero: there is no such thing
+    /// as negative heat, and a key burned over a clean file has burned for nothing (owner: <i>"a key burned
+    /// at heat 1 removes almost nothing and nobody notices"</i>).</para>
+    ///
+    /// <para><b>The stamp does not move</b>, and that is the whole difference between this and
+    /// <see cref="Cool"/>. Cooling advances the clock because it IS the clock; a scrub reaches into the file
+    /// and takes pages out of it, so the hours the captain has or has not spent away from these people are
+    /// exactly what they were a moment ago. Banking through <see cref="ContactLedger.ApplyHeat"/> at the
+    /// row's own existing stamp is what says so.</para>
+    ///
+    /// <para><paramref name="why"/> is required and unused by the arithmetic. It is here because the audit
+    /// row asked for a path that is <i>visible in the ledger as an edit, not as time passing</i>: a caller
+    /// that cannot say why it is deleting somebody's file is a caller that should not be deleting it.</para>
+    /// </summary>
+    /// <returns>HOW MUCH WAS ERASED — the number the owner's own note says has to be carried forward,
+    /// because <i>an absence is only evidence if somebody wrote down how big it was</i>. Zero when there was
+    /// nothing on the book.</returns>
+    public static int Scrub(ContactLedger book, string operatorId, string why)
+    {
+        ArgumentNullException.ThrowIfNull(book);
+        ArgumentNullException.ThrowIfNull(operatorId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(why);
+
+        string id = LedgerId(operatorId);
+        ContactHistory standing = book.For(id);
+        int erased = Math.Min(ABand, Math.Max(0, standing.HeatOwed));
+        if (erased <= 0)
+        {
+            return 0;
+        }
+
+        book.ApplyHeat(id, NameOf(operatorId), -erased, standing.HeatStampSimTime);
+        return erased;
+    }
 
     /// <summary>#715 · Past this, the panel at their gate wants a face with the paper.</summary>
     public const int TheGateWantsAFaceAt = 3;

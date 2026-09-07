@@ -1,0 +1,68 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using Quest = SpaceSails.Client.Pages.Map.Quest
+@*
+    #251 · SEVEN CARDS, EACH ONE A SINGLE THING AT ARM'S LENGTH — one file.
+
+    The run of small cards that follows the satchel panel in Map.razor, forty-six consecutive lines of it:
+    the galley's tot of rum, the nav help sheet, the fan of papers when more than one of them answers the
+    door, the object you have just picked up, the selfie, the offer of one, and the keypad on a hatch. Each
+    is one thing held up and looked at; none of them is a board, a menu or a strip.
+
+    Moved by PURE MOTION: the gates came with the invocations — a gate is what says WHEN one of these is on
+    the glass — and every page member the block reads is a [Parameter] with the SAME NAME, so not one
+    character between the fences changed and MapMarkup splices it straight back where it came from. The rack
+    renders nothing when every gate is shut, so the page's paint order is exactly what it was.
+
+    IHandleEvent repeats the page's own override (Map.Sim.cs). The .razor.css beside this file carries no
+    rules; it exists to give the component Map.razor.css's scope (pinned in SpaceSails.Client.csproj), and
+    the seven cards keep their own sheets.
+*@
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────── *@
+    @if (_galleyCardOpen)
+    {
+        <GalleyCard _lastRumLine="@_lastRumLine" _rumTots="@_rumTots" _tenderLine="@_tenderLine"
+                    CloseGalleyCard="@CloseGalleyCard" Dismiss="@Dismiss"
+                    GalleyFeedAmbientDays="@GalleyFeedAmbientDays" GalleyFeedItemCount="@GalleyFeedItemCount"
+                    NewsFeed="@((int ambientCount) => NewsFeed(ambientCount))" PourRumFromGalley="@PourRumFromGalley" RumWobbleActive="@RumWobbleActive"
+                    SimTime="@SimTime" />
+    }
+
+    @if (_navHelpOpen)
+    {
+        <NavHelpCard CloseNavHelp="@CloseNavHelp" Dismiss="@Dismiss" />
+    }
+
+    @if (WalletFanIsUp && _surface is { } fanEx && TheWalletFan is { Count: > 1 } fanPapers)
+    {
+        <WalletFanCard ChooseThePaper="@ChooseThePaper" CloseTheWalletFan="@CloseTheWalletFan" Dismiss="@Dismiss"
+                       NameOnYourOwnPapers="@NameOnYourOwnPapers" TheBookOn="@TheBookOn"
+                       ThePaperInYourHandIs="@ThePaperInYourHandIs" fanEx="@fanEx" fanPapers="@fanPapers" />
+    }
+
+    @if (_viewObject is { } vo)
+    {
+        <ViewObjectCard CloseViewObject="@CloseViewObject" Dismiss="@Dismiss" KeepTheFind="@KeepTheFind"
+                        LeaveTheFind="@LeaveTheFind" PressTheClaim="@PressTheClaim" PressTheHit="@PressTheHit"
+                        TheClaimAsks="@TheClaimAsks" TheClaimDeskIsUp="@TheClaimDeskIsUp"
+                        TheFindIsWaitingOnAnAnswer="@TheFindIsWaitingOnAnAnswer" TheKitsCardIsUp="@TheKitsCardIsUp"
+                        TheKitSweeps="@TheKitSweeps" vo="@vo" />
+    }
+
+    @if (_selfieShot is { } shot)
+    {
+        <SelfieShotCard CloseSelfieShot="@CloseSelfieShot" Dismiss="@Dismiss" shot="@shot" />
+    }
+
+    @if (_selfieOffer is { } selfieOffer)
+    {
+        <SelfieOfferCard _selfieOffer="@_selfieOffer" AcceptSelfieOffer="@AcceptSelfieOffer"
+                         DeclineSelfieOffer="@DeclineSelfieOffer" Dismiss="@Dismiss" selfieOffer="@selfieOffer" />
+    }
+
+    @if (_pinJob is { } pinJob)
+    {
+        <PinJobCard _pinHatch="@_pinHatch" _pinOutcome="@_pinOutcome" CancelPin="@CancelPin" Dismiss="@Dismiss"
+                    PinClear="@PinClear" PinDisplay="@PinDisplay" PinPush="@PinPush" SubmitPin="@SubmitPin" />
+    }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────── *@

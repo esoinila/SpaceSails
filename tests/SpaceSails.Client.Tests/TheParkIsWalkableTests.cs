@@ -588,7 +588,7 @@ public sealed class TheParkIsWalkableTests
     [Fact]
     public void TheAttendanceNoteFilesOnceFromOnePlace()
     {
-        string root = RepoRoot();
+        string root = TestTree.RepoRoot();
         var raises = new List<(string File, int At)>();
         foreach (string file in Directory.EnumerateFiles(
             Path.Combine(root, "src", "SpaceSails.Client"), "*.*", SearchOption.AllDirectories))
@@ -638,15 +638,15 @@ public sealed class TheParkIsWalkableTests
     [Fact]
     public void ThereIsAOneUrlRouteIntoThePark()
     {
-        string root = RepoRoot();
-        // #870 · the sim page is nine partials by subject now; "the sim" here is all of them.
+        string root = TestTree.RepoRoot();
+        // #870 · the sim page is twenty partials by subject now; "the sim" here is all of them.
         string sim = string.Concat(
             Directory.EnumerateFiles(
                     Path.Combine(root, "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
                 .OrderBy(p => p, StringComparer.Ordinal)
                 .Select(File.ReadAllText));
         string surface = File.ReadAllText(
-            Path.Combine(root, "src", "SpaceSails.Client", "Pages", "Map.Surface.Cheats.cs"));
+            Path.Combine(root, "src", "SpaceSails.Client", "Pages", "Map.Surface.Cheats.Stand.cs"));  // #251 · the park boot
 
         Assert.Contains("pair.StartsWith(\"park=\"", sim, StringComparison.Ordinal);
         Assert.Contains("_parkCheat = true", sim, StringComparison.Ordinal);
@@ -658,19 +658,5 @@ public sealed class TheParkIsWalkableTests
         Assert.Contains("StandCaptainAt(green.X, green.Y", stand, StringComparison.Ordinal);
 
         Assert.Contains(DevStarts.All, e => e.Url == "/map?park=1");
-    }
-
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
     }
 }

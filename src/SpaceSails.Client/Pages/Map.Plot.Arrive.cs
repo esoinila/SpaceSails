@@ -27,7 +27,7 @@ public partial class Map
     /// reprojection, which is exactly what makes the ✓/✗ bit flip when a mid-flight edit or a missed burn
     /// ruins the plan (the owner's ask) instead of standing there stale and green.
     /// </summary>
-    private sealed class ArriveStep
+    public sealed class ArriveStep
     {
         public required string BodyId { get; init; }
         public required ArrivalStepRule.ArrivalKind Kind { get; init; }

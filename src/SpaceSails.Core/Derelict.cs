@@ -49,6 +49,18 @@ public static class Derelict
         return false;
     }
 
+    /// <summary>#241 · The scenario's own hand-authored wreck — the lost roadster the fetch job is sent
+    /// after. It predates <see cref="BodyIdPrefix"/> and so does not carry it, which is why the client had
+    /// the id typed into five files and no predicate could answer "is that body a wreck".</summary>
+    public const string RoadsterBodyId = "derelict-roadster";
+
+    /// <summary>#241 · IS THIS BODY A DEAD HULL? Every generated wreck (<see cref="BodyIdPrefix"/>) and the
+    /// scenario's own roadster. One question, one answer — so an instrument that must not call a three-metre
+    /// wreck a planet, and a code path that must not promise a clamp on one, are asking the same thing.</summary>
+    public static bool IsWreckBody(string? bodyId) =>
+        TryParseWreckId(bodyId, out _)
+        || string.Equals(bodyId, RoadsterBodyId, System.StringComparison.Ordinal);
+
     /// <summary>The finder's fee for filing an honest accident report, as a fraction of the assessed cargo
     /// value (owner: <i>"say 10% of the value"</i>). FLAGGED for tuning.</summary>
     public const double ReportFeeFraction = 0.10;
@@ -457,13 +469,19 @@ public static class Derelict
 
     /// <summary>What a decision actually pays. <paramref name="ContactEarned"/> is the part that outlives
     /// the payout: an honest filing makes somebody who will take your call later (owner: <i>"contacts that
-    /// may provide in future or fast win immediately"</i>).</summary>
+    /// may provide in future or fast win immediately"</i>).
+    ///
+    /// <para>#938 D4 · <paramref name="SurchargeCr"/> is what cl. 14(b) took out of this payment, and it is
+    /// reported rather than recomputed for the same reason every other number in this file is: the receipt
+    /// must show the money that is actually missing, not a second arithmetic that agrees with the first
+    /// until one of them is edited. Zero on the quiet road, which is the whole joke (#553).</para></summary>
     public readonly record struct SalvageOutcome(
         int CreditsNow,
         int HeatGained,
         bool ContactEarned,
         bool CargoIsHot,
-        string Line);
+        string Line,
+        int SurchargeCr = 0);
 
     /// <summary>
     /// Price the captain's decision.
@@ -499,7 +517,12 @@ public static class Derelict
         // line item nobody can explain, off the back of an incident nobody will describe. It is also the
         // in-fiction reason this road has always paid worse than stripping her: the regulation that drove the
         // work into mountains is the same regulation the captain is paying for here, in credits, on a receipt.
-        int fee = ComplianceSurcharge.Deduct((int)System.Math.Round(value * ReportFeeFraction));
+        // #938 D4: the gross is kept so the receipt can say what was taken off it. Four per cent came out of
+        // every filed report since #553 and no surface in the game ever named it — the captain saw a smaller
+        // number and no reason for it, which is the one shape this design must NOT have. The incident stays
+        // undescribed; the deduction does not stay invisible.
+        int feeGross = (int)System.Math.Round(value * ReportFeeFraction);
+        int fee = ComplianceSurcharge.Deduct(feeGross);
         bool readRight = reportedCause == wreck.Cause;
 
         if (!readRight)
@@ -510,12 +533,13 @@ public static class Derelict
                 ContactEarned: false,
                 CargoIsHot: false,
                 Line: $"You filed on the {wreck.ShipName}, and the fee cleared. The finding did not survive review — " +
-                      "a wrong cause helps nobody, and they will remember that too.");
+                      "a wrong cause helps nobody, and they will remember that too.",
+                SurchargeCr: ComplianceSurcharge.AmountOn(feeGross));
         }
 
         bool fraud = wreck.Cause == WreckCause.InsuranceJob;
-        int bonus = ComplianceSurcharge.Deduct(
-            (int)System.Math.Round(value * (fraud ? FraudBountyFraction : CorrectCauseBonusFraction)));
+        int bonusGross = (int)System.Math.Round(value * (fraud ? FraudBountyFraction : CorrectCauseBonusFraction));
+        int bonus = ComplianceSurcharge.Deduct(bonusGross);
 
         return new SalvageOutcome(
             CreditsNow: fee + bonus,
@@ -526,7 +550,8 @@ public static class Derelict
                 ? $"You filed on the {wreck.ShipName} and named it staged. An underwriter who was about to pay out " +
                   "instead pays YOU, and will want to know what else you have seen."
                 : $"You filed on the {wreck.ShipName} and read her right. The fee cleared, the finding stood, and " +
-                  "somebody now owes you a straight answer.");
+                  "somebody now owes you a straight answer.",
+            SurchargeCr: ComplianceSurcharge.AmountOn(feeGross) + ComplianceSurcharge.AmountOn(bonusGross));
     }
 
     // ── #652 · THE HALF THAT OUTLIVED NOTHING ────────────────────────────────────────────────────────

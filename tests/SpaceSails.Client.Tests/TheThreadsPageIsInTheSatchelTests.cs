@@ -23,22 +23,9 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheThreadsPageIsInTheSatchelTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>The satchel block of Map.razor, cut the way #690's guards cut it — every assertion is about
     /// THIS dialog's subtree and not the file at large.</summary>
@@ -189,7 +176,7 @@ public sealed class TheThreadsPageIsInTheSatchelTests
         // The client never invents one. No literal subject anywhere in the Pages tree: every subject in the
         // game is minted by the Core author that wrote the sentence.
         foreach (string page in Directory.EnumerateFiles(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client"), "*.*", SearchOption.AllDirectories))
+            Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client"), "*.*", SearchOption.AllDirectories))
         {
             if (page.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
                 || page.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal)

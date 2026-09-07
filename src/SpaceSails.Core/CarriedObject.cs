@@ -58,11 +58,34 @@ public static class CarriedObject
 
             Satchel.Kind.Relic => RelicReveal(item.Id),
 
+            // #1149 · THE INSPECTOR'S CARD, and it is the ONE pass in the wallet worth a card of its own.
+            // Every other badge is a site vouching for a person and its whole face is already legible on the
+            // satchel row (the site code, the tier); this one's face is a single word, and the thing worth
+            // looking at is the object rather than the print. #614's law kept to the letter: it says what the
+            // laminate IS, and not one word about which doors it has ever been through.
+            //
+            // The face is the INSPECTORATE office's own painting — #695's law (one office, one face), so the
+            // letterhead the game has been printing on authority cards since #679 and this card are looking
+            // at the same photograph rather than at two answers about one office.
+            Satchel.Kind.Badge when Inspectorate.IsTheCard(item)
+                => new Reveal(Inspectorate.ArtUrl, Inspectorate.CardLabel, Inspectorate.LookCardLine),
+
+            // #535 · THE KEY, and this card is the whole of what the object ever says about itself. Caption
+            // only (#528's deliberate no-picture idiom, the same call the cutting rig makes two arms down):
+            // there is no painting of a code. It says what the thing IS and never who issued it — the canon
+            // law of the object, and the one question the whole feature is interesting for.
+            Satchel.Kind.BlackOpsKey => BlackOpsKey.Card,
+
             // #763 · The kit that hears the buttons. Its card is not decoration — it is the SCREEN, and the
             // sweep is written onto it by whoever raises it (<see cref="SdrScanner.Hits"/>), which is why
             // what is composed here is the object's own story and never a picture of one.
             Satchel.Kind.Tool when SdrScanner.IsTheKit(item)
                 => new Reveal(SdrScanner.ArtUrl, SdrScanner.CardLabel, SdrScanner.CardStory),
+
+            // #537 · The cutting rig. Caption-only — the deliberate no-picture idiom rather than a broken
+            // one — and the story says what the object IS and never which wall to point it at.
+            Satchel.Kind.Tool when HullCutter.IsTheCutter(item)
+                => new Reveal(string.Empty, HullCutter.CardLabel, HullCutter.CardStory),
 
             // ── #828 · THE GLANCE: A SHEET HAS A FACE, AND LOOKING AT IT IS FREE ─────────────────────────
             //
@@ -83,6 +106,12 @@ public static class CarriedObject
             // through — and the caption-only idiom (#528, the odd book) because a paper is not a portrait.
             Satchel.Kind.Paper => PaperReveal(item.Id),
 
+            // #233 · The chip out of the roadster. Caption-only for the third reason the idiom exists and
+            // the sharpest one: this card COULD have shown the photographs, and showing them would have
+            // named the two people the client is paying a stranger not to be able to name. The line says
+            // what the object is — two faces and a clock — and stops there.
+            Satchel.Kind.Dirt when CompromisingChip.IsTheChip(item) => CompromisingChip.Card,
+
             _ => null,
         };
     }
@@ -92,10 +121,21 @@ public static class CarriedObject
     public static Reveal PaperReveal(string paperId)
     {
         ArgumentNullException.ThrowIfNull(paperId);
-        return new Reveal(
-            "",
-            $"📋 {FieldClue.Label(FieldClue.CertaintyOf(paperId)).ToUpperInvariant()}",
-            FieldClue.Document(paperId));
+
+        // #1061 · THE AUTHORED SHEET IS TITLED WITH ITS OWN NAME. Every other paper in the game is anonymous
+        // by design — a captain holding six of them is holding six certainties and no titles worth reading —
+        // so the head of this card is the CERTAINTY. That is exactly wrong for the one sheet somebody wrote:
+        // the plate on the regolith, the row in the sleeve and the head of this card all have to be the same
+        // four words, or the thing the captain walked over to pick up is not the thing that opened.
+        //
+        // Caption-only (#528's deliberate no-picture idiom), like every other paper: a document is not a
+        // portrait, and no plate in this repository is a photograph of a rate schedule.
+        return HardcaseRep.IsTheSchedule(paperId)
+            ? new Reveal("", HardcaseRep.ScheduleLabel, HardcaseRep.ScheduleBody)
+            : new Reveal(
+                "",
+                $"📋 {FieldClue.Label(FieldClue.CertaintyOf(paperId)).ToUpperInvariant()}",
+                FieldClue.Document(paperId));
     }
 
     /// <summary>#677 · WHICH relic-class card, asked of the find's own id.

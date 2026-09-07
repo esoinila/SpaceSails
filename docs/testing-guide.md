@@ -9,6 +9,19 @@ sweeps these rows headless after a release, using each row's "what a tester shou
 oracle — one more reason to keep those expectations written down and current. The workflow shelf
 index is [docs/workflows/README.md](workflows/README.md).
 
+**Running the xUnit suites:** the full run is `dotnet test SpaceSails.slnx -c Release` and takes
+about six minutes; the inner-loop run is `--filter "speed!=slow"` (or `./test-fast.ps1`) and takes
+about forty seconds. A green fast run means the rules hold, not that the ship flies — see
+[Appendix C](#appendix-c--the-fast-run-and-the-full-run-251-item-4) for exactly what it skips and
+why. CI always runs the whole suite. If your new guard installs one of Core's process-wide
+registers, read
+[Appendix D](#appendix-d--the-process-wide-registers-and-why-some-suites-run-alone-1108) first — it
+is the difference between a suite that is correct and a suite that is correct most afternoons. And if
+you are about to SPLIT a file rather than change one, read
+[Appendix E](#appendix-e--structural-work-what-a-split-lane-measures-before-it-lands-251): what a pure
+move has to prove, why a static class does not split where its concerns are, and the two helpers the
+house keeps so that a repo path or a bench is not written out a seventy-ninth time.
+
 **Before you start:** run `./run.ps1` (Release build) and open the printed localhost URL.
 Debug WASM runs on the IL interpreter and is roughly **100× slower** — choppy frames, sluggish
 plotting, and timings in these scripts (rum wobble, boarding time, warp behavior) will all read
@@ -26,6 +39,29 @@ Dark-on-dark is a defect anywhere it occurs. Two guards stand behind that senten
 `SpaceSails.Client.Tests.EveryTextReadsTests` sweeps the shipped stylesheets and every art slot in
 `Map.razor`, and `SpaceSails.UiGate.EveryTextReadsTests` boots `?stool=1` at 390 × 700 and measures
 the real contrast of every visible text run against the deck canvas's own pixels.
+
+**And ask this of every change you make (owner ruling 2026-08-08, #761): _does anything
+plot-significant happen here, and where does the player read it?_** — plot-significant means it
+changes what the captain **knows, owes, is owed, or can do**: a reveal, a debt, a standing gained or
+lost, a door that will now open, somebody who will now remember. The player is told **at the moment
+it happens, on the surface they are looking at** — never only in a log. The field book and the
+autopilot ledger are the record; they are not the telling, and *"it is in the book"* is the answer
+this rule exists to refuse.
+
+Three surfaces, and which one is right is a question about where the eye is, not about how loud the
+moment is:
+
+| The captain is… | Say it on | Seam |
+| --- | --- | --- |
+| doing nothing else — the moment IS the pause | a card, or a plate at the edge | `RaiseStoryBeat(…)` |
+| looking at a pop-up | that pop-up's own outcome region | `SayItWhereTheyAreLooking(…)` (#736) |
+| flying, walking, being chased | the HUD pulse, at a rank that cannot lose the slot | `ShowPulseMessage(line, Telling.Floor)` (#693) |
+
+`SpaceSails.Client.Tests.ThePlayerIsToldTests` holds every answer already given — one row per
+moment, checked against the shipping source — and it goes **red** if you give a line a
+plot-significant rank without saying in that table what moment it is and where it is read. What it
+cannot do is decide whether YOUR new event is plot-significant: that judgement is the question
+above, and this is the only place it gets asked.
 
 ---
 
@@ -45,6 +81,16 @@ the real contrast of every visible text run against the deck canvas's own pixels
 
 **Broken looks like:** blank canvas, a spinner that never clears past "Rigging the sails…", or
 the wrong scenario's bodies rendering.
+
+**What the boot should look like (#161, staged).** The front door — the berth list, the saved
+voyages, **Continue — docked at &lt;haven&gt;** — comes up **live and pressable within about a
+second**, long before the world behind it is finished; measured 0.2 s on the shipping (AOT) build
+and 0.6 s on a plain local publish. Choosing from it while the sky is still being plotted is
+supported and is the ordinary case: the door shuts, the ⚙ loading door shows through narrating the
+phase it is on (*"plotting the traffic lanes — freighter 5 of 8…"*), and the voyage starts the
+moment the world is ready. **Broken looks like:** a front door stuck on *"Warming the reactor — the
+ship's computer is still booting"* for more than a couple of seconds, a berth click that does
+nothing, or the picker reappearing **on top of** the voyage it just started.
 
 ---
 
@@ -284,17 +330,26 @@ shuttle not returning when the window closes.
 
 1. Launch **Sol (Electric)**. Confirm the HUD shows a Charge bar under the main readouts.
 2. Warp toward the sun (or into a visible plasma stream). Confirm the charge percentage climbs.
-3. Let it reach 90%+. Confirm the HUD flags "⚡ ARCING — visible system-wide" and a halo ring
-   appears around your ship on the map.
-4. Press `V`. Confirm charge drops to roughly half its prior value and the arcing warning clears
-   once under 90%.
-5. Press `V` again immediately. Confirm a "Vent recharging…" message appears (cooldown) rather
+3. Let it reach 90%+. Confirm the HUD flags "⚡ ARCING — visible system-wide" **and that you can see
+   it on the map without reading the HUD at all**: a short whip stands off her beam with three
+   filaments crawling slowly off its tip (#528 §7). It is a PLUME off one extremity, never a ring
+   around the hull — field strength is potential over radius of curvature, so a discharge leaves the
+   sharpest thing she has and a sphere is the one shape it cannot be.
+4. **Pause** (`space`) while she is arcing. Confirm the filaments FREEZE. The crawl is seeded from
+   sim time, so a stopped world draws a stopped plume; a plume that keeps dancing while paused is
+   the wall clock leaking into the picture.
+5. Press `V`. Confirm charge drops to roughly half its prior value, the arcing warning clears once
+   under 90%, and the dump itself SNAPS — five brighter, longer filaments off the same masthead,
+   gone inside about two-thirds of a second. Do it again from a nearly cold hull and confirm the
+   flash is dimmer and shorter: the brightness is the charge that actually left her.
+6. Press `V` again immediately. Confirm a "Vent recharging…" message appears (cooldown) rather
    than a second instant halving.
-6. Fly into a plasma stream while charged and confirm you feel a push along the stream's
+7. Fly into a plasma stream while charged and confirm you feel a push along the stream's
    direction (speed changes without spending a pulse).
 
-**Broken looks like:** charge never climbing near the sun, arcing warning never appearing, or
-venting not reducing the charge value.
+**Broken looks like:** charge never climbing near the sun, arcing warning never appearing, venting
+not reducing the charge value — or the discharge drawn as a ring centred on the ship, drawn while
+she is merely GLOWING, the same brightness whatever she dumped, or still dancing on a paused map.
 
 ---
 
@@ -581,6 +636,7 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | `?expedition=1\|mining` | Spawn an away-team gig ALREADY ACCEPTED, its rock parked in shuttle range (#370). |
 | `?deflection=1\|c\|s\|m` | Spawn the asteroid-deflection gig accepted, rock inbound, ship docked at Ringside (#394). |
 | **`?crew=petition`** | **A DEPUTATION — three of them in the corridor outside your door (#663).** Boots holding the voyage the crew send one over: five of them left on the rock (the `?deflection=` gig above is the only thing in the shipped game that kills a crewman), and every wreck since filed honestly, so the share is empty and the bunks are too. It grants those two counters and nothing else — no standing is written and no card is pushed; the ship's own clock reads the crew sheet on the next tick, finds them past `CrewTemp.Standing.Petition`, and the beat arrives through the ordinary door with its cadence spent and its line in the ledger. Read the sheet behind it on the **Captain desk → the crew's report**: PETITION at the top, GETTING HOME on the floor and THE SHARE down with it. `?crew=deputation` is the same door. |
+| **`?crew=meeting`** | **THE MEETING YOU WERE NOT ASKED TO — the cantina at an odd watch, and a chair pulled out that nobody is sitting in (#1066).** The same ruined voyage as `?crew=petition` above, with nobody ashore in five berths on top of it. **The shore-leave rule:** a clamp at a GREAT PORT is a run ashore — that is Ringside Exchange and The Red Eye, the two berths the arrival tube (#541) gives a glazed gangway to — and every other berth is a working stop. Four working stops in a row breaks the captain's word, and every berth past that breaks it again, which is what carries the crew sheet from PETITION down to `CrewTemp.Standing.Ultimatum`. It grants counters and nothing else; the ship's own clock reads the sheet on the next tick and the beat arrives through the ordinary door. Read the sheet on the **Captain desk → the crew's report**: ULTIMATUM at the top, THE CAPTAIN'S WORD on the floor, and the shore-leave footnote under the bars saying how many stops it has been and where the line is. `?crew=ultimatum` is the same door. |
 | **`?secretlab=1`** | **Spawn a landable rock in shuttle range hiding a Vantar SECRET LAB, hidden door pre-revealed (#409).** |
 | **`?kaamos=N\|all`** | **Assemble the first N PROJEKTI KAAMOS fragments (canonical order), or `all` — the intel readout + reach notice without a playthrough (#411).** |
 | **`?kaamos=bounce`** | **Seat the freight agent holding the docket the board keeps sending back at every bar — PROJEKTI KAAMOS's FRONT DOOR (#635). Press `[E]` at any bar patron, take the job, and the filing bounces off your hull too: the arc appears in the Captain's ledger with no shard in hand.** |
@@ -610,6 +666,9 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?book=N` / `?book=on`** | **Put THE ODD BOOK in every would-be-empty room this excursion searches (#701). `1`–`10` force that catalog entry, which is how all ten authored texts get read on demand; `on` (or `all`/`any`) forces the SEEDED entry, i.e. the shipped selection with the one-in-six gate taken off, which is how the Laboratory/Transit-station weighting is watched working. It cannot put a book in an OCCUPIED room — a book is what a would-be-empty room has *instead of* the empty line, and a cheat that laid one on top of a pallet would have you playtesting a room the game cannot produce. It is an ARGUMENT to `OddBooks.Search` and never a second answer OR-ed in beside it (the `?dark=1` rule). Pair with `&secretlab=deep&land=1&floor=2`.** |
 | **`?autowalk=1`** | **RETIRED (#875) — parsed, and it changes nothing.** Click-to-walk shipped behind this flag as a dev cheat *"until the owner rules on always-on"*; the owner ruled on 2026-08-15: *"click to walk should always be on when the arrows for walking are active also. The two should be linked as alternative UI methods for walking."* So **a click on the deck is a control of the game now, on every walked view (a surface excursion, every Hive floor, the ship's own deck), with no URL at all** — and it is refused or held by the very same predicate that refuses or holds the arrow keys (`Map.Deck.TheCaptainsLegsAreTheirOwn`): the escort holds both (#833), a seat costs both the stand first (#847), a stalled machine says so to both (#825), and a click that plans nothing says why (#866). The flag is kept only as a **no-op alias** so old dev links still boot. What the click always was and still is: A\* over the same walls the collision uses, at the same walking speed — NOT a teleport and NOT a faster walk, so air drains, the nerve frays, the tracker rings, the auto-doors cycle and the Old Ones close exactly as they do under WASD. **Any movement key cancels instantly** — the keys always win. Click a console, a hatch or a door and the walk stops ADJACENT to it, so `[E]` is live the moment it ends. A drag still pans the deck plan. |
 | **`?found=1`** | **Park the one rock in the system with a band NOBODY DUG under the band nobody listed (#677), set down at the lift head, and start with every authority this site ever issued already in the wallet — including the last one, which is the way past the seam. About one site in fifty has galleries and the way in is a card somebody left in a room eleven floors down, so without this the feature is unreachable in practice. It implies `?secretlab=1` (there is no other way down). It overrides no Core fact: the rock's whole shape — its depth, its two kinds, its unlisted band and its halls — is seeded off its body id (`UndergroundComplex.FoundBandCheatSiteId`) exactly like every other site, so what you walk is what a captain would walk. The cards are minted through the real `AuthorityCard` and put in the real satchel, so the panel, the gate, the refusal ladder and the wallet fan all behave as they do for somebody who earned them. Pair with `&land=1`, and with `&floor=17` to ride straight to the first gallery.** *(It is also a button in the front door's **⚙ DEV START SITES** list — 🕳 “The halls nobody dug”.)* |
+| **`?buried=1`** | **The same rock as `?found=1`, one shift later: the ground has been OPENED a whole world window ago, so the burial (#1063) fires on the way down and you land on a site whose galleries have been filled, floored and resurfaced. Implies `?found=1`. It seeds the disclosure clock's register and nothing else — the fill runs through the ordinary `Burial.Fill` on the ordinary descent, because a cheat that wrote a filled ground straight in would be testing a code path the game does not have. The lift panel now stops at the listed bottom; on that floor there is a short recess with one old door in a flat grey that belongs to no palette and does not open; a mason is at a table in the upper canteen; the maintenance ledger is in the first room searched; and the wire has one cheerful line about drainage. Nothing anywhere says a ground was buried. See “The ground that was filled in while you were away”.** |
+| **`?stopped=1`** | **`?buried=1`'s twin (#1074): the same rock, the same ground opened a whole world window ago, and a window chosen so the split hands this one to the AUTHORITY instead of to the neighbours. Implies `?found=1`. Nothing is filled in — the galleries are still there — but the shaft below the listed bottom is sealed: the lift panel stops at the listed bottom with no row and no refusal, a leaf at the blind end of the spine reads `AUTHORITY — WORKING CLOSED` and gives the order verbatim, the plant's valve-book is in the second room searched on that floor, and the week's rota is still up in the upper canteen — beside a personnel register row naming one hand off that shift, two regulars who answer about him, and a mug nobody will move (beat 4). See “The working that was closed while you were away”.** |
+| **`?preserved=1`** | **`?stopped=1` one shift further along (#1074 beat 2): the same rock, the same ground handed to the office by the split, opened TWO whole world windows ago — so the order fires on the way down and then the closed working passes into official CARE. Implies `?stopped=1` and `?found=1`. Nothing below ground changes at all; everything new is on the surface, at the survey shed the lift comes up in. It stands inside a small closed ring of rail with exactly ONE gap in it, the gap faces the tube, and at the gap one line of ground label reads `AUTHORITY — THIS SITE IS PRESERVED. Its significance is under study.` — no date, no department, no name. See “The site that passed into official care”.** |
 | **`?card=next` / `?card=N` / `?card=all`** | **MINT AN AUTHORITY CARD BEFORE THE FIRST RIDE (#693) — the one cheat that makes the CARDED lift row, the gate beat and the refusal ladder reachable on an ordinary site.** #692 shipped all three and closed with the honest note that none of them had been seen in a browser: *"reaching the row needs an authority card in the wallet and no dev cheat mints one"*. `next` mints the band under wherever you are set down — the gate you will be standing at — asked of `NextShaftBelow` so it steps over the band of nothing under the unlisted floors (#677). `N` mints that band specifically, which is how the WRONG-card refusal is seen. `all` is `?found=1`'s whole wallet on any rock. It names a **band**, never a card id: a body typed into a URL is a body the landing may not be on, and the cheat would mint paper no gate on the ground reads. A band the site does not have mints nothing **and says so**, naming the bands it does have. Minted through the real `AuthorityCard` into the real satchel, so the panel, the gate, the refusal and the wallet fan behave exactly as they do for a captain who earned it. Implies `?secretlab=1`; pair with `&secretlab=deep` or `&found=1` to choose the rock. Try `/map?secretlab=deep&land=1&floor=1&card=next`.** *(Also a button in the front door's **⚙ DEV START SITES** list — 🎫 “The lift row the card unlocks”.)* |
 | **`?kit=1`** | **ASSEMBLE THE FIELD DOSSIER ON THE FIRST PIECE OF SOMEBODY'S KIT, WITH EVERY SENTENCE IT CAN CARRY (#774/#588).** The dossier is the rarest beat on the regolith: it wants three *papers* rooms inside ONE excursion at one room in eight, and its four-sentence form — the person, the next of kin, what that family knows, and the phrase that opens a door somewhere else — is two more one-in-three rolls behind that. Which is exactly why #774 shipped: the card raised, all four sentences pulsed **under its own backdrop**, and nobody could stand in front of the scene to notice. This moves the two GATES and nothing behind them — the stranger, the family, the hint, the in and the moon they name are the seeded ones for the room you actually completed, so what you read is a card a captain can genuinely be handed. Pair with `&outpost=1` for the shortest road to one: the hut's SOMEBODY'S EFFECTS console is a piece of kit in its own right (#588), so one press assembles the whole thing. Try `/map?dock=the-tilt&site=0&land=1&outpost=1&kit=1`.** *(Also a button in the front door's **⚙ DEV START SITES** list — 🗂 “Whose kit was this — the whole dossier”.)* |
 | **`?tablescene=1`** | **BOOT THE TABLE SCENE (#746) — the B1 canteen of a deep site, with people in it, one URL from the front door. Walk to a table with somebody at it, press `[E]`, and ask to join. It implies the whole route (`?secretlab=deep&land=1&floor=1`) rather than adding a fourth spelling of it, and sets the captain down IN the canteen. (It used to turn `?autowalk=1` on because the last leg is a walk across a room; since #875 the click walks you on every boot, so there is nothing left to turn on.) It does NOT force who is at the tables: the rota is seeded off the site and the watch like any other shift (#709), and a cheat that seated THE HAND for you would be testing a room that does not ship — if this watch has no Hand in it, that is the room, and the next shift is a reload away. Three of #709's cast are scenes (the hand, the fitter, the temp); everybody else keeps their one breath.**<br><br>**#792 · READ THE ROOM BEFORE YOU CROSS IT.** Owner: *"people looking to sit down look at those like hungry wild beasts look at their prey… Now I have trouble finding a free table."* Every top now draws the chairs it actually seats, in three marks and no words: a **grey bar** is a chair nobody is in at a table nobody is at; a **green bar** is a free chair at a table somebody is ALREADY at — the **invitation**, and the whole of the second glance; a **warm filled body with a bar behind its shoulders** is somebody sitting there, in the same chair-back idiom the seated captain got in #788. **Two warm ticks struck over a top mean a conversation** — there is something to **overhear** — and a top without them holds somebody on their own, which is who `[E]` can ask to join. None of it is worked out on the glass: the occupancy and the conversation both come off `CanteenRegulars.Tables` at the frozen watch, so a chair drawn free is a chair the press will offer. Pair with `&watch=2` and then `&watch=5` — the same room, two different answers to all three glances. |
@@ -638,6 +697,7 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?badge=1`** | **MINT THIS SITE'S OWN PASS AND PUT YOU IN FRONT OF SOMEBODY WHO READS IT (#804).** Implies `?patrol=1`'s whole route, because a pass with nobody to show it to is not a thing anybody can test. Minting is the ONLY thing it does: the guard still has to see you, the wallet is still read by Core, and what is said is what would have been said had the pass been earned. **Earned, it comes off the cage crew.** The Hand at a B1 table hands you a day-labour chit (#746), the chit opens the gate to the band below (#752), and the site does what a site does with a body that has arrived on somebody's account — it puts you on its books at the bottom of the cage. **The gig does not pay in coin; it pays in paper.**<br><br>**WHAT A TESTER SHOULD SEE.** 🎒 `I` shows **🪪 SITE PASS · GENERAL HANDS · <SITE> SITE** in the wallet. Walk straight at a round: the card **👮 THE ROUND STOPS AT YOU** goes up, and its amber row says he reads the face, the site code and the tier, hands it back, and mentions the wet floor round the corner. Close it and the round picks up where it left off. Now try the other three answers — boot `?patrol=1` with nothing (*"Nothing comes out of your wallet that this floor has ever heard of"*), with only the chit (*"That's for the cage. This isn't the cage."*), or take a pass to a different rock (it names the other SITE, the #679 ladder one building along). **All three end the same way: he walks you back to the car, nothing is taken, nobody is called, and a line goes into a book.** There is no chase in this feature and there is nowhere for one to start.<br><br>**BROKEN LOOKS LIKE:** a challenge that ends in anything but a walk back to the lift; a refusal that does not say WHY; the escort line pulsing to the HUD *behind* the card's own backdrop (#736's law — the sentence you act on rides the card); or a pass that works on a rock it was not issued for. *(Also a button in the front door's **⚙ DEV START SITES** list — 🪪 “…and the same floor with the site's own pass in your wallet”.)* |
 | **`?watch=N`** | **PIN WHICH SHIFT THE HALL IS ON (#751). The B1 cantina hall holds eighty and how many of its twenty tables are taken varies BY WATCH — a heaving day watch, a small-hours watch of a dozen souls — and **nothing in the game announces which one you walked into**: that is the design, and it is exactly the kind of design a tester cannot see without waiting four sim-hours between looks. A watch is four sim-hours (`PatronRota.WatchSeconds`) and six of them are a day, so `?watch=2` is the middle of the day and `?watch=5` is the small hours; compare the two and the whole feature is on the screen. Owner, twice over: *"testing is a feature."* It pins the watch INDEX and nothing else — who is in the room and where they sat are still the rota's own answer for that shift (#709), so what you walk into is the room a captain would get, never a rigged one. Pair with `&tablescene=1`.** |
 | **`?perf=1`** | **ARM THE DRAW-COST PROBE (#841, Lab 46) — the one measurement this repo has never had.** Lab 45 priced the SIM side of #841 to the microsecond and closed on the half it could not reach: *"if culling is worth doing it has to be justified on DRAW cost, and this lab could not measure draw cost."* There is no headless path to a canvas, and a timing taken from an MCP-driven tab is invalid here by standing law (the tab is `document.hidden`, so rAF is throttled and the timers are clamped). So the game carries its own stopwatch. `?perf=1` puts a clock on the walked view: **the whole `DrawWalkFrame`**, the **17 passes** of the pen's conductor by name (`PaintTheGround`, `FillTheFurniture`, `DrawTheWalls`, `DrawTheSeats`, `DrawTheConsoles`, …), and the **flush across to the canvas** (`CanvasRenderer.EndFrame`, the one line of the frame that reaches JavaScript — everything above it only fills an array). It keeps a rolling 120-frame window and reports it twice: a **line across the top of the deck** (mean / p95 / max, the furniture's share, the three dearest passes), refreshed four times a second, and the **same table printed to the browser console every 120 frames** in a fixed greppable shape — `[perf] pass=<name> mean=… p95=… max=…` — which is what you copy into `labs/46-what-a-draw-costs/README.md`. It changes nothing about the world and costs nothing when it is off (one null check per pass; the probe object does not exist). **Read it in a REAL FOREGROUND TAB, on the machine and at the window size you care about** — that is the whole reason it exists, and a number read anywhere else has to be disowned in the same breath it is quoted. Try `/map?secretlab=deep&land=1&floor=1&perf=1`, then walk from the park into a bare corridor and watch which row moves. *(Also a button in the front door's **⚙ DEV START SITES** list — ⏱ "What a draw costs — the furnished floor, timed".)* |
+| **`?holdbeats=1`** | **HOLD THE STORY CARDS WHILE A SCRIPT DRIVES A BOARD (#1148) — a latch for automation, not a way to play.** The UiGate's canaries script *open a board, press its way out*, and nothing in them quiesces the story seam: in a loaded serial run a card's cadence came due over the open charge board, its `.view-object-backdrop` went over the board's own **Step away**, and Playwright waited **sixty seconds** for a button a modal was standing on — while the same class passed alone at the base (35 s) and alone at the head (29 s). With this key on the URL, a beat whose presentation is a **CARD** is **DEFERRED** into the same one-at-a-time queue the sit hold (#865) and the danger hold already share. **It is a deferral and never a drop:** the cadence is unspent until the beat actually speaks, so the beat is still owed and #761's *the player is told* is untouched — a flag that could DELETE a plot-significant moment would be a gate quietly editing the game it is measuring. **PLATES are not held**, deliberately: a plate eats no click (`pointer-events: none`) and steals no keyboard, and one gate next door exists to catch a plate lying on the plotting panel. The latch is the URL and nothing else — there is no field on the page and no way to release it from inside the running game, so a page booted with it holds its cards for as long as that page lives. `1`, `true` or `yes`; anything else is not a hold. **Not for playtesting** — a captain who boots with it will simply never be shown a card. Try `/map?dock=red-eye&holdbeats=1`. |
 
 ### Walking the found halls — `?found=1` (#677)
 
@@ -665,6 +725,144 @@ many and each is half again as large, which is the only sentence the plan is all
 
 Pair with `&dark=0` — there is no such switch, and there does not need to be: these floors are dark because
 they declare it, and `?dark=1` is for the ordinary ones.
+
+**And the disclosure clock: what a tester should see is NOTHING.** Crossing the seam starts `DisclosureClock`
+for that ground (#677's second mechanic), and the mechanic's own law is that it is *never a progress bar and
+never announced* — so there is no line, no counter, no glyph, no card and nothing on the HUD to look for, and
+a build that grew one has a bug. The only place it is visible is the save file: open the vault JSON and the
+`progress` section carries `hallsOpened`, one row per ground, each with the world-side window the seam was
+first crossed in. Re-enter the same galleries and the row does not move — the FIRST crossing is the one kept,
+because a clock you can restart by going back again is a farm. **#1063 is the first beat that reads it** (see
+below); #1068 and #1074 are still to come, and each authors its own words when it is built.
+
+### The ground that was filled in while you were away — `?buried=1` (#1063)
+
+```
+/map?buried=1&land=1                the same rock as ?found=1, one shift later
+/map?found=1&land=1                 …and the same ground before the job, to compare
+```
+
+`?buried=1` is `?found=1` with the ground already **opened a whole world window ago**, so the burial fires on
+the way down. Since #1074 it also picks WHICH window, because the window decides which of the two outcomes
+this ground gets — see `?stopped=1` below for the other one and you land on a site whose galleries have been filled, floored and resurfaced. It seeds the
+disclosure clock's register and nothing else — the fill itself runs through the ordinary `Burial.Fill` on the
+ordinary descent, because a cheat that wrote a filled ground straight into the register would be testing a
+code path the game does not have.
+
+**What a tester should see, and every bit of it is deniable:**
+
+- **the lift panel has no button past the listed bottom.** Ride down: the building stops where the building
+  says it stops. There is no gap, no greyed row and no sentence about it, and `&floor=17` now sets you down
+  on the nearest floor that exists.
+- **on the listed bottom, a short recess off the main corridor** — five du deep, at the blind end of the
+  spine — with a single door across the back of it. It is drawn in a **flat mid-grey that belongs to no
+  palette**, heavier than any wall beside it (the found band's own idiom, §13.20), and it **does not open**
+  and says nothing at all. That is the specimen, and it is the only segment on any listed floor in the game
+  drawn that way.
+- **in the upper canteen, a mason at a table.** Press E: *"pre-existing masonry, origin undetermined."* That
+  is the whole testimony. On `?found=1` — the works are on and the job is not done — the board also carries
+  **"Resurfacing of the lower galleries begins Monday. Please use the upper walks."**; on `?buried=1` that
+  notice has come down, because the job is finished.
+- **search the first room on that floor**: the maintenance ledger — *"Sub-level access no longer required.
+  Filled and remediated per instruction."* Then count the instruction numbers in it. There are none.
+- **the wire has one cheerful line about drainage**, once, and ✂ CLIP files it under the site's own operator.
+
+**And what a tester must NOT see:** any card, pulse, beat, nerve shock, HUD marker, stat, sensor return or
+sentence anywhere saying that a ground was buried, that anything was hidden, or who did it. A build that grew
+one has a bug. The field book is the only witness, and **nothing the burial does may remove or change one
+entry in it** — a note, a clipped story, a red thread or a satchel row taken out of those galleries before the
+fill still reads exactly as it read. In the save file the `progress` section grows `hallsBuried` beside
+`hallsOpened`, and that is the only place any of it is written down.
+
+### The working that was closed while you were away — `?stopped=1` (#1074)
+
+```
+/map?stopped=1&land=1               the same rock as ?found=1, closed by order
+/map?buried=1&land=1                …and the other thing that can happen to it
+/map?found=1&land=1                 …and the same ground before either
+```
+
+`?stopped=1` is `?buried=1`'s twin. #1063's burial and #1074's stop order are **one trigger's two outcomes** —
+an opened found band, one whole world window, the captain off the body — and a ground gets one of them,
+decided by a coin seeded on the ground and the window it was opened in. So this cheat parks the ROCK *and* the
+WINDOW: it walks back a shift at a time until the split hands this ground to the office, and then gets out of
+the way. The closure runs through the ordinary `StopOrder.Note` on the ordinary descent.
+
+**What a tester should see, and every bit of it is deniable:**
+
+- **nothing is filled in.** The galleries are exactly where you left them: the site's true depth is unchanged,
+  every gallery still reads as a gallery, and the field book still agrees with the ground. This is the whole
+  difference from `?buried=1` — the town forgot; the office remembered on purpose.
+- **the lift panel has no button past the listed bottom**, and no row refusing one either. There is no gap, no
+  greyed row and no sentence about it. The building does not admit that band exists, so it does not name it
+  even to say no.
+- **on the listed bottom, a short recess off the main corridor** — five du deep, at the blind end of the spine,
+  the same pocket `?buried=1` keeps its specimen in (a ground is stopped or buried and never both). Across
+  the back of it is one leaf that does not open, wearing **`AUTHORITY — WORKING CLOSED`**. Press E:
+  *"By order of the Authority this working is closed pending structural review. No schedule for the review is
+  published."* A stamp and no signature. Try the satchel on it and there is no reader; point a sentry at it
+  and there is no hasp.
+- **search the SECOND room on that floor**: the plant's valve-book, three entries on one paper. Read the
+  instruction numbers down the page — **2231**, then nothing, then **2233** — and the line between them says
+  *per order* where both the others say *per instruction*. Nobody writes down that a number is missing.
+- **in the upper canteen, the week's rota is still up**, listing the shift. The resurfacing notice is not: a
+  notice about a job somebody was going to do comes down when nobody is going to do it.
+- **and pinned beside the rota, the personnel register** (#1074 beat 4): `REGISTER — PERSONNEL` — a name, and
+  then *"Reassigned where their skills are most needed."* No destination, no date, no signature. Press `[E]`
+  on the board until it comes round; it is one of the four slots and never a fifth.
+- **two of the people in that room are off that shift.** Stop at their tables:
+  - one says *"Transferred, I think. Administration would know where."* — and means it, which is the whole
+    of him. He is not covering and he is not frightened; that is what he was told and what he believes.
+  - the other has **a mug on the shelf behind her chair** (🍺, the canteen's own glass, drawn and never
+    pressable). Ask her and she says *"That stays where it is."* Ask again and you get her plate and nothing
+    else, which is the room's ordinary once-per-person law doing the changing of the subject.
+  - the mason from `?buried=1` is **not** in this room. A ground is stopped or buried and never both.
+
+**And what a tester must NOT see:** any card, pulse, beat, nerve shock, HUD marker, stat, sensor return or
+sentence anywhere saying that a working was stopped, that anything is being kept from anybody, or who
+ordered it — and no name, anywhere, on anything except the register row's own hand. Nobody says *missing*,
+nobody says *dead*, nobody names the working, and none of those three sentences mentions the Authority: the
+enforcer is an office, it signs orders and fences, and it has no business in a canteen. Nothing explains the
+mug, ever. In the save file the `progress` section grows `hallsStopped` beside `hallsBuried`, and that is the
+only place any of it is written down — the register row, the two regulars and the mug are read straight off
+it and keep no state of their own.
+
+### The site that passed into official care — `?preserved=1` (#1074 beat 2)
+
+```
+/map?preserved=1&land=1             the same rock, one shift further along
+/map?stopped=1&land=1               …and the same ground on the shift the order landed
+/map?found=1&land=1                 …and the same ground before any of it
+```
+
+`?preserved=1` is `?stopped=1` one shift further along: the same rock, the same ground handed to the Authority
+by the split, opened **two** whole world windows ago instead of one. Both stages of the office's paperwork
+therefore fire on the way down — the working is closed, and then the closed working passes into care. The
+order closed it *pending structural review*, with no schedule published; a window later there is still no
+schedule, because the review that was never scheduled has become a study that never ends, and a study needs a
+fence around it. Nobody decided anything in between.
+
+**Everything new is on the SURFACE. Nothing below ground has changed at all** — the halls are still there,
+the shaft under the listed bottom is still sealed by the order, the plate still reads
+`AUTHORITY — WORKING CLOSED`, and every line of the `?stopped=1` walkthrough above still holds.
+
+**What a tester should see:**
+
+- **walk down the field to the survey shed the lift comes up in** (the camouflaged head with the two machined
+  doors). It is inside a **rail**: a small closed ring of ordinary low wall, drawn in the same dim inner-line
+  ink as every fallen span on the site — not the ship's bright hull stroke, and not a rectangle.
+- **exactly ONE gap in it, and the gap faces the tube you walked out of.** Stand at the shed and look back
+  toward the way home: the gate is on that side. This is a law and not a seed — ride the car up out of the
+  halls and you are set down INSIDE the ring, and you must never have to walk round it to reach your own boat.
+- **at the gap, on the regolith, one line:**
+  *`AUTHORITY — THIS SITE IS PRESERVED. Its significance is under study.`* It stands a pace outside the rail,
+  on the approach, so you read it on the way in.
+
+**And what a tester must NOT see:** a second gap; a gap facing anywhere but the tube; a fence you have to walk
+round to get home; a date, a department, a reference number or a signature anywhere on the notice; any card,
+pulse, beat, nerve shock, HUD marker, stat or line on the wire about it; or any change at all below ground.
+In the save file the `progress` section grows `hallsPreserved` beside `hallsStopped`, and nothing ever takes an
+id back out of it — the study does not end.
 
 ### Reading the whole shelf — `?book=N` (#701)
 
@@ -1254,11 +1452,19 @@ lock, when you want to leave.
 
 ### Knocking on her walls — the hidden-void search (#537)
 
-Some hulls hide a space that is not on the deck plan. **Her plating is honest and her manifest is not**: a lying
-hull books one section of her shielding at a third of what every other section holds. Read the **cargo manifest**
-(a console that was always there) and the discrepancy is the clue; on a clean hull it says the frame numbers match
-all the way down the page, which it has to, or a document that only speaks up when there is something to find is
-a pointer rather than a clue.
+Some hulls hide a space that is not on the deck plan. **Her plating is honest and her paperwork is not** — and
+since slice 3 there are **three papers a lie can sit in, and a hull lies in exactly one**:
+
+| read it at | what does not add up |
+|---|---|
+| 📦 **the cargo manifest** | one section of her shielding booked at a third of what every other section holds |
+| 🪧 **the placard at the lock** | the builder's frame numbering steps over a run of frames it never writes down |
+| ⚙ **the dead bridge panel** | the board is dead except one breaker, warm, on a bus to a section nobody uses |
+
+Each is deniable on its own, and **every one dead-ends on a clean hull** — and on a lying hull the two she does
+NOT lie in dead-end as well. So reading one document is not a search: read the manifest on a hull whose lie is in
+her frame numbering and you are told, truthfully, that her shielding books out, and you learn nothing. A document
+that only speaks up when there is something to find is a pointer rather than a clue.
 
 Then **`K` to knock**, standing still. Two gears, chosen on the remote:
 
@@ -1268,12 +1474,35 @@ Then **`K` to knock**, standing still. Two gears, chosen on the remote:
 | ✊ knuckles | 12 | 2 du | 13 du — as loud as dogging a hatch by hand |
 
 Moving abandons the reading and does **not** refund the noise. Three answers: `SOLID`, `ODD` (near, not here), and
-`HOLLOW` — which puts a **FALSE PLATE** on the deck to force.
+`HOLLOW` — which puts a **FALSE PLATE** on the deck.
 
-**What to check.** The clock strip shows the knock and, once the manifest is read, the band to search. About one
-hull in five hides something (Lab 44 probe F prints which of the ten seeded causes lie, and where). A void sits
-either in the **shielding band** outboard of a room or inside a **bulkhead run** between two rooms — and what is
-in it decides which: a rack of keys fits a bulkhead, a folded gun mount or a cold locker needs the band.
+**Then you need the rig.** Forcing the plate costs a **🔥 HULL CUTTER** — 240 cr over the same back counter that
+sells the SDR scanner, three cuts to a cell, bulky enough to cost a pocket space. `E` at the plate is a **9 s
+channel** that dies if you step off it and is loud at the start, and it spends one cut; the last cut leaves the
+rig in the hole. The satchel row prints what is left in the cell.
+
+**And then you can get IN.** A void in the **shielding band** is walkable once cut: `E` again and the captain
+folds in and pulls the plate to behind him. The deck draws the pocket as space (only that stretch of the band —
+the rest stays hatched), the header says *A SPACE NOBODY DREW*, and `E` pushes the plate off again to get out. A
+void inside a **bulkhead run** is a hand's width of pipework and refuses — what is in a void decides where it
+can be, so a rack of keys fits a bulkhead and a folded gun mount needs the band.
+
+**What a sweep team (#538) finds.** With the plate fitted, the pressure hull is a wall and they genuinely cannot
+see you — walls are law for everyone (#324). Three things still give you away, all deterministic:
+
+1. **You are not in it** — standing in a corridor is exactly as fatal as it always was.
+2. **They watched you get in** — a lamp on the plate as it closes. Wait for the cone to pass.
+3. **The cut is still warm** — for **40 s** after the rig goes through, a lamp landing on the plate opens it.
+   The clock strip shows it counting down (`🔥 WARM CUT · the cut is still bright`). Cut early and let it cool.
+
+Making a racket is deliberately not a fourth tell: noise already walks them to the place, which puts a lamp on
+the plate, which asks the warm-cut question. The best outcome in the game is the one you hear from inside —
+*boots on the deck plating, and then the sound goes forward, unhurried, and keeps going.*
+
+**What to check.** The clock strip shows the knock, the cut, the warm-cut countdown and, once the right paper is
+read, the band to search. About one hull in five hides something (Lab 44 probe F prints which of the ten seeded
+causes lie, and where). The false plate must **survive a deck rebuild** — dog a hatch or run a pump after finding
+it and it is still there.
 
 ### The mountain lab — doors that lock, a board, and an alarm to hack (#409)
 
@@ -1328,6 +1557,37 @@ shared word is a grace, not a relationship.
 Discovery **persists per game-thread**: once found, a revisit to that body shows the door already revealed.
 To exercise the *discovery* vector itself on an ordinary body, land empty-handed and **probe** (`[E]` on the
 regolith) — the detector shrieks a proximity hint near the door and reveals it on the exact square.
+
+### The chain-of-custody worry (#426)
+
+Storm-triggered dread over #397's ship history, and the first thing in the game that reads the **captain's
+own hull's** service record rather than an NPC's. **Walk her own deck** (no haven, no landing) and wait for
+the first `〰` toast of a fresh rough patch: the tremor that OPENS a storm window speaks a chain-of-custody
+line instead of the ordinary pool line — *"Something aft settles into a new shape. Koski & Daughters Orbital
+Yards (Rauma Crater, Luna) laid her down in 2341, and every owner since has trusted that."* The yard and the
+year are her **builder's plate's** (#392); the rest of her record (two owners deep, renamed once) is seeded
+off the same pools every hull is dealt from.
+
+**She has a glory name now** (owner ruling, 2026-09-06, #1151): her plate always said in prose that she had
+one, and her seed's rename count had come up zero, so the two disagreed. The count comes off the plate and
+the name still comes off the pools — so **all three** worries are now reachable on her own deck, including
+the one that says it: *"A frame ticks under the load. She was HALYARD once; whoever signed her last survey
+under that name is not answering the radio either."* The same name is the row the claims counter's second
+press refuses (#1151), and her builder's plate in the engine room now carries the cover-up her seed dealt
+her — *"Her name is on a plate bolted over another plate. The old bolts are a different thread."*
+
+What a tester should see, and what should never happen:
+
+- **Once per storm.** The second, third and fourth tremors of the same rough patch speak the ordinary ship
+  pool again. A fresh run (the storm blew over, or the caution PA announced it) may worry again.
+- **Her hull only.** A shudder in a haven bar or on a moon never says it — a station settling on its clamps
+  is somebody else's paperwork.
+- **The plate never reads the old name out.** Walk to `⚜ BUILDER'S PLATE` in the engine room and press `[E]`:
+  the card says she was renamed and does not say what to. What she was called is the claims counter's
+  question, and the storm's own third worry.
+- **Nothing resolves, and nothing is charged.** No yard can inspect the weld, no dossier field says
+  UNSURVEYED, no nerve pip moves, and there is no maintenance debt anywhere (the issue's optional hook is
+  deliberately **not** built). If a mechanic ever offers to settle it, the beat has been broken.
 
 ### The dockable berths — `?dock=<id>` (#288 / #289)
 
@@ -1443,6 +1703,34 @@ Sets you down a pace outside a shelter's door with both sentries holding twelve 
 1. **The plates say what they DO** — `🫁 CHARGING RACK — FILLS YOUR TANK` and `🔫 EMERGENCY LOCKER — FILLS YOUR MAGAZINES`. The owner, standing between them: *"on shelters I always forget which is which."*
 2. **The magazines are on screen** — `🔫 MAGAZINES · K-77 12/99 in the sling · R-3B 12/99 in the sling`, under the motion tracker, above the key hints. Press `[E]` on the locker and watch it go to `99/99` in the same breath as the receipt says how many rounds went in. Before #728 that receipt paid into a number the player could see nowhere.
 3. **Come down with nothing and the press says so** — board with no sentry in the sling and the readout reads `none down here — no sentry came with you`, and the press answers *"finds nothing to fill"* rather than claiming your magazines are full.
+
+#### The bodyguard, and the road home (#326)
+
+```
+/map?dock=the-tilt&site=0&land=1&reevers=4
+```
+
+Owner, live 2026-07-18: *"I think the securibots most important job is not let anything come between me and
+the shuttle :-D"* — and *"Protect the path to the ship at about half way so there is always a way to retreat
+back to safety (until bullets run out) :-D"*
+
+Walk down-field until the tube is well behind you, then check the four things:
+
+1. **The plate names both stances** — `🤖 T — deploy here` and `🤖 ⇧T — hold my line home`, side by side,
+   whenever a bot is in the sling. The stance is chosen at the press, so both halves of the choice have to be
+   readable at the press.
+2. **`⇧T` sets a bodyguard down and it WALKS.** Set it at your feet, then keep walking deeper. It does not
+   stay where you put it: it goes to the middle of the line between you and the tube and holds that spot,
+   recomputing every time you move. Turn and walk sideways and it crosses the field to the new middle.
+3. **`T` is still the post.** Set the second bot down with plain `T` and it never moves again, in the same
+   world, on the same walk. If both walk, the modifier is not being read.
+4. **The counter is the expiry.** Let the escort grind a pack down to `00` and it stops where it stands — a
+   dry bot on your retreat line wearing its frozen counter, which is the mark #316 reads. Lift off without it
+   and the ledger prints the write-off it always printed.
+
+What *broken* looks like: a bodyguard that shoots the Old One nearest ITSELF while another walks up the
+corridor behind it (the priority is not reaching the trigger), a bot that walks once and then stands still
+(the post is not being recomputed), or a bot that walks through a slab to get to its mark.
 
 ### Add-ons for any of the above
 
@@ -1661,6 +1949,13 @@ re-renders each committed file from its own rows and demands it come back byte f
 
 ### Re-pinning
 
+**First: is this a lane that may re-pin at all?** A refactor lane may not. A pure move is precisely the
+change these ledgers exist to be blind to, so a red one in a split lane is the finding and the fix is the
+cut, never the pin — see
+[Appendix E2](#e2-the-ledgers-are-the-gate--0-moved-0-new-0-gone--and-a-split-lane-never-re-pins). What
+follows is for a lane that has *legitimately moved a number* and can say in its PR body which change moved
+it.
+
 When a change legitimately moves a pinned number, run the measurement — never a text editor:
 
 ```bash
@@ -1717,3 +2012,521 @@ Run it once on the base and once on your lane, then diff the two directories.
 
 > `EveryRoundFingerprintsTheSameTests` still keeps its pins in source. It is the fourth snapshot
 > guard and the next candidate for a ledger; nothing about #1055 changes what it measures.
+
+---
+
+## Appendix C — the fast run and the full run (#251, item 4)
+
+The suite is not slow. A small, nameable set of gates inside it is slow, and until #251 everybody
+paid for them on every red-proof cycle. Measured over the whole solution on 2026-09-02 at
+`e7c1915` — **5,759 tests, 3,552 s of test time, 551 test classes**:
+
+| per-test wall time | tests | share of tests | share of the clock |
+| --- | ---: | ---: | ---: |
+| under 1 ms | 2,886 | 50.1% | 0.0% |
+| 1–10 ms | 1,324 | 23.0% | 0.1% |
+| 10–100 ms | 733 | 12.7% | 0.7% |
+| 0.1–1 s | 524 | 9.1% | 5.0% |
+| 1–5 s | 171 | 3.0% | 13.3% |
+| 5–15 s | 79 | 1.4% | 19.0% |
+| 15 s and up | **42** | **0.7%** | **61.9%** |
+
+Half the suite finishes in under a millisecond and costs nothing at all. Forty-two tests hold
+five-eighths of the clock.
+
+### The cut: ten seconds of CLASS total
+
+The unit is the **class**, not the test, because the class is the unit xUnit schedules — it
+parallelises across test classes and serialises within one. That is not theory. In the baseline run
+each assembly's wall clock *was* its single slowest class:
+
+| assembly | wall clock | its slowest class | that class alone |
+| --- | ---: | --- | ---: |
+| `SpaceSails.Core.Tests` | 5 m 51 s | `ZubrinTrafficTests` | 349 s |
+| `SpaceSails.Client.Tests` | 5 m 1 s | `EveryDeskBootsTests` | 300 s |
+
+Tagging half of a slow class would leave the other half holding the floor, so a class carries the
+mark or it does not. **64 classes** cost ten seconds or more: 21 in Core, 43 in the Client. Between
+them they are **733 tests — 12.7% of the suite — and 93.0% of its measured seconds.** (63 of them
+were measured in the 2026-09-02 baseline; the 64th, `TheWorldBuildersAreThreadSafeTests`, is #1108's
+concurrency guard, measured at 15 s on 2026-09-04.)
+
+Ten is a budget, not a discovered boundary: the class-total distribution is a continuum here, with
+the nearest class above the line at 10.5 s and the nearest below it at 9.8 s. It is chosen because
+it puts the fast run's own floor — the slowest class it still runs — at about ten seconds, which is
+roughly where the test host's own start-up begins to dominate anyway.
+
+### The invocations
+
+```bash
+# FAST — the inner loop. Everything except the slow gates.
+dotnet test SpaceSails.slnx -c Release --filter "speed!=slow"
+
+# FULL — the contract. Exactly what CI runs; nothing is filtered.
+dotnet test SpaceSails.slnx -c Release
+
+# ONLY the slow gates — for when you touched one of them.
+dotnet test SpaceSails.slnx -c Release --filter "speed=slow"
+
+# One suite at a time, and with your own filter ANDed on.
+dotnet test tests/SpaceSails.Core.Tests -c Release --filter "speed!=slow"
+dotnet test tests/SpaceSails.Core.Tests -c Release --filter "(speed!=slow)&(FullyQualifiedName~Airlock)"
+```
+
+PowerShell has a wrapper that prints the command it is about to run and what the fast run cannot
+tell you:
+
+```powershell
+./test-fast.ps1              # the fast run
+./test-fast.ps1 -Full        # the full run, same as CI
+./test-fast.ps1 -Slow        # only the gates on the roster
+./test-fast.ps1 -Core        # one suite; -Client for the other
+./test-fast.ps1 -Trx         # also write .trx, so you can re-measure the class totals
+```
+
+Measured on the same box, same build, back to back:
+
+| run | invocation | wall clock | tests |
+| --- | --- | ---: | ---: |
+| FULL, before #251 | (no filter) | **6 m 0 s** | 5,759, all green |
+| FULL, after #251 | (no filter) | **5 m 27 s** | 5,767, all green |
+| FAST | `--filter "speed!=slow"` | **38 s** | 5,035, all green |
+| the gates alone | `--filter "speed=slow"` | **5 m 55 s** | 732, all green |
+
+The two full runs are the zero-change proof: same tests, all green, the eight extra being this
+lane's own roster guards and nothing else (Core 4,178 -> 4,182; Client 1,581 -> 1,585). The fast run
+is the win — **9.5x**, six minutes down to thirty-eight seconds.
+
+The fourth row is the cut's own receipt. The 732 tagged tests take 5 m 55 s *by themselves*, which
+is the whole of the original six-minute run; the other 5,035 tests are very nearly free. That is the
+finding in one line: the suite was never slow, sixty-three classes were.
+
+### What the fast run does not tell you
+
+This matters more than the number. A green fast run means **the rules still hold.** It does not mean
+the ship still flies, the floors are still walkable, or the boot still builds the world it always
+built — those are exactly the tests it skipped. What it leaves out, by family:
+
+- **The N-body and long-flight gates** — `Lab20LongGoodbyeTests`, `SimulatorTests`, `LongHaulTests`,
+  `TheCyclerArrivalIsAKeptCoOrbitalTests`, `TheParkedShipIsNotRunDownByTheMoonTests`,
+  `TheAutopilotFliesAtATenthTests`, `EveryLaneItLaysHashesTheSameTests`.
+- **The traffic and surface generators** — `ZubrinTrafficTests` (349 s on its own),
+  `EncounterRuleTests`, `SurfaceReachabilityTests`, `SurfaceStructureTests`,
+  `OneCounterAndOnlyOneTests`, `TrafficAndPredictionTests`, `OuterReachesTests`, `ArchiveNodeTests`,
+  `TheRefugesUndergroundTests`.
+- **The A-star walkability audits** — every square of a floor proved reachable:
+  `TheParkTakesAClickTests`, `TheLandingPutsYouSomewhereYouCanWALKTests`, `TheHallIsWalkableTests`,
+  `TheRoundIsWalkableTests`, `YouCanWalkTheHiveTests`, `TheExitIsTheFullStopTests`,
+  `StationWreckTests`, and the rest.
+- **The boot sweeps** — `EveryDeskBootsTests` (300 s), `EveryPopUpCanBeDismissedTests`,
+  `TheBootBuildsTheSameWorldTests`, `TheBootStopsWhenYouLeaveTests`.
+- **The snapshot fingerprints of Appendix B** — `EveryFrameLeavesTheSameFingerprintTests`,
+  `EveryRoundFingerprintsTheSameTests`, `EverySeatTheCaptainTakesFingerprintsTheSameTests`. A
+  re-pin is never done off a fast run.
+
+**Run it full before you push**, and know that CI does regardless: `.github/workflows/ci.yml` runs
+`dotnet test SpaceSails.slnx` with no filter and is deliberately untouched by #251. The fast run is
+a convenience for the person typing; the merge gate is the whole contract, as it always was.
+
+### The roster, and how to change it
+
+The mark is an xUnit trait — `[SlowGate]` on the class, which a discoverer turns into
+`speed=slow`. It is declared once per test assembly (`tests/*/SlowGate.cs`) because the two test
+assemblies cannot see each other; what travels between them is the trait name, not the type.
+
+Every tag is written down with the seconds that earned it, in
+`tests/SpaceSails.Core.Tests/TheSlowGateRosterTests.cs` and its Client twin, and three laws hold the
+two halves together:
+
+1. **No unwritten tag.** A class carrying `[SlowGate]` with no row goes red — a tag nobody wrote
+   down is a test the fast run silently stops running.
+2. **No stale row.** A row naming a class that is gone, or that no longer carries the mark, goes red
+   with "REMOVE ME".
+3. **The mark reaches the runner.** The discoverer is asked directly what trait it emits, and the
+   attribute's wiring is checked to point at *its own* assembly's discoverer. Without this, laws 1
+   and 2 would stay green forever while `--filter "speed!=slow"` quietly ran everything.
+
+Plus the anti-vacuous half: the sweep must find the assembly's test classes, the roster must be
+non-empty and must match the tagged set exactly, the tagged set must stay a small minority (a mark
+on everything would make the fast run empty and still pass), and no row may sit under the documented
+cut. All four laws were **shown RED** before they were trusted — a planted tag, a stale row, a
+reworded trait key and an under-cut number; the messages are quoted in the #251 PR body.
+
+**The guard does not re-measure.** Asserting "this class really does take ten seconds" would be
+asserting a property of the machine it happens to be running on — a loaded dev box, a cold runner, a
+laptop on battery — and would redden for reasons that have nothing to do with the code. The numbers
+in the roster are evidence, dated and quoted; only tag-versus-roster agreement is re-checked, because
+that is a property of the source and cannot drift with the weather.
+
+To re-measure the class totals yourself:
+
+```bash
+dotnet test SpaceSails.slnx -c Release --logger "trx" --results-directory TestResults
+```
+
+then sum each class's `UnitTestResult/@duration` from the `.trx`. Tag or untag the class, edit its
+row in the same commit, and quote what you measured in the PR — the laws above will tell you, by
+name, if you did only half of it.
+
+---
+
+## Appendix D — the process-wide registers, and why some suites run alone (#1108)
+
+Five registers in Core are **ambient**: a static the whole process shares, installed once by whoever
+owns the save and consulted at the one seam every reader already goes through.
+
+| register | installed by | read by |
+| --- | --- | --- |
+| `PreservationZone` | `Map.Preserve.cs` | `MoonSurface.SurfaceDeck`, `UndergroundComplex.MoneyTrail` |
+| `StopOrder` | `Map.Stop.cs` | `UndergroundComplex` (depth, bands, the money trail), `CanteenBoard`, `CanteenRegulars`, `Burial.NoticeIsUp` |
+| `Burial` | `Map.Burial.cs` | `UndergroundComplex.HasFoundBand` and its neighbours, `CanteenBoard`, `CanteenRegulars` |
+| `PoliteDecline` | `Map.Decline.cs` | `UndergroundComplex.Decline` |
+| `QuietHands` | `Map.QuietHands.cs` | the owed-ground seam |
+
+That is deliberate and it stays. A burial changes the *shape* of a site, and the shape of a site is
+asked by about thirty callers — the lift panel, the remote, the sounder, the room carver, the sign
+writer, the audits, the renderer — none of which has any business learning what a burial is. §13.15's
+second cause is a caller reasoning about the shape of a building it does not own, and thirty callers
+each taught a new idea is that bug thirty times. The game is single-threaded and reads them safely.
+
+**The test runner is not single-threaded, and that is where the cost lands.** xUnit parallelises
+across test classes. A guard that installs one of these registers on a *real* body id — `luna`,
+`titan`, `phobos` — changes the world under every other class building that body at that instant.
+Symptoms are never about the register: #1108 was `EveryFrameHashesTheSameTests` drawing 651 marks
+where 649 were pinned, and `TheLiftHeadIsJustAnotherHutTests` measuring a lift head with a
+preservation fence accidentally welded to it, about one run in four with Core and Client sharing a
+machine. The register never appears in the message.
+
+So:
+
+* **Every test class that writes one of these registers carries
+  `[Collection(StopRegisterCollection.Name)]`** — in both suites. The definition is one linked file
+  (`tests/SpaceSails.Core.Tests/StopRegisterCollection.cs`, compiled into the Client suite as well),
+  because a collection definition is per-assembly and two copies of "there is one of these" is how
+  two halves come to disagree.
+* **That collection is `DisableParallelization = true`.** Sharing a collection serialises the
+  *writers* against each other and does nothing at all about the *readers*, which are the rest of
+  the suite. Measured with an isolated xUnit 2.9.3 probe: four watcher classes polling a flag held
+  by a plain `[CollectionDefinition]` class all saw the overlap (4 failed / 1 passed); with
+  `DisableParallelization = true` on the same definition, none of them did (5 passed).
+* **`TheProcessWideWritersAreSerialisedTests` enforces it** by reading both suites' sources for the
+  six writes that replace process-wide state — the five `Install(` calls plus
+  `Aerobrake.DiceEpisodeHook =`, which is the same animal — and failing any class that performs one
+  without the attribute. It found four that had drifted outside, and two Aerobrake suites that had
+  never been in.
+
+**Writing a new guard that needs one of these registers?** Install it, restore it in a `finally`,
+prefer an id family of your own (`care-ground-0`, `money-ground-1`) over a real body — and put
+`[Collection(StopRegisterCollection.Name)]` on the class. The law will tell you if you forget.
+
+**The other half — the generator caches.** `MoonSurface`'s layout memo and `HavenInterior`'s deck
+memo are process-wide caches. Both were plain dictionaries once and both cost an afternoon (#585, a
+shelter list that did not match the ground; #649, an `InvalidOperationException` out of the oracle
+seat audit); both are `ConcurrentDictionary` now, and neither fix left a guard behind.
+`TheWorldBuildersAreThreadSafeTests` is that guard: it fingerprints every mark the three world
+builders lay, then has every core rebuild them fifty times over and asserts the fingerprints never
+move. A cache keyed on a pure function of its inputs is fine; one whose value depends on call order
+is not.
+
+**And they are BOUNDED (#1112).** The haven memo's key carries the docking watch, which advances for
+ever, so a long voyage left one built station in memory per watch — while its twin had had a cap and a
+flush since #371, because the rule was written into a call site instead of into a type. Both now hold one
+`BoundedMemo<TKey, TValue>` (`src/SpaceSails.Client/Rendering/BoundedMemo.cs`): a `ConcurrentDictionary`
+with a cap of 64 and the moon's eviction rule — on overflow, flush and start fresh — whose insert path is
+taken under a lock, so `Count <= Cap` is an invariant and not a near-miss a guard would flake on. **A
+process-wide memo you add goes through it**, and `TheWorldMemosDoNotGrowForEverTests` will say so: it
+holds both twins to their cap over cap + 1 distinct keys, checks that a hit and a post-eviction rebuild
+are the same deck mark for mark, and fails any static `ConcurrentDictionary` field left bare in the
+client.
+
+**"But the boot path writes them on every page build."** It does — a live `Pages.Map` is the game's one
+writer and installs all five on every world build, so every Client guard that boots a page writes them too.
+Those writes are `Install([])`: a fresh voyage has nothing stopped, fenced, filled or declined, and no test
+boots a page with `?stopped=` / `?buried=` / `?preserved=`, nor loads a vault whose `Halls*` rows are
+non-empty. An empty register replaced by an empty register moves nobody's world. What moves a world is a
+**non-empty** install, and that only ever happens in the dozen suites the law names — which is why
+serialising them costs a dozen classes and not the half of the Client suite that boots a page.
+
+---
+
+## Appendix E — structural work: what a split lane measures before it lands (#251)
+
+#251's second half is a refactor phase, and a refactor phase in this repo is held to the same standard as
+a feature: **prove it, do not assert it.** Everything below was learned by doing it — five files in
+#1163, three in #1160, two test files and a bench in #1165, six stylesheet moves in #1166 — and each rule
+here is written because a lane paid for the absence of it.
+
+The house laws for a structural lane live in
+[coding-helpers.md § House laws for structural work](coding-helpers.md#house-laws-for-structural-work-870).
+This appendix is the *measurement* half: the commands, the gates, and the three ways a "pure move" turns
+out not to be one.
+
+### E1. The pure-split proof — concatenate the bodies and diff (#1160, #1163, #1165)
+
+A split by concern is a **pure move**: every member keeps its name, its visibility and its signature, and
+not a line of behaviour is touched. That claim is checkable, and a split lane is expected to check it
+rather than say it.
+
+The proof is mechanical. Concatenate the class bodies of the new partials **in the order the cut made
+them** and diff the result against the file as it stood on the base commit. A pure move produces exactly
+one kind of difference:
+
+> **blank lines, and nothing else** — the separators that stood *between* the sections, now the gaps
+> between files.
+
+Quote the arithmetic in the PR body, in this shape:
+
+```
+every line of the base class body, 23–1230, is placed in exactly one partial with its text
+unchanged: 1,201 of 1,208 lines placed, 7 dropped, all seven blank, 0 changed.
+```
+
+Landed examples, all the same shape: `Map.Npc.cs` (1,347 of 1,351, 4 dropped, all blank),
+`Map.Sim.Tick.cs` (1,201 of 1,208, 7 blank), `HavenInterior.cs` (1,189 of 1,191, 2 blank),
+`SurfaceLayout.cs` (1,199 of 1,202, 3 blank), `Map.BarWalkers.cs` (1,119 of 1,124, 5 blank), and in the
+test tree `EveryFrameLeavesTheSameFingerprintTests.cs` (three blank lines) and
+`TheClaimIsWalkedEndToEndTests.cs` (four).
+
+**`0 changed` is the number that matters.** A line that moved and was also re-wrapped, re-indented or
+"tidied on the way past" makes the whole diff unreviewable, and the reason to insist on the arithmetic is
+that a reviewer cannot see it any other way once a 1,400-line file has become five.
+
+**And the guards that read a family by name have to learn a glob.** A split moves method bodies between
+files, and a guard that opened one file by name now reads half its subject. The answer is
+`Directory.EnumerateFiles(dir, "Map.Sim.Tick*.cs")` in ordinal order, concatenated — never a written list
+of the parts, because *a written list one file behind the next split narrows a sweep without saying so.*
+That matters most for `DoesNotContain` claims over a whole subject: pointing one at a single partial does
+not turn it red, it just quietly stops asking. When you re-path a guard this way, say in the PR that no
+assertion changed.
+
+### E2. The ledgers are the gate — 0 moved, 0 new, 0 gone — and a split lane never re-pins
+
+The three snapshot ledgers of [Appendix B](#appendix-b--the-pin-ledgers-and-the-one-sanctioned-way-to-re-pin-1055)
+are what a structural lane is actually measured by, because a pure move is precisely the change they must
+not be able to see. Run them **with `SPACESAILS_REPIN` unset**:
+
+```bash
+dotnet test tests/SpaceSails.Client.Tests -c Release \
+  --filter "FullyQualifiedName~EveryFrameHashesTheSame|FullyQualifiedName~EveryFrameLeavesTheSameFingerprint|FullyQualifiedName~EverySeatTheCaptainTakesFingerprintsTheSame"
+```
+
+then prove the files themselves did not move under you:
+
+```bash
+git diff --stat <base> -- tests/SpaceSails.Client.Tests/Ledgers/
+```
+
+The line the PR body has to carry is:
+
+> `EveryFrameHashesTheSameTests`, `EveryFrameLeavesTheSameFingerprintTests` and
+> `EverySeatTheCaptainTakesFingerprintsTheSameTests`: **0 moved, 0 new, 0 gone**, `SPACESAILS_REPIN`
+> unset; the three ledgers under `tests/SpaceSails.Client.Tests/Ledgers/` are byte-identical to `<base>`.
+
+**A split lane never re-pins.** Appendix B's `SPACESAILS_REPIN=1` recipe is for a lane that *legitimately
+moved a number* — and by definition a pure move has not. If a ledger reddens in a split lane, that is the
+finding: something in the cut changed the game, and the fix is the cut, never the pin. #1163's
+`HavenInterior` split is the case in point, and E3 is what it found.
+
+### E3. A partial split of a static class is not free (#1163)
+
+**Static field initializers of a partial class run in the order the compiler reads the FILES**, not the
+order a reader sees. The SDK hands `csc` a glob, so a declaration moved into an alphabetically earlier
+partial is initialised *before* the thing it is measured off.
+
+`HavenInterior.cs` reads as five clean concerns, and splitting it that way **moved 33 pinned frames and
+reddened 14 guards.** Almost every coordinate in that class is written `HallTopY + n`, and `HallTopY` is
+a `static readonly` — it is `Math.Cos` of the twelve-gon's apothem, so it cannot be a `const`. Move the
+bar's tops into `HavenInterior.Bar.cs` and every one of them initialises against `HallTopY == 0`: a
+station built with its furniture stacked on the hall floor. **Nothing warns. The build is clean.**
+
+So, for a static class:
+
+* **Everything that DECLARES a static field stays in the opening file, in its original order.** Only the
+  parts that declare none may be carved off. `HavenInterior.Build.cs` is two methods and not one field,
+  which is exactly why it is the half that could move.
+* **The cut is where the initializers allow, not where the concerns are** — and when those two differ,
+  write the reason into the class docblock so the next person who reaches for the concern-shaped cut reads
+  why it is not one. `HavenInterior`'s does.
+* `SurfaceLayout` is the other outcome, and worth knowing as the contrast: it has exactly one static field
+  and nothing initialises against it, so there the concern-shaped cut and the initializer-safe cut are the
+  same cut.
+
+`EveryFrameHashesTheSameTests` caught this on the first run, which is what that ledger is for and the
+reason a split of this kind is attempted at all.
+
+**Since #1175 a guard says it, so you do not have to remember it.**
+`SpaceSails.Core.Tests.NoPartialClassSpreadsItsStaticFieldsTests` sweeps every `.cs` file under `src/` and
+goes red when **one static field initializer of a multi-file partial class reads a static field of the same
+class that is declared in another file.** That is the hazard exactly, and it is not the same thing as "the
+statics are spread": 22 files declare a static field of `Map`, and a private colour that reads nothing
+cannot be initialised in the wrong order. What may never cross a file boundary is the **chain**.
+
+The gate's second law is what makes the first one able to fail: a text scanner that stops recognising a
+declaration goes vacuously green, so the **twelve chains this tree has are written down by name** and the
+found set is compared with the written set in both directions. Add a computed static to a partial class and
+the guard makes you write the row — which is where you read why its two ends may not be split apart. Delete
+the field and its row goes with it, the way a stale size-gate row does.
+
+Two things worth knowing before you trust the compiler instead:
+
+* **A reference-typed chain sometimes stops the build; a value-typed one never does.** Moving
+  `CanteenRegulars.Faces` to a sibling partial fails with `CS8604: possible null reference argument` —
+  nullable analysis, and luck. Moving `HavenInterior.HallApothem` (a `float`) builds clean and silent: its
+  default is a perfectly legal `0`, and there is no diagnostic in the language for a value that is merely
+  wrong. Every coordinate, seat count and threshold in this game is a value type.
+* **A `const` is safe** — it is folded into every use at compile time, so no order can be wrong. Reaching
+  for `const` instead of `static readonly` is the real fix whenever the value permits it; `HallApothem` is
+  a `Math.Cos`, which is why it cannot be.
+
+### E4. A `@keyframes` travels with its only user (#1166)
+
+The scoped-CSS rewriter suffixes a `@keyframes` NAME with the component's scope and rewrites the
+`animation:` shorthands that name it — **but only the ones in the same file.** Move a rule into a
+surface's sheet and leave its keyframes behind and the compiled rule names something that resolves to
+nothing: no build error, no test, the animation simply never runs. It happened to the alarm banner's
+pulse, and it was found by diffing the generated bundle.
+
+#1109 read that trap as "these rules can never leave", and left two carrier sheets empty because of it.
+The move it did not see is the one #1166 made:
+
+> **A `@keyframes` may move wherever ALL of its users can follow.**
+
+`adrift-pulse` and `story-plate-in` each have exactly one user in the whole client, so each left with its
+user and both carriers became real sheets. Stated that way, the rule also explains the three that stayed:
+`pilot-banner-pulse` is named by the banner AND by NavHud's flying step, `save-warming-turn` by
+SaveLoadRack's spinner AND by the page's own boot gear, and `wait-shuttle-fly`'s only user is
+`.wait-shuttle`, which is `Map.razor`'s own markup with nowhere to go.
+
+**And four reasons a CSS block stays in `Map.razor.css`.** The page sheet's own header states them with
+the counts the tooling returns — 28 + 49 + 3 + 11 = 91 blocks in 1,105 lines — and a lane proposing to
+move a block should be able to say which of the four it is not:
+
+1. **The page's own markup** (28) — `Map.razor` and its partials render it; there is no surface to file
+   it under.
+2. **The cross-cutting kit** (49) — a class two or more surfaces render. Filing one of these under a
+   single surface hands a lane editing that surface the power to restyle five others without knowing it.
+3. **Keyframes that cannot travel** (3) — and every rule naming one. See the rule above.
+4. **Anything that would change who wins** (11) — one owner each, and still stuck. The bundle appends the
+   surface sheets AFTER the page's, so a rule that leaves lands *later* than it was; where two rules of
+   equal specificity both match an element, that reverses the cascade. Six of the eleven are card skins
+   held by the #735 family law, which sets the same `max-height` and — being written later in the page
+   sheet — is the cap actually in force.
+
+`TheBundleIsTheSameCascadeTests` is the guard for all of this, and it holds four laws: nothing lost, no
+pair that could win or lose against each other changed places, every `animation:` in the same file as the
+`@keyframes` it names, and the reader's sheet order checked against the real generated bundle in `obj/`.
+Run it on any lane that touches a `.razor.css`.
+
+> **A prose list is not a safe place for a selector.** The first draft of that page header listed the six
+> stuck card skins as selectors and reddened `EveryTextReadsTests`, which finds the #735
+> capped-and-scrolling family by the FIRST place in the file where the busted card's class is followed by
+> a comma — the paragraph got there first. Guards read stylesheets as text; write comment lists in
+> English.
+
+### E5. The tree is LF and UTF-8, and `.gitattributes` says so (#1163)
+
+`git ls-files --eol src` had two files out of 1,506 that git would not call text. The cause was not the
+line endings: both carried a **literal NUL byte inside a string literal** — written as `\0` and collapsed
+into a raw byte by whatever tool wrote the file — and git's heuristic calls any blob with a NUL in its
+first 8k binary.
+
+The cost is that those two files **cannot be code-reviewed.** `grep -rn … src` prints *"Binary file …
+matches"* instead of the line; `git diff` prints *"Bin 28862 -> 28302 bytes"* instead of the change. And
+being called binary, they were exempt from every end-of-line convention too — one of them had drifted to
+CRLF while all 1,504 others were LF. CI is Linux and cannot see that; a Windows checkout can, and #1160
+lost an hour to the far end of it, because `TheTableSceneIsOneRoomTests.MethodBodyAround` matches with a
+verbatim-string regex that **begins with the test file's own line break**. One source file with the other
+kind of break reddens a guard for a reason that is not in the code.
+
+So there is a `.gitattributes` at the repo root now. It pins every hand-written kind to `text eol=lf` and
+names what ships `binary`, so the next file cannot drift the same way.
+
+**Two checks worth running on any lane that adds files:**
+
+```bash
+# Nothing under src/ or tests/ should be -text, and nothing should be CRLF in the index.
+git ls-files --eol src tests | grep -v 'w/lf'
+
+# Should print nothing at all.
+git add --renormalize . && git status --short
+```
+
+`"\0"` and a raw NUL compile to the same one-character string, so writing the escape costs nothing and
+buys back `grep` and `git diff`.
+
+**The other half of "this is text" is WHICH BYTES, and it now has a law of its own.** A file can be
+perfectly LF, perfectly non-binary to git, and still not be UTF-8 — and one was: a comment in
+`TheHudSaysWhereTheAirComesFromTests.cs` carried a lone `0xB7` at byte 1,589, a Latin-1 middle dot that
+had lost its `0xC2` lead, two bytes in front of a correctly-encoded ellipsis. Nothing in the toolchain
+said so. Roslyn assumes UTF-8 and substitutes U+FFFD rather than failing; git's heuristic only looks for
+NULs; and a lone high byte in a comment changes no behaviour anybody would notice. What it costs is
+exactly what a wrong line ending costs: **a source-shape guard reads a text its author never wrote**, and
+the red says the needle is missing rather than that the file is mis-encoded.
+
+`EverySourceFileDecodesAsUtf8Tests` (beside the size gate in `tests/SpaceSails.Core.Tests`) sweeps every
+`.cs`, `.razor`, `.razor.css`, `.md` and `.json` under `src/`, `tests/` and `docs/` — 1,846 files — and
+decodes each with `Utf8.ToUtf16(…, replaceInvalidSequences: false)`, which hands back the **exact byte
+offset** of the first sequence it could not read. A BOM is fine: those three bytes are U+FEFF like any
+other character. It was shown RED by putting the `0xB7` back:
+
+```
+#251 · 1 file(s) under src/, tests/ or docs/ are not valid UTF-8:
+  tests/SpaceSails.Client.Tests/TheHudSaysWhereTheAirComesFromTests.cs — first bad byte 0xB7 at
+  offset 1589, in: "riton", "the-clinker",¶¶        // #677 · â¦and the one roc"
+```
+
+So: write `·`, `…`, `—` and curly quotes as UTF-8, never as the stray high byte a Latin-1 tool leaves
+behind.
+
+### E6. Two helpers the house keeps, and why you use them (#1165)
+
+Both are the same finding — **one law transcribed at its call sites** — which is the shape this repo has
+now paid for five times.
+
+**`TestTree.RepoRoot()`.** "Walk up from `AppContext.BaseDirectory` until the source tree is under foot"
+had **28 distinct implementations** across the test tree, and its dominant form was copied byte for byte
+into 71 files in `SpaceSails.Client.Tests` and 6 in `SpaceSails.Core.Tests`. Seventy-eight copies of one
+sentence: the day the layout moves, seventy-eight files have to agree about it, and nothing in the
+compiler says so if seventy-seven of them do. It is declared **once per assembly** —
+`tests/SpaceSails.Client.Tests/TestTree.cs`, anchored on `src/SpaceSails.Client`, and its Core twin
+anchored on `src/SpaceSails.Core` — because the two assemblies cannot see each other, exactly as
+`SlowGateAttribute` is declared twice. What travels between them is the RULE, not the type.
+
+A new guard that needs a repo-relative path calls `TestTree.RepoRoot()`. It throws if it runs out of
+parents rather than falling back, because a guard that silently got the wrong root would read no files,
+find no offenders and pass for ever — the fifth bug class arriving through a path helper.
+
+There is still a written-down backlog of *different* helpers with the same name: ones anchored on
+`scenarios/`, `SpaceSails.slnx`, `docs/`, `wwwroot/art`. **A helper that looks for a different landmark is
+a different helper however similar its name**, and folding one in would be a behaviour change wearing a
+refactor's clothes. The measured list is in `TestTree`'s own docblock and in #1165's PR body.
+
+**The benches — `CastawayBench`, and the house idiom.** Three classes were each building the castaway's
+world with the same fifteen steps: the same boot over `scenarios/sol.json`, the same walk past the tube,
+the same shuttle at the same seed-42 hull, the same 0.1 s frame through the page's own `OnTick`. Not
+similar steps — identical ones, normalised and hashed member by member.
+
+`CastawayBench.cs` is that world once, beside `DeskBench` and `ShellBench` where the house keeps its
+benches, and a file reaches it with
+
+```csharp
+using static SpaceSails.Client.Tests.CastawayBench;
+```
+
+so **not one call site changed.** That is the point of the idiom: a `using static` lift is reviewable
+because every line that used to read `Boot(…)` still reads `Boot(…)`.
+
+Two rules for putting something on a bench:
+
+* **Only the steps that were IDENTICAL in the files that had them.** Everything a file does its own way
+  stays in that file, where a reader can see it — `ClampAtThePort`, `ArmHerCharges`, `RunUntilSheGoes`
+  and each file's own hunter all stayed put for that reason. A harness that swallowed those differences
+  would be a harness that quietly changed what a guard asks.
+* **It is a bench, not a fake.** Every step goes through a shipping door — `ClampOntoHaven`,
+  `RefreshAshore`, `LaunchShuttleRun`, `OnTick`. The only stand-ins are the off-browser render handles
+  `DeskBench` documents from the other side.
+
+And because a lifted guard is a guard whose world somebody else now builds: **re-prove a sample of them
+RED.** #1165 reverted the production rule under three of the lifted tests one at a time and quoted each
+failure message in the PR body, file and line included — which is also how you show that the split file
+really carries the test.

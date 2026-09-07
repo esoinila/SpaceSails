@@ -127,10 +127,26 @@ public sealed partial class Map
         ShipBoardLog($"☢ OVERLOAD ARMED on {ShipNameNow()} — {Scuttle.OverloadSeconds:0} seconds.");
         _shipAlerts.Raise(AlertKind.Collision, AlertSeverity.Red, "☢ OVERLOAD ARMED — her own charges", SimTime);
         RendererInterop.PlayCue("alarm");
+
+        // #525 · …AND AT A BERTH THE NINETY SECONDS ARE NOT PRIVATE. The charges' PA is the port's PA: the
+        // concourse is told, the slots either side of him are emptied with a reason on the record, and the
+        // room goes out through the leaves that do not open for him. In open space this is a no-op and the
+        // arming above is byte for byte what it always was.
+        TheCollarIsCleared();
+
         RequestVaultSave();
     }
 
-    /// <summary>Back the keys out, while there is still a panel that will take them.</summary>
+    /// <summary>
+    /// Back the keys out, while there is still a panel that will take them.
+    ///
+    /// <para>#525 · <b>AND AT A BERTH THIS DOES NOT UNDO THE PORT.</b> The clock stops, the keys come out,
+    /// the ship is a ship again — and the neighbouring slots stay reassigned, because a declared overload is
+    /// not a thing a harbour un-hears. The office moved two hulls off a collar on the strength of an
+    /// announcement; the announcement was true when it was made, and the captain changing his mind about the
+    /// second half of it is not information anybody down there has. Making the roster snap back would also
+    /// make the whole scene free: arm at a berth, watch the room empty, call it off, and pay nothing.</para>
+    /// </summary>
     private void BackTheKeysOut()
     {
         if (_shipChargesSeconds is not { } left)
@@ -232,13 +248,31 @@ public sealed partial class Map
     /// <summary>
     /// Was the captain aboard her when it happened?
     ///
-    /// <para>Two signals say NO for certain and are the only ones this trusts: the shuttle is away with him in
-    /// it, or he is standing on a surface. Everything else — walking her own deck, or ashore in a haven's bar
-    /// while she sits at the berth — counts as aboard, because guessing generously about survival is how a
-    /// mechanic quietly stops having stakes. (Blowing her AT a station berth is its own scene, and its own
-    /// crime, and it is not this slice: see issue #525.)</para>
+    /// <para>Two signals said NO for certain and were the only ones this trusted: the shuttle is away with
+    /// him in it, or he is standing on a surface. Everything else — walking her own deck, or ashore in a
+    /// haven's bar while she sits at the berth — counted as aboard, because guessing generously about
+    /// survival is how a mechanic quietly stops having stakes.</para>
+    ///
+    /// <para><b>#525 · AND THE THIRD IS THE BERTH SCENE.</b> A captain past the tube, on a station's own
+    /// floor, with three kilometres of ring and a mated gangway between him and her, is not aboard her by any
+    /// reading a person would give the word — and the generosity that would have been is not generosity at
+    /// all here, which is exactly why this signal could be added where the shuttle's and the surface's
+    /// stopped. In the dark, getting clear costs him his ship and buys him a world with nobody in it who
+    /// cares. <b>Here it buys him a concourse belonging to the people he did it to</b>: the wire has it
+    /// before he reaches the far side, the port's operator remembers it at the top of their meter, and
+    /// nobody breaks off. He is not a castaway at a station. He is a fugitive on foot.</para>
+    ///
+    /// <para><see cref="_ashore"/> is the signal and not <see cref="_dockedHavenId"/>, because sitting at his
+    /// own nav board with the gangway mated is still sitting on her.</para>
+    ///
+    /// <para><b>#1151 · AND IT IS NOT THIS SCENE'S QUESTION ANY MORE.</b> The owner's ruling on #525 makes
+    /// "is the master on her" a law the collectors read too, so the three signals moved to
+    /// <see cref="TheMasterIsAboardHer"/> and this asks that. Not a rename: the ending kept its own name for
+    /// the question because the ending is asking it in the past tense, about the frame the charges reached
+    /// zero on. Two copies of the predicate is the mirrored-constant bug class said about a fact rather than
+    /// a number, and the copy that would have drifted is the one nobody was looking at.</para>
     /// </summary>
-    private bool CaptainWasAboardHer() => _surface is null && _shuttleRun is null;
+    private bool CaptainWasAboardHer() => TheMasterIsAboardHer();
 
     /// <summary>
     /// He stayed. Through the SAME brain-backup death the collector, the impact and the regolith all use — the
@@ -315,15 +349,77 @@ public sealed partial class Map
         _telescopeLevel = kit.TelescopeLevel;
         RebuildSensor();
 
-        // The excursion, if he was on one, ends here — there is nothing overhead to go back up to.
+        // The excursion, if he was on one, ends here — there is nothing overhead to go back up to. Folded
+        // the way the shuttle's own lift-off folds it (Map.Surface.cs), including the writ that followed his
+        // heat down: a collector party is a body ON THAT GROUND, and the ground is gone.
         bool wasOnSurface = _surface is not null;
+
+        // #1151 · WHICH GROUND HE DID IT OVER, read here or never — one statement later `_surface` is null
+        // and the ground the pursuers are about to be told to wait for him at is unaskable. It is the port
+        // that SERVES this ground they wait at, not the ground; QuietHands.PortFor answers that.
+        string? theGround = _surface?.Stop.Body.Id;
+
         if (wasOnSurface)
         {
             _surface = null;
             _reevers.Clear();
+            _collectors.Clear();
             _lastNearestReeverRange = null;
         }
         _shuttleRun = null;
+
+        // #525 · WHERE SHE WENT, ASKED BEFORE THE WAKE MOVES HIM. WakeAtNearestHaven clamps onto whatever is
+        // closest and rewrites _dockedHavenId on the way, so the port he did this AT has to be read now or
+        // never.
+        string? crimeScene = HerChargesAreAtABerth ? _dockedHavenId : null;
+
+        // #525 · AND NOBODY IS CHASING WHAT IS NOT THERE — IN THE DARK. The deterrent breaks off whoever was
+        // watching at the moment the keys turned — that is the mechanic, spent once per arming so the line is
+        // not said every frame. It cannot cover a hunter who arrived DURING the ninety seconds, and on the old
+        // code he went on flying his intercept at a hull that had stopped existing. Said with nothing at all:
+        // the arithmetic changed, not the conversation, and the card is already up.
+        //
+        // AT A BERTH IT DOES NOT FIRE, and the suppression is the scene. #1090's break-off rests on one
+        // sentence — there is no prize in a ship that has stopped existing — and at a berth that sentence is
+        // false. The prize was never only the hull: he did this on their concourse, he is standing on it, and
+        // the interest transfers to the man rather than evaporating with the ship.
+        if (crimeScene is null)
+        {
+            for (int h = 0; h < _hunters.Count; h++)
+            {
+                HunterState hunter = _hunters[h];
+                if (!hunter.BrokenOff && !hunter.CaughtPlayer)
+                {
+                    _hunters[h] = hunter with { BrokenOff = true };
+                }
+
+                // #1151 · …AND THE BREAK-OFF IS NOT THE END OF THE PROCESS. The owner's ruling on #525 says
+                // the pursuers cannot proceed without the captain, which is a different sentence from "the
+                // pursuers stop caring". The chase ends here exactly as #1090 built it — the ending is
+                // untouched, the roster empties, no line is said — and the contract goes onto the file,
+                // waiting at the port that serves the ground he did it over.
+                //
+                // ASKED OF EVERY PURSUER WHO IS NOT HOLDING HIM, and not only of the ones this loop has just
+                // let go — which is a bug the narrower condition really had. The DETERRENT breaks them off
+                // ninety seconds earlier (the note comes up half a tone and nobody boards a ship that is
+                // about to stop existing), so by the time the clock reaches zero the roster is usually
+                // already all flags, and the filing would never have happened at all. Whether a contract was
+                // voided by the arming or by the ending, it is the same contract and it is still owed a
+                // captain.
+                //
+                // One writ: TheWritWaitsForHim keeps the first and ignores the rest, through the same
+                // `ThereIsRoomOnTheFile` the sky asks before letting anybody board (#1151 slice 4) — so a
+                // roster of pursuers cannot become a roster of writs at either of the two doors.
+                if (!hunter.CaughtPlayer)
+                {
+                    TheWritWaitsForHim(theGround, null, hunter);
+                }
+            }
+        }
+        else
+        {
+            TheStationFilesIt(crimeScene);
+        }
 
         // Picked up, and berthed on somebody's charity.
         string haven = WakeAtNearestHaven();
@@ -344,20 +440,32 @@ public sealed partial class Map
 
         ApplyNerveShock(ShipScuttle.CastawayNerveCost, "you watched your own ship go");
 
+        // #525 · …and where she went at a berth, the port's own second line goes under the ending the card
+        // already tells. It is the answer to that card's own last clause — "worth the fuel to nobody" — which
+        // is the one thing on it that is not true at a station.
         _shipEpitaph = new ShipEpitaph(
             ShipScuttle.CastawayLine,
             ShipScuttle.CastawaySurvivesLine,
-            ShipScuttle.RescuedAtLine(haven));
+            ShipScuttle.RescuedAtLine(haven),
+            crimeScene is null ? null : BerthScuttle.ThePortHasYourName);
 
         string line = $"☢ She is gone, and you are not. Picked up at {haven}, with the hull nobody else wanted.";
         LogAutopilotEvent(line);
         ShipBoardLog(line);
+
+        // …and it is written down, by this ending rather than by a side effect of the wake. A berth's clamp
+        // does ask for a save, but a haven with no berth to clamp to does not — and an ending that empties
+        // the hold, launders the stamp on it and swaps the hull must never depend on which kind of rock
+        // happened to be nearest. A reload does not resurrect her.
+        RequestVaultSave();
         StateHasChanged();
     }
 
     /// <summary>The card a surviving captain reads once. Three lines: what happened, what is still his, and who
-    /// came for him.</summary>
-    private sealed record ShipEpitaph(string Went, string Survives, string Rescue);
+    /// came for him — and, at a berth and nowhere else, a fourth
+    /// (<see cref="BerthScuttle.ThePortHasYourName"/>). Null in the dark, so the card in open space renders
+    /// exactly the three captions it always rendered.</summary>
+    public sealed record ShipEpitaph(string Went, string Survives, string Rescue, string? Port = null);
 
     private ShipEpitaph? _shipEpitaph;
 

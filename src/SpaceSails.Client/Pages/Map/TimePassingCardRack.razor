@@ -1,0 +1,42 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SpaceSails.Core
+@*
+    #251 · THE THREE CARDS THAT STAND BETWEEN YOU AND A LOT OF TIME PASSING — one file.
+
+    Nineteen consecutive lines of Map.razor: the long-haul jump (years), the coast skip (days), and the
+    arrival brake, which is the one that asks rather than tells. All three are the same moment in different
+    sizes — the game is about to move the clock a long way and wants you looking at it.
+
+    Moved by PURE MOTION: the gates came with the invocations, and every page member the block reads is a
+    [Parameter] with the SAME NAME. `_voidCardTucked` — the tuck-away toggle on the void card — is WRITTEN
+    by two of the three, so it crosses as a PAIR (the value in, the page's own setter out) behind a private
+    property that keeps the field's own name, and it crosses ONCE: the page was handing the same field and
+    the same setter down twice, to the jump card and to the coast card, and this rack is where they meet.
+    Not one character between the fences changed.
+
+    IHandleEvent repeats the page's own override (Map.Sim.cs). The .razor.css beside this file carries no
+    rules; it exists to give the component Map.razor.css's scope (pinned in SpaceSails.Client.csproj), and
+    the three cards keep their own sheets.
+*@
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────── *@
+    @if (_jumpActive)
+    {
+        <JumpCard _jumpDestName="@_jumpDestName" _jumpFlavor="@_jumpFlavor" _jumpTotalYears="@_jumpTotalYears"
+                  _jumpYear="@_jumpYear" _voidCardTuckedValue="@_voidCardTucked" _voidCardTuckedSet="@(v => _voidCardTucked = v)" Dismiss="@Dismiss" />
+    }
+
+    @if (_coastSkipActive)
+    {
+        <CoastSkipCard _coastSkipDays="@_coastSkipDays" _coastSkipLabel="@_coastSkipLabel"
+                       _voidCardTuckedValue="@_voidCardTucked" _voidCardTuckedSet="@(v => _voidCardTucked = v)" Dismiss="@Dismiss" />
+    }
+
+    @if (_worldReady && !_deckMode && _brakeGate.Asking)
+    {
+        <BrakeGateCard _brakeDestName="@_brakeDestName" _brakeGate="@_brakeGate"
+                       ArrivalBrakeAskText="@ArrivalBrakeAskText" BrakeIsAerobrake="@BrakeIsAerobrake"
+                       DeclineArrivalBrake="@DeclineArrivalBrake" Dismiss="@Dismiss"
+                       FireArrivalBrake="@FireArrivalBrake" />
+    }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────── *@

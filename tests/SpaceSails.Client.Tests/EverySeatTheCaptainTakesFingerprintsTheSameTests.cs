@@ -56,10 +56,10 @@ namespace SpaceSails.Client.Tests;
 /// <c>ThereIsOnePlaceASittingIsOpened</c>, which reads the sites themselves.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 25 s over 4 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
@@ -95,8 +95,8 @@ public sealed class EverySeatTheCaptainTakesFingerprintsTheSameTests
                 + "has moved, and the seat verbs will throw instead of running.");
         pending.SetValue(map, true);
 
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Static)!;
-        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Static)!;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Public | BindingFlags.Static)!;
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Public | BindingFlags.Static)!;
         object ex = Activator.CreateInstance(exType, nonPublic: true)!;
         object stop = Activator.CreateInstance(stopType,
             new CelestialBody(body, body, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;

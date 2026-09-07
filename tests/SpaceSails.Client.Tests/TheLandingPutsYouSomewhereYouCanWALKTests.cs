@@ -35,6 +35,7 @@ namespace SpaceSails.Client.Tests;
 /// captain ended up. Net catches the player; audit catches the bug.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 90 s over 4 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheLandingPutsYouSomewhereYouCanWALKTests
 {
     // Every landable body the scenario ships, plus the two cheat rocks the secret-lab URLs park alongside the

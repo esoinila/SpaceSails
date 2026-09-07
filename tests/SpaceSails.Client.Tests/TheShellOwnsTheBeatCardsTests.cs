@@ -38,6 +38,7 @@ namespace SpaceSails.Client.Tests;
 /// still wear its own name, does the button still say the word it always said, and does pressing it take
 /// the card down.</para>
 /// </summary>
+[SlowGate] // #251 · 80 s over 11 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheShellOwnsTheBeatCardsTests
 {
     /// <summary>The roots of the three families. Named rather than inferred, in the house idiom of #735's own

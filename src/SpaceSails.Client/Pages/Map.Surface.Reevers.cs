@@ -4,548 +4,15 @@ using SpaceSails.Core.Interior;
 
 namespace SpaceSails.Client.Pages;
 
-// Part of Map.Surface (#870 split; the header note lives in Map.Surface.cs) — the Old Ones: sight, the chase, the tide, the sentries and the exchange.
+// Part of Map.Surface (#870 split; the header note lives in Map.Surface.cs) — THE PACK ITSELF: where the
+// Old Ones come from and how they move. `StepReevers` is the shamble — the whole per-frame chase, pack
+// shove, leash and wall-slide — `ApplyIdleShiver` is the thermal twitch of one that is standing still,
+// `StepTide` and `SpawnTideReever` are the deep filling the field one contact at a time, and `ReeverSeed`
+// and `WatchdogLevelAt` are the two facts a ground remembers about its own watchdogs (read from
+// Map.Surface.cs and Map.Surface.Dig.cs as well as here). What the pack SEES is next door in
+// Map.Surface.Reevers.Sight.cs; what it does when it reaches you is in Map.Surface.Reevers.Exchange.cs.
 public partial class Map
 {
-    // #465 · A SHUT DOOR IS OPAQUE. Owner, 2026-07-27: "the gun would be behind one door and not shooting
-    // through it." Doors are not collision segments — the passage is always walkable, by law — so they never
-    // entered the sight test, and the tube's built-in gun happily shot straight through a closed airlock.
-    //
-    // Opacity and solidity are NOT the same property (this is exactly the distinction #442 is about): a shut
-    // door stops the eye and the round while never stopping the captain's boots. So sight queries get the
-    // walls PLUS whatever doors are shut this instant, and collision keeps getting the walls alone.
-    private readonly List<SurfaceCollision.Segment> _sightBlockers = [];
-
-    // #858 · AND THE EYE IS HANDED THE INDEX, like everything that walks already is.
-    //
-    // Lab 45 measured what this list cost: the sightline sweep is strictly O(walls) at ~18–25 ns a segment,
-    // it is 63% of a guard's whole per-frame bill on the 465-segment floor, and the SAME query against the
-    // SAME walls filed into the SAME grid DeckPlan already carries (_deckPlan.CollisionField, #448) is 29×
-    // faster at 436 segments and FLAT — 1.6× for 8× the stone. The legs were handed the index and the eye
-    // was handed a plain list, one line apart, and nobody had noticed because the eye is small until it is
-    // not. It also refilled that list EVERY frame, at O(walls), whether or not anybody was looking at
-    // anything (0.0011 ms on B1) — and some callers ask for it inside a loop, once per candidate pair.
-    //
-    // So the list is filed into a WallIndex and KEPT. One source of truth: the index is built FROM
-    // _sightBlockers, the very list this method used to return, so what the eye sweeps and what a hand-swept
-    // list would sweep are the same segments by construction rather than by two authorities agreeing.
-    //
-    // WHEN IT IS REBUILT is the whole of the caching, and it is derived rather than timed: the stone changes
-    // only when the plan does (a fresh deck, or #371's AppendRegion — both of which hand CollisionSegments a
-    // NEW array, so reference identity is the honest generation token), and the door set changes only when a
-    // door's shut-state actually flips. Those flips are still ASKED every frame — IsDoorShut is a handful of
-    // doors and the renderer's own answer must never lag the sim's by a frame — but they are cheap, and a
-    // frame that answers "the same doors are shut as last frame" does no work at all.
-    private SurfaceCollision.WallIndex? _sightIndex;
-    private SurfaceCollision.Segment[]? _sightStone;   // the stone _sightIndex was filed from, by identity
-    private bool[] _sightDoorShut = [];                // …and which doors were shut when it was
-
-    private IReadOnlyList<SurfaceCollision.Segment> SightBlockers()
-    {
-        DeckPlan.Door[] doors = _deckPlan.Doors;
-        bool asFiled = _sightIndex is not null && ReferenceEquals(_sightStone, _deckPlan.CollisionSegments);
-        if (_sightDoorShut.Length != doors.Length)
-        {
-            _sightDoorShut = new bool[doors.Length];
-            asFiled = false;
-        }
-        for (int i = 0; i < doors.Length; i++)
-        {
-            bool shut = IsDoorShut(doors[i]);
-            if (_sightDoorShut[i] != shut)
-            {
-                _sightDoorShut[i] = shut;
-                asFiled = false;
-            }
-        }
-        if (asFiled)
-        {
-            return _sightIndex!;
-        }
-
-        _sightBlockers.Clear();
-        foreach (SurfaceCollision.Segment seg in _deckPlan.CollisionSegments)
-        {
-            _sightBlockers.Add(seg);
-        }
-        for (int i = 0; i < doors.Length; i++)
-        {
-            if (!_sightDoorShut[i])
-            {
-                continue; // standing open — you can see (and shoot) straight down the tube
-            }
-            DeckPlan.Door d = doors[i];
-            _sightBlockers.Add(new SurfaceCollision.Segment(d.X1, d.Y1, d.X2, d.Y2));
-        }
-        _sightStone = _deckPlan.CollisionSegments;
-        _sightIndex = SurfaceCollision.WallIndex.Build(_sightBlockers);
-        return _sightIndex;
-    }
-
-    // The same rule DeckView draws with (Core Airlock), so what blocks a shot is exactly what the player
-    // sees closed — one door open at a time, the far end of an interlocked tube always shut.
-    private bool IsDoorShut(DeckPlan.Door d)
-    {
-        if (d.Locked)
-        {
-            return true;
-        }
-        double mx = (d.X1 + d.X2) / 2.0, my = (d.Y1 + d.Y2) / 2.0;
-        double toDoor = Math.Sqrt(((_avatarX - mx) * (_avatarX - mx)) + ((_avatarY - my) * (_avatarY - my)));
-
-        // ONE RULE, AND IT IS THE ONE THE PLAYER CAN SEE. I briefly opened doors here for Reevers too, on
-        // the owner's "unlocked doors should open for reevers" — and it broke the invariant this method
-        // exists to hold, stated in the comment above it: the RENDERER decides a door is open from the
-        // CAPTAIN's distance and nothing else. Adding a second opener here made the sim treat a door as
-        // open while the deck drew it shut, so a gun fired through a door the player could see was closed
-        // (owner, twice: "a reever was shot through a closed door").
-        //
-        // What blocks a shot must be exactly what the player sees closed. If Reevers are ever to work
-        // doors, the RENDERER has to learn it at the same moment — one source of truth or none.
-        double nearestPartner = double.PositiveInfinity;
-        if (d.Interlock != 0)
-        {
-            foreach (DeckPlan.Door other in _deckPlan.Doors)
-            {
-                if (other.Interlock != d.Interlock || other.Locked || other.Equals(d))
-                {
-                    continue;
-                }
-                double ox = (other.X1 + other.X2) / 2.0, oy = (other.Y1 + other.Y2) / 2.0;
-                nearestPartner = Math.Min(nearestPartner,
-                    Math.Sqrt(((_avatarX - ox) * (_avatarX - ox)) + ((_avatarY - oy) * (_avatarY - oy))));
-            }
-        }
-        return !Airlock.MayOpen(toDoor, nearestPartner, DeckPlan.DoorOpenRadius);
-    }
-
-    // #446: the movers CLOSE ENOUGH TO FRIGHTEN — the same count, fenced to the dread range. The tracker
-    // still hears every mover on the field (its fan is untouched, and a far blip is exactly the dread the
-    // fan is for); this is only what the nerve is priced from, so a hunter you have time to walk away from
-    // costs nothing. It also feeds the sighting spell, so a dot on the far rim no longer lands a jolt.
-    private int CountMovingReeversWithin(double range)
-    {
-        double r2 = range * range;
-        int n = 0;
-        foreach (Reever r in _reevers)
-        {
-            double dx = r.X - _avatarX, dy = r.Y - _avatarY;
-            if (MotionTracker.IsMoving(r.Vx, r.Vy) && (dx * dx) + (dy * dy) <= r2)
-            {
-                n++;
-            }
-        }
-        return n;
-    }
-
-    // #446: how far off the nearest Old One is, in deck units — infinity on an empty ground. Core prices the
-    // whole sustained dread through this one number (NerveModel.Dread).
-    private double NearestReeverRange()
-    {
-        double best = double.PositiveInfinity;
-        foreach (Reever r in _reevers)
-        {
-            double dx = r.X - _avatarX, dy = r.Y - _avatarY;
-            double d2 = (dx * dx) + (dy * dy);
-            if (d2 < best)
-            {
-                best = d2;
-            }
-        }
-        return double.IsPositiveInfinity(best) ? best : Math.Sqrt(best);
-    }
-
-    // A net between the captain and the tube: an Old One wedged up-field (nearer the tube mouth than the
-    // captain) and laterally close enough to block the sprint. Cheap geometry, matching the encirclement
-    // the pack already leans into — the "cornered" the owner named, priced as a stressor.
-    // #475 · CORNERED HAS TO MEAN CORNERED. Core prices this as "a net wedged between the captain and the
-    // tube mouth" and charges the sharpest routine drain in the game for it — 5.0/s, more than a full-contact
-    // chase — deliberately NOT discounted by range, because being cut off is not a distance term
-    // (NerveModelTests.BeingCornered_IsCloseByDefinition_AndIsNeverDiscountedByRange pins that on purpose).
-    //
-    // The law was right; this predicate was not keeping its side of the bargain. It asked only for a contact
-    // somewhere ABOVE the captain in a lateral lane, with no bound on how far above — so a single Old One
-    // drifting forty deck units up, nowhere near anything, read as a net and billed the full 5.0/s. Three
-    // captains in a row died on that: full gauge, never touched, killed by a dot on the far rim.
-    //
-    // A hunter you can comfortably walk around is not wedged between you and anywhere. So it only counts once
-    // it is near enough to contest the escape — the same range at which Core says an Old One stops being
-    // scenery, which keeps the two halves of the owner's ruling ("not unless they get REALLY close") agreeing.
-    private bool IsCornered()
-    {
-        foreach (Reever r in _reevers)
-        {
-            if (r.Y > _avatarY + 1.0 && r.Y <= MoonSurface.SurfaceTopY + 0.5 &&
-                Math.Abs(r.X - _avatarX) < CornerLateralRange)
-            {
-                double dx = r.X - _avatarX, dy = r.Y - _avatarY;
-                if ((dx * dx) + (dy * dy) <= NerveModel.DreadRangeDeckUnits * NerveModel.DreadRangeDeckUnits)
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    // #586 · IN SIGHT OF THE MONOLITH — and only where the monolith actually IS.
-    //
-    // This used to be pure distance to MoonSurface.AnchorX/Y, which is the DEEP ANCHOR of every ground
-    // there is: every seeded site puts its own fixture there (Luna's mass-driver muzzle, a plinth
-    // elsewhere), so walking up to any of them fired the once-in-a-life Lovecraftian hit — 24 nerve, the
-    // line "👁 The monolith resolves out of the dark", and the FirstMonolith selfie against the monolith
-    // plate — over a broken launch machine. And _monolithSeen is kept FOR LIFE, so the captain who did
-    // that could never be shown the real slab's beat again. Constant governing the wrong thing, and the
-    // sentence disagreeing with the sim, in one line.
-    //
-    // Monolith.StandsOn is the same predicate the renderer builds the slab's card from, so the beat cannot
-    // drift from the object again.
-    /// <summary>#649 · THE DWELL, AND THE ONE STRANGE THING.
-    ///
-    /// <para>Three gates, all of them Core's (<see cref="MonolithWatch"/>): the PLACE (the monolith's own
-    /// ground, and inside its sight), the WINDOW (about one visit-window in three is attentive, on the same
-    /// slow clock the foot-offerings use, so it holds still for a whole excursion), and the DWELL — you have
-    /// to STAY. Nothing is watching to see you arrive. It is watching to see whether you stand there.</para>
-    ///
-    /// <para>Walking out of sight resets the clock, which is the difference between standing at a thing and
-    /// passing it. Once per excursion at most, and the beat costs the captain nothing —
-    /// <see cref="MonolithWatch.NerveCost"/> carries the reasoning and is the one number to change.</para>
-    ///
-    /// <para>Deliberately NOT a story card or a plate. The picture idiom (#528) is the right instrument for
-    /// almost everything and the wrong one here: a frame around a thing says THIS IS A THING, and the whole
-    /// ruling is that anything happening near this stone stays deniable.</para></summary>
-    private void StepMonolithWatch(double dtRealSeconds)
-    {
-        if (_surface is not { } ex || !MonolithWatch.CanHappenOn(ex.Stop.Body.Id, ex.Site.LayoutSalt))
-        {
-            return;
-        }
-
-        if (!SeesMonolith())
-        {
-            ex.MonolithDwellSeconds = 0;   // you walked away; standing at a thing is not passing it
-            return;
-        }
-
-        ex.MonolithDwellSeconds += dtRealSeconds;
-
-        // ?watchers=1 — the beat is rare BY DESIGN (one window in three, then forty seconds of standing
-        // still), which makes it the exact shape of scene Map.Sim's own rule is about: "a scene nobody can
-        // reach on demand is a scene that ships broken." The cheat opens the window and shortens the dwell;
-        // it does not change what happens, so what a tester sees is what a captain sees.
-        double dwell = _watchersCheat ? MonolithWatch.DwellSeconds * 0.05 : MonolithWatch.DwellSeconds;
-        if (ex.MonolithWatchSpent || ex.MonolithDwellSeconds < dwell)
-        {
-            return;
-        }
-
-        long epoch = Monolith.EpochAt(SimTime);
-        if (!_watchersCheat && !MonolithWatch.AttentiveIn(ex.Stop.Body.Id, ex.Site.LayoutSalt, epoch))
-        {
-            ex.MonolithWatchSpent = true;   // this window is not one of them; do not keep asking
-            return;
-        }
-
-        ex.MonolithWatchSpent = true;
-        MonolithWatch.What what = MonolithWatch.Which(
-            ex.Stop.Body.Id, ex.Site.LayoutSalt, epoch, packOnTheField: _reevers.Count > 0);
-        ShowAndFile(MonolithWatch.Line(what), MonolithWatch.Glyph);
-
-        // NerveCost is 0.0 and the call is left in on purpose: the number is a feel call the owner may want
-        // to make, and a call site that has to be re-found is a decision that quietly never gets made.
-        if (MonolithWatch.NerveCost > 0)
-        {
-            ApplyNerveShock(MonolithWatch.NerveCost, "something out here was paying attention");
-        }
-    }
-
-    /// <summary>How far the captain is from the deep anchor, squared. One expression, because the sight beat
-    /// and the arrival beat must measure from the same point or they can disagree about where the thing
-    /// is.</summary>
-    private double DistanceToAnchorSquared()
-    {
-        double dx = _avatarX - MoonSurface.AnchorX;
-        double dy = _avatarY - MoonSurface.AnchorY;
-        return (dx * dx) + (dy * dy);
-    }
-
-    private bool SeesMonolith()
-    {
-        if (_surface is not { } ex || !Monolith.StandsOn(ex.Stop.Body.Id, ex.Site.LayoutSalt))
-        {
-            return false;
-        }
-        return DistanceToAnchorSquared() <= Monolith.SightRangeDu * Monolith.SightRangeDu;
-    }
-
-    // #314: the sentry line. Every SentryBot.FireIntervalSeconds, deployed non-dry bots each put one
-    // round into the nearest Old One in their arc — the counter ticks down, the Reever soaks a hit, and
-    // at RoundsPerReever hits it drops to a husk left where it fell. Pure resolution in Core; this owns
-    // the cadence, the zap-line flash, and the husk ledger. Dry bots freeze silent.
-    private void StepSentries(double dtRealSeconds)
-    {
-        if (_surface is not { } ex || ex.Bots.Count == 0)
-        {
-            return;
-        }
-        ex.FireTimer += dtRealSeconds;
-        if (ex.FireTimer < SentryBot.FireIntervalSeconds)
-        {
-            return;
-        }
-        ex.FireTimer = 0;
-
-        var live = ex.Bots.Where(b => b.Deployed && b.Rounds > 0).ToList();
-        if (live.Count == 0 || _reevers.Count == 0)
-        {
-            return;
-        }
-
-        var deployed = live.Select(b => new SentryBot.Deployed(b.Unit, b.X, b.Y, b.Rounds)).ToList();
-        var targets = _reevers.Select(r => new SentryBot.Target(r.X, r.Y, r.HitsTaken)).ToList();
-        // #437: the guns obey the maze too — a slab between a bot and an Old One breaks the shot, on the
-        // SAME segments the captain collides with and the Reevers sight along (owner, live 2026-07-26:
-        // "Now the cannons shot though the walls").
-        // #538 · WEAPONS TIGHT. While the order stands, nothing of the captain's fires — not a deployed
-        // bot, not the tube gun that never runs dry. Skipping the volley entirely is the honest
-        // implementation: no rounds leave, no magazines drain, and no noise is made, which is the point.
-        if (!SentryBot.MayOpenFire(_weaponsTight))
-        {
-            return;
-        }
-
-        // #603 · And what does leave is what is IN them: a bot loaded with the lab round drops a queue in
-        // one shot and one loaded with issue ball grinds them down.
-        var loaded = live.Select(b => Core.Ammunition.ById(b.AmmoId)).ToList();
-        SentryBot.Volley volley = SentryBot.Step(deployed, targets, SightBlockers(), loaded);
-
-        // Fold the drained magazines back and flash a zap line from each bot that fired.
-        double nowMs = _lastTimestampMs ?? 0;
-        for (int i = 0; i < live.Count; i++)
-        {
-            SurfaceBot bot = live[i];
-            bool fired = volley.Bots[i].Rounds < bot.Rounds;
-            // #461: the tube's built-in gun never runs dry — it is the shuttle's fixture, not your magazine.
-            // Everything else about it is an ordinary sentry (it obeys the walls, it can only shoot what it
-            // can see), it simply never stops being able to hold the threshold.
-            bot.Rounds = SurfaceArrival.IsDoorSentry(bot.Unit)
-                ? SurfaceArrival.DoorSentryRounds
-                : volley.Bots[i].Rounds;
-            if (fired)
-            {
-                // #456: your own guns are the loudest thing on the moon. A volley calls the deep to the BOT
-                // — so bringing sentries still buys time (#314), but now it is paid for by being found.
-                MakeNoise(bot.X, bot.Y, ReeverHearing.Noise.Gunfire);
-
-                // #488 · AND ABOARD, IT WAKES THEM. Owner: "when the guns start singing the reevers nearby
-                // start to wake up." A hull that has been silent for forty years, and the first thing that
-                // happens is automatic fire in a steel corridor — nothing sleeps through that.
-                //
-                // It goes through the wreck's own noise rule, so it obeys the same hard cap as everything
-                // else the captain does: the NEAREST two, and no more. A firefight will steadily wake the
-                // ship because it keeps happening, which is the right consequence and still never a summons.
-                MakeNoiseAboard(bot.X, bot.Y, LoudEarshot);
-            }
-            if (fired && NearestReeverInArc(bot) is { } aim)
-            {
-                bot.AimX = aim.X;
-                bot.AimY = aim.Y;
-                bot.FiringUntilMs = nowMs + 120;
-            }
-        }
-
-        // Re-map surviving Reevers' hit counts (position-match; the list order is preserved by Step's
-        // survivor pass, which drops downed ones in index order). Rebuild from the survivor list.
-        ApplyReeverSurvivors(volley.Reevers);
-
-        if (volley.Husks.Count > 0)
-        {
-            foreach (SentryBot.Husk h in volley.Husks)
-            {
-                ex.Husks.Add((h.X, h.Y));
-            }
-            RendererInterop.PlayCue("alarm");
-            ShowPulseMessage($"🔫 Zap — {volley.Husks.Count} Old One{(volley.Husks.Count == 1 ? "" : "s")} down, {(volley.Husks.Count == 1 ? "a husk" : "husks")} left in the regolith. The sentries hold — watch the counters.");
-        }
-        // No per-shot cue: the guns fire five times a second — the zap-line flash and the ticking
-        // counter carry the feedback; only a downed Old One earns a sound.
-    }
-
-    // Rebuild _reevers from the SentryBot survivor snapshot: downed ones are gone, survivors carry their
-    // new hit counts. Matches by index over the live list Step was fed (same order, downed dropped).
-    private void ApplyReeverSurvivors(IReadOnlyList<SentryBot.Target> survivors)
-    {
-        // Survivors preserve the fed order with downed entries removed, so walk both lists in step.
-        int s = 0;
-        var kept = new List<Reever>(survivors.Count);
-        foreach (Reever r in _reevers)
-        {
-            if (s < survivors.Count && Math.Abs(survivors[s].X - r.X) < 1e-6 && Math.Abs(survivors[s].Y - r.Y) < 1e-6)
-            {
-                r.HitsTaken = survivors[s].HitsTaken;
-                kept.Add(r);
-                s++;
-            }
-            // else: this Reever was downed this volley — drop it.
-        }
-        if (kept.Count != _reevers.Count)
-        {
-            _reevers.Clear();
-            _reevers.AddRange(kept);
-        }
-    }
-
-    // Where a bot that just fired should be DRAWN aiming. Owner, live 2026-07-27: "See it fire through wall
-    // now." #437/#438 taught the SHOT and the PIN to respect stone — but this, the third caller, still picked
-    // by bare distance, so the gun legitimately shot the nearest thing it could SEE while the zap line was
-    // drawn at the nearest thing FULL STOP. A beam painted across a monolith at a target the bot never
-    // engaged: the fire was honest, the picture was not. Same CanEngage gate as the volley, so the beam can
-    // only ever be drawn at the target the volley could actually have spent its round on.
-    private (double X, double Y)? NearestReeverInArc(SurfaceBot bot)
-    {
-        // #603 · WHAT IS LOADED DECIDES WHAT IT WILL SHOOT AT. Owner: "some lab found exploding rounds
-        // might be too dangerous to use to close by targets."
-        //
-        // A two-stage round arms after travel, so at arm's length the second charge goes off level with the
-        // gun and whoever is standing beside it. The sentry simply will not take that shot — the interlock
-        // idiom this ground already speaks (#462's airlock, #523's automatic, the vent readiness refusal).
-        //
-        // The consequence is the frightening part and it is entirely the captain's own doing: a gun loaded
-        // with the wrong thing is SILENT with the pack on top of it, because of a choice made three rooms
-        // ago. The override the owner asked for ("the gun complains but also gives override option to just
-        // fire") belongs at the HUD, on a captain's word — not here, where it would fire itself.
-        double minimum = Core.Ammunition.ById(bot.AmmoId).MinimumRangeDu;
-        double minimumSq = minimum * minimum;
-
-        double bestSq = SentryBot.RangeDeckUnits * SentryBot.RangeDeckUnits;
-        (double, double)? best = null;
-        foreach (Reever r in _reevers)
-        {
-            double dx = r.X - bot.X, dy = r.Y - bot.Y;
-            double d2 = (dx * dx) + (dy * dy);
-            if (d2 < minimumSq)
-            {
-                continue;   // inside the arming distance: it would take the gun with it
-            }
-            if (d2 <= bestSq && SentryBot.CanEngage(bot.X, bot.Y, r.X, r.Y, _deckPlan.CollisionField))
-            {
-                bestSq = d2;
-                best = (r.X, r.Y);
-            }
-        }
-        return best;
-    }
-
-    // #314: deploy a carried sentry at the captain's feet, or retrieve a deployed one they're standing on.
-    // The [E]-style act on the bare ground — no console, so it's the T key (Map.Deck). Retrieval wins when
-    // you're on top of a bot (dry or not); else you set one down.
-    private void DeployOrRetrieveSentry()
-    {
-        if (_surface is not { } ex)
-        {
-            return;
-        }
-        // Retrieve: a deployed bot within reach → back into the sling (keeps its remaining rounds).
-        SurfaceBot? onFoot = null;
-        double bestSq = DeckPlan.InteractRadius * DeckPlan.InteractRadius;
-        foreach (SurfaceBot b in ex.Bots)
-        {
-            if (!b.Deployed)
-            {
-                continue;
-            }
-            double dx = b.X - _avatarX, dy = b.Y - _avatarY;
-            double d2 = (dx * dx) + (dy * dy);
-            if (d2 <= bestSq)
-            {
-                bestSq = d2;
-                onFoot = b;
-            }
-        }
-        if (onFoot is not null)
-        {
-            onFoot.Deployed = false;
-            RendererInterop.PlayCue("board");
-            ShowPulseMessage($"🤖 {onFoot.Unit} shouldered — counter at {SentryBot.Readout(onFoot.Rounds)}. Back in the sling.");
-            return;
-        }
-
-        // Deploy: the first carried bot goes down where you stand, facing the field.
-        SurfaceBot? carried = ex.Bots.FirstOrDefault(b => !b.Deployed);
-        if (carried is null)
-        {
-            ShowPulseMessage(ex.Bots.Count == 0
-                ? "No sentry bots loaded — bring them down at boarding next time."
-                : "Every bot's already deployed. Walk onto one and press T to pick it up.");
-            return;
-        }
-        carried.Deployed = true;
-        carried.X = _avatarX;
-        carried.Y = _avatarY;
-        RendererInterop.PlayCue("board");
-        // #380 item 7 (owner ruling 2026-07-19: "new players are left mystified") — the FIRST deploy of an
-        // excursion spells the whole doctrine out once, before the bots bite: they run dry, and a bot left
-        // behind at liftoff is a write-off. Later deploys keep the short line.
-        if (!ex.SentryHintShown)
-        {
-            ex.SentryHintShown = true;
-            ShowPulseMessage($"🤖 {carried.Unit} deployed — magazine {SentryBot.Readout(carried.Rounds)}. The bot holds the line while its magazine lasts — a siege always outlasts the ammo. Bots buy time, not safety; don't forget them at liftoff.");
-            return;
-        }
-        ShowPulseMessage($"🤖 {carried.Unit} deployed — magazine {SentryBot.Readout(carried.Rounds)}. It'll hold this arc until the counter reads 00. Bots buy time, not safety.");
-    }
-
-    /// <summary>
-    /// FILL A CARRIED SENTRY AT THE LOCK. Owner: <i>"Carrying the autogun to our shuttle air-lock should reload
-    /// it ( might ve needed for big ship) 😎"</i>
-    ///
-    /// <para>The boat carries the belts; the bot carries only what you last gave it. So a drained sentry is a
-    /// WALK rather than a write-off — a stroll on a small hull, and a real decision on the 4× hauler of #531
-    /// with a pack somewhere behind you. Free of any other currency on purpose: the cost is time and exposure,
-    /// the same shape as the pump's.</para>
-    ///
-    /// <para>Returns true when it actually did something, so the lock can say that instead of opening the
-    /// destination list — pressing E again gets you the list, and nothing is taken away.</para>
-    /// </summary>
-    private bool TryFillCarriedSentryAtTheLock()
-    {
-        if (_surface is not { } ex)
-        {
-            return false;
-        }
-
-        SurfaceBot? carried = ex.Bots.FirstOrDefault(b => !b.Deployed);
-        if (carried is null)
-        {
-            return false;   // nothing in the sling; the lock has its usual job to do
-        }
-
-        if (!SentryBot.NeedsFilling(carried.Rounds))
-        {
-            ShowPulseMessage(SentryBot.AlreadyFullLine(carried.Unit));
-            return false;   // it said its piece, but the lock should still open
-        }
-
-        // #540 · A COLD BOAT ARMS NOBODY. Owner, on what makes the wait bite: "As the ammo count runs down and
-        // reload place is warming up to allow use and its gun." The belts live aboard her, behind a hatch that is
-        // dogged while she sleeps — so going dark takes away the resupply and the covering gun as well as the ride.
-        if (!SilentRunning.HatchOpen(BoatState))
-        {
-            ShowPulseMessage(SilentRunning.ReloadNeedsHerAwakeLine(BoatSecondsLeft));
-            RendererInterop.PlayCue("block");
-            return true;    // handled: an empty sling and a shut boat is not a reason to offer a ride out
-        }
-
-        int was = carried.Rounds;
-        carried.Rounds = SentryBot.MaxMagazine;
-        ShowPulseMessage(SentryBot.FilledLine(carried.Unit, was));
-        LogAutopilotEvent($"🤖 {carried.Unit} refilled at the lock ({SentryBot.Readout(was)} → " +
-                          $"{SentryBot.Readout(SentryBot.MaxMagazine)}).");
-        RendererInterop.PlayCue("board");
-        RequestVaultSave();
-        return true;
-    }
-
     private void StepReevers(double dtRealSeconds)
     {
         if (_surface is null || _reevers.Count == 0)
@@ -563,14 +30,37 @@ public partial class Map
         // wedged on a wall, or already on target. Tied to the tracker's own motion floor: sub-floor motion
         // this frame is "still" by the same law the fan reads, so we hold it and let it shiver in place.
         double idleProgress = MotionTracker.StillSpeed * dt;
+        // #563 · THE LEAFS THEY ARE HAULING, STEPPED FIRST. Owner ruling, 2026-09-06 — the Old Ones use
+        // doors. A leaf that comes over on this frame has to be over for this frame's legs, sight and
+        // rounds, never a frame behind the picture, so the hauling is banked before any list is taken.
+        StepLeafWork(dt);
         // #324: the maze is law for the many too — the Reevers bump-and-slide on the SAME wall segments
         // the captain does, and can only see the captain when no wall stands between.
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
         const double reeverRadius = DeckPlan.AvatarRadius;
-        // Sight for DRAWING is not the same list as sight for WALKING: a shut door stops the eye and not
-        // the shamble, so the visibility test below uses the blockers (walls + shut doors) rather than the
-        // collision field.
-        IReadOnlyList<SurfaceCollision.Segment>? sight = OnWreck ? SightBlockers() : null;
+        // #563 · …AND THE OLD ONES' OWN LIST: stone PLUS whatever is shut this instant (TheirLegs, which is
+        // SightBlockers itself). `walls` above is the CAPTAIN's list and stays exactly what it was — a leaf
+        // never stops his boot, because it opens for him. It stops theirs, because it does not.
+        IReadOnlyList<SurfaceCollision.Segment> theirLegs = TheirLegs();
+        // #563 · …AND THE EYE READS THAT SAME LIST, ON EVERY GROUND. Owner ruling, 2026-09-06: the Reevers
+        // do not see through a closed door on the moon either.
+        //
+        // There used to be a second local here — `sight` — which was `theirLegs` aboard a wreck and NULL
+        // anywhere else, so every reader below fell back on `walls`, the captain's bare stone. #1154 built
+        // that fallback deliberately conservative (it fixed the sleeper's lamp aboard and left every regolith
+        // byte-identical), and #1157 then handed their LEGS the shut leaf on every ground. The two together
+        // left a hut door stopping an Old One's boot and not its eye: you could shut a leaf in its face,
+        // watch it stand there, and still be hunted through the picture of a closed door.
+        //
+        // That is the last hiding place of the one asymmetry this whole row of fixes is about — #465 the
+        // round, #466 the swing, #1099 the beam, #1154 the sleeper's lamp, #1157 the legs — and the ruling
+        // ends it. So there is NO second list any more, on any ground: everything below asks `theirLegs`,
+        // which IS SightBlockers() — one object, one indexed grid, one memoization, not a copied predicate
+        // and not a second list kept in step by hand. Aboard a wreck this is byte-for-byte what `sight` was;
+        // on a moon it is the ruling, and on a site with nothing shut it is the old stone exactly.
+        //
+        // `walls` above stays the CAPTAIN's own list and does not move — a leaf never stops HIS boot,
+        // because it opens for him.
         foreach (Reever r in _reevers)
         {
             // #488 · THE ONES THAT HAVE NOT WOKEN YET. They do not move, so they cost nothing here and the
@@ -579,9 +69,20 @@ public partial class Map
             // is drawn exactly as it is — folded down, not moving, and about to stop being either.
             if (r.Dormant)
             {
+                // #442 · A SLEEPER IS BEHIND THE DOOR TOO. Owner ruling 2026-09-06: <i>"the Reevers should
+                // not see through a closed door."</i> This read `walls` — the LEGS' list — while every awake
+                // contact eighteen lines down reads the eye's list of stone PLUS whatever is shut.
+                // Opacity is not solidity, which is the whole of #442, and a shut hatch is opaque: a sleeper
+                // folded down behind a dogged leaf was drawn straight through it. Worse, the lamp that DRAWS
+                // it is the same lamp that WAKES it (three lines down), so a captain who had shut a hatch
+                // roused what was on the far side of it without ever laying eyes on the thing.
+                //
+                // #563 · AND THE SAME ON A MOON. This said `sight ?? walls`, and off a wreck that fallback
+                // WAS the bare stone — so a sleeper folded down in a hut was roused through a shut hut door
+                // exactly as one aboard used to be. One list now, on every ground.
                 double lampDx = r.X - _avatarX, lampDy = r.Y - _avatarY;
                 bool inLamp = (lampDx * lampDx) + (lampDy * lampDy) <= DormantSightRange * DormantSightRange
-                              && SurfaceCollision.HasLineOfSight(_avatarX, _avatarY, r.X, r.Y, walls);
+                              && SurfaceCollision.HasLineOfSight(_avatarX, _avatarY, r.X, r.Y, theirLegs);
                 r.VisibleOnMap = inLamp;
                 r.Vx = 0;
                 r.Vy = 0;
@@ -601,7 +102,7 @@ public partial class Map
             if (OnWreck)
             {
                 bool wasSeen = r.VisibleOnMap;
-                r.VisibleOnMap = SurfaceCollision.HasLineOfSight(_avatarX, _avatarY, r.X, r.Y, sight);
+                r.VisibleOnMap = SurfaceCollision.HasLineOfSight(_avatarX, _avatarY, r.X, r.Y, theirLegs);
 
                 // THE AMBUSH JOLT. Owner: "the surprise was there … but it had zero effect on my sanity?"
                 // The #379 sighting spell charges only the first fright of a spell, which is right for a
@@ -637,7 +138,7 @@ public partial class Map
                 }
                 r.Vx = 0;
                 r.Vy = 0;
-                ApplyIdleShiver(r, walls, reeverRadius, now,
+                ApplyIdleShiver(r, theirLegs, reeverRadius, now,
                     Math.Atan2(_avatarY - r.AnchorY, _avatarX - r.AnchorX));
                 if (onSurface && ReeverChase.Caught(r.X, r.Y, _avatarX, _avatarY))
                 {
@@ -655,15 +156,22 @@ public partial class Map
             // body walking out that is news, and even that gets a beat: nothing may notice the captain, by
             // eye OR by ear, until the grace has run. It is what makes stepping out of the door possible.
             // #488: aboard, a SHUT DOOR breaks their look as well as a wall — otherwise a hull full of
-            // dogged hatches is no cover at all, and closing one behind you buys nothing. `sight` is walls
-            // plus shut doors; off a wreck it is null and this is the old walls-only test exactly.
-            if (SurfaceArrival.CanBeSpotted(((_lastTimestampMs ?? 0) - (_surface?.LandedAtMs ?? 0)) / 1000.0)
-                && SurfaceCollision.HasLineOfSight(r.X, r.Y, _avatarX, _avatarY, sight ?? walls))
-            {
-                r.LastSeenX = _avatarX;
-                r.LastSeenY = _avatarY;
-                r.EverSeen = true;
-            }
+            // dogged hatches is no cover at all, and closing one behind you buys nothing. #563, 2026-09-06:
+            // AND ON A MOON. `theirLegs` is walls plus whatever is shut on every ground now, so the hut door
+            // the owner asked #563 for — "rooms with doors we can hide behind while we reload our guns safe
+            // from reevers" — finally breaks the look it always stopped the boot at.
+            // #436 · AND THE SIGHTLINE IS NOW PERMISSION TO ROLL, NOT KNOWLEDGE. Owner, 2026-07-26: "There
+            // needs to be a reevers observation roll to its line of sight environment… Then the moment reever
+            // discovers becomes special." This used to be the latch flipping in the same frame the geometry
+            // opened; the rule that decides now lives in Core (ReeverObservation) and the beat that says so
+            // lives in Map.Surface.Observation. Everything the two clauses below meant is unchanged and is
+            // still asked here — the grace, and whether stone (or a shut door) stands between the two — and
+            // the answer is handed to the look rather than acted on directly.
+            //
+            // Called with the answer either way, deliberately: a look with no sightline is how the head goes
+            // back DOWN, and an un-stirring is as much of the fear window as a stirring.
+            TakeALook(r, SurfaceArrival.CanBeSpotted(((_lastTimestampMs ?? 0) - (_surface?.LandedAtMs ?? 0)) / 1000.0)
+                && SurfaceCollision.HasLineOfSight(r.X, r.Y, _avatarX, _avatarY, theirLegs));
 
             // Owner, 2026-07-26: "make sure reevers behind walls can be unaware of the player being there
             // if they have not seen the player." An Old One that has NEVER laid eyes on the captain does
@@ -693,7 +201,14 @@ public partial class Map
                 }
                 r.Vx = 0;
                 r.Vy = 0;
-                ApplyIdleShiver(r, walls, reeverRadius, now, r.Facing);
+                // #436 · THE HEAD COMES UP, AND IT IS DRAWN AND NOT SAID. Canon, 2026-09-05: the head coming
+                // up is a POSE CHANGE ON THE EXISTING MARK, no line, no banner — the owner's own note that
+                // "SECURITY ALERTED as a banner is the wrong shape". A stirred one turns to face the captain
+                // (the same expression a sentry-pinned one already uses); an unaware one keeps its own
+                // facing, exactly as before. Nothing else about it changes: it holds its ground, it shivers,
+                // and it has not committed — which is what makes backing behind stone still work.
+                ApplyIdleShiver(r, theirLegs, reeverRadius, now,
+                    r.Stirred ? Math.Atan2(_avatarY - r.AnchorY, _avatarX - r.AnchorX) : r.Facing);
                 if (onSurface && ReeverChase.Caught(r.X, r.Y, _avatarX, _avatarY))
                 {
                     caught = true; // walked right into it in the dark — that counts as being found
@@ -773,7 +288,7 @@ public partial class Map
             // work a slab left, half right, and the two streams meet you around its ends.
             int wallSide = (r.JitterSeed & 1) == 0 ? 1 : -1;
             (double nx, double ny) = ReeverChase.Step(
-                baseX, baseY, aimX, aimY, step * VacuumDrag(r), barrier, walls, reeverRadius, wallSide);
+                baseX, baseY, aimX, aimY, step * VacuumDrag(r), barrier, theirLegs, reeverRadius, wallSide);
 
             // #585 · AND OUT OF THE SHELTERS. Owner, playing: "lol I saw one reever get into a shelter :-D",
             // then "3 reevers waiting in the shelter :-D". A doorway has to be a real gap or the captain
@@ -797,7 +312,14 @@ public partial class Map
             //
             // So: if a contact is standing IN stone, walk it out along the shortest way. Cheap — the test is
             // one collision query that says "no" for every Old One on an ordinary frame.
-            (nx, ny) = ExtricateFromStone(nx, ny, walls, reeverRadius);
+            //
+            // #563 · AND IT IS ASKED OF THEIR LIST, WHICH NOW INCLUDES A LEAF. There is a second way to end
+            // up inside a barrier and it arrived with this lane: a contact standing in a doorway while the
+            // captain walks out of the leaf's own radius has the leaf close on it. Slide is a bump-and-slide
+            // and has nothing to say about a body that is ALREADY inside a segment — both axes are refused
+            // and it would stand there for good, wedged in a hatch. Same law, same call, same shortest way
+            // out; the only change is which list is asked.
+            (nx, ny) = ExtricateFromStone(nx, ny, theirLegs, reeverRadius);
 
             double progressed = Math.Sqrt(((nx - baseX) * (nx - baseX)) + ((ny - baseY) * (ny - baseY)));
 
@@ -814,7 +336,7 @@ public partial class Map
                 }
                 r.Vx = 0;
                 r.Vy = 0;
-                ApplyIdleShiver(r, walls, reeverRadius, now,
+                ApplyIdleShiver(r, theirLegs, reeverRadius, now,
                     Math.Atan2(_avatarY - r.AnchorY, _avatarX - r.AnchorX));
             }
             else
@@ -866,11 +388,11 @@ public partial class Map
             {
                 spread[i] = (_reevers[i].X, _reevers[i].Y);
             }
-            ReeverPack.KeepApart(spread, walls, reeverRadius);
+            ReeverPack.KeepApart(spread, theirLegs, reeverRadius);
             // #453: and off the captain's own dot, on the same law. Safe here because every Reever's catch
             // test has already run this frame — reaching you still catches you; this only stops the drawn
             // dots from merging into one once that verdict is in.
-            ReeverPack.KeepClearOfCaptain(spread, _avatarX, _avatarY, walls, reeverRadius);
+            ReeverPack.KeepClearOfCaptain(spread, _avatarX, _avatarY, theirLegs, reeverRadius);
             for (int i = 0; i < _reevers.Count; i++)
             {
                 Reever moved = _reevers[i];
@@ -921,28 +443,6 @@ public partial class Map
             r.AnchorX, r.AnchorY, jx, jy, radius, walls, SurfaceCollision.Gait.Stagger);
         r.Facing = baseFacing + ReeverIdle.FacingTwitchAt(r.JitterSeed, t);
     }
-
-    // True if any deployed, non-dry sentry has this Old One inside its firing arc — the pin that holds it.
-    private bool PinnedBySentry(Reever r)
-    {
-        if (_surface is not { } ex)
-        {
-            return false;
-        }
-        foreach (SurfaceBot b in ex.Bots)
-        {
-            // #437: a bot only holds what it can SEE — stone between the two breaks the pin exactly as it
-            // breaks the shot, so a Reever that rounds a corner genuinely breaks contact with the gun
-            // grinding it down.
-            if (b.Deployed && b.Rounds > 0
-                && SentryBot.CanEngage(b.X, b.Y, r.X, r.Y, SightBlockers()))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private void StepTide(double dtRealSeconds)
     {
         if (_surface is not { } ex)
@@ -998,10 +498,13 @@ public partial class Map
     // player learns the deep is alive. Marked Tide so StepReevers leashes it to the home range.
     private void SpawnTideReever(SurfaceExcursion ex)
     {
-        (double x, double y) = MoonSurface.TideSpawnPoint(ex.ThreatSeed, ex.TideSpawnIndex);
+        (double x, double y) = MoonSurface.TideSpawnPoint(ex.ThreatSeed, ex.TideSpawnIndex, _avatarX, _avatarY);
         _reevers.Add(new Reever
         {
-            X = x, Y = y, Facing = Math.PI / 2, Tide = true,
+            // #563 · Facing THE CAPTAIN, not "up". It used to claw out of the bottom rim and could only ever
+            // be looking one way; it rises on a ring around the captain now, so half of them would have been
+            // born with their back to the only thing on the moon they care about.
+            X = x, Y = y, Facing = Math.Atan2(_avatarY - y, _avatarX - x), Tide = true,
             // A distinct phase per tide contact (the spawn index, salted apart from the pack stream) so a
             // deep field of leash-held Old Ones all shiver independently at their home range.
             JitterSeed = (ex.ThreatSeed * 0xD1B54A32D192ED03UL) + (ulong)ex.TideSpawnIndex + 1UL,
@@ -1025,220 +528,6 @@ public partial class Map
             ShowPulseMessage("〜 The tracker stirs — something's moving in the deep, far below. The regolith never stays empty for long. Don't linger. Reevers — the Old Ones. They don't want your loot; they want YOU. Grab what you came for and run.");
         }
     }
-
-    // A caught digger: no loot taken (the whole point) — it prices the danger in heat, the same lever the
-    // law's collectors use. Debounced so one brush isn't a stunlock.
-    //
-    // #380 item 1 — NOT a death today (owner constraint: don't build the surface-death / insurance-captain
-    // mechanic here, just route what exists). A Reever's hand raises heat + shocks the nerve; the captain is
-    // told to RUN, not resurrected. When the surface-death lane lands, this is the site that would classify
-    // the death via DeathNarration.SurfaceEnd(_nerve, seed) → DeathCause.Reevers / .Joined and hand it to the
-    // shared BUSTED resurrection (Cause + DeathBodyName on the encounter); the art + lines are already wired.
-    private void ReeverCatch()
-    {
-        double now = _lastTimestampMs ?? 0;
-        if (now - _lastReeverCatchMs < 1500)
-        {
-            return;
-        }
-        _lastReeverCatchMs = now;
-
-        // #380 item 1 / Evening wind #20 — THE OVERDRAW. Nerves already bottomed out and an Old One lays
-        // hands ANYWAY: this qualifying hit breaks the captain. Read on the nerve BEFORE the touch shock
-        // (already empty + more damage), routed place-dependently (the Old Ones took you — or, rarely, you
-        // joined them) into the shared BUSTED resurrection, where the piracy insurance issues a new captain.
-        // Fail Forward — the run continues (ledger, ship and hoards persist). Below empty is where it breaks;
-        // above it, the touch only floors the gauge and the captain is told to RUN, as before.
-        if (_surface is { } dying && _busted is null && CaptainSuccession.OverdrawQualifies(_nerve))
-        {
-            TriggerSurfaceOverdrawDeath(dying, nerveRanOut: true); // the gauge broke first
-            return;
-        }
-
-        if (_surface is { } ex)
-        {
-            ex.Catches++;
-        }
-        // #580 · NO SHIP HEAT FROM A HAND ON YOUR SUIT. This used to raise _heat by one per catch, and that
-        // was wrong twice over. Owner: "moving on the planet should NOT cause HEAT" / "any heat should happen
-        // on the surface or site, not in space" / "we don't want to be guarding our parking lot ... that is
-        // not good game play :-D".
-        //
-        // He is right on the fiction and on the play. HEAT is what the collectors and the law hold against
-        // your SHIP, earned by robbery and piracy and hot cargo — an Old One grabbing a suit on Miranda tells
-        // nobody anything, and there is no ledger out here to be entered in. On the play side the coupling
-        // was worse than untidy: it turned every excursion into a slow tax on the parked ship, so a good long
-        // walk came home to wolves. The site's own pressure is ex.Catches, above, and that stays local.
-        //
-        // Same class as the Debt Collector deaths he caught earlier: a space-side consequence reaching down
-        // onto a moon where it has no business being.
-        // #480 · The nerve price of a hand on you is decided by NervePips, not here: ONE pip, ONCE per
-        // encounter (owner: "repeated strikes should not cost more of sanity … we already take medical hit
-        // from reever"), and again on every hand once the captain is nearly gone. We only report the event.
-        _touchedThisFrame = true;
-        RendererInterop.PlayCue("alarm");
-        ShowPulseMessage("🩸 An Old One lays hands on you — it wants no loot, only you. Tear free and RUN!");
-        RequestVaultSave();
-    }
-
-    // ── #453 · THE EXCHANGE: five blows, and a die between each one and your skin ──────────────────────
-    //
-    // Owner, 2026-07-27: "player health could be like 5 reever hits but the reever sphere must touch the
-    // player sphere when a hit is received. Player should have some melee blocking ability. Dice throw. We
-    // should narrate what happens to the player. Maybe a splash of blood when reever hit goes through
-    // players attempt to block it. :-D"
-    //
-    // A swing resolves ONLY on real contact — the two bodies touching, not merely near — and every Old One
-    // winds up on its own cadence, so being held at arm's length by the pack shove (#441) is not a blender.
-    private double _bloodUntilMs = double.NegativeInfinity;
-
-    // Blood on the regolith for a moment after a blow gets through — the surface has never had visual
-    // punctuation for being hurt, and "you are bleeding" should not be something you read in a corner.
-    private bool BloodShowing => (_lastTimestampMs ?? 0) < _bloodUntilMs;
-
-    // #466: a blow lands only when the two bodies TOUCH and nothing stands between them. Stone (and a shut
-    // door) stops an arm exactly as it stops a round — otherwise a Reever pressed against the far face of a
-    // slab is close enough to kill you through it.
-    private bool CanSwingAt(Reever r, IReadOnlyList<SurfaceCollision.Segment> sight)
-    {
-        // #471: contact is "at arm's length or nearer", and it must include EXACTLY arm's length. The
-        // keep-off-the-captain shove (#453) parks a crowding Old One at precisely PersonalSpace — the very
-        // same 1.4 that is the touch distance — so a strict comparison left every one of them a floating
-        // hair too far away to ever swing. Playtested: three pressed against the captain, nerve shot, and
-        // the condition still read "unmarked" because not one blow could register. A hair of tolerance.
-        const double reach = CaptainCondition.TouchDistance + 0.05;
-        double dx = r.X - _avatarX, dy = r.Y - _avatarY;
-        if ((dx * dx) + (dy * dy) > reach * reach)
-        {
-            return false;
-        }
-        return SurfaceCollision.HasLineOfSight(r.X, r.Y, _avatarX, _avatarY, sight);
-    }
-
-    /// <summary>
-    /// WHERE NOTHING CAN REACH THE CAPTAIN, on whichever thing they are standing.
-    ///
-    /// <para>Owner, standing shoulder to shoulder with an Old One aboard a wreck with a full nerve bar and
-    /// five unmarked condition pips: <i>"look I take no damage or sanity loss from reever now."</i> He was
-    /// exactly right, and it was never once possible. Both the blow and the being-caught were gated on
-    /// <c>MoonSurface.IsSafeAboard</c>, which asks whether the captain is above the regolith's top rim at
-    /// y = −20 — and a wreck's ENTIRE deck runs from −9 to +9. Every square metre of every derelict has
-    /// always been "safely up the tube at the ship".</para>
-    ///
-    /// <para>The FOURTH bug of exactly this shape this weekend (the regolith tide aboard, the moon barrier
-    /// clamping the pack outside the hull, the moon spawn point, and now this). The pattern is a MOON
-    /// CONSTANT GOVERNING A SHIP, and it hides so well because the moon's number is not absurd for a wreck
-    /// — it is merely satisfied everywhere, so the feature silently never fires and nothing ever errors.</para>
-    ///
-    /// <para>Aboard, safety is not a latitude. It is the shuttle's own lock: past that bulkhead is the away
-    /// team's side and nothing follows you there, which is the same crew-only-door law the tube obeys.</para>
-    /// </summary>
-    /// <para>#621 · And the answer now lives in <see cref="AwayTeamSide.BackAtTheShuttle"/>, because the AIR
-    /// needed the same fact and worked it out for itself with the moon's rule alone — the same bug, in the
-    /// one instrument a captain cannot survive being lied to by. Two places computing one fact is the bug
-    /// even while they agree.</para>
-    private bool CaptainBeyondReach =>
-        AwayTeamSide.BackAtTheShuttle(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius);
-
-    private void ResolveReeverSwings(double nowMs)
-    {
-        if (_surface is not { } ex || _busted is not null || CaptainBeyondReach)
-        {
-            return; // up the tube, or past the shuttle lock — nothing reaches you there
-        }
-
-        // Who has a hand on you RIGHT NOW: bodies touching, the owner's rule. Counted first, because being
-        // swarmed is itself a penalty on the block — every one past the first is another thing to watch.
-        // #466 (owner, live 2026-07-27: "The reevers killed me through a wall there"). Touching is not
-        // enough — a body a hair from yours on the FAR SIDE of a thin slab is still 1.4 units away, and the
-        // swing landed through the stone. A blow needs a clear line as well as contact: the same sight law
-        // the eyes and the guns obey (#324/#438), shut doors included (#465).
-        IReadOnlyList<SurfaceCollision.Segment> sight = SightBlockers();
-        int touching = 0;
-        foreach (Reever r in _reevers)
-        {
-            if (CanSwingAt(r, sight))
-            {
-                touching++;
-            }
-        }
-        if (touching == 0)
-        {
-            return;
-        }
-
-        foreach (Reever r in _reevers)
-        {
-            if (!CanSwingAt(r, sight))
-            {
-                continue;
-            }
-            if (nowMs - r.LastSwingMs < CaptainCondition.SwingCooldownSeconds * 1000.0)
-            {
-                continue; // still winding up
-            }
-            r.LastSwingMs = nowMs;
-
-            // #696 · SOMETHING GOT A HAND ON YOU, AND THE EXPOSURE IS GONE. Placed before the block roll on
-            // purpose: being REACHED is what ends the hold, not being hurt by it. A captain who turns a blow
-            // aside has still had somebody's arm come through the space they were photographing into, and a
-            // darkroom that survived that would be telling them the ground is safer than it is — which is
-            // the whole thing the twenty seconds were bought to say.
-            ProcessingIsInterrupted(Core.Processing.Interruption.Reached);
-
-            // The die, seeded off this contact and its swing count so a long fight never repeats itself.
-            r.Swings++;
-            ulong seed = DiceRule.Seed(r.JitterSeed, $"swing:{r.Swings}");
-            DiceRoll roll = CaptainCondition.BlockRoll(seed, _nerve, ex.Carrying, touching);
-
-            if (CaptainCondition.Resolve(roll) == CaptainCondition.Exchange.Blocked)
-            {
-                // #467: its own voice. A block RINGS — bright, hard, over in a blink — so it can never be
-                // confused with the blow that gets through (owner: "I should know when I'm hurt").
-                ShowPulseMessage($"🛡 {CaptainCondition.BlockLine(seed)}");
-                RendererInterop.PlayCue("block");
-                if (_showVentPanel)
-                {
-                    _ventMessage = $"🛡 {CaptainCondition.BlockLine(seed)}";
-                }
-                continue;
-            }
-
-            // It got through. One of the five, blood on the ground, and the old touch cost on top.
-            ex.HitsTaken++;
-            _bloodUntilMs = nowMs + 900;
-            ShowPulseMessage($"🩸 {CaptainCondition.HitLine(seed)}");
-            if (_showVentPanel)
-            {
-                // The pulse message lives on the canvas, and the board is standing on top of the canvas.
-                // A blow landed while reading the panel has to arrive ON the panel or it never happened.
-                _ventMessage = $"🩸 {CaptainCondition.HitLine(seed)}";
-            }
-            // #467: low, wet and wrong — nothing else in the game sounds like this. And at one pip left the
-            // game stops being subtle about it: a floor-level dread tone on top, every single time.
-            RendererInterop.PlayCue("wound");
-            if (CaptainCondition.MaxHits - ex.HitsTaken == 1)
-            {
-                RendererInterop.PlayCue("last");
-            }
-            // #480: the blow already charged the body. The nerve is charged once for being CAUGHT (and
-            // again every time once you are nearly gone) — NervePips decides, we only report it.
-            _touchedThisFrame = true;
-            RequestVaultSave();
-
-            if (CaptainCondition.IsDown(ex.HitsTaken))
-            {
-                // The fifth blow. Routed into the SAME staged death the overdraw uses, so the piracy
-                // insurance issues a new captain and the run continues (Fail Forward) — the ship, the
-                // ledger and every buried cache outlive you (#455's rebirth thread).
-                // The FIFTH BLOW — the condition marker decided, not the nerve. Since #480 this is the
-                // common surface death, and it must not narrate as an overdraw.
-                TriggerSurfaceOverdrawDeath(ex, nerveRanOut: false);
-                return;
-            }
-        }
-    }
-
     // Seed the 2D6 from place + integer-second instant — deterministic, replayable in a test.
     private ulong ReeverSeed(string bodyId) => DiceRule.Seed($"reever:{bodyId}", (long)SimTime);
 

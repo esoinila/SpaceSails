@@ -313,7 +313,10 @@ public static class AutopilotRehearsal
             // legacy decision loop: Approach still works on a μ=0 body (it matches velocity and closes the
             // short range), and its budget guard stays. Insert can never fire here (WindowOpen needs
             // distance < hill = 0), so the ship is never falsely "orbit-captured".
-            if (isStation && DockRule.InEnvelope(ship, bodyPos, bodyVel, body.BodyRadius))
+            // #244: …and "inside the envelope" is the wrong test for a berth that has no clamp — the
+            // rehearsal prices the trip the loop is going to fly, so it asks the same question of the same
+            // predicate (DockRule.Arrived), which for a wreck is the fetch pickup's own range.
+            if (isStation && DockRule.Arrived(ship, bodyPos, bodyVel, body))
             {
                 return new RehearsalResult(
                     true, pulses, approachBurns, ship.SimTime - startTime, false, false, path);

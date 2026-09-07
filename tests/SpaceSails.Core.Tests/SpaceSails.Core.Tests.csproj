@@ -18,6 +18,30 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <!-- #251 item 1 - THIS SUITE READS THE CLIENT'S MARKUP TOO, so it needs the same composed reader.
+       TheDeathCardReadsTheNarrationSeamTests states its law over Map.razor, and the wake card moved into
+       Pages/Map/BustedCard.razor with the rest of the surfaces. MapMarkup hands back the page with every
+       surface spliced in at its invocation site; it is LINKED rather than copied so there is exactly one
+       of it, and it is held to its own law next door in TheComposedPageIsThePageTests. -->
+  <ItemGroup>
+    <Compile Include="..\SpaceSails.Client.Tests\MapMarkup.cs" Link="MapMarkup.cs" />
+    <!-- #251 - and the splice itself, which MapMarkup is a binding of. There are two decomposed pages in
+         the client now (Pages/Map.razor and Pages/Stations/TrackingPost.razor) and the mechanics are said
+         once, in SurfaceComposition; MapMarkup will not compile without it. Same rule as the two files
+         either side: one copy, linked. -->
+    <Compile Include="..\SpaceSails.Client.Tests\SurfaceComposition.cs" Link="SurfaceComposition.cs" />
+    <!-- #251 item 3 — and its twin for the stylesheet, for the same reason and by the same rule: one copy,
+         linked. MapMarkup.Read hands the whole cascade back for Pages/Map.razor.css, so it cannot compile
+         without it. -->
+    <Compile Include="..\SpaceSails.Client.Tests\MapStylesheet.cs" Link="MapStylesheet.cs" />
+    <!-- #234 — Lab 31's arithmetic, LINKED for exactly the same reason: one copy. The lab prints five
+         graded verdicts ("BEYOND ANY REAL MATERIAL", "A LONG ROPE WITH A ROCK ON THE END"), and a memorable
+         sentence outlives the numbers that produced it. Lab31BeanstalkTests holds each printed verdict to
+         the taper column it was read off, so the function that printed it IS the function under test —
+         copying it in here would only prove the copy agrees with itself. -->
+    <Compile Include="..\..\labs\31-the-beanstalk\Beanstalk.cs" Link="Lab31\Beanstalk.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\SpaceSails.Core\SpaceSails.Core.csproj" />
     <ProjectReference Include="..\..\labs\SpaceSails.LabViz\SpaceSails.LabViz.csproj" />
@@ -33,6 +57,11 @@
   <ItemGroup>
     <Content Include="..\..\src\SpaceSails.Client\wwwroot\css\app.css" Link="cssource\app.css" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\src\SpaceSails.Client\Pages\Map.razor.css" Link="cssource\Map.razor.css" CopyToOutputDirectory="PreserveNewest" />
+    <!-- #251 item 3 — and the seventy-six sheets the page's own stylesheet was split into. The bands this
+         gate resolves are spread across them now (`.jump-overlay` is JumpCard's, `.busted-backdrop` is
+         BustedCard's), and a z-index only means anything against the WHOLE cascade anyway: copying the
+         page's half alone would leave the gate quietly resolving fewer selectors every time a rule moved. -->
+    <Content Include="..\..\src\SpaceSails.Client\Pages\Map\*.razor.css" Link="cssource\Map\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="..\..\src\SpaceSails.Client\Components\DiceTray.razor.css" Link="cssource\DiceTray.razor.css" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

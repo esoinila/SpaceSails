@@ -171,4 +171,27 @@ public sealed partial class Map
         RequestVaultSave();
         StateHasChanged();
     }
+
+    /// <summary>#537 · …and the other half of the owner's combi, over the same counter. The scanner finds a
+    /// thing; this opens it. Both are <c>Satchel.Kind.Tool</c>, both are bulky, and a captain with room for
+    /// one of them is making the choice the pocket exists to make them make.</summary>
+    private void BuyTheCutter()
+    {
+        if (!TheBackCounterIsOpen)
+        {
+            return;
+        }
+
+        HullCutter.Bought bought = HullCutter.Buy(_credits, _satchel);
+        if (bought.Taken)
+        {
+            _credits = bought.RemainingCredits;
+            _satchel = [.. Core.Satchel.Add(_satchel, HullCutter.FreshRig)];
+        }
+
+        SayItWhereTheyAreLooking(bought.Line);
+        RendererInterop.PlayCue("board");
+        RequestVaultSave();
+        StateHasChanged();
+    }
 }

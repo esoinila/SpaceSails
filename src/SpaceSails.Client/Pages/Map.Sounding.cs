@@ -24,9 +24,14 @@ public sealed partial class Map
     /// captain who comes back finds the same ship.</summary>
     private HullSounding.HiddenVoid? _hullVoid;
 
-    /// <summary>Whether the manifest has been read. The clue is a DOCUMENT — until somebody opens it, there is
-    /// nothing to compare the wall to, and the search is the blind one Lab 44 priced at 22 rackets.</summary>
-    private bool _manifestRead;
+    /// <summary>Whether the paper this hull lies in has been read. The clue is a DOCUMENT — until somebody
+    /// opens the right one, there is nothing to compare the wall to, and the search is the blind one Lab 44
+    /// priced at 22 rackets.
+    ///
+    /// <para>#537 slice 3 · It is no longer only the manifest. Three papers can carry the lie now
+    /// (<see cref="HullSounding.ClueKind"/>) and a hull tells exactly one of them, so this is set by
+    /// whichever station happened to be the one that did not add up.</para></summary>
+    private bool _clueRead;
 
     /// <summary>Whether the plate has come off. Once found it stays found — the ship does not re-hide it.</summary>
     private bool _voidOpened;
@@ -57,8 +62,14 @@ public sealed partial class Map
     private void ResolveHullVoid()
     {
         _sounding = null;
-        _manifestRead = false;
+        _clueRead = false;
         _voidOpened = false;
+        _plateFound = false;
+        _inTheVoid = false;
+        _cutting = null;
+        _secondsSinceTheCut = double.PositiveInfinity;
+        _sawThePlateClose.Clear();
+        _theyWalkedPastOnce = false;
         _hullVoid = _wreck is { } w
             ? HullSounding.VoidFor(w.Id, WreckLayout.Compartments, WreckLayout.SpineHalfHeight,
                                    WreckLayout.TopY, WreckLayout.BottomY)
@@ -132,7 +143,7 @@ public sealed partial class Map
         ShowPulseMessage(HullSounding.ReadingLine(reading));
         RendererInterop.PlayCue(reading == HullSounding.Reading.Hollow ? "reveal" : "board");
 
-        if (reading != HullSounding.Reading.Hollow || _hullVoid is not { } found)
+        if (reading != HullSounding.Reading.Hollow || _hullVoid is null)
         {
             StateHasChanged();
             return;
@@ -142,41 +153,14 @@ public sealed partial class Map
         // get at it." The plate becomes a thing on the deck that a captain then has to work on, which is the
         // machinery #371 already built for forcing a sealed door.
         LogAutopilotEvent(HullSounding.ReadingLine(reading));
-        AddVoidPlateConsole(found);
-        StateHasChanged();
-    }
 
-    /// <summary>Put the false plate on the deck as something to press. It appears only once it has been FOUND —
-    /// a console standing there from boarding would give the whole thing away to anyone who walked past.</summary>
-    private void AddVoidPlateConsole(in HullSounding.HiddenVoid found)
-    {
-        _deckPlan.AppendRegion(new DeckPlan.DeckRegion(
-            Walls: [],
-            Consoles: [new DeckPlan.ConsoleSpot(
-                DeckPlan.ConsoleKind.SecretDoor, (float)found.PlateX, (float)found.PlateY,
-                "🕳 THE FALSE PLATE")],
-            Labels: [],
-            Backdrops: []));
-    }
-
-    /// <summary>Force it. It is a SecretDoor rather than a SealedDoor because the expedition lane's sealed doors
-    /// carry region ids and belong to its own bookkeeping — borrowing the kind would have put a wreck's plate into
-    /// an excursion's opened-door set. Same verb to the player, different ledger.</summary>
-    private void OpenTheFalsePlate()
-    {
-        if (_hullVoid is not { } found || _voidOpened)
-        {
-            return;
-        }
-
-        _voidOpened = true;
-        ShowPulseMessage(HullSounding.FoundItLine(found));
-        LogAutopilotEvent(HullSounding.FoundItLine(found));
-        RendererInterop.PlayCue("reveal");
-
-        // Loud: a plate coming off a bulkhead is not a quiet act, whichever gear found it.
-        MakeNoiseAboard(found.PlateX, found.PlateY, LoudEarshot);
-        RequestVaultSave();
+        // The plate goes on the deck as STATE, and the deck is rebuilt from it. It used to be appended
+        // straight onto the live plan, which meant the one find of the whole search was deleted by the next
+        // rebuild — dog a hatch, run a pump, purge the node, and the plate you spent twenty-two rackets
+        // finding was simply not there any more. Nothing about the search could see that; only playing it
+        // could. (#537 slice 3.)
+        _plateFound = true;
+        RebuildWreckDeck();
         StateHasChanged();
     }
 
@@ -207,7 +191,7 @@ public sealed partial class Map
     {
         get
         {
-            if (!_manifestRead || _voidOpened || _hullVoid is not { } hidden)
+            if (!_clueRead || _voidOpened || _hullVoid is not { } hidden)
             {
                 return null;
             }

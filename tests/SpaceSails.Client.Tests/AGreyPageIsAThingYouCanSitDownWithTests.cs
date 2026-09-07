@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using SpaceSails.Core;
 
@@ -24,23 +24,9 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class AGreyPageIsAThingYouCanSitDownWithTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Pages(params string[] file) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", "Pages", .. file]));
+        MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", .. file]));
 
     /// <summary>The Captain desk's "Tips, intel &amp; rumors" block, cut out of the ledger view. Cutting it is
     /// the point: a mark rendered somewhere else in this 880-line component is a mark on a different section.</summary>
@@ -86,7 +72,7 @@ public sealed class AGreyPageIsAThingYouCanSitDownWithTests
         // …and the class it names is really styled, so "greyed" is a fact about pixels and not a class name
         // nobody ever wrote a rule for.
         string css = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "Pages", "Stations", "Captain.razor.css"));
+            TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Stations", "Captain.razor.css"));
         Assert.Contains(".captain-ledger-unremembered {", css, StringComparison.Ordinal);
         Assert.Contains("grayscale", css, StringComparison.Ordinal);
     }
@@ -224,7 +210,7 @@ public sealed class AGreyPageIsAThingYouCanSitDownWithTests
         Assert.Equal(1, CountOf(map, @"bust\.FilingNotice"));
 
         // …and it is set once, at the succession seam, off Core's own sentence.
-        string busted = Pages("Map.Combat.Busted.cs");
+        string busted = MapMarkup.PagesFamily("Map.Combat.Busted*.cs"); // #251 · counted over the whole subject
         Assert.Contains("b.FilingNotice = MarkTheBookAtTheFilingLine();", busted, StringComparison.Ordinal);
         Assert.Equal(1, CountOf(busted, @"MarkTheBookAtTheFilingLine\(\)"));
     }

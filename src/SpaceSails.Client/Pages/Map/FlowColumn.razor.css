@@ -1,0 +1,4 @@
+﻿/* #251 · scope carrier. This surface shares Map.razor.css's css scope (pinned in
+   SpaceSails.Client.csproj) so the page's existing rules keep matching the markup that moved
+   here — .map-flowcolumn, .map-topstack and the peek-passthrough pair among them. It carries no
+   rules of its own: a column places boxes, and the boxes it places keep their own sheets. */

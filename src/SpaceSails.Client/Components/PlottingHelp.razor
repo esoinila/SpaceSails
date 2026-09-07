@@ -162,16 +162,3 @@
         <a href="/guide" target="_blank" rel="noopener">📖 The Captain's Guide ↗</a>
     </p>
 </div>
-
-@code {
-    /// <summary>The row's own ✓ / ✗, asked of <see cref="ArrivalStepRule.Badge"/> rather than typed — the
-    /// glyph is a function of a verdict in the panel, so it is a function of one here too. The numbers in
-    /// the check are only there to make a valid or invalid one; nothing on this card reads them.</summary>
-    private static string TheBadge(bool valid) => ArrivalStepRule.Badge(
-        ArrivalStepRule.Check(
-            ArrivalStepRule.ArrivalKind.Orbit,
-            "Mars",
-            distance: valid ? 0 : 1e12,
-            relSpeed: valid ? 0 : 1e5,
-            hillRadius: 1));
-}

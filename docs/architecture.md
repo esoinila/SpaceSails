@@ -50,9 +50,11 @@ Three projects carry the weight (`SpaceSails.slnx`):
 - **`src/SpaceSails.Contracts`** — DTOs and scenario models (`Scenario.cs`,
   `Multiplayer.cs`) shared by anything that talks to Core or the (archived) hub.
 - **`src/SpaceSails.Client`** — the Blazor WASM app. `Pages/Map.razor` is the single host page
-  (`@page "/map"`, 6,499 lines of markup): it owns the `<canvas>`, the desk tab bar, keyboard
-  shortcuts, and drives `Core.Simulator` directly in-process. Its code-behind is
-  `public sealed partial class Map` — **117 `Pages/Map.*.cs` partials, 45,940 lines** — plus two
+  (`@page "/map"`, 765 lines of markup after #251 cut the rest into 98 surfaces under `Pages/Map/`,
+  19 more under `Pages/Map/NavHud/` and 10 under `Pages/Map/SatchelPanel/` — the two surfaces that
+  were themselves big enough to take apart in their turn): it owns the `<canvas>`, the boot door,
+  keyboard shortcuts, and drives `Core.Simulator` directly in-process. Its code-behind is
+  `public sealed partial class Map` — **205 `Pages/Map.*.cs` partials, 68,767 lines** — plus two
   families that are no longer partials at all but collaborator objects behind a written interface
   (`Pages/Seating/`, `Pages/Patrol/`). `Rendering/CanvasRenderer.cs` implements `IRenderer`
   over that canvas; `Rendering/RendererInterop.cs` is the `[JSImport]`/`[JSExport]` boundary to
@@ -87,10 +89,11 @@ Features arrived faster than containers did, and by 2026-08-15 the two biggest s
 repo were `Pages/Map.Surface.cs` at 9,410 lines and `Core/UndergroundComplex.cs` at 8,747. Neither
 was *about* anything by then — each was simply the obvious place to put the next thing. #870 cut
 them, and everything else over the line, into **families**: one subject per file, the family named by
-the file-name stem, and the family's header note kept in the family's own core file. **71 files under
-`src/` carry a one-line `// Subject:` banner** saying what they are for and which family they belong
-to (55 in `Pages/`, 11 in `Core/`); that line is the first thing to read and the cheapest thing to
-grep.
+the file-name stem, and the family's header note kept in the family's own core file. #251's refactor
+phase carried the same method further, into the surfaces, the stylesheet and the test tree. **98 files
+under `src/` carry a one-line `// Subject:` banner** saying what they are for and which family they
+belong to (72 in `Pages/`, 12 in `Rendering/`, 14 in `Core/`); that line is the first thing to read and
+the cheapest thing to grep.
 
 Nothing was rewritten. Every one of those splits was a **pure move** — the code and its docblocks
 travelled byte-identical, and the PR carried a mechanical proof that they had. See
@@ -99,34 +102,45 @@ for what a lane has to prove before it lands.
 
 ### The client page
 
-`Pages/Map.razor` (6,499 lines of markup) is the host; its code-behind is
-`public sealed partial class Map`, **117 `Pages/Map.*.cs` files, 45,940 lines**. Every partial still
+`Pages/Map.razor` (1,204 lines of markup) is the host; its code-behind is
+`public sealed partial class Map`, **205 `Pages/Map.*.cs` files, 68,767 lines**. Every partial still
 sees every field of every other — that is what a partial class is — which is exactly why the two
 families that kept colliding across crews are no longer partials at all (next section).
 
+Counted at `1cb7bb4c`. The eleven biggest families, by total lines — 79 of the 205 files are a family
+of one, which is the shape the cut was aiming for:
+
 | family | files | lines | what lives there |
 |---|---:|---:|---|
-| `Map.Surface.*` | 15 | 9,548 | the excursion, one subject each: `.Tank` `.Shelter` `.Dig` `.Darkroom` `.Satchel` `.Reevers` `.Hive` `.Canteen` `.Comms` `.Nerve` `.Hud` `.Frame` `.RepoBoat` `.Cheats` |
-| `Map.Sim.*` | 15 | 4,576 | the loop: `.Boot` `.Tick` `.Keys` `.Controls` `.Cancel` `.Starts` `.Cheats`, and `Map.Sim.World.*` (7 files, 2,119) — the boot's own named stages plus every `?query=` reader (`.Build` `.Start` `.Query` `.QueryArcs` `.QueryGround` `.QueryHive`) |
-| `Map.Combat.*` | 6 | 3,121 | `.FireControl` (the gun deck) `.Ordnance` (what has left the tube) `.Boarding` `.Busted` `.Remote` |
-| `Map.Plot.*` | 9 | 2,967 | the plotting table: `.Bodies` `.Nodes` `.Ribbon` `.Frame` `.FlightPlan` `.Destination` `.Skim` `.Sling` |
-| `Map.Quests.*` | 7 | 2,737 | `.Offers` `.Contracts` `.Ledger` `.Bank` `.Bar` `.Caches` |
-| `Map.Venting.*` | 6 | 1,882 | pressure: `.Pumps` `.Vacuum` `.Doors` `.Fire` `.Mimic` |
-| `Map.Deck.*` | 7 | 1,820 | the walked ship: `.Walk` `.Interact` `.Fixtures` `.Comforts` `.Scope` `.Stall` |
-| the seat family, page side | 7 | 1,795 | `Map.Table.cs` `Map.Seated.cs` `Map.Cubicle.cs` `Map.SitStandDesk.cs` `Map.Stool.cs` `Map.Bench.cs` `Map.OfficeChair.cs` — what a seat is a *gate* on, kept on the page |
-| `Map.Patrol.*`, page side | 4 | 247 | forwarders only: the round itself moved out |
+| `Map.Surface.*` | 31 | 13,004 | the excursion, one subject each: `.Excursion` `.Tank` `.Shelter` `.Dig` `.Darkroom` `.Satchel` `.Hive` `.Canteen` `.Comms` `.Nerve` `.Hud` `.Frame` `.Tiles` `.Monolith` `.Stair` `.LiftPad` `.RepoBoat` `.Racks` `.Forensics` `.Escort` `.Observation` `.KeepOrLeave` `.InspectionTag` `.Break` `.Cheats`, and `Map.Surface.Reevers.*` (5 files) — the pack, plus `.Sight` `.Exchange` `.Doors` `.Sentries` |
+| `Map.Sim.*` | 20 | 5,686 | the loop: `.Boot` `.Keys` `.Controls` `.Cancel` `.Starts` `.Cheats`; `Map.Sim.Tick.*` (6 files) — the conductor plus `.Step` `.Cadence` `.Views` `.Nearest` `.Warp`; and `Map.Sim.World.*` (7 files, 2,590) — the boot's own named stages plus every `?query=` reader (`.Build` `.Start` `.Query` `.QueryArcs` `.QueryGround` `.QueryHive`) |
+| `Map.Plot.*` | 11 | 4,669 | the plotting table: `.Bodies` `.Nodes` `.Ribbon` `.Frame` `.FlightPlan` `.Destination` `.Skim` `.Sling` `.Arrive` `.CastOff` |
+| `Map.Quests.*` | 10 | 3,729 | `.Offers` `.Contracts` `.Terms` `.Ledger` `.Bank` `.Bar` `.Caches` `.Compass` `.MilkRun` |
+| `Map.Combat.*` | 6 | 3,428 | `.FireControl` (the gun deck) `.Ordnance` (what has left the tube) `.Boarding` `.Busted` `.Remote` |
+| the seat family, page side | 8 | 2,170 | `Map.Table.cs` `Map.Seated.cs` `Map.Seated.News.cs` `Map.Cubicle.cs` `Map.SitStandDesk.cs` `Map.Stool.cs` `Map.Bench.cs` `Map.OfficeChair.cs` — what a seat is a *gate* on, kept on the page |
+| `Map.Deck.*` | 7 | 2,014 | the walked ship: `.Walk` `.Interact` `.Fixtures` `.Comforts` `.Scope` `.Stall` |
+| `Map.Venting.*` | 6 | 1,903 | pressure: `.Pumps` `.Vacuum` `.Doors` `.Fire` `.Mimic` |
+| `Map.Vault.*` | 9 | 1,788 | the save: `.FrontDoor` `.Sections` `.Rack` `.Restore` `.Import` `.Autosave` `.Threads` `.CaptainCard` |
+| `Map.Autopilot.*` | 6 | 1,655 | pure motion: `.OrbitAssist` `.ArrivalWindow` `.FlightPlan` `.ParkWatch` `.Ancients` |
+| `Map.Npc.*` | 6 | 1,509 | the traffic: `.Tasking` `.Dossier` `.Draw` `.Selection` `.QShip` |
+| `Map.BarWalkers.*` | 5 | 1,242 | the docked bar's feet: `.Watch` `.Walk` `.Rep` `.Top` |
+| `Map.Patrol.*`, page side | 4 | 255 | forwarders only: the round itself moved out |
 
-`Rendering/DeckView.*` (6 files, 2,665) is the same shape one layer down: `DeckView.Frame.cs` holds
-`Draw`, which is a conductor over seventeen named passes rather than one 1,058-line method;
-`.Hud` `.Seats` `.Inks` `.Dark` are the rest.
+`Rendering/DeckView.*` (10 files, 3,036) is the same shape one layer down: `DeckView.Frame.cs` holds
+`Draw`, which is a conductor over named passes rather than one 1,058-line method, and it has since been
+cut in its turn (`.Frame.Ground` `.Frame.Figures` `.Frame.OverTheDark`, and `.Doors` off it for #563);
+`.Hud` `.Seats` `.Inks` `.Dark` are the rest. `Rendering/DeckPlan.*` (7 files, 1,666),
+`Rendering/HavenInterior.*` (3 files, 1,268) and `Rendering/HiveInterior.*` (5 files, 1,804 — #1164
+turned a 1,106-line `FloorDeck` into forty named passes) went the same way.
 
 ### Core
 
 | family | files | lines | what lives there |
 |---|---:|---:|---|
-| `UndergroundComplex.*` | 15 | 8,845 | the Hive, by department: `.Block` `.Hall` `.FloorPlan` `.Park` `.Rooms` `.Fixtures` `.Amenities` `.Shafts` `.Signs` `.AuthorityCard` `.Arrivals` `.Air` `.Haul` `.Cards` |
-| `PatrolBeat.*` | 8 | 2,102 | the round's pure half: `.Lane` `.Chase` `.Challenge` `.Checkpoints` `.CoverAct` `.Escort` `.Eye` |
-| `RingOffice.*` | 5 | 1,794 | `.Layout` `.Fittings` `.Frame` `.Prose` |
+| `UndergroundComplex.*` | 26 | 12,149 | the Hive, by department: `.Block` `.Hall` `.FloorPlan` `.Park` `.Rooms` `.Fixtures` `.Amenities` `.Shafts` `.Signs` `.AuthorityCard` `.Arrivals` `.Air` `.Haul` `.Cards` `.Ring` `.Stair` `.LiftCode` `.Landscape` `.MoneyTrail` `.Papers` `.Burial` `.Stop` `.Break` `.Decline` `.Inspection` |
+| `PatrolBeat.*` | 8 | 2,345 | the round's pure half: `.Lane` `.Chase` `.Challenge` `.Checkpoints` `.CoverAct` `.Escort` `.Eye` |
+| `RingOffice.*` | 5 | 1,845 | `.Layout` `.Fittings` `.Frame` `.Prose` |
+| `SurfaceLayout.*` | 4 | 1,274 | the ground, split by #251: the vocabulary and the two `For` overloads, plus `.Grounds` (the four schemes) `.Expedition` (#370's away sites) `.Builders` (the primitives none of them can seal the field with) |
 
 ### Two families are objects now, not partials
 
@@ -138,8 +152,8 @@ what it still needs from the page is an interface you can read in one sitting:
 
 | | the object | the door | members | the page's side |
 |---|---|---|---:|---|
-| the seat | `Pages/Seating/*` — 8 files, 2,485 lines (`Seating.cs`, `.Seated` `.Table` `.Stool` `.Bench` `.OfficeChair` `.Sit`) | `Pages/Seating/ISeatHost.cs` | **28** | `Map.SeatHost.cs` (145) |
-| the round | `Pages/Patrol/*` — 9 files, 2,573 lines (`Patrol.cs`, `.Round` `.Floor` `.Run` `.Challenge` `.Escort` `.Hide`, `Guard.cs`) | `Pages/Patrol/IPatrolHost.cs` | **21** | `Map.PatrolHost.cs` (126) |
+| the seat | `Pages/Seating/*` — 13 files, 3,464 lines (`Seating.cs`, `.Seated` `.Stool` `.Bench` `.OfficeChair` `.BarTop` `.Sit`, and `Seating.Table.*` — the table scene split five ways by #251: the opening, `.Moves` `.Wait` `.Cabinet` `.Answered`) | `Pages/Seating/ISeatHost.cs` | **32** | `Map.SeatHost.cs` (164) |
+| the round | `Pages/Patrol/*` — 9 files, 3,339 lines (`Patrol.cs`, `.Round` `.Floor` `.Run` `.Challenge` `.Escort` `.Hide`, `Guard.cs`) | `Pages/Patrol/IPatrolHost.cs` | **21** | `Map.PatrolHost.cs` (126) |
 
 Both are `private sealed partial class` nested inside `Map` — the records they are made of
 (`TableTalk`, `StoolSeat`, `Guard`) are the page's private types, and nesting keeps them private
@@ -148,7 +162,7 @@ is the one neutral file that builds them, because a class gets exactly one param
 and it may not live in either family's files.
 
 **The member counts are the finding, and they are ratchets.** `TheSeatKeepsItsOwnStateTests` and
-`ThePatrolKeepsItsOwnStateTests` assert 28 and 21 exactly: taking a member off is a good day and the
+`ThePatrolKeepsItsOwnStateTests` assert 32 and 21 exactly: taking a member off is a good day and the
 number comes down with it; adding one is a lane of its own, argued for in a PR body, because it is
 the chair (or the guard) asking the page for something new. The technique that keeps the numbers
 small is written into both interfaces' docblocks — **ask for the ANSWER, never for the machinery.**
@@ -171,15 +185,23 @@ stays cut.
 offenders; a listed file must be at or below its written allowance; and a listed file that has fallen
 back under the line must have its row *deleted* (a list of permissions nobody revokes is how a gate
 stops being a gate). A fourth fact is the anti-vacuous half — the sweep must actually find the tree
-(200+ files; it finds 442), `obj/` and `bin/` must stay out, and the line must sit clear of the
-largest file beneath it by at least 25 lines.
+(200+ files; it finds 1,041), `obj/` and `bin/` must stay out, and the line must sit clear of the
+largest file beneath it by at least 25 lines. #251 item 1 taught it to see `*.razor` and `*.razor.css`
+as well as `*.cs`: `Map.razor` at 8,771 lines and `Map.razor.css` at 6,613 — the two files that issue
+class names FIRST — had been invisible to the one law that exists to stop a file getting that long,
+purely because of their extension.
 
 **The exception list is empty.** It was written with ten rows; #870's lanes took nine of them under
 the line, and the last — a single 1,656-line method that a pure move was not allowed to split — went
-behind a fingerprint of the world every boot URL builds. The longest source file in the repo today is
-`Core/UndergroundComplex.Block.cs` at **1,447 lines**, which is 53 lines of daylight under the line.
-From here, law 1 is the whole gate, laws 2 and 3 are vacuously green, and the first row anybody writes
-will be a new debt rather than an inherited one.
+behind a fingerprint of the world every boot URL builds. #251 item 1 then put one row back for
+`Map.razor.css`, and item 3 retired it in the PR that shrank the sheet — 6,613 lines to 1,452, and to
+1,105 after #1166 walked the last two `@keyframes` out to their only user.
+
+The longest source file in the repo at `25593360` is `Pages/Map.razor` itself at **1,204 lines**,
+which is 296 lines of daylight under the line, with `Pages/Map.Walkers.cs` (1,161) and
+`Core/UndergroundComplex.Block.cs` (1,156) behind it. From here, law 1 is the whole gate, laws 2 and 3
+are vacuously green, and the first row anybody writes will be a new debt rather than an inherited
+one.
 
 The number is not about a compiler. It is about a reader: fifteen hundred lines is roughly where
 "what is this file about?" stops having an answer.

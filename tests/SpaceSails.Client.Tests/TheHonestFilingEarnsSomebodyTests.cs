@@ -46,7 +46,7 @@ public sealed class TheHonestFilingEarnsSomebodyTests
             string candidate = Path.Combine(at.FullName, "src", "SpaceSails.Client", "Pages", "Map.razor");
             if (File.Exists(candidate))
             {
-                return File.ReadAllText(candidate);
+                return MapMarkup.Read(candidate);
             }
             at = at.Parent;
         }

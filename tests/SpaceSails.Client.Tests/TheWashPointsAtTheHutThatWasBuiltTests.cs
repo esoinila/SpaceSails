@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
@@ -46,8 +46,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheWashPointsAtTheHutThatWasBuiltTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>The shipped sweep — the same set the lift's own guard walks, so the two cannot drift apart
     /// about which grounds count.</summary>
@@ -82,8 +81,8 @@ public sealed class TheWashPointsAtTheHutThatWasBuiltTests
                 + "has moved.");
         pending.SetValue(map, true);
 
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Static)!;
-        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Static)!;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Public | BindingFlags.Static)!;
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Public | BindingFlags.Static)!;
         object ex = Activator.CreateInstance(exType, nonPublic: true)!;
         object stop = Activator.CreateInstance(stopType,
             new CelestialBody(body, body, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;
@@ -191,7 +190,8 @@ public sealed class TheWashPointsAtTheHutThatWasBuiltTests
             {
                 Pages.Map map = Standing(body, site, revealed: true);
                 var beacons =
-                    (List<(double Bearing, double Range, bool IsHome, bool IsLab)>)Call(map, "BuildBeacons");
+                    (List<(double Bearing, double Range, bool IsHome, bool IsLab, bool IsDead)>)Call(
+                        map, "BuildBeacons");
 
                 var lab = beacons.FindAll(b => b.IsLab);
                 Assert.True(lab.Count == 1,

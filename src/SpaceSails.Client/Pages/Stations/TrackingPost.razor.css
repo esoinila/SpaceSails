@@ -38,67 +38,6 @@
     height: 320px;
 }
 
-.tracking-ledger-table {
-    display: block;
-    overflow-y: auto;
-    flex: 1 1 auto;
-}
-
-.tracking-ledger-table tbody {
-    display: table;
-    width: 100%;
-    table-layout: fixed;
-}
-
-/* Scope wall (PR-12): the specialist's whole-desk instrument — one live scope tile per tracked
-   target, filling the remaining desk area. Responsive grid: 1 tile alone, up to 2x2 at 4. */
-.scope-wall-grid {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
-    display: grid;
-    /* auto-fill (not auto-fit) with a capped track max: a lone tile gets a sane ~19rem square
-       instead of stretching to the full desk width — 2x2 naturally once 3-4 tiles are present. */
-    grid-template-columns: repeat(auto-fill, minmax(15rem, 19rem));
-    justify-content: center;
-    gap: 0.75rem;
-    align-content: start;
-}
-
-.scope-wall-tile {
-    display: flex;
-    flex-direction: column;
-    background: #05070b;
-    border: 1px solid rgba(90, 200, 190, 0.35);
-    border-radius: 0.4rem;
-    overflow: hidden;
-    max-width: 19rem;
-}
-
-.scope-wall-tile-empty {
-    border-style: dashed;
-    border-color: rgba(150, 160, 180, 0.3);
-    opacity: 0.75;
-}
-
-.scope-wall-canvas {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    display: block;
-}
-
-.scope-wall-tile-footer {
-    padding: 0.3rem 0.5rem;
-    font-size: 0.78rem;
-}
-
-.scope-wall-tile-empty-label {
-    text-align: center;
-    color: rgba(200, 210, 225, 0.55);
-    font-style: italic;
-    padding: 0.5rem;
-}
-
 .tracking-rosette-svg {
     width: 108px;
     height: 108px;
@@ -209,6 +148,36 @@
     background: rgba(120, 220, 255, 0.10);
     border-radius: 0.25rem;
 }
+
+/* #239: the state chip — its own signal, never inferred from the progress number beside it. */
+.sensor-task-chip {
+    flex: 0 0 auto;
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    padding: 0 0.3rem;
+    border-radius: 0.2rem;
+    border: 1px solid currentColor;
+    white-space: nowrap;
+}
+
+.sensor-chip-running {
+    color: #7ddcff;
+    animation: sensor-chip-alive 1.4s ease-in-out infinite;
+}
+
+/* A stationary 0% must still read ALIVE (owner, #239): the chip breathes, the percent does not. */
+@keyframes sensor-chip-alive {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.45; }
+}
+
+.sensor-chip-waiting { color: #c8ccd4; }
+
+.sensor-chip-queued { color: #8d949f; }
+
+.sensor-chip-done { color: #7fbf8a; }
+
+.sensor-task-done { opacity: 0.55; }
 
 /* PR-D: the cold-case board — lost locks with live search areas. */
 .sensor-lost-box {

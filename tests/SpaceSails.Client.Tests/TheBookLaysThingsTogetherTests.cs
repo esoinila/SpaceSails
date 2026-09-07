@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using SpaceSails.Core;
@@ -17,23 +17,9 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class TheBookLaysThingsTogetherTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Pages(params string[] file) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", "Pages", .. file]));
+        MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", .. file]));
 
     /// <summary>One method body, from its signature to the next member at the same indent — the same cut the
     /// sibling client guards make, so a body read here is a body read there.</summary>
@@ -257,7 +243,7 @@ public sealed class TheBookLaysThingsTogetherTests
     [Fact]
     public void TheSigningSheetIsFiledOnTheSameEdgeAsThePlate()
     {
-        string rep = Method(Pages("Map.Rep.cs"), "private void TellHimYouAlreadyHaveOne()");
+        string rep = Method(Pages("Map.Rep.Pitch.cs"), "private void TellHimYouAlreadyHaveOne()");
 
         int latch = rep.IndexOf("_repSigningToldInLife = CaptainsLife", StringComparison.Ordinal);
         int filed = rep.IndexOf("FileTheSigningSheet()", StringComparison.Ordinal);

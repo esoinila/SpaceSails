@@ -108,6 +108,32 @@ The browser-free twin — `SpaceSails.Client.Tests.EveryTextReadsTests` — swee
 and every art slot in `Map.razor` for the same law, so a new picture with a new caption on it is caught
 the day it is written rather than the day somebody thinks to drive to it.
 
+## The no-button-zone gate (issue #236) — `TheBannerBandIsANoButtonZoneTests`
+
+Owner ruling, mid-car-run (2026-07-17): *"generally we should try to keep the ship status real estate
+(under them) button free in all screens to avoid unpressable buttons."*
+
+The band is whatever `.map-topstack` lays out — desk tabs, the who-flies banner, the #166 alert strip —
+at the height the banner really grew to this frame. Two laws, one boot each:
+
+1. **No pressable control is laid out inside the band, on any screen.** Swept across 23 screens — seven
+   desks at two berths at 1280×720, the same seven at 390×700 (where the tab bar wraps and the band is
+   181 px rather than 111), the berth-picker gate and the BUSTED interrupt — asking every `button` /
+   `input` / `a[href]` under `.map-page` whether its box is in the band. Three ways to be allowed there,
+   and only three: it is the band's OWN (a descendant of `.map-topstack` — the banner growing into its
+   own real estate), it is **named furniture** whose row must ALSO prove itself by `elementFromPoint`
+   (`.map-layers`, `.nav-search`, `.desk-chip-strip` — all three paint above the masthead, so the gate
+   makes them show it), or a **modal owns the screen** (#236's own exemption, by name). Both tables must
+   stay complete in both directions: a new family with no row goes red, and a row nobody meets goes red
+   too.
+2. **A desk clears the band by FLOWING under it, never by a number.** Walks every ancestor from
+   `.desk-content` up to `.map-flowcolumn` and requires each one in flow. A desk in flow cannot be
+   covered by a growing banner — it is pushed. That is what deleted `--desk-top-clearance`.
+
+Proven red by restoring the clearance the lane deleted (`padding-top: 5.75rem`, absolute): 27 offences,
+the first five of them the Captain's Orders/Status/Tutorials/Ledger/Crew toggle — the very row the owner
+caught.
+
 ## Run it locally
 
 ```bash

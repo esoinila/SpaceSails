@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -41,6 +41,7 @@ namespace SpaceSails.Client.Tests;
 /// <c>KeyboardEventArgs</c> at the <c>onkeydown</c> handler id the render tree wrote for
 /// <c>.map-page</c>, and the road the key takes is the player's road.</para>
 /// </summary>
+[SlowGate] // #251 · 26 s over 13 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheChecklistAndTheTrayTakeTheShellAndEscapeClosesTheMenusTests
 {
     // ══════════════════════════════════════════════════════════════════════════════════════════════════
@@ -122,8 +123,7 @@ public sealed class TheChecklistAndTheTrayTakeTheShellAndEscapeClosesTheMenusTes
     [Fact]
     public void TheRuleForTheChecklistsAnchorIsWrittenWithDeep()
     {
-        string css = WithoutComments(File.ReadAllText(
-            Path.Combine(ClientSource(), "Pages", "Map.razor.css")));
+        string css = WithoutComments(MapStylesheet.Text);
 
         var reaching = Selectors(css)
             .Where(one => one.TrimEnd().EndsWith(".map-tutorial", StringComparison.Ordinal))

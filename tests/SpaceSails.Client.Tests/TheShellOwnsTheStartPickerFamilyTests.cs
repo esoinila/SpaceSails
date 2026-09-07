@@ -42,6 +42,7 @@ namespace SpaceSails.Client.Tests;
 /// documents, because the logbook's <i>⤓ bank here</i> raises the bank sheet on the same root class. What a
 /// MIGRATION can break is narrower, and this file asks that instead.</para>
 /// </summary>
+[SlowGate] // #251 · 30 s over 13 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheShellOwnsTheStartPickerFamilyTests
 {
     /// <summary>The family's one root. <c>save-surface</c> and <c>bank-sheet</c> ride the same element as
@@ -437,8 +438,7 @@ public sealed class TheShellOwnsTheStartPickerFamilyTests
     [InlineData("the tow offer and the plan alarm", "rescue-card")]
     public void EveryCardInTheCelebrationFamilyTakesTheTallCardCapAndThePinnedFoot(string name, string root)
     {
-        string css = WithoutComments(File.ReadAllText(
-            Path.Combine(ClientSource(), "Pages", "Map.razor.css")));
+        string css = WithoutComments(MapStylesheet.Text);
 
         Assert.True(
             SelectorsOfTheRuleContaining(css, "max-height: min(92vh, 100%)")

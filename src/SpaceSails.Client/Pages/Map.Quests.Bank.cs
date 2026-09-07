@@ -36,7 +36,7 @@ public partial class Map
 
     // The open bank card: whose desk we're at, their character sheet, and whether we reached them over
     // the wire (dark-web desk) or in person (their bar table) — the channel gates what's allowed.
-    private sealed record BankSession(string ContactId, string DisplayName, ContactSheet Sheet, bool ViaWire)
+    public sealed record BankSession(string ContactId, string DisplayName, ContactSheet Sheet, bool ViaWire)
     {
         public string? Notice { get; set; } // the last action's receipt, shown on the card
     }

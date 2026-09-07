@@ -23,6 +23,7 @@ namespace SpaceSails.Client.Tests;
 /// lift to everything the floor is offering you, and back?</b></para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 19 s over 9 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class YouCanWalkTheHiveTests
 {
     private static readonly string[] Bodies =

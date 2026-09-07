@@ -29,6 +29,7 @@ namespace SpaceSails.Client.Tests;
 /// walk, every bed, every bench, and a grid over the whole box, which is what a finger actually does.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 96 s over 5 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheParkTakesAClickTests
 {
     private static SurfaceLayout.Field Field => MoonSurface.ExpeditionField();
@@ -379,21 +380,7 @@ public sealed class TheParkTakesAClickTests
     /// over the WHOLE page, and pointing it at a single partial would be a silent weakening.</summary>
     private static string Deck() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
-
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 }

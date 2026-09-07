@@ -45,6 +45,7 @@ namespace SpaceSails.Client.Tests;
 /// the code as it shipped.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 22 s over 5 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheShipLanesAreArchivedTests
 {
     private const int WidthPx = 1200, HeightPx = 700;
@@ -219,8 +220,7 @@ public sealed class TheShipLanesAreArchivedTests
     [Fact]
     public void TheLaneSweepsAreKeptBecauseTheyPutRealContactsInTheLedger()
     {
-        ICelestialEphemeris sol = CircularOrbitEphemeris.FromScenario(
-            ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol.json")));
+        ICelestialEphemeris sol = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
         CorridorRegion lane = TradeCorridors.Regions(sol, 0)
             .Single(r => r is { AId: "earth", BId: "mars" } or { AId: "mars", BId: "earth" });

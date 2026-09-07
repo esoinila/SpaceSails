@@ -364,6 +364,132 @@ public sealed class HullSoundingTests
         }
     }
 
+    // ── #537 slice 3 · THREE PAPERS, AND A HULL LIES IN EXACTLY ONE ───────────────────────────────────
+
+    /// <summary>
+    /// A CLEAN HULL DEAD-ENDS EVERY PAPER, AND A LYING HULL DEAD-ENDS TWO OF THEM. This is the whole of the
+    /// #533 discipline for the new clue kinds, and it is written as a pair so neither half can pass on its
+    /// own: an honest line that leaked the band would fail the first block, and a clue that never fired
+    /// would fail the second.
+    ///
+    /// <para>The consequence a player feels is that reading ONE document is not a search. Read the manifest
+    /// on a hull whose lie is in her frame numbering and you are told, truthfully, that her shielding books
+    /// out — and you learn nothing, which is the price of not reading all three.</para>
+    /// </summary>
+    [Fact]
+    public void EveryPaperDeadEndsExceptTheOneSheLiesIn()
+    {
+        HullSounding.HiddenVoid hidden = new(
+            "DEEP HOLD", Outboard: true, -12, -6, true, -9, WreckLayout.TopY,
+            6 * WreckLayout.ShieldingDepth, "something", HullSounding.ClueKind.SkippedFrame);
+
+        foreach (HullSounding.ClueKind kind in Enum.GetValues<HullSounding.ClueKind>())
+        {
+            string honest = HullSounding.HonestLine(kind);
+
+            Assert.False(string.IsNullOrWhiteSpace(honest));
+            Assert.DoesNotContain("void", honest, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("hidden", honest, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(hidden.NearRoom, honest, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain(HullSounding.FrameNumber(hidden.X0).ToString(), honest,
+                                  StringComparison.Ordinal);
+        }
+
+        // …and the one she DOES lie in names the room and the run, so the two are plainly different pages.
+        string told = HullSounding.AsDiscrepancy(hidden).Reason;
+        Assert.Contains(hidden.NearRoom, told, StringComparison.Ordinal);
+        Assert.NotEqual(HullSounding.HonestLine(HullSounding.ClueKind.SkippedFrame), told);
+    }
+
+    /// <summary>
+    /// AND EVERY KIND STATES A MEASUREMENT AND DRAWS NO CONCLUSION. The law the manifest already shipped
+    /// under, now owed by three papers: a captain told "there is a void outboard of the deep hold" has been
+    /// handed the find; one told her frame plate steps over six frames has been handed the QUESTION.
+    /// </summary>
+    [Fact]
+    public void EveryClueKindStatesAMeasurementAndNeverAnAnswer()
+    {
+        var reasons = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (HullSounding.ClueKind kind in Enum.GetValues<HullSounding.ClueKind>())
+        {
+            HullSounding.HiddenVoid hidden = new(
+                "NEAR HOLD", Outboard: true, -12, -6, false, -9, WreckLayout.BottomY,
+                6 * WreckLayout.ShieldingDepth, "something", kind);
+
+            HullSounding.Discrepancy d = HullSounding.AsDiscrepancy(hidden);
+            string line = HullSounding.ClueLine(d);
+            reasons.Add(d.Reason);
+
+            Assert.False(string.IsNullOrWhiteSpace(line));
+            Assert.DoesNotContain("void", line, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("hidden", line, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("search here", line, StringComparison.OrdinalIgnoreCase);
+            Assert.DoesNotContain("smuggl", line, StringComparison.OrdinalIgnoreCase);
+        }
+
+        // THREE PAPERS, THREE SENTENCES. A hull whose three clue kinds all read out the same words is one
+        // clue wearing three names, and the whole reason the kinds exist — that reading the wrong page
+        // teaches you nothing — quietly stops being true.
+        Assert.Equal(Enum.GetValues<HullSounding.ClueKind>().Length, reasons.Count);
+    }
+
+    /// <summary>Whichever paper she lies in, the band it names is the band the plate opens into. A clue that
+    /// points somewhere other than the find is the bug Lab 44 caught in the first geometry rule, and adding
+    /// two more sources of the same <c>Discrepancy</c> is exactly how it would come back.</summary>
+    [Fact]
+    public void EveryClueKindNamesTheSameBandAsThePlate()
+    {
+        foreach (HullSounding.ClueKind kind in Enum.GetValues<HullSounding.ClueKind>())
+        {
+            HullSounding.HiddenVoid hidden = new(
+                "DEEP HOLD", Outboard: true, -12, -6, true, -9, WreckLayout.TopY,
+                6 * WreckLayout.ShieldingDepth, "something", kind);
+
+            HullSounding.Discrepancy d = HullSounding.AsDiscrepancy(hidden);
+
+            Assert.Equal(hidden.X0, d.X0, 3);
+            Assert.Equal(hidden.X1, d.X1, 3);
+            Assert.Equal(hidden.Top, d.Top);
+            Assert.Equal(hidden.AreaSquareDu, d.AreaSquareDu, 3);
+        }
+    }
+
+    /// <summary>Frame numbers are counted from her transom forward, in one place, so a clue and a placard can
+    /// never disagree about which frame a wall is on.</summary>
+    [Fact]
+    public void FramesAreNumberedFromTheTransomForward()
+    {
+        Assert.Equal(0, HullSounding.FrameNumber(WreckLayout.TransomX));
+        Assert.Equal(6, HullSounding.FrameNumber(WreckLayout.TransomX + 6));
+        Assert.True(HullSounding.FrameNumber(WreckLayout.BowX) > HullSounding.FrameNumber(WreckLayout.AftX));
+    }
+
+    /// <summary>A SEEDED HULL PICKS ONE PAPER AND KEEPS IT, and adding the roll did not move any of the
+    /// placements the golden pin above is written against — it rides its own tag, so the existing stream is
+    /// untouched.</summary>
+    [Fact]
+    public void WhichPaperSheLiesInIsAsFixedAsWhereTheVoidIs()
+    {
+        int seen = 0;
+        foreach (string id in new[] { "quiet-sister", "marbury", "ptarmigan", "long-shrift", "golden-hull" })
+        {
+            if (VoidOn(id) is not { } hidden)
+            {
+                continue;
+            }
+
+            seen++;
+            Assert.Contains(hidden.Says, Enum.GetValues<HullSounding.ClueKind>());
+            for (int again = 0; again < 3; again++)
+            {
+                Assert.Equal(hidden.Says, VoidOn(id)!.Value.Says);
+            }
+        }
+
+        Assert.True(seen > 0, "no hull hid anything, so this law tested nothing");
+    }
+
     /// <summary>The manifest's lie reads out as the same <see cref="HullSounding.Discrepancy"/> the geometry rule
     /// produces, so one panel can show either without knowing which it got — and it still refuses to draw a
     /// conclusion.</summary>

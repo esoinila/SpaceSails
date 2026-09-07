@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -39,32 +39,18 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheCarriedMissionsPaneTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     // ── The bench ───────────────────────────────────────────────────────────────────────────────────────
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>The shipping scenario, off the canonical copy at the repo root — the same JSON the client
-    /// fetches. Cached: the ephemeris is read-only here and every case wants the same sky.</summary>
-    private static readonly Lazy<ICelestialEphemeris> Sol = new(() => CircularOrbitEphemeris.FromScenario(
-        ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol.json"))));
+    /// fetches, parsed once for the whole assembly (<see cref="TestTree.Sol"/>). The EPHEMERIS is still this
+    /// class's own: it is read-only here and every case wants the same sky.</summary>
+    private static readonly Lazy<ICelestialEphemeris> Sol =
+        new(() => CircularOrbitEphemeris.FromScenario(TestTree.Sol));
 
     private static Type Nested(string name) =>
         typeof(Pages.Map).GetNestedType(name, Hidden | BindingFlags.Static)
@@ -346,7 +332,7 @@ public sealed class TheCarriedMissionsPaneTests
     {
         var second = new List<string>();
         foreach (string file in Directory.EnumerateFiles(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "*.cs", SearchOption.AllDirectories))
+            Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "*.cs", SearchOption.AllDirectories))
         {
             string[] lines = File.ReadAllLines(file);
             for (int i = 0; i < lines.Length; i++)

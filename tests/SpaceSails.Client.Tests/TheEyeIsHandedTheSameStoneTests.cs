@@ -210,22 +210,8 @@ public sealed class TheEyeIsHandedTheSameStoneTests
 
     // ── THE PAGE ITSELF ───────────────────────────────────────────────────────────────────────────────
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     private static string Between(string text, string from, string to)
     {
@@ -246,7 +232,7 @@ public sealed class TheEyeIsHandedTheSameStoneTests
     public void ThePageFilesItsSightBlockersIntoTheIndexAndKeepsThem()
     {
         string sight = Between(
-            Pages("Map.Surface.Reevers.cs"),
+            Pages("Map.Surface.Reevers.Sight.cs"),
             "private IReadOnlyList<SurfaceCollision.Segment> SightBlockers()",
             "private bool IsDoorShut(");
 

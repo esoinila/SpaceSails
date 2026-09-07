@@ -178,6 +178,66 @@ public static class CollectorLanding
         + "sitting on a rock, one standing with their arms folded, one down on a knee. Nobody is trying the "
         + "door. Nobody has to.");
 
+    // ── #731 · AND WHEN THEIR BUSINESS IS DONE, THEY GO HOME ─────────────────────────────────────────
+
+    /// <summary>
+    /// #731 · What a hunter id looks like when the hunter is a crew standing on regolith rather than a boat
+    /// in space, and the reason it is a constant.
+    ///
+    /// <para>The encounter this crew opens is filed under <c>collector-ground:&lt;body&gt;</c>, and the code
+    /// that ends an encounter — <c>RemoveHunter</c> — searches the SPACE hunter list, which a crew on the
+    /// ground was never in. So <i>"logs a clean sweep and sheers off"</i> was a sentence about a ship, said
+    /// over a crew who had not moved: this repository's third named bug class (the sim doing one thing while
+    /// a sentence reports another). The prefix is quoted at both ends now, so the id that names a ground crew
+    /// and the id that recognises one cannot drift apart.</para>
+    /// </summary>
+    public const string GroundHunterIdPrefix = "collector-ground:";
+
+    /// <summary>Whether an encounter id belongs to a crew on the ground rather than a hull in space.</summary>
+    public static bool IsAGroundCrew(string? hunterId) =>
+        hunterId is not null && hunterId.StartsWith(GroundHunterIdPrefix, StringComparison.Ordinal);
+
+    /// <summary>#731 · How far off their own boat the crew stand when they get out of it, in deck units — and
+    /// the same distance they walk back to when they are finished. One number, so the place they came from
+    /// and the place they queue for cannot be two different spots.</summary>
+    public const double StandsOffTheBoatDu = 2.0;
+
+    /// <summary>
+    /// #731 · <b>THE HATCH IS THEIRS.</b> A captain pushed clear of the boat's own airlock while somebody is
+    /// working it — the same law, and the same shape, as a wreck's crew-only lock holding a captain out while
+    /// the sweep team files through it (<c>WreckLayout.HeldAtLock</c>).
+    ///
+    /// <para>The issue's own rule is that the door opens on their authority exactly where the captain's would
+    /// be refused, <b>and that no line may explain it</b>. There is nothing to explain here: it is their boat,
+    /// they came down in it, and a captain who walks into the queue is simply not going through with them. The
+    /// push is outward along the line from the hatch, so it can never trap anybody — a captain standing exactly
+    /// on it is moved off in a fixed direction rather than jittered.</para>
+    ///
+    /// <para>It applies ONLY while a body is at the head of the file. A permanent no-go bubble beside the way
+    /// home would be furniture, and on a moon where air is the clock, furniture in the walk home is a way to
+    /// kill a captain with a rule nobody can see.</para>
+    /// </summary>
+    public static (double X, double Y) HeldOffTheirHatch(
+        double x, double y, double hatchX, double hatchY, double radius)
+    {
+        double keepOut = radius + Interior.Egress.DoorStandoffDu;
+        double dx = x - hatchX, dy = y - hatchY;
+        double range = Math.Sqrt((dx * dx) + (dy * dy));
+        if (range >= keepOut)
+        {
+            return (x, y);
+        }
+
+        if (range <= 1e-9)
+        {
+            // Standing precisely on it. Off along the side the crew are not queueing on, which is the one
+            // direction that never puts a captain inside the file.
+            return (hatchX, hatchY + keepOut);
+        }
+
+        return (hatchX + (dx / range * keepOut), hatchY + (dy / range * keepOut));
+    }
+
     /// <summary>Is this contact close enough to be a catch?</summary>
     public static bool HasYou(double collectorX, double collectorY, double avatarX, double avatarY)
     {

@@ -306,6 +306,41 @@ public static partial class UndergroundComplex
         return sign.StartsWith('⟶');   // ⟶ SECTOR n · d.d km
     }
 
+    /// <summary>
+    /// #1074 · <b>IS THERE ANYTHING ON THIS DOOR TO TRY A CARD AGAINST?</b> No, for exactly two things in
+    /// this building: a rib's sealed mouth, whose bolts go through the frame into the rock from a side you
+    /// are not on, and the order's own plate (<see cref="StopOrder.Plate"/>), which is a leaf somebody
+    /// welded shut and stamped rather than a lock somebody turned.
+    ///
+    /// <para>Written as ONE question rather than as an <c>||</c> at the call site, because the caller is the
+    /// client and the client must never be the place that decides what a sign IS — the same rule
+    /// <see cref="IsSealedWay"/> and <see cref="IsDoorSign"/> are written to. A captain who presses a card
+    /// against a stop order gets the sealed way's own honest answer (<i>"there is no reader on this. No slot,
+    /// no plate, no panel"</i>) rather than the room-door line about a mechanical lock and somebody who
+    /// walked away with the key — which would be a sentence describing a world the sim is not running.</para>
+    ///
+    /// <para><b>NO PAD ON THESE TWO — and that is now a distinction rather than a blanket.</b> This paragraph
+    /// used to read "#602's in-code ruling, said in a predicate: NO KEYPAD", which was OUR refusal, written
+    /// before the owner had ruled and never revisited after he did. He ruled the numpad IN on 2026-08-02
+    /// (call 3 in <c>UndergroundComplex.AuthorityCard.cs</c>): the gated FLOORS on the lift panel get a pad,
+    /// a vicious sticker beside it, three tries and a ninety-second decay window.</para>
+    ///
+    /// <para>None of which reaches anything this predicate answers YES for, and the reason is the reason the
+    /// predicate exists at all. A pad is a thing bolted beside a LOCK, and a lock is a mechanism somebody
+    /// operates. A rib's sealed mouth is bolts through the frame into the rock from a side you are not on;
+    /// the order's plate is a leaf somebody WELDED and then stamped. There is nothing on either of them to
+    /// read a card, nothing to type into, nothing to break, and no other door in the building that opens
+    /// them. The lift's gate is the opposite case in every particular — a working reader, on a working panel,
+    /// that a captain is already standing in front of, pressing buttons.</para>
+    ///
+    /// <para>So the honest line is <b>a sealed working has no pad; only the gated floors get one</b>, and it
+    /// stays a fact about what the thing IS, which is what lets it be a predicate.</para></summary>
+    public static bool HasNoReader(string sign)
+    {
+        ArgumentNullException.ThrowIfNull(sign);
+        return IsSealedWay(sign) || StopOrder.IsPlate(sign);
+    }
+
     /// <summary>#803 · Is this sign the goods hoist's own plate? Asked of the sign for the same reason
     /// <see cref="IsSealedWay"/> is: the client meets these as strings on a console and must never be the
     /// place that decides what one of them IS.</summary>

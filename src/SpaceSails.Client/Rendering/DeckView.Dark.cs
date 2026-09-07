@@ -133,6 +133,14 @@ public sealed partial class DeckView
 
                     float sx0 = ox + ((float)bx0 * scale), sy0 = oy - ((float)by1 * scale);
                     float sx1 = ox + ((float)bx1 * scale), sy1 = oy - ((float)by0 * scale);
+                    // #563 · and off the glass is not drawn. The unseen bound is the northern rim of the
+                    // tile row now and runs the whole width of the carried chunk, most of it nowhere near
+                    // the captain — four bands every two deck units of it is a lot of black rectangles
+                    // painted where nobody is looking.
+                    if (OffTheGlass(sx0, sy0, sx1, sy1))
+                    {
+                        continue;
+                    }
                     FillRect(sx0, sy0, sx1 - sx0, sy1 - sy0, ink);
                 }
             }

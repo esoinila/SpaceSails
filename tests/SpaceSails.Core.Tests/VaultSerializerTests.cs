@@ -89,6 +89,37 @@ public class VaultSerializerTests
             TutorialPlayed = true,
             SecretLabsFound = ["phobos", "the-hermits-rock"],
             OddBooksRead = ["the-travels", "the-fat-paperback"],
+            // #677 — the disclosure clock's register. Two grounds, opened in two different world-side
+            // windows, because a register that only ever held one row would round-trip a shape the game
+            // cannot produce and would say nothing about the window travelling with the ground.
+            HallsOpened = [new HallOpeningRecord("phobos", 0), new HallOpeningRecord("miranda", 17)],
+            // #1063 — …and which of those grounds the neighbours have since filled in. ONE of the two, so
+            // the round trip carries a register that is a SUBSET rather than a copy of the one above it: a
+            // file where every opened ground is also a buried one would round-trip a shape the game reaches
+            // only at the very end and would say nothing about the two lists being independent.
+            HallsBuried = ["miranda"],
+            // #1068 — …and which of them the world has since declined on, with the window each declined
+            // in. The OTHER of the two, so the three registers here are three different subsets rather
+            // than one list said three times: a file where the buried ground and the declined ground were
+            // the same row would round-trip nothing about them being independent facts.
+            HallsDeclined = [new HallDeclineRecord("phobos", 4)],
+            // #1068 — …and which of them the harbour has done its paperwork about, with the window and with
+            // the berth already handed over. BerthGiven is TRUE on purpose: false is what a dropped field
+            // decays to, so a round trip that only ever carried false would prove nothing about the one flag
+            // standing between "the berth moved once" and "the berth moves every time you reload".
+            HallsHandled = [new QuietHandRecord("miranda", 9, BerthGiven: true)],
+            // #1074 — …and which of them the Authority has since closed the deep working of. The SAME row
+            // as the declined one, deliberately: a stop and a decline are two different things that can be
+            // true of one ground at once (they are different channels), and a file where the three lists
+            // never overlapped would round-trip a shape that says nothing about them being independent.
+            // What may never share a row is a stop and a BURIAL, and that is a law about the world rather
+            // than about this format — TheStopOrderAtTheDigTests holds it.
+            HallsStopped = ["phobos"],
+            // #1074 beat 2 — and which of THOSE closed workings have since been fenced, signed and put under
+            // study. The same id as the stopped one, deliberately and unavoidably: a zone stands on a closed
+            // working and nowhere else, so a file whose two lists did not overlap would round-trip a shape
+            // the world cannot produce.
+            HallsPreserved = ["phobos"],
         },
         Nerve = new NerveSection { Nerve = 42.5, MonolithSeen = true },
         Overheard = new OverheardSection
@@ -136,6 +167,31 @@ public class VaultSerializerTests
         Assert.Equal(["phobos", "the-hermits-rock"], loaded.Progress.SecretLabsFound); // #409 — found labs persist per thread
         // #701 — and the shelves whose gist the casebook already carries, so a reload never re-files one
         Assert.Equal(["the-travels", "the-fat-paperback"], loaded.Progress.OddBooksRead);
+        // #677 — and the disclosure clock's register, WITH the window each ground was opened in. A clock
+        // that forgot across a reload would reset every threshold written against it, silently.
+        Assert.Equal(
+            [new HallOpeningRecord("phobos", 0), new HallOpeningRecord("miranda", 17)],
+            loaded.Progress.HallsOpened);
+        // #1063 — and which of them were filled in. A burial that forgot across a reload would put a set of
+        // galleries back under a site the captain's own field book says are gone, and the book is the only
+        // witness there is.
+        Assert.Equal(["miranda"], loaded.Progress.HallsBuried);
+        // #1068 — and which of them the world declined on, WITH the window. The window is what the door is
+        // chosen against, so a save that dropped it would re-open the shut leaf and shut a different one:
+        // a lock that moved by itself, which is the one reading a declined door may never have.
+        Assert.Equal([new HallDeclineRecord("phobos", 4)], loaded.Progress.HallsDeclined);
+        // #1068 — and which of them the harbour filed, with the window and the spent berth. The spent flag is
+        // the load-bearing half: a reassignment that came back on every reload would be the one farmable
+        // shape #672's channel is written to avoid, and nothing on screen would ever say so.
+        Assert.Equal([new QuietHandRecord("miranda", 9, true)], loaded.Progress.HallsHandled);
+        // #1074 — and which of them an office closed the working of. A closure that forgot across a reload
+        // would re-open a shaft an office had sealed, and would let the neighbours fill in a ground the
+        // Authority had already taken.
+        Assert.Equal(["phobos"], loaded.Progress.HallsStopped);
+        // #1074 beat 2 — and which of those have since passed into official care. Nothing ever takes a site
+        // back OUT of care, so a reload that dropped this list would be the one mechanical fact of the beat
+        // going missing: the study would end, which is the thing it does not do.
+        Assert.Equal(["phobos"], loaded.Progress.HallsPreserved);
         Assert.Equal(42.5, loaded.Nerve!.Nerve, 6);   // #317 — a captain who fled shaking is still shaking
         Assert.True(loaded.Nerve.MonolithSeen);        //        and the monolith's first-sight hit stays spent
         Assert.Equal(["luna#1", "titan#3"], loaded.Authorities!.Cards);   // #590 — the wallet

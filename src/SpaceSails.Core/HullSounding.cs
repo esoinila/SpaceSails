@@ -251,6 +251,8 @@ public static class HullSounding
     /// <param name="PlateY">…on the wall of a room, so a captain stands in the room and reaches it.</param>
     /// <param name="AreaSquareDu">How much ship it accounts for — the search, once the clue is believed.</param>
     /// <param name="Holds">What is in there, in the captain's own words when they get in.</param>
+    /// <param name="Says">WHICH of her papers does not add up — see <see cref="ClueKind"/>. Defaults to the
+    /// manifest, which is the one that shipped first and the one every existing caller means.</param>
     public readonly record struct HiddenVoid(
         string NearRoom,
         bool Outboard,
@@ -260,7 +262,37 @@ public static class HullSounding
         double PlateX,
         double PlateY,
         double AreaSquareDu,
-        string Holds);
+        string Holds,
+        ClueKind Says = ClueKind.Manifest);
+
+    /// <summary>
+    /// #537 slice 3 · WHICH OF HER PAPERS DOES NOT ADD UP. The manifest was one, and a hull that only ever
+    /// lied in the same document would teach a captain to read one page and skip the rest of the ship.
+    ///
+    /// <para><b>Each is deniable on its own</b>, which is #533's whole discipline: a stuck breaker, a
+    /// draughtsman who renumbered after a refit, a shielding section booked light because somebody was lazy.
+    /// None of the three is proof of anything. Two of them agreeing would be — and they never do, because
+    /// <b>a hull tells exactly one</b>. Read the wrong page on a lying hull and you get an honest dead end
+    /// and learn nothing, which is the price of not reading all three.</para>
+    ///
+    /// <para><b>And on a clean hull every one of them dead-ends</b> (<see cref="HonestLine"/>). A document
+    /// that only speaks up when there is something to find is not a clue, it is a pointer — the law the
+    /// manifest already shipped under, now owed by three papers instead of by one.</para>
+    /// </summary>
+    public enum ClueKind
+    {
+        /// <summary>The cargo manifest: her shielding is booked section by section, and one section is booked
+        /// light. Read at the manifest station.</summary>
+        Manifest,
+
+        /// <summary>The builder's frame numbering, off the damage-control placard by the lock: the plate
+        /// counts from the transom forward and steps over a run of frames it never writes down.</summary>
+        SkippedFrame,
+
+        /// <summary>The dead bridge panel — dead except for one breaker warm to the back of a glove. A
+        /// standing load on a bus that runs to a compartment nobody is using.</summary>
+        StandingLoad,
+    }
 
     /// <summary>How many hulls carry one at all. Rare on purpose: a void on every wreck makes measuring routine,
     /// and the whole appeal is that most ships are exactly what they look like.</summary>
@@ -327,6 +359,12 @@ public static class HullSounding
         (string holds, bool needsTheBand) =
             WhatIsInThere[DiceRule.Roll(DiceRule.Seed(seed, "holds"), WhatIsInThere.Length).Face - 1];
 
+        // #537 slice 3 · WHICH PAPER SHE LIES IN. Rolled on its own tag so the placement rolls above and the
+        // golden hull's pinned geometry are untouched by adding it — a new roll folded into the existing
+        // stream would have re-cut every seeded hull in the game, and the pin exists precisely to catch that.
+        ClueKind says = (ClueKind)(DiceRule.Roll(DiceRule.Seed(seed, "tell"),
+                                                 System.Enum.GetValues<ClueKind>().Length).Face - 1);
+
         // A bulkhead run only exists where a room has a room on the other side of it, and only takes small
         // things. Anything bulky goes outboard whatever the roll says — the ship decides, not the dice.
         float[] bulkheads =
@@ -352,7 +390,7 @@ public static class HullSounding
 
             return new HiddenVoid(
                 name, Outboard: false, bulkhead - half, bulkhead + half, top,
-                face, insideY, WreckLayout.BulkheadDepth * roomDepth, holds);
+                face, insideY, WreckLayout.BulkheadDepth * roomDepth, holds, says);
         }
 
         // Outboard, in the shielding band: the plate is on the room's outboard wall, clear of its corners.
@@ -371,18 +409,59 @@ public static class HullSounding
             System.Math.Max(WreckLayout.TransomX, plateX - bandHalf),
             System.Math.Min(WreckLayout.ShieldingForwardEnd, plateX + bandHalf),
             top, plateX, top ? topY : bottomY,
-            VoidFrames * WreckLayout.ShieldingDepth, holds);
+            VoidFrames * WreckLayout.ShieldingDepth, holds, says);
     }
 
-    /// <summary>The manifest's lie, as the same <see cref="Discrepancy"/> the geometry rule produces — one type,
-    /// two sources, so a panel that can show one can show the other without knowing which it got.</summary>
+    /// <summary>Her paperwork's lie, as the same <see cref="Discrepancy"/> the geometry rule produces — one
+    /// type, several sources, so a panel that can show one can show the others without knowing which it got.</summary>
     public static Discrepancy AsDiscrepancy(in HiddenVoid hidden) =>
-        new(hidden.Outboard
+        new(ReasonFor(hidden), hidden.X0, hidden.X1, hidden.Top, hidden.AreaSquareDu);
+
+    /// <summary>Her frame number at a station, counted from the transom forward the way a builder counts.
+    /// One place that arithmetic lives, so a clue and a placard can never disagree about which frame a wall
+    /// is on.</summary>
+    public static int FrameNumber(double x) =>
+        (int)System.Math.Round(x - WreckLayout.TransomX);
+
+    /// <summary>
+    /// WHAT DOES NOT ADD UP, in the captain's own terms and never as an answer. Each arm states a
+    /// measurement and stops; the conclusion is the player's, which is the difference between this and a
+    /// treasure map (#533, and the law <c>TheClueStatesAMeasurementAndDrawsNoConclusion</c> pins).
+    /// </summary>
+    private static string ReasonFor(in HiddenVoid hidden) => hidden.Says switch
+    {
+        ClueKind.SkippedFrame =>
+            $"her frames are numbered from the transom forward in one hand, and the plate on {hidden.NearRoom}'s " +
+            $"bulkhead runs {FrameNumber(hidden.X0)} straight on to {FrameNumber(hidden.X1)} without ever " +
+            $"writing down the {FrameNumber(hidden.X1) - FrameNumber(hidden.X0)} in between",
+
+        ClueKind.StandingLoad =>
+            $"the board is dead and every breaker on it is cold except one, and the bus that one carries runs " +
+            $"outboard of {hidden.NearRoom} to a section of her that nobody has been in for eleven years",
+
+        _ => hidden.Outboard
                 ? $"her shielding is booked by the section, and the run outboard of {hidden.NearRoom} holds a " +
                   "third of what every other section of it does"
                 : $"her bulkhead schedule books every frame at one thickness, and the one {hidden.NearRoom} " +
                   "shares is a hand's width off it",
-            hidden.X0, hidden.X1, hidden.Top, hidden.AreaSquareDu);
+    };
+
+    /// <summary>
+    /// WHAT THE SAME PAPER SAYS ON A HULL THAT IS NOT LYING — or on a lying hull whose lie is somewhere else.
+    /// Every clue kind owes one, and it has to be an honest dead end: a document that only speaks up when
+    /// there is something to find has stopped being a clue and become a pointer, and a captain would learn
+    /// in two boardings to read the silence rather than the page.
+    /// </summary>
+    public static string HonestLine(ClueKind kind) => kind switch
+    {
+        ClueKind.SkippedFrame =>
+            "📐 Her frame numbers run from the transom to the bow without a gap in them, in one hand, on a " +
+            "plate that has been painted over twice.",
+        ClueKind.StandingLoad =>
+            "📐 The board is dead and every breaker on it is as cold as the next one.",
+        _ =>
+            "📐 Her shielding is booked section by section, and every section holds the same.",
+    };
 
     // ── What is said ──────────────────────────────────────────────────────────────────────────────────
 

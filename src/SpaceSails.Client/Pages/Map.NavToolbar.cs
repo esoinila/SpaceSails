@@ -71,10 +71,16 @@ public partial class Map
 
     /// <summary>The hover on <c>🛰 Autopilot to stable park</c> — the #180 fork, where the current radius is
     /// tide-chaotic and the press hands her to the autopilot rather than parking her somewhere the sun will
-    /// strip. Still an emergency: the descent starts from wherever she happens to be.</summary>
+    /// strip. Still an emergency: the descent starts from wherever she happens to be.
+    ///
+    /// <para>#1179 · the radius named here is <c>oi.KeptPark</c>, #286's CLAMPED park. This sentence is a
+    /// promise about where the press will take her, and the autopilot it hands her to parks at
+    /// <c>min(tide-stable, cap)</c> — so quoting the raw tide-stable radius named a berth the pilot would
+    /// not fly to at any inner moon whose park the cap cuts off. The wording is untouched; only the number
+    /// it reads is.</para></summary>
     private string EmergencyDescentTip(OrbitAssistInfo oi) =>
         $"Emergency descent at {oi.Body.Name} — this radius is tide-chaotic (Lab 16), so the autopilot takes " +
-        $"her down to the stable park at {FormatDistance(OrbitRule.ParkingRadius(oi.Body, oi.Hill))} from " +
+        $"her down to the stable park at {FormatDistance(oi.KeptPark)} from " +
         "wherever she is now, unplanned. 🗺 Plot + an arrive-orbit step flies the approach properly.";
 
     /// <summary>The hover on <c>Auto-orbit</c> — arming the capture off the current coast, with no plan behind

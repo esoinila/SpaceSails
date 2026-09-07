@@ -116,9 +116,19 @@ public partial class Map
             // Never roll a cache for days before it was in the ground: start its scan at the later of
             // the global last-check and its own burial day.
             long from = Math.Max(lastChecked, DiscoveryRule.PeriodIndex(c.BuriedSimTime));
-            // #295: a Reever-haunted stash is harder for rivals to work — the watchdogs guard it too.
-            if (DiscoveryRule.DiscoveredWithin(c.Id, from, SimTime, c.ReeverLevel) is not null)
+            // #455: the odds this chest actually earned — the carry, the shovel and the ground's own Reever
+            // weight, read off the ONE oracle (CacheSafety) that also wrote the line the captain was shown
+            // when he put it down. The promise and the dice cannot drift because they are the same call.
+            //
+            // #316 law 3 · …and the FOURTH term, the only one the captain chose on purpose: the husks his own
+            // stand left on that ground. Sentry fire buys safety today and advertises the site tomorrow. A
+            // quiet dig hands a zero in here and the chest reads exactly as it always has.
+            if (DiscoveryRule.DiscoveredWithin(c, from, SimTime, TheFightThisGroundCarries(c)) is { } found)
             {
+                // #316 law 1, second half · THE GROUND CARRIES WHAT HAPPENED — written BEFORE the chest comes
+                // off the books, because every mark is derived from the chest: where its ✗ was, and what
+                // haunted the ground it was under.
+                TheRivalsLeftTheirMarks(c, found);
                 _caches.Remove(c.Id);
                 RendererInterop.PlayCue("alarm");
                 ShowPulseMessage($"🏴‍☠️ Someone dug up our chest on {BodyName(c.BodyId)} — {c.ContentsLine()} gone. Split the hoards next time.");

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -23,22 +23,9 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class TheHeatIsBankedOnceTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Read(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), .. parts]));
+        MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), .. parts]));
 
     private static int Count(string haystack, string needle)
     {
@@ -55,7 +42,7 @@ public sealed class TheHeatIsBankedOnceTests
     /// <summary>Every file in the client, with the build leftovers left out.</summary>
     private static IEnumerable<(string Path, string Text)> ClientFiles()
     {
-        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client");
+        string dir = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client");
         char sep = Path.DirectorySeparatorChar;
         foreach (string file in Directory.EnumerateFiles(dir, "*.*", SearchOption.AllDirectories))
         {
@@ -149,7 +136,57 @@ public sealed class TheHeatIsBankedOnceTests
             perVisit >= 0 && filedIt > perVisit,
             "the signer's report is banked outside the once-per-visit latch — four glasses, four reports.");
 
-        // …and there is no eighth banker anywhere in the client. One seam, or the count above proves nothing.
+        // #417 · …and the NINTH, which is the only crossing in the game the captain WALKS INTO WITH HIS EYES
+        // OPEN. Every other one on this list is something done to him — a machine refusing his card, a man
+        // walking him out, a bang somebody heard, a woman who set him up. This one is a button he presses
+        // knowing the price: the man in the next berth pays him to be missed, and the port he was tied up in
+        // is the port that finds out. Banked through the one seam, owed to whoever runs THAT berth.
+        //
+        // ONCE, because the settling is once: the arm is behind `_finderProgress.Settled` still reading
+        // `Outcome.Open`, and pressing the card's second verb after the first changes nothing. That latch is
+        // asserted here rather than left to the reader, because a bribe that could be taken twice would be a
+        // band of heat per press.
+        string finder = Read("src", "SpaceSails.Client", "Pages", "Map.Finder.cs");
+        Assert.Equal(1, Count(finder, "BankTheCrossing(new UndergroundComplex.HeatCharge("));
+        Assert.Contains("_finderProgress.Settled != FinderCase.Outcome.Open", finder, StringComparison.Ordinal);
+        int settledGate = finder.IndexOf("_finderProgress.Settled != FinderCase.Outcome.Open", StringComparison.Ordinal);
+        int bribeBanked = finder.IndexOf("BankTheCrossing(new UndergroundComplex.HeatCharge(", StringComparison.Ordinal);
+        Assert.True(
+            settledGate >= 0 && bribeBanked > settledGate,
+            "the bribe's charge is banked outside the once-per-case latch — two presses, two bands.");
+
+        // #525 · …and the ELEVENTH, which is the only crossing on this list that is not something the captain
+        // does ON somebody's floor. It is something he does TO their harbour: he set his own reactor to run
+        // away with itself while clamped to their collar, and let it. Owed to whoever runs THAT port, through
+        // the one seam, like every other crossing here — and worth the meter's own `Ceiling` rather than a
+        // band, because every other row above is an evening that can be had again and there is only one ship.
+        //
+        // ONCE BY CONSTRUCTION RATHER THAN BY A LATCH, which is why there is no `_somethingReported.Add` to
+        // point at: `AdvanceShipCharges` clears the clock BEFORE it calls the ending, so the ending cannot be
+        // re-entered by a later frame — and the second call would need a second hull. Both halves are pinned:
+        // one banking call, one call site, and the clock stopped before she goes.
+        string berth = Read("src", "SpaceSails.Client", "Pages", "Map.BerthScuttle.cs");
+        Assert.Equal(1, Count(berth, "BankTheCrossing(BerthScuttle.Charge(havenId))"));
+
+        string board = Read("src", "SpaceSails.Client", "Pages", "Map.ShipScuttleBoard.cs");
+        Assert.Equal(1, Count(board, "TheStationFilesIt(crimeScene)"));
+        Assert.Equal(1, Count(board, "SheGoes();"));
+
+        // ADJACENT, not merely earlier. `_shipChargesSeconds = null;` appears in BackTheKeysOut as well, so
+        // "the clear comes before the call somewhere in this file" is true whichever order the two statements
+        // are written in — a guard that asked only that would be green on the swap it exists to catch, which
+        // is this ground's fifth named bug class. What is asserted is that nothing but whitespace stands
+        // between them.
+        const string clockStopped = "_shipChargesSeconds = null;";
+        int endsHer = board.IndexOf("SheGoes();", StringComparison.Ordinal);
+        int stopsTheClock = board.LastIndexOf(clockStopped, endsHer, StringComparison.Ordinal);
+        Assert.True(
+            stopsTheClock >= 0
+            && string.IsNullOrWhiteSpace(board[(stopsTheClock + clockStopped.Length)..endsHer]),
+            "her clock is still running when the ending is called — a frame could re-enter it, and the "
+            + "port's operator would be charged for one hull twice.");
+
+        // …and there is no TWELFTH banker anywhere in the client. One seam, or the count above proves nothing.
         // The seam's own DECLARATION is not a call — `private void BankTheCrossing(…)` in Map.IllegalHeat.cs
         // is the door, and counting the door as somebody walking through it would put a phantom crossing in
         // this list every time the file is read.
@@ -169,8 +206,19 @@ public sealed class TheHeatIsBankedOnceTests
             // #973 L5b · THE EIGHTH BANKER, and it is the femme fatale's. One walk-in in three is a setup, and
             // paying for it is a customs post that was waiting at the berth the errand was flown back to —
             // owed to whoever runs THAT berth, through the one seam, like every other crossing in this list.
-            ["Map.Combat.Remote.cs×1", "Map.IllegalHeat.cs×1", "Map.OldCrew.cs×1", "Map.Scan.cs×1",
-             "Map.Surface.Hive.cs×1", "Map.WalkIn.cs×1", "Patrol.Floor.cs×1", "Patrol.Run.cs×1"],
+            // #417 · THE NINTH BANKER, and it is the finder's. Taking the bribe at the confrontation berth
+            // costs one whole band of heat — IllegalHeat.ABand, the meter's own step — owed to whoever runs
+            // THAT berth, through the one seam, like every other crossing in this list.
+            // #233 · THE TENTH, and it is the only crossing in the game the captain chooses in cold blood at
+            // a desk: selling the roadster's photographs to the dark web instead of handing them back. One
+            // band, owed to whoever runs the ground the desk was worked from, through the same one seam.
+            // #525 · THE ELEVENTH, and the only one that is not about the captain being looked at, walked
+            // out, refused, heard or set up: he ended his own ship on their collar. One band would be an
+            // insult to the event, so it is the meter's own Ceiling — quoted, never typed.
+            ["Map.BerthScuttle.cs×1", "Map.Blackmail.cs×1", "Map.Combat.Remote.cs×1", "Map.Finder.cs×1",
+             "Map.IllegalHeat.cs×1", "Map.OldCrew.cs×1",
+             "Map.Scan.cs×1", "Map.Surface.Hive.cs×1", "Map.WalkIn.cs×1", "Patrol.Floor.cs×1",
+             "Patrol.Run.cs×1"],
             bankers);
     }
 

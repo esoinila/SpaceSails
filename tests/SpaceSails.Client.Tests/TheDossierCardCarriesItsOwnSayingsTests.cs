@@ -27,33 +27,20 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheDossierCardCarriesItsOwnSayingsTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
-    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// <summary>#870 · The sim page is twenty partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
     private static string Rendering(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Rendering", file));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering", file));
 
     /// <summary>One method's body, from its signature to the next member at the same indent — the cut
     /// <see cref="TheOutcomeIsOnThePopUpTests"/> makes, so a body read here is a body read there.</summary>
@@ -225,12 +212,12 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
             "show anybody the bug #774 is about (#774).");
 
         string starts = File.ReadAllText(Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Core", "DevStarts.cs"));
+            TestTree.RepoRoot(), "src", "SpaceSails.Core", "DevStarts.cs"));
         Assert.True(starts.Contains("kit=1", StringComparison.Ordinal),
             "the dossier has no front-door button — the owner's rule for that catalogue is that these " +
             "special places to start are shown in the UI (#439/#774).");
 
-        string guide = File.ReadAllText(Path.Combine(RepoRoot(), "docs", "testing-guide.md"));
+        string guide = File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "docs", "testing-guide.md"));
         Assert.True(guide.Contains("kit=1", StringComparison.Ordinal),
             "docs/testing-guide.md is the prose twin of the DevStarts catalogue and has no row for ?kit= (#774).");
     }

@@ -1,0 +1,230 @@
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using Xunit;
+
+namespace SpaceSails.Client.Tests;
+
+/// <summary>
+/// #251 item 1 · A SURFACE MAY NOT SWALLOW A WRITE.
+///
+/// <para>This is the one way the decomposition can break the game while every test in the repo stays green,
+/// and it broke it twice before this law existed. The markup that moved out of <c>Map.razor</c> does not only
+/// READ the page: <c>@onclick="() => _walletOpen = !_walletOpen"</c> assigns a field on the PAGE, and so does
+/// <c>@bind="_scrubOffsetSeconds"</c>, which is the same assignment with the compiler writing it for you.
+/// Hand that member down as an ordinary one-way <c>[Parameter]</c> and the code still compiles, still runs,
+/// and quietly does nothing: the component writes its own copy, the page never hears it, the satchel tab you
+/// pressed does not change and the plot scrub does not move.</para>
+///
+/// <para><b>Nothing in the xUnit suites can see that</b> — none of them presses a button in a browser. Five
+/// swallowed writes shipped inside this refactor's own first two commits and were found by an audit written
+/// afterwards; a sixth (<c>@bind="_scrubOffsetSeconds"</c>) got past that audit too, because the audit looked
+/// for an <c>=</c> and <c>@bind</c> does not have one. It was caught by the UI gate, in a browser, three
+/// minutes of CI later. This law is the audit made permanent and made to cover both spellings.</para>
+///
+/// <para><b>The shape a written member must take</b> — the value in, the page's own setter out, and a private
+/// property that keeps the member's original name so the moved markup still reads as it read in the page:</para>
+/// <code>
+/// [Parameter] public bool _walletOpenValue { get; set; }
+/// [Parameter] public Action&lt;bool&gt; _walletOpenSet { get; set; } = default!;
+/// private bool _walletOpen { get =&gt; _walletOpenValue; set { _walletOpenValue = value; _walletOpenSet(value); } }
+/// </code>
+///
+/// <para><b>It found one the moment it was written</b>: <c>SaveLoadRack</c> writes <c>_renameDraft</c> from
+/// the berth-rename field's <c>@oninput</c>, and that member had been handed down one-way. Fixed in the same
+/// commit.</para>
+///
+/// <para><b>Proven RED</b> by collapsing that pair back to a one-way parameter — deleting the
+/// <c>_renameDraftSet</c> parameter and the private property, and passing <c>_renameDraft</c> straight in:
+/// "SaveLoadRack.razor writes `_renameDraft`, which is a one-way [Parameter] — the page will never hear
+/// it."</para>
+///
+/// <para>#251 · <b>And a THIRD spelling, found by the lane that cut the last surfaces out of the host.</b>
+/// <c>@ref="_navSearchInput"</c> is an assignment the compiler writes, exactly as <c>@bind</c> is, and it
+/// had no <c>=</c> for the first pattern and no <c>@bind</c> for the second. Hand a captured member down
+/// one-way and the capture lands on the component's copy: the page's <c>ElementReference</c> stays default,
+/// and <c>FocusNavSearch</c>'s <c>await _navSearchInput.FocusAsync()</c> — what <c>/</c> does — throws in the
+/// browser with every xUnit suite green. Three surfaces capture this way and all three were already paired
+/// when the sweep was added, which is the point: the law is here for the fourth.</para>
+///
+/// <para>#251 · <b>The law is stated over EVERY decomposed page</b>, not over one directory. The sensors
+/// desk's markup came out into <c>Pages/Stations/TrackingPost/</c> the same way and is swept by the same
+/// pass — a law that knew about one surfaces directory would be a law that a second decomposition walks
+/// straight past.</para>
+/// </summary>
+public sealed class NoSurfaceSwallowsAWriteTests
+{
+    private static string RepoRoot()
+    {
+        for (DirectoryInfo? at = new(AppContext.BaseDirectory); at is not null; at = at.Parent)
+        {
+            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Core")))
+            {
+                return at.FullName;
+            }
+        }
+        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
+    }
+
+    private static string SurfacesDir =>
+        Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map");
+
+    /// <summary>Every decomposed page's surfaces directory. One pass, all of them.</summary>
+    private static IReadOnlyList<string> AllSurfaceDirs =>
+    [
+        SurfacesDir,
+        // #251 · the surfaces of a surface: NavHud.razor's own markup, cut into Pages/Map/NavHud/. Two
+        // of the writes this law exists to catch (`_scrubOffsetSeconds` through @bind, `_burnAngleAbsolute`
+        // through a spelled assignment) crossed INTO NavHud that way and cross out of it again here.
+        Path.Combine(SurfacesDir, "NavHud"),
+        // #251 · and the second surface cut up in its turn: SatchelPanel.razor's six pages, under
+        // Pages/Map/SatchelPanel/. BOTH of this law's own worked examples live down here now —
+        // `_satchelPage`, which the tab bar assigns on every press, and `_walletOpen`, the folder toggle
+        // this class's summary quotes — so a list that stopped at NavHud would be a list that no longer
+        // covers the two writes it was written about.
+        Path.Combine(SurfacesDir, "SatchelPanel"),
+        Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Stations", "TrackingPost"),
+    ];
+
+    private static IEnumerable<string> EverySurfaceFile() =>
+        AllSurfaceDirs
+            .SelectMany(d => Directory.EnumerateFiles(d, "*.razor", SearchOption.TopDirectoryOnly))
+            .OrderBy(p => p, StringComparer.Ordinal);
+
+    /// <summary>Everything the moved block of one surface writes: an assignment it spells out, an
+    /// assignment <c>@bind</c> spells for it, and one <c>@ref</c> spells for it.</summary>
+    internal static IReadOnlyList<string> WhatItWrites(string markup)
+    {
+        var written = new List<string>();
+
+        // An assignment the markup spells: `_x = y`, `_x++`, `_x += 1`. NOT an attribute (`Attr="value"`,
+        // which is an identifier immediately followed by `="`), and not a comparison.
+        foreach (Match m in Regex.Matches(
+            markup, @"(?<![\w.])([A-Za-z_]\w*)\s*(?:=(?![=>""'])|\+\+|--|\+=|-=|\*=|/=)"))
+        {
+            written.Add(m.Groups[1].Value);
+        }
+
+        // …and the assignment @bind writes for it. `@bind="_x"` on an element and `@bind-Foo="_x"` on a
+        // component both compile to a setter that assigns to `_x`.
+        foreach (Match m in Regex.Matches(markup, @"@bind(?:-[A-Za-z]\w*)?=""@?([A-Za-z_]\w*)"))
+        {
+            written.Add(m.Groups[1].Value);
+        }
+
+        // …and the THIRD spelling. `@ref="_x"` compiles to
+        // `AddElementReferenceCapture(seq, __value => { _x = __value; })` (or the component twin) — an
+        // assignment to the page's member with no `=` in the markup for the first pattern to find and no
+        // `@bind` for the second. It is the same hole with the same silence: hand the member down one-way
+        // and the capture lands on the component's own copy while the page's field stays a default
+        // ElementReference, so the code that USES the capture — Map's FocusNavSearch awaits
+        // `_navSearchInput.FocusAsync()` when the captain presses `/` — throws into the browser console
+        // with nothing in any xUnit suite able to say so. Three surfaces capture this way today
+        // (NavSearchPanel's input, SensorsDeskLayer's TrackingPost, DeskPanels' LocalSpace) and all three
+        // were already paired; this sweep is what stops the fourth from not being.
+        foreach (Match m in Regex.Matches(markup, @"@ref=""@?([A-Za-z_]\w*)"))
+        {
+            written.Add(m.Groups[1].Value);
+        }
+
+        return written;
+    }
+
+    /// <summary>The one-way parameters of a surface: the ones whose name IS the parameter, rather than the
+    /// <c>…Value</c>/<c>…Set</c> pair standing behind a private property of the member's own name.</summary>
+    private static HashSet<string> OneWayParameters(string file) =>
+    [
+        .. Regex.Matches(file, @"\[Parameter\] public [^\n]*? ([A-Za-z_]\w*) \{ get; set; \}")
+            .Select(m => m.Groups[1].Value)
+    ];
+
+    [Fact]
+    public void EveryPageMemberASurfaceWritesIsHandedDownTwoWay()
+    {
+        var swallowed = new List<string>();
+
+        foreach (string path in EverySurfaceFile())
+        {
+            // #1107 · the COMPONENT, not the file: a surface's `@code` block lives in <Name>.razor.cs now.
+            string text = SurfaceComposition.ComponentText(path);
+            int begins = text.IndexOf(MapMarkup.MarkupBegins, StringComparison.Ordinal);
+            int ends = text.IndexOf(MapMarkup.MarkupEnds, StringComparison.Ordinal);
+            if (begins < 0 || ends <= begins)
+            {
+                continue;
+            }
+
+            string markup = text[begins..ends];
+            HashSet<string> oneWay = OneWayParameters(text);
+
+            foreach (string name in WhatItWrites(markup).Distinct(StringComparer.Ordinal)
+                                                        .OrderBy(n => n, StringComparer.Ordinal))
+            {
+                if (oneWay.Contains(name))
+                {
+                    swallowed.Add($"  {Path.GetFileName(path)} writes `{name}`, which is a one-way "
+                                  + "[Parameter] — the page will never hear it.");
+                }
+            }
+        }
+
+        Assert.True(swallowed.Count == 0,
+            $"#251 · {swallowed.Count} write(s) in the moved markup land on the component and stop there:\n"
+            + string.Join("\n", swallowed) + "\n\n"
+            + "The page's own field is what the markup wrote when it lived in the page, and it is what has to\n"
+            + "be written now. Hand the member down as a PAIR and put its own name on a private property:\n\n"
+            + "    [Parameter] public T <name>Value { get; set; }\n"
+            + "    [Parameter] public Action<T> <name>Set { get; set; } = default!;\n"
+            + "    private T <name> { get => <name>Value; set { <name>Value = value; <name>Set(value); } }\n\n"
+            + "…and pass `<name>Value=\"@<name>\" <name>Set=\"@(v => <name> = v)\"` from Map.razor. Nothing in\n"
+            + "the xUnit suites can see this failing on its own: it compiles, it runs, and the control simply\n"
+            + "does nothing.");
+    }
+
+    /// <summary>#251 · The world this law is stated against can tell pass from fail. It must be reading real
+    /// markup, it must actually FIND the writes that are there, and it must not be counting every attribute
+    /// in the file as one.</summary>
+    [Fact]
+    public void THE_WRITE_AUDIT_CanTellPassFromFail()
+    {
+        // It finds a spelled assignment, and the one @bind spells for it.
+        Assert.Contains("_walletOpen", NoSurfaceSwallowsAWriteTests.WhatItWrites(
+            """@onclick="() => _walletOpen = !_walletOpen">"""));
+        Assert.Contains("_scrubOffsetSeconds", WhatItWrites(
+            """<input type="range" @bind="_scrubOffsetSeconds" @bind:event="oninput" />"""));
+        Assert.Contains("_credits", WhatItWrites("""<DarkWeb @bind-Credits="_credits" />"""));
+        // …and the one the compiler writes for `@ref`, on an element and on a component alike.
+        Assert.Contains("_navSearchInput", WhatItWrites("""<input @ref="_navSearchInput" type="search" />"""));
+        Assert.Contains("_trackingPost", WhatItWrites("""<TrackingPost @ref="_trackingPost" Visible="true" />"""));
+
+        // …and it does NOT call an attribute an assignment, or a comparison one.
+        Assert.DoesNotContain("class", WhatItWrites("""<div class="satchel-page">"""));
+        Assert.DoesNotContain("Dismiss", WhatItWrites("""<OverlayShell Dismiss="OverlayDismiss.Close" />"""));
+        Assert.DoesNotContain("_satchelPage", WhatItWrites("""@if (_satchelPage == SatchelPage.Notes)"""));
+
+        // And there are surfaces to hold it to, several of which really do write.
+        string[] surfaces = [.. EverySurfaceFile()];
+        Assert.True(surfaces.Length > 60, $"only {surfaces.Length} surface(s) — this law is guarding an empty room.");
+
+        // #251 · every decomposed page is swept, not just the first one. A law that knew about Pages/Map/
+        // alone would let a second decomposition through untested, which is how this class of bug returns.
+        foreach (string dir in AllSurfaceDirs)
+        {
+            Assert.Contains(surfaces, p => Path.GetDirectoryName(p) == dir);
+        }
+
+        int writers = surfaces.Count(p =>
+        {
+            string t = SurfaceComposition.ComponentText(p);
+            int b = t.IndexOf(MapMarkup.MarkupBegins, StringComparison.Ordinal);
+            int e = t.IndexOf(MapMarkup.MarkupEnds, StringComparison.Ordinal);
+            return b >= 0 && e > b && WhatItWrites(t[b..e])
+                .Any(n => t.Contains($"public Action<", StringComparison.Ordinal) && t.Contains($"{n}Set ", StringComparison.Ordinal));
+        });
+        Assert.True(writers >= 8,
+            $"only {writers} surface(s) hand a written member down two-way — either the pattern has been "
+            + "unwound or this audit has stopped seeing the writes it is here to see.");
+    }
+}

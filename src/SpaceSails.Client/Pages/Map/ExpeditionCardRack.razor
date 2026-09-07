@@ -1,0 +1,62 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SpaceSails.Core
+@using System.Globalization
+@*
+    #251 · GOING DOWN TO A PLACE, AND FINDING OUT WHAT IS THERE — five cards on one file.
+
+    Thirty-eight consecutive lines of Map.razor: the boarding target you are about to commit bots and coin
+    to, the treasure map that names a place, the expedition brief, the reveal that answers it, and the
+    deflection story a run tells you one panel at a time. One subject — an excursion, from the decision to
+    the telling.
+
+    Moved by PURE MOTION: the gates came with the invocations, and every page member the block reads is a
+    [Parameter] with the SAME NAME. One of them is WRITTEN — the boarding card's `_boardEmptyConfirm` — so
+    it crosses as a PAIR (the value in, the page's own setter out) behind a private property that keeps the
+    field's own name, which is what stops the confirm landing on this component and stopping there
+    (NoSurfaceSwallowsAWriteTests). Not one character between the fences changed.
+
+    IHandleEvent repeats the page's own override (Map.Sim.cs). The .razor.css beside this file carries no
+    rules; it exists to give the component Map.razor.css's scope (pinned in SpaceSails.Client.csproj), and
+    the five cards keep their own sheets.
+*@
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────── *@
+    @if (_boardTarget is { } boardStop)
+    {
+        <BoardTargetCard _boardBots="@_boardBots" _boardCoin="@_boardCoin" _boardEmptyConfirmValue="@_boardEmptyConfirm" _boardEmptyConfirmSet="@(v => _boardEmptyConfirm = v)"
+                         _boardSiteIndex="@_boardSiteIndex" _boardSites="@_boardSites" _cargoUnits="@_cargoUnits"
+                         _credits="@_credits" AdjustBoardBots="@AdjustBoardBots" AdjustBoardCoin="@AdjustBoardCoin"
+                         AvailableBots="@AvailableBots" Board="@Board" BoardingAWreck="@BoardingAWreck"
+                         BoardingHoldQuote="@BoardingHoldQuote" BoardingHoldSeverity="@BoardingHoldSeverity"
+                         BotMusterLine="@BotMusterLine" CancelBoarding="@CancelBoarding"
+                         ConfirmBoarding="@ConfirmBoarding" FormatDuration="@FormatDuration"
+                         HotHoldUnits="@HotHoldUnits" LoadedBotsSummary="@LoadedBotsSummary"
+                         SelectBoardSite="@SelectBoardSite" SetBoardCoin="@SetBoardCoin"
+                         SurfaceGroundInteract="@SurfaceGroundInteract" TryBoard="@TryBoard" boardStop="@boardStop" />
+    }
+
+    @if (_treasureMapCard is { } map)
+    {
+        <TreasureMapCard BodyName="@BodyName" Dismiss="@Dismiss" DismissMapCard="@DismissMapCard"
+                         TreasureMapArtCss="@TreasureMapArtCss" map="@map" />
+    }
+
+    @if (_expeditionBriefCard is { } brief)
+    {
+        <ExpeditionBriefPanel Dismiss="@Dismiss" DismissExpeditionBrief="@DismissExpeditionBrief"
+                              ExpeditionBriefArtCss="@ExpeditionBriefArtCss" brief="@brief" />
+    }
+
+    @if (_expeditionRevealCard is { } reveal)
+    {
+        <ExpeditionRevealPanel Dismiss="@Dismiss" DismissExpeditionReveal="@DismissExpeditionReveal"
+                               ExpeditionBriefArtCss="@ExpeditionBriefArtCss" reveal="@reveal" />
+    }
+
+    @if (_deflectionStory is { Count: > 0 } story && _deflectionStoryIndex < story.Count)
+    {
+        <DeflectionStoryCard _deflectionStoryIndex="@_deflectionStoryIndex"
+                             AdvanceDeflectionStory="@AdvanceDeflectionStory"
+                             DeflectionPanelArtCss="@DeflectionPanelArtCss" Dismiss="@Dismiss" story="@story" />
+    }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────── *@

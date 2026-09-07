@@ -31,7 +31,7 @@ public sealed class TheHudSaysWhereTheAirComesFromTests
         "luna", "phobos", "europa", "ganymede", "callisto",
         "titan", "enceladus", "miranda", "triton", "the-clinker",
 
-        // #677 � …and the one rock in the system with GALLERIES under it. Without it every sweep in this
+        // #677 · …and the one rock in the system with GALLERIES under it. Without it every sweep in this
         // file audits a universe where the found band does not exist and passes for the wrong reason —
         // which is the fifth named bug class (a guard handed a world that cannot tell pass from fail).
         UndergroundComplex.FoundBandCheatSiteId,

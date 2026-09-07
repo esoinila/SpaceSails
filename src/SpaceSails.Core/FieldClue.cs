@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace SpaceSails.Core;
 
@@ -103,6 +103,47 @@ public static class FieldClue
     {
         ArgumentNullException.ThrowIfNull(paperId);
 
+        // #1061 · THE ONE SHEET IN THIS GAME THAT WAS WRITTEN RATHER THAN SEEDED, and it is here rather than
+        // in a second reader for the reason UndergroundComplex.IsHallRecord is inside RelicReveal: everything
+        // that reads a paper — the sleeve's row, the free glance, the dig at a table, the gist filed when it
+        // is put down — goes through this function and Title below. A second composition for one authored
+        // sheet would be a document that read one way in the pocket and another on the card.
+        //
+        // It returns the body ALONE. The seeded tail below ("there is a place named on it…") is the paper
+        // telling you how well it pins a place, and a rate schedule's answer to that is the whole of what it
+        // already says: it prices the ground and never names what happens on it.
+        if (HardcaseRep.IsTheSchedule(paperId))
+        {
+            return HardcaseRep.ScheduleBody;
+        }
+
+        // #1074/#1063 · …AND THE FIVE THE ARC WROTE, for exactly the same reason and through exactly the
+        // same door. A paper out of one of the underground's five designated rooms is a paper somebody
+        // composed a sentence for, and until this branch a captain who carried the rail's invoice out and
+        // opened it in the sleeve was shown a torn shipping manifest.
+        //
+        // Body ALONE again, and see PaperHeads.DocumentOf for why: the seeded tail below is a generic paper
+        // saying how well it pins a place, and these five pin nothing — they are the paperwork of one job on
+        // the ground the captain is already standing on. THE CERTAINTY IS NOT BRANCHED. It still rolls off
+        // the id exactly as it always did, so the tracker's spread, the row's short word and Line() are all
+        // untouched: what changed is what the sheet SAYS, not what it is worth.
+        if (UndergroundComplex.AuthoredPaperOf(paperId) is { } written)
+        {
+            return PaperHeads.DocumentOf(written);
+        }
+
+        // #602 · …and the code paper, the sixth head, through the same door as the five above. Until #602's
+        // canon pass of 2026-09-05 this arm returned the sheet's own handwriting, digits and all; the pass
+        // wrote it a head of its own instead, and a head DESCRIBES the page rather than transcribing it —
+        // see LiftCode.PaperDocument for why the four digits stay on the works floor.
+        //
+        // Body ALONE, again, and the certainty is not branched: it still rolls off the id, so the tracker's
+        // spread, the row's short word and Line() all say what they always said.
+        if (UndergroundComplex.LiftCode.PaperIn(paperId) is not null)
+        {
+            return UndergroundComplex.LiftCode.PaperDocument;
+        }
+
         string[] papers =
         [
             "A duplicate movement order, carbon third copy, the top two long gone. Somebody has ticked a " +
@@ -164,6 +205,30 @@ public static class FieldClue
     public static string Title(string paperId)
     {
         ArgumentNullException.ThrowIfNull(paperId);
+
+        // #1061 · …and the authored sheet is called what it is called. See Document above for why the branch
+        // is here and not in a reader of its own.
+        if (HardcaseRep.IsTheSchedule(paperId))
+        {
+            return HardcaseRep.ScheduleLabel;
+        }
+
+        // #1074/#1063 · …and the five the arc wrote are called what they are called. Same door as Document
+        // above, and the same one roll behind it: the row still ends with the seeded short word, so a
+        // pocketful of papers is still comparable on the one thing worth comparing them on.
+        if (UndergroundComplex.AuthoredPaperOf(paperId) is { } written)
+        {
+            return PaperHeads.TitleOf(written);
+        }
+
+        // #602 · …and the code paper is called what the canon pass named it, WITHOUT the digits — it used to
+        // wear its own first clause sliced off the sentence, which is a title borrowed rather than written.
+        // A row that shouted the number would put the answer in the inventory, where the captain never had
+        // to open anything to get it.
+        if (UndergroundComplex.LiftCode.PaperIn(paperId) is not null)
+        {
+            return UndergroundComplex.LiftCode.PaperTitle;
+        }
 
         string[] titles =
         [

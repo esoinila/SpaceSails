@@ -152,7 +152,7 @@ public sealed partial class DeckView
         if (hud.Beacons is { Count: > 0 } beacons)
         {
             double breathe = 0.85 + (0.15 * Math.Sin(simTime * 0.0016));
-            foreach ((double bearing, double range, bool isHome, bool isLab) in beacons)
+            foreach ((double bearing, double range, bool isHome, bool isLab, bool isDead) in beacons)
             {
                 double rr = Math.Min(range / detectionRange, 1.0) * (r - 5);
                 float bx = cx + (float)(Math.Cos(bearing) * rr);
@@ -165,18 +165,35 @@ public sealed partial class DeckView
                 // (#592). With nine shelter rings on the fan, one more ring in the same ink is not a signal —
                 // the owner had a tracker full of identical circles and no way to tell which one was the way
                 // down. A beacon that cannot be told apart from its neighbours is decoration.
-                var ink = isLab
-                    ? new RgbaColor(
-                        SpaceSails.Core.BodyPalette.Imported.R,
-                        SpaceSails.Core.BodyPalette.Imported.G,
-                        SpaceSails.Core.BodyPalette.Imported.B, (byte)(235 * breathe))
-                    : isHome
-                        ? new RgbaColor(150, 215, 255, (byte)(210 * breathe))
-                        : new RgbaColor(130, 235, 215, (byte)(195 * breathe));
+                //
+                // #608 · …and a DEAD place is the fourth. A pressure refuge whose seal went is still a
+                // place — it is on the plan, the captain will see it from the corridor, and a tracker that
+                // dropped it would be handing back the "walking to one that was never marked is just a bad
+                // map" complaint the owner filed against exactly this. What it may not do is wear the calm
+                // ring, because that ring has meant AIR YOU CAN REACH since #573 and this room has none.
+                // Grey, dimmer, and NOT breathing: the pulse is what makes the other rings read as something
+                // still running, and this one is not.
+                var ink = isDead
+                    ? new RgbaColor(150, 150, 158, 150)
+                    : isLab
+                        ? new RgbaColor(
+                            SpaceSails.Core.BodyPalette.Imported.R,
+                            SpaceSails.Core.BodyPalette.Imported.G,
+                            SpaceSails.Core.BodyPalette.Imported.B, (byte)(235 * breathe))
+                        : isHome
+                            ? new RgbaColor(150, 215, 255, (byte)(210 * breathe))
+                            : new RgbaColor(130, 235, 215, (byte)(195 * breathe));
 
                 // The lab ring is drawn a size larger and doubled, so it reads at a glance on a busy fan.
-                _renderer.DrawCircle(bx, by, (float)((isLab ? 8.0 : 5.5) * breathe), null, ink, isLab ? 2.4f : 1.8f);
-                _renderer.DrawCircle(bx, by, isLab ? 2.4f : 1.6f, ink, ink);
+                // The dead one is drawn hollow — no filled centre — because a ring with nothing in it is
+                // what every instrument in this game has always meant by a place that is not answering.
+                _renderer.DrawCircle(
+                    bx, by, (float)((isLab ? 8.0 : 5.5) * (isDead ? 1.0 : breathe)), null, ink,
+                    isLab ? 2.4f : 1.8f);
+                if (!isDead)
+                {
+                    _renderer.DrawCircle(bx, by, isLab ? 2.4f : 1.6f, ink, ink);
+                }
             }
         }
 

@@ -53,8 +53,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheCaseIsNotTiedToAPlaceTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     /// <summary>The classy great-port tier, and the one the owner filed this from.</summary>
     private const string TheRedEye = "red-eye";
@@ -346,9 +345,9 @@ public sealed class TheCaseIsNotTiedToAPlaceTests
     [Fact]
     public void THE_WALKED_FRAME_StepsTheDigWhereTheSurfaceClockCannotReach()
     {
-        string tick = Pages("Map.Sim.Tick.cs");
+        string tick = Tick();
         int walked = tick.IndexOf("private bool TheWalkedViewOwnsThisFrame", StringComparison.Ordinal);
-        Assert.True(walked >= 0, "Map.Sim.Tick.cs no longer has a walked frame — this guard reads a dead name.");
+        Assert.True(walked >= 0, "Map.Sim.Tick*.cs no longer has a walked frame — this guard reads a dead name.");
 
         string body = tick[walked..];
         int branch = body.IndexOf("if (_surface is null)", StringComparison.Ordinal);
@@ -395,7 +394,7 @@ public sealed class TheCaseIsNotTiedToAPlaceTests
         // The real Sol ephemeris, because the BOOK names the place off the berth's own body
         // (`DockedStationName`) — a bench with no bodies in it would file every entry under "ashore" and the
         // place assertion below would be agreeing with a hole rather than with the room.
-        Set(map, "_ephemeris", CircularOrbitEphemeris.FromScenario(Sol.Value));
+        Set(map, "_ephemeris", CircularOrbitEphemeris.FromScenario(TestTree.Sol));
         Set(map, "_dockedHavenId", TheRedEye);
         Set(map, "_deckMode", true);
         Set(map, "_activeThreadId", ThreadId);
@@ -433,25 +432,17 @@ public sealed class TheCaseIsNotTiedToAPlaceTests
     private static IReadOnlyCollection<string> Register(Pages.Map map) =>
         (HashSet<string>)Field(map, "_workedUp")!;
 
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol.json")));
-
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
+    /// <summary>The frame's source — all of it. `Map.Sim.Tick.cs` was split by concern (#251) and the walked
+    /// frame moved to `Map.Sim.Tick.Views.cs`, so this reads the family as a glob in ordinal order rather
+    /// than naming one partial the next split could empty.</summary>
+    private static string Tick() =>
+        string.Join("\n", Directory
+            .EnumerateFiles(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim.Tick*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     // ── Reflection plumbing ──────────────────────────────────────────────────────────────────────────
 

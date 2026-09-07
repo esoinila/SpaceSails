@@ -5,10 +5,11 @@ namespace SpaceSails.Core.Tests;
 /// the hunters it calls down. Everything here is a pure function of ship-id hashes, sim time and
 /// player heat — determinism is law, so most assertions run twice and compare bit-for-bit.
 /// </summary>
+[SlowGate] // #251 · 151 s over 38 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class EncounterRuleTests
 {
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     private static NpcShip Ship(string id, string cargo = "He3", int cargoUnits = 10, bool isPod = false) =>
         new(id, "Test Hauler", cargo, "saturn", "earth", RoutePersonality.Economical,

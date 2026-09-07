@@ -1,0 +1,197 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using NotesView = SpaceSails.Client.Pages.Map.NotesView
+@*
+    #251 · THE NOTES PAGE, ON ITS OWN FILE.
+
+    THE FIELD BOOK (#741). Title-first expanding nodes, three registers to read it in — this ground,
+    the whole case, the sheets still in your sleeve — and the red pen that runs down a page.
+
+    Moved out of SatchelPanel.razor by PURE MOTION — the block between the two fences below is the block
+    that was in the panel, character for character. Every member it reads is a [Parameter] with the SAME
+    NAME (a field keeps its underscore, a method arrives as a delegate under its own name, a variable the
+    panel's `@if` bound arrives under the name that binding gave it), which is what lets the markup move
+    without a rewrite and lets the composition splice it straight back where it came from.
+
+    IHandleEvent repeats SatchelPanel's own override, which repeats Map.Sim.cs's: the HUD's refresh
+    belongs to OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render
+    back on every event in here. The .razor.css beside this file carries the one rule block of the
+    satchel's sheet that THIS markup, and no other component in the client, renders (#1166); its scope
+    is the PAGE's own (b-4dqsdx4p75, pinned in SpaceSails.Client.csproj), so every rule — the ones
+    beside it and the shared kit left in SatchelPanel.razor.css — goes on matching it.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and a code
+    block is where its first statements are legal. It is outside the fences, so what the composition reads
+    is exactly the lines that stood in the panel.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from SatchelPanel.razor ────────────────────────────────────────────────── *@
+                    @* #741 · THE NOTEBOOK. Owner, from the chair: "the notes become EXPANDING TEXT nodes —
+                       title-first, collapsed by default… the opened node houses its text as bullets… the
+                       note is structured for CONNECTING, not for prose-reading."
+
+                       And the instrument, in his own words: "I guess it could be a red pen only used to
+                       connect the things", with the gesture "select one, select the other — connected".
+
+                       Every arrangement decision on this page — which rows sit together, which pair carries
+                       a red edge, what a title says, whether the pen may come out — is CaseThreads', asked
+                       once per draw. This markup renders rows and decides nothing. *@
+                    <div class="satchel-notes-filter">
+                        <button type="button" class="satchel-filter @(_notesView == NotesView.Here ? "on" : "")"
+                                title="Only what this body and this site have told you"
+                                @onclick="() => TheNotebookTurnsTo(NotesView.Here)">📍 this ground</button>
+                        <button type="button" class="satchel-filter @(_notesView == NotesView.Everywhere ? "on" : "")"
+                                title="The whole book, ground by ground"
+                                @onclick="() => TheNotebookTurnsTo(NotesView.Everywhere)">🥾 every ground</button>
+                        <button type="button" class="satchel-filter @(_notesView == NotesView.TheCase ? "on" : "")"
+                                title="The whole book in the order the red lines put it"
+                                @onclick="() => TheNotebookTurnsTo(NotesView.TheCase)">🧵 the case</button>
+                    </div>
+
+                    @* #741 · THE PEN. One control, drawn everywhere and disabled nowhere (#212/#603): on
+                       your feet or at a bar top it answers with the sentence that says what would fix it,
+                       which is how the gumshoe rule gets learned. Picking it up is not a menu — it changes
+                       what pressing a title MEANS, which is the whole of the fiction. *@
+                    <div class="notebook-pen">
+                        <button type="button" class="satchel-filter red-pen @(_penInHand ? "on" : "")"
+                                title="@(_penInHand ? SpaceSails.Core.CaseThreads.PenInHandHint : SpaceSails.Core.CaseThreads.PenHint)"
+                                @onclick="TakeUpTheRedPen">@SpaceSails.Core.CaseThreads.PenLabel</button>
+                        <span class="notebook-register">
+                            @(_penInHand
+                                ? SpaceSails.Core.CaseThreads.ConnectingBlurb
+                                : SpaceSails.Core.CaseThreads.ReadingBlurb)
+                        </span>
+                    </div>
+
+                    @if (_satchelOutcome is { Length: > 0 } penSaid)
+                    {
+                        <div class="satchel-outcome">@penSaid</div>
+                    }
+
+                    @* ── #973 L3 · THE SHEETS. The other kind of evidence the book holds: not what the
+                       ground told you, but what somebody REMEMBERS. Drawn above the notes and on every
+                       reading of them, because a held memory has no ground — the photograph was taken on a
+                       boat deck that is not in this system any more, and the day you signed happened
+                       somewhere nobody wrote down.
+
+                       Each row is the text, then the one line that says whose it is, which theory it
+                       serves, who put it in your hand and the day (HeldMemory.Sheet.BookLine). The book
+                       keeps no opinion about any of it — the SPREAD is where two of them get to argue. *@
+                    @if (TheSheets() is { Count: > 0 } sheets)
+                    {
+                        <div class="satchel-sheets">
+                            @foreach (SpaceSails.Core.HeldMemory.Sheet sheet in sheets)
+                            {
+                                <div class="held-sheet @(sheet.IsStray ? "stray" : "")">
+                                    <div class="held-sheet-title">
+                                        @SpaceSails.Core.HeldMemory.RowTitle(sheet)
+                                    </div>
+                                    <div class="held-sheet-text">@sheet.Text</div>
+                                    <div class="held-sheet-byline">@sheet.BookLine</div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (_notesView == NotesView.Everywhere)
+                    {
+                        <div class="satchel-sub">
+                            Every ground you have turned over, the ones you stood on most recently first.
+                        </div>
+
+                        @if (SpaceSails.Core.FieldNotes.PerPlace(_fieldNotes) is { Count: > 0 } book)
+                        {
+                            <div class="satchel-notes">
+                                @foreach (SpaceSails.Core.FieldFinding found in book)
+                                {
+                                    <div class="satchel-place">🥾 @found.Place</div>
+                                    <NotebookNodes Rows="@NotebookPage(found.Lines)"
+                                               PenInHand="_penInHand"
+                                               WithPlace="false"
+                                               IsOpen="NodeIsOpen"
+                                               IsHeld="NodeIsHeld"
+                                               OnTitle="NoteTitlePressed" />
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="satchel-empty">
+                                The book is blank. It fills the way everything out here fills — one room at a
+                                time, and only the ones you turn over.
+                            </div>
+                        }
+                    }
+                    else if (_notesView == NotesView.TheCase)
+                    {
+                        @* The one reading where a line drawn between two GROUNDS can put its two entries
+                           side by side. The place stops being a heading and becomes a tag on the node — the
+                           order belongs to the case here, and a ground is a fact about an entry like any
+                           other. *@
+                        <div class="satchel-sub">
+                            The whole book in the order your own lines put it. The book does not know what
+                            any of them means.
+                        </div>
+
+                        @if (TheWholeCase() is { Count: > 1 } whole)
+                        {
+                            <div class="satchel-notes">
+                                <NotebookNodes Rows="@NotebookPage(whole)"
+                                               PenInHand="_penInHand"
+                                               WithPlace="true"
+                                               IsOpen="NodeIsOpen"
+                                               IsHeld="NodeIsHeld"
+                                               OnTitle="NoteTitlePressed" />
+                            </div>
+                        }
+                        else if (_fieldNotes.Count == 0)
+                        {
+                            <div class="satchel-empty">
+                                The book is blank. It fills the way everything out here fills — one room at a
+                                time, and only the ones you turn over.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="satchel-empty">
+                                @SpaceSails.Core.CaseThreads.NothingToConnectLine
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="satchel-sub">
+                            @* "somewhere" is Core's own word for a ground it cannot name (PlaceLabel), and the
+                               satchel only opens on an excursion anyway — a fallback, not a second format. *@
+                            @(PlaceUnderfoot() ?? "Somewhere") — what was found here, latest first.
+                            The book keeps it. It keeps no opinion about it.
+                        </div>
+
+                        @if (NotesFromThisGround() is { Count: > 0 } here)
+                        {
+                            <div class="satchel-notes">
+                                <NotebookNodes Rows="@NotebookPage(here)"
+                                               PenInHand="_penInHand"
+                                               WithPlace="false"
+                                               IsOpen="NodeIsOpen"
+                                               IsHeld="NodeIsHeld"
+                                               OnTitle="NoteTitlePressed" />
+                            </div>
+                        }
+                        else if (_fieldNotes.Count == 0)
+                        {
+                            <div class="satchel-empty">
+                                The book is blank. It fills the way everything out here fills — one room at a
+                                time, and only the ones you turn over.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="satchel-empty">
+                                Nothing filed for this ground. Either you have not searched it, or it had
+                                nothing to say — the book does not know which, and neither do you.
+                            </div>
+                        }
+                    }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

@@ -27,6 +27,7 @@ namespace SpaceSails.Client.Tests;
 /// guard drawn through a wall.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 33 s over 10 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheRoundIsWalkableTests
 {
     private static readonly string[] Bodies =
@@ -264,29 +265,18 @@ public sealed class TheRoundIsWalkableTests
     // Source-shape guards, exactly as #752's own file argues for them: what must never come back is a guard
     // drawn through a wall, a fan that cannot hear one, and a band that falls off the end of a deck.
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
+    /// <summary>#251 · Through <see cref="MapMarkup"/> rather than straight off disk, because the Hive
+    /// surface is four partials now and this guard slices the ride out of it. Every other path this helper
+    /// is handed still comes back as <c>File.ReadAllText</c>.</summary>
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
-    /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
+    /// <summary>#870 · The round is five partials by subject now, so the page this guard reads is all five —
     /// concatenated in the order the one file laid them out, which is exactly the text it read before the
-    /// split. The count is asserted, so a seventh part can never go unread.</summary>
+    /// split. The count is asserted, so a sixth part can never go unread.</summary>
     private static string Patrol()
     {
-        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
+        string dir = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages");
         string[] order =
         [
             // #870 lane 6′c · RE-PATHED. The verbs moved onto Patrol's own partials, so the page's half
@@ -438,7 +428,7 @@ public sealed class TheRoundIsWalkableTests
         Assert.Contains(DevStarts.All, e => e.Url == "/map?badge=1");
 
         // …and the guide is the prose twin of that catalogue, so a button without a row is half a feature.
-        string root = RepoRoot();
+        string root = TestTree.RepoRoot();
         string guide = File.ReadAllText(Path.Combine(root, "docs", "testing-guide.md"));
         Assert.Contains("?patrol=", guide, StringComparison.Ordinal);
         Assert.Contains("?badge=1", guide, StringComparison.Ordinal);
@@ -496,7 +486,7 @@ public sealed class TheRoundIsWalkableTests
         // AND IT IS ACTUALLY IN THE FOLDER. The art seam hides its own failure; this is the only assertion
         // in the suite that can see an empty frame.
         string file = Path.Combine(
-            RepoRoot(), "src", "SpaceSails.Client", "wwwroot", PatrolBeat.ChallengeArtUrl);
+            TestTree.RepoRoot(), "src", "SpaceSails.Client", "wwwroot", PatrolBeat.ChallengeArtUrl);
         Assert.True(File.Exists(file),
             $"{PatrolBeat.ChallengeArtUrl} is not in wwwroot/art — the challenge card would draw a hole and " +
             "never say so.");

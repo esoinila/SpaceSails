@@ -9,7 +9,7 @@ namespace SpaceSails.Core.Tests;
 public class ShipMissionTests
 {
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     private static ScenarioDefinition LoadWheel() =>
         ScenarioLoader.LoadFile(Path.Combine(AppContext.BaseDirectory, "scenarios", "wheel.json"));

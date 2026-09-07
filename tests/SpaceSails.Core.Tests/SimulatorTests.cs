@@ -2,6 +2,7 @@ using SpaceSails.Contracts;
 
 namespace SpaceSails.Core.Tests;
 
+[SlowGate] // #251 · 28 s over 22 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class SimulatorTests
 {
     private const double SunMu = 1.32712440018e20;
@@ -77,7 +78,7 @@ public class SimulatorTests
     [Fact]
     public void Project_MatchesStepByStepIntegration()
     {
-        var ephemeris = CircularOrbitEphemeris.FromScenario(LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var simulator = new Simulator(ephemeris, timeStepSeconds: 60);
         var plan = new ManeuverPlan([new ManeuverNode(SimTime: 1800, ManeuverAction.Accelerate, Pulses: 3)]);
         double circularSpeed = Math.Sqrt(SunMu / EarthOrbitRadius);
@@ -99,7 +100,7 @@ public class SimulatorTests
     {
         ShipState RunFresh()
         {
-            var simulator = new Simulator(CircularOrbitEphemeris.FromScenario(LoadSol()), timeStepSeconds: 60);
+            var simulator = new Simulator(CircularOrbitEphemeris.FromScenario(TestTree.Sol), timeStepSeconds: 60);
             var plan = new ManeuverPlan([
                 new ManeuverNode(SimTime: 3600, ManeuverAction.Accelerate, Pulses: 2),
                 new ManeuverNode(SimTime: 5 * Day, ManeuverAction.Decelerate),
@@ -118,7 +119,7 @@ public class SimulatorTests
     [Fact]
     public void ProjectAdaptive_IsDeterministic()
     {
-        var simulator = new Simulator(CircularOrbitEphemeris.FromScenario(LoadSol()), timeStepSeconds: 1);
+        var simulator = new Simulator(CircularOrbitEphemeris.FromScenario(TestTree.Sol), timeStepSeconds: 1);
         var plan = new ManeuverPlan([new ManeuverNode(SimTime: 2 * Day, ManeuverAction.Accelerate, Pulses: 3)]);
         double circularSpeed = Math.Sqrt(SunMu / EarthOrbitRadius);
         var state = new ShipState(new Vector2d(EarthOrbitRadius, 0), new Vector2d(0, circularSpeed), 0);
@@ -204,7 +205,7 @@ public class SimulatorTests
         // Arrive 1e8 m over Earth at 1.2 km/s relative: the window is open, the burn costs a
         // sane number of pulses, and after insertion the integrator holds the orbit — Earth
         // distance stays within a few percent for a full orbital period.
-        var ephemeris = CircularOrbitEphemeris.FromScenario(LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var simulator = new Simulator(ephemeris, timeStepSeconds: 1.0);
         CelestialBody earth = ephemeris.Bodies.First(b => b.Id == "earth");
         CelestialBody sun = ephemeris.Bodies.First(b => b.Id == "sun");
@@ -243,7 +244,7 @@ public class SimulatorTests
     {
         // The live high-warp path (60 s adaptive quanta) must agree with the historic fixed
         // 1 s integration over a 30-day Earth-vicinity cruise with a mid-course burn.
-        var ephemeris = CircularOrbitEphemeris.FromScenario(LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var simulator = new Simulator(ephemeris, timeStepSeconds: 1.0);
         Vector2d earth0 = ephemeris.Position("earth", 0);
         Vector2d v0 = (ephemeris.Position("earth", 1.0) - ephemeris.Position("earth", -1.0)) / 2.0;
@@ -268,7 +269,7 @@ public class SimulatorTests
     public void RunAdaptive_IsFrameTimingInvariant()
     {
         // Equal quanta must yield bit-identical results however the caller groups its frames.
-        var ephemeris = CircularOrbitEphemeris.FromScenario(LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var simulator = new Simulator(ephemeris, timeStepSeconds: 1.0);
         Vector2d earth0 = ephemeris.Position("earth", 0);
         Vector2d v0 = (ephemeris.Position("earth", 1.0) - ephemeris.Position("earth", -1.0)) / 2.0;
@@ -413,7 +414,4 @@ public class SimulatorTests
         Assert.True(missChasing < missCoasting * 0.5,
             $"X-Pilot chase should more than halve the miss: coasting {missCoasting:F0} m, chasing {missChasing:F0} m");
     }
-
-    internal static ScenarioDefinition LoadSol() =>
-        ScenarioLoader.LoadFile(Path.Combine(AppContext.BaseDirectory, "scenarios", "sol.json"));
 }

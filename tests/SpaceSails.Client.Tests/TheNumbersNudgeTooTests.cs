@@ -29,22 +29,9 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class TheNumbersNudgeTooTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     /// <summary>The source with its comments taken out — a guard about what the panel DOES must never be
     /// answered by prose SAYING it does. The razor comment above these buttons quotes the owner in full,
@@ -103,7 +90,7 @@ public sealed class TheNumbersNudgeTooTests
 
     /// <summary>Every plot partial, read as one subject.</summary>
     private static string Planner() => string.Concat(
-        Directory.EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Plot*.cs")
+        Directory.EnumerateFiles(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Plot*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 

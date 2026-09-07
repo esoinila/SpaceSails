@@ -10,9 +10,10 @@ namespace SpaceSails.Client.Pages;
 /// the aggregates of the voyage so far, gathered from state the game ALREADY keeps, so the sheet is a
 /// reading of what actually happened rather than a second bookkeeping system nobody remembers to update.</para>
 ///
-/// <para>Some inputs are honest zeroes for now and say so at their line. That is deliberate: a sheet with
-/// five real dimensions and two dormant ones is worth having today, and each dormant one is a named hook
-/// rather than a number invented to fill a bar.</para>
+/// <para>Some inputs are honest zeroes and say so at their line. That is deliberate: each dormant one is a
+/// named hook rather than a number invented to fill a bar. #1066 took one of them live —
+/// <c>PromisesBroken</c>, fed by shore leave counted in berths — and left the two beside it dormant with a
+/// sharper reason written at each.</para>
 /// </summary>
 public sealed partial class Map
 {
@@ -24,19 +25,42 @@ public sealed partial class Map
     private int _profitableLies;
 
     /// <summary>
-    /// DORMANT, AND THE COMPILER SAID SO. Word given to the crew and honoured, or not.
+    /// STILL DORMANT, AND THE COMPILER SAID SO. Word given to the crew and HONOURED.
     ///
-    /// <para>These were fields until the build refused them: "never assigned to, and will always have its
-    /// default value". It was right, and the refusal is worth keeping rather than silencing. There is nothing
-    /// in the game yet that makes a promise TO THE CREW — the tow offer and the rescue are promises to
-    /// strangers.</para>
+    /// <para>This was a field until the build refused it: "never assigned to, and will always have its
+    /// default value". It was right, and the refusal is worth keeping rather than silencing. Nothing in the
+    /// game yet makes a promise TO THE CREW and then keeps it — the tow offer and the rescue are promises
+    /// to strangers, and a run ashore given on time is not a promise kept, it is a promise not broken (which
+    /// is what <see cref="_workingStopsSinceShoreLeave"/> going back to zero already says).</para>
     ///
-    /// <para>So they are constants with their hooks named, and the dimension that reads them sits at its
-    /// baseline honestly. A bar that moved for invented reasons would be worse than a bar that does not
-    /// move: the captain cannot act on a number nobody is keeping.</para>
+    /// <para>So it is a constant with its hook named, and the half of THE CAPTAIN'S WORD that reads it sits
+    /// at its baseline honestly. A bar that moved for invented reasons would be worse than a bar that does
+    /// not move: the captain cannot act on a number nobody is keeping.</para>
     /// </summary>
-    private const int PromisesKept = 0;      // hook: a run ashore offered, a share pledged, a rescue promised
-    private const int PromisesBroken = 0;    // hook: the same, not honoured — the line that ends captaincies
+    private const int PromisesKept = 0;      // hook: a share pledged and paid, a rescue promised and flown
+
+    /// <summary>
+    /// #1066 · SHORE LEAVE AS A LEDGER LINE — consecutive berths with no run ashore, and the only number
+    /// this sheet has ever kept across a save.
+    ///
+    /// <para><b>The rule, and why it is legible.</b> A clamp is a RUN ASHORE only at a great port
+    /// (<see cref="ArrivalTube.Tier.GreatPort"/>); every other berth is a WORKING STOP. Nothing new has to
+    /// be explained to the player, because the game already tells him which one he is at, in the picture it
+    /// raises at that very clamp: the arrival tube's establishing shot (#541) is a long glazed gangway with
+    /// <i>"two streams of people … and nobody who has any idea who you are"</i>, or one rigid tube with
+    /// <i>"two dock workers waiting for you to get out of the way"</i>. The first is somewhere a crew can
+    /// disappear into for a night. The second is a shift.</para>
+    ///
+    /// <para>And the tier is DERIVED and never authored — <see cref="ArrivalTube.TierFor"/> reads the
+    /// scenario's own scheduled-traffic model — so a new berth in a new scenario gets the right answer
+    /// without anybody remembering to tag it, and the ledger line can never disagree with the picture.</para>
+    ///
+    /// <para>Session state elsewhere on this sheet is honest (a voyage's filings and near-misses are what
+    /// this run has done); this one is not, and that is the difference between a mood and a PROMISE. A crew
+    /// kept aboard for six berths do not forget it over a reload, so it rides the vault — one integer, in
+    /// <see cref="ProgressSection.WorkingStopsSinceShoreLeave"/>, written only when somebody is counting.</para>
+    /// </summary>
+    private int _workingStopsSinceShoreLeave;
 
     /// <summary>
     /// #663 · PEOPLE WHO DID NOT COME HOME — and the constant that had quietly stopped being honest.
@@ -52,7 +76,9 @@ public sealed partial class Map
     /// <para>Aggregate by construction, like everything else on this sheet: <see cref="CrewTemp"/> is a
     /// TEMPERATURE and not a roster, so a COUNT is exactly the shape it wants, and it does not need
     /// individual crew after all. Session state, like <see cref="_honestFilings"/> and
-    /// <see cref="_nearMisses"/> beside it — this sheet has never been vaulted.</para>
+    /// <see cref="_nearMisses"/> beside it. (#1066 vaulted the one input on this sheet that is a PROMISE
+    /// rather than a mood — <see cref="_workingStopsSinceShoreLeave"/> — and deliberately left the rest of
+    /// the voyage's aggregates where they were.)</para>
     ///
     /// <para>Deliberately NOT counted here: an away expedition's <c>ExpeditionScientistsLost</c>. Those are
     /// contractors the captain carried, and the crew's report is about the crew. Somebody should decide
@@ -78,16 +104,24 @@ public sealed partial class Map
         SharePaid: _credits,
 
         PromisesKept: PromisesKept,
-        PromisesBroken: PromisesBroken,
+
+        // #1066 · LIVE AT LAST, and through the hook the dimension names first: THE CAPTAIN'S WORD is made
+        // of "a run ashore, a share, a rescue", and this is the run ashore. The arithmetic — where the line
+        // is, and that every berth past it breaks the word again — is Core's, so the owner's dial is in one
+        // place and this seam only reports the tally.
+        PromisesBroken: CrewTemp.ShoreLeavePromisesBroken(_workingStopsSinceShoreLeave),
+
         CrewLost: _crewLost,
         NearMisses: _nearMisses,
 
         // The galley's own counter, already kept and already conspicuous when it does not move.
         TotsPoured: _rumTots,
 
-        // DORMANT, honestly: nothing tracks shore leave yet. Zero reads as "recently ashore", which is the
-        // kind answer while the input does not exist — better than inventing a number that would make REST
-        // move for reasons the captain cannot see or act on.
+        // STILL DORMANT after #1066, and now for a sharper reason than "nothing tracks shore leave". Shore
+        // leave IS tracked — in BERTHS (see _workingStopsSinceShoreLeave), because a berth is the event the
+        // game actually has. This field is DAYS, and turning stops into days to make REST move would be the
+        // invented number this sheet exists to refuse. REST therefore reads its rum and nothing else, and
+        // the overdue run ashore lands on THE CAPTAIN'S WORD where the promise was made.
         DaysSinceShoreLeave: 0,
 
         Heat: _heat.Level,
@@ -135,6 +169,32 @@ public sealed partial class Map
         RequestVaultSave();
     }
 
+    /// <summary>
+    /// #1066 · THE BERTH, AS THE CREW SEE IT. Called from the one clamp
+    /// (<c>Map.Docking.ClampOntoHaven</c>) with the tier that clamp has already worked out for the arrival
+    /// tube's establishing shot — <b>one tier read, two reporters</b>, which is #1065's law and matters here
+    /// for the ordinary reason: a second place deciding what kind of place this is would be a second set of
+    /// books, and the picture on the screen and the line on the sheet could then disagree about the same
+    /// berth.
+    ///
+    /// <para>A great port puts the counter back to nothing — the crew went ashore, and what they say
+    /// afterwards is different from what they said before, because this sheet is a temperature and not a
+    /// court record. Anything else adds one.</para>
+    ///
+    /// <para>No pulse line, deliberately. The clamp already says its piece and the tube's plate is already
+    /// on the screen; a third sentence at the same moment would be the stacked-card failure in the one
+    /// channel the player cannot close. Where the counter stands is on the crew sheet, which is where the
+    /// captain goes to ask (#761).</para>
+    /// </summary>
+    private void NoteTheBerthTheCrewGot(ArrivalTube.Tier tier)
+    {
+        _workingStopsSinceShoreLeave = tier == ArrivalTube.Tier.GreatPort
+            ? 0
+            : _workingStopsSinceShoreLeave + 1;
+
+        RequestVaultSave();
+    }
+
     /// <summary>A boarding, a soak, a chase that everyone came home from. This is what buys tolerance rather
     /// than happiness — see <see cref="CrewTemp.Cohesion"/>.</summary>
     private void NoteNearMiss()
@@ -158,11 +218,30 @@ public sealed partial class Map
     /// <para>Nothing here writes a standing, raises a beat or pushes a card. The ship's own clock reads the
     /// sheet on the next tick and the deputation arrives through the one door, which is the only way to
     /// test the WIRING rather than the cheat.</para>
+    ///
+    /// <para>#1066 · <c>/map?crew=meeting</c> is the same door, one landing further down. It grants the
+    /// deputation's two counters AND a run of working stops long enough that the word is broken — and it is
+    /// worth saying that BOTH are still needed, because that is the design: shore leave alone can never
+    /// convene the meeting on a ship that pays and brings people home (<c>ShoreLeaveIsALedgerLineTests</c>
+    /// sweeps a hundred berths to say so). The meeting is what a captain gets for failing them in several
+    /// ways at once.</para>
     /// </summary>
-    private void SeedCrewCheat()
+    /// <param name="which">"petition" or "meeting" — which landing of the same staircase.</param>
+    private void SeedCrewCheat(string which)
     {
         _crewLost = DeflectionCrewSize;
         _honestFilings = HonestFilingsThatEmptyTheShare;
+
+        if (which == "meeting")
+        {
+            _workingStopsSinceShoreLeave = WorkingStopsThatBreakTheWordTwice;
+
+            ShowPulseMessage(
+                "🕯 Test: five of the crew did not come home from the rock, every wreck since has been filed " +
+                $"honestly, and nobody has been ashore in {WorkingStopsThatBreakTheWordTwice} berths. Read " +
+                "the crew sheet on the captain's desk — and then wait for the cantina at an odd watch.");
+            return;
+        }
 
         ShowPulseMessage(
             "🧑‍🔧 Test: five of the crew did not come home from the rock, and every wreck since has been " +
@@ -175,6 +254,14 @@ public sealed partial class Map
     /// (<c>CrewTempTests</c>) and the number is pinned against the shipping sheet in
     /// <c>TheCrewSheetCountsTheDeadTests</c>.</summary>
     private const int HonestFilingsThatEmptyTheShare = 12;
+
+    /// <summary>#1066 · Berths with no run ashore — enough that THE CAPTAIN'S WORD is broken twice over,
+    /// which is what the Ultimatum edge costs on top of the bodies and the empty share. Derived from Core's
+    /// dial rather than typed, so the owner turning
+    /// <see cref="CrewTemp.WorkingStopsBetweenRunsAshore"/> moves the dev door with the game; the claim that
+    /// this number really does convene the meeting is pinned in
+    /// <c>TheCrewSheetCountsTheStopsAshoreTests</c>.</summary>
+    private const int WorkingStopsThatBreakTheWordTwice = CrewTemp.WorkingStopsBetweenRunsAshore + 1;
 
     /// <summary>What the crew had to go on the last time anybody asked. Held so the standing is recomputed
     /// when — and only when — the thing it is computed FROM has moved; a <see cref="CrewTemp.Voyage"/> is a
@@ -199,12 +286,32 @@ public sealed partial class Map
     /// mirror of the seen-set with nobody to keep it honest. Raising on every worsened reading and letting
     /// the one door answer is the same law the arc wire is written under.</para>
     ///
-    /// <para><b>Petition OR WORSE</b>, deliberately. Today the shipped inputs bottom out exactly at Petition
-    /// (<c>TheCrewSheetCountsTheDeadTests</c> sweeps the page's own voyage and pins it), so this reads as
-    /// "the Petition edge" — but a standing that ever skips past it must still show the deputation once
-    /// rather than nothing at all. <c>CrewMeeting</c>'s Ultimatum edge is NOT wired beside it, because
-    /// nothing in the game writes an input that can reach it, and a caller that can never fire is this
-    /// house's fifth bug class wearing the fix's clothes.</para>
+    /// <para><b>Petition OR WORSE</b>, deliberately. A standing that skips past the edge must still show the
+    /// deputation once rather than nothing at all.</para>
+    ///
+    /// <para><b>#1066 · AND THE MEETING, ONE LANDING DOWN.</b> <c>StoryBeats.Beat.CrewMeeting</c> was the
+    /// last beat on <c>EveryStoryBeatHasACallerTests.KnownOrphans</c>, excused because its
+    /// <see cref="CrewTemp.Standing.Ultimatum"/> edge needed <i>a broken promise TO THE CREW or months
+    /// without shore leave</i> — numbers nobody kept. Shore leave is kept now
+    /// (<see cref="_workingStopsSinceShoreLeave"/>), it reaches the sheet as a broken promise, and the edge
+    /// is crossable, so the excuse is spent and the beat is raised here beside its sibling — one watcher,
+    /// one read of the sheet, two edges.</para>
+    ///
+    /// <para><b>Why the meeting is raised on the CROSSING and the deputation is not.</b> The two beats have
+    /// different cadences and the difference is the whole of it. <c>CrewDeputation</c> is
+    /// <see cref="StoryBeats.Cadence.OnceEver"/>, so raising it on every worsened reading is free — the one
+    /// door answers, and a local "have we told them yet" bool would be a mirror of the seen-set with nobody
+    /// to keep it honest. <c>CrewMeeting</c> is <see cref="StoryBeats.Cadence.EveryTime"/>, and it is that
+    /// for a stated reason (<c>StoryBeatsTests.OnlyRareMomentsFireEveryTime</c>: only moments RARE BY THEIR
+    /// OWN NATURE may): the meeting happening at all is rare, but an ultimatum is a STANDING and a standing
+    /// is a state that stays true — a captain sitting at one earns a credit and the sheet moves, and an
+    /// unconditional raise here would put a modal on the screen every time his purse changed. So what is
+    /// rare is the CROSSING, and the crossing is what is raised.</para>
+    ///
+    /// <para>That is not a second seen-flag either: it is read off <c>_crewVoyageLastRead</c>, the state
+    /// this method already holds for its own short-circuit. Nothing new is remembered, and a captain who
+    /// fixes it and breaks it again gets a second meeting, which is right — the crew would hold a second
+    /// one.</para>
     /// </summary>
     private void WatchWhereTheCrewStand()
     {
@@ -214,9 +321,31 @@ public sealed partial class Map
             return; // the crew have learned nothing since the last frame
         }
 
+        CrewTemp.Standing was = CrewTemp.StandingOf(_crewVoyageLastRead);
         _crewVoyageLastRead = now;
 
-        if (CrewTemp.StandingOf(now) >= CrewTemp.Standing.Petition)
+        CrewTemp.Standing standing = CrewTemp.StandingOf(now);
+
+        // #1066 · ONE BEAT PER READING, AND IT IS THE WORSE ONE. A crew at an ultimatum are PAST asking —
+        // the deputation is "the last cheap moment", hats in hands, and it is not what happens after the
+        // meeting has been held. So a standing at Ultimatum takes the meeting and returns: raising both on
+        // one reading would put two cards up in one frame, and whichever went second would silently paint
+        // over the first. If the captain hauls it back to a Petition, the deputation is there waiting for
+        // him, which is the right way round.
+        if (standing >= CrewTemp.Standing.Ultimatum)
+        {
+            if (was < CrewTemp.Standing.Ultimatum)
+            {
+                // The cantina at an odd watch, and a chair pulled out that nobody is sitting in. What they
+                // DO about it — the date they name, the island and the pistol — is #519's scope; this is
+                // the moment the captain learns it is being decided without him.
+                RaiseStoryBeat(StoryBeats.Beat.CrewMeeting);
+            }
+
+            return;
+        }
+
+        if (standing >= CrewTemp.Standing.Petition)
         {
             RaiseStoryBeat(StoryBeats.Beat.CrewDeputation);
         }

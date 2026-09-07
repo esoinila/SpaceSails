@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -211,7 +211,8 @@ public partial class Map
                 DrillPointInteract(); // #394: drill the charge (a long channel), or fire it once armed
                 break;
             case DeckPlan.ConsoleKind.SecretDoor when OnWreck:
-                OpenTheFalsePlate();    // #537: the plate a sounding found — "a tool to get at it"
+                // #537: the plate a sounding found. One press, three lives — cut it, get in, get out.
+                WorkTheFalsePlate();
                 break;
             case DeckPlan.ConsoleKind.SecretDoor:
                 SecretDoorInteract(); // #409: force the hidden lab door — the channel that appends the lab region
@@ -238,6 +239,11 @@ public partial class Map
                 // #585: down the shaft, or back up out of it. #801: whichever of the two cars you walked
                 // to — the method asks the pressed spot, so this arm does not have to know.
                 HiveLiftInteract();
+                break;
+            case DeckPlan.ConsoleKind.HiveStair:
+                // #719: the second way out. No panel and no floor to choose — the press IS the climb, it
+                // goes one way, and the tank pays for it.
+                ClimbTheStairOut();
                 break;
             case DeckPlan.ConsoleKind.HiveHaul:
                 HiveHaulInteract();   // #585: turn over one room of the facility
@@ -376,6 +382,9 @@ public partial class Map
                 break;
             case DeckPlan.ConsoleKind.WreckPlacard:
                 ReadDamageControlPlacard(); // #488: where the valves are, told at the lock
+                break;
+            case DeckPlan.ConsoleKind.WreckKey:
+                TakeTheBlackOpsKey();       // #535: the code in somebody's kit, and its own card on the spot
                 break;
             case DeckPlan.ConsoleKind.ArchiveNode:
                 ConfrontArchiveNode();      // look at the thing in the hold — the throw, and what it gives back

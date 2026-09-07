@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -45,6 +45,7 @@ namespace SpaceSails.Client.Tests;
 /// face. Rename the member and the card stops compiling; change its value and the card follows without an
 /// edit; type it by hand and this goes red naming the string.</para>
 /// </summary>
+[SlowGate] // #251 · 11 s over 7 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheHelpCardTeachesTodaysPanelTests
 {
     /// <summary>Docked at Selene Gate — the same world the pop-up law raises its cards in, and a berth is
@@ -367,21 +368,5 @@ public sealed class TheHelpCardTeachesTodaysPanelTests
         Regex.Replace(razor, @"@\*.*?\*@", " ", RegexOptions.Singleline);
 
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
-
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-
-            at = at.Parent;
-        }
-
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
+        MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 }

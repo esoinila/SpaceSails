@@ -99,6 +99,20 @@ public static class Satchel
         /// <see cref="CompartmentOf"/>'s safe default, taken deliberately here rather than by omission,
         /// because the honest price of carrying a tool is not carrying something else.</para></summary>
         Tool,
+
+        /// <summary>#535 · A BLACK-OPS KEY. A code, on something you show, that makes a patrol decide it never
+        /// saw you.
+        ///
+        /// <para>Appended, never inserted, for the fourth time and the same reason: the ordinal is what a
+        /// saved satchel stores, and a kind slipped into the middle would silently reinterpret every item in
+        /// every existing vault.</para>
+        ///
+        /// <para>It is deliberately not an <see cref="Authority"/>, and the difference is the whole object. An
+        /// authority is an office vouching for a HOLE — countersigned, filed, and read by a machine that then
+        /// writes down that it read it. This is the opposite instrument: it is spent to stop a record from
+        /// being written at all, it works once, and it is never offered to a door, because a shaft files
+        /// nothing about you and there is nothing there for a key to unfile.</para></summary>
+        BlackOpsKey,
     }
 
     /// <summary>One thing in the pocket.</summary>
@@ -193,7 +207,11 @@ public static class Satchel
         // an arithmetic about BULK should be allowed to refuse.
         // #804 · A badge is a wallet card too, and for the third time the same reason: the paper that gets
         // you past a person is never the thing an arithmetic about BULK should be allowed to refuse.
-        Kind.Authority or Kind.Chit or Kind.Badge => Compartment.Wallet,
+        // #535 · And a black-ops key is a wallet card too, for the fourth time and the sharpest version of
+        // the same reason: it is the best find in the game, it is flat, and a captain who is told "your
+        // pockets are full" while standing over the one object that edits the world's memory of him has been
+        // refused by an arithmetic that was never about codes.
+        Kind.Authority or Kind.Chit or Kind.Badge or Kind.BlackOpsKey => Compartment.Wallet,
         Kind.Paper or Kind.Dirt => Compartment.Sleeve,
         _ => Compartment.Pocket,
     };

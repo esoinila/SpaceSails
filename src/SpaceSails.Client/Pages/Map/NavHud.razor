@@ -1,0 +1,260 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using FlightEditorKind = SpaceSails.Client.Pages.Map.FlightEditorKind
+@using PlanNode = SpaceSails.Client.Pages.Map.PlanNode
+@using SpaceSails.Core
+@*
+    #251 item 1 · THE NAV MAP HUD, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+    <div class="map-hud">
+        <NavToolbar _destinationBodyId="@_destinationBodyId" _dockAffordance="@_dockAffordance"
+                    _dockedHavenId="@_dockedHavenId" _followDest="@_followDest"
+                    _longHaulClearanceBlock="@_longHaulClearanceBlock" _longHaulDeparture="@_longHaulDeparture"
+                    _reactionMassPulses="@_reactionMassPulses" _showTutorial="@_showTutorial"
+                    _skipActive="@_skipActive" _skipNext="@_skipNext" ActiveTutorialIndex="@ActiveTutorialIndex"
+                    CanFollowDestination="@CanFollowDestination" EmergencyUndockTip="@EmergencyUndockTip"
+                    EngageLongHaul="@EngageLongHaul" FollowDestTip="@FollowDestTip" FollowShip="@FollowShip"
+                    LongCoastAheadReadout="@LongCoastAheadReadout" LongHaulOfferBlock="@LongHaulOfferBlock"
+                    LongHaulTargetPlanet="@LongHaulTargetPlanet" MatchAndClamp="@MatchAndClamp"
+                    OnWarpSliderInput="@OnWarpSliderInput" Paused="@Paused" PlotButtonTip="@PlotButtonTip"
+                    PlotMode="@PlotMode" PressAndRefocus="@PressAndRefocus" ShowLongCoastAdvert="@ShowLongCoastAdvert"
+                    StartSkip="@StartSkip" ToggleDock="@ToggleDock" ToggleFollow="@ToggleFollow"
+                    ToggleFollowDest="@ToggleFollowDest" ToggleNavHelp="@ToggleNavHelp" TogglePause="@TogglePause"
+                    TogglePlotMode="@TogglePlotMode" ToggleSkip="@ToggleSkip" ToggleTutorial="@ToggleTutorial"
+                    Undock="@Undock" WarpReadout="@WarpReadout" WarpSliderValue="@WarpSliderValue"
+                    OnZoomStep="@OnZoomStep" />
+
+        <div class="map-readouts bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
+            <ShipReadoutLines _camera="@_camera" _cargoUnits="@_cargoUnits" _cargoValue="@_cargoValue"
+                              _credits="@_credits" _effectiveWarp="@_effectiveWarp" _plasma="@_plasma"
+                              _reactionMassPulses="@_reactionMassPulses" _scenarioName="@_scenarioName" _ship="@_ship"
+                              _skipActive="@_skipActive" _skipTargetEpoch="@_skipTargetEpoch"
+                              _skipTargetLabel="@_skipTargetLabel" CargoCapacity="@CargoCapacity"
+                              CircularSpeedHere="@CircularSpeedHere" FormatDuration="@FormatDuration"
+                              FormatSimTime="@FormatSimTime" FormatZoom="@FormatZoom" Paused="@Paused"
+                              ReactionMassCapacity="@ReactionMassCapacity" SimTime="@SimTime" Warp="@Warp" />
+            @if (OrbitInfo() is { } oi)
+            {
+                <OrbitAssistBox oi="@oi" _disarmConfirmBodyId="@_disarmConfirmBodyId"
+                                ActiveCargoRunTo="@ActiveCargoRunTo" CargoNextAction="@CargoNextAction"
+                                DestinationEta="@DestinationEta" DockMatchSpeedMps="@DockMatchSpeedMps"
+                                DockNavLockTip="@DockNavLockTip" DockReachMeters="@DockReachMeters"
+                                DockStatusLine="@DockStatusLine" EmergencyCaptureTip="@EmergencyCaptureTip"
+                                EmergencyDescentTip="@EmergencyDescentTip"
+                                EmergencyInsertionTip="@EmergencyInsertionTip" EnterOrbit="@EnterOrbit"
+                                FormatDistance="@FormatDistance" IsDockableHaven="@IsDockableHaven"
+                                NavLockedByDock="@NavLockedByDock" OrbitStatusLine="@OrbitStatusLine"
+                                SetDestination="@SetDestination" />
+            }
+            <DockFocusBox _dockAffordance="@_dockAffordance" DockFocusLive="@DockFocusLive"
+                          EffectiveDockTankPulses="@EffectiveDockTankPulses" />
+            <NearestSpaceLines _activeRadar="@_activeRadar" _dockedHavenId="@_dockedHavenId"
+                               _nearestBodyPosition="@_nearestBodyPosition"
+                               _nearestBodyVelocity="@_nearestBodyVelocity" _nearestHaven="@_nearestHaven"
+                               _plasma="@_plasma" _pulse="@_pulse" _ship="@_ship"
+                               ArcChargeThreshold="@ArcChargeThreshold" DockMatchSpeedMps="@DockMatchSpeedMps"
+                               DockReachMeters="@DockReachMeters" FormatDistance="@FormatDistance"
+                               NearestReadoutName="@NearestReadoutName" />
+            <BoardingProgressBox _captureEngaged="@_captureEngaged" _captureProgress="@_captureProgress"
+                                 _captureRequiredSeconds="@_captureRequiredSeconds"
+                                 _captureTargetCallsign="@_captureTargetCallsign" _cargoUnits="@_cargoUnits"
+                                 CargoCapacity="@CargoCapacity" SelectedCaptureTarget="@SelectedCaptureTarget" />
+            <PlunderOfferBox _captureTargetCallsign="@_captureTargetCallsign"
+                             _plunderOpportunityTargetId="@_plunderOpportunityTargetId"
+                             AuthorizePlunder="@AuthorizePlunder" DeclinePlunder="@DeclinePlunder" />
+        </div>
+
+        <FrameSelector _plotFrameBodyId="@_plotFrameBodyId" FrameOptions="@FrameOptions"
+                       FramePickerGroups="@FramePickerGroups" FrameSpeedReadout="@FrameSpeedReadout"
+                       OnFramePicked="@OnFramePicked" SetPlotFrame="@SetPlotFrame" />
+
+        @if (PlotMode)
+        {
+            @* #997 · THE PANEL IS A CappedScrollPanel NOW, and its behaviour is exactly #993's — because
+               the component IS #993's arithmetic, lifted out of this one panel's forty-line comment and
+               given a name. A head that keeps its measured height, a body that takes what is left and
+               scrolls there, a floor under the body so a short window pages the panel instead of squeezing
+               the plan to nothing, and the open editor scrolled into view when — and only when — WHICH
+               editor is open has changed since the last paint.
+
+               PlotPanelFitsTheWindowTests is unchanged and still locates `.map-plot` and `.map-plot-nodes`
+               by name: the panel keeps both names and both jobs, and the guard that proved the behaviour
+               at 1280x720 is the guard that now proves the component. *@
+            <CappedScrollPanel class="map-plot bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small"
+                               BodyClass="map-plot-nodes" BodyFloor="6rem"
+                               HasContent="@(!PlanListIsEmpty)"
+                               OpenChild="@OpenPlanEditorKey()" OpenChildSelector=".map-plan-step-open">
+                <Header>
+                <PlotScrubControls _closestPass="@_closestPass" _horizonChoice="@_horizonChoice"
+                                   _scrubOffsetSecondsValue="@_scrubOffsetSeconds"
+                                   _scrubOffsetSecondsSet="@(v => _scrubOffsetSeconds = v)"
+                                   CurrentPlotHorizonSeconds="@CurrentPlotHorizonSeconds"
+                                   FormatDistance="@FormatDistance" FormatHorizon="@FormatHorizon"
+                                   FormatSimTime="@FormatSimTime" HorizonSliderValue="@HorizonSliderValue"
+                                   OnHorizonSliderInput="@OnHorizonSliderInput" RibbonHorizonNote="@RibbonHorizonNote"
+                                   ScrubTime="@ScrubTime" SetHorizonAuto="@SetHorizonAuto" />
+                <FlightPlanHead FlightNowNext="@FlightNowNext" FlightPlanCurrentStep="@FlightPlanCurrentStep"
+                                FlightPlanStepCount="@FlightPlanStepCount" />
+                <PlotComposeStrip _arrive="@_arrive" _openEditor="@_openEditor"
+                                  _reactionMassPulses="@_reactionMassPulses" _skimmablePass="@_skimmablePass"
+                                  _slingablePass="@_slingablePass" AddArriveAtScrub="@AddArriveAtScrub"
+                                  AddBurnAtScrub="@AddBurnAtScrub" AddCastOffAtTop="@AddCastOffAtTop"
+                                  ArriveButtonLabel="@ArriveButtonLabel" ArriveCandidate="@ArriveCandidate"
+                                  NavLockedByDock="@NavLockedByDock" PlanBeginsWithCastOff="@PlanBeginsWithCastOff"
+                                  PlannedPulseTotal="@PlannedPulseTotal" ToggleSkimPanel="@ToggleSkimPanel"
+                                  ToggleSlingPanel="@ToggleSlingPanel" />
+                <SlingComposeEditor _openEditor="@_openEditor" _slingablePass="@_slingablePass"
+                                    _slingFailure="@_slingFailure" _slingPassRadii="@_slingPassRadii"
+                                    _slingResult="@_slingResult" _slingSide="@_slingSide"
+                                    _slingSolving="@_slingSolving" AddSlingBurn="@AddSlingBurn"
+                                    OnSlingRadiiInput="@OnSlingRadiiInput" RunSlingSolveAsync="@RunSlingSolveAsync"
+                                    SetSlingSide="@SetSlingSide" SlingBurnLine="@SlingBurnLine"
+                                    SlingLeverLine="@SlingLeverLine" SlingMaxRadii="@SlingMaxRadii"
+                                    SlingMinRadii="@SlingMinRadii" SlingNodeNoteNow="@SlingNodeNoteNow"
+                                    SlingOutcomeLine="@SlingOutcomeLine" SlingPassLine="@SlingPassLine" />
+                <SkimComposeEditor _openEditor="@_openEditor" _skimAltKm="@_skimAltKm" _skimFailure="@_skimFailure"
+                                   _skimmablePass="@_skimmablePass" _skimResult="@_skimResult"
+                                   _skimSolving="@_skimSolving" AddSkimBurn="@AddSkimBurn"
+                                   OnSkimAltInput="@OnSkimAltInput" RunSkimSolveAsync="@RunSkimSolveAsync"
+                                   SkimDepthLine="@SkimDepthLine" SkimFinePrint="@SkimFinePrint"
+                                   SkimOutcomeLine="@SkimOutcomeLine" SkimShedLine="@SkimShedLine"
+                                   SkimShellTopKm="@SkimShellTopKm" />
+                @if (_destinationBodyId is not null && _ancientCharges > 0)
+                {
+                    @* M28: the Ancients' pilot — scarce alien auto-plot, found at the pyramids. *@
+                    <button type="button" class="btn btn-sm btn-warning w-100 mb-2" title="Spend an Ancients' charge to auto-plot the whole course" @onclick="UseAncientsPilot">
+                        ◬ The Ancients' pilot — lay course to @BodyName(_destinationBodyId) (@_ancientCharges left)
+                    </button>
+                }
+
+                <PlanShapeNotes NavLockedByDock="@NavLockedByDock" PlanListIsEmpty="@PlanListIsEmpty"
+                                PlanShapeWarningLine="@PlanShapeWarningLine" />
+                </Header>
+                <ChildContent>
+                        @foreach (PlanNode node in _planNodes)
+                        {
+                            @* #955 NAV-1 · THE TWO DEPARTURE ROWS. Shaped exactly like every other row — pip,
+                               caret, glance line, time — because the owner's whole ask is ONE list read top to
+                               bottom, and a departure that looked different would read as a different kind of
+                               thing. Their editors are the small ones they deserve: the clamp has nothing to
+                               set (it costs nothing and points nowhere), the clearance has the ±p nudges in
+                               NodeFrame's own faces. Both are removable, like every step. *@
+                            if (node.Kind != PlanStepKind.Burn)
+                            {
+                                FlightStepState _ds = FlightPlanStatusBuilder.BurnState(node.Stale, node.Executed);
+                                bool _dopen = _openEditor == FlightEditorKind.Burn && ReferenceEquals(node, _selectedPlanNode);
+                                <DepartureStepRow node="@node" _ds="@_ds" _dopen="@_dopen"
+                                                  _selectedPlanNode="@_selectedPlanNode"
+                                                  ClearanceEtaLine="@ClearanceEtaLine" FormatSimTime="@FormatSimTime"
+                                                  NudgeDepartureEpoch="@NudgeDepartureEpoch"
+                                                  NudgeNodePulses="@NudgeNodePulses"
+                                                  PlanStepGlanceLine="@PlanStepGlanceLine"
+                                                  RemoveTheCastOff="@RemoveTheCastOff"
+                                                  SeparationFromHarbour="@SeparationFromHarbour"
+                                                  ToggleBurnEditor="@ToggleBurnEditor" />
+                                continue;
+                            }
+
+                            @* PR-D2: each burn is a step. Collapsed, it shows a glanceable line (type +
+                               direction + countdown); clicking the line expands its editor in place
+                               (accordion — one open at a time). The state pip (planned / done / stale)
+                               rides the left edge so the plan reads at a glance. *@
+                            FlightStepState _bs = FlightPlanStatusBuilder.BurnState(node.Stale, node.Executed);
+                            bool _open = _openEditor == FlightEditorKind.Burn && ReferenceEquals(node, _selectedPlanNode);
+                            <div class="mb-1 map-plan-step map-plan-step-@_bs.ToString().ToLowerInvariant() @(node.Stale ? "text-decoration-line-through text-secondary" : "") @(_open ? "map-plan-step-open" : "") @(ReferenceEquals(node, _selectedPlanNode) ? "map-plot-node-selected" : "")">
+                                <div class="map-plan-step-line" role="button" tabindex="0"
+                                     title="Click to @(_open ? "collapse" : "edit") this step"
+                                     @onclick="() => ToggleBurnEditor(node)">
+                                    <span class="map-plan-step-pip" title="@_bs" aria-hidden="true"></span>
+                                    <span class="map-plan-step-caret" aria-hidden="true">@(_open ? "▾" : "▸")</span>
+                                    <span class="flex-grow-1">@BurnGlanceLine(node)</span>
+                                    <span class="text-secondary small text-nowrap">@FormatSimTime(node.SimTime)</span>
+                                </div>
+                                @if (_open)
+                                {
+                                    <BurnStepEditor node="@node" _burnAngleAbsoluteValue="@_burnAngleAbsolute"
+                                                    _burnAngleAbsoluteSet="@(v => _burnAngleAbsolute = v)"
+                                                    DeleteNode="@DeleteNode" FormatSimTime="@FormatSimTime"
+                                                    HeadingAlongCourseAt="@HeadingAlongCourseAt"
+                                                    MaxNodePulses="@MaxNodePulses" MinNodePulses="@MinNodePulses"
+                                                    NodeAimedAlong="@NodeAimedAlong" NudgeNodeAim="@NudgeNodeAim"
+                                                    NudgeNodeEpoch="@NudgeNodeEpoch"
+                                                    NudgeNodePulses="@NudgeNodePulses"
+                                                    PlanningPrimaryName="@PlanningPrimaryName"
+                                                    PlotFrameName="@PlotFrameName" RetimeToScrub="@RetimeToScrub"
+                                                    SetHeading="@SetHeading" SetNodeDirection="@SetNodeDirection"
+                                                    SetPercent="@SetPercent" SetPlotFrame="@SetPlotFrame"
+                                                    SetPulses="@SetPulses" TripFrameOffer="@TripFrameOffer" />
+                                }
+                            </div>
+                        }
+                        <ScheduledBurnRows FormatSimTime="@FormatSimTime"
+                                           ScheduledAutopilotBurns="@ScheduledAutopilotBurns"
+                                           ScheduledBurnGlanceLine="@ScheduledBurnGlanceLine" />
+                        @* PR-D2: armed auto-orbit is the terminal step. Collapsed it names the body + state
+                           (ARMED → ACTIVE while the autopilot flies the approach); expanded it gains its own
+                           disarm control, so the insertion's button lives in its step like every other. The
+                           docked-guard (NavLockedByDock) still gates arming/disarming. #952: when the ARRIVE
+                           step below names the same body, that row IS this fact (with the pass and the ✓/✗
+                           bit on it) — so this one stands down rather than say it twice. *@
+                        @if (_armedOrbitBodyId is not null && !ArriveCoversArmed)
+                        {
+                            <ArmedOrbitStepRow _armedBudgetPulses="@_armedBudgetPulses"
+                                               _armedOrbitBodyId="@_armedOrbitBodyId"
+                                               _armedTransferSummary="@_armedTransferSummary"
+                                               _disarmConfirmBodyId="@_disarmConfirmBodyId"
+                                               _keepTrimPulsesPerDay="@_keepTrimPulsesPerDay"
+                                               _openEditor="@_openEditor" _orbitKept="@_orbitKept"
+                                               ArmedInsertionSimTime="@ArmedInsertionSimTime"
+                                               AutopilotFlyingApproach="@AutopilotFlyingApproach" BodyName="@BodyName"
+                                               DockNavLockTip="@DockNavLockTip" FormatSimTime="@FormatSimTime"
+                                               HarborClassOf="@HarborClassOf" NavLockedByDock="@NavLockedByDock"
+                                               ToggleArmedInsertion="@ToggleArmedInsertion"
+                                               ToggleInsertionEditor="@ToggleInsertionEditor" />
+                        }
+                        @* #952/#955 — THE ARRIVE STEP. The plan's last row, and the owner's "cherry on top":
+                           visually identical to the burn rows above it (pip · caret · glance line · time),
+                           with the valid/invalid bit as a badge and, when it is ✗, the whole sentence in
+                           numbers underneath. PR-D1 of UnifiedNavListNotes.md: the sub-panel of a step is
+                           WHERE the related buttons live, so Arm / Disarm / scrub-to-it / remove are all
+                           inside this row and nowhere else. *@
+                        @if (_arrive is { } _ar)
+                        {
+                            <ArriveStepRow _ar="@_ar" _disarmConfirmBodyId="@_disarmConfirmBodyId"
+                                           _openEditor="@_openEditor" ArmArriveStep="@ArmArriveStep"
+                                           ArmedArrivalStillAhead="@ArmedArrivalStillAhead" ArriveCheck="@ArriveCheck"
+                                           ArriveCoversArmed="@ArriveCoversArmed" ArriveGlanceLine="@ArriveGlanceLine"
+                                           ArriveIsAThen="@ArriveIsAThen" ArrivePassFor="@ArrivePassFor"
+                                           ArrivePlanCompleteLine="@ArrivePlanCompleteLine"
+                                           ArriveRibbonTooShortLine="@ArriveRibbonTooShortLine"
+                                           AutopilotFlyingApproach="@AutopilotFlyingApproach" BodyName="@BodyName"
+                                           DockNavLockTip="@DockNavLockTip" FormatSimTime="@FormatSimTime"
+                                           NavLockedByDock="@NavLockedByDock"
+                                           PlanBeginsWithCastOff="@PlanBeginsWithCastOff"
+                                           RemoveArriveStep="@RemoveArriveStep" ScrubToArrive="@ScrubToArrive"
+                                           ToggleArriveEditor="@ToggleArriveEditor" />
+                        }
+                </ChildContent>
+            </CappedScrollPanel>
+        }
+    </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

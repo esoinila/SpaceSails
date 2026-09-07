@@ -21,7 +21,7 @@ public class ElectricUniverseTests
     [Fact]
     public void NewtonianScenario_YieldsNoEnvironment_AndChargeStaysZero()
     {
-        ScenarioDefinition sol = SimulatorTests.LoadSol();
+        ScenarioDefinition sol = TestTree.Sol;
         var ephemeris = CircularOrbitEphemeris.FromScenario(sol);
 
         Assert.Null(PlasmaEnvironment.FromScenario(sol, ephemeris));

@@ -1,0 +1,48 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SpaceSails.Core
+@*
+    #251 item 1 · THE CAPTAIN'S-REMOTE BUTTON, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. The one page member it reads is a [Parameter] with the SAME NAME,
+    which is what lets the markup move without a rewrite and lets the suite's source guards read it through
+    MapMarkup exactly as before.
+
+    THE BUTTON AND THE PANEL ARE TWO SURFACES ON PURPOSE, and were before this file existed: #1107 moved
+    CaptainsRemotePanel — the 📻 remote itself — and left the little button that opens it in the host,
+    because they are opened by different `@if`s. `_deckMode && _surface is not null` puts the button on the
+    deck HUD; `_showCaptainsRemote`, which pressing it sets, puts the panel up. Both `@if`s stay in
+    Map.razor, so the page keeps its paint order and its conditions in one place.
+
+    IHandleEvent repeats the page's own override (Map.Sim.cs) — without it Blazor would put an automatic
+    re-render back on every event in here, which the page turns off because the HUD's refresh belongs to
+    OnTick's 200 ms throttle. The .razor.css beside this file carries no rules: `.captains-remote-btn`
+    stays in Pages/Map.razor.css where #1109 left it, so the shipped cascade does not move.
+
+    OpenCaptainsRemote is wired STRAIGHT to `@onclick`, so it crosses as an EventCallback and the PAGE is
+    the receiver of the press rather than this surface (#1135 clause 2) — which is the whole job of this
+    button: the press sets a field the page's own `@if` reads.
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #538 · THE CAPTAIN'S REMOTE. Owner: "Maybe small button to open the sentry settings pop-up 😎" and then the
+       better name for it — "Captain's remote". A small button on the deck HUD, because this is a handheld thing a
+       captain thumbs while crouched behind a bulkhead, not a settings menu on a console somewhere else. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ───────────────────────────────────────────────── *@
+        <button type="button" class="btn btn-sm btn-outline-warning captains-remote-btn"
+                title="@SilentRunning.PanelTitle — hold your bots, and put the boat to sleep"
+                @onclick="OpenCaptainsRemote">
+            📻 Remote
+        </button>
+@* ── MARKUP ENDS ──────────────────────────────────────────────────────────────── *@
+}

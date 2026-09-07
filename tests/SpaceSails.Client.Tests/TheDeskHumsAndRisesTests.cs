@@ -34,8 +34,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheDeskHumsAndRisesTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     private static readonly string[] Bodies =
     [
@@ -103,8 +102,8 @@ public sealed class TheDeskHumsAndRisesTests
                 + "has moved, and the presses will throw instead of running.");
         pending.SetValue(map, true);
 
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Static)!;
-        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Static)!;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Public | BindingFlags.Static)!;
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Public | BindingFlags.Static)!;
         object ex = Activator.CreateInstance(exType, nonPublic: true)!;
         object stop = Activator.CreateInstance(stopType,
             new CelestialBody(body, body, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;
@@ -137,7 +136,7 @@ public sealed class TheDeskHumsAndRisesTests
 
     /// <summary>Press [E] where the captain is standing, through the shipping key handler.</summary>
     private static void PressE(Pages.Map map) =>
-        Assert.True((bool)Invoke(map, "HandleDeckKey", "e")!, "the deck did not take the [E] key.");
+        Assert.True((bool)Invoke(map, "HandleDeckKey", "e", false)!, "the deck did not take the [E] key.");
 
     // ── THE LEDGER, SNAPSHOTTED ───────────────────────────────────────────────────────────────────────
 

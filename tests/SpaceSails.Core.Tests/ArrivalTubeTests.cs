@@ -13,9 +13,7 @@ namespace SpaceSails.Core.Tests;
 /// </summary>
 public sealed class ArrivalTubeTests
 {
-    private static ICelestialEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(ScenarioLoader.LoadFile(
-            Path.Combine(AppContext.BaseDirectory, "scenarios", "sol.json")));
+    private static ICelestialEphemeris Sol() => CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     /// <summary>
     /// THE HEADLINE RESULT, and the reason this rule was worth deriving rather than authoring: the tube comes out

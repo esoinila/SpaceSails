@@ -1,0 +1,83 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using NavSearchRow = SpaceSails.Client.Pages.Map.NavSearchRow
+@*
+    #251 item 1 · THE NAV SEARCH, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules:
+    `.nav-search` and its rows stay in Pages/Map.razor.css where #1109 left them, so the shipped cascade
+    does not move with the markup.
+
+    TWO WRITES CROSS BACK, and one of them is a spelling neither earlier audit knew about. `@onfocus="() =>
+    _navSearchOpen = true"` is the ordinary kind — a field on the PAGE, assigned from moved markup, so it
+    goes down as a Value/Set pair with a private property keeping its own name (#251 item 1's law, and
+    NoSurfaceSwallowsAWriteTests').
+
+    `@ref="_navSearchInput"` is the other kind: an assignment the COMPILER writes. It captures an
+    ElementReference into the page's field, and the page is the one that uses it — `/` calls
+    FocusNavSearch, which awaits `_navSearchInput.FocusAsync()`. Hand that member down one-way and the
+    capture lands on this component's copy, the page's field stays a default ElementReference, and pressing
+    `/` throws into the browser console with nothing in the suite to say so. It crosses as a pair for the
+    same reason `@bind` does, and the audit next door now reads all three spellings.
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #406 Nav search — type a name to find & jump to a target instead of zoom-hunting. Sits beside
+       🗺 Layers on the same map desks (Nav/Sensors/WarRoom); the results drop straight down. Reuses the
+       pick-row idiom (icon · name · kind/flavor); a row jumps by framing + centring the target (its menu
+       is one more click). / focuses it, ↑↓ move, Enter jumps, Esc closes. The input stops keydown
+       propagation so typing a name never drives the ship. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ───────────────────────────────────────────────── *@
+        <div class="nav-search" @onclick:stopPropagation="true">
+            <input @ref="_navSearchInput" type="search" class="form-control form-control-sm nav-search-input"
+                   placeholder="🔍 find a target… ( / )" value="@_navSearchQuery" aria-label="Search the map for a target"
+                   title="Type a name to find &amp; jump to a body, depot, or contact — / focuses, ↑↓ move, Enter jumps, Esc closes"
+                   @oninput="OnNavSearchInput" @onfocus="() => _navSearchOpen = true"
+                   @onkeydown="OnNavSearchKeyDown" @onkeydown:stopPropagation="true" />
+            @if (_navSearchOpen && _navSearchRows.Count > 0)
+            {
+                <div class="nav-search-results bg-dark bg-opacity-75 rounded p-1 small shadow text-light">
+                    @for (int i = 0; i < _navSearchRows.Count; i++)
+                    {
+                        NavSearchRow row = _navSearchRows[i];
+                        bool sel = i == _navSearchIndex;
+                        @* #963: the row already SAYS "🛬 landable" in its flavor; the hover spells out what
+                           landable buys you, since that was the owner's actual question about the glyph. *@
+                        <button type="button" class="btn btn-sm text-start py-0 nav-search-row @(sel ? "btn-info" : "btn-outline-info")"
+                                title="@NavSearchRowTip(row)"
+                                @onclick="() => JumpToSearchResult(row)">
+                            <span class="nav-search-name">@row.Icon @row.Name</span>
+                            <span class="text-secondary"> · @row.Flavor</span>@if (row.Hidden)
+                            {
+                                <span class="text-warning"> · hidden by your layer filter</span>
+                            }
+                        </button>
+                    }
+                </div>
+            }
+            else if (_navSearchOpen && !string.IsNullOrWhiteSpace(_navSearchQuery))
+            {
+                <div class="nav-search-results bg-dark bg-opacity-75 rounded p-1 small shadow text-secondary">
+                    nothing on the charts by that name
+                </div>
+            }
+        </div>
+@* ── MARKUP ENDS ──────────────────────────────────────────────────────────────── *@
+}

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,24 +27,19 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheWallsAreHungAndReadTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-
-            at = at.Parent;
-        }
-
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Pages(params string[] file) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", "Pages", .. file]));
+        File.ReadAllText(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", .. file]));
+
+    /// <summary>The traffic's source — ALL of it, as a glob rather than a written list. `Map.Npc.cs` was
+    /// split by concern (#251) and the two methods this class audits ended up in two different partials; a
+    /// guard naming one file reads whatever the last split happened to leave in it, and the next split would
+    /// turn it red for a reason that is not in the ship. Ordinal order, so the read is the same everywhere.</summary>
+    private static string Npc() =>
+        string.Join("\n", Directory
+            .EnumerateFiles(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Npc*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     /// <summary>One method body, from its signature to the next member at the same indent — the same cut the
     /// sibling client guards make, so a body read here is a body read there.</summary>
@@ -235,26 +230,29 @@ public sealed class TheWallsAreHungAndReadTests
     [Fact]
     public void EveryArrivalEdgeInTheGameTellsTheBook()
     {
-        (string File, string Signature)[] edges =
+        // #251 · the docking code and the autopilot are families of partials now, so the edge is named by
+        // the GLOB its subject spans rather than by whichever file the last cut happened to leave it in.
+        // Read in declared (ordinal) order through MapMarkup.PagesFamily.
+        (string Family, string Signature)[] edges =
         [
-            ("Map.Docking.cs", "TheArrivalIsRemembered(dest.Id)"),    // the shuttle hop between havens
-            ("Map.Docking.cs", "TheArrivalIsRemembered(dock.Id)"),    // the clamp
-            ("Map.Autopilot.cs", "TheArrivalIsRemembered(body.Id)"),  // the autopilot's park
-            ("Map.Autopilot.cs", "TheArrivalIsRemembered(oi.Body.Id)"), // the manual insertion
-            ("Map.Surface.cs", "TheArrivalIsRemembered(stop.Body.Id)"), // the boat setting down
+            ("Map.Docking*.cs", "TheArrivalIsRemembered(dest.Id)"),    // the shuttle hop between havens
+            ("Map.Docking*.cs", "TheArrivalIsRemembered(dock.Id)"),    // the clamp
+            ("Map.Autopilot*.cs", "TheArrivalIsRemembered(body.Id)"),  // the autopilot's park
+            ("Map.Autopilot*.cs", "TheArrivalIsRemembered(oi.Body.Id)"), // the manual insertion
+            ("Map.Surface.Boarding.cs", "TheArrivalIsRemembered(stop.Body.Id)"), // the boat setting down
         ];
 
-        foreach ((string file, string call) in edges)
+        foreach ((string family, string call) in edges)
         {
-            Assert.Contains(call, Pages(file), StringComparison.Ordinal);
+            Assert.Contains(call, MapMarkup.PagesFamily(family), StringComparison.Ordinal);
         }
 
         // …and every arrival edge stands beside the `ArrivedAt` hook that already marks one, or (the landing)
         // at the one place a boat is mated. Counted, so a new edge cannot be added without noticing this.
         int wired = 0;
-        foreach (string file in new[] { "Map.Docking.cs", "Map.Autopilot.cs", "Map.Surface.cs" })
+        foreach (string family in new[] { "Map.Docking*.cs", "Map.Autopilot*.cs", "Map.Surface.Boarding.cs" })
         {
-            string source = Pages(file);
+            string source = MapMarkup.PagesFamily(family);
             int at = 0;
             while ((at = source.IndexOf("TheArrivalIsRemembered(", at, StringComparison.Ordinal)) >= 0)
             {
@@ -301,7 +299,7 @@ public sealed class TheWallsAreHungAndReadTests
     [Fact]
     public void SheIsBerthedOnTheSweepAndBothWaysOfMeetingHerReachOneWriter()
     {
-        string npc = Pages("Map.Npc.cs");
+        string npc = Npc();
         Assert.Contains("EnsureTheOldShipIsBerthed();", Method(npc, "private void SweepSensors()"),
             StringComparison.Ordinal);
         Assert.Contains("TheOldShipIsSeen(id);", Method(npc, "private void TrackShipFromMenu(string id)"),
@@ -322,5 +320,184 @@ public sealed class TheWallsAreHungAndReadTests
         // #973 L5b's Ilse FIND ends at her, so the predicate that says where she is has to exist and be
         // asked of the universe rather than of whatever berth the captain happens to be at.
         Assert.Contains("private string? TheReachBodyId(string? threadId)", ads, StringComparison.Ordinal);
+    }
+
+    // ── THE CUSTOMS DESK (#380 item 10) ──────────────────────────────────────────────────────────────
+    //
+    // The audit's last open mystifier: a counter, a gate, a signed authority and an officer standing at it
+    // promised a CHECK, and the captain walked through carrying whatever he liked, for ever. The answer is
+    // one card on the officer's own square, per tier — and these hold the three ways it could still be a
+    // lie: hung at the wrong tiers, saying something other than what was authored, or standing close enough
+    // to the lifeboat muster that [E] reads the wrong fixture.
+
+    /// <summary>The SHIPPING scenario, not a fixture: the whole claim of the tube module is that the tier is
+    /// derived from traffic somebody already wrote down, and a fixture would let the desk and the economy
+    /// drift apart. Parsed once for the whole assembly (<see cref="TestTree.Sol"/>); the ephemeris built
+    /// over it is this class's own.</summary>
+    private static readonly Lazy<ICelestialEphemeris> Sol =
+        new(() => CircularOrbitEphemeris.FromScenario(TestTree.Sol));
+
+    private static DeckPlan.ConsoleSpot? CustomsAt(DeckPlan deck)
+    {
+        DeckPlan.ConsoleSpot[] found = [.. deck.Consoles.Where(
+            c => string.Equals(c.Label, ArrivalTube.CustomsLabel, StringComparison.Ordinal))];
+        Assert.True(found.Length <= 1, "one gate, one desk — this concourse hangs the customs card twice.");
+        return found.Length == 1 ? found[0] : null;
+    }
+
+    /// <summary>
+    /// EVERY PORT'S GATE SAYS WHAT IT IS FOR — AND AN OUTPOST'S DOES NOT, because an outpost has no queue and
+    /// nobody to run one. Swept over <see cref="HavenInterior.InteriorBodyIds"/> against the shipping
+    /// <c>sol.json</c>, so a ninth haven added next month either gets the card its traffic earns or turns this
+    /// red; and the sweep is required to MEET all three tiers, so one that quietly collapsed to a single tier
+    /// could not stay green.
+    ///
+    /// <para>The words are compared VERBATIM: they are the authored pair (#380, 2026-09-03) and the only new
+    /// prose on this desk. The reserved word (<c>worldbuilding-notes.md</c> §8) is asserted absent from
+    /// both.</para>
+    ///
+    /// <para><b>Proven RED</b> by returning the working-berth line at <see cref="ArrivalTube.Tier.Outpost"/>:
+    /// The Tilt and The Deep grow a desk and this fails on both.</para>
+    /// </summary>
+    [Fact]
+    public void TheGateSaysWhatItIsForAtTheTwoTiersThatFundOneAndNowhereElse()
+    {
+        const string greatPort =
+            "Anyone who wanted a look at you had the length of that concourse to take it. "
+            + "This desk stamps what they decided.";
+        const string workingBerth =
+            "A formality this berth does not fund. The stamp is real; the looking is not.";
+
+        Assert.Equal(greatPort, ArrivalTube.CustomsLine(ArrivalTube.Tier.GreatPort));
+        Assert.Equal(workingBerth, ArrivalTube.CustomsLine(ArrivalTube.Tier.WorkingBerth));
+        Assert.Null(ArrivalTube.CustomsLine(ArrivalTube.Tier.Outpost));   // no officer, so no opinion
+
+        foreach (string line in new[] { greatPort, workingBerth })
+        {
+            Assert.DoesNotContain("monolith", line, StringComparison.OrdinalIgnoreCase); // §8: reserved
+        }
+
+        var met = new HashSet<ArrivalTube.Tier>();
+        foreach (string body in HavenInterior.InteriorBodyIds)
+        {
+            ArrivalTube.Tier tier = ArrivalTube.TierFor(Sol.Value, body);
+            met.Add(tier);
+            DeckPlan deck = HavenInterior.DockedDeck(body, null, 0, false, null, null, tier)!;
+            DeckPlan.ConsoleSpot? desk = CustomsAt(deck);
+
+            if (tier == ArrivalTube.Tier.Outpost)
+            {
+                Assert.True(desk is null, $"{body} is an outpost and still keeps a customs desk.");
+                continue;
+            }
+
+            Assert.True(desk is not null, $"{body} ({tier}) has a gate and no card at it.");
+            Assert.Equal(DeckPlan.ConsoleKind.ViewObject, desk!.Value.Kind);
+            Assert.Null(desk.Value.ImageUrl);      // a text plate, in the lifeboat muster's idiom
+            Assert.Equal(tier == ArrivalTube.Tier.GreatPort ? greatPort : workingBerth, desk.Value.Caption);
+        }
+
+        // The shipping scenario actually exercises all three tiers — a sweep that only ever met one would
+        // prove nothing about the other two.
+        Assert.Equal(3, met.Count);
+    }
+
+    /// <summary>
+    /// THE DESK AND THE TUBE PLATE ARE ONE READING OF ONE BERTH. The captain read
+    /// <see cref="ArrivalTube.WalkLine"/> on the plate ninety seconds earlier; the officer's card has to agree
+    /// with it, and it does because both come out of the same tier switch on the same
+    /// <see cref="ArrivalTube.TierFor"/> answer. Asserted as a PAIR — a desk exactly where the plate said
+    /// there was a walk to be watched — and as ROUTING, because the client could still hand the deck a tier
+    /// it worked out some other way, at one weld and not the other.
+    ///
+    /// <para><b>Proven RED</b> by handing the second weld <c>ArrivalTube.Tier.GreatPort</c> instead of
+    /// <c>TubeTierAt(id)</c>: the routing count drops to one and this fails.</para>
+    /// </summary>
+    [Fact]
+    public void TheDeskAgreesWithTheTubePlateAboutTheSameBerth()
+    {
+        foreach (string body in HavenInterior.InteriorBodyIds)
+        {
+            ArrivalTube.Tier tier = ArrivalTube.TierFor(Sol.Value, body);
+            DeckPlan deck = HavenInterior.DockedDeck(body, null, 0, false, null, null, tier)!;
+
+            // A desk stands exactly where the plate said somebody could look at you on the way in.
+            Assert.Equal(ArrivalTube.WalkLine(tier) != ArrivalTube.WalkLine(ArrivalTube.Tier.Outpost),
+                CustomsAt(deck) is not null);
+
+            // …and the card is this berth's tier's card, not the neighbour's.
+            if (CustomsAt(deck) is { } desk)
+            {
+                Assert.Equal(ArrivalTube.CustomsLine(tier), desk.Caption);
+                foreach (ArrivalTube.Tier other in Enum.GetValues<ArrivalTube.Tier>())
+                {
+                    if (other != tier)
+                    {
+                        Assert.NotEqual(ArrivalTube.CustomsLine(other), desk.Caption);
+                    }
+                }
+            }
+        }
+
+        // ROUTING: the page hands the deck ITS OWN TierFor read — the same call Map.Docking makes for the
+        // plate — at BOTH welds (the first dock, and every re-weld after a wing opens), so a captain who
+        // cracks a hatch mid-visit does not lose the officer.
+        string deckPage = Pages("Map.Deck.cs");
+        Assert.Contains("ArrivalTube.TierFor(sky, havenId)", deckPage, StringComparison.Ordinal);
+        Assert.Equal(2, deckPage.Split("TheBarsChurn, TubeTierAt(id))").Length - 1);
+    }
+
+    /// <summary>
+    /// STANDING AT THE DESK READS THE DESK. It is hung on the officer's own square — a du behind the starboard
+    /// counter, and this asserts the clearance from every other fixture on the deck rather than trusting the
+    /// arithmetic in the comment, at the square the captain actually stands on.
+    ///
+    /// <para>It also holds the officer and his card TOGETHER: the droid and the console read one constant, so
+    /// [E] cannot answer from the next square along and the man cannot be somebody else's.</para>
+    ///
+    /// <para><b>Proven RED</b> by hanging the console on the lifeboat's square: the nearest console at the
+    /// desk resolves to the muster, and the officer stands eight du off his own card.</para>
+    /// </summary>
+    [Fact]
+    public void StandingAtTheCustomsDeskReadsTheOfficerAndNothingElse()
+    {
+        int checked_ = 0;
+        foreach (string body in HavenInterior.InteriorBodyIds)
+        {
+            ArrivalTube.Tier tier = ArrivalTube.TierFor(Sol.Value, body);
+            DeckPlan deck = HavenInterior.DockedDeck(body, null, 0, false, null, null, tier)!;
+            if (CustomsAt(deck) is not { } desk)
+            {
+                continue;
+            }
+
+            checked_++;
+            DeckPlan.ConsoleSpot? under = deck.NearestConsoleSpot(desk.X, desk.Y);
+            Assert.NotNull(under);
+            Assert.Equal(ArrivalTube.CustomsLabel, under!.Value.Label);
+
+            foreach (DeckPlan.ConsoleSpot other in deck.Consoles)
+            {
+                if (string.Equals(other.Label, desk.Label, StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                double d = Math.Sqrt(((other.X - desk.X) * (other.X - desk.X))
+                                   + ((other.Y - desk.Y) * (other.Y - desk.Y)));
+                Assert.True(d > DeckPlan.InteractRadius,
+                    $"{body}: `{other.Label}` stands {d:F1} du from the customs desk — inside the [E] reach.");
+            }
+
+            // The man is on the card's square: the figure the captain walks up to IS the one who speaks.
+            var buffer = new DeckPlan.Droid[DeckPlan.MaxDroids];
+            deck.FillDroids(0, buffer);
+            DeckPlan.Droid officer = buffer.Take(deck.DroidCount).Single(
+                dr => string.Equals(dr.Name, "Customs", StringComparison.Ordinal));
+            Assert.Equal(desk.X, officer.X, 3);
+            Assert.Equal(desk.Y, officer.Y, 3);
+        }
+
+        Assert.True(checked_ >= 5, $"only {checked_} ports were checked — the sweep found almost no desks.");
     }
 }

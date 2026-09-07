@@ -231,7 +231,7 @@ public sealed class ALockedCubicleBuysTimeTests
     private static string Seat(string page, string seat) =>
         Source(page) + Source(Path.Combine("Seating", seat));
 
-    /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
+    /// <summary>#870 · The round is five partials by subject now, so the page this guard reads is all five —
     /// concatenated in the order the one file laid them out, which is exactly the text it read before the
     /// split. A part not named here is appended rather than dropped, so nothing can go unread.</summary>
     private static string Patrol()

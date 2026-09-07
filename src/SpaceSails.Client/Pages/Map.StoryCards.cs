@@ -96,8 +96,15 @@ public sealed partial class Map
         // urgent enough to interrupt a fight, and this is a beat and a half of screen owed to a press the
         // player has just made. Nothing is dropped — the cadence is unspent until it actually speaks, and the
         // queue below serves it the moment the chair is taken.
+        //
+        // #1148 · …AND A CARD RAISED WHILE A BROWSER GATE IS DRIVING A BOARD WAITS TOO. A third arm on the
+        // same queue, from a URL and nothing else (see StoryBeats.HoldQueryFlag for the sixty-second click
+        // that bought it). It is the sit-beat arm's shape exactly — it asks nothing about deferrability,
+        // because it is not a judgement about the beat at all — and it keeps the same promise the other two
+        // keep: the cadence is unspent until the beat speaks, so a held beat is still owed.
         if (StoryBeats.PresentationOf(beat) == StoryBeats.Presentation.Card
-            && (TheSitBeatIsSettling
+            && (TheBeatsAreHeldForAGate
+                || TheSitBeatIsSettling
                 || (StoryBeats.DeferrableWhileInDanger(beat) && CaptainIsInDanger())))
         {
             _deferredBeat ??= (beat, subject, outcome);
@@ -106,6 +113,23 @@ public sealed partial class Map
 
         ShowStoryBeat(beat, subject, outcome);
     }
+
+    /// <summary>
+    /// #1148 · ARE THE BEATS HELD FOR A BROWSER GATE? The client half of
+    /// <see cref="StoryBeats.HoldQueryFlag"/> — the address bar asked, never a field remembered.
+    ///
+    /// <para><b>Why a question and not a boolean on the page.</b> Two reasons, and the second is the one
+    /// that decided it. A latch that changes nothing about the world has no business in <c>BootQuery</c>,
+    /// which pins what the parse ANSWERED — that is #841's own argument for reading <c>?perf=1</c> off
+    /// <c>Navigation.Uri</c> in <c>Map.Sim.World.Build</c>, and this is the same kind of flag. And #905's
+    /// frame ledger walks every instance field on this page: one more <c>bool</c> re-pins thirty
+    /// fingerprints and a roster row to carry a value that is <c>False</c> in every scene the sweep drives.
+    /// A test-only latch is not worth a ledger, so it is not stored.</para>
+    ///
+    /// <para><c>Navigation</c> is null on a page that was never injected into — a bench that builds a bare
+    /// <c>Map</c> and raises a beat at it — and that reads as NOT held, which is the shipping answer.</para>
+    /// </summary>
+    private bool TheBeatsAreHeldForAGate => Navigation is { } address && StoryBeats.HeldIn(address.Uri);
 
     /// <summary>Whether this beat is allowed to speak right now, by Core's cadence rules and nothing else.</summary>
     private bool BeatMaySpeak(StoryBeats.Beat beat, string? subject)
@@ -287,7 +311,12 @@ public sealed partial class Map
         // #865 · …and once the chair has actually been taken. "The strip is open with the scene by the time
         // any deferred card raises" is the second half of the sit-beat rule, and it is kept here rather than
         // by hoping the beat has run out on its own.
-        if (_deferredBeat is { } waiting && !CaptainIsInDanger() && !TheSitBeatIsSettling
+        //
+        // #1148 · …and once the gate's latch is off. Asked SECOND, after the queue is known to hold
+        // something: the latch lives in the live URL rather than in a field on this page (see
+        // StoryBeats.HeldIn for why), and a frame with nothing waiting must not pay to read an address.
+        if (_deferredBeat is { } waiting && !TheBeatsAreHeldForAGate
+            && !CaptainIsInDanger() && !TheSitBeatIsSettling
             && _storyCard is null && _busted is null)
         {
             _deferredBeat = null;

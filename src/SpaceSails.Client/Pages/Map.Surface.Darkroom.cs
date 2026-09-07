@@ -675,9 +675,23 @@ public partial class Map
         // #763 · The kit, named as it is named. A tool this build does not know is still a tool and says so
         // rather than falling through to the default arm, which would print a receiver as a file on
         // somebody — the third named bug class, in a row of a list.
-        Core.Satchel.Kind.Tool => Core.SdrScanner.IsTheKit(item)
-            ? Core.SdrScanner.ItemName
+        // #537 · …and the cutting rig, which is the one tool whose COUNT is its state: the cell IS the item,
+        // so the row prints what is left in it or a captain cannot tell a full rig from a last cut.
+        Core.Satchel.Kind.Tool => Core.SdrScanner.IsTheKit(item) ? Core.SdrScanner.ItemName
+            : Core.HullCutter.IsTheCutter(item) ? Core.HullCutter.RowLabel(item.Count)
             : "🧰 a piece of kit",
+
+        // #535 · The key, by its own canon name and nothing else. NOT by the hull it came off — the id IS the
+        // hull, and a row that printed it would stencil a ship's designation onto the one object in the game
+        // whose entire value is that it leads back to nobody. It has an arm here for the kit's reason one
+        // arm up: without one a code falls through to the default and reads as a file on somebody, which is
+        // the third named bug class in a row of a list.
+        Core.Satchel.Kind.BlackOpsKey => $"{Core.BlackOpsKey.Glyph} {Core.BlackOpsKey.Name}",
+
+        // #233 · The chip out of the roadster. It IS a file on somebody — that is precisely why it rides in
+        // this kind — but it is a NAMED one, and the row says so, because a captain carrying two kinds of
+        // leverage has to be able to tell which of them a client is asking for back.
+        Core.Satchel.Kind.Dirt when Core.CompromisingChip.IsTheChip(item) => Core.CompromisingChip.RowLabel,
 
         _ => "🗃 a file on somebody",
     };

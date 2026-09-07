@@ -1,0 +1,63 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@*
+    #251 item 1 · THE STORY PLATE, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor, and so does the paragraph above it about WHERE it renders:
+    #994 put this plate at the FOOT of .map-flowcolumn, and that is the host's own geometry — the reason it
+    lands on the pixels it lands on is the flow, not this file. What moved here is the plate's own note and
+    the plate's own markup.
+
+    IHandleEvent repeats the page's own override (Map.Sim.cs) — without it Blazor would put an automatic
+    re-render back on every event in here, which the page turns off because the HUD's refresh belongs to
+    OnTick's 200 ms throttle. The .razor.css beside this file carries no rules: `.story-plate` and its
+    `story-plate-in` keyframes stay together in Pages/Map.razor.css, where #1109 deliberately kept them
+    (an animation cut off from its keyframes is that PR's first named trap), so the cascade does not move.
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal — this one
+    OPENS with a statement (`var flashCopy = …`). The braces put the moved lines back in the context they
+    were written in; they are outside the fences, so what the source guards read is still exactly the
+    lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+        @* The plate: same picture, same words, no keyboard stolen and no world stopped. The PANEL is still not
+           clickable — a thing you must dismiss is a thing that blocked you — but #992 gives it the one control
+           the owner's ruling asks of every surface in this file: "there should not be a pop-up that cannot be
+           closed or minimized" (owner ruling 2026-08-24). The ✕ re-enables its own pointer-events and nothing
+           else does, so the plate goes on passing every other click through to the room behind it. The great
+           port's own plate is what made the case: ArrivalTube.Title(GreatPort) is "🛬 THE LONG WALK IN", it
+           carries the longest of the three captions, and it lands bottom-left across the captain's-remote
+           button for the whole of StoryBeats.PlateSeconds. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ───────────────────────────────────────────────── *@
+            var flashCopy = StoryBeatCopy(flash.Beat, flash.Subject);
+            @* #997 · the plate is an OverlayShell in its BARE frame: no head row, no body wrapper, and the
+               way out is the LAST child — which is exactly the geometry #996 measured and #992 gave it. The
+               plate is one flex row of [art][words][✕], so the shell puts nothing between them. *@
+            <OverlayShell class="story-plate" aria-live="polite"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="story-plate-close" DismissFace="✕" DismissLabel="Close"
+                          DismissTitle="Take it down now — it would go on its own in a few seconds"
+                          OnClose="() => Dismiss(CloseStoryPlate)">
+                @if (flashCopy.Art is { Length: > 0 })
+                {
+                    <img class="story-plate-art" src="@flashCopy.Art" alt=""
+                         onerror="this.style.display='none'" />
+                }
+                <div class="story-plate-words">
+                    <div class="story-plate-title">@flashCopy.Title</div>
+                    <div class="story-plate-caption">@flashCopy.Caption</div>
+                </div>
+            </OverlayShell>
+@* ── MARKUP ENDS ──────────────────────────────────────────────────────────────── *@
+}

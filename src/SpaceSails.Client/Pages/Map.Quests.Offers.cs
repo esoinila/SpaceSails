@@ -34,6 +34,11 @@ public partial class Map
         }
         string giver = spot.Label.Replace("◈", "").Trim();
 
+        // #417 · …and a finder's case may be about this face at this port. It TAKES nothing: the regular
+        // still opens their own table card and still hands over whatever work they had — what the case adds
+        // is the entry in the field book, under this person's name as well as its own.
+        TheWitnessMayHaveSeenIt(giver);
+
         // The station oracle (#425): Solenne "Static" Marsh wears a BarPatron console but is no quest-giver —
         // route her to the ranting-oracle flow before any give-work path. Matched by name (OracleRant.IsOracle),
         // the same idiom the Magpie is matched by.
@@ -233,21 +238,36 @@ public partial class Map
 
     // A parcel to carry to another haven — completes when you berth there. Destination is any haven
     // other than the one you're standing in, chosen by sim time + berth so it's stable per booth.
-    private Quest? MakeCargoRunOffer(string giver)
+    // #160 · `destOverride` is the milk-run lesson's one entry into this method: the tutorial has already
+    // chosen the berth it wants taught (the nearest OTHER clampable berth to the one the captain is standing
+    // in) and needs the card, the purse and the pitch to be the ones the board would really have written. It
+    // comes through here rather than being built beside it so the lesson can never issue a contract the game
+    // does not issue — the #742 lesson, one arc over: a job handed over for a different number is a job that
+    // playtests nothing. Null (the ordinary walk-up) keeps the weighted neighbourhood pick untouched.
+    private Quest? MakeCargoRunOffer(string giver, CelestialBody? destOverride = null)
     {
-        List<CelestialBody> havens = (_ephemeris?.Bodies ?? [])
-            .Where(b => b.IsHaven && b.Id != _dockedHavenId
-                        && _quests.All(q => q.DestBodyId != b.Id))
-            .OrderBy(b => b.Id, StringComparer.Ordinal)
-            .ToList();
-        if (havens.Count == 0)
+        CelestialBody dest;
+        if (destOverride is not null)
         {
-            return null;
+            dest = destOverride;
+        }
+        else
+        {
+            List<CelestialBody> havens = (_ephemeris?.Bodies ?? [])
+                .Where(b => b.IsHaven && b.Id != _dockedHavenId
+                            && _quests.All(q => q.DestBodyId != b.Id))
+                .OrderBy(b => b.Id, StringComparer.Ordinal)
+                .ToList();
+            if (havens.Count == 0)
+            {
+                return null;
+            }
+
+            // The neighbourhood law (owner 2026-07-19): weight the pick toward nearby systems so most parcels
+            // are a local hop, a neighbour planet is the occasional stretch, and a cross-system saga is rare.
+            dest = havens[WeightedOfferIndex(havens, b => b.Id)];
         }
 
-        // The neighbourhood law (owner 2026-07-19): weight the pick toward nearby systems so most parcels
-        // are a local hop, a neighbour planet is the occasional stretch, and a cross-system saga is rare.
-        CelestialBody dest = havens[WeightedOfferIndex(havens, b => b.Id)];
         // #349: the purse scales with the actual HAUL — the heliocentric void from where the job is taken
         // (this berth) to the destination — not the old flat 300 that read a station's tiny local orbit and
         // paid the same to Luna as to Neptune. A cross-system parcel now pays like the long trip it is.
@@ -338,7 +358,7 @@ public partial class Map
         {
             return null; // no world yet, or there is only one lost roadster
         }
-        if (_ephemeris.Bodies.All(b => b.Id != "derelict-roadster"))
+        if (_ephemeris.Bodies.All(b => b.Id != Derelict.RoadsterBodyId))
         {
             return null; // scenario without the wreck
         }
@@ -358,9 +378,13 @@ public partial class Map
         // #349: name the hand-off's address (station — PLANET system) so the captain knows where the
         // associate waits without hunting every moon.
         string blurb = $"“Word is a dead tycoon's cherry-red roadster is drifting sunward of Mars — shot up as a stunt, never came down. There's a hardware wallet wedged between the seats: a fortune, and untraceable. Fetch it, bring it quiet to my associate at {BodyAddress(dest.Id)}. {reward:N0} cr, and we never spoke.”";
+        // #233 · …and what is ACTUALLY between the seats is dealt here, off the same booth seed the hand-off
+        // address above was picked with. The brief still says wallet, because the client believes it says
+        // wallet — one car in four is wrong about that, and nobody finds out until the seats. See
+        // Map.Blackmail for why the answer rides Pin.
         return new Quest($"fetch-{++_questSeq}", QuestKind.Fetch, giver,
             "", dest.Name, "Fetch the roadster's lost wallet", blurb, reward,
-            DestBodyId: dest.Id, SourceBodyId: "derelict-roadster");
+            DestBodyId: dest.Id, SourceBodyId: Derelict.RoadsterBodyId, Pin: WhatIsBetweenTheSeats());
     }
 
     // #223: the Fixer's cache run — a map to SOMEONE ELSE'S buried hoard. The recovery flow and the

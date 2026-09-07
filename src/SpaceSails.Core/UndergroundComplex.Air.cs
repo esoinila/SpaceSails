@@ -84,10 +84,117 @@ public static partial class UndergroundComplex
     public static bool RefugeHolds(double cx, double cy, double x, double y) =>
         Math.Abs(x - cx) <= RefugeHalfWidth && Math.Abs(y - cy) <= RefugeHalfHeight;
 
-    /// <summary>One pressure refuge: a room somebody kept the seals on, with an air cracker in it.</summary>
-    public readonly record struct Refuge(double X, double Y, string Sign)
+    // ── #608/#1149 · AND WHAT DECADES DID TO IT: ALMOST NOTHING ─────────────────────────────────────────
+    //
+    // The regulation above says what was BUILT, and it is not in question: every airless floor has a refuge
+    // and the plan still marks it. What the plan does not carry is whether the thing still works — and the
+    // owner ruled on that twice, the second time reversing the first.
+    //
+    // #608, in the same breath he asked for the refuges: "their state after decades is the story. The ones
+    // that still hold are the ones somebody maintained; the ones that do not are the ones somebody stopped
+    // being paid to." That shipped as #1087's seeded split — a fifth holding, and a maintenance line the
+    // department either kept or lost.
+    //
+    // #1149, 2026-09-06, is the correction, and it is the world's answer rather than ours: "On a failed
+    // floor the emergency station most probably still works decades or centuries after everything else
+    // stopped — robustness and reliability were the metrics it was built to ... They almost never fail from
+    // old age; something happened, and we tell it." Safety equipment is not a service a department buys. It
+    // is a REGULATION, built to a spec written by people who assumed nobody would be maintaining it on the
+    // day it mattered, and a fire extinguisher in an abandoned office block still discharges.
+    //
+    // So the room is a fact, the SEAL is still a story, and all three states survive with new causes — see
+    // UndergroundComplex.Inspection.cs, which holds the whole of the new law and the reasoning for it:
+    //
+    //   HOLDING · the default, on every floor, whatever the department. Nothing is rolled for it.
+    //   EMPTY   · not decay: somebody DREW on it (#573's reservoir idiom, a visitor's footprint), rare, and
+    //             it comes back on the rack's own clock. It costs a captain TIME, never range.
+    //   FAILED  · an EVENT and never age: at most one per site, on a minority of sites, never the first
+    //             refuge a captain reaches, and told by a card with its own painting.
+    //             Owner, on the fan (#604): "A refuge whose seal has failed must still paint, and must read
+    //             as failed. Walking to one and finding it dead is a real beat; walking to one that was
+    //             never marked is just a bad map."
+
+    /// <summary>What a refuge's seal has done with the decades since anybody paid for it.</summary>
+    public enum RefugeState
     {
-        /// <summary>Is the captain in its air? <see cref="RefugeHolds"/>, so there is only ever one answer.</summary>
+        /// <summary>The door cycles, the room holds, and there is air in the rack.</summary>
+        Holding,
+
+        /// <summary>The door cycles and the room holds. The rack is drawn down: somebody was here before you,
+        /// and it is coming back on its own clock.</summary>
+        Empty,
+
+        /// <summary>The seal went. The room is on the plan and holds nothing.</summary>
+        Failed,
+    }
+
+    /// <summary>Is a pressure refuge marked on this floor's plan? The LAW, not a count taken off a built
+    /// floor — the lift panel asks it about floors it has not generated and the card asks it about the one
+    /// underfoot, and a panel that answered by building twenty floors would be a panel nobody presses twice.
+    ///
+    /// <para><c>EveryAirlessFloorHasARefuge</c> and <c>APressurisedFloorCarriesNoRefuge</c> are what keep
+    /// this honest: they walk every floor of a hundred sites and check that the generator agrees with the
+    /// sentence written here.</para></summary>
+    public static bool RefugeOnThePlan(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return level < 0 && !HoldsPressure(bodyId, level);
+    }
+
+    /// <summary>What state the refuge on this floor is in — null where the plan marks none.
+    ///
+    /// <para>A fact about the FLOOR rather than about the room, which is why the client may ask it directly
+    /// instead of carrying it down through the deck plan: there is one refuge per floor, its state is decided
+    /// here, and one ask is one answer.</para>
+    ///
+    /// <para><b>#1149 · It holds, unless something happened to it.</b> No department is consulted and no coin
+    /// is tossed over decay — the owner's ruling is that a refuge is built to a robustness spec and outlasts
+    /// the building around it. Two things can still be true of one: the site's one FAILED refuge happened
+    /// here (<see cref="FailedRefugeFloorOf"/>), or somebody drew the rack down before you got to it
+    /// (<see cref="SomebodyDrewTheRackDown"/>). Neither is age, and the order is the order of severity: a
+    /// room that will not cycle does not care what is in its bottles.</para></summary>
+    public static RefugeState? StateOfTheRefugeOn(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        if (!RefugeOnThePlan(bodyId, level))
+        {
+            return null;
+        }
+        if (FailedRefugeFloorOf(bodyId) == level)
+        {
+            return RefugeState.Failed;
+        }
+        return SomebodyDrewTheRackDown(bodyId, level) ? RefugeState.Empty : RefugeState.Holding;
+    }
+
+    /// <summary>Does the refuge on this floor hold pressure at all — the one question the suit asks. Empty
+    /// still counts: the door cycles and the room holds, and that is the difference between a wait and a
+    /// death.</summary>
+    public static bool RefugeStillHolds(RefugeState state) => state != RefugeState.Failed;
+
+    /// <summary>What is said once, at the door, by state. Three sentences for three worlds, and none of them
+    /// says what to do about it.</summary>
+    public static string RefugeEntryLine(RefugeState state) => state switch
+    {
+        RefugeState.Holding =>
+            "🫁 The door cycles and the gauge climbs. A rack of bottles on the wall, and the meter on the " +
+            "fill line still turns.",
+        RefugeState.Empty =>
+            "🫁 The door cycles and the room holds. The fill line reads empty, and the tag on the valve is " +
+            "dated years ago.",
+        _ =>
+            "🫁 The door will not cycle. The seal went a long time ago, and somebody wrote the date on the " +
+            "frame.",
+    };
+
+    /// <summary>One pressure refuge: a room somebody kept the seals on, with an air cracker in it.</summary>
+    /// <param name="State">#608 · What the decades did to it — <see cref="StateOfTheRefugeOn"/>, carried on
+    /// the room so the renderer that draws the plate has the answer the suit is using.</param>
+    public readonly record struct Refuge(
+        double X, double Y, string Sign, RefugeState State = RefugeState.Holding)
+    {
+        /// <summary>Is the captain in its air? <see cref="RefugeHolds"/>, so there is only ever one answer.
+        /// Geometry only — whether that air EXISTS is <see cref="State"/>'s business.</summary>
         public bool Contains(double x, double y) => RefugeHolds(X, Y, x, y);
     }
 
@@ -192,15 +299,14 @@ public static partial class UndergroundComplex
         int pick = pool[DiceRule.Roll(DiceRule.Seed($"hive:refuge:{bodyId}:{level}"), pool.Count).Face - 1];
         Room chosen = rooms[pick];
         rooms.RemoveAt(pick);
-        refuges.Add(new Refuge(chosen.X, chosen.Y, RefugeSign(bodyId, level, 0)));
+        refuges.Add(new Refuge(
+            chosen.X, chosen.Y, RefugeSign(bodyId, level, 0),
+            // The seal is decided by the FLOOR, not by the carve, and asked here rather than worked out
+            // again: the panel, the card, the tracker and the suit all read StateOfTheRefugeOn, and a room
+            // that carried a second opinion about its own door is this repo's oldest and dearest bug.
+            StateOfTheRefugeOn(bodyId, level) ?? RefugeState.Holding));
         return refuges;
     }
-
-    /// <summary>Said once, stepping into a refuge's air on a dead floor. The relief, and the reason it is
-    /// there — which is a form somebody filed, not a kindness.</summary>
-    public const string RefugeBreathingLine =
-        "🫁 The inner door cycles behind you and the readout stops falling. Pressure — in a room somebody " +
-        "was made to build, on a floor nobody was ever meant to be caught out on. The seals held.";
 
     /// <summary>What the console inside is called.</summary>
     public const string RefugeTankLabel = "🫁 REFUGE RACK";
@@ -213,6 +319,45 @@ public static partial class UndergroundComplex
     /// would be a second instrument appearing to contradict the first, which is the one thing #612 says is
     /// worse than saying nothing. <c>REFUGE ·</c> makes the scope of the claim part of the claim.</para></summary>
     public const string RefugeGlyph = "🫁 REFUGE · AIR";
+
+    /// <summary>The same plate on a room whose seal went. It is the stencil and nothing else: a plate does
+    /// not change when a compressor dies, and the whole tell is the WORD THAT IS MISSING — a captain who has
+    /// read <c>REFUGE · AIR</c> on two floors reads this one and knows before the walk.
+    ///
+    /// <para>Owner (#604): <i>"A refuge whose seal has failed must still paint, and must read as failed."</i>
+    /// So the map does not quietly drop it, and it does not go on promising air either.</para></summary>
+    public const string RefugeFailedGlyph = "🫁 PRESSURE REFUGE";
+
+    /// <summary>#938 · THE PLATE ON A ROOM THAT HOLDS AND HAS NOTHING IN IT. Authored for the one
+    /// line-needed marker #608 shipped with (2026-09-03), in the stencil grammar the other two speak.
+    ///
+    /// <para>The bug it closes: <see cref="RefugeGlyphFor"/> read the plate off a two-way test, so
+    /// <see cref="RefugeState.Empty"/> — thirty-nine per cent of them — wore <see cref="RefugeGlyph"/> and
+    /// went on saying AIR at range. That is the #612 fault at the worst possible door: the one word a
+    /// captain crosses a dead floor for, printed over a rack whose fill line is empty and whose valve tag is
+    /// dated years ago. The room is not a lie — it holds, and shelter is worth the walk — but AIR is.</para>
+    ///
+    /// <para>DRY is the whole correction, and it is one word because the plate is read at a run. It keeps
+    /// <c>REFUGE ·</c> so the scope of the claim stays part of the claim; it does not become a warning,
+    /// because the room still works; and it is a word about the RACK, which is the only thing the decades
+    /// took. A captain who has read AIR on one floor and DRY on this one knows the difference before the
+    /// walk, which is the same service the failed plate does by dropping the word altogether.</para></summary>
+    public const string RefugeDryGlyph = "🫁 REFUGE · DRY";
+
+    /// <summary>Which plate a refuge in this state wears. One place, so the deck plan and the tracker cannot
+    /// come to disagree about what the room claims — and now three plates for three states, because a
+    /// two-way test could only ever tell the captain which of them the room was NOT.</summary>
+    public static string RefugeGlyphFor(RefugeState state) => state switch
+    {
+        RefugeState.Failed => RefugeFailedGlyph,
+        RefugeState.Empty => RefugeDryGlyph,
+        _ => RefugeGlyph,
+    };
+
+    /// <summary>#608 · What the lift panel prints on a floor whose plan carries a refuge. It says a refuge is
+    /// THERE and never what state it is in — the plan is a drawing made when the building was new, and no
+    /// drawing knows which compressors are still turning. Finding that out is the walk.</summary>
+    public const string RefugeRowTag = "REFUGE";
 
     // ── #609 · THE ONE THING YOU MUST NOT MISS ──────────────────────────────────────────────────────────
     //
@@ -283,7 +428,13 @@ public static partial class UndergroundComplex
             "There is a PRESSURE REFUGE on this floor. Every vacuum floor in this building has one: staff " +
             "worked these levels in suits all day, and somebody with a clipboard made the owners pay for " +
             "somewhere to go when a tank ran short. It is not beside the lift — it never is — and your " +
-            "tracker paints it as a ring like any shelter on the surface.";
+            "tracker paints it as a ring like any shelter on the surface.\n\n" +
+            // #608 · AND THE SENTENCE THAT STOPS THE CARD PROMISING SOMETHING THE BUILDING CANNOT KEEP.
+            // The paragraph above is about what was BUILT and every word of it is still true. What the card
+            // may not do is let a captain read "somewhere to go when a tank ran short" as "air, forty du
+            // that way" — because a quarter of these rooms have air, some hold and have nothing, and some
+            // will not open at all. The plan is a drawing; the seal is decades of nobody paying for it.
+            "The plan marks a refuge on this band. Whether it still holds is not on the plan.";
     }
 
     /// <summary>Said on stepping out on the top floor — the lie that makes the rest work.</summary>
@@ -297,10 +448,22 @@ public static partial class UndergroundComplex
         "been disturbed since it settled. Your tank starts counting again. From here down, depth costs air.";
 
     /// <summary>What a locked door says when the captain tries it. It never opens, and the game never pretends
-    /// it might — a door that teases is a puzzle, and this is meant to be a WALL with a world behind it.</summary>
-    public static string LockedLine(string sign) =>
-        $"🔒 {sign}. The lock is not a lock you can argue with — it is a decision somebody made, and it is " +
-        "still being enforced by a building whose owners stopped answering a long time ago.";
+    /// it might — a door that teases is a puzzle, and this is meant to be a WALL with a world behind it.
+    ///
+    /// <para>#1074 · <b>One door in the building answers with what is POSTED on it instead</b>, because one
+    /// door in the building has something posted on it: the order at the seal. The plate is the heading and
+    /// the sentence under it is the order, verbatim (<see cref="StopOrder.OrderLine"/>) — which is what a
+    /// stop order IS, a piece of paper somebody stuck to a door, and it is the whole of what the world ever
+    /// says about the closure. Nothing is composed here: the two strings are set side by side and no third
+    /// sentence explains either of them.</para></summary>
+    public static string LockedLine(string sign)
+    {
+        ArgumentNullException.ThrowIfNull(sign);
+        return StopOrder.IsPlate(sign)
+            ? $"🔒 {sign}. {StopOrder.OrderLine}"
+            : $"🔒 {sign}. The lock is not a lock you can argue with — it is a decision somebody made, and "
+                + "it is still being enforced by a building whose owners stopped answering a long time ago.";
+    }
 
     /// <summary>#600 · How far under the regolith the shed's floor a given level sits, in metres.
     ///

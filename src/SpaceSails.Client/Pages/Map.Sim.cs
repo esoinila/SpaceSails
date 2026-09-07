@@ -164,10 +164,16 @@ public partial class Map
         double shed = _ship.Charge * 0.5;
         _ship = _ship with { Charge = _ship.Charge * 0.5 };
 
-        // #528 / Lab 43 · light the plume at the mast, and tell the story once in a while. Both are cooled by
-        // their own rules — the flash by its 600 ms, the card by StoryBeats.CadenceOf — so a captain who dumps
-        // every minute is not narrated at every minute.
+        // #528 §7 / Lab 43 · light the plume at the mast, and tell the story once in a while. Both are cooled
+        // by their own rules — the flash by its 600 ms, the card by StoryBeats.CadenceOf — so a captain who
+        // dumps every minute is not narrated at every minute.
+        //
+        // WHAT left her and WHEN are one event, so they are recorded together. The flash is scaled by the
+        // charge actually dumped (DischargePlume.DumpBrightness, which is SeenFartherFactor's own excess), and
+        // a dump that recorded only its timestamp would light a full hull's discharge and a whisper's exactly
+        // the same — which is what it did before this lane.
         _lastDischargeMs = _lastTimestampMs ?? 0;
+        _lastDischargeShed = shed;
         if (shed >= HullCharge.ContactorHoldsAt)
         {
             RaiseStoryBeat(StoryBeats.Beat.ChargeLetGo);

@@ -1,0 +1,57 @@
+﻿/* #251 item 3 · GroundGrewCard's OWN RULES, moved verbatim out of Map.razor.css.
+
+   3 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
+   exactly the string it compiled to before the move and matches exactly the elements it matched.
+
+   WHERE THIS FILE SITS IN THE CASCADE. Blazor concatenates every *.razor.css into
+   SpaceSails.Client.styles.css ordered by the file's project-relative path, compared without regard
+   to case — so Pages/Map.razor.css comes first and the surfaces follow it alphabetically. Rules that
+   moved here therefore sit LATER in the bundle than they did. That is safe only because no rule left
+   behind, and no rule in an alphabetically-later surface, can win or lose against one of these: see
+   TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
+
+   SHARED KIT — this file is not private. Other surfaces render classes styled here:
+   AirNoticeCard, TubeRearmCard.
+   The kit is filed under the surface it is NAMED after. A value changed here changes those
+   surfaces too, so read that list before you touch one.
+ */
+
+.ground-grows-art {
+    display: block;
+    width: 100%;
+    border-radius: 0.25rem;
+    margin: 0.5rem 0 0.7rem;
+    border: 1px solid rgba(120, 210, 180, 0.28);
+}
+
+.ground-grows-beats {
+    margin: 0.9rem 0 0.2rem;
+    padding-left: 1.1rem;
+    text-align: left;
+    color: rgba(226, 238, 250, 0.88);
+    font-size: 0.85rem;
+    line-height: 1.55;
+}
+
+.ground-grows-beats li + li {
+    margin-top: 0.55rem;
+}
+
+/* #584 · WHERE THE GROUND GREW — a plate, not a sentence.
+
+   It is set in the monospace the instruments already speak in, because every one of its three tokens comes
+   off an instrument or a wall: the floor's own stencil, the SDR kit's compass, the fan's "N du". Prose face
+   would have dressed a readout as narration, which is the one thing this line must not be — the captain is
+   meant to read it the way they read the tracker's own caption and then walk.
+
+   Under the stamp and above the art, so a captain who dismisses the card in one second has still had the
+   answer in the same glance as the headline. Same ink as the card's own border family. */
+.ground-grows-where {
+    margin: 0.15rem 0 0.35rem;
+    color: rgba(150, 235, 205, 0.92);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.02em;
+}

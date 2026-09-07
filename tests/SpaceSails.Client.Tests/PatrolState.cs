@@ -34,7 +34,7 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public static class PatrolState
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
     private const BindingFlags Either = Hidden | BindingFlags.Public;
 
     /// <summary>The twenty-two, and what each is called on the round now. Raw name in, property name out —

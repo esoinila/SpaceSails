@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -229,8 +229,17 @@ public sealed class TheHeadlightsAreTheWholeOfTheSeeingTests
         (List<Mark> marks, _, var toWorld) = Frame(plan, ax, ay, heading, dark: false);
         int outside = marks.Count(m => WhollyDark(m, toWorld, ax, ay, heading));
 
-        Xunit.Assert.True(outside > 100,
+        // #563 slice 2 · The floor was 100 and is 50, re-measured rather than nudged. The frame's cull now
+        // reaches doors and console plates as well as walls, and a deck's view is 64 du across while this
+        // floor is three hundred — so the two hundred-odd marks that went were drawn entirely past the edge
+        // of the glass and were never evidence of anything a captain could have seen. What is left is 70 of
+        // 75, which is the claim this guard is actually making: with the lights ON, nearly the whole frame
+        // stands in ground the dark frame leaves empty.
+        Xunit.Assert.True(outside > 50,
             $"a LIT floor should be drawn far past the lamp's reach; only {outside} of {marks.Count} were");
+        Xunit.Assert.True(outside * 4 > marks.Count * 3,
+            $"only {outside} of {marks.Count} lit marks stand outside the cone — the blackout has almost "
+            + "nothing left to hide, so its guard has almost nothing left to prove.");
         Xunit.Assert.DoesNotContain(marks, IsTheBlackout);   // and nothing is blacked out on a lit floor
     }
 

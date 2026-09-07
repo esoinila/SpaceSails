@@ -30,22 +30,23 @@ public sealed class YouCanSitAtAnEmptyTableTests
         "titan", "enceladus", "miranda", "triton", "the-clinker",
     ];
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        MapMarkup.Read(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+
+    /// <summary>#1164 · The Hive floor's source — ALL of it, as a glob rather than a written list.
+    /// <c>HiveInterior.FloorDeck</c> was 31 <c>// ── banner ──</c> sections inside one 1,106-line method
+    /// and is now one named pass per section across several partials (#251), so the text this guard has
+    /// always read over is spread across <c>HiveInterior*.cs</c>. Concatenated rather than narrowed to one
+    /// part on purpose: claims here are <c>DoesNotContain</c> over the WHOLE subject, and pointing one at a
+    /// single partial would quietly stop it looking at most of the floor. Ordinal order, so the read is the
+    /// same on every machine.</summary>
+    private static string Hive() =>
+        string.Concat(Directory
+            .EnumerateFiles(
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering"),
+                "HiveInterior*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(MapMarkup.Read));
 
     /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
     /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
@@ -55,14 +56,38 @@ public sealed class YouCanSitAtAnEmptyTableTests
     /// are <c>DoesNotContain</c> over the whole subject, and pointing one at a single file would be a silent
     /// weakening.</summary>
     private static string Table() =>
-        Source("Pages", "Map.Table.cs") + Source("Pages", "Seating", "Seating.Table.cs");
+        Source("Pages", "Map.Table.cs") + TheTablesOwnPartials();
 
+    /// <summary>#251 · The table scene is FIVE partials now (opening, the moves, #757's wait, #758's
+    /// cabinet, #680's one ending) — read as a GLOB and not as a written list, because several claims over
+    /// this text are <c>DoesNotContain</c> over the whole subject and a list that fell one file behind the
+    /// next split would narrow them without a word. Ordinal by path so the concatenation is stable.</summary>
+    private static string TheTablesOwnPartials()
+    {
+        string[] parts = System.IO.Directory.GetFiles(
+            System.IO.Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating"),
+            "Seating.Table*.cs");
+        // Scene order, not alphabetical: `Seating.Table.cs` — the file that opens the scene and carries the
+        // family's class summary — comes first, exactly where it was when it was the only one, and the rest
+        // follow it ordinal. Several claims over this text cut a method body FORWARD to the next thing, and
+        // a sort that put the opening file last would have them cutting across a file trailer.
+        System.Array.Sort(parts, (a, b) =>
+            System.StringComparer.Ordinal.Compare(
+                System.IO.Path.GetFileName(a) == "Seating.Table.cs" ? "" : a,
+                System.IO.Path.GetFileName(b) == "Seating.Table.cs" ? "" : b));
+        var all = new System.Text.StringBuilder();
+        foreach (string part in parts)
+        {
+            all.Append(System.IO.File.ReadAllText(part));
+        }
+        return all.ToString();
+    }
 
-    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// <summary>#870 · The sim page is twenty partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
@@ -70,7 +95,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
     /// all of them — exactly the text it read out of one file before the split.</summary>
     private static string Deck() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
@@ -178,7 +203,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
     {
         // #603 · A dot with no words on it is a dot nobody presses. The label is Core's — one place says
         // what a free table is called, and the renderer does not invent a second name for it.
-        Assert.Contains("SittingAlone.FreeTablePlate", Source("Rendering", "HiveInterior.cs"),
+        Assert.Contains("SittingAlone.FreeTablePlate", Hive(),
             StringComparison.Ordinal);
 
         DeckPlan deck = DeckFor("luna", UndergroundComplex.TopPressurisedFloor("luna") ?? -1, 5);
@@ -382,7 +407,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
         Assert.Contains(DevStarts.All, e => e.Url.Contains("tablescene=free", StringComparison.Ordinal));
         Assert.Contains(DevStarts.All, e => e.Url.Contains("approach=1", StringComparison.Ordinal));
 
-        string guide = File.ReadAllText(Path.Combine(RepoRoot(), "docs", "testing-guide.md"));
+        string guide = File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "docs", "testing-guide.md"));
         Assert.Contains("tablescene=free", guide, StringComparison.Ordinal);
         Assert.Contains("approach=1", guide, StringComparison.Ordinal);
         Assert.Contains("approach=0", guide, StringComparison.Ordinal);
@@ -442,7 +467,7 @@ public sealed class YouCanSitAtAnEmptyTableTests
         // painting can be made to say anything at all.
         foreach (string art in new[] { SittingAlone.WaitingArtUrl, SittingAlone.RestingArtUrl })
         {
-            string file = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "wwwroot", art);
+            string file = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "wwwroot", art);
             Assert.True(File.Exists(file),
                 $"{art} is not in wwwroot/art — the panel would draw a hole and never say so.");
         }

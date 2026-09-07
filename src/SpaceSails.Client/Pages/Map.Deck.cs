@@ -33,7 +33,18 @@ public partial class Map
     // default; while docked at a haven with an interior it becomes the combined ship+tube+station
     // complex, which you walk across continuously (see SetDeckForDock). The renderers and the avatar
     // loop all read _deckPlan, so nothing else needs to know which deck is active.
-    private DeckPlan _deckPlan = DeckPlan.Ship;
+    //
+    // #1119 item 1 · HER OWN COPY, AND THIS LINE IS NOT DECORATION. `DeckPlan.Ship` is a
+    // `{ get; } = BuildShip(null)` SINGLETON and `AppendRegion` MUTATES the plan it is called on. So while
+    // this field started on the singleton, ANY append onto the live deck — an expedition chamber, an outpost
+    // hatch, Vantar's whole lab — welded that ground onto the process-wide ship plan that every other reader
+    // of `DeckPlan.Ship` (the docked complex's seed, the moon surface's fixtures, the boot warm-up's
+    // backdrops) goes on asking. The #584 bench found it the loud way: 49 tests red on a Linux runner with a
+    // lab on the ship deck. It was one call away in production, and it is the map lying about the ship.
+    //
+    // `ShipWith([])` is `BuildShip` run again — the same deck, a new object — so an append aboard stays
+    // aboard THIS page. The singleton stays for the read-only askers; nothing mutable points at it any more.
+    private DeckPlan _deckPlan = DeckPlan.ShipWith([]);
     private bool _ashore;                          // true once you're past the tube, in the station room
     private string _havenName = "";               // the docked haven welded on, or ""
 
@@ -53,11 +64,18 @@ public partial class Map
             // the cellar door has no console at his chair any more, and whoever has come out of it and sat
             // down has one at his.
             && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce,
-                                        FillBarWalkerDroids, TheBarsChurn) is { } complex)
+                                        FillBarWalkerDroids, TheBarsChurn, TubeTierAt(id)) is { } complex)
         {
             _deckPlan = complex;
         }
     }
+
+    /// <summary>#380 item 10 · Which tube this berth earned, for the customs desk on its concourse — the page's
+    /// own <see cref="ArrivalTube.TierFor"/> read, the SAME call the arrival plate makes (Map.Docking), so the
+    /// officer's card and the plate the captain read on the way in cannot come to two answers about one port.
+    /// Null with no ephemeris loaded, which leaves the desk off rather than guessing a tier.</summary>
+    private ArrivalTube.Tier? TubeTierAt(string havenId) =>
+        _ephemeris is { } sky ? ArrivalTube.TierFor(sky, havenId) : null;
 
     private void ToggleDeck()
     {
@@ -85,7 +103,7 @@ public partial class Map
             // the cellar door has no console at his chair any more, and whoever has come out of it and sat
             // down has one at his.
             && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce,
-                                        FillBarWalkerDroids, TheBarsChurn) is { } complex)
+                                        FillBarWalkerDroids, TheBarsChurn, TubeTierAt(id)) is { } complex)
         {
             _deckPlan = complex;
             _havenName = _ephemeris?.Bodies.FirstOrDefault(b => b.Id == id)?.Name ?? "the haven";

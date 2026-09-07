@@ -488,7 +488,7 @@ public sealed class EveryTextReadsTests
 
     /// <summary>A shipped client file, read from the repo the tests were built out of.</summary>
     private static string Client(string relative) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", relative.Replace('/', Path.DirectorySeparatorChar)));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", relative.Replace('/', Path.DirectorySeparatorChar)));
 
     /// <summary>A long value on one line, for a failure message that has to stay readable itself.</summary>
     private static string Squash(string value) =>

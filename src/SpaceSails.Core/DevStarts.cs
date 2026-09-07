@@ -369,6 +369,12 @@ public static class DevStarts
         new("🧑‍🔧", "A DEPUTATION — three of them outside your door",
             "Five of the crew left on the rock and every wreck since filed honestly, so the share is empty and the bunks are too. The crew sheet on the Captain's desk reads PETITION, and the ship's own clock puts three of them in the corridor with their hats in their hands (#663, #394).",
             "/map?crew=petition"),
+        // #1066 · …and one landing further down the same staircase. The meeting's edge is an ULTIMATUM,
+        // which costs the deputation's two counters AND a run of berths with nobody ashore — reaching it
+        // honestly is most of a session, so it gets its own door beside the one above.
+        new("🕯", "THE MEETING YOU WERE NOT ASKED TO",
+            "The same ruined voyage as the deputation above, and nobody ashore in five berths on top of it — a great port is the only berth that counts as a run ashore, and this captain has not called at one. The crew sheet reads ULTIMATUM, and the cantina holds a meeting at an odd watch with a chair pulled out that nobody is sitting in (#1066, #663).",
+            "/map?crew=meeting"),
         new("💰", "A fat purse",
             "The Sol start with 50,000 credits in the purse, for pricing anything without grinding for it.",
             "/map?credits=50000"),

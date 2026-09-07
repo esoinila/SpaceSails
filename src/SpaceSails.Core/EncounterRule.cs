@@ -130,8 +130,13 @@ public static class EncounterRule
     /// <summary>...at under this relative speed — a hunter roaring past at speed doesn't count.</summary>
     public const double CatchRelativeSpeedMetersPerSecond = 3000;
 
-    /// <summary>Adrift-style consequence (M6's flow, reused): lose the hold, pay the toll.</summary>
-    public const int CatchFineCredits = 500;
+    // #380 item 4 · CatchFineCredits (500) USED TO LIVE HERE. It was the pre-BUSTED consequence — lose
+    // the hold, pay a flat toll — and PR-BUSTED replaced the whole of it with <see cref="BustedRule"/>'s
+    // submit / bribe / resist ladder without deleting the number. Nothing has read it since. It is removed
+    // rather than left, because both guides went on quoting it for six weeks after the flow it described
+    // stopped existing: a constant with no consumer is a claim with no owner, and the documentation was
+    // reading it as if it were still the law. What the catch actually costs is BustedRule.CoinFraction,
+    // BustedRule.BribeDemand and BustedRule.ResistCheck, and those are the only numbers a guide may quote.
 
     /// <summary>Stay hidden at a haven this long and a hunter loses the scent.</summary>
     public const double BreakOffHiddenDays = 2;
@@ -171,12 +176,25 @@ public static class EncounterRule
     /// <summary>Deterministic per-ship "type": hashes the ship's id rather than drawing from any
     /// live RNG stream, so asking twice (or asking on client and server) always agrees. Heat
     /// nudges the odds — the same ship can flip from compliant to stubborn as the player's
-    /// reputation grows.</summary>
+    /// reputation grows.
+    ///
+    /// <para>#534 · <b>A hull that is not a merchant does not answer as one.</b> A masked warship
+    /// (<see cref="QShip.IsMasked"/>) never heaves to, at any heat, and that is the whole of what
+    /// committing to her costs: no new rule about combat, no special case at the boarding gate — the
+    /// ordinary machinery meeting a target that shoots back. Everything downstream already exists and
+    /// resolves off this one answer (a warning shot buys nothing, the robbery costs the stubborn heat,
+    /// and the muscle she calls is the muscle the heat already spawns). The read before the pass was the
+    /// whole chance.</para></summary>
     public static ComplianceState ComplianceOf(NpcShip npc, int playerHeat)
     {
         if (npc.IsPod)
         {
             return ComplianceState.NothingToComply;
+        }
+
+        if (QShip.IsMasked(npc))
+        {
+            return ComplianceState.Stubborn;
         }
 
         double stubbornFraction = Math.Min(MaxStubbornFraction,

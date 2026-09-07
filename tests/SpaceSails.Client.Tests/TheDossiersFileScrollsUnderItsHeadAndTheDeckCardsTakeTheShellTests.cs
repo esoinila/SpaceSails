@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -37,6 +37,7 @@ namespace SpaceSails.Client.Tests;
 /// register or its not-a-pop-up list, and none of them changed identity. What a MIGRATION can break is
 /// narrower, and this file asks that instead.</para>
 /// </summary>
+[SlowGate] // #251 · 55 s over 16 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheDossiersFileScrollsUnderItsHeadAndTheDeckCardsTakeTheShellTests
 {
     // ══════════════════════════════════════════════════════════════════════════════════════════════════
@@ -183,8 +184,7 @@ public sealed class TheDossiersFileScrollsUnderItsHeadAndTheDeckCardsTakeTheShel
     [Fact]
     public void TheDossierIsAColumnWithACeilingAndTheArithmeticIsNotSaidTwice()
     {
-        string css = WithoutComments(File.ReadAllText(
-            Path.Combine(ClientSource(), "Pages", "Map.razor.css")));
+        string css = WithoutComments(MapStylesheet.Text);
 
         string card = RuleBody(css, "::deep .map-dossier")
             ?? throw new Xunit.Sdk.XunitException("Map.razor.css has no `::deep .map-dossier` rule at all.");
@@ -429,7 +429,7 @@ public sealed class TheDossiersFileScrollsUnderItsHeadAndTheDeckCardsTakeTheShel
     [Fact]
     public void TheBrakesFireAnswerEndsTheAskAndTheAskIsTheOnlyGateOnTheCard()
     {
-        string razor = File.ReadAllText(Path.Combine(ClientSource(), "Pages", "Map.razor"));
+        string razor = MapMarkup.Read(Path.Combine(ClientSource(), "Pages", "Map.razor"));
         int card = razor.IndexOf("arrival-brake-card", StringComparison.Ordinal);
         Assert.True(card >= 0, "Map.razor no longer draws an .arrival-brake-card this guard can find.");
 
@@ -607,8 +607,7 @@ public sealed class TheDossiersFileScrollsUnderItsHeadAndTheDeckCardsTakeTheShel
         + "stretched across the pad's `align-items: stretch` column")]
     public void TheRulesForWhatTheShellNowDrawsAreWrittenWithDeep(string target, string what)
     {
-        string css = WithoutComments(File.ReadAllText(
-            Path.Combine(ClientSource(), "Pages", "Map.razor.css")));
+        string css = WithoutComments(MapStylesheet.Text);
 
         var reaching = Selectors(css)
             .Where(selector => Regex.IsMatch(selector, $@"{Regex.Escape(target)}\s*(\{{|,|$|:)")

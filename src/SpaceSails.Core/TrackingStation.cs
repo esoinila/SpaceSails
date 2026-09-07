@@ -16,6 +16,34 @@ public readonly record struct ScanJob(double CenterBearingRad, double ArcWidthRa
 
     /// <summary>Sim time this job takes to sweep its whole arc.</summary>
     public double DurationSeconds => ArcWidthRad * SecondsPerRadian;
+
+    /// <summary>
+    /// #240 · WHEN THE BEAM GETS THERE. The fraction of this job's pass, 0…1, at which the sweep first
+    /// crosses <paramref name="bearingRad"/> — or null when the bearing is outside the arc and the beam
+    /// never reaches it at all.
+    ///
+    /// <para>Owner, watching the roadster scan climb: <i>"Is it randomized now, the point when we find the
+    /// car, or is it always at 100%? We might get lucky earlier also?"</i> It was always 100 %, because the
+    /// reveal was hung on the pass's completion instant. The sweep has always taken sim time in proportion
+    /// to the arc (<see cref="DurationSeconds"/>); what was missing was the statement of WHERE IT STARTS, so
+    /// that a coverage could be a function of time at all. It starts at the leading edge
+    /// (<c>Center − Arc/2</c>) and runs to the trailing one — the convention, stated once, here.</para>
+    ///
+    /// <para>Nothing is randomised: luck is geometry. A contact a third of the way into the swept sky
+    /// glints at a third of the pass, every time, on any machine. And a full-circle survey has no bearing
+    /// outside it, so every direction has a moment — which is why this needs no special case for one.</para>
+    /// </summary>
+    public double? CoverageFraction(double bearingRad)
+    {
+        if (ArcWidthRad <= 0)
+        {
+            return null;   // a job that sweeps nothing covers nothing, ever
+        }
+
+        double delta = bearingRad - (CenterBearingRad - (ArcWidthRad / 2));
+        delta -= Math.Tau * Math.Floor(delta / Math.Tau);   // into [0, 2π) from the leading edge
+        return delta <= ArcWidthRad ? delta / ArcWidthRad : null;
+    }
 }
 
 /// <summary>

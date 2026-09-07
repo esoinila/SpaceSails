@@ -10,19 +10,54 @@ public partial class Map
     // ── #573 · THE SHELTER'S CHARGING RACK [E]. The only place outside her tube that refills a suit, and
     //    therefore the only reason the deep field is worth crossing rather than merely looking at. ──
     /// <summary>#573 · The fixed places the fan should point at: the way home, and every shelter. Bearings
-    /// and ranges from the captain, so the tracker answers "which way" for somewhere that does not move.</summary>
-    private List<(double Bearing, double Range, bool IsHome, bool IsLab)> BuildBeacons(SurfaceExcursion ex)
+    /// and ranges from the captain, so the tracker answers "which way" for somewhere that does not move.
+    ///
+    /// <para><b>What the three flags mean, because one of them is not named for what it draws.</b>
+    /// <c>IsHome</c> is the way back — the ship's tube, or the lift cars underground. <c>IsDead</c> is a
+    /// place that is on the plan and is not answering. <c>IsLab</c> is neither: it is the ring in the
+    /// IMPORTED VIOLET a door itself wears (#592) and it means <i>a way in that somebody made</i> — the lift
+    /// head when the hidden door is known (#585), and, since #584, the mouth of any ground that has JOINED
+    /// THE PLAN this excursion. Both are the same claim and the same ink, which is why they share the flag
+    /// rather than growing a fourth colour nobody could tell from the other three.</para></summary>
+    private List<(double Bearing, double Range, bool IsHome, bool IsLab, bool IsDead)> BuildBeacons(
+        SurfaceExcursion ex)
     {
-        var list = new List<(double, double, bool, bool)>();
+        var list = new List<(double, double, bool, bool, bool)>();
         if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
         {
             return list;   // a hull has neither a tube mouth nor a shelter
         }
 
-        void Add(double x, double y, bool home, bool lab = false)
+        void Add(double x, double y, bool home, bool lab = false, bool dead = false)
         {
             double dx = x - _avatarX, dy = y - _avatarY;
-            list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), home, lab));
+            list.Add((Math.Atan2(dy, dx), Math.Sqrt((dx * dx) + (dy * dy)), home, lab, dead));
+        }
+
+        // ── #584 · AND THE GROUND THAT JUST GREW, FOR THE REST OF THE EXCURSION ────────────────────────
+        //
+        // Owner, after forcing a door: "I was left totally un-aware about what that did and where?"
+        //
+        // The card names the place once. This is what keeps answering after it is dismissed, and it is the
+        // half that makes the notification ACTIONABLE — a chamber is appended at a seeded spot that is
+        // routinely off the current view, so a captain who read the card, closed it and turned round had
+        // nothing left to walk toward. The instrument they are already watching has it now.
+        //
+        // ONLY THIS FLOOR'S. A room forced on B2 is not a place on B3, and a beacon that ignored the floor
+        // would be the map lying (#573) in the register this fan has already been burned by twice — #591's
+        // surface huts painted underground, #608's shelters painted on a dead floor.
+        //
+        // It is called from both branches below rather than once at the end, because the underground branch
+        // returns early and a captain who forces a door down there is the captain who most needs the ring.
+        void AddNewGround()
+        {
+            foreach ((double gx, double gy, int floor) in ex.NewGround)
+            {
+                if (floor == ex.Floor)
+                {
+                    Add(gx, gy, home: false, lab: true);
+                }
+            }
         }
 
         // ── #591 · UNDERGROUND, THE BEACONS ARE DIFFERENT PLACES ──
@@ -45,14 +80,60 @@ public partial class Map
         // one place it costs a life.
         if (ex.Floor < 0)
         {
-            foreach (UndergroundComplex.Shaft car in
-                UndergroundComplex.ShaftsOn(MoonSurface.ExpeditionField()))
+            // ── #719 slice 2 · …AND A STOPPED CAR IS NOT ONE OF THEM ──
+            //
+            // The break takes the cars off the fan altogether. Two readings were available and only one of
+            // them is honest. Painting them NOT-home would put them in the refuge's ink, and that ring means
+            // AIR YOU CAN REACH (#608) — a car has none. Painting them home would have the instrument
+            // offering a way out that will not come, which is the map lying (#573) in the one place it costs
+            // a life. So the fan is silent about them, exactly as it is silent about every other bit of
+            // fabric down here, and the panel's own plate is where a captain learns why.
+            //
+            // What that leaves is the stair, alone and FIRST, which is how "the HOME ring moves from the cage
+            // to the stair door" is said in this loop's own vocabulary: everything that asks the fan for the
+            // way home takes the first home ring it finds.
+            if (!TheCarIsStopped)
             {
-                (double carX, double carY) = car.Landing;
-                Add(carX,
-                    carY + ((car.Kind == UndergroundComplex.ShaftKind.Cage ? 1 : -1)
-                        * (UndergroundComplex.CorridorHalf + 1.5)),
-                    home: true);
+                foreach (UndergroundComplex.Shaft car in
+                    UndergroundComplex.ShaftsOn(MoonSurface.ExpeditionField()))
+                {
+                    (double carX, double carY) = car.Landing;
+                    Add(carX,
+                        carY + ((car.Kind == UndergroundComplex.ShaftKind.Cage ? 1 : -1)
+                            * (UndergroundComplex.CorridorHalf + 1.5)),
+                        home: true);
+                }
+            }
+
+            // ── #719 · AND THE STAIR, WHICH IS A WAY OFF THIS FLOOR AND SO PAINTS LIKE ONE ──
+            //
+            // It goes on the fan for the reason the cars do, in this loop's own words one screen up: down
+            // here the places worth a ring are the ways out, "the way home in the only sense that matters
+            // underground". The stair is one — the only one besides the cage that actually climbs out — and
+            // a captain who has to hunt for the second way out in the dark has not got one.
+            //
+            // IT IS NOT PAINTED IN THE REFUGE'S INK, and that is the decision. The not-home ring means AIR
+            // YOU CAN REACH on this floor (#608), and a stairwell has none: two rings in one colour meaning
+            // two different promises is the map lying (#573) in exactly the way the refuge ring was built
+            // not to.
+            //
+            // HOME STAYS THE CAGE while the car runs, because the cage is FIRST in this list and stays
+            // first — ShaftsOn puts it there and everything that asks the fan for "the way home" takes the
+            // first home ring it finds. The stair is appended after the cars, so on an ordinary afternoon
+            // nothing that has ever meant the cage by HOME now means the stair.
+            //
+            // #719 slice 2 · …and the day the car stops, the cars are not added at all, so the stair is the
+            // first home ring and therefore IS home. That is the owner's "the HOME ring moves from the cage
+            // to the stair door", achieved by the list being shorter rather than by a second rule about
+            // which ring counts.
+            //
+            // #719 slice 2 · …and the spot is Core's own now (StairRingAt), because the tank measures to it
+            // as well the moment the car stops. One journey, one function: the ring that says WHICH WAY and
+            // the readout that says WHAT IT COSTS cannot come to two answers about where the door is.
+            if (UndergroundComplex.HasStairOn(ex.Stop.Body.Id, ex.Floor)
+                && UndergroundComplex.StairRingAt(MoonSurface.ExpeditionField()) is { } stair)
+            {
+                Add(stair.X, stair.Y, home: true);
             }
 
             // ── #608 · AND THE REFUGES, WHICH ARE THIS FLOOR'S SHELTERS ──
@@ -75,17 +156,60 @@ public partial class Map
             // Nothing is painted on a floor that holds pressure, because there is nothing to point at: the
             // whole floor is the refuge, and a ring saying "air, 40 du that way" while you are standing in
             // air is an instrument disagreeing with the room.
+            //
+            // #608 · AND A DEAD ONE STILL PAINTS, IN A DEAD RING. Owner, in the same comment: "A refuge
+            // whose seal has failed must still paint, and must read as failed. Walking to one and finding it
+            // dead is a real beat; walking to one that was never marked is just a bad map." Both halves are
+            // enforced here — the ring is drawn, and it is drawn in an ink that is not the promise the calm
+            // ring makes, because a tracker that painted a room with no air in it in the same colour as one
+            // with air in it would be the map lying (#573) in the one place it costs a tank.
+            bool failed = RefugeSealHere(ex) == UndergroundComplex.RefugeState.Failed;
             foreach ((double rx, double ry) in RefugesOn())
             {
-                Add(rx, ry, home: false);
+                Add(rx, ry, home: false, dead: failed);
             }
+            AddNewGround();   // #584
             return list;
         }
 
         Add(MoonSurface.SpawnX, MoonSurface.SpawnY, home: true);
-        foreach (SurfaceStructure.Spec shelter in SheltersOn(ex))
+
+        // ── #573/#563 slice 3 · EVERY SHELTER THE FAN CAN HEAR, AND THEN THE NEAREST ONE IT CANNOT ──────
+        //
+        // The shelters are per tile now, so the ground the captain is carrying holds several times what one
+        // field did. Painting all of them would have handed the owner back the instrument #585 already
+        // complained about — "a beacon that cannot be told apart from its neighbours is decoration" — in its
+        // worst form: everything past the fan's reach clamps to the RIM (DeckView.Hud), so eighty rings
+        // become a fence of circles around the edge with the way home somewhere inside it.
+        //
+        // So the rule is the one the instrument already keeps for a mover: what it can HEAR, it places; what
+        // it cannot, it points at. Beyond the reach exactly ONE ring is drawn, the nearest roof — which is
+        // the honest answer to the only question a captain asks at that distance ("which way is air that is
+        // not the ship?") and is strictly more instrument than the old fence of nine.
+        //
+        // The way home is untouched by any of this. It is painted unconditionally, at every distance, on
+        // every frame — #563 slice 2 guarded exactly that, and a range gate that ever reached it would be
+        // the one lie this fan may not tell.
+        double reach = MotionTracker.DetectionRange(SurfaceVisualHalfWidthDu);
+        double nearestBeyond = double.MaxValue;
+        (double X, double Y)? farthestWorthAsking = null;
+        foreach ((ShelterSpot _, SurfaceStructure.Spec shelter) in SheltersInReach(ex))
         {
-            Add(shelter.CentreX, shelter.CentreY, home: false);
+            double dx = shelter.CentreX - _avatarX, dy = shelter.CentreY - _avatarY;
+            double range = Math.Sqrt((dx * dx) + (dy * dy));
+            if (range <= reach)
+            {
+                Add(shelter.CentreX, shelter.CentreY, home: false);
+            }
+            else if (range < nearestBeyond)
+            {
+                nearestBeyond = range;
+                farthestWorthAsking = (shelter.CentreX, shelter.CentreY);
+            }
+        }
+        if (farthestWorthAsking is { } outThere)
+        {
+            Add(outThere.X, outThere.Y, home: false);
         }
 
         // #585/#584 · AND THE LIFT HEAD, once the door is known. Owner, standing in a ruin that happened to
@@ -124,6 +248,7 @@ public partial class Map
             Add(headX, headY, home: false, lab: true);
         }
 
+        AddNewGround();   // #584
         return list;
     }
 
@@ -195,27 +320,23 @@ public partial class Map
             return;
         }
 
-        // Identify WHICH ruin by its position — the console sits at the building's centre, which is the
-        // stable key SurfaceLayout hands out.
-        string body = ex.Stop.Body.Id, salt = ex.Site.LayoutSalt;
-        SurfaceLayout.Plan plan = SurfaceLayout.For(body, MoonSurface.ExpeditionField(), salt);
-        IReadOnlyList<(double X, double Y)> centres = plan.BuildingCentres ?? [];
-
-        int which = -1;
-        for (int i = 0; i < centres.Count; i++)
-        {
-            if (Math.Abs(centres[i].X - spot.X) < 0.5 && Math.Abs(centres[i].Y - spot.Y) < 0.5)
-            {
-                which = i;
-                break;
-            }
-        }
+        // Identify WHICH ruin, and — since #563 slice 2 — ON WHICH TILE. The console sits at the building's
+        // centre, which is the stable key SurfaceLayout hands out; the tile is what makes that key unique
+        // once the ground is a lattice and every tile has buildings of its own.
+        string body = ex.Stop.Body.Id;
+        (SurfaceTiles.Address tile, int which) = RuinUnderYourHand(ex, spot.X, spot.Y);
         if (which < 0)
         {
             return;
         }
 
-        string key = $"{which}";
+        // The tile's own contents salt, and it is used for EVERY question below rather than the site's — the
+        // find, the rounds, the credits, the papers, the person they assemble into, the lead. One salt per
+        // ruin, resolved once: asking some of them on the site and some on the tile is how a drawer comes to
+        // hold one thing and report another.
+        string salt = SurfaceTiles.ContentSalt(body, ex.Site.LayoutSalt, tile);
+
+        string key = $"{tile.X}_{tile.Y}:{which}";
         if (!ex.RuinsSearched.Add(key))
         {
             ShowPulseMessage("You have already been through this one.");
@@ -276,7 +397,10 @@ public partial class Map
             case SurfaceSalvage.Find.Papers:
                 // Texture, never testimony (#563): a roster, a docket, a note in a locker. Nothing here
                 // explains what is outside, and nothing ever will.
-                ShowAndFile(SurfaceSalvage.PapersLine(body, salt, which), "📄");
+                // #417 · …and under the case's own headings when this is the ground a finder's case names.
+                // Empty subjects everywhere else, which is exactly what ShowAndFile already files.
+                ShowAndFileAbout(
+                    SurfaceSalvage.PapersLine(body, salt, which), "📄", ThePapersSubjectsAt(body));
                 ApplyNerveShock(2.0, "somebody else's paperwork, still where they left it");
                 AssembleSomebody(ex, body, salt, which);   // #588: a person, out of the pieces
 
@@ -297,6 +421,53 @@ public partial class Map
         RequestVaultSave();
     }
 
+    /// <summary>#563 slice 2 · WHICH RUIN THE CAPTAIN'S HAND IS ON, and which tile it stands on.
+    ///
+    /// <para>This used to ask the HOME tile's plan and nothing else, which was right while the ground was one
+    /// field. With a lattice it meant a captain standing in a ruin two tiles out pressed [E] and either got
+    /// nothing (no home building at that spot) or — far worse — got the home tile's building of the same
+    /// index, so the drawer reported somebody else's papers. So the search runs over the ground actually
+    /// being carried, home tile included, and hands back the address as well as the index.</para>
+    ///
+    /// <para>The home tile is asked first and by name, because it is not in <c>Stream.Loaded</c> on a ground
+    /// that is not a lattice at all — a derelict's deck and an away-expedition site still have ruins on
+    /// them, and they still answer here.</para></summary>
+    private (SurfaceTiles.Address Tile, int Index) RuinUnderYourHand(
+        SurfaceExcursion ex, double x, double y)
+    {
+        string body = ex.Stop.Body.Id, salt = ex.Site.LayoutSalt;
+
+        foreach (SurfaceTiles.Address a in TilesUnderfoot(ex))
+        {
+            SurfaceLayout.Plan plan = a == SurfaceTiles.Home
+                ? SurfaceLayout.For(body, MoonSurface.ExpeditionField(), salt)
+                : SurfaceTiles.Ground(body, salt, a);
+            IReadOnlyList<(double X, double Y)> centres = plan.BuildingCentres ?? [];
+            for (int i = 0; i < centres.Count; i++)
+            {
+                if (Math.Abs(centres[i].X - x) < 0.5 && Math.Abs(centres[i].Y - y) < 0.5)
+                {
+                    return (a, i);
+                }
+            }
+        }
+        return (SurfaceTiles.Home, -1);
+    }
+
+    /// <summary>The home tile, then every other tile the excursion is carrying. One list, so anything that
+    /// has to find "the thing under the captain's hand" walks the same ground the renderer just drew.</summary>
+    private static IEnumerable<SurfaceTiles.Address> TilesUnderfoot(SurfaceExcursion ex)
+    {
+        yield return SurfaceTiles.Home;
+        foreach (SurfaceTiles.Address a in ex.Stream.Loaded)
+        {
+            if (a != SurfaceTiles.Home)
+            {
+                yield return a;
+            }
+        }
+    }
+
     // ── #573 · THE SHELTER'S EMERGENCY LOCKER [E]. Owner, on Andy Weir's bubble shelters: they "should also
     //    contain reload to guns". A shelter stocked with air and nothing else is a tap, not a refuge. ──
     private void ShelterLockerInteract()
@@ -309,8 +480,7 @@ public partial class Map
         {
             return;
         }
-        int whichLocker = ShelterUnderfoot(ex);
-        if (whichLocker < 0)
+        if (!ShelterUnderfoot(ex).Found)
         {
             return;
         }
@@ -368,8 +538,8 @@ public partial class Map
         // "the time it takes to pump air is good incentive to not take too much". So [E] reads the gauge
         // rather than working a lever. An affordance that did nothing would be worse than none (#212), so it
         // tells you what the machine is doing and lets you decide how long to stand there.
-        int which = ShelterUnderfoot(ex);
-        if (which < 0)
+        ShelterSpot which = ShelterUnderfoot(ex);
+        if (!which.Found)
         {
             ShowPulseMessage("🫁 The rack's fitting is inside. Step in out of the vacuum.");
             return;
@@ -398,6 +568,27 @@ public partial class Map
         }
         if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.HiveRefuge })
         {
+            return;
+        }
+
+        // #1149 · THE PAPER ON THE VALVE COMES FIRST, ONCE. Every refuge in the building carries an
+        // inspection tag and the press that reads the rack is the press that takes it — a second console at
+        // the same centre would be a second thing to walk to and would crowd the one the fan points at.
+        if (TryTheInspectionTag(ex))
+        {
+            return;
+        }
+
+        // #608 · …AND ON A DEAD ONE THERE IS NOTHING TO READ, which the verb has to say out loud rather than
+        // answer with a gauge quoting zero. The state line IS the answer: a door that will not cycle is
+        // worth more to a captain deciding whether to walk back than a needle resting on the pin.
+        //
+        // #1149 · EMPTY comes off this branch and goes back to the gauge below, because an empty rack is no
+        // longer a rack with nothing behind it — it is a working cracker somebody drew right down, and
+        // RackGaugeLine's own trickle line is exactly and already the sentence for that.
+        if (RefugeSealHere(ex) is { } seal && seal == UndergroundComplex.RefugeState.Failed)
+        {
+            ShowPulseMessage(UndergroundComplex.RefugeEntryLine(seal));
             return;
         }
 

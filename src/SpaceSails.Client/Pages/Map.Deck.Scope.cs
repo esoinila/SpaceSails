@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -24,7 +24,7 @@ public partial class Map
     // in the game's voice, plus the true body id so the "point the scope" hook can aim an area scan.
     // Provenance (Giver/Station/AcquiredSimTime, PR-J) is optional and client-side — who slid it to
     // you, where, and when — so the Captain's ledger can attribute it; older tips render without it.
-    private sealed record ScopeIntel(string Id, string BodyId, string Headline, IReadOnlyList<string> Lines,
+    public sealed record ScopeIntel(string Id, string BodyId, string Headline, IReadOnlyList<string> Lines,
         string? Giver = null, string? Station = null, double AcquiredSimTime = 0);
 
     private const string ScopeCanvasId = "scope-canvas";
@@ -191,11 +191,17 @@ public partial class Map
             // between a planet and the station in its Hill sphere every station orbit. Where there IS a
             // hierarchy, the sub-line says whose sphere we are in — the box still names, and still draws,
             // the object actually locked, so the words and the picture can never disagree.
-            string? note = _nearestParentName is { } parentName && _nearestChildName == body.Name
+            ScopeView.TargetKind kind = ScopeKindOf(body);
+            // #241 · …and NOT for a landmark. The orbit note is one of the two things an ephemeris body is
+            // asked, and the ruling is that the storied ground is asked neither: a landmark has no rail of
+            // its own, and printing its host's would be the instrument answering a question about a
+            // different object.
+            string? note = kind == ScopeView.TargetKind.Body
+                && _nearestParentName is { } parentName && _nearestChildName == body.Name
                 ? NearestRule.OrbitsNote(parentName)
                 : null;
             return new ScopeView.Target(
-                ScopeView.TargetKind.Body, body.Name, note,
+                kind, body.Name, note,
                 _nearestBodyPosition, _nearestBodyVelocity,
                 body.BodyRadius, BodyColor(body.Id), InPlasmaAt(_nearestBodyPosition),
                 IsHaven: body.IsHaven, Dockable: IsDockableHaven(body));
@@ -203,6 +209,34 @@ public partial class Map
 
         return new ScopeView.Target(ScopeView.TargetKind.None, "", null, Vector2d.Zero, Vector2d.Zero, 0, default, false);
     }
+
+    /// <summary>
+    /// #241 · WHAT THE GLASS IS LOOKING AT. Every ephemeris body used to arrive at the scope as
+    /// <c>TargetKind.Body</c>, and <c>KindLabel</c>'s only question of a body was its radius — so the
+    /// Derelict Roadster, three metres of dead car on its own rail round the sun, wore the corner tag
+    /// <b>PLANET</b> and was drawn as a lit disc with a terminator on it.
+    ///
+    /// <para>A wreck is its own class of thing and now says so: <see cref="Derelict.IsWreckBody"/> is the
+    /// one question (the generated <c>wreck-</c> hulls and the scenario's own roadster), and the seam is a
+    /// kind-per-class rather than a special case, so the next oddity that deserves a portrait gets one
+    /// without new plumbing.</para>
+    /// </summary>
+    /// <para>#241 (owner ruling, 2026-09-05) · …and the STORIED GROUND, which is the other half of the same
+    /// issue. The Phobos monolith reached this glass the only way it can — as the rock it stands on — and
+    /// came out tagged <b>PLANET</b>, sorted by an 11 km radius that is a fact about the rock and not about
+    /// the thing anybody points a telescope at it for. The ruling is that the landmark is NOT promoted to an
+    /// ephemeris body (<c>Landmark</c> is deliberately "a small Core datum, NOT an ephemeris body"): the glass
+    /// simply says LANDMARK, and asks it neither of the two questions an ephemeris body is asked — no orbit
+    /// note, no radius class.</para>
+    ///
+    /// <para><see cref="Landmarks.HasNamedSite"/> is the one question, the same one the rumour-giver asks
+    /// ("is this moon storied enough to hang a rumour on"), so nothing new is seeded and nothing is typed
+    /// twice. A HAVEN is excluded on purpose: a port is a port, and its own plate is the more useful thing to
+    /// read off a corner of an instrument you are steering by.</para>
+    private static ScopeView.TargetKind ScopeKindOf(CelestialBody body) =>
+        Derelict.IsWreckBody(body.Id) ? ScopeView.TargetKind.Derelict
+        : !body.IsHaven && Landmarks.HasNamedSite(body.Id) ? ScopeView.TargetKind.Landmark
+        : ScopeView.TargetKind.Body;
 
     private ScopeView.Target? ResolveScopeTarget(string id)
     {
@@ -240,7 +274,7 @@ public partial class Map
                 const double h = 1.0;
                 Vector2d velocity = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
                 return new ScopeView.Target(
-                    ScopeView.TargetKind.Body, body.Name, null,
+                    ScopeKindOf(body), body.Name, null,
                     position, velocity, body.BodyRadius, BodyColor(body.Id), InPlasmaAt(position),
                     IsHaven: body.IsHaven, Dockable: IsDockableHaven(body));
             }
@@ -269,6 +303,10 @@ public partial class Map
         Vector2d center = _ephemeris.Position(intel.BodyId, aimTime);
         string label = $"intel fix · {intel.Headline}";
         _trackingPost.EnqueueAndPrioritize(SensorTask.AreaScan(center, WreckScanRadiusM, label));
+        // #233 · Beat one of the car mission's gag: the hunt for the dead car starts HERE, at the one funnel
+        // all three 🔭 buttons come through, so the bird cannot miss it down one of them. Only the roadster
+        // — see Map.Blackmail.
+        SquawkTheCarHunt(intel.BodyId);
         SwitchDesk(ShipDesk.Sensors);
         ShowPulseMessage("🔭 Scope slewing to the intel fix — watch the Sensors desk. Warp time to let the pass land.");
     }

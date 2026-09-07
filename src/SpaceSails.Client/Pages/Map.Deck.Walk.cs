@@ -235,7 +235,12 @@ public partial class Map
 
     // Movement keys are held-state (smooth walk); E interacts; Q returns to the map. Returns
     // true when the key was consumed by the deck so it can't also fire a thrust pulse.
-    private bool HandleDeckKey(string key)
+    /// <param name="shift">#326 · Whether the modifier was actually down, taken from the event rather than
+    /// read off the letter's CASE. A capital "T" arrives from a shifted press AND from a caps-locked one, so
+    /// a stance decided by case would hand a caps-locked captain the opposite of the verb the bar is naming
+    /// — the sim doing one thing while the screen says another, over the machine that decides whether he
+    /// gets home.</param>
+    private bool HandleDeckKey(string key, bool shift = false)
     {
         switch (key)
         {
@@ -336,9 +341,14 @@ public partial class Map
                 return true;
             case "t" or "T":
                 // #314: set down a carried sentry at your feet (or pick up one you're standing on).
+                // #326: …in one of TWO stances, and the modifier is the choice. Plain T is the owner's
+                // "deploy here" — the post #314 shipped. ⇧T is "hold my line home": the bot becomes a
+                // bodyguard and walks the middle of the line between you and the way out until its counter
+                // reads 00. Both are named on the surface plate whenever a bot rides the sling, because an
+                // affordance you cannot see is an affordance you do not have (#212).
                 if (_surface is not null)
                 {
-                    DeployOrRetrieveSentry();
+                    DeployOrRetrieveSentry(shift);
                 }
                 return true;
             default:

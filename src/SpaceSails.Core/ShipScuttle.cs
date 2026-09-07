@@ -188,6 +188,27 @@ public static class ShipScuttle
         "Whatever was chasing her has nothing left to chase: the hull was the asset, the bounty and the prize, " +
         "and the captain is a man in a small cold boat who is worth the fuel to nobody.";
 
+    /// <summary>
+    /// #528 · THE PICTURE FOR THE ONE ENDING THAT IS SUPPOSED TO BE A BEGINNING — and it was painted,
+    /// shipped, and pointed at by nothing at all.
+    ///
+    /// <para><c>art/castaway.jpg</c> came into <c>wwwroot/art</c> with #915, whose own title says so
+    /// (<i>"the eight posters of the eternally promising, the castaway, and the last unnamed death"</i>).
+    /// The card it was painted for went on rendering three text lines under a stamp, because a painting
+    /// arriving in the folder is not a painting arriving in the markup and <b>nothing in the build can tell
+    /// the difference</b>: the <c>onerror</c>-hide law that makes code-before-art safe is exactly what makes
+    /// art-before-code invisible. This is the audit's second bug class — <i>pictures with no moment</i> —
+    /// and its fourth instance, after the three <c>kaamos-*</c> canvases (#642) and the two orphans #647
+    /// wired. <c>EveryPaintingHasAMomentTests</c> is the sweep that will not let there be a fifth.</para>
+    ///
+    /// <para>Named here rather than in the markup for #634's reason and this one: the words of this card
+    /// live in this file, beside the rule that decides which ending happened, and a picture chosen in the
+    /// client is a picture that can drift away from the sentence it is under. The canvas is the boat —
+    /// patched plating, no plume, a sun that is just another star — and there is nobody visible in it,
+    /// which is the caption's own discipline held in paint: <i>evidence, and not one word about who.</i></para>
+    /// </summary>
+    public const string CastawayArt = "art/castaway.jpg";
+
     /// <summary>And what survives — said plainly, because a player who has just lost a ship needs to know what
     /// he still has before he can decide whether it was worth it.</summary>
     public const string CastawaySurvivesLine =

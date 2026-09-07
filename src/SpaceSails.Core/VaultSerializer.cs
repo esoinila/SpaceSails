@@ -70,16 +70,19 @@ public static class VaultSerializer
     private const string SecAuthorities = "authorities";  // #590 · the cards that run a shaft
     private const string SecFiling = "filing";            // #973 · the pages you don't remember writing
     private const string SecWalkIn = "walkin";            // #973 L5b · the walk-ins the SPREAD found out
+    private const string SecFinder = "finder";            // #417 · the finder's case, and how far down it
     private const string SecOldCrew = "oldcrew";           // #973 L5a · the four who knew the old face
     private const string SecCrossings = "crossings";       // #973 L5a · ⚖ what he said of it, and who heard
     private const string SecHeldMemories = "heldmemories"; // #978 · the sheets that are not documents
     private const string SecWeather = "insuranceweather"; // #973 · what the bars say about the insurance men
     private const string SecSatchel = "satchel";          // #603 · everything carried on foot
     private const string SecWorkedUp = "workedup";        // #1016 · the sheets already dug out at a table
+    private const string SecTurnedOver = "turnedover";    // #615 · the rooms already gone through, by site
     private const string SecKaamos = "kaamos";
     private const string SecNebula = "nebula";
     private const string SecResume = "resume";
     private const string SecLogbook = "logbook";        // #948 · the captain's name, the title, the note
+    private const string SecGround = "ground";          // #563 slice 2 · what a captain changed on a moon
     private const string SecVoid = "void";              // #638 · the adrift countdown, when one is running
 
     /// <summary>Serialize a vault to its on-disk JSON string (envelope + checksum). Only non-null
@@ -108,15 +111,18 @@ public static class VaultSerializer
         AddSection(sections, SecAuthorities, vault.Authorities);
         AddSection(sections, SecFiling, vault.Filing);
         AddSection(sections, SecWalkIn, vault.WalkIn);
+        AddSection(sections, SecFinder, vault.Finder);
         AddSection(sections, SecOldCrew, vault.OldCrew);
         AddSection(sections, SecCrossings, vault.Crossings);
         AddSection(sections, SecHeldMemories, vault.HeldMemories);
         AddSection(sections, SecWeather, vault.InsuranceWeather);
         AddSection(sections, SecSatchel, vault.Satchel);
         AddSection(sections, SecWorkedUp, vault.WorkedUp);
+        AddSection(sections, SecTurnedOver, vault.TurnedOver);
         AddSection(sections, SecKaamos, vault.Kaamos);
         AddSection(sections, SecNebula, vault.Nebula);
         AddSection(sections, SecResume, vault.Resume);
+        AddSection(sections, SecGround, vault.Ground);
         AddSection(sections, SecLogbook, vault.Logbook);
         AddSection(sections, SecVoid, vault.Void);
 
@@ -258,15 +264,18 @@ public static class VaultSerializer
             Authorities = Harvest<AuthoritiesSection>(sections, SecAuthorities, warnings),
             Filing = Harvest<FilingSection>(sections, SecFiling, warnings),
             WalkIn = Harvest<WalkInSection>(sections, SecWalkIn, warnings),
+            Finder = Harvest<FinderSection>(sections, SecFinder, warnings),
             OldCrew = Harvest<OldCrewSection>(sections, SecOldCrew, warnings),
             Crossings = Harvest<CrossingsSection>(sections, SecCrossings, warnings),
             HeldMemories = Harvest<HeldMemoriesSection>(sections, SecHeldMemories, warnings),
             InsuranceWeather = Harvest<InsuranceWeatherSection>(sections, SecWeather, warnings),
             Satchel = Harvest<SatchelSection>(sections, SecSatchel, warnings),
             WorkedUp = Harvest<WorkedUpSection>(sections, SecWorkedUp, warnings),
+            TurnedOver = Harvest<TurnedOverSection>(sections, SecTurnedOver, warnings),
             Kaamos = Harvest<KaamosSection>(sections, SecKaamos, warnings),
             Nebula = Harvest<NebulaSection>(sections, SecNebula, warnings),
             Resume = Harvest<ResumeSection>(sections, SecResume, warnings),
+            Ground = Harvest<GroundSection>(sections, SecGround, warnings),
             Logbook = Harvest<LogbookSection>(sections, SecLogbook, warnings),
             Void = Harvest<VoidSection>(sections, SecVoid, warnings),
         };

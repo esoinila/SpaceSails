@@ -1,0 +1,118 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SpaceSails.Core
+@using DesignateTarget = SpaceSails.Client.Pages.Map.DesignateTarget
+@*
+    #251 · THE WALKED DECK'S OWN CORNERS, ON ONE FILE.
+
+    Seven gates about a captain who is off her bridge and on her feet, and the strip of clocks that has to
+    be readable from the corridor while she is: the remote's button and its panel, the lab's door board and
+    its alarm panel, the one banner strip every running clock shares (#540), the captain chip that vacates
+    the top corner the moment a captain goes down a hole, and the heat line that takes that corner on the
+    ground of an outfit that remembers her (#715). Six surfaces and one bare line of markup — the heat line
+    is a div, which is why the scope carrier beside this file matters. They were ninety-three consecutive lines of Map.razor and they are the same ninety-three
+    lines here — the gates came with the invocations, because a gate is what says WHEN one of these is on
+    the glass, and the page keeps its paint order by hosting this rack where they stood.
+
+    Moved by PURE MOTION: every page member the block reads is a [Parameter] with the SAME NAME, so not one
+    character between the fences changed and MapMarkup splices it straight back where it came from.
+    IHandleEvent repeats the page's own override (Map.Sim.cs) — the HUD's refresh belongs to OnTick's 200 ms
+    throttle, not to every event in here. The .razor.css beside this file carries no rules; it exists to
+    give the component Map.razor.css's scope (pinned in SpaceSails.Client.csproj) — which the heat line, a
+    bare div, needs as much as the six surfaces need their own sheets.
+*@
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────── *@
+    @* #488 · THE CLOCKS, WHERE YOU CAN SEE THEM WHILE YOU FIGHT. Owner: "I love that pressure waiting in a
+       hot spot with round counts dropping :-D" — which only works if the pump and the soak are legible from
+       OUT IN THE CORRIDOR, not just from the board you walked away from. Two clocks racing each other: the
+       one emptying a room, and the one on the sentry holding the lane while it does. *@
+    @* HER OWN CLOCKS, out where she can be read from the corridor. Owner, having started a pump on her board
+       and walked away: "I expect to see the pumping here now as we have on the reever infested salvage ship."
+       Same strip, same classes — a run you can only infer from a sentence on a panel is a run you will forget
+       you started, and hers take the best part of a minute. *@
+    @if (_deckMode && _surface is not null)
+    {
+        <CaptainsRemoteButton OpenCaptainsRemote="@OpenCaptainsRemote" />
+    }
+
+    @if (_showCaptainsRemote)
+    {
+        <CaptainsRemotePanel _boatOrderedCold="@_boatOrderedCold" _boatWarmth="@_boatWarmth"
+                             _designateOpen="@_designateOpen" _designateTargets="@_designateTargets"
+                             _designateUnit="@_designateUnit" _remoteOutcome="@_remoteOutcome"
+                             _soundQuietly="@_soundQuietly" _surface="@_surface" _weaponsTight="@_weaponsTight"
+                             AwayWindowRemoteLine="@AwayWindowRemoteLine"
+                             AwayWindowRemoteSubLine="@AwayWindowRemoteSubLine"
+                             BackToTheSwitches="@BackToTheSwitches" BoatState="@BoatState"
+                             CloseCaptainsRemote="@CloseCaptainsRemote" DesignatableGuns="@DesignatableGuns"
+                             Dismiss="@Dismiss" FireOnTheLock="@FireOnTheLock" OnWreck="@OnWreck"
+                             OpenDesignate="@OpenDesignate" PickTheGun="@PickTheGun"
+                             RaiseTheClaimsDesk="@RaiseTheClaimsDesk"
+                             SendTheStanding="@SendTheStanding" SoundingGear="@SoundingGear"
+                             TheRemoteReachesAKiosk="@TheRemoteReachesAKiosk"
+                             ToggleBoatPower="@ToggleBoatPower" ToggleQuietSearch="@ToggleQuietSearch"
+                             ToggleWeaponsTight="@ToggleWeaponsTight" />
+    }
+
+    @if (_showDoorBoard)
+    {
+        <DoorBoardPanel _doorBoardOutcome="@_doorBoardOutcome" _hasVantarCard="@_hasVantarCard"
+                        _labDoors="@_labDoors" CloseDoorBoard="@CloseDoorBoard" Dismiss="@Dismiss"
+                        WorkTheDoor="@WorkTheDoor" />
+    }
+
+    @if (_showAlarmPanel)
+    {
+        <AlarmPanel _alarmOutcome="@_alarmOutcome" _labAlarm="@_labAlarm" _labHackRoll="@_labHackRoll"
+                    CloseAlarmPanel="@CloseAlarmPanel" CurrentApproach="@CurrentApproach" Dismiss="@Dismiss"
+                    HackTheAlarm="@HackTheAlarm" LabHackStack="@LabHackStack" />
+    }
+
+    @* #540 · ONE STRIP, EVERY CLOCK. This used to be three separate `.wreck-clocks` blocks — and since the CSS
+       pins the strip at a FIXED top/right, any two of them running at once drew exactly on top of each other.
+       Weapons tight plus a pump was already an unreadable pile; the boat's clocks would have made three. So they
+       are one list now, ordered by how much they should frighten you: the keel, then the way off her, then the
+       air, then the standing orders you might have forgotten. Which is also the owner's scene, in order —
+       "say self destruct tics down but shuttle still warms up". *@
+    @if (_deckMode && (_weaponsTight || BoatClockWorthShowing || SweepersAboard
+                       || LabAlarmSecondsLeft is not null
+                       || SoundingSecondsLeft is not null || SearchBandLine is not null
+                       || CutSecondsLeft is not null || WarmCutSecondsLeft is not null
+                       || (OnWreck
+                           ? _pumps.Count > 0 || AnyRoomSoaking || _scuttleSecondsLeft is not null
+                           : _shipPumps.Count > 0 || _shipChargesSeconds is not null)))
+    {
+        <DeckBannerStrip _hasVantarCard="@_hasVantarCard" _pumps="@_pumps"
+                         _scuttleSecondsLeft="@_scuttleSecondsLeft" _shipChargesSeconds="@_shipChargesSeconds"
+                         _shipPumps="@_shipPumps" _soundQuietly="@_soundQuietly" _sweepers="@_sweepers"
+                         _weaponsTight="@_weaponsTight" AnySweeperOnTheCaptain="@AnySweeperOnTheCaptain"
+                         BoatClockWorthShowing="@BoatClockWorthShowing" BoatSecondsLeft="@BoatSecondsLeft"
+                         BoatState="@BoatState" CutSecondsLeft="@CutSecondsLeft"
+                         CutsLeftInTheCell="@CutsLeftInTheCell" LabAlarmSecondsLeft="@LabAlarmSecondsLeft"
+                         OnWreck="@OnWreck" RoomsSoaking="@RoomsSoaking" SearchBandLine="@SearchBandLine"
+                         SoundingSecondsLeft="@SoundingSecondsLeft" SweepersAboard="@SweepersAboard"
+                         WarmCutSecondsLeft="@WarmCutSecondsLeft" WorstSweeperState="@WorstSweeperState" />
+    }
+
+    @if (_worldReady && _surface is null && !_showStartPicker && !_showSaveDrawer && ActiveThreadInfo is { } capThread)
+    {
+        <CaptainThreadStrip CaptainInitial="@CaptainInitial" CaptainMonoColor="@CaptainMonoColor"
+                            capThread="@capThread" />
+    }
+
+    @* #715 · THEY REMEMBER YOU HERE — the whole presentation of the illegal-heat meter, and it names nobody.
+
+       Owner's rulings: heat is owed to the ENTITY you crossed, never to the world, and there is no HEAT: 62%
+       banner (§13.8, the issue's own canon section). So this is one line, in the corner the captain chip
+       vacates the moment a captain goes down a hole, and it is drawn at the sites of the outfit that
+       remembers this captain AND NOWHERE ELSE — not aboard, not at a haven, and not at another company's
+       identical door however hot the captain is elsewhere.
+
+       It does not say WHOSE memory it is. That is the feature: a player who walks into a site they have never
+       visited and reads this line has just learned who owns it, which is the payoff #715 asks for. Naming the
+       company here would have done the inference for them. *@
+    @if (_worldReady && _surface is not null && !_showStartPicker && !_showSaveDrawer && TheyRememberYouHere)
+    {
+        <div class="heat-remembered">@SpaceSails.Core.IllegalHeat.TheyRememberYouHere</div>
+    }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────── *@

@@ -46,6 +46,24 @@ public static class FuelMarket
     public static int PricePerPulse(double pumpHeliocentricDistanceMeters) =>
         pumpHeliocentricDistanceMeters >= OuterMarkupThresholdMeters ? OuterPricePerPulse : InnerPricePerPulse;
 
+    /// <summary>The cheapest a pulse may ever be quoted at, whatever the market has done overnight. One
+    /// credit, so a downward move can never make reaction mass free — <see cref="QuoteFill"/> reads a
+    /// non-positive price as a gift, and a market that gave the tank away would be a market with a hole in
+    /// it.</summary>
+    public const int MinimumPricePerPulse = 1;
+
+    /// <summary>#1068 · The same price with the market's own overnight move on it — the seam this class's
+    /// remarks already reserved (<i>"a future per-haven price table drops in behind PricePerPulse without
+    /// touching the desk"</i>), and it is a MOVE rather than a table because a move is all anybody has
+    /// needed yet.
+    ///
+    /// <para><paramref name="moveCr"/> is credits per pulse, signed, and comes from
+    /// <see cref="QuietHands.PulsePriceMoveAt"/> — which bounds itself by the only spread this market has
+    /// ever published, the belt markup above. Zero is the ordinary answer at every pump in almost every
+    /// world, and zero returns exactly what <see cref="PricePerPulse(double)"/> returns.</para></summary>
+    public static int PricePerPulse(double pumpHeliocentricDistanceMeters, int moveCr) =>
+        Math.Max(MinimumPricePerPulse, PricePerPulse(pumpHeliocentricDistanceMeters) + moveCr);
+
     /// <summary>A fill quote: how many pulses the captain actually takes on and what it costs. Both are
     /// non-negative; <see cref="Cost"/> is exactly <c>Pulses × pricePerPulse</c>.</summary>
     public readonly record struct Quote(int Pulses, int Cost);

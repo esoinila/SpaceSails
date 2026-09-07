@@ -123,6 +123,18 @@ public static class StoryBeats
         /// because the cadence is once per subject and the subject of this moment is a person — two women is
         /// two moments; the same woman twice is not one.</summary>
         WalkIn,
+
+        /// <summary>#1149 · THE ONE REFUGE THAT DID NOT HOLD. A pressure refuge, on the plan, marked on the
+        /// fan, and dead — and the room says why. The subject is the SITE (<c>ex.Stop.Body.Id</c>): a
+        /// building has at most one of these and it is that building's story, so a second moon's dead refuge
+        /// is a second moment and not a repeat.</summary>
+        RefugeFailed,
+
+        /// <summary>#1151 · THE DESK COMES BACK. A claim is lodged at a kiosk and, from the second one
+        /// onward, the captain is somewhere else for a moment: an office, a pen, a page he did not read. No
+        /// subject — the memory is not about WHICH hull he lost, it is about the process he keeps agreeing
+        /// to, and a subject here would be the seam filing the very thing the card is uneasy about.</summary>
+        TheClaim,
     }
 
     /// <summary>How often a beat is allowed to speak.</summary>
@@ -207,8 +219,12 @@ public static class StoryBeats
         // about the captain. A second KAAMOS shard is a different painting and different words; a second
         // moon's buried door is a different moon. OnceEver would show one and silently swallow the rest,
         // which is the exact failure the arrival tube was written to stop.
+        // #1149 · …and the refuge that failed with them, for the same clause exactly: it is about a PLACE.
+        // A site carries at most one, so once per subject IS once per building — and OnceEver would show the
+        // first one a captain ever walked into and silently swallow every other site's.
         Beat.KaamosShardFound or Beat.NebulaShardFound or Beat.OutpostEffectsRead
-            or Beat.SecretLabDoorFound or Beat.TheDormantThingWakes => Cadence.OncePerSubject,
+            or Beat.SecretLabDoorFound or Beat.TheDormantThingWakes
+            or Beat.RefugeFailed => Cadence.OncePerSubject,
 
         // #973 L5b · …and the walk-in with them, for the same clause and one more. It is about a PERSON, and
         // a person who has already crossed a room to ask you for something does not do it again — the ask is
@@ -342,6 +358,81 @@ public static class StoryBeats
     public const double PlateSeconds = 7.0;
 
     /// <summary>
+    /// #1148 · <b>HOLD THE BEATS WHILE A GATE IS DRIVING A BOARD.</b> The URL key, named once so the parse,
+    /// the docs table and the browser gate cannot drift about how it is spelled: <c>?holdbeats=1</c>.
+    ///
+    /// <para><b>What went wrong.</b> The UiGate's canaries script <i>open a board, press its way out</i>, and
+    /// nothing in them quiesces this seam. In a loaded 13-minute serial run a card's cadence came due while
+    /// the charge board was open, the card's <c>.view-object-backdrop</c> went over the board's own
+    /// <i>Step away</i>, and Playwright waited sixty seconds for a button a modal was standing on. The same
+    /// class passed alone at the base (35 s) and alone at that head (29 s): the gate was measuring the
+    /// story's timing rather than the board.</para>
+    ///
+    /// <para><b>What it does, and the one thing it must never do.</b> Held, a CARD is DEFERRED — into the
+    /// same one-at-a-time queue #865's sit-beat hold and the danger hold already use, and for the same
+    /// reason: the cadence is unspent until the beat actually speaks, so nothing is dropped and the beat is
+    /// still owed. #761's law is that a plot-significant moment reaches the player, and a test flag that
+    /// could DELETE one would be a gate quietly editing the game it is measuring. Deferral, never a drop.</para>
+    ///
+    /// <para><b>Cards only, deliberately.</b> A PLATE eats no click (<c>pointer-events: none</c>) and steals
+    /// no keyboard, so it never blocked anything; and the gate next door
+    /// (<c>HudCollisionTests.The_story_plate_never_covers_the_plotting_panel</c>) exists to catch one lying
+    /// on the plotting panel, which a hold would silently un-test.</para>
+    /// </summary>
+    public const string HoldQueryFlag = "holdbeats";
+
+    /// <summary>
+    /// #1148 · Does this URL carry <see cref="HoldQueryFlag"/>? Asked of the LIVE address rather than read
+    /// into the boot's <c>BootQuery</c> holder, for the reason <c>?perf=1</c> (#841) is read the same way one
+    /// file over: it changes nothing about the world — no body, no berth, no cheat — so it has no business in
+    /// the holder that pins what the parse ANSWERED, and a field for it on the page would move thirty pinned
+    /// frame fingerprints (#905) to carry a value that is <c>False</c> in every one of them.
+    ///
+    /// <para>Takes a whole URL or a bare query; a fragment is not the query. Values are the <c>1|true|yes</c>
+    /// the client's own dev cheats accept, so the key spelled with any other value is NOT a hold — a flag
+    /// that held on anything at all could not tell its own pass from its own fail.</para>
+    ///
+    /// <para>Allocation-free on purpose: while a beat is held this is asked on every frame.</para>
+    /// </summary>
+    public static bool HeldIn(string? url)
+    {
+        if (string.IsNullOrEmpty(url))
+        {
+            return false;
+        }
+
+        int question = url.IndexOf('?', StringComparison.Ordinal);
+        ReadOnlySpan<char> query = question < 0 ? url.AsSpan() : url.AsSpan(question + 1);
+        int fragment = query.IndexOf('#');
+        if (fragment >= 0)
+        {
+            query = query[..fragment];
+        }
+
+        while (!query.IsEmpty)
+        {
+            int amp = query.IndexOf('&');
+            ReadOnlySpan<char> pair = amp < 0 ? query : query[..amp];
+            query = amp < 0 ? default : query[(amp + 1)..];
+
+            if (!pair.StartsWith(HoldQueryFlag + "=", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            ReadOnlySpan<char> said = pair[(HoldQueryFlag.Length + 1)..];
+            if (said.Equals("1", StringComparison.OrdinalIgnoreCase)
+                || said.Equals("true", StringComparison.OrdinalIgnoreCase)
+                || said.Equals("yes", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// #664 · THE NOISE THE SURFACE MAKES, decided here for the same reason the picture and the cadence are.
     ///
     /// <para>The seam used to chime <c>"reveal"</c> for every card and plate it raised, which was right while
@@ -396,6 +487,11 @@ public static class StoryBeats
         Beat.CollectorsSetDown => CollectorLanding.ArrivalPlate,
         Beat.SealedDoorReleased => NestPlates.Released,
 
+        // #1151 · …and the claim's own desk, through the same door. Its three strings are authored beside the
+        // rule that decides a claim happened, exactly as the eleven above are, so this file learns the
+        // sentence rather than keeping a second copy of it.
+        Beat.TheClaim => NebulaClaims.DeskPlate,
+
         _ => null,
     };
 
@@ -444,6 +540,9 @@ public static class StoryBeats
         Beat.BerthGreatPort => ArrivalTube.ArtFile(ArrivalTube.Tier.GreatPort),
         Beat.BerthWorkingBerth => ArrivalTube.ArtFile(ArrivalTube.Tier.WorkingBerth),
         Beat.BerthOutpost => ArrivalTube.ArtFile(ArrivalTube.Tier.Outpost),
+        // #1149 · One canvas for every failed refuge in the game, and fixed rather than keyed by the site:
+        // what the picture shows is not a moon, it is a room and what was done to its door.
+        Beat.RefugeFailed => "art/refuge-failed.jpg",
 
         _ => PlateOf(beat, subject)?.ArtFile ?? "",
     };
@@ -470,6 +569,8 @@ public static class StoryBeats
         Beat.BerthGreatPort => ArrivalTube.Title(ArrivalTube.Tier.GreatPort),
         Beat.BerthWorkingBerth => ArrivalTube.Title(ArrivalTube.Tier.WorkingBerth),
         Beat.BerthOutpost => ArrivalTube.Title(ArrivalTube.Tier.Outpost),
+        // #1149 · Authored canon (2026-09-06), verbatim, behind the refuge family's own glyph.
+        Beat.RefugeFailed => "🫁 THE REFUGE THAT FAILED",
 
         // #664 · The one adopted beat whose stamp names its subject: "🕷 DEEP HOLD — IT OPENS BOTH WAYS". The
         // two halves are joined in NestPlates so they cannot drift apart in two files, exactly as the after-
@@ -557,6 +658,15 @@ public static class StoryBeats
                 "Forty years, and a pocket of her atmosphere was still shut in with something that would burn. " +
                 "The light of it comes down the spine ahead of the heat, and every hatch anybody left open is a " +
                 "road it already knows.",
+
+            // #1149 · Authored canon (2026-09-06), verbatim and entire. Three flat observations in the order
+            // a captain standing in the doorway would make them, and the last one is the only verdict the
+            // card is allowed: what did NOT happen. It never says what came through, it never names the
+            // inspector, and it never says which way anybody went afterwards — the Scully law, at the one
+            // door in the building where the temptation to explain is worst.
+            Beat.RefugeFailed =>
+                "The rack is full; nobody ever drew on it. The seal was cut from the inside, cleanly, and " +
+                "closed again from the outside. It did not fail from age.",
 
             // #664 · The adopted eleven read their caption off the same Core plate their title and their
             // painting come from. Not one word of these was retyped here: `KaamosLore.PlateFor` and the nine

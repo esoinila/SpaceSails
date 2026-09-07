@@ -81,6 +81,10 @@ public partial class Map
     // hole her sail). docs/MondayPonder/UIUsabilityNotes.md — "the gun tutorial" (owner's idea).
     private const int FirstHuntSteps = 6;              // indices 0..5 belong to the first hunt
 
+    // …and the last step of the first hunt that still NEEDS the pod out there (board her). Steps 4 and 5
+    // are the sell and the spend, which happen at a market with the catch already in the hold (#351).
+    private const int StepBoardPod = 3;
+
     // Second-hunt (the gun) step indices — kept named so the AdvanceTutorial wiring stays legible.
     private const int StepSelectFreighter = 6;
     private const int StepWarnFreighter = 7;
@@ -93,6 +97,21 @@ public partial class Map
     private const int StepOrderLayLow = 12;
     private const int StepInsertHaven = 13;
     private const int StepCoolHeat = 14;
+
+    // #160 · Fourth tutorial (THE MILK RUN) — the eight steps of the whole working loop, in order. Written
+    // as consts off the third track's last step rather than derived from TutorialSteps.Length, because a
+    // static FIELD that reads another static field of the same partial class depends on which source file
+    // the compiler happened to see first; a const does not. The eight LINES are canon and live in Core
+    // (MilkRunLesson.Lines); the eight GATES — the real state that finishes each step — are in
+    // Map.Quests.MilkRun.cs, one row per line.
+    private const int StepTakeTheMilkRun = StepCoolHeat + 1;         // 1 · take the contract off the board
+    private const int StepPlanDockToDock = StepTakeTheMilkRun + 1;   // 2 · plot the whole trip, berth to berth
+    private const int StepTopHerOff = StepTakeTheMilkRun + 2;        // 3 · fill the tank (#157)
+    private const int StepArmAndRead = StepTakeTheMilkRun + 3;       // 4 · arm, and read the rehearsal's quote
+    private const int StepDepartureBurn = StepTakeTheMilkRun + 4;    // 5 · the cast-off fires itself (#159)
+    private const int StepWarpTheCoast = StepTakeTheMilkRun + 5;     // 6 · warp is the captain's clock
+    private const int StepArriveAndDock = StepTakeTheMilkRun + 6;    // 7 · the armed-at-plan-time arrival (#955)
+    private const int StepPaidAtTheCounter = StepTakeTheMilkRun + 7; // 8 · the coin on the counter
 
     private static readonly string[] TutorialSteps =
     [
@@ -117,19 +136,28 @@ public partial class Map
         // hard way that a cooled gauge is not what calls a collector off ("we have zero heat and are docked
         // at haven ... why is this still hunting us?"). Her own card carries the break-off clock.
         "Lie low until the heat cools to nothing (her contract has its own clock — read her card)",
+        // #160 · Fourth — THE MILK RUN, the whole working loop end to end. Its eight rows are the eight
+        // canon lines themselves, spliced in from Core: the row you read on the checklist IS the line the
+        // game speaks when that step becomes the one to do, because they are one string and there was never
+        // a reason for them to be two. (The splice is why StepTakeTheMilkRun is a const off StepCoolHeat.)
+        .. MilkRunLesson.Lines,
     ];
 
     // The tutorials are independent tracks over ranges of TutorialSteps — the Captain's Tutorials tab
     // lists them, one card each, and starting one (re)seeds its scenario. Order here IS play order:
     // finishing a track flows _tutorialStep into the next (rob in "the gun" → arrive in "use a haven"
     // already carrying heat), while the picker can jump to any.
-    private sealed record TutorialTrack(int Start, int Length, string Title, string Blurb);
+    public sealed record TutorialTrack(int Start, int Length, string Title, string Blurb);
 
     private static readonly TutorialTrack[] TutorialTracks =
     [
         new(0, FirstHuntSteps, "The soft catch", "A compliant Luna pod — learn the intercept and the board."),
         new(StepSelectFreighter, 6, "The gun", "A runner who won't heave to — hole her sail, take her cargo."),
         new(StepOrderLayLow, 3, "Use a haven", "You've made enemies. Cool the heat and shake the hunter at a haven."),
+        // #160 · The milk run. Its card's name and blurb are the two halves of its own first line — derived,
+        // not authored, because the canon pass wrote eight lines and a ninth for a picker card would be a
+        // ninth line. Length comes off the array so a step can never be added without a card that shows it.
+        new(StepTakeTheMilkRun, MilkRunLesson.StepCount, MilkRunLesson.Title, MilkRunLesson.Blurb),
     ];
 
     // The track _tutorialStep currently sits in, or -1 once every step is behind you.
@@ -157,17 +185,17 @@ public partial class Map
     // down (holed or boarded); turning in at any haven pays the reward. State is a plain list of
     // records — player-driven, never read by the physics sim. ---
     // #973 L5b · WalkIn is the woman's favour: a FIND with two berths in it and no coin at either end.
-    private enum QuestKind { Hunt, CargoRun, Intel, Fetch, Crack, Favor, FetchCache, WalkIn }
+    public enum QuestKind { Hunt, CargoRun, Intel, Fetch, Crack, Favor, FetchCache, WalkIn }
     // Fetch adds a PickedUp step between Active and Complete: fly to the SourceBodyId derelict to grab
     // the goods, then hand them over in person at the DestBodyId station's bar (no electronic trace).
     // Crack is the same face-to-face shape but the pickup is a locked hatch *here*: walk to the named
     // hatch, key in the Pin the Fixer gave you, then hand the package back to the Fixer at this station.
-    private enum QuestState { Active, PickedUp, Complete, TurnedIn }
+    public enum QuestState { Active, PickedUp, Complete, TurnedIn }
     // A hunt stores the prey's ship id in TargetShipId; a cargo run / fetch stores the delivery haven's
     // body id in DestBodyId (TargetCallsign holds the human name in all cases). A fetch also stores the
     // pickup derelict's body id in SourceBodyId. A crack stores the target hatch's id (e.g. "V-06") in
     // TargetShipId and its access code in Pin.
-    private sealed record Quest(string Id, QuestKind Kind, string Giver, string TargetShipId,
+    public sealed record Quest(string Id, QuestKind Kind, string Giver, string TargetShipId,
         string TargetCallsign, string Title, string Blurb, int Reward, string? DestBodyId = null,
         string? SourceBodyId = null, string? Pin = null, HeldMemory.Theory? Theory = null)
     {
@@ -198,6 +226,7 @@ public partial class Map
             case 0: SeedFirstHuntTarget(); break;
             case 1: SeedSecondHuntTarget(); break;
             case 2: SeedHavenLesson(); break;
+            case 3: SeedMilkRun(); break;   // #160 — the lesson posts its OWN contract (#1091's law)
         }
 
         SwitchDesk(ShipDesk.Nav); // the hunt/haven all play out on the map; go to the helm
@@ -261,6 +290,89 @@ public partial class Map
             .ToArray();
     }
 
+    // ── #351 · THE LESSON KEEPS ITS OWN PREY IN THE WORLD ────────────────────────────────────────────
+    //
+    // Owner, 2026-07-18, six sim-days into the same voyage: "It showed me the tutorial soft catch window
+    // here even though all the targets it talks about are long gone. A schedule based tutorial only works
+    // at certain time. It is kind of a bad design like this. THE TUTORIAL SELECTION SHOULD TRIGGER THE
+    // LAUNCH OF THE TARGET VEHICLES."
+    //
+    // Ruling-2 answered the first half that same day: the soft catch's pod is no longer cast at boot off a
+    // T=0 Earth clock (see the note in Map.Sim.World.Build.PlanTheTrafficAsync) — taking the lesson ON
+    // launches her, abeam wherever the ship actually is THEN (SeedFirstHuntTarget / SeedSecondHuntTarget).
+    //
+    // This is the other half, and it is the half his screenshot was actually taken in. A launch is a
+    // MOMENT; the checklist is a thing that stays up. Between the two the world can take the prey away
+    // entirely — ReseedWorldForJump (Map.LongHaul) drops every non-depot mover on a long haul, a cycler
+    // crossing and a vault resume, StepNpcs retires one the clock has left an epoch behind, and the pod's
+    // own 60-day expiry despawns her at her destination — and none of that told the checklist, which went
+    // on naming a Sitting Duck that was nowhere in the world. So: while the lesson still NEEDS her, she is
+    // out there. Launched again, abeam the ship NOW, which is the same sentence the owner wrote.
+    //
+    // Two doors, one method. Opening the checklist is the captain's own selection and relaunches at once
+    // (ToggleTutorial); and the sensor sweep, which is already where "the sky must never empty" is kept
+    // (RefillTraffic), keeps the promise for a window that was left open across a jump — rate-limited to a
+    // sim-hour like its neighbour, so a pod that despawns where she is launched cannot spawn every frame.
+    private const double LessonPreyCheckSeconds = 3600;
+    private double _lastLessonPreyCheckSimTime = double.NegativeInfinity;
+
+    private void KeepTheLessonsPreyInTheWorld()
+    {
+        // Only while the captain is actually looking at a lesson: _tutorialStep rests at 0 for every
+        // captain who never took one (it is not vaulted), so the checklist being UP is what says a lesson
+        // is running. Cheap enough to sit in the sweep — an int compare before anything is scanned.
+        if (!_showTutorial || SimTime - _lastLessonPreyCheckSimTime < LessonPreyCheckSeconds)
+        {
+            return;
+        }
+
+        _lastLessonPreyCheckSimTime = SimTime;
+        RelaunchTheLessonsPreyIfSheIsGone();
+    }
+
+    /// <summary>Launch the active lesson's target again if the world no longer has her — the owner's
+    /// ruling applied to every moment the lesson is on, not just the moment it was taken on. A prey that
+    /// is still out there is left strictly alone, so a plotted intercept is never yanked out from under
+    /// the captain.</summary>
+    private void RelaunchTheLessonsPreyIfSheIsGone()
+    {
+        if (_tutorialStep <= StepBoardPod)
+        {
+            if (!SheIsStillOutThere(TrafficSchedule.StarterPodId))
+            {
+                SeedFirstHuntTarget();
+            }
+        }
+        else if (_tutorialStep >= StepSelectFreighter && _tutorialStep <= StepBoardFreighter
+                 && !SheIsStillOutThere(TrafficSchedule.StarterFreighterId))
+        {
+            SeedSecondHuntTarget();
+        }
+        else
+        {
+            // #160 · The milk run's "prey" is a notice on a wall. The same ruling reaches it: if the lesson
+            // still wants the contract taken and it is not on the board, opening the checklist puts it back
+            // there. (A run already in the captain's hand is left strictly alone — see the method.)
+            PostTheMilkRunContractAgain();
+        }
+    }
+
+    /// <summary>Is that hull still a thing in this world? Retired by a jump (gone from the roster
+    /// outright) and despawned/expired (still on it, flagged Arrived) both answer no. Boarded does not —
+    /// a robbed pod keeps flying, and the lesson's next steps are about her cargo, not her.</summary>
+    private bool SheIsStillOutThere(string shipId)
+    {
+        foreach (NpcState npc in _npcStates)
+        {
+            if (npc.Ship.Id == shipId && !npc.Arrived)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     // #266 — the rescue offer pop-up (piracy-pop-up family): a real modal with the terms visible before
     // accepting. Auto-opens the instant we go adrift (UpdateShipAlerts); re-openable from the inline
     // adrift affordance while stranded; Decline just dismisses (the offer stands until we're under way).
@@ -276,7 +388,16 @@ public partial class Map
         await RefocusMap();
     }
 
-    private void ToggleTutorial() => _showTutorial = !_showTutorial;
+    private void ToggleTutorial()
+    {
+        _showTutorial = !_showTutorial;
+        if (_showTutorial)
+        {
+            // #351 — raising the checklist IS the tutorial selection the owner's ruling names, so it
+            // launches the lesson's target if the world no longer has her. A live prey is untouched.
+            RelaunchTheLessonsPreyIfSheIsGone();
+        }
+    }
 
     // #292: a lesson engaged (started or run to its end) means this captain is no longer truly new —
     // the fresh-Earth greeting must never raise itself again, this run or any future one. Persisted

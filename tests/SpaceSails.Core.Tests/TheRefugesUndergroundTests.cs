@@ -30,7 +30,8 @@ namespace SpaceSails.Core.Tests;
 /// floor of SUIT-WORK, staffed all day by people in suits, and a building that staffs one and gives them
 /// nowhere to go is one busy lift away from killing somebody.</para>
 /// </summary>
-public sealed class TheRefugesUndergroundTests
+[SlowGate] // #251 · 11 s over 12 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
+public sealed partial class TheRefugesUndergroundTests
 {
     private static SurfaceLayout.Field Field => SurfaceLayout.DefaultField;
 
@@ -340,57 +341,5 @@ public sealed class TheRefugesUndergroundTests
         // from, or the volume claims ground the walls do not enclose.
         Assert.True(UndergroundComplex.RefugeHalfWidth < 15.0 / 2);
         Assert.True(UndergroundComplex.RefugeHalfHeight < 12.0 / 2);
-    }
-
-    [Fact]
-    public void TheREFUGENeverExplainsWhatThisPlaceWasFor()
-    {
-        // Canon, owner ruling 2026-07-30, and this is a tempting place to break it: a safety plate is the
-        // one thing down here allowed to be plain, and "plain" is one word away from "explanatory". A
-        // refuge may say what the ROOM is for. It may never say what the BUILDING is for.
-        string[] forbidden =
-        [
-            "old one", "old ones", "reever", "restore", "backup", "brain", "kaamos", "minister",
-            "ancient", "alien", "experiment", "specimen",
-        ];
-
-        var prose = new List<string>
-        {
-            UndergroundComplex.RefugeBreathingLine,
-            UndergroundComplex.RefugeTankLabel,
-            UndergroundComplex.RefugeGlyph,
-            UndergroundComplex.VacuumCard("miranda", -2, 600),
-            UndergroundComplex.VacuumCard("miranda", -7, 90),
-        };
-        for (int i = 0; i < 12; i++)
-        {
-            prose.Add(UndergroundComplex.RefugeSign("miranda", -i - 2, 0));
-        }
-
-        foreach (string line in prose)
-        {
-            foreach (string bad in forbidden)
-            {
-                Assert.DoesNotContain(bad, line, StringComparison.OrdinalIgnoreCase);
-            }
-        }
-    }
-
-    [Fact]
-    public void ThePlateSaysWhatTheRoomIsAndStops()
-    {
-        // A captain who cannot find air is not being teased (#573's rule for the surface shelter's sign,
-        // pointed underground). The plate is an inspectorate's: a number, an occupancy, and an instruction.
-        for (int level = -2; level > -20; level--)
-        {
-            if (UndergroundComplex.HoldsPressure("miranda", level))
-            {
-                continue;
-            }
-            string sign = UndergroundComplex.RefugeSign("miranda", level, 0);
-            Assert.Contains("PRESSURE REFUGE", sign, StringComparison.Ordinal);
-            Assert.Contains("OCCUPANCY", sign, StringComparison.Ordinal);
-            Assert.Equal(sign, UndergroundComplex.RefugeSign("miranda", level, 0));   // deterministic
-        }
     }
 }

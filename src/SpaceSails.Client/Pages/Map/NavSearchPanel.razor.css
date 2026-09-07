@@ -1,0 +1,63 @@
+/* #251 · NavSearchPanel's OWN RULES, moved verbatim out of Map.razor.css.
+
+   6 rule block(s), in the order Map.razor.css wrote them, comments included: the box, the input, its
+   placeholder, the results drop, the row and the name. Nothing was retyped. The scope is still the
+   PAGE's (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector
+   compiles to the string it compiled to before the move.
+
+   The carrier comment that used to stand here said moving a rule "would move it in the cascade too".
+   It would, and does — these six now sit later in the bundle than they did. It is safe because the
+   #406 find box is the only markup in the client that carries any of these classes, so no rule left
+   behind in Map.razor.css and no rule in a later sheet can win or lose against one of them.
+   TheBundleIsTheSameCascadeTests is what says so rather than this paragraph.
+
+   These six read the page's own `--map-control-top` / `--map-control-height` (#986 F1), declared on
+   `.map-page` and inherited down the DOM — inheritance does not care which sheet a rule was written
+   in, so the box still sits on the same top-left row as the 🗺 Layers toggle. */
+
+/* #406 Nav search — a compact find-and-jump box seated on the same top-left row as the 🗺 Layers
+   toggle, just to its right, so the two map controls read as a pair. The input sits at the Layers
+   BUTTON's height (above where the Layers panel drops), and its own results drop straight down. In the
+   rare case both dropdowns are open they can overlap in the 7.5–14rem band, so the search sits a layer
+   higher (chrome+40 > the panel's +30) and is never buried. */
+.nav-search {
+    position: absolute;
+    top: var(--map-control-top);
+    left: 7.5rem;
+    width: 15rem;
+    max-width: calc(100% - 8.25rem);
+    z-index: calc(var(--z-map-chrome) + 40);
+    pointer-events: auto;
+}
+
+.nav-search-input {
+    height: var(--map-control-height);
+    background-color: rgba(33, 37, 41, 0.9);
+    color: #dee2e6;
+    border-color: #495057;
+}
+
+.nav-search-input::placeholder {
+    color: #adb5bd;
+}
+
+.nav-search-results {
+    position: absolute;
+    top: 2.15rem;
+    left: 0;
+    right: 0;
+    max-height: 60vh;
+    overflow-y: auto;
+    display: grid;
+    gap: 0.15rem;
+}
+
+/* rows wrap rather than clip — a body's flavor tail ("· 🛬 landable — shuttle range") can be long */
+.nav-search-row {
+    white-space: normal;
+    line-height: 1.15;
+}
+
+.nav-search-name {
+    font-weight: 600;
+}

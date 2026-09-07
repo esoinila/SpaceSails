@@ -22,26 +22,12 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheSilentFindsAreRaisedOnceTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     /// <summary>Every line of shipping client code, one file at a time — obj/ and bin/ skipped, because a
     /// generated copy of a razor file would count every call twice.</summary>
     private static IEnumerable<(string File, string Text)> ClientSource()
     {
-        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client");
+        string dir = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client");
         foreach (string file in Directory.EnumerateFiles(dir, "*.*", SearchOption.AllDirectories))
         {
             char s = Path.DirectorySeparatorChar;

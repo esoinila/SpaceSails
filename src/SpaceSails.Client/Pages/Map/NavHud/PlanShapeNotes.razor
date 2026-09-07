@@ -1,0 +1,45 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@*
+    #251 · THE EMPTY-PLAN LINE AND THE PLAN-SHAPE WARNING, ON ITS OWN FILE.
+
+    Moved out of NavHud.razor by PURE MOTION — the block between the two fences below is the block that
+    was in the HUD, character for character. Every member it reads is a [Parameter] with the SAME NAME
+    (fields keep their underscore, methods come across as delegates under their own names), which is what
+    lets the markup move without a rewrite and lets MapMarkup splice it straight back where it came from.
+
+    IHandleEvent repeats NavHud's own override, which repeats Map.Sim.cs's: the HUD's refresh belongs to
+    OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render back on
+    every event in here. The .razor.css beside this file carries no rules; it exists to give the component
+    Map.razor.css's scope (pinned in SpaceSails.Client.csproj), so every rule that styled these elements
+    goes on matching them.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and
+    a code block is where its first statements are legal. It is outside the fences, so what the source
+    guards read is still exactly the lines that were in the HUD.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from NavHud.razor ──────────────────────────────────────────────────── *@
+                @* #989 · THE PLAN'S SHAPE, SAID AT THE DESK. Owner: "2 cast-off in sequence sounds kind of
+                   silly — we should have some logic check." The check is Core's (CastOffRule.CheckShape),
+                   and it is the SAME call that refuses a second pair at the button and that wakes the
+                   captain once when a plan on the board goes bad. Here it is simply readable: a plan that
+                   cannot be flown as written says so above the steps, in the rule's own words.
+
+                   #997 · IT AND THE EMPTY LINE ARE BOTH HEAD, and that is the whole of the restructuring
+                   this migration asked of the panel: what is above the plan does not scroll, the plan does.
+                   The empty state is a head row for a reason a body element would have got wrong — a body
+                   drawn on an empty plan would stand its own 6rem floor of blank scroller under a sentence
+                   that says there is nothing to scroll. *@
+                @if (PlanListIsEmpty)
+                {
+                    <div class="text-secondary">@(NavLockedByDock
+                        ? "No steps yet. Press ⚓ + Cast off to start the plan at this berth, then add the burns and end it with an orbit or a dock."
+                        : "No maneuver nodes. Scrub to a future time and add a burn — then end the plan with an orbit or a dock.")</div>
+                }
+                else if (PlanShapeWarningLine() is { } _shapeWarning)
+                {
+                    <div class="text-warning small mb-1">✗ @_shapeWarning</div>
+                }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

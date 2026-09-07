@@ -35,26 +35,13 @@ namespace SpaceSails.Client.Tests;
 /// cascade order that makes it stick, and the two keyboard chains — asserted the day they are typed rather
 /// than the day somebody thinks to drive to them.</para>
 /// </summary>
+[SlowGate] // #251 · 24 s over 6 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class ThePocketIsNotACardTests
 {
     private const string Ashore = "/map?dock=the-tilt&site=0&land=1";
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>One method's body, cut at the next member declaration — the idiom every source guard on this
     /// ground already uses, so a body read here is a body read there.</summary>
@@ -129,8 +116,7 @@ public sealed class ThePocketIsNotACardTests
     [Fact]
     public void TheModifiersRuleIsWrittenAfterTheFamilysOwn()
     {
-        string css = File.ReadAllText(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor.css"));
+        string css = MapStylesheet.Text;
 
         int family = css.IndexOf(".view-object-backdrop {", StringComparison.Ordinal);
         int modifier = css.IndexOf(".satchel-backdrop {", StringComparison.Ordinal);

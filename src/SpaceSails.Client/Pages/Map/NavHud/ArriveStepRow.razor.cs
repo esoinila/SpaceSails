@@ -1,0 +1,44 @@
+﻿using Microsoft.AspNetCore.Components;
+using ArriveStep = SpaceSails.Client.Pages.Map.ArriveStep;
+using FlightEditorKind = SpaceSails.Client.Pages.Map.FlightEditorKind;
+using SpaceSails.Core;
+
+namespace SpaceSails.Client.Pages;
+
+// ArriveStepRow — the code-behind for ArriveStepRow.razor.
+//
+// #1107/#1140 · the members live in a .cs file beside the component because the razor generator's output
+// is NOT ANALYSED: a finding inside an `@code { … }` block is a finding nobody is ever shown.
+//
+// Every [Parameter] below is a member of NavHud under THE MEMBER'S OWN NAME — a field keeps its
+// underscore, a method arrives as a delegate with its own signature, a variable NavHud's `@if` or
+// `@foreach` binds arrives under the name that binding gave it. That is the whole trick: it is what let
+// the markup move out of NavHud.razor without a single character of it changing.
+public partial class ArriveStepRow
+{
+    /// <summary>the arrive step this row draws — the page's `@if (_arrive is { } _ar)` binding, under the name the `@if` gave it.</summary>
+    [Parameter] public ArriveStep _ar { get; set; } = default!;
+    [Parameter] public string? _disarmConfirmBodyId { get; set; }
+    [Parameter] public FlightEditorKind _openEditor { get; set; } = default!;
+    [Parameter] public EventCallback ArmArriveStep { get; set; }
+    [Parameter] public bool ArmedArrivalStillAhead { get; set; }
+    [Parameter] public Func<ArrivalStepRule.ArrivalCheck?> ArriveCheck { get; set; } = default!;
+    [Parameter] public bool ArriveCoversArmed { get; set; }
+    [Parameter] public Func<ArriveStep, string> ArriveGlanceLine { get; set; } = default!;
+    [Parameter] public Func<ArriveStep, bool> ArriveIsAThen { get; set; } = default!;
+    [Parameter] public Func<string, ClosestApproach.Pass?> ArrivePassFor { get; set; } = default!;
+    [Parameter] public Func<string?> ArrivePlanCompleteLine { get; set; } = default!;
+    [Parameter] public Func<string?> ArriveRibbonTooShortLine { get; set; } = default!;
+    [Parameter] public bool AutopilotFlyingApproach { get; set; }
+    [Parameter] public Func<string, string> BodyName { get; set; } = default!;
+    [Parameter] public string DockNavLockTip { get; set; } = default!;
+    [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
+    [Parameter] public bool NavLockedByDock { get; set; }
+    [Parameter] public bool PlanBeginsWithCastOff { get; set; }
+    [Parameter] public EventCallback RemoveArriveStep { get; set; }
+    [Parameter] public EventCallback ScrubToArrive { get; set; }
+    [Parameter] public EventCallback ToggleArriveEditor { get; set; }
+
+    // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
+    Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
+}

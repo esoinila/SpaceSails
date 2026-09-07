@@ -94,6 +94,12 @@ public sealed partial class DeckView
         (double X, double Y, string Text)? Countdown = null,
         System.Collections.Generic.IReadOnlyList<(double X, double Y, string Counter, bool Dry, bool Firing, double AimX, double AimY)>? Bots = null,
         System.Collections.Generic.IReadOnlyList<(double X, double Y)>? Husks = null,
+        // #316 law 1, second half: DISTURBED GROUND AT A DUG SPOT — the hole a rival's shovel left where one
+        // of our ✗ marks used to be. The chest is off the ledger by the time this draws, so the hole is all
+        // that is left of it, and the whole point is that it is not nothing. Drawn in the ground-mark
+        // vocabulary the regolith already speaks (the divot ring the beach-comber's checked squares use, with
+        // the ✗'s own glyph gone dead inside it) — no new art: these marks are a closed alphabet.
+        System.Collections.Generic.IReadOnlyList<(double X, double Y)>? Pits = null,
         // #324: the contextual surface keybar — the deploy/drop keys spelled out along the bottom while
         // they're live (a bot in the sling shows [T], a chest in hand shows [G]). #212 affordances-never-hide.
         string? KeyHints = null,
@@ -136,7 +142,10 @@ public sealed partial class DeckView
         // meant ONE thing since it was built — something is moving and it wants you — so anything else
         // painted on it has to be unmistakably not that. Red things move; blue rings are places, and places
         // do not come to you.
-        System.Collections.Generic.IReadOnlyList<(double Bearing, double Range, bool IsHome, bool IsLab)>? Beacons = null,
+        // #608 · IsDead is a place still worth KNOWING about that is no longer worth running to — a pressure
+        // refuge whose seal went. Owner: "a refuge whose seal has failed must still paint, and must read as
+        // failed", so it is on the fan and it is not in the ink that means air.
+        System.Collections.Generic.IReadOnlyList<(double Bearing, double Range, bool IsHome, bool IsLab, bool IsDead)>? Beacons = null,
         // #573 · Your OWN caches, once they are inside the fan's reach. Owner: "we would like our own caches
         // onto the detector also.... since now finding them is a real task :-D (only if in range though)".
         // The range gate is the whole point — a map that always knows where your treasure is has taken the
@@ -273,6 +282,29 @@ public sealed partial class DeckView
     /// interactions with nothing drawn under them.</para>
     /// </summary>
     private const double LampRingDu = DeckPlan.InteractRadius;
+
+    // #563 · THE GLASS, remembered for the frame. Set once in Draw, read by the passes that paint a
+    // ground which is no longer one field: the regolith is a lattice of tiles (SurfaceTiles) and the frame
+    // carries nine of them, so "paint all of it" stopped being a sentence with a bounded cost in it.
+    private int _viewW = 1, _viewH = 1;
+
+    /// <summary>Is this segment entirely past one edge of the glass? A cheap, conservative reject — it is
+    /// only ever true when BOTH ends are outside the SAME edge, so nothing that crosses the view can be
+    /// skipped and no picture changes. The default margin covers a stroke's own width and the fact that a
+    /// wall is drawn thicker than the line it is given.
+    ///
+    /// <para>#563 slice 2 · <paramref name="margin"/> is a parameter because not everything drawn at a point
+    /// is a point. A console's PLATE is a line of text centred on it and reaches half its own width to each
+    /// side, so a plate rejected on a twelve-pixel margin would have its words clipped off the edge of the
+    /// screen — the picture changing, which is the one thing a cull may never do. Callers that draw wide
+    /// pass their own reach.</para></summary>
+    private bool OffTheGlass(float x1, float y1, float x2, float y2, float margin = 12f)
+    {
+        return (x1 < -margin && x2 < -margin)
+            || (x1 > _viewW + margin && x2 > _viewW + margin)
+            || (y1 < -margin && y2 < -margin)
+            || (y1 > _viewH + margin && y2 > _viewH + margin);
+    }
 
     private void FillRect(float x, float y, float w, float h, RgbaColor color)
     {

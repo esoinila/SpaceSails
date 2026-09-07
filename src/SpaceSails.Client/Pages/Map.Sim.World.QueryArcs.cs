@@ -22,7 +22,7 @@ public partial class Map
 {
 
     /// <summary>The rolls a room makes about you, and the state you are in when it makes them —
-    /// <c>?approach=</c>, <c>?rep=</c>, <c>?walkin=</c>, <c>?hurt=</c>, <c>?shelter=</c>, <c>?mags=</c>, <c>?watch=</c> and
+    /// <c>?approach=</c>, <c>?rep=</c>, <c>?kolt=</c>, <c>?walkin=</c>, <c>?finder=</c>, <c>?hurt=</c>, <c>?shelter=</c>, <c>?mags=</c>, <c>?watch=</c> and
     /// <c>?roll=</c>.</summary>
     private bool ReadTheRoomsOwnDice(string pair, BootQuery q)
     {
@@ -67,6 +67,25 @@ public partial class Map
                 _ => null,
             };
         }
+        else if (pair.StartsWith("kolt=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #1061 beat 2 dev cheat: /map?kolt=1 puts Brem Kolt on this ground whatever his rota says;
+            // /map?kolt=0 keeps him off it.
+            //
+            // The same argument as ?rep= above, and a sharper one, because his rota has a CEILING as well as
+            // a period: one ground in three, and never more than two grounds in a whole universe. Without a
+            // lever the entire beat — the approach, the three lines, the break, the run, the sheet in the
+            // dust — is reachable only by landing on moon after moon and hoping, and then only twice ever.
+            // It forces WHETHER and never WHO or WHAT: his lines, his prices, what he drops and the fact
+            // that he runs are all the ones a captain gets.
+            string candidate = Uri.UnescapeDataString(pair["kolt=".Length..]).ToLowerInvariant();
+            _hardcaseCheat = candidate switch
+            {
+                "1" or "true" or "yes" or "now" => true,
+                "0" or "false" or "no" or "never" => false,
+                _ => null,
+            };
+        }
         else if (pair.StartsWith("walkin=", StringComparison.OrdinalIgnoreCase))
         {
             // #973 L5b dev cheat: /map?walkin=1 lets a walk-in happen at this berth whatever the rota and the
@@ -80,6 +99,23 @@ public partial class Map
             // lines are the ones a captain gets, and whether this one is a setup is the seed's.
             string candidate = Uri.UnescapeDataString(pair["walkin=".Length..]).ToLowerInvariant();
             _walkInCheat = candidate switch
+            {
+                "1" or "true" or "yes" or "now" => true,
+                "0" or "false" or "no" or "never" => false,
+                _ => null,
+            };
+        }
+        else if (pair.StartsWith("finder=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #417 dev cheat: /map?finder=1 lets Ilse Varga cross this floor whatever else is true;
+            // /map?finder=0 keeps her away.
+            //
+            // It forces WHETHER and never WHAT. Whether this world can furnish a case at all is still Core's
+            // answer — a universe whose traffic has never shared a name between two hulls has no case in it,
+            // and the lever cannot conjure one — and the witness, the ground, the two hulls, the berth and
+            // the pay are all the ones a captain gets.
+            string candidate = Uri.UnescapeDataString(pair["finder=".Length..]).ToLowerInvariant();
+            _finderCheat = candidate switch
             {
                 "1" or "true" or "yes" or "now" => true,
                 "0" or "false" or "no" or "never" => false,
@@ -385,10 +421,20 @@ public partial class Map
             // card: the ship's own clock reads the sheet on the next tick, finds the crew past the edge, and
             // the beat arrives through the one door with its cadence spent and its line in the log — which
             // is the whole point of wiring the deputation at the standing rather than at a cheat.
+            //
+            // #1066 · …and one landing further down. The Ultimatum edge the crew MEETING sits on needs the
+            // two counters above AND a run of berths with no shore leave, and reaching it honestly means
+            // losing the rock's dice, filing a dozen wrecks straight, and then working the Mars/Venus/Luna
+            // circuit for five berths without once calling at Ringside or the Red Eye. That is most of a
+            // session for one card, so it gets a door too — and the door still only grants COUNTERS.
             string candidate = Uri.UnescapeDataString(pair["crew=".Length..]).ToLowerInvariant();
             if (candidate is "petition" or "deputation")
             {
                 q.CrewCheat = "petition";
+            }
+            else if (candidate is "meeting" or "ultimatum")
+            {
+                q.CrewCheat = "meeting";
             }
         }
         else if (pair.StartsWith("nerve=", StringComparison.OrdinalIgnoreCase))

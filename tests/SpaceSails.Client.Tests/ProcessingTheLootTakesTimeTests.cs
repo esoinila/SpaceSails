@@ -26,36 +26,23 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class ProcessingTheLootTakesTimeTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
-    /// <summary>#870 · The sim page is nine partials by subject now, so "the sim" a guard reads over is all
+    /// <summary>#870 · The sim page is twenty partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>
     private static string Sim() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Sim*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
-    /// <summary>#870 · The surface page is fifteen partials by subject now, so "the surface" a guard counts
+    /// <summary>#870 · The surface page is thirty-one partials by subject now, so "the surface" a guard counts
     /// over is all of them — exactly the text it read out of one file before the split.</summary>
     private static string Surface() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Surface*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Surface*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
@@ -313,13 +300,13 @@ public sealed class ProcessingTheLootTakesTimeTests
         // #1016 · …fed by the ONE hold, which is the page's now rather than the excursion's.
         Assert.Contains("_processing is { } paper", hud, StringComparison.Ordinal);
 
-        string glyph = Method("Map.Surface.Hud.cs", "private static string SurfaceChannelGlyph(");
+        string glyph = Method("Map.Surface.Hud.Prompts.cs", "private static string SurfaceChannelGlyph(");
         Assert.Contains("Core.Processing.Glyph", glyph, StringComparison.Ordinal);
 
         // Not cold-green. The rearm is the ship helping you; standing still in the open for twenty seconds is
         // the cost the mechanic is made of, and a soothing colour over it would be the picture arguing with
         // the sim.
-        string aid = Method("Map.Surface.Hud.cs", "private static bool SurfaceChannelIsAid(");
+        string aid = Method("Map.Surface.Hud.Prompts.cs", "private static bool SurfaceChannelIsAid(");
         // #1016 · The hold is handed IN rather than read off the excursion (it is the page's now, because
         // a dig at a top in a docked bar has no excursion under it). The method is still static and still
         // pure, which is the part of this law worth holding.
@@ -328,7 +315,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // And the bright line above the keybar outranks the chest while a hold runs: for those seconds the
         // only thing left to decide is whether the boots stay put, and "hold position" without a number is an
         // instruction to wait an unknown length of time while something walks towards you.
-        string prompt = Method("Map.Surface.Hud.cs", "private string? BuildStandingPrompt(");
+        string prompt = Method("Map.Surface.Hud.Prompts.cs", "private string? BuildStandingPrompt(");
         Assert.Contains("_processing is { } paper", prompt, StringComparison.Ordinal);
         Assert.Contains("Core.Processing.SecondsLeft(", prompt, StringComparison.Ordinal);
     }

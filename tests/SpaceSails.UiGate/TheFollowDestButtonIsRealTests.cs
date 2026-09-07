@@ -183,14 +183,30 @@ public sealed class TheFollowDestButtonIsRealTests : IAsyncLifetime
         await _page.GotoAsync($"{_host.BaseUrl}/map?scenario=sol&start=wreck{dest}",
             new() { Timeout = BootTimeoutMs });
 
-        await _page.Locator(FollowShip).WaitForAsync(
-            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
-
         // …and it is the SETTLED screen, not the boot window. The start point is applied after the first
         // paint, so a gate that measured immediately could be measuring a HUD that is about to be replaced —
-        // which is exactly the trap described above. Two seconds of frames, then the toolbar must still be
-        // there, or this is not the screen a captain sits on.
-        await _page.WaitForTimeoutAsync(2_000);
+        // which is exactly the trap described above.
+        //
+        // #161 · THIS USED TO BE "TWO SECONDS OF FRAMES", AND THE TWO SECONDS WERE A FICTION. The Nav HUD
+        // is drawn on `_activeDesk == ShipDesk.Nav` alone, so the toolbar is in the DOM from the boot's very
+        // first render — measured here at 0.9 s, twelve seconds before `?dest=` is laid down. What made the
+        // old wait "work" was the thing #161 exists to kill: the boot pegged the main thread in one
+        // unbroken block, so the CDP query behind `WaitForTimeoutAsync` could not be ANSWERED until the
+        // world was finished, and the gate read a settled screen by accident. Stage the boot so the browser
+        // breathes between ships and the same two seconds land squarely inside the boot window — this gate
+        // was the only one of the twenty-eight that noticed, and it noticed by going red on a page that is
+        // now strictly more responsive than it was.
+        //
+        // So it waits on the BOOT instead of on a clock: the "Rigging the sails…" door detaches when the
+        // world is ready, and the start point, the cheats and `?dest=` are laid down in the same
+        // synchronous run before the next render — so a DOM without that door is a DOM with the
+        // destination already in it. No sleep, and nothing left to be lucky about.
+        // (Attached first, then detached — `GotoAsync` returns while the page is still an empty shell, and
+        // a bare "wait until it is gone" is satisfied instantly by a door that has not been hung yet.)
+        await _page.WaitForSelectorAsync(".map-loading",
+            new() { State = WaitForSelectorState.Attached, Timeout = BootTimeoutMs });
+        await _page.WaitForSelectorAsync(".map-loading",
+            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
         await _page.Locator(FollowShip).WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
     }

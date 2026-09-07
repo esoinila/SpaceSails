@@ -1,0 +1,61 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using System.Globalization
+@*
+    #251 · ONE OCCUPATION OF ONE TABLE — the seated region and the two things it raises, on one file.
+
+    Thirty-eight consecutive lines of Map.razor. The seated region is TWO FRAMES of the same fact: docked,
+    the table is a strip along the bottom with the case work on it; adrift, it is a card. One `@if` binds
+    the table and a second chooses the frame, which is why the whole nested block had to travel together —
+    splitting it would have left half a sentence on either side. Behind it, the two things a seated captain
+    can put up: the paper, and the confirm that says standing up costs you the rest.
+
+    Moved by PURE MOTION: every page member the block reads is a [Parameter] with the SAME NAME, so not one
+    character between the fences changed — including the page's own closing note, "…and the seated region
+    closes. Two frames, one occupation of one table", which is about this block and travels with it.
+
+    IHandleEvent repeats the page's own override (Map.Sim.cs). The .razor.css beside this file carries no
+    rules; it exists to give the component Map.razor.css's scope (pinned in SpaceSails.Client.csproj), and
+    the four surfaces keep their own sheets.
+*@
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────── *@
+    @if (SeatedTable is { } tab)
+    {
+    @if (SeatedIsDocked)
+    {
+        <SeatedDockedStrip _satchel="@_satchel" _seatedNewsOpen="@_seatedNewsOpen"
+                           ACabinetLeafToWork="@ACabinetLeafToWork" CabinetLeafHint="@CabinetLeafHint"
+                           CabinetLeafLabel="@CabinetLeafLabel" CanSpreadTheCaseHere="@CanSpreadTheCaseHere"
+                           OpenTheSpread="@OpenTheSpread" ProcessingFraction="@ProcessingFraction"
+                           ProcessingUnderway="@ProcessingUnderway" SatchelLabel="@SatchelLabel"
+                           SeatedCompanyLine="@SeatedCompanyLine" SeatedCustomerLine="@SeatedCustomerLine"
+                           SeatedOverheardLine="@SeatedOverheardLine" SpreadDoorHint="@SpreadDoorHint"
+                           SpreadDoorLabel="@SpreadDoorLabel" TableMoveClicked="@TableMoveClicked"
+                           TableMoveIsUrged="@TableMoveIsUrged" TableMoveOnOffer="@TableMoveOnOffer"
+                           TableMoveRefusal="@TableMoveRefusal" TableMovesOnTheTable="@TableMovesOnTheTable"
+                           TableShow="@TableShow" TableShowables="@TableShowables"
+                           ToggleSeatedNews="@ToggleSeatedNews" WorkTheCabinetLeaf="@WorkTheCabinetLeaf" tab="@tab" />
+    }
+    else
+    {
+        <TableCard _credits="@_credits" _satchel="@_satchel" CloseTable="@CloseTable" Dismiss="@Dismiss"
+                   SatchelLabel="@SatchelLabel" TableMoveClicked="@TableMoveClicked"
+                   TableMoveIsUrged="@TableMoveIsUrged" TableMoveOnOffer="@TableMoveOnOffer"
+                   TableMoveRefusal="@TableMoveRefusal" TableMovesOnTheTable="@TableMovesOnTheTable"
+                   TableShow="@TableShow" TableShowables="@TableShowables" tab="@tab" />
+    }
+    }   @* …and the seated region closes. Two frames, one occupation of one table. *@
+
+    @if (ThePaperIsOpen)
+    {
+        <ThePaperCard AlreadyClipped="@AlreadyClipped" ClipThisStory="@ClipThisStory"
+                      CloseSeatedNews="@CloseSeatedNews" Dismiss="@Dismiss" SeatedNewsFeed="@SeatedNewsFeed"
+                      SeatedNewsItemCount="@SeatedNewsItemCount" SimTime="@SimTime" />
+    }
+
+    @if (TheStandUpConfirmIsUp)
+    {
+        <StandUpConfirmCard Dismiss="@Dismiss" KeepYourSeat="@KeepYourSeat"
+                            StandingUpCostsARest="@StandingUpCostsARest" StandUpFromTable="@StandUpFromTable" />
+    }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────── *@

@@ -35,6 +35,7 @@ namespace SpaceSails.Client.Tests;
 /// the replica cannot quietly drift from the page.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 25 s over 7 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class AStandingGuardIsStandingAtSomethingTests
 {
     private static readonly string[] Bodies = ["luna", "miranda", "titan", "europa"];
@@ -768,29 +769,15 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
 
     // ── THE PAGE ITSELF ───────────────────────────────────────────────────────────────────────────────
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
-    /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
+    /// <summary>#870 · The round is five partials by subject now, so the page this guard reads is all five —
     /// concatenated in the order the one file laid them out, which is exactly the text it read before the
-    /// split. The count is asserted, so a seventh part can never go unread.</summary>
+    /// split. The count is asserted, so a sixth part can never go unread.</summary>
     private static string Patrol()
     {
-        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
+        string dir = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages");
         string[] order =
         [
             // #870 lane 6′c · RE-PATHED. The verbs moved onto Patrol's own partials, so the page's half
@@ -825,6 +812,20 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
         }
         return string.Concat(parts);
     }
+
+    /// <summary>#1164 · The Hive floor's source — ALL of it, as a glob rather than a written list.
+    /// <c>HiveInterior.FloorDeck</c> was 31 <c>// ── banner ──</c> sections inside one 1,106-line method
+    /// and is now one named pass per section across four partials (#251), so the block this guard cuts —
+    /// from #831's banner to the cars' first line — spans two adjacent passes rather than two adjacent
+    /// sections of one method. Concatenated in Ordinal order, which is the order the compiler reads them
+    /// and the order they were written in, so the cut is the same text it always was.</summary>
+    private static string Hive() =>
+        string.Concat(Directory
+            .EnumerateFiles(
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering"),
+                "HiveInterior*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 
     private static string Between(string text, string from, string to)
     {
@@ -872,8 +873,7 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
     [Fact]
     public void TheStationsAreDrawnFromCoreAndCarryNoVerb()
     {
-        string hive = File.ReadAllText(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Rendering", "HiveInterior.cs"));
+        string hive = Hive();
         string block = Between(hive, "#831 · AND THE WATCHCLOCK STATIONS", "// The cars, on every floor");
 
         Assert.Contains("PatrolBeat.IsPatrolled(bodyId, level)", block, StringComparison.Ordinal);

@@ -408,6 +408,26 @@ public static class SuitAir
         "coming home on what is in the tank. Turn now and you make it on the reserve; go on and you had " +
         "better be right about what is out there.";
 
+    /// <summary>#563 law 7 · THE BACKSTOP, SAID IN THE SUIT'S OWN VOICE — what a captain is told the once,
+    /// ten thousand eight hundred deck units out, when the world declines to go further.
+    ///
+    /// <para>It lives HERE, beside <see cref="CrossingWarning"/>, and that placement is the design of it. The
+    /// backstop is not a fence and must never sound like one: an invisible wall that says nothing is the
+    /// failure #563 opened with, and an invisible wall that explains a technical limit is worse. What is
+    /// actually true at that distance is the TANK — a captain standing out there emptied it getting there and
+    /// crossed the point of no return at less than half the way — so the refusal is the same arithmetic
+    /// <see cref="PastPointOfNoReturn"/> has been running since #325, stated flatly by the thing that runs it.
+    /// No card, no overlay, no new register: the suit's line, on the suit's own channel.</para>
+    ///
+    /// <para>Said ONCE per excursion (<see cref="SurfaceEdge.BackstopVoice"/>) and never inside the radius,
+    /// because a line repeated at every step along a boundary is a nag, and a nag is how a vital fact turns
+    /// into wallpaper.</para>
+    ///
+    /// <para>Fable's canon pass, 2026-09-03, quoted on #563 and shipped VERBATIM — no channel glyph is
+    /// prepended, because the authored sentence is the whole of what the suit says.</para></summary>
+    public const string BackstopRefusal =
+        "The suit refuses the step. Its arithmetic is simple: from here, the tank does not reach the tube.";
+
     /// <summary>The line as the last of it goes. Suffocation is a death the game owes the player an honest
     /// account of — they were told, once, plainly, and they chose.</summary>
     public const string SuffocationLine =

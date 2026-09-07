@@ -33,10 +33,11 @@ namespace SpaceSails.Core.Tests;
 /// — the frozen hull and the diving coast — stay on <c>CoMoving</c> on purpose and say so: they are #733's
 /// kept evidence, and evidence you have quietly re-based is not evidence.</para>
 /// </summary>
+[SlowGate] // #251 · 25 s over 8 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class TheParkedShipIsNotRunDownByTheMoonTests
 {
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     /// <summary>Every standoff this game actually parks a free-flying ship at beside a moon, named. Both
     /// are quoted from the constants the live code quotes, so retuning either one re-runs this sweep for

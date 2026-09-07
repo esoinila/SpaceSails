@@ -3,7 +3,7 @@ namespace SpaceSails.Core.Tests;
 public class TradeCorridorTests
 {
     private static CircularOrbitEphemeris Sol() =>
-        CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
     [Fact]
     public void Regions_OnePerPresentAnchorPair()

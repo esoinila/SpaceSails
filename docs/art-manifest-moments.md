@@ -226,3 +226,42 @@ grand gangways are at **Ringside Exchange** and **The Red Eye**, and **Selene Ga
 - **Rule it illustrates:** nobody here knows her, and she knows it. The paper in her hands is the whole of what
   she has, and she is holding it like proof rather than like evidence.
 - **Negative list:** as above. **No text, no lettering, no signage.**
+
+## 15. `art/refuge-failed.jpg` — THE REFUGE THAT FAILED ✅ PAINTED
+- **Beat:** `RefugeFailed` · **once per subject (the site)** · **CARD** — the captain is standing still in the
+  room, there is nothing to press and nothing to decide, and the card is the whole of the telling (#761).
+- **Fires:** `Map.Surface.Tank.cs · StepSuitAir`, at the door, the first time the captain stands inside a
+  refuge whose `UndergroundComplex.StateOfTheRefugeOn` is `RefugeState.Failed`. There is at most one of those
+  per site (#1149), and never the first refuge a captain can reach on it.
+- **Composition:** INTERIOR, a small poured concrete pressure refuge a hundred and fifty metres under a moon.
+  A full rack of steel air bottles on the left wall, two rows, gauges intact, untouched — nobody ever drew on
+  it. Facing the viewer, a heavy circular-handled pressure door in a bolted frame, and the door leaf **cut
+  open**: a long clean slit through the plate, edges bright and precise, the cut made from the inside and the
+  panel closed again from the outside so it no longer seals. One service lamp high on the left throwing a hard
+  cone across the floor, everything else in deep shadow. Dust undisturbed except by the cut. A faint handprint
+  on the wall beside the rack. Muted desaturated palette, painterly, heavy shadow, no figures.
+- **Rule it illustrates:** they almost never fail from old age. Something happened, and the room is the only
+  witness — the rack is full because whoever left through that door was not short of air.
+- **Negative list:** house rules (no sea, no sky, no daylight, no horizon). **No text, no lettering, no
+  signage** — the plate over this door is drawn by the deck renderer and must not be doubled in pixels. No
+  creature, no body, no tool left in shot, and nothing that says which way anybody went.
+
+## 16. `art/claim-desk.jpg` — THE CLAIM ✅ PAINTED
+- **Beat:** `TheClaim` · **every time** (rationed by the world, not by the seam — a lodging costs a hull) ·
+  **CARD**
+- **Fires:** `Map.Claims.Kiosk.LodgeTheClaim`, on the **second and every later** claim this captain lodges
+  (`NebulaClaims.TheDeskComesBack`). The first one gets no card: one claim is a thing that happened to you and
+  two is a pattern, and a card on the first would be the game telling the captain what to feel about it.
+- **Composition:** a company claims office remembered rather than seen, in the flashback family's bleach but
+  colder and further back than `flashback.jpg` — a whole room instead of one object. A broad veneered desk seen
+  slightly from above and from the claimant's side; on it a **thick multi-page form fanned open, the third page
+  half lifted**, and a pen laid across it. Behind the desk an adjuster in a Nebula Mutual uniform coat, seated,
+  **face lost to the blown-out light from a window behind them** — present, unreadable, not sinister. Filing
+  banks receding into white on both sides. Colour drained nearly to monochrome with a surviving cold blue-grey
+  cast; heavy bloom, painterly, grimy lived-in used-future sci-fi.
+- **Rule it illustrates:** the claim is a process the captain keeps agreeing to and cannot reconstruct. The
+  third page is the only object in the frame given any emphasis, and nothing in the picture says what is on it
+  — the card's own caption stops in the same place, and the rep never names it either.
+- **Negative list:** house rules (no sea, no sky, no daylight, no horizon). **No text, no lettering, no
+  signage, no legible print on the form** — a readable third page would answer the one question the whole beat
+  exists to leave open.

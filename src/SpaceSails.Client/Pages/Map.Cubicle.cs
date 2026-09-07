@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
@@ -63,15 +63,22 @@ public partial class Map
         _seating.CubicleFloorKey = key;
         _floorCubicles.Clear();
 
-        if (ex.Floor >= 0
-            || UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Park
-                is not { } green)
+        if (ex.Floor >= 0)
         {
             return _floorCubicles;
         }
 
-        foreach (UndergroundComplex.RingRoom room in green.Frontage)
+        // #775 · The FLOOR's ring and not the park's view of it. This reached the rooms through the garden,
+        // which was the ring's only publisher while a ring only ever stood round one — and a landscape
+        // floor's big suites have the same service strips with the same cubicles in them, so the hide the
+        // lock exists for would have been silently missing on every one of them.
+        foreach (UndergroundComplex.RingRoom room in
+            UndergroundComplex.Build(ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).TheRing)
         {
+            if (room.Shut)
+            {
+                continue;   // a room whose own leaf does not open is not a hide
+            }
             foreach (RingOffice.Stall cell in room.Cubicles)
             {
                 _floorCubicles.Add((room, cell));

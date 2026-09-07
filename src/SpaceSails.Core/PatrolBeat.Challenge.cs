@@ -40,11 +40,20 @@ public static partial class PatrolBeat
     public const string BadgeTier = "GENERAL HANDS";
 
     /// <summary>What is printed on it. Seeded off nothing — a pass says the site and the tier, and a pass
-    /// that said more would be a department, which is a question nobody has ruled on.</summary>
+    /// that said more would be a department, which is a question nobody has ruled on.
+    ///
+    /// <para>#1149 · <b>…unless the issuer is not a site.</b> The INSPECTORATE sits above the listed
+    /// complexes (<see cref="Inspectorate"/>), so the face of its card is its own plate and nothing else:
+    /// there is no site code on it for a man to read out loud, which is the whole of what makes it a
+    /// different kind of paper in the same wallet. The branch lives HERE, in the one function that says what
+    /// is printed on a pass, so the chooser row (<see cref="WalletChoice.Claims"/>), the satchel row
+    /// (<c>FoundPass.Plate</c>) and the look card all read one answer rather than three.</para></summary>
     public static string BadgeTitle(string bodyId)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
-        return $"SITE PASS · {BadgeTier} · {BodyNames.Designation(bodyId)} SITE";
+        return string.Equals(bodyId, Inspectorate.IssuerId, StringComparison.Ordinal)
+            ? Inspectorate.Plate
+            : $"SITE PASS · {BadgeTier} · {BodyNames.Designation(bodyId)} SITE";
     }
 
     /// <summary>Is the captain carrying this site's own pass? The possession IS the state — no flag, no
@@ -162,20 +171,49 @@ public static partial class PatrolBeat
     /// is as automatic as it ever was. What moved is WHEN the captain decided, not whether the man asks.</para>
     /// </summary>
     /// <param name="bodyId">The site whose floor you are standing on.</param>
+    /// <param name="level">#1149 · The floor you are standing on, because one paper in the wallet is judged
+    /// by where you are standing rather than by whose building it is: the inspector's card is honoured on a
+    /// floor that carries a refuge whatever the roster says (<see cref="Inspectorate.HonouredAt"/>). It is a
+    /// REQUIRED argument rather than an optional one with a tidy default, deliberately — a caller that could
+    /// forget it would be handed a world that cannot tell a pass from a refusal.</param>
+    /// <param name="watch">#1149 · The frozen watch (<c>SurfaceExcursion.CanteenWatch</c>), for the site's
+    /// inspection roster. Never a live clock; see <see cref="Inspectorate.InspectionIsDue"/>.</param>
     /// <param name="plate">Who stopped you (<see cref="PlateOf"/>).</param>
     /// <param name="shown">The paper that went into his hand, or null when nothing did — an empty wallet, or
     /// a captain who had nothing a palm is for.</param>
-    public static Read TheGuardReads(string bodyId, string plate, Satchel.Item? shown)
+    /// <param name="inspectionRunning">#1149 · Whether this excursion has ALREADY had its inspection
+    /// accepted. It decides one thing and nothing else: whether the authored sentence is said. A man who has
+    /// already been told there is an inspection on this afternoon does not announce it to you again, so the
+    /// second read of the card is <see cref="SatisfiedLine"/> — a pass that works, read like any other.</param>
+    public static Read TheGuardReads(
+        string bodyId, int level, long watch, string plate, Satchel.Item? shown, bool inspectionRunning)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(plate);
 
         string card = ChallengeCard(plate);
 
-        switch (WalletChoice.WhatHappens(bodyId, shown))
+        switch (WalletChoice.WhatHappens(bodyId, level, watch, shown))
         {
             case WalletChoice.Outcome.Worked:
                 return new(true, SatisfiedLine, ChallengeLabel, card);
+
+            // #1149 · THE INSPECTOR. The round treats the captain as the man the tag on every valve in this
+            // building is about, and there is no roll anywhere in it: the ladder has already asked the one
+            // question (is this floor a refuge floor, or is an inspection on the roster this watch), and a
+            // die cast here would be a second answer to it.
+            case WalletChoice.Outcome.Inspection:
+                return new(
+                    true, inspectionRunning ? SatisfiedLine : Inspectorate.HonouredLine, ChallengeLabel, card);
+
+            // #1149 · …AND THE BET, LOST. Nobody inspects unannounced, and this site has nothing on its
+            // roster for this watch. He says the SAME sentence — that is what the line is for, and the
+            // captain cannot tell the two reads apart from it — and then the round does what a refused round
+            // has always done: the walk back to the car, and the floor said into a radio on the way
+            // (#719 slice 2, the maintenance break, which is where "he called it in" is already felt). No new
+            // security kind is minted for it, and nothing anywhere explains it (§13.8).
+            case WalletChoice.Outcome.NoInspectionDue:
+                return new(false, Inspectorate.HonouredLine, ChallengeLabel, card, EscortLine);
 
             // Somebody else's building. Named, because a refusal that reads the site code out loud is worth
             // carrying (#679) — and because a captain who has worked two sites should learn that the second

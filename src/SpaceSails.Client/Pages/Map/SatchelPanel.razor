@@ -1,0 +1,127 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using NotesView = SpaceSails.Client.Pages.Map.NotesView
+@using SatchelPage = SpaceSails.Client.Pages.Map.SatchelPage
+@*
+    #251 item 1 · THE SATCHEL, ON ITS OWN FILE.
+
+    Moved out of Map.razor by PURE MOTION — the block between the two fences below is the block that was in
+    the page, character for character. Every page member it reads is a [Parameter] with the SAME NAME (the
+    fields keep their underscore, the methods come across as delegates), which is what lets the markup move
+    without a rewrite and lets the suite's source guards read it through MapMarkup exactly as before.
+
+    The `@if` that opens it stays in Map.razor: the page keeps its paint order in one place, and a closed
+    surface still renders nothing. IHandleEvent repeats the page's own override (Map.Sim.cs) — without it
+    Blazor would put an automatic re-render back on every event in here, which the page turns off because
+    the HUD's refresh belongs to OnTick's 200 ms throttle. The .razor.css beside this file carries no rules;
+    it exists to give the component Map.razor.css's scope (#251 item 3 moves the rules).
+
+    The `@{ }` around the fences is not decoration: the block used to sit inside `@if (…) { … }`,
+    which is a Razor CODE block, and a code block is where its first statements are legal. The braces
+    put the moved lines back in the context they were written in; they are outside the fences, so what
+    the source guards read is still exactly the lines that were in the page.
+*@
+@* ── THE PAGE'S OWN NOTE ON THIS SURFACE, moved here with it (#251 item 1) and not touched by a
+   word: it is the paragraph that stood above this block in Map.razor. It sits ABOVE the fence, not
+   inside it, so that a source guard slicing the block by text goes on reading markup and not prose.
+   ── *@
+    @* #603 · THE SATCHEL. Opened with I it is a look at what you are carrying; opened from a door or an
+       instrument it is a list of things to TRY, and every answer is definite.
+
+       #1027 · `satchel-backdrop` IS THE LAYER, AND IT IS NOT COSMETIC. The pocket used to be one more
+       `.view-object-backdrop` among forty, which meant it shared a z-index with every card the world raises
+       and lost the tie to whichever of them was typed lower in this file. This block is at ~2480 and the
+       arrival card's is at ~3550, so a captain pressing I under 🛗 THE SHAFT opened the satchel BEHIND the
+       picture and saw a dead key. The modifier lifts it one step (OverlayBands.SatchelBackdrop, 1330) —
+       above the cards, below the distress lifeline and below every modal. The Esc chain in
+       Map.Sim.Cancel.cs peels it in the same order. *@
+
+@{
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
+        <div class="view-object-backdrop satchel-backdrop" @onclick="() => Dismiss(CloseSatchel)">
+            @* One Close for both pages: the satchel shuts the same way whichever half of it you are
+               reading, and I still toggles it (#688) regardless of the page. *@
+            <OverlayShell class="satchel" StopClicks="true"
+                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                          DismissClass="view-object-close" DismissFace="Close"
+                          OnClose="() => Dismiss(CloseSatchel)">
+                <SatchelTitle _satchelPage="@_satchelPage" BinWithinReach="@BinWithinReach" />
+
+                <SatchelTabs _satchel="@_satchel" _satchelPageValue="@_satchelPage"
+                             _satchelPageSet="@(v => _satchelPage = v)" BinWithinReach="@BinWithinReach"
+                             CaptainIsSeatedAnywhere="@CaptainIsSeatedAnywhere" CompassOnFoot="@CompassOnFoot"
+                             SpreadDoorHint="@SpreadDoorHint" TheBookThreads="@TheBookThreads"
+                             TheSatchelTurnsTo="@TheSatchelTurnsTo" />
+
+                @* #784 · THE SPREAD. Owner: "we can't do that without a place to lay the docs we make notes
+                   from" — so this page IS the table surface, and every row on it is a paper lying on it.
+
+                   The press starts the DIGGING BAR (Map.Seated.cs → BeginProcessing, Processing.Work.Write):
+                   the one channel this surface has, the one progress rectangle it draws, over the captain's
+                   own mark on a deck that is still running. Owner's register, kept quiet in the prose:
+                   "we are digging for info and understanding."
+
+                   No control is hidden and none is disabled (#212/#603). The bar desk's refusal is a
+                   SENTENCE you get by pressing, because that is how the gumshoe rule gets learned. *@
+                @if (_satchelPage == SatchelPage.Spread)
+                {
+                    <SpreadTable _laid="@_laid" _reconciled="@_reconciled" _satchelOutcome="@_satchelOutcome"
+                                 CaseHasBegun="@CaseHasBegun" ClearTheSpread="@ClearTheSpread" IsLaid="@IsLaid"
+                                 LayablePapers="@LayablePapers" LayItOnTheSpread="@LayItOnTheSpread"
+                                 ProcessingUnderway="@ProcessingUnderway" RipHint="@RipHint"
+                                 RipIsOffered="@RipIsOffered" RipItUp="@RipItUp" SatchelLabel="@SatchelLabel"
+                                 SpreadableFinds="@SpreadableFinds" SpreadDigClicked="@SpreadDigClicked"
+                                 SpreadRefusal="@SpreadRefusal" SpreadRowVerb="@SpreadRowVerb"
+                                 WriteUpHint="@WriteUpHint" />
+                }
+                else if (_satchelPage == SatchelPage.Notes)
+                {
+                    <NotesBook _fieldNotes="@_fieldNotes" _notesView="@_notesView" _penInHand="@_penInHand"
+                               _satchelOutcome="@_satchelOutcome" NodeIsHeld="@NodeIsHeld"
+                               NodeIsOpen="@NodeIsOpen" NotebookPage="@NotebookPage"
+                               NotesFromThisGround="@NotesFromThisGround" NoteTitlePressed="@NoteTitlePressed"
+                               PlaceUnderfoot="@PlaceUnderfoot" TakeUpTheRedPen="@TakeUpTheRedPen"
+                               TheNotebookTurnsTo="@TheNotebookTurnsTo" TheSheets="@TheSheets"
+                               TheWholeCase="@TheWholeCase" />
+                }
+                else if (_satchelPage == SatchelPage.Threads)
+                {
+                    <ThreadStacks _bookTag="@_bookTag" _penInHand="@_penInHand" _satchelOutcome="@_satchelOutcome"
+                                  NodeIsHeld="@NodeIsHeld" NodeIsOpen="@NodeIsOpen" NotebookPage="@NotebookPage"
+                                  NoteTitlePressed="@NoteTitlePressed"
+                                  RunThePenDownTheStack="@RunThePenDownTheStack" SheetStacks="@SheetStacks"
+                                  TakeUpTheRedPen="@TakeUpTheRedPen" TheBookThreads="@TheBookThreads"
+                                  TheThreadsFilterTurnsTo="@TheThreadsFilterTurnsTo" />
+                }
+                else if (_satchelPage == SatchelPage.Bin)
+                {
+                    <BinSleeve _satchelOutcome="@_satchelOutcome" BinnableFinds="@BinnableFinds"
+                               BinRowFlag="@BinRowFlag" BinRowHint="@BinRowHint" BinWithinReach="@BinWithinReach"
+                               RipItUp="@RipItUp" SatchelLabel="@SatchelLabel" />
+                }
+                else if (_satchelPage == SatchelPage.Missions)
+                {
+                    <CarriedCompass _satchelOutcome="@_satchelOutcome" CompassOnFoot="@CompassOnFoot" />
+                }
+                else
+                {
+                <CarriedPockets _satchel="@_satchel" _satchelOutcome="@_satchelOutcome"
+                                _satchelTarget="@_satchelTarget" _walletOpenValue="@_walletOpen"
+                                _walletOpenSet="@(v => _walletOpen = v)" CanWriteUp="@CanWriteUp"
+                                CloseTheLoadChooser="@CloseTheLoadChooser" LeaveHintFor="@LeaveHintFor"
+                                LeaveItem="@LeaveItem" LoadHint="@LoadHint" LoadIntoIt="@LoadIntoIt"
+                                LoadIsOffered="@LoadIsOffered" LookAtItem="@LookAtItem" NudgeShare="@NudgeShare"
+                                OpenItemCard="@OpenItemCard" OpenTheLoadChooser="@OpenTheLoadChooser"
+                                ProcessingUnderway="@ProcessingUnderway" RipHint="@RipHint"
+                                RipIsOffered="@RipIsOffered" RipItUp="@RipItUp" BurnIsOffered="@BurnIsOffered"
+                                BurnTheBlackOpsKey="@BurnTheBlackOpsKey" SatchelLabel="@SatchelLabel"
+                                ScanHint="@ScanHint" ScanIsOffered="@ScanIsOffered"
+                                ScanWithTheKit="@ScanWithTheKit" TargetFor="@TargetFor"
+                                TheLoadChooser="@TheLoadChooser" TryItem="@TryItem"
+                                TryTheWholeWallet="@TryTheWholeWallet" Wallet="@Wallet"
+                                WalletTarget="@WalletTarget" WriteItUp="@WriteItUp" WriteUpHint="@WriteUpHint" />
+                }
+            </OverlayShell>
+        </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

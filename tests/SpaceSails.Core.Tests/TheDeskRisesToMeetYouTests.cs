@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -155,8 +155,18 @@ public sealed class TheDeskRisesToMeetYouTests
             }
         }
 
+        // #775 · RE-PINNED BY MEASUREMENT, and the reason is worth a line because the number went DOWN.
+        //
+        // These two are anti-vacuity floors: a sweep that found nothing would pass the size law forever, so
+        // it has to have looked at a real world. They walk CHAMBERS, and #775 took a share of the building's
+        // chambers away — a floor whose department is desk work is cut as a block now, so its down-ribs are
+        // the block's gates and only its up-ribs carry the module. Laboratories is one department in eight
+        // and lab benches come off lab floors alone, so the bench count roughly halved: 288 across 1154
+        // floors, measured, where it was over 500. Two hundred is still hundreds of rooms on dozens of
+        // worlds and it keeps daylight under the measurement rather than resting on it. The desks did not
+        // move far enough to need one — the ring's own banks are not in this sweep and never were.
         Assert.True(desks > 500, $"only {desks} office desk(s) in the whole sweep — this proved little.");
-        Assert.True(benches > 500, $"only {benches} lab bench(es) in the whole sweep — this proved little.");
+        Assert.True(benches > 200, $"only {benches} lab bench(es) in the whole sweep — this proved little.");
         Assert.True(wrong.Count == 0,
             $"{wrong.Count} desk(s) are not the size a person is:{Environment.NewLine}"
             + string.Join(Environment.NewLine, wrong.Take(12)));
@@ -285,7 +295,9 @@ public sealed class TheDeskRisesToMeetYouTests
             }
         }
 
-        Assert.True(measured > 1000, $"only {measured} fitting(s) were measured — this proved little.");
+        // #775 · Re-pinned by measurement for the reason above: this sweep walks chambers, and a landscape
+        // floor has fewer of them. 803 across 1154 floors, measured, where it was over 1000.
+        Assert.True(measured > 600, $"only {measured} fitting(s) were measured — this proved little.");
         Assert.True(wrong.Count == 0,
             $"{wrong.Count} fitting(s) are drawn as a box and are not one:"
             + $"{Environment.NewLine}{string.Join(Environment.NewLine, wrong.Take(12))}");

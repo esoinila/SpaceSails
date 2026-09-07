@@ -40,7 +40,7 @@ public class AncientsRuleTests
     [Fact]
     public void AutoPlot_LaysACourse_ThatBeatsCoasting()
     {
-        var ephemeris = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         Vector2d earthPos = ephemeris.Position("earth", 0);
         Vector2d earthVel = (ephemeris.Position("earth", 1.0) - ephemeris.Position("earth", -1.0)) / 2.0;
         // Free-sailing near Earth, destination Mars — the classic first voyage.

@@ -19,24 +19,10 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheHallCardsAreRaisedOnceTests
 {
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
 
     private static IEnumerable<(string File, string Text)> ClientSource()
     {
-        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client");
+        string dir = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client");
         foreach (string file in Directory.EnumerateFiles(dir, "*.*", SearchOption.AllDirectories))
         {
             char s = Path.DirectorySeparatorChar;

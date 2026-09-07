@@ -152,6 +152,14 @@ public partial class Map
             _cautionLastShudderMs = nowMs;
         }
 
+        // #426 CHAIN-OF-CUSTODY — the tremor that OPENS a storm window on her own deck stops being weather
+        // for one line and becomes a question about the paperwork behind the weld that just spoke. Composed
+        // from her own service record (Map.Custody); null every other tremor, and everywhere but her deck.
+        if (ChainOfCustodyThought(setting) is { } custody)
+        {
+            line = custody;
+        }
+
         RendererInterop.PlayCue("board");
         ShowPulseMessage("〰 " + line);
 

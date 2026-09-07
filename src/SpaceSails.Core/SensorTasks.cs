@@ -67,6 +67,79 @@ public sealed record SensorTask(
 public readonly record struct CompletedPass(SensorTask Task, double StartTime, double CompleteTime);
 
 /// <summary>
+/// #240 · HOW MUCH OF AN AREA SCAN'S PATCH OF SKY THE TELESCOPE HAS BEEN OVER, and when — everything a
+/// reader needs to ask "has this sweep crossed that point YET?" without knowing what is out there.
+///
+/// <para><see cref="Covered"/> is the fraction of the wedge behind the beam (1 on the completing pass).
+/// <see cref="Job"/> and <see cref="Observer"/> travel together deliberately: the wedge and the bearing of
+/// anything judged against it must be measured from the same point, or a reader would be re-deriving the
+/// aim from a ship that has moved since.</para>
+/// </summary>
+public readonly record struct AreaScanCoverage(
+    Vector2d Center, double Radius, ScanJob Job, Vector2d Observer, double Covered, double SimTime);
+
+/// <summary>
+/// #239 · WHERE ONE SENSOR TASK STANDS WITH THE TELESCOPE. Four states, and the captain can be told which
+/// one without doing arithmetic.
+///
+/// <para>Owner, after hunting the roadster with the wrong instrument: <i>"the sensor jobs should display
+/// running, waiting, stopped states… Let's make it clearer what scan job is actually running."</i> And then,
+/// minutes later, the exact failure mode: he watched the CORRECT aimed job sit at <i>"● 0%"</i> and read it
+/// as <i>"maybe it is waiting to start."</i> RUNNING-at-zero-progress and WAITING are the same picture if
+/// the picture is a percentage. <b>The percent is progress; the state is truth</b>, and they are two
+/// different facts.</para>
+///
+/// <para>The distinction between <see cref="Queued"/> and <see cref="Waiting"/> is the one the schedule
+/// could not previously make at all, and it is the whole of this fix: <see cref="TelescopeSchedule"/>
+/// returned its finished passes and <b>kept nothing</b>, so "the glass has already been on this one" was not
+/// a fact the desk held. A standing custody pass between looks and a job whose first look has never happened
+/// are very different things to a captain deciding what to prioritise.</para>
+/// </summary>
+public enum SensorTaskState
+{
+    /// <summary>In the queue, and the glass has not been on it yet — its first look is still ahead.</summary>
+    Queued,
+
+    /// <summary>The one job the telescope is on right now.</summary>
+    Running,
+
+    /// <summary>In the queue, and the glass has already given it a pass — a standing job between looks.</summary>
+    Waiting,
+
+    /// <summary>Its pass landed and it has left the carousel: recent history, kept so it can be seen.</summary>
+    Done,
+}
+
+/// <summary>#239 · The four words, in one place, so the Sensors desk and anything else that grows a task row
+/// speak the same vocabulary (#203's one voice). Plate idiom: a state is a noun on a chip, not a sentence.
+/// </summary>
+public static class SensorTaskPlates
+{
+    /// <summary>The chip's word for a state.</summary>
+    public static string For(SensorTaskState state) => state switch
+    {
+        SensorTaskState.Running => "RUNNING",
+        SensorTaskState.Waiting => "WAITING",
+        SensorTaskState.Done => "DONE",
+        _ => "QUEUED",
+    };
+
+    /// <summary>The glyph that goes in front of it — the thing the eye catches from across the desk. Here
+    /// rather than on the desk because a chip is one plate: a surface that spelled its own glyph could drift
+    /// from the word beside it without anything noticing.</summary>
+    public static string Glyph(SensorTaskState state) => state switch
+    {
+        SensorTaskState.Running => "▶",
+        SensorTaskState.Waiting => "⏸",
+        SensorTaskState.Done => "✓",
+        _ => "◷",
+    };
+
+    /// <summary>The whole chip, glyph and word.</summary>
+    public static string Chip(SensorTaskState state) => $"{Glyph(state)} {For(state)}";
+}
+
+/// <summary>
 /// The single steerable telescope's schedule (vision: "It cannot look more than one way and one
 /// focus at a time. We need to priorize in the scanning desk."). A carousel over an ordered task
 /// list: the instrument works the queue top to bottom, spends each task's duration, then moves
@@ -78,6 +151,14 @@ public readonly record struct CompletedPass(SensorTask Task, double StartTime, d
 public sealed class TelescopeSchedule
 {
     private readonly List<SensorTask> _queue = [];
+
+    // #239 · THE PASSES THE SCHEDULE USED TO FORGET. Advance() handed its CompletedPass list to the caller
+    // and kept nothing, so nothing anywhere could answer "has the glass been on this job yet" or "what did
+    // it just finish" — which is why the desk was reduced to inferring a state from a percentage. Newest
+    // last; at most one entry per task id (a recurring job's latest pass replaces its previous one), and the
+    // list is capped because history a captain will never scroll to is a leak, not a feature.
+    private readonly List<CompletedPass> _finished = [];
+
     private SensorTask? _active;
     private bool _activeWasForced;
     private double _activeStart;
@@ -86,9 +167,50 @@ public sealed class TelescopeSchedule
     private string? _forcedNextId;
     private double _clock;
 
+    /// <summary>How many finished passes are kept for the DONE rows.</summary>
+    public const int FinishedDepth = 8;
+
     public IReadOnlyList<SensorTask> Queue => _queue;
 
     public SensorTask? Active => _active;
+
+    /// <summary>#239 · The passes that landed, newest first — the recent history the desk dims and prunes.
+    /// A task still in the carousel is NOT done (it is <see cref="SensorTaskState.Waiting"/> its next turn),
+    /// so this is only ever the jobs that finished and left.</summary>
+    public IEnumerable<CompletedPass> RecentlyDone
+    {
+        get
+        {
+            for (int i = _finished.Count - 1; i >= 0; i--)
+            {
+                if (!Contains(_finished[i].Task.Id))
+                {
+                    yield return _finished[i];
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// #239 · WHERE A TASK STANDS — the fact the desk reads instead of guessing from a percentage. Null when
+    /// the schedule has never heard of the id: an unknown job has no state, and answering QUEUED for one
+    /// would be the instrument making something up.
+    /// </summary>
+    public SensorTaskState? StateOf(string taskId)
+    {
+        if (_active?.Id == taskId)
+        {
+            return SensorTaskState.Running;
+        }
+
+        bool ranBefore = _finished.Exists(p => p.Task.Id == taskId);
+        if (Contains(taskId))
+        {
+            return ranBefore ? SensorTaskState.Waiting : SensorTaskState.Queued;
+        }
+
+        return ranBefore ? SensorTaskState.Done : null;
+    }
 
     public double ActiveStartTime => _activeStart;
 
@@ -199,12 +321,26 @@ public sealed class TelescopeSchedule
             }
 
             _clock = end;
-            (completed ??= []).Add(new CompletedPass(_active!, _activeStart, end));
+            var pass = new CompletedPass(_active!, _activeStart, end);
+            (completed ??= []).Add(pass);
+            Retain(pass);
             CompleteActive();
         }
 
         _clock = Math.Max(_clock, toSimTime);
         return completed ?? (IReadOnlyList<CompletedPass>)[];
+    }
+
+    /// <summary>Keep a landed pass: one entry per task id, newest last, capped at
+    /// <see cref="FinishedDepth"/>.</summary>
+    private void Retain(CompletedPass pass)
+    {
+        _finished.RemoveAll(p => p.Task.Id == pass.Task.Id);
+        _finished.Add(pass);
+        if (_finished.Count > FinishedDepth)
+        {
+            _finished.RemoveRange(0, _finished.Count - FinishedDepth);
+        }
     }
 
     private void StartNext(Func<SensorTask, double> durationOf)

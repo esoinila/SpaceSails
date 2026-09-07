@@ -45,13 +45,13 @@ namespace SpaceSails.Client.Tests;
 /// rubber stamp: it still only promises what it has flown.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 42 s over 4 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheArrivalIsArmedThenNotOnlyNowTests
 {
     private readonly Xunit.Abstractions.ITestOutputHelper _out;
     public TheArrivalIsArmedThenNotOnlyNowTests(Xunit.Abstractions.ITestOutputHelper output) => _out = output;
 
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     private const double Day = 86400.0;
 
@@ -298,7 +298,7 @@ public sealed class TheArrivalIsArmedThenNotOnlyNowTests
                 "ComponentBase has no _hasPendingQueuedRender — the render early-out this bench rides on has moved.");
         pending.SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
 
@@ -321,7 +321,7 @@ public sealed class TheArrivalIsArmedThenNotOnlyNowTests
 
     private static void AddPlottedVectorBurn(Pages.Map map, double simTime, double percent, double heading)
     {
-        Type nodeType = typeof(Pages.Map).GetNestedType("PlanNode", BindingFlags.NonPublic)
+        Type nodeType = typeof(Pages.Map).GetNestedType("PlanNode", BindingFlags.NonPublic | BindingFlags.Public)
             ?? throw new InvalidOperationException("Map.PlanNode is gone — this bench has drifted.");
         object node = Activator.CreateInstance(nodeType, nonPublic: true)!;
         SetField(node, "SimTime", simTime);
@@ -388,22 +388,6 @@ public sealed class TheArrivalIsArmedThenNotOnlyNowTests
     }
 
     // ── Reflection plumbing (the TheBerthEndsTheVoyageTests / TheBrakeCardKnowsSheIsClamped idiom) ──────
-
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(ScenarioPath("sol.json")));
-
-    private static string ScenarioPath(string file)
-    {
-        var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
-        while (dir is not null && !System.IO.Directory.Exists(System.IO.Path.Combine(dir.FullName, "scenarios")))
-        {
-            dir = dir.Parent;
-        }
-
-        return dir is null
-            ? throw new InvalidOperationException("no scenarios/ directory above the test binary")
-            : System.IO.Path.Combine(dir.FullName, "scenarios", file);
-    }
 
     private static void Set(object o, string field, object? value) => SetField(o, field, value);
 

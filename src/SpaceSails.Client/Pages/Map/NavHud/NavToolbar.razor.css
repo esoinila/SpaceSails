@@ -1,0 +1,9 @@
+﻿/* #251 · NavToolbar's CSS-SCOPE CARRIER. No rules — on purpose.
+
+   Blazor gives every component its own scope identifier and compiles Map.razor.css / NavHud.razor.css to
+   `.selector[b-<the page's scope>]`. A component with no stylesheet of its own gets NO scope, and every
+   rule that styled this markup would stop matching it the moment it left NavHud.razor — no build error,
+   no test, the surface simply renders unstyled. This file exists so the csproj's
+   `Pages\Map\NavHud\*.razor.css` entry can pin it to `b-4dqsdx4p75`, the page's own identifier, and the
+   shipped stylesheet does not change by a byte. EverySurfaceWearsThePagesCssScopeTests keeps it true.
+ */

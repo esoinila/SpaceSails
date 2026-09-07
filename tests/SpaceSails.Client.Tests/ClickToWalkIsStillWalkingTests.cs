@@ -23,6 +23,7 @@ namespace SpaceSails.Client.Tests;
 /// is this project's fifth named bug class, and a hand-drawn box with one wall in it is exactly that world.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 19 s over 7 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class ClickToWalkIsStillWalkingTests
 {
     private static SurfaceLayout.Field Field => MoonSurface.ExpeditionField();

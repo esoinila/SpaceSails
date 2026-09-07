@@ -17,6 +17,7 @@ namespace SpaceSails.Core.Tests;
 /// <para>So the split is <b>measured over generated sites</b> rather than asserted off the constant, and the
 /// prose is grepped. Both were watched go red — see the PR body.</para>
 /// </summary>
+[SlowGate] // #251 · 12 s over 10 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheEmptyRoomThatHoldsOneBookTests
 {
     private static SurfaceLayout.Field Field => SurfaceLayout.DefaultField;
@@ -358,7 +359,13 @@ public sealed class TheEmptyRoomThatHoldsOneBookTests
 
     /// <summary>A SCENE NOBODY CAN REACH ON DEMAND SHIPS BROKEN — and the cheat is an ARGUMENT to the one
     /// ask, never a second answer beside it (§13.18). It takes the one-in-six gate off and does nothing
-    /// else: it cannot put a book in an occupied room, and it cannot change what a book says.</summary>
+    /// else: it cannot put a book in an occupied room, and it cannot change what a book says.
+    ///
+    /// <para>#804 · <b>AND A ROOM SOMEBODY'S PASS IS LYING IN IS OCCUPIED.</b> The found pass is dealt
+    /// beside the haul table rather than inside it (<see cref="FoundPass.RoomFor"/>), so the haul table calls
+    /// its drawer empty and it is not — the third clause of <see cref="OddBooks.CouldHoldOne"/>. It is named
+    /// here rather than asked through that method, so this guard still states the law in its own terms
+    /// instead of restating the shipped composition back to itself.</para></summary>
     [Fact]
     public void TheCheatOpensEveryWouldBeEmptyRoomAndInventsNothing()
     {
@@ -367,7 +374,8 @@ public sealed class TheEmptyRoomThatHoldsOneBookTests
         foreach (Room r in rooms)
         {
             bool empty =
-                UndergroundComplex.InRoom(r.Body, r.Level, r.Index) == UndergroundComplex.Haul.Nothing;
+                UndergroundComplex.InRoom(r.Body, r.Level, r.Index) == UndergroundComplex.Haul.Nothing
+                && !FoundPass.IsHere(r.Body, r.Level, r.Index);
             empties += empty ? 1 : 0;
 
             OddBooks.Reading? any = OddBooks.Search(r.Body, r.Level, r.Index, null, forced: 0);

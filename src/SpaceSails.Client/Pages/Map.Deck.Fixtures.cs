@@ -78,6 +78,22 @@ public partial class Map
                 return;
             }
 
+            // #1061 beat 2 · …and the sheet a frightened man dropped in the dust, which is a PICKUP as well
+            // as a read and therefore cannot fall through to the plain look below. Recognised by its own
+            // plate, exactly as the two consoles above are, so this lane adds no dispatch of its own.
+            if (_surface is { } dropEx && TryTheDroppedSchedule(dropEx, spot.Label))
+            {
+                return;
+            }
+
+            // #1151 · …and the claims kiosk, which is not a plate at all: the machine takes three things off
+            // the captain in order and keeps what it has been given. Recognised by its plate the way the two
+            // above are, so the concourse builder still never learns what any fixture is FOR.
+            if (TryTheClaimsKiosk(spot.Label))
+            {
+                return;
+            }
+
             _viewObject = MaybeAppendPlaqueGratitude(spot); // #394: Ringside's plaque grows a line once saved
 
             // #411: reading the whole dedication plate that NAMES PROJEKTI KAAMOS (Ringside's, the one place
@@ -134,6 +150,14 @@ public partial class Map
     private void CloseViewObject()
     {
         _viewObject = null;
+
+        // #615 · …and a find waiting on an answer is answered BY the closing. Every road out of this card is
+        // LEAVE, which is why the two-verb card needs no special case in the general closing law (no pop-up
+        // that cannot be closed): the safe answer is the one the ✕ already gives — nothing is taken and the
+        // room keeps what it holds. A pending find that outlived its card would be a state nothing on screen
+        // was saying, and the next Keep pressed anywhere would empty a room the captain had walked out of.
+        _pendingFind = null;
+
         ReleaseHeldSayings();
     }
 

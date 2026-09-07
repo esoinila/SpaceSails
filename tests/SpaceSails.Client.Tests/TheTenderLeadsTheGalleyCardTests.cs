@@ -24,6 +24,7 @@ namespace SpaceSails.Client.Tests;
 /// through the same channel the browser's JS side calls — #992's rule, and the reason a claim about the
 /// button is a claim about the game rather than about a method name.</para>
 /// </summary>
+[SlowGate] // #251 · 15 s over 5 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheTenderLeadsTheGalleyCardTests
 {
     private const string FreeFlying = "/map?start=wreck";

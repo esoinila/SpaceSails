@@ -91,7 +91,12 @@ public partial class Map
                 // #731 · …and who has already stood up and walked off this watch. One body, one place: a
                 // regular crossing the hall on real legs must not ALSO be drawn in the chair they left, and
                 // the one function that can be made to agree about it is the one that seats them.
-                ex.HallStoodUp);
+                ex.HallStoodUp,
+                // #731 · …and who has walked IN off the oncoming rota and taken a top. The mirror of the
+                // line above and for the mirror reason: somebody the player watched cross the floor and sit
+                // down has to be drawn in that chair by the same one function, or the room turns over in the
+                // one frame nobody is looking at, which is what it did before this lane.
+                ex.HallCameIn);
             // #411 · the head office's two floors with a beat on them get one console apiece, APPENDED the
             // way the hidden door and the outpost hut are — so the Hive's generator, and the A* audit that
             // walks every floor of it, are untouched.
@@ -104,7 +109,8 @@ public partial class Map
         {
             _deckPlan = WreckInterior.WreckDeck(
                 aboard, _wreckExamined, _wreckSalvaged, SurfaceDroidCount, FillSurfaceDroids,
-                HeldDoors(), BlockedDoors(), _archiveAboard, _archivePurged);
+                HeldDoors(), BlockedDoors(), _archiveAboard, _archivePurged,
+                keyAboard: _keyAboard);   // #535 · the code in her crew spaces, if she is still holding one
             ComposeWhatYouLeft(ex);
             return;
         }
@@ -140,8 +146,12 @@ public partial class Map
         // #409: on ANY body that hides a lab (expedition deep field or a rare ordinary moon), compose the
         // revealed hidden door and — once forced — replay the appended lab region onto the freshly-built base.
         ComposeSecretLabSite(ex);
-        ComposeOutpost(ex);          // #563: the hut — its dogged hatch, or the room once it is forced
+        ComposeTiles(ex);            // #563: the ground beyond the home tile — the treadmill's carried chunk
+        ComposeOutpost(ex);          // #563: the huts — its dogged hatch, or the room once it is forced
         ComposeWhatYouLeft(ex);      // #698: and whatever the captain themselves put down on this ground
+        // #1061 beat 2 · …and the one thing on this ground somebody ELSE put down, which is why it is not in
+        // the store above: every sentence that store prints says "where YOU left it".
+        ComposeTheDroppedSchedule(ex);
     }
 
     /// <summary>
@@ -297,6 +307,11 @@ public partial class Map
             return;
         }
 
+        // #563 · FIRST, THE GROUND UNDER THE BOOTS. If the last step crossed a tile boundary the world is
+        // re-welded here, before anything asks a question about it — a Reever stepped against walls that are
+        // about to be replaced is a Reever stepped against the wrong ground.
+        StepGroundStream(_surface);
+
         StepSuitAir(dtRealSeconds);     // #564: the tank, the line, and the walk home
         StepTubeRearm(dtRealSeconds);   // #562: the ship feeds your sentries while you stand in her tube
         StepDigChannel(dtRealSeconds);
@@ -332,12 +347,18 @@ public partial class Map
             CheckStaffMessUnderfoot();    // #725: …and the one room down here that is a find rather than a route
             CheckCantinaHallUnderfoot();  // #751: the hall, and the doors along the back of it
             CheckTheParkUnderfoot();      // #759: …and the park behind its glass, which records attendance
+            CheckHusksUnderfoot();        // #316: …and what the last visit left lying in the regolith
         }
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
         StepSecretLabDetector();                 // #585: the needle climbs as you close on a named moon
         StepOutpostDoorChannel(dtRealSeconds);   // #563: the outpost hatch's force channel
         StepDrillChannel(dtRealSeconds); // #394: the drilling — sinking the charge into the rock
+        // #326 · THE BODYGUARDS WALK FIRST. A bot set down in the escort stance re-posts to the middle of
+        // the captain→home line, and it does so BEFORE the volley so it shoots from where it is standing
+        // this frame rather than from where it stood last one — a zap line drawn from a spot the bot has
+        // already left is the third named bug class, a drawn shape reporting what the sim never said.
+        StepEscorts(dtRealSeconds);
         StepSentries(dtRealSeconds);
         // #585 · NOTHING SHAMBLES DOWN HERE. Owner, stepping out of the car: "I don't think there should be
         // reevers down here", then "now the reevers are on surface right, so they should not be visible here
@@ -352,7 +373,18 @@ public partial class Map
         {
             _reevers.Clear();
         }
+        // #436 · How fast the captain is going, measured BEFORE anything looks at him and OUTSIDE the pack's
+        // own step — StepReevers returns early on an empty field, and a measure that skipped those frames
+        // would hand the first contact of an excursion a speed computed across every frame since the last one
+        // existed. The observation roll reads this; nothing else does.
+        MeasureTheCaptainsMotion(dtRealSeconds);
         StepReevers(dtRealSeconds);
+        // #1061 beat 2 · …and the one person out here who is frightened of them. AFTER the pack, deliberately
+        // and for the rep's own reason further down: what he decides about is a field whose Old Ones have
+        // already moved this frame, so the sightline he breaks on is this frame's and not the last one's. And
+        // BEFORE the walkers, so a captain who steps into a lift finds him already off the excursion's band
+        // rather than standing in a corridor of B1.
+        AdvanceTheHardcase(dtRealSeconds);
         StepCollectors(dtRealSeconds); // #583: the repo boat, and the people who got out of it
         // #804 · …and the ROUNDS, which are the other thing about the clause above: the pack is cleared on
         // descent and what walks the restricted floors instead is somebody on a payroll. Stepped AFTER the

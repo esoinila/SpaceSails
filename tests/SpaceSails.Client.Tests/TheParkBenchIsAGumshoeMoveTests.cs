@@ -39,22 +39,8 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         "titan", "enceladus", "miranda", "triton", "the-clinker",
     ];
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     private static string Source(params string[] parts) =>
-        File.ReadAllText(Path.Combine([RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+        File.ReadAllText(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
 
     /// <summary>#870 lane 6c · Re-PATHED, never re-asserted. The seat family is TWO files per subject now:
     /// the page's half — the records, the dev rows, the things a seat is a GATE on, and the forwarders — and
@@ -64,7 +50,32 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     /// are <c>DoesNotContain</c> over the whole subject, and pointing one at a single file would be a silent
     /// weakening.</summary>
     private static string Table() =>
-        Source("Pages", "Map.Table.cs") + Source("Pages", "Seating", "Seating.Table.cs");
+        Source("Pages", "Map.Table.cs") + TheTablesOwnPartials();
+
+    /// <summary>#251 · The table scene is FIVE partials now (opening, the moves, #757's wait, #758's
+    /// cabinet, #680's one ending) — read as a GLOB and not as a written list, because several claims over
+    /// this text are <c>DoesNotContain</c> over the whole subject and a list that fell one file behind the
+    /// next split would narrow them without a word. Ordinal by path so the concatenation is stable.</summary>
+    private static string TheTablesOwnPartials()
+    {
+        string[] parts = System.IO.Directory.GetFiles(
+            System.IO.Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Seating"),
+            "Seating.Table*.cs");
+        // Scene order, not alphabetical: `Seating.Table.cs` — the file that opens the scene and carries the
+        // family's class summary — comes first, exactly where it was when it was the only one, and the rest
+        // follow it ordinal. Several claims over this text cut a method body FORWARD to the next thing, and
+        // a sort that put the opening file last would have them cutting across a file trailer.
+        System.Array.Sort(parts, (a, b) =>
+            System.StringComparer.Ordinal.Compare(
+                System.IO.Path.GetFileName(a) == "Seating.Table.cs" ? "" : a,
+                System.IO.Path.GetFileName(b) == "Seating.Table.cs" ? "" : b));
+        var all = new System.Text.StringBuilder();
+        foreach (string part in parts)
+        {
+            all.Append(System.IO.File.ReadAllText(part));
+        }
+        return all.ToString();
+    }
 
     private static string Seated() =>
         Source("Pages", "Map.Seated.cs") + Source("Pages", "Seating", "Seating.Seated.cs");
@@ -72,21 +83,20 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     private static string Bench() =>
         Source("Pages", "Map.Bench.cs") + Source("Pages", "Seating", "Seating.Bench.cs");
 
-
     /// <summary>#870 · The deck page is seven partials by subject now, so "the deck" a guard reads over is
     /// all of them — exactly the text it read out of one file before the split.</summary>
     private static string Deck() => string.Concat(
         Directory.EnumerateFiles(
-                Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
+                Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.Deck*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
 
-    /// <summary>#870 · The round is six partials by subject now, so the page this guard reads is all six —
+    /// <summary>#870 · The round is five partials by subject now, so the page this guard reads is all five —
     /// concatenated in the order the one file laid them out, which is exactly the text it read before the
-    /// split. The count is asserted, so a seventh part can never go unread.</summary>
+    /// split. The count is asserted, so a sixth part can never go unread.</summary>
     private static string Patrol()
     {
-        string dir = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages");
+        string dir = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages");
         string[] order =
         [
             // #870 lane 6′c · RE-PATHED. The verbs moved onto Patrol's own partials, so the page's half
@@ -123,10 +133,10 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     }
 
     private static string CoreSource(string name) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Core", name));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Core", name));
 
     private static string Doc(string name) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "docs", name));
+        File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "docs", name));
 
     private static IEnumerable<(string Body, int Level, UndergroundComplex.Park Park)> EveryPark()
     {
@@ -693,7 +703,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         // #870 · The module is one partial class spread over PatrolBeat*.cs. Same needle, same code, new
         // path — the source read here is the concatenation of every part, in ordinal order.
         string patrol = string.Concat(Directory
-            .EnumerateFiles(Path.Combine(RepoRoot(), "src", "SpaceSails.Core"), "PatrolBeat*.cs")
+            .EnumerateFiles(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Core"), "PatrolBeat*.cs")
             .OrderBy(p => p, StringComparer.Ordinal)
             .Select(File.ReadAllText));
         Assert.Contains(
@@ -725,7 +735,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
 
         // …and the park's landing calls it before it stands the captain at the gate, so the row lands ON the
         // bench rather than beside it.
-        string surface = Source("Pages", "Map.Surface.Cheats.cs");
+        string surface = Source("Pages", "Map.Surface.Cheats.Stand.cs");  // #251 · the park boot
         int park = surface.IndexOf("private void StandInTheParkIfAsked(", StringComparison.Ordinal);
         string landing = surface[park..(park + 1600)];
         int sits = landing.IndexOf("SitOnAFreeBenchIfAsked(in green)", StringComparison.Ordinal);

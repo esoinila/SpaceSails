@@ -308,11 +308,18 @@ public sealed class TheHiveTests
         // Owner: "those sites should have good loot of stuff and information also... like dirt on potential
         // contacts ... the works." Dirt is the most valuable thing here because it is the only haul you spend
         // on a PERSON, so it has to be the scarcest or it stops being a find.
+        //
+        // #608 · READ OFF B1 AND NOT B2, and the move is the point rather than a repair. B2 does not hold
+        // pressure, and the owner's rule is that office work — "writing with a pen ... reading documents" —
+        // does not happen in a suit, so a file on somebody is a thing found on a floor somebody could work
+        // on. This weighting is the weighting of a floor with air in it; the vacuum floors have their own
+        // and TheRefugesUndergroundTests audits them.
+        Assert.True(UndergroundComplex.HoldsPressure("miranda", -1));
         var counts = new Dictionary<UndergroundComplex.Haul, int>();
         const int rooms = 900;
         for (int i = 0; i < rooms; i++)
         {
-            UndergroundComplex.Haul haul = UndergroundComplex.InRoom("miranda", -2, i);
+            UndergroundComplex.Haul haul = UndergroundComplex.InRoom("miranda", -1, i);
             counts[haul] = counts.GetValueOrDefault(haul) + 1;
         }
 

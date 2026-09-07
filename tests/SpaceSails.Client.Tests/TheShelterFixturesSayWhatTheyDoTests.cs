@@ -137,20 +137,6 @@ public sealed class TheShelterFixturesSayWhatTheyDoTests
 
     // ── the readout, on the instrument column that actually draws it ──────────────────────────────────
 
-    private static string RepoRoot()
-    {
-        DirectoryInfo? at = new(AppContext.BaseDirectory);
-        while (at is not null)
-        {
-            if (Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
-            {
-                return at.FullName;
-            }
-            at = at.Parent;
-        }
-        throw new DirectoryNotFoundException($"could not find the repo root above {AppContext.BaseDirectory}");
-    }
-
     [Fact]
     public void TheOnFootInstrumentColumnActuallyPRINTSTheMagazines()
     {
@@ -163,7 +149,7 @@ public sealed class TheShelterFixturesSayWhatTheyDoTests
         // seam EveryStoryBeatHasACallerTests uses to prove a beat has a caller. It asks one question — does
         // the method that composes the on-foot instrument column emit the readout — and it goes red the
         // moment somebody deletes the call, which is the failure it exists for.
-        string page = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.Hud.cs");
+        string page = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.Hud.Prompts.cs");
         Assert.True(File.Exists(page), $"the on-foot page has moved: {page}");
 
         string source = File.ReadAllText(page);

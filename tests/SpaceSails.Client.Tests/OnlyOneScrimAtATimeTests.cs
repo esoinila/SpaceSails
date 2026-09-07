@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -179,7 +179,7 @@ public sealed class OnlyOneScrimAtATimeTests
     [Fact]
     public void TheQueueIsPumpedByTheWalkedFrame()
     {
-        string tick = File.ReadAllText(Path.Combine(ClientSource(), "Pages", "Map.Sim.Tick.cs"));
+        string tick = Tick();
         int walkers = tick.IndexOf("AdvanceBarWalkers(dtRealSeconds);", StringComparison.Ordinal);
         Assert.True(walkers >= 0, "the walked frame no longer steps the bar's walkers where this guard reads.");
 
@@ -210,7 +210,7 @@ public sealed class OnlyOneScrimAtATimeTests
     /// </summary>
     private static HashSet<string> TheGatesTheMarkupDrawsAScrimBehind()
     {
-        string[] lines = File.ReadAllLines(Path.Combine(ClientSource(), "Pages", "Map.razor"));
+        string[] lines = MapMarkup.ReadLines(Path.Combine(ClientSource(), "Pages", "Map.razor"));
         var live = new bool[lines.Length];
         bool insideComment = false;
         for (int i = 0; i < lines.Length; i++)
@@ -301,4 +301,13 @@ public sealed class OnlyOneScrimAtATimeTests
 
         throw new DirectoryNotFoundException($"could not find the client source above {AppContext.BaseDirectory}");
     }
+
+    /// <summary>The frame's source — all of it. `Map.Sim.Tick.cs` was split by concern (#251) and the
+    /// walked frame moved to `Map.Sim.Tick.Views.cs`, so this reads the family as a glob in ordinal order
+    /// rather than naming one partial that the next split could empty.</summary>
+    private static string Tick() =>
+        string.Join("\n", Directory
+            .EnumerateFiles(Path.Combine(ClientSource(), "Pages"), "Map.Sim.Tick*.cs")
+            .OrderBy(path => path, StringComparer.Ordinal)
+            .Select(File.ReadAllText));
 }

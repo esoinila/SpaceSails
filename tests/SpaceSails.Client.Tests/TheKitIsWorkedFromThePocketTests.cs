@@ -25,8 +25,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheKitIsWorkedFromThePocketTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     private const string Body = "luna";
 
@@ -47,7 +46,7 @@ public sealed class TheKitIsWorkedFromThePocketTests
     }
 
     private static string Pages(string file) =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", file));
 
     /// <summary>A subtree of a file, with BOTH markers asserted — a cut that silently missed would make
     /// every claim about it vacuous.</summary>
@@ -62,7 +61,9 @@ public sealed class TheKitIsWorkedFromThePocketTests
 
     /// <summary>The object card's whole subtree — the one surface the kit answers on.</summary>
     private static string TheObjectCard() =>
-        Between(Pages("Map.razor"), "@if (_viewObject is { } vo)", "@* THE CAPTAIN'S SELFIE");
+        // #251 item 1: the selfie card's own comment moved into Pages/Map/SelfieShotCard.razor with it,
+        // so the slice ends where the next surface's guard opens - markup, not prose.
+        Between(Pages("Map.razor"), "@if (_viewObject is { } vo)", "@if (_selfieShot is { } shot)");
 
     // ── (a) THE SWITCH ──────────────────────────────────────────────────────────────────────────────────
 
@@ -188,8 +189,8 @@ public sealed class TheKitIsWorkedFromThePocketTests
                 + "has moved, and the kit's verbs will throw instead of running.");
         pending.SetValue(map, true);
 
-        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Static)!;
-        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Static)!;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden | BindingFlags.Public | BindingFlags.Static)!;
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Public | BindingFlags.Static)!;
         object ex = Activator.CreateInstance(exType, nonPublic: true)!;
         object stop = Activator.CreateInstance(stopType,
             new CelestialBody(Body, Body, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -53,10 +53,10 @@ namespace SpaceSails.Client.Tests;
 /// before this file was written — the runs are quoted in the pull request.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 12 s over 10 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheDirectNavActionsAreEmergenciesTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
     private const double AU = 1.495978707e11;
 
     /// <summary>The one dress an emergency press wears. Quiet red — an OUTLINE, not a filled danger button:
@@ -71,9 +71,6 @@ public sealed class TheDirectNavActionsAreEmergenciesTests
 
     /// <summary>A berth to be cast off from — the same world <see cref="EveryDeskBootsTests"/> uses.</summary>
     private const string ABerth = "/map?dock=selene-gate&body=luna&site=1";
-
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> Sol =
-        new(() => ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol.json")));
 
     /// <summary>Each emergency press, found in the markup by the words a player READS on it — never by the
     /// tooltip helper this file is also asserting, which would make the guard chase its own tail.</summary>
@@ -240,8 +237,8 @@ public sealed class TheDirectNavActionsAreEmergenciesTests
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
-        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(Sol.Value);
-        Set(map, "_scenarioName", Sol.Value.Name);
+        ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
         Set(map, "_ephemeris", ephemeris);
         Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
 
@@ -264,7 +261,7 @@ public sealed class TheDirectNavActionsAreEmergenciesTests
     /// <summary>Map.razor with the line endings normalised — git hands it out CRLF on Windows and LF on the
     /// runner, and a guard that cannot tell one machine from the other cannot tell pass from fail.</summary>
     private static string Razor() =>
-        File.ReadAllText(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"))
+        MapMarkup.Read(Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.razor"))
             .Replace("\r\n", "\n");
 
     /// <summary>The whole of a button from its opening angle bracket to the marker inside it, so a guard about

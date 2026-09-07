@@ -385,8 +385,14 @@ public sealed class HudCollisionTests : IAsyncLifetime
     [Fact]
     public async Task A_room_full_of_bar_contacts_never_covers_the_counters_own_foot()
     {
+        // #1148 · `&holdbeats=1` — this canary opens a panel and presses its way out, and nothing in
+        // it quiesces the story seam: a CARD whose cadence lands mid-script paints its
+        // `.view-object-backdrop` over the button the gate is about to press (measured: sixty seconds
+        // of Playwright waiting on the charge board's own *Step away*, #1146's serial run). The latch
+        // DEFERS such a beat rather than dropping it, and leaves plates alone. See
+        // StoryBeats.HoldQueryFlag.
         await _page.GotoAsync(
-            _host.BaseUrl + "/map?scenario=sol&oldcrew=1", new() { Timeout = BootTimeoutMs });
+            _host.BaseUrl + "/map?scenario=sol&oldcrew=1&holdbeats=1", new() { Timeout = BootTimeoutMs });
 
         await _page.WaitForSelectorAsync(".map-loading",
             new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });

@@ -31,6 +31,7 @@ namespace SpaceSails.Core.Tests;
 /// <see cref="SurfaceScale.CaptainWidthDu"/>, which is the captain's own body and not a number this file
 /// chose.</para>
 /// </summary>
+[SlowGate] // #251 · 132 s over 5 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class OneCounterAndOnlyOneTests
 {
     /// <summary>The same spread <c>TheDeskServesItsWholeLengthTests</c> sweeps.</summary>

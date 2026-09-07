@@ -10,6 +10,7 @@ namespace SpaceSails.Core.Tests;
 /// would give. Plus the guard rules (refuse while hunted / in-well / short / off-course), the
 /// arrival-at-capture-range placement, the promise wording, and Miranda's ephemeris + shuttle-range.
 /// </summary>
+[SlowGate] // #251 · 12 s over 42 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public class LongHaulTests
 {
     private const double SunMu = 1.32712440018e20;
@@ -69,7 +70,7 @@ public class LongHaulTests
         // Guards the actual scenarios/sol.json data file (not just the inline fixture): Miranda is present,
         // a landable moon of Uranus, and every phase of its orbit sits inside a shuttle hop of The Tilt —
         // so #231's bury flow lists it when docked at The Tilt with zero code changes.
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         CelestialBody miranda = eph.Bodies.Single(b => b.Id == "miranda");
 
         Assert.Equal("uranus", miranda.ParentId);
@@ -379,7 +380,7 @@ public class LongHaulTests
         // planet, non-haven station — with the departure solvable and the menu wording naming the planet.
         // (The owner's "The Tilt lacks the rocket" was a within-capture-range state: at Uranus vicinity the
         // gate correctly hides it — see the paired test below.)
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var ship = new ShipState(eph.Position("the-space-bar", 0), TransferMath.BodyVelocity(eph, "the-space-bar", 0), 0);
 
         (string dest, string planet)[] cases =
@@ -408,7 +409,7 @@ public class LongHaulTests
     {
         // The paired truth: docked at The Tilt (inside Uranus's capture range), clicking The Tilt/Miranda/
         // Uranus offers NO long haul — you're already there; the last mile is the dock/arm, not a jump.
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var atTilt = new ShipState(eph.Position("the-tilt", 0), TransferMath.BodyVelocity(eph, "the-tilt", 0), 0);
 
         Assert.Null(OfferTargetPlanet(eph, atTilt, "the-tilt"));
@@ -727,7 +728,7 @@ public class LongHaulTests
     [Fact]
     public void DecadeJump_RetiresEveryStatefulShip_AsIntegrationWould()
     {
-        var eph = CircularOrbitEphemeris.FromScenario(SimulatorTests.LoadSol());
+        var eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         double epoch = 3655.0 * 86400.0; // Mars -> Uranus decade
 
         IReadOnlyList<NpcShip> fleet = TrafficSchedule.Generate(eph, seed: 42, count: 8);
