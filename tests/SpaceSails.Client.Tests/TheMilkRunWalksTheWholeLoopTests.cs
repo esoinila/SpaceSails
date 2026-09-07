@@ -46,8 +46,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheMilkRunWalksTheWholeLoopTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     /// <summary>The berth the bench starts ashore at — a clampable station haven, which is the only kind of
     /// place a contract is taken at and the only kind that has a counter to be paid over.</summary>

@@ -31,7 +31,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheRepPitchesAndWithdrawsTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     private const string ThreadId = "3b7e51c9d0a44f628e1c7d905af2b613";
 

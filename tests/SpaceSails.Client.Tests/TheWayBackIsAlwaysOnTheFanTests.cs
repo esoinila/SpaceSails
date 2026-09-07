@@ -36,7 +36,7 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public class TheWayBackIsAlwaysOnTheFanTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
     private static readonly string[] Bodies = ["luna", "phobos", "titan", "miranda"];
 

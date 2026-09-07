@@ -391,7 +391,7 @@ public sealed class TheBootBuildsTheSameWorldTests
 
     // ── The bench ────────────────────────────────────────────────────────────────────────────────────
 
-    internal const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    internal const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>Boot the SHIPPING component at <paramref name="url"/> and render everything it changed.
     ///

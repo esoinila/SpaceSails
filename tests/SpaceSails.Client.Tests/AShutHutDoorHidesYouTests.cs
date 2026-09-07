@@ -36,8 +36,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class AShutHutDoorHidesYouTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     /// <summary>A shipped moon, and the one every other regolith guard in this project stands on.</summary>
     private const string Body = "luna";

@@ -45,8 +45,7 @@ internal static class CastawayBench
 {
     /// <summary>Everything on the page, public or not, instance or static — these guards drive a live
     /// component through its own private verbs, which is the only way to ask a page what it does.</summary>
-    internal const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    internal const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     /// <summary>The port everything ashore happens at. It is a WORKING BERTH that the deal gave a machine
     /// to — both facts asserted rather than assumed in <c>TheKiosksSquare</c>, because a port with no

@@ -39,8 +39,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheFinderWalksTheWholeCaseTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     private const string TheRedEye = "red-eye";
     private const string TheOtherPort = "ringside-exchange";

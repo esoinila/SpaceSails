@@ -48,7 +48,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheScopeGoesWhereTheCaptainPointsItTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
     private const string HunterId = "hunter-0";
     private const string Callsign = "Debt Collector";

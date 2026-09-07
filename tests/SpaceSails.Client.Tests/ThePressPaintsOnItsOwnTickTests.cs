@@ -58,7 +58,7 @@ public sealed class ThePressPaintsOnItsOwnTickTests
     /// the cheapest of the five and needs no berth. The desk under test is the same in all of them.</summary>
     private const string TheWorld = "/map?start=wreck";
 
-    private static readonly BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private static readonly BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
     /// <summary>
     /// #1134's case, driven. <c>Start sweep</c> lives on <c>ScopeControls</c>, a surface; the state it

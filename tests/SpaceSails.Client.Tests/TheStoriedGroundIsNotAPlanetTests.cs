@@ -39,8 +39,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheStoriedGroundIsNotAPlanetTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     private const int SizePx = 220;
 

@@ -32,8 +32,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class ASleeperIsBehindTheDoorTooTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     /// <summary>A sentinel no wreck deck can produce, written into the contact's memory before the drive so a
     /// WRITE is observable as a write. A guard that watched for a CHANGE would pass on a build that wrote the

@@ -26,8 +26,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheArrivalEndsWhereTheErrandIsTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     // ── (a) THE ERRAND HAPPENS WHERE THE SHIP IS LEFT ─────────────────────────────────────────────────
 

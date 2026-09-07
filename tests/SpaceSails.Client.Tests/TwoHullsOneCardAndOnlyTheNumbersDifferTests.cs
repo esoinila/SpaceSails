@@ -30,7 +30,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TwoHullsOneCardAndOnlyTheNumbersDifferTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
     /// <summary>The captain's own range and closing speed, well inside sensor reach and well outside the
     /// boarding envelope — the pre-commit distance the whole mechanic is about.</summary>

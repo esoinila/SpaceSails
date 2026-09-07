@@ -25,8 +25,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheCabinetDrawsItsCurtainTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     private const string Body = "luna";
     private const int WidthPx = 1200;

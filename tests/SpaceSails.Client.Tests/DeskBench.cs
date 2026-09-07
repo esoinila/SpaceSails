@@ -68,7 +68,7 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 internal sealed class DeskBench : Renderer
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
     private const BindingFlags Shared = BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
 
     /// <summary>The four stages of <c>BootTheWorldAsync</c> that run BEHIND the browser gate, in the order the

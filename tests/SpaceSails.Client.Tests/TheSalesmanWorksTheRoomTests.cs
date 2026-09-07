@@ -36,8 +36,7 @@ namespace SpaceSails.Client.Tests;
 [SlowGate] // #251 · 23 s over 7 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheSalesmanWorksTheRoomTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     private const string Body = "luna";
     private const string ThreadId = "b71f4a0c39d24e5ba8027c6f1d3e5490";

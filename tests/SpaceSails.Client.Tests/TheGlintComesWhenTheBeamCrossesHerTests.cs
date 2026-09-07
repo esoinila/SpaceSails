@@ -35,7 +35,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheGlintComesWhenTheBeamCrossesHerTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
     private const string LostThingId = "the-lost-thing";
 

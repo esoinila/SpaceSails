@@ -36,7 +36,7 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class TheDisposalYouWatchTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
     /// <summary>Long enough to run any hold out, whatever the clock is set to. Read off Core rather than
     /// typed, so a re-tuned constant does not quietly turn these into tests of a bar that never fills.</summary>

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using SpaceSails.Contracts;
 using SpaceSails.Core;
@@ -91,4 +92,47 @@ internal static class TestTree
 
     /// <summary><c>scenarios/sol.json</c>, the sky the game ships, parsed once for the whole assembly.</summary>
     internal static ScenarioDefinition Sol => TheShippingSky.Value;
+
+    // ── #251 · THE THREE REACHES, NAMED ONCE ──────────────────────────────────────────────────────────
+    //
+    // WHAT THE MEASUREMENT FOUND. This project reaches into the page's private state constantly — that is
+    // what a guard over a Blazor component has to do — and on 2026-09-07 it did so through ONE HUNDRED
+    // `const BindingFlags Hidden` declarations, spread over three distinct values and four spellings
+    // (`private const`, bare `const`, `internal const`, and one `private static readonly`), plus three more
+    // holding one of the same three values under another name (`Members` twice, `Anything` once). A hundred
+    // and three spellings of three ideas is the law-transcribed-at-its-call-sites shape RepoRoot() had.
+    //
+    // WHAT WAS DONE, AND WHAT DELIBERATELY WAS NOT. Only the VALUE moved. Every file keeps its own
+    // `Hidden` — the name all 833 of its mentions in this project spell — and that name is now an alias for
+    // one of the three constants below, so a reader who wants to know what `Hidden` reaches has one place to
+    // look, and the day a fourth reach is wanted there is one place to add it. Four constants are LEFT
+    // ALONE, and they are left alone for the same reason the sweep happened: they are not copies of these.
+    // `DeskBench.Shared` and `HerChainOfOwnersTests.Constants` are Static|NonPublic|Public — a reach nothing
+    // else in the tree asks for, twice, under two names; and the five `const BindingFlags Public` in
+    // Core.Tests carry DeclaredOnly, which asks a different question (what this type declares, not what it
+    // has) and belongs to the other assembly.
+    //
+    // What is NOT lifted is the reflection HELPERS these flags are passed to: `Get`, `Set`, `Field`, `Read`
+    // and `Invoke` are 273 declarations over 108 distinct bodies (the largest single agreement is 26), so a
+    // sweep of them would leave one shared helper plus a hundred private ones — the half-sweep #1165 warned
+    // against. The full measurement is in this lane's pull request.
+    //
+    // The names say the REACH rather than the flags, because that is the question a reader arrives with.
+
+    /// <summary>Private instance members only — the narrowest of the three, and the right one for a guard
+    /// that means to read a component's own <c>_field</c> and would rather miss than silently pick up a
+    /// public property of the same name. 27 declarations in 25 files.</summary>
+    internal const BindingFlags PrivateOnAnInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+
+    /// <summary>Any instance member, public or not. The house default: most guards here want the field
+    /// whatever its accessibility, because whether a member is private is the page's business and not the
+    /// law's. 48 declarations.</summary>
+    internal const BindingFlags AnythingOnAnInstance =
+        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
+    /// <summary>Any member at all — instance or static, public or not. What a guard needs when the thing it
+    /// is reaching for is a nested type, a static table or a helper the page keeps beside the state. 28
+    /// declarations, three of which spelled it <c>Members</c> or <c>Anything</c>.</summary>
+    internal const BindingFlags AnythingAtAll =
+        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
 }

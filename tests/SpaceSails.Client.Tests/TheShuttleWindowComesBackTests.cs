@@ -34,8 +34,7 @@ public sealed class TheShuttleWindowComesBackTests
     private readonly Xunit.Abstractions.ITestOutputHelper _out;
     public TheShuttleWindowComesBackTests(Xunit.Abstractions.ITestOutputHelper output) => _out = output;
 
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
     private const string Berth = "red-eye";
     private const string Moon = "ganymede";
 

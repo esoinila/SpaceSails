@@ -49,8 +49,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TwoGripsOneWalkTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>The floor these guards drive. The GENERATOR's floor, never a hand-typed room — a guard
     /// handed a world it built itself cannot tell pass from fail.</summary>

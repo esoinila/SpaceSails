@@ -38,8 +38,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class ABodyguardWalksYourLineHomeTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>The Stickney rim — the one authored ground with no maze between the landing band and the
     /// object, which is what a walking guard wants under it (worldbuilding-notes §8, the-landing-site §10).

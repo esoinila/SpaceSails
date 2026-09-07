@@ -25,8 +25,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheCarWithPhotographsInItTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     private const string TheHunt = "DUDE. WHERE. Is. The CAR?!";
     private const string TheFind = "You found your CAAAR!";

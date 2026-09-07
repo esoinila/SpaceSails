@@ -470,8 +470,7 @@ public sealed class TheyKnewTheFaceBeforeTests
 
     // ── THE BENCH ────────────────────────────────────────────────────────────────────────────────────
 
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     private const string ThreadId = "9f3c71ab54d8402e8c17ba26d0e5391f";
     private const string TheRedEye = "red-eye";

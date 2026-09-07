@@ -489,8 +489,7 @@ public sealed class TheOverlayShellIsOneMechanismTests
 
     // ── Plumbing ──────────────────────────────────────────────────────────────────────────────────────
 
-    private const BindingFlags Anything =
-        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+    private const BindingFlags Anything = TestTree.AnythingAtAll;
 
     /// <summary>Walk one cref: the first name is a member or nested type of the law, or a type by name;
     /// every name after it is a member or a nested type of what the last one resolved to. A parameter list

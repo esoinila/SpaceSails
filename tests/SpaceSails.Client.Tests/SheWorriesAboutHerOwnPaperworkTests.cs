@@ -31,8 +31,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class SheWorriesAboutHerOwnPaperworkTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>A stable seed for the deck's schedule, written down so the windows below are reproducible
     /// by hand.</summary>

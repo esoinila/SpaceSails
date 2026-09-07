@@ -55,8 +55,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheStallSaysSoTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>The floor these guards drive. One site is enough to prove a law about a clock, and it is the
     /// GENERATOR's floor rather than a hand-typed room — a guard handed a world it built itself cannot tell

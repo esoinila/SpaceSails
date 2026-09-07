@@ -42,7 +42,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheHeldBeatIsStillOwedTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>The beat every law here is driven with: a CARD (so the seam's card arms apply at all), and
     /// <see cref="StoryBeats.Cadence.OnceEver"/> (so "spent exactly once" is a question the seen-set can

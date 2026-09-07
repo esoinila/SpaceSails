@@ -29,8 +29,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheDockedBarIsAWalkableRoomTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     /// <summary>The classy great-port tier, and the one the owner drinks in.</summary>
     private const string TheRedEye = "red-eye";

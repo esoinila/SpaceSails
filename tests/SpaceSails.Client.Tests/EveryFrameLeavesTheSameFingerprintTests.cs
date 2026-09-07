@@ -94,8 +94,7 @@ namespace SpaceSails.Client.Tests;
 [SlowGate] // #251 · 36 s over 32 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed partial class EveryFrameLeavesTheSameFingerprintTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     // ── WHERE THE PINS LIVE ───────────────────────────────────────────────────────────────────────────
     //
