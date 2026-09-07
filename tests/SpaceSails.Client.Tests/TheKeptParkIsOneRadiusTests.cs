@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -52,6 +53,19 @@ namespace SpaceSails.Client.Tests;
 ///     Math.Min(OrbitRule.ParkingRadius(body, hill), keptRadiusCap);
 ///     return $"autopilot flying the approach — insertion at ≈{FormatAltitude(
 ///         OrbitRule.ParkingRadius(oi.Body, oi.Hill) - oi.Body.BodyRadius)}";
+/// </code>
+///
+/// <para>#1179 · <b>and red AGAIN the day the subject grew past the family.</b> Widening to the glob found
+/// the second site and then stopped at the family's edge — four more readers of the same quantity sat one
+/// directory listing away, in files that are not partials of the autopilot at all. Pointed at the whole
+/// client it failed on today's tree, naming every one with its file and line:</para>
+/// <code>
+/// #286 · `OrbitRule.ParkingRadius(` is named at 5 site(s) in src/SpaceSails.Client:
+///     Pages\Map.Autopilot.Arm.cs:260  Math.Min(OrbitRule.ParkingRadius(body, hill), keptRadiusCap);
+///     Pages\Map.NavToolbar.cs:77  …stable park at {FormatDistance(OrbitRule.ParkingRadius(oi.Body, oi.Hill))}…
+///     Pages\Map.Plot.FlightPlan.cs:308  ? OrbitRule.ParkingRadius(keptBody, _orbitedBodyHillRadius) - keptBody.BodyRadius
+///     Pages\Map.Plot.FlightPlan.cs:347  double parkAlt = OrbitRule.ParkingRadius(oi.Body, oi.Hill) - oi.Body.BodyRadius;
+///     Pages\Map.Sim.Tick.Warp.cs:100  double park = OrbitRule.ParkingRadius(_nearestBody, hill);
 /// </code>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
@@ -210,47 +224,80 @@ public sealed class TheKeptParkIsOneRadiusTests
     /// partial that joins the autopilot tomorrow is in the subject the day it lands, rather than the day
     /// somebody remembers to add it. Ordinal order is fine here where it is not for the debit ledger: this
     /// claim is a COUNT and a PRESENCE, never a sequence.</para>
+    ///
+    /// <para>#1179 · <b>AND THE FAMILY WAS STILL THE WRONG SUBJECT.</b> Widening to the glob found the second
+    /// site and then stopped exactly at the family's edge — while FOUR more readers of the same quantity sat
+    /// just outside it, in files that are not partials of the autopilot at all: the flight-plan board's two
+    /// altitude quotes, the nav toolbar's emergency-descent promise, and the warp tier's how-far-to-the-band
+    /// heuristic. The clamped park is not an autopilot-family idea; it is a CLIENT idea — the number every
+    /// surface that speaks about where the ship is going, or steers by how near she is to it, has to be
+    /// asking for. So the subject is <c>src/SpaceSails.Client</c>, read recursively: every <c>.cs</c> and
+    /// <c>.razor</c> under it. (Raw file reads, not <c>MapMarkup.Read</c>'s composed ones: composition exists
+    /// so a guard reading ONE path is not half-blind, and a sweep that already visits every file on disk is
+    /// blind to nothing — while splicing surfaces into the page would count their text twice.)</para>
     /// </summary>
     [Fact]
-    public void TheClientsAutopilotSpellsTheClampedParkAtExactlyOneSite()
+    public void TheClientSpellsTheClampedParkAtExactlyOneSite()
     {
-        // #1177 · every Map.Autopilot* partial, so "named at exactly one site" is a claim about the whole
-        // autopilot and not about the subset of it a previous lane happened to list.
-        string source = MapMarkup.PagesFamily("Map.Autopilot*.cs");
-
-        NamedOnce(source, "OrbitRule.MaxKeptRadiusUnderParent(");
-        NamedOnce(source, "OrbitRule.ParkingRadius(");
+        // #1179 · the whole client, recursively. "Named at exactly one site" is a claim about every surface
+        // that could quote the park or steer by it, not about the partials of the class that flies to it.
+        NamedOnceInTheClient("OrbitRule.MaxKeptRadiusUnderParent(");
+        NamedOnceInTheClient("OrbitRule.ParkingRadius(");
 
         // …and the one site of each is the shared helper, not a call site that happens to be alone today.
+        string source = MapMarkup.PagesFamily("Map.Autopilot*.cs");
         Assert.Contains(
             "private double KeptRadiusCap(CelestialBody body, CelestialBody parent) =>",
             source, StringComparison.Ordinal);
         Assert.Contains(
             "private static double KeptParkRadius(CelestialBody body, double hill, double keptRadiusCap) =>",
             source, StringComparison.Ordinal);
-        // The three readers, and nothing else: the insertion loop, the keeper, and the panel that
-        // COACHES the insertion — the third joined them in #1177.
-        Assert.Equal(3, Count(source, "KeptRadiusCap(body, parent)"));
-        Assert.Equal(3, Count(source, "KeptParkRadius(body, hill, "));
+        // The readers spelled `body, hill` — the insertion loop, the keeper, the panel that COACHES the
+        // insertion (#1177) — plus, since #1179, the parentless overload through which the readers OUTSIDE
+        // this family ask, so they get the clamp without a second spelling of it.
+        Assert.Equal(4, Count(source, "KeptRadiusCap(body, parent)"));
+        Assert.Equal(4, Count(source, "KeptParkRadius(body, hill, "));
     }
 
     private static int Count(string haystack, string needle) =>
         Regex.Matches(haystack, Regex.Escape(needle)).Count;
 
-    /// <summary>#1177 · the count, and — when it is wrong — the LINES, so the failure names the second
-    /// site instead of printing "expected 1, actual 2" about a family of eleven files.</summary>
-    private static void NamedOnce(string source, string needle)
+    /// <summary>#1179 · the subject of the one-site claim: every <c>.cs</c> and <c>.razor</c> under
+    /// <c>src/SpaceSails.Client</c>, recursively, minus the build's own output.</summary>
+    private static IEnumerable<string> ClientSources()
     {
-        string[] sites = source
-            .Split('\n')
-            .Where(line => line.Contains(needle, StringComparison.Ordinal))
-            .Select(line => "    " + line.Trim())
-            .ToArray();
+        string root = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client");
+        char sep = Path.DirectorySeparatorChar;
+        return Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories)
+            .Concat(Directory.EnumerateFiles(root, "*.razor", SearchOption.AllDirectories))
+            .Where(path => !path.Contains($"{sep}obj{sep}", StringComparison.Ordinal)
+                        && !path.Contains($"{sep}bin{sep}", StringComparison.Ordinal))
+            .OrderBy(path => path, StringComparer.Ordinal);
+    }
 
-        Assert.True(sites.Length == 1,
-            $"#286 · `{needle}` is named at {sites.Length} site(s) in the Map.Autopilot* family; the clamped " +
-            "park is ONE quantity and every reader must ask the shared helper for it, or the panel can quote " +
-            "a radius the pilot does not fly (#1177):\n" + string.Join("\n", sites));
+    /// <summary>#1177/#1179 · the count, and — when it is wrong — the FILE, LINE and TEXT of every site, so
+    /// the failure names the offenders instead of printing "expected 1, actual 5" about a client of several
+    /// hundred files.</summary>
+    private static void NamedOnceInTheClient(string needle)
+    {
+        string root = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client");
+        var sites = new List<string>();
+        foreach (string path in ClientSources())
+        {
+            string[] lines = File.ReadAllLines(path);
+            for (int i = 0; i < lines.Length; i++)
+            {
+                if (lines[i].Contains(needle, StringComparison.Ordinal))
+                {
+                    sites.Add($"    {Path.GetRelativePath(root, path)}:{i + 1}  {lines[i].Trim()}");
+                }
+            }
+        }
+
+        Assert.True(sites.Count == 1,
+            $"#286 · `{needle}` is named at {sites.Count} site(s) in src/SpaceSails.Client; the clamped park " +
+            "is ONE quantity and every reader must ask the shared helper for it, or a surface can quote — or " +
+            "steer by — a radius the pilot does not fly (#1177, #1179):\n" + string.Join("\n", sites));
     }
 
     // ── The bench ─────────────────────────────────────────────────────────────────────────────────────
