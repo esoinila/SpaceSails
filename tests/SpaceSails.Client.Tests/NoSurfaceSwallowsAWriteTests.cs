@@ -79,6 +79,12 @@ public sealed class NoSurfaceSwallowsAWriteTests
         // of the writes this law exists to catch (`_scrubOffsetSeconds` through @bind, `_burnAngleAbsolute`
         // through a spelled assignment) crossed INTO NavHud that way and cross out of it again here.
         Path.Combine(SurfacesDir, "NavHud"),
+        // #251 · and the second surface cut up in its turn: SatchelPanel.razor's six pages, under
+        // Pages/Map/SatchelPanel/. BOTH of this law's own worked examples live down here now —
+        // `_satchelPage`, which the tab bar assigns on every press, and `_walletOpen`, the folder toggle
+        // this class's summary quotes — so a list that stopped at NavHud would be a list that no longer
+        // covers the two writes it was written about.
+        Path.Combine(SurfacesDir, "SatchelPanel"),
         Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Stations", "TrackingPost"),
     ];
 

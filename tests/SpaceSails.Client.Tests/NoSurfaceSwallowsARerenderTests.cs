@@ -125,6 +125,9 @@ public sealed class NoSurfaceSwallowsARerenderTests
         // #251 · the surfaces of a surface. NavHud.razor is Map's own markup one file out, and its
         // markup is cut into Pages/Map/NavHud/ in its turn — under NavHud's dispatch, which is Map's.
         Path.Combine(Client, "Pages", "Map", "NavHud"),
+        // #251 · and the same again for the satchel: SatchelPanel.razor's six pages are
+        // Pages/Map/SatchelPanel/ now, under SatchelPanel's dispatch, which is Map's.
+        Path.Combine(Client, "Pages", "Map", "SatchelPanel"),
         Path.Combine(Client, "Pages", "Stations", "TrackingPost"),
     ];
 

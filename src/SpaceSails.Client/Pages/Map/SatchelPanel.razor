@@ -45,100 +45,13 @@
                           Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
                           DismissClass="view-object-close" DismissFace="Close"
                           OnClose="() => Dismiss(CloseSatchel)">
-                <div class="view-object-title">
-                    @(_satchelPage switch
-                    {
-                        SatchelPage.Notes => "📓 WHAT YOU WROTE DOWN",
-                        // #741 v1 · Not the tab's own word twice over: a page title is the QUESTION the page
-                        // answers, the way the compass's is ("why you are down here").
-                        SatchelPage.Threads => "🧵 WHAT YOU WROTE DOWN TWICE",
-                        SatchelPage.Spread => "🗂 THE PAPERS, OUT ON THE TABLE",
-                        // #828 · The bucket is NAMED, and it is the one the boots are at — never "a bin".
-                        // Away from one the title falls back to the verb, because a page whose fixture has
-                        // walked off is a page about the verb and nothing else.
-                        SatchelPage.Bin => BinWithinReach() is { } titleBin
-                            ? SpaceSails.Core.RipAndBin.PickerTitle(titleBin.Tier)
-                            : SpaceSails.Core.RipAndBin.Label,
-                        // #727 · Not "your missions" — WHY YOU ARE DOWN HERE, which is the question the page
-                        // answers and the one a captain three floors into a basement is actually asking.
-                        SatchelPage.Missions => "🗺 WHY YOU ARE DOWN HERE",
-                        _ => "🎒 WHAT YOU ARE CARRYING",
-                    })
-                </div>
+                <SatchelTitle _satchelPage="@_satchelPage" BinWithinReach="@BinWithinReach" />
 
-                @* #690 · A pocket and a notebook are both things a satchel holds. Owner: "should we have
-                   notes / clues section in our inventory ui?" — and on the register: "it's like our detective
-                   notepad :-D". The field book used to render only at a ship-brain desk, so the captain
-                   standing at a sealed door could not consult their own notes; #688's leave verb made that
-                   acute by filing a paper's gist to exactly that unreachable place. No second store here —
-                   the NOTES page reads _fieldNotes, the one book. *@
-                <div class="satchel-tabs">
-                    <button type="button"
-                            class="satchel-tab @(_satchelPage == SatchelPage.Carried ? "on" : "")"
-                            title="What is in the satchel"
-                            @onclick="() => _satchelPage = SatchelPage.Carried">
-                        🎒 CARRIED@(_satchel.Count > 0 ? $" ({_satchel.Count})" : "")
-                    </button>
-                    <button type="button"
-                            class="satchel-tab @(_satchelPage == SatchelPage.Notes ? "on" : "")"
-                            title="What the ground has told you"
-                            @onclick="() => _satchelPage = SatchelPage.Notes">
-                        📓 NOTES
-                    </button>
-                    @* #741 v1 · THREADS, beside the book and reading the same one. Owner's issue: "a third
-                       tab — THREADS — grouping existing entries by the entities they already name… the
-                       THREAD is just the stack of what you wrote about one name, and the captain draws the
-                       line." ALWAYS drawn, like the compass: an empty page here is an answer, and a tab
-                       that appeared only once a case was forming would be missing exactly while a captain
-                       wondered whether the game did this at all. The count is the book's, not a badge. *@
-                    <button type="button"
-                            class="satchel-tab @(_satchelPage == SatchelPage.Threads ? "on" : "")"
-                            title="@SpaceSails.Core.CaseSubjects.TabHint"
-                            @onclick="() => TheSatchelTurnsTo(SatchelPage.Threads)">
-                        @SpaceSails.Core.CaseSubjects.TabLabel@(TheBookThreads() is { Count: > 0 } stacks
-                            ? $" ({stacks.Count})" : "")
-                    </button>
-                    @* #727 · THE THIRD POCKET. What you learned (📓) and what you owe (🗺) are two different
-                       questions, and the book keeps its opinionless voice by not being asked the second one.
-                       Unlike SPREAD and THE BIN this tab is ALWAYS drawn: a compass that vanished when there
-                       was nothing on it would answer "why am I down here" with silence, and the whole point
-                       of the page is that the answer is never nothing — it is "nothing owed on foot", said
-                       out loud, on the page. *@
-                    <button type="button"
-                            class="satchel-tab @(_satchelPage == SatchelPage.Missions ? "on" : "")"
-                            title="What you took on, and what of it you can do standing here"
-                            @onclick="() => _satchelPage = SatchelPage.Missions">
-                        🗺 MISSIONS@(CompassOnFoot() is { Count: > 0 } owed ? $" ({owed.Count})" : "")
-                    </button>
-                    @* #784 · THE SPREAD, and the tab exists only when there is a table under it. Owner's law:
-                       "writing things down requires sitting down to be properly done" — and the tab follows
-                       the posture rather than standing there greyed out, because on your feet this is not a
-                       page you are being refused, it is a page that does not apply. The refusal a captain
-                       DOES need to meet (the bar desk) is inside the page, on the seat that has one. *@
-                    @if (CaptainIsSeatedAnywhere)
-                    {
-                        <button type="button"
-                                class="satchel-tab @(_satchelPage == SatchelPage.Spread ? "on" : "")"
-                                title="@SpreadDoorHint"
-                                @onclick="() => _satchelPage = SatchelPage.Spread">
-                            🗂 SPREAD
-                        </button>
-                    }
-                    @* #828 · THE BIN, and the tab follows the FIXTURE the way the spread tab follows the
-                       posture: standing at a bucket it is a page, three du away it is not a page you are
-                       being refused. It exists so the captain who opened the pocket by reflex ([I]) can
-                       still find the bin they are standing at, and so the one who came in through [E] can
-                       get back to their pockets and their book without walking away first. *@
-                    @if (BinWithinReach() is { } binTab)
-                    {
-                        <button type="button"
-                                class="satchel-tab @(_satchelPage == SatchelPage.Bin ? "on" : "")"
-                                title="@SpaceSails.Core.RipAndBin.Hint(binTab.Tier)"
-                                @onclick="() => _satchelPage = SatchelPage.Bin">
-                            @SpaceSails.Core.RipAndBin.Glyph THE BIN
-                        </button>
-                    }
-                </div>
+                <SatchelTabs _satchel="@_satchel" _satchelPageValue="@_satchelPage"
+                             _satchelPageSet="@(v => _satchelPage = v)" BinWithinReach="@BinWithinReach"
+                             CaptainIsSeatedAnywhere="@CaptainIsSeatedAnywhere" CompassOnFoot="@CompassOnFoot"
+                             SpreadDoorHint="@SpreadDoorHint" TheBookThreads="@TheBookThreads"
+                             TheSatchelTurnsTo="@TheSatchelTurnsTo" />
 
                 @* #784 · THE SPREAD. Owner: "we can't do that without a place to lay the docs we make notes
                    from" — so this page IS the table surface, and every row on it is a paper lying on it.
