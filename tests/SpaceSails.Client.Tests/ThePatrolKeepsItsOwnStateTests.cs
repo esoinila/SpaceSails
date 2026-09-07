@@ -226,7 +226,7 @@ public sealed partial class ThePatrolKeepsItsOwnStateTests
     [Fact]
     public void TheTwentyTwoAreAllOnThePatrolObject()
     {
-        const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+        const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
         const BindingFlags Either = Hidden | BindingFlags.Public;
 
         Type round = typeof(Pages.Map).GetNestedType("Patrol", Hidden | BindingFlags.Public)
@@ -278,7 +278,7 @@ public sealed partial class ThePatrolKeepsItsOwnStateTests
     [Fact]
     public void ThePageHoldsExactlyOneRoundAndNeverSwapsIt()
     {
-        const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+        const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
         Type round = typeof(Pages.Map).GetNestedType("Patrol", Hidden | BindingFlags.Public)!;
         Type guard = typeof(Pages.Map).GetNestedType("Guard", Hidden | BindingFlags.Public)!;
@@ -309,7 +309,7 @@ public sealed partial class ThePatrolKeepsItsOwnStateTests
     [Fact]
     public void TheFifteenQuestionsAreOnTheRoundAndForwardedByThePage()
     {
-        const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+        const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
         Type round = typeof(Pages.Map).GetNestedType("Patrol", Hidden | BindingFlags.Public)!;
         var missing = new List<string>();

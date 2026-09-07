@@ -29,7 +29,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheKeysOfNavigationAreTheLoudOnesTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
     private const double AU = 1.495978707e11;
 
     // ─────────────────────────── #963 · the scope's switch lives on the scope ───────────────────────────

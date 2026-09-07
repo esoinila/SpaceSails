@@ -35,8 +35,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheAutopilotNeverPromisesAClampTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>The clamp instruction, exactly as the page writes it. Any surface carrying this is
     /// telling the captain to press ⚓ Dock.</summary>

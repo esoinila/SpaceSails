@@ -43,7 +43,7 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public class TheGroundThatGrewSaysWhereTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
     private static readonly ExpeditionSiteKind[] Kinds =
     [

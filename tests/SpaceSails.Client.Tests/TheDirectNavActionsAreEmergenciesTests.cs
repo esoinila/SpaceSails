@@ -56,8 +56,7 @@ namespace SpaceSails.Client.Tests;
 [SlowGate] // #251 · 12 s over 10 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheDirectNavActionsAreEmergenciesTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
     private const double AU = 1.495978707e11;
 
     /// <summary>The one dress an emergency press wears. Quiet red — an OUTLINE, not a filled danger button:

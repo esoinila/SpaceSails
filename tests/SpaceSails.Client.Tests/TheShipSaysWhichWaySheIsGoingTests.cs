@@ -34,7 +34,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheShipSaysWhichWaySheIsGoingTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>The ship's own ink (<c>Map.Plot.cs</c>'s <c>ShipColor</c>) — the arrowhead is drawn in it and
     /// in nothing new, so this is also what tells her triangle apart from every other polygon in the frame.</summary>

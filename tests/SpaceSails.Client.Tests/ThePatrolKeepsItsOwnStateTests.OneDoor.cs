@@ -262,7 +262,7 @@ public sealed partial class ThePatrolKeepsItsOwnStateTests
     [Fact]
     public void TheThirteenVerbsTheOutsideStillCallsAreForwardedByThePage()
     {
-        const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+        const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
         Type round = typeof(Pages.Map).GetNestedType("Patrol", Hidden | BindingFlags.Public)!;
         var missing = new List<string>();

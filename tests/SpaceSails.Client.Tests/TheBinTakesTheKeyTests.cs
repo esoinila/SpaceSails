@@ -35,7 +35,7 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class TheBinTakesTheKeyTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
     // ── (a) THE TWO DOORS, DRIVEN ─────────────────────────────────────────────────────────────────────
 

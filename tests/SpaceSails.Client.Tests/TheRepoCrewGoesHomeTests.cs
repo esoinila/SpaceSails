@@ -41,8 +41,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheRepoCrewGoesHomeTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>One frame, at the clamp the surface step spends however long the browser was away
     /// (<c>MaxSurfaceStepSeconds</c>) — the game's own worst frame, driven at its own ceiling.</summary>

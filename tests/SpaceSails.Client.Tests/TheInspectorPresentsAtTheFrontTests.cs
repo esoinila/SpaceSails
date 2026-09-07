@@ -26,7 +26,7 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class TheInspectorPresentsAtTheFrontTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
     private const double Dt = 1.0 / 60.0;
     private const long Watch = 3L;
 

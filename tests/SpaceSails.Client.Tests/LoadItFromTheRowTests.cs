@@ -34,7 +34,7 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class LoadItFromTheRowTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
     /// <summary>A gun on the ground, as the bench sets one up.</summary>
     private readonly record struct Gun(

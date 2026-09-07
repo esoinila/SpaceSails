@@ -39,7 +39,7 @@ public sealed partial class ThePatrolKeepsItsOwnStateTests
     [Fact]
     public void EveryOneOfTheGuardsTwentyEightIsOnTheTypeWithTheSetterItShouldHave()
     {
-        const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+        const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
         const BindingFlags Either = Hidden | BindingFlags.Public;
 
         Type guard = typeof(Pages.Map).GetNestedType("Guard", Hidden | BindingFlags.Public)

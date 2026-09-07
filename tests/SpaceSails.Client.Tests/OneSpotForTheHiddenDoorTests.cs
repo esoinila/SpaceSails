@@ -47,8 +47,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class OneSpotForTheHiddenDoorTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>The shipped sweep — the same list #625's guard walks, so the two cannot drift apart about
     /// which grounds count.</summary>

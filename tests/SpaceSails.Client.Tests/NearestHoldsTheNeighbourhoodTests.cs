@@ -38,8 +38,7 @@ namespace SpaceSails.Client.Tests;
 [SlowGate] // #251 · 34 s over 99 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class NearestHoldsTheNeighbourhoodTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>Where the ship is held while the family turns: a planet, and how far off it to park.
     /// The ranges are the ones the flicker was found at — from a long approach down to close aboard.</summary>

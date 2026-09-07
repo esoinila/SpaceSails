@@ -45,8 +45,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheCounterAboardHasStoolsTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     /// <summary>The box the walk is searched in — her hull, with room to spare on every side.</summary>
     private static (double MinX, double MinY, double MaxX, double MaxY) HerBounds => (-26, -12, 32, 16);

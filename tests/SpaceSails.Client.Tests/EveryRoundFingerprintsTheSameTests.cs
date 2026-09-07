@@ -76,8 +76,7 @@ namespace SpaceSails.Client.Tests;
 [SlowGate] // #251 · 29 s over 5 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed partial class EveryRoundFingerprintsTheSameTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     private const string Body = "luna";
 

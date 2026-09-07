@@ -28,8 +28,7 @@ public class TheGroundRemembersWhatYouDidToItTests
         MapType.GetNestedType("SurfaceExcursion", BindingFlags.NonPublic | BindingFlags.Public)
         ?? throw new InvalidOperationException("the excursion record is gone");
 
-    private const BindingFlags Members =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+    private const BindingFlags Members = TestTree.AnythingAtAll;
 
     /// <summary>THE LEDGER IS ON THE SHIP, NOT ON THE VISIT. A <see cref="GroundMemory"/> held by the page
     /// outlives an excursion; one held by the excursion is thrown away with it, which is the bug this slice

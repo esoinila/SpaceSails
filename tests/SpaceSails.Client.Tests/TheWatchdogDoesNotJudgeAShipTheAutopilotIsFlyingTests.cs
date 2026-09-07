@@ -60,7 +60,7 @@ public sealed class TheWatchdogDoesNotJudgeAShipTheAutopilotIsFlyingTests
     public TheWatchdogDoesNotJudgeAShipTheAutopilotIsFlyingTests(Xunit.Abstractions.ITestOutputHelper output) =>
         _out = output;
 
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
     private const double Day = 86400.0;
 
     /// <summary>Where the ship stands when she arms: 1.5 M km out in Jupiter's well, on a slow, eccentric

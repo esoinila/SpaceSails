@@ -34,8 +34,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheBarKeepsItsOwnHoursTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     /// <summary>How many watches of every bar in the game the sweep walks. Eight watches is a day and a bit
     /// per berth, which across the shipped havens is enough evenings that a room with no metabolism in it

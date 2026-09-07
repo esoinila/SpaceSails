@@ -37,8 +37,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheWreckHasItsOwnArrivalTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>The canon arm verb, pinned character for character. Fable, on #244, 2026-09-05.</summary>
     private const string TheVerb = "Close to pickup";

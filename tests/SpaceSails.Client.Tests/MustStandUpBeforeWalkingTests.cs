@@ -43,8 +43,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class MustStandUpBeforeWalkingTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>The floors this file drives. One site is enough to prove a law about a key handler, and the
     /// seats themselves are swept for existence by <c>EverySeatIsSomewhereYouCanSitTests</c> next door — but

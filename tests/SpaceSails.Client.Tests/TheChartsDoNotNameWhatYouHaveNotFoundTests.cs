@@ -49,7 +49,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheChartsDoNotNameWhatYouHaveNotFoundTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
     private const string WreckId = "derelict-roadster";
     private const string WreckName = "Derelict Roadster";

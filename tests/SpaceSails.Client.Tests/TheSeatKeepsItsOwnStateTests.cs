@@ -219,7 +219,7 @@ public sealed class TheSeatKeepsItsOwnStateTests
     [Fact]
     public void TheSeatObjectReallyCarriesTheFiveAndAnswersAllFifteen()
     {
-        const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+        const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
         const BindingFlags Any = Hidden | BindingFlags.Public;
 
         FieldInfo? seating = typeof(Pages.Map).GetField("_seating", Hidden);

@@ -45,8 +45,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheKeptParkIsOneRadiusTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     /// <summary>A roomy moon with a real parent, so #286's cap and the tide-stable park are both defined.</summary>
     private const string Moon = "luna";

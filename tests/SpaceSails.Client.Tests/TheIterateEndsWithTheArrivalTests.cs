@@ -53,7 +53,7 @@ public sealed class TheIterateEndsWithTheArrivalTests
     private readonly Xunit.Abstractions.ITestOutputHelper _out;
     public TheIterateEndsWithTheArrivalTests(Xunit.Abstractions.ITestOutputHelper output) => _out = output;
 
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
     private const double Day = 86400.0;
 
     /// <summary>The departure that reaches Mars — the very constants #969's bench pins, solved once with the

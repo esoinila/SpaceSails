@@ -28,7 +28,7 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public class OnePagesDeckIsItsOwnTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
     private static DeckPlan DeckOf(Map page) =>
         (DeckPlan)typeof(Map).GetField("_deckPlan", Hidden)!.GetValue(page)!;

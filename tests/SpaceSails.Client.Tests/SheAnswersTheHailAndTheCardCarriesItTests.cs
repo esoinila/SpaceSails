@@ -26,7 +26,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class SheAnswersTheHailAndTheCardCarriesItTests
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
     /// <summary>Well inside the tight-beam's 5×10¹⁰ m reach and well outside the boarding envelope: the
     /// pre-commit range the whole read is about.</summary>

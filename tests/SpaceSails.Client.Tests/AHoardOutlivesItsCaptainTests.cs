@@ -40,8 +40,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class AHoardOutlivesItsCaptainTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingAtAll;
 
     /// <summary>A berth to die from — the same world the desk sweep boots.</summary>
     private const string ABerth = "/map?dock=selene-gate&body=luna&site=1";

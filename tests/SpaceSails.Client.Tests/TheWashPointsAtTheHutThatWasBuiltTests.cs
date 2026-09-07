@@ -46,8 +46,7 @@ namespace SpaceSails.Client.Tests;
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheWashPointsAtTheHutThatWasBuiltTests
 {
-    private const BindingFlags Hidden =
-        BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+    private const BindingFlags Hidden = TestTree.AnythingOnAnInstance;
 
     /// <summary>The shipped sweep — the same set the lift's own guard walks, so the two cannot drift apart
     /// about which grounds count.</summary>

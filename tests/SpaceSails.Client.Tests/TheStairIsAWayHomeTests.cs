@@ -33,7 +33,7 @@ public sealed class TheStairIsAWayHomeTests
         "secret-lab-site", "secret-lab-site-unlisted",
     ];
 
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
     private static SurfaceLayout.Field Field => MoonSurface.ExpeditionField();
 

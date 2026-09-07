@@ -25,7 +25,7 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public static class SeatState
 {
-    private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic;
+    private const BindingFlags Hidden = TestTree.PrivateOnAnInstance;
 
     /// <summary>The five, and what each is called on the seat object now. Raw name in, property name out.</summary>
     private static readonly Dictionary<string, string> Moved = new(StringComparer.Ordinal)

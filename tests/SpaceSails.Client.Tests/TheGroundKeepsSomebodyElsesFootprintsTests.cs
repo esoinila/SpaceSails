@@ -36,8 +36,7 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public class TheGroundKeepsSomebodyElsesFootprintsTests
 {
-    private const BindingFlags Members =
-        BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+    private const BindingFlags Members = TestTree.AnythingAtAll;
 
     private static Type MapType =>
         typeof(DeckPlan).Assembly.GetType("SpaceSails.Client.Pages.Map")
