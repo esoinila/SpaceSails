@@ -1,9 +1,44 @@
-﻿/* #251 · SpreadTable's CSS-SCOPE CARRIER. No rules — on purpose.
+﻿/* #251 · SpreadTable's OWN RULES, moved verbatim out of SatchelPanel.razor.css.
 
-   Blazor gives every component its own scope identifier and compiles Map.razor.css / SatchelPanel.razor.css
-   to `.selector[b-<the page's scope>]`. A component with no stylesheet of its own gets NO scope, and every
-   rule that styled this markup would stop matching it the moment it left SatchelPanel.razor — no build
-   error, no test, the surface simply renders unstyled. This file exists so the csproj's
-   `Pages\Map\SatchelPanel\*.razor.css` entry can pin it to `b-4dqsdx4p75`, the page's own identifier, and
-   the shipped stylesheet does not change by a byte. EverySurfaceWearsThePagesCssScopeTests keeps it true.
+   Four rule blocks, in the order that sheet wrote them. Nothing here was retyped: these are the same
+   characters under a different name. The scope is still the PAGE's (`b-4dqsdx4p75`, pinned in
+   SpaceSails.Client.csproj), so every selector compiles to exactly the string it compiled to before the
+   move and matches exactly the elements it matched.
+
+   WHAT IS DOWN HERE AND WHAT IS NOT (#1166). A block moves with its markup only when EVERY user moves:
+   every rule below names a class that SpreadTable.razor — and no other component in the client —
+   renders. The satchel's shared kit (the row, the item button, the leave control, the sub-line,
+   the empty line) is rendered by four or five of these surfaces at once and stays in
+   SatchelPanel.razor.css, filed under the surface it is named after.
+
+   The bundle appends this sheet AFTER SatchelPanel.razor.css, so a rule that moved here lands LATER in
+   the cascade than it was. TheBundleIsTheSameCascadeTests holds the whole partition to the law that says
+   no pair which can win or lose against each other changed places.
  */
+
+/* #973 L3 · THE RECONCILE, on the spread. The laid pair sits above the papers because it is what the
+   captain is looking at; the second question sits under the verdict because it is a count and not a
+   conclusion. */
+.spread-lay { margin-bottom: 0.6rem; }
+
+.spread-laid {
+    display: flex;
+    gap: 0.4rem;
+    align-items: baseline;
+    flex-wrap: wrap;
+    margin: 0.3rem 0;
+}
+
+.spread-laid-item {
+    font-size: 0.75rem;
+    color: #d8b56a;
+    border: 1px solid rgba(216, 181, 106, 0.35);
+    border-radius: 3px;
+    padding: 0.1rem 0.4rem;
+}
+
+.spread-second-question {
+    font-size: 0.7rem;
+    color: #7b8ca3;
+    margin: 0.15rem 0 0.4rem;
+}

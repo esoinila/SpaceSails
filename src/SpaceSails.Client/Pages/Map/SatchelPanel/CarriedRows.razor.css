@@ -1,9 +1,81 @@
-﻿/* #251 · CarriedRows's CSS-SCOPE CARRIER. No rules — on purpose.
+﻿/* #251 · CarriedRows's OWN RULES, moved verbatim out of SatchelPanel.razor.css.
 
-   Blazor gives every component its own scope identifier and compiles Map.razor.css / SatchelPanel.razor.css
-   to `.selector[b-<the page's scope>]`. A component with no stylesheet of its own gets NO scope, and every
-   rule that styled this markup would stop matching it the moment it left SatchelPanel.razor — no build
-   error, no test, the surface simply renders unstyled. This file exists so the csproj's
-   `Pages\Map\SatchelPanel\*.razor.css` entry can pin it to `b-4dqsdx4p75`, the page's own identifier, and
-   the shipped stylesheet does not change by a byte. EverySurfaceWearsThePagesCssScopeTests keeps it true.
+   Eight rule blocks, in the order that sheet wrote them. Nothing here was retyped: these are the same
+   characters under a different name. The scope is still the PAGE's (`b-4dqsdx4p75`, pinned in
+   SpaceSails.Client.csproj), so every selector compiles to exactly the string it compiled to before the
+   move and matches exactly the elements it matched.
+
+   WHAT IS DOWN HERE AND WHAT IS NOT (#1166). A block moves with its markup only when EVERY user moves:
+   every rule below names a class that CarriedRows.razor — and no other component in the client —
+   renders. The satchel's shared kit (the row, the item button, the leave control, the sub-line,
+   the empty line) is rendered by four or five of these surfaces at once and stays in
+   SatchelPanel.razor.css, filed under the surface it is named after.
+
+   The bundle appends this sheet AFTER SatchelPanel.razor.css, so a rule that moved here lands LATER in
+   the cascade than it was. TheBundleIsTheSameCascadeTests holds the whole partition to the law that says
+   no pair which can win or lose against each other changed places.
  */
+
+/* Opened from nowhere in particular, it is a LOOK — the rows are not buttons pretending to be inert, they
+   simply are not offering anything, because there is nothing here to offer it to. */
+.satchel-item.inert { cursor: default; opacity: 0.92; }
+
+.satchel-look {
+    flex: 0 0 auto;
+    padding: 0 0.7rem;
+    font: inherit;
+    font-size: 0.95rem;
+    line-height: 1;
+    color: #e6dcc8;
+    background: #171a20;
+    border: 1px solid rgba(200, 170, 120, 0.22);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-look:hover {
+    background: #20242c;
+    border-color: rgba(200, 170, 120, 0.6);
+}
+
+/* #697 · THE WALLET. One row for every card in the pocket, and the cards one tap under it. It is styled as a
+   heading rather than as an object, because it is not one — it is the pocket the objects are in. */
+.satchel-folder {
+    letter-spacing: 0.05em;
+    background: #1b1c17;
+    border-color: rgba(200, 170, 120, 0.4);
+}
+
+.satchel-folder:hover:not(:disabled) { background: #23241c; }
+
+/* TRY THEM ALL. Its own control beside the folder, never part of it — #614's ruling one size up: opening a
+   wallet must not be a mis-click away from offering everything in it to a door. Amber, like every other
+   control down here that costs you a decision. */
+.satchel-fan {
+    flex: 0 0 auto;
+    padding: 0 0.8rem;
+    font: inherit;
+    font-size: 0.74rem;
+    white-space: nowrap;
+    color: #d8b884;
+    background: #201b12;
+    border: 1px solid rgba(200, 170, 120, 0.45);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-fan:hover {
+    color: #f0dfb8;
+    background: #2a2317;
+    border-color: rgba(200, 170, 120, 0.8);
+}
+
+/* The cards themselves, stepped in so the folder above them reads as the thing they came out of. */
+.satchel-wallet-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-left: 0.9rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid rgba(200, 170, 120, 0.25);
+}

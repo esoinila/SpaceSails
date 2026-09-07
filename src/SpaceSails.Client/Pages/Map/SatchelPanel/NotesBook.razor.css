@@ -1,9 +1,23 @@
-﻿/* #251 · NotesBook's CSS-SCOPE CARRIER. No rules — on purpose.
+﻿/* #251 · NotesBook's OWN RULES, moved verbatim out of SatchelPanel.razor.css.
 
-   Blazor gives every component its own scope identifier and compiles Map.razor.css / SatchelPanel.razor.css
-   to `.selector[b-<the page's scope>]`. A component with no stylesheet of its own gets NO scope, and every
-   rule that styled this markup would stop matching it the moment it left SatchelPanel.razor — no build
-   error, no test, the surface simply renders unstyled. This file exists so the csproj's
-   `Pages\Map\SatchelPanel\*.razor.css` entry can pin it to `b-4dqsdx4p75`, the page's own identifier, and
-   the shipped stylesheet does not change by a byte. EverySurfaceWearsThePagesCssScopeTests keeps it true.
+   One rule block, kept as that sheet wrote it. Nothing here was retyped: these are the same
+   characters under a different name. The scope is still the PAGE's (`b-4dqsdx4p75`, pinned in
+   SpaceSails.Client.csproj), so every selector compiles to exactly the string it compiled to before the
+   move and matches exactly the elements it matched.
+
+   WHAT IS DOWN HERE AND WHAT IS NOT (#1166). A block moves with its markup only when EVERY user moves:
+   every rule below names a class that NotesBook.razor — and no other component in the client —
+   renders. The satchel's shared kit (the row, the item button, the leave control, the sub-line,
+   the empty line) is rendered by four or five of these surfaces at once and stays in
+   SatchelPanel.razor.css, filed under the surface it is named after.
+
+   The bundle appends this sheet AFTER SatchelPanel.razor.css, so a rule that moved here lands LATER in
+   the cascade than it was. TheBundleIsTheSameCascadeTests holds the whole partition to the law that says
+   no pair which can win or lose against each other changed places.
  */
+
+.held-sheet-title {
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+    color: #d8b56a;
+}
