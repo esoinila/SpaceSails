@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -146,7 +146,9 @@ public sealed class TheArrivalEndsWhereTheErrandIsTests
     /// decides an arrival rather than a string that happens to be somewhere in the file.</summary>
     private static string TheStationArrivalBranch()
     {
-        string source = File.ReadAllText(ClientFile("Map.Autopilot.cs"));
+        // #251 · CheckArmedInsertion lives in Map.Autopilot.Approach.cs now. Read the whole armed
+        // autopilot in DECLARED order, so this structural slice cuts the same text it always cut.
+        string source = MapMarkup.TheArmedAutopilot();
         int start = source.IndexOf("if (body.Kind == BodyKind.Station)", StringComparison.Ordinal);
         Assert.True(start > 0,
             "Map.Autopilot no longer forks the armed arrival on BodyKind.Station — this bench has drifted");

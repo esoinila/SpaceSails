@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -135,7 +135,11 @@ public sealed class ADerelictIsNotAMoonTests
         foreach (string path in Directory.EnumerateFiles(ClientSourceRoot, "*.cs", SearchOption.AllDirectories))
         {
             string name = Path.GetFileName(path);
-            if (name is "AwayTeamSide.cs" or "MoonSurface.cs")
+            // #251 · "the place that answers" is SIX files now (MoonSurface.cs and its five partials), so
+            // the exemption is the family and not one filename. Naming one of them would leave the other
+            // five swept — which today finds nothing, and on the day one of them writes the qualified call
+            // would go red at the one place that is allowed to.
+            if (name is "AwayTeamSide.cs" || name.StartsWith("MoonSurface.", StringComparison.Ordinal))
             {
                 continue;   // the one place allowed to ask, and the place that answers
             }

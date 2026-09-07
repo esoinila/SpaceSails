@@ -99,8 +99,9 @@ public sealed class TheWreckHasItsOwnArrivalTests
     [Fact]
     public void TheFableMarker_IsGoneFromTheAutopilot()
     {
-        string source = File.ReadAllText(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Autopilot.cs"));
+        // #251 · AutopilotStandInEnvelope moved to Map.Autopilot.StandDown.cs; a marker could hide in any
+        // of the six, so the sweep reads the family rather than one partial.
+        string source = MapMarkup.TheArmedAutopilot();
 
         Assert.Contains("AutopilotStandInEnvelope", source, StringComparison.Ordinal);
         Assert.DoesNotContain("FABLE: line needed", source, StringComparison.Ordinal);
