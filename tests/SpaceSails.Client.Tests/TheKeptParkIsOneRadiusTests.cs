@@ -33,10 +33,18 @@ namespace SpaceSails.Client.Tests;
 ///
 /// <para>(b) <b>Spelled once in the source.</b> The behavioural half above is flown against sol.json, where
 /// #286's cap is inert (every shipped moon's tide-stable park is far tighter than the cap) — so a second
-/// expression that simply DROPPED the cap would still agree there. The source half closes that: the client's
-/// autopilot names <c>MaxKeptRadiusUnderParent</c> exactly once and <c>ParkingRadius</c> exactly once, inside
-/// the two helpers every reader calls — three of them since #1177 added the panel that COACHES the
-/// insertion to the loop that flies it and the keeper that holds it.</para>
+/// expression that simply DROPPED the cap would still agree there. The source half closes that: THE CLIENT
+/// names <c>MaxKeptRadiusUnderParent</c> exactly once and <c>ParkingRadius</c> exactly once, inside the two
+/// helpers every reader calls — the insertion loop, the keeper, the panel that COACHES the insertion
+/// (#1177), and since #1179 the four readers outside the autopilot's own family, which ask through a
+/// parentless overload rather than each writing the parent lookup out again.</para>
+///
+/// <para>(a2, a3, a4) <b>And every sentence built on it means what it says.</b> Five driven guards fly the
+/// real page at a moon where #286's cap BITES — the panel's coaching line (#1177), and since #1179 the
+/// plan banner's orbit-insert row, the AUTOPILOT HOLDS THE ORBIT line, the emergency-descent hover and the
+/// #136 warp tier. Each measures what the autopilot did off the trim cadence the insertion wrote, never off
+/// a second spelling of the expression under test, and each asserts its world DISCRIMINATES before asking
+/// anything of it.</para>
 ///
 /// <h3>RED PROOF (watched)</h3>
 /// <para>Re-introducing the pre-lane second expression in <c>StationKeep</c>, differing —
