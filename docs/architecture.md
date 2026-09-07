@@ -50,8 +50,9 @@ Three projects carry the weight (`SpaceSails.slnx`):
 - **`src/SpaceSails.Contracts`** — DTOs and scenario models (`Scenario.cs`,
   `Multiplayer.cs`) shared by anything that talks to Core or the (archived) hub.
 - **`src/SpaceSails.Client`** — the Blazor WASM app. `Pages/Map.razor` is the single host page
-  (`@page "/map"`, 1,204 lines of markup after #251 item 1 cut the rest into 84 surfaces under
-  `Pages/Map/`): it owns the `<canvas>`, the desk tab bar, keyboard shortcuts, and drives
+  (`@page "/map"`, 765 lines of markup after #251 cut the rest into 98 surfaces under `Pages/Map/`
+  and 19 more under `Pages/Map/NavHud/`): it owns the `<canvas>`, the boot door, keyboard shortcuts,
+  and drives
   `Core.Simulator` directly in-process. Its code-behind is
   `public sealed partial class Map` — **205 `Pages/Map.*.cs` partials, 68,767 lines** — plus two
   families that are no longer partials at all but collaborator objects behind a written interface

@@ -45,8 +45,8 @@ namespace SpaceSails.Client.Tests;
 /// <list type="bullet">
 /// <item><b><c>Map.razor</c> switches the automatic re-render OFF</b> — <c>@implements IHandleEvent</c> with
 /// <c>HandleEventAsync =&gt; callback.InvokeAsync(arg)</c> (Map.Sim.cs) — because the HUD's refresh belongs to
-/// the rAF-driven 200 ms throttle in <c>OnTick</c> and not to every mouse press. All 103 surfaces under
-/// <c>Pages/Map/</c> — 84 of them plus the 19 <c>NavHud</c> cut out of one of those — repeat that override,
+/// the rAF-driven 200 ms throttle in <c>OnTick</c> and not to every mouse press. All 117 surfaces under
+/// <c>Pages/Map/</c> — 98 of them plus the 19 <c>NavHud</c> cut out of one of those — repeat that override,
 /// which is what makes their crossings inert: with the suppression on
 /// both sides, an <c>Action</c> and an <c>EventCallback</c> re-render exactly the same thing, which is
 /// nothing. Where Map wants a repaint on the press it calls <c>StateHasChanged</c> in its own method, and it
@@ -56,7 +56,7 @@ namespace SpaceSails.Client.Tests;
 /// </list>
 ///
 /// <para>That difference decides where a swallow can HURT, never where the crossing is allowed to be sloppy.
-/// Clause 2 is therefore stated over both pages and all 114 surfaces: it costs nothing, and what it buys is
+/// Clause 2 is therefore stated over both pages and all 128 surfaces: it costs nothing, and what it buys is
 /// that the guarantee stops depending on <b>what the page happens to pass</b>. An <c>Action</c> parameter
 /// lands on the page only while the page keeps handing it a method group; the day someone passes a closure
 /// instead, the receiver silently becomes the surface and nothing anywhere says so. An

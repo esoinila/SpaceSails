@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -31,7 +31,7 @@ namespace SpaceSails.Client.Tests;
 /// </list>
 ///
 /// <para><b>The scope groups are read off the compiler, not assumed.</b> #251 item 1 pinned one scope across
-/// <c>Pages/Map.razor</c> and its 103 surfaces under <c>Pages/Map/</c> — 84, plus the 19 that <c>NavHud</c>
+/// <c>Pages/Map.razor</c> and its 117 surfaces under <c>Pages/Map/</c> — 98, plus the 19 that <c>NavHud</c>
 /// was cut into in its turn — so "this sheet's scope" is a GROUP of components and not one file. That
 /// mapping is taken from the generated <c>*.rz.scp.css</c> in
 /// <c>obj/</c> — the same source of truth <c>TheBundleIsTheSameCascadeTests</c> checks its bundle order

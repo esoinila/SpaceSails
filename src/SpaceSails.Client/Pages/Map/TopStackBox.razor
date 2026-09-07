@@ -1,0 +1,42 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@*
+    #251 · THE MASTHEAD BOX, ON ITS OWN FILE — the head of the flow column.
+
+    `.map-topstack` is the one region of the column that is a BOX rather than a single gated surface:
+    a div of its own with two children inside it, the desk tabs and the pilot banner with the #166 alert
+    strip under it. #195 put the three of them in one in-flow column so a two- or three-row banner PUSHES
+    the toolbar down instead of floating over it; #992 measured the column against the window; #1038 gave
+    the box its peek-passthrough. All three of those facts are about THIS box, so they travel with it, and
+    what is left where it stood is one tag.
+
+    Moved out of FlowColumn.razor by PURE MOTION: the two gates came with the two invocations (a box with
+    both gates shut renders an empty div, which is what it rendered before), and every member it reads is a
+    [Parameter] with the SAME NAME. Nothing here writes.
+
+    IHandleEvent repeats the page's own override (Map.Sim.cs). The .razor.css beside this file carries no
+    rules; it exists to give the component Map.razor.css's scope (pinned in SpaceSails.Client.csproj), so
+    the `.map-topstack` and `.map-peek` rules go on matching this div exactly as they matched it in the
+    page — and the UI gate that measures the band off `.map-topstack`'s own laid-out box goes on finding it.
+*@
+@* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────── *@
+    <div class="map-topstack peek-passthrough">
+
+    @if (_surface is null)
+    {
+        <ShipTabsStrip _activeDesk="@_activeDesk" _peekMap="@_peekMap" DeskKeyLabel="@DeskKeyLabel"
+                       DeskLabel="@DeskLabel" SwitchDeskFromClick="@SwitchDeskFromClick" TabBarOrder="@TabBarOrder"
+                       TogglePeekMapFromClick="@TogglePeekMapFromClick" />
+    }
+
+    @if (_worldReady && !_deckMode)
+    {
+        <TopBannerStack _armedOrbitBodyId="@_armedOrbitBodyId" _bannerRowOffset="@_bannerRowOffset"
+                        _dockReadyStatus="@_dockReadyStatus" _shipAlerts="@_shipAlerts"
+                        AcknowledgeAlert="@AcknowledgeAlert" AuthorizePlunder="@AuthorizePlunder"
+                        AutopilotStoodDown="@AutopilotStoodDown" BannerPageDown="@BannerPageDown"
+                        BannerPageUp="@BannerPageUp" Board="@Board" DeclinePlunder="@DeclinePlunder"
+                        FlightNowNext="@FlightNowNext" SwitchDeskFromClick="@SwitchDeskFromClick" />
+    }
+    </div>@* /.map-topstack — tabs · banner · alert strip; the Nav HUD (.map-hud) flows below it *@
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────── *@
