@@ -158,7 +158,7 @@ public sealed class ThePlayerIsToldTests
         // A POLICY BOUGHT. He says nothing new about a sale — that is the character — so the telling is the
         // card refreshing to the tier now held, which is the fact that changed.
         new("the premium is paid and the policy is the tier you now hold",
-            Surface.OnModalOutcome, "Map.Rep.cs", "BuyFromTheRep",
+            Surface.OnModalOutcome, "Map.Rep.Pitch.cs", "BuyFromTheRep",
             "_repCard = NebulaRep.PitchFor(_insurance.Tier, _repNameOnFile, bleeding: false);"),
 
         // ── PEOPLE WHO WILL NOW REMEMBER — the five crossings of #715 ───────────────────────────────────
