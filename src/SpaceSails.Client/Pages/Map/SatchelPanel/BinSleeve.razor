@@ -14,9 +14,10 @@
 
     IHandleEvent repeats SatchelPanel's own override, which repeats Map.Sim.cs's: the HUD's refresh
     belongs to OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render
-    back on every event in here. The .razor.css beside this file carries no rules of its own, and its scope is the
-    PAGE's own (b-4dqsdx4p75, pinned in SpaceSails.Client.csproj), so every rule that styled this markup
-    goes on matching it.
+    back on every event in here. The .razor.css beside this file carries no rules: every rule that
+    styles this markup is kit two or more surfaces render, so it stays in SatchelPanel.razor.css
+    (#1166). The carrier exists to give the component the PAGE's own scope (b-4dqsdx4p75, pinned in
+    SpaceSails.Client.csproj), so those rules go on matching it.
 
     The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and a code
     block is where its first statements are legal. It is outside the fences, so what the composition reads
