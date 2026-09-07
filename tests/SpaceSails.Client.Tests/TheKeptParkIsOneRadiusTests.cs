@@ -208,6 +208,222 @@ public sealed class TheKeptParkIsOneRadiusTests
             $"({unclampedAltitude}) that #286's cap cuts off. It said: \"{line}\"");
     }
 
+    // ── (a3) #1179 · AND SO DO THE THREE SENTENCES OUTSIDE THE AUTOPILOT'S OWN FAMILY ──────────────────
+
+    /// <summary>
+    /// THE BANNER ROW AND THE COACHING LINE QUOTE ONE ALTITUDE — <b>where the clamp bites.</b>
+    ///
+    /// <para><c>OrbitStatusLine</c>'s comment has said since #203 that its number is <i>"the SAME number the
+    /// banner's <c>orbit-insert (alt N km)</c> row shows"</i>. #1177 moved the panel onto the clamped park
+    /// and left <c>InsertStepLabel</c> on the raw <c>OrbitRule.ParkingRadius</c>, which turned that sentence
+    /// from a law into a coincidence — true at every shipped body, because #286's cap is inert on the whole
+    /// shipped sky, and false at the first inner moon that clamps. #1178 could only soften the comment to
+    /// say so. This is the guard that lets the equality be claimed again: it flies both sentences at the one
+    /// world where they can disagree and requires them to quote one string.</para>
+    ///
+    /// <para>The park they are measured against is not a third spelling of the expression under test — it is
+    /// <see cref="TheParkTheAutopilotFlies"/>, read back out of the trim cadence the insertion actually
+    /// wrote.</para>
+    ///
+    /// <para><b>RED PROOF (watched):</b> restoring <c>InsertStepLabel</c>'s
+    /// <c>OrbitRule.ParkingRadius(oi.Body, oi.Hill) - oi.Body.BodyRadius</c> fails here — the banner row and
+    /// the coaching line quoting two altitudes for one arrival:</para>
+    /// <code>
+    /// #1179 · the plan banner's orbit-insert row must quote the park the autopilot PARKS AT (alt 1000 km,
+    /// measured off the trim cadence the insertion wrote), never the unclamped tide-stable radius
+    /// (alt 2600 km) that #286's cap cuts off. It said: "orbit-insert at Skimmer (alt 2600 km)"
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void TheBannerRowAndTheCoachingLineQuoteOneAltitude_WhereTheClampBites()
+    {
+        CircularOrbitEphemeris eph = AMoonThatSkimsItsParent();
+        CelestialBody moon = eph.Bodies.First(b => b.Id == Skimmer);
+        double hill = HillOf(eph, moon);
+        double unclamped = TheParkTheTideAloneWouldAllow(eph, moon);
+        double flown = TheParkTheAutopilotFlies(eph, moon);
+
+        Pages.Map page = AShipOnTheApproachTo(eph, moon, 2 * hill);
+        object oi = Invoke(page, "OrbitInfo")
+            ?? throw new InvalidOperationException("the orbit panel has no readout for this ship — bench drift");
+
+        string banner = (string)Invoke(page, "InsertStepLabel")!;
+        string coaching = (string)Invoke(page, "OrbitStatusLine", oi)!;
+
+        string flownAltitude = Altitude(page, flown - moon.BodyRadius);
+        string unclampedAltitude = Altitude(page, unclamped - moon.BodyRadius);
+        Assert.NotEqual(flownAltitude, unclampedAltitude); // …and the two really do render differently
+
+        Assert.True(
+            banner.Contains(flownAltitude, StringComparison.Ordinal)
+                && !banner.Contains(unclampedAltitude, StringComparison.Ordinal),
+            $"#1179 · the plan banner's orbit-insert row must quote the park the autopilot PARKS AT " +
+            $"({flownAltitude}, measured off the trim cadence the insertion wrote), never the unclamped " +
+            $"tide-stable radius ({unclampedAltitude}) that #286's cap cuts off. It said: \"{banner}\"");
+
+        Assert.True(
+            coaching.Contains(flownAltitude, StringComparison.Ordinal),
+            $"#1179 · the bench has drifted: the coaching line no longer quotes {flownAltitude} — \"{coaching}\"");
+
+        // …and the claim OrbitStatusLine's own comment makes, stated as an equality rather than a hope.
+        Assert.Equal(AltitudeQuotedIn(banner), AltitudeQuotedIn(coaching));
+    }
+
+    /// <summary>
+    /// THE HOLDING LINE NAMES THE RADIUS THE KEEPER IS HOLDING — <b>where the clamp bites.</b>
+    ///
+    /// <para>"🛰 AUTOPILOT HOLDS THE ORBIT — <i>body</i>, alt N km" is, by its own #220/#203 comment, the
+    /// STEADY park the keeper trims back to, put on the banner precisely because the live radius oscillates.
+    /// Built off a raw <c>OrbitRule.ParkingRadius</c>, at a moon whose park #286's cap cuts off, it stated an
+    /// altitude <c>StationKeep</c> was actively trimming AWAY from — the one number on that line that was
+    /// supposed to be beyond argument.</para>
+    ///
+    /// <para><b>RED PROOF (watched):</b> restoring
+    /// <c>OrbitRule.ParkingRadius(keptBody, _orbitedBodyHillRadius) - keptBody.BodyRadius</c> fails here —
+    /// the NOW line naming an orbit the keeper is trimming away from:</para>
+    /// <code>
+    /// #1179 · the holding line must name the park the keeper TRIMS BACK TO (alt 1000 km, measured off the
+    /// trim cadence the insertion wrote), never the unclamped tide-stable radius (alt 2600 km) it is
+    /// trimming away from. It said: "AUTOPILOT HOLDS THE ORBIT - Skimmer, alt 2600 km, trim ~57 p/day"
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void TheHoldingLineNamesTheParkTheKeeperTrimsBackTo_WhereTheClampBites()
+    {
+        CircularOrbitEphemeris eph = AMoonThatSkimsItsParent();
+        CelestialBody moon = eph.Bodies.First(b => b.Id == Skimmer);
+        double hill = HillOf(eph, moon);
+        double unclamped = TheParkTheTideAloneWouldAllow(eph, moon);
+
+        // Fly her in, so the line is spoken by a page that is really keeping an orbit.
+        Pages.Map page = AShipDeepInsideTheParkOf(eph, moon, Math.Min(unclamped, CapOf(eph, moon)));
+        Invoke(page, "CheckArmedInsertion");
+        Assert.True(Get<bool>(page, "_orbitKept"),
+            "the bench never reached the insertion — it proves nothing about the park");
+        double flown = RadiusOfALocalPeriod(
+            (Get<double>(page, "_keepNextCheckTime") - Get<double>(page, "SimTime"))
+                / OrbitKeeping.TrimCadenceFraction, moon.Mu);
+
+        // The kept body IS the bound body while keeping — what UpdateOrbitedBody would have cached.
+        Set(page, "_orbitedBodyId", moon.Id);
+        Set(page, "_orbitedBodyHillRadius", hill);
+
+        var status = (FlightPlanStatus)Invoke(page, "FlightNowNext")!;
+        Assert.StartsWith("🛰 AUTOPILOT HOLDS THE ORBIT", status.NowLine, StringComparison.Ordinal);
+
+        string flownAltitude = Altitude(page, flown - moon.BodyRadius);
+        string unclampedAltitude = Altitude(page, unclamped - moon.BodyRadius);
+        Assert.NotEqual(flownAltitude, unclampedAltitude);
+
+        Assert.True(
+            status.NowLine.Contains(flownAltitude, StringComparison.Ordinal)
+                && !status.NowLine.Contains(unclampedAltitude, StringComparison.Ordinal),
+            $"#1179 · the holding line must name the park the keeper TRIMS BACK TO ({flownAltitude}, " +
+            $"measured off the trim cadence the insertion wrote), never the unclamped tide-stable radius " +
+            $"({unclampedAltitude}) it is trimming away from. It said: \"{status.NowLine}\"");
+    }
+
+    /// <summary>
+    /// THE EMERGENCY-DESCENT PROMISE NAMES WHERE THE PRESS SENDS HER — <b>where the clamp bites.</b>
+    ///
+    /// <para><i>"the autopilot takes her down to the stable park at N"</i> is a promise about a berth, made
+    /// on the hover of the button that hands her to the autopilot. The autopilot parks at
+    /// <c>min(tide-stable, #286's cap)</c>; the promise quoted the tide-stable half alone. Unlike the two
+    /// altitudes above, this one is a DISTANCE (<c>FormatDistance</c>, not <c>FormatAltitude</c>) — so it is
+    /// compared as the page renders it, in the units the captain reads on the hover.</para>
+    ///
+    /// <para><b>RED PROOF (watched):</b> restoring
+    /// <c>FormatDistance(OrbitRule.ParkingRadius(oi.Body, oi.Hill))</c> fails here, promising a berth the
+    /// autopilot does not fly to:</para>
+    /// <code>
+    /// #1179 · the emergency-descent hover promises a berth, so it must name the one the autopilot flies to
+    /// (1500 km, measured off the trim cadence the insertion wrote), never the unclamped tide-stable radius
+    /// (3100 km) #286's cap cuts off. It said: "...takes her down to the stable park at 3100 km..."
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void TheEmergencyDescentPromiseNamesTheParkTheAutopilotFliesTo_WhereTheClampBites()
+    {
+        CircularOrbitEphemeris eph = AMoonThatSkimsItsParent();
+        CelestialBody moon = eph.Bodies.First(b => b.Id == Skimmer);
+        double hill = HillOf(eph, moon);
+        double unclamped = TheParkTheTideAloneWouldAllow(eph, moon);
+        double flown = TheParkTheAutopilotFlies(eph, moon);
+
+        Pages.Map page = AShipOnTheApproachTo(eph, moon, 2 * hill);
+        object oi = Invoke(page, "OrbitInfo")
+            ?? throw new InvalidOperationException("the orbit panel has no readout for this ship — bench drift");
+        string tip = (string)Invoke(page, "EmergencyDescentTip", oi)!;
+
+        string flownDistance = Distance(flown);
+        string unclampedDistance = Distance(unclamped);
+        Assert.NotEqual(flownDistance, unclampedDistance);
+
+        Assert.True(
+            tip.Contains(flownDistance, StringComparison.Ordinal)
+                && !tip.Contains(unclampedDistance, StringComparison.Ordinal),
+            $"#1179 · the emergency-descent hover promises a berth, so it must name the one the autopilot " +
+            $"flies to ({flownDistance}, measured off the trim cadence the insertion wrote), never the " +
+            $"unclamped tide-stable radius ({unclampedDistance}) #286's cap cuts off. It said: \"{tip}\"");
+    }
+
+    // ── (a4) #1179 · AND THE ONE READER THAT IS NOT A SENTENCE ─────────────────────────────────────────
+
+    /// <summary>
+    /// THE WARP TIER MEASURES THE BAND SHE IS CLOSING ON. #136 caps warp on final approach to a deep-well
+    /// moon because its parking band is only tens of km wide — far thinner than the grazing tier's 10× step.
+    /// The heuristic asks two questions about <c>park</c>, and BOTH are about the ship's nearness to the band
+    /// she will fly to: <i>does that band sit inside the grazing radius</i> (3·R), and <i>how much room is
+    /// left to it</i>. The armed loop flies to #286's clamped park, so the unclamped tide-stable radius was
+    /// the wrong quantity for both — this is not a sentence, but it is the same wrong number.
+    ///
+    /// <para><b>The world has to be one where the two ANSWERS differ</b>, not merely the two radii — so this
+    /// is flown at the same skimming moon pulled 1,000 km further in, where the clamped park (1,000 km) sits
+    /// INSIDE the grazing radius (1,500 km) while the tide-stable park (≈3,040 km) sits well outside it. On
+    /// the unclamped number the gate answered <i>"roomy moon — the tiers suffice"</i> and left warp at 10×
+    /// while the ship was closing on a band a moon-radius wide; on the clamped one it caps.</para>
+    ///
+    /// <para><b>RED PROOF (watched):</b> restoring <c>OrbitRule.ParkingRadius(_nearestBody, hill)</c> fails
+    /// here — the tier returns int.MaxValue, no cap at all:</para>
+    /// <code>
+    /// #1179 · the #136 warp tier must measure the band the autopilot AIMS AT — #286's clamped park,
+    /// 1.000e+006 m, which is inside this moon's 1.500e+006 m grazing radius. Read off the unclamped
+    /// tide-stable radius (3.039e+006 m) it answers "roomy moon — the tiers suffice" and leaves warp
+    /// uncapped while the ship closes on a band a moon-radius wide.
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void TheWarpTierCapsOnTheBandTheAutopilotAimsAt_WhereTheClampBites()
+    {
+        CircularOrbitEphemeris eph = AMoonThatSkimsItsParent(TightEnoughToPullTheBandInside);
+        CelestialBody moon = eph.Bodies.First(b => b.Id == Skimmer);
+        double hill = HillOf(eph, moon);
+        double unclamped = TheParkTheTideAloneWouldAllow(eph, moon);
+        double cap = CapOf(eph, moon);
+        double grazing = 3 * moon.BodyRadius;
+
+        // The world: the clamped band is inside the grazing radius and the unclamped one is outside it, so
+        // the two expressions give the tier OPPOSITE answers. Without this the guard asserts nothing.
+        Assert.True(cap < grazing, $"the clamped park ({cap:e3} m) must sit inside the grazing radius " +
+            $"({grazing:e3} m), or the tier caps on neither number and this bench proves nothing");
+        Assert.True(unclamped >= grazing, $"the tide-stable park ({unclamped:e3} m) must sit outside the " +
+            $"grazing radius ({grazing:e3} m), or the tier caps on both numbers and this bench proves nothing");
+        Assert.True(cap > OrbitRule.SurfaceParkRadii * moon.BodyRadius,
+            "the clamped park must still be a flyable orbit above the surface floor, or the autopilot refuses");
+
+        // A ship armed for the moon and closing on it, inside capture range — the state #136 is about.
+        double distance = 4 * cap;
+        Assert.True(distance <= OrbitRule.CaptureRange(hill), "the bench must be inside capture range");
+        Pages.Map page = AShipClosingOn(eph, moon, distance);
+
+        int warpCap = (int)Invoke(page, "DeepWellInsertionWarpCap", distance)!;
+        Assert.True(warpCap < int.MaxValue,
+            "#1179 · the #136 warp tier must measure the band the autopilot AIMS AT — #286's clamped park, " +
+            $"{cap:e3} m, which is inside this moon's {grazing:e3} m grazing radius. Read off the unclamped " +
+            $"tide-stable radius ({unclamped:e3} m) it answers \"roomy moon — the tiers suffice\" and leaves " +
+            "warp uncapped while the ship closes on a band a moon-radius wide.");
+    }
+
     // ── (b) SPELLED ONCE IN THE SOURCE ────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -333,16 +549,90 @@ public sealed class TheKeptParkIsOneRadiusTests
     /// the shape <c>MoonOrbitClearanceTests.ClampScenario</c> already ships — with the masses picked so the
     /// clamped park is a real orbit the autopilot can reach: circular speed there is ≈1.6 km/s, well under
     /// the window's 5 km/s limit, and the clamped radius (1,500 km) sits comfortably above the moon's
-    /// 550 km surface floor and well below the tide-stable park (≈3,100 km) the cap cuts off.</summary>
-    private static CircularOrbitEphemeris AMoonThatSkimsItsParent()
+    /// 550 km surface floor and well below the tide-stable park (≈3,100 km) the cap cuts off.
+    ///
+    /// <para>#1179 · <paramref name="orbitRadius"/> is the one dial, and its default leaves this world byte
+    /// for byte what #1177 flew. Pulling the moon 1,000 km further in tightens the cap without changing the
+    /// shape, which is what the warp-tier guard needs — see
+    /// <see cref="TightEnoughToPullTheBandInside"/>.</para></summary>
+    private static CircularOrbitEphemeris AMoonThatSkimsItsParent(double orbitRadius = 2.55e7)
     {
         var giant = new CelestialBody("giant", "Giant", null, 2e13, 2.0e7, 0, 0, 0, BodyKind.Planet);
         // d = 25,500 km: 1,500 km outside the giant's #278 clearance band plus #286's grace, so the cap
         // lands at 1,500 km — inside the moon's own tide-stable park, which is what makes the clamp bite.
-        const double d = 2.55e7;
-        double period = 2 * Math.PI * Math.Sqrt(d * d * d / giant.Mu);
-        var skimmer = new CelestialBody(Skimmer, "Skimmer", "giant", 3e12, 5e5, d, period, 0, BodyKind.Moon);
+        double period = 2 * Math.PI * Math.Sqrt(orbitRadius * orbitRadius * orbitRadius / giant.Mu);
+        var skimmer = new CelestialBody(
+            Skimmer, "Skimmer", "giant", 3e12, 5e5, orbitRadius, period, 0, BodyKind.Moon);
         return new CircularOrbitEphemeris([giant, skimmer]);
+    }
+
+    /// <summary>#1179 · the same moon 1,000 km further in, so the cap lands at 1,000 km — INSIDE the 1,500 km
+    /// grazing radius the #136 warp tier gates on, while the tide-stable park (≈3,040 km) stays outside it.
+    /// That is the only scaling at which the two expressions give the tier opposite answers.</summary>
+    private const double TightEnoughToPullTheBandInside = 2.50e7;
+
+    /// <summary>The moon's Hill radius in this world — read from the ephemeris, as the page reads it.</summary>
+    private static double HillOf(ICelestialEphemeris eph, CelestialBody moon) =>
+        OrbitRule.HillRadius(moon, eph.Bodies.First(b => b.Id == moon.ParentId).Mu);
+
+    /// <summary>#286's cap in this world: the widest kept radius whose swept circle clears the parent.</summary>
+    private static double CapOf(ICelestialEphemeris eph, CelestialBody moon) =>
+        OrbitRule.MaxKeptRadiusUnderParent(
+            eph.InstantaneousOrbitRadius(moon.Id, 0), eph.Bodies.First(b => b.Id == moon.ParentId));
+
+    /// <summary>The UNCLAMPED tide-stable radius — the number every one of these sentences used to quote, and
+    /// the one each of them must not.</summary>
+    private static double TheParkTheTideAloneWouldAllow(ICelestialEphemeris eph, CelestialBody moon) =>
+        OrbitRule.ParkingRadius(moon, HillOf(eph, moon));
+
+    /// <summary>#1179 · WHAT THE PILOT FLIES, MEASURED OFF THE SIM — not a second spelling of the expression
+    /// under test. The insertion sizes its first trim cadence at a quarter of the local period AT THE RADIUS
+    /// IT PARKED AT, so inverting that period returns what the autopilot did.</summary>
+    private static double TheParkTheAutopilotFlies(ICelestialEphemeris eph, CelestialBody moon)
+    {
+        double unclamped = TheParkTheTideAloneWouldAllow(eph, moon);
+        double cap = CapOf(eph, moon);
+        Assert.True(cap < unclamped,
+            $"this bench proves nothing: #286's cap ({cap:e3} m) does not bite the tide-stable park " +
+            $"({unclamped:e3} m), so the clamped and unclamped quotes would be the same number");
+
+        Pages.Map flying = AShipDeepInsideTheParkOf(eph, moon, Math.Min(unclamped, cap));
+        Invoke(flying, "CheckArmedInsertion");
+        Assert.True(Get<bool>(flying, "_orbitKept"),
+            "the bench never reached the insertion — it proves nothing about the park");
+        double cadence = Get<double>(flying, "_keepNextCheckTime") - Get<double>(flying, "SimTime");
+        return RadiusOfALocalPeriod(cadence / OrbitKeeping.TrimCadenceFraction, moon.Mu);
+    }
+
+    /// <summary>#1179 · a ship armed for <paramref name="moon"/> and closing on it from
+    /// <paramref name="distance"/>, with the nearest-body cache the warp tier reads already filled — the
+    /// final-approach state #136's cap is about.</summary>
+    private static Pages.Map AShipClosingOn(ICelestialEphemeris eph, CelestialBody moon, double distance)
+    {
+        var map = new Pages.Map();
+        typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(map, true);
+
+        Set(map, "_ephemeris", eph);
+        const double h = 1.0;
+        Vector2d at = eph.Position(moon.Id, 0);
+        Vector2d moonVel = (eph.Position(moon.Id, h) - eph.Position(moon.Id, -h)) / (2 * h);
+        // Falling straight in at 1 km/s — closing, so the tier's "not yet closing" branch is not the one taken.
+        Set(map, "_ship", new ShipState(at + new Vector2d(distance, 0), moonVel + new Vector2d(-1000, 0), 0));
+        Set(map, "_armedOrbitBodyId", moon.Id);
+        Set(map, "_nearestBody", moon);
+        Set(map, "_nearestBodyPosition", at);
+        Set(map, "_nearestBodyVelocity", moonVel);
+        return map;
+    }
+
+    /// <summary>#1179 · the altitude a sentence quotes — the "alt N km" the page's own formatter wrote, cut
+    /// back out of it, so the two sentences are compared on the string the captain reads.</summary>
+    private static string AltitudeQuotedIn(string sentence)
+    {
+        Match m = Regex.Match(sentence, @"alt [^)\s][^)]*");
+        Assert.True(m.Success, $"no altitude in \"{sentence}\" — this bench has drifted");
+        return m.Value.TrimEnd();
     }
 
     /// <summary>The radius whose local circular period is <paramref name="period"/> — the inverse of
@@ -354,6 +644,11 @@ public sealed class TheKeptParkIsOneRadiusTests
     /// <summary>The page's own altitude formatting — the string the captain actually reads.</summary>
     private static string Altitude(Pages.Map map, double metresAboveSurface) =>
         (string)Invoke(map, "FormatAltitude", metresAboveSurface)!;
+
+    /// <summary>#1179 · the page's own DISTANCE formatting — the emergency-descent hover quotes a radius from
+    /// the body's centre, not an altitude, so it is compared in the units it is written in.</summary>
+    private static string Distance(double metres) =>
+        (string)typeof(Pages.Map).GetMethod("FormatDistance", Hidden)!.Invoke(null, [metres])!;
 
     /// <summary>#1177 · a ship the coaching line speaks to: armed on <paramref name="moon"/> and inside its
     /// capture range, but OUTSIDE the Hill sphere, so the window is shut and the panel falls through to the
