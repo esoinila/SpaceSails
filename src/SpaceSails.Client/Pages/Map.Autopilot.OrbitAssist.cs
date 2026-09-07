@@ -130,6 +130,10 @@ public partial class Map
             // "orbit-insert (alt N km)" row shows, never the raw orbital radius the panel used to quote.
             // #1177: and off the CLAMPED park (oi.KeptPark), which is the radius the loop below this
             // sentence will actually park at — the panel quoted the unclamped one for as long as it existed.
+            // The banner row (InsertStepLabel) still builds its own from OrbitRule.ParkingRadius, so the two
+            // agree at every shipped body (#286's cap is inert there) and would part company at an inner moon
+            // that clamps. Three more quotes outside this family have the same shape; they are #1177's
+            // follow-up, not silently different numbers.
             return $"autopilot flying the approach — insertion at ≈{FormatAltitude(oi.KeptPark - oi.Body.BodyRadius)}";
         if (oi.InCaptureRange) return "in capture range — auto-orbit can park you";
         // #153: once inside the capture range (e.g. already bound/orbiting) the gap goes NEGATIVE —
