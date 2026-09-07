@@ -194,4 +194,76 @@ public sealed partial class EveryPopUpCanBeDismissedTests
             + "make the row's reason a sentence about the CODE somebody has just read — ten of the eleven "
             + "reasons this ceiling used to count were describing gates that had moved.");
     }
+
+    /// <summary>
+    /// EVERY WORLD IN THE REGISTER IS ONE SOMEBODY HAS SAID WHERE IT CAME FROM.
+    ///
+    /// <para><b>The drift this was written for.</b> The <c>World</c> docstring said "a URL from
+    /// <see cref="EveryDeskBootsTests"/>'s matrix", and three rows had quietly stopped obeying it —
+    /// <c>?oracle=1&amp;ashore=1</c>, <c>?barcase=1</c> and <c>?start=wreck&amp;target=collector</c> are in no
+    /// matrix. Nothing was WRONG: all three boot, and guard 3 renders each of them. What was wrong is that
+    /// the register's worlds had no owner, and a register's worlds are precisely where this repo's fifth
+    /// named bug class lives — a guard handed a world it never reached runs every check it has and passes
+    /// on nothing.</para>
+    ///
+    /// <para><b>So the law is that sentence, made checkable.</b> A row's world comes from the matrix, or it
+    /// is one of the three in <see cref="TheWorldsBeyondTheMatrix"/> with a reason beside it; and that table
+    /// may hold nothing mute, nothing the matrix already carries, nothing stale, and nothing no row DRIVES —
+    /// because an off-matrix world reaches a renderer only by a driven row, and one sitting on an undriven
+    /// row would be a world this suite names and never visits.</para>
+    ///
+    /// <para><b>Anti-vacuity.</b> The two tables are asked to actually meet: the matrix must hand over
+    /// worlds, and <see cref="Docked"/> — a URL that is a matrix row character for character — must be found
+    /// in it. A comparison against an empty or mis-keyed set would otherwise excuse everything.</para>
+    /// </summary>
+    [Fact]
+    public void EveryWorldInTheRegisterComesFromTheMatrixOrSaysWhyNot()
+    {
+        var matrix = EveryDeskBootsTests.EveryWorldUrl().ToHashSet(StringComparer.Ordinal);
+
+        Assert.True(matrix.Count > 0,
+            "the desk matrix handed this guard no worlds at all, so every comparison below would pass on "
+            + "nothing. EveryDeskBootsTests.EveryWorldUrl() has moved or emptied.");
+        Assert.Contains(Docked, matrix);
+
+        var beyond = TheWorldsBeyondTheMatrix.ToDictionary(w => w.Url, w => w.Why, StringComparer.Ordinal);
+
+        var adrift = TheRegister.Select(p => p.World)
+            .Distinct(StringComparer.Ordinal)
+            .Where(w => !matrix.Contains(w) && !beyond.ContainsKey(w))
+            .Order(StringComparer.Ordinal)
+            .ToList();
+        Assert.True(adrift.Count == 0,
+            $"{adrift.Count} world(s) in the register are neither in EveryDeskBootsTests' matrix nor in "
+            + "TheWorldsBeyondTheMatrix, so nothing says where they came from. Either use a matrix world, or "
+            + "add a row to that table with the reason a desk sweep would learn nothing from it:\n  - "
+            + string.Join("\n  - ", adrift));
+
+        var mute = TheWorldsBeyondTheMatrix.Where(w => w.Why.Length == 0).Select(w => w.Url).ToList();
+        Assert.True(mute.Count == 0,
+            "an exception with no reason on it is not an exception, it is a hole:\n  - "
+            + string.Join("\n  - ", mute));
+
+        var alreadyThere = TheWorldsBeyondTheMatrix.Where(w => matrix.Contains(w.Url))
+            .Select(w => w.Url).ToList();
+        Assert.True(alreadyThere.Count == 0,
+            $"{alreadyThere.Count} world(s) are listed as beyond the matrix and are IN it — the matrix has "
+            + "grown a row and this table was not read again:\n  - " + string.Join("\n  - ", alreadyThere));
+
+        var used = TheRegister.Select(p => p.World).ToHashSet(StringComparer.Ordinal);
+        var stale = TheWorldsBeyondTheMatrix.Where(w => !used.Contains(w.Url)).Select(w => w.Url).ToList();
+        Assert.True(stale.Count == 0,
+            $"{stale.Count} world(s) are excused here and used by no row — an excuse nobody spends is an "
+            + "excuse nobody re-reads:\n  - " + string.Join("\n  - ", stale));
+
+        var neverBooted = TheWorldsBeyondTheMatrix
+            .Where(w => !TheRegister.Any(p => string.Equals(p.World, w.Url, StringComparison.Ordinal)
+                                              && p.Raise is not null))
+            .Select(w => w.Url)
+            .ToList();
+        Assert.True(neverBooted.Count == 0,
+            $"{neverBooted.Count} off-matrix world(s) sit only on rows with no driver, so no law in this "
+            + "repository ever boots them: the matrix does not sweep them and guard 3 never raises them. "
+            + "Drive the row, or put the world in the matrix:\n  - " + string.Join("\n  - ", neverBooted));
+    }
 }

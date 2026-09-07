@@ -38,7 +38,10 @@ public sealed partial class EveryPopUpCanBeDismissedTests
 
     /// <param name="Name">What it is called out loud, for a failure message a person can act on.</param>
     /// <param name="RootClass">The class its ROOT wears — the one the recogniser sees.</param>
-    /// <param name="World">A URL from <see cref="EveryDeskBootsTests"/>'s matrix that can host it.</param>
+    /// <param name="World">A URL that can host it: one of <see cref="EveryDeskBootsTests"/>'s matrix worlds,
+    /// or one of the three in <see cref="TheWorldsBeyondTheMatrix"/> that this register boots for itself.
+    /// <see cref="EveryWorldInTheRegisterComesFromTheMatrixOrSaysWhyNot"/> is what stops a fourth from
+    /// arriving unannounced.</param>
     /// <param name="Raise">Put the page in the state that draws it, or null when this bench cannot build the
     /// world it needs. Null rows are still covered by both completeness guards.</param>
     /// <param name="WhyNotDriven">Required on a null <paramref name="Raise"/>; must be empty otherwise.</param>
@@ -77,6 +80,40 @@ public sealed partial class EveryPopUpCanBeDismissedTests
     /// puts <c>_deckMode</c> true — and her card is gated on the deck. Both cheats are the documented pair
     /// (Map.Sim.World.QueryArcs: <i>"the rant, one URL and one [E]"</i>).</summary>
     private const string HerCorner = "/map?oracle=1&ashore=1";
+
+    /// <summary>#1016 · The captain sat down at a bar table with the day's paper on it. One cheat, because
+    /// the seated news panel is drawn by the SEAT and not by the berth.</summary>
+    private const string BarCase = "/map?barcase=1";
+
+    /// <summary>#997 wave 10 · The free-flying world with muscle already sent at her, so the tactical UI has
+    /// something to point at. The dossier is the collector's, and there is no collector by default.</summary>
+    private const string HerDossier = FreeFlying + "&target=collector";
+
+    /// <summary>
+    /// THE THREE WORLDS THIS REGISTER BOOTS FOR ITSELF, and why each is not simply a sixth row of
+    /// <see cref="EveryDeskBootsTests"/>' matrix.
+    ///
+    /// <para><b>Why this table exists.</b> The <c>World</c> docstring used to say a row's URL came from that
+    /// matrix, and for three rows it had quietly stopped being true. That is a small lie with a large shape:
+    /// it is the sentence a reader trusts instead of checking, and the register's own worlds are exactly the
+    /// thing a wrong-world guard (this repo's fifth named bug class) hides behind. So the exceptions are
+    /// written down rather than assumed, and
+    /// <see cref="EveryWorldInTheRegisterComesFromTheMatrixOrSaysWhyNot"/> makes a fourth one cost an edit
+    /// here.</para>
+    ///
+    /// <para><b>Why they are not in the matrix instead.</b> That matrix is desk-shaped — a berth, a
+    /// roadstead, a ground, a free flight — and it costs eight desk×world cells per row on a
+    /// <c>[SlowGate]</c> class already at 300 s. These three are card-shaped: each exists to put ONE surface
+    /// on the screen, and none of them would tell that sweep anything a desk does not already answer in the
+    /// world beside it. Nothing here boots unwatched, either: an off-matrix world reaches a renderer only
+    /// because a row of this register drives it, which is the last thing the guard checks.</para>
+    /// </summary>
+    private static readonly (string Url, string Why)[] TheWorldsBeyondTheMatrix =
+    [
+        (HerCorner, "seats one named NPC on the deck; the matrix has no world that seats anybody"),
+        (BarCase, "seats the captain AT A TABLE; the matrix's berths put her on the concourse"),
+        (HerDossier, "sends muscle at her; the matrix's free flight is unhunted"),
+    ];
 
     private static readonly PopUp[] TheRegister =
     [
@@ -176,7 +213,7 @@ public sealed partial class EveryPopUpCanBeDismissedTests
         //
         // Exit.AControl: its ✕ is the shell's own dismiss, and the KEY is proved next door by typing it
         // (TheNewsIsASeatVerbTests.EscapeTakesThePaperFirstAndTheChairSecond).
-        new("the paper at the table — the docked news panel", "seated-news", "/map?barcase=1",
+        new("the paper at the table — the docked news panel", "seated-news", BarCase,
             Exit.AControl,
             b => b.CallOnTheDispatcher("OpenSeatedNews")),
 
@@ -513,7 +550,7 @@ public sealed partial class EveryPopUpCanBeDismissedTests
         //
         // The driver calls the SHIPPING cheat rather than poking `_interestTargetId`, which is the stronger
         // of the two: a cheat that stopped raising this card would fail here rather than nowhere.
-        new("the target dossier", "map-dossier", FreeFlying + "&target=collector", Exit.AControl,
+        new("the target dossier", "map-dossier", HerDossier, Exit.AControl,
             PointTheGlassAtHerAgain, At: ShipDesk.Nav),
     ];
 
