@@ -135,7 +135,7 @@ public sealed class TheKeepAtTheCounterTests
         // Red proof: seed it off the clock — `TheKeep.TellAt((long)(SimTime / 3600))` — and the clock claim
         // names it. Drop the ServedByTheKeep gate and #772's self-service card grows a sentence about a man
         // who is not there.
-        string tell = Method("Map.Quests.Bar.cs", "private string? TheKeepsTell()");
+        string tell = Method("Map.Quests.Bar.Asking.cs", "private string? TheKeepsTell()");
 
         Assert.Contains("ex.CanteenWatch", tell, StringComparison.Ordinal);
         Assert.Contains("CounterService.ServedByTheKeep(_barMenu)", tell, StringComparison.Ordinal);
@@ -150,10 +150,10 @@ public sealed class TheKeepAtTheCounterTests
     {
         // Red proof, both ways: delete the FileNote and the captain's book forgets that they asked; delete
         // the RecordKnownTell and nothing anywhere ever leaks, with every Core guard still green.
-        string ask = Method("Map.Quests.Bar.cs", "private void AskBarkeepForRumor()");
+        string ask = Method("Map.Quests.Bar.Drinks.cs", "private void AskBarkeepForRumor()");
         Assert.Contains("AskingIsBeingSeenAsking(keep);", ask, StringComparison.Ordinal);
 
-        string seen = Method("Map.Quests.Bar.cs", "private void AskingIsBeingSeenAsking(");
+        string seen = Method("Map.Quests.Bar.Asking.cs", "private void AskingIsBeingSeenAsking(");
 
         // EXACTLY ONE of each. Two FileNotes would be two entries for one question, which is the shape of
         // this repo's own duplicated-write bugs.
@@ -187,7 +187,7 @@ public sealed class TheKeepAtTheCounterTests
         string open = Method("Map.Quests.Bar.cs", "private void OpenCounterService(");
         Assert.Contains("TheRoomSaysItBack(counter);", open, StringComparison.Ordinal);
 
-        string leak = Method("Map.Quests.Bar.cs", "private void TheRoomSaysItBack(");
+        string leak = Method("Map.Quests.Bar.Asking.cs", "private void TheRoomSaysItBack(");
 
         Assert.Contains("CounterService.ServedByTheKeep(counter)", leak, StringComparison.Ordinal);
         Assert.Contains("TheKeep.LeakedTopic(", leak, StringComparison.Ordinal);

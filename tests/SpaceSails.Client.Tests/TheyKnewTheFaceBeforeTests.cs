@@ -446,7 +446,7 @@ public sealed class TheyKnewTheFaceBeforeTests
     [Fact]
     public void TheOldCrewJoinTheOneContactList()
     {
-        string body = Method(Pages("Map.Quests.Bar.cs"),
+        string body = Method(Pages("Map.Quests.Bar.Contacts.cs"),
             "private IReadOnlyList<(string Giver, string Display)> PresentBarContacts()");
 
         Assert.Contains("OldCrewHere", body, StringComparison.Ordinal);
@@ -459,7 +459,7 @@ public sealed class TheyKnewTheFaceBeforeTests
     [Fact]
     public void TheOfferAndTheGlassReadOneRoom()
     {
-        string body = Method(Pages("Map.Quests.Bar.cs"),
+        string body = Method(Pages("Map.Quests.Bar.Contacts.cs"),
             "private void BuyContactDrink(string giver, bool offeringUsual = false)");
 
         Assert.Contains("ContactDrink.TheRoom room = TheRoomFor(giver);", body, StringComparison.Ordinal);
