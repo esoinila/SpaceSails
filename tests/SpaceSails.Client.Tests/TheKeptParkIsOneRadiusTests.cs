@@ -34,7 +34,8 @@ namespace SpaceSails.Client.Tests;
 /// #286's cap is inert (every shipped moon's tide-stable park is far tighter than the cap) — so a second
 /// expression that simply DROPPED the cap would still agree there. The source half closes that: the client's
 /// autopilot names <c>MaxKeptRadiusUnderParent</c> exactly once and <c>ParkingRadius</c> exactly once, inside
-/// the two helpers both readers call.</para>
+/// the two helpers every reader calls — three of them since #1177 added the panel that COACHES the
+/// insertion to the loop that flies it and the keeper that holds it.</para>
 ///
 /// <h3>RED PROOF (watched)</h3>
 /// <para>Re-introducing the pre-lane second expression in <c>StationKeep</c>, differing —
@@ -61,6 +62,9 @@ public sealed class TheKeptParkIsOneRadiusTests
 
     /// <summary>A roomy moon with a real parent, so #286's cap and the tide-stable park are both defined.</summary>
     private const string Moon = "luna";
+
+    /// <summary>#1177 · the pathological inner moon — no shipped body has a biting clamp (see the test).</summary>
+    private const string Skimmer = "skimmer";
 
     // ── (a) BOTH PATHS, ONE NUMBER ────────────────────────────────────────────────────────────────────
 
@@ -101,6 +105,94 @@ public sealed class TheKeptParkIsOneRadiusTests
         // …and it is the one radius Core computes, so they are not equally wrong.
         Assert.Equal(cadence, fromTheInsertion, 6);
         Assert.Equal(cadence, fromTheKeeper, 6);
+    }
+
+    // ── (a2) #1177 · AND IT IS THE PARK THE PANEL QUOTES ──────────────────────────────────────────────
+
+    /// <summary>
+    /// THE COACHING LINE QUOTES THE PARK THE PILOT FLIES — <b>in a world where the clamp bites.</b>
+    ///
+    /// <para>This is the assertion (a) could not make and (b) could only make about text. The orbit panel's
+    /// approach line says <i>"autopilot flying the approach — insertion at ≈alt N km"</i>, and until #1177 it
+    /// built that N from <c>OrbitRule.ParkingRadius</c> — the UNCLAMPED tide-stable radius — while three
+    /// metres of code away the loop parked at <c>min(that, #286's cap)</c>. Sentence versus sim.</para>
+    ///
+    /// <para><b>Why this world and not sol.json.</b> The lane was asked to fly this at a shipped body where
+    /// the clamp bites. There is none, and that was measured rather than assumed: across sol.json, sol-eu.json
+    /// and oops.json the cap is wider than the tide-stable park at EVERY body with mass — Luna by 18×, Titan
+    /// by 67×, the tightest real case (Miranda) by 363×. The only two bodies where the cap bites at all are
+    /// μ=0 stations (Highport Satellite Works, Mercury Compute Farms), which the autopilot never parks at —
+    /// <i>"Insert can never fire on a μ=0 body."</i> So a guard flown at a shipped body cannot fail, which is
+    /// this repo's fifth bug class: a green test that asserts nothing. It is flown instead at the pathological
+    /// inner moon <c>MoonOrbitClearanceTests</c> already ships for exactly this purpose — a moon skimming its
+    /// parent's cloud tops, where #286's clamp is the whole point — scaled so the park speeds stay under the
+    /// window's 5 km/s limit and the insertion really fires.</para>
+    ///
+    /// <para><b>Nothing here is recomputed from the same expression twice.</b> The flown park is read back out
+    /// of the SIM: the insertion writes <c>_keepNextCheckTime</c> as a quarter of the local period AT the
+    /// radius it parked at, so inverting that period is a measurement of what the autopilot did, not a second
+    /// spelling of what it should have done. The quoted park is read out of the real page's own
+    /// <c>OrbitStatusLine</c> string. The two are then required to be the same number, and the unclamped
+    /// number is required to be ABSENT — which is what makes this fail rather than merely look right.</para>
+    ///
+    /// <para><b>RED PROOF (watched):</b> restoring the old line —
+    /// <c>FormatAltitude(OrbitRule.ParkingRadius(oi.Body, oi.Hill) - oi.Body.BodyRadius)</c> — fails here
+    /// with both numbers on the page:</para>
+    /// <code>
+    /// #1177 · the panel must quote the park the autopilot PARKS AT (alt 1000 km, measured off the trim
+    /// cadence the insertion wrote), never the unclamped tide-stable radius (alt 2600 km) that #286's cap
+    /// cuts off. It said: "autopilot flying the approach — insertion at ≈alt 2600 km"
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void ThePanelQuotesTheParkTheAutopilotActuallyParksAt_WhereTheClampBites()
+    {
+        CircularOrbitEphemeris eph = AMoonThatSkimsItsParent();
+        CelestialBody moon = eph.Bodies.First(b => b.Id == Skimmer);
+        CelestialBody parent = eph.Bodies.First(b => b.Id == moon.ParentId);
+
+        double hill = OrbitRule.HillRadius(moon, parent.Mu);
+        double unclamped = OrbitRule.ParkingRadius(moon, hill);
+        double cap = OrbitRule.MaxKeptRadiusUnderParent(eph.InstantaneousOrbitRadius(moon.Id, 0), parent);
+
+        // The world has to be one where the two answers DIFFER, or nothing below can go red.
+        Assert.True(cap < unclamped,
+            $"this bench proves nothing: #286's cap ({cap:e3} m) does not bite the tide-stable park " +
+            $"({unclamped:e3} m), so the clamped and unclamped quotes would be the same number");
+        Assert.True(cap > OrbitRule.SurfaceParkRadii * moon.BodyRadius,
+            "the clamped park must still be a flyable orbit above the surface floor, or the autopilot refuses");
+
+        // (1) WHAT THE PILOT FLIES — measured off the sim. The insertion parks the ship and sizes the first
+        // trim cadence at a quarter of the local period AT THAT RADIUS; invert the period and the radius the
+        // autopilot chose comes back out, without spelling its expression a second time.
+        Pages.Map flying = AShipDeepInsideTheParkOf(eph, moon, Math.Min(unclamped, cap));
+        Invoke(flying, "CheckArmedInsertion");
+        Assert.True(Get<bool>(flying, "_orbitKept"),
+            "the bench never reached the insertion — it proves nothing about the park");
+        double cadence = Get<double>(flying, "_keepNextCheckTime") - Get<double>(flying, "SimTime");
+        double flown = RadiusOfALocalPeriod(cadence / OrbitKeeping.TrimCadenceFraction, moon.Mu);
+
+        // (2) WHAT THE PANEL SAYS — the real page's own sentence, for a ship on the approach: armed, inside
+        // capture range, outside the Hill sphere (so the window is shut and the coaching branch is the one
+        // that speaks).
+        Pages.Map coaching = AShipOnTheApproachTo(eph, moon, 2 * hill);
+        object oi = Invoke(coaching, "OrbitInfo")
+            ?? throw new InvalidOperationException("the orbit panel has no readout for this ship — bench drift");
+        string line = (string)Invoke(coaching, "OrbitStatusLine", oi)!;
+        Assert.StartsWith("autopilot flying the approach", line, StringComparison.Ordinal);
+
+        // (3) ONE NUMBER. The sentence quotes an altitude, so both radii are put through the page's own
+        // formatter — the comparison is on the string the captain reads, not on a double she never sees.
+        string flownAltitude = Altitude(coaching, flown - moon.BodyRadius);
+        string unclampedAltitude = Altitude(coaching, unclamped - moon.BodyRadius);
+        Assert.NotEqual(flownAltitude, unclampedAltitude); // …and they really do render differently
+
+        Assert.True(
+            line.Contains(flownAltitude, StringComparison.Ordinal)
+                && !line.Contains(unclampedAltitude, StringComparison.Ordinal),
+            $"#1177 · the panel must quote the park the autopilot PARKS AT ({flownAltitude}, measured off " +
+            $"the trim cadence the insertion wrote), never the unclamped tide-stable radius " +
+            $"({unclampedAltitude}) that #286's cap cuts off. It said: \"{line}\"");
     }
 
     // ── (b) SPELLED ONCE IN THE SOURCE ────────────────────────────────────────────────────────────────
@@ -188,6 +280,49 @@ public sealed class TheKeptParkIsOneRadiusTests
         Set(map, "_ship", new ShipState(at + offset, moonVel + circular, 0));
         Set(map, "_armedOrbitBodyId", moon.Id);
 
+        return map;
+    }
+
+    /// <summary>#1177 · THE #286 DANGER ZONE, MADE FLYABLE. A moon skimming its parent's clearance band —
+    /// the shape <c>MoonOrbitClearanceTests.ClampScenario</c> already ships — with the masses picked so the
+    /// clamped park is a real orbit the autopilot can reach: circular speed there is ≈1.6 km/s, well under
+    /// the window's 5 km/s limit, and the clamped radius (1,500 km) sits comfortably above the moon's
+    /// 550 km surface floor and well below the tide-stable park (≈3,100 km) the cap cuts off.</summary>
+    private static CircularOrbitEphemeris AMoonThatSkimsItsParent()
+    {
+        var giant = new CelestialBody("giant", "Giant", null, 2e13, 2.0e7, 0, 0, 0, BodyKind.Planet);
+        // d = 25,500 km: 1,500 km outside the giant's #278 clearance band plus #286's grace, so the cap
+        // lands at 1,500 km — inside the moon's own tide-stable park, which is what makes the clamp bite.
+        const double d = 2.55e7;
+        double period = 2 * Math.PI * Math.Sqrt(d * d * d / giant.Mu);
+        var skimmer = new CelestialBody(Skimmer, "Skimmer", "giant", 3e12, 5e5, d, period, 0, BodyKind.Moon);
+        return new CircularOrbitEphemeris([giant, skimmer]);
+    }
+
+    /// <summary>The radius whose local circular period is <paramref name="period"/> — the inverse of
+    /// <c>OrbitRule.LocalOrbitPeriod</c>, so the park the autopilot chose can be MEASURED off the cadence
+    /// it wrote instead of recomputed from the expression under test.</summary>
+    private static double RadiusOfALocalPeriod(double period, double mu) =>
+        Math.Cbrt(mu * (period / (2 * Math.PI)) * (period / (2 * Math.PI)));
+
+    /// <summary>The page's own altitude formatting — the string the captain actually reads.</summary>
+    private static string Altitude(Pages.Map map, double metresAboveSurface) =>
+        (string)Invoke(map, "FormatAltitude", metresAboveSurface)!;
+
+    /// <summary>#1177 · a ship the coaching line speaks to: armed on <paramref name="moon"/> and inside its
+    /// capture range, but OUTSIDE the Hill sphere, so the window is shut and the panel falls through to the
+    /// "autopilot flying the approach — insertion at ≈…" branch rather than to "window OPEN" or
+    /// "bound — parked at".</summary>
+    private static Pages.Map AShipOnTheApproachTo(ICelestialEphemeris eph, CelestialBody moon, double outTo)
+    {
+        var map = new Pages.Map();
+        typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(map, true);
+
+        Set(map, "_ephemeris", eph);
+        Vector2d at = eph.Position(moon.Id, 0);
+        Set(map, "_ship", new ShipState(at + new Vector2d(outTo, 0), new Vector2d(0, 0), 0));
+        Set(map, "_armedOrbitBodyId", moon.Id);
         return map;
     }
 
