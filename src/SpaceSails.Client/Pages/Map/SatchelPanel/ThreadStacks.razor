@@ -1,0 +1,143 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@*
+    #251 · THE THREADS PAGE, ON ITS OWN FILE.
+
+    THE THREADS (#741 v1) — the same book read the other way round: every entry that names one
+    subject, stacked under that name, with the captain's own line drawn between them.
+
+    Moved out of SatchelPanel.razor by PURE MOTION — the block between the two fences below is the block
+    that was in the panel, character for character. Every member it reads is a [Parameter] with the SAME
+    NAME (a field keeps its underscore, a method arrives as a delegate under its own name, a variable the
+    panel's `@if` bound arrives under the name that binding gave it), which is what lets the markup move
+    without a rewrite and lets the composition splice it straight back where it came from.
+
+    IHandleEvent repeats SatchelPanel's own override, which repeats Map.Sim.cs's: the HUD's refresh
+    belongs to OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render
+    back on every event in here. The .razor.css beside this file carries no rules of its own, and its scope is the
+    PAGE's own (b-4dqsdx4p75, pinned in SpaceSails.Client.csproj), so every rule that styled this markup
+    goes on matching it.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and a code
+    block is where its first statements are legal. It is outside the fences, so what the composition reads
+    is exactly the lines that stood in the panel.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from SatchelPanel.razor ────────────────────────────────────────────────── *@
+                    @* ── #741 v1 · THE THREADS ────────────────────────────────────────────────────────────
+                       Owner's issue: "nothing collects every note that mentions The Tilt's harbourmaster, or
+                       OFFICE OF WORKS… the player who wants the big picture re-reads the whole book and does
+                       the string-and-corkboard in their head — which is fine for three entries and hopeless
+                       at thirty."
+
+                       So: one heading per name the book has written down MORE THAN ONCE, and under it every
+                       entry that wrote it, oldest first. The rows are the notebook's own nodes — the same
+                       titles, the same bullets, the same red-line marks — because a second way of drawing an
+                       entry would be a second reading of one book.
+
+                       IT CONCLUDES NOTHING. No arrow, no ranking, no "these are related". The stack is the
+                       juxtaposition and the juxtaposition is the whole argument; the captain draws the line,
+                       with the same pen, and the book keeps no opinion about what it means. *@
+                    <div class="satchel-sub">@SpaceSails.Core.CaseSubjects.Blurb</div>
+
+                    @* ── #973 L3 · MONEY &amp; LOVE (owner ruling §12). The detective's two theories, as a
+                       filter over the sheets that stack on this page. It never hides a NOTE: the field
+                       book's own threads have no tag to be filtered by, and a filter that silently emptied
+                       half the page would be the tab lying about what the book holds. Always lands on the
+                       whole book, because a filter that survived the lid is a captain opening their own
+                       book onto half of it and not being told why. *@
+                    <div class="satchel-notes-filter">
+                        <button type="button" class="satchel-filter @(_bookTag is null ? "on" : "")"
+                                title="Every sheet in the book"
+                                @onclick="() => TheThreadsFilterTurnsTo(null)">🎞 every sheet</button>
+                        <button type="button"
+                                class="satchel-filter @(_bookTag == SpaceSails.Core.HeldMemory.Theory.Money ? "on" : "")"
+                                title="Only the sheets that follow the money"
+                                @onclick="() => TheThreadsFilterTurnsTo(SpaceSails.Core.HeldMemory.Theory.Money)">
+                            💰 @SpaceSails.Core.HeldMemory.Label(SpaceSails.Core.HeldMemory.Theory.Money)
+                        </button>
+                        <button type="button"
+                                class="satchel-filter @(_bookTag == SpaceSails.Core.HeldMemory.Theory.Love ? "on" : "")"
+                                title="Only the sheets that follow the heart"
+                                @onclick="() => TheThreadsFilterTurnsTo(SpaceSails.Core.HeldMemory.Theory.Love)">
+                            🖤 @SpaceSails.Core.HeldMemory.Label(SpaceSails.Core.HeldMemory.Theory.Love)
+                        </button>
+                    </div>
+
+                    @* The sheets, stacked by the names they write down — the photograph's four faces are
+                       four threads on the day it is handed over. Drawn above the field book's own stacks
+                       and in the same shape, because they are the same page answering the same question
+                       about two different kinds of paper. *@
+                    @if (SheetStacks() is { Count: > 0 } sheetStacks)
+                    {
+                        <div class="satchel-notes">
+                            @foreach (SpaceSails.Core.HeldMemory.Stack stack in sheetStacks)
+                            {
+                                <div class="thread-head">
+                                    <span class="thread-name">@stack.Heading</span>
+                                    <span class="thread-count">
+                                        @SpaceSails.Core.CaseSubjects.EntriesLabel(stack.Sheets.Count)
+                                    </span>
+                                </div>
+                                @foreach (SpaceSails.Core.HeldMemory.Sheet sheet in stack.Sheets)
+                                {
+                                    <div class="held-sheet @(sheet.IsStray ? "stray" : "")">
+                                        <div class="held-sheet-text">@sheet.Text</div>
+                                        <div class="held-sheet-byline">@sheet.BookLine</div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+
+                    <div class="notebook-pen">
+                        <button type="button" class="satchel-filter red-pen @(_penInHand ? "on" : "")"
+                                title="@(_penInHand ? SpaceSails.Core.CaseThreads.PenInHandHint : SpaceSails.Core.CaseThreads.PenHint)"
+                                @onclick="TakeUpTheRedPen">@SpaceSails.Core.CaseThreads.PenLabel</button>
+                        <span class="notebook-register">
+                            @(_penInHand
+                                ? SpaceSails.Core.CaseThreads.ConnectingBlurb
+                                : SpaceSails.Core.CaseThreads.ReadingBlurb)
+                        </span>
+                    </div>
+
+                    @if (_satchelOutcome is { Length: > 0 } stackSaid)
+                    {
+                        <div class="satchel-outcome">@stackSaid</div>
+                    }
+
+                    @if (TheBookThreads() is { Count: > 0 } threads)
+                    {
+                        <div class="satchel-notes">
+                            @foreach (SpaceSails.Core.CaseSubjects.SubjectThread stack in threads)
+                            {
+                                SpaceSails.Core.CaseSubjects.SubjectThread run = stack;
+                                <div class="thread-head">
+                                    <span class="thread-name">@stack.Heading</span>
+                                    <span class="thread-count">
+                                        @SpaceSails.Core.CaseSubjects.EntriesLabel(stack.Entries.Count)
+                                    </span>
+                                    @* The pen, offered where the stack is. Never disabled and never hidden
+                                       (#212/#603): pressed on your feet or at a bar top it answers with the
+                                       sentence that says what would fix it, exactly as the pen itself does. *@
+                                    <button type="button" class="satchel-filter thread-pen"
+                                            title="@SpaceSails.Core.CaseSubjects.ConnectTheStackHint"
+                                            @onclick="() => RunThePenDownTheStack(run)">
+                                        @SpaceSails.Core.CaseSubjects.ConnectTheStackLabel
+                                    </button>
+                                </div>
+                                <NotebookNodes Rows="@NotebookPage(stack.Entries)"
+                                               PenInHand="_penInHand"
+                                               WithPlace="true"
+                                               IsOpen="NodeIsOpen"
+                                               IsHeld="NodeIsHeld"
+                                               OnTitle="NoteTitlePressed" />
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.CaseSubjects.NothingTwiceLine</div>
+                    }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

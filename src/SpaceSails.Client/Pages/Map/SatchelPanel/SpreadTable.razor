@@ -1,0 +1,143 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@*
+    #251 · THE SPREAD, ON ITS OWN FILE.
+
+    THE PAPERS, OUT ON THE TABLE. The seated half of the case: the dig that files a sheet into the
+    book (#784), and the reconcile that lays two of them side by side and prints what the table said
+    (#973 L3). Every word of the three verdicts is Core's; this block lays a row and shows it.
+
+    Moved out of SatchelPanel.razor by PURE MOTION — the block between the two fences below is the block
+    that was in the panel, character for character. Every member it reads is a [Parameter] with the SAME
+    NAME (a field keeps its underscore, a method arrives as a delegate under its own name, a variable the
+    panel's `@if` bound arrives under the name that binding gave it), which is what lets the markup move
+    without a rewrite and lets the composition splice it straight back where it came from.
+
+    IHandleEvent repeats SatchelPanel's own override, which repeats Map.Sim.cs's: the HUD's refresh
+    belongs to OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render
+    back on every event in here. The .razor.css beside this file carries no rules of its own, and its scope is the
+    PAGE's own (b-4dqsdx4p75, pinned in SpaceSails.Client.csproj), so every rule that styled this markup
+    goes on matching it.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and a code
+    block is where its first statements are legal. It is outside the fences, so what the composition reads
+    is exactly the lines that stood in the panel.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from SatchelPanel.razor ────────────────────────────────────────────────── *@
+                    <div class="satchel-sub">@(CaseHasBegun ? SpaceSails.Core.SeatedSpread.SpreadAgainBlurb : SpaceSails.Core.SeatedSpread.SpreadBlurb)</div>
+
+                    @if (_satchelOutcome is { Length: > 0 } spreadSaid)
+                    {
+                        <div class="satchel-outcome">@spreadSaid</div>
+                    }
+                    else if (SpreadRefusal is { Length: > 0 } spreadNo)
+                    {
+                        <div class="satchel-outcome">@spreadNo</div>
+                    }
+
+                    @if (ProcessingUnderway() is { } spreadBusy)
+                    {
+                        <div class="satchel-outcome">@spreadBusy</div>
+                    }
+
+                    @* ── #973 L3 · THE RECONCILE. The other verb a table full of paper is for: lay two
+                       things side by side and see whether they are talking about the same world. Every
+                       word of the three verdicts is Fable's (SpreadReconcile); this markup lays a row and
+                       prints what the table said.
+
+                       The laid pair is drawn ABOVE the papers, because it is what the captain is looking
+                       at — and the second question sits under the verdict rather than beside it, since it
+                       is a count and not a conclusion. Nothing here is disabled (#212/#603): a paper
+                       already on the table says so on its own row. *@
+                    @if (LayablePapers() is { Count: > 0 } papers)
+                    {
+                        <div class="spread-lay">
+                            <div class="satchel-sub">
+                                @SpaceSails.Core.SeatedSpread.LayThemTogetherBlurb
+                            </div>
+
+                            @if (_laid.Count > 0)
+                            {
+                                <div class="spread-laid">
+                                    @foreach (SpaceSails.Core.SpreadReconcile.Paper on in _laid)
+                                    {
+                                        <span class="spread-laid-item">@on.Label</span>
+                                    }
+                                    <button type="button" class="satchel-filter"
+                                            title="Take everything off the table"
+                                            @onclick="ClearTheSpread">✕</button>
+                                </div>
+                            }
+
+                            @if (_reconciled is { } said)
+                            {
+                                <div class="satchel-outcome spread-verdict">@said.Line</div>
+                                <div class="spread-second-question">@said.SecondQuestion</div>
+                            }
+
+                            <div class="satchel-items">
+                                @foreach (SpaceSails.Core.SpreadReconcile.Paper paper in papers)
+                                {
+                                    SpaceSails.Core.SpreadReconcile.Paper lay = paper;
+                                    <div class="satchel-row">
+                                        <button type="button" class="satchel-item spread-item"
+                                                title="@SpaceSails.Core.SeatedSpread.LayItHint"
+                                                @onclick="() => LayItOnTheSpread(lay)">
+                                            <span class="satchel-item-name">@paper.Label</span>
+                                            <span class="satchel-item-try">
+                                                @(IsLaid(paper.Id)
+                                                    ? SpaceSails.Core.SeatedSpread.AlreadyLaidWord
+                                                    : SpaceSails.Core.SeatedSpread.LayItWord)
+                                            </span>
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (SpreadableFinds() is { Count: > 0 } spreadable)
+                    {
+                        <div class="satchel-items">
+                            @foreach (SpaceSails.Core.Satchel.Item lying in spreadable)
+                            {
+                                SpaceSails.Core.Satchel.Item dig = lying;
+                                <div class="satchel-row">
+                                    @* Through SpreadDigClicked and not WriteItUp directly: a successful
+                                       press CLOSES this dialog (#696 shuts the pocket so the deck comes
+                                       back), and a click that closes a dialog leaves focus on a button that
+                                       no longer exists — the map then takes no keys at all. Found by
+                                       playing it. *@
+                                    <button type="button" class="satchel-item spread-item"
+                                            title="@WriteUpHint(dig)"
+                                            @onclick="() => SpreadDigClicked(dig)">
+                                        <span class="satchel-item-name">@SatchelLabel(dig)</span>
+                                        <span class="satchel-item-try">
+                                            @SpaceSails.Core.SeatedPosture.WriteGlyph @SpreadRowVerb(dig)
+                                        </span>
+                                    </button>
+                                    @* #798 · …AND THE OTHER END OF THE EVENING. Owner: "those trash cans
+                                       are needed so we get rid of the processed materials without
+                                       connecting them to us too clearly, like leaving them to the table."
+                                       The loop is sit, dig, book, BIN — and the bin has to be on the page
+                                       the digging happened on, or the last rung is somewhere else.
+
+                                       Never disabled: with no bin within reach it says so, on this page,
+                                       and names what would fix it. *@
+                                    @if (RipIsOffered(dig))
+                                    {
+                                        <button type="button" class="satchel-leave"
+                                                title="@RipHint(dig)"
+                                                @onclick="() => RipItUp(dig)">@SpaceSails.Core.RipAndBin.Glyph</button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.SeatedSpread.NothingToWorkLine</div>
+                    }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
