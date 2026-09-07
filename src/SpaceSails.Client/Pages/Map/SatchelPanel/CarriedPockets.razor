@@ -1,0 +1,116 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@*
+    #251 · THE CARRIED PAGE, ON ITS OWN FILE.
+
+    WHAT YOU ARE CARRYING — the pocket's own page, and the frame of it: what the door is asking for
+    (or what the satchel holds), then the refusal and the running hold said HERE, inside the modal's own
+    layer (#680/#696), and then one of three things — the load chooser, the empty line, or the rows.
+
+    Moved out of SatchelPanel.razor by PURE MOTION — the block between the two fences below is the block
+    that was in the panel, character for character. Every member it reads is a [Parameter] with the SAME
+    NAME (a field keeps its underscore, a method arrives as a delegate under its own name, a variable the
+    panel's `@if` bound arrives under the name that binding gave it), which is what lets the markup move
+    without a rewrite and lets the composition splice it straight back where it came from.
+
+    IHandleEvent repeats SatchelPanel's own override, which repeats Map.Sim.cs's: the HUD's refresh
+    belongs to OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render
+    back on every event in here. The .razor.css beside this file carries no rules of its own, and its scope is the
+    PAGE's own (b-4dqsdx4p75, pinned in SpaceSails.Client.csproj), so every rule that styled this markup
+    goes on matching it.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and a code
+    block is where its first statements are legal. It is outside the fences, so what the composition reads
+    is exactly the lines that stood in the panel.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from SatchelPanel.razor ────────────────────────────────────────────────── *@
+                <div class="satchel-sub">
+                    @if (_satchelTarget is { } at)
+                    {
+                        @* #688 · At a door the list has gone quiet except for the keys, and a row of inert
+                           controls that never says why is #603's founding sin one layer up. So the door says
+                           what it reads. It names no card and hints at no wallet — it says what a lock is. *@
+                        <text>
+                            Offering it to <strong>@at.Label</strong>.
+                            @if (SpaceSails.Core.SatchelTry.IsDoor(at.Target))
+                            {
+                                <text>It reads authorities and nothing else — a countersigned card, or nothing at all.</text>
+                            }
+                            else
+                            {
+                                <text>Pick something.</text>
+                            }
+                        </text>
+                    }
+                    else
+                    {
+                        @* #688 · The subtitle names what it counts. One figure for three compartments was a
+                           sentence that could not be true — a sleeve stuffed with manifests says nothing
+                           about the pockets, and neither of them says anything about the wallet, which never
+                           fills at all. Core does the arithmetic so the dialog and the pocket cannot
+                           disagree about the same satchel. *@
+                        <text>
+                            Everything found out here, and it stays yours between visits.
+                            @SpaceSails.Core.Satchel.SpaceLine(_satchel)
+                        </text>
+                    }
+                </div>
+
+                @* #680 · A failed try answers HERE, inside the modal's own layer — the pulse HUD sits
+                   under the backdrop blur, where the refusal is in the DOM and not on the screen. *@
+                @if (_satchelOutcome is { } said)
+                {
+                    <div class="satchel-outcome">@said</div>
+                }
+
+                @* #696 · AND A RUNNING HOLD SAYS SO, HERE. The darkroom shuts the satchel on the way in so
+                   the captain can watch the fan, but nothing stops them opening it again with I while the
+                   twenty seconds run — and a pocket that says nothing about the document currently under
+                   their own hands is the dialog lying about itself. Same law as the line above: whatever
+                   surface is up is the surface that has to speak (#680/#686). *@
+                @if (ProcessingUnderway() is { } busy)
+                {
+                    <div class="satchel-outcome">@busy</div>
+                }
+
+                @* ── #837 · THE LOAD CHOOSER ────────────────────────────────────────────────────────────
+                   Owner, satchel open on '12 loose rounds': "I would expect like load it into one or both
+                   guns" / "and like how many each .. by default I guess it would be all into one in most
+                   cases, but we should give flexibility here."
+
+                   One row per gun the captain's hands can reach — the sling first, because a gun on your own
+                   back is the least demanding version of this verb, then whatever is set down within arm's
+                   length. Every figure on it is Core's: the counts are SentryBot.MagazineCell, which is the
+                   same function the MAGAZINES readout is built out of, and the arrow shows what that line
+                   will read AFTER the press, before the press (#696 — the price known beforehand).
+
+                   The page decides nothing. It has no arithmetic, no mutation and no words of its own. *@
+                @if (TheLoadChooser() is { } loading)
+                {
+                    <HandLoadChooser loading="@loading" CloseTheLoadChooser="@CloseTheLoadChooser"
+                                     LoadIntoIt="@LoadIntoIt" NudgeShare="@NudgeShare" />
+                }
+                else if (_satchel.Count == 0)
+                {
+                    <div class="satchel-empty">
+                        Empty. Rooms down here are worth searching — most are stripped, and the ones that
+                        are not are the reason anybody comes.
+                    </div>
+                }
+                else
+                {
+                    <CarriedRows _satchel="@_satchel" _satchelTarget="@_satchelTarget"
+                                 _walletOpenValue="@_walletOpen" _walletOpenSet="@(v => _walletOpen = v)"
+                                 CanWriteUp="@CanWriteUp" LeaveHintFor="@LeaveHintFor" LeaveItem="@LeaveItem"
+                                 LoadHint="@LoadHint" LoadIsOffered="@LoadIsOffered" LookAtItem="@LookAtItem"
+                                 OpenItemCard="@OpenItemCard" OpenTheLoadChooser="@OpenTheLoadChooser"
+                                 RipHint="@RipHint" RipIsOffered="@RipIsOffered" RipItUp="@RipItUp"
+                                 BurnIsOffered="@BurnIsOffered" BurnTheBlackOpsKey="@BurnTheBlackOpsKey"
+                                 SatchelLabel="@SatchelLabel" ScanHint="@ScanHint" ScanIsOffered="@ScanIsOffered"
+                                 ScanWithTheKit="@ScanWithTheKit" TargetFor="@TargetFor" TryItem="@TryItem"
+                                 TryTheWholeWallet="@TryTheWholeWallet" Wallet="@Wallet"
+                                 WalletTarget="@WalletTarget" WriteItUp="@WriteItUp" WriteUpHint="@WriteUpHint" />
+                }
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

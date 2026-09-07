@@ -1,0 +1,70 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@*
+    #251 · THE LOAD CHOOSER, ON ITS OWN FILE.
+
+    THE LOAD CHOOSER (#837) — one row per gun the captain's hands can reach, with the stepper that
+    says how many rounds go into each and the arrow that shows what the magazine line will read AFTER
+    the press. Every figure on it is Core's; this block decides nothing.
+
+    Moved out of SatchelPanel.razor by PURE MOTION — the block between the two fences below is the block
+    that was in the panel, character for character. Every member it reads is a [Parameter] with the SAME
+    NAME (a field keeps its underscore, a method arrives as a delegate under its own name, a variable the
+    panel's `@if` bound arrives under the name that binding gave it), which is what lets the markup move
+    without a rewrite and lets the composition splice it straight back where it came from.
+
+    IHandleEvent repeats SatchelPanel's own override, which repeats Map.Sim.cs's: the HUD's refresh
+    belongs to OnTick's 200 ms throttle, and a child that did not repeat it would put an automatic render
+    back on every event in here. The .razor.css beside this file carries no rules of its own, and its scope is the
+    PAGE's own (b-4dqsdx4p75, pinned in SpaceSails.Client.csproj), so every rule that styled this markup
+    goes on matching it.
+
+    The `@{ }` around the fences is not decoration: the block came out of a Razor CODE block, and a code
+    block is where its first statements are legal. It is outside the fences, so what the composition reads
+    is exactly the lines that stood in the panel.
+*@
+@{
+@* ── MARKUP BEGINS · verbatim from SatchelPanel.razor ────────────────────────────────────────────────── *@
+                    <div class="satchel-sub">@SpaceSails.Core.SentryHandLoad.ChooserBlurb(loading.Pocket, loading.KindName)</div>
+
+                    @if (loading.Picks.Count == 0)
+                    {
+                        <div class="satchel-empty">@SpaceSails.Core.SentryHandLoad.NothingInReachLine</div>
+                    }
+                    else
+                    {
+                        <div class="satchel-items">
+                            @foreach (SpaceSails.Core.SentryHandLoad.Pick offering in loading.Picks)
+                            {
+                                SpaceSails.Core.SentryHandLoad.Pick gun = offering;
+                                <div class="satchel-row">
+                                    <button type="button" class="satchel-item"
+                                            title="@gun.Note"
+                                            @onclick="() => LoadIntoIt(gun)">
+                                        <span class="satchel-item-name">
+                                            🔫 @gun.Unit @gun.Now @(gun.Worked ? "→ " + gun.After : "") <span class="satchel-where">@gun.Where</span>
+                                        </span>
+                                        <span class="satchel-item-try">@SpaceSails.Core.SentryHandLoad.LoadLabel</span>
+                                    </button>
+                                    @* THE COUNT STEPPER, and it is only drawn where there is a choice to
+                                       make: a row whose ceiling is nought has a refusal to say and no
+                                       interesting difference between one nothing and another. *@
+                                    @if (gun.Ceiling > 0)
+                                    {
+                                        <button type="button" class="satchel-leave"
+                                                title="@SpaceSails.Core.SentryHandLoad.FewerHint"
+                                                @onclick="() => NudgeShare(gun, -1)">−</button>
+                                        <span class="satchel-share">@gun.Share of @gun.Pocket</span>
+                                        <button type="button" class="satchel-leave"
+                                                title="@SpaceSails.Core.SentryHandLoad.MoreHint"
+                                                @onclick="() => NudgeShare(gun, 1)">+</button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    <button type="button" class="satchel-back"
+                            @onclick="CloseTheLoadChooser">@SpaceSails.Core.SentryHandLoad.BackLabel</button>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}
