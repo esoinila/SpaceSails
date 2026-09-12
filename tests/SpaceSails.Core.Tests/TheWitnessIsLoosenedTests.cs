@@ -167,6 +167,10 @@ public sealed class TheWitnessIsLoosenedTests
     /// THE FRESH FOLD IS ABOUT A WATCH THE CLOCK CANNOT REACH, so the first real watch always forgets it.
     /// Without this the whole rule could be passing on a fold that happened to start on watch zero — and
     /// watch zero is where every game begins.
+    ///
+    /// <para><b>Watched RED:</b> <c>WitnessWatch.Fresh</c> given <c>0</c> for its watch —
+    /// <i>"Assert.True() Failure · Expected: True · Actual: False"</i>, a brand-new captain walking up to a
+    /// witness the fold already thinks has been greeted and asked.</para>
     /// </summary>
     [Fact]
     public void AFreshFoldIsForgottenByTheFirstRealWatch()

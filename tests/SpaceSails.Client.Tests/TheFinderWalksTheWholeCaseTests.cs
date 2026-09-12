@@ -322,10 +322,11 @@ public sealed class TheFinderWalksTheWholeCaseTests
     /// notice his table card, the counter card and the contract card all print (#736), and out as the pulse
     /// for a captain with no card up.</para>
     ///
-    /// <para><b>Watched RED:</b> the <c>FinderCase.TheGreetingIsDue</c> gate replaced by the slice 1 body
-    /// (file the hook, flip <c>WitnessHeard</c>) — <i>"he handed the lead to a captain who merely walked
-    /// up"</i>; and with only the greeting restored but its fold write dropped, <i>"he said it twice in one
-    /// watch"</i>.</para>
+    /// <para><b>Watched RED:</b> the greeting replaced by slice 1's own body (file the hook, flip
+    /// <c>WitnessHeard</c>) — <i>"he handed the lead to a captain who merely walked up."</i>; and, with the
+    /// greeting back, its <c>Greeting()</c> fold write dropped — <i>"Assert.Null() Failure · Value is not
+    /// null · Actual: "“I work the rota. I don't work for you.”""</i>, the man repeating himself at every
+    /// press.</para>
     /// </summary>
     [Fact]
     public void ReachingTheWitnessSaysOneSentenceAndFilesNothing()
@@ -366,11 +367,12 @@ public sealed class TheFinderWalksTheWholeCaseTests
     /// accepted glass files the hook under his own name as well as the case's — and every glass after that
     /// is a glass, because he said it once and once is what he said.</para>
     ///
-    /// <para><b>Watched RED:</b> the <c>FinderCase.WitnessAnswer.Nothing</c> early return dropped out of
-    /// <c>TheWitnessHearsTheOffer</c> — <i>"Assert.False() Failure · a refused glass filed the lead"</i>;
-    /// and the <c>Asking()</c> write dropped — <i>"a second glass in the same watch bought what the first
-    /// one was refused"</i>; and the <c>FileNoteAbout</c> call dropped — <i>"the lead he was bought never
-    /// reached the book"</i>.</para>
+    /// <para><b>Watched RED</b> three ways. The filing arm widened from <c>Talks</c> to "anything but
+    /// nothing" — <i>"a refused glass filed the lead."</i>. The <c>Asking()</c> write dropped, so the spent
+    /// watch never spends — <i>"Assert.Equal() Failure · Expected: "" · Actual: "  “One drink. Then I never
+    /// saw you.”""</i>, the second glass of a watch buying what the first was refused. And the
+    /// <c>FileNoteAbout</c> call dropped — <i>"Assert.Equal() Failure · Expected: 2 · Actual: 1"</i>, the
+    /// lead he was bought never reaching the book.</para>
     /// </summary>
     [Fact]
     public void ARefusedGlassCostsTheWatchAndAnAcceptedOneBuysTheLead()
@@ -430,10 +432,12 @@ public sealed class TheFinderWalksTheWholeCaseTests
     /// the game is behind, and a rota regular the captain has never worked for has no ledger history — so
     /// without the case joining him to that list the lead would sit behind a button that never draws.</para>
     ///
-    /// <para><b>Watched RED:</b> the <c>TheCaseWouldHaveHimLoosened</c> clause dropped out of
-    /// <c>PresentBarContacts</c> — <i>"the case's own witness cannot be bought a drink at all"</i>; and the
-    /// accept-arm call removed from <c>BuyContactDrink</c> — <i>"the drink seam does not tell the finder
-    /// what the glass did (accept arm)"</i>.</para>
+    /// <para><b>Watched RED</b> four ways. <c>TheCaseWouldHaveHimLoosened</c> made to answer false —
+    /// <i>"the case's own witness cannot be bought a drink at all."</i>. Its clause dropped out of
+    /// <c>PresentBarContacts</c>, and the accept-arm call out of <c>BuyContactDrink</c> — both
+    /// <i>"Assert.Contains() Failure: Sub-string not found"</i>. And a second
+    /// <c>ContactDrink.OfferDrink</c> added beside the first — <i>"Assert.Equal() Failure · Expected: 1 ·
+    /// Actual: 2"</i>, which is the only one of the four that would have caught a parallel roll path.</para>
     /// </summary>
     [Fact]
     public void TheWitnessIsOfferedTheDrinkTheBarAlreadyPours()
