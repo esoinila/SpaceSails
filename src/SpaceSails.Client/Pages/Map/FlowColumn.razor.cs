@@ -186,6 +186,7 @@ public partial class FlowColumn
     [Parameter] public bool _worldReady { get; set; }
     [Parameter] public Action<AlertKind> AcknowledgeAlert { get; set; } = default!;
     [Parameter] public string ActiveCaptainName { get; set; } = default!;
+    [Parameter] public Func<ConditionsReading?> ActiveConditions { get; set; } = default!;
     [Parameter] public Func<string, Quest?> ActiveCargoRunTo { get; set; } = default!;
     [Parameter] public Func<int> ActiveTutorialIndex { get; set; } = default!;
     [Parameter] public Action<ArrivalStepRule.ArrivalKind> AddArriveAtScrub { get; set; } = default!;
@@ -311,6 +312,7 @@ public partial class FlowColumn
     [Parameter] public Func<double, string> FormatHorizon { get; set; } = default!;
     [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
     [Parameter] public Func<double, string> FormatZoom { get; set; } = default!;
+    [Parameter] public Func<(string Line, string Readout)?> FrameMotionTipLine { get; set; } = default!;
     [Parameter] public Func<List<FrameOption>> FrameOptions { get; set; } = default!;
     [Parameter] public Func<List<(string Label, List<CelestialBody> Members)>> FramePickerGroups { get; set; } = default!;
     [Parameter] public Func<string> FrameSpeedReadout { get; set; } = default!;

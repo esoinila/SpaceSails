@@ -154,20 +154,30 @@
             }
             @if (dossier.IsPrey)
             {
-                @* The autosteal criterion box (owner): both must be green before shuttles launch. *@
-                bool rangeOk = dossier.Distance <= CaptureRule.CaptureRadiusMeters;
-                bool speedOk = dossier.RelSpeed <= CaptureRule.MaxRelativeSpeed;
+                @* The autosteal criterion box (owner): both must be green before shuttles launch.
+
+                   #243 · AND IT IS NOW THE SAME TWO CHIPS THE NAV STRIP DRAWS. Owner, on approach to the
+                   roadster: "The piracy pop-up has the criteria nicely shown… In the boarding dialog just
+                   seeing green or red told the story much faster. I guess it could be a general
+                   meet-the-conditions [display] in the navigation screen." This box is the model the strip
+                   was generalized FROM, so the generalization has to come back for it — otherwise the day
+                   somebody changes how a criterion reads there are two boxes in the game claiming to be the
+                   same instrument. The two rows below were hand-written comparisons against the two
+                   constants; they are ConditionsGate.Board's chips now, coloured by CaptureRule's own
+                   predicates, drawn by the component the strip draws. The heading, the verdict line and the
+                   three sentences under it are untouched.
+
+                   The numbers change hand here, and deliberately: they are in DockFocus's coaching unit
+                   ("500,000 km", "5 km/s" — the one the owner reads off the #200 clamp panel) instead of
+                   this page's FormatDistance. One instrument, one way of writing a number. *@
+                ConditionsReading autosteal =
+                    ConditionsGate.Board(dossier.Name, dossier.Distance, dossier.RelSpeed, dossier.Closing);
                 <div class="border border-secondary rounded px-2 py-1 mt-1">
                     <div class="fw-bold">🎯 Autosteal needs BOTH:</div>
-                    <div class="@(rangeOk ? "text-success" : "text-warning")">
-                        @(rangeOk ? "✅" : "❌") close enough —
-                        @FormatDistance(dossier.Distance) @(rangeOk ? "≤" : ">") @FormatDistance(CaptureRule.CaptureRadiusMeters)
-                    </div>
-                    <div class="@(speedOk ? "text-success" : "text-warning")">
-                        @(speedOk ? "✅" : "❌") speed match —
-                        @((dossier.RelSpeed / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s
-                        @(speedOk ? "≤" : ">") @((CaptureRule.MaxRelativeSpeed / 1000).ToString("F0", CultureInfo.InvariantCulture)) km/s
-                    </div>
+                    @foreach (GateCriterion criterion in autosteal.Criteria)
+                    {
+                        <CriteriaChip Criterion="@criterion" />
+                    }
                     <div class="@(dossier.BoardReady == 2 ? "text-success fw-bold" : "text-secondary")">
                         @(dossier.BoardReady switch
                         {
