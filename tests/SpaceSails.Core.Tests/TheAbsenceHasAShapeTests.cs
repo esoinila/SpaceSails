@@ -141,6 +141,25 @@ public sealed class TheAbsenceHasAShapeTests
         Assert.True(clashes.Count == 0,
             "the absence note shares its kind with: " + string.Join(", ", clashes));
 
+        // …and the same question asked of the SOURCE, because half the glyphs this book files under are
+        // client literals typed at the filing site (the find's torch, the file, the wall, the clipping) and
+        // no reflection over Core can see one of those. The mark may appear in exactly one file.
+        string root = TestTree.RepoRoot();
+        List<string> wearers =
+        [
+            .. System.IO.Directory
+                .EnumerateFiles(System.IO.Path.Combine(root, "src"), "*.cs", System.IO.SearchOption.AllDirectories)
+                .Concat(System.IO.Directory.EnumerateFiles(
+                    System.IO.Path.Combine(root, "src"), "*.razor", System.IO.SearchOption.AllDirectories))
+                .Select(p => System.IO.Path.GetRelativePath(root, p).Replace('\\', '/'))
+                .Where(rel => !rel.Contains("/obj/", StringComparison.Ordinal)
+                              && !rel.Contains("/bin/", StringComparison.Ordinal))
+                .Where(rel => System.IO.File.ReadAllText(System.IO.Path.Combine(root, rel))
+                              .Contains(MissingMiddle.Glyph, StringComparison.Ordinal))
+                .OrderBy(rel => rel, StringComparer.Ordinal),
+        ];
+        Assert.Equal(["src/SpaceSails.Core/MissingMiddle.cs"], wearers);
+
         // And the note it mints really wears it, along with everything else a book entry needs.
         string body = Grounds()[0];
         using (Buried(body))
@@ -592,6 +611,62 @@ public sealed class TheAbsenceHasAShapeTests
             }
         }
         Assert.True(seen > 10, $"only {seen} grounds kept a specimen — this proves little.");
+    }
+
+    /// <summary>
+    /// #1063 · <b>ONE READER, ONE WRITER.</b> §13.15's second cause is a caller reasoning about the shape of
+    /// a building it does not own, and this beat has five of them: the compose that replays a site, the force
+    /// itself, the cache claim, the fog and the born-dark overlay all resolve the chamber behind a forced
+    /// door. A room that came back empty to one of them and full to another would bank 900 credits out of
+    /// bare ground, or draw a landmark over a room with nothing under it, and nothing on screen would say
+    /// which was lying.
+    ///
+    /// <para>So the source is swept: the client resolves a forced region in exactly one place, decides the
+    /// spend in exactly one place, and writes the key down in exactly one place.</para>
+    ///
+    /// <para><b>Revert that reddened it:</b> the cache-claim loop pointed back at
+    /// <c>ExpeditionRegions.ForceOpen</c> — <i>"2 places in the client resolve a forced chamber"</i>.</para>
+    /// </summary>
+    [Fact]
+    public void TheForcedChamberHasOneReaderAndTheSpendOneWriter()
+    {
+        string root = TestTree.RepoRoot();
+        string client = System.IO.Path.Combine(root, "src", "SpaceSails.Client");
+
+        Dictionary<string, List<string>> where = new(StringComparer.Ordinal)
+        {
+            ["ExpeditionRegions.ForceOpen("] = [],
+            ["EmptySeal.WouldBeEmpty("] = [],
+            ["EmptySeal.Key("] = [],
+        };
+
+        foreach (string full in System.IO.Directory
+            .EnumerateFiles(client, "*.cs", System.IO.SearchOption.AllDirectories)
+            .Concat(System.IO.Directory.EnumerateFiles(client, "*.razor", System.IO.SearchOption.AllDirectories)))
+        {
+            string rel = System.IO.Path.GetRelativePath(root, full).Replace('\\', '/');
+            if (rel.Contains("/obj/", StringComparison.Ordinal) || rel.Contains("/bin/", StringComparison.Ordinal))
+            {
+                continue;
+            }
+            string text = System.IO.File.ReadAllText(full);
+            foreach (string call in where.Keys)
+            {
+                for (int at = text.IndexOf(call, StringComparison.Ordinal); at >= 0;
+                     at = text.IndexOf(call, at + call.Length, StringComparison.Ordinal))
+                {
+                    where[call].Add(rel);
+                }
+            }
+        }
+
+        foreach ((string call, List<string> sites) in where)
+        {
+            Assert.True(sites.Count == 1,
+                $"{sites.Count} places in the client call {call} — there may be exactly one: "
+                + string.Join(", ", sites));
+            Assert.Equal("src/SpaceSails.Client/Pages/Map.ExpeditionRegions.cs", sites[0]);
+        }
     }
 
     // ══ THE SCULLY LAW, AND §8's RESERVED WORD ══════════════════════════════════════════════════════════
