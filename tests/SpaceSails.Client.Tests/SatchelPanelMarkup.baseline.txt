@@ -212,6 +212,24 @@
 
                                        Never disabled: with no bin within reach it says so, on this page,
                                        and names what would fix it. *@
+                                    @* #798 item 2 · …AND THE PAGE GRANULARITY, ONE CONTROL EARLIER. Owner:
+                                       "rip out the most compromising evidence and toss the rest
+                                       inconspicuously… the processing UI is where the split happens —
+                                       seated, with air."
+
+                                       Drawn between the pen and the shredder because that is the order of
+                                       the evening: dig it, take the one sheet out, bin the rest. Drawn only
+                                       where it APPLIES (#212/#603) — a single-sheet paper, a sheet nothing
+                                       has been dug out of, and half a document that has already come apart
+                                       are not refusals, they are a verb about something else — and the one
+                                       gate a captain can meet with the control already in front of them,
+                                       the chair opposite filling up, is said OUT LOUD. *@
+                                    @if (SplitIsOffered(dig))
+                                    {
+                                        <button type="button" class="satchel-leave"
+                                                title="@SplitHint(dig)"
+                                                @onclick="() => SplitTheDocument(dig)">@SpaceSails.Core.PageGranularity.Glyph</button>
+                                    }
                                     @if (RipIsOffered(dig))
                                     {
                                         <button type="button" class="satchel-leave"

@@ -295,7 +295,17 @@ public sealed partial class Map
         // word on this line is the entire difference a later arc has to read back when it decides whether
         // anything comes of it. It is a fact about what the captain did and never a verdict about what it
         // bought them, because nothing in this game knows that yet.
-        FileNote(RipAndBin.DisposalNote(label, bin.Tier), RipAndBin.Glyph);
+        //
+        // #798 item 2 · …and the note says WHAT KIND OF THING was left behind, because a folder with its one
+        // damning sheet already out of it is not the same object in a bin as a file somebody tore up whole.
+        // Owner: "a file in the bin that reads boring explains itself; a missing file explains nothing." The
+        // question is asked of the ID — the bulk carries its own mark and there is no register of split
+        // documents anywhere — so this line cannot come to a different view from the row that drew it.
+        FileNote(
+            RipAndBin.DisposalNote(
+                label, bin.Tier,
+                boring: PageGranularity.PartOf(item.Id) == PageGranularity.Part.TheBulk),
+            RipAndBin.Glyph);
 
         string said = RipAndBin.RippedLine(label, bin.Tier);
         if (WhoIsWatchingYouRip() is { } who)

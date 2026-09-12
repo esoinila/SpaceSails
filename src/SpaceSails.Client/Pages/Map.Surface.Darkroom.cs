@@ -648,8 +648,15 @@ public partial class Map
         // #613 · Each paper by its own name. Owner: "the operational papers could have individual short
         // titles… now they look identical in inventory." The certainty stays on the end, because that is the
         // one thing about a paper worth comparing across a pocketful of them.
+        // #798 item 2 · …and a document that has come apart says WHICH PART OF ITSELF this row is, between
+        // its own title and its own short word. It is a citation and not a second name (Core owns it, and
+        // owns why): both halves of a split are still the document they came out of — same title, same
+        // certainty, rolled off the same id — and what a captain holding two rows off one file needs is
+        // which of them is the page and which is the rest. An empty string on anything still whole, so the
+        // row of an unsplit paper is the row it has always been, character for character.
         Core.Satchel.Kind.Paper =>
-            $"📋 {Core.FieldClue.Title(item.Id)} — {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(item.Id))}",
+            $"📋 {Core.FieldClue.Title(item.Id)}{Core.PageGranularity.RowCitation(item.Id)}"
+                + $" — {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(item.Id))}",
         Core.Satchel.Kind.Rounds => item.Id == Ammunition.LabTwoStage.Id
             ? $"🔫 {item.Count} × {Ammunition.LabTwoStage.Name}"
             : $"🔫 {item.Count} loose round{(item.Count == 1 ? "" : "s")}",

@@ -371,7 +371,17 @@ public partial class Map
     /// about to add a fifth copy of this one from the far side of the building, so the format lives here and
     /// every hand that writes the set or reads it goes through it.</para>
     /// </summary>
-    private static string WrittenUpKey(Core.Satchel.Item item) => $"{item.Kind}:{item.Id}";
+    /// <remarks>
+    /// #798 item 2 · …and it keys on the DOCUMENT rather than on the row. A page torn out of a file and the
+    /// folder it came out of are two things in the sleeve and ONE thing to the book: the dig that put the
+    /// document in there read every page of it (#828's completeness law), so a sheet that arrived by being
+    /// torn off a document already in the book is already in the book. Without this the split would quietly
+    /// undo its own precondition — the bin picker would flag both halves <i>not yet worked</i> and warn that
+    /// binning the folder loses whatever it had to say, about a folder whose every word is already written
+    /// down in the captain's own hand.
+    /// </remarks>
+    private static string WrittenUpKey(Core.Satchel.Item item) =>
+        $"{item.Kind}:{Core.PageGranularity.SourceOf(item.Id)}";
 
     /// <summary>
     /// #784 → #1016 · <b>THE REGISTER, AND IT IS THE CASE'S RATHER THAN THE GROUND'S.</b>

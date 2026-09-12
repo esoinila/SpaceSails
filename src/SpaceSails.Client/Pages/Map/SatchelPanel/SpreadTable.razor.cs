@@ -27,6 +27,9 @@ public partial class SpreadTable
     [Parameter] public Func<Core.Satchel.Item, bool> RipIsOffered { get; set; } = default!;
     [Parameter] public Action<Core.Satchel.Item> RipItUp { get; set; } = default!;
     [Parameter] public Func<Core.Satchel.Item, string> SatchelLabel { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, string> SplitHint { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, bool> SplitIsOffered { get; set; } = default!;
+    [Parameter] public Action<Core.Satchel.Item> SplitTheDocument { get; set; } = default!;
     [Parameter] public Func<List<Core.Satchel.Item>> SpreadableFinds { get; set; } = default!;
     [Parameter] public Func<Core.Satchel.Item, Task> SpreadDigClicked { get; set; } = default!;
     [Parameter] public string? SpreadRefusal { get; set; }

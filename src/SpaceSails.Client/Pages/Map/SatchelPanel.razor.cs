@@ -95,6 +95,9 @@ public partial class SatchelPanel
     [Parameter] public Func<Core.Satchel.Item, bool> ScanIsOffered { get; set; } = default!;
     [Parameter] public Action<Core.Satchel.Item> ScanWithTheKit { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<HeldMemory.Stack>> SheetStacks { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, string> SplitHint { get; set; } = default!;
+    [Parameter] public Func<Core.Satchel.Item, bool> SplitIsOffered { get; set; } = default!;
+    [Parameter] public Action<Core.Satchel.Item> SplitTheDocument { get; set; } = default!;
     [Parameter] public Func<List<Core.Satchel.Item>> SpreadableFinds { get; set; } = default!;
     [Parameter] public Func<Core.Satchel.Item, Task> SpreadDigClicked { get; set; } = default!;
     [Parameter] public string SpreadDoorHint { get; set; } = default!;
