@@ -228,6 +228,16 @@ public partial class FlowColumn
     [Parameter] public Action<int> BuyFuel { get; set; } = default!;
     [Parameter] public EventCallback BuyNetJammer { get; set; }
     [Parameter] public Action BuyTheInspectorCard { get; set; } = default!;
+
+    /// <summary>#535 slice 2 · The fence's key row: what it costs, how the desk prints it, and the press.
+    /// All three are Map's, passed straight through — this shell composes nothing.</summary>
+    [Parameter] public Func<int?> TheFencesKeyPrice { get; set; } = default!;
+
+    /// <summary>#535 slice 2 · The price in the desk's one credit typography.</summary>
+    [Parameter] public Func<string> TheFencesKeyPriceText { get; set; } = default!;
+
+    /// <summary>#535 slice 2 · Buy it.</summary>
+    [Parameter] public Action BuyTheKeyFromTheFence { get; set; } = default!;
     [Parameter] public Action<string> BuyUpgrade { get; set; } = default!;
     [Parameter] public EventCallback CallInFavorAtPump { get; set; }
     [Parameter] public Action CancelFiringSolution { get; set; } = default!;

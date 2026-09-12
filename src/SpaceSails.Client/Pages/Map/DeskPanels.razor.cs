@@ -168,6 +168,17 @@ public partial class DeskPanels
 
     /// <summary>#1149 · Buy it. Map moves the coin and puts the laminate in the wallet.</summary>
     [Parameter] public Action BuyTheInspectorCard { get; set; } = default!;
+
+    /// <summary>#535 slice 2 · What the desk's fence wants for one black-ops key, or null when this port has
+    /// already dealt its one for the watch — Map's own <c>TheFencesKeyPrice</c>, three times the BUSTED
+    /// card's bribe through that card's own function and never typed.</summary>
+    [Parameter] public Func<int?> TheFencesKeyPrice { get; set; } = default!;
+
+    /// <summary>#535 slice 2 · That price in the desk's one credit typography, composed by Map.</summary>
+    [Parameter] public Func<string> TheFencesKeyPriceText { get; set; } = default!;
+
+    /// <summary>#535 slice 2 · Buy it — Map moves the coin and strikes the port off for the watch.</summary>
+    [Parameter] public Action BuyTheKeyFromTheFence { get; set; } = default!;
     [Parameter] public Action SellTheChipToTheFence { get; set; } = default!;
     [Parameter] public Func<NpcShip, string> DepartureLabel { get; set; } = default!;
     [Parameter] public Action DismissCrashNote { get; set; } = default!;
