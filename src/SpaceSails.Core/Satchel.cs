@@ -237,11 +237,13 @@ public static class Satchel
     // folder that explains itself — walked away carrying exactly as much as the captain who stuffed the
     // whole folder in their coat. The tradecraft bought nothing the arithmetic could see.
     //
-    // It is a WEIGHT CLASS and deliberately not a new Kind. Four guards sweep every evidence kind and
-    // assert that each one has a full gist, a glance and a dig (AGlanceIsNotADig's completeness and table
-    // laws, TheDisposalYouWatch's glance-purity and dug-sheet laws); a Kind.Sheet with no dig of its own
-    // would have reddened all four for a reason that has nothing to do with the laws they state, and it
-    // would have cost the sheet every verb paper already has. The compartment is not touched either —
+    // It is a WEIGHT CLASS and deliberately not a new Kind. Four guards sweep every evidence kind and ask
+    // each one for a full gist, a glance and a dig — AGlanceIsNotADig's completeness law and its
+    // one-paragraph law, TheDisposalYouWatch's glance-purity law and its no-unworked-dug-sheet law — and
+    // every one of them builds its item with a PLAIN id. A Kind.Sheet would therefore be constructed by all
+    // four in a shape the world can never produce (a sheet that is not a page of anything) and then asked
+    // for a dig of its own, which is a lie about the one object whose entire point is that its dig already
+    // happened. It would also cost the sheet every verb paper already has. The compartment is not touched —
     // LeftBehind.GistOf asks CompartmentOf(kind) to decide what is a document at all, and a sheet that
     // rode somewhere else would stop being one to the book on the way past.
     //
