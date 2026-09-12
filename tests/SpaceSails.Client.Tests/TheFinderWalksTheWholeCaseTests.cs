@@ -89,16 +89,21 @@ public sealed class TheFinderWalksTheWholeCaseTests
         Assert.Contains(CaseSubjects.On(lead), s => s.Name == FinderCase.DisplayName);
         Assert.Contains(CaseSubjects.On(lead), s => s.Name == c.ClientPortName);
 
-        // (3) LEAD ONE — the witness, and only at the port her own rota favours.
+        // (3) LEAD ONE — the witness, and only at the port her own rota favours. #417 slice 2a: reaching him
+        // is no longer the lead. He is a man working a rota, and what he saw costs a glass he may refuse.
         Set(map, "_dockedHavenId", AnyPortBut(c.WitnessPortId));
-        Invoke(map, "TheWitnessMayHaveSeenIt", c.WitnessId);
+        Assert.Equal("", TheGlass(map, c.WitnessId, taken: true));
         Assert.False(Progress(map).WitnessHeard, "the witness answered at a port she does not drink at.");
 
         Set(map, "_dockedHavenId", c.WitnessPortId);
-        Invoke(map, "TheWitnessMayHaveSeenIt", "SOMEBODY ELSE ENTIRELY");
+        Assert.Equal("", TheGlass(map, "SOMEBODY ELSE ENTIRELY", taken: true));
         Assert.False(Progress(map).WitnessHeard, "a stranger answered the case's own lead.");
 
         Invoke(map, "TheWitnessMayHaveSeenIt", c.WitnessId);
+        Assert.False(Progress(map).WitnessHeard, "he handed the lead to a captain who merely walked up.");
+
+        Assert.Contains(FinderCase.WitnessTakesTheGlass, TheGlass(map, c.WitnessId, taken: true),
+                        StringComparison.Ordinal);
         Assert.True(Progress(map).WitnessHeard);
         Assert.Equal(c.TheHook, Notes(map).Last().Text);
         Assert.Contains(CaseSubjects.On(Notes(map).Last()), s => s.Name == c.WitnessId);
@@ -307,6 +312,170 @@ public sealed class TheFinderWalksTheWholeCaseTests
         Assert.False(Progress(fresh).Taken);
     }
 
+    // ══ #417 SLICE 2a · THE DRINK-LOOSENED LEAD ══════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// <b>HE SAYS HE DOESN'T WORK FOR YOU, ONCE A WATCH, AND FILES NOTHING WHILE HE SAYS IT.</b>
+    ///
+    /// <para>Slice 1's witness handed the trail over to anybody who came within a metre of him. What a
+    /// walk-up does now is exactly one thing: his own sentence, said where the captain is looking — the bar
+    /// notice his table card, the counter card and the contract card all print (#736), and out as the pulse
+    /// for a captain with no card up.</para>
+    ///
+    /// <para><b>Watched RED:</b> the <c>FinderCase.TheGreetingIsDue</c> gate replaced by the slice 1 body
+    /// (file the hook, flip <c>WitnessHeard</c>) — <i>"he handed the lead to a captain who merely walked
+    /// up"</i>; and with only the greeting restored but its fold write dropped, <i>"he said it twice in one
+    /// watch"</i>.</para>
+    /// </summary>
+    [Fact]
+    public void ReachingTheWitnessSaysOneSentenceAndFilesNothing()
+    {
+        Pages.Map map = TheCaseIsTakenAndTheWitnessIsInTheRoom(out FinderCase.Case c);
+        int before = Notes(map).Count;
+
+        Invoke(map, "TheWitnessMayHaveSeenIt", c.WitnessId);
+        Assert.False(Progress(map).WitnessHeard, "he handed the lead to a captain who merely walked up.");
+        Assert.Equal(before, Notes(map).Count);
+        Assert.Equal($"“{FinderCase.WitnessBeforeTheGlass}”", (string?)Field(map, "_barNotice"));
+        Assert.Equal($"“{FinderCase.WitnessBeforeTheGlass}”", TheLineOnScreen(map));
+
+        // …and not twice in one watch.
+        Set(map, "_barNotice", null);
+        Invoke(map, "TheWitnessMayHaveSeenIt", c.WitnessId);
+        Assert.Null((string?)Field(map, "_barNotice"));
+
+        // …but the next watch he is there again and says it again, because he does not remember you.
+        NextWatch(map);
+        Invoke(map, "TheWitnessMayHaveSeenIt", c.WitnessId);
+        Assert.Equal($"“{FinderCase.WitnessBeforeTheGlass}”", (string?)Field(map, "_barNotice"));
+
+        // …and the wrong face at the right port, and the right face at the wrong port, hear nothing at all.
+        Set(map, "_barNotice", null);
+        NextWatch(map);
+        Invoke(map, "TheWitnessMayHaveSeenIt", "SOMEBODY ELSE ENTIRELY");
+        Set(map, "_dockedHavenId", AnyPortBut(c.WitnessPortId));
+        Invoke(map, "TheWitnessMayHaveSeenIt", c.WitnessId);
+        Assert.Null((string?)Field(map, "_barNotice"));
+    }
+
+    /// <summary>
+    /// <b>A REFUSED GLASS FILES NOTHING AND COSTS THE WATCH; AN ACCEPTED ONE FILES THE LEAD, ONCE.</b>
+    ///
+    /// <para>The whole slice, walked on the page: he waves it off and says so, the rest of that watch is
+    /// only drinking (a glass he WOULD have taken buys nothing), the next watch he is askable again, the
+    /// accepted glass files the hook under his own name as well as the case's — and every glass after that
+    /// is a glass, because he said it once and once is what he said.</para>
+    ///
+    /// <para><b>Watched RED:</b> the <c>FinderCase.WitnessAnswer.Nothing</c> early return dropped out of
+    /// <c>TheWitnessHearsTheOffer</c> — <i>"Assert.False() Failure · a refused glass filed the lead"</i>;
+    /// and the <c>Asking()</c> write dropped — <i>"a second glass in the same watch bought what the first
+    /// one was refused"</i>; and the <c>FileNoteAbout</c> call dropped — <i>"the lead he was bought never
+    /// reached the book"</i>.</para>
+    /// </summary>
+    [Fact]
+    public void ARefusedGlassCostsTheWatchAndAnAcceptedOneBuysTheLead()
+    {
+        Pages.Map map = TheCaseIsTakenAndTheWitnessIsInTheRoom(out FinderCase.Case c);
+        int before = Notes(map).Count;
+
+        // (1) REFUSED — his line rides out on the receipt that is already carrying the math, and the book
+        // is untouched.
+        Assert.Contains(FinderCase.WitnessStaysOnShift, TheGlass(map, c.WitnessId, taken: false),
+                        StringComparison.Ordinal);
+        Assert.False(Progress(map).WitnessHeard, "a refused glass filed the lead.");
+        Assert.Equal(before, Notes(map).Count);
+
+        // (2) …and the rest of THAT watch is only drinking. One ask a watch, whatever the answer was.
+        Assert.Equal("", TheGlass(map, c.WitnessId, taken: true));
+        Assert.False(Progress(map).WitnessHeard,
+                     "a second glass in the same watch bought what the first one was refused.");
+
+        // (3) THE NEXT WATCH, and the glass he takes is the lead.
+        NextWatch(map);
+        Assert.Contains(FinderCase.WitnessTakesTheGlass, TheGlass(map, c.WitnessId, taken: true),
+                        StringComparison.Ordinal);
+        Assert.True(Progress(map).WitnessHeard);
+        Assert.Equal(before + 1, Notes(map).Count);
+
+        FieldNote filed = Notes(map).Last();
+        Assert.Equal(c.TheHook, filed.Text);
+        Assert.Contains(CaseSubjects.On(filed), s => s.Name == c.WitnessId);
+        Assert.Contains(CaseSubjects.On(filed), s => s.Name == FinderCase.DisplayName);
+
+        // (4) …and he is done with it. Every glass after this one is a glass.
+        NextWatch(map);
+        Assert.Equal("", TheGlass(map, c.WitnessId, taken: true));
+        Assert.Equal(before + 1, Notes(map).Count);
+
+        // …and he has nothing to say to a walk-up any more either.
+        Set(map, "_barNotice", null);
+        Invoke(map, "TheWitnessMayHaveSeenIt", c.WitnessId);
+        Assert.Null((string?)Field(map, "_barNotice"));
+
+        // (5) THE OTHER TWO LEADS NEVER WANTED A GLASS. The clause that says this slice touched one lead.
+        Assert.Equal(c.SubjectLine, Invoke(map, "ThePapersSubjectsAt", c.PaperSiteBodyId));
+        Assert.True(Progress(map).PaperFound);
+        Invoke(map, "TheCaseReadsThisHull", c.HullId);
+        Assert.True(Progress(map).HullRead);
+        Assert.True(Progress(map).TrailWalked);
+    }
+
+    /// <summary>
+    /// <b>AND THE GLASS IS THE BAR'S OWN GLASS.</b> The page asks
+    /// <see cref="ContactDrink.OfferDrink"/> in exactly one place — the bar's — and the finder is handed the
+    /// verdict it reached, on BOTH arms. A second roll in the finder's file would be two dice deciding one
+    /// question; a second offer flow beside the bar's would be two moments deciding it.
+    ///
+    /// <para>The other half is the ROW: <c>PresentBarContacts</c> is the one gate every drink affordance in
+    /// the game is behind, and a rota regular the captain has never worked for has no ledger history — so
+    /// without the case joining him to that list the lead would sit behind a button that never draws.</para>
+    ///
+    /// <para><b>Watched RED:</b> the <c>TheCaseWouldHaveHimLoosened</c> clause dropped out of
+    /// <c>PresentBarContacts</c> — <i>"the case's own witness cannot be bought a drink at all"</i>; and the
+    /// accept-arm call removed from <c>BuyContactDrink</c> — <i>"the drink seam does not tell the finder
+    /// what the glass did (accept arm)"</i>.</para>
+    /// </summary>
+    [Fact]
+    public void TheWitnessIsOfferedTheDrinkTheBarAlreadyPours()
+    {
+        string bar = Page("Map.Quests.Bar.Contacts.cs");
+
+        // The finder's file with its COMMENTS STRIPPED — the paragraphs in there name the drink seam on
+        // purpose (a comment that could not say what its code is wired to would be a worse comment), so a
+        // guard that could not tell a sentence about a roll from a roll would have to be written not to
+        // look at them at all.
+        string finder = CodeOnly(Page("Map.Finder.cs"));
+
+        // ONE roll, in the bar, and the finder asked about its verdict on both arms.
+        Assert.Equal(1, Occurrences(bar, "ContactDrink.OfferDrink("));
+        Assert.DoesNotContain("OfferDrink", finder, StringComparison.Ordinal);
+        Assert.DoesNotContain("ContactDrink.Roll", finder, StringComparison.Ordinal);
+        Assert.DoesNotContain("DiceRule.", finder, StringComparison.Ordinal);
+        Assert.Contains("TheWitnessHearsTheOffer(giver, accepted: false)", bar, StringComparison.Ordinal);
+        Assert.Contains("TheWitnessHearsTheOffer(giver, accepted: true)", bar, StringComparison.Ordinal);
+
+        // …and the row he is offered it on is the bar's own list of people you can buy for.
+        Assert.Contains("TheCaseWouldHaveHimLoosened(giver)", bar, StringComparison.Ordinal);
+
+        // …which really does let him through a gate that would otherwise have shut on him: he has no ledger
+        // history at all, which is exactly the condition PresentBarContacts refuses.
+        Pages.Map map = TheCaseIsTakenAndTheWitnessIsInTheRoom(out FinderCase.Case c);
+        Assert.False(Contacts(map).For(c.WitnessId).HasHistory,
+                     "this bench's witness is already a known contact — it cannot tell the gate from the case.");
+        Assert.True((bool)Invoke(map, "TheCaseWouldHaveHimLoosened", c.WitnessId)!,
+                    "the case's own witness cannot be bought a drink at all.");
+
+        // …and only him, only there, and only until he has talked.
+        Assert.False((bool)Invoke(map, "TheCaseWouldHaveHimLoosened", "SOMEBODY ELSE ENTIRELY")!);
+        Set(map, "_dockedHavenId", AnyPortBut(c.WitnessPortId));
+        Assert.False((bool)Invoke(map, "TheCaseWouldHaveHimLoosened", c.WitnessId)!);
+
+        Set(map, "_dockedHavenId", c.WitnessPortId);
+        TheGlass(map, c.WitnessId, taken: true);
+        Assert.True(Progress(map).WitnessHeard);
+        Assert.False((bool)Invoke(map, "TheCaseWouldHaveHimLoosened", c.WitnessId)!);
+    }
+
     // ══ THE WIRING THE BENCH CANNOT STAND A WORLD UP FOR ═════════════════════════════════════════════════
 
     /// <summary>
@@ -418,7 +587,7 @@ public sealed class TheFinderWalksTheWholeCaseTests
         FinderCase.Case c = (FinderCase.Case)Field(map, "_finderCase")!;
 
         Set(map, "_dockedHavenId", c.WitnessPortId);
-        Invoke(map, "TheWitnessMayHaveSeenIt", c.WitnessId);
+        TheGlass(map, c.WitnessId, taken: true);   // #417 slice 2a · the witness talks for a glass, or not at all
         Invoke(map, "ThePapersSubjectsAt", c.PaperSiteBodyId);
         Invoke(map, "TheCaseReadsThisHull", c.HullId);
 
@@ -426,6 +595,49 @@ public sealed class TheFinderWalksTheWholeCaseTests
         Invoke(map, "TheRevealAtTheBerth");
         Assert.NotNull(Field(map, "_finderReveal"));
         return map;
+    }
+
+    /// <summary>#417 slice 2a · A captain who has taken the case, standing at the port the witness's own
+    /// rota favours him at — the one room where any of this slice's questions mean anything.</summary>
+    private static Pages.Map TheCaseIsTakenAndTheWitnessIsInTheRoom(out FinderCase.Case c)
+    {
+        Pages.Map map = SheIsAtTheTable();
+        Invoke(map, "AnswerTheFinder", true);
+        c = (FinderCase.Case)Field(map, "_finderCase")!;
+        Set(map, "_dockedHavenId", c.WitnessPortId);
+        Set(map, "_barNotice", null);
+        return map;
+    }
+
+    /// <summary>Offer him a glass and have the bar's own verdict come back <paramref name="taken"/> — the
+    /// one seam <c>BuyContactDrink</c> calls on both its arms, asked here directly because standing the man
+    /// a real drink wants the rota to have seated that particular regular on that particular watch. What
+    /// comes back is the tail of his sentence, as the receipt would carry it.</summary>
+    private static string TheGlass(Pages.Map map, string giver, bool taken) =>
+        (string)Invoke(map, "TheWitnessHearsTheOffer", giver, taken)!;
+
+    /// <summary>Move the clock on by a whole rota watch — the unit the witness's fold is kept in, asked of
+    /// <see cref="PatronRota"/> rather than typed as a number of seconds.</summary>
+    private static void NextWatch(Pages.Map map) =>
+        Set(map, "SimTime", (double)Field(map, "SimTime")! + PatronRota.WatchSeconds);
+
+    /// <summary>A source file with its line comments and doc comments taken out, so a guard sweeping for a
+    /// CALL is never answered by a paragraph about one.</summary>
+    private static string CodeOnly(string source) =>
+        string.Join('\n', source.Split('\n').Where(l => !l.TrimStart().StartsWith("//", StringComparison.Ordinal)));
+
+    /// <summary>How many times one piece of text occurs in a file. A guard that asked "is it there" could
+    /// not see a SECOND one, which is the whole question where a roll is concerned.</summary>
+    private static int Occurrences(string haystack, string needle)
+    {
+        int found = 0;
+        for (int at = haystack.IndexOf(needle, StringComparison.Ordinal); at >= 0;
+             at = haystack.IndexOf(needle, at + needle.Length, StringComparison.Ordinal))
+        {
+            found++;
+        }
+
+        return found;
     }
 
     private static void RunUntilHerCardIsUp(Pages.Map map)
