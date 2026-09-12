@@ -33,9 +33,26 @@ public static class CaptureRule
     /// <summary>Kept for HUD scale/legacy callers: the nominal window length.</summary>
     public const double RequiredSeconds = 60;
 
+    /// <summary>
+    /// #243 · <b>THE RANGE HALF OF THE WINDOW, ASKABLE ON ITS OWN.</b> Owner: <i>"we always have the duo of
+    /// relative speed and distance, and some criteria for those"</i> — and the conditions strip has to be
+    /// able to colour each half of the duo separately. Hoisting the half out is not a convenience: without
+    /// it the strip would re-type <c>distance ≤ CaptureRadiusMeters</c> beside the place that enforces it,
+    /// which is this repository's "one law, two typings" bug class with a two-line head start.
+    /// <see cref="IsInWindow"/> is written in terms of this and <see cref="SpeedInWindow"/>, so the chip the
+    /// captain reads and the predicate the shuttles launch on are the same CODE, not the same intention.
+    /// (The squared comparisons it used to make are the same test — both sides non-negative — so nothing
+    /// about the window moved; <c>TheWindowIsItsOwnTwoHalves</c> sweeps the boundary and says so.)
+    /// </summary>
+    public static bool RangeInWindow(double distanceMeters) => distanceMeters <= CaptureRadiusMeters;
+
+    /// <summary>#243 · The relative-speed half of the window, askable on its own. See
+    /// <see cref="RangeInWindow"/> for why the halves exist.</summary>
+    public static bool SpeedInWindow(double relativeSpeedMps) => relativeSpeedMps <= MaxRelativeSpeed;
+
     public static bool IsInWindow(ShipState player, ShipState target) =>
-        (player.Position - target.Position).LengthSquared <= CaptureRadiusMeters * CaptureRadiusMeters
-        && (player.Velocity - target.Velocity).LengthSquared <= MaxRelativeSpeed * MaxRelativeSpeed;
+        RangeInWindow((player.Position - target.Position).Length)
+        && SpeedInWindow((player.Velocity - target.Velocity).Length);
 
     /// <summary>Whether a boarding may PROCEED this instant (#177/#178). Boarding is a felony, and
     /// the owner got robbed-by-accident when autopilot flew him through a moon and a selected depot

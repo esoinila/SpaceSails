@@ -106,11 +106,17 @@ public static class DockFocus
         _ => string.Empty,
     };
 
+    // #243 · THE TWO FORMATTERS LEFT THIS FILE AND CAME BACK AS CALLS. They were private here and they were
+    // right, and then the conditions strip needed to print the boarding window, the capture gate and the
+    // shuttle's reach in the SAME hand as the clamp's rows — because the owner's complaint was that reading
+    // the criteria was slow, and four gates written in four unit styles is the slow version of this
+    // instrument. So the bodies moved to ConditionsGate and these are the same two functions under their old
+    // names: the rows below are formatted by the identical code they always were, and the other gates are
+    // now formatted by it too. TheDockingNumbersToHitTests still reads these rows character for character.
+
     /// <summary>A distance in metres as the owner's own coaching unit — "500,000 km".</summary>
-    private static string Km(double meters) =>
-        (meters / 1000).ToString("N0", CultureInfo.InvariantCulture) + " km";
+    private static string Km(double meters) => ConditionsGate.Km(meters);
 
     /// <summary>A speed in m/s as "8 km/s" / "10.5 km/s".</summary>
-    private static string KmPerSecond(double metersPerSecond) =>
-        (metersPerSecond / 1000).ToString("0.#", CultureInfo.InvariantCulture) + " km/s";
+    private static string KmPerSecond(double metersPerSecond) => ConditionsGate.KmPerSecond(metersPerSecond);
 }
