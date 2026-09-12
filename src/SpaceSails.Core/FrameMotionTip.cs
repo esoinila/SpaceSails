@@ -43,15 +43,20 @@ public static class FrameMotionTip
     /// True when the picture is hiding the cruise: the ship is moving in the Sun's frame, and what the
     /// captain is being shown is under <see cref="QuietFraction"/> of it.
     ///
-    /// <para>A ship that genuinely is not moving (helio speed at or near zero — nothing in the scenario, but
-    /// the arithmetic has to answer anyway) gets NO tip, because then the frame is not lying: it really is
-    /// parked, and a line blaming the frame would be the game explaining a fact it invented.</para>
+    /// <para><b>A ship that genuinely is not moving gets no tip</b> — the frame is not lying about a ship at
+    /// rest, and a line blaming it would be the game explaining a fact it invented. That falls out of the
+    /// STRICT comparison rather than a clause of its own, and the distinction cost this file a rewrite: the
+    /// first cut guarded it with <c>heliocentricSpeedMps &gt; 0</c>, which reads like the law and can never
+    /// change an answer (both speeds are magnitudes, so at rest the test is already <c>0 &lt; 0</c>). The
+    /// red-proof is what caught it — breaking that clause left the guard GREEN. A condition that cannot
+    /// change an answer is this repository's fifth named bug class wearing a comment, so it is gone and the
+    /// strictness is where the law lives: <c>AShipThatIsTrulyStoppedIsNotToldItIsTheFramesFault</c> goes red
+    /// the moment the <c>&lt;</c> becomes a <c>&lt;=</c>.</para>
     /// </summary>
     /// <param name="frameSpeedMps">Ship speed in the display frame (m/s) — what the map is showing.</param>
     /// <param name="heliocentricSpeedMps">Ship speed in the Sun / inertial frame (m/s) — the cruise.</param>
     public static bool FrameIsEatingTheMotion(double frameSpeedMps, double heliocentricSpeedMps) =>
-        heliocentricSpeedMps > 0
-        && !double.IsNaN(frameSpeedMps)
+        !double.IsNaN(frameSpeedMps)
         && frameSpeedMps < heliocentricSpeedMps * QuietFraction;
 
     /// <summary>

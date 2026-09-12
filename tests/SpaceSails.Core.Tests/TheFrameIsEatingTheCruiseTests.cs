@@ -89,8 +89,14 @@ public class TheFrameIsEatingTheCruiseTests
     /// <summary>
     /// <b>A ship that is genuinely stopped gets no tip.</b> Zero heliocentric speed means the frame is not
     /// hiding anything: it really is parked, and blaming the frame would be the game explaining a fact it
-    /// invented. (This is the row that stops <see cref="FrameMotionTip.FrameIsEatingTheMotion"/> from being
-    /// "0 &lt; 0 × 0.15", which is false by luck rather than by law.)
+    /// invented.
+    ///
+    /// <para>This guard is why the rule is written with a STRICT comparison and not a
+    /// <c>heliocentricSpeedMps &gt; 0</c> clause. The first cut had that clause, it read like the law, and
+    /// it was dead code — both speeds are magnitudes, so at rest the test is already <c>0 &lt; 0</c> and the
+    /// clause could never change an answer. Deleting it and re-proving this guard is what showed the
+    /// difference: the rows below go red on <c>&lt;</c> becoming <c>&lt;=</c>, which is a mistake somebody
+    /// could actually make, and went GREEN on the clause being removed, which is the mistake nobody could.</para>
     /// </summary>
     [Fact]
     public void AShipThatIsTrulyStoppedIsNotToldItIsTheFramesFault()
