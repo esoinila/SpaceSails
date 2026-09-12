@@ -76,9 +76,18 @@ public partial class Map
             {
                 continue; // the Magpie only drinks with the room when their rota has them in it
             }
-            if (!_contacts.For(giver).HasHistory)
+            // #306: only KNOWN contacts — a stranger has no relationship to deepen yet.
+            //
+            // #417 slice 2a · …AND THE ONE STRANGER A LIVE CASE HAS A REASON TO BUY FOR. The finder's
+            // witness is a rota regular, and a rota regular the captain has never worked for has no ledger
+            // history at all — so the lead this slice puts behind a glass would have been behind a row that
+            // never drew. He joins the bar's OWN list rather than getting an offer path of his own, which is
+            // the same move #973 L5a made for an old shipmate behind a customs desk: one flow, one roll, one
+            // question. Once he has talked he is back to the ordinary rule (and by then the shared glass has
+            // booked him goodwill, so he stays).
+            if (!_contacts.For(giver).HasHistory && !TheCaseWouldHaveHimLoosened(giver))
             {
-                continue; // #306: only KNOWN contacts — a stranger has no relationship to deepen yet
+                continue;
             }
             found.Add((giver, GiverDisplay(giver)));
         }
@@ -151,9 +160,15 @@ public partial class Map
         ContactDrink.TheRoom room = TheRoomFor(giver);
         DrinkOfferResult offered = ContactDrink.OfferDrink(
             offerSeed, goodwillBefore, holdingSecret, offeringFavorite, room);
+        // #417 slice 2a · …AND ONE OF THESE FACES MAY BE A FINDER'S WITNESS, whose lead is behind exactly
+        // this verdict. Asked on BOTH arms of the one offer the bar already rolled — never a second roll —
+        // and what comes back is the tail of his own sentence, riding out on whichever receipt this press is
+        // about to compose, because a notice and a pulse are slots and a second line into a slot is a line
+        // said to nobody (#736).
         if (!offered.Accepted)
         {
-            _barNotice = $"🚫 {RefusalLine(display, holdingSecret)}  🎲 {offered.Describe()}";
+            _barNotice = $"🚫 {RefusalLine(display, holdingSecret)}  🎲 {offered.Describe()}"
+                + TheWitnessHearsTheOffer(giver, accepted: false);
             ShowPulseMessage(_barNotice); // no coin moved, no goodwill booked — the glass never left the bar
             return;
         }
@@ -188,6 +203,11 @@ public partial class Map
             : string.Empty;
         string chose = $"{display} takes the {chosen.Name}.";
 
+        // #417 slice 2a · …and if this face is a live case's witness, the glass he just took is the one
+        // thing that buys what he saw. His sentence is the same tail `learn` is, for the same reason, and
+        // the lead goes into the field book in the breath after he says it.
+        string loosened = TheWitnessHearsTheOffer(giver, accepted: true);
+
         string line;
         switch (parley.Outcome)
         {
@@ -217,7 +237,7 @@ public partial class Map
                     CloseBarkeep();
                     ClosePatronTable();  // the drink's door swings the contract card up in place of the table card
                     _pendingOffer = offer; // set AFTER the closers, which never touch _pendingOffer, so the card shows
-                    ShowPulseMessage($"🍷 {chose} A drink with {display} opens a door (🎲 {parley.Describe()}). They slide a proposition across the table.{learn} (−{keep.DrinkPrice:N0} cr)");
+                    ShowPulseMessage($"🍷 {chose} A drink with {display} opens a door (🎲 {parley.Describe()}). They slide a proposition across the table.{learn}{loosened} (−{keep.DrinkPrice:N0} cr)");
                     RequestVaultSave();
                     return;
                 }
@@ -229,7 +249,7 @@ public partial class Map
                 break;
         }
 
-        _barNotice = $"{line}  🎲 {parley.Describe()}";
+        _barNotice = $"{line}  🎲 {parley.Describe()}{loosened}";
         ShowPulseMessage($"{_barNotice} (−{keep.DrinkPrice:N0} cr)");
         RequestVaultSave(); // #225: the purse moved, goodwill/tells/favourite were booked
     }

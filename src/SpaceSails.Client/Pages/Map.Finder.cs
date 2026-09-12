@@ -27,6 +27,16 @@ namespace SpaceSails.Client.Pages;
 /// the captain watches the case assemble itself out of things he went and looked at. The two moments that DO
 /// speak are the two the canon pass wrote sentences for: the red herring clearing, and the reveal.</para>
 ///
+/// <h3>…and the one lead that talks, because it is a man</h3>
+///
+/// <para><b>#417 slice 2a.</b> The paper and the hull are things: look at them and they are yours. The
+/// witness is a person working a rota at somebody else's port, and slice 1 let him hand over what he saw
+/// because the captain walked within a metre of him. He is now loosened or not loosened: he says he does not
+/// work for you, he is offered a glass through the bar's own <see cref="ContactDrink.OfferDrink"/> — the
+/// shipped roll, the shipped math, the shipped offer moment, accept or refuse decided before a credit moves
+/// — and the lead is behind the accept. A refusal costs the WATCH and not the lead. The other two leads are
+/// not touched by a word.</para>
+///
 /// <h3>Once per port, and never twice</h3>
 ///
 /// <para>She keeps a VISIT FOLD, exactly as the salesman and the walk-in do: a different berth is a different
@@ -67,6 +77,15 @@ public sealed partial class Map
     /// <summary>Whether she has already crossed this floor this visit. Once an evening, whatever was
     /// said.</summary>
     private bool _finderAskedThisVisit;
+
+    /// <summary>#417 slice 2a · What the WITNESS's current watch has already had out of him — his sentence,
+    /// and his one glass. Her fold is a berth and his is a watch, because that is the unit each of them is
+    /// actually measured in: she travels, and he works a rota (<see cref="PatronRota.WatchIndex"/>).
+    ///
+    /// <para>Not cleared anywhere and not stored anywhere: it is asked <see cref="FinderCase.WitnessWatch.On"/>
+    /// the current watch at every door into it, and a fold asked about a watch it is not about answers as
+    /// fresh.</para></summary>
+    private FinderCase.WitnessWatch _finderWitnessWatch = FinderCase.WitnessWatch.Fresh;
 
     /// <summary>#417 dev cheat (<c>/map?finder=1</c>, <c>/map?finder=0</c>): force her on or off this berth.
     /// Null is the shipped rota. It forces WHETHER and never WHAT — the case, the hulls, the berth and the
@@ -354,23 +373,109 @@ public sealed partial class Map
     /// glass, still hands over whatever work they had. What the case adds is the entry in the book — the
     /// same one line, under this person's own name as well as the case's, which is how the THREADS page
     /// comes to have four rows under one heading.</para>
+    ///
+    /// <para><b>#417 slice 2a · AND THE WALK-UP NO LONGER FILES ANYTHING.</b> It used to: reaching him WAS
+    /// the lead. What he does now is say he does not work for you (once a watch —
+    /// <see cref="FinderCase.TheGreetingIsDue"/>) and become somebody the bar will let you buy a glass for.
+    /// The lead itself is behind that glass, in <see cref="TheWitnessHearsTheOffer"/>.</para>
     /// </summary>
     private void TheWitnessMayHaveSeenIt(string giver)
     {
-        if (!TheTrailIsLive || _finderProgress.WitnessHeard || _finderCase is not { } c
-            || !string.Equals(_dockedHavenId, c.WitnessPortId, StringComparison.Ordinal)
-            || !giver.Contains(c.WitnessId, StringComparison.OrdinalIgnoreCase))
+        if (!ThisFaceIsTheCasesWitness(giver))
         {
             return;
         }
 
-        _finderProgress = _finderProgress with { WitnessHeard = true };
+        _finderWitnessWatch = _finderWitnessWatch.On(PatronRota.WatchIndex(SimTime));
+        if (!FinderCase.TheGreetingIsDue(_finderProgress, _finderWitnessWatch))
+        {
+            return;
+        }
 
-        // THE QUESTION HE WAS ASKED, under his own name as well as the case's. Not a new sentence and not
-        // an answer somebody put in his mouth: the hook is what the captain came to ask about, and what the
-        // book keeps is that he asked THIS person about it.
-        FileNoteAbout(c.TheHook, FinderGlyph, c.SubjectsWithTheWitness(giver));
-        RequestVaultSave();
+        _finderWitnessWatch = _finderWitnessWatch.Greeting();
+        TheWitnessSays(FinderCase.WitnessBeforeTheGlass);
+    }
+
+    /// <summary>
+    /// #417 slice 2a · <b>THE GLASS, ANSWERED — AND THE LEAD THAT IS BEHIND IT.</b> Called from the bar's
+    /// own <c>BuyContactDrink</c> at the moment <see cref="ContactDrink.OfferDrink"/> has settled and before
+    /// a credit has moved, on BOTH arms. Nothing is rolled here: the verdict is the one the bar reached, on
+    /// the one seam every drink in the game goes through.
+    ///
+    /// <para><b>Returns the tail of a sentence, and that is deliberate.</b> The bar composes one receipt per
+    /// press — the refusal line and its math, or the parley's line and its math — into <c>_barNotice</c> and
+    /// one pulse, and both of those are SLOTS: a second line written into them in the same press is a line
+    /// said to nobody (#693/#736). So his sentence rides out on the receipt that is already carrying the
+    /// math, in the same idiom the drink's own <c>learn</c> tail uses two lines above the call.</para>
+    ///
+    /// <para>The lead files here, in the breath after he speaks, which is the canon pass's own order.</para>
+    /// </summary>
+    /// <param name="giver">Whoever the glass was for. Almost never him.</param>
+    /// <param name="accepted">Whether the bar's own offer roll said he takes it.</param>
+    /// <returns>What to append to the receipt, or an empty string when the glass was only a glass.</returns>
+    private string TheWitnessHearsTheOffer(string giver, bool accepted)
+    {
+        if (!ThisFaceIsTheCasesWitness(giver) || _finderCase is not { } c)
+        {
+            return "";
+        }
+
+        _finderWitnessWatch = _finderWitnessWatch.On(PatronRota.WatchIndex(SimTime));
+        FinderCase.WitnessAnswer answer =
+            FinderCase.WhatTheGlassDoes(_finderProgress, _finderWitnessWatch, accepted);
+        if (answer == FinderCase.WitnessAnswer.Nothing)
+        {
+            return "";
+        }
+
+        // HIS ONE ASK THIS WATCH IS SPENT, whichever way it went — the finder's own "asked once an evening",
+        // on the unit a rota regular is measured in. A refusal costs the captain the watch and not the lead.
+        _finderWitnessWatch = _finderWitnessWatch.Asking();
+
+        if (answer == FinderCase.WitnessAnswer.Talks)
+        {
+            _finderProgress = _finderProgress with { WitnessHeard = true };
+
+            // THE QUESTION HE WAS ASKED, under his own name as well as the case's. Not a new sentence and
+            // not an answer somebody put in his mouth: the hook is what the captain came to ask about, and
+            // what the book keeps is that he asked THIS person about it.
+            FileNoteAbout(c.TheHook, FinderGlyph, c.SubjectsWithTheWitness(giver));
+            RequestVaultSave();
+        }
+
+        return $"  “{FinderCase.LineFor(answer)}”";
+    }
+
+    /// <summary>
+    /// #417 slice 2a · <b>WOULD THE BAR POUR FOR HIM AT ALL?</b> Asked by <c>PresentBarContacts</c>, which
+    /// is the ONE gate every drink row in the game is behind — the counter card's, the table card's and the
+    /// contract card's alike.
+    ///
+    /// <para>It exists because the shipped gate is <i>a contact you have HISTORY with</i>, and a rota
+    /// regular the captain has never done a job for has none: the case's own witness could be sitting there
+    /// with no way to stand him anything. Rather than grow a second offer path beside the bar's (two flows,
+    /// two rolls, one question), the case joins him to the list the fixers and the old crew are already on
+    /// — the same move #973 L5a made for a shipmate behind a customs desk. He drops back off it the moment
+    /// the lead is in the book, unless the glass itself made him a contact, which it does.</para>
+    /// </summary>
+    private bool TheCaseWouldHaveHimLoosened(string giver) =>
+        !_finderProgress.WitnessHeard && ThisFaceIsTheCasesWitness(giver);
+
+    /// <summary>Is this face, at this berth, the witness the live case names? The same three clauses slice 1
+    /// opened its lead with, in one place now that three doors ask them.</summary>
+    private bool ThisFaceIsTheCasesWitness(string giver) =>
+        TheTrailIsLive && _finderCase is { } c
+        && string.Equals(_dockedHavenId, c.WitnessPortId, StringComparison.Ordinal)
+        && giver.Contains(c.WitnessId, StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>#417 slice 2a · He says it where the captain is standing: into the bar's own notice — which
+    /// is what his table card, the counter card and the contract card all print (#736) — and out as the
+    /// pulse for a captain who has no card up at all. The bar's own idiom, one line lower than
+    /// <c>BuyContactDrink</c>'s.</summary>
+    private void TheWitnessSays(string line)
+    {
+        _barNotice = $"“{line}”";
+        ShowPulseMessage(_barNotice);
     }
 
     /// <summary>
