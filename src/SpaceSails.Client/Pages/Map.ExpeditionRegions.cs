@@ -213,12 +213,20 @@ public partial class Map
             _deckPlan.RemoveConsoleAt((float)pos.X, (float)pos.Y, DeckPlan.ConsoleKind.SealedDoor, 0.2);
         }
 
-        // #1063 · …and the empty one takes none of what follows. No reveal cue, no card, no ring on the fan,
-        // no "new ground on the plan" — because a recess with nothing in it is not a discovery, and every one
-        // of those channels would be the house insisting it was. It gets the authored line and the book gets
-        // it too, filed under the door glyph the seals already wear, and then the game says nothing more
-        // about it ever again. The geometry is already appended above: he can walk in and stand in it, which
-        // is the entire beat.
+        // #1063 · …and the empty one takes none of the CELEBRATION that follows. No reveal cue, no rule card,
+        // no "cold air that hasn't moved in ten thousand years", because a recess with nothing in it is not a
+        // discovery and every one of those channels would be the house insisting it was. It gets the authored
+        // line and the book gets it too, filed under the door glyph the seals already wear, and then the game
+        // says nothing more about it ever again. The geometry is already appended above: he can walk in and
+        // stand in it, which is the entire beat.
+        //
+        // #584's RING AND PLATE ARE NOT CELEBRATION, AND IT KEEPS BOTH. The recess is real ground on the live
+        // plan, so the fan goes on pointing at where the plan grew and the plate goes on naming it — an
+        // instrument that did not know about ground the captain had just made would be the map lying about
+        // its own shape, which is a worse bug than any beat is worth. What it refuses is the once-per-captain
+        // RULE card, because that card is a PROMISE — "what is behind one is worth the time it costs to
+        // open" — and this is the one room in the game with nothing behind it. Teaching the rule here would
+        // be the house making exactly the claim #1063 spends this room to break.
         //
         // SAID ONCE, AND THE BOOK KEEPS ONE OF IT. A landing starts with every door sealed again (OpenedDoors
         // is session-only, by that field's own law), so a captain who comes back to this site can set his
@@ -228,6 +236,12 @@ public partial class Map
         // is the book stuttering about a thing that happened once.
         if (nothingInIt)
         {
+            RendererInterop.PlayCue("board");   // a door moving, not a revelation
+            if (mouth is { } bare)
+            {
+                TheGroundJustGrew(ex, bare.X, bare.Y, teachTheRule: false);
+            }
+
             if (justSpent)
             {
                 RequestVaultSave();   // the spend is written down the moment it is spent
@@ -257,7 +271,7 @@ public partial class Map
         {
             return;
         }
-        if (!TheGroundJustGrew(ex, where.X, where.Y))
+        if (!TheGroundJustGrew(ex, where.X, where.Y, teachTheRule: true))
         {
             ShowPulseMessage("⚙ The door gives — cold air that hasn't moved in ten thousand years. New ground on the plan. Step through and look.");
         }
