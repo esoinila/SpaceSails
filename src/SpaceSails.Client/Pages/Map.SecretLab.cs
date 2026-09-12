@@ -353,7 +353,7 @@ public partial class Map
         // own door, which is where AppendSecretLabGeometry grew the chamber from and where the hidden-door
         // console stood until this line took it off the plan. So the card's plate and the fan's ring name the
         // ground that actually appended, and not a second opinion about where the lab is.
-        TheGroundJustGrew(ex, placement.DoorX, placement.DoorY);
+        TheGroundJustGrew(ex, placement.DoorX, placement.DoorY, teachTheRule: true);
     }
 
     /// <summary>The small nerve chill of crossing into the lab (owner: "entering the lab … is a nerve hit").

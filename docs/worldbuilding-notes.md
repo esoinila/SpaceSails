@@ -275,6 +275,23 @@ burial does removes or rewrites one field-book note, clipped story, red thread o
 record is the only witness and it stays correct, which is what the player stands on. Cheat `?buried=1`.
 Details: `features/the-landing-site.md` §13.30.
 
+**Shipped (#1063, slice 2 — THE MISSING MIDDLE, and SEALED ≠ FULL).** The quest shape the issue names, and
+the protection it makes mandatory. A slow honest raise leaves permits, complaints and invoices; a sudden
+burial leaves rumour — so the captain **works the maintenance ledger on a buried ground** (a thing he does,
+never an announcement) and looks for the paper trail that must exist under either story. He finds neither, and
+his own hand goes into the field book under **a note kind of its own**: *"Looked for the paper a raise this
+size leaves: permit, complaint, invoice. Nothing under either story. The absence has a shape, and I have
+measured it."* Once per ground, filed beside the find and never instead of it, and declared (per #741) to be
+about the site's operator and the ground — so it stacks under the same heading as the rag's own cheerful
+account of the job. And the protection: **at least once in a captain's life a forced seal is exactly, boringly
+empty.** One leaf per ground is nominated off the world's own seed; the first nominated leaf he forces opens
+on a plain recess with no cache, no name and no reward, and he says so once — *"Sealed, and empty. A room
+somebody closed because there was nothing in it, which is a reason."* Spent once and never again, and only
+**early**, before that ground has a burial to read the emptiness into. It exists because the alternative was a
+game in which every sealed door pays, which is the game quietly proving that a closed door means something is
+behind it — the one inference §672 forbids the world to hand out. Details:
+`features/the-landing-site.md` §13.30b.
+
 **Still open and deliberately unbuilt: any inhabitant content.**
 
 ### The Old Ones use doors (owner ruling, 2026-09-06 — #563 question 2)

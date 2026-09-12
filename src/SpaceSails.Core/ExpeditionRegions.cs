@@ -140,6 +140,28 @@ public static class ExpeditionRegions
         return list;
     }
 
+    /// <summary>#1063 · <b>THE LEAF DOORS OF THIS KIND</b> — the seals that open on nothing further: a room
+    /// with no nested door in its far wall, in door order. Published because <see cref="EmptySeal"/> has to
+    /// choose one and may only ever choose one of these — a seal that turned out to be empty and was also the
+    /// only way to a depth-2 chamber would spend the disappointment by deleting a reward, which is a
+    /// different and much worse bargain than the one #1063 asked for.
+    ///
+    /// <para>Read off <see cref="Specs"/>, the same one table <see cref="ForceOpen"/> and
+    /// <see cref="AllDoors"/> read, so "which doors are leaves" can never become a second opinion.</para>
+    /// </summary>
+    public static IReadOnlyList<string> LeafDoorIds(ExpeditionSiteKind kind)
+    {
+        var leaves = new List<string>();
+        foreach (DoorSpec s in Specs(kind))
+        {
+            if (s.NestedId is null)
+            {
+                leaves.Add(s.Id);
+            }
+        }
+        return leaves;
+    }
+
     /// <summary>The region door <paramref name="doorId"/> of <paramref name="kind"/> appends when forced.
     /// Pure and deterministic; clamped inside the field's safe span. Unknown ids return an empty region
     /// (defensive — a stale id never crashes the append).</summary>

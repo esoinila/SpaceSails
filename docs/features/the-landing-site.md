@@ -2767,10 +2767,89 @@ out of the ordinary rota; the ledger's `HaulLine` arm removed; the ledger design
 where the way down already is; the leaf never drawn → *"only 0 specimen(s) were drawn"*; the leaf drawn in the
 facility's own poured ink; and the register dropped from the vault fixture.)*
 
-**What is deliberately NOT in slice 1**, and is filed rather than half-built: the **missing middle** — the
-absence in the exact shape of the thing removed, as its own note kind, with the four clue tags the research
-offers — and the **spent-once "sealed ≠ full"** empty forced seal. Both are design calls about the field book
-and about a one-shot disappointment, and neither is a ten-line addition to a seam that exists.
+**What was deliberately NOT in slice 1**, and was filed rather than half-built: the **missing middle** and
+the **spent-once "sealed ≠ full"** empty forced seal. Both shipped in slice 2 — §13.30b.
+
+13.30b **The absence has a shape, and once — exactly once — a seal is boringly empty** (#1063, slice 2: the
+two remainders).
+
+**THE MISSING MIDDLE, as its own note kind.** The issue: *"A slow honest raise leaves permits, complaints,
+invoices; a sudden burial leaves rumor. The captain can hunt the paper trail that must exist under EITHER
+story — and finds neither. That absence has a shape: an absence in the exact shape of the thing removed — and
+finding-the-absence is filed as its own note kind."*
+
+- **The kind is a glyph**, because that is what a kind IS in this book: `FieldNote.Glyph` is the only field
+  the ledger card, the satchel's NOTES tab and the THREADS page all read to tell one sort of entry from
+  another. `MissingMiddle.Glyph` is **⬚** — an outline with nothing inside it — and it is swept out of the
+  whole of `src/`, so it may appear in exactly one file. No enum was added: the issue's four clue tags
+  (absence-signal, peripheral-trace, shadow-anomaly, category-gap) are explicitly *"optional, flagged, not
+  required for the beat"*, and a taxonomy with one inhabitant is a table waiting to be wrong.
+- **The trigger is a thing the captain DOES**, never an announcement: **he works the maintenance ledger** —
+  the one paper the burial leaves, in the room it is kept in (`MaintenanceLedgerRoomFor`, which only exists on
+  a filled ground). That is the only moment in the game when a captain holds the paperwork of a burial and can
+  look for what is not in it, and the ledger's own numbering has already told him an instruction 2212 was
+  issued. Nothing says the absence to him; **he measures it**, and the book keeps the measurement: *"Looked
+  for the paper a raise this size leaves: permit, complaint, invoice. Nothing under either story. The absence
+  has a shape, and I have measured it."* — authored, verbatim.
+- **Once per ground**, asked of the BOOK (`MissingMiddle.AlreadyMeasured`, matched on kind AND place) rather
+  than of a flag, because the book is the only witness and a second register of what it contains would be a
+  second source for one fact. A second buried ground is still owed its own entry.
+- **Filed BESIDE the find, never instead of it** — §13.30's binding law. The ledger's own line went into the
+  book the moment the paper went into the pocket and still says exactly what it said; the find is what makes
+  the absence measurable at all, and a book that kept only the conclusion would be the extraction #741 refuses
+  to be.
+- **#741's subject law.** The author declares what its sentence is about at writing time: the site's own
+  operator — the letterhead the missing permits and invoices would have carried, and the one the rag's
+  clipping is already filed under (#1052) — and the ground. So the world's cheerful account of the job and the
+  captain's measurement of what is missing from it **stack under one heading**, and the book says nothing over
+  them. No person is named, because the line prints nobody's name.
+
+**SEALED ≠ FULL — the one disappointment this arc spends on purpose.** The issue, under *Scully protection
+(mandatory)*: *"at least once, the captain forces a sealed thing early and it is exactly, boringly empty …
+so the pattern never hardens into proof."*
+
+The pattern it breaks was real and shipping: **every sealed door in this game pays.** Force one and a chamber
+appends with a landmark over it and a discovery cache in the middle of it, every time, for ever — which a
+player learns in two presses, after which a closed door has stopped being a question and become evidence that
+something is behind it. That is the inference #672 forbids the world to hand out, and a mechanic that
+guarantees every seal is full is the game quietly proving it.
+
+- **Exactly one, per captain-lifetime.** Not a rate: a rate is a second pattern to learn (*"about one in six
+  are empty"*) and would make emptiness ordinary, which is the opposite of the point.
+- **A leaf, never a way on.** Only a door with nothing nested behind it (`ExpeditionRegions.LeafDoorIds`) can
+  be the empty one, so the spend costs a cache and never costs a route.
+- **EARLY — before the burial threshold of its ground.** `EmptySeal.WouldBeEmpty` refuses on a ground the
+  works are on or that has been filled in: a captain who has already watched a ground get erased and then
+  finds a bare recess files the emptiness as part of the story, which is the opposite of what it is for.
+- **Seeded choice, remembered spend, and they are two different facts.** Each ground nominates one of its
+  leaves off `DiceRule` — a pure function of the body id, so a world always nominates the same door and two
+  captains comparing notes agree. The captain spends the disappointment on the first nominated leaf he
+  actually forces; that one door's key is written down (`ProgressSection.EmptySealSpentOn`) and **every later
+  reading asks the written key and nothing else**, through one reader (`Map.RegionOf`): the compose on a
+  revisit, the cache claim, the fog, the born-dark overlay. Guarded by a source sweep — one reader, one
+  decider, one writer, because §13.15's second cause is five callers reasoning about one building.
+- **What it opens on: the same room, with nothing in it.** No cache, no landmark, no name, no bonus — and the
+  **walls and bounds untouched**, which is the half that makes the beat work. He forces the door, walks in,
+  stands in the middle of it, and there is nothing there. A seal that appended no ground at all would read as
+  a refusal or as a bug.
+- **What is said, once:** *"Sealed, and empty. A room somebody closed because there was nothing in it, which
+  is a reason."* — authored, verbatim, and the second sentence is the entire protection: it supplies the
+  boring explanation itself, out loud, from the one witness who has been arguing against it. **No reveal cue,
+  no card, no ring on the fan**, because a recess with nothing in it is not a discovery and every one of those
+  channels would be the house insisting it was. A landing starts sealed again, so a later visit can force the
+  same leaf: the room is still empty, the screen answers the press, and the book stays at one entry.
+- **The kept specimen is untouched.** #1082's preserved doorway is the other leaf in this arc that opens on
+  nothing, and it stays exactly as it is: it is not forced, it is not a seal, it says nothing, and
+  `EmptySeal`'s whole vocabulary is the expedition's authored door ids.
+
+*(Guarded by `TheAbsenceHasAShapeTests` (Core, 13). — Watched go **RED**, seventeen reverts: the absence
+glyph set to the seal's door glyph; `IsTheLedgerRoom` comparing the level only; the room condition dropped
+from `ShouldBeWritten`; `AlreadyMeasured` never matching; `FieldNotes.Append` forgetting the book it was
+handed; `SubjectsFor` returning nothing; `LeafDoorIds` returning every door; the nomination made not a die;
+the spent arm removed from `WouldBeEmpty`; `IsSpentOn` comparing the door id only; the burial gate removed
+from `WouldBeEmpty`; `Hollow` returning the region unchanged; `Hollow` clearing the walls too;
+`SpecimenRecessDu` nudged to 4.0; the reserved word planted in the absence line; a full stop moved in the
+empty-seal line; and the cache loop pointed back at Core directly.)*
 
 13.31 **A door that opened yesterday does not open today, and the scope's one-shot comes back with nothing**
 (#1068, slice 1 — the disclosure clock's second customer, and two of the watchers' three manifestation

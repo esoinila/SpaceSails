@@ -200,7 +200,7 @@ public partial class Map
         // The ground just grew. On an ordinary moon this is now the FIRST way that can ever happen to a
         // captain, so the card that explains it belongs here more than anywhere — and #584's WHERE with it,
         // through the one writer: the hatch that gave is the mouth of the room that arrived.
-        TheGroundJustGrew(ex, hatchX, hatchY);
+        TheGroundJustGrew(ex, hatchX, hatchY, teachTheRule: true);
         RequestVaultSave();
     }
 

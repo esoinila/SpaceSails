@@ -230,6 +230,11 @@ public partial class Map
                 // empty law, same reason. A burial that forgot across a reload would un-bury a ground the
                 // field book says is gone, and the book being the only witness is the whole feature.
                 HallsBuried = _hallsBuried.Count > 0 ? [.. _hallsBuried] : null,
+                // #1063 slice 2 · …and the one seal this captain has forced and found empty. Same
+                // null-while-unspent law and the same reason one rung harder: a spend a reload forgot would
+                // put the cache back into a room the book says was bare AND leave him a second empty room to
+                // find later, and two of them is a rate rather than a disappointment (EmptySeal).
+                EmptySealSpentOn = _emptySealSpentOn,
                 // #1068 · …and which of them the world has since declined on, WITH the window each declined
                 // in. Same null-while-empty law, same reason; the window rides along because the door is
                 // chosen against it, and a reload that forgot the number would shut a different leaf.
@@ -465,6 +470,11 @@ public partial class Map
         {
             _hallsBuried = [.. buried];
         }
+
+        // #1063 slice 2: and the one seal already found empty. Assigned rather than guarded on null, so a
+        // thread that never spent it loads as unspent and a file written before this shipped does too — the
+        // one rule this latch has is that it only ever goes from null to a key, never back.
+        _emptySealSpentOn = vault.Progress?.EmptySealSpentOn;
 
         // #1068: and which of them the world has since declined on, with the window each declined in.
         // Restored rather than re-derived for the hardest version of the reason again: the window is what
