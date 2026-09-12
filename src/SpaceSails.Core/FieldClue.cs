@@ -39,6 +39,13 @@ public static class FieldClue
     public static Certainty CertaintyOf(string paperId)
     {
         ArgumentNullException.ThrowIfNull(paperId);
+        // #798 item 2 · A PAGE TORN OUT OF A DOCUMENT IS STILL THAT DOCUMENT'S PAGE. The split gives the
+        // sheet and the bulk ids of their own, which is what lets "has this come apart?" be a question about
+        // the thing in your hand rather than a set somebody has to remember to save (PageGranularity's own
+        // note on why). Every roll that makes a paper what it is therefore has to ask the SOURCE, or one
+        // split would hand the captain two unrelated documents out of one — a pay sheet whose torn-out page
+        // opens as a shipping manifest. One line, at the top of each of this file's three readers.
+        paperId = PageGranularity.SourceOf(paperId);
         return DiceRule.Roll(DiceRule.Seed($"clue:certainty:{paperId}"), 6).Face switch
         {
             1 or 2 or 3 => Certainty.Vague,
@@ -90,6 +97,28 @@ public static class FieldClue
         _ => "a position",
     };
 
+    /// <summary>
+    /// #798 item 2 · IS THIS SHEET ONE THE ARC WROTE, rather than one the dice composed?
+    ///
+    /// <para><see cref="Document"/> and <see cref="Title"/> each ask these three questions in this order,
+    /// and each of them needs the specific answer — WHICH authored sheet — so neither can be written over
+    /// this predicate. What could not be written anywhere else is the question itself, which
+    /// <see cref="PageGranularity.PagesIn"/> has to ask to keep a composed page from being torn into
+    /// "page 3 of 4": every one of these was written as a single sheet, and two of them are read back out of
+    /// the sleeve BY ID by systems that would not recognise a torn one.</para>
+    ///
+    /// <para>It is deliberately a question about the DOCUMENT and not about a part of one — callers hand it
+    /// a source id (<see cref="PageGranularity.SourceOf"/>), which is what every reader in this file does on
+    /// its first line.</para>
+    /// </summary>
+    public static bool IsAuthored(string paperId)
+    {
+        ArgumentNullException.ThrowIfNull(paperId);
+        return HardcaseRep.IsTheSchedule(paperId)
+            || UndergroundComplex.AuthoredPaperOf(paperId) is not null
+            || UndergroundComplex.LiftCode.PaperIn(paperId) is not null;
+    }
+
     /// <summary>#603 · WHAT IS ACTUALLY ON THE PAGE. Owner: <i>"if we open inventory and view the paper from
     /// there then?"</i>
     ///
@@ -102,6 +131,11 @@ public static class FieldClue
     public static string Document(string paperId)
     {
         ArgumentNullException.ThrowIfNull(paperId);
+
+        // #798 item 2 · the second of the three readers — see CertaintyOf above for why the source is asked
+        // first. It matters most HERE: the branches below are "is this one of the sheets the arc wrote",
+        // asked by id, and a split id is not the id any of them is looking for.
+        paperId = PageGranularity.SourceOf(paperId);
 
         // #1061 · THE ONE SHEET IN THIS GAME THAT WAS WRITTEN RATHER THAN SEEDED, and it is here rather than
         // in a second reader for the reason UndergroundComplex.IsHallRecord is inside RelicReveal: everything
@@ -205,6 +239,12 @@ public static class FieldClue
     public static string Title(string paperId)
     {
         ArgumentNullException.ThrowIfNull(paperId);
+
+        // #798 item 2 · the third of the three readers — see CertaintyOf above. The folder in the bin is
+        // still called what the document is called, and so is the sheet out of it; what tells the two rows
+        // apart is the page citation the satchel puts after this title (PageGranularity.RowCitation), not a
+        // second name invented for half a file.
+        paperId = PageGranularity.SourceOf(paperId);
 
         // #1061 · …and the authored sheet is called what it is called. See Document above for why the branch
         // is here and not in a reader of its own.
