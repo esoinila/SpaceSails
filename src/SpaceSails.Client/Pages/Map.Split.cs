@@ -48,6 +48,12 @@ public sealed partial class Map
     /// is the clause <see cref="SplitTheDocument"/> says OUT LOUD: the spread only draws at a table, but the
     /// chair opposite can fill while the papers are out (#784's own drama beat), and a control that vanished
     /// mid-sitting would teach nothing about why.</para>
+    ///
+    /// <para>#798 item 2, second cut · The row it is offered on is EVIDENCE and no longer paper alone — a
+    /// file on somebody is the multi-page object the owner's sentence was about. Nothing on this page had to
+    /// learn that: the kind reaches Core untouched, and the spread already lists a dossier
+    /// (<c>SpreadableFinds</c> offers anything with a gist), so the control simply appears on a row that was
+    /// already there.</para>
     /// </summary>
     private bool SplitIsOffered(Core.Satchel.Item item) =>
         PageGranularity.CanSplit(
@@ -102,6 +108,13 @@ public sealed partial class Map
         // asked BEFORE anything moves, on the list as it will actually stand: the document is out of it, the
         // sheet is in, and the question is whether the folder still goes. The refusal is the sleeve's own
         // sentence, which already names what would fix it.
+        //
+        // #798 item 2, second cut · With today's constants this can no longer refuse: the sheet costs the
+        // sleeve NOTHING (Satchel.FoldedSheetSpace) and the folder takes the space the document just
+        // vacated. The line stays, and not because a refusal is free — because this is the arithmetic being
+        // ASKED rather than a fact assumed about two constants in another file. The day a sheet costs
+        // something again, the line that keeps #678's destroyed-find bug from coming back is this one, and
+        // it will already be here.
         System.Collections.Generic.IReadOnlyList<Core.Satchel.Item> less =
             Core.Satchel.Remove(_satchel, item.Kind, item.Id, item.Count);
         System.Collections.Generic.IReadOnlyList<Core.Satchel.Item> withSheet =

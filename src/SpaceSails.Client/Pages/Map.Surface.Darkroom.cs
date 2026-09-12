@@ -700,6 +700,29 @@ public partial class Map
         // leverage has to be able to tell which of them a client is asking for back.
         Core.Satchel.Kind.Dirt when Core.CompromisingChip.IsTheChip(item) => Core.CompromisingChip.RowLabel,
 
-        _ => "🗃 a file on somebody",
+        // ── #798 item 2, second cut · …AND A FILE ON SOMEBODY SAYS WHICH PART OF ITSELF IT IS ───────────
+        //
+        // Owner: "a compromising FILE is not uniform… rip out the most compromising evidence and toss the
+        // rest inconspicuously." A dossier is the object that sentence is ABOUT, and the first cut of the
+        // split left it out for one reason only: a file on somebody has no title, so there was nothing for
+        // the page citation to sit after. That reason does not survive being looked at. The citation is a
+        // citation and not a name — what it needs in front of it is a HEADING, and this row has carried one
+        // since the day the kind existed. "🗃 a file on somebody, page 2 of 3" and "🗃 a file on somebody,
+        // 2 pages of 3" are two rows a captain can tell apart, which is the whole job.
+        //
+        // Nothing was invented to make that true: no subject name is rolled, no dossier prose is composed,
+        // and no new field goes in the vault. The heading is the same string the default arm below prints
+        // (they share the one constant, because two spellings of one row is how they come to disagree), and
+        // Core owns the citation — the same RowCitation the paper arm asks for, empty on anything whole, so
+        // an unsplit file is the row it has always been character for character.
+        Core.Satchel.Kind.Dirt => AFileOnSomebody + Core.PageGranularity.RowCitation(item.Id),
+
+        _ => AFileOnSomebody,
     };
+
+    /// <summary>#798 item 2 · The heading a dossier row wears — the only thing a file on somebody has ever
+    /// said about itself, and therefore the thing the page citation hangs on. One constant, because the
+    /// Dirt arm and the catch-all above print the same words and a second spelling of them would drift.
+    /// </summary>
+    private const string AFileOnSomebody = "🗃 a file on somebody";
 }

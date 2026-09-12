@@ -64,13 +64,21 @@ public static class PageGranularity
     /// named bug class. It is also what keeps the split from ever touching the sheets other systems look for
     /// BY ID: the code paper is read out of the sleeve by <c>LiftCode.PaperIn</c>, and a split id is not the
     /// id it is looking for.</para>
+    ///
+    /// <para>#798 item 2, second cut · <b>…AND SO IS THE CHIP</b>
+    /// (<see cref="CompromisingChip.IsTheFindId"/>). Widening the verb to <see cref="Satchel.Kind.Dirt"/>
+    /// brought one named object into this function's world that is not a dossier at all: the thing between
+    /// the seats of the roadster rides in the satchel as a file on somebody because that is what it IS to a
+    /// client, and it is a data chip with photographs on it. It has no pages, and the arc wrote its one
+    /// sentence. Asked of the ID because that is all this function is ever handed — see that predicate for
+    /// why it exists at all.</para>
     /// </summary>
     public static int PagesIn(string paperId)
     {
         ArgumentNullException.ThrowIfNull(paperId);
 
         string source = SourceOf(paperId);
-        if (FieldClue.IsAuthored(source))
+        if (FieldClue.IsAuthored(source) || CompromisingChip.IsTheFindId(source))
         {
             return 1;
         }
@@ -180,8 +188,8 @@ public static class PageGranularity
     /// <summary>
     /// MAY THIS DOCUMENT BE SPLIT, HERE, NOW?
     ///
-    /// <para>Four clauses and every one of them is the owner's: it is <b>paper</b> (a handful of rounds has
-    /// no pages and an authority is a door, not evidence); it is <b>whole</b> (a document comes apart once —
+    /// <para>Four clauses and every one of them is the owner's: it is <b>EVIDENCE</b> (a handful of rounds
+    /// has no pages and an authority is a door, not evidence); it is <b>whole</b> (a document comes apart once —
     /// and because the parts wear their own ids, that law needs no state to enforce and cannot be defeated
     /// by binning one half); it is <b>already in the book</b> (the owner's own precondition: <i>"the
     /// photograph already in the book"</i> — tearing a document up before the dig throws away the bulk's
@@ -192,12 +200,28 @@ public static class PageGranularity
     /// <para><paramref name="seatedForTheSpread"/> is the caller's own fact about a seat, asked of
     /// <see cref="SeatedSpread.RefusalAt"/> and never re-decided here: what a seat is, and who is sitting at
     /// it, is a question about a room and this file does not have one.</para>
+    ///
+    /// <h3>#798 item 2, second cut · A FILE ON SOMEBODY COMES APART TOO</h3>
+    /// <para>The first cut of this clause read <c>kind == Satchel.Kind.Paper</c>, and that was the one place
+    /// this feature was narrower than the owner's own sentence. <i>"A compromising FILE is not uniform"</i>
+    /// — a dossier is the multi-page object he was describing, and it was left out for a reason about
+    /// PRESENTATION (a file on somebody has no title for a page citation to hang on) rather than a reason
+    /// about the law. The citation now hangs on the heading the row already carries, and the clause is the
+    /// one this game already has for "a thing that can be read over your shoulder":
+    /// <see cref="RipAndBin.IsEvidence"/>, which is the same pair <see cref="LeftBehind.GistOf"/> has a gist
+    /// for and the same pair the bin's own picker offers.</para>
+    ///
+    /// <para>It is ASKED of that predicate rather than restated as <c>Paper or Dirt</c>, because "what is a
+    /// document in this game" already had one answer and a second copy of it here is how the shredder and
+    /// the scissors would come to disagree about a kind somebody adds next year. Everything downstream of
+    /// the split is kind-blind already — the ids, <see cref="SourceOf"/>, the seated register's key, the
+    /// bin's filed note — so nothing else in the feature had to learn a second kind.</para>
     /// </summary>
     public static bool CanSplit(
         Satchel.Kind kind, string paperId, bool alreadyInTheBook, bool seatedForTheSpread)
     {
         ArgumentNullException.ThrowIfNull(paperId);
-        return kind == Satchel.Kind.Paper
+        return RipAndBin.IsEvidence(kind)
             && PartOf(paperId) == Part.Whole
             && alreadyInTheBook
             && seatedForTheSpread
@@ -243,6 +267,14 @@ public static class PageGranularity
     /// one file needs is which of them is the page and which is the rest. Both halves of a split say how
     /// long the document was, because "page 3 of 4" and "3 pages of 4" are the same fact read from the two
     /// sides and a captain should not have to hold one row up against the other to work it out.</para>
+    ///
+    /// <para>#798 item 2, second cut · And because it is a citation and not a sentence, it needs nothing but
+    /// a HEADING in front of it, which is exactly why <see cref="Satchel.Kind.Dirt"/> can now be split. A
+    /// file on somebody has no title — it is a name and a posting and the years around them, and this game
+    /// has never printed a heading on one — so the citation hangs on the only thing the row has ever said
+    /// about itself, <i>a file on somebody</i>, and reads <i>a file on somebody, page 2 of 3</i>. No stored
+    /// field was invented and no dossier prose was written to make that work: a citation after a heading is
+    /// the whole of what the two rows need to be told apart.</para>
     /// </summary>
     public static string RowCitation(string paperId)
     {
