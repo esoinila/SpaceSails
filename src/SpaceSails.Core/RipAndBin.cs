@@ -421,7 +421,14 @@ public static class RipAndBin
     /// <para>It records what the captain did and never what it bought them, because nothing in this game
     /// knows that yet.</para>
     /// </summary>
-    public static string DisposalNote(string what, Tier tier)
+    /// <param name="what">The document, in the captain's own words.</param>
+    /// <param name="tier">Which bucket took it.</param>
+    /// <param name="boring">#798 item 2 · Whether what went in was the BULK of a split file — the folder
+    /// with the one damning sheet already out of it. The shape does not change (bucket first, document
+    /// after, one flat clause about what was left behind); the last clause does, because what was left
+    /// behind is a different thing. See <see cref="LeftInTheBin"/> for the ladder, and
+    /// <see cref="PageGranularity.BulkDisposalClause"/> for the clause itself.</param>
+    public static string DisposalNote(string what, Tier tier, bool boring = false)
     {
         ArgumentNullException.ThrowIfNull(what);
         // The BUCKET first and the document after it, for two reasons that agree: the notebook clips a
@@ -433,6 +440,15 @@ public static class RipAndBin
         // what was left behind — because a later arc reads these back and a note that changed shape at the
         // top of the ladder would be a second format to parse. What differs is the last clause, and it has
         // to: three of these rungs left a thing in a room, and the fourth left nothing anywhere.
+        // #798 item 2 · …and the fifth answer to that same last clause: the bulk of a split file. It is asked
+        // through LeavesSomethingToFind rather than against the enum, so the top rung cannot end up claiming
+        // a boring folder was left in a bin it destroyed — there is nothing in that drawer to read as
+        // anything, and the note that said otherwise would be the third named bug class in a book entry.
+        if (boring && LeavesSomethingToFind(tier))
+        {
+            return $"Torn up and put in {TheBin(tier)}: {what}. {PageGranularity.BulkDisposalClause}";
+        }
+
         return tier == Tier.SecureDisposal
             ? $"Fed to {TheBin(tier)}: {what}. Watched it go; there is nothing left of it to find."
             : $"Torn up and put in {TheBin(tier)}: {what}. Nothing of it was left on the table.";
@@ -451,6 +467,47 @@ public static class RipAndBin
     /// bug class with a bin in its hand.</para>
     /// </summary>
     public static bool LeavesSomethingToFind(Tier tier) => tier != Tier.SecureDisposal;
+
+    /// <summary>
+    /// #798 item 2 · …AND WHAT WHOEVER EMPTIES IT MAKES OF WHAT IS THERE.
+    ///
+    /// <para>Owner: <i>"bin the innocent bulk, which is ALSO cover — a file in the bin that reads boring
+    /// explains itself; a missing file explains nothing."</i> <see cref="LeavesSomethingToFind"/> answers
+    /// whether there is anything in the drawer at all, which is a fact about the RUNG. This answers what the
+    /// thing in the drawer says about the person who put it there, which is a fact about WHAT WENT IN — and
+    /// the two were one predicate until a captain could put half a file in a bin.</para>
+    ///
+    /// <para><b>Ordinal order IS the ranking, worst first</b>, exactly as <see cref="Tier"/>'s is and for the
+    /// same reason: a caller comparing two disposals compares two enum values rather than consulting a table
+    /// somebody has to remember to keep in step. Nothing is stored under these ordinals.</para>
+    ///
+    /// <para>Nothing here tells a captain they got away with it — that is still the ladder's discipline and
+    /// #649's. A boring folder is a better bet than a torn-up dossier and the game never once says it was
+    /// enough.</para>
+    /// </summary>
+    public enum WhatIsLeft
+    {
+        /// <summary>A file somebody went to the trouble of getting rid of. Torn up, in a bin, in a building
+        /// where professionals empty the bins — and the tearing is itself the thing that says it mattered.
+        /// The worst answer, and the one binning a whole document has always given.</summary>
+        AFileSomebodyGotRidOf,
+
+        /// <summary>A file about nothing much. It leaves something to find, and what there is to find reads
+        /// as nothing: the pages nobody would keep, thrown out by somebody who had no reason to keep
+        /// them.</summary>
+        NothingMuch,
+
+        /// <summary>Nothing at all — the secure rung, and the only one that is not a bet.</summary>
+        Nothing,
+    }
+
+    /// <summary>What is left in the bin for whoever empties it, given the rung and whether what went in was
+    /// the bulk of a split file. One function, so the act, the filed note and any later arc that decides
+    /// whether something comes back all read ONE answer.</summary>
+    public static WhatIsLeft LeftInTheBin(Tier tier, bool bulkOfASplitFile) =>
+        !LeavesSomethingToFind(tier) ? WhatIsLeft.Nothing
+        : bulkOfASplitFile ? WhatIsLeft.NothingMuch
+        : WhatIsLeft.AFileSomebodyGotRidOf;
 
     /// <summary>Who was looking. The client decides which of these is true — what "watched" means at a
     /// counter, at a table and on a corridor are three questions about rooms, and this file does not have
@@ -549,6 +606,9 @@ public static class RipAndBin
             yield return KeyPrompt(tier);
             yield return RippedLine("the manifest", tier);
             yield return DisposalNote("the manifest", tier);
+            // #798 item 2 · …and the same note for a split file's bulk, which is a fifth sentence this
+            // ladder can print and would otherwise be a line the canon sweep never sees.
+            yield return DisposalNote("the manifest", tier, boring: true);
         }
         foreach (Watcher who in (Watcher[])Enum.GetValues(typeof(Watcher)))
         {
