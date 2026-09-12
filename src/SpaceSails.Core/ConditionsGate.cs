@@ -63,12 +63,19 @@ namespace SpaceSails.Core;
 public static class ConditionsGate
 {
     /// <summary>
-    /// How still a rate has to be before the chip says nothing rather than flickering an arrow. Expressed as
-    /// a fraction of the chip's own LIMIT per second, so one number covers a 3-million-km range gate and an
-    /// 8-km/s speed gate without either of them needing a threshold of its own: 0.1 % of the limit per
-    /// second is a change you would have to watch for a quarter of an hour to see.
+    /// The rate at which "closing" becomes "neither" — a micrometre per second, i.e. the geometry's own
+    /// zero.
+    ///
+    /// <para><b>It is this small on purpose, and the first cut of it was much larger and wrong.</b> A band
+    /// scaled to the chip's LIMIT looks principled and is not: the dock envelope is 5×10⁸ m and the speeds
+    /// crossing it are ~10³ m/s, so even a tenth of a percent of the limit per second swallows every closing
+    /// speed the game can produce and the arrow never moves — an instrument that says "steady" while the
+    /// ship falls toward a berth. There is nothing to filter here anyway: the rate is
+    /// <see cref="RelativeMotion.ClosingSpeed"/>, computed analytically from exact state rather than sampled
+    /// between frames, so it carries no noise to debounce. A purely lateral pass reads exactly zero by the
+    /// geometry, and that is the only case <see cref="ConditionTrend.Steady"/> is for.</para>
     /// </summary>
-    public const double SteadyFractionPerSecond = 0.001;
+    public const double StillnessMps = 1e-6;
 
     // ── The gates, as chips ──────────────────────────────────────────────────────────────────────────
 
@@ -86,9 +93,9 @@ public static class ConditionsGate
         new(ConditionGateKind.Board, callsign,
         [
             Chip("close enough", Km(distance), "≤ " + Km(CaptureRule.CaptureRadiusMeters),
-                CaptureRule.RangeInWindow(distance), -closingSpeedMps, CaptureRule.CaptureRadiusMeters),
+                CaptureRule.RangeInWindow(distance), -closingSpeedMps),
             Chip("speed match", KmPerSecond(relSpeed), "≤ " + KmPerSecond(CaptureRule.MaxRelativeSpeed),
-                CaptureRule.SpeedInWindow(relSpeed), null, CaptureRule.MaxRelativeSpeed),
+                CaptureRule.SpeedInWindow(relSpeed), null),
         ]);
 
     /// <summary>
@@ -108,7 +115,7 @@ public static class ConditionsGate
             // Only the FIRST row is a range, and only a range has a rate the game measures. The drift row
             // and the match-burn quote get no arrow rather than a guessed one.
             double? rate = i == 0 ? -closingSpeedMps : null;
-            chips.Add(Chip(row.Label, row.Reading, row.Gate, row.Inside, rate, DockRule.EnvelopeMeters));
+            chips.Add(Chip(row.Label, row.Reading, row.Gate, row.Inside, rate));
         }
 
         return new ConditionsReading(
@@ -129,9 +136,9 @@ public static class ConditionsGate
         return new ConditionsReading(ConditionGateKind.Orbit, bodyName,
         [
             Chip("close enough", Km(check.Distance), "≤ " + Km(check.DistanceLimit),
-                check.DistanceOk, -closingSpeedMps, check.DistanceLimit),
+                check.DistanceOk, -closingSpeedMps),
             Chip("slow enough", KmPerSecond(check.RelSpeed), "< " + KmPerSecond(check.SpeedLimit),
-                check.SpeedOk, null, check.SpeedLimit),
+                check.SpeedOk, null),
         ]);
     }
 
@@ -144,7 +151,7 @@ public static class ConditionsGate
         new(ConditionGateKind.ShuttleHop, bodyName,
         [
             Chip("in shuttle reach", Km(distance), "≤ " + Km(ShuttleRange.RangeMeters),
-                ShuttleRange.InRange(distance), -closingSpeedMps, ShuttleRange.RangeMeters),
+                ShuttleRange.InRange(distance), -closingSpeedMps),
         ]);
 
     // ── Which gate is the ACTIVE one ─────────────────────────────────────────────────────────────────
@@ -260,26 +267,25 @@ public static class ConditionsGate
     /// "nothing measures this", which draws no arrow at all.
     /// </summary>
     public static GateCriterion Chip(
-        string label, string reading, string gate, bool inside, double? ratePerSecond, double limit) =>
-        new(label, reading, gate, inside, TrendOf(ratePerSecond, limit));
+        string label, string reading, string gate, bool inside, double? ratePerSecond) =>
+        new(label, reading, gate, inside, TrendOf(ratePerSecond));
 
     /// <summary>
-    /// The trend law, in one place because both the chips and their guard have to agree about it. A rate
-    /// inside <see cref="SteadyFractionPerSecond"/> of the limit per second is <see cref="ConditionTrend.Steady"/>;
-    /// below it the value is falling toward the gate (<see cref="ConditionTrend.Improving"/> — every axis
-    /// here passes by being small); above it the value is climbing away
-    /// (<see cref="ConditionTrend.Worsening"/>). No rate at all is <see cref="ConditionTrend.Unknown"/>.
+    /// The trend law, in one place because both the chips and their guard have to agree about it. Negative
+    /// is the value FALLING toward its gate (<see cref="ConditionTrend.Improving"/> — every axis here passes
+    /// by being small), positive is it climbing away (<see cref="ConditionTrend.Worsening"/>), the
+    /// geometry's own zero (<see cref="StillnessMps"/>) is <see cref="ConditionTrend.Steady"/>, and no rate
+    /// at all is <see cref="ConditionTrend.Unknown"/> — no arrow, no word.
     /// </summary>
-    public static ConditionTrend TrendOf(double? ratePerSecond, double limit)
+    public static ConditionTrend TrendOf(double? ratePerSecond)
     {
-        if (ratePerSecond is not { } rate || double.IsNaN(rate) || limit <= 0)
+        if (ratePerSecond is not { } rate || double.IsNaN(rate))
         {
             return ConditionTrend.Unknown;
         }
 
-        double still = limit * SteadyFractionPerSecond;
-        return rate < -still ? ConditionTrend.Improving
-            : rate > still ? ConditionTrend.Worsening
+        return rate < -StillnessMps ? ConditionTrend.Improving
+            : rate > StillnessMps ? ConditionTrend.Worsening
             : ConditionTrend.Steady;
     }
 
