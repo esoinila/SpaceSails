@@ -26,7 +26,9 @@ namespace SpaceSails.Core;
 /// <item><b>The client</b> — Varga, at a bar table at a port the world publishes. Her hook names that port,
 /// and it is the only place the hook's <c>{PORT}</c> is ever filled from.</item>
 /// <item><b>Lead one, a witness</b> — one of the bar's own roving regulars (<see cref="PatronRota"/>), at the
-/// port that rota actually favours them at. #414's rhythm, asked rather than re-invented.</item>
+/// port that rota actually favours them at. #414's rhythm, asked rather than re-invented. <b>Slice 2a:</b>
+/// he is the one lead that has to be LOOSENED — he gives up what he saw for a glass he may refuse, through
+/// the bar's own offer (<see cref="WhatTheGlassDoes"/>, <c>FinderCase.TheWitness.cs</c>).</item>
 /// <item><b>Lead two, a paper</b> — a find on a real body's ground, clipped into the field book under this
 /// case's subjects (#1052/#934).</item>
 /// <item><b>Lead three, a hull under a former name</b> — an NPC hull out of the traffic, read off her own
@@ -118,10 +120,35 @@ public static partial class FinderCase
     public const string AfterTheBribe =
         "The account clears before he does. Varga will hear; she always does.";
 
+    // ── #417 SLICE 2a · THE WITNESS'S OWN THREE ─────────────────────────────────────────────────────────
+    //
+    // Fable's canon pass for this slice, verbatim, and the whole of what the man says. He is the one lead in
+    // this case that is a PERSON rather than a place or a paper, and slice 1 let him hand the trail over the
+    // moment the captain walked up to him — which made him a switch with a face painted on it. These three
+    // sentences are the difference: he says the first to anybody who comes asking, and the other two are his
+    // answer to a glass, which is the only currency he takes.
+    //
+    // They are APPENDED to AllProse rather than filed beside the case's own lines, because AllProse is read
+    // POSITIONALLY by `EveryLineIsTheCanonPassVerbatim` against a copy retyped from the issue — so the
+    // eleven slice 1 shipped keep the indices they were checked at, and a later slice's lines land after
+    // them where that suite's own copy grows the same way.
+
+    /// <summary>What he says when the captain reaches him with the case open and nothing in his hand. Said
+    /// once a watch, because a man repeating one sentence at every press is furniture with a speaker in
+    /// it.</summary>
+    public const string WitnessBeforeTheGlass = "I work the rota. I don't work for you.";
+
+    /// <summary>…and when he waves the offered glass off. Nothing files and nothing is owed: the captain can
+    /// come back on a later watch and ask again.</summary>
+    public const string WitnessStaysOnShift = "Keep it. I'm on shift.";
+
+    /// <summary>…and when he takes it, in the breath before the lead goes into the book.</summary>
+    public const string WitnessTakesTheGlass = "One drink. Then I never saw you.";
+
     /// <summary>Every player-facing sentence this case can put on a screen — the ten the canon pass authored
-    /// plus the hook's template, which is a sentence with a port's name in the middle of it. The same
-    /// <c>AllProse</c> discipline every prose-bearing type in Core keeps, and the list the reserved-word
-    /// sweep and the no-twelfth-string sweep both walk.</summary>
+    /// plus the hook's template (a sentence with a port's name in the middle of it), and slice 2a's three
+    /// for the witness. The same <c>AllProse</c> discipline every prose-bearing type in Core keeps, and the
+    /// list the reserved-word sweep and the no-twelfth-string sweep both walk.</summary>
     public static IEnumerable<string> AllProse()
     {
         yield return Approach;
@@ -135,6 +162,9 @@ public static partial class FinderCase
         yield return TakeTheBribe;
         yield return AfterTurningIn;
         yield return AfterTheBribe;
+        yield return WitnessBeforeTheGlass;
+        yield return WitnessStaysOnShift;
+        yield return WitnessTakesTheGlass;
     }
 
     // ── WHAT THE WORLD HANDS IN ─────────────────────────────────────────────────────────────────────────
