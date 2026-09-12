@@ -163,6 +163,12 @@ public static class PageGranularity
         };
     }
 
+    /// <summary>Is this row the BULK of a split file — the folder with its one damning sheet already out of
+    /// it? Named, rather than left as a comparison somebody retypes, because it is the question the bin's
+    /// filed note turns on and this project has paid four times for a law transcribed at its call
+    /// sites.</summary>
+    public static bool IsTheBulk(string? id) => PartOf(id) == Part.TheBulk;
+
     /// <summary>The id the torn-out sheet carries.</summary>
     public static string SheetIdOf(string paperId) => TornPageTag + SourceOf(paperId);
 

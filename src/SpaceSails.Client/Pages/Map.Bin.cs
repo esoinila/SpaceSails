@@ -301,11 +301,8 @@ public sealed partial class Map
         // Owner: "a file in the bin that reads boring explains itself; a missing file explains nothing." The
         // question is asked of the ID — the bulk carries its own mark and there is no register of split
         // documents anywhere — so this line cannot come to a different view from the row that drew it.
-        FileNote(
-            RipAndBin.DisposalNote(
-                label, bin.Tier,
-                boring: PageGranularity.PartOf(item.Id) == PageGranularity.Part.TheBulk),
-            RipAndBin.Glyph);
+        bool boring = PageGranularity.IsTheBulk(item.Id);
+        FileNote(RipAndBin.DisposalNote(label, bin.Tier, boring), RipAndBin.Glyph);
 
         string said = RipAndBin.RippedLine(label, bin.Tier);
         if (WhoIsWatchingYouRip() is { } who)
