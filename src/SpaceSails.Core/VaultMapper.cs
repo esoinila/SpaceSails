@@ -42,6 +42,9 @@ public static class VaultMapper
                 HeatOwed = h.HeatOwed,
                 KnewTheOldFace = h.KnewTheOldFace,
                 WasLiedTo = h.WasLiedTo,
+                // #535 slice 2 — the favour is once per contact per captain-lifetime, so it has to survive
+                // a reload; a restart that forgot it would be an unlimited supply of a consumable.
+                FavourSpent = h.FavourSpent,
                 HeatStampSimTime = h.HeatStampSimTime,
                 Transactions = h.Transactions
                     .Select(t => new CreditTxnRecord((int)t.Kind, t.Amount, t.SimTime, t.Note))
@@ -81,6 +84,7 @@ public static class VaultMapper
                 HeatOwed = r.HeatOwed,
                 KnewTheOldFace = r.KnewTheOldFace,
                 WasLiedTo = r.WasLiedTo,
+                FavourSpent = r.FavourSpent,
                 HeatStampSimTime = r.HeatStampSimTime,
                 Transactions = txns,
             };
