@@ -187,7 +187,8 @@ public partial class Map
         // down. Every later reading of this room — the compose on a revisit, the cache loop, the fog — asks
         // the written key instead (see RegionOf), so what the captain walked out of is what he walks back
         // into, and no second door can ever become the empty one however long the voyage runs.
-        if (EmptySeal.WouldBeEmpty(kind, ex.Stop.Body.Id, doorId, _emptySealSpentOn))
+        bool justSpent = EmptySeal.WouldBeEmpty(kind, ex.Stop.Body.Id, doorId, _emptySealSpentOn);
+        if (justSpent)
         {
             _emptySealSpentOn = EmptySeal.Key(ex.Stop.Body.Id, doorId);
         }
@@ -218,10 +219,24 @@ public partial class Map
         // it too, filed under the door glyph the seals already wear, and then the game says nothing more
         // about it ever again. The geometry is already appended above: he can walk in and stand in it, which
         // is the entire beat.
+        //
+        // SAID ONCE, AND THE BOOK KEEPS ONE OF IT. A landing starts with every door sealed again (OpenedDoors
+        // is session-only, by that field's own law), so a captain who comes back to this site can set his
+        // shoulder to this leaf a second time — and it is still empty, which is the book being right. What he
+        // does not get is the sentence again: the screen answers the press, because a press that finished in
+        // silence reads as a swallowed keypress, and the book stays at one entry, because a line said twice
+        // is the book stuttering about a thing that happened once.
         if (nothingInIt)
         {
-            RequestVaultSave();   // the spend is written down the moment it is spent
-            ShowAndFile(EmptySeal.Line, EmptySeal.Glyph);
+            if (justSpent)
+            {
+                RequestVaultSave();   // the spend is written down the moment it is spent
+                ShowAndFile(EmptySeal.Said, EmptySeal.Glyph);
+            }
+            else
+            {
+                ShowPulseMessage(EmptySeal.Said);
+            }
             return;
         }
 

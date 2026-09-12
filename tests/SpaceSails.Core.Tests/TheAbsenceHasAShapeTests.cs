@@ -739,5 +739,10 @@ public sealed class TheAbsenceHasAShapeTests
         Assert.Equal(
             "Sealed, and empty. A room somebody closed because there was nothing in it, which is a reason.",
             EmptySeal.Line);
+
+        // …and the one composition either seam is allowed: the kind, then the sentence, and not one word
+        // besides. A pulse and a book entry that were composed separately would be two authorings of a line
+        // that has one author.
+        Assert.Equal(EmptySeal.Glyph + " " + EmptySeal.Line, EmptySeal.Said);
     }
 }

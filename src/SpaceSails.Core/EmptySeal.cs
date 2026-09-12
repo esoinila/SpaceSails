@@ -73,6 +73,12 @@ public static class EmptySeal
     public const string Line =
         "Sealed, and empty. A room somebody closed because there was nothing in it, which is a reason.";
 
+    /// <summary>#1063 · The line as the screen and the book both take it, behind its kind. <b>Not new
+    /// prose</b> and not a second authoring: it is the glyph and the authored sentence, the same composition
+    /// <c>UndergroundComplex.MaintenanceLedgerLine</c> already ships in, written once here so the pulse the
+    /// captain reads and the entry the book keeps cannot become two slightly different strings.</summary>
+    public const string Said = Glyph + " " + Line;
+
     /// <summary>#1063 · How the one spent seal is written down: the ground and the door, joined by a
     /// character neither of them can contain (a door id is one of this file's own authored ids and a body id
     /// is not permitted a pipe anywhere else in the save either). One string, so the save carries one field
