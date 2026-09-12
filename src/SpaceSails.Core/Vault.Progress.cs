@@ -291,4 +291,25 @@ public sealed record ProgressSection
     [System.Text.Json.Serialization.JsonIgnore(
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public PendingWritRecord? WritPending { get; init; }
+
+    /// <summary>
+    /// #1063 slice 2 · <b>THE ONE SEAL THIS CAPTAIN HAS FOUND EMPTY</b> (<see cref="EmptySeal.Key"/>), or
+    /// null while he still has the disappointment to spend — which is most of every voyage.
+    ///
+    /// <para>It rides the file for a harder version of <see cref="HallsBuried"/>'s reason. A spend a reload
+    /// forgot would put the cache BACK into a room the captain's own field book says was bare, and the book
+    /// being the only witness is the whole of #1063; worse, it would let him find a SECOND empty room later,
+    /// and two of them is a rate. The point of the beat is that it happens once — a captain who can work out
+    /// how often a seal is empty can work out what a full one proves, and that is the inference #672 exists
+    /// to refuse.</para>
+    ///
+    /// <para><b>Written only when it has been spent</b>, the #1057/#1066/#1074 law: the checksum is taken
+    /// over the payload, so an eager <c>"emptySealSpentOn": null</c> on every save would change the digest of
+    /// every vault ever written and hang the 📛 tampered marker on an honest voyage. A pre-#1063 file simply
+    /// lacks the field and loads with the disappointment unspent, which is the truth about every voyage
+    /// played before there was one to spend.</para>
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? EmptySealSpentOn { get; init; }
 }

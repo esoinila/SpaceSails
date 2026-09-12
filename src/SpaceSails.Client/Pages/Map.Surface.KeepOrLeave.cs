@@ -260,6 +260,33 @@ public partial class Map
                     find.BodyId, find.Level, find.RoomIndex, ex.Site.Name));
         }
 
+        // ── #1063 slice 2 · THE MISSING MIDDLE ──────────────────────────────────────────────────────────
+        //
+        // The issue: "A slow honest raise leaves permits, complaints, invoices; a sudden burial leaves rumor.
+        // The captain can hunt the paper trail that must exist under EITHER story — and finds neither. That
+        // absence has a shape: an absence in the exact shape of the thing removed — and finding-the-absence
+        // is filed as its own note kind."
+        //
+        // THE TRIGGER IS THE ACT AND THE ACT IS THIS ONE. He worked the maintenance ledger — the single
+        // surviving record of the job, whose own numbering runs 2211, nothing, 2213 — and that is the only
+        // moment in the game when a captain is holding the paperwork of a burial and can look for what is
+        // not in it. Nothing announces it to him; the second entry the book takes is HIS measurement, in his
+        // own hand, filed under a kind of its own (MissingMiddle.Glyph).
+        //
+        // FILED BESIDE THE FIND AND NEVER INSTEAD OF IT — the burial's binding law, THE BOOK NEVER LIES. The
+        // ledger's own line went into the book four lines above and stays exactly as it was written; this is
+        // a second entry on the same page of the same ground, and the find is what makes the absence
+        // measurable at all. Core owns both halves of the decision (whether it is written, and what it is
+        // about) for #634's reason and #741's: a sentence composed in the client can drift away from the sim,
+        // and a SUBJECT worked out by a reader of the prose is the extraction this book refuses to be.
+        if (MissingMiddle.ShouldBeWritten(
+                find.BodyId, find.Level, find.RoomIndex, _fieldNotes, TheBooksNameForHere()))
+        {
+            FileNoteAbout(
+                MissingMiddle.Line, MissingMiddle.Glyph,
+                MissingMiddle.SubjectsFor(find.BodyId, ex.Site.Name));
+        }
+
         if (find.Haul == UndergroundComplex.Haul.Dirt)
         {
             ApplyNerveShock(4.0, "reading somebody's file in a building that should not exist");
