@@ -42,6 +42,10 @@ public sealed record ContactRecord
     /// <summary>#973 L5a — the captain told this contact the reactor-seal story. <i>The book marks the
     /// lie.</i> Defaults false.</summary>
     public bool WasLiedTo { get; init; }
+    /// <summary>#535 slice 2 — this contact has already handed the captain their one black-ops key.
+    /// <i>The book marks the favour.</i> Defaults false, so a vault written before slice 2 loads with
+    /// everybody's favour still unspent — which is what was true when it was written.</summary>
+    public bool FavourSpent { get; init; }
     public IReadOnlyList<CreditTxnRecord> Transactions { get; init; } = [];
 }
 
