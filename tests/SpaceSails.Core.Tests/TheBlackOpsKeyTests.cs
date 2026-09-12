@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -341,6 +341,11 @@ public sealed class TheBlackOpsKeyTests
             BlackOpsKey.BurnLine,
             BlackOpsKey.CardLabel,      // the canon name, shouted — the plate typography, not a second name
             BlackOpsKey.ScrubReason,    // a ledger reason, never rendered
+            // #535 slice 2 · the other two sources' canon, authored on the issue and copied in verbatim.
+            BlackOpsKey.FavourLine,
+            BlackOpsKey.FavourVerb,
+            BlackOpsKey.FenceRowLine,
+            BlackOpsKey.FenceVerb,
         ];
 
         string[] stray =
