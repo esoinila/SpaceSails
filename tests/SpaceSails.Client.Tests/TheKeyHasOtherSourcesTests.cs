@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -151,8 +151,9 @@ public sealed class TheKeyHasOtherSourcesTests
     [Fact]
     public void TheFavourIsNotOnTheTableWhenItsLawDoesNotHold()
     {
-        Pages.Map cold = ABarWhereSomebodyOwesYouOne(out _);
-        Book(cold).AddGoodwill(Giver, Giver, -BlackOpsKey.TopGoodwillBand);
+        Pages.Map cold = ADeskThatWillDeal(out _);
+        Book(cold).AddGoodwill(Giver, Giver, BlackOpsKey.TopGoodwillBand - 1);
+        Assert.Equal(BlackOpsKey.TopGoodwillBand - 1, Book(cold).For(Giver).Goodwill);
         Assert.False((bool)Invoke(cold, "TheFavourIsOnTheTable", Giver)!);
 
         Pages.Map lied = ABarWhereSomebodyOwesYouOne(out _);
