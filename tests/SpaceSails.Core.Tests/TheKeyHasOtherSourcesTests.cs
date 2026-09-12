@@ -230,9 +230,9 @@ public sealed class TheKeyHasOtherSourcesTests
             foreach (long window in new long[] { 0, 3, 77 })
             {
                 ulong seed = BlackOpsKey.FenceSeed(port, window);
-                foreach (int heat in new[] { 0, 1, 2, 3, 4 })
+                foreach (int heat in new[] { -5, 0, 1, 2, 3, 4 })
                 {
-                    int bribe = BustedRule.BribeDemand(Math.Max(1, heat), seed).Total;
+                    int bribe = BustedRule.BribeDemand(heat, seed).Total;
 
                     Assert.Equal(BlackOpsKey.FenceAsksThisManyBribes * bribe,
                         BlackOpsKey.FencePrice(heat, seed));
@@ -251,22 +251,38 @@ public sealed class TheKeyHasOtherSourcesTests
         Assert.NotEqual(oneBribe * 4, BlackOpsKey.FencePrice(2, s));
     }
 
-    /// <summary>A COLD CAPTAIN IS QUOTED THE BOTTOM OF THE LADDER, NEVER A FREE ONE — the repo boat's own
-    /// <c>Math.Max(1, …)</c> floor, and it has to be there or heat 0 would price the key off a heat band the
-    /// bribe has no arm for.</summary>
+    /// <summary>
+    /// THE QUOTE READS THE METER THE COLLECTOR READS — and a cold captain is quoted the bottom of the bribe's
+    /// own ladder rather than nothing, because the bribe's bottom band is what heat zero already means.
+    ///
+    /// <para>This is the guard that caught the only second-opinion in the feature. The first cut of
+    /// <see cref="BlackOpsKey.FencePrice"/> floored the heat at one, the repo boat's own line copied across —
+    /// and reverting that floor turned NOTHING red, because <see cref="BustedRule.BribeDemand"/>'s band table
+    /// already answers every heat at or below one with one arm. A floor that cannot be told apart from its
+    /// absence is not a rule, it is a number waiting to disagree with the one that decides, so it came out;
+    /// what is pinned here instead is the behaviour it was there for.</para>
+    /// </summary>
     [Fact]
-    public void AColdCaptainIsQuotedTheBottomRungAndNotNothing()
+    public void TheQuoteReadsTheMeterAndAColdCaptainIsStillQuotedSomething()
     {
         ulong seed = BlackOpsKey.FenceSeed("the-tilt", 2);
 
-        Assert.Equal(BlackOpsKey.FencePrice(1, seed), BlackOpsKey.FencePrice(0, seed));
-        Assert.Equal(BlackOpsKey.FencePrice(1, seed), BlackOpsKey.FencePrice(-5, seed));
-        Assert.True(BlackOpsKey.FencePrice(0, seed) > 0);
+        Assert.True(BlackOpsKey.FencePrice(0, seed) > 0,
+            "a captain with a clean meter is quoted nothing at all, so the fence is giving keys away to "
+            + "exactly the captains who have no use for one.");
 
-        // …and heat still moves the quote, or the floor would be the whole rule.
-        Assert.True(BlackOpsKey.FencePrice(3, seed) > BlackOpsKey.FencePrice(1, seed),
+        // Heat really moves the quote, or the price is a constant wearing a function's clothes.
+        Assert.True(BlackOpsKey.FencePrice(3, seed) > BlackOpsKey.FencePrice(0, seed),
             "the fence quotes a hot captain no more than a cold one, so the price is not reading the meter "
             + "the collector reads and the line about what a clean record costs is not true of anything.");
+
+        // …and it is the BRIBE's ladder the quote walks, arm for arm, rather than one of its own.
+        foreach (int heat in new[] { -5, 0, 1, 2, 3, 9 })
+        {
+            Assert.Equal(
+                BlackOpsKey.FenceAsksThisManyBribes * BustedRule.BribeDemand(heat, seed).Total,
+                BlackOpsKey.FencePrice(heat, seed));
+        }
     }
 
     /// <summary>

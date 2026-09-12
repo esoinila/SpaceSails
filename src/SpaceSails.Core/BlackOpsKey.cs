@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace SpaceSails.Core;
@@ -294,12 +294,18 @@ public static class BlackOpsKey
     ///
     /// <para>It moves with the captain's heat because the bribe does, and that is the fiction rather than a
     /// quirk: the fence is pricing what a clean record is worth TO YOU, and he can read the same meter the
-    /// collector reads. The <c>Math.Max(1, …)</c> floor is the repo boat's own
-    /// (<c>Map.Surface.RepoBoat</c>), so a cold captain is quoted the bottom of the ladder and never a free
-    /// one.</para>
+    /// collector reads.</para>
+    ///
+    /// <para><b>There is deliberately no heat floor here, and the red-proof is why.</b> The first cut wrote
+    /// <c>Math.Max(1, heat)</c> — the repo boat's own line, copied across. Reverting it did not turn a single
+    /// guard red, because <see cref="BustedRule.BribeDemand"/>'s own band table already answers
+    /// <c>&lt;= 1</c> with one arm: the floor was a SECOND opinion about a question the bribe had already
+    /// settled, and the only thing it could ever do is disagree with it — silently, on the afternoon somebody
+    /// gives that table a heat-zero arm. So the heat goes through whole and the bribe decides what a cold
+    /// captain is quoted, the way it decides what a hot one is.</para>
     /// </summary>
     public static int FencePrice(int heat, ulong seed) =>
-        FenceAsksThisManyBribes * BustedRule.BribeDemand(Math.Max(1, heat), seed).Total;
+        FenceAsksThisManyBribes * BustedRule.BribeDemand(heat, seed).Total;
 
     /// <summary>The key the fence sells. Its id is the port and the watch, so two windows are two keys and
     /// one window is one key however many times the row is looked at.</summary>
