@@ -192,8 +192,8 @@ public sealed class GroundMemory
     // section, one reader. A separate store for them would be a second place to forget to save, which is the
     // bug the husks themselves were just dragged out of.
 
-    /// <summary>A mark on the ground that is not a body. Two of them, and no more: the forensic vocabulary
-    /// the issue itself names.</summary>
+    /// <summary>A mark on the ground that is not a body. The forensic vocabulary the issue itself names,
+    /// plus #563's one addition.</summary>
     public enum ScarKind
     {
         /// <summary>Disturbed ground at a dug spot — the hole a chest came out of.</summary>
@@ -201,6 +201,25 @@ public sealed class GroundMemory
 
         /// <summary>A sentry left standing where it ran dry, counter frozen at 00 (#314/#326).</summary>
         DryBot,
+
+        // ── #563 · THE THIRD MARK, AND IT IS YOURS ───────────────────────────────────────────────────
+        //
+        // Owner ruling, 2026-09-13, on the last of #563's three open questions: "I love the own lineage. If
+        // not enough material, fill in with strangers, preferably NPCs we know something about."
+        //
+        // A suit lying in the regolith with the license still clipped to it is the same sort of object the
+        // other two are — not a body you can loot, not a hole; a thing that is WHERE IT IS and WHEN IT
+        // HAPPENED, and whose whole value to a captain who looks is how old it is. So it is this enum's
+        // third word rather than a fourth system: same key shape, same three age bands, same reader, drawn
+        // through the husk mark #316 already has. No new renderer anywhere in this slice.
+        //
+        // Unlike the two above it, a suit is never REMEMBERED into this ledger: the roster already holds the
+        // fact (RetiredCaptain.Grave), and a second copy of one death is the fourth named bug class written
+        // into the save file. The excursion derives the mark from the roster on arrival.
+
+        /// <summary>#563 · A predecessor of this very captain, lying where the license changed hands.
+        /// Derived from the roster's own grave, never stored in this ledger.</summary>
+        Suit,
     }
 
     /// <summary>One scar, where it is and when it was made — the same (position, moment) pair a
@@ -328,6 +347,26 @@ public sealed class GroundMemory
         return age >= OldAfterSeconds ? "Regolith-dusted. Weeks old." : "Dusted over. Days old.";
     }
 
+    // ── #563 · AND WHAT THE CAPTAIN HAS ALREADY READ ─────────────────────────────────────────────────
+    //
+    // A breadcrumb files a page in the field book, and a page is a durable thing. Latching the read on the
+    // excursion (the way the husks' underfoot pulse latches) would re-file it on the next trip and the trip
+    // after that, until the predecessor's thread was six copies of one sentence — which is not a book, it is
+    // a stutter. So the fact "this mark has been read" is a MARK LIKE ANY OTHER on the ground the reading
+    // happened on: one ledger, one vault section, one reader, and it survives lift-off because the book it
+    // guards does.
+    //
+    // Built out of the mark's OWN key rather than a second address of its own, so a latch can never point at
+    // a different spot from the thing it latches.
+
+    /// <summary>#563 · The key for "the captain has read this mark" — the mark's own key with a word in
+    /// front of it. Core owns the format, exactly as it owns the husk's and the scar's.</summary>
+    public static string ReadKey(string markKey)
+    {
+        ArgumentNullException.ThrowIfNull(markKey);
+        return $"read:{markKey}";
+    }
+
     private static string Fixed(double v) =>
         Math.Round(v, 2).ToString("F2", CultureInfo.InvariantCulture);
 
@@ -383,7 +422,17 @@ public sealed class GroundMemory
         _ => "read",
     };
 
-    private static string Word(ScarKind what) => what == ScarKind.Pit ? "pit" : "drybot";
+    // #563 · A LADDER, NOT A TERNARY. This was `what == ScarKind.Pit ? "pit" : "drybot"`, which is exactly
+    // right for two kinds and silently wrong for three: the suit would have spelled itself "drybot", and
+    // because a suit is never written to the ledger the file would have looked clean while the READ LATCH
+    // for a lineage mark and the read latch for a dry bot on the same spot became one row. Switched over the
+    // enum so a fourth kind is a compiler's problem rather than a save's.
+    private static string Word(ScarKind what) => what switch
+    {
+        ScarKind.Pit => "pit",
+        ScarKind.Suit => "suit",
+        _ => "drybot",
+    };
 
     /// <summary>The inverse of <see cref="Word(ScarKind)"/>. Null for a word this build does not know, so a
     /// file written by a later build loads as a captain who can see less rather than one who cannot
@@ -392,6 +441,7 @@ public sealed class GroundMemory
     {
         "pit" => ScarKind.Pit,
         "drybot" => ScarKind.DryBot,
+        "suit" => ScarKind.Suit,
         _ => null,
     };
 }

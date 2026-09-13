@@ -76,16 +76,27 @@ public static class CaptainSuccession
     /// and append the retiree to the thread's history so the roster still remembers them. Pure — returns the
     /// updated row; the registry persists it. The successor is seeded off the thread id and the generation
     /// (prior retirements + 1), so a universe's rebirth sequence is fully deterministic.</summary>
-    public static GameThreadInfo Succeed(GameThreadInfo current, int retiredSimDay)
+    /// <param name="grave">#563 · WHERE HE FELL, when the death happened standing on a ground — the one
+    /// writer of <see cref="RetiredCaptain.Grave"/>. Null is the ordinary case: most deaths happen on her
+    /// own deck, and a deck is not a ground anybody walks back to.</param>
+    public static GameThreadInfo Succeed(
+        GameThreadInfo current, int retiredSimDay, CaptainGrave? grave = null)
     {
         ArgumentNullException.ThrowIfNull(current);
         (string retiredName, int retiredAvatar) = Captains.For(current);
         int generation = current.Retired.Count + 1;
         (string newName, int newAvatar) = NewIdentity(retiredAvatar, SeedFor(current.Id, generation));
 
+        // #563 · The cause is re-asked here rather than taken on trust from the caller. This is the ONE
+        // writer of the roster's history, so it is the one place a bad pairing can be stopped before it is
+        // in the save for the rest of that universe's life — and a record in a file is the most expensive
+        // place in this game to be wrong, because no later build can tell a mistake from a fact. A suit in
+        // the regolith for a captain who flew a ship into a moon at speed would be exactly that.
+        CaptainGrave? kept = grave is { } g && CaptainGrave.CanRecord(g.Cause) ? g : null;
+
         var history = new List<RetiredCaptain>(current.Retired)
         {
-            new(retiredName, Math.Max(0, retiredSimDay)),
+            new(retiredName, Math.Max(0, retiredSimDay)) { Grave = kept },
         };
 
         return current with
