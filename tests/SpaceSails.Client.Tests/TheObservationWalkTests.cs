@@ -146,15 +146,14 @@ public sealed class TheObservationWalkTests
     [Fact]
     public void TheTailLeadsToTheWalkWhenNobodyNoticesYou()
     {
-        Pages.Map map = AshoreAt(ObservationWalk.HavenId);
-        StandCaptainAt(map, 2.5, 6);   // aboard, in the airlock corridor: no line to anything ashore
-
         DeckReachability.Point rail = HavenInterior.TheRailAt(ObservationWalk.HavenId)!.Value;
         string person = TheTail.ThePersonOfInterest(ObservationWalk.HavenId);
+        Pages.Map map = ATailAfoot(person, out int evenings);
+        Assert.True(evenings < 48, "the tail is not reachable at Selene Gate at all.");
 
         DeckReachability.Point? from = null;
         int routePoints = 0;
-        for (int i = 0; i < 600 && double.IsNaN(WaitStartedAt(map)); i++)
+        for (int i = 0; i < 900 && double.IsNaN(WaitStartedAt(map)); i++)
         {
             RunFrames(map, 1);
             if (ThePersonAfoot(map, person) is not { } who)
@@ -197,15 +196,10 @@ public sealed class TheObservationWalkTests
     [Fact]
     public void TheyStopAndWaitWhenTheyNoticeYou()
     {
-        Pages.Map map = AshoreAt(ObservationWalk.HavenId);
         string person = TheTail.ThePersonOfInterest(ObservationWalk.HavenId);
 
         // Get them on the floor first, from a place with no sightline at all.
-        StandCaptainAt(map, 2.5, 6);
-        for (int i = 0; i < 60 && ThePersonAfoot(map, person) is null; i++)
-        {
-            RunFrames(map, 1);
-        }
+        Pages.Map map = ATailAfoot(person, out _);
 
         object who = ThePersonAfoot(map, person)
             ?? throw new InvalidOperationException("nobody got on the floor to be noticed.");
@@ -257,11 +251,10 @@ public sealed class TheObservationWalkTests
     [Fact]
     public void TheCardFiresAtTheBlindEndAndTheBookFilesTheNote()
     {
-        Pages.Map map = AshoreAt(ObservationWalk.HavenId);
         string person = TheTail.ThePersonOfInterest(ObservationWalk.HavenId);
+        Pages.Map map = ATailAfoot(person, out _);
 
-        StandCaptainAt(map, 2.5, 6);
-        for (int i = 0; i < 600 && double.IsNaN(WaitStartedAt(map)); i++)
+        for (int i = 0; i < 900 && double.IsNaN(WaitStartedAt(map)); i++)
         {
             RunFrames(map, 1);
         }
@@ -318,6 +311,7 @@ public sealed class TheObservationWalkTests
                         && PatronRota.Resolve(person, b, 0) == PatronState.AtBar);
 
         Pages.Map map = AshoreAt(elsewhere);
+        PastLastCall(map);
         Set(map, "_observationWalkSpentOn", ObservationWalk.Key(ObservationWalk.HavenId, person));
         StandCaptainAt(map, 2.5, 6);
 
@@ -334,9 +328,10 @@ public sealed class TheObservationWalkTests
 
     // ── PLUMBING ─────────────────────────────────────────────────────────────────────────────────────────
 
-    private static Pages.Map AshoreAt(string berth)
+    private static Pages.Map AshoreAt(string berth, long watch = 0)
     {
         var map = new Pages.Map();
+        Set(map, "SimTime", watch * PatronRota.WatchSeconds);
         typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
             .SetValue(map, true);
 
@@ -348,6 +343,50 @@ public sealed class TheObservationWalkTests
         Invoke(map, "SetDeckForDock", berth);
         Invoke(map, "StandAtTheBarThreshold");
         return map;
+    }
+
+    /// <summary>#731 · Wind the room's clock past LAST CALL, which is where the walk is walked from: nobody
+    /// gets out of a chair in this bar before the shift says so, and the point after which nothing is
+    /// scheduled to happen any more is the room's own <see cref="Egress.LastCallFraction"/>. Every test below
+    /// that wants somebody on their feet has to get there honestly.</summary>
+    private static void PastLastCall(Pages.Map map)
+    {
+        var watch = (long)Invoke(map, "get_BarWatch")!;
+        Set(map, "SimTime",
+            (watch * PatronRota.WatchSeconds) + (PatronRota.WatchSeconds * Egress.LastCallFraction) + 1);
+    }
+
+    /// <summary>
+    /// #1199 · A PAGE WITH THE TAIL ACTUALLY AFOOT, found by walking the station's own evenings until one of
+    /// them produces it — never by picking a watch that happens to work.
+    ///
+    /// <para>The tail does not happen every evening and must not: the rota has to have the person in the room
+    /// this watch, and the room's own hours must not already have walked them out through a leaf (one body,
+    /// one place). Both are facts about a watch, so the honest thing for a guard to do is sweep watches and
+    /// assert that the beat is REACHABLE — which is itself the claim that matters, and goes red if the tail
+    /// becomes impossible.</para>
+    /// </summary>
+    private static Pages.Map ATailAfoot(string person, out int evenings)
+    {
+        for (evenings = 0; evenings < 48; evenings++)
+        {
+            Pages.Map map = AshoreAt(ObservationWalk.HavenId, evenings);
+            PastLastCall(map);
+            StandCaptainAt(map, 2.5, 6);   // aboard, in the airlock corridor: no line to anything ashore
+
+            for (int i = 0; i < 40; i++)
+            {
+                RunFrames(map, 1);
+                if (ThePersonAfoot(map, person) is { } who
+                    && Get(who, "For")!.ToString() == "WalkingTheRoute")
+                {
+                    return map;
+                }
+            }
+        }
+
+        throw new InvalidOperationException(
+            "forty-eight evenings at Selene Gate and the tail never once set off — the beat is unreachable.");
     }
 
     /// <summary>Put the captain somewhere, and tell the motion rule he has been there a while — so a

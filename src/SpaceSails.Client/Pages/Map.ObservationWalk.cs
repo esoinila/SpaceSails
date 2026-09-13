@@ -92,6 +92,22 @@ public partial class Map
 
         if (!_walkDealt)
         {
+            // ── #731 · THE ROOM'S OWN HOURS BIND THIS TOO ───────────────────────────────────────────────
+            //
+            // Nobody gets out of a chair in this bar before the shift says so — a room that empties itself on
+            // frame one has no hours, it has a leak, and that law is enforced over every berth and watch in
+            // the game. The tail was breaking it: it stood a regular up forty seconds into a watch whose
+            // first scheduled departure was two hours away, and the sweep caught it before a player could.
+            //
+            // So the walk is walked AFTER LAST CALL — past Egress.LastCallFraction of the watch, which is the
+            // room's own statement of the point after which nothing is scheduled to happen any more. No new
+            // constant, and it is the better beat: they go out to look at the view when the evening is over
+            // and the room is done with them, which is when a person actually would.
+            if (IntoTheBarsWatch <= PatronRota.WatchSeconds * Egress.LastCallFraction)
+            {
+                return;
+            }
+
             SendThemOutOntoTheWalk(in bar, person);
             return;
         }
@@ -131,10 +147,17 @@ public partial class Map
     /// </summary>
     private void SendThemOutOntoTheWalk(in HavenInterior.BarFloor bar, string person)
     {
+        if (_barAfoot.Count >= WalkerBand)
+        {
+            // A full band is NOT NOW rather than NO — the room's own leavers hold slots for a few seconds at
+            // a time and then give them back. Marking the walk dealt here would let a busy instant cancel the
+            // whole beat for the visit, which is the opposite of what dealing-once is for.
+            return;
+        }
+
         _walkDealt = true;
 
-        if (_barAfoot.Count >= WalkerBand
-            || HavenInterior.TheRailAt(bar.BodyId) is not { } rail)
+        if (HavenInterior.TheRailAt(bar.BodyId) is not { } rail)
         {
             return;
         }
