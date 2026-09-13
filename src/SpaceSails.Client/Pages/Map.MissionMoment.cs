@@ -120,7 +120,10 @@ public partial class Map
         }
 
         _missionMoment = _missionMomentQueue.Dequeue();
-        RendererInterop.PlayCue("reveal");
+
+        // NO CUE OF ITS OWN, deliberately. Both raisers already play the sound of the thing that happened —
+        // the reveal its "reveal", the prise its "board" — at the same instant, and a card that added a
+        // third noise on top would be the game clearing its throat before speaking.
         StateHasChanged();
     }
 
