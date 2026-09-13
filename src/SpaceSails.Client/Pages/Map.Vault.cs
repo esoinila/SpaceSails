@@ -58,6 +58,11 @@ public partial class Map
             _shipBots.Add(new ShipBot(unit, SentryBot.MaxMagazine));
         }
 
+        // #325/#332 · The chandlery's two: no spare bottles in stores (they are bought, never issued), and a
+        // full pill cabinet — the same stake every captain has opened with since #343.
+        _extendedTanks = 0;
+        _pills = Chandlery.MedKitFullStock;
+
         // Upgrades back to base (and the tank to the base capacity that implies), sensor rebuilt.
         _massLevel = 0;
         _sensorLevel = 0;
@@ -187,6 +192,11 @@ public partial class Map
                 SentryMagazines = _shipBots.Select(b => b.Rounds).ToList(), // #314
             },
             Cargo = new CargoSection(hold, VaultMapper.ToHotLines(_hotCargo)),
+
+            // #325/#332 · The chandlery's stores, always written by a live game: a captain always has a
+            // cabinet, even an empty one, and "what is in it" is exactly the fact this section exists to
+            // carry. Only a vault written before the lane lacks the section.
+            Chandlery = new ChandlerySection { ExtendedTanks = _extendedTanks, MedKitPills = _pills },
             Heat = new HeatSection(_heat.Level, _heat.RaisedAtSimTime),
             Contacts = VaultMapper.ToSection(_contacts),
             Caches = VaultMapper.ToSection(_caches),
@@ -385,6 +395,27 @@ public partial class Map
             {
                 _shipBots.Add(new ShipBot(SentryBot.RosterUnits[i], mags[i]));
             }
+
+        }
+
+        // ── #325/#332 · THE CHANDLERY'S STORES ─────────────────────────────────────────────────────────
+        //
+        //  Its own section, and read outside the ship block on purpose: a vault written before this lane
+        //  simply has no chandlery section, and such a file has nothing to say about either count. It opens
+        //  the way every captain has opened until now — nothing in stores, a full cabinet — which is what
+        //  the field initialisers already hold, so the absent case is the no-op it should be.
+        if (vault.Chandlery is { } chandlery)
+        {
+            // Spare bottles: clamped at zero and nothing else. A count of stores has no ceiling the game
+            // imposes — they stack by the owner's own ask — and a save is not the place to invent one.
+            _extendedTanks = Math.Max(0, chandlery.ExtendedTanks);
+
+            // The cabinet. A NULL here is a section that carries no pill key and genuinely has nothing to
+            // say, so it loads FULL. A recorded zero is an EMPTY cabinet and stays empty: rounding it up on
+            // load would be a free restock for anybody who reloads, which is the same exploit shape the heat
+            // section exists to refuse.
+            _pills = Math.Clamp(
+                chandlery.MedKitPills ?? Core.Chandlery.MedKitFullStock, 0, Core.Chandlery.MedKitFullStock);
         }
 
         if (vault.Upgrades is { } up)

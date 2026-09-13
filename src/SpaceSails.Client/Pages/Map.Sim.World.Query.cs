@@ -328,7 +328,11 @@ public partial class Map
             string candidate = Uri.UnescapeDataString(pair["air=".Length..]);
             if (double.TryParse(candidate, NumberStyles.Float, CultureInfo.InvariantCulture, out double secs))
             {
-                _airCheatSeconds = Math.Clamp(secs, 1, SuitAir.TankSeconds);
+                // #325 · Clamped to the LARGEST bottle the suit can ever hold, not to the standard one.
+                // A tester arriving with ?air= on an excursion that fitted an extended tank would otherwise
+                // have been silently capped at half the budget the rest of the game was using — the boot
+                // cheat handing over one captain and the instruments showing another.
+                _airCheatSeconds = Math.Clamp(secs, 1, SuitAir.PlayBudget(extendedTank: true));
             }
         }
         else if (pair.StartsWith("process=", StringComparison.OrdinalIgnoreCase))

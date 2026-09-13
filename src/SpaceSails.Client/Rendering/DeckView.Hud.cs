@@ -208,7 +208,9 @@ public sealed partial class DeckView
         {
             float aw = r * 1.75f, ah = Math.Max(7f, r * 0.085f);
             float ax0 = Math.Max(8f, cx - (aw / 2)), ay0 = airBottom;
-            double frac = Math.Clamp(hud.AirSeconds / SuitAir.TankSeconds, 0, 1);
+            // #325 · Against THIS excursion's budget, never the constant — see AirBudgetSeconds.
+            double airFull = hud.AirBudgetSeconds > 0 ? hud.AirBudgetSeconds : SuitAir.PlayBudget(false);
+            double frac = Math.Clamp(hud.AirSeconds / airFull, 0, 1);
 
             // Colour is the BAND, not the fraction — because the question is never "how full is it" but
             // "can I still get home from here", and those two part company the moment you walk anywhere.

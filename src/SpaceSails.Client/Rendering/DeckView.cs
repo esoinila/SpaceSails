@@ -163,6 +163,13 @@ public sealed partial class DeckView
         // list of key hints, is not a meter. Negative = no tank (aboard, or off a surface entirely).
         double AirSeconds = -1,
         double AirDistanceHome = 0,
+        // #325 · …and what a FULL one holds today, because a haven sells an extended bottle that doubles it
+        // (SuitAir.PlayBudget). The bar drew its fraction against SuitAir.TankSeconds, so a captain who had
+        // bought margin would have watched a full meter for the whole first half of the walk and then seen
+        // it fall twice as fast — the drawn shape reporting something the sim was not doing, which is this
+        // project's third named bug class. Zero or less = fall back to a standard tank (the meter is only
+        // ever drawn for an excursion, which always states its own).
+        double AirBudgetSeconds = 0,
         // #562 · The glyph over the channel bar, so the one bar can say WHICH slow thing you are doing. It
         // was always a shovel, which was fine while digging was the only channel; the tube rearm is not a
         // shovel and reading one there would be the sim saying one thing while a picture says another.

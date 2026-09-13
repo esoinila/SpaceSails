@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace SpaceSails.Core;
@@ -26,13 +26,21 @@ namespace SpaceSails.Core;
 public sealed class SurfaceStream
 {
     private readonly int _radius;
+    private readonly double _playBudgetSeconds;
     private readonly List<SurfaceTiles.Address> _loaded = [];
     private bool _started;
 
-    /// <summary>A stream carrying <paramref name="radius"/> tiles in each direction around the captain.</summary>
-    public SurfaceStream(int radius = SurfaceTiles.ChunkRadius)
+    /// <summary>A stream carrying <paramref name="radius"/> tiles in each direction around the captain.
+    ///
+    /// <para>#325 · <paramref name="playBudgetSeconds"/> is the excursion's tank
+    /// (<see cref="SuitAir.PlayBudget"/>): the lattice stops at the backstop, and the backstop is the
+    /// tether. Held for the life of the stream because a tank is fitted at the START of an excursion and
+    /// cannot change under a captain's boots — a budget that moved mid-walk would evict ground somebody is
+    /// standing on.</para></summary>
+    public SurfaceStream(double playBudgetSeconds, int radius = SurfaceTiles.ChunkRadius)
     {
         _radius = Math.Max(0, radius);
+        _playBudgetSeconds = playBudgetSeconds;
     }
 
     /// <summary>The tile the captain was last known to be standing on.</summary>
@@ -76,7 +84,7 @@ public sealed class SurfaceStream
         _started = true;
         Centre = now;
 
-        IReadOnlyList<SurfaceTiles.Address> want = SurfaceTiles.Chunk(now, _radius);
+        IReadOnlyList<SurfaceTiles.Address> want = SurfaceTiles.Chunk(now, _playBudgetSeconds, _radius);
         if (evicted is not null)
         {
             foreach (SurfaceTiles.Address had in _loaded)

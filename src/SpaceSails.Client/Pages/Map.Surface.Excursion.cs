@@ -16,6 +16,41 @@ public partial class Map
 {
     public sealed class SurfaceExcursion
     {
+        /// <summary>
+        /// #325 · AN EXCURSION IS BUILT KNOWING WHICH BOTTLE IS ON IT, and there is no later moment at which
+        /// it can be told.
+        ///
+        /// <para>A tank is fitted to a suit at the shuttle, and a captain cannot walk back to the ship's
+        /// stores from four thousand du out — so the flag is a CONSTRUCTOR ARGUMENT and the property is
+        /// get-only. That is not decoration: everything about this walk's air is derived from it at
+        /// construction (the budget, the suit's starting charge, and the tile lattice the stream carries),
+        /// and a settable flag would mean a captain could be handed a bigger world with their boots already
+        /// on the ground, with the tiles under them evicted underfoot.</para>
+        ///
+        /// <para>The parameterless overload is the standard bottle, and it exists because a dozen benches
+        /// build an excursion through <c>Activator.CreateInstance(t, nonPublic: true)</c> — a constructor
+        /// whose only parameter is optional is not a parameterless constructor as far as reflection is
+        /// concerned, and every one of them would have thrown.</para>
+        /// </summary>
+        public SurfaceExcursion() : this(extendedTank: false)
+        {
+        }
+
+        /// <param name="extendedTank">Whether a spare bottle from the ship's stores went on this suit.</param>
+        public SurfaceExcursion(bool extendedTank)
+        {
+            ExtendedTank = extendedTank;
+
+            // The suit steps out FULL of what it is actually carrying. Stated here, at the one moment the
+            // bottle becomes a fact about a walk, and read from the one function — an initialiser could not
+            // do it, because an initialiser runs before the flag arrives.
+            AirSeconds = SuitAir.PlayBudget(extendedTank);
+
+            // …and the ground reaches as far as the suit is willing to walk. Same moment, same reason: the
+            // lattice stops at the backstop and the backstop is the tether.
+            Stream = new SurfaceStream(AirBudgetSeconds);
+        }
+
         public required ShuttleStop Stop { get; init; }
         public required string? RestoreHavenId { get; init; }
 
@@ -203,8 +238,38 @@ public partial class Map
         // nobody out here is maintaining a door you levered off its dogs.
         // #564 · THE TANK. Seconds of suit air left, and whether the captain has already been told they
         // crossed the point of no return (the warning is a LINE you cross, said once — not a nag).
-        public double AirSeconds { get; set; } = SuitAir.TankSeconds;
+        //
+        // #325 · AirSeconds STARTS at this excursion's budget, not at the constant, because a fitted
+        // extended tank is fitted before the boots touch regolith and a suit that filled to the standard
+        // mark and then had the bottle "added" would be two tanks arguing. The initialiser reads the same
+        // one function every other reader does — see the constructor, which is the only place it can be
+        // stated, and the only place it is.
+        public double AirSeconds { get; set; }
         public bool AirWarned { get; set; }
+
+        // ── #325 · THE EXTENDED TANK ──────────────────────────────────────────────────────────────────
+        //
+        //  Owner, #325 item 5: "extended tanks / spare bottles as purchasable margin ... the tourist shop
+        //  becomes an outfitter."
+        //
+        //  One bit, set at the SHUTTLE, never afterwards: a tank is fitted to a suit before it goes down,
+        //  and a captain cannot walk back to the ship's stores from four thousand du out. It is taken by the
+        //  constructor and GET-ONLY for exactly that reason — the compiler refuses the bug rather than a
+        //  comment asking nicely.
+        //
+        //  Everything else about the tank is derived from it through the one function, never stored: the
+        //  budget, the lattice's extent, the backstop radius, the meter's full mark and the rack's fill cap
+        //  all ask AirBudgetSeconds. Nothing caches the answer, because a cached copy of a fact is a second
+        //  source of that fact and this file already says so about the huts eight screens up.
+        public bool ExtendedTank { get; }
+
+        /// <summary>#325 · This excursion's play budget — what a FULL suit holds today. The one number the
+        /// geometry, the instruments and the sentences all read.</summary>
+        public double AirBudgetSeconds => SuitAir.PlayBudget(ExtendedTank);
+
+        // #325 · Whether the suit has already said the bottle is on. One-shot per excursion, the same shape
+        // as AirWarned above and for the same reason: the fitting is a FACT said once, not a status line.
+        public bool ExtendedTankNoted { get; set; }
 
         // #573 · The low-air mark is a SEPARATE warning from the point-of-no-return, because in a bounded
         // field the point-of-no-return can never fire at all and the captain would die having been told
@@ -699,7 +764,12 @@ public partial class Map
 
         // #563 · Which tiles are carried right now, and how many times that has changed. Never null: an
         // excursion always stands on ground, even before it has walked a step.
-        public SurfaceStream Stream { get; } = new();
+        //
+        // #325 · Built by the constructor rather than by an initialiser, because it carries the tile lattice
+        // out to the backstop, the backstop is the tether, and the tether is AirBudgetSeconds — which is not
+        // known until the tank flag arrives. An initialiser runs first, so every excursion would have carried
+        // a standard-tank lattice however many bottles it left with.
+        public SurfaceStream Stream { get; }
 
         public List<SurfaceBot> Bots { get; init; } = [];  // #314: sentries carried + deployed this excursion
 

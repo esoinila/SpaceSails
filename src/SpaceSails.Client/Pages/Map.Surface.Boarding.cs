@@ -71,7 +71,15 @@ public partial class Map
         // #394: is this landing the deflection gig's inbound rock? Then the excursion arms the drilling.
         bool isDeflectionRock = _deflection is { } dgig && dgig.RockBodyId == stop.Body.Id;
 
-        var excursion = new SurfaceExcursion
+        // #325 · THE BOTTLE GOES ON HERE, and this is the only place it can. An extended tank is fitted to
+        // a suit before the suit goes down; there is no walking back to the ship's stores from four thousand
+        // du out. FitExtendedTankForExcursion spends one from stores and hands back the one bit the whole
+        // rest of the excursion derives its air from — the budget, the tile lattice's extent, the backstop
+        // radius, the meter's full mark and the shelter rack's fill cap all read SuitAir.PlayBudget off it.
+        // Nothing here is conditional on having one: no tank means a standard walk, exactly as before.
+        bool extendedTankFitted = FitExtendedTankForExcursion();
+
+        var excursion = new SurfaceExcursion(extendedTankFitted)
         {
             Stop = stop,
             RestoreHavenId = _dockedHavenId,

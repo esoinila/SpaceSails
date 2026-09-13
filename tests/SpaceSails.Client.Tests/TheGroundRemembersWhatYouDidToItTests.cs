@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -269,7 +269,7 @@ public class TheGroundRemembersWhatYouDidToItTests
     {
         MethodInfo compose = MapType.GetMethod("TileRegion", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("TileRegion is gone — the composer moved.");
-        return compose.Invoke(null, [body, salt, SurfaceTiles.Chunk(centre)])
+        return compose.Invoke(null, [body, salt, SurfaceTiles.Chunk(centre, SuitAir.PlayBudget(extendedTank: false))])
             ?? throw new InvalidOperationException("the composer handed back nothing");
     }
 

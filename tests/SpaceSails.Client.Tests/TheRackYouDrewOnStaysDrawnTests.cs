@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -58,7 +58,7 @@ public sealed class TheRackYouDrewOnStaysDrawnTests
             List<(float X, float Y, string Kind)> consoles = Consoles(region);
 
             var promised = new List<(double X, double Y)>();
-            foreach (SurfaceTiles.Address a in SurfaceTiles.Chunk(Away))
+            foreach (SurfaceTiles.Address a in SurfaceTiles.Chunk(Away, SuitAir.PlayBudget(extendedTank: false)))
             {
                 if (a == SurfaceTiles.Home)
                 {
@@ -205,7 +205,7 @@ public sealed class TheRackYouDrewOnStaysDrawnTests
         List<(double Bearing, double Range, bool IsHome, bool IsLab, bool IsDead)> shelters =
             [.. beacons.Where(b => !b.IsHome && !b.IsLab)];
 
-        int carried = SurfaceTiles.Chunk(Away).Sum(a => SurfaceTiles.Shelters(Body, site.LayoutSalt, a).Count);
+        int carried = SurfaceTiles.Chunk(Away, SuitAir.PlayBudget(extendedTank: false)).Sum(a => SurfaceTiles.Shelters(Body, site.LayoutSalt, a).Count);
         Assert.True(carried > shelters.Count,
             $"every one of the {carried} shelters the captain is carrying got a ring — that is the fence of "
             + "identical circles this rule exists to prevent.");
@@ -264,7 +264,7 @@ public sealed class TheRackYouDrewOnStaysDrawnTests
         MethodInfo compose = typeof(Pages.Map)
             .GetMethod("TileRegion", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("TileRegion is gone — the composer moved.");
-        return compose.Invoke(null, [body, salt, SurfaceTiles.Chunk(centre)])!;
+        return compose.Invoke(null, [body, salt, SurfaceTiles.Chunk(centre, SuitAir.PlayBudget(extendedTank: false))])!;
     }
 
     private static List<(float X, float Y, string Kind)> Consoles(object region)

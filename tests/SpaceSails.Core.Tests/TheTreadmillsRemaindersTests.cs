@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Core;
@@ -56,7 +56,7 @@ public class TheTreadmillsRemaindersTests
     [Fact]
     public void TheBackstop_SaysItsLineOnceAndOnlyPastTheRadius()
     {
-        double r = SurfaceTiles.BackstopRadiusDu;
+        double r = SurfaceTiles.BackstopRadiusDu(SuitAir.PlayBudget(extendedTank: false));
         (double cx, double cy) = SurfaceTiles.TubeMouth();
 
         foreach ((string body, string salt) in Sites().Take(8))
@@ -73,7 +73,7 @@ public class TheTreadmillsRemaindersTests
                 // that re-arms itself on the way back in.
                 for (double d = 0.0; d <= r * 1.2; d += 1.0)
                 {
-                    if (voice.Step(body, salt, cx + (ux * d), cy + (uy * d)).Line is not null)
+                    if (voice.Step(body, salt, cx + (ux * d), cy + (uy * d), SuitAir.PlayBudget(extendedTank: false)).Line is not null)
                     {
                         said++;
                         firstAt = firstAt < 0 ? d : firstAt;
@@ -81,7 +81,7 @@ public class TheTreadmillsRemaindersTests
                 }
                 for (double d = r * 1.2; d >= 0.0; d -= 1.0)
                 {
-                    if (voice.Step(body, salt, cx + (ux * d), cy + (uy * d)).Line is not null)
+                    if (voice.Step(body, salt, cx + (ux * d), cy + (uy * d), SuitAir.PlayBudget(extendedTank: false)).Line is not null)
                     {
                         said++;
                     }
@@ -103,7 +103,7 @@ public class TheTreadmillsRemaindersTests
     [Fact]
     public void TheBackstop_IsSilentOnEveryWalkAnybodyActuallyTakes()
     {
-        double reach = SurfaceTiles.BackstopRadiusDu * (1.0 - SurfaceEdge.BackstopWanderFraction) - 1.0;
+        double reach = SurfaceTiles.BackstopRadiusDu(SuitAir.PlayBudget(extendedTank: false)) * (1.0 - SurfaceEdge.BackstopWanderFraction) - 1.0;
         (double cx, double cy) = SurfaceTiles.TubeMouth();
 
         foreach ((string body, string salt) in Sites())
@@ -115,7 +115,7 @@ public class TheTreadmillsRemaindersTests
                 for (double d = 0.0; d <= reach; d += 25.0)
                 {
                     SurfaceEdge.BackstopVoice.Refusal step =
-                        voice.Step(body, salt, cx + (Math.Cos(bearing) * d), cy + (Math.Sin(bearing) * d));
+                        voice.Step(body, salt, cx + (Math.Cos(bearing) * d), cy + (Math.Sin(bearing) * d), SuitAir.PlayBudget(extendedTank: false));
                     Assert.True(step.Line is null && !step.Beyond,
                         $"{body}/{salt}: the world declined a step {d:F0} du out, which is ground a captain " +
                         "walks. The backstop is meant to be a limit nobody meets.");
@@ -144,10 +144,10 @@ public class TheTreadmillsRemaindersTests
 
         // And it is what the boundary actually hands back, rather than a constant nobody says.
         (double cx, double cy) = SurfaceTiles.TubeMouth();
-        double far = SurfaceTiles.BackstopRadiusDu * 1.3;
+        double far = SurfaceTiles.BackstopRadiusDu(SuitAir.PlayBudget(extendedTank: false)) * 1.3;
         Assert.Equal(
             SuitAir.BackstopRefusal,
-            new SurfaceEdge.BackstopVoice().Step("phobos", "", cx + far, cy).Line);
+            new SurfaceEdge.BackstopVoice().Step("phobos", "", cx + far, cy, SuitAir.PlayBudget(extendedTank: false)).Line);
     }
 
     // ── REMAINDER 2 · THE HUTS SURVIVE THE SHUTTLE ──────────────────────────────────────────────────────

@@ -50,6 +50,70 @@ public static class SuitAir
     /// out first, and the tank is what makes the far end of it a decision.</para></summary>
     public const double TankSeconds = 1200.0;
 
+    // ── #325 · THE EXTENDED TANK, AND WHY THE CONSTANT ABOVE IS NO LONGER THE ANSWER ──────────────────────
+    //
+    //  Owner, #325 item 5: "The kiosk finally sells something load-bearing: extended tanks / spare bottles
+    //  as purchasable margin ... the tourist shop becomes an outfitter."
+    //
+    //  A bottle that only moves a number on a gauge is not margin, it is decoration. What a captain actually
+    //  buys is a bigger WORLD for one excursion: the ground reaches further, the turn-back point is further
+    //  out, and the suit refuses the step further out — because every one of those is the same arithmetic,
+    //  tank seconds against a walking pace, and always has been.
+    //
+    //  Which is exactly why TankSeconds may not be read directly any more. Before this, SIX places in src/
+    //  multiplied or divided by the constant to answer "how big is this excursion" — the backstop radius,
+    //  the tile lattice's own extent, the meter's full mark, the shelter rack's fill cap, its gauge line and
+    //  the boot cheat's clamp. Fitting a tank and leaving any one of them on the constant is this project's
+    //  third named bug class with a bottle in its hand: the sim doing one thing while a drawn shape or a
+    //  sentence reports another. A captain would have walked out past the fence with air to spare and been
+    //  told by the suit that the tank does not reach the tube — which it now does.
+    //
+    //  So PlayBudget is the ONE function, it takes the excursion's own fact, and the guard for it is a
+    //  source sweep (TheChandleryTests) that fails on any direct reader of TankSeconds outside this file.
+
+    /// <summary>#325 · What an extended tank multiplies the excursion's play budget by — and, because a
+    /// chandlery prices what it sells rather than inventing a figure, what the haven charges for one in
+    /// rounds at its own bar (<see cref="Chandlery.ExtendedTankPrice"/>). One number, both meanings: the
+    /// day somebody re-tunes the bottle, the price moves with it and nobody has to remember.
+    ///
+    /// <para><b>Twice, and not more.</b> Fable's line for the fitting says <i>"twice the walk, and the walk
+    /// back is still half"</i> — the second half of that sentence is the law (<see cref="ReserveFactor"/> is
+    /// untouched, so the turn-back point stays where the fiction says it is, just further out), and the
+    /// first half is this.</para></summary>
+    public const int ExtendedTankFactor = 2;
+
+    /// <summary>
+    /// #325 · THE EXCURSION'S PLAY BUDGET — the one function anything that wants to know how much air this
+    /// walk is worth must ask. Never <see cref="TankSeconds"/>, which is only ever the STANDARD bottle.
+    ///
+    /// <para>The reserve is deliberately NOT in here. <see cref="ReserveSeconds"/> is the EMU's separate
+    /// secondary pack — half an hour that exists to get you home — and a chandlery does not sell you a
+    /// bigger emergency. Buying margin must not quietly buy a longer grace period as well, or the one
+    /// honest half-hour in the game becomes a function of your purse.</para>
+    /// </summary>
+    /// <para><b>What deliberately stays on the standard bottle, inside this file.</b> Five readers, and
+    /// every one of them on purpose:</para>
+    /// <list type="bullet">
+    /// <item><see cref="ReserveSeconds"/> — the secondary pack is not for sale; see the paragraph above.
+    /// </item>
+    /// <item><see cref="SuitClock"/> — the play-to-fiction conversion, which is a RATE rather than a size.
+    /// A full extended bottle reads 16h00 through it, which is the honest thing for a suit carrying twice
+    /// the air.</item>
+    /// <item><see cref="BandFor"/>'s CRITICAL threshold and <see cref="RunningLow"/>'s low mark — both are
+    /// an ABSOLUTE quantity of air remaining, and ninety-six seconds left is ninety-six seconds left
+    /// whichever bottle it came out of. Scaling them would have made a bought tank quieter as well as
+    /// bigger, which is the one thing #564's "air must never be a silent timer" forbids.</item>
+    /// <item><see cref="CostOfTask"/> — a job takes the air a job takes. Digging a hole does not get cheaper
+    /// because you are carrying more.</item>
+    /// </list>
+    /// <param name="extendedTank">Whether the excursion left the ship with a fitted extended tank.</param>
+    public static double PlayBudget(bool extendedTank) =>
+        TankSeconds * (extendedTank ? ExtendedTankFactor : 1);
+
+    /// <summary>Everything the suit carries on THIS excursion, primary and reserve, in play-seconds — the
+    /// budget-aware twin of <see cref="FullSeconds"/>.</summary>
+    public static double FullSecondsWith(bool extendedTank) => PlayBudget(extendedTank) + ReserveSeconds;
+
     /// <summary>#573 · WHAT THE SUIT SAYS IT HOLDS, in hours — the figure a captain reads, as opposed to the
     /// budget the game spends.
     ///
