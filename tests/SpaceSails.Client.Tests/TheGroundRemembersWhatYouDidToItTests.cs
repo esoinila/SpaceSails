@@ -102,10 +102,14 @@ public class TheGroundRemembersWhatYouDidToItTests
     {
         // ONE WRITER. Both guns come through AHuskFallsAt, and nothing else in the client builds a husk row:
         // a second writer is a second place to forget the ledger, which is this bug exactly.
-        foreach (string file in new[] { "Map.Surface.Reevers.Sentries.cs", "Map.SweepTeam.cs" })
+        // #251 · READ AS SUBJECTS, NOT AS FILES. The second row is a DoesNotContain over a whole gun's
+        // source, and the sweep team is four partials now — pointing that row at one of them would not turn
+        // it red, it would quietly stop asking about the other three, which is this repo's fifth bug class
+        // wearing a tidy diff. PagesFamily takes a glob, and an exact filename is a family of one.
+        foreach (string file in new[] { "Map.Surface.Reevers.Sentries.cs", "Map.SweepTeam*.cs" })
         {
-            Assert.Contains("AHuskFallsAt(ex,", Pages(file), StringComparison.Ordinal);
-            Assert.DoesNotContain(".Husks.Add(", Pages(file), StringComparison.Ordinal);
+            Assert.Contains("AHuskFallsAt(ex,", MapMarkup.PagesFamily(file), StringComparison.Ordinal);
+            Assert.DoesNotContain(".Husks.Add(", MapMarkup.PagesFamily(file), StringComparison.Ordinal);
         }
 
         string tiles = Pages("Map.Surface.Tiles.cs");
