@@ -1,10 +1,10 @@
-# Test links — the 2026-09-12/13 night run (PRs #1184–#1192)
+# Test links — the 2026-09-12/13 night run (PRs #1184–#1194)
 
 *Companion to [`testing-guide.md`](testing-guide.md) Appendix A. Every link boots the live build at
 `https://esoinila.github.io/SpaceSails-play/map?…` straight into the situation, using only cheats that
 exist in the query whitelist. Read Appendix A for what each key does.*
 
-The run: **nine PRs, one night.** Six are play you can reach from a URL; two are named remainders of
+The run: **ten PRs, one night.** Seven are play you can reach from a URL; two are named remainders of
 things that shipped earlier in the week; one (#1189) is an instrument rather than a scene. **No drawn
 frame changed anywhere in this run** — the 66 phase hashes and the 32 seat fingerprints reported *zero
 moved* on every single PR — so §2 is the half that must look exactly the same.
@@ -15,6 +15,7 @@ moved* on every single PR — so §2 is the half that must look exactly the same
 
 | what | link | what to look for |
 | --- | --- | --- |
+| **The moon is a safety-deposit box** (#319 slice 1, PR #1194) — *"Let's add another options to hide onto the planet / site. Anything from the inventory that is light enough… hiding evidence of our piracy without losing it. Maybe we steal something too important to risk carrying it around, like a superchip prototype etc."* (owner, live 2026-07-18) | `/map?fetch=picked-chip&dock=the-space-bar` — the roadster's **data chip already in the pocket** — then walk to the **shuttle-bay door** and open the boarding panel for Phobos | the panel that packs the chest grows one row: **🎒 BURY A THING FROM THE SATCHEL**, listing what is light enough in the order it is carried, named by the satchel's own namer. Press to pick (`◉`), **press again to un-pick**. It is **absent**, not greyed, on an empty-handed captain. Then ride down and press `[E]` on bare regolith: the **same** `DIG HERE`, the same 2D6, the same ✗, the same return dig — and the register, said once when what goes in is not the chest: *"Not coin this time. Something that is safer in the ground than in the hold."* Dig it back up and it is in your coat again. |
 | **The absence has a shape** (#1063 s2, PR #1184) — a kind of note nothing else in the game files under | `/map?buried=1&land=1` → ride down, find the **maintenance ledger** in the first room searched on the listed bottom, then open 📓 NOTES | **two** entries under that ground, not one. The ledger you carried out, and under a mark you have never seen — **⬚** — the captain's own hand: *"Looked for the paper a raise this size leaves: permit, complaint, invoice. Nothing under either story. The absence has a shape, and I have measured it."* Written **once per ground**; the ledger's own entry is untouched beside it. On THREADS it stacks under the site's operator. |
 | **Sealed ≠ full** (#1063 s2, PR #1184) — **no cheat, on purpose** | `/map?expedition=1` → take the team down, then force **every** `⚙ SEALED DOOR` on the ground | one leaf — the same one on that moon every time — opens on a room with **nothing in it**: no landmark, no `🗝 DISCOVERY CACHE`, no credits, no name, and the walls and bounds exactly as they were. **No reveal cue, no card, no ring on the fan.** Said once: *"Sealed, and empty. A room somebody closed because there was nothing in it, which is a reason."* Once per captain-lifetime — force every door on the next three sites and all of them pay. |
 | **The worst page comes out** (#798 item 2, PR #1185) | `/map?spread=1` (seated at a cabinet top, three finds in the sleeve) | every **worked, multi-page** paper row now carries a third control between the pen and the shredder. Press it: the document becomes **two rows** — `…, page 3 of 4` and `…, 3 pages of 4`. Said once, at the press: *"One sheet, folded twice, goes where the book goes. What is left is a folder anyone would be bored to find."* A one-sheet paper, an undug one, and an already-split one **draw no control at all** (a verb that does not apply is not a refusal). Stand up and the press refuses out loud. |
@@ -31,8 +32,16 @@ moved* on every single PR — so §2 is the half that must look exactly the same
 | **The tourist shop becomes an outfitter** (#325/#332, PR #1191) | `/map?dock=the-space-bar&credits=5000` → the berth's services column | two new cards beside the pump and the armory. `🫁 EXTENDED TANK` — **80 cr** here, 100 at The Deep (it is `RoundPrice × 2`, per house). They stack; one is fitted at the start of the next excursion and says so once: *"Extended tank fitted. The arithmetic is kinder today: twice the walk, and the walk back is still half."* Then `/map?dock=the-space-bar&land=1` — the ground itself reaches twice as far (the backstop, the wavy edge, the air meter's full mark) and **the reserve is untouched**. |
 | **The refill the cabinet promised since #343** (#332, PR #1191) | `/map?nerve=1&dock=the-space-bar&credits=5000` → med bay, swallow the cabinet empty, then the berth's services column | the empty line no longer names the backlog: *"MED KIT: the pill cabinet is empty — the calming stock is spent. Any haven's chandlery sells the refill."* `💊 MED-KIT REFILL` charges **one glass per pill missing** (36–48 cr for a full cabinet), so swallowing one costs one. |
 
-**In flight, not merged:** **#319 slice 1 — *bury anything light*** (the moon as a safety-deposit box:
-dead drops, evidence, prototypes, geocache escrow). No PR open as this is written.
+**Three mechanical strings changed with #1194 and are flagged for your voice if you want them** (all
+three are plumbing, not prose, so none was written as canon): the bury pulse's noun
+(`Chest buried` → **`In the ground`** when no chest went in), the surface HUD's holding line
+(`CARRYING THE CHEST` → **`SOMETHING TO PUT IN THE GROUND`**), and the recovery tail
+(`1 thing from the satchel back in the satchel` / `…stays down there — no room on you for it.`).
+The manifest **counts and never names** — `1 thing from the satchel` — so a hoard line read over your
+shoulder in a bar is not the one place in the game where burying evidence advertises evidence.
+
+**Still open on #319:** dead-drop messages for a named recipient, the geocache escrow / dark-web sale,
+the NPC-insurance ledger flag, and the counterfeit ✗.
 
 ## 2 · Things that must look exactly the same
 
@@ -49,7 +58,17 @@ shape**, and each row names its own cause:
 | #1185 | `SatchelPanelMarkup.baseline.txt` +18 lines | exactly the split control |
 | #1189 | `NavHudMarkup.baseline.txt` +71 lines, **zero deletions** | the two new surfaces only; nothing existing moved |
 | #1192 | `TrackingPostMarkup.baseline.txt` +2 blocks | the hold line at its two render sites |
-| #1187, #1188 | **nothing** | no ledger, no baseline, no razor change |
+| #1187, #1188, #1194 | **nothing** | no ledger, no baseline, no razor change (#1194's row is inside `BoardTargetCard`, which no baseline covers) |
+
+**And the twelve readers #1194 audited must each be exactly as blind as they were.** *Nothing was
+taught anything and no flag was added* — a buried row simply leaves the one `_satchel` list, so it is
+absent from all twelve at once. If a buried thing is still visible in any of these, that is the bug:
+
+`BinnableFinds` (🗑) · `SpreadableFinds` (✍) · `CompromisingChip.InThePocket` (the blackmail client and
+the fence) · `CarryingABlackOpsKey` (the BUSTED wake) · `Inspectorate.Held` · `AuthorityCardIds` (the
+lift) · `PatrolBeat.BadgeHeld` (a guard's beat) · `CanteenTable.Cover.Held` (the mess-hall cover) ·
+`Wallet` (a locked door) · `TableShowables` (a bar table) · `CountOf(Rounds)` (a hand-load) ·
+`BuildVault` → `SatchelSection` (the save).
 
 So a difference anywhere below is a bug, not a redesign. A quick once-over:
 
@@ -82,3 +101,10 @@ So a difference anywhere below is a bug, not a redesign. A quick once-over:
 - **#325/#332** — **a haven added without a bar would have no chandlery.** True of no haven today
   (7 interiors, 7 keeps); either every haven gets a keep or the fallback rate wants naming.
 - **#1149** — a haven's chandlery row for a berth with no keep would want a house voice, if you want it.
+- **#319** — the weight threshold is **1 and refuses nothing today**, deliberately: everything a captain
+  can walk with costs one place or none, so the rule bites the day something costs two rather than
+  inviting a second weight scale now. **One thing at a time** (the cache's field is a list, so this
+  widens later without touching the vault); the pick is made **at the shuttle door**, not at the shovel,
+  and it is a pointer — four rounds picked and two fired bury two. A pocket with no room on the way back
+  up **leaves it in the ground at the same ✗** rather than destroying it. Only a chest in the sling
+  spends the purse. And the three mechanical strings above, if you want them in your own voice.
