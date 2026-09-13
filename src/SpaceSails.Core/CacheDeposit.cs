@@ -42,7 +42,13 @@ namespace SpaceSails.Core;
 /// </summary>
 public static class CacheDeposit
 {
-    // ── THE WEIGHT RULE ──────────────────────────────────────────────────────────────────────────────
+    // ── THE WEIGHT RULE BEGINS ───────────────────────────────────────────────────────────────────────
+    //
+    // TheMoonIsASafetyDepositBoxTests SLICES THE SOURCE BETWEEN THESE TWO FENCES and forbids the word
+    // `Kind` inside them. That is the whole guard against this becoming a list of kinds, so the fences are
+    // load-bearing: everything that DECIDES how heavy a thing is lives between them, and everything that
+    // merely identifies a row lives below. Do not put a switch in here, and do not move the fence to make
+    // room for one.
 
     /// <summary>#319 · <b>LIGHT ENOUGH TO CARRY DOWN THE TUBE</b>, in the satchel's own units: the most a
     /// thing may cost the compartment it rides in (<see cref="Satchel.SpaceCostOf"/>) and still go in a hole.
@@ -77,6 +83,12 @@ public static class CacheDeposit
         }
         return rows;
     }
+
+    // ── THE WEIGHT RULE ENDS ─────────────────────────────────────────────────────────────────────────
+    //
+    // Below this line nothing decides how heavy anything is. What follows asks WHICH ROW a pick is, which is
+    // the satchel's own identity for a row (kind AND id, exactly as Satchel.Remove matches one) and has
+    // nothing to do with weight.
 
     /// <summary>#319 · Is this thing still in that pocket? Asked at the shovel, because the chooser's pick
     /// was made at the shuttle door and a whole excursion happens in between — a paper can be read and
