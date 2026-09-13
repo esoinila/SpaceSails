@@ -77,7 +77,12 @@ public sealed class TheVoidFinallyHasALaneTests
     [Fact]
     public void TheWatchRunsOnTheWholeDayLoop()
     {
-        string combat = Pages("Map.Combat.cs");
+        // #251 · RE-PATHED, and to a FAMILY rather than to one file of it. The whole-day loop is
+        // `UpdateEncounters`, which the cut sent to `Map.Combat.Pursuit.cs`; naming that one file would be
+        // right today and blind the day the pursuit grows a second partial. The glob is the loop's own
+        // subject and nothing else — widening to `Map.Combat*.cs` would let these two calls pass from the
+        // busted card or the fire-control panel, which is not what "the right loop" claims.
+        string combat = MapMarkup.PagesFamily("Map.Combat.Pursuit*.cs");
         Assert.Contains("RunCacheDiscoveryWatch();", combat, StringComparison.Ordinal);   // the right loop
         Assert.Contains("RunTheVoidWatch();", combat, StringComparison.Ordinal);
     }
