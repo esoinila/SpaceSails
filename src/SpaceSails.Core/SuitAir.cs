@@ -91,6 +91,21 @@ public static class SuitAir
     /// bigger emergency. Buying margin must not quietly buy a longer grace period as well, or the one
     /// honest half-hour in the game becomes a function of your purse.</para>
     /// </summary>
+    /// <para><b>What deliberately stays on the standard bottle, inside this file.</b> Five readers, and
+    /// every one of them on purpose:</para>
+    /// <list type="bullet">
+    /// <item><see cref="ReserveSeconds"/> — the secondary pack is not for sale; see the paragraph above.
+    /// </item>
+    /// <item><see cref="SuitClock"/> — the play-to-fiction conversion, which is a RATE rather than a size.
+    /// A full extended bottle reads 16h00 through it, which is the honest thing for a suit carrying twice
+    /// the air.</item>
+    /// <item><see cref="BandFor"/>'s CRITICAL threshold and <see cref="RunningLow"/>'s low mark — both are
+    /// an ABSOLUTE quantity of air remaining, and ninety-six seconds left is ninety-six seconds left
+    /// whichever bottle it came out of. Scaling them would have made a bought tank quieter as well as
+    /// bigger, which is the one thing #564's "air must never be a silent timer" forbids.</item>
+    /// <item><see cref="CostOfTask"/> — a job takes the air a job takes. Digging a hole does not get cheaper
+    /// because you are carrying more.</item>
+    /// </list>
     /// <param name="extendedTank">Whether the excursion left the ship with a fitted extended tank.</param>
     public static double PlayBudget(bool extendedTank) =>
         TankSeconds * (extendedTank ? ExtendedTankFactor : 1);
