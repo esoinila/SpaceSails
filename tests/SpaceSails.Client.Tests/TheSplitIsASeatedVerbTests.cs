@@ -109,7 +109,11 @@ public sealed class TheSplitIsASeatedVerbTests
                             ((HashSet<string>)Field(map, "_workedUp")!).Add($"{kind}:{id}");
                         }
 
-                        bool want = kind == Satchel.Kind.Paper
+                        // #798 item 2, second cut · EVIDENCE, not paper alone. The clause moved to
+                        // RipAndBin.IsEvidence in Core — the pair the field book has a gist for — so this
+                        // matrix asks the same question the shipped predicate asks rather than a copy of it
+                        // somebody has to remember the day a third kind of document arrives.
+                        bool want = RipAndBin.IsEvidence(kind)
                             && dug
                             && PageGranularity.PagesIn(id) >= 2
                             && PageGranularity.PartOf(useId) == PageGranularity.Part.Whole;
@@ -236,6 +240,120 @@ public sealed class TheSplitIsASeatedVerbTests
     }
 
     /// <summary>
+    /// #798 item 2, second cut · A FILE ON SOMEBODY COMES APART THE SAME WAY, AND THE TWO ROWS CAN BE TOLD
+    /// APART.
+    ///
+    /// <para>Owner: <i>"a compromising FILE is not uniform… rip out the most compromising evidence and toss
+    /// the rest inconspicuously."</i> A dossier is the object that sentence is about, and #1185 left it out
+    /// for one reason: a file on somebody has no title, so the page citation had nothing to sit after. The
+    /// answer is that a citation needs a HEADING and not a name — this row has carried one since the kind
+    /// existed — so the whole verb is driven again on <see cref="Satchel.Kind.Dirt"/> and every claim the
+    /// paper press makes is re-made here, including the one the widening was blocked on.</para>
+    ///
+    /// <para><b>Proven RED</b> twice. Reverting <c>PageGranularity.CanSplit</c>'s first clause to
+    /// <c>kind == Satchel.Kind.Paper</c> — the shipped behaviour this cut widens — fails at the press:</para>
+    /// <code>
+    /// the split is not offered on a dug multi-page file on somebody — the widening is not there.
+    /// </code>
+    /// <para>…and script-deleting <c>Core.PageGranularity.RowCitation(item.Id)</c> from the Dirt arm of
+    /// <c>SatchelLabel</c> fails on the rows:</para>
+    /// <code>
+    /// the torn sheet and the folder are the same row: "🗃 a file on somebody".
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void A_FILE_ON_SOMEBODY_ComesApartAndItsTwoRowsAreNotTheSameRow()
+    {
+        (Pages.Map map, Satchel.Item dossier) = SeatedWithADugDocument(Satchel.Kind.Dirt);
+        IReadOnlyList<string> bookBefore = TheBook(map);
+
+        Assert.True(RipAndBin.IsEvidence(dossier.Kind),
+            "a file on somebody is not evidence in this build — the bench cannot tell this law's pass from "
+            + "its fail.");
+        Assert.True((bool)Invoke(map, "SplitIsOffered", dossier)!,
+            "the split is not offered on a dug multi-page file on somebody — the widening is not there.");
+
+        Invoke(map, "SplitTheDocument", dossier);
+
+        var sheet = new Satchel.Item(Satchel.Kind.Dirt, PageGranularity.SheetIdOf(dossier.Id));
+        var folder = new Satchel.Item(Satchel.Kind.Dirt, PageGranularity.BulkIdOf(dossier.Id));
+        IReadOnlyList<Satchel.Item> sleeve = Sleeve(map);
+
+        Assert.DoesNotContain(sleeve, i => i.Id == dossier.Id);
+        Assert.Contains(sleeve, i => i.Id == sheet.Id && i.Kind == Satchel.Kind.Dirt);
+        Assert.Contains(sleeve, i => i.Id == folder.Id && i.Kind == Satchel.Kind.Dirt);
+
+        // The book does not move, and both halves are still in it — the same two disciplines the paper
+        // press is held to, because the register keys on the DOCUMENT and never on the row.
+        Assert.Equal(bookBefore, TheBook(map));
+        Assert.True((bool)Invoke(map, "AlreadyWrittenUp", sheet)!);
+        Assert.True((bool)Invoke(map, "AlreadyWrittenUp", folder)!);
+        Assert.Equal(RipAndBin.AlreadyInTheBookFlag, Ask<string>(map, "BinRowFlag", folder));
+        Assert.Equal(PageGranularity.SplitLine, Field(map, "_satchelOutcome"));
+
+        // ── THE THING THE WIDENING WAS BLOCKED ON ────────────────────────────────────────────────────
+        //
+        // Two rows off one dossier, and a captain has to be able to say which is the page and which is the
+        // rest. There is no title here to hang that on — so it hangs on the heading, which is the only
+        // thing a file on somebody has ever said about itself.
+        string sheetRow = Ask<string>(map, "SatchelLabel", sheet);
+        string folderRow = Ask<string>(map, "SatchelLabel", folder);
+        string wholeRow = Ask<string>(map, "SatchelLabel", dossier);
+
+        Assert.True(sheetRow != folderRow,
+            $"the torn sheet and the folder are the same row: \"{sheetRow}\".");
+        Assert.EndsWith(PageGranularity.RowCitation(sheet.Id), sheetRow, StringComparison.Ordinal);
+        Assert.EndsWith(PageGranularity.RowCitation(folder.Id), folderRow, StringComparison.Ordinal);
+        Assert.Contains($"page {PageGranularity.WorstPageOf(dossier.Id)}", sheetRow, StringComparison.Ordinal);
+        Assert.Contains($"{PageGranularity.BulkPagesIn(dossier.Id)} pages", folderRow,
+            StringComparison.Ordinal);
+
+        // …and the heading itself is untouched. Both rows still start with the sentence the game has always
+        // printed on a dossier, so the citation is an addition and never a second name — and a file that
+        // never came apart wears nothing at all.
+        Assert.StartsWith(wholeRow, sheetRow, StringComparison.Ordinal);
+        Assert.StartsWith(wholeRow, folderRow, StringComparison.Ordinal);
+        Assert.Equal(wholeRow, Ask<string>(map, "SatchelLabel",
+            new Satchel.Item(Satchel.Kind.Dirt, AOneSheetPaper())));
+    }
+
+    /// <summary>
+    /// #798 item 2, second cut · THE SPLIT MAKES ROOM, DRIVEN — the sleeve is lighter after it than before.
+    ///
+    /// <para>The whole of the second remainder, stated where a captain meets it rather than as an arithmetic
+    /// in Core: one document comes apart into two rows, and the sleeve's own figure does not move — because
+    /// the folder takes the space the document had and the page folded twice takes none
+    /// (<see cref="Satchel.FoldedSheetSpace"/>). Then the folder goes in a bin and the captain is carrying
+    /// the one thing that mattered for nothing at all.</para>
+    ///
+    /// <para><b>Proven RED</b> by script-changing <c>Satchel.SpaceCostOf</c> to <c>=> 1</c> — the arithmetic
+    /// as #1185 shipped it:</para>
+    /// <code>
+    /// the sleeve got HEAVIER by taking a file apart: 1 before, 2 after.
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void THE_SPLIT_LeavesTheSleeveNoHeavierThanTheDocumentDid()
+    {
+        (Pages.Map map, Satchel.Item paper) = SeatedWithADugDocument();
+        int before = Satchel.Used(Sleeve(map), Satchel.Compartment.Sleeve);
+
+        Invoke(map, "SplitTheDocument", paper);
+
+        int after = Satchel.Used(Sleeve(map), Satchel.Compartment.Sleeve);
+        Assert.True(Sleeve(map).Count == 2,
+            $"the press left {Sleeve(map).Count} row(s) in the sleeve — this guard is weighing the wrong "
+            + "world.");
+        Assert.True(after == before,
+            $"the sleeve got heavier by taking a file apart: {before} before, {after} after.");
+
+        // …and what the captain keeps once the folder is gone costs nothing at all, which is the sentence
+        // the owner wrote: small, hideable.
+        var sheet = new Satchel.Item(paper.Kind, PageGranularity.SheetIdOf(paper.Id));
+        Assert.Equal(Satchel.FoldedSheetSpace, Satchel.Used([sheet], Satchel.Compartment.Sleeve));
+    }
+
+    /// <summary>
     /// A DOCUMENT COMES APART ONCE, DRIVEN — press it again and nothing happens to anything.
     ///
     /// <para>The law is Core's and needs no state to hold, which is exactly the claim worth driving: after
@@ -290,26 +408,39 @@ public sealed class TheSplitIsASeatedVerbTests
     {
         (string body, int level, RipAndBin.Bin bin) = ABinSomewhere();
         string document = AMultiPagePaper();
+        int kinds = 0;
 
-        // The folder, binned.
-        var bulk = new Satchel.Item(Satchel.Kind.Paper, PageGranularity.BulkIdOf(document));
-        Pages.Map folder = AtTheBin(body, level, bin, bulk);
-        Invoke(folder, "RipItUp", bulk);
+        // #798 item 2, second cut · Over BOTH kinds of document. The bin is kind-blind — the note is filed
+        // off the id's own mark (PageGranularity.IsTheBulk) — and that is precisely the claim worth driving
+        // now that a dossier can come apart: nothing in the disposal had to learn a second kind.
+        foreach (Satchel.Kind kind in Enum.GetValues<Satchel.Kind>().Where(RipAndBin.IsEvidence))
+        {
+            kinds++;
 
-        Assert.Empty(Sleeve(folder));
-        Assert.Contains(TheBook(folder),
-            line => line.Contains(PageGranularity.BulkDisposalClause, StringComparison.Ordinal));
+            // The folder, binned.
+            var bulk = new Satchel.Item(kind, PageGranularity.BulkIdOf(document));
+            Pages.Map folder = AtTheBin(body, level, bin, bulk);
+            Invoke(folder, "RipItUp", bulk);
 
-        // …and the same bucket, handed the whole document, files the other clause. Both halves, because a
-        // note that read "nothing much" for everything would pass the first assertion and mean nothing.
-        var whole = new Satchel.Item(Satchel.Kind.Paper, document);
-        Pages.Map entire = AtTheBin(body, level, bin, whole);
-        Invoke(entire, "RipItUp", whole);
+            Assert.Empty(Sleeve(folder));
+            Assert.Contains(TheBook(folder),
+                line => line.Contains(PageGranularity.BulkDisposalClause, StringComparison.Ordinal));
 
-        Assert.DoesNotContain(TheBook(entire),
-            line => line.Contains(PageGranularity.BulkDisposalClause, StringComparison.Ordinal));
-        Assert.Contains(TheBook(entire),
-            line => line.Contains("Nothing of it was left on the table", StringComparison.Ordinal));
+            // …and the same bucket, handed the whole document, files the other clause. Both halves, because
+            // a note that read "nothing much" for everything would pass the first assertion and mean
+            // nothing.
+            var whole = new Satchel.Item(kind, document);
+            Pages.Map entire = AtTheBin(body, level, bin, whole);
+            Invoke(entire, "RipItUp", whole);
+
+            Assert.DoesNotContain(TheBook(entire),
+                line => line.Contains(PageGranularity.BulkDisposalClause, StringComparison.Ordinal));
+            Assert.Contains(TheBook(entire),
+                line => line.Contains("Nothing of it was left on the table", StringComparison.Ordinal));
+        }
+
+        Assert.True(kinds >= 2,
+            $"only {kinds} kind(s) of document were binned — this sweep claims to cover both and does not.");
     }
 
     // ── (d) THE CONTROL ON THE PAGE ──────────────────────────────────────────────────────────────────
@@ -380,10 +511,14 @@ public sealed class TheSplitIsASeatedVerbTests
     /// writes the register by hand, so the precondition these guards rest on is the one a player
     /// produces.</para>
     /// </summary>
-    private static (Pages.Map Map, Satchel.Item Paper) SeatedWithADugDocument()
+    /// <param name="kind">#798 item 2, second cut · Which kind of document is on the table. A file on
+    /// somebody is dug through the same far end, keyed into the same register and spread on the same page,
+    /// so the bench takes a kind rather than growing a second copy of itself.</param>
+    private static (Pages.Map Map, Satchel.Item Paper) SeatedWithADugDocument(
+        Satchel.Kind kind = Satchel.Kind.Paper)
     {
         Pages.Map map = SatAtATopInTheBar();
-        var paper = new Satchel.Item(Satchel.Kind.Paper, AMultiPagePaper());
+        var paper = new Satchel.Item(kind, AMultiPagePaper());
         Set(map, "_satchel", new List<Satchel.Item> { paper });
         Set(map, "_showSatchel", true);
 

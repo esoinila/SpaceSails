@@ -33,6 +33,37 @@ public sealed class ThePageWorthTearingOutTests
     private static IEnumerable<string> ManyPapers() =>
         Enumerable.Range(0, 240).Select(i => $"hive:doc:pages-{i}");
 
+    /// <summary>#798 item 2, second cut · …and a net of dossier-shaped ids, out of the same generator's
+    /// grammar. Every fact about a document here is rolled off its id and an id is an opaque string, so this
+    /// net proves nothing new about the DICE — what it proves is that the laws below are stated over the ids
+    /// a <see cref="Satchel.Kind.Dirt"/> row actually wears rather than over paper's alone.</summary>
+    private static IEnumerable<string> ManyDossiers() =>
+        Enumerable.Range(0, 240).Select(i => $"hive:dirt:pages-{i}");
+
+    /// <summary>
+    /// #798 item 2, second cut · THE KINDS THAT COME APART — asked of Core, never typed out.
+    ///
+    /// <para>A document, in this game, is whatever <see cref="RipAndBin.IsEvidence"/> says it is: the pair
+    /// the field book has a gist for, the pair the bin's picker offers, and now the pair the scissors are
+    /// live on. Sweeping the enum through that predicate rather than writing <c>Paper, Dirt</c> is what
+    /// makes a third kind of document arriving tomorrow swept by every law in this file without anybody
+    /// remembering to come back here.</para>
+    /// </summary>
+    private static IEnumerable<Satchel.Kind> EvidenceKinds() =>
+        Enum.GetValues<Satchel.Kind>().Where(RipAndBin.IsEvidence);
+
+    /// <summary>Anti-vacuity for every sweep below: a "both kinds" loop over one kind proves half of what it
+    /// claims, and a loop over none passes in silence. Written once and asserted in each sweep.</summary>
+    private static void TheNetHasBothKindsOfDocument()
+    {
+        List<Satchel.Kind> kinds = [.. EvidenceKinds()];
+        Assert.True(kinds.Count >= 2,
+            $"this build calls {kinds.Count} kind(s) evidence — every sweep in this file that claims to "
+            + "cover both kinds of document is being stated over a world with only one of them.");
+        Assert.Contains(Satchel.Kind.Paper, kinds);
+        Assert.Contains(Satchel.Kind.Dirt, kinds);
+    }
+
     // ── (a) A DOCUMENT HAS PAGES, AND THE SAME ONES EVERY TIME ───────────────────────────────────────
 
     /// <summary>
@@ -169,23 +200,32 @@ public sealed class ThePageWorthTearingOutTests
     [Fact]
     public void A_ONE_SHEET_DOCUMENT_IsNeverSplit()
     {
+        TheNetHasBothKindsOfDocument();
         int single = 0, many = 0;
-        foreach (string id in ManyPapers())
-        {
-            bool can = PageGranularity.CanSplit(
-                Satchel.Kind.Paper, id, alreadyInTheBook: true, seatedForTheSpread: true);
 
-            if (PageGranularity.PagesIn(id) == 1)
+        // #798 item 2, second cut · Stated over BOTH kinds of document. A file on somebody is the object the
+        // owner's sentence was actually about, and the page count it is refused on is the same roll off the
+        // same id — so the law is one law and this is one loop, not two guards that could drift apart.
+        foreach (Satchel.Kind kind in EvidenceKinds())
+        {
+            foreach (string id in ManyPapers().Concat(ManyDossiers()))
             {
-                single++;
-                Assert.False(can, $"{id} is one sheet and the game is offering to tear a page out of it.");
-            }
-            else
-            {
-                many++;
-                Assert.True(can,
-                    $"{id} is {PageGranularity.PagesIn(id)} pages, dug, whole and on a table, and the split "
-                    + "is refused anyway.");
+                bool can = PageGranularity.CanSplit(
+                    kind, id, alreadyInTheBook: true, seatedForTheSpread: true);
+
+                if (PageGranularity.PagesIn(id) == 1)
+                {
+                    single++;
+                    Assert.False(can,
+                        $"{kind} {id} is one sheet and the game is offering to tear a page out of it.");
+                }
+                else
+                {
+                    many++;
+                    Assert.True(can,
+                        $"{kind} {id} is {PageGranularity.PagesIn(id)} pages, dug, whole and on a table, and "
+                        + "the split is refused anyway.");
+                }
             }
         }
 
@@ -217,28 +257,32 @@ public sealed class ThePageWorthTearingOutTests
     [Fact]
     public void THE_SPLIT_IsOfferedOnlyWhereTheCaseMayBeSpread()
     {
-        string id = ManyPapers().First(PageGranularity.IsMultiPage);
+        TheNetHasBothKindsOfDocument();
+        string paper = ManyPapers().First(PageGranularity.IsMultiPage);
+        string dossier = ManyDossiers().First(PageGranularity.IsMultiPage);
         int allowed = 0, refused = 0;
 
+        foreach (Satchel.Kind kind in EvidenceKinds())
+        foreach (string id in new[] { paper, dossier })
         foreach (SeatedHud.Seat seat in Enum.GetValues<SeatedHud.Seat>())
         {
             foreach (bool alone in new[] { true, false })
             {
                 bool maySpread = SeatedSpread.RefusalAt(seat, alone) is null;
                 bool can = PageGranularity.CanSplit(
-                    Satchel.Kind.Paper, id, alreadyInTheBook: true, seatedForTheSpread: maySpread);
+                    kind, id, alreadyInTheBook: true, seatedForTheSpread: maySpread);
 
                 if (maySpread)
                 {
                     allowed++;
-                    Assert.True(can, $"{seat} (alone: {alone}): the case may be spread here and the split is "
-                        + "refused anyway.");
+                    Assert.True(can, $"{kind} {id} at {seat} (alone: {alone}): the case may be spread here "
+                        + "and the split is refused anyway.");
                 }
                 else
                 {
                     refused++;
-                    Assert.False(can, $"{seat} (alone: {alone}): the case cannot be spread at this seat and "
-                        + "the split is offered anyway.");
+                    Assert.False(can, $"{kind} {id} at {seat} (alone: {alone}): the case cannot be spread at "
+                        + "this seat and the split is offered anyway.");
                 }
             }
         }
@@ -265,14 +309,19 @@ public sealed class ThePageWorthTearingOutTests
     [Fact]
     public void A_DOCUMENT_NOBODY_HAS_DUG_IsNeverTakenApart()
     {
+        TheNetHasBothKindsOfDocument();
         int tried = 0;
-        foreach (string id in ManyPapers().Where(PageGranularity.IsMultiPage))
+        foreach (Satchel.Kind kind in EvidenceKinds())
         {
-            tried++;
-            Assert.False(
-                PageGranularity.CanSplit(
-                    Satchel.Kind.Paper, id, alreadyInTheBook: false, seatedForTheSpread: true),
-                $"{id}: nothing has been dug out of this document and the split is offered anyway.");
+            foreach (string id in ManyPapers().Concat(ManyDossiers()).Where(PageGranularity.IsMultiPage))
+            {
+                tried++;
+                Assert.False(
+                    PageGranularity.CanSplit(
+                        kind, id, alreadyInTheBook: false, seatedForTheSpread: true),
+                    $"{kind} {id}: nothing has been dug out of this document and the split is offered "
+                    + "anyway.");
+            }
         }
 
         Assert.True(tried > 60, $"only {tried} document(s) were tried — this proves nothing.");
@@ -295,8 +344,9 @@ public sealed class ThePageWorthTearingOutTests
     [Fact]
     public void A_DOCUMENT_ComesApartOnceAndNothingHasToRememberThat()
     {
+        TheNetHasBothKindsOfDocument();
         int tried = 0;
-        foreach (string id in ManyPapers().Where(PageGranularity.IsMultiPage))
+        foreach (string id in ManyPapers().Concat(ManyDossiers()).Where(PageGranularity.IsMultiPage))
         {
             string sheet = PageGranularity.SheetIdOf(id);
             string bulk = PageGranularity.BulkIdOf(id);
@@ -309,31 +359,120 @@ public sealed class ThePageWorthTearingOutTests
             Assert.Equal(id, PageGranularity.SourceOf(bulk));
             Assert.Equal(id, PageGranularity.SourceOf(id));
 
-            Assert.False(
-                PageGranularity.CanSplit(
-                    Satchel.Kind.Paper, sheet, alreadyInTheBook: true, seatedForTheSpread: true),
-                $"{id}: the torn-out sheet can be torn again — a document is coming apart twice.");
-            Assert.False(
-                PageGranularity.CanSplit(
-                    Satchel.Kind.Paper, bulk, alreadyInTheBook: true, seatedForTheSpread: true),
-                $"{id}: the bulk can be split again — a document is coming apart twice.");
+            foreach (Satchel.Kind kind in EvidenceKinds())
+            {
+                Assert.False(
+                    PageGranularity.CanSplit(
+                        kind, sheet, alreadyInTheBook: true, seatedForTheSpread: true),
+                    $"{kind} {id}: the torn-out sheet can be torn again — a document is coming apart twice.");
+                Assert.False(
+                    PageGranularity.CanSplit(
+                        kind, bulk, alreadyInTheBook: true, seatedForTheSpread: true),
+                    $"{kind} {id}: the bulk can be split again — a document is coming apart twice.");
+            }
         }
 
         Assert.True(tried > 60, $"only {tried} document(s) were tried — this proves nothing.");
     }
 
-    /// <summary>A handful of rounds has no pages, and an authority is a door rather than evidence. The kind
-    /// clause, stated over every kind the satchel has rather than over the two somebody remembered.</summary>
+    /// <summary>
+    /// #798 item 2, second cut · ONLY A DOCUMENT COMES APART — and a document is whatever the field book
+    /// has a gist for.
+    ///
+    /// <para>A handful of rounds has no pages and an authority is a door rather than evidence; a file on
+    /// somebody is <i>exactly</i> the multi-page object the owner described (<i>"a compromising FILE is not
+    /// uniform"</i>), and the first cut of this feature left it out for a reason about a missing title
+    /// rather than a reason about the law. So the clause is <see cref="RipAndBin.IsEvidence"/> — the pair
+    /// the book already keeps and the bin already takes — asked of Core rather than restated here, and
+    /// swept over every kind the satchel has rather than over the ones somebody remembered.</para>
+    ///
+    /// <para><b>Proven RED</b> both ways. Reverting <c>CanSplit</c>'s first clause to
+    /// <c>kind == Satchel.Kind.Paper</c> — the shipped behaviour this cut is widening — reddens the
+    /// offered half:</para>
+    /// <code>
+    /// Dirt is a document the book keeps a gist for and the game refuses to tear a page out of it.
+    /// </code>
+    /// <para>…and replacing it with <c>true</c> reddens the withheld half on <c>Authority</c>.</para>
+    /// </summary>
     [Fact]
-    public void ONLY_PAPER_ComesApart()
+    public void ONLY_EVIDENCE_ComesApart()
     {
+        TheNetHasBothKindsOfDocument();
         string id = ManyPapers().First(PageGranularity.IsMultiPage);
-        foreach (Satchel.Kind kind in Enum.GetValues<Satchel.Kind>().Where(k => k != Satchel.Kind.Paper))
+        int offered = 0, withheld = 0;
+
+        foreach (Satchel.Kind kind in Enum.GetValues<Satchel.Kind>())
         {
-            Assert.False(
-                PageGranularity.CanSplit(kind, id, alreadyInTheBook: true, seatedForTheSpread: true),
-                $"{kind} is not paper and the game is offering to tear a page out of it.");
+            bool can = PageGranularity.CanSplit(
+                kind, id, alreadyInTheBook: true, seatedForTheSpread: true);
+
+            if (RipAndBin.IsEvidence(kind))
+            {
+                offered++;
+                Assert.True(can,
+                    $"{kind} is a document the book keeps a gist for and the game refuses to tear a page "
+                    + "out of it.");
+            }
+            else
+            {
+                withheld++;
+                Assert.False(can,
+                    $"{kind} is not a document and the game is offering to tear a page out of it.");
+            }
+
+            // …and the shredder and the scissors are answering ONE question, not two that happen to agree
+            // today. This is the line that would catch the day somebody hand-writes `Paper or Dirt` back
+            // into either file.
+            Assert.True(
+                RipAndBin.IsEvidence(kind)
+                    == (LeftBehind.GistOf(new Satchel.Item(kind, "split-guard-1"), "B1") is { Length: > 0 }),
+                $"{kind}: the book and the shredder disagree about whether this is a document, and the "
+                + "scissors are written over one of them.");
         }
+
+        Assert.True(offered >= 2 && withheld >= 4,
+            $"the enum produced {offered} evidence and {withheld} non-evidence kind(s) — a sweep whose "
+            + "world answers one way everywhere proves nothing.");
+    }
+
+    /// <summary>
+    /// #798 item 2, second cut · THE CHIP IS ONE OBJECT AND IS NEVER TORN IN HALF.
+    ///
+    /// <para>Widening the verb to <see cref="Satchel.Kind.Dirt"/> brought one named thing into its world
+    /// that is not a dossier at all: what was between the seats of the roadster rides the satchel as a file
+    /// on somebody because that is what it IS to a client, and it is a data chip with photographs on it. It
+    /// has no pages. The arc wrote its one sentence, the row prints its canon name, and a captain offered
+    /// the scissors on <i>page 2 of 3</i> of a chip would be the sim doing one thing while the row said
+    /// another — this repo's third named bug class, in an inventory line, introduced by a widening.</para>
+    ///
+    /// <para><b>Proven RED</b> by script-deleting <c>|| CompromisingChip.IsTheFindId(source)</c> from
+    /// <c>PagesIn</c>:</para>
+    /// <code>
+    /// the chip out of the roadster is 4 page(s) long.
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void THE_NAMED_CHIP_IsNeverTornInHalf()
+    {
+        Satchel.Item chip = CompromisingChip.Found();
+        Assert.True(RipAndBin.IsEvidence(chip.Kind),
+            "the chip is not evidence in this build, so this guard cannot tell a pass from a fail — the "
+            + "clause it is about would refuse the split for a completely different reason.");
+
+        Assert.True(PageGranularity.PagesIn(chip.Id) == 1,
+            $"the chip out of the roadster is {PageGranularity.PagesIn(chip.Id)} page(s) long.");
+        Assert.False(PageGranularity.IsMultiPage(chip.Id));
+        Assert.False(
+            PageGranularity.CanSplit(
+                chip.Kind, chip.Id, alreadyInTheBook: true, seatedForTheSpread: true),
+            "the game is offering to tear a page out of a data chip.");
+        Assert.Equal("", PageGranularity.RowCitation(chip.Id));
+
+        // …and the two spellings of "is this the chip" are one spelling, which is what keeps the id from
+        // being held in two places that could come to disagree about it.
+        Assert.True(CompromisingChip.IsTheFindId(chip.Id));
+        Assert.False(CompromisingChip.IsTheFindId("hive:doc:pages-0"));
+        Assert.False(CompromisingChip.IsTheFindId(null));
     }
 
     // ── (d) BOTH HALVES ARE STILL THE SAME DOCUMENT ──────────────────────────────────────────────────
@@ -360,7 +499,11 @@ public sealed class ThePageWorthTearingOutTests
     public void BOTH_HALVES_AreStillTheDocumentTheyCameOutOf()
     {
         int tried = 0;
-        foreach (string id in ManyPapers().Where(PageGranularity.IsMultiPage))
+
+        // #798 item 2, second cut · Over BOTH nets. The three readers take an id and nothing else, so a
+        // dossier's halves resolve through exactly the same SourceOf line — and that is the claim worth
+        // stating, because it is the whole of why Kind.Dirt needed no reader of its own to come apart.
+        foreach (string id in ManyPapers().Concat(ManyDossiers()).Where(PageGranularity.IsMultiPage))
         {
             tried++;
             foreach (string half in new[] { PageGranularity.SheetIdOf(id), PageGranularity.BulkIdOf(id) })
@@ -433,10 +576,14 @@ public sealed class ThePageWorthTearingOutTests
             Assert.True(PageGranularity.PagesIn(id) == 1,
                 $"{id} is a sheet the arc wrote and the game says it is {PageGranularity.PagesIn(id)} pages "
                 + "long.");
-            Assert.False(
-                PageGranularity.CanSplit(
-                    Satchel.Kind.Paper, id, alreadyInTheBook: true, seatedForTheSpread: true),
-                $"{id} is a sheet the arc wrote and the game is offering to tear a page out of it.");
+            foreach (Satchel.Kind kind in EvidenceKinds())
+            {
+                Assert.False(
+                    PageGranularity.CanSplit(
+                        kind, id, alreadyInTheBook: true, seatedForTheSpread: true),
+                    $"{id} is a sheet the arc wrote and the game is offering to tear a page out of it "
+                    + $"as {kind}.");
+            }
         }
     }
 
@@ -540,6 +687,127 @@ public sealed class ThePageWorthTearingOutTests
                     + "file in a bin — a note about a thing that is not there.");
             }
         }
+    }
+
+    // ── (f) THE TORN SHEET IS A CHEAPER CARRY ────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #798 item 2, second cut · THE SHEET COSTS THE SLEEVE LESS THAN THE FOLDER IT CAME OUT OF.
+    ///
+    /// <para>Owner: <i>"pocket the one damning sheet — SMALL, HIDEABLE — and bin the innocent bulk."</i>
+    /// #1185 shipped the split with both halves costing exactly what the whole document cost and said so in
+    /// its own judgement calls; a captain who did the professional thing walked away carrying as much as one
+    /// who stuffed the folder in their coat, and the tradecraft bought nothing the arithmetic could see.
+    /// </para>
+    ///
+    /// <para>Three claims, and all three are measured through <b>the satchel's own arithmetic</b> rather
+    /// than asserted about a constant: the sheet costs <see cref="Satchel.FoldedSheetSpace"/>, that is
+    /// STRICTLY less than what the folder costs, and the folder is full price — it is the folder, it is
+    /// exactly as thick as it looks, and it is on its way to a bin. Over both kinds of document, because the
+    /// cost is read off the ID and a dossier's sheet is folded the same way a pay sheet's is.</para>
+    ///
+    /// <para><b>Proven RED</b> by script-changing <c>Satchel.SpaceCostOf</c> to <c>=> 1</c> — the arithmetic
+    /// as it stood before this cut:</para>
+    /// <code>
+    /// Assert.True() Failure
+    ///   Paper hive:doc:pages-2: the torn sheet costs the sleeve 1 and the folder costs 1 — the split
+    ///   buys the captain nothing they can carry, which is the whole of what item 2 is for.
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void A_TORN_SHEET_CostsTheSleeveLessThanTheFolderItCameOutOf()
+    {
+        TheNetHasBothKindsOfDocument();
+        Assert.True(Satchel.FoldedSheetSpace < 1,
+            $"a folded sheet is priced at {Satchel.FoldedSheetSpace}, which is what every other thing in "
+            + "the satchel costs — there is no cheaper carry here and this guard is about nothing.");
+
+        int proved = 0;
+        foreach (Satchel.Kind kind in EvidenceKinds())
+        {
+            Assert.Equal(Satchel.Compartment.Sleeve, Satchel.CompartmentOf(kind));
+
+            foreach (string id in ManyPapers().Concat(ManyDossiers())
+                         .Where(PageGranularity.IsMultiPage).Take(24))
+            {
+                var whole = new Satchel.Item(kind, id);
+                var sheet = new Satchel.Item(kind, PageGranularity.SheetIdOf(id));
+                var folder = new Satchel.Item(kind, PageGranularity.BulkIdOf(id));
+
+                // Measured the way the sleeve measures: what one thing adds to Used, which is the number
+                // every capacity question in this game is answered out of.
+                int forSheet = Satchel.Used([sheet], Satchel.Compartment.Sleeve);
+                int forFolder = Satchel.Used([folder], Satchel.Compartment.Sleeve);
+                int forWhole = Satchel.Used([whole], Satchel.Compartment.Sleeve);
+                proved++;
+
+                Assert.True(forSheet == Satchel.FoldedSheetSpace,
+                    $"{kind} {id}: the torn sheet takes {forSheet} of the sleeve and the one place that "
+                    + $"says what a sheet weighs says {Satchel.FoldedSheetSpace}.");
+                Assert.True(forSheet < forFolder,
+                    $"{kind} {id}: the torn sheet costs the sleeve {forSheet} and the folder costs "
+                    + $"{forFolder} — the split buys the captain nothing they can carry, which is the whole "
+                    + "of what item 2 is for.");
+                Assert.True(forFolder == forWhole,
+                    $"{kind} {id}: the folder costs {forFolder} and the document it came out of cost "
+                    + $"{forWhole} — the bulk is the folder and is exactly as thick as it looks.");
+                Assert.Equal(Satchel.FoldedSheetSpace, Satchel.SpaceCostOf(sheet));
+                Assert.Equal(1, Satchel.SpaceCostOf(whole));
+            }
+        }
+
+        Assert.True(proved >= 24, $"only {proved} document(s) were priced — this proves nothing.");
+    }
+
+    /// <summary>
+    /// …AND IT IS A CARRY AND NOT A NUMBER: A FULL SLEEVE TAKES THE SHEET AND REFUSES THE FOLDER.
+    ///
+    /// <para>The arithmetic above is worth nothing unless the two verbs a captain actually meets agree with
+    /// it. <see cref="Satchel.CanTake"/> is the question every haul path asks before it consumes a find
+    /// (#678's whole issue), and <see cref="Satchel.Add"/> is the one that refuses politely — so a sleeve
+    /// packed to its cap is offered both halves, and what it does with them is the feature: the page folded
+    /// twice goes in, the folder does not.</para>
+    ///
+    /// <para><b>Proven RED</b> by script-reverting <c>Add</c> and <c>CanTake</c> to ask
+    /// <c>IsFull(list, item.Kind)</c> — the kind-shaped question they asked before this cut:</para>
+    /// <code>
+    /// a sleeve with no room left in it refused the one page the whole verb exists to hand the captain.
+    /// </code>
+    /// </summary>
+    [Fact]
+    public void A_FULL_SLEEVE_TakesTheSheetAndRefusesTheFolder()
+    {
+        string id = ManyPapers().First(PageGranularity.IsMultiPage);
+        var sheet = new Satchel.Item(Satchel.Kind.Paper, PageGranularity.SheetIdOf(id));
+        var folder = new Satchel.Item(Satchel.Kind.Paper, PageGranularity.BulkIdOf(id));
+
+        IReadOnlyList<Satchel.Item> full = [];
+        for (int i = 0; i < Satchel.SleeveCapacity; i++)
+        {
+            full = Satchel.Add(full, new Satchel.Item(Satchel.Kind.Paper, $"hive:doc:filler-{i}"));
+        }
+
+        Assert.True(full.Count == Satchel.SleeveCapacity,
+            $"the bench built a sleeve of {full.Count} against a cap of {Satchel.SleeveCapacity} — it is "
+            + "not full and this guard would pass on anything.");
+        Assert.True(Satchel.IsFull(full, Satchel.Kind.Paper),
+            "the sleeve is at its cap and the satchel does not think it is full.");
+        Assert.Equal(0, Satchel.SpaceLeft(full, Satchel.Compartment.Sleeve));
+
+        Assert.True(Satchel.CanTake(full, sheet),
+            "a sleeve with no room left in it refused the one page the whole verb exists to hand the "
+            + "captain.");
+        Assert.False(Satchel.CanTake(full, folder),
+            "a sleeve at its cap took another folder — the cap has stopped meaning anything.");
+
+        Assert.Contains(Satchel.Add(full, sheet), i => i.Id == sheet.Id);
+        Assert.DoesNotContain(Satchel.Add(full, folder), i => i.Id == folder.Id);
+
+        // …and the sheet going in does not move the sleeve's own figure, which is what "costs nothing"
+        // means when the subtraction is the one every other caller does.
+        Assert.Equal(
+            Satchel.Used(full, Satchel.Compartment.Sleeve),
+            Satchel.Used(Satchel.Add(full, sheet), Satchel.Compartment.Sleeve));
     }
 
     /// <summary>Both of this feature's authored sentences reach the canon sweep — #709's discipline. A line

@@ -73,7 +73,21 @@ public static class CompromisingChip
 
     /// <summary>Is this the chip? Asked of a satchel row before it is given a card or a name.</summary>
     public static bool IsTheChip(Satchel.Item item) =>
-        item.Kind == Satchel.Kind.Dirt && string.Equals(item.Id, FindId, StringComparison.Ordinal);
+        item.Kind == Satchel.Kind.Dirt && IsTheFindId(item.Id);
+
+    /// <summary>
+    /// #798 item 2 · …AND THE SAME QUESTION ASKED OF AN ID ALONE, for the one caller that has no row.
+    ///
+    /// <para><see cref="PageGranularity.PagesIn"/> is handed a document id and nothing else, and it has to
+    /// know that this one is not a dossier with pages in it. The chip is a NAMED, authored object — one lost
+    /// roadster, one chip, one canon sentence about what is on it — and a captain offered the scissors on
+    /// <i>page 2 of 3</i> of a data chip would be the sim doing one thing while the row said another, which
+    /// is this repo's third named bug class in an inventory line.</para>
+    ///
+    /// <para>It is the predicate <see cref="IsTheChip"/> is now written over rather than a second copy of
+    /// the comparison: two places holding one id is how they come to disagree about it.</para>
+    /// </summary>
+    public static bool IsTheFindId(string? id) => string.Equals(id, FindId, StringComparison.Ordinal);
 
     /// <summary>The chip in a satchel, or null. The pocket read every ending asks first.</summary>
     public static Satchel.Item? InThePocket(IReadOnlyList<Satchel.Item>? carried)
