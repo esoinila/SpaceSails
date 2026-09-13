@@ -160,6 +160,12 @@ public partial class Map
             ShowPulseMessage("You step back — the door holds. It stays sealed.");
             return;
         }
+        // #563 · AND THE HOLD IS HEARD, every tick of it, at the door. Owner ruling 2026-09-13: a locked
+        // door costs time, noise or danger and never a key. The cadence is the shovel's own (one emit per
+        // channel tick, at the anchor) and the loudness is Clatter, so the tide inside twelve du converges
+        // on the frame you have both hands on while you still have both hands on it.
+        TheHoldIsHeard(ch);
+
         ch.Progress += dtRealSeconds / ExpeditionRegions.DoorForceSeconds;
         if (ch.Progress >= 1.0)
         {

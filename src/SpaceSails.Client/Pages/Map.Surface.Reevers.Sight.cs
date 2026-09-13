@@ -1,4 +1,4 @@
-﻿using SpaceSails.Client.Rendering;
+using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 using SpaceSails.Core.Interior;
 
@@ -91,6 +91,16 @@ public partial class Map
     // sees closed — one door open at a time, the far end of an interlocked tube always shut.
     private bool IsDoorShut(DeckPlan.Door d, int index)
     {
+        // #563 · A LEAF SOMEBODY PUT A ROUND THROUGH IS NOT A DOOR ANY MORE, and this question is asked
+        // FIRST — ahead of the locked short-circuit below, which is the whole point of it. A shot lock is
+        // shot whether the leaf was merely shut or keyed; asking `d.Locked` first would have left a keyed
+        // leaf reading SHUT to every sight line and every round in the game after the captain had watched it
+        // come off its frame, which is precisely the sim-says-one-thing-the-picture-says-another bug class
+        // this file's own warning paragraph exists to prevent.
+        if (_deckPlan.LeafIsShot(index))
+        {
+            return false;
+        }
         if (d.Locked)
         {
             return true;

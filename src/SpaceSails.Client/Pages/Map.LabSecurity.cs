@@ -137,8 +137,20 @@ public sealed partial class Map
 
     // ── The doors themselves ──────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Press a door. Walks it round <see cref="LockedDoor.Next"/>, which never skips a state — so a
-    /// captain cannot lock something by accident on the way past.</summary>
+    /// <summary>
+    /// Press a door. Open ⇄ Shut by hand, and a KEYED one does not answer hands at all.
+    ///
+    /// <para>#563 · <b>THE CARD IS GONE FROM THIS METHOD.</b> Owner ruling, 2026-09-13: <i>"I like the time
+    /// instead of a key, considering we have firepower and tools. We can create the same effect as needing a
+    /// key by making it slow, too noisy, or dangerous in other ways."</i> So a lockdown is no longer a walk to
+    /// a chair two rooms deeper than you are: it is a decision about what you are willing to spend. The
+    /// shoulder (<see cref="LockedDoor.ForceSeconds"/>, heard every second it runs) or the round
+    /// (<see cref="ShootTheLockNow"/>, heard by half the field, and the leaf never comes back).</para>
+    ///
+    /// <para>Pressed AT the door the shoulder goes on by itself, because standing at a keyed leaf and being
+    /// told nothing would be the control doing nothing and saying nothing — the satchel's founding law.
+    /// Pressed on the BOARD, two rooms away, there is no shoulder to put on it and the state does not move.</para>
+    /// </summary>
     private void WorkTheDoor(string doorId)
     {
         if (!_labDoors.TryGetValue(doorId, out LockedDoor.State was))
@@ -149,10 +161,17 @@ public sealed partial class Map
         // #736 · Every answer this board gives is said ON the board. The door being worked is two rooms away
         // and the board's own backdrop is over the world, so a line pulsed from here is in the DOM and not on
         // the screen — #680's law, arriving at the panel the owner asked for in #409's own words.
-        LockedDoor.State now = LockedDoor.Next(was, _hasVantarCard);
+        LockedDoor.State now = LockedDoor.Next(was);
         if (now == was)
         {
-            SayItWhereTheyAreLooking(LockedDoor.NoKeyLine);
+            // A keyed leaf, or one that is not a leaf any more. If the captain's own hands are on it, the
+            // press starts the hold; from the board it is the fact and nothing else.
+            if (LockedDoor.MayForce(was) && StandingAtLabDoor(doorId))
+            {
+                BeginForcingALabDoor(doorId);
+                return;
+            }
+            SayItWhereTheyAreLooking(LockedDoor.Label(was));
             RendererInterop.PlayCue("block");
             return;
         }
@@ -161,16 +180,8 @@ public sealed partial class Map
         SayItWhereTheyAreLooking(now switch
         {
             LockedDoor.State.Shut => LockedDoor.ShutLine,
-            LockedDoor.State.Locked => LockedDoor.LockedLine,
             _ => "🚪 The door goes back and the dark past it is colder than the room you are in.",
         });
-
-        // Said once, ever: the vent board's oldest lesson, moved to the ground.
-        if (now == LockedDoor.State.Locked && !_saidWhichSide)
-        {
-            _saidWhichSide = true;
-            LogAutopilotEvent(LockedDoor.WhichSideLine);
-        }
 
         // A door is a WALL, so the ground has to be rebuilt or the map and the boot disagree — which is the
         // lesson #465 paid for on the ship's own hatches.
@@ -181,7 +192,64 @@ public sealed partial class Map
         StateHasChanged();
     }
 
-    private bool _saidWhichSide;
+    /// <summary>Are the captain's own hands on this leaf? The board throws doors from a wall two rooms away
+    /// and a shoulder does not reach that far — asked of <see cref="NearestLabDoorId"/>, the one lookup the
+    /// prompt and the press already share, so the two can never disagree about which door is under a hand.</summary>
+    private bool StandingAtLabDoor(string doorId) =>
+        _deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is { Kind: DeckPlan.ConsoleKind.LabDoor }
+        && string.Equals(NearestLabDoorId(), doorId, StringComparison.Ordinal);
+
+    /// <summary>
+    /// #563 · THE SLOW ROAD, ON A KEYED LAB DOOR. The fourth force channel in the game and the only one
+    /// priced at <see cref="LockedDoor.ForceSeconds"/> — the constant THIS kind of door owns. The other three
+    /// force a seal that rotted (<c>ExpeditionRegions.DoorForceSeconds</c>, 5 s); this one forces bolts a
+    /// security system shot home on purpose, and the garrison is awake the whole time.
+    /// </summary>
+    private void BeginForcingALabDoor(string doorId)
+    {
+        if (_surface is not { } ex || AnySlowThingUnderYourHands)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.LabDoor } spot)
+        {
+            return;
+        }
+        ex.LabDoorChannel = new DoorChannel { DoorId = doorId, AnchorX = spot.X, AnchorY = spot.Y };
+        RendererInterop.PlayCue("board");
+        ShowPulseMessage(LockedDoor.BeingForcedLine("the door") + " Hold position — step away to abort.");
+    }
+
+    /// <summary>One frame of that hold. Stepping off the anchor aborts (the same law every other channel in
+    /// the game keeps), and every tick of it is HEARD — see <see cref="TheHoldIsHeard"/>.</summary>
+    private void StepLabDoorChannel(double dtRealSeconds)
+    {
+        if (_surface is not { LabDoorChannel: { } ch } ex)
+        {
+            return;
+        }
+        double dx = _avatarX - ch.AnchorX, dy = _avatarY - ch.AnchorY;
+        if ((dx * dx) + (dy * dy) > DeckPlan.InteractRadius * DeckPlan.InteractRadius)
+        {
+            ex.LabDoorChannel = null;
+            ShowPulseMessage("You take your shoulder off it. The bolts are where they were.");
+            return;
+        }
+
+        TheHoldIsHeard(ch);
+
+        ch.Progress += dtRealSeconds / LockedDoor.ForceSeconds;
+        if (ch.Progress >= 1.0)
+        {
+            ex.LabDoorChannel = null;
+            _labDoors[ch.DoorId] = LockedDoor.State.Open;
+            RebuildSurfaceDeck();
+            RendererInterop.PlayCue("door");
+            SayItWhereTheyAreLooking(LockedDoor.ForcedLine("The door"));
+            AlertSweepersToNoise(_avatarX, _avatarY);
+            StateHasChanged();
+        }
+    }
 
     /// <summary>Whether a lab door blocks the way — asked by the deck builder, so a shut door is a wall to the
     /// boot and to the eye exactly as a dogged hatch is.</summary>
@@ -331,10 +399,16 @@ public sealed partial class Map
         }
 
         _hasVantarCard = true;
+        // #563 · FABLE: line needed. The owner ruled on 2026-09-13 that a locked door is TIME and never a
+        // key, so the card stopped being a key the moment LockedDoor lost its hasKey parameter — it is a
+        // CREDENTIAL THE ALARM PANEL RESPECTS (LabSecurity.Modifiers: "Vantar's card in the reader", +4) and
+        // nothing else. Both sentences below are therefore the authored ones with the door clause DELETED
+        // rather than rewritten: no prose was written by an implementation crew. What is wanted in its place
+        // is one authored sentence saying what the card IS now — a man's building pass, good at the panel he
+        // sat in front of, useless against hinges — and that sentence is Fable's to write.
         ShowPulseMessage(
-            "🗝 Vantar's card, on a lanyard, still round the neck of the chair. Every door in the mountain " +
-            "answers to it — the ones ahead of you and the one you came in through.");
-        LogAutopilotEvent("🗝 Vantar's card taken — every door in the lab now answers.");
+            "🗝 Vantar's card, on a lanyard, still round the neck of the chair.");
+        LogAutopilotEvent("🗝 Vantar's card taken.");
         RendererInterop.PlayCue("reveal");
         RequestVaultSave();
         StateHasChanged();

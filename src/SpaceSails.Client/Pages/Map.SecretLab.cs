@@ -1,4 +1,4 @@
-﻿using SpaceSails.Client.Rendering;
+using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -212,7 +212,7 @@ public partial class Map
             }
 
             consoles.Add(new(DeckPlan.ConsoleKind.LabDoor, (float)d.X, (float)(d.Y - LabDoorHalf - 0.9),
-                             $"{LockedDoor.Label(state, _hasVantarCard)} · {d.Deeper}"));
+                             $"{LockedDoor.Label(state)} · {d.Deeper}"));
         }
 
         // ── #822 · AND THE CRAWL, which is the same law one more time: shut is a WALL. Owner's ruling on
@@ -276,6 +276,12 @@ public partial class Map
             ShowPulseMessage("You step back — the hidden door holds. It stays sealed. (Some doors are a mercy shut.)");
             return;
         }
+        // #563 · AND THE HOLD IS HEARD, every tick of it, at the door. Owner ruling 2026-09-13: a locked
+        // door costs time, noise or danger and never a key. The cadence is the shovel's own (one emit per
+        // channel tick, at the anchor) and the loudness is Clatter, so the tide inside twelve du converges
+        // on the frame you have both hands on while you still have both hands on it.
+        TheHoldIsHeard(ch);
+
         ch.Progress += dtRealSeconds / ExpeditionRegions.DoorForceSeconds;
         if (ch.Progress >= 1.0)
         {

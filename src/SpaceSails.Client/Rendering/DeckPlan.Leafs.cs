@@ -33,6 +33,14 @@ public sealed partial class DeckPlan
     private double[] _leafBeat = [];     // the beat it is being hauled against (ReeverDoor.HaulSeconds)
     private bool[] _leafOpened = [];     // …and the ones that are all the way over, for good
 
+    // #563 · …AND THE ONES THAT ARE NOT DOORS ANY MORE. Owner ruling, 2026-09-13: a locked door is TIME,
+    // never a key — and one of the times you may spend is a round. A shot leaf is terminal: passable and
+    // transparent forever, never shut, never locked, never hauled. It lives HERE for the reason every word
+    // of this file's header gives: the sim writes it, the sight list and the pen both read it, and there is
+    // no second answer anywhere for what stands open. A destroyed leaf drawn shut would be exactly the bug
+    // #465, #1099 and #1154 were each paid for.
+    private bool[] _leafShot = [];
+
     private void FitLeafState()
     {
         if (_leafHauled.Length == Doors.Length)
@@ -42,6 +50,32 @@ public sealed partial class DeckPlan
         System.Array.Resize(ref _leafHauled, Doors.Length);
         System.Array.Resize(ref _leafBeat, Doors.Length);
         System.Array.Resize(ref _leafOpened, Doors.Length);
+        System.Array.Resize(ref _leafShot, Doors.Length);
+    }
+
+    /// <summary>#563 · Has somebody put a round through this lock? Terminal, and the one thing on a leaf that
+    /// nothing walks back.</summary>
+    public bool LeafIsShot(int index)
+    {
+        FitLeafState();
+        return (uint)index < (uint)_leafShot.Length && _leafShot[index];
+    }
+
+    /// <summary>#563 · <b>Shoot the lock.</b> The leaf is gone as a leaf: it counts as held open from this
+    /// instant, so the same frame's legs, sight, rounds and pen all read a doorway with nothing in it.
+    /// Returns false when there was nothing to shoot — a leaf already destroyed — so a caller cannot spend a
+    /// second round on the same hole.</summary>
+    public bool ShootTheLeaf(int index)
+    {
+        FitLeafState();
+        if ((uint)index >= (uint)_leafShot.Length || _leafShot[index])
+        {
+            return false;
+        }
+        _leafShot[index] = true;
+        _leafOpened[index] = true;   // held open for good, by the one mechanism that already means that
+        _leafHauled[index] = 0;
+        return true;
     }
 
     /// <summary>Has something hauled this leaf all the way over? It stays over: <b>they do not close doors

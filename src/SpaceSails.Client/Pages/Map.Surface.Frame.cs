@@ -1,4 +1,4 @@
-﻿using SpaceSails.Client.Rendering;
+using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 using SpaceSails.Core.Interior;
 
@@ -112,6 +112,7 @@ public partial class Map
                 HeldDoors(), BlockedDoors(), _archiveAboard, _archivePurged,
                 keyAboard: _keyAboard);   // #535 · the code in her crew spaces, if she is still holding one
             ComposeWhatYouLeft(ex);
+            ReplayShotLeaves(ex);
             return;
         }
 
@@ -152,6 +153,10 @@ public partial class Map
         // #1061 beat 2 · …and the one thing on this ground somebody ELSE put down, which is why it is not in
         // the store above: every sentence that store prints says "where YOU left it".
         ComposeTheDroppedSchedule(ex);
+
+        // #563 · LAST, because every composer above it appends doors. A leaf somebody shot the lock off is
+        // gone for the rest of the excursion, and this fresh plan has never heard of it.
+        ReplayShotLeaves(ex);
     }
 
     /// <summary>
@@ -351,6 +356,7 @@ public partial class Map
         }
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
+        StepLabDoorChannel(dtRealSeconds);       // #563: a shoulder on a KEYED lab door — 25 s, and heard
         StepSecretLabDetector();                 // #585: the needle climbs as you close on a named moon
         StepOutpostDoorChannel(dtRealSeconds);   // #563: the outpost hatch's force channel
         StepDrillChannel(dtRealSeconds); // #394: the drilling — sinking the charge into the rock

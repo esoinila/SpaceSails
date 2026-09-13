@@ -1,4 +1,4 @@
-﻿using SpaceSails.Client.Rendering;
+using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 using SpaceSails.Core.Interior;
 
@@ -125,6 +125,12 @@ public partial class Map
                 aboard.Add($"🎒 I — items ({_satchel.Count})");
             }
 
+            // #563 · …and the fast road at a door, only where it exists. See ShootTheLockPlate.
+            if (ShootTheLockPlate() is { } aboardPlate)
+            {
+                aboard.Add(aboardPlate);
+            }
+
             // #537 · A VERB NOBODY IS TOLD ABOUT IS A VERB NOBODY HAS. Caught by booting the scene and
             // reading the hint bar, which is the owner's own method: the knock was bound, the clock ran, the
             // sweep team heard it — and the strip along the bottom never mentioned K existed.
@@ -190,6 +196,16 @@ public partial class Map
         if (_satchel.Count > 0)
         {
             parts.Add($"🎒 I — items ({_satchel.Count})");
+        }
+
+        // #563 · THE FAST ROAD, ON THE DOOR PROMPT ROW. Owner ruling, 2026-09-13: a locked door is TIME,
+        // never a key — and one of the times a captain may spend is a round. The plate joins the row the
+        // other keys are on, and ONLY where the verb exists: armed, above ground, standing at something with
+        // a lock still on it. An affordance you cannot read is one you do not have (#212); one you can read
+        // where it will not answer is worse, which is the lesson #723 paid for with "E — dig" on rockcrete.
+        if (ShootTheLockPlate() is { } plate)
+        {
+            parts.Add(plate);
         }
         parts.Add(_audioEnabled ? "🔊 M — mute" : "🔇 M — unmute"); // #338: the first-sound switch, always spelled out
         return string.Join(" ∙ ", parts);

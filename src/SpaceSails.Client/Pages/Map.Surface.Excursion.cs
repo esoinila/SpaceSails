@@ -1,4 +1,4 @@
-﻿using SpaceSails.Client.Rendering;
+using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 using SpaceSails.Core.Interior;
 
@@ -267,6 +267,26 @@ public partial class Map
         public HashSet<string> SecretLabLogsRead { get; } = [];
         public DoorChannel? SecretLabDoorChannel { get; set; }
 
+        // #563 · …AND THE SHOULDER ON A KEYED LAB DOOR. Owner ruling, 2026-09-13: "a locked door is TIME,
+        // never a key" — so a keyed leaf in the mountain is not a wall to the captain any more, it is
+        // LockedDoor.ForceSeconds of standing still in a corridor with the garrison awake. Same channel
+        // class, same abort-by-stepping-away law, same one progress bar; what it costs is the constant its
+        // own kind owns (25 s, not the 5 s a sealed way costs) because a bolt shot into a frame by a living
+        // security system is not a seal that rotted.
+        public DoorChannel? LabDoorChannel { get; set; }
+
+        // #563 · WHICH LEAVES HAVE HAD A ROUND THROUGH THE LOCK. Keyed on the leaf's own four
+        // coordinates (Map.Doors.ShootTheLock.LeafKey), for the reason HiveInterior.LockKey is: a site
+        // carries several doors that are the same object to look at, and a captain who shot one of them has
+        // not shot the others.
+        //
+        // IT LIVES HERE AND NOT ON THE PLAN because the plan is thrown away and rebuilt several times a
+        // minute (RebuildSurfaceDeck reassigns _deckPlan outright), and a destroyed door that grew its leaf
+        // back the next time somebody buried a chest would be the opposite of terminal. Same place the other
+        // forced-door facts live — OpenedDoors, SecretLabForced, LocksShotOpen — and the same law: session
+        // state, replayed onto every fresh deck, gone when the excursion is.
+        public HashSet<string> LeavesShotOpen { get; } = [];
+
         // #563 · The outpost hut on this site, if it has one: where it stands, whether the hatch has been
         // forced this visit, whether its locker and its effects have been taken/read, and the force channel
         // while it is running. Session state — a hut re-seals between excursions, which is honest enough:
@@ -309,6 +329,6 @@ public partial class Map
         // Map.AnySlowThingUnderYourHands, which is this OR the one hold. Splitting it that way is what
         // keeps a single answer to "is a bar already filling" on every ground the captain can stand on.
         public bool AnyChannel => Channel is not null || DoorChannel is not null || DrillChannel is not null
-            || SecretLabDoorChannel is not null || OutpostDoorChannel is not null;
+            || SecretLabDoorChannel is not null || OutpostDoorChannel is not null || LabDoorChannel is not null;
     }
 }

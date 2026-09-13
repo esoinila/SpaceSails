@@ -44,9 +44,15 @@ public static class SurfaceOutpost
     public const int PresentInFour = 3;
 
     /// <summary>The seconds of held [E] a dogged hatch costs. Matches the expedition door
-    /// (<c>ExpeditionRegions.DoorForceSeconds</c>) so "forcing something" has one feel across the game — and
-    /// the tracker keeps sweeping the whole time, which is the real price.</summary>
-    public const double ForceSeconds = 5.0;
+    /// (<see cref="ExpeditionRegions.DoorForceSeconds"/>) so "forcing something" has one feel across the game —
+    /// and the tracker keeps sweeping the whole time, which is the real price.
+    ///
+    /// <para>#563 · <b>IT IS THE SAME CONSTANT NOW, NOT A COPY OF IT.</b> This line used to read
+    /// <c>= 5.0</c> under a doc comment claiming it matched the expedition door — a fact spelled in two
+    /// places, agreeing, which is this repo's named "one source of truth" bug in its quietest form: the day
+    /// the owner tunes the expedition door, the hatch silently stops matching it and the comment goes on
+    /// saying it does. Two places computing one fact is the bug even while they agree.</para></summary>
+    public const double ForceSeconds = ExpeditionRegions.DoorForceSeconds;
 
     /// <summary>The rounds a shelter's ammunition locker holds. Never a full magazine — see the class note.</summary>
     public const int CacheRoundsMin = 20;

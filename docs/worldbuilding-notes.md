@@ -336,6 +336,53 @@ tech is absolutely necessary to survive, the really big survivor-doors make litt
 terraforming that later faded — so out here the doors are legacy and nostalgia still (the gramophone rule,
 #563). The game states none of this.
 
+
+**§10 addendum — A DOOR IS A PHYSICAL UI, AND A LOCKED ONE IS TIME** (owner rulings, 2026-09-13, filed
+from #563 questions 1 and 2). Documentation only — never a card, never a plate, never a line in the game.
+
+**Q2, why they keep doors at all**, owner verbatim:
+
+> *"We still use open-flame BBQ. It is convenient, and doors act as a physical UI in their interactions with
+> other Old Ones — the lowest common standard of access, a bit like a modem starting from a high standard and
+> settling to the lowest common one even at low speed."*
+
+> *"The Old Ones can display the five UAP observation criteria though, when needed for plot reasons. But
+> generally they lie to use doors."*
+
+Fable gloss, beside it: *"The five observables (instantaneous acceleration, hypersonic speed without
+signatures, trans-medium travel, low observability, positive lift) are the ceiling; the door is the floor they
+choose to be seen at. §10.4c's parental law stands: what they could do instead is never shown unless the plot
+spends it, once."*
+
+So the 2026-09-06 gramophone is sharpened rather than replaced: a door is not only nostalgia, it is a
+HANDSHAKE — the lowest common standard two of them can both be certain of, the way a modem falls back until
+both ends agree even though either could go faster alone. That is why a hall a hundred thousand years old has
+a leaf in it that a man can lean on: it was never built for a man, it was built to be the slowest, most
+legible thing in the building.
+
+**Q1, what a locked door costs**, owner verbatim:
+
+> *"I like the time instead of a key, considering we have firepower and tools. We can create the same effect
+> as needing a key by making it slow, too noisy, or dangerous in other ways."*
+
+**A locked door is TIME, never a key.** A key would make a door an inventory hunt — walk the level until the
+card falls out of a drawer — and this game already has three better clocks (the tether, the tracker and the
+pack). So a locked door charges one of three prices and never a carried item:
+
+| price | what it is | what it costs |
+| --- | --- | --- |
+| **SLOW** | your shoulder on it | `LockedDoor.ForceSeconds` (25 s) on a keyed leaf, `ExpeditionRegions.DoorForceSeconds` (5 s) on a seal that rotted — and the tracker sweeps the whole time |
+| **NOISY** | the hold is heard | `ReeverHearing.Noise.Clatter` at the door, every tick of the hold, 12 du. A shut leaf goes on hiding you from SIGHT and never from ears |
+| **DANGEROUS** | a round through the hasp | one round, instantly, `Noise.Gunfire` at 34 du — and the leaf is DESTROYED: never shut, never locked, never a refuge again |
+
+The third one is the sentries' own law arriving at a doorway: *buys time, never safety*. The captain spends
+the door's entire future — every retreat it would ever have covered — for twenty-five seconds now, and the
+game says nothing at all about that trade. The pack walking in through the hole later is the telling.
+
+Vantar's card survives this as a **credential a panel respects** and nothing with hinges: no door in the game
+is gated by a carried item.
+
+
 ## Suggested landing spots
 
 | Theme | Milestone | First concrete step |

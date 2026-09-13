@@ -299,6 +299,18 @@ public partial class Map
             case "e" or "E":
                 InteractAtConsole();
                 return true;
+            case "f" or "F":
+                // #563 · SHOOT THE LOCK. Owner ruling, 2026-09-13: "We have firepower and tools. We can
+                // create the same effect as needing a key by making it slow, too noisy, or dangerous in
+                // other ways." This is the dangerous one — one round out of the hand-load, the door opens
+                // now, everything with ears learns where you are standing, and the leaf is destroyed for
+                // good. The verb refuses itself where it does not exist (off the ground, unarmed, nothing
+                // shootable under the hand), and the plate is absent in exactly those cases.
+                if (_surface is not null)
+                {
+                    ShootTheLockNow();
+                }
+                return true;
             case "b" or "B":
                 // PR-WIRE: bank at the contact's table — deposit, withdraw or borrow (in person).
                 OpenBankAtBar();
