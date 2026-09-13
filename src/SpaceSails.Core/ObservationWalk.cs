@@ -230,4 +230,21 @@ public static class ObservationWalk
     /// the person the captain actually lost and never for somebody else standing at a counter.</summary>
     public static bool IsSpentOn(string? spentOn, string bodyId, string name) =>
         spentOn is not null && string.Equals(spentOn, Key(bodyId, name), StringComparison.Ordinal);
+
+    /// <summary>
+    /// #1199 · <b>IS THE LATER SIGHTING STILL OWED?</b> — the second half of "once", and a separate written
+    /// fact from the spend rather than a suffix on it.
+    ///
+    /// <para>Two fields and not one parsed field, deliberately. <see cref="EmptySeal"/>'s own doc argues the
+    /// case: a key is worth having because the answer to "was it this one" is a COMPARISON rather than a
+    /// parse, and a spend that grew a <c>|seen</c> tail would have thrown that away to save a line in a save
+    /// file. So the spend says who, and this says whether the world has already handed them back.</para>
+    ///
+    /// <para>The sighting is owed exactly once: after it is paid, the walk is a walk, the person keeps
+    /// walking routes, and nothing about any of it is ever mentioned again.</para>
+    /// </summary>
+    /// <param name="spentOn">The key of the one person this captain followed and did not find, or null.</param>
+    /// <param name="sightingAt">Where the sighting was already paid, or null while it is still owed.</param>
+    public static bool SightingIsOwed(string? spentOn, string? sightingAt) =>
+        spentOn is not null && sightingAt is null;
 }

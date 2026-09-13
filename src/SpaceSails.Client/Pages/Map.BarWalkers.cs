@@ -192,11 +192,24 @@ public partial class Map
         }
 
         ForgetTheBarsFeet(bar.BodyId);
+
+        // #1062 · HOW FAST THE CAPTAIN IS ACTUALLY GOING, measured by the one rule that measures it (#436's
+        // own, in Map.Surface.Observation) rather than by a second opinion kept in this room. The notice
+        // question the tail asks reads it and nothing else does — and the surface frame that usually calls
+        // this does not run at a berth, which is exactly why the call belongs here too.
+        MeasureTheCaptainsMotion(dtRealSeconds);
+
+        // #1199 · …and the one sighting the world still owes this captain, asked at EVERY counter in the
+        // system and not only at the station with the walk in it: that IS the shape of the beat's tail —
+        // somewhere else, later, unhurried.
+        TheyAreAtTheCounter(bar.BodyId);
+
         DealTheBarsHours(bar);
         StepTheBarsFeet(dtRealSeconds, bar);
         AdvanceTheRepAshore(bar);
         AdvanceTheWalkIn(bar);   // #973 L5b · …and whoever the evening has crossing the floor to your table
         AdvanceTheFinder(bar);   // #417 · …and the finder, when there is a case or an account to settle
+        AdvanceTheWalk(bar);     // #1199 · …and whoever the evening has crossing the floor with YOU behind them
     }
 
     /// <summary>#973 L0 · CASTING OFF IS THE ROOM FORGETTING. Same law a turned shift is underground: what
@@ -211,6 +224,11 @@ public partial class Map
 
         _barFeetBerth = berth;
         _barAfoot.Clear();
+
+        // #1062 · …and the tail, for the identical reason and through the one place that knows the berth has
+        // changed. A notice latch carried across a casting-off would be somebody at a different station
+        // already suspicious of a captain who has not walked behind them yet.
+        ForgetTheWalk(berth);
 
         // …and the evening with them. A different berth is a different room, and a chair emptied at the last
         // one is a chair belonging to a station this captain is no longer tied to. Null and not empty for the

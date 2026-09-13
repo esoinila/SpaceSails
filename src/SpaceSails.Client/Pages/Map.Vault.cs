@@ -245,6 +245,13 @@ public partial class Map
                 // put the cache back into a room the book says was bare AND leave him a second empty room to
                 // find later, and two of them is a rate rather than a disappointment (EmptySeal).
                 EmptySealSpentOn = _emptySealSpentOn,
+                // #1199 · …and the one person this captain has followed onto an observation walk and not
+                // found, with the counter the world has since handed them back at. Same null-while-unspent
+                // law and the same reason one rung harder again: a spend a reload forgot would let the same
+                // person be walked into the same tube twice, and a thing that happens twice is a mechanic
+                // rather than a moment (ObservationWalk).
+                ObservationWalkSpentOn = _observationWalkSpentOn,
+                ObservationWalkSightingAt = _observationWalkSightingAt,
                 // #1068 · …and which of them the world has since declined on, WITH the window each declined
                 // in. Same null-while-empty law, same reason; the window rides along because the door is
                 // chosen against it, and a reload that forgot the number would shut a different leaf.
@@ -506,6 +513,12 @@ public partial class Map
         // thread that never spent it loads as unspent and a file written before this shipped does too — the
         // one rule this latch has is that it only ever goes from null to a key, never back.
         _emptySealSpentOn = vault.Progress?.EmptySealSpentOn;
+
+        // #1199: and the one person already followed and not found, with the counter the sighting was paid
+        // at. Assigned rather than guarded on null for the identical reason — a voyage that never spent it
+        // loads unspent, and a file written before this shipped does too.
+        _observationWalkSpentOn = vault.Progress?.ObservationWalkSpentOn;
+        _observationWalkSightingAt = vault.Progress?.ObservationWalkSightingAt;
 
         // #1068: and which of them the world has since declined on, with the window each declined in.
         // Restored rather than re-derived for the hardest version of the reason again: the window is what

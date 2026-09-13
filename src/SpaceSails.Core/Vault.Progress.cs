@@ -333,4 +333,12 @@ public sealed record ProgressSection
     [System.Text.Json.Serialization.JsonIgnore(
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public string? ObservationWalkSpentOn { get; init; }
+
+    /// <summary>#1199 · …and WHERE the world handed them back — the body id of the counter the one later
+    /// sighting was said at, or null while it is still owed. A separate written fact from the spend and not
+    /// a suffix on it, for <see cref="ObservationWalk.SightingIsOwed"/>'s reason: a key earns its keep by
+    /// being compared rather than parsed. Same null-while-unpaid law as every field above it.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? ObservationWalkSightingAt { get; init; }
 }
