@@ -92,7 +92,12 @@ public sealed class TheSatchelTests
         Assert.True(Satchel.Item.TryParse("1:1:hive:luna:-3:7", out Satchel.Item colons));
         Assert.Equal("hive:luna:-3:7", colons.Id);
 
-        foreach (string junk in new[] { null!, "", "9:1:x", "notanint:1:x", "0:1:", "2:0:x", "2:-1:x", ":", "1:x" })
+        // #711 · THE FUTURE-KIND CASE IS DERIVED, NOT TYPED. It used to read "9:1:x" and went green only
+        // while nine was past the end of the enum — appending Satchel.Kind.Parcel turned the junk row into a
+        // perfectly good parcel and the guard caught it, which is what it is for. Spelled off the enum's own
+        // length so the next appended kind cannot quietly retire this case instead of being caught by it.
+        string futureKind = $"{Enum.GetValues<Satchel.Kind>().Length}:1:x";
+        foreach (string junk in new[] { null!, "", futureKind, "notanint:1:x", "0:1:", "2:0:x", "2:-1:x", ":", "1:x" })
         {
             Assert.False(Satchel.Item.TryParse(junk, out _), $"'{junk}' parsed as an item.");
         }

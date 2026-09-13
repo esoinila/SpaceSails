@@ -354,7 +354,7 @@ public sealed class ALockedCubicleBuysTimeTests
 
         // Nobody NEW notices you while the catch is over.
         Assert.Contains("if (hide is null)", patrol, StringComparison.Ordinal);
-        Assert.Contains("StopTheRoundIfAnybodySeesYou(sight);", patrol, StringComparison.Ordinal);
+        Assert.Contains("StopTheRoundIfAnybodySeesYou(sight, book);", patrol, StringComparison.Ordinal);
 
         // The man who saw you goes and stands at the cell's PUBLISHED step square — not a coordinate the
         // client measured for itself.
