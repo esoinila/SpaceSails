@@ -87,7 +87,19 @@ public partial class Map
             // stage (accepted, wreck hidden, tip in the ledger); active = post-scan (wreck charted,
             // backward-compatible); picked = charted + already lifted.
             string candidate = Uri.UnescapeDataString(pair["fetch=".Length..]).ToLowerInvariant();
-            if (candidate is "intel" or "active" or "picked")
+
+            // #238, found while testing · THE "-chip" SUFFIX WAS DOCUMENTED AND UNREACHABLE. #233 taught the
+            // INJECTOR to read it — InjectFetchCheat, verbatim: "Any stage may be suffixed with -chip
+            // (/map?fetch=intel-chip) … so the three endings can be walked without waiting for the
+            // one-in-four to land" — and this whitelist, two files away, went on accepting exactly three
+            // words. Every ?fetch=intel-chip anybody has typed since has injected NOTHING AT ALL, and the
+            // twin's whole arc has had no way in but the one-in-four roll it was written to skip. Matched on
+            // the STEM now, so the reader and the writer of this cheat cannot part company again.
+            const string chip = "-chip";
+            string stage = candidate.EndsWith(chip, StringComparison.Ordinal)
+                ? candidate[..^chip.Length]
+                : candidate;
+            if (stage is "intel" or "active" or "picked")
             {
                 q.FetchCheat = candidate;
             }

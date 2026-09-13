@@ -377,7 +377,7 @@ public partial class Map
         const int reward = 4200; // a dead man's fortune, in a currency nobody can trace
         // #349: name the hand-off's address (station — PLANET system) so the captain knows where the
         // associate waits without hunting every moon.
-        string blurb = $"“Word is a dead tycoon's cherry-red roadster is drifting sunward of Mars — shot up as a stunt, never came down. There's a hardware wallet wedged between the seats: a fortune, and untraceable. Fetch it, bring it quiet to my associate at {BodyAddress(dest.Id)}. {reward:N0} cr, and we never spoke.”";
+        string blurb = $"“Word is a dead tycoon's cherry-red roadster is drifting {Derelict.RoadsterBearingPhrase} — shot up as a stunt, never came down. There's a hardware wallet wedged between the seats: a fortune, and untraceable. Fetch it, bring it quiet to my associate at {BodyAddress(dest.Id)}. {reward:N0} cr, and we never spoke.”";
         // #233 · …and what is ACTUALLY between the seats is dealt here, off the same booth seed the hand-off
         // address above was picked with. The brief still says wallet, because the client believes it says
         // wallet — one car in four is wrong about that, and nobody finds out until the seats. See

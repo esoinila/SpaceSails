@@ -379,8 +379,13 @@ public class TheBlackmailTwinTests
     {
         Parrot.Squawk[] all = Enum.GetValues<Parrot.Squawk>();
 
-        Assert.Equal(Parrot.Squawk.CarFound, all[^1]);
-        Assert.Equal(Parrot.Squawk.CarHunt, all[^2]);
+        // #238 appended a THIRD car squawk behind these two (CarGlimpsed, the glint), which is this guard
+        // doing exactly its job: the pair moved off the end because something was added AFTER them, and
+        // nothing was slipped in FRONT of them. The whole car block is pinned in order rather than just its
+        // last member, so the next append is caught the same way.
+        Assert.Equal(Parrot.Squawk.CarGlimpsed, all[^1]);
+        Assert.Equal(Parrot.Squawk.CarFound, all[^2]);
+        Assert.Equal(Parrot.Squawk.CarHunt, all[^3]);
         Assert.Equal("FIRING SOLUTION, CAPTAIN!", Parrot.Line(Parrot.Squawk.FiringSolution, 0));
 
         foreach (Parrot.Squawk kind in all)

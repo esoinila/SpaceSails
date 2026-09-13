@@ -1,0 +1,28 @@
+/* #238 · THE MISSION EVENT, AT THE SMALLER SIZE.
+
+   The owner asked for "the #185 celebration grammar at a smaller size", and SMALLER is the whole of what
+   this file says. Everything else — the backdrop, the card's ground, border, shadow and sticky foot — is
+   .mission-celebration's, rendered by this component and styled by CelebrationCard.razor.css, which is why
+   there are four declarations here and not forty.
+
+   The scope is still the PAGE's (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so
+   `::deep` reaches the shell-rendered card exactly as the neighbouring surfaces' rules do. */
+
+::deep .mission-moment {
+    /* Two thirds of the payday's width. A beat with one line in it in a 30rem card reads as a card that
+       failed to load the rest of itself; the geometry is the content's, which is the house's own
+       elegant-minimalism rule about compression. */
+    max-width: min(22rem, 88vw);
+    padding: 1rem 1.25rem;
+}
+
+.mm-headline {
+    /* The shout. Same weight and letter-spacing as the payday's fanfare row, one step down in size —
+       the family resemblance is the point: this is the celebration's sibling, not a notice. */
+    color: #ffd479;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1.35;
+    margin-bottom: 0.4rem;
+}
