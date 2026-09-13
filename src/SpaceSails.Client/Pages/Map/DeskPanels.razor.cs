@@ -229,6 +229,19 @@ public partial class DeskPanels
     [Parameter] public Action<KeyboardEventArgs> RenameKeyDown { get; set; } = default!;
     [Parameter] public Action ReopenStartPicker { get; set; } = default!;
     [Parameter] public EventCallback RestockSentries { get; set; }
+
+    // -- #325/#332 - THE CHANDLERY'S SEVEN WIRES ------------------------------------------------------
+    //  Funcs rather than values, the same shape SentryRoundsMissing/SentryRestockCost use, so the markup
+    //  reads the page's ONE property each render instead of a copy that was correct when the parameter was
+    //  last set. A chandlery row that quoted a stale price would be the same bug the armory's #562 note
+    //  further down this file is about, one card lower in the column.
+    [Parameter] public Func<bool> ChandleryOpen { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryTankPrice { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryTanksAboard { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryPillsMissing { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryRefillPrice { get; set; } = default!;
+    [Parameter] public EventCallback BuyExtendedTank { get; set; }
+    [Parameter] public EventCallback BuyMedKitRefill { get; set; }
     [Parameter] public Func<NpcShip, string> RouteLabel { get; set; } = default!;
     [Parameter] public Action ScanFiringWindows { get; set; } = default!;
     [Parameter] public Func<string, ScopeIntel?> ScopeIntelById { get; set; } = default!;

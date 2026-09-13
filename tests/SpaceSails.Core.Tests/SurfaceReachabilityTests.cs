@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Core;
 using Xunit;
@@ -56,7 +56,7 @@ public class SurfaceReachabilityTests
     private static DeckReachability.Point Spawn => new(TubeCenterX, Env.TopY - 2.0);
 
     /// <summary>The tiles audited: the tube's own, and every tile touching it. See the class note.</summary>
-    private static IReadOnlyList<SurfaceTiles.Address> Ring => SurfaceTiles.Chunk(SurfaceTiles.Home);
+    private static IReadOnlyList<SurfaceTiles.Address> Ring => SurfaceTiles.Chunk(SurfaceTiles.Home, SuitAir.PlayBudget(extendedTank: false));
 
     /// <summary>The flood's step. Coarser than <see cref="DeckReachability.DefaultStep"/> because the audited
     /// region is six times the ground it used to be — and still SOUND, which is the only thing that matters:

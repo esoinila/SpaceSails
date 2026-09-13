@@ -362,6 +362,7 @@ public partial class Map
             Rumours: BuildRumours(ex),
             // #564: the tank, drawn as a bar under the tracker.
             AirSeconds: ex.AirSeconds,
+            AirBudgetSeconds: ex.AirBudgetSeconds,   // #325 · what a full one holds on THIS walk
             // #612 · Is the tank actually running? The gauge said nothing either way until the owner asked
             // "where here does it say if I consume tanks or have air?" — and it now asks ONE function
             // (#608), the same one the drain itself is gated on.

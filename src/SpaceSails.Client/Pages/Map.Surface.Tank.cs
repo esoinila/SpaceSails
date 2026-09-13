@@ -36,6 +36,26 @@ public partial class Map
             return;
         }
 
+        // ── #325 · THE BOTTLE, SAID ONCE ──────────────────────────────────────────────────────────────
+        //
+        //  Fable's line, shipped verbatim (Chandlery.TankFittedLine), on the suit's own channel — the same
+        //  register as the point-of-no-return line, the reserve cut-in and the backstop refusal, because it
+        //  is the same kind of fact: a thing about the arithmetic the captain is walking under.
+        //
+        //  Said HERE, on the first tick of the walk, rather than at the shuttle: the descent is a run of
+        //  narration the captain is watching pass and a line dropped into it is a line nobody reads. And
+        //  said ONCE — a fitting is a fact, not a status row, and this file's other one-shots (AirWarned,
+        //  ReserveNoted) are one-shot for exactly the reason a repeated vital sentence becomes wallpaper.
+        //
+        //  Deliberately NOT gated on the supply: it is true whether the captain steps out onto regolith or
+        //  straight into a pressurised corridor, and a bought thing that goes unmentioned because the first
+        //  room happened to have air is a purchase the game quietly failed to acknowledge.
+        if (ex.ExtendedTank && !ex.ExtendedTankNoted)
+        {
+            ex.ExtendedTankNoted = true;
+            ShowPulseMessage(Chandlery.TankFittedLine);
+        }
+
         // #573 · INSIDE THE SHELTER, NOTHING IS SPENT. Owner, twice and unambiguously: "it should not be
         // possible to run out of air inside the emergency shelter" / "air should not be expended while in it
         // at all". Its sign has read PRESSURISED since the day it was built, and a suit standing in an

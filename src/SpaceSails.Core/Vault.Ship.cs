@@ -29,6 +29,24 @@ public sealed record ShipSection
     /// rounds. Durable ship state like the other ammo above; a missing section (old file) defaults to a
     /// full-loaded roster on the client. Order matches <see cref="SentryBot.RosterUnits"/>.</summary>
     public IReadOnlyList<int> SentryMagazines { get; init; } = [];
+
+    /// <summary>#325 — extended suit tanks bought at a chandlery and not yet fitted, as a COUNT. They ride
+    /// the ship and not the satchel (owner's placement: a spare bottle is stores, not something you carry
+    /// out with you), they stack, and one is consumed at the start of the next excursion.
+    ///
+    /// <para>Appended after <see cref="SentryMagazines"/> rather than slotted in beside the other
+    /// consumables, because the serializer writes a section in the order its properties are DECLARED —
+    /// moving an existing line to make room would rewrite every old save's field order for nothing. An old
+    /// file with no entry loads as zero, which is what every captain has had until now.</para></summary>
+    public int ExtendedTanks { get; init; }
+
+    /// <summary>#332 — calming pills in the med bay's cabinet, 0..<see cref="Chandlery.MedKitFullStock"/>.
+    /// Durable: a cabinet does not refill itself over a reload, which was the whole reason the restock had
+    /// to exist. Nullable so an old save (which never had the field) can be told apart from one that
+    /// genuinely records an EMPTY cabinet — a plain int would have handed every returning captain a full
+    /// cabinet on load, which is a free restock and the exact exploit the heat section exists to refuse.
+    /// </summary>
+    public int? MedKitPills { get; init; }
 }
 
 /// <summary>The hold. Each line is a cargo class and its unit count; the hot (stolen-while-heated)

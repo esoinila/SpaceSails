@@ -394,6 +394,15 @@ public partial class FlowColumn
     [Parameter] public Action<KeyboardEventArgs> RenameKeyDown { get; set; } = default!;
     [Parameter] public Action ReopenStartPicker { get; set; } = default!;
     [Parameter] public EventCallback RestockSentries { get; set; }
+
+    // #325/#332 - the chandlery's wires, forwarded to DeskPanels untouched.
+    [Parameter] public Func<bool> ChandleryOpen { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryTankPrice { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryTanksAboard { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryPillsMissing { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryRefillPrice { get; set; } = default!;
+    [Parameter] public EventCallback BuyExtendedTank { get; set; }
+    [Parameter] public EventCallback BuyMedKitRefill { get; set; }
     [Parameter] public Action<PlanNode> RetimeToScrub { get; set; } = default!;
     [Parameter] public Func<(string Text, bool Warn)?> RibbonHorizonNote { get; set; } = default!;
     [Parameter] public Func<NpcShip, string> RouteLabel { get; set; } = default!;

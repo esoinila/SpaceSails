@@ -203,8 +203,45 @@ public partial class Map
         // nobody out here is maintaining a door you levered off its dogs.
         // #564 · THE TANK. Seconds of suit air left, and whether the captain has already been told they
         // crossed the point of no return (the warning is a LINE you cross, said once — not a nag).
-        public double AirSeconds { get; set; } = SuitAir.TankSeconds;
+        //
+        // #325 · AirSeconds STARTS at this excursion's budget, not at the constant, because a fitted
+        // extended tank is fitted before the boots touch regolith and a suit that filled to the standard
+        // mark and then had the bottle "added" would be two tanks arguing. The initialiser reads the same
+        // one function every other reader does. Lazily, for the same reason Stream is lazy: ExtendedTank is
+        // `init`, so a field initialiser would run before the flag arrived and every suit in the game would
+        // step out filled to the standard mark.
+        private double? _airSeconds;
+
+        public double AirSeconds
+        {
+            get => _airSeconds ??= AirBudgetSeconds;
+            set => _airSeconds = value;
+        }
+
         public bool AirWarned { get; set; }
+
+        // ── #325 · THE EXTENDED TANK ──────────────────────────────────────────────────────────────────
+        //
+        //  Owner, #325 item 5: "extended tanks / spare bottles as purchasable margin ... the tourist shop
+        //  becomes an outfitter."
+        //
+        //  One bit, set at the SHUTTLE, never afterwards: a tank is fitted to a suit before it goes down,
+        //  and a captain cannot walk back to the ship's stores from four thousand du out. It is `init` for
+        //  exactly that reason — the compiler refuses the bug rather than a comment asking nicely.
+        //
+        //  Everything else about the tank is derived from it through the one function, never stored: the
+        //  budget, the lattice's extent, the backstop radius, the meter's full mark and the rack's fill cap
+        //  all ask AirBudgetSeconds. Nothing caches the answer, because a cached copy of a fact is a second
+        //  source of that fact and this file already says so about the huts eight screens up.
+        public bool ExtendedTank { get; init; }
+
+        /// <summary>#325 · This excursion's play budget — what a FULL suit holds today. The one number the
+        /// geometry, the instruments and the sentences all read.</summary>
+        public double AirBudgetSeconds => SuitAir.PlayBudget(ExtendedTank);
+
+        // #325 · Whether the suit has already said the bottle is on. One-shot per excursion, the same shape
+        // as AirWarned above and for the same reason: the fitting is a FACT said once, not a status line.
+        public bool ExtendedTankNoted { get; set; }
 
         // #573 · The low-air mark is a SEPARATE warning from the point-of-no-return, because in a bounded
         // field the point-of-no-return can never fire at all and the captain would die having been told
@@ -699,7 +736,15 @@ public partial class Map
 
         // #563 · Which tiles are carried right now, and how many times that has changed. Never null: an
         // excursion always stands on ground, even before it has walked a step.
-        public SurfaceStream Stream { get; } = new();
+        //
+        // #325 · Built LAZILY, and that is not a style choice. The stream carries the tile lattice out to
+        // the backstop, the backstop is the tether, and the tether is AirBudgetSeconds — which is an init
+        // property, so a field initialiser would run before the tank flag had been set and every excursion
+        // would carry a standard-tank lattice however many bottles it left with. First touch happens after
+        // construction; nothing reads a stream before the excursion exists.
+        private SurfaceStream? _stream;
+
+        public SurfaceStream Stream => _stream ??= new SurfaceStream(AirBudgetSeconds);
 
         public List<SurfaceBot> Bots { get; init; } = [];  // #314: sentries carried + deployed this excursion
 

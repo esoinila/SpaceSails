@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -102,16 +102,22 @@ public partial class Map
     //      calming pills can be retrieved to help restore sanity to captain"). CABIN 3 is reborn as the
     //      med bay; its MED KIT console dispenses ONE calming pill per press, restoring the captain's
     //      nerve through the SAME #339 relief seam the galley drink rides (NerveModel.DrinkRestore owns
-    //      the law — reused, not parallelled). Stock is a finite shipboard supply that starts at 6;
-    //      RESTOCKING is a later lane (no resupply seam yet). ----
-    private const int MedBayPillStock = 6;
-    private int _pills = MedBayPillStock;
+    //      the law — reused, not parallelled). Stock is a finite shipboard supply.
+    //
+    //      #332 · AND THE LATER LANE HAS ARRIVED. This block used to end "RESTOCKING is a later lane (no
+    //      resupply seam yet)" and the empty-cabinet line said so out loud to the captain, which is the game
+    //      talking about its own backlog instead of about its world. A haven's chandlery sells the refill
+    //      now (Map.Trade.Chandlery.cs), so the stock count moved to Core — Chandlery.MedKitFullStock —
+    //      where the cabinet, the price and the restock can all read ONE number. This file keeps the one
+    //      thing that is properly its own: the cabinet is the only READER of _pills, and the restock is the
+    //      only writer besides the press below. ----
+    private int _pills = Chandlery.MedKitFullStock;
 
     private string TakePill()
     {
         if (_pills <= 0)
         {
-            return "MED KIT: the pill cabinet is empty — the calming stock is spent. (Restock is a later lane.)";
+            return Chandlery.CabinetEmptyLine;
         }
 
         _pills--;

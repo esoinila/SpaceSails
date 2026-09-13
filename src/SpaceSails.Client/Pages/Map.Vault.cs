@@ -58,6 +58,11 @@ public partial class Map
             _shipBots.Add(new ShipBot(unit, SentryBot.MaxMagazine));
         }
 
+        // #325/#332 · The chandlery's two: no spare bottles in stores (they are bought, never issued), and a
+        // full pill cabinet — the same stake every captain has opened with since #343.
+        _extendedTanks = 0;
+        _pills = Chandlery.MedKitFullStock;
+
         // Upgrades back to base (and the tank to the base capacity that implies), sensor rebuilt.
         _massLevel = 0;
         _sensorLevel = 0;
@@ -185,6 +190,8 @@ public partial class Map
                 SlugAmmo = _slugAmmo,
                 MissileAmmo = _missileAmmo,
                 SentryMagazines = _shipBots.Select(b => b.Rounds).ToList(), // #314
+                ExtendedTanks = _extendedTanks,                             // #325 · spare bottles in stores
+                MedKitPills = _pills,                                       // #332 · the cabinet as it stands
             },
             Cargo = new CargoSection(hold, VaultMapper.ToHotLines(_hotCargo)),
             Heat = new HeatSection(_heat.Level, _heat.RaisedAtSimTime),
@@ -385,6 +392,17 @@ public partial class Map
             {
                 _shipBots.Add(new ShipBot(SentryBot.RosterUnits[i], mags[i]));
             }
+
+            // #325 · Spare bottles. Clamped at zero and nothing else: a count of stores has no ceiling the
+            // game imposes, they stack by the owner's own ask, and a save is not the place to invent one.
+            _extendedTanks = Math.Max(0, ship.ExtendedTanks);
+
+            // #332 · The cabinet. NULL means a file written before the restock lane existed, and such a file
+            // genuinely has nothing to say about pills — so it loads full, which is what that captain has had
+            // all along. A recorded zero is an EMPTY cabinet and stays empty: rounding it up to full on load
+            // would be a free restock for anybody who reloads, which is the same exploit shape the heat
+            // section exists to refuse.
+            _pills = Math.Clamp(ship.MedKitPills ?? Chandlery.MedKitFullStock, 0, Chandlery.MedKitFullStock);
         }
 
         if (vault.Upgrades is { } up)
