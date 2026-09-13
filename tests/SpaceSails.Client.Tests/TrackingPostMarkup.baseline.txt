@@ -177,6 +177,16 @@
             {
                 <div class="sensor-tasks-box mb-2">
                     <div class="fw-bold">🔭 Sensor tasks — one telescope, worked top to bottom</div>
+                    @* #238 item 3 · WHEN THE THING HOLDING THE GLASS IS NOT IN THIS LIST. A manual sweep takes
+                       the instrument out from under the carousel, so no row below is RUNNING and the panel's
+                       four true words say nothing about the aimed job queued beneath it — the owner ran a 77 %
+                       sweep straight past his own roadster fix. The complaint stands where the running row
+                       would have stood. Composed in Core (ScopeHold.Line) and READ here, never spelled: the
+                       Sensors desk chip's second line prints this same string. *@
+                    @if (_schedule.Active is null && ScopeHoldLine is { } heldByHand)
+                    {
+                        <div class="sensor-task-held">@heldByHand</div>
+                    }
                     @foreach (SensorTask task in _schedule.Queue)
                     {
                         @* #239: READ, never inferred — RUNNING at 0% and WAITING are one picture if the picture is a percentage. *@
@@ -218,6 +228,13 @@
                                         @onclick="() => _schedule.Remove(task.Id)">✕</button>
                             }
                         </div>
+                        @* #238 item 3 · …and when the holder DOES have a row, the complaint hangs off it. Same
+                           string, same source; the scheduled case and the hand-flown one above are two places a
+                           row can be, not two sentences. *@
+                        @if (state == SensorTaskState.Running && ScopeHoldLine is { } heldByThisPass)
+                        {
+                            <div class="sensor-task-held" @key="@("held:" + task.Id)">@heldByThisPass</div>
+                        }
                     }
                     @foreach (CompletedPass done in _schedule.RecentlyDone)
                     {
