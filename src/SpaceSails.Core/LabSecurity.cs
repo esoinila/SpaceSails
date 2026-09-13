@@ -208,14 +208,19 @@ public static class LabSecurity
         "🔒 LOCKDOWN. Every door in the mountain goes over at once — the one ahead of you, the one behind you, " +
         "and the one you came in through. Vantar built this to keep something in.";
 
-    /// <summary>The way out of a lockdown, and it is the card. Which is why the card is in the DEEPEST room: a
-    /// captain who ran at the first alarm never had it, and now needs it, and it is behind two locked doors.</summary>
-    public const string LockdownWithTheCardLine =
-        "🔒 Every door is keyed — and you are holding the thing that keys them. Whatever Vantar built this to " +
-        "keep in, you can walk past it.";
-
-    /// <summary>…and without it.</summary>
-    public const string LockdownWithoutTheCardLine =
-        "🔒 Every door is keyed and there is no handle on this side of any of them. The card is where you did " +
-        "not go.";
+    // #563 · FABLE: line needed — and two authored sentences were RETIRED here rather than rewritten.
+    //
+    // LockdownWithTheCardLine ("you are holding the thing that keys them") and LockdownWithoutTheCardLine
+    // ("The card is where you did not go") were the lockdown's second breath, and both of them are FALSE
+    // after the owner's ruling of 2026-09-13: a locked door is TIME, never a key, so the card keys nothing
+    // and its absence strands nobody. A sentence that goes on promising a way out the sim no longer has is
+    // the third named bug class in this repo — the sim doing one thing while a sentence reports another — and
+    // it is worse here than most, because it would send a captain two rooms deeper for an object that cannot
+    // help him while a garrison walks the corridor behind him.
+    //
+    // They are deleted and nothing is put in their place: an implementation crew does not write canon. What
+    // is wanted is ONE authored sentence for the same beat, saying what a lockdown costs now rather than
+    // what it wants — the shoulder (LockedDoor.ForceSeconds, and every second of it is heard) or the round
+    // (LockedDoor.LockShotLine, and the door never comes back). LockdownLine above is unchanged and still
+    // carries the whole event on its own in the meantime.
 }

@@ -125,9 +125,9 @@ public sealed partial class Map
 
         ShowPulseMessage(LabSecurity.LockdownLine);
         LogAutopilotEvent(LabSecurity.LockdownLine);
-        LogAutopilotEvent(_hasVantarCard
-            ? LabSecurity.LockdownWithTheCardLine
-            : LabSecurity.LockdownWithoutTheCardLine);
+        // #563 · The second breath used to be "…and the card is / is not in your hand". It is not a fact
+        // about the world any more (see LabSecurity's own FABLE marker), so the lockdown says the one thing
+        // that is still true and stops. What the captain does about it is now on the door prompt row.
 
         RendererInterop.PlayCue("alarm");
         ApplyNerveShock(NervePips.SightingPips * (int)NervePips.PipUnit, "every door in the mountain just keyed");
@@ -350,7 +350,9 @@ public sealed partial class Map
         {
             SayItWhereTheyAreLooking(_labAlarm == LabSecurity.State.Disarmed
                 ? "🔔 The panel is dark. You already had this argument."
-                : LabSecurity.LockdownWithoutTheCardLine);
+                // #563 · …and after a lockdown the panel has nothing left to argue about. It says the event
+                // itself rather than the retired sentence about a card that opens nothing.
+                : LabSecurity.LockdownLine);
             return;
         }
 

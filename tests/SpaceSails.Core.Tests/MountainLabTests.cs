@@ -338,9 +338,13 @@ public sealed class MountainLabTests
     }
 
     /// <summary>
-    /// AND LOCKDOWN IS THE POINT OF ALL OF IT. The owner's cool feature turned against him: every door keyed at
-    /// once, including the way out — and the only thing that opens them is in the deepest room. The two lines
-    /// have to say plainly which of those two situations the captain is in.
+    /// AND LOCKDOWN IS THE POINT OF ALL OF IT. The owner's cool feature turned against him: every door keyed
+    /// at once, including the way out.
+    ///
+    /// <para>#563 · The two card sentences this used to pin are RETIRED (owner ruling, 2026-09-13: a locked
+    /// door is TIME, never a key), so what is pinned now is that they cannot come back — a sentence promising
+    /// a way out the sim no longer has is the third named bug class, and a merge is exactly how one returns.
+    /// RED by re-adding either const.</para>
     /// </summary>
     [Fact]
     public void LockdownTellsYouWhichSideOfItYouAreOn()
@@ -348,8 +352,11 @@ public sealed class MountainLabTests
         Assert.Contains("every door", LabSecurity.LockdownLine, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("came in through", LabSecurity.LockdownLine, StringComparison.OrdinalIgnoreCase);
 
-        Assert.Contains("you can walk past it", LabSecurity.LockdownWithTheCardLine, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("where you did not go", LabSecurity.LockdownWithoutTheCardLine, StringComparison.OrdinalIgnoreCase);
+        foreach (string gone in new[] { "LockdownWithTheCardLine", "LockdownWithoutTheCardLine" })
+        {
+            Assert.Empty(typeof(LabSecurity).GetMember(
+                gone, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static));
+        }
     }
 
     // ── The muscle, and what hiding from it is worth ──────────────────────────────────────────────────
