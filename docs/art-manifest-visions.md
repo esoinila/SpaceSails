@@ -74,6 +74,21 @@ Destination: `src/SpaceSails.Client/wwwroot/art/`. Every slot `onerror`-hides.
 > dark for kilometres. Intimate and enormous at once. Cold blue-grey palette, painterly, illegible worn
 > stencilling only, no readable text, no lettering, no face.
 
+## 7. `art/observation-walk.jpg` — the observation walk ★ *the absence IS the picture*
+
+*#1199. Not an archive vision — it is a room the captain is standing in — but it belongs to this set and not
+to the bars', because what this house style is for is exactly what this canvas has to do: cold, clean, large,
+lit by something that was not installed for company, and **empty**. The rule at the top of this file is the
+whole brief. The evidence is a lit tube with nobody in it; the conclusion is the captain's and the game never
+offers one. If a figure ever turns up at the far end of this canvas the feature is spent.*
+
+*It is used twice and is one canvas both times: laid under the walk as its glass floor (what a transparent
+floor looks like from above is the thing that is under it), and carried by the card at the blind end.*
+
+> A long glass-floored observation tube reaching out from a space-station concourse over a planetary limb,
+> interior lit, empty, the rail at the far end, seen from the entrance; painterly, cold, clean, no people, no
+> text, no lettering, no faces.
+
 ---
 
 ## Generation recipe
@@ -97,8 +112,14 @@ grok -p "Call your image_gen tool (aspect_ratio 16:9) with prompt: '<PROMPT>'. S
 | 4 | `archive-intake` | `vision-intake.jpg` | ✅ | ✅ |
 | 5 | `archive-wintering` | `vision-wintering.jpg` | ✅ | ✅ |
 | 6 | `archive-your-rack` | `vision-your-rack.jpg` | ✅ | ✅ |
+| 7 | `StoryBeats.Beat.TheObservationWalk` / `ObservationWalk.ArtUrl` | `observation-walk.jpg` | ✅ | ✅ |
 
-**All six are now on screen.** The node's client lane landed — the dwell field, the confrontation card
+**Number 7 is on screen too**, twice, at Selene Gate: as the floor of the walk itself (a backdrop at 0.55,
+so the deck reads through it) and on the story card at the blind end, which takes the shell's own
+`onerror`-hide like every other canvas in the game. Walk ashore, cross the concourse, and go out of the
+hall's due-west doorway.
+
+**All six of the originals are now on screen.** The node's client lane landed — the dwell field, the confrontation card
 and the handle — so every canvas above is reachable in the game at `/map?archive=1&land=1`: walk aft
 into the **DEEP HOLD** and go to the column. The visions render on their own cold-framed card
 (`.archive-vision`), still `onerror`-hiding, still with **no caption from the game** — the image is the
