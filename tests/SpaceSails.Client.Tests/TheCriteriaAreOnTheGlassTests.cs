@@ -326,15 +326,21 @@ public sealed class TheCriteriaAreOnTheGlassTests
     [Fact]
     public void TheSwitchChipUsesThePagesOwnFrameVerb()
     {
-        string row = Source("Pages", "Map", "NavHud", "FrameMotionTipRow.razor");
-        Assert.Contains("SetPlotFrame(null)", row, StringComparison.Ordinal);
+        string file = Source("Pages", "Map", "NavHud", "FrameMotionTipRow.razor");
+
+        // THE MARKUP, not the file. The first cut of this guard read the whole thing and passed on a razor
+        // whose button had stopped calling the verb entirely, because the PROSE above it still said the
+        // words — a guard reading a comment about the code instead of the code. Everything below is read off
+        // the block the browser actually renders.
+        string row = file[file.IndexOf("@if (FrameMotionTipLine()", StringComparison.Ordinal)..];
+
+        Assert.Contains("@onclick=\"() => SetPlotFrame(null)\"", row, StringComparison.Ordinal);
         Assert.Contains("FrameMotionTip.SwitchChip", row, StringComparison.Ordinal);
 
         // No sentence and no threshold of its own — both are Core's, so the razor cannot drift from the law.
         foreach (string typedTwice in new[] { "Barely moving", "0.15", "15%", "v helio", "helio" })
         {
-            Assert.DoesNotContain(typedTwice, row[row.IndexOf("@if (FrameMotionTipLine()", StringComparison.Ordinal)..],
-                StringComparison.Ordinal);
+            Assert.DoesNotContain(typedTwice, row, StringComparison.Ordinal);
         }
 
         // It is a row in the flow with a button on it, never a surface that has to be dismissed — the
