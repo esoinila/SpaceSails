@@ -319,7 +319,16 @@ public sealed class TheCarWithPhotographsInItTests
         int ends = dig.IndexOf("\n    }", at, StringComparison.Ordinal);
         string body = dig[at..ends];
 
-        Assert.Contains("TheChipGoesInTheChest(ex.PendingCargo)", body, StringComparison.Ordinal);
+        // #319 · The list is named `manifest` now rather than spelled `ex.PendingCargo` at this call — the
+        // bury learned to put things in a hole with no chest in it, and a captain who dropped his chest to
+        // sprint and then buried the file in his coat must not have the dropped chest's cargo go in with it.
+        // So this guard makes the CLAIM it was always making, and makes it stronger: the chip joins the very
+        // list the cache is minted from, whatever that list is called. A rename that quietly pointed the chip
+        // at a list nobody buries is exactly what it is here to catch.
+        Assert.Contains("TheChipGoesInTheChest(manifest)", body, StringComparison.Ordinal);
+        Assert.Contains("_caches.Bury(\n            ex.Stop.Body.Id, coin, manifest,".ReplaceLineEndings(),
+            body.ReplaceLineEndings(), StringComparison.Ordinal);
+
         // …and it joins the manifest AFTER the hold has been settled, because the chip was never in the hold
         // and HoldAfterBurying must not be asked to subtract it from anything.
         Assert.True(
