@@ -78,14 +78,18 @@ public static class CacheMint
         string id, string bodyId, int mintIndex, int coin, IReadOnlyList<CacheCargo> cargo,
         double buriedSimTime, string owner, bool playerOwned, int reeverLevel = 0,
         double? digX = null, double? digY = null, int? siteIndex = null,
-        bool? buried = null, double? padDistance = null)
+        bool? buried = null, double? padDistance = null,
+        IReadOnlyList<Satchel.Item>? deposit = null)
     {
         Landmark site = Landmarks.At(bodyId, siteIndex);
         string seed = SeedKey(bodyId, owner, buriedSimTime, mintIndex);
         return new TreasureCache(
             id, bodyId, site.Name, Bearing(seed), Paces(seed),
             coin, cargo ?? [], buriedSimTime, owner, playerOwned, reeverLevel, digX, digY, siteIndex,
-            buried, padDistance);
+            // #319 · …and whatever came out of the captain's coat, minted into the SAME chest. An empty pick
+            // is stored as null rather than as an empty list, so a chest is a chest byte for byte in the
+            // vault and the legacy round-trip guard stays green.
+            buried, padDistance, deposit is { Count: > 0 } things ? things : null);
     }
 }
 
