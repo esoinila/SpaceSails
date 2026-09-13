@@ -144,7 +144,7 @@ public sealed class TheTenthIsQuotedAndOnlyTheAutopilotsTests
         "Map.Plot.Sling.cs",        // the slingshot plan's pulses
         "Map.Docking*.cs",          // the terminal match (#251 · six partials, swept as one)
         "Map.LongHaul*.cs",         // a long-haul departure / mid-course (#251 · five partials, swept as one)
-        "Map.Combat.FireControl.cs",// weapons
+        "Map.Combat.FireControl*.cs",// weapons (#251 · five partials, swept as one)
         "Map.ChargeBoard.cs",       // the contactor's draw
     ];
 
