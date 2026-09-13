@@ -30,23 +30,6 @@ public sealed record ShipSection
     /// full-loaded roster on the client. Order matches <see cref="SentryBot.RosterUnits"/>.</summary>
     public IReadOnlyList<int> SentryMagazines { get; init; } = [];
 
-    /// <summary>#325 — extended suit tanks bought at a chandlery and not yet fitted, as a COUNT. They ride
-    /// the ship and not the satchel (owner's placement: a spare bottle is stores, not something you carry
-    /// out with you), they stack, and one is consumed at the start of the next excursion.
-    ///
-    /// <para>Appended after <see cref="SentryMagazines"/> rather than slotted in beside the other
-    /// consumables, because the serializer writes a section in the order its properties are DECLARED —
-    /// moving an existing line to make room would rewrite every old save's field order for nothing. An old
-    /// file with no entry loads as zero, which is what every captain has had until now.</para></summary>
-    public int ExtendedTanks { get; init; }
-
-    /// <summary>#332 — calming pills in the med bay's cabinet, 0..<see cref="Chandlery.MedKitFullStock"/>.
-    /// Durable: a cabinet does not refill itself over a reload, which was the whole reason the restock had
-    /// to exist. Nullable so an old save (which never had the field) can be told apart from one that
-    /// genuinely records an EMPTY cabinet — a plain int would have handed every returning captain a full
-    /// cabinet on load, which is a free restock and the exact exploit the heat section exists to refuse.
-    /// </summary>
-    public int? MedKitPills { get; init; }
 }
 
 /// <summary>The hold. Each line is a cargo class and its unit count; the hot (stolen-while-heated)
@@ -96,3 +79,40 @@ public sealed record DiceItemsSection(IReadOnlyList<DiceItemRecord> Items)
 public sealed record DiceItemRecord(string ItemId, string Label, int Value);
 
 // ── Player progression flags (#292): onboarding state that gates the nav-screen greeting. ──
+
+// ── #325/#332 · THE CHANDLERY'S STORES ────────────────────────────────────────────────────────────────
+
+/// <summary>
+/// #325/#332 · What the haven chandlery sold this ship and she has not used yet: spare suit bottles in
+/// stores, and the med bay's pill cabinet as it actually stands.
+///
+/// <para><b>Why a whole SECTION rather than two fields on <see cref="ShipSection"/>.</b> Because the
+/// checksum is taken over the payload. Two keys added to a section every save already writes would have
+/// changed the digest of every vault ever written, and the #638 note on <see cref="Vault.Void"/> spells out
+/// what that costs: the 📛 tampered marker hung on an honest voyage. The save-compat proof is a
+/// byte-for-byte one (<c>ALegacyVaultRoundTripsByteForByteAcrossTheVoid</c>), and it caught exactly this —
+/// the first cut of this lane DID put the fields on <see cref="ShipSection"/>, and the guard reddened at the
+/// character where <c>"extendedTanks"</c> appeared. A section the writer omits when there is nothing to say
+/// leaves an old file untouched.</para>
+///
+/// <para>So it is written only when the client has something to record, and a vault that lacks it loads as
+/// the opening stake: no bottles in stores, a full cabinet. Which is what every captain has had until
+/// now.</para>
+/// </summary>
+public sealed record ChandlerySection
+{
+    /// <summary>#325 — extended suit tanks bought and not yet fitted, as a COUNT. They ride the ship and not
+    /// the satchel (owner's placement: a spare bottle is stores, not something you carry out with you), they
+    /// stack, and one is consumed at the start of the next excursion.</summary>
+    public int ExtendedTanks { get; init; }
+
+    /// <summary>#332 — calming pills in the med bay's cabinet, 0..<see cref="Chandlery.MedKitFullStock"/>.
+    /// Durable: a cabinet does not refill itself over a reload, which was the whole reason the restock had
+    /// to exist.
+    ///
+    /// <para>Nullable, and that matters. A file that carries this section but not this key has nothing to
+    /// say about pills and loads as a full cabinet; a recorded ZERO is an empty one and stays empty. A plain
+    /// int could not tell those apart, and whichever way it guessed would be wrong for somebody — either
+    /// every returning captain opens to an empty cabinet, or reloading is a free restock.</para></summary>
+    public int? MedKitPills { get; init; }
+}

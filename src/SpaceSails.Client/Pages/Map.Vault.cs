@@ -190,10 +190,13 @@ public partial class Map
                 SlugAmmo = _slugAmmo,
                 MissileAmmo = _missileAmmo,
                 SentryMagazines = _shipBots.Select(b => b.Rounds).ToList(), // #314
-                ExtendedTanks = _extendedTanks,                             // #325 · spare bottles in stores
-                MedKitPills = _pills,                                       // #332 · the cabinet as it stands
             },
             Cargo = new CargoSection(hold, VaultMapper.ToHotLines(_hotCargo)),
+
+            // #325/#332 · The chandlery's stores, always written by a live game: a captain always has a
+            // cabinet, even an empty one, and "what is in it" is exactly the fact this section exists to
+            // carry. Only a vault written before the lane lacks the section.
+            Chandlery = new ChandlerySection { ExtendedTanks = _extendedTanks, MedKitPills = _pills },
             Heat = new HeatSection(_heat.Level, _heat.RaisedAtSimTime),
             Contacts = VaultMapper.ToSection(_contacts),
             Caches = VaultMapper.ToSection(_caches),
@@ -393,16 +396,26 @@ public partial class Map
                 _shipBots.Add(new ShipBot(SentryBot.RosterUnits[i], mags[i]));
             }
 
-            // #325 · Spare bottles. Clamped at zero and nothing else: a count of stores has no ceiling the
-            // game imposes, they stack by the owner's own ask, and a save is not the place to invent one.
-            _extendedTanks = Math.Max(0, ship.ExtendedTanks);
+        }
 
-            // #332 · The cabinet. NULL means a file written before the restock lane existed, and such a file
-            // genuinely has nothing to say about pills — so it loads full, which is what that captain has had
-            // all along. A recorded zero is an EMPTY cabinet and stays empty: rounding it up to full on load
-            // would be a free restock for anybody who reloads, which is the same exploit shape the heat
+        // ── #325/#332 · THE CHANDLERY'S STORES ─────────────────────────────────────────────────────────
+        //
+        //  Its own section, and read outside the ship block on purpose: a vault written before this lane
+        //  simply has no chandlery section, and such a file has nothing to say about either count. It opens
+        //  the way every captain has opened until now — nothing in stores, a full cabinet — which is what
+        //  the field initialisers already hold, so the absent case is the no-op it should be.
+        if (vault.Chandlery is { } chandlery)
+        {
+            // Spare bottles: clamped at zero and nothing else. A count of stores has no ceiling the game
+            // imposes — they stack by the owner's own ask — and a save is not the place to invent one.
+            _extendedTanks = Math.Max(0, chandlery.ExtendedTanks);
+
+            // The cabinet. A NULL here is a section that carries no pill key and genuinely has nothing to
+            // say, so it loads FULL. A recorded zero is an EMPTY cabinet and stays empty: rounding it up on
+            // load would be a free restock for anybody who reloads, which is the same exploit shape the heat
             // section exists to refuse.
-            _pills = Math.Clamp(ship.MedKitPills ?? Chandlery.MedKitFullStock, 0, Chandlery.MedKitFullStock);
+            _pills = Math.Clamp(
+                chandlery.MedKitPills ?? Core.Chandlery.MedKitFullStock, 0, Core.Chandlery.MedKitFullStock);
         }
 
         if (vault.Upgrades is { } up)

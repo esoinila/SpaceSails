@@ -348,26 +348,40 @@ public sealed class TheChandlerySellsMarginTests
     /// punishing returning captains — and any fix that rounded zero up to full would have handed every
     /// captain a free restock on reload, which is the exploit the heat section exists to refuse.</para>
     ///
-    /// <para><b>Proven RED</b> by dropping <c>ExtendedTanks</c> from the round-trip and by making the
-    /// section's pills non-nullable: the first failed on the tank count, the second could no longer tell an
-    /// old file from an empty cabinet.</para>
+    /// <para>The third claim is the one that changed the design. The counts began as two fields on
+    /// <c>ShipSection</c>, and <c>ALegacyVaultRoundTripsByteForByteAcrossTheVoid</c> went red at the
+    /// character where <c>"extendedTanks"</c> appeared: the checksum is taken over the payload, so two keys
+    /// on a section every save already writes changes the digest of every vault ever written and hangs the
+    /// 📛 tampered marker on an honest voyage. They live in their own omitted-when-empty section now, the
+    /// #638 shape.</para>
+    ///
+    /// <para><b>Proven RED</b> by marking <c>ExtendedTanks</c> <c>[JsonIgnore]</c> (the round-trip lost the
+    /// tank count), by defaulting the section's pills to <c>0</c> (an old file could no longer be told from
+    /// an empty cabinet), and by writing the section unconditionally in <c>VaultSerializer.Save</c> (the
+    /// omission assertion named it, and the legacy byte-for-byte guard reddened beside it).</para>
     /// </summary>
     [Fact]
     public void TheStockCountsRoundTripTheVault()
     {
         var saved = new Vault
         {
-            Ship = new ShipSection { ExtendedTanks = 3, MedKitPills = 0 },
+            Chandlery = new ChandlerySection { ExtendedTanks = 3, MedKitPills = 0 },
         };
 
         string json = VaultSerializer.Save(saved);
         Vault loaded = VaultSerializer.Load(json);
 
-        Assert.Equal(3, loaded.Ship!.ExtendedTanks);
-        Assert.Equal(0, loaded.Ship!.MedKitPills);
+        Assert.False(loaded.Tampered);
+        Assert.Equal(3, loaded.Chandlery!.ExtendedTanks);
+        Assert.Equal(0, loaded.Chandlery!.MedKitPills);
 
         // …and a section that never heard of pills says so, rather than saying "empty".
-        var old = new ShipSection { ExtendedTanks = 0 };
+        var old = new ChandlerySection { ExtendedTanks = 0 };
         Assert.Null(old.MedKitPills);
+
+        // AND THE SECTION IS OMITTED WHEN THERE IS NOTHING TO RECORD, which is what keeps every vault
+        // written before this lane loading and re-saving byte for byte — the #638 law on Vault.Void, and
+        // the guard that caught the first cut of this lane putting the two counts on ShipSection.
+        Assert.DoesNotContain("chandlery", VaultSerializer.Save(new Vault()), StringComparison.Ordinal);
     }
 }
