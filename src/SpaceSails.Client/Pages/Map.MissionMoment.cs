@@ -1,4 +1,3 @@
-using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
