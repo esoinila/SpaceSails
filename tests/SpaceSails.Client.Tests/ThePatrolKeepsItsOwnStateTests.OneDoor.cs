@@ -81,7 +81,20 @@ public sealed partial class ThePatrolKeepsItsOwnStateTests
     [Fact]
     public void TheRoundNeedsExactlyThisManyThingsFromThePage()
     {
-        const int TheRatchet = 21;
+        // #711 slice 1 · RAISED 21 → 23, ARGUED. The round learned to find a parcel, and the two things it
+        // needs for that are the page's and cannot be derived on the floor:
+        //
+        //   WorldSeed  — which UNIVERSE this is. One outfit in a world does not reach for the fine book, and
+        //                "a world" here is the active game thread (a new voyage clears the contacts book).
+        //                The thread id is the page's identity system; the round takes the ANSWER — a folded
+        //                seed — rather than the machinery, which is exactly the shape this note asks for.
+        //   PayTheFine — coin out for a fine paid on somebody's floor. A VERB, not the purse: the round
+        //                cannot read _credits, cannot see what is left, and cannot spend it on anything
+        //                else. The amount is Core's (BustedRule.BribeDemand, called by UnlistedParcel).
+        //
+        // Everything else the find needs — the ledger and the sim clock — is threaded through
+        // AdvancePatrol's own parameters, which is why this is two and not four.
+        const int TheRatchet = 23;
 
         List<string> members = HostMembers();
 

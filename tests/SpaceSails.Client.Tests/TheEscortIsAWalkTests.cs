@@ -634,13 +634,13 @@ public sealed class TheEscortIsAWalkTests
         Assert.Contains("double toX = toTheNoise ? TheNoise.X : _host.AvatarX;", walkUp, StringComparison.Ordinal);
         Assert.Contains("double toY = toTheNoise ? TheNoise.Y : _host.AvatarY;", walkUp, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.AtCardReach(g.X, g.Y, toX, toY)", walkUp, StringComparison.Ordinal);
-        Assert.Contains("TheRoundStopsAtYou(ex, g);", walkUp, StringComparison.Ordinal);
+        Assert.Contains("TheRoundStopsAtYou(ex, g, book, simTime);", walkUp, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.StillComing(", walkUp, StringComparison.Ordinal);
 
         // …and arriving at a NOISE may never raise the card: that arm returns ABOVE the read, so a man who
         // walked over to a hole in a hasp does not inspect the papers of whoever is not standing beside it.
         int atTheNoise = walkUp.IndexOf("TheNoiseWasNothing(g);", StringComparison.Ordinal);
-        int theCard = walkUp.IndexOf("TheRoundStopsAtYou(ex, g);", StringComparison.Ordinal);
+        int theCard = walkUp.IndexOf("TheRoundStopsAtYou(ex, g, book, simTime);", StringComparison.Ordinal);
         Assert.True(
             atTheNoise >= 0 && atTheNoise < theCard,
             "the walk to a bang no longer returns above the read — a man who arrived at a PLACE would raise "
