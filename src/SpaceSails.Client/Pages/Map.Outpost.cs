@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;

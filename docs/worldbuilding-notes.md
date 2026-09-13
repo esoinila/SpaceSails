@@ -360,6 +360,21 @@ both ends agree even though either could go faster alone. That is why a hall a h
 a leaf in it that a man can lean on: it was never built for a man, it was built to be the slowest, most
 legible thing in the building.
 
+### The Kosh principle
+
+Owner, 2026-09-13, verbatim in spirit:
+
+> *"Ambassador Kosh in Babylon 5: in public he is an alien in an encounter suit, because almost everybody
+> would instantly recognise who and what he is otherwise. The five observables are played more to special
+> connections, or used when Kosh himself is in danger. The moments when the Old Ones do not use doors are
+> special or private, part of a bigger plan that is not yet clear. In X-Files terms these are grandeur
+> reveals — used sparingly, because otherwise they lose their dramatic potency. When they use them, we make a
+> show of it and tell it well, with graphics and pop-ups."*
+
+Fable gloss: *"An observable is a budget the plot spends once per arc. The show is a told beat, art and card,
+never a mechanic the player can repeat — and the absence can be the show: a dead end with one way in, and
+nobody there."*
+
 **Q1, what a locked door costs**, owner verbatim:
 
 > *"I like the time instead of a key, considering we have firepower and tools. We can create the same effect

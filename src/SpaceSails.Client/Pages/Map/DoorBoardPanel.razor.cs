@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Components;
+﻿using Microsoft.AspNetCore.Components;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;

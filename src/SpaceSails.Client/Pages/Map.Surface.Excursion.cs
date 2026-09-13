@@ -1,4 +1,4 @@
-using SpaceSails.Client.Rendering;
+﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 using SpaceSails.Core.Interior;
 
