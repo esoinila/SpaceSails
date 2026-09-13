@@ -54,6 +54,13 @@ public partial class TrackingPost
     /// <summary>Tuesday plan PR-A / #240: how much of a scan's sky the telescope has been over.</summary>
     [Parameter] public EventCallback<AreaScanCoverage> OnAreaScanCoverage { get; set; }
 
+    /// <summary>#238 item 3 · The targets a live contract is waiting on, handed down by the page — an id and
+    /// a position each, never a quest. The desk has never known what a quest is and this fix does not teach
+    /// it: the page owns <c>_quests</c> and <c>IsBodyHidden</c> and answers WHICH targets are live; the desk
+    /// owns the schedule and answers what is holding the glass and what is behind it. Each side answers the
+    /// half it actually has.</summary>
+    [Parameter] public IReadOnlyList<QuestScopeTarget> LiveQuestTargets { get; set; } = [];
+
     private const double RosetteCenterPx = 100;
     private const double RosetteMaxRadiusPx = 82;
     private const int RosetteSteps = 48;

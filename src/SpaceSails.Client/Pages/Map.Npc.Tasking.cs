@@ -289,6 +289,54 @@ public partial class Map
         }
     }
 
+    /// <summary>
+    /// #238 item 3 · <b>WHAT A LIVE CONTRACT IS WAITING ON.</b> The page's half of "sweep holds the scope":
+    /// the Sensors desk is handed targets, never quests, and this is where the quest ledger is read.
+    ///
+    /// <para><b>The audit, written down, because the answer was "there isn't one".</b> A
+    /// <see cref="SensorTask"/> carries no link to a quest — it never has, and nothing in the schedule does
+    /// either. The link the game DOES already have is on the other side: a quest names a
+    /// <c>SourceBodyId</c>, and <c>IsBodyHidden</c> is the one question the client asks to tell "still the
+    /// thing we are hunting" from "found, this tip is spent" — at the compass step
+    /// (<c>CurrentStepOf</c>), at the quest card (<c>Charted</c>), at the ledger line, and at the 🔭 button
+    /// (<c>PointScopeForActiveFetch</c>). So the criticality is DERIVED from the target, exactly as those
+    /// four do, and no flag was added to a task to carry it.</para>
+    ///
+    /// <para>Two kinds of target, because the telescope has two kinds of aim. A fetch's uncharted source body
+    /// is a POINT of sky: it is matched against an area scan's disc, which is the same containment test
+    /// <see cref="OnAreaScanCovered"/> next door uses to decide the reveal — asked before the pass rather
+    /// than after it. A hunt's mark is a CONTACT: it is matched by id against a directed pass, and its
+    /// position comes through <see cref="ContactPosition"/>, the one lookup every desk already reads a hull's
+    /// place through (so a sky scan aimed where she actually is counts too).</para>
+    ///
+    /// <para>ACTIVE only. A fetch in <c>PickedUp</c> has the wallet aboard and the scan leg behind it; a
+    /// complete one is history. Nothing that is already done is allowed to complain about a sweep.</para>
+    /// </summary>
+    private IReadOnlyList<QuestScopeTarget> LiveQuestScopeTargets()
+    {
+        List<QuestScopeTarget>? targets = null;
+        foreach (Quest q in _quests)
+        {
+            if (q.State != QuestState.Active)
+            {
+                continue;
+            }
+
+            if (_ephemeris is not null && q.SourceBodyId is { } src && IsBodyHidden(src))
+            {
+                (targets ??= []).Add(new QuestScopeTarget(src, _ephemeris.Position(src, SimTime)));
+            }
+
+            if (q.Kind == QuestKind.Hunt && q.TargetShipId.Length > 0
+                && ContactPosition(q.TargetShipId) is { } mark)
+            {
+                (targets ??= []).Add(new QuestScopeTarget(q.TargetShipId, mark));
+            }
+        }
+
+        return targets ?? (IReadOnlyList<QuestScopeTarget>)[];
+    }
+
     private void SweepCorridorFromMenu(CorridorRegion lane, bool standing)
     {
         if (_trackingPost is null)
