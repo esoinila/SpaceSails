@@ -73,8 +73,18 @@ public static class SurfaceTiles
     /// point of no return at rather less than half this distance (<see cref="SuitAir.PastPointOfNoReturn"/>
     /// bites once the walk home costs more than what is left, around 5,000 du). So the walk back is already
     /// lethal more than twice over before the bound is anything but a rumour, which is the whole
-    /// requirement: air stops you, geometry never gets the chance.</para></summary>
-    public static double BackstopRadiusDu => SuitAir.TankSeconds * SuitAir.WalkSpeedDu;
+    /// requirement: air stops you, geometry never gets the chance.</para>
+    ///
+    /// <para>#325 · AND IT IS THE EXCURSION'S TANK, NOT THE STANDARD ONE. A haven sells an extended bottle
+    /// that doubles the play budget (<see cref="SuitAir.PlayBudget"/>), and a bound left on the constant
+    /// would have been the whole requirement inverted: geometry stopping a captain who still had air, at a
+    /// distance the suit's own refusal line says the tank does not reach — while it now does. The radius is
+    /// read off the tether, so it moves when the tether does. Every caller passes the budget rather than
+    /// defaulting to it, on purpose: a default is how five of the six readers stayed on the constant.</para>
+    /// </summary>
+    /// <param name="playBudgetSeconds">This excursion's budget, from <see cref="SuitAir.PlayBudget"/>.</param>
+    public static double BackstopRadiusDu(double playBudgetSeconds) =>
+        playBudgetSeconds * SuitAir.WalkSpeedDu;
 
     /// <summary>Which tile a point on the ground belongs to.</summary>
     public static Address At(double x, double y)
@@ -105,7 +115,7 @@ public static class SurfaceTiles
     /// <summary>Is this tile part of the world? A tile above <see cref="TopRow"/> is behind the ship, and a
     /// tile whose nearest corner is beyond <see cref="BackstopRadiusDu"/> is past the backstop. Neither is
     /// ever generated.</summary>
-    public static bool WithinBackstop(Address a)
+    public static bool WithinBackstop(Address a, double playBudgetSeconds)
     {
         if (a.Y > TopRow)
         {
@@ -115,7 +125,8 @@ public static class SurfaceTiles
         (double hx, double hy) = TubeMouth();
         double dx = Math.Max(0.0, Math.Max(leftX - hx, hx - rightX));
         double dy = Math.Max(0.0, Math.Max(bottomY - hy, hy - topY));
-        return (dx * dx) + (dy * dy) <= BackstopRadiusDu * BackstopRadiusDu;
+        double r = BackstopRadiusDu(playBudgetSeconds);
+        return (dx * dx) + (dy * dy) <= r * r;
     }
 
     /// <summary>The northern rim of a top-row tile that is NOT the home tile — the line the landing band's own
@@ -380,8 +391,13 @@ public static class SurfaceTiles
 
     /// <summary>The tiles carried at once around <paramref name="centre"/> — the chunk. Ordered, so two
     /// callers asking the same question get the same list in the same order and a comparison of two chunks
-    /// is a comparison of two lists.</summary>
-    public static IReadOnlyList<Address> Chunk(Address centre, int radius = ChunkRadius)
+    /// is a comparison of two lists.
+    ///
+    /// <para>#325 · It takes the excursion's play budget because the lattice's own extent is the backstop
+    /// (<see cref="WithinBackstop"/>), and the ground has to reach as far as the suit is willing to walk. A
+    /// lattice that stopped at the standard radius while the suit allowed twice it is a captain walking off
+    /// the world with air in the bottle.</para></summary>
+    public static IReadOnlyList<Address> Chunk(Address centre, double playBudgetSeconds, int radius = ChunkRadius)
     {
         var ring = new List<Address>();
         for (int dy = -radius; dy <= radius; dy++)
@@ -389,7 +405,7 @@ public static class SurfaceTiles
             for (int dx = -radius; dx <= radius; dx++)
             {
                 var a = new Address(centre.X + dx, centre.Y + dy);
-                if (WithinBackstop(a))
+                if (WithinBackstop(a, playBudgetSeconds))
                 {
                     ring.Add(a);
                 }

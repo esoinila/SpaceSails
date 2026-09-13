@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace SpaceSails.Core;
@@ -136,8 +136,14 @@ public static class SurfaceEdge
     /// <summary>How far the backstop wanders off its nominal radius, as a fraction of it.</summary>
     public const double BackstopWanderFraction = 0.08;
 
-    /// <summary>The backstop's radius at one bearing from the tube mouth (radians, the usual sense).</summary>
-    public static double BackstopRadiusAt(string bodyId, string siteSalt, double bearingRad)
+    /// <summary>The backstop's radius at one bearing from the tube mouth (radians, the usual sense).
+    ///
+    /// <para>#325 · <paramref name="playBudgetSeconds"/> is the excursion's own tank
+    /// (<see cref="SuitAir.PlayBudget"/>) — the nominal radius is read off it, and the wander rides on top
+    /// unchanged, so a fitted extended bottle pushes the whole wavy boundary out without changing its
+    /// shape.</para></summary>
+    public static double BackstopRadiusAt(
+        string bodyId, string siteSalt, double bearingRad, double playBudgetSeconds)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(siteSalt);
@@ -147,21 +153,22 @@ public static class SurfaceEdge
         // Integer harmonics: periodic in the bearing, so r(θ) = r(θ + 2π) exactly and the loop is closed by
         // construction rather than by a taper. Normalised to −0.5..+0.5.
         double wave = (Math.Sin((3.0 * bearingRad) + phase) + Math.Sin((5.0 * bearingRad) + phase2)) / 4.0;
-        return SurfaceTiles.BackstopRadiusDu * (1.0 + (BackstopWanderFraction * wave));
+        return SurfaceTiles.BackstopRadiusDu(playBudgetSeconds) * (1.0 + (BackstopWanderFraction * wave));
     }
 
     /// <summary>Has this point walked past the backstop? Pure, constant time, and measured from the tube
     /// mouth — which is what the suit measures from too (#453: the route, never the coordinate).</summary>
-    public static bool BeyondBackstop(string bodyId, string siteSalt, double x, double y)
+    public static bool BeyondBackstop(
+        string bodyId, string siteSalt, double x, double y, double playBudgetSeconds)
     {
         (double cx, double cy) = SurfaceTiles.TubeMouth();
         double dx = x - cx, dy = y - cy;
         double r = Math.Sqrt((dx * dx) + (dy * dy));
-        if (r <= SurfaceTiles.BackstopRadiusDu * (1.0 - BackstopWanderFraction))
+        if (r <= SurfaceTiles.BackstopRadiusDu(playBudgetSeconds) * (1.0 - BackstopWanderFraction))
         {
             return false;   // inside the innermost the backstop can ever come — no trigonometry needed
         }
-        return r > BackstopRadiusAt(bodyId, siteSalt, Math.Atan2(dy, dx));
+        return r > BackstopRadiusAt(bodyId, siteSalt, Math.Atan2(dy, dx), playBudgetSeconds);
     }
 
     /// <summary>
@@ -194,9 +201,10 @@ public static class SurfaceEdge
         public bool HasSpoken => _said;
 
         /// <summary>Ask the boundary about one step.</summary>
-        public Refusal Step(string bodyId, string siteSalt, double x, double y)
+        public Refusal Step(
+            string bodyId, string siteSalt, double x, double y, double playBudgetSeconds)
         {
-            if (!BeyondBackstop(bodyId, siteSalt, x, y))
+            if (!BeyondBackstop(bodyId, siteSalt, x, y, playBudgetSeconds))
             {
                 return new Refusal(false, null);
             }
