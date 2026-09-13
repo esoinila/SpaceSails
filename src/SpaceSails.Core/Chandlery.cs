@@ -1,4 +1,4 @@
-using SpaceSails.Core.Interior;
+﻿using SpaceSails.Core.Interior;
 
 namespace SpaceSails.Core;
 
@@ -123,4 +123,14 @@ public static class Chandlery
     /// <summary>#332 · …and the receipt a refill prints, in the same shape.</summary>
     public static string RefillReceiptLine(int pills, int price) =>
         $"🧾 {MedKitRefillPlate} — {pills} {(pills == 1 ? "pill" : "pills")}, {price:N0} cr. The cabinet is full.";
+
+    /// <summary>#325/#332 · EVERY FIXED STRING THIS COUNTER CAN PUT IN FRONT OF A CAPTAIN — the two
+    /// authored lines and the two plates, enumerated so the canon sweep has something to sweep.
+    ///
+    /// <para>A prose guard that has to go and find the strings it is guarding is a guard that silently
+    /// stops covering the next one somebody adds. The receipts are not here because they are FORMATS rather
+    /// than sentences — they are built from a plate and a number, and both halves are already listed.</para>
+    /// </summary>
+    public static IReadOnlyList<string> AllProse() =>
+        [TankFittedLine, CabinetEmptyLine, ExtendedTankPlate, MedKitRefillPlate];
 }
