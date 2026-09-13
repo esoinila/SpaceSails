@@ -338,17 +338,20 @@ public partial class TrackingPost
     /// So the holder gets a row here, and it is never quest-critical — nobody aims a hand-flown sweep at a
     /// contract; the whole complaint is that it is not the aimed job.</para>
     ///
-    /// <para>The passive watch rides the same row for completeness. It can never actually produce the line:
-    /// it only starts when the queue is EMPTY (<c>OnParametersSet</c>), and an empty queue has no waiter.</para>
+    /// <para><b>The passive watch is NOT a holder</b>, and that is a real distinction rather than a tidy one.
+    /// The idle survey starts by itself whenever the queue is empty and stands down by itself the instant
+    /// anything is queued (<c>RunScheduledInstrument</c>: "real tasks outrank the idle watch") — so between
+    /// the press that queues the roadster fix and the next tick there is one frame in which the watch still
+    /// holds the glass. Reporting that frame would put the owner's complaint on screen about an instrument
+    /// that is already handing itself over, and the captain has not been asked to do anything about it. The
+    /// hand-flown sweep is the only thing that HOLDS: it is the one that has to be stopped.</para>
     /// </summary>
     private IEnumerable<ScopeHold.Work> ScopeWork()
     {
-        if (_activeJob is not null)
+        if (_activeJob is not null && !_passiveJobRunning)
         {
             yield return new ScopeHold.Work(
-                _passiveJobRunning ? "passive watch" : ScopeHold.ManualSweepName,
-                SensorTaskState.Running,
-                QuestCritical: false);
+                ScopeHold.ManualSweepName, SensorTaskState.Running, QuestCritical: false);
         }
 
         foreach (SensorTask task in _schedule.Queue)
