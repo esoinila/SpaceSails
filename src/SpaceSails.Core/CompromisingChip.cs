@@ -64,6 +64,18 @@ public static class CompromisingChip
     /// <summary>The satchel row's prose, built from the two canon fragments and nothing else.</summary>
     public static string RowLabel => Glyph + " " + Name;
 
+    /// <summary>#238 · What the GOT-IT beat calls it. The twin's prise is the SAME hand in the SAME gap in
+    /// the SAME seat as the wallet's — one car in four simply has this in it instead — so the beat closes on
+    /// the owner's own four words and differs only in what the hand came out with. Built from the canon
+    /// name rather than beside it, so a rename of the object renames the beat with it.</summary>
+    public static string PickupItem => $"the{Name[1..].ToLowerInvariant()}{WhereItWas}";
+
+    /// <summary>#238 · The owner's own closing words for the prise, as a fragment — everything from the
+    /// comma of <see cref="Derelict.WalletBetweenTheSeats"/> on. Taken from the wallet's phrase rather than
+    /// re-typed beside it, because there is one gap in one seat and it should be described once.</summary>
+    private static string WhereItWas =>
+        Derelict.WalletBetweenTheSeats[Derelict.WalletBetweenTheSeats.IndexOf(',', StringComparison.Ordinal)..];
+
     // ── WHOSE POCKET, AND WHICH ONE ───────────────────────────────────────────────────────────────────
 
     /// <summary>Mint it. <see cref="Satchel.Kind.Dirt"/> is exactly what this is — the satchel's own words:

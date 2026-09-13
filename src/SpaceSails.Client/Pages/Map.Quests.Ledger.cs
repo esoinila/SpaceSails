@@ -155,7 +155,7 @@ public partial class Map
                 QuestKind.CargoRun => cargoDetail,
                 QuestKind.Favor => $"{cargoDetail} Working it off clears the {q.Reward:N0} cr you owe {GiverDisplay(q.Giver)}.",
                 QuestKind.Intel => $"Off-books route on {q.TargetCallsign} — now on your contacts (🕸).",
-                QuestKind.Fetch => $"Prise the wallet from the derelict roadster (sunward of Mars), then hand it to The Fixer in person at {q.TargetCallsign}.",
+                QuestKind.Fetch => $"Prise the wallet from the derelict roadster ({Derelict.RoadsterBearingPhrase}), then hand it to The Fixer in person at {q.TargetCallsign}.",
                 QuestKind.Crack => $"Key {q.Pin} into hatch {q.TargetShipId} here, lift the package, then hand it back to The Fixer.",
                 QuestKind.FetchCache => $"Take the shuttle down to {BodyName(q.SourceBodyId ?? "")}, dig up the marked chest, then carry the lot to {q.TargetCallsign}.",
                 // #973 L5b · her favour. The row carries the theory tag the whole arc's second axis is made
@@ -272,6 +272,19 @@ public partial class Map
                 // #973 L1 · a dated page, and therefore one the filing line can take away. Keyed off the
                 // receipt's own stamp and its text, never its rendered age — the age changes every minute.
                 EntryId: FilingLine.EntryId("autopilot", simTime, text), SimTime: simTime));
+        }
+
+        // #238 · THE MISSION EVENTS' OWN RECEIPTS — a found-her and a got-it, filed the way a stand-down is,
+        // newest first. The card IS the moment and the card is gone in two seconds; this is the line the
+        // captain goes back to when he wants to know whether that just happened, which is the literal
+        // question the whole feature answers. Its own section and not the autopilot's: a reveal is not a
+        // handback, and filing it under "🛰 Autopilot" would be the sentence disagreeing with the fact.
+        foreach ((double simTime, string text) in _missionMomentLedger)
+        {
+            tips.Add(new Stations.Captain.LedgerTip(
+                MissionMoments.LedgerTitle, [text], $"logged {LedgerClock.Age(simTime, SimTime)}",
+                ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null,
+                EntryId: FilingLine.EntryId("mission-moment", simTime, text), SimTime: simTime));
         }
 
         // #202: the piracy receipts — the shadow ledger of the honest jobs. What, units, worth, off

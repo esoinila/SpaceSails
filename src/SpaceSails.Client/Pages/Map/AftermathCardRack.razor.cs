@@ -33,6 +33,11 @@ public partial class AftermathCardRack
     [Parameter] public string _groundGrewWhere { get; set; } = default!;
     [Parameter] public bool _groundLessonOpen { get; set; }
     [Parameter] public bool _hasNetJammer { get; set; }
+
+    /// <summary>#238 · The mission event at the smaller size — the scope resolving a hidden target, or a
+    /// quest step that finished itself by proximity — or null when no beat is on the glass.</summary>
+    [Parameter] public MissionMoment? _missionMoment { get; set; }
+
     [Parameter] public HotCargoLedger _hotCargo { get; set; } = default!;
     [Parameter] public int _reactionMassPulses { get; set; }
     [Parameter] public bool _showSaveDrawer { get; set; }
@@ -56,6 +61,7 @@ public partial class AftermathCardRack
     [Parameter] public IReadOnlyList<string>? DeathNerveLedgerLines { get; set; }
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
     [Parameter] public EventCallback DismissCelebration { get; set; } = default!;
+    [Parameter] public EventCallback DismissMissionMoment { get; set; } = default!;
     [Parameter] public Func<int, string> HeatFlames { get; set; } = default!;
     [Parameter] public string HotGlossTitle { get; set; } = default!;
     [Parameter] public Func<string, string> OldCrewHistoryLine { get; set; } = default!;
@@ -64,6 +70,7 @@ public partial class AftermathCardRack
     [Parameter] public Action PresentTheBlackOpsKey { get; set; } = default!;
     [Parameter] public Func<Action, Task> PressAndRefocus { get; set; } = default!;
     [Parameter] public Action<bool, string> Say { get; set; } = default!;
+    [Parameter] public EventCallback ShowMeTheMissionMoment { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

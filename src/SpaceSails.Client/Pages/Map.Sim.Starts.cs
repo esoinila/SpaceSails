@@ -47,7 +47,7 @@ public partial class Map
         new("the-deep", "🌀", "The Deep — docked (Neptune)",
             "At the edge of the charts — begin already clamped on at The Deep, above Neptune, a fuel pump and a long way from anyone."),
         new("wreck", "🚗", "The Derelict Roadster — alongside (test)",
-            "Co-moving beside the lost roadster, sunward of Mars — for testing the fetch pickup.", Test: true),
+            $"Co-moving beside the lost roadster, {Derelict.RoadsterBearingPhrase} — for testing the fetch pickup.", Test: true),
         new("enceladus", "❄️", "Enceladus — alongside (test)",
             "Co-moving beside Enceladus, a short fall from its capture band — for testing the deep-well auto-orbit (#136).", Test: true),
     ];

@@ -181,6 +181,10 @@ public partial class Map
         if (_navHelpOpen) { CloseNavHelp(); return true; }
         if (_showRescueOffer) { _showRescueOffer = false; return true; }
         if (_celebration is not null) { DismissCelebration(); return true; }
+        // #238 · The mission event, on the rung under the payday it is the smaller sibling of. Escape
+        // dismisses it rather than pressing `show me`: the cancel key means "take this off my screen",
+        // never "and also move my camera".
+        if (_missionMoment is not null) { DismissMissionMoment(); return true; }
         // #997 wave 11 · THE FOUR CLICK MENUS — FABLE'S RULING, WAVE 11.
         //
         // #1012 migrated them into one mechanism and reported, without changing anything, that this is the
@@ -310,6 +314,7 @@ public partial class Map
         if (_kioskCard is not null) { CloseKioskCard(); return true; }
         if (_viewObject is not null) { CloseViewObject(); return true; }
         if (_celebration is not null) { DismissCelebration(); return true; }
+        if (_missionMoment is not null) { DismissMissionMoment(); return true; }
         return false;
     }
 }

@@ -248,11 +248,6 @@ public partial class Map
             Vector2d wreck = _ephemeris.Position(q.SourceBodyId, SimTime);
             if ((_ship.Position - wreck).Length <= FetchPickupRangeM)
             {
-                // #233 · ALONGSIDE, and the bird has been waiting the whole flight for this. Owner's own
-                // framing: the punchline lands at "the moment the fetch pickup unlocks", which is this line,
-                // so it needs no latch of its own — the state pattern above already fires once.
-                SquawkTheCarFound();
-
                 // #233 · …and one car in four has photographs in it instead. Same moment, same range, same
                 // cue; what differs is that this one comes ABOARD, in the pocket, with three ways out.
                 if (TheCarHasTheChip(q))
@@ -267,6 +262,20 @@ public partial class Map
                 AdvanceMission(q, QuestState.PickedUp,
                     $"Got it — the wallet was wedged between the seats. Now get it to {q.TargetCallsign}, quiet-like. 💾");
                 RendererInterop.PlayCue("board");
+
+                // #238 · THE BEAT THE OWNER HAD TO ASK FOR, and the reason this file changed at all. He took
+                // THIS wallet mid-coast and then had to ask aloud whether the loot was aboard: the receipt
+                // above went to a HUD banner behind whatever he was looking at, at whatever warp he was
+                // flying, and the only lasting change on the screen was the Captain chip's next line.
+                //
+                // Nothing here is a second transition — the state moved on the line above, through the one
+                // writer, exactly as it did before. This is the MOMENT that state change owed him.
+                //
+                // #233's bird rides INSIDE it rather than beside it. The punchline still lands at "the
+                // moment the fetch pickup unlocks", which is still this instant; what it no longer does is
+                // fire from a second place, so the card's line and the bubble's line cannot be two squawks.
+                TheMomentTheyEarnedIt(MissionMoments.Pickup(
+                    Derelict.WalletBetweenTheSeats, Parrot.Squawk.CarFound, _parrotCounter));
             }
         }
     }

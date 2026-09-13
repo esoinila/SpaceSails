@@ -29,6 +29,16 @@
                          PayCompletedQuests="@PayCompletedQuests" party="@party" />
     }
 
+    @* #238 · The celebration's scout siblings, on the celebration's own backdrop and directly beneath it:
+       the scope resolving a hidden target, and a quest step that finished itself by proximity. Gated here
+       rather than in its own rack because it is the same KIND of thing as the eight gates around it — a
+       thing the game puts in front of you once the doing is over. *@
+    @if (_missionMoment is { } beat)
+    {
+        <MissionMomentCard moment="@beat" DismissMissionMoment="@DismissMissionMoment"
+                           ShowMeTheMissionMoment="@ShowMeTheMissionMoment" />
+    }
+
     @if (_busted is { } bust && !_showSaveDrawer)
     {
         <BustedCard _credits="@_credits" _hasNetJammer="@_hasNetJammer" _hotCargo="@_hotCargo"
