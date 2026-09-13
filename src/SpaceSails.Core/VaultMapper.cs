@@ -45,6 +45,12 @@ public static class VaultMapper
                 // #535 slice 2 — the favour is once per contact per captain-lifetime, so it has to survive
                 // a reload; a restart that forgot it would be an unlimited supply of a consumable.
                 FavourSpent = h.FavourSpent,
+                // #711 — the folder an outfit closed on the captain, saved for the reason heat is: an
+                // answer that evaporated when the tab was closed would not be a memory, and this one is
+                // ARMOUR — a restart that forgot it would quietly re-open every folder the captain paid a
+                // fine to close.
+                FolderClosed = h.FolderClosed,
+                FolderClosedAtRung = h.FolderClosedAtRung,
                 HeatStampSimTime = h.HeatStampSimTime,
                 Transactions = h.Transactions
                     .Select(t => new CreditTxnRecord((int)t.Kind, t.Amount, t.SimTime, t.Note))
@@ -85,6 +91,10 @@ public static class VaultMapper
                 KnewTheOldFace = r.KnewTheOldFace,
                 WasLiedTo = r.WasLiedTo,
                 FavourSpent = r.FavourSpent,
+                // #711 — absent on any vault written before a folder could be closed, which reads as
+                // false/0: nobody has an answer for this captain, which is exactly what was true.
+                FolderClosed = r.FolderClosed,
+                FolderClosedAtRung = r.FolderClosedAtRung,
                 HeatStampSimTime = r.HeatStampSimTime,
                 Transactions = txns,
             };

@@ -695,6 +695,12 @@ public partial class Map
         // the third named bug class in a row of a list.
         Core.Satchel.Kind.BlackOpsKey => $"{Core.BlackOpsKey.Glyph} {Core.BlackOpsKey.Name}",
 
+        // #711 · The parcel, by its own plate. An arm of its own for the key's reason one arm up: without
+        // one a box falls through to the default and reads as a file on somebody — the third named bug
+        // class, and a lie about the one object in this game whose whole worth is that it is exactly as
+        // boring as it looks.
+        Core.Satchel.Kind.Parcel => $"{Core.UnlistedParcel.Glyph} {Core.UnlistedParcel.Plate}",
+
         // #233 · The chip out of the roadster. It IS a file on somebody — that is precisely why it rides in
         // this kind — but it is a NAMED one, and the row says so, because a captain carrying two kinds of
         // leverage has to be able to tell which of them a client is asking for back.

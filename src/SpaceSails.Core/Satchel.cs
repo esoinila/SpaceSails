@@ -113,6 +113,24 @@ public static class Satchel
         /// being written at all, it works once, and it is never offered to a door, because a shaft files
         /// nothing about you and there is nothing there for a key to unfile.</para></summary>
         BlackOpsKey,
+
+        /// <summary>#711 · AN UNLISTED PARCEL. Somebody's small box, aboard, on nobody's manifest.
+        ///
+        /// <para>Appended, never inserted, for the fifth time and the same reason: the ordinal is what a
+        /// saved satchel stores, and a kind slipped into the middle would silently reinterpret every item in
+        /// every existing vault.</para>
+        ///
+        /// <para><b>It is CARGO and it is not EVIDENCE, and that separation is the whole object.</b>
+        /// <see cref="RipAndBin.IsEvidence"/> knows two kinds — <see cref="Paper"/> and <see cref="Dirt"/>,
+        /// the two that ride the document sleeve — and a parcel is neither: nobody reads a box over your
+        /// shoulder, there is nothing in it to dig, and tearing it up is not a verb. A parcel that rode the
+        /// sleeve would be a thing the bin picker offered to shred and the seated spread offered to work,
+        /// which is three systems being told a lie about one object.</para>
+        ///
+        /// <para>It is BULKY, so it rides the pockets proper — <see cref="CompartmentOf"/>'s safe default,
+        /// taken deliberately here rather than by omission, because the honest price of carrying somebody
+        /// else's box is not carrying something of your own.</para></summary>
+        Parcel,
     }
 
     /// <summary>One thing in the pocket.</summary>

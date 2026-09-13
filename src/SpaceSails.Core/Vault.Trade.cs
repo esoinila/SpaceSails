@@ -46,6 +46,14 @@ public sealed record ContactRecord
     /// <i>The book marks the favour.</i> Defaults false, so a vault written before slice 2 loads with
     /// everybody's favour still unspent — which is what was true when it was written.</summary>
     public bool FavourSpent { get; init; }
+    /// <summary>#711 — this outfit fined the captain over an unlisted parcel and filed him under ordinary.
+    /// <i>The book marks the folder.</i> Defaults false, so a vault written before anything could close one
+    /// loads with every drawer empty — which is what was true when it was written.</summary>
+    public bool FolderClosed { get; init; }
+    /// <summary>#711 — the band their meter stood at when that folder was closed, which is the number "new
+    /// cause" is measured against. Only meaningful while <see cref="FolderClosed"/> is true, which is why a
+    /// defaulted 0 costs an old file nothing.</summary>
+    public int FolderClosedAtRung { get; init; }
     public IReadOnlyList<CreditTxnRecord> Transactions { get; init; } = [];
 }
 
