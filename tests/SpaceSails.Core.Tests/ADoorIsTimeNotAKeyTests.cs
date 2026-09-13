@@ -328,6 +328,45 @@ public sealed class ADoorIsTimeNotAKeyTests
     }
 
     /// <summary>
+    /// #563 · <b>AND THE TWO LINES THE CARD LEFT BEHIND.</b> Both are Fable-authored and both replace a
+    /// sentence that became false the day the key was retired, so both are pinned verbatim and both are
+    /// enumerated — by reflection, like <see cref="LockedDoor"/>'s, so a sentence added to
+    /// <see cref="LabSecurity"/> next month is swept by the canon guard below on the day it is written.
+    ///
+    /// <para><b>RED</b> by changing a character of either line, by dropping either out of
+    /// <c>LabSecurity.AllProse</c>, or by re-adding <c>LockdownWithTheCardLine</c> (which
+    /// <c>MountainLabTests.LockdownTellsYouWhichSideOfItYouAreOn</c> also rejects by name).</para>
+    /// </summary>
+    [Fact]
+    public void TheLockdownAndTheCardSayWhatIsTrueNow()
+    {
+        Assert.Equal(
+            "Lockdown. Every door on the floor is a shoulder or a round now, and both are heard.",
+            LabSecurity.LockdownCostsLine);
+        Assert.Equal(
+            "Vantar's building pass. It still talks to the panels; it has never talked to a hinge.",
+            LabSecurity.VantarsPassLine);
+
+        var prose = new List<string>(LabSecurity.AllProse());
+        foreach (FieldInfo f in typeof(LabSecurity)
+                     .GetFields(BindingFlags.Public | BindingFlags.Static)
+                     .Where(f => f.FieldType == typeof(string)))
+        {
+            Assert.Contains((string)f.GetValue(null)!, prose);
+        }
+
+        // …and neither of them promises a way out that the sim no longer has: the card opens nothing, so it
+        // must never be named as the answer to a keyed door again.
+        foreach (string line in prose)
+        {
+            foreach (string bad in new[] { "keys them", "where you did not go", "unlock", "walk past it" })
+            {
+                Assert.DoesNotContain(bad, line, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+    }
+
+    /// <summary>
     /// NOTHING A DOOR SAYS BREAKS CANON, AND NOTHING IT SAYS ANNOUNCES. §8's reserved word is absent; so is
     /// every word that would explain what the halls were for; and so is any sentence that tells the captain
     /// the noise has been heard — the pack arriving through the hole is the telling (#453/#456).
@@ -347,7 +386,7 @@ public sealed class ADoorIsTimeNotAKeyTests
             "you have been", "detected",
         ];
 
-        foreach (string line in LockedDoor.AllProse())
+        foreach (string line in LockedDoor.AllProse().Concat(LabSecurity.AllProse()))
         {
             foreach (string bad in forbidden)
             {

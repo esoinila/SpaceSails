@@ -208,19 +208,58 @@ public static class LabSecurity
         "🔒 LOCKDOWN. Every door in the mountain goes over at once — the one ahead of you, the one behind you, " +
         "and the one you came in through. Vantar built this to keep something in.";
 
-    // #563 · FABLE: line needed — and two authored sentences were RETIRED here rather than rewritten.
-    //
-    // LockdownWithTheCardLine ("you are holding the thing that keys them") and LockdownWithoutTheCardLine
-    // ("The card is where you did not go") were the lockdown's second breath, and both of them are FALSE
-    // after the owner's ruling of 2026-09-13: a locked door is TIME, never a key, so the card keys nothing
-    // and its absence strands nobody. A sentence that goes on promising a way out the sim no longer has is
-    // the third named bug class in this repo — the sim doing one thing while a sentence reports another — and
-    // it is worse here than most, because it would send a captain two rooms deeper for an object that cannot
-    // help him while a garrison walks the corridor behind him.
-    //
-    // They are deleted and nothing is put in their place: an implementation crew does not write canon. What
-    // is wanted is ONE authored sentence for the same beat, saying what a lockdown costs now rather than
-    // what it wants — the shoulder (LockedDoor.ForceSeconds, and every second of it is heard) or the round
-    // (LockedDoor.LockShotLine, and the door never comes back). LockdownLine above is unchanged and still
-    // carries the whole event on its own in the meantime.
+    /// <summary>
+    /// #563 · <b>THE LOCKDOWN'S SECOND BREATH — WHAT IT COSTS, NOT WHAT IT WANTS.</b> Fable-authored;
+    /// implemented verbatim.
+    ///
+    /// <para>It replaces two sentences that were retired by the owner's ruling of 2026-09-13:
+    /// <c>LockdownWithTheCardLine</c> (<i>"you are holding the thing that keys them"</i>) and
+    /// <c>LockdownWithoutTheCardLine</c> (<i>"The card is where you did not go"</i>). Both became FALSE the
+    /// moment a locked door stopped being a key — the card keys nothing now and its absence strands nobody —
+    /// and a sentence that goes on promising a way out the sim no longer has is the third named bug class in
+    /// this repo. The second one was worse than most: it sent a captain two rooms deeper for an object that
+    /// cannot help him, while a garrison walked the corridor behind him.</para>
+    ///
+    /// <para>The replacement says only what is true and offers nothing beyond it — the two prices, and the
+    /// fact that both are heard. It does NOT say who is listening or that anything is coming; the pack
+    /// arriving is the telling (#453/#456).</para>
+    /// </summary>
+    public const string LockdownCostsLine =
+        "Lockdown. Every door on the floor is a shoulder or a round now, and both are heard.";
+
+    /// <summary>Every string this class publishes, in one place — the house's <c>AllProse</c> idiom, so a
+    /// canon sweep reads exactly the sentences a captain reads. <c>ADoorIsTimeNotAKeyTests</c> walks it by
+    /// reflection and fails the day a string const is added here and not enumerated.</summary>
+    public static System.Collections.Generic.IEnumerable<string> AllProse()
+    {
+        yield return PanelTitle;
+        yield return ArmedByLine;
+        yield return GarrisonWakesLine;
+        yield return HackedLine;
+        yield return FailedLine(ArmedSeconds);
+        yield return LockdownLine;
+        yield return LockdownCostsLine;
+        yield return VantarsPassLine;
+        yield return VantarsPassNote;
+    }
+
+    // ── THE CARD, AFTER THE RULING ─────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #563 · <b>WHAT VANTAR'S CARD IS NOW.</b> Fable-authored; implemented verbatim.
+    ///
+    /// <para>The card used to be the only thing in the mountain that changed what a door would do, and its
+    /// own sentence said so. After the ruling it turns no hinges at all: it is a credential a PANEL respects
+    /// (<see cref="Modifiers"/>, <i>"Vantar's card in the reader"</i>, +4) and nothing else. This is the one
+    /// sentence that says that, and it says it without ever telling the captain what to do instead.</para>
+    ///
+    /// <para>It lives in Core rather than inline on the page for the reason every other line here does: it is
+    /// swept by <see cref="AllProse"/>, so the canon guards read exactly what a captain reads.</para>
+    /// </summary>
+    public const string VantarsPassLine =
+        "Vantar's building pass. It still talks to the panels; it has never talked to a hinge.";
+
+    /// <summary>…and the book's own record of the moment, which is a FACT and not the event — the same
+    /// division every other autopilot note in the game keeps.</summary>
+    public const string VantarsPassNote = "🗝 Vantar's card taken.";
 }

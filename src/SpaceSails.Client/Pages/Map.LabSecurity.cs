@@ -126,8 +126,9 @@ public sealed partial class Map
         ShowPulseMessage(LabSecurity.LockdownLine);
         LogAutopilotEvent(LabSecurity.LockdownLine);
         // #563 · The second breath used to be "…and the card is / is not in your hand". It is not a fact
-        // about the world any more (see LabSecurity's own FABLE marker), so the lockdown says the one thing
-        // that is still true and stops. What the captain does about it is now on the door prompt row.
+        // about the world any more, so it says what the lockdown COSTS instead — the shoulder or the round,
+        // and both are heard. Nothing about who is listening: the pack arriving is the telling.
+        LogAutopilotEvent(LabSecurity.LockdownCostsLine);
 
         RendererInterop.PlayCue("alarm");
         ApplyNerveShock(NervePips.SightingPips * (int)NervePips.PipUnit, "every door in the mountain just keyed");
@@ -350,9 +351,9 @@ public sealed partial class Map
         {
             SayItWhereTheyAreLooking(_labAlarm == LabSecurity.State.Disarmed
                 ? "🔔 The panel is dark. You already had this argument."
-                // #563 · …and after a lockdown the panel has nothing left to argue about. It says the event
-                // itself rather than the retired sentence about a card that opens nothing.
-                : LabSecurity.LockdownLine);
+                // #563 · …and after a lockdown the panel has nothing left to argue about. It names the price
+                // the floor is charging now rather than the retired sentence about a card that opens nothing.
+                : LabSecurity.LockdownCostsLine);
             return;
         }
 
@@ -392,7 +393,9 @@ public sealed partial class Map
         StateHasChanged();
     }
 
-    /// <summary>Take the card. It is the only thing in the lab that changes what a door will do.</summary>
+    /// <summary>Take the card. #563 · It is no longer the thing that changes what a door will do — it is a
+    /// credential the PANEL respects (<c>LabSecurity.Modifiers</c>, +4) and nothing with hinges answers to
+    /// it. The authored sentence that says so is <see cref="LabSecurity.VantarsPassLine"/>.</summary>
     private void TakeVantarsCard()
     {
         if (_hasVantarCard)
@@ -401,16 +404,13 @@ public sealed partial class Map
         }
 
         _hasVantarCard = true;
-        // #563 · FABLE: line needed. The owner ruled on 2026-09-13 that a locked door is TIME and never a
-        // key, so the card stopped being a key the moment LockedDoor lost its hasKey parameter — it is a
-        // CREDENTIAL THE ALARM PANEL RESPECTS (LabSecurity.Modifiers: "Vantar's card in the reader", +4) and
-        // nothing else. Both sentences below are therefore the authored ones with the door clause DELETED
-        // rather than rewritten: no prose was written by an implementation crew. What is wanted in its place
-        // is one authored sentence saying what the card IS now — a man's building pass, good at the panel he
-        // sat in front of, useless against hinges — and that sentence is Fable's to write.
+        // #563 · The card's old sentence promised every door in the mountain. It turns no hinges now, so the
+        // authored replacement says what it IS — a building pass — and the page reads it out of Core, where
+        // AllProse sweeps it, rather than holding a second copy of it here.
         ShowPulseMessage(
-            "🗝 Vantar's card, on a lanyard, still round the neck of the chair.");
-        LogAutopilotEvent("🗝 Vantar's card taken.");
+            "🗝 Vantar's card, on a lanyard, still round the neck of the chair. "
+            + LabSecurity.VantarsPassLine);
+        LogAutopilotEvent(LabSecurity.VantarsPassNote);
         RendererInterop.PlayCue("reveal");
         RequestVaultSave();
         StateHasChanged();
