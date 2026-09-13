@@ -72,6 +72,20 @@ public partial class Map
             return 0;
         }
 
+        // The haven has to actually be in the sky before it is asked where it is: CircularOrbitEphemeris
+        // THROWS on an id it does not carry, and an arrow is not worth a chance of taking the frame down.
+        // (A cheat-spawned or scenario-swapped affordance is the only way here in practice — but "in
+        // practice" is what the roadster bug was, so the strip simply draws no arrow instead.)
+        bool inTheSky = false;
+        foreach (CelestialBody candidate in _ephemeris.Bodies)
+        {
+            if (candidate.Id == havenId) { inTheSky = true; break; }
+        }
+        if (!inTheSky)
+        {
+            return 0;
+        }
+
         const double h = 1.0;
         Vector2d position = _ephemeris.Position(havenId, SimTime);
         Vector2d velocity =
