@@ -79,7 +79,7 @@ public partial class Map
         // Nothing here is conditional on having one: no tank means a standard walk, exactly as before.
         bool extendedTankFitted = FitExtendedTankForExcursion();
 
-        var excursion = new SurfaceExcursion
+        var excursion = new SurfaceExcursion(extendedTankFitted)
         {
             Stop = stop,
             RestoreHavenId = _dockedHavenId,
@@ -89,7 +89,6 @@ public partial class Map
             Expedition = isExpeditionSite,
             Deflection = isDeflectionRock,
             Site = chosenSite,
-            ExtendedTank = extendedTankFitted,
         };
 
         // #314: pull up to botsToBring sentries off the ship's roster into the sling (carried, not yet

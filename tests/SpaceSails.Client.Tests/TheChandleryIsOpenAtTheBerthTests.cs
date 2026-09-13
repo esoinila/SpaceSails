@@ -259,8 +259,8 @@ public sealed class TheChandleryIsOpenAtTheBerthTests
     /// is watching for is an excursion that knows about the bottle and an instrument that does not.
     ///
     /// <para><b>Proven RED</b> by giving <c>AirSeconds</c> back its old
-    /// <c>= SuitAir.TankSeconds</c> initialiser: the suit stepped out half full onto ground that reached
-    /// twice as far.</para>
+    /// <c>= SuitAir.TankSeconds</c> initialiser in place of the constructor's line: the suit stepped out
+    /// half full onto ground that reached twice as far.</para>
     /// </summary>
     [Fact]
     public void TheExcursionBuiltWithABottleIsTwiceTheWalk()
@@ -269,8 +269,7 @@ public sealed class TheChandleryIsOpenAtTheBerthTests
             "SurfaceExcursion", Hidden | BindingFlags.Public | BindingFlags.Static)!;
 
         object plain = Activator.CreateInstance(exType, nonPublic: true)!;
-        object fitted = Activator.CreateInstance(exType, nonPublic: true)!;
-        exType.GetProperty("ExtendedTank")!.SetValue(fitted, true);
+        object fitted = Activator.CreateInstance(exType, [true])!;
 
         double plainBudget = (double)exType.GetProperty("AirBudgetSeconds")!.GetValue(plain)!;
         double fittedBudget = (double)exType.GetProperty("AirBudgetSeconds")!.GetValue(fitted)!;
