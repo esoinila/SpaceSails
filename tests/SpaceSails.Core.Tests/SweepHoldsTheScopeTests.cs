@@ -139,6 +139,12 @@ public class SweepHoldsTheScopeTests
     /// it: nothing is in anybody's way, and a panel that complained here would be telling the captain his own
     /// scan was the obstacle. This is the condition a naive "is anything quest-critical queued" predicate gets
     /// wrong, which is why it is its own guard.
+    ///
+    /// <para>There is a SECOND quest-critical job queued behind it, and that is not decoration: with only
+    /// routine work behind the holder this case comes out null whether or not anybody checks the holder, and
+    /// the guard would be green on a composer that had stopped asking — a test whose world cannot tell pass
+    /// from fail (the fifth named bug class). The waiter here makes the holder's own criticality the ONLY
+    /// thing keeping this silent.</para>
     /// </summary>
     [Fact]
     public void NothingIsSaidWhileTheQuestCriticalJobIsTheOneOnTheGlass()
@@ -146,7 +152,7 @@ public class SweepHoldsTheScopeTests
         Assert.Null(ScopeHold.LineFor(
         [
             new(Derelict.RoadsterScopeJobName, SensorTaskState.Running, QuestCritical: true),
-            new("sky scan · 0.4 AU out", SensorTaskState.Queued, QuestCritical: false),
+            new("GOLDEN HIND", SensorTaskState.Queued, QuestCritical: true),
         ]));
     }
 
