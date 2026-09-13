@@ -115,20 +115,48 @@ public static class ShuttleExcursion
     /// any thin 'board with a chest' shortcut build the load through <see cref="Pack"/>, so the two
     /// routes are provably one path (the owner's "no duplicate path" law, #313 deliverable 4).
     /// </summary>
-    public readonly record struct ChestLoad(int Coin, System.Collections.Generic.IReadOnlyList<CacheCargo> Cargo)
+    /// <param name="Coin">Credits off the books, clamped to the purse.</param>
+    /// <param name="Cargo">The hold's snapshot taken at the shuttle door.</param>
+    /// <param name="Deposit">#319 · <b>THE SECOND CHOICE THE CHOOSER GAINED</b> — one thing out of the
+    /// captain's own satchel, picked at the shuttle door and carried down to go in the same hole. Owner:
+    /// <i>"Anything from the inventory that is light enough."</i>
+    ///
+    /// <para>It rides HERE, on the chest's own load, rather than in a second sling of its own, because the
+    /// issue's law is that there is no parallel path: one pack, one walk, one DIG HERE press, one 2D6, one ✗.
+    /// A load whose only content is this is still a load (see <see cref="ChestLoad.IsEmpty"/>), which is what
+    /// makes burying a file with an empty purse a first-class trip rather than a fishing expedition the panel
+    /// argues with.</para>
+    ///
+    /// <para>It is a PICK and not a removal: the thing stays in the captain's satchel for the whole walk — a
+    /// coat is not a cargo manifest — and only the shovel spends it. A paper picked at the door and then
+    /// read, filed or set down on the ground simply is not there to bury, which is
+    /// <see cref="CacheDeposit.AsCarried"/>'s question and the reason it exists.</para></param>
+    public readonly record struct ChestLoad(
+        int Coin,
+        System.Collections.Generic.IReadOnlyList<CacheCargo> Cargo,
+        Satchel.Item? Deposit = null)
     {
-        /// <summary>An empty load — no coin, no cargo. Boarding with an empty load carries no chest, so
-        /// the surface shows no dig site (a pure sightseeing hop).</summary>
-        public bool IsEmpty => Coin <= 0 && (Cargo is null || Cargo.Count == 0);
+        /// <summary>An empty load — no coin, no cargo, and nothing out of the satchel. Boarding with an
+        /// empty load carries no chest, so the surface shows no dig site (a pure sightseeing hop).</summary>
+        public bool IsEmpty => Coin <= 0 && (Cargo is null || Cargo.Count == 0) && Deposit is null;
     }
 
     /// <summary>Pack a chest from a purse figure and the current hold, clamped to what's actually on
     /// hand. The single builder both the long path and the shortcut call, so a shortcut can be proven
-    /// equal to the long path for the same inputs.</summary>
-    public static ChestLoad Pack(int coin, int credits, System.Collections.Generic.IReadOnlyList<CacheCargo> hold)
+    /// equal to the long path for the same inputs.
+    ///
+    /// <para>#319 · <paramref name="deposit"/> is the one thing out of the satchel the chooser picked, and it
+    /// is WEIGHED HERE rather than trusted — <see cref="CacheDeposit.IsLightEnough"/>, the one weight rule —
+    /// so the pure builder both routes go through is the place a thing too heavy to carry down the tube stops
+    /// being a thing that can be buried. A refused pick packs as no pick at all rather than as an error: the
+    /// chooser never offers one, so reaching this is a caller that built a load by hand.</para></summary>
+    public static ChestLoad Pack(
+        int coin, int credits, System.Collections.Generic.IReadOnlyList<CacheCargo> hold,
+        Satchel.Item? deposit = null)
     {
         int clamped = System.Math.Clamp(coin, 0, System.Math.Max(0, credits));
-        return new ChestLoad(clamped, hold ?? []);
+        Satchel.Item? weighed = deposit is { } thing && CacheDeposit.IsLightEnough(thing) ? thing : null;
+        return new ChestLoad(clamped, hold ?? [], weighed);
     }
 
     /// <summary>

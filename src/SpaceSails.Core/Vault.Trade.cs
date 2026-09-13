@@ -129,6 +129,20 @@ public sealed record CacheRecord
     [System.Text.Json.Serialization.JsonIgnore(
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public double? PadDistance { get; init; }
+
+    /// <summary>#319 · The things out of the captain's own satchel that are in this hole, each as the one
+    /// string a satchel row is saved as anywhere in this game (<see cref="Satchel.Item.Stored"/>) — the same
+    /// three-part <c>kind:count:id</c> shape the satchel's own section writes, read back through the same
+    /// <see cref="Satchel.Item.TryParse"/>. Deliberately not a shape of its own: two spellings of one row is
+    /// how a chest dug up after a reload comes back holding something the captain never buried.
+    ///
+    /// <para>Null (and unwritten) when the hole holds no such thing, which is every chest, every rumour map
+    /// and every cache in every vault written before #319. That is not tidiness — the digest is taken over
+    /// the PAYLOAD, so one extra <c>"deposit": null</c> per chest changes the checksum of every hoard ever
+    /// saved and opens an honest captain's voyage flying the 📛 tampered flag.</para></summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? Deposit { get; init; }
 }
 
 public sealed record CacheCargoRecord(string CargoClass, int Units, bool Hot);

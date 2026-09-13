@@ -87,7 +87,45 @@ public partial class Map
     {
         _boardTarget = null;
         _boardEmptyConfirm = false;
+        // #319 · …and the pick goes back in the coat. A chooser reopened on tomorrow's satchel holding
+        // yesterday's answer would be the dialog remembering a world that has walked off — CloseSatchel's
+        // own reason for putting the load chooser away, one panel over.
+        _boardDeposit = null;
     }
+
+    // ── #319 · THE SECOND CHOICE ─────────────────────────────────────────────────────────────────────────
+    //
+    // Owner, live 2026-07-18: "Let's add another options to hide onto the planet / site. Anything from the
+    // inventory that is light enough … hiding evidence of our piracy without losing it. Maybe we steal
+    // something too important to risk carrying it around, like a superchip prototype etc."
+    //
+    // It goes on THIS panel — the one that already packs the chest — and not on a chooser of its own, because
+    // the whole issue is that there is no second flow: the same walk, the same DIG HERE press, the same 2D6,
+    // the same ✗, the same return dig under the same odds. What the panel gains is a row. What the ground
+    // gains is nothing at all, which is the point.
+
+    /// <summary>#319 · The one thing out of the satchel this trip is carrying down to bury, or null. A PICK,
+    /// not a removal — the row stays in the pocket for the whole walk and only the shovel spends it.</summary>
+    private Core.Satchel.Item? _boardDeposit;
+
+    /// <summary>#319 · What the chooser may offer: everything in the pocket light enough to carry down the
+    /// tube, weighed by the ONE rule (<see cref="CacheDeposit.LightEnoughIn"/>, which reads the satchel's own
+    /// <c>SpaceCostOf</c> and never a list of kinds). Empty pocket, empty row — the panel simply does not
+    /// grow one.</summary>
+    private IReadOnlyList<Core.Satchel.Item> BuriableInTheSatchel => CacheDeposit.LightEnoughIn(_satchel);
+
+    /// <summary>#319 · Is this row the one the trip is carrying down? Matched on kind and id — the satchel's
+    /// own identity for a row — so a stack that is spent down from six rounds to two is still the pick.</summary>
+    private bool BoardDepositIs(Core.Satchel.Item item) =>
+        _boardDeposit is { } picked && picked.Kind == item.Kind
+        && string.Equals(picked.Id, item.Id, StringComparison.Ordinal);
+
+    /// <summary>#319 · Pick a thing to bury, or un-pick the one already picked. ONE at a time and deliberately
+    /// so: the hole is a decision about a single object the captain has decided is safer in the ground than on
+    /// him, and a multi-select would turn the panel into a packing exercise. Pressing the picked row again is
+    /// how it is taken back — the general UI law's "nothing you cannot undo", inside a row.</summary>
+    private void ChooseBoardDeposit(Core.Satchel.Item item) =>
+        _boardDeposit = BoardDepositIs(item) ? null : item;
 
     private void AdjustBoardCoin(int delta) => _boardCoin = Math.Clamp(_boardCoin + delta, 0, _credits);
 
@@ -117,7 +155,11 @@ public partial class Map
     // confirm. Anything loaded boards straight away.
     private async Task TryBoard(ShuttleStop stop)
     {
-        if (_boardCoin <= 0 && _cargoUnits <= 0)
+        // #319 · …and a thing picked out of the satchel is a LOADED sling. The "are you certain?" prompt is
+        // about walking down with nothing to do, and a captain carrying a file he has decided is safer under
+        // a rock than in his coat has the most deliberate errand in the game — being asked whether he is sure
+        // he did not mean to bring money would be the panel reading his trip back to him wrong.
+        if (_boardCoin <= 0 && _cargoUnits <= 0 && _boardDeposit is null)
         {
             _boardEmptyConfirm = true; // empty sling — ask once before the walk down
             return;
@@ -133,7 +175,11 @@ public partial class Map
         var hold = _cargoByClass.Where(kv => kv.Value > 0)
             .Select(kv => new CacheCargo(kv.Key, kv.Value, IsHotClass(kv.Key)))
             .ToList();
-        ShuttleExcursion.ChestLoad chest = ShuttleExcursion.Pack(_boardCoin, _credits, hold);
+        // #319 · …and the thing out of the coat rides down on the SAME load. Pack weighs it against the one
+        // rule on the way past (CacheDeposit.IsLightEnough), so the pure builder both boarding routes go
+        // through is where a thing too heavy for the tube stops being a thing that can be buried.
+        ShuttleExcursion.ChestLoad chest = ShuttleExcursion.Pack(_boardCoin, _credits, hold, _boardDeposit);
+        _boardDeposit = null;
         _boardEmptyConfirm = false;
         // #320: carry the picked landing site down — its salt seeds the ground, its name the header.
         LandingSite site = _boardSites.Count > 0

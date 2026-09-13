@@ -52,6 +52,15 @@ public partial class BoardTargetCard
     [Parameter] public Func<double, string> FormatDuration { get; set; } = default!;
     [Parameter] public Func<int> HotHoldUnits { get; set; } = default!;
     [Parameter] public Func<string> LoadedBotsSummary { get; set; } = default!;
+    // #319 · The second choice's four members, each under the page member's own name and in the same shapes
+    // as every parameter above: what the pocket offers, whether a row is the pick, the press that picks one,
+    // and the page's own row-namer (a static on Map, handed down as a delegate like every other method here —
+    // so the row on the boarding panel and the row in the satchel are named by ONE function and can never
+    // come to two spellings of one object).
+    [Parameter] public IReadOnlyList<Satchel.Item> BuriableInTheSatchel { get; set; } = default!;
+    [Parameter] public Func<Satchel.Item, bool> BoardDepositIs { get; set; } = default!;
+    [Parameter] public Action<Satchel.Item> ChooseBoardDeposit { get; set; } = default!;
+    [Parameter] public Func<Satchel.Item, string> SatchelLabel { get; set; } = default!;
     [Parameter] public Action<int> SelectBoardSite { get; set; } = default!;
     [Parameter] public Action<int> SetBoardCoin { get; set; } = default!;
     [Parameter] public Action SurfaceGroundInteract { get; set; } = default!;

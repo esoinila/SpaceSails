@@ -85,6 +85,10 @@ public partial class Map
             RestoreHavenId = _dockedHavenId,
             PendingCoin = chest.Coin,
             PendingCargo = [.. chest.Cargo],
+            // #319 · …and the one thing out of the captain's own coat the chooser picked to put in the
+            // ground. It rides the excursion as a POINTER at a row that is still in the satchel: the pocket
+            // goes on being the pocket for the whole walk, and only the shovel spends it.
+            PendingDeposit = chest.Deposit,
             ThreatSeed = ReeverSeed(stop.Body.Id),
             Expedition = isExpeditionSite,
             Deflection = isDeflectionRock,
