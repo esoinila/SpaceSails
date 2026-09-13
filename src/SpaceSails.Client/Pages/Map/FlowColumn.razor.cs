@@ -239,6 +239,14 @@ public partial class FlowColumn
 
     /// <summary>#535 slice 2 · Buy it.</summary>
     [Parameter] public Action BuyTheKeyFromTheFence { get; set; } = default!;
+
+    /// <summary>#711 slice 1 · Whether the desk has an unlisted parcel to hand over — Map's own
+    /// <c>ParcelOnOffer</c>. A bool and not a price: no coin moves through that row.</summary>
+    [Parameter] public Func<bool> ParcelOnOffer { get; set; } = default!;
+
+    /// <summary>#711 slice 1 · Take it. Map puts it in the pocket; nothing else moves.</summary>
+    [Parameter] public Action TakeTheUnlistedParcel { get; set; } = default!;
+
     [Parameter] public Action<string> BuyUpgrade { get; set; } = default!;
     [Parameter] public EventCallback CallInFavorAtPump { get; set; }
     [Parameter] public Action CancelFiringSolution { get; set; } = default!;

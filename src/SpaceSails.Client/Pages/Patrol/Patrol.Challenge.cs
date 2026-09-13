@@ -29,7 +29,8 @@ public sealed partial class Map
         /// one method on this floor that has already been worth three issues of them.</para>
         /// </summary>
         private void WalkUpToTheCaptain(
-            SurfaceExcursion ex, Guard g, int index, double dt, IReadOnlyList<SurfaceCollision.Segment> walls)
+            SurfaceExcursion ex, Guard g, int index, double dt, IReadOnlyList<SurfaceCollision.Segment> walls,
+            ContactLedger book, double simTime)
         {
             g.HeIsOneFrameFurtherIntoTheWalkUp(dt);
             g.HeCountsDownToARePlan(dt);
@@ -62,7 +63,7 @@ public sealed partial class Map
                 if (_host.ViewObject is null)
                 {
                     g.HeStopsWalkingUp();
-                    TheRoundStopsAtYou(ex, g);
+                    TheRoundStopsAtYou(ex, g, book, simTime);
                 }
                 return;
             }
@@ -167,12 +168,32 @@ public sealed partial class Map
         /// notice now buys the HAIL and nothing else, and the card is the walk-up's business
         /// (<see cref="WalkUpToTheCaptain"/>).</para>
         /// </summary>
-        private void StopTheRoundIfAnybodySeesYou(IReadOnlyList<SurfaceCollision.Segment> sight)
+        private void StopTheRoundIfAnybodySeesYou(
+            IReadOnlyList<SurfaceCollision.Segment> sight, ContactLedger book)
         {
             // …and never while somebody is already on their way over, or walking you out. An approach is the
             // stop, in progress; a second one behind it would be two men doing one job.
             if (_host.ViewObject is not null || !PatrolBeat.CanBeNoticed(FloorSeconds)
                 || Escort is not null || EscortDue is not null)
+            {
+                return;
+            }
+
+            // ── #711 · …AND NEVER WHERE THE ANSWER IS ALREADY ON FILE ────────────────────────────────────
+            //
+            // Canon (head coder, 2026-08-09): "an entity that has already caught you once has an answer for
+            // you, and answers are never re-questioned without new cause." This is that sentence, and it is
+            // the whole payoff of the fine the captain paid here.
+            //
+            // It is a SILENCE and not a sentence, which is the only shape §13.8 allows it. A pass-without-a-
+            // read told on a card would be the building explaining to the captain that his cover is working,
+            // in the feature whose entire premise is that nobody ever says so. What the player gets is that
+            // the rounds on this ground stop stopping — and the day they start again, the meter moved a whole
+            // band and nothing anywhere will say that either.
+            //
+            // Asked HERE, at the sighting, rather than inside the read: a man who has an answer for you does
+            // not walk over and then decline to ask. He looks at you and carries on doing his corridors.
+            if (_host.Surface is { } settled && UnlistedParcel.TheFolderIsClosed(book, settled.Stop.Body.Id))
             {
                 return;
             }
@@ -302,7 +323,8 @@ public sealed partial class Map
         /// He stops, reads what is in your wallet, and tells you the answer. The judgement is Core's and only
         /// Core's; this raises the card, spends the nerve and — when it comes to that — walks you back.
         /// </summary>
-        private void TheRoundStopsAtYou(SurfaceExcursion ex, Guard g)
+        private void TheRoundStopsAtYou(
+            SurfaceExcursion ex, Guard g, ContactLedger book, double simTime)
         {
             g.HeStandsAtYou();
             g.Vx = 0;
@@ -315,6 +337,25 @@ public sealed partial class Map
             WalletFanOpen = false;
             Satchel.Item? handed = ThePaperHandedOver(bodyId);
 
+            // ── #711 · THE PARCEL IS WHAT IS FOUND, AND IT IS FOUND FIRST ────────────────────────────────
+            //
+            // Canon (head coder, 2026-08-09): "Layer 1's whole job is to be the floor the search stops at."
+            // A man with his hand out for your papers is a man who has already seen the box, and a search
+            // that found the parcel AFTER reading the wallet would be a search that did not stop at it.
+            //
+            // On the fine, this method is OVER: no paper is handed over, no ladder is walked, nothing is
+            // filed about a name you never gave. He is already looking at the next hull, which is the only
+            // sentence on the card and the literal truth about the sim.
+            UnlistedParcel.Found? parcel = null;
+            if (UnlistedParcel.Held(_host.Satchel))
+            {
+                parcel = TheParcelIsWhatHeFinds(ex, g, book, simTime);
+                if (!parcel.Value.TheReadGoesOn)
+                {
+                    return;
+                }
+            }
+
             // #1149 · …AND WHERE THE CAPTAIN IS STANDING, AND WHICH WATCH IT IS. One paper in the wallet is
             // judged by the floor and the roster rather than by whose building this is (Inspectorate), and
             // both facts are read off the excursion the read is happening on — the FROZEN watch (ex.
@@ -323,6 +364,15 @@ public sealed partial class Map
 
             PatrolBeat.Read read = PatrolBeat.TheGuardReads(
                 bodyId, ex.Floor, ex.CanteenWatch, g.Plate, handed, ex.InspectionRunning);
+
+            // #711 · …AND HE KEPT LOOKING. The one arm where a parcel does not end the afternoon: the tell
+            // goes on the front of the card the captain was always going to get, and everything under it —
+            // the ladder, the consequence, the pip, the escort — happens exactly as it happens on any other
+            // afternoon. Nothing about this read is softened by it, which is the point of it.
+            if (parcel is not null)
+            {
+                read = UnlistedParcel.TheReadGoesOnAfterIt(read);
+            }
 
             // #1149 · THE INSPECTION IS ON, from this read until the shuttle lifts. It is set BEFORE the card
             // goes up, and that ordering is load-bearing in one direction only: the sentence on the card was
@@ -381,6 +431,62 @@ public sealed partial class Map
             // actually watch it happen on.
             EscortDue = g;
             _host.RequestVaultSave();
+        }
+
+        /// <summary>
+        /// #711 slice 1 · <b>HE FINDS THE PARCEL.</b> The whole of what a box aboard costs and buys, in the
+        /// one place a man on a rota ever looks at a captain.
+        ///
+        /// <para><b>The judgement is Core's and only Core's.</b>
+        /// <see cref="UnlistedParcel.TheParcelIsWhatIsFound"/> decides whether the fine book comes out,
+        /// quotes the fine off <c>BustedRule.BribeDemand</c>, banks the crossing and closes the folder — all
+        /// in one call, because the ORDER of those is load-bearing and a client that did them separately
+        /// would be the place it came apart. This method does the three things Core cannot: coin out of the
+        /// purse, the box out of the pocket, and the card up.</para>
+        ///
+        /// <para><b>The parcel goes either way.</b> A man who found a box does not hand it back, and the arm
+        /// where he writes nothing down is the arm where the captain has lost the box AND has nothing to
+        /// show for it. Nothing anywhere explains that (§13.8); the line on the card is the whole of the
+        /// telling.</para>
+        ///
+        /// <para>The card is raised HERE only on the fine, because that is the arm where the read is over.
+        /// On the other one the read goes on, and one card carries both halves — two cards on one screen
+        /// being the stacked-card mistake #777 named.</para>
+        /// </summary>
+        private UnlistedParcel.Found TheParcelIsWhatHeFinds(
+            SurfaceExcursion ex, Guard g, ContactLedger book, double simTime)
+        {
+            string bodyId = ex.Stop.Body.Id;
+
+            // Seeded off the SITE and the FROZEN watch, never a live clock and never the frame — the
+            // discipline the inspection roster keeps one file along. A fine is a number a man wrote down
+            // once; it may not be a different number because the captain read the card a second later.
+            UnlistedParcel.Found found = UnlistedParcel.TheParcelIsWhatIsFound(
+                book, bodyId,
+                DiceRule.Seed($"parcel:fine:{bodyId}", ex.CanteenWatch, ex.Floor),
+                simTime, _host.WorldSeed);
+
+            _host.PayTheFine(found.Fine);
+            _host.Satchel = [.. UnlistedParcel.Confiscated(_host.Satchel)];
+            _host.FileNote(
+                found.Fined ? UnlistedParcel.FineNote : UnlistedParcel.TellNote, UnlistedParcel.Glyph);
+
+            if (found.Fined)
+            {
+                // #684's idiom, and deliberately the round's OWN card: the same label, the same painting of
+                // the same man, because it is the same thirty seconds. A card shape of its own for this beat
+                // would be the game flagging that something unusual just happened to a captain who has been
+                // told, in as many words, that he is ordinary.
+                PatrolBeat.Read told = UnlistedParcel.TheFineIsTold(g.Plate);
+                _host.ViewObject = new DeckPlan.ConsoleSpot(
+                    DeckPlan.ConsoleKind.ViewObject, (float)_host.AvatarX, (float)_host.AvatarY,
+                    told.Label, PatrolBeat.ChallengeArtUrl, told.Card, told.Told);
+                RendererInterop.PlayCue("reveal");
+                _host.LogAutopilotEvent($"{told.Label} — {told.Told}");
+            }
+
+            _host.RequestVaultSave();
+            return found;
         }
 
         /// <summary>

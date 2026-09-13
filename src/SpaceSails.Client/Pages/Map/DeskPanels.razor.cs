@@ -179,6 +179,14 @@ public partial class DeskPanels
 
     /// <summary>#535 slice 2 · Buy it — Map moves the coin and strikes the port off for the watch.</summary>
     [Parameter] public Action BuyTheKeyFromTheFence { get; set; } = default!;
+
+    /// <summary>#711 slice 1 · Whether the desk has an unlisted parcel to hand over — Map's own
+    /// <c>ParcelOnOffer</c>. A bool and not a price: no coin moves through that row.</summary>
+    [Parameter] public Func<bool> ParcelOnOffer { get; set; } = default!;
+
+    /// <summary>#711 slice 1 · Take it. Map puts it in the pocket; nothing else moves.</summary>
+    [Parameter] public Action TakeTheUnlistedParcel { get; set; } = default!;
+
     [Parameter] public Action SellTheChipToTheFence { get; set; } = default!;
     [Parameter] public Func<NpcShip, string> DepartureLabel { get; set; } = default!;
     [Parameter] public Action DismissCrashNote { get; set; } = default!;

@@ -255,7 +255,7 @@ public sealed partial class Map
                     // off the law's own answer, rather than in each of the branches below that walk him away.
                     g.HeStopsCovering();
                 }
-                TheOneThingHeIsDoingThisFrame(ex, g, i, dt, walls, sight, hide);
+                TheOneThingHeIsDoingThisFrame(ex, g, i, dt, walls, sight, hide, book, simTime);
 
                 // WHAT THE CAPTAIN MAY KNOW. One call, one answer, used by the marker and by nothing else — so
                 // a guard behind a wall is off the deck by construction rather than by a renderer's opinion.
@@ -292,7 +292,7 @@ public sealed partial class Map
             // hail raised on the frame the catch turned would be a man challenging a door.
             if (hide is null)
             {
-                StopTheRoundIfAnybodySeesYou(sight);
+                StopTheRoundIfAnybodySeesYou(sight, book);
             }
             else
             {
@@ -342,7 +342,8 @@ public sealed partial class Map
             SurfaceExcursion ex, Guard g, int index, double dt,
             IReadOnlyList<SurfaceCollision.Segment> walls,
             IReadOnlyList<SurfaceCollision.Segment> sight,
-            (RingOffice.Stall Cell, string Key)? hide)
+            (RingOffice.Stall Cell, string Key)? hide,
+            ContactLedger book, double simTime)
         {
             switch (g.DoingThisFrame(ReferenceEquals(g, Escort), hide is not null))
             {
@@ -351,7 +352,7 @@ public sealed partial class Map
                 case Guard.Doing.AfterYou: HeIsComingAfterYou(ex, g, dt, walls); break;
                 case Guard.Doing.LostToADoor: HeHasLostYouToADoor(g, index); break;
                 case Guard.Doing.Covering: HeIsMadeAndCoveringForIt(g, dt, walls, sight); break;
-                case Guard.Doing.WalkingUp: HeIsCrossingTheFloorToYou(ex, g, index, dt, walls); break;
+                case Guard.Doing.WalkingUp: HeIsCrossingTheFloorToYou(ex, g, index, dt, walls, book, simTime); break;
                 default: WalkTheRound(g, dt, walls); break;
             }
         }
@@ -453,9 +454,9 @@ public sealed partial class Map
         /// your face.</summary>
         private void HeIsCrossingTheFloorToYou(
             SurfaceExcursion ex, Guard g, int index, double dt,
-            IReadOnlyList<SurfaceCollision.Segment> walls)
+            IReadOnlyList<SurfaceCollision.Segment> walls, ContactLedger book, double simTime)
         {
-            WalkUpToTheCaptain(ex, g, index, dt, walls);
+            WalkUpToTheCaptain(ex, g, index, dt, walls, book, simTime);
         }
     }
 }
