@@ -306,6 +306,15 @@ public partial class Map
                 {
                     _hudPits.Add((scar.X, scar.Y));
                 }
+                // #563 · A SUIT IN THE REGOLITH IS DRAWN AS WHAT IT IS — a body lying on the ground, which
+                // is the one mark #316 already paints and the one this game has spent two lanes teaching a
+                // captain to read. No new renderer, no new layer switch: a captain who has turned the husk
+                // layer off is not asking to be shown half a crime scene, and his own predecessor is the
+                // half that would have been left on.
+                else if (scar.What == GroundMemory.ScarKind.Suit)
+                {
+                    _hudHusks.Add((scar.X, scar.Y));
+                }
             }
         }
 

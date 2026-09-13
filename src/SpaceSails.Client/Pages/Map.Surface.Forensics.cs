@@ -112,4 +112,164 @@ public partial class Map
             ex.Scars.Add(scar);
         }
     }
+
+    // ── #563 · AND THE ONES WHO CAME BEFORE YOU ──────────────────────────────────────────────────────
+    //
+    // Owner ruling, 2026-09-13, closing the last of #563's three open questions: "I love the own lineage.
+    // If not enough material, fill in with strangers, preferably NPCs we know something about."
+    //
+    // And the loop it feeds, #455 in the owner's own words: "after pirate insurance rebirth you can come
+    // see if your loot is still there." He flies back for the chest. What is waiting beside it now is the
+    // man who buried it, still wearing the license — because the policy issued this captain over that one's
+    // body, on this ground, on a day the roster wrote down.
+    //
+    // NOT SEEDED FROM THE GROUND LEDGER, and that is the design rather than an economy: the roster already
+    // holds the fact (RetiredCaptain.Grave, written once at the succession), and a scar row beside it would
+    // be two records of one death in the save file for the rest of that universe's life — the fourth named
+    // bug class, where it is most expensive. The mark is DERIVED here, on arrival, so it is exactly as
+    // durable as the roster and can never drift from it.
+
+    /// <summary>
+    /// The suits this captain's own line left on this ground, out of the thread's roster and onto the
+    /// visit's mark list. Called at arrival beside <see cref="SeedTheHusksLeftHere"/> and
+    /// <see cref="SeedTheScarsLeftHere"/>, for the reason they are: a ground painted ahead of the seeding is
+    /// a field a captain walks into clean and then watches sprout bodies.
+    ///
+    /// <para>Nothing here rolls and nothing here writes. Core reads the roster
+    /// (<see cref="LineageMark.BuriedOn"/>); this only carries the answer onto the list the renderer
+    /// walks.</para>
+    /// </summary>
+    private void SeedTheLineageLyingHere(SurfaceExcursion ex)
+    {
+        foreach (RetiredCaptain gone in LineageMark.BuriedOn(
+            ActiveThreadInfo?.Retired, ex.Stop.Body.Id, ex.Site.LayoutSalt))
+        {
+            ex.Scars.Add(LineageMark.MarkFor(gone));
+        }
+    }
+
+    /// <summary>
+    /// #563 · <b>WHO A MARK BELONGS TO, AND THEREFORE WHAT THE BOOK WRITES ABOUT IT.</b> The owner's own
+    /// order, in one method: <b>your own lineage first</b>, and a stranger only where the lineage has none.
+    ///
+    /// <para>A suit is always one of yours — it was derived from your own roster, so it cannot be anything
+    /// else. Anything else on this ground (the rivals' hole, the sentry they walked away from) gets a NAME
+    /// only when no predecessor of yours died here: a tag reading a stranger's name over your own
+    /// predecessor's grave would be the fill-in overwriting the material it exists to stand in for.</para>
+    ///
+    /// <para><b>The name is drawn, never invented</b> (<see cref="LineageMark.StrangerFor"/>): a member of
+    /// the game's own named cast, seeded off the body and the site so one ground always answers one name.
+    /// And it changes NOTHING about the mark — not where it is, not when it happened, not the odds it feeds.
+    /// #316's marks are untouched; this reads a name onto one.</para>
+    ///
+    /// <para>The subject is declared by this author per #741 — the book never reads the prose back to work
+    /// out who a page is about, and a Person subject is only ever minted by a writer that is PRINTING that
+    /// person's name, which both of these sentences do.</para>
+    /// </summary>
+    private (string Text, string Glyph, string Subjects)? WhatThisMarkSays(
+        SurfaceExcursion ex, GroundMemory.Scar scar)
+    {
+        IReadOnlyList<RetiredCaptain> mine =
+            LineageMark.BuriedOn(ActiveThreadInfo?.Retired, ex.Stop.Body.Id, ex.Site.LayoutSalt);
+
+        if (scar.What == GroundMemory.ScarKind.Suit)
+        {
+            // WHICH of them is at your feet: the one whose grave is at this exact spot. The scar was built
+            // out of that grave's own position, so this is an identity and not a proximity — two captains
+            // who happened to die on one tile still get one page each.
+            RetiredCaptain? here = mine.FirstOrDefault(
+                c => c.Grave is { } g && g.X == scar.X && g.Y == scar.Y);
+            return here is null
+                ? null
+                : (LineageMark.YoursNote(here), LineageMark.LineageGlyph,
+                   CaseSubjects.Line(CaseSubjects.Person(here.Name)));
+        }
+
+        if (mine.Count > 0)
+        {
+            return null;   // your own line died on this ground — the strangers do not fill in over them
+        }
+
+        string who = LineageMark.StrangerFor(ex.Stop.Body.Id, ex.Site.LayoutSalt);
+        return (LineageMark.StrangerNote(who), LineageMark.StrangerGlyph,
+                CaseSubjects.Line(CaseSubjects.Person(who)));
+    }
+
+    /// <summary>
+    /// #563 · <b>THE PRESS THAT READS A MARK.</b> Answered at the captain's FEET, ahead of the console
+    /// dispatch, in the same place and by #688's argument: a captain standing on a thing cannot be made to
+    /// walk off it to look at it.
+    ///
+    /// <para><b>It answers ONCE and then gets out of the way.</b> [E] on the regolith is BURY THE CHEST
+    /// (#440), and a mark that ate that press for ever would be a grave a captain can never bury a chest
+    /// beside — which is exactly the complaint #316 records against putting the husks' own reading on this
+    /// key. One press per mark, and the ground is his again.</para>
+    ///
+    /// <para><b>The latch is a ground mark like any other</b> (<see cref="GroundMemory.ReadKey"/>) rather
+    /// than a per-visit flag, because the thing it guards is durable: latched on the visit, the same
+    /// sentence would be filed again next trip and the trip after, until the predecessor's THREADS stack
+    /// was six copies of one line. That is not a book, it is a stutter.</para>
+    ///
+    /// <para><b>And the age comes from the ground, not from here</b> — <see cref="GroundMemory.AgeLine(
+    /// double, double)"/>, #1127's own three bands off the sim clock, the same sentence a husk underfoot
+    /// speaks. Dating a suit is the same question as dating a body, and this repo's third named bug class is
+    /// two reporters of one truth.</para>
+    ///
+    /// <para>No pop-up (the general UI law of 2026-08-24): the line goes to the pulse and into the book, in
+    /// the idiom the forensics already speak in.</para>
+    /// </summary>
+    private bool TryReadTheMarkAtYourFeet()
+    {
+        if (_surface is not { } ex || TheMarkTakingYourPress() is not { } scar
+            || WhatThisMarkSays(ex, scar) is not { } said)
+        {
+            return false;
+        }
+
+        _groundMemory.Remember(ReadLatchFor(ex, scar));
+        string page = $"{said.Text} {GroundMemory.AgeLine(scar.AtSimTime, SimTime)}";
+        ShowPulseMessage($"{said.Glyph} {page}");
+        FileNoteAbout(page, said.Glyph, said.Subjects);
+        RequestVaultSave();   // the latch has to survive the shuttle, which means surviving the file
+        return true;
+    }
+
+    /// <summary>
+    /// #563 · <b>WHICH MARK — IF ANY — THIS PRESS BELONGS TO.</b> One question, asked by the key and by the
+    /// keybar, because a bar that promised a reading the key would not give is the sim doing one thing while
+    /// a sentence reports another — the bug class this repository has named and paid for three times.
+    ///
+    /// <para>Null when there is nothing in reach, when the mark has already been read
+    /// (<see cref="GroundMemory.ReadKey"/>), or when it has nothing to say — a rival's hole on a ground your
+    /// own line died on stays anonymous, which is the owner's own order of precedence.</para>
+    /// </summary>
+    private GroundMemory.Scar? TheMarkTakingYourPress()
+    {
+        if (_surface is not { } ex)
+        {
+            return null;
+        }
+
+        foreach (GroundMemory.Scar scar in ex.Scars)
+        {
+            double dx = scar.X - _avatarX;
+            double dy = scar.Y - _avatarY;
+            if ((dx * dx) + (dy * dy) > DeckPlan.InteractRadius * DeckPlan.InteractRadius
+                || _groundMemory.Knows(ReadLatchFor(ex, scar))
+                || WhatThisMarkSays(ex, scar) is null)
+            {
+                continue;
+            }
+
+            return scar;
+        }
+
+        return null;
+    }
+
+    /// <summary>The "already read" key for one mark. The ledger's own scar key identifies it, so the latch
+    /// and any stored row name the same thing — and a suit, which has no stored row at all because it is
+    /// derived from the roster, is still told apart from its neighbours by exactly the same string.</summary>
+    private static string ReadLatchFor(SurfaceExcursion ex, GroundMemory.Scar scar) =>
+        GroundMemory.ReadKey(GroundMemory.ScarKey(ex.Stop.Body.Id, ex.Site.LayoutSalt, scar));
 }

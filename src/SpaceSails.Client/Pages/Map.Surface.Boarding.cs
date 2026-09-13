@@ -138,6 +138,11 @@ public partial class Map
         // be, and any sentry a rival crew walked away from. Same moment, same reason, same ledger.
         SeedTheScarsLeftHere(excursion);
 
+        // #563 · …AND THE ONES WHO CAME BEFORE YOU. Same moment, same reason, one source further out: the
+        // captains this universe has buried on THIS ground, out of the roster the thread has kept since
+        // Evening wind #20. Derived rather than stored — the roster IS the record (SeedTheLineageLyingHere).
+        SeedTheLineageLyingHere(excursion);
+
         _surface = excursion;
 
         // ── #583 · DOES THE HEAT FOLLOW YOU DOWN? Rolled ONCE, here, off the heat this captain earned and

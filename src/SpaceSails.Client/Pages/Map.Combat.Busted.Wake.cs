@@ -59,6 +59,19 @@ public partial class Map
 
         RemoveHunter(b.HunterId);
 
+        // ── #563 · WHERE HE FELL, READ BEFORE THE GROUND IS TAKEN AWAY ───────────────────────────────
+        //
+        // Owner ruling, 2026-09-13: "I love the own lineage." The lineage is only material if it has a
+        // PLACE, and the place is standing right here on the live excursion — for another four lines. The
+        // fold-away below is what has always made this death "a failed gig", and it is also what has always
+        // thrown the one fact away.
+        //
+        // Read HERE rather than at the six trigger sites (the pack, the tank, the sweep team, the writ, the
+        // scuttle, the cheat) for the reason law 5 gives: one writer. Every road to a rebirth comes through
+        // this method, and a seventh trigger added next month gets the grave for free rather than being
+        // remembered to.
+        CaptainGrave? grave = TheGroundThatTookHim(b);
+
         // Evening wind #20 — a surface-overdraw death happens mid-excursion, so the away gig ends here as a
         // failed/aborted trip (no payout) and the surface is folded away, before the resurrection flies the
         // brain-backup to the nearest clinic. The buried/banked hoards live off-ship and are untouched.
@@ -136,7 +149,7 @@ public partial class Map
         // Evening wind #20 — THE NEW CAPTAIN, on ANY death-resurrection (this overdraw AND the collector /
         // Bolivia / impact paths): the piracy insurance rolls the thread's identity — a fresh seeded name and
         // a differing face — and the roster keeps the retiree. The corner chip and roster re-read the change.
-        IssueSuccessorCaptain(b);
+        IssueSuccessorCaptain(b, grave);
 
         // #422 arc 2 — THE GLITCH IN THE REBIRTH. You experience the Nebula thread by DYING: for one flat
         // second the wake card reads a line it should not (a seeded flash off this death), and reading it
@@ -177,7 +190,49 @@ public partial class Map
     // rolls + persists the new one through the registry (the #368 fields are editable data), and refreshes
     // the cached roster so the in-play chip and the saved-voyages list show the new face at once. A run with
     // no indexed thread (a legacy save) simply keeps its current identity and the card narrates generically.
-    private void IssueSuccessorCaptain(BustedEncounter b)
+    /// <summary>
+    /// #563 · <b>DID THIS DEATH HAPPEN ON A GROUND SOMEBODY CAN WALK BACK TO?</b> Three facts, all of them
+    /// already here, and no fourth one invented:
+    ///
+    /// <list type="number">
+    /// <item>the captain is <b>out of the ship</b> — there is a live excursion;</item>
+    /// <item>he is on <b>regolith</b> and not on a floor of the facility. <c>ex.Floor &gt;= 0</c> is the same
+    /// one fact the death card's own place classifier reads (#609) and the same one the shovel is gated on
+    /// (#723): a captain who suffocates 150 m down is lying on poured rockcrete, and there is no regolith
+    /// there for a suit to be found in;</item>
+    /// <item>the body is a <b>world</b> and not a wreck (#574) — a derelict's steel deck is not a ground,
+    /// and its id is the thing that says so.</item>
+    /// </list>
+    ///
+    /// <para>…and then the CAUSE has to be one that can happen to a landing party at all, which is asked of
+    /// <c>CaptainGrave.CanRecord</c> → <c>DeathNarration.CanHappen</c> rather than of a second list kept
+    /// here. The two halves are both necessary: the cause says the death is the sort that has a ground, the
+    /// excursion says which ground.</para>
+    ///
+    /// <para>Null everywhere else, which is most deaths — her own deck is not somewhere a later captain
+    /// goes looking.</para>
+    /// </summary>
+    private CaptainGrave? TheGroundThatTookHim(BustedEncounter b)
+    {
+        if (_surface is not { } ex
+            || ex.Floor < 0
+            || Derelict.TryParseWreckId(ex.Stop.Body.Id, out _)
+            || !CaptainGrave.CanRecord(b.Cause))
+        {
+            return null;
+        }
+
+        // The site salt, not the site index: it is the second half of every GroundMemory key on this ground
+        // and the thing the excursion itself carries, so the grave is addressed exactly as the husks and the
+        // holes around it are. The spot is where the captain was standing — the avatar, which is where the
+        // body is, and is the same pair the burial and the husk writer both read.
+        return new CaptainGrave(ex.Stop.Body.Id, ex.Site.LayoutSalt, _avatarX, _avatarY, b.Cause);
+    }
+
+    /// <param name="grave">#563 · The ground that took him, when there was one — read off the live
+    /// excursion before the wake folds it away. Handed straight to the registry, which hands it to the rule
+    /// that decides whether it is keepable.</param>
+    private void IssueSuccessorCaptain(BustedEncounter b, CaptainGrave? grave = null)
     {
         if (string.IsNullOrEmpty(_activeThreadId))
         {
@@ -190,7 +245,7 @@ public partial class Map
         }
 
         int simDay = (int)(SimTime / 86400);
-        if (Threads.IssueSuccessor(_activeThreadId, simDay) is { } after)
+        if (Threads.IssueSuccessor(_activeThreadId, simDay, grave) is { } after)
         {
             b.NewCaptainName = after.CaptainName;
             b.NewCaptainAvatar = after.AvatarIndex;
