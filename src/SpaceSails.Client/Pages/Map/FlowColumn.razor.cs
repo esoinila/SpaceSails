@@ -329,6 +329,9 @@ public partial class FlowColumn
     [Parameter] public Func<Stations.Captain.AccountRow[]> LedgerAccounts { get; set; } = default!;
     [Parameter] public Func<Stations.Captain.CacheMapItem[]> LedgerMaps { get; set; } = default!;
     [Parameter] public Func<Stations.Captain.LedgerTip[]> LedgerTipsAsRemembered { get; set; } = default!;
+    /// <summary>#238 item 3 · the page's own <c>LiveQuestScopeTargets()</c>, passed straight through to the
+    /// Sensors desk layer.</summary>
+    [Parameter] public Func<IReadOnlyList<QuestScopeTarget>> LiveQuestScopeTargets { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<Stations.WarRoom.LiveRound>> LiveRounds { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<CommerceRule.LocalContact>> LocalContacts { get; set; } = default!;
     [Parameter] public string? LocalSpaceBodyId { get; set; }

@@ -24,4 +24,9 @@ public partial class SensorTaskQueue
     [Parameter] public Func<SensorTaskState, string> StateChipClass { get; set; } = default!;
     [Parameter] public Func<SensorTask, string> TaskCostText { get; set; } = default!;
     [Parameter] public Action<string> AbandonSearch { get; set; } = default!;
+
+    /// <summary>#238 item 3 · the desk's own <c>ScopeHoldLine</c> — already composed, and already null unless a
+    /// non-quest job is holding the glass with a quest-critical one behind it. This surface decides WHERE the
+    /// sentence stands, never what it says.</summary>
+    [Parameter] public string? ScopeHoldLine { get; set; }
 }
