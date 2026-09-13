@@ -164,7 +164,13 @@ public partial class Map
             // asks: your feet first, then the bucket you are standing at, then the ground. Underground this
             // strip read "E — use" everywhere, which is exactly nothing at the one spot where the key opens
             // the sleeve over a bin — and a verb nobody is told about is a verb nobody has (#212/#537).
+            // #563 · …AND SO DOES A MARK IN THE REGOLITH, in the same ladder and the same order, one rung
+            // under the recovery ring because that is where the [E] dispatch put it. This one is easy to
+            // never discover: the captain is standing over a chest-burying key with a body under his boots.
+            // The plate is the mark's own (LineageMark.Plate) and deliberately says nothing about WHOSE it
+            // is — walking over to find that out is the whole beat.
             StandingOnWhatYouLeft() ? LeftBehind.ReachPrompt
+                : TheMarkTakingYourPress() is not null ? $"🪦 E — {LineageMark.Plate}"
                 : TheBinTakingYourPress() is { } atTheBin ? RipAndBin.KeyPrompt(atTheBin.Tier)
                 : !MoonSurface.ShovelWorksOnThisFloor(ex.Floor) ? "E — use"
                 // #319 · The key takes a thing out of the coat as readily as a chest out of the sling, and
