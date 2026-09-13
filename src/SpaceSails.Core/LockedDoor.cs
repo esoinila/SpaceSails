@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace SpaceSails.Core;
 
 /// <summary>
@@ -197,4 +199,22 @@ public static class LockedDoor
     public const string WhichSideLine =
         "You will never be quite certain what you shut the door on. Now there is a second question: which side " +
         "of it you are.";
+
+    /// <summary>Every string this class publishes, in one place — the house's <c>AllProse</c> idiom, so a
+    /// canon sweep reads exactly the sentences a captain reads. A reflection sweep in
+    /// <c>ADoorIsTimeNotAKeyTests</c> fails the day a string const or a label state is added and not
+    /// enumerated here, which is what stops the sweep from going quietly out of date.</summary>
+    public static IEnumerable<string> AllProse()
+    {
+        foreach (State s in System.Enum.GetValues<State>())
+        {
+            yield return Label(s);
+        }
+        yield return ShutLine;
+        yield return BeingForcedLine("the door");
+        yield return ForcedLine("The door");
+        yield return ShootThePlate;
+        yield return LockShotLine;
+        yield return WhichSideLine;
+    }
 }

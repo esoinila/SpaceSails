@@ -40,13 +40,7 @@ public sealed partial class DeckView
                 continue;
             }
 
-            // #563 · A DESTROYED LEAF IS DRAWN AS A HOLE, and this is asked ahead of the locked
-            // treatment for the reason IsDoorShut asks it ahead of the same test: a keyed leaf that has been
-            // shot open would otherwise go on being drawn cold, heavy and barred while the sim walks
-            // everything straight through it. The plan is the one source (DeckPlan.Leafs) and both readers
-            // ask it on the same frame. LeafOpening already returns 1 for a shot leaf — ShootTheLeaf marks
-            // it opened — so the retracted picture below is reached with no second drawing rule.
-            if (d.Locked && !plan.LeafIsShot(leafIndex))
+            if (d.Locked)
             {
                 // Another berth's sealed hatch — always shut, drawn cold (steel-blue), a real wall behind.
                 //

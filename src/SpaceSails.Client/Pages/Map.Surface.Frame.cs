@@ -112,7 +112,6 @@ public partial class Map
                 HeldDoors(), BlockedDoors(), _archiveAboard, _archivePurged,
                 keyAboard: _keyAboard);   // #535 · the code in her crew spaces, if she is still holding one
             ComposeWhatYouLeft(ex);
-            ReplayShotLeaves(ex);
             return;
         }
 
@@ -153,10 +152,6 @@ public partial class Map
         // #1061 beat 2 · …and the one thing on this ground somebody ELSE put down, which is why it is not in
         // the store above: every sentence that store prints says "where YOU left it".
         ComposeTheDroppedSchedule(ex);
-
-        // #563 · LAST, because every composer above it appends doors. A leaf somebody shot the lock off is
-        // gone for the rest of the excursion, and this fresh plan has never heard of it.
-        ReplayShotLeaves(ex);
     }
 
     /// <summary>

@@ -275,18 +275,6 @@ public partial class Map
         // security system is not a seal that rotted.
         public DoorChannel? LabDoorChannel { get; set; }
 
-        // #563 · WHICH LEAVES HAVE HAD A ROUND THROUGH THE LOCK. Keyed on the leaf's own four
-        // coordinates (Map.Doors.ShootTheLock.LeafKey), for the reason HiveInterior.LockKey is: a site
-        // carries several doors that are the same object to look at, and a captain who shot one of them has
-        // not shot the others.
-        //
-        // IT LIVES HERE AND NOT ON THE PLAN because the plan is thrown away and rebuilt several times a
-        // minute (RebuildSurfaceDeck reassigns _deckPlan outright), and a destroyed door that grew its leaf
-        // back the next time somebody buried a chest would be the opposite of terminal. Same place the other
-        // forced-door facts live — OpenedDoors, SecretLabForced, LocksShotOpen — and the same law: session
-        // state, replayed onto every fresh deck, gone when the excursion is.
-        public HashSet<string> LeavesShotOpen { get; } = [];
-
         // #563 · The outpost hut on this site, if it has one: where it stands, whether the hatch has been
         // forced this visit, whether its locker and its effects have been taken/read, and the force channel
         // while it is running. Session state — a hut re-seals between excursions, which is honest enough:
