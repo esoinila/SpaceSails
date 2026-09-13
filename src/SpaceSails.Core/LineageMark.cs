@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -85,6 +85,36 @@ public static class LineageMark
         ArgumentException.ThrowIfNullOrWhiteSpace(who);
         return $"Not one of yours. The tag on it reads {who}, and the tag is older than the dust.";
     }
+
+    // ── …AND WHAT EACH OF THEM IS ABOUT, SAID BY THE AUTHOR ───────────────────────────────────
+    //
+    // #741's law, and it is not a style note: A SUBJECT COMES FROM THE AUTHOR, NEVER FROM THE PROSE. The
+    // thing that knows a sentence names a person is the thing that put the person in it, so it says so here,
+    // beside the words, and nothing downstream ever reads the text back to find out. The client's filing
+    // funnel carries the field and mints nothing — `TheFilingFunnelCarriesTheAuthorsSubjects` sweeps the
+    // whole Pages tree and fails the build if any file in it so much as SPELLS one of the minting calls.
+    //
+    // The personal-name half of that law is a PROMISE this author makes about its own sentence: a Person
+    // subject is only ever minted by a writer that is PRINTING that name on what the captain reads. Both
+    // sentences above print it — the predecessor's name is the second phrase of one, and the stranger's tag
+    // is the middle of the other — so both promises are good.
+
+    /// <summary>One page of the field book as this author hands it over: the words, the glyph, and the
+    /// subjects it declares itself to be about. The same shape <see cref="FieldDossier.Saying"/> keeps, for
+    /// the same reason.</summary>
+    public readonly record struct Page(string Text, string Glyph, string Subjects);
+
+    /// <summary>The page over one of your own, and the man it is about.</summary>
+    public static Page YoursPage(RetiredCaptain retired)
+    {
+        ArgumentNullException.ThrowIfNull(retired);
+        return new Page(
+            YoursNote(retired), LineageGlyph, CaseSubjects.Line(CaseSubjects.Person(retired.Name)));
+    }
+
+    /// <summary>The page over somebody else's mark, and the name on the tag.</summary>
+    public static Page StrangerPage(string who) =>
+        new(StrangerNote(who), StrangerGlyph, CaseSubjects.Line(CaseSubjects.Person(who)));
 
     // ── THE CAST ─────────────────────────────────────────────────────────────────────────────────────
     //

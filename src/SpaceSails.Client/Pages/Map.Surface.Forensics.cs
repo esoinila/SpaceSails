@@ -1,4 +1,4 @@
-using SpaceSails.Client.Rendering;
+﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -162,12 +162,14 @@ public partial class Map
     /// And it changes NOTHING about the mark — not where it is, not when it happened, not the odds it feeds.
     /// #316's marks are untouched; this reads a name onto one.</para>
     ///
-    /// <para>The subject is declared by this author per #741 — the book never reads the prose back to work
-    /// out who a page is about, and a Person subject is only ever minted by a writer that is PRINTING that
-    /// person's name, which both of these sentences do.</para>
+    /// <para><b>This page declares nothing.</b> Per #741 a subject comes from the AUTHOR and never from the
+    /// prose, so <see cref="LineageMark"/> hands the words, the glyph and the subjects over together
+    /// (<see cref="LineageMark.Page"/>) and all this method does is decide WHICH page. Nothing in the client
+    /// mints a subject: the filing funnel's own sweep (<c>TheFilingFunnelCarriesTheAuthorsSubjects</c>)
+    /// walks every file under <c>src/SpaceSails.Client</c> and fails the build if any of them so much as
+    /// SPELLS one of the three minting calls — this comment included, which is how it should be.</para>
     /// </summary>
-    private (string Text, string Glyph, string Subjects)? WhatThisMarkSays(
-        SurfaceExcursion ex, GroundMemory.Scar scar)
+    private LineageMark.Page? WhatThisMarkSays(SurfaceExcursion ex, GroundMemory.Scar scar)
     {
         IReadOnlyList<RetiredCaptain> mine =
             LineageMark.BuriedOn(ActiveThreadInfo?.Retired, ex.Stop.Body.Id, ex.Site.LayoutSalt);
@@ -179,10 +181,7 @@ public partial class Map
             // who happened to die on one tile still get one page each.
             RetiredCaptain? here = mine.FirstOrDefault(
                 c => c.Grave is { } g && g.X == scar.X && g.Y == scar.Y);
-            return here is null
-                ? null
-                : (LineageMark.YoursNote(here), LineageMark.LineageGlyph,
-                   CaseSubjects.Line(CaseSubjects.Person(here.Name)));
+            return here is null ? null : LineageMark.YoursPage(here);
         }
 
         if (mine.Count > 0)
@@ -190,9 +189,7 @@ public partial class Map
             return null;   // your own line died on this ground — the strangers do not fill in over them
         }
 
-        string who = LineageMark.StrangerFor(ex.Stop.Body.Id, ex.Site.LayoutSalt);
-        return (LineageMark.StrangerNote(who), LineageMark.StrangerGlyph,
-                CaseSubjects.Line(CaseSubjects.Person(who)));
+        return LineageMark.StrangerPage(LineageMark.StrangerFor(ex.Stop.Body.Id, ex.Site.LayoutSalt));
     }
 
     /// <summary>
@@ -221,15 +218,18 @@ public partial class Map
     private bool TryReadTheMarkAtYourFeet()
     {
         if (_surface is not { } ex || TheMarkTakingYourPress() is not { } scar
-            || WhatThisMarkSays(ex, scar) is not { } said)
+            || WhatThisMarkSays(ex, scar) is not { } page)
         {
             return false;
         }
 
         _groundMemory.Remember(ReadLatchFor(ex, scar));
-        string page = $"{said.Text} {GroundMemory.AgeLine(scar.AtSimTime, SimTime)}";
-        ShowPulseMessage($"{said.Glyph} {page}");
-        FileNoteAbout(page, said.Glyph, said.Subjects);
+        // The author's words, with the GROUND's own age line after them — #1127's three bands, the same
+        // sentence a husk underfoot speaks. Dating a suit is the same question as dating a body.
+        var said = new LineageMark.Page(
+            $"{page.Text} {GroundMemory.AgeLine(scar.AtSimTime, SimTime)}", page.Glyph, page.Subjects);
+        ShowPulseMessage($"{said.Glyph} {said.Text}");
+        FileNoteAbout(said.Text, said.Glyph, said.Subjects);
         RequestVaultSave();   // the latch has to survive the shuttle, which means surviving the file
         return true;
     }
