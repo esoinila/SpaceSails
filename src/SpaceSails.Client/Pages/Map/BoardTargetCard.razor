@@ -104,6 +104,39 @@
                     <span>Hold loaded with it</span>
                     <span>@(_cargoUnits > 0 ? $"{_cargoUnits} units ({HotHoldUnits()} hot)" : "empty")</span>
                 </div>
+                @* #319 · THE SECOND CHOICE. Owner, live 2026-07-18: "Let's add another options to hide onto
+                   the planet / site. Anything from the inventory that is light enough … hiding evidence of
+                   our piracy without losing it. Maybe we steal something too important to risk carrying it
+                   around, like a superchip prototype etc."
+
+                   It is a ROW on the panel that already packs the chest and not a chooser of its own, because
+                   the whole issue is that there is no second flow: the same walk, the same DIG HERE press,
+                   the same 2D6, the same ✗, the same return dig under the same odds.
+
+                   It appears only when the pocket holds something light enough (CacheDeposit's ONE weight
+                   rule, read off the satchel's own SpaceCostOf and never off a list of kinds). An empty-handed
+                   captain is not shown a control with nothing behind it; a captain who IS carrying something
+                   is never left to guess that the shovel would take it (#212, affordances never hide).
+
+                   A picked row is pressed again to un-pick it — the general UI law's "nothing you cannot
+                   undo", inside a row. *@
+                @if (BuriableInTheSatchel.Count > 0)
+                {
+                    <div class="bury-deposit">
+                        <div class="bury-deposit-head">🎒 @CacheDeposit.RowLabel</div>
+                        @foreach (Satchel.Item thing in BuriableInTheSatchel)
+                        {
+                            Satchel.Item t = thing;
+                            <button type="button"
+                                    class="bury-deposit-row @(BoardDepositIs(t) ? "bury-deposit-sel" : "")"
+                                    title="@(BoardDepositIs(t) ? "Leave it aboard after all" : "Carry it down and put it in the ground")"
+                                    @onclick="() => ChooseBoardDeposit(t)">
+                                <span class="bury-deposit-mark">@(BoardDepositIs(t) ? "◉" : "○")</span>
+                                <span class="bury-deposit-name">@SatchelLabel(t)</span>
+                            </button>
+                        }
+                    </div>
+                }
                 }
                 @* #314/#324: load the ship's sentry bots as surface escorts — they hold the line against
                    the Old Ones until their 99-round magazines run dry. A margin you buy, not safety. The

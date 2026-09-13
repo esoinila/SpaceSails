@@ -50,7 +50,12 @@ public partial class ExpeditionCardRack
     [Parameter] public Func<string> BoardingHoldQuote { get; set; } = default!;
     [Parameter] public Func<int> BoardingHoldSeverity { get; set; } = default!;
     [Parameter] public Func<string, string> BodyName { get; set; } = default!;
+    // #319 · The boarding card's second choice, passed straight through under the page members' own names.
+    [Parameter] public Func<Satchel.Item, bool> BoardDepositIs { get; set; } = default!;
     [Parameter] public string BotMusterLine { get; set; } = default!;
+    [Parameter] public IReadOnlyList<Satchel.Item> BuriableInTheSatchel { get; set; } = default!;
+    [Parameter] public Action<Satchel.Item> ChooseBoardDeposit { get; set; } = default!;
+    [Parameter] public Func<Satchel.Item, string> SatchelLabel { get; set; } = default!;
     [Parameter] public EventCallback CancelBoarding { get; set; } = default!;
     [Parameter] public Func<ShuttleStop, Task> ConfirmBoarding { get; set; } = default!;
     [Parameter] public Func<DeflectionStoryPanel, string> DeflectionPanelArtCss { get; set; } = default!;

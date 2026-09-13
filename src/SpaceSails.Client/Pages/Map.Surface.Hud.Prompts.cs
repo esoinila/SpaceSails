@@ -37,16 +37,22 @@ public partial class Map
                 $"({Core.Processing.SecondsLeft(paper.Elapsed, ProcessingSeconds):F0} s). Step away and it is lost.";
         }
 
-        if (!ex.Carrying)
+        if (!ex.ShovelHasSomethingToBury)
         {
             return null; // nothing owed — the ground goes quiet again
         }
         // #723 · The floor rides along, so this line stops promising a burial on a Hive corridor. Underground
         // it now reads "walk out onto the regolith" — which is the honest instruction down there, because the
         // way to bury a chest 150 m under a facility is the lift.
+        //
+        // #319 · …and the NOUN rides along too. A captain walking with nothing but a folded sheet in his coat
+        // is not "CARRYING THE CHEST", and a standing HUD line that said so would be the one this repo has
+        // paid for three times — the sim doing one thing while a sentence reports another. What it must NOT
+        // do is name the thing: the line says there is something to put down, never what.
+        string holding = ex.Carrying ? "CARRYING THE CHEST" : "SOMETHING TO PUT IN THE GROUND";
         return MoonSurface.IsDiggableGround(_avatarX, _avatarY, ex.Floor)
-            ? "⛏ CARRYING THE CHEST — press E to BURY IT HERE"
-            : "⛏ CARRYING THE CHEST — walk out onto the regolith, then E to bury it";
+            ? $"⛏ {holding} — press E to BURY IT HERE"
+            : $"⛏ {holding} — walk out onto the regolith, then E to bury it";
     }
 
     /// <summary>#562 + #696 · WHICH slow thing the one bar is showing. A ladder rather than four inline
@@ -155,7 +161,10 @@ public partial class Map
             StandingOnWhatYouLeft() ? LeftBehind.ReachPrompt
                 : TheBinTakingYourPress() is { } atTheBin ? RipAndBin.KeyPrompt(atTheBin.Tier)
                 : !MoonSurface.ShovelWorksOnThisFloor(ex.Floor) ? "E — use"
+                // #319 · The key takes a thing out of the coat as readily as a chest out of the sling, and
+                // the strip says which one it would be putting down.
                 : ex.Carrying ? "⛏ E — BURY THE CHEST HERE"
+                : ex.ShovelHasSomethingToBury ? "⛏ E — BURY IT HERE"
                 : "E — dig / use",
         };
         bool carryingBot = ex.Bots.Any(b => !b.Deployed);
@@ -226,7 +235,12 @@ public partial class Map
         {
             lines.Add(ex.Carrying
                 ? "⛏ E on the regolith — bury the chest where you stand"
-                : "🪛 E on the regolith — probe for shallow treasure");
+                // #319 · …and the same one key, for the thing out of the satchel. A captain who walked down
+                // with something to put in the ground and was offered a fishing expedition would have been
+                // told his own errand was not on the list (#212, affordances never hide).
+                : ex.ShovelHasSomethingToBury
+                    ? "⛏ E on the regolith — bury it where you stand"
+                    : "🪛 E on the regolith — probe for shallow treasure");
         }
         if (ownMarkCount > 0)
         {

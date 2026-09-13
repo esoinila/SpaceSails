@@ -61,6 +61,20 @@ public partial class Map
         public LandingSite Site { get; init; }
         public int PendingCoin { get; set; }
         public List<CacheCargo> PendingCargo { get; init; } = [];
+
+        /// <summary>#319 · THE THING OUT OF THE COAT. One satchel row the chooser picked at the shuttle door
+        /// to put in the ground (<see cref="Core.ShuttleExcursion.ChestLoad.Deposit"/>), carried down.
+        ///
+        /// <para>It is a POINTER at a row that is still in the captain's satchel, never a copy lifted out of
+        /// it: a coat is not a cargo manifest, and the satchel goes on being the satchel for the whole walk —
+        /// it can be offered at a door, spread on a desk, torn up at a bin. The shovel asks
+        /// <see cref="CacheDeposit.AsCarried"/> whether it is still there and buries what it finds, so a paper
+        /// picked at the door and then read, filed or set down is simply not there to bury and nothing
+        /// anywhere has to be told about it.</para>
+        ///
+        /// <para>Nulled the instant it goes in the hole, which is what takes the shovel back off [E].</para></summary>
+        public Core.Satchel.Item? PendingDeposit { get; set; }
+
         public bool ChestDropped { get; set; }
         public double DropX, DropY;
         public bool Buried { get; set; }                 // the carried chest went into the ground
@@ -813,6 +827,17 @@ public partial class Map
 
         // A chest is in hand right now: something was loaded, not yet buried, not dropped.
         public bool Carrying => (PendingCoin > 0 || PendingCargo.Count > 0) && !Buried && !ChestDropped;
+
+        /// <summary>#319 · IS THERE ANYTHING TO PUT IN A HOLE — the question the shovel asks, and the ONLY
+        /// thing #319 widened. <see cref="Carrying"/> is deliberately left exactly as it was, because four
+        /// other systems read it and every one of them is about the WEIGHT of a chest in your arms: the walk
+        /// speed (<c>CurrentWalkSpeed</c>), the block roll a captain throws with his hands full
+        /// (<c>CaptainCondition.BlockRoll</c>), what an Old One sees him doing
+        /// (<c>ReeverObservation.Doing.Hauling</c>) and whether [G] can drop it. A file folded into a coat
+        /// pocket does not slow a man down, does not stop him getting an arm up, and cannot be dropped to
+        /// sprint — so widening <see cref="Carrying"/> would have quietly re-priced four scenes that have
+        /// nothing to do with this issue.</summary>
+        public bool ShovelHasSomethingToBury => Carrying || PendingDeposit is not null;
         public bool Channeling => Channel is not null;
         // #371 Phase 3 / #394: any channel underway (a dig, a door-force, OR the drill) — mutually exclusive.
         //
