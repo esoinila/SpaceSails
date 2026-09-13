@@ -351,6 +351,7 @@ public partial class Map
         }
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
+        StepLabDoorChannel(dtRealSeconds);       // #563: a shoulder on a KEYED lab door — 25 s, and heard
         StepSecretLabDetector();                 // #585: the needle climbs as you close on a named moon
         StepOutpostDoorChannel(dtRealSeconds);   // #563: the outpost hatch's force channel
         StepDrillChannel(dtRealSeconds); // #394: the drilling — sinking the charge into the rock

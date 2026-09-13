@@ -625,7 +625,6 @@ sweep roster | _routeWindowsArmedFor | Double?
 sweep roster | _routeWindowsRibbon | Object
 sweep roster | _ruinedShares | Double
 sweep roster | _rumTots | Int32
-sweep roster | _saidWhichSide | Boolean
 sweep roster | _sailHoled | Boolean
 sweep roster | _sailRepairedAtSimTime | Double
 sweep roster | _samples | IReadOnlyList<TrajectorySample>
@@ -2005,21 +2004,21 @@ the surface | HerOwnDeckInFlight.OneLongGap | ∅
 the surface | HerOwnDeckInFlight.AHeldKey | ∅
 the surface | HerOwnDeckInFlight.APlannedRoute | ∅
 the surface | HerOwnDeckInFlight.AHandOnTheWarpSlider | ∅
-the surface | TheRegolithOnFoot.SteadyFrames | SurfaceExcursion(AirLowWarned=no, AirSeconds=1223.8, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no,… 8808 chars, sha256 2a786c6d43f70f53
-the surface | TheRegolithOnFoot.OneLongGap | SurfaceExcursion(AirLowWarned=no, AirSeconds=1275, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 8806 chars, sha256 a3758516dce08a66
-the surface | TheRegolithOnFoot.AHeldKey | SurfaceExcursion(AirLowWarned=no, AirSeconds=1223.8, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no,… 8808 chars, sha256 2a786c6d43f70f53
-the surface | TheRegolithOnFoot.APlannedRoute | SurfaceExcursion(AirLowWarned=no, AirSeconds=1247.8, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no,… 8808 chars, sha256 498bc8eb911d16c2
-the surface | TheRegolithOnFoot.AHandOnTheWarpSlider | SurfaceExcursion(AirLowWarned=no, AirSeconds=1223.8, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no,… 8808 chars, sha256 2a786c6d43f70f53
-the surface | AHiveFloorWithAPatrol.SteadyFrames | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5724 chars, sha256 213640b493908449
-the surface | AHiveFloorWithAPatrol.OneLongGap | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5724 chars, sha256 0583086a50eda7a8
-the surface | AHiveFloorWithAPatrol.AHeldKey | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5724 chars, sha256 213640b493908449
-the surface | AHiveFloorWithAPatrol.APlannedRoute | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5723 chars, sha256 2a751a9f39bc864d
-the surface | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5724 chars, sha256 213640b493908449
-the surface | ACaptainInAChair.SteadyFrames | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5724 chars, sha256 213640b493908449
-the surface | ACaptainInAChair.OneLongGap | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5724 chars, sha256 0583086a50eda7a8
-the surface | ACaptainInAChair.AHeldKey | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5724 chars, sha256 213640b493908449
-the surface | ACaptainInAChair.APlannedRoute | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5723 chars, sha256 2a751a9f39bc864d
-the surface | ACaptainInAChair.AHandOnTheWarpSlider | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5724 chars, sha256 213640b493908449
+the surface | TheRegolithOnFoot.SteadyFrames | SurfaceExcursion(AirLowWarned=no, AirSeconds=1223.8, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no,… 8826 chars, sha256 7062f57613e2d4b1
+the surface | TheRegolithOnFoot.OneLongGap | SurfaceExcursion(AirLowWarned=no, AirSeconds=1275, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 8824 chars, sha256 1287e176f08859d6
+the surface | TheRegolithOnFoot.AHeldKey | SurfaceExcursion(AirLowWarned=no, AirSeconds=1223.8, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no,… 8826 chars, sha256 7062f57613e2d4b1
+the surface | TheRegolithOnFoot.APlannedRoute | SurfaceExcursion(AirLowWarned=no, AirSeconds=1247.8, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no,… 8826 chars, sha256 d9390d0390f5924b
+the surface | TheRegolithOnFoot.AHandOnTheWarpSlider | SurfaceExcursion(AirLowWarned=no, AirSeconds=1223.8, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no,… 8826 chars, sha256 7062f57613e2d4b1
+the surface | AHiveFloorWithAPatrol.SteadyFrames | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5742 chars, sha256 4d53c4eec6a7a5a3
+the surface | AHiveFloorWithAPatrol.OneLongGap | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5742 chars, sha256 4dde8607a934a450
+the surface | AHiveFloorWithAPatrol.AHeldKey | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5742 chars, sha256 4d53c4eec6a7a5a3
+the surface | AHiveFloorWithAPatrol.APlannedRoute | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5741 chars, sha256 8300fca1ee2378d2
+the surface | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5742 chars, sha256 4d53c4eec6a7a5a3
+the surface | ACaptainInAChair.SteadyFrames | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5742 chars, sha256 4d53c4eec6a7a5a3
+the surface | ACaptainInAChair.OneLongGap | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5742 chars, sha256 4dde8607a934a450
+the surface | ACaptainInAChair.AHeldKey | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5742 chars, sha256 4d53c4eec6a7a5a3
+the surface | ACaptainInAChair.APlannedRoute | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5741 chars, sha256 8300fca1ee2378d2
+the surface | ACaptainInAChair.AHandOnTheWarpSlider | SurfaceExcursion(AirLowWarned=no, AirSeconds=1200, AirWarned=no, Backstop=BackstopVoice(_said=no), Bots=[], Buried=no, B… 5742 chars, sha256 4d53c4eec6a7a5a3
 the surface | TheMapFrameInFlight.SteadyFrames | ∅
 the surface | TheMapFrameInFlight.OneLongGap | ∅
 the surface | TheMapFrameInFlight.AHeldKey | ∅
@@ -2060,36 +2059,36 @@ the pulse cooldown | TheElectricUniverse.OneLongGap | -1
 the pulse cooldown | TheElectricUniverse.AHeldKey | -1
 the pulse cooldown | TheElectricUniverse.APlannedRoute | -1
 the pulse cooldown | TheElectricUniverse.AHandOnTheWarpSlider | -1
-sweep | HerOwnDeckInFlight.SteadyFrames | 838 fields, sha256 592462ca928453426c69e28bcc16bc2536e7f1be4f610d59e386c32ca1708970
-sweep | HerOwnDeckInFlight.OneLongGap | 838 fields, sha256 b94b56281ab97ca9c0ed9293d7cb2c25b7a8a2d0b05502eceba3e5523078ee9e
-sweep | HerOwnDeckInFlight.AHeldKey | 838 fields, sha256 ef2d8302f02c571612cdebf37aff48bf600c59819f0674ff688c5f4aa0de66b9
-sweep | HerOwnDeckInFlight.APlannedRoute | 838 fields, sha256 cb48bb9a890a92b8dde42104d71a49a9ba0ae61f69ecc2e564ef626f819088fa
-sweep | HerOwnDeckInFlight.AHandOnTheWarpSlider | 838 fields, sha256 97585c67c3d930d0b0eea0c02af5cef954e3a6da66666c476f14ff71fdc5a92d
-sweep | TheRegolithOnFoot.SteadyFrames | 838 fields, sha256 2c90509c3811c2beb0c92bb690081be117d41606195dded7567591e2e1bed6f5
-sweep | TheRegolithOnFoot.OneLongGap | 838 fields, sha256 07a769e391beea5c5bf2f33ea27eee41a8a24aa002ae9590cc12bdfd0bbcf753
-sweep | TheRegolithOnFoot.AHeldKey | 838 fields, sha256 b78276d17de14b56e33ebe8e3dc5b60898bb2626ce392f70f52b7a5cbc72929b
-sweep | TheRegolithOnFoot.APlannedRoute | 838 fields, sha256 884b349919457c9b22975ae1a84a92fd5d693c3216c81bff4c12d542a4a5e133
-sweep | TheRegolithOnFoot.AHandOnTheWarpSlider | 838 fields, sha256 479d587b9e224146c3c3e591d5eb55c50cb357edbac1b7858390838c8095f6b4
-sweep | AHiveFloorWithAPatrol.SteadyFrames | 838 fields, sha256 667a8f241257b7cb5ae80306e08809b88082bd00655e636f50fc09220ebbcce9
-sweep | AHiveFloorWithAPatrol.OneLongGap | 838 fields, sha256 c342e7ee6358af65f2f9f0840e3adab91ce1d42bf532c20c5093bfa2b19ed7d8
-sweep | AHiveFloorWithAPatrol.AHeldKey | 838 fields, sha256 007c461a9503a768fd47ba69db0d27ebaa1b25bd42f6f1a2dc6f6a4a5f117e98
-sweep | AHiveFloorWithAPatrol.APlannedRoute | 838 fields, sha256 1296726787fa1458738f05b8a6f11603bf8a88d52898dbd219cd67bdd7e124fb
-sweep | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 838 fields, sha256 ad85ff4c2f77a56241a9c12be3ae71ec5ecfefa146fcbe263748c204847549d2
-sweep | ACaptainInAChair.SteadyFrames | 838 fields, sha256 426268efb410f8190be14e8146ce32a1c5e62a0aafb2e2224a14406b748cac5d
-sweep | ACaptainInAChair.OneLongGap | 838 fields, sha256 a104acfdcd647aa355ffab5ff7eb57239f88a68441e5c48bb552de5adf2262ac
-sweep | ACaptainInAChair.AHeldKey | 838 fields, sha256 16955eccf9e364b588a1759f778002253035fb794cac0b4ca652d1a50d1c810a
-sweep | ACaptainInAChair.APlannedRoute | 838 fields, sha256 1296726787fa1458738f05b8a6f11603bf8a88d52898dbd219cd67bdd7e124fb
-sweep | ACaptainInAChair.AHandOnTheWarpSlider | 838 fields, sha256 ea835de7ef17c26635484a7e8625122e4ddca98e175d41824d793104d9de5b33
-sweep | TheMapFrameInFlight.SteadyFrames | 838 fields, sha256 c90ba81a41aae8d48bedfef3650349ac3aac3f40de7af83375ad6167012cd651
-sweep | TheMapFrameInFlight.OneLongGap | 838 fields, sha256 a9efc74f0892bac0350051be4bc628ff43aa167726f2fe095a2df6e2e2e0c6eb
-sweep | TheMapFrameInFlight.AHeldKey | 838 fields, sha256 7d06695071c15aae8ff8eb7aaea10a2811a73fd4ee59e62d699fec0f4f23457a
-sweep | TheMapFrameInFlight.APlannedRoute | 838 fields, sha256 fe24e4e60752f30af9691fe156c0d0c47a78c30d9875d76826bb549bcc4f2895
-sweep | TheMapFrameInFlight.AHandOnTheWarpSlider | 838 fields, sha256 888bbad622ced9c823d144e79cffda9c6fc6607a46b33c30ac21e569568b0b52
-sweep | TheElectricUniverse.SteadyFrames | 838 fields, sha256 3eec1d8b068acc6d63b1d6d96649255eca09211ddbd53100941a807734951bb6
-sweep | TheElectricUniverse.OneLongGap | 838 fields, sha256 12fa094a38c148ee2a07c9ee55fb1431d2eff908805f5b7fbd990088d891fee5
-sweep | TheElectricUniverse.AHeldKey | 838 fields, sha256 95b7b3418cb5b77407f9c2bf646aa0a61e91b8e56ba04ae887f17d30320eb043
-sweep | TheElectricUniverse.APlannedRoute | 838 fields, sha256 0306b4c9569c48bb0e45ce5546ee4ee149ffea00fd1d553129d0c468a55dcfa9
-sweep | TheElectricUniverse.AHandOnTheWarpSlider | 838 fields, sha256 c6f700d7ecd2795b5b597fcae6300a7a1c474a919716208af0cc202656032968
+sweep | HerOwnDeckInFlight.SteadyFrames | 837 fields, sha256 056ae78ad71d94aa2d498e502402ff95c42fb5f78f83b6e81965b31af6ed943c
+sweep | HerOwnDeckInFlight.OneLongGap | 837 fields, sha256 a4a08ac11290330304abbdc3477c09e06ca3453cc752d8eaff4047b3b6d0796e
+sweep | HerOwnDeckInFlight.AHeldKey | 837 fields, sha256 e9450f7802712bcbabbedb3c78cb076461642cbc2c71c93ab286df4fd1135e82
+sweep | HerOwnDeckInFlight.APlannedRoute | 837 fields, sha256 156d325789ec61ec7a5fcb04d97141bbdbae5497a3c196b97e7f849a2702c515
+sweep | HerOwnDeckInFlight.AHandOnTheWarpSlider | 837 fields, sha256 c943f8e9232d05308d0506bdd99b24527a390aace6f52bad4b30da9064caba8e
+sweep | TheRegolithOnFoot.SteadyFrames | 837 fields, sha256 a2177c2933411f03c4c99c7802dfab1706d46ae099d6ae4400a6c9e087d2ee23
+sweep | TheRegolithOnFoot.OneLongGap | 837 fields, sha256 a283011a62b5d5af683fba0fb57c1efc5cf63bb656f101a7474a14fc92906c9f
+sweep | TheRegolithOnFoot.AHeldKey | 837 fields, sha256 d3c1b3a2e344883d144cad4776cb4dc52fbc218632bf61e1477386fd69995c12
+sweep | TheRegolithOnFoot.APlannedRoute | 837 fields, sha256 f97de1c5b84e484ea1b33876b5c4c3ee6e7ca5ce8652cde61a95802ac4a24b57
+sweep | TheRegolithOnFoot.AHandOnTheWarpSlider | 837 fields, sha256 915cd9902c8a1102f13ce5cd2115c9f62e181b40ade312b1fd3a1c2b4ac76974
+sweep | AHiveFloorWithAPatrol.SteadyFrames | 837 fields, sha256 73e10aa463fd083cd2508bf7ee80322f6f80f00af4c306600d73aeb64388890e
+sweep | AHiveFloorWithAPatrol.OneLongGap | 837 fields, sha256 4e8063f1aac95451600652822fad3673d4b75bf745d03f0f894c1eb150a319f3
+sweep | AHiveFloorWithAPatrol.AHeldKey | 837 fields, sha256 865b3d45c72d9fb4316d4cf5dd9e065a5676756df5aeba647e9429bd5dd4c4ee
+sweep | AHiveFloorWithAPatrol.APlannedRoute | 837 fields, sha256 e6b554713981bf7a3745e6b81535720fa14c590d05bef36297ad623db2cc77bd
+sweep | AHiveFloorWithAPatrol.AHandOnTheWarpSlider | 837 fields, sha256 db9c7a3f431c79edfb71f5ffd35a0a77d5dd9ec25e6c550d672befb826daa505
+sweep | ACaptainInAChair.SteadyFrames | 837 fields, sha256 ff4b40587dd7f2dfcff9cabc8c8d56b7db6f312f5b34c9e3a4b7a2122e002ccb
+sweep | ACaptainInAChair.OneLongGap | 837 fields, sha256 a76804bec3cd458fb06326101591957718b09b39eb9add099c6f79d6d020555d
+sweep | ACaptainInAChair.AHeldKey | 837 fields, sha256 42acaeb8e53a9b88d92ff20de3cd84702abef17f55c26b3737c94b6bdc171b72
+sweep | ACaptainInAChair.APlannedRoute | 837 fields, sha256 e6b554713981bf7a3745e6b81535720fa14c590d05bef36297ad623db2cc77bd
+sweep | ACaptainInAChair.AHandOnTheWarpSlider | 837 fields, sha256 10228e71c668728da506ffd0164537e2a0d659e53a6bfc2ddf3c789e6c873506
+sweep | TheMapFrameInFlight.SteadyFrames | 837 fields, sha256 be522e0682b9132f4c652c9b9f149bfd66187fd4e3573921638202cbad92223d
+sweep | TheMapFrameInFlight.OneLongGap | 837 fields, sha256 8f6d5793e5a87bf4b4960564f1f4100ede475cbd656c0ecfff186658faa394d8
+sweep | TheMapFrameInFlight.AHeldKey | 837 fields, sha256 da3986b4a0c50caf9d5fa455efa27ee59619b4b6028078dcb137b67197978de7
+sweep | TheMapFrameInFlight.APlannedRoute | 837 fields, sha256 ff10ebc8113c35d0c0b2bb5a702a77aeaf90bd742cc288227d2895b8efe2b005
+sweep | TheMapFrameInFlight.AHandOnTheWarpSlider | 837 fields, sha256 aaeda9333116d329255b81650b86a094f7928ed89bb6d3eb5066fc71f151f497
+sweep | TheElectricUniverse.SteadyFrames | 837 fields, sha256 87773283593a263a3585bdb45fbff994a7381bfe2629226256584a8d087afdfe
+sweep | TheElectricUniverse.OneLongGap | 837 fields, sha256 2b6fd12711d4f062c80981e2f8219ec8c9690f5baf6e3faaaf0f7d1ac6aaaa4f
+sweep | TheElectricUniverse.AHeldKey | 837 fields, sha256 6cae9cd475ea2b493a864107345a39e4f3ec04551d6eb3cf50157508ade455ca
+sweep | TheElectricUniverse.APlannedRoute | 837 fields, sha256 fbcf759fb6d3c2a435e1df1bf1674ec71c8a6f89639f45763c31b0a520f89f8c
+sweep | TheElectricUniverse.AHandOnTheWarpSlider | 837 fields, sha256 417ac13d7302fd06231435c6158ac8743eccf2a0afbac1854b89026bf8406934
 walked-view pen | HerOwnDeckInFlight.SteadyFrames | 39397 calls, sha256 e4a2d0b25df18e3bf7b360589b17fe0b7fa7dd14d3b861903edf1594ba618acb
 walked-view pen | HerOwnDeckInFlight.OneLongGap | 39406 calls, sha256 5297158a2c8eefea027e7c47384a3605357b794dc4eafc2269f629a83635336f
 walked-view pen | HerOwnDeckInFlight.AHeldKey | 39395 calls, sha256 b85af1d2af7441fda3e67a7618d9e56e6765f8c27d1b0f818b8598a48efdcada

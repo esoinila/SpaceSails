@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace SpaceSails.Core;
 
 /// <summary>
@@ -17,10 +19,27 @@ namespace SpaceSails.Core;
 /// the room. That is the whole value, and it is an escalation of the existing rule rather than a contradiction of
 /// it — they still never operate the door, they simply out-last it.</para>
 ///
-/// <para><b>And the cost is the good part.</b> The lab's doors are keyed, and the key is deeper in. So a captain
-/// who locks the outer door to keep the pack off has locked their own way home until they go further in and find
-/// the card — which is the vent board's oldest lesson, on the ground: <i>you will never be certain what you shut
-/// the door on</i>, and now also <i>which side of it you are.</i></para>
+/// <para><b>#563 · AND THE PRICE IS TIME, NEVER A KEY.</b> Owner ruling, 2026-09-13: <i>"I like the time instead
+/// of a key, considering we have firepower and tools. We can create the same effect as needing a key by making it
+/// slow, too noisy, or dangerous in other ways."</i> A key would turn a door into an inventory hunt — walk the
+/// level until the card falls out of a drawer — and this game has a tether, a tracker and a pack, which are three
+/// better clocks than a scavenger hunt. So a locked door now costs one of three things and never a carried item:
+/// <list type="number">
+/// <item><b>SLOW.</b> <see cref="ForceSeconds"/> with your shoulder on it, and the tracker sweeping the whole
+/// time. The constant did not move; what moved is that it is now a price the CAPTAIN can pay.</item>
+/// <item><b>NOISY.</b> The hold is heard. Every tick of it puts a <c>ReeverHearing.Noise.Clatter</c> at the
+/// door, so the tide inside twelve du turns and walks to the doorway you are leaning on. A shut leaf still
+/// hides you from SIGHT (#1154/#1161) and has never hidden you from ears.</item>
+/// <item><b>DANGEROUS.</b> <see cref="ShootThePlate"/> — one round, instantly, at full earshot, and the leaf
+/// is <see cref="State.Destroyed"/> for the rest of the excursion. You spend the door's whole future for
+/// present speed, which is the sentries' own law arriving at a door: <i>buys time, never safety</i>.</item>
+/// </list></para>
+///
+/// <para><b>What went with the key.</b> Vantar's card no longer turns anything with hinges: it is a credential a
+/// PANEL respects (<c>LabSecurity.Approach.HasKeyCard</c>) and nothing else. <c>MayLock</c>, <c>NoKeyLine</c> and
+/// <c>LockedLine</c> were the card's three sentences and they are gone with it — the house still keys every door
+/// at once (the lockdown), and the captain's answer to that is the shoulder or the round rather than a walk to a
+/// chair two rooms deeper.</para>
 /// </summary>
 public static class LockedDoor
 {
@@ -36,6 +55,20 @@ public static class LockedDoor
 
         /// <summary>Shut and keyed. The pack can lean on it for as long as they like.</summary>
         Locked,
+
+        /// <summary>
+        /// #563 · SHOT OFF ITS FRAME, AND THAT IS TERMINAL. Owner, 2026-09-13: <i>"We have firepower and
+        /// tools."</i> A round through the hasp opens the door in the time it takes to pull a trigger — and
+        /// takes the door out of the world as a door. It is <see cref="Passable"/> and
+        /// <see cref="Transparent"/> forever, it can never be shut, locked or forced again, and nothing on
+        /// either side of it will ever be shut out again.
+        ///
+        /// <para>That is the danger, and it is deliberately not a punishment the game announces: the captain
+        /// spends the door's ENTIRE FUTURE — every retreat behind it, every time the pack would have been
+        /// stopped by it — to save <see cref="ForceSeconds"/> now. The sentries' own law, at a doorway:
+        /// buys time, never safety.</para>
+        /// </summary>
+        Destroyed,
     }
 
     /// <summary>
@@ -49,15 +82,17 @@ public static class LockedDoor
     /// second one is what turns a delay into a countdown, which keeps a lone straggler from being a crisis.</summary>
     public const int ForcedByAtLeast = 2;
 
-    /// <summary>Whether a door can be walked through.</summary>
-    public static bool Passable(State state) => state == State.Open;
+    /// <summary>Whether a door can be walked through. A destroyed one always is — there is nothing left of it
+    /// to stop anybody.</summary>
+    public static bool Passable(State state) => state is State.Open or State.Destroyed;
 
     /// <summary>Whether it can be seen through. Same answer, and deliberately the SAME rule the ship's hatches
-    /// follow (#465): opacity and solidity are not the same property, but a door happens to have both.</summary>
-    public static bool Transparent(State state) => state == State.Open;
+    /// follow (#465): opacity and solidity are not the same property, but a door happens to have both — and a
+    /// door that is not there any more has neither.</summary>
+    public static bool Transparent(State state) => state is State.Open or State.Destroyed;
 
     /// <summary>Whether the pack can get through this one eventually. The single line the whole feature rests
-    /// on: shut is a delay, locked is an answer.</summary>
+    /// on: shut is a delay, locked is an answer. (A destroyed leaf is not forced; it is walked through.)</summary>
     public static bool CanBeForced(State state) => state == State.Shut;
 
     /// <summary>Whether a crowd this size is enough to work on it.</summary>
@@ -65,37 +100,73 @@ public static class LockedDoor
 
     // ── What the captain may do to it ─────────────────────────────────────────────────────────────────
 
-    /// <summary>A captain may always shut a door they are standing at, and always open one that is not keyed.
-    /// Nothing about this needs a tool — it is a door.</summary>
-    public static bool MayOpen(State state, bool hasKey) =>
-        state == State.Shut || (state == State.Locked && hasKey);
+    /// <summary>A captain may open a shut door with their hands. A KEYED one does not answer hands at all any
+    /// more — it answers <see cref="MayForce"/> (time) or <see cref="MayShootTheLock"/> (a round), which is the
+    /// whole of the 2026-09-13 ruling: <i>a locked door is TIME, never a key.</i></summary>
+    public static bool MayOpen(State state) => state == State.Shut;
 
-    /// <summary>…and may shut an open one, always.</summary>
+    /// <summary>…and may shut an open one, always. Never a destroyed one: that is what terminal means.</summary>
     public static bool MayShut(State state) => state == State.Open;
 
     /// <summary>
-    /// THE LOCK NEEDS THE KEY, IN BOTH DIRECTIONS. A captain without the card cannot lock a door and cannot
-    /// unlock one — which is what stops the lock being a free win. Find the card and you gain the ability to shut
-    /// the pack out permanently AND the ability to shut yourself in permanently, in the same act.
+    /// #563 · THE SLOW ROAD. A keyed door can be taken by leaning on it for <see cref="ForceSeconds"/> —
+    /// the constant this class has always carried, now a price the captain can pay as well as the pack.
+    ///
+    /// <para>A SHUT door is not on this list because it does not need to be: hands open it in no time at all
+    /// (<see cref="MayOpen"/>), and offering a twenty-five second hold for something free would be the control
+    /// inventing a cost the world does not charge.</para>
     /// </summary>
-    public static bool MayLock(State state, bool hasKey) => hasKey && state == State.Shut;
+    public static bool MayForce(State state) => state == State.Locked;
 
-    /// <summary>What pressing the door does next, given what it is and what the captain is carrying.</summary>
-    public static State Next(State state, bool hasKey) => state switch
+    /// <summary>
+    /// #563 · THE FAST ROAD, AND ITS PRICE. Owner: <i>"We have firepower and tools."</i> Where the captain is
+    /// carrying the hand-load, a shut or keyed leaf can be taken with <see cref="RoundsToShootTheLock"/> round
+    /// — instantly, at full earshot, and permanently.
+    ///
+    /// <para><b>Unarmed is not a refusal, it is the absence of a verb</b>: the plate is simply not on the row
+    /// (#212 — an affordance you cannot read is one you do not have), so nothing on screen ever offers a trade
+    /// the pocket cannot pay for.</para>
+    /// </summary>
+    public static bool MayShootTheLock(State state, bool armed) =>
+        armed && state is State.Shut or State.Locked;
+
+    /// <summary>
+    /// What one round from the hand-load costs a lock. ONE — the captain is standing at arm's length with the
+    /// hasp in front of them, which is not the sentry's lane (<c>ShootTheLock.RoundsPerHasp</c> prices a
+    /// machine shooting a door across a corridor). Owner's brief, 2026-09-13: <i>one round from the
+    /// hand-load</i>. FLAGGED for the owner's tuning.
+    /// </summary>
+    public const int RoundsToShootTheLock = 1;
+
+    /// <summary>Fire on the lock. The leaf is gone — not open, GONE — and no state walks back out of
+    /// <see cref="State.Destroyed"/> anywhere in this file. A door the round could not have been fired at
+    /// (already open, already destroyed) does not move, so a caller that forgot to ask
+    /// <see cref="MayShootTheLock"/> cannot spend a round on nothing.</summary>
+    public static State Shoot(State state) =>
+        state is State.Shut or State.Locked ? State.Destroyed : state;
+
+    /// <summary>What pressing the door does next. Open ⇄ Shut, by hand, and nothing else: a keyed leaf does not
+    /// move for a press (it wants time or a round) and a destroyed one has nothing left to press.
+    ///
+    /// <para>#563 · There is no longer a rung from Shut to Locked. That rung WAS the card, and with the card
+    /// retired the captain cannot key a door at all — the house still can, all of them at once, and the answer
+    /// to that is the shoulder or the round.</para></summary>
+    public static State Next(State state) => state switch
     {
         State.Open => State.Shut,
-        State.Shut => hasKey ? State.Locked : State.Open,
-        _ => hasKey ? State.Shut : State.Locked,   // keyed and no card: it does not move
+        State.Shut => State.Open,
+        _ => state,   // keyed or gone: a press does not move it
     };
 
     // ── What is said ──────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>The prompt on the door itself, so a captain reads its state before touching it.</summary>
-    public static string Label(State state, bool hasKey) => state switch
+    public static string Label(State state) => state switch
     {
         State.Open => "🚪 OPEN — press to shut",
-        State.Shut => hasKey ? "🚪 SHUT — press to lock" : "🚪 SHUT — press to open",
-        _ => hasKey ? "🔒 LOCKED — press to unlock" : "🔒 LOCKED",
+        State.Shut => "🚪 SHUT — press to open",
+        State.Destroyed => "🕳 THE LOCK IS GONE — and the door with it",
+        _ => "🔒 LOCKED",
     };
 
     /// <summary>Shutting one. Says what it buys AND what it does not, because a door that only advertised the
@@ -103,16 +174,6 @@ public static class LockedDoor
     public const string ShutLine =
         "🚪 The door goes over and the bar drops. It will hold them — for a while. They do not work a handle; " +
         "they lean, and they have nothing else to do.";
-
-    /// <summary>…and locking one.</summary>
-    public const string LockedLine =
-        "🔒 The card takes and the bolts go home. Nothing on the other side of that is getting through it. " +
-        "Nothing on this side is getting back through it either, without the card in your hand.";
-
-    /// <summary>A captain at a keyed door with nothing to open it with. States the fact and offers nothing —
-    /// the way in is somewhere else, and finding it is the game.</summary>
-    public const string NoKeyLine =
-        "🔒 There is no handle on this side, and the reader wants something you are not carrying.";
 
     /// <summary>When the leaning starts. Deliberately a sound rather than a number: the clock is on the HUD, and
     /// the line is what makes a captain look at it.</summary>
@@ -123,9 +184,37 @@ public static class LockedDoor
     public static string ForcedLine(string what) =>
         $"🚪 {what} comes off its track. Whatever a shut door was worth, you have spent it.";
 
-    /// <summary>The thing a captain should be told once, the first time they lock one behind them — the
+    /// <summary>#563 · The plate for the fast road, on the door prompt row beside [E]. Fable-authored;
+    /// implemented verbatim.</summary>
+    public const string ShootThePlate = "F — SHOOT THE LOCK";
+
+    /// <summary>#563 · Said once, when the lock is shot — the captain's own register, and the only thing the
+    /// game ever says about what that cost. Fable-authored; implemented verbatim. Nothing here announces the
+    /// noise: the ear is rung by the sim and the pack arriving IS the telling (#456, inference horror).</summary>
+    public const string LockShotLine =
+        "The lock is gone, and the door with it as a door. Nothing behind you closes now.";
+
+    /// <summary>The thing a captain should be told once, the first time they are on the wrong side of one — the
     /// vent board's oldest lesson, moved to the ground.</summary>
     public const string WhichSideLine =
         "You will never be quite certain what you shut the door on. Now there is a second question: which side " +
         "of it you are.";
+
+    /// <summary>Every string this class publishes, in one place — the house's <c>AllProse</c> idiom, so a
+    /// canon sweep reads exactly the sentences a captain reads. A reflection sweep in
+    /// <c>ADoorIsTimeNotAKeyTests</c> fails the day a string const or a label state is added and not
+    /// enumerated here, which is what stops the sweep from going quietly out of date.</summary>
+    public static IEnumerable<string> AllProse()
+    {
+        foreach (State s in System.Enum.GetValues<State>())
+        {
+            yield return Label(s);
+        }
+        yield return ShutLine;
+        yield return BeingForcedLine("the door");
+        yield return ForcedLine("The door");
+        yield return ShootThePlate;
+        yield return LockShotLine;
+        yield return WhichSideLine;
+    }
 }

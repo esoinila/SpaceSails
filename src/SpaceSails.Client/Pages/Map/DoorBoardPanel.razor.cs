@@ -25,7 +25,6 @@ public partial class DoorBoardPanel
     // when it lived in the page. A parameter that needs saying more than that says it on its own line.
 
     [Parameter] public string? _doorBoardOutcome { get; set; }
-    [Parameter] public bool _hasVantarCard { get; set; }
     [Parameter] public Dictionary<string, LockedDoor.State> _labDoors { get; set; } = default!;
     [Parameter] public Action CloseDoorBoard { get; set; } = default!;
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;

@@ -36,10 +36,13 @@
                           DismissClass="view-object-close" DismissFace="Step back"
                           OnClose="() => Dismiss(CloseDoorBoard)">
                 <div class="view-object-title">🎛 DOOR BOARD — VANTAR LABS</div>
+                @* #563 · THE CARD CLAUSE IS GONE FROM THIS CAPTION, by deletion and not by rewriting:
+                   the owner ruled on 2026-09-13 that a locked door is TIME and never a key, so a caption
+                   promising that a card in the pocket "will key as well as shut" would be the panel
+                   describing a verb the board no longer has. What is left is the sentence that was always
+                   true of it. *@
                 <div class="view-object-caption">
-                    Every door in the mountain, on one wall. @(_hasVantarCard
-                        ? "The card is in your hand, so they will key as well as shut."
-                        : "They will shut. Keying wants a card you are not carrying.")
+                    Every door in the mountain, on one wall. They will shut.
                 </div>
 
                 <div class="vent-actions">
@@ -51,9 +54,9 @@
                         string id = labDoor.Key;
                         <button type="button"
                                 class="btn btn-sm @(labDoor.Value == LockedDoor.State.Locked ? "btn-warning" : "btn-outline-warning")"
-                                title="@LockedDoor.Label(labDoor.Value, _hasVantarCard)"
+                                title="@LockedDoor.Label(labDoor.Value)"
                                 @onclick="() => WorkTheDoor(id)">
-                            @LockedDoor.Label(labDoor.Value, _hasVantarCard)
+                            @LockedDoor.Label(labDoor.Value)
                         </button>
                     }
                 </div>
