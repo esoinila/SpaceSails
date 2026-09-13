@@ -1,0 +1,31 @@
+@namespace SpaceSails.Client.Components
+@using SpaceSails.Core
+
+@* ══════════════════════════════════════════════════════════════════════════════════════════════════════
+   #243 · ONE CRITERION, DRAWN ONCE, WHEREVER A GATE IS BEING READ.
+
+   Owner, on approach to the roadster: "The piracy pop-up has the criteria nicely shown — green when
+   distance matches, green when relative speed difference is low enough. … In the boarding dialog just
+   seeing green or red told the story much faster." And then: "I guess it could be a general
+   meet-the-conditions [display] in the navigation screen."
+
+   So the ROW is the component, not the box. The piracy dossier's autosteal criterion, the conditions strip
+   on the Nav screen and anything that grows a two-condition gate later all render THIS, which is what makes
+   "all gates speak identically" a fact about the build rather than a promise in a comment.
+
+   IT ADDS NO COLOUR AND NO TYPOGRAPHY. Every class below is one the criterion box already wore before this
+   component existed — `text-success` inside the gate, `text-warning` outside it, the ✅/❌ pair — so the
+   shipped cascade does not change by a byte and there is no new token for the owner's elegant-minimalism
+   ruling to disagree with. That is also why this file has no .razor.css: it has no rules of its own to
+   scope, and a rule-less carrier here would only be a file to keep in step.
+
+   THE TREND RIDES ON THE ROW, NOT BESIDE IT (owner: "Are we closing or distancing" · "▲▼ per #210's
+   range-rate"). The arrow inherits the row's own colour, so a red chip that is closing reads as one thing
+   at a glance and a red chip drifting away reads as another — without a second colour to learn. A criterion
+   whose rate nothing in the sim measures draws NO arrow at all rather than a flat one, because a symbol
+   that means "we did not work it out" and a symbol that means "it is not moving" must not be the same mark.
+   ══════════════════════════════════════════════════════════════════════════════════════════════════════ *@
+
+<div class="@(Criterion.Inside ? "text-success" : "text-warning")" title="@Hint">
+    @(Criterion.Inside ? "✅" : "❌") @Criterion.Label — @Criterion.Reading @Criterion.Gate@Arrow
+</div>

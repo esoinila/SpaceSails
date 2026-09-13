@@ -270,6 +270,45 @@
                     }
                 </div>
             }
+            @* #243 · THE CONDITIONS STRIP. Owner, on approach to the roadster: "Let's have a more clear
+               display of how well we meet the criteria. Are we closing or distancing. … it is slow to read
+               visually: read the scope, remember the limit was 3 from another part of the screen, then check
+               the other variable. In the boarding dialog just seeing green or red told the story much
+               faster." And the generalization, same session: "I guess it could be a general
+               meet-the-conditions [display] in the navigation screen."
+
+               ONE INSTRUMENT, NOT FOUR. The owner's own distillation is the design: "trying to be dockable,
+               or capture etc — we always have the duo of relative speed and distance, and some criteria for
+               those." So this strip is the duo, with whichever gate is live supplying the two limits —
+               boarding window, clamp envelope, orbit capture, shuttle reach. Which one speaks, and every
+               number in it, is decided in Core by ConditionsGate off the code that ENFORCES each gate; the
+               markup here quotes no threshold and makes no comparison, which is what stops the readout from
+               being green about a limit the machinery refuses.
+
+               IT IS ABSENT, NOT EMPTY, WHEN NO GATE IS LIVE. The complaint being answered is a screen that
+               has to be hunted across; a permanently reserved rectangle that is blank most of the time is one
+               more thing to hunt past. ActiveConditions() returns null and this draws nothing at all.
+
+               ITS HOUSING IS THE PIRACY HOUSING, for the same reason #200's clamp panel took it (#1043): the
+               plunder offer, the boarding progress and the docking focus are all in-FLOW sections of this
+               same .map-readouts block, not floating cards. A box that claims real document height in a
+               column already bound to the window (.map-flowcolumn, #992) cannot fight the lines above it or
+               the Plotting panel below it for a pixel — no z-index, no position, nothing to lose a stacking
+               argument with, and #236's no-button zone is not even in play because the strip has no buttons.
+
+               IT SITS ABOVE THE CLAMP PANEL, not below it: during an approach the strip is the summary and
+               #200's panel is the detail, and the summary is read first. When the live gate IS the clamp the
+               two say the same thing in the same words, because the strip's chips ARE DockFocus's rows. *@
+            @if (ActiveConditions() is { } conditions)
+            {
+                <div class="map-conditions border border-secondary rounded px-2 py-1 mt-1">
+                    <div class="fw-bold">@ConditionsGate.Title(conditions)</div>
+                    @foreach (GateCriterion criterion in conditions.Criteria)
+                    {
+                        <CriteriaChip Criterion="@criterion" />
+                    }
+                </div>
+            }
             @* #200 · THE DOCKING FOCUS PANEL — "Own pop-up of the numbers to hit, just like in piracy-hold."
                The owner, inbound to Venus Haven, could not read off this HUD how close he was to the clamp's
                distance and speed limits; the line he had was one sentence of coaching, and the readout beside
@@ -445,6 +484,38 @@
                                HasContent="@(!PlanListIsEmpty)"
                                OpenChild="@OpenPlanEditorKey()" OpenChildSelector=".map-plan-step-open">
                 <Header>
+                @* #242 · THE FRAME IS EATING YOUR CRUISE. Owner, post-undock: "I was wondering why the ship
+                   don't move... the origin was set to Mars... after setting to Sun we got going. We should
+                   have some tip about that in burn planning."
+
+                   The sim was right and the picture was lying by omission: in the Mars frame the map
+                   subtracts the heliocentric motion the ship SHARES with Mars, so a ship cruising at 33 km/s
+                   and separating from Mars at 3 looks parked. Third of the frame-honesty family (#206 the
+                   every-body origins, #209 the frame-cropped ribbon).
+
+                   NOTHING NEW IS BEING TOLD. Both numbers are already on the glass — the frame chip row
+                   prints "v rel Mars: 5.9" and, in the Sun frame, "v helio: 33.5". This line only says that
+                   those two numbers are ABOUT each other, at the one moment it matters, which is why it
+                   lives in the Plot panel (the owner's "in burn planning") and not in a banner.
+
+                   WHEN it speaks and WHAT it says are both FrameMotionTip's, in Core: the owner's 15 % lives
+                   there once, and so does the sentence, so the guard that proves the line cannot be reading
+                   a threshold of its own. The row shows its working — the two speeds that made the case —
+                   rather than asking to be believed.
+
+                   THE CHIP IS ONE PRESS AND IT IS NOT A POP-UP. Nothing here can block the panel or need
+                   dismissing (the 2026-08-24 ruling): it is a line in the flow with a small button on it,
+                   and pressing it does exactly what the owner did by hand — SetPlotFrame(null), the Sun. *@
+                @if (FrameMotionTipLine() is { } frameTip)
+                {
+                    <div class="map-frame-tip d-flex flex-wrap align-items-center gap-1 mb-1 text-info">
+                        <span>@frameTip.Line</span>
+                        <span class="text-secondary">@frameTip.Readout</span>
+                        <button type="button" class="btn btn-sm btn-outline-info py-0"
+                                title="@FrameMotionTip.SwitchChipTitle"
+                                @onclick="() => SetPlotFrame(null)">@FrameMotionTip.SwitchChip</button>
+                    </div>
+                }
                 <div class="fw-bold mb-1">Plotting</div>
                 @* #949 · The label is Core's (NodeFrame.ScrubLabel) so the help card can print the same
                    word. The clock beside it is the client's own ladder and stays here. *@

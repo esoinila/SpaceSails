@@ -102,6 +102,7 @@ public partial class NavHud
     [Parameter] public SlingPlanner.Result? _slingResult { get; set; }
     [Parameter] public SlingPlanner.PassSide _slingSide { get; set; } = default!;
     [Parameter] public bool _slingSolving { get; set; }
+    [Parameter] public Func<ConditionsReading?> ActiveConditions { get; set; } = default!;
     [Parameter] public Func<string, Quest?> ActiveCargoRunTo { get; set; } = default!;
     [Parameter] public Func<int> ActiveTutorialIndex { get; set; } = default!;
     [Parameter] public Action<ArrivalStepRule.ArrivalKind> AddArriveAtScrub { get; set; } = default!;
@@ -159,6 +160,7 @@ public partial class NavHud
     [Parameter] public Func<double, string> FormatHorizon { get; set; } = default!;
     [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
     [Parameter] public Func<double, string> FormatZoom { get; set; } = default!;
+    [Parameter] public Func<(string Line, string Readout)?> FrameMotionTipLine { get; set; } = default!;
     [Parameter] public Func<List<FrameOption>> FrameOptions { get; set; } = default!;
     [Parameter] public Func<List<(string Label, List<CelestialBody> Members)>> FramePickerGroups { get; set; } = default!;
     [Parameter] public Func<string> FrameSpeedReadout { get; set; } = default!;

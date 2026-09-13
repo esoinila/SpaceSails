@@ -53,6 +53,26 @@ public sealed class ScopeView
     /// <summary>Footer tag: "◆ AUTO" in auto mode, "◆ TRACK" when the pilot picked the target.</summary>
     public string LockLabel { get; set; } = "◆ AUTO";
 
+    /// <summary>
+    /// #243 · <b>THE CONDITIONS STRIP'S SUMMARY, MIRRORED WHERE THE EYES ARE.</b> Owner, on approach to the
+    /// roadster: <i>"Mirror the strip's summary in the Scope corner (where the eyes are during an
+    /// approach)."</i> A captain flying an approach is watching the glass, not the HUD column beside it, so
+    /// the verdict has to be here as well as there.
+    ///
+    /// <para>It is a PROPERTY rather than an argument to <see cref="Draw"/> for the same reason
+    /// <see cref="LockLabel"/> is: the page sets it as part of the frame it is already resolving, and
+    /// threading a second string through the draw signature would put the telescope in the business of the
+    /// Nav screen's gates. Empty is the normal state — no live gate, nothing drawn, the eyepiece exactly as
+    /// it has always been.</para>
+    /// </summary>
+    public string GateSummary { get; set; } = string.Empty;
+
+    /// <summary>#243 · Whether every criterion of that gate is met — the only thing the colour says. It
+    /// reuses the SAME dim green/amber pair #210 already put in this corner rather than minting an alarm
+    /// colour: "the door is open" and "the gap is shrinking" are the same kind of quiet good news, and the
+    /// owner's standing note on this instrument is that it stays calm.</summary>
+    public bool GateMet { get; set; }
+
     public ScopeView(IRenderer renderer)
     {
         _renderer = renderer;
@@ -122,6 +142,20 @@ public sealed class ScopeView
         if (target.Detail is { Length: > 0 } detail)
         {
             _renderer.DrawText(8, 30, detail, new RgbaColor(150, 240, 210, 160), "10px monospace");
+        }
+
+        // #243 · THE CONDITIONS STRIP'S VERDICT, IN THE ONE FREE CORNER. Owner: "Mirror the strip's summary
+        // in the Scope corner (where the eyes are during an approach)." It goes UNDER the kind label rather
+        // than beside any of the four readings, because the other corners are all about the TARGET and this
+        // is about the ship's standing with it — and because at 280 px there is one line of room there and
+        // nowhere else. A glyph and one tick per criterion is all that fits and all that is needed: the
+        // chips themselves, with their numbers, are two hand-spans left on the HUD.
+        //
+        // ONE QUESTION, ASKED ONCE. The string is composed in Core off the very reading the strip draws, so
+        // the corner cannot say ✓✓ over a strip showing a red chip. Drawn only when a gate is live.
+        if (GateSummary is { Length: > 0 } gate)
+        {
+            _renderer.DrawText(s - 8, 30, gate, GateMet ? RelClosing : RelOpening, "11px monospace", TextAlign.Right);
         }
         _renderer.DrawText(8, s - 10, FormatDistance(distance), HudText, "bold 12px monospace");
         // #210 quiet color assist: dim green while closing, dim amber while opening — a calm cue,
