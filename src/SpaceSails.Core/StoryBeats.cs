@@ -135,6 +135,13 @@ public static class StoryBeats
         /// subject — the memory is not about WHICH hull he lost, it is about the process he keeps agreeing
         /// to, and a subject here would be the seam filing the very thing the card is uneasy about.</summary>
         TheClaim,
+
+        /// <summary>#1199 · THE WALK IS EMPTY. Somebody was followed out onto a glass-floored tube with one
+        /// way in, the captain waited at the mouth, and then walked in and there is nobody there. <b>No
+        /// subject</b>, and the cadence is <see cref="Cadence.OnceEver"/>: the beat is already spent once
+        /// per universe against its own vault flag, and a card keyed on a person would quietly offer a
+        /// second one the day a second person walked a route. There is one of these, ever.</summary>
+        TheObservationWalk,
     }
 
     /// <summary>How often a beat is allowed to speak.</summary>
@@ -209,6 +216,13 @@ public static class StoryBeats
         // the KAAMOS arc ever says to most captains; and the shelter plate is a RULE OF THE WORLD — its own
         // caller files the line at PulseRank.Beat and calls it "a rule of the world learned once".
         Beat.ArchivePurged or Beat.KaamosFilingBounced or Beat.ShelterIsNotSanctuary => Cadence.OnceEver,
+
+        // #1199 · …and the empty walk with them, for a reason of its own. The owner's whole argument for this
+        // beat is that it is spent sparingly — "used sparingly, because otherwise they lose their dramatic
+        // potency" — and a card that could come up twice is the moment turning into a mechanic. The vault
+        // flag already refuses a second spend; this says the same thing one floor up, so the two halves of
+        // "once" cannot ever come to two answers.
+        Beat.TheObservationWalk => Cadence.OnceEver,
 
         // COOLED, because the moment is real every time and the CARD is not. A stranger standing you a drink
         // is worth a picture the first time each evening and wallpaper by the third; a captain throwing three
@@ -543,6 +557,10 @@ public static class StoryBeats
         // #1149 · One canvas for every failed refuge in the game, and fixed rather than keyed by the site:
         // what the picture shows is not a moon, it is a room and what was done to its door.
         Beat.RefugeFailed => "art/refuge-failed.jpg",
+        // #1199 · The walk itself, and it is the SAME canvas the room lays under its own glass floor
+        // (ObservationWalk.ArtUrl) rather than a second painting of one view. The card is the absence, so
+        // the picture has to be the place the captain is standing in with nobody in it.
+        Beat.TheObservationWalk => ObservationWalk.ArtUrl,
 
         _ => PlateOf(beat, subject)?.ArtFile ?? "",
     };
@@ -571,6 +589,10 @@ public static class StoryBeats
         Beat.BerthOutpost => ArrivalTube.Title(ArrivalTube.Tier.Outpost),
         // #1149 · Authored canon (2026-09-06), verbatim, behind the refuge family's own glyph.
         Beat.RefugeFailed => "🫁 THE REFUGE THAT FAILED",
+        // #1199 · Authored canon (2026-09-13), verbatim, behind the eye every watched-from-somewhere beat
+        // already wears. It names the ROOM and not the event: a title that announced what had happened would
+        // be the show telling the joke ahead of the picture.
+        Beat.TheObservationWalk => ObservationWalk.Glyph + " " + ObservationWalk.CardTitle,
 
         // #664 · The one adopted beat whose stamp names its subject: "🕷 DEEP HOLD — IT OPENS BOTH WAYS". The
         // two halves are joined in NestPlates so they cannot drift apart in two files, exactly as the after-
@@ -667,6 +689,11 @@ public static class StoryBeats
             Beat.RefugeFailed =>
                 "The rack is full; nobody ever drew on it. The seal was cut from the inside, cleanly, and " +
                 "closed again from the outside. It did not fail from age.",
+
+            // #1199 · Authored canon (2026-09-13), verbatim and entire, read off the room's own type so the
+            // card and the place cannot come to two accounts of one tube. Two sentences: the room, and then
+            // the room running out. Nothing is explained and nothing is named — the card IS the absence.
+            Beat.TheObservationWalk => ObservationWalk.CardBody,
 
             // #664 · The adopted eleven read their caption off the same Core plate their title and their
             // painting come from. Not one word of these was retyped here: `KaamosLore.PlateFor` and the nine

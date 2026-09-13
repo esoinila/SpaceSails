@@ -137,6 +137,64 @@ public static partial class UndergroundComplex
     public const double FireCodeSmallRoomDu = 8.0;
 
     /// <summary>
+    /// #822 · <b>THE EXEMPTION LIST — every room the fire code lets off with one way out, BY NAME, with the
+    /// reason beside the name.</b>
+    ///
+    /// <para>It was one exemption and it was dimensional: a space you can cross in two paces
+    /// (<see cref="FireCodeSmallRoomDu"/>). That answered every room in the building, because every room in
+    /// the building that had one door was small. #1199 brought the first room that has one door <b>on
+    /// purpose and is not small</b> — an observation walk, a straight glass-floored tube out over the drop
+    /// with a rail at the blind end — and the honest way to let it off is not to widen the number. Widening
+    /// the number would exempt every oversized cupboard in the game along with it, which is how a standing
+    /// law quietly becomes a default.</para>
+    ///
+    /// <para>So the law grows a list instead. Each member is a room the owner's sentence was never about,
+    /// each carries its reason in its own doc, and <see cref="ReasonFor"/> hands that reason back so a guard
+    /// can hold the list to being REASONED rather than merely long. Adding a member is a deliberate act with
+    /// a sentence attached; nothing is ever let off by arithmetic again.</para>
+    /// </summary>
+    public enum FireCodeExemption
+    {
+        /// <summary>No exemption. The standing law applies in full: at least
+        /// <see cref="FireCodeMinExits"/> ways out.</summary>
+        None = 0,
+
+        /// <summary>#822 · The original, and the only one the owner's own sentence names: <i>"no space may
+        /// have only one door except bedroom-small rooms."</i> A WC cubicle, a privacy booth, a cell you can
+        /// cross in two paces and whose one door you are never out of reach of. Measured and not declared —
+        /// <see cref="FireCodeSmallRoomDu"/> is the whole of it.</summary>
+        BedroomSmall = 1,
+
+        /// <summary>#1199 · An observation walk. <b>A dead end by design is the whole point of the room</b>:
+        /// a straight tube out from a concourse over the drop, lit the whole way, glass underfoot, a rail at
+        /// the blind end — and a second way out of it would have to go somewhere, which is the one thing
+        /// there is nowhere for it to go. Declared and never measured: it is long
+        /// (<see cref="ObservationWalk.LengthDu"/> is three times the bedroom-small threshold), so no number
+        /// could ever let it off, and that is precisely why it has to be named.</summary>
+        ObservationWalk = 2,
+    }
+
+    /// <summary>#822 · Why the law lets this kind of room off — the sentence that belongs beside the name,
+    /// handed back rather than left in a comment so the list can be held to being reasoned. Not
+    /// player-facing: the fire code is a building law and the building never explains itself to a
+    /// captain.</summary>
+    public static string ReasonFor(FireCodeExemption exemption) => exemption switch
+    {
+        FireCodeExemption.BedroomSmall =>
+            "a space you can cross in two paces is never out of reach of its one door",
+        FireCodeExemption.ObservationWalk =>
+            "a dead end by design is the whole point of the room",
+        _ => "",
+    };
+
+    /// <summary>#822 · <b>DOES A ROOM SATISFY THE STANDING LAW?</b> The whole of the fire code in one
+    /// sentence: two ways out, unless it is on the list by name. Written here rather than on the room type
+    /// so the carve, the sweep, the guards and the havens' own one-doorway room are all reading the same
+    /// one, and so the day a third exemption is argued for there is exactly one place it lands.</summary>
+    public static bool MeetsFireCode(int exits, FireCodeExemption exemption) =>
+        exemption != FireCodeExemption.None || exits >= FireCodeMinExits;
+
+    /// <summary>
     /// #822 · How many doors a run of street frontage this long is served by, fire code included. The whole
     /// of the door law in one function, so the carve, the guards and any later sweep are reading one
     /// sentence.

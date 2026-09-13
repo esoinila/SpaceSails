@@ -209,6 +209,28 @@ public partial class Map
         /// leaf that refuses the captain, so what ends this walk is the far edge of the ground and the fact
         /// that he is no longer between the captain and it.</para></summary>
         HardcaseFleeing,
+
+        /// <summary>
+        /// #1062 slice 1 · <b>SOMEBODY WALKING A ROUTE WITH YOU BEHIND THEM.</b> The person of interest,
+        /// crossing a station's concourse on their own business — which is all it is, and all it looks like.
+        ///
+        /// <para>It is its own errand and not <see cref="Leaving"/> for one reason: this walk is READ from
+        /// behind, every frame. A notice question is asked of it against the range, the captain's own motion
+        /// and the walls (<see cref="SpaceSails.Core.TheTail"/>), and no other errand in this enum is ever
+        /// looked at over its own shoulder.</para></summary>
+        WalkingTheRoute,
+
+        /// <summary>
+        /// #1062 slice 1 · <b>THEY HAVE CLOCKED YOU, AND THEY ARE WAITING FOR YOU TO GO PAST.</b> The whole
+        /// of what a noticed tail costs, and the owner's own shape for it (#1062): <i>"a noticed tail doesn't
+        /// confront you, they simply stop going where they were going."</i>
+        ///
+        /// <para>They stop, they turn to look at you, and they do not move again until you are no longer
+        /// behind them. <b>No card, no line, no pulse, no banner</b> — the errand's entire content is a body
+        /// that has stopped walking, and working out why is the captain's job. It is a different ENDING from
+        /// everything else here (while you stand there it has no ending at all), which is what this enum is
+        /// for.</para></summary>
+        LettingYouPass,
     }
 
     /// <summary>#731 · Every walker's slot is off-map when nobody is in it — the same idiom an unseen guard

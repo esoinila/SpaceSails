@@ -228,6 +228,98 @@ public static partial class HavenInterior
     /// figure and the console that speaks for him standing a du apart is a man talking from the next square.</summary>
     private static readonly (float X, float Y) CustomsDesk = (6.5f, HallBottomY + 7);
 
+    // ── #1199 · THE OBSERVATION WALK ─────────────────────────────────────────────────────────────────────
+    //
+    // Owner, 2026-09-13: "even better if we preclude the cliché hidden door by having that place be like an
+    // observation tube (a Grand Canyon walk on top of the cliff with a transparent floor) in some space
+    // station, with only one entry / exit."
+    //
+    // A straight tube out from the concourse, due west, over the drop. WHICH haven has it is Core's
+    // (ObservationWalk.HavenId) and how long it is is Core's (ObservationWalk.LengthDu) — this file owns only
+    // the room's place on the ring, which is a fact about this hall's geometry and about nothing else.
+    //
+    // WHY EDGE 5. Edge k faces (30 + 30k)°, so 5 is due west: the only free compass point left after the
+    // tube took south (8) and the bar took north (2), and the one that gives a tube whose walls are axis
+    // aligned — a straight walk, drawn straight, with a rail square across the blind end. It costs the
+    // station one sealed department panel (the ring deals MEDBAY to this edge), and the sealed-edge counter
+    // is still stepped over it below so that every OTHER edge on every station keeps the tag and the hatch id
+    // it already had. The oldest port in the system gave up a department to put a window where its people
+    // could look at home; that is the sort of thing a station does and the sort of thing it never mentions.
+
+    /// <summary>#1199 · Which edge of the hall ring the walk opens off. Edge <c>k</c> faces
+    /// <c>(30 + 30k)°</c>; 5 is due west.</summary>
+    private const int ObservationWalkEdge = 5;
+
+    /// <summary>#1199 · The walk's own numbers, worked out ONCE off the hall ring: the two jambs of its one
+    /// doorway and the x of its blind end. The walls the renderer draws, the plate the map layer reads, the
+    /// floor the art is laid on and the band a walker is plotted down all come from here, so the room the
+    /// captain walks and the room he is looking at cannot become two rooms — this repository's third named
+    /// bug class, which on this deck would be a body strolling through a rail.</summary>
+    private static readonly (float MouthX, float NorthJambY, float SouthJambY, float BlindX) TheWalk =
+        MeasureTheObservationWalk();
+
+    /// <summary>#1199 · …and the measuring, off <see cref="HallVertex"/> and the SAME
+    /// <see cref="DeckExpansions.CarveDoorway"/> proportions every other opened edge on this ring is cut
+    /// with (0.30 … 0.70). Never typed-in coordinates: unaudited client geometry literals are this project's
+    /// oldest and most reliably wrong bug class, and a doorway measured here but cut there would be two
+    /// opinions about one gap.</summary>
+    private static (float, float, float, float) MeasureTheObservationWalk()
+    {
+        (float ax, float ay) = HallVertex(ObservationWalkEdge);
+        (float bx, float by) = HallVertex(ObservationWalkEdge + 1);
+        (WingWall stubA, WingWall stubB, _) = DeckExpansions.CarveDoorway(ax, ay, bx, by, 0.30f, 0.70f);
+
+        // The edge runs north to south, so stubA ends at the north jamb and stubB begins at the south one.
+        return (stubA.X2, stubA.Y2, stubB.Y1, (float)(stubA.X2 - ObservationWalk.LengthDu));
+    }
+
+    /// <summary>#1199 · Is this haven the one with the walk? Asked of Core, so the room and every rule about
+    /// it are reading one answer.</summary>
+    public static bool HasObservationWalk(string bodyId) =>
+        string.Equals(bodyId, ObservationWalk.HavenId, StringComparison.Ordinal) && HasInterior(bodyId);
+
+    /// <summary>
+    /// #1199 · <b>THE WALK, AS A PLACE A BODY CAN BE PUT.</b> The far half of the tube — where the rail is,
+    /// and the only ground in this station that is out of sight of the concourse — handed out as a point so
+    /// the tail's last leg and the beat's own trigger are aimed at the same spot the walls were built round.
+    ///
+    /// <para>Half a walk short of the blind wall, so a body that stops there is standing AT the rail rather
+    /// than in it, and one avatar clear of the glass either side by construction (the tube is the doorway's
+    /// own width). Null at every other berth in the game, which is all of them but one.</para>
+    /// </summary>
+    public static DeckReachability.Point? TheRailAt(string bodyId) =>
+        HasObservationWalk(bodyId)
+            ? new DeckReachability.Point(
+                TheWalk.BlindX + (2 * DeckPlan.AvatarRadius),
+                (TheWalk.NorthJambY + TheWalk.SouthJambY) / 2.0)
+            : null;
+
+    /// <summary>#1199 · Where the MOUTH of it is — the doorway's own middle, on the hall side of the line.
+    /// Where a captain stands to watch somebody walk out over the drop, and where the wait is counted
+    /// from.</summary>
+    public static DeckReachability.Point? TheWalksMouthAt(string bodyId) =>
+        HasObservationWalk(bodyId)
+            ? new DeckReachability.Point(
+                TheWalk.MouthX + (2 * DeckPlan.AvatarRadius),
+                (TheWalk.NorthJambY + TheWalk.SouthJambY) / 2.0)
+            : null;
+
+    /// <summary>#1199 · The box the walls were laid on — <c>(x0, y0, x1, y1)</c>, blind end to mouth, south
+    /// jamb to north. Published because "is that door on the walk" and "is the captain in the walk" are the
+    /// same question about the same rectangle, and a guard that re-measured it from two points would be a
+    /// second geometry agreeing with whatever the first one did.</summary>
+    public static (double X0, double Y0, double X1, double Y1)? TheWalksBox(string bodyId) =>
+        HasObservationWalk(bodyId)
+            ? (TheWalk.BlindX, TheWalk.SouthJambY, TheWalk.MouthX, TheWalk.NorthJambY)
+            : null;
+
+    /// <summary>#1199 · Is this point inside the walk? The box and nothing else — the same shape
+    /// <c>UndergroundComplex.Room.Contains</c> answers with, so "in the walk" is one question with one answer
+    /// rather than a threshold typed into whichever file asked last.</summary>
+    public static bool InTheObservationWalk(string bodyId, double x, double y) =>
+        TheWalksBox(bodyId) is { } box
+        && x >= box.X0 && x <= box.X1 && y >= box.Y0 && y <= box.Y1;
+
     // --- The bar, off the hall's north door — big and cavernous, a local-planet view along the back ---
     private const float BarLeft = -14f;
     private const float BarRight = 19f;

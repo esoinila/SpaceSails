@@ -118,9 +118,18 @@ public static partial class UndergroundComplex
         /// <summary>How many ways out of it there are — the number the fire code is stated in.</summary>
         public int Exits => Ways.Count;
 
+        /// <summary>#1199 · Which entry on the exemption list this room is let off under, if any. An
+        /// underground room is only ever let off by its size — nothing down here is a dead end on purpose —
+        /// so this reads as the old sentence did and says so by name instead of by arithmetic.</summary>
+        public FireCodeExemption Exemption =>
+            BedroomSmall ? FireCodeExemption.BedroomSmall : FireCodeExemption.None;
+
         /// <summary>#822 · Does this room satisfy the standing law? Asked here rather than in the guard, so
-        /// the carve and the sweep are reading one sentence.</summary>
-        public bool MeetsFireCode => BedroomSmall || Exits >= FireCodeMinExits;
+        /// the carve and the sweep are reading one sentence — and since #1199 that sentence is
+        /// <see cref="UndergroundComplex.MeetsFireCode(int, FireCodeExemption)"/>, the law's own, rather than
+        /// a second copy of it spelled out on this type. The answer is byte-for-byte what it always
+        /// was.</summary>
+        public bool MeetsFireCode => UndergroundComplex.MeetsFireCode(Exits, Exemption);
 
         /// <summary>Is the captain in it? The box the walls were laid on, and nothing else.</summary>
         public bool Contains(double x, double y) => x >= X0 && x <= X1 && y >= Y0 && y <= Y1;

@@ -367,6 +367,20 @@ public sealed class ThePlayerIsToldTests
         new("the refuge on the plan is dead, and you are standing in it",
             Surface.RaisedCard, "Map.Surface.Tank.cs", "StepSuitAir",
             "RaiseStoryBeat(StoryBeats.Beat.RefugeFailed, ex.Stop.Body.Id);"),
+
+        // #1199 · THE WALK ITSELF is a card (the absence, at the blind end) and takes the row above's shape.
+        // THIS row is its tail: the person the captain followed into a tube with one way in and did not find
+        // is standing at a counter somewhere else in the system, unhurried, and the captain is told so ONCE.
+        //
+        // RANKED and not carded, and the distinction is the whole beat. A card would stop the world and
+        // announce that something had been resolved — and nothing has been: they are at a counter, which is
+        // where their own rota has them, doing what everybody in this game does. It changes what the captain
+        // KNOWS (they are there, and ordinary, and nothing is going to be explained) and it changes nothing
+        // else, so it goes to the HUD's one slot at a rank the next instrument reading cannot displace, and
+        // there is nothing standing in front of a captain walking up to a bar.
+        new("the person you lost is at a counter, and nothing is owed an explanation",
+            Surface.RankedPulse, "Map.ObservationWalk.cs", "TheyAreAtTheCounter",
+            "ShowPulseMessage(ObservationWalk.CounterLine(person), PulseRank.Beat);"),
     ];
 
     /// <summary>

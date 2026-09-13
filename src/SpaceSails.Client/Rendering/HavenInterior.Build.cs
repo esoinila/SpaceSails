@@ -71,6 +71,24 @@ public static partial class HavenInterior
                 walls.Add(new(BarDoorLeft, b.Y, b.X, b.Y, false, true));
                 doors.Add(new(BarDoorLeft, a.Y, BarDoorRight, a.Y)); // wide auto door
             }
+            else if (k == ObservationWalkEdge && HasObservationWalk(spec.BodyId))
+            {
+                // #1199 · THE OBSERVATION WALK, at the one station that has one. The edge is cut with the SAME
+                // two stubs and unlocked auto-door every other opened joint on this ring gets — the doorway is
+                // ordinary, because the room's whole precaution is that nothing about it is special until it
+                // is. The tube itself is welded on below; here we only open the wall.
+                //
+                // The sealed-edge counter is still stepped, one line down, so this station's OTHER nine edges
+                // keep the department name and the hatch id they have always had. What the walk costs is the
+                // one panel this edge would have carried, and a station with a view instead of a medbay is a
+                // decision a port made long before the captain got here.
+                (WingWall stubA, WingWall stubB, WingDoor way) =
+                    DeckExpansions.CarveDoorway(a.X, a.Y, b.X, b.Y, 0.30f, 0.70f);
+                walls.Add(new(stubA.X1, stubA.Y1, stubA.X2, stubA.Y2, false, true));
+                walls.Add(new(stubB.X1, stubB.Y1, stubB.X2, stubB.Y2, false, true));
+                doors.Add(new(way.X1, way.Y1, way.X2, way.Y2));
+                sealedIdx++;
+            }
             else // a sealed berth / department — or an opened expansion joint
             {
                 string tag = ringTags[sealedIdx % ringTags.Length];
@@ -124,6 +142,31 @@ public static partial class HavenInterior
         walls.Add(new(BarLeft, BarTopY, BarRight, BarTopY, true, true)); // spinward window onto space
         labels.Add((HallCenterX, BarTopY - 6.5f, spec.BarName));
         labels.Add((8f, HallTopY + 1.5f, "🎁 GIFT SHOP")); // every place has one (owner)
+
+        // ── #1199 · THE TUBE ITSELF ──────────────────────────────────────────────────────────────────────
+        //
+        // Three walls and a plate, and that is the whole room. Two sides running due west from the jambs the
+        // ring was just cut at, and a rail square across the blind end — no second opening anywhere on it,
+        // which is the one fact about this room the player has to be able to see for himself.
+        //
+        // ALL THREE ARE GLASS (IsWindow), drawn in the pen's own WindowLine exactly as the bar's spinward
+        // window already is. No new renderer, no new ink, no new token: the walk reads as glass because the
+        // game already has one way of saying glass, and a tube that needed a new one would be a room the
+        // renderer had to be taught about.
+        if (HasObservationWalk(spec.BodyId))
+        {
+            walls.Add(new(TheWalk.MouthX, TheWalk.NorthJambY, TheWalk.BlindX, TheWalk.NorthJambY, true, true));
+            walls.Add(new(TheWalk.MouthX, TheWalk.SouthJambY, TheWalk.BlindX, TheWalk.SouthJambY, true, true));
+            walls.Add(new(TheWalk.BlindX, TheWalk.NorthJambY, TheWalk.BlindX, TheWalk.SouthJambY, true, true));
+
+            // The plate, a third of the way out, so it is read on the way IN and is not sitting on top of
+            // whoever is standing at the rail. It is the room's NAME and says nothing else — Core's string,
+            // never retyped, because the map layer's plate and the card's title come from one place.
+            labels.Add((
+                TheWalk.MouthX - ((float)ObservationWalk.LengthDu / 3f),
+                (TheWalk.NorthJambY + TheWalk.SouthJambY) / 2f,
+                ObservationWalk.Plate));
+        }
 
         // #247 — the bar counter, and the BARKEEP behind it. Owner ashore at the Rusty Roadstead: "How
         // do I get a drink at the Rusty bar here? Did we forget to add the bar-keep :-D". The counter is
@@ -362,6 +405,22 @@ public static partial class HavenInterior
             new(spec.BarArt, BarLeft, BarTopY, BarRight - BarLeft, BarTopY - HallTopY, 0.95f),
         };
 
+        // #1199 · THE GLASS FLOOR. The drop, laid UNDER the walk in the same backdrop grammar the hall and
+        // the bar already get their art through — a canvas over a rectangle, at an alpha. There is no
+        // per-room floor fill token in this pen and this room does not need one invented: what a transparent
+        // floor looks like from above is the thing that is under it, and that is a picture.
+        //
+        // Held back from the bar's 0.95 so the deck's own floor still reads through it. The captain is
+        // walking ON something; he can simply see past it, which is the entire feature of the room.
+        if (HasObservationWalk(spec.BodyId))
+        {
+            backdrops.Add(new(
+                ObservationWalk.ArtUrl,
+                TheWalk.BlindX, TheWalk.NorthJambY,
+                TheWalk.MouthX - TheWalk.BlindX, TheWalk.NorthJambY - TheWalk.SouthJambY,
+                0.55f));
+        }
+
         // Weld on each active wing's geometry (Wednesday plan §3 PR-F): walls, any doors, consoles
         // (translated to deck console kinds), and floor labels. The doorway into each was already
         // carved above; here the room itself grows.
@@ -430,7 +489,12 @@ public static partial class HavenInterior
                 FillComplexDroids(simTime, buffer, backRoomOpen, serviceX, serviceY, regulars, oracleHere);
                 fillWalkers?.Invoke(buffer, SeatedFigureCount);
             },
-            location: (x, y) => x < -14.5 && y is > 15 and < 37 ? "BONDED STORES · BACK ROOM"
+            // #1199 · …and the walk answers FIRST, because it is the only room on this deck that reaches
+            // outside the hall ring on a line the immigration half-plane below would otherwise claim. A haven
+            // deck has no room objects — this lambda IS what a haven means by "which room am I in" — so the
+            // walk being a real, named place before and after the beat is exactly this clause existing.
+            location: (x, y) => InTheObservationWalk(spec.BodyId, x, y) ? ObservationWalk.Plate
+                              : x < -14.5 && y is > 15 and < 37 ? "BONDED STORES · BACK ROOM"
                               : y > HallTopY ? spec.BarName
                               : y > HallBottomY ? $"{spec.Authority} IMMIGRATION"
                               : y > ShipHatchY ? "GANGWAY"
