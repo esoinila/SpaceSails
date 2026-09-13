@@ -304,13 +304,21 @@ public static partial class HavenInterior
                 (TheWalk.NorthJambY + TheWalk.SouthJambY) / 2.0)
             : null;
 
-    /// <summary>#1199 · Is this point inside the walk? The box the walls were laid on and nothing else — the
-    /// same shape <c>UndergroundComplex.Room.Contains</c> answers with, so "in the walk" is one question with
-    /// one answer rather than a threshold typed into whichever file asked last.</summary>
-    public static bool InTheObservationWalk(string bodyId, double x, double y) =>
+    /// <summary>#1199 · The box the walls were laid on — <c>(x0, y0, x1, y1)</c>, blind end to mouth, south
+    /// jamb to north. Published because "is that door on the walk" and "is the captain in the walk" are the
+    /// same question about the same rectangle, and a guard that re-measured it from two points would be a
+    /// second geometry agreeing with whatever the first one did.</summary>
+    public static (double X0, double Y0, double X1, double Y1)? TheWalksBox(string bodyId) =>
         HasObservationWalk(bodyId)
-        && x <= TheWalk.MouthX && x >= TheWalk.BlindX
-        && y <= TheWalk.NorthJambY && y >= TheWalk.SouthJambY;
+            ? (TheWalk.BlindX, TheWalk.SouthJambY, TheWalk.MouthX, TheWalk.NorthJambY)
+            : null;
+
+    /// <summary>#1199 · Is this point inside the walk? The box and nothing else — the same shape
+    /// <c>UndergroundComplex.Room.Contains</c> answers with, so "in the walk" is one question with one answer
+    /// rather than a threshold typed into whichever file asked last.</summary>
+    public static bool InTheObservationWalk(string bodyId, double x, double y) =>
+        TheWalksBox(bodyId) is { } box
+        && x >= box.X0 && x <= box.X1 && y >= box.Y0 && y <= box.Y1;
 
     // --- The bar, off the hall's north door — big and cavernous, a local-planet view along the back ---
     private const float BarLeft = -14f;

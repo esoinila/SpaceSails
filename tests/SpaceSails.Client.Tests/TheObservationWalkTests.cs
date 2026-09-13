@@ -85,26 +85,24 @@ public sealed class TheObservationWalkTests
     public void TheWalkHasExactlyOneDoorwayAndNoOther()
     {
         DeckPlan deck = HavenInterior.DockedDeck(ObservationWalk.HavenId)!;
-        DeckReachability.Point rail = HavenInterior.TheRailAt(ObservationWalk.HavenId)!.Value;
-        DeckReachability.Point mouth = HavenInterior.TheWalksMouthAt(ObservationWalk.HavenId)!.Value;
+        (double x0, double y0, double x1, double y1) = HavenInterior.TheWalksBox(ObservationWalk.HavenId)!.Value;
+
+        // The room's own box, grown by one body's width so an opening cut in ANY of its four sides — the
+        // mouth, either flank, or a back door through the rail — is inside the count. A count that only
+        // looked strictly inside would miss the very door this law exists to forbid.
+        const double Reach = DeckPlan.AvatarRadius;
 
         int ways = 0;
         foreach (DeckPlan.Door door in deck.Doors)
         {
             double mx = (door.X1 + door.X2) / 2.0, my = (door.Y1 + door.Y2) / 2.0;
-
-            // Inside the tube, or standing in its mouth: x between the blind end and one step OUTSIDE the
-            // mouth line, y between the jambs.
-            bool inTheTube = mx >= rail.X - ObservationWalk.LengthDu
-                             && mx <= mouth.X + DeckPlan.AvatarRadius
-                             && Math.Abs(my - rail.Y) <= ObservationWalk.LengthDu / 2.0
-                             && HavenInterior.InTheObservationWalk(
-                                    ObservationWalk.HavenId, mx - DeckPlan.AvatarRadius, my);
-            if (inTheTube)
+            if (mx < x0 - Reach || mx > x1 + Reach || my < y0 - Reach || my > y1 + Reach)
             {
-                ways++;
-                Assert.False(door.Locked, "the one way into the walk is not a leaf anybody is refused at.");
+                continue;
             }
+
+            ways++;
+            Assert.False(door.Locked, "the one way into the walk is not a leaf anybody is refused at.");
         }
 
         Assert.Equal(ObservationWalk.Doorways, ways);
