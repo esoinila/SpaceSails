@@ -59,6 +59,14 @@ public static class Escort
     ///
     /// <para>The watch turning over ends it regardless — the room forgetting is a rule this lane inherited
     /// and does not get to opt out of — so this is a ceiling inside a shift and never a second clock.</para>
+    ///
+    /// <para><b>#1199 · THIS IS THE ESCORT'S, AND ONLY THE ESCORT'S.</b> The observation walk read it too for
+    /// one release — the fiction is the same one from the other side — and the owner played it and said to
+    /// shorten it. It was shortened THERE (<c>ObservationWalk.WaitFraction</c>, one eightieth) and not here,
+    /// because the two are not waited through the same way: this hour is a CEILING on a beat the captain ends
+    /// by walking over, and the ordinary play of it is over in seconds. The walk's is the whole of what
+    /// happens next, waited out at whatever the clock is doing. Same fiction, different clocks, and each one
+    /// stated once where the beat it belongs to lives.</para>
     /// </summary>
     public const double PatienceFraction = 0.25;
 
