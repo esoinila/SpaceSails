@@ -107,6 +107,13 @@ public partial class DarkWeb
     /// this component does no arithmetic about it, exactly as it does none about the other three rows.</summary>
     [Parameter] public bool ParcelOnOffer { get; set; }
 
+    /// <summary>#711 slice 2 · The ground the box already in the pocket is going to, as the desk prints it —
+    /// <c>ParcelDrop.DestinationRow</c>, composed by Map off the job's own destination. Empty when the
+    /// captain carries no parcel, which is what makes the job row and the offer row two halves of one state
+    /// rather than two rows that could both be drawn at once. This component does no arithmetic about where
+    /// anything is going, exactly as it does none about any price on this desk.</summary>
+    [Parameter] public string ParcelDestinationRow { get; set; } = "";
+
     /// <summary>#711 slice 1 · Raised when the captain takes the parcel. Map puts it in the pocket; the desk
     /// only carries the press.</summary>
     [Parameter] public EventCallback OnTakeParcel { get; set; }

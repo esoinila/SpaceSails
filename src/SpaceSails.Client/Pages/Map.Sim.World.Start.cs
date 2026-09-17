@@ -110,6 +110,11 @@ public partial class Map
             q.KaamosCheat = null;
         }
 
+        // #711 slice 2 — the box goes in the pocket BEFORE ?land= fires, because this cheat WRITES the
+        // landing: it mints real parcels until one names ground this berth can reach, then points the
+        // descent at it. Nothing happens here without ?parcel=1.
+        TakeAParcelForCheat();
+
         if (_landCheat)
         {
             // #464: ride the shuttle down now that the berth is clamped and the ephemeris is live, so the

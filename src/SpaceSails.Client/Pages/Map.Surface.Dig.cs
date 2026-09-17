@@ -369,7 +369,11 @@ public partial class Map
         // noun — the manifest, the safety read, the warning, the instruction — is the chest's own line to the
         // character, because it is the chest's own hole.
         string what = theChestGoesIn ? "Chest buried" : "In the ground";
-        ShowPulseMessage($"⛏ {what} — {cache.ContentsLine()} off the books. The ✗ marks this spot. {cache.SafetyWith(TheFightThisGroundCarries(cache)).Sentence} Rivals may dig it up over the coming days; the more Reevers haunt this ground, the safer it stays. Now get back to the shuttle.");
+        // #711 slice 2 · …AND ON ONE GROUND IN THE WHOLE SKY THE SAME SHOVEL IS A DELIVERY. The tail rides
+        // the sentence the captain is already reading rather than a second pulse that would overwrite it —
+        // one press, one line (#774). It is empty everywhere else, and a parcel buried on the wrong moon
+        // gets exactly this pulse and exactly this ✗, because that is exactly what it is.
+        ShowPulseMessage($"⛏ {what} — {cache.ContentsLine()} off the books. The ✗ marks this spot. {cache.SafetyWith(TheFightThisGroundCarries(cache)).Sentence} Rivals may dig it up over the coming days; the more Reevers haunt this ground, the safer it stays. Now get back to the shuttle.{TheDropIsMade(cache)}");
     }
 
     /// <summary>
