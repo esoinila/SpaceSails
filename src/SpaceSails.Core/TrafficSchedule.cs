@@ -85,16 +85,24 @@ public static class TrafficSchedule
     /// <summary>#161 · How many catch-up steps a mid-flight hauler's integration hands back the frame after.
     ///
     /// <para>The catch-up is the longest single piece of work left in the whole boot once the two route
-    /// searches are yielded around: 20–70 days at <see cref="CatchUpTimeStep"/> is 240–840 steps, and on the
-    /// interpreted payload the worst of them measured 1.8–2.1 s. A hundred and twenty-eight steps is ten
-    /// days of a hauler's flight and about a fifth of that — small enough that the block stops being the
-    /// boot's worst, large enough that the frames handed back are counted in tens rather than hundreds
-    /// (every one of them costs a browser turnaround, and the boot's total is the thing they buy from).</para>
+    /// searches are yielded around: on the interpreted payload the worst of them measured 1.8–2.1 s. What
+    /// makes the size of this number matter is how MANY steps that is, and the answer is not the one the
+    /// "20–70 days" in the code above suggests. That is the LEAD — how long she still has to fly — and the
+    /// catch-up is everything before it: a Saturn→Mars transfer takes years, the lead is clamped to weeks,
+    /// so the integration behind her is of the order of <b>twelve thousand</b> steps at
+    /// <see cref="CatchUpTimeStep"/>, not eight hundred.</para>
+    ///
+    /// <para><b>Which is why this was measured rather than guessed, and the first guess was wrong.</b> At
+    /// 128 steps a slice the interpreted boot handed the browser 880 extra frames and went from 15 s to
+    /// 31 s — the blocks were tiny and the boot had doubled, because every yield costs a browser
+    /// turnaround. Two thousand and forty-eight puts a slice at about 0.3 s interpreted and 0.06 s AOT:
+    /// comfortably under the route searches that are now the boot's worst blocks, and about thirty extra
+    /// frames over the whole wave.</para>
     ///
     /// <para>It changes no number the sim produces: see <see cref="Simulator.RunSliceBySlice"/> for why the
     /// slicing cannot move the run, and <c>TheSameRunHoweverItIsSliced</c> for the law that says so.</para>
     /// </summary>
-    private const int CatchUpStepsPerSlice = 128;
+    private const int CatchUpStepsPerSlice = 2048;
 
     // Central-space vs. outer-reaches split for scenario-driven routes: a route touching
     // anything past ~Mars's orbit counts as "long haul" (mid-flight ships spawned already deep

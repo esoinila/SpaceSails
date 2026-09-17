@@ -116,7 +116,40 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
     // read, i.e. whether "Continue — docked at <haven>" is on the door. This gate boots a fresh browser
     // context with no saved voyage in it, so it has no Continue to look for and cannot be the law for
     // that. Named here rather than left as a trap for the next reader.)
-    private sealed record LoadBudget(long FrontPageMs, long PickerMs, long BootMs, long DeskSwitchMs, long TotalMs);
+    // #161, second pass · A SIXTH BUDGET, AND THE ONLY ONE THAT IS ABOUT THE BROWSER'S DIALOG RATHER THAN
+    // THE CAPTAIN'S PATIENCE — THE LONGEST SYNCHRONOUS BLOCK OF THE BOOT.
+    //
+    // The owner's acceptance on #161 is not a number at all, it is *no "page unresponsive" warning on a cold
+    // load*. That warning is not a function of how long the boot takes; it is a function of how long ONE
+    // uninterrupted block owns the main thread. The five budgets above cannot see it: a boot that finishes
+    // in fifteen seconds as twenty short stages and a boot that finishes in fifteen seconds as four
+    // four-second freezes score identically on every one of them, and only the second one gets a dialog.
+    //
+    // The number is the GAME'S, not this gate's. The boot already prints one line per stage, each stage sits
+    // between two yields, and a stage's own cost is therefore precisely a block the browser was not handed
+    // back. RememberTheLongestBlock listens to the console the page is already writing and keeps the worst.
+    //
+    // MEASURED BEFORE THE NUMBER WAS WRITTEN — a Release publish driven by this same Playwright host on the
+    // dev box, three runs, worst of each, with the worst stage named:
+    //
+    //     payload        ship-by-ship (#1114, the base)            step-and-slice (this lane)    budget
+    //     interpreted    3.49 / 5.09 / 4.19 s  "freighter 4 of 8"  1.54 / 1.48 / 1.37 s           3 s
+    //                                                              (a ROUTE SEARCH, freighter 2)
+    //     AOT (CI)       0.96 s (#1114's own measurement)          ~a fifth of the above        2.5 s
+    //
+    // WHAT EACH BUDGET CATCHES, said plainly, because the two payloads cannot catch the same thing. The
+    // interpreted ceiling sits INSIDE the window 1.54 s ↔ 3.49 s — 1.9x the worst staged run measured here,
+    // and half a second clear of the cheapest block the un-staged code produced on this same box — so
+    // collapsing GenerateStepByStep back to one yield per ship reddens it, and that is the one-line undo of
+    // this lane. The AOT ceiling cannot be that tight: AOT runs the same work ~5x faster, so the whole
+    // window between the staged and the un-staged block is under a second, and a budget inside it would
+    // flake on a contended runner rather than catch a regression. What the AOT number is honestly good for
+    // is the COARSER loss — putting the whole freighter wave back in one block (#1114's own undo, 2.92 s AOT
+    // on that lane's measurement) — and 2.5 s catches that with room to spare while sitting ~4x above the
+    // CI baseline this file estimates at local×1.9. Two ceilings, two regressions, both named, and neither
+    // pretending to catch the other's.
+    private sealed record LoadBudget(
+        long FrontPageMs, long PickerMs, long BootMs, long DeskSwitchMs, long TotalMs, long LongestBlockMs);
 
     // AOT payload (the shipping artifact — the numbers that gate CI). Tuned from the measurement above.
     private static readonly LoadBudget AotBudget = new(
@@ -124,7 +157,8 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
         PickerMs: 2_500,
         BootMs: 20_000,
         DeskSwitchMs: 8_000,
-        TotalMs: 30_000);
+        TotalMs: 30_000,
+        LongestBlockMs: 2_500);
 
     // Interpreted payload (a plain local `dotnet publish` with no AOT). Blazor WASM is IL-INTERPRETED
     // here, ~100× slower on the CPU-heavy boot, so the AOT budgets would false-fail. This path is not
@@ -136,7 +170,11 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
         PickerMs: 6_000,
         BootMs: 150_000,
         DeskSwitchMs: 40_000,
-        TotalMs: 200_000);
+        TotalMs: 200_000,
+        // …except this one, which is deliberately NOT loose: it is the interpreted payload that carries the
+        // long blocks, so this is the ceiling that can actually catch a regression, and its window is
+        // measured rather than picked. See the note above the record.
+        LongestBlockMs: 3_000);
 
     // AOT compiles managed IL to native wasm, ballooning dotnet.native.*.wasm from ~1.5 MB (the
     // interpreter runtime alone) to ~18 MB. A threshold between the two cleanly tells the payloads
@@ -152,6 +190,11 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
     private long _bootMs = -1;
     private long _deskSwitchMs = -1;
     private long _totalMs = -1;
+
+    // #161 · The worst single stage of the boot, and which one it was — read off the boot's own console
+    // lines as they arrive (see RememberTheLongestBlock). -1 until the first one is seen.
+    private long _longestBlockMs = -1;
+    private string _longestBlockStage = "";
 
     private readonly StringBuilder _log = new();
     private readonly List<string> _consoleErrors = new();
@@ -183,6 +226,8 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
             {
                 _consoleErrors.Add(msg.Text);
             }
+
+            RememberTheLongestBlock(msg.Text);
         };
         _page.PageError += (_, err) => _pageErrors.Add(err);
     }
@@ -446,6 +491,32 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
     // Fail the gate when a milestone (or the whole canary) ran slower than its honest budget — a
     // load-speed REGRESSION, not a slow runner (budgets carry ~2.5× headroom). Collects EVERY breach
     // so one red check reports all of them, each with the measured number vs its budget.
+    // #161 · THE LONGEST SYNCHRONOUS BLOCK, READ OFF THE BOOT'S OWN CLOCK.
+    //
+    // The boot already prints one line per stage under the [SpaceSails] prefix, and each stage sits between
+    // two yields — so a stage's own cost IS a block the main thread owed the browser and did not hand back.
+    // Nothing is instrumented for this gate: it listens to the console the page is already writing, which
+    // is why the number is the game's, measured in the browser, and not a stopwatch of Playwright's around
+    // something it hopes is the same thing.
+    //
+    //     [SpaceSails] boot · the traffic lanes — freighter 4 of 8 — 3486 ms (t+12787 ms)
+    //                          \_______ the stage ______/            \__ ITS OWN COST __/
+    private static readonly System.Text.RegularExpressions.Regex BootStageLine = new(
+        @"^\[SpaceSails\] boot · (?<stage>.+) — (?<ms>\d+) ms \(t\+\d+ ms\)$",
+        System.Text.RegularExpressions.RegexOptions.Compiled);
+
+    private void RememberTheLongestBlock(string consoleText)
+    {
+        System.Text.RegularExpressions.Match m = BootStageLine.Match(consoleText.Trim());
+        if (!m.Success || !long.TryParse(m.Groups["ms"].Value, out long ms) || ms <= _longestBlockMs)
+        {
+            return;
+        }
+
+        _longestBlockMs = ms;
+        _longestBlockStage = m.Groups["stage"].Value;
+    }
+
     private void AssertWithinBudget()
     {
         if (string.Equals(Environment.GetEnvironmentVariable("SPACESAILS_UIGATE_NO_BUDGET"), "1",
@@ -473,6 +544,15 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
         Check("scenario boot complete", _bootMs, b.BootMs);
         Check("desk switch responsive", _deskSwitchMs, b.DeskSwitchMs);
         Check("whole canary", _totalMs, b.TotalMs);
+        Check($"longest synchronous boot block (\"{_longestBlockStage}\")", _longestBlockMs, b.LongestBlockMs);
+
+        // …and the half of that budget that is not a number: it is read off console lines, so a change that
+        // silences or reshapes them would leave it measuring NOTHING and passing forever. -1 means not one
+        // boot stage line was heard, which is a broken law rather than a fast boot.
+        Assert.True(_longestBlockMs >= 0,
+            "the longest-block budget heard no '[SpaceSails] boot · <stage> — N ms (t+M ms)' line all boot. "
+            + "Either the boot stopped printing its stages or the line's shape changed — either way this "
+            + "budget is now measuring nothing, which is worse than not having it.");
 
         Assert.True(breaches.Count == 0,
             "Load-speed budget exceeded — the boot path regressed (or the runner is genuinely "
@@ -494,6 +574,11 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
         Row("scenario boot complete", _bootMs, b.BootMs);
         Row("desk switch responsive", _deskSwitchMs, b.DeskSwitchMs);
         Row("whole canary (total)", _totalMs, b.TotalMs);
+        Row("longest sync boot block", _longestBlockMs, b.LongestBlockMs);
+        if (_longestBlockMs >= 0)
+        {
+            _log.AppendLine($"[timing]   …and it was: \"{_longestBlockStage}\"");
+        }
     }
 
     private static string Fmt(long ms) => $"{ms / 1000.0:0.0}s ({ms}ms)";
