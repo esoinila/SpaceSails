@@ -268,11 +268,34 @@ public partial class Map
     }
 
     /// <summary>Everything off the main corridor and behind the glass — <c>?park=</c>,
-    /// <c>?frontdoor=</c>, <c>?parkwalk=</c>, <c>?ringoffice=</c>, <c>?goodscar=</c>, <c>?parkback=</c>,
-    /// <c>?freight=</c> and <c>?designate=</c>.</summary>
+    /// <c>?parkphase=</c>, <c>?frontdoor=</c>, <c>?parkwalk=</c>, <c>?ringoffice=</c>, <c>?goodscar=</c>,
+    /// <c>?parkback=</c>, <c>?freight=</c> and <c>?designate=</c>.</summary>
     private bool ReadTheCorridorAndThePark(string pair, BootQuery q)
     {
-        if (pair.StartsWith("park=", StringComparison.OrdinalIgnoreCase))
+        if (pair.StartsWith("parkphase=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #759 dev cheat: /map?park=1&parkphase=<night|dawn|day|dusk|morning> jumps the sim clock so the
+            // park at THIS site is at that point of its own grow-cycle when the captain arrives. It is
+            // ?simhours= with the arithmetic done for you, and it has to be, because the answer depends on
+            // the site: the cycle carries a per-site phase offset, so 4 sim-hours is somebody's afternoon
+            // here and somebody's dark next door. The clock is jumped where the site is known
+            // (StandInTheParkIfAsked), never here.
+            //
+            // `morning` is the one a tester wants: it sets you down five sim-minutes before the park's own
+            // dawn, on a cycle the building is NOT also having a morning on — because the beat is the
+            // CHANGE, and you cannot walk in on a change.
+            string candidate = Uri.UnescapeDataString(pair["parkphase=".Length..]).ToLowerInvariant();
+            _parkPhaseCheat = candidate switch
+            {
+                "night" => ParkDay.Phase.Night,
+                "dawn" => ParkDay.Phase.Dawn,
+                "day" => ParkDay.Phase.Day,
+                "dusk" => ParkDay.Phase.Dusk,
+                _ => _parkPhaseCheat,
+            };
+            _parkMorningCheat = candidate is "morning";
+        }
+        else if (pair.StartsWith("park=", StringComparison.OrdinalIgnoreCase))
         {
             // #759 dev cheat: /map?park=1 boots THE PARK — the same B1 route as ?counter=1, with the
             // last leg walked through the gate at the end of the hall's own corridor instead of to the

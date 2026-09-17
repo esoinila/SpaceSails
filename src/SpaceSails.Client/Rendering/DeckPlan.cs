@@ -212,8 +212,28 @@ public sealed partial class DeckPlan
     }
 
     /// <summary>A room backdrop image: top-left at (X, Y) in deck units, W×H deck units, drawn
-    /// under the vector overlay. The top-down renderer walks these.</summary>
-    public readonly record struct Backdrop(string Url, float X, float Y, float W, float H, float Alpha);
+    /// under the vector overlay. The top-down renderer walks these.
+    ///
+    /// <para>#759 · <c>GrowLight</c> marks the panels lit by the park's own lamps rather than by the
+    /// building's. It is a FLAG and not a number, because the number is a function of sim-time
+    /// (<see cref="SpaceSails.Core.ParkDay"/>) and this plan is built once per floor and then drawn for as
+    /// long as the captain stands on it — bake the alpha in here and the park's day stops the moment you
+    /// stop walking through doors. False on every other backdrop in the game, which is all of them.</para>
+    /// </summary>
+    public readonly record struct Backdrop(
+        string Url, float X, float Y, float W, float H, float Alpha, bool GrowLight = false);
+
+    /// <summary>
+    /// #759 · <b>THE PARK'S OWN DAY, AS THE TWO THINGS A FRAME NEEDS TO DRAW IT</b> — the site whose cycle
+    /// it is (the per-site phase offset is seeded off that id) and where the floodlight masts stand.
+    ///
+    /// <para>The LEVEL is deliberately absent, for <see cref="Backdrop"/>'s reason: a plan is built when a
+    /// captain arrives on a floor and drawn thousands of times after, so a level stored here would be the
+    /// light as it was when you walked in — which is precisely the thing a captain who lingers is meant to
+    /// be able to watch change. The plan carries the site and the posts; <see cref="DeckView"/> asks
+    /// <see cref="SpaceSails.Core.ParkDay"/> what they look like on the frame it is drawing.</para>
+    /// </summary>
+    public readonly record struct GrowLight(string SiteId, IReadOnlyList<(float X, float Y)> Masts);
 
     /// <summary>
     /// #537 · A RECTANGLE OF SOLID SHIP. Shielding bands, bulkhead runs, machinery spaces — anything that is
@@ -432,6 +452,10 @@ public sealed partial class DeckPlan
     public (float X, float Y, string Text, float Px, int Tone)[] BigLabels { get; private set; } = [];
     public Backdrop[] Backdrops { get; private set; }
 
+    /// <summary>#759 · The park's grow-lamp rig, on the one floor of the one building that has a park in
+    /// it — see <see cref="GrowLight"/>. Null on every other plan in the game.</summary>
+    public GrowLight? Grow { get; private set; }
+
     /// <summary>Filled structure — see <see cref="Structure"/>. Drawn under everything else, because it is what
     /// the ship is made of rather than something in her.</summary>
     public Structure[] Structures { get; private set; }
@@ -509,8 +533,10 @@ public sealed partial class DeckPlan
         Structure[]? structures = null,
         StoolSpot[]? stools = null,
         BenchSpot[]? benchSeats = null,
-        FurnitureSpot[]? furniture = null)
+        FurnitureSpot[]? furniture = null,
+        GrowLight? grow = null)
     {
+        Grow = grow;
         Structures = structures ?? [];
         Furniture = furniture ?? [];
         Walls = walls;

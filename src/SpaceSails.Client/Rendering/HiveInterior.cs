@@ -204,7 +204,7 @@ public static partial class HiveInterior
             consoles, labels, backdrops, tables, stools, in floor,
             bodyId, level, canteenWatch, cabinetsDogged, stoodUp, cameIn);
 
-        DrawThePark(consoles, labels, backdrops, benchSeats, in floor);
+        DeckPlan.GrowLight? grow = DrawThePark(consoles, labels, backdrops, benchSeats, in floor, bodyId);
         FurnishTheSuites(
             consoles, labels, furniture, in floor, level, canteenWatch, booked, cubiclesShut);
         FurnishTheMeetingRooms(consoles, labels, furniture, in floor);
@@ -249,7 +249,10 @@ public static partial class HiveInterior
             bigLabels: [.. bigLabels],
             // #605 · The floor's department livery. Null on the band nobody listed, so that concrete is the
             // one place down here left bare — the absence is the tell.
-            hullInk: UndergroundComplex.LiveryFor(bodyId, level));
+            hullInk: UndergroundComplex.LiveryFor(bodyId, level),
+            // #759 · …and the park's own lamps, on the one floor of the one building that has a park in it.
+            // Null everywhere else, which is every other floor of every other site.
+            grow: grow);
     }
 
     /// <summary>

@@ -165,4 +165,29 @@ public sealed partial class DeckView
     private static readonly RgbaColor DoorOpen = new(255, 180, 90, 90);    // retracted leaves, faded
     private static readonly RgbaColor DoorLocked = new(120, 140, 170, 210);// another berth's sealed hatch
     private const double DoorOpenRadius = DeckPlan.DoorOpenRadius; // #465: one number, shared with sight
+
+    // ── #759 · THE PARK'S GROW-LAMPS ─────────────────────────────────────────────────────────────────────
+    //
+    // The one light in this game on a schedule of its own (SpaceSails.Core.ParkDay). Two readings come off
+    // that schedule and they are deliberately unequal:
+    //
+    //   · THE GRAVEL, quietly. The floor art's own alpha is scaled between GrowFloor and GrowFloor+GrowSwing
+    //     — 55% of what it wears at the bottom of the cycle, 100% at the top. It never goes to nothing,
+    //     because the register #759 asks for is "never broken, never right": a room whose paths you cannot
+    //     see has BROKEN, and a tester would file that as a bug instead of noticing it as a fact.
+    //   · THE LAMP HEADS, plainly. A disc per mast that grows from a dark head (GrowHeadDu) to a wash
+    //     (+ GrowReachDu) and lifts out of the deck's own dark as it does. This is where the eye actually
+    //     reads the hour, and it is five posts against a far wall rather than a number anywhere on the glass.
+    //
+    // Horticultural white — the cold-forward white a grow rig throws, and NOT the warm amber every other
+    // light on this deck (the doors, the avatar, the stencils) is drawn in. That separation is the point:
+    // the park is not lit by the building's lamps and must not be drawn as though it were.
+    private const double GrowFloor = 0.55, GrowSwing = 0.45;
+    private const double GrowHeadDu = 0.9, GrowReachDu = 3.1;
+
+    private static RgbaColor GrowLampFill(double level) =>
+        new(214, 232, 226, (byte)(14 + (146 * level)));
+
+    private static RgbaColor GrowLampEdge(double level) =>
+        new(224, 240, 232, (byte)(44 + (150 * level)));
 }
