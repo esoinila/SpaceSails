@@ -216,7 +216,10 @@ public sealed partial class Map
         }
 
         IReadOnlyList<string> ground = TheLandableGround();
-        string haven = _dockedHavenId ?? _dockBodyId ?? "";
+        // #1217: the SAME question the desk asks (WhereTheShipIsStanding, through DarkWebCurrentBody), not a
+        // second hand-rolled spelling of it — a cheat that seeded a different id than the row would have
+        // handed out is a cheat that tests a parcel the desk never offers.
+        string haven = DarkWebCurrentBody()?.Id ?? "";
         long watch = PatronRota.WatchIndex(SimTime);
 
         for (int i = 0; i < ParcelCheatWindowsTried; i++)

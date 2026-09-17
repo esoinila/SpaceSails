@@ -51,6 +51,62 @@ public partial class Map
     private ShuttleFlightView.Run? _shuttleRun;
     private NpcState? _shuttleTarget;
 
+    /// <summary>
+    /// #1217 · <b>WHERE IS THIS SHIP, FOR THE PURPOSES OF A QUIET DEAL?</b> — asked once, here, because
+    /// three fields answer three different questions and only a reader that knows which is which can tell
+    /// a berth from a port zone.
+    ///
+    /// <list type="bullet">
+    /// <item><c>_dockedHavenId</c> — <b>AT A BERTH.</b> The clamp is on; the arm is out; the ship is tied to
+    /// that dock and there is a floor to stand on. The most specific answer there is, so it goes first.</item>
+    /// <item><c>_docked</c>/<c>_dockBodyId</c> — <b>AT A PLANETARY MARKET.</b> Mere proximity: within
+    /// <see cref="DockRadiusMeters"/> (0.067 AU) of earth/mars/venus, the only three bodies
+    /// <c>UpdateDockStatus</c> ever names. The ship still flies freely there — it is a commodity market's
+    /// catchment, not a place to stand.</item>
+    /// <item>the Hill-radius bind — <b>IN ORBIT.</b> Riding a massive body's well (a moon haven such as
+    /// Enceladus, μ&gt;0). A station haven has no mass, so this branch can never answer for one.</item>
+    /// </list>
+    ///
+    /// <para>The bug this exists to end (#1217): the dark-web desk asked only the last two, so a ship
+    /// clamped to a berth — the one place the fiction ever sends you for an off-the-books handover — was
+    /// told it was "not orbiting or docked anywhere" while three other panels read <i>Docked at The Tilt</i>.
+    /// It was never reachable at a station haven, from the day the desk was written (#30, 2026-07-04): the
+    /// port-zone branch can only ever name a PLANET, and <c>IntelMarket.CanTradeIntelAt</c> says planets
+    /// never deal.</para>
+    ///
+    /// <para>This is deliberately NOT "is there a commodity market here". A berth is somewhere to hand a
+    /// thing over; it is not somewhere that buys ore by the tonne, and nothing here says it is — the market
+    /// desks keep reading <c>_docked</c>, which is exactly the question they mean.</para>
+    /// </summary>
+    private CelestialBody? WhereTheShipIsStanding()
+    {
+        if (_ephemeris is null)
+        {
+            return null;
+        }
+
+        if (_dockedHavenId is not null && BodyById(_dockedHavenId) is { } clampedTo)
+        {
+            return clampedTo;
+        }
+
+        if (_docked && _dockBodyId is not null && BodyById(_dockBodyId) is { } market)
+        {
+            return market;
+        }
+
+        if (_nearestBody is { ParentId: not null } nb && BodyById(nb.ParentId) is { } parent)
+        {
+            double hill = OrbitRule.HillRadius(nb, parent.Mu);
+            if (OrbitRule.IsBound(_ship, _nearestBodyPosition, _nearestBodyVelocity, nb, hill))
+            {
+                return nb;
+            }
+        }
+
+        return null;
+    }
+
     // The berth we're tied up at, for a tip's provenance line; "ashore" when not docked to a named body.
     private string DockedStationName() =>
         _dockedHavenId is { } id && _ephemeris is not null
