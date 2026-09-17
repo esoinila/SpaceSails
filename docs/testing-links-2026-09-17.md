@@ -43,7 +43,7 @@ station time.
 
 | what | link | what to look for | played |
 | --- | --- | --- | --- |
-| **The walk is empty, and you can play the wait** (#1199 / #1062, this PR) | `/map?dock=selene-gate&ashore=1&simhours=4` — clamped at Selene Gate, ashore in **THE EARTHRISE BAR**, with the station clock four hours in so the room is **past last call** (the walk is only dealt in the last quarter of a watch; last call is at 10,800 s of 14,400). The person of interest at this berth is the haven's own named regular, **GILT-EYE**, and the rota has him at the bar on this watch. | He gets up from his top and crosses the concourse **due west**, out onto `OBSERVATION WALK` — glass floor, the limb under it, a rail at the blind end. Follow him: stay inside legible range with a clear line and **he stops and waits for you to go past** (no card, no line — he just turns). Break the line, and on a frame nobody is looking at him he is simply **not on the floor any more**. Then walk out to the rail yourself. **At warp 1 the card comes up about three minutes after the last moment you had eyes on him** — it used to be an hour. The card is the absence; the note files under his own name on THREADS; nothing is pulsed over the card. | ❌ `09-17` — **the link does not reach the beat**, see below |
+| **The walk is empty, and you can play the wait** (#1199 / #1062, this PR) | `/map?dock=selene-gate&ashore=1&simhours=7.5` — clamped at Selene Gate, ashore in **THE EARTHRISE BAR**, with the station clock seven and a half hours in so the room is **past last call** (the walk is only dealt in the last quarter of a watch; last call is at 10,800 s of 14,400). The person of interest at this berth is the haven's own named regular, **GILT-EYE**, and the rota has him at the bar on this watch. | He gets up from his top and crosses the concourse **due west**, out onto `OBSERVATION WALK` — glass floor, the limb under it, a rail at the blind end. Follow him: stay inside legible range with a clear line and **he stops and waits for you to go past** (no card, no line — he just turns). Break the line, and on a frame nobody is looking at him he is simply **not on the floor any more**. Then walk out to the rail yourself. **At warp 1 the card comes up about three minutes after the last moment you had eyes on him** — it used to be an hour. The card is the absence; the note files under his own name on THREADS; nothing is pulsed over the card. | ❌ `09-17` — the link did not reach the beat ([#1213](https://github.com/esoinila/SpaceSails/issues/1213)); **fixed in #1221, re-play pending** — the link above is the repointed one, see below |
 
 **Reading the wait off the clock while you play:** the wait is measured from the last frame he was visible,
 in **sim** seconds, so the warp slider is the fast-forward if you want it — but the point of this change is
@@ -63,10 +63,18 @@ room the room has left after last call).
 > GILT-EYE at all. Played on for 105 s at warp 1 at the documented URL: nobody crosses the concourse, the
 > walk stays empty, no card, no note, and nothing is ever said out loud. The walk itself is fine — the room,
 > the tube, the plate and the rail are all where the row says, and the captain can walk out to the rail; it
-> is only the *person* who is missing. **No `simhours` value is known to work**, because the frozen watch is
-> pinned to 0 and GILT-EYE is one of watch 0's leavers, so any clock past last call is also past his
-> departure. Until #1213 is ruled on, there is **no link in this file that reaches §1's beat** — do not
-> re-derive one; play it.
+> is only the *person* who is missing. **On the build that was played, no `simhours` value could work**,
+> because the frozen watch was pinned to 0 and GILT-EYE is one of watch 0's leavers, so any clock past last
+> call was also past his departure.
+>
+> ✅ **Fixed in #1221 — re-play pending.** `?simhours=` now moves the clock *before* the berth freezes its
+> watch, so the room is the room of that hour. The link in the row above has been repointed to
+> **`&simhours=7.5`** and the reason is the second half of the same bug: four sim-hours is *exactly one
+> watch*, so `simhours=4` lands a captain at the **start** of watch 1, where nothing is past last call and
+> the walk is correctly refused. 7.5 h is the first hour that is past last call **and** on a watch the rota
+> seats GILT-EYE on **and** the shift does not walk him out of. It is held by a guard that drives the
+> shipping metabolism from that URL's boot state and finds him afoot on the route to the rail — but a guard
+> is not a play, so the ❌ above stands until somebody opens it in a browser.
 
 ---
 

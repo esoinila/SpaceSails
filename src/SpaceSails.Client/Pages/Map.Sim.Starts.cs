@@ -142,15 +142,33 @@ public partial class Map
         _camera.CenterOn(_ship.Position);
     }
 
-    // The ship's state for a start point. Reuses InitializeShipState's finite-difference "co-moving
-    // with a body" idiom, just keyed off a different body — a small radial offset keeps the ship clear
-    // of the body's surface. "earth" (and any unknown id) falls back to the standard Earth spawn.
-    private ShipState PlaceShipForStart(string id)
+    /// <summary>
+    /// #1216 case 2 · <b>WHICH BODY A START HANGS OFF, SAID ONCE.</b> Every start in the registry that is not
+    /// simply the standard spawn is laid down ALONGSIDE something — a berth to clamp onto, a moon to park by,
+    /// a wreck to sit on top of — and the ephemeris it is laid down against is whichever scenario the URL
+    /// actually loaded.
+    ///
+    /// <para>This table exists because <c>/map?scenario=sol-eu&amp;start=wreck</c> was a hard crash:
+    /// <c>KeyNotFoundException: derelict-roadster</c>, thrown out of <c>CircularOrbitEphemeris.Position</c>
+    /// through <c>BerthState.CoOrbital</c>, on the red error page — two whitelisted cheats, legally combined,
+    /// and the boot never asked whether the sky it built has the body the start names. Sol-eu holds eighteen
+    /// bodies and none of them is a roadster, a Selene Gate or a Red Eye.</para>
+    ///
+    /// <para><b>It is one table and not two.</b> <see cref="PlaceShipForStart"/> reads it to place the ship and
+    /// <see cref="ThisSkyCanHonourTheStart"/> reads it to refuse — a second copy that agreed today is this
+    /// repository's oldest bug class, and here it would be a check that passes a start the placement then
+    /// throws on.</para>
+    /// </summary>
+    /// <returns>The body and the standoff, or null for a start that hangs off nothing the scenario could
+    /// lack (the standard spawn, which every shipped world builds).</returns>
+    private static (string BodyId, double OffsetMeters)? WhatAStartHangsOff(string id)
     {
+        // A named berth is laid down just off the ~1 km station, well within dock reach.
         if (DockedStarts.TryGetValue(id, out string? dockBody))
         {
-            return CoMovingBy(dockBody, 3_000); // just off the ~1 km station, well within dock reach
+            return (dockBody, 3_000);
         }
+
         // Every one of these is a FREE park: the ship is let go alongside, not clamped on, so she flies
         // whatever orbit the standoff's direction gives her. #742 — laid along the Sun's radius, the
         // Enceladus spawn struck the ice at +9.17 h on one arrival phase of its 24, and the Europa spawn
@@ -160,12 +178,36 @@ public partial class Map
         // the arrival phase stops deciding anything at either of them.
         return id switch
         {
-            "jupiter" => CoOrbitalBy("europa", 2e7),           // clear of Europa's surface, amid the Galilean system
-            "saturn" => CoOrbitalBy("ringside-exchange", 2e7), // by the ring station, Enceladus/Titan a burn away
-            "enceladus" => CoOrbitalBy("enceladus", 5e6),      // (test) co-moving alongside Enceladus, ~5 Hill radii out (#136)
-            "wreck" => CoOrbitalBy(Derelict.RoadsterBodyId, 2_000), // (test) alongside the wreck, inside fetch-pickup range
-            _ => InitializeShipState(),
+            "jupiter" => ("europa", 2e7),                  // clear of Europa's surface, amid the Galilean system
+            "saturn" => ("ringside-exchange", 2e7),        // by the ring station, Enceladus/Titan a burn away
+            "enceladus" => ("enceladus", 5e6),             // (test) alongside Enceladus, ~5 Hill radii out (#136)
+            "wreck" => (Derelict.RoadsterBodyId, 2_000),   // (test) alongside the wreck, inside fetch-pickup range
+            _ => null,
         };
+    }
+
+    /// <summary>#1216 case 2 · <b>CAN THE SKY THAT WAS ACTUALLY LOADED HONOUR THIS START?</b> True when the id
+    /// names a berth this scenario has to clamp onto, or hangs off a body this scenario carries, or hangs off
+    /// nothing at all. False is the honest answer for a start point the loaded world has no anchor for, and
+    /// the boot then does what Appendix A has always said an unknown start does: the picker shows.</summary>
+    private bool ThisSkyCanHonourTheStart(string id) =>
+        ResolveDockStartId(id) is not null
+        || WhatAStartHangsOff(id) is not { } anchor
+        || _ephemeris?.Bodies.Any(b => b.Id == anchor.BodyId) == true;
+
+    // The ship's state for a start point. Reuses InitializeShipState's finite-difference "co-moving
+    // with a body" idiom, just keyed off a different body — a small radial offset keeps the ship clear
+    // of the body's surface. "earth" (and any unknown id) falls back to the standard Earth spawn.
+    private ShipState PlaceShipForStart(string id)
+    {
+        if (DockedStarts.ContainsKey(id) && WhatAStartHangsOff(id) is { } berth)
+        {
+            return CoMovingBy(berth.BodyId, berth.OffsetMeters); // the CLAMPED idiom, out along the Sun's radius
+        }
+
+        return WhatAStartHangsOff(id) is { } park
+            ? CoOrbitalBy(park.BodyId, park.OffsetMeters)
+            : InitializeShipState();
     }
 
     // A ship state co-moving with a body at boot (SimTime 0), a given distance radially outward from it
