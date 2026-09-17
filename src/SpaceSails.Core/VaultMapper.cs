@@ -244,6 +244,7 @@ public static class VaultMapper
         {
             AssembledFragmentIds = progress.AssembledIds,
             ConvergenceSeen = progress.ConvergenceSeen,
+            PolicyClosed = progress.PolicyClosed,   // #640 · nothing on file, and it has to survive the save
         };
     }
 
@@ -253,7 +254,10 @@ public static class VaultMapper
     public static void Apply(NebulaSection? section, NebulaProgress progress)
     {
         ArgumentNullException.ThrowIfNull(progress);
-        progress.Load(section?.AssembledFragmentIds, section?.ConvergenceSeen ?? false);
+        progress.Load(
+            section?.AssembledFragmentIds,
+            section?.ConvergenceSeen ?? false,
+            section?.PolicyClosed ?? false);
     }
 
     public static InsuranceSection ToSection(PirateInsurance policy) =>

@@ -256,11 +256,33 @@ public sealed partial class Map
         // Relief is real and that is the trap.
         ApplyNerveRelief(ArchiveNode.PurgeRelief * NervePips.PipUnit);
 
+        ArchiveNode.Resident who = ArchiveNode.ResidentOf(w.Id);
+
         // A lapsed subscriber's collector has nothing left to recover — a real payment for the reckless
         // road, so the handle is not merely a punishment. Silently: see the summary.
-        if (ArchiveNode.ResidentOf(w.Id) == ArchiveNode.Resident.DelinquentSubscriber)
+        if (who == ArchiveNode.Resident.DelinquentSubscriber)
         {
             _heat = EncounterRule.RaiseHeat(_heat, -PurgeHeatCleared, SimTime);
+        }
+
+        // ── #640 · AND IF IT WAS YOURS ───────────────────────────────────────────────────────────────
+        //
+        // Owner ruling 2026-09-17, option A: the policy closes, and the next death is the last one. This
+        // line is the whole mechanism. It is as silent as the one above it, and it is silent ON PURPOSE:
+        //
+        //   * NOTHING is added to the handle. No confirmation, no "are you sure", no second label. The
+        //     legend said RESIDENT PATTERN NOT RECOVERABLE and was telling the truth, and the entire beat
+        //     — the entire joke — is that we keep our nerve and let the captain pull it. A warning here
+        //     would not make the game kinder, it would make the label a lie by implying the game would
+        //     have stopped them if it mattered.
+        //   * The information was always PURCHASABLE: a confrontation at the Noticed band or worse reads
+        //     the collar, and the collar says the number is yours. That is the design's own defence, it
+        //     shipped with the feature, and it is why the ruling could be option A at all.
+        //   * No pulse, no log line, no ledger entry. A captain who did not pay to read the collar does
+        //     not find out what they did here. They find out at the clinic that is not there.
+        if (ArchiveNode.ClosesThePolicy(who))
+        {
+            _nebula.MarkPolicyClosed();
         }
 
         RendererInterop.PlayCue("board");
