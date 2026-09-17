@@ -115,7 +115,9 @@ at all.
 > story card's backdrop** (the finder crosses the room on the same nine seconds) and is then spent, drawn
 > and unreadable; and [#1215](https://github.com/esoinila/SpaceSails/issues/1215) — the #429 stranger-bond
 > fires **out on the concourse and inside the walk**, hands the captain a cognac "on the counter" and ticks
-> the tot ledger in a room with no counter in it.
+> the tot ledger in a room with no counter in it. ✅ **Both fixed in #1222 — re-play pending:** a
+> plot-significant pulse raised while any scrim is up is now held and said on the frame the glass clears, and
+> the bond is scoped to the bar's own floor by the same predicate every other beat in that room uses.
 
 ---
 

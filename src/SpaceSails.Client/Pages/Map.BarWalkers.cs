@@ -89,6 +89,20 @@ public partial class Map
     /// wall the room is built off — never a threshold typed in here.</summary>
     private bool InTheBar(in HavenInterior.BarFloor bar) => _avatarY > bar.FloorY;
 
+    /// <summary>#1215 · …and the same question asked by somebody who is not already holding the floor.
+    ///
+    /// <para>The room's own beats are all handed the <see cref="HavenInterior.BarFloor"/> by
+    /// <see cref="AdvanceBarWalkers"/> and then ask <see cref="InTheBar"/> of it — the rota's metabolism, the
+    /// finder, the walk-in, the tail's chair reading. The stranger-bond (#429) is raised from the other end of
+    /// the game, at the end of an ambient scare (<c>Map.Shudder</c>), so it has no floor in its hand; until
+    /// #1215 it made do with "at a berth with a keep", and fired out on the concourse and inside the
+    /// observation walk.</para>
+    ///
+    /// <para>This is those two calls composed and nothing else. It is deliberately NOT a second predicate:
+    /// same floor (<see cref="TheDockedBar"/>), same wall (<see cref="InTheBar"/>), so a room that moves moves
+    /// for every beat in it at once.</para></summary>
+    private bool TheCaptainIsInTheDockedBar => TheDockedBar() is { } bar && InTheBar(in bar);
+
     /// <summary>#973 L0 · The bar's walker band, written into the slots the docked deck reserved for it. The
     /// same filler the Hive floor uses, handed the other room's feet.</summary>
     private void FillBarWalkerDroids(DeckPlan.Droid[] buffer, int firstSlot) =>

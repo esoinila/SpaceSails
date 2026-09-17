@@ -26,9 +26,24 @@ public partial class Map
     // there's no bar, no one eligible, or the seeded gate holds. The cognac beat is the hero.
     private void TryBond(StrangerBond.Scare scare, bool cold, double nowMs)
     {
-        // Only in a docked bar/haven — a scare on the bare ship deck or a lonely surface site has no room of
-        // strangers to bond. Keyed to the docked bar's keep (the same gate PresentBarContacts uses).
-        if (_dockedHavenId is not { } haven || CurrentKeep is null)
+        // #1215 · IN THE ROOM, OR NOT AT ALL.
+        //
+        // This gate was "at this BERTH" — a docked haven with a keep behind its counter — and a berth is not a
+        // room. Played headless at Selene Gate, the captain walked west out of THE EARTHRISE BAR, across the
+        // concourse and into the glass observation tube, waited, and was dealt the full hero beat: TWO GLASSES
+        // ("Two tumblers land on the counter…"), the cognac line, and a tot on the Galley's sobriety ledger.
+        // There is no counter, no barkeep and no stranger where he was standing. Three times in one session.
+        //
+        // The beat's whole register is a CO-PRESENT stranger, in this room, standing you one — so it is scoped
+        // the way every other beat in that room already scopes itself, and by the same call rather than a
+        // second opinion about where the bar is: the rota's own metabolism (Map.BarWalkers), the finder
+        // (Map.Finder), the walk-in (Map.WalkIn) and the tail's chair reading (Map.TailBehindYou) all ask
+        // TheDockedBar() for the floor and InTheBar() for the captain. Two answers to "is he in the bar" is
+        // this repository's oldest bug class with a drink in its hand.
+        //
+        // OFF THE FLOOR THE SCARE STILL HAPPENS. TryBond is called at the END of a scare's dread beat, so what
+        // a captain in the tube gets is exactly what he should get: the fright, and nobody to share it with.
+        if (!TheCaptainIsInTheDockedBar || _dockedHavenId is not { } haven || CurrentKeep is null)
         {
             return;
         }

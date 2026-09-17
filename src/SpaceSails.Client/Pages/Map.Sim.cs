@@ -197,8 +197,46 @@ public partial class Map
     /// lingers long enough to READ, scaled by its length, so the words a player paid a round to hear aren't
     /// gone before they land. The durable "overheard" book is the real record; this is the doorbell.</para>
     /// </summary>
-    private void ShowPulseMessage(string message, PulseRank rank = PulseRank.Status) =>
+    /// <remarks>
+    /// #1214 · <b>A PLOT-SIGNIFICANT LINE IS NOT SAID INTO THE DARK.</b>
+    ///
+    /// <para>This is the one funnel every pulse in the game goes through, and the one place the last loss
+    /// #693 named could be closed for all of them. <see cref="PulseSlot"/> settles a pulse losing to a pulse;
+    /// #768's <see cref="PulseHold"/> settles an event's own lines losing to the card that same event raises.
+    /// Neither covers the third case, which is the one that was played: <b>a beat the WORLD raises while
+    /// somebody ELSE'S card is up.</b> The tail's chair reading (#1062) fired under the finder's pitch
+    /// (#417) — the DOM had the sentence, verbatim, at (400, 96), under a z-1320 backdrop — and the sit that
+    /// paid for it got nothing back. Spent, drawn, invisible. Twice in one session.</para>
+    ///
+    /// <para><b>So a line at <see cref="Telling.Floor"/> or above is HELD while a scrim is up</b>, and said on
+    /// the frame the glass clears (<c>SayWhatTheScrimWasStandingOn</c>, in the tick beside the pulse's own
+    /// expiry). Everything below that floor keeps today's behaviour exactly: weather is allowed to be missed,
+    /// which is what makes it weather, and four hundred instrument lines do not queue up behind a satchel.</para>
+    ///
+    /// <para><b>Held, not "must not spend", and not "ride the card".</b> The other two seams were both
+    /// considered and both are wrong here. <i>Not spending</i> would mean every beat in the game becoming
+    /// re-entrant — the walk, the tail and the later sighting are each spent ONCE by construction, and a beat
+    /// that had to be re-offered would be a second answer to "has this happened yet". <i>Riding the card</i>
+    /// is #736's law and it is about the sentence you ACT ON: the answer to a press belongs on the card that
+    /// asked. A beat the world raised is not an answer to whichever card happens to be up, and writing it into
+    /// that card's outcome would put the tail's chair reading inside Ilse Varga's pitch.</para>
+    ///
+    /// <para><b>One held line and not a queue</b>, which is <see cref="PulseHold"/>'s own settled law rather
+    /// than a new decision: the HUD has ONE slot with a dwell, so releasing two would write the second over
+    /// the first in the same frame and the captain would read exactly one of them anyway. The one that
+    /// survives is chosen by RANK — <i>the sentence that survives the card must be the sentence that would
+    /// have been on screen had no card been raised</i>.</para>
+    /// </remarks>
+    private void ShowPulseMessage(string message, PulseRank rank = PulseRank.Status)
+    {
+        if (rank.IsPlotSignificant() && ACardStopsTheWorld)
+        {
+            _held = _held.Hold(message, rank);
+            return;
+        }
+
         _pulse = _pulse.Write(message, rank, _lastTimestampMs ?? 0);
+    }
 
     private string BodyName(string id)
     {

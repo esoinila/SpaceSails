@@ -638,10 +638,24 @@ public partial class Map
     private void HoldSaying(string text, PulseRank rank = PulseRank.Status) =>
         _held = _held.Hold(text, rank);
 
-    /// <summary>#768 · Is something in front of the captain that a pulse would play UNDER? The two full-screen
-    /// cards, asked of the world as it now stands rather than predicted from the conditions that raise
-    /// them — a copy of those conditions is a second rule to keep in step, and this one cannot be wrong.</summary>
-    private bool ACardStopsTheWorld => _viewObject is not null || _storyCard is not null;
+    /// <summary>#768 · Is something in front of the captain that a pulse would play UNDER? Asked of the world
+    /// as it now stands rather than predicted from the conditions that raise them — a copy of those
+    /// conditions is a second rule to keep in step, and this one cannot be wrong.
+    ///
+    /// <para>#1214 · <b>AND IT IS THE WHOLE CENSUS NOW, NOT TWO OF THIRTY-ONE.</b> This read
+    /// <c>_viewObject is not null || _storyCard is not null</c> — the two cards #768's own events raise — and
+    /// its docblock already said what was wrong with that: <i>a copy of those conditions is a second rule to
+    /// keep in step</i>. It was one, and it had fallen thirty cards behind. The bug that found it: the tail's
+    /// chair reading (#1062) pulsed under the FINDER's card (#417), which is <c>_finderCard</c> and was on
+    /// neither side of that <c>||</c> — <i>"From this chair you can see the door…"</i>, spent, drawn at
+    /// (400, 96), and invisible beneath a z-1320 backdrop.</para>
+    ///
+    /// <para>#1052 already built the honest answer and proved it cannot go stale: <see cref="AScrimIsUp"/>
+    /// runs the <c>TheScrimCensus</c>, and <c>OnlyOneScrimAtATimeTests</c> walks <c>Map.razor</c> itself and
+    /// requires the census to name every <c>.view-object-backdrop</c> gate in it. So a card typed tomorrow
+    /// joins this law on the day it is typed, and the mirror that had gone stale cannot be one again.</para>
+    /// </summary>
+    private bool ACardStopsTheWorld => AScrimIsUp;
 
     /// <summary>#768 · The end of an event that had things to say: if nothing is in front of the captain the
     /// held winner is simply pulsed, here and now, exactly as it always was. If a card IS up, it stays held
@@ -666,6 +680,29 @@ public partial class Map
             return;
         }
         (_pulse, _held) = _held.ReleaseInto(_pulse, _lastTimestampMs ?? 0);
+    }
+
+    /// <summary>
+    /// #1214 · <b>THE FRAME THE GLASS CLEARS.</b> A plot-significant line raised while a scrim was up is held
+    /// (<see cref="ShowPulseMessage"/>); this is where it is finally said.
+    ///
+    /// <para>It is a frame check and not a closer hook, and that is the whole of why it works. #768's release
+    /// hangs off <c>CloseViewObject</c> and <c>CloseStoryCard</c> — the two cards whose OWN events do the
+    /// holding — and there are thirty-one cards in <c>TheScrimCensus</c>. A line held under the finder's pitch
+    /// would have waited for a story card that was never coming. Asking the world once a frame costs nothing
+    /// and cannot fall behind: the <c>_held.Any</c> test is one field read, and the census walk happens only
+    /// on the handful of frames something is actually waiting — the same argument
+    /// <see cref="PumpTheScrimQueue"/> makes for itself, for the same reason.</para>
+    ///
+    /// <para>Called from the tick beside <c>_pulse.Expire</c>, which is the pulse's own per-frame seam, so the
+    /// held line is released into a slot on the same frame that slot is being aged.</para>
+    /// </summary>
+    private void SayWhatTheScrimWasStandingOn()
+    {
+        if (_held.Any && !ACardStopsTheWorld)
+        {
+            ReleaseHeldSayings();
+        }
     }
 
     /// <summary>#686 · The record half alone, for a line whose SAYING happens inside an open dialog — the
