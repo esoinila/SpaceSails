@@ -381,6 +381,54 @@ public sealed class ThePlayerIsToldTests
         new("the person you lost is at a counter, and nothing is owed an explanation",
             Surface.RankedPulse, "Map.ObservationWalk.cs", "TheyAreAtTheCounter",
             "ShowPulseMessage(ObservationWalk.CounterLine(person), PulseRank.Beat);"),
+
+        // #1062 slice 2 · THE MIRROR HALF, and both of its rows are about a captain WORKING SOMETHING OUT
+        // rather than being handed it. That is why neither is a card: a card would be the house announcing
+        // "you have discovered a tail", and the whole of the feature is that the house says nothing until the
+        // captain has spent something — a sit that costs him the floor, or a detour that costs him his route.
+        //
+        // RANKED and not Status, because the line is the PAYOFF of that spend and the next instrument reading
+        // must not wipe it before it is read — #689's own failure, and the reason PulseRank.Beat exists. And
+        // there is nothing standing in front of him: he is on a deck, on his own feet, with no dialog open.
+        new("you have worked out that the man who came in after you is here for you",
+            Surface.RankedPulse, "Map.TailBehindYou.cs", "YouHaveNoticedHim",
+            "ShowPulseMessage(line, PulseRank.Beat);"),
+
+        // …and the other end of the same exchange. It is said ONLY to a captain who had already noticed him
+        // (HeGoesAndAsksTheWrongFloor gates it on that latch, and a guard of its own drives the case where he
+        // had not): a captain who never spotted the man is never told he has just lost him, because he never
+        // knew there was anything to lose. The book takes the same beat in the same breath, filed under the
+        // PLACE, so the line is readable again after the HUD has moved on.
+        new("the corridor behind you is empty, and the man who was in it has gone",
+            Surface.RankedPulse, "Map.TailBehindYou.cs", "HeGoesAndAsksTheWrongFloor",
+            "ShowPulseMessage(TheTailBehindYou.LostLine, PulseRank.Beat);"),
+
+        // #1062 slice 2 · THE BURN, and the row's whole content is WHERE it is not said. Nothing is raised on
+        // the frame a watched captain does a quiet thing at a berth — #761's law about a burned lead, which
+        // slice 1 obeys at the other end. The telling waits until he walks back into the place and finds it
+        // has nothing for him, and then it is one line about housekeeping and one entry in the book under
+        // the same PLACE the losing note went under, so THREADS stacks the evening in order.
+        //
+        // Ranked, not carded: a card would stop the world to announce a consequence, and what has happened is
+        // that a room is tidy.
+        new("the place you did your quiet business in has been walked through ahead of you",
+            Surface.RankedPulse, "Map.TailBehindYou.cs", "TheBurnIsToldHere",
+            "ShowPulseMessage(TheTailBehindYou.TheBurnLine, PulseRank.Beat);"),
+
+        // #759 · THE PARK'S MORNING ARRIVES AT THE WRONG TIME. Plot-significant because it is the only
+        // moment the building ever admits the park is not the thing the plate at the gate says it is, and
+        // the captain has to still be standing in the room to catch it — sent down the same road at Status
+        // it could be displaced by the next instrument reading, and the one beat the room gives away would
+        // have been told to nobody.
+        //
+        // RANKED AND NOT CARDED, and this is the clearest case of that rule in the game. A card stops the
+        // world to announce something; what has happened is that some lamps came on. The register #759 asks
+        // for is "subtly wrong — never broken, never right", and a full-screen plate would spend the beat in
+        // the act of delivering it. The book takes the other half in the same breath, filed under the PLACE,
+        // so it is readable again after the HUD has moved on.
+        new("the park's morning comes up at an hour nobody else in the building is keeping",
+            Surface.RankedPulse, "Map.ParkDay.cs", "CheckTheParksOwnDay",
+            "SayItWhereTheyAreLooking(ParkDay.LingerLine, PulseRank.Beat);"),
     ];
 
     /// <summary>

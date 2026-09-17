@@ -24,6 +24,9 @@ public partial class Map
     /// <summary>Where this boot ends: clamped on at a berth, at a named start point, or at the picker.</summary>
     private void ApplyTheStartPoint(BootQuery q)
     {
+        // #1213 · THE CLOCK IS SET BEFORE SHE ARRIVES, and it has to be. See JumpTheClockBeforeSheArrives.
+        JumpTheClockBeforeSheArrives(q);
+
         // Start point: an explicit /map?start=<id> jumps straight there (the renderer is live now, so
         // a docked-&-ashore start's board cue is safe); with no param, offer the boot picker so a
         // playtester (or a player who'd rather not always cast off from Earth) can choose a locale.
@@ -31,9 +34,26 @@ public partial class Map
         {
             StartDockedAtHaven(dockHaven); // #288: boot already clamped on at any dockable berth
         }
-        else if (q.StartId is not null)
+        else if (q.StartId is { } asked && ThisSkyCanHonourTheStart(asked))
         {
-            ApplyStart(q.StartId);
+            ApplyStart(asked);
+        }
+        else if (q.StartId is not null || q.DockCheat is not null)
+        {
+            // #1216 case 2 · THE SKY THAT WAS LOADED CANNOT HONOUR IT, so the boot refuses the way Appendix A
+            // has always said an unknown start is refused: THE PICKER SHOWS. `/map?scenario=sol-eu&start=wreck`
+            // used to reach CircularOrbitEphemeris.Position with a body id that sky has never held and throw
+            // KeyNotFoundException onto the red error page — a legal pair of whitelisted cheats ending in a
+            // stack trace. A start an id names and a start a WORLD can honour are two questions, and until now
+            // only the first was asked (Map.Sim.World.Query checks the registry, which is scenario-blind).
+            //
+            // The door was lowered at the top of the boot precisely because a start WAS asked for
+            // (RaiseTheFrontDoorWhileTheReactorWarms), so raising it again here is the refusal: the captain
+            // gets the berth list this scenario actually has, which is the same answer a mistyped start gets.
+            // Nothing is said — a dev cheat that cannot be honoured is a shortcut that did not work, never a
+            // new failure mode, which is the rule `?dest=` is already written to (Map.Sim.World.Start).
+            _showStartPicker = true;
+            StateHasChanged();
         }
         else
         {
@@ -109,6 +129,11 @@ public partial class Map
             SeedKaamosHeadOfficeCheat();
             q.KaamosCheat = null;
         }
+
+        // #711 slice 2 — the box goes in the pocket BEFORE ?land= fires, because this cheat WRITES the
+        // landing: it mints real parcels until one names ground this berth can reach, then points the
+        // descent at it. Nothing happens here without ?parcel=1.
+        TakeAParcelForCheat();
 
         if (_landCheat)
         {
@@ -230,8 +255,10 @@ public partial class Map
     }
 
     /// <summary>The two seeded approaches, which suppress the picker because picking a berth would
-    /// overwrite them — and then the purse, the tank and the clock, LAST, so a start’s own defaults are
-    /// already down before these overwrite them.</summary>
+    /// overwrite them — and then the purse and the tank, LAST, so a start’s own defaults are already down
+    /// before these overwrite them. <b>The CLOCK is no longer one of them (#1213)</b>: what hour it is is not
+    /// a default a start lays down, it is when the world is, and it now moves before she arrives — see
+    /// <see cref="JumpTheClockBeforeSheArrives"/>.</summary>
     private void SeedTheApproachesAndThePurse(BootQuery q)
     {
         // ?sling=<bodyId>: boot onto an inbound arc with a close pass by that body (PR-G test hook).
@@ -260,9 +287,42 @@ public partial class Map
         {
             _reactionMassPulses = Math.Clamp(seedPulses, 0, ReactionMassCapacity);
         }
+    }
 
-        // ?simhours=N: jump the sim clock at boot so the roaming Magpie's rota can be sampled (PR-F).
-        // While docked, HoldAtDock re-pins the ship to the berth at the new time on the next tick.
+    /// <summary>
+    /// #1213 · <b>?simhours=N JUMPS THE CLOCK BEFORE THE CAPTAIN ARRIVES, NOT AFTER.</b>
+    ///
+    /// <para><b>The law this cheat now keeps:</b> <c>?dock=X&amp;simhours=N</c> must build the world of a
+    /// captain who really tied up at X when the station clock read N hours. Same berth, same frozen watch,
+    /// same rota, same schedule of who finishes and goes. Anything else is a cheat handing over one world
+    /// while the instruments describe another, which is this repository's third named bug class.</para>
+    ///
+    /// <para><b>What it was doing instead.</b> This jump used to be the last line of
+    /// <see cref="SeedTheApproachesAndThePurse"/> — four stages AFTER <see cref="ApplyTheStartPoint"/>, which
+    /// is where <c>?dock=</c> clamps on and where <c>SetDeckForDock</c> freezes <c>_dockVisitSimTime</c>, the
+    /// watch the whole bar is resolved at (#410). So the cheat produced a room seated on <b>watch 0</b> with
+    /// the clock reading N: <c>BarWatch</c> stayed 0 whatever <c>simhours</c> said, and
+    /// <c>IntoTheBarsWatch = SimTime − BarWatch × WatchSeconds</c> came out as the whole of N — past every
+    /// departure <see cref="Egress"/> had scheduled inside the first <see cref="Egress.LastCallFraction"/> of
+    /// that watch. <b>A room emptied its entire evening of leavers on frame one</b>, and #1199's observation
+    /// walk was dealt to a chair its person had just been walked out of: the rota (unchurned) still said he
+    /// was there, the room (churned) said he was not, and the beat was spent in silence on nobody. Played
+    /// headless at the documented link, GILT-EYE was gone from his chair 1.5 s after boot and 105 s of warp
+    /// produced no walker, no card and no note.</para>
+    ///
+    /// <para><b>Why here and not a fifth stage.</b> Because the clock is not a cheat that seeds state on top
+    /// of a world — it is <i>when</i> the world is. Every line below this one reads it: the berth's position
+    /// and velocity are taken at <c>SimTime</c> (<c>ResolveDockHaven</c>, <c>BerthState.CoMoving</c>), the
+    /// deck is welded at <c>SimTime</c>, the rota is resolved at <c>SimTime</c> and the Magpie's own post —
+    /// which is the rota this cheat was written for in the first place — is a function of it. Setting it
+    /// afterwards was never "the clock, later"; it was a different berth, a different room and a different
+    /// evening, reported as the same one.</para>
+    ///
+    /// <para>It stays the ship's own clock and the page's, written together, because they are one fact. While
+    /// docked, <c>HoldAtDock</c> re-pins the hull to the berth on the next tick exactly as before.</para>
+    /// </summary>
+    private void JumpTheClockBeforeSheArrives(BootQuery q)
+    {
         if (q.SimHoursCheat is { } jumpHours)
         {
             _ship = _ship with { SimTime = jumpHours * 3600 };

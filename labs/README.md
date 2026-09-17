@@ -57,6 +57,7 @@ dotnet run --project labs/36-the-cannonball -c Release
 dotnet run --project labs/37-the-slow-hand -c Release
 dotnet run --project labs/38-the-rock-that-mines-itself -c Release
 dotnet run --project labs/39-the-long-knife -c Release
+dotnet run --project labs/49-the-paint-job -c Release
 ```
 
 Each lesson folder holds:
@@ -511,6 +512,30 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     coordinate tells you where to start looking; one that draws the floor tells you what to fix* — detection
     and diagnosis are two different tools, and a project with only one keeps paying for the other. *(Ran
     2026-08-01 as "Lab 44"; renumbered by #664.)*
+
+49. [**The paint job**](49-the-paint-job/README.md) — the last candidate on the #395 playbook, and the one
+    the issue itself doubted: albedo/Yarkovsky, *"probably too slow to be a gig — the lab exists to prove WHY
+    it's not."* It is, and here is why, as a bound rather than a shrug. This is the only deflection that has
+    been **measured on real asteroids**, so the lab starts by earning the right to speak: handed the published
+    parameters, the linearised plane-parallel model reproduces **Bennu's −284.6 m/yr to 0.77×** and Golevka's
+    ≈ −95.6 m/yr to within its unknown thermal inertia. Then the finding that decides everything — **the lever
+    only turns one way.** α·G(Θ(α)) is strictly increasing in α (its derivative reduces to
+    (Θ/D²)·(0.25+2Θ+3.5Θ²) > 0), so a coat can never make a rock drift FASTER; the very most it can buy is
+    switching off the drift the rock already had, and real rocks already absorb 90–98% of what hits them. With
+    the ceiling (4/9)·α·Φ·G_max — spin-free, chemistry-free, un-arguable — a whitewashed **50 m C-type at 1 AU
+    opens one Earth radius in 36 years** (the honest positive; the boundary is *small, dark, near, and decades
+    of warning*), but the game's own 30 Mm SafeMiss takes **78**, a 140 m rock **208**, and at **Ringside —
+    9.58 AU, where the #394 gig actually happens** — **8,743 years**, because sunlight is 92× thinner and the
+    thermal lag collapses on top of it, a total factor of **1,517**. Nothing on the whole C/S/M × size grid
+    gets under **648 years** there, even at the ceiling. It is also the CHEAPEST technique by mass
+    (**34.5 t** covers a 140 m rock, less than the cannonball's 200 t hull) — and the same 20 t *thrown*
+    instead of spread is **nine times faster**. Also corrects the issue's own phrasing (over a 4 h spin "one
+    side" is every side; only mean albedo survives the average) and closes the two escape hatches by computing
+    them: direct radiation pressure is 5× the bigger acceleration and still loses (radial ⇒ linear in T, not
+    quadratic), and the seasonal term, which really does dominate at Saturn distance, is still a
+    **2,383-year** job. **Verdict: REFUSED for promotion** — 759× slower at Ringside than the slowest
+    technique already certified. Broken on purpose eight times; every break turns guards red. Wired into CI as
+    `YarkovskyPaintTests`.
 
 ## Framing rule
 

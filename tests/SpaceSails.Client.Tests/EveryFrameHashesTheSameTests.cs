@@ -399,6 +399,31 @@ public sealed class EveryFrameHashesTheSameTests
         + "order, at round-trip precision. The re-pin history — which lane moved which rows and by what\n"
         + "arithmetic — is in the class docs of EveryFrameHashesTheSameTests.";
 
+    // ── #759 · THE FIVE FLOORS WITH A PARK ON THEM WERE RE-PINNED, AND THE COUNTS SAY EXACTLY WHY ─────
+    //
+    // The park's floodlight masts keep the room's own grow-cycle now (SpaceSails.Core.ParkDay): the gravel's
+    // art is drawn at an alpha scaled by the cycle's level, and each of the five masts draws ONE disc whose
+    // reach and ink are that same level. So every case with a park in it gains exactly FIVE marks —
+    //   luna B1 651 → 656 · luna B1 · sat down at a desk 664 → 669 · luna B1 · the round is out 677 → 682 ·
+    //   phobos B1 643 → 648 · titan B1 612 → 617
+    // — five cases, +5 apiece, and the other twenty-eight rows of this ledger are byte-identical. Five is
+    // UndergroundComplex.ParkMastCount, and it is five whatever hour the frame is drawn at: a lamp that is
+    // off still draws its head, because a mark that comes and goes would make a frame's call count depend
+    // on the clock.
+    //
+    // WHICH PHASE EACH PINNED FRAME NOW HOLDS, since these cases are drawn at a FIXED simTime and that fixes
+    // the hour along with everything else. luna's park is at the top of its dark for most of the first cycle
+    // (its own phase offset is 0.177, and its dawn begins at 1,496 s), so `luna B1` at 880 s and `sat down at
+    // a desk` at 205 s are both NIGHT at level 0, while `the round is out` at 1,500 s is four seconds into
+    // its DAWN at level 0.001. phobos and titan, both drawn at 880 s, are in broad DAY at level 1. That two
+    // sites' parks are lit at the same instant a third's is dark is the per-site offset doing its job, and it
+    // is the cheapest possible demonstration that this ledger can tell one hour from another.
+    //
+    // AND `luna B1 · the lamps are all there is` DID NOT MOVE, honestly: on a floor lit only by the suit lamp
+    // the mask discards the whole ground pass, so the park's art and its five discs are not drawn at all.
+    // It is the same reason that case stayed green when two passes were swapped in the conductor, and it is
+    // why there is a lit case for every dark one.
+
     // ── #758 · THE FIVE HALL FLOORS WERE RE-PINNED, AND THE CALL COUNTS PROVE WHY ─────────────────────
     //
     // The cabinets carry a privacy glyph on their plate now (CabinetPrivacy.PlateFor), so the three floors

@@ -92,6 +92,8 @@ Small, linked pages — one station or mechanic per page — under `docs/feature
 
 - [The landing site](docs/features/the-landing-site.md) — what a moon's ground has to be before it ships: sites, air, shelters, caches, the monolith, and the underground complex
 - [Going ashore — the haven walk](docs/features/haven-interior-walk.md) — the first indoor walk into a haven
+- [Losing the tail](docs/features/losing-the-tail.md) — somebody mundane and human is behind you ashore, and
+  nothing says so until you work it out
 - [The captain's character](docs/features/the-captains-character.md) — a ledger, not a meter
 
 **Wrecks, air, and the things aboard them**

@@ -203,6 +203,30 @@
                 </table>
             }
 
+            @* #711 slice 2 · …AND ONCE IT IS IN THE POCKET, THE SAME ROW IS THE JOB. The row is where the
+               work lives — no panel, no quest entry, no tab: the captain reads the instruction and the
+               ground at the counter he took the box across, and nowhere else. It replaces the offer rather
+               than sitting beside it, because one hull carries one parcel and the desk has nothing more to
+               hand over while it does.
+
+               The instruction is Core's, verbatim; the destination line beneath it is the functional row
+               (BODY · SITE) in the same format the map card has always spelled a sited chest in, composed
+               by Core off the ground the job actually names. No price, then or now. *@
+            @if (!string.IsNullOrEmpty(ParcelDestinationRow))
+            {
+                <table class="table table-sm table-dark mb-2">
+                    <tbody>
+                        <tr>
+                            <td>
+                                @UnlistedParcel.Plate
+                                <div class="text-secondary">@ParcelDrop.TheInstruction</div>
+                                <div class="text-info">@ParcelDestinationRow</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            }
+
             <div class="text-secondary mb-1">Your sellable tracks (quality ≥ 50%):</div>
             @if (!SellableTracks.Any())
             {

@@ -187,6 +187,10 @@ public partial class DeskPanels
     /// <summary>#711 slice 1 · Take it. Map puts it in the pocket; nothing else moves.</summary>
     [Parameter] public Action TakeTheUnlistedParcel { get; set; } = default!;
 
+    /// <summary>#711 slice 2 · The ground the box already in the pocket is going to, as the desk prints it —
+    /// Map's own <c>TheParcelsDestinationRow</c>, empty while no parcel is carried.</summary>
+    [Parameter] public Func<string> TheParcelsDestinationRow { get; set; } = default!;
+
     [Parameter] public Action SellTheChipToTheFence { get; set; } = default!;
     [Parameter] public Func<NpcShip, string> DepartureLabel { get; set; } = default!;
     [Parameter] public Action DismissCrashNote { get; set; } = default!;

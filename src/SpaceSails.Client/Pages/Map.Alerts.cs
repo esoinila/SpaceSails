@@ -224,7 +224,33 @@ public partial class Map
     private readonly IntelLedger _intelLedger = new();
 
     // Comms-tree selection (master–detail; ui-guidelines.md): a ship id, "offbooks", "darkweb".
-    private string? _commsSelectedId;
+    private string? _commsSelectedIdValue;
+
+    /// <summary>
+    /// The comms tree's selection — and, since #711 slice 2, THE ONE DOOR ONTO THE DARK-WEB DESK.
+    ///
+    /// <para>A property rather than a field for the reason <c>SwitchDesk</c> is one method: every route in
+    /// (the tree node, the ledger's <i>"→ dark web"</i> link, the flow column's own copy of the tree) writes
+    /// this one member, so a payment that arrives "the next time the captain opens the desk" cannot be
+    /// leaked past by a route that forgot to ask. Nothing new can leak past by forgetting either.</para>
+    ///
+    /// <para>Only a CHANGE to the desk counts: re-selecting the node you are already on is not opening
+    /// anything, and a payment that landed on every re-render would be a payment landing on a frame.</para>
+    /// </summary>
+    private string? _commsSelectedId
+    {
+        get => _commsSelectedIdValue;
+        set
+        {
+            bool opening = value is "darkweb" && _commsSelectedIdValue is not "darkweb";
+            _commsSelectedIdValue = value;
+            if (opening)
+            {
+                ThePaymentIsThere();
+            }
+        }
+    }
+
     private string? _commsHailAnswer;
 
     // #534 tell (e): what each hull has been heard to say, by hull id. Written by CommsHail when a hull

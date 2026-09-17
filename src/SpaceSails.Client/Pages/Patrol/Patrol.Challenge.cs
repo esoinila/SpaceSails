@@ -467,7 +467,20 @@ public sealed partial class Map
                 simTime, _host.WorldSeed);
 
             _host.PayTheFine(found.Fine);
+
+            // #711 slice 2 · WHICH BOX IT WAS, read BEFORE the pocket is emptied — the length of the quiet
+            // that follows is seeded off the parcel that was lost, and a second later there is no parcel to
+            // ask. Both arms: the box is carried off whether or not a fine was written, so the work dries up
+            // whether or not a fine was written. Nothing is said about it on either.
+            string? carriedOff = ParcelDrop.TheParcelIn(_host.Satchel)?.Id;
+
             _host.Satchel = [.. UnlistedParcel.Confiscated(_host.Satchel)];
+
+            if (carriedOff is not null)
+            {
+                _host.TheDeskHasNothingForAWhile(carriedOff);
+            }
+
             _host.FileNote(
                 found.Fined ? UnlistedParcel.FineNote : UnlistedParcel.TellNote, UnlistedParcel.Glyph);
 

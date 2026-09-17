@@ -441,15 +441,29 @@ public sealed class TheCarWithPhotographsInItTests
     }
 
     /// <summary>Berth the ship where the dark web will actually deal — a haven with an interior, which is
-    /// where a fetch's drop is anyway. Returns the berth's body id.</summary>
+    /// where a fetch's drop is anyway. Returns the berth's body id.
+    ///
+    /// <para>#1217 · <b>This used to build a world the game cannot build.</b> It reflection-set
+    /// <c>_dockBodyId</c> to the HAVEN's id — a field <c>UpdateDockStatus</c> only ever fills with
+    /// earth/mars/venus — and the desk's old body-lookup found the haven through it and dealt. Every guard
+    /// below was therefore green about a berth at which the shipping game showed <i>"Intel market offline"</i>,
+    /// which is how #1217 survived ten weeks and a played QA pass. Nothing here writes a dock field now: the
+    /// clamp goes on through <c>ClampOntoHaven</c> — the one door the ⚓ press, the honest auto-dock and the
+    /// <c>?dock=</c> boot start all go through — and the port-zone flags are then whatever the tick's own
+    /// <c>UpdateDockStatus</c> says they are at that berth.</para>
+    ///
+    /// <para><see cref="TheDeskDealsWhereTheClampIsTests"/> sweeps the same question over every berth in
+    /// <c>sol.json</c> and pins the rule that makes the old bench unwritable.</para></summary>
     private static string DockTheShipWhereTheDeskWorks(Pages.Map map)
     {
-        ICelestialEphemeris eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
-        CelestialBody haven = eph.Bodies.First(b => b.IsHaven && SpaceSails.Client.Rendering.HavenInterior.HasInterior(b.Id));
+        ICelestialEphemeris sky = Get<ICelestialEphemeris>(map, "_ephemeris");
+        CelestialBody haven = sky.Bodies.First(b =>
+            DockableHavens.IsDockable(b) && SpaceSails.Client.Rendering.HavenInterior.HasInterior(b.Id));
 
-        Set(map, "_docked", true);
-        Set(map, "_dockBodyId", haven.Id);
-        Set(map, "_dockedHavenId", haven.Id);
+        Invoke(map, "ClampOntoHaven", haven, sky.Position(haven.Id, Get<double>(map, "SimTime")), null);
+        Invoke(map, "UpdateDockStatus");
+
+        Assert.Equal(haven.Id, Get<string?>(map, "_dockedHavenId"));
         Assert.True((bool)Invoke(map, "DarkWebCanTrade")!, $"the desk will not deal at {haven.Id}.");
         return haven.Id;
     }

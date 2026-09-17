@@ -52,6 +52,19 @@ public partial class Map
                 continue;
             }
 
+            // #1062 slice 2 · …and the one walk on this floor whose DESTINATION is the captain. Its own
+            // branch for the mirror of that reason: this walk does not end where the route runs out either —
+            // it ends when he has had nothing to look at for long enough to give up.
+            if (w.For is Errand.BehindYou or Errand.AskingTheWrongFloor)
+            {
+                if (StepTheCoat(w, dt, walls, i))
+                {
+                    anybodyLanded = true;
+                }
+
+                continue;
+            }
+
             if (w.For == Errand.Approaching)
             {
                 if (StepAnApproach(bar, w, dt, walls, i))

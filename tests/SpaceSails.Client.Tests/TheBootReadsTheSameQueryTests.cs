@@ -135,6 +135,12 @@ public sealed class TheBootReadsTheSameQueryTests
             ["/map?oldcrew=1"] = "b9691b512a29cb915a96656f49d03369",
             ["/map?nonsense=1&start=there-is-no-such-start&dock=NOT+A+HAVEN&site=-3&floor=0"] = "fd148a7b9398a8e099041739d88d88b0",
             ["/map?park=1"] = "f2f1f4dc2eabc32e963942e7998c77ff",
+            // #759 · …and both of them read EXACTLY what ?park=1 reads, which is the honest answer and worth
+            // the row rather than an exemption: `?parkphase=` writes two fields on the PAGE (which phase was
+            // asked for, and whether the morning door was), and not one of the thirty BootQuery fields this
+            // file renders. The park's clock is jumped where the site is known, long after the parse.
+            ["/map?park=1&parkphase=morning"] = "f2f1f4dc2eabc32e963942e7998c77ff",
+            ["/map?park=1&parkphase=night"] = "f2f1f4dc2eabc32e963942e7998c77ff",
             ["/map?park=1&spread=1"] = "9f8da805410c2e720f2b91f66c8dd3b2",
             ["/map?parkback=1"] = "f2f1f4dc2eabc32e963942e7998c77ff",
             ["/map?parkwalk=1"] = "f2f1f4dc2eabc32e963942e7998c77ff",

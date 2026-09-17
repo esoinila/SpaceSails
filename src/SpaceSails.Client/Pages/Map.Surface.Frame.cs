@@ -347,6 +347,7 @@ public partial class Map
             CheckStaffMessUnderfoot();    // #725: …and the one room down here that is a find rather than a route
             CheckCantinaHallUnderfoot();  // #751: the hall, and the doors along the back of it
             CheckTheParkUnderfoot();      // #759: …and the park behind its glass, which records attendance
+            CheckTheParksOwnDay();        // #759: …and its morning, which arrives at nobody else's hour
             CheckHusksUnderfoot();        // #316: …and what the last visit left lying in the regolith
         }
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar

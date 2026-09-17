@@ -27,11 +27,17 @@ public static partial class HiveInterior
     /// #759 - DRAWS THE PARK: the floor art in panels Core cut, the plate at the gate, what is in each bed
     /// and where it goes when it is picked, the benches, and the one figure on the far one. Every solid thing
     /// in it is already poured. Lays down: consoles, labels, backdrops, benchSeats.
+    ///
+    /// <para>#759 - ...and RETURNS THE LAMP RIG, null on every floor with no park in it. The masts stop
+    /// being scenery here: the gravel's panels are flagged as grow-lit and the posts are handed up as a
+    /// <see cref="DeckPlan.GrowLight"/>, so the frame can ask <see cref="ParkDay"/> what the room looks
+    /// like at the sim-time it is DRAWING rather than at the sim-time the captain walked in. Nothing about
+    /// the level is decided in this file - see that record's docs for why it cannot be.</para>
     /// </summary>
-    private static void DrawThePark(
+    private static DeckPlan.GrowLight? DrawThePark(
         List<DeckPlan.ConsoleSpot> consoles, List<(float X, float Y, string Text)> labels,
         List<DeckPlan.Backdrop> backdrops, List<DeckPlan.BenchSpot> benchSeats,
-        in UndergroundComplex.FloorPlan floor)
+        in UndergroundComplex.FloorPlan floor, string bodyId)
     {
         // ── #759 · THE PARK, DRAWN ─────────────────────────────────────────────────────────────────────
         //
@@ -55,7 +61,10 @@ public static partial class HiveInterior
                     backdrops.Add(new(
                         parkArt, (float)px0, (float)py1,
                         (float)(px1 - px0), (float)(green.Y1 - green.Y0),
-                        UndergroundComplex.HallArtAlpha));
+                        UndergroundComplex.HallArtAlpha,
+                        // #759 · …and it is the one floor in the game that is lit by something other than
+                        // the building. The flag, not the number: see DeckPlan.Backdrop.
+                        GrowLight: true));
                 }
             }
 
@@ -77,7 +86,22 @@ public static partial class HiveInterior
             // offering things would be a park that had noticed you.
             labels.Add((
                 (float)green.FigureX, (float)(green.FigureY + 2.2), green.FigurePlate));
+
+            // #759 · THE MASTS STOP BEING POSTS. Core published them as points and poured them as four
+            // segments apiece the day the park was carved (UndergroundComplex.ParkMastXs); until now that
+            // was the whole of them, and the room's "artificial day" was a word in a comment. The rig goes
+            // up to the plan as WHERE and WHOSE — the site id, because the cycle's phase offset is seeded
+            // off it, and nothing else, because nothing else about the light is a fact about this floor.
+            var rig = new List<(float X, float Y)>(green.Masts.Count);
+            foreach ((double mx, double my) in green.Masts)
+            {
+                rig.Add(((float)mx, (float)my));
+            }
+
+            return new DeckPlan.GrowLight(bodyId, rig);
         }
+
+        return null;
     }
 
     /// <summary>

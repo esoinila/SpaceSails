@@ -167,6 +167,25 @@ public static class DevStarts
             + "you did. Then walk to the bench with the lone figure on it, sit on the free end, and try the "
             + "spread again — half a bench is a rest, and the refusal is the feature (#793).",
             "/map?park=1&spread=1"),
+        // #759 · …AND THE LIGHT KEEPS ITS OWN DAY. The park's grow-cycle is deliberately incommensurate
+        // with the building's watch (ParkDay), so its morning arrives at a different point of the shift
+        // every time and the ONE hour a tester needs cannot be reached by typing a number into ?simhours=:
+        // the answer depends on which site's park you are standing in. Two rows, because the light and the
+        // beat are two different things to look at — and `morning` is the only way to see a CHANGE, since
+        // you cannot walk in on one.
+        new("🌳🌗", "The park at an hour of its own",
+            "B1 of a deep site, inside the park with its lamps at the BOTTOM of their cycle: the gravel "
+            + "reads dim and the five floodlight masts against the far wall are dark heads. Swap the key "
+            + "for day / dusk / dawn and boot again — same room, same plan, different hour, and NOTHING on "
+            + "the glass anywhere says which one it is (#759).",
+            "/map?park=1&parkphase=night"),
+        new("🌳🌅", "…and standing in it when the morning comes up",
+            "The same park, set down five sim-minutes before its own dawn, on a cycle the rest of the "
+            + "building is not having a morning on. Stand still (or take a bench — it makes no difference) "
+            + "and watch the masts come up. One pulse lands, once per captain per site, and one line goes "
+            + "in the field book. Walk out of the gate and back in first and NOTHING lands: you came in "
+            + "again, and the beat is the change (#759).",
+            "/map?park=1&parkphase=morning"),
         // #775 · THE WAY IN, AND THE WAY THE FOOD COMES IN. Owner, walking the new B1: "the bar/canteen
         // needs DOORS ON THE MAIN CORRIDOR — today you have to really look for the way in; a venue's
         // entrance should find YOU." The row that proves that has to start OUTSIDE the room, which is the

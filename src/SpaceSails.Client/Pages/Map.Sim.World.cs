@@ -35,7 +35,12 @@ public partial class Map
     /// </summary>
     private sealed class BootQuery
     {
-        public string ScenarioName = "sol";
+        /// <summary>#1216 · The world a boot that names no scenario — or names one that does not exist —
+        /// ends up in. Stated once, because the default and the FALLBACK have to be the same word: two
+        /// spellings of "sol" is the boot silently falling back to a world nobody shipped.</summary>
+        public const string DefaultScenario = "sol";
+
+        public string ScenarioName = DefaultScenario;
         public string? StartId;
         public string? DockCheat; // /map?dock=<haven-id>: boot already clamped onto ANY dockable haven (#288)
         public int? FuelCheat; // /map?fuel=N: boot with N reaction-mass pulses in the tank (#288)
@@ -277,6 +282,13 @@ public partial class Map
         SayTheBootStageCost("the URL read");
 
         ScenarioDefinition scenario = await FetchTheScenarioAsync(q, abandoned);
+
+        // #711 slice 2 · THE GROUND A DEAD DROP MAY NAME IS THE SCENARIO'S OWN, taken HERE — before the
+        // cheats hang their rocks off the berth. Every one of those appended bodies is a landable moon, and
+        // a pool that counted them would move every taken parcel's destination for a boot that used one,
+        // which is a desk row lying about a job the captain has already accepted.
+        RememberTheGroundADropMayName(scenario);
+
         scenario = AppendTheBodiesTheCheatsAskFor(scenario, q);
         SayTheBootStageCost("the scenario fetched and parsed");
 

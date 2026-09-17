@@ -278,16 +278,7 @@ public partial class Map
             return;
         }
 
-        // Cached against (body, floor), the hall poll's own reason: Build lays a whole floor out, and
-        // running it inside the step loop would be a generator call every tick for the whole excursion.
-        if (_parkFor != (ex.Stop.Body.Id, ex.Floor))
-        {
-            _parkFor = (ex.Stop.Body.Id, ex.Floor);
-            _park = UndergroundComplex.Build(
-                ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Park;
-        }
-
-        if (_park is not { } green || !green.Contains(_avatarX, _avatarY))
+        if (TheGreenOnThisFloor(ex) is not { } green || !green.Contains(_avatarX, _avatarY))
         {
             return;
         }
@@ -295,6 +286,28 @@ public partial class Map
         ex.HiveParkNoteFiled = true;
         ShowAndFile(UndergroundComplex.ParkNote, UndergroundComplex.ParkGlyph);
         RequestVaultSave();
+    }
+
+    /// <summary>
+    /// #759 · The park on the floor the captain is standing on, or null. Cached against (body, floor), the
+    /// hall poll's own reason: <c>Build</c> lays a whole floor out, and running it inside the step loop
+    /// would be a generator call every tick for the whole excursion.
+    ///
+    /// <para>It is a method rather than three lines inside the attendance poll because it has a SECOND
+    /// reader now — #759's grow-cycle beat, <c>Map.ParkDay.cs</c> — and the attendance poll stands down for
+    /// good the moment it has fired. One cache, asked by both, or the second reader would be holding the
+    /// park of whichever floor the first one last looked at.</para>
+    /// </summary>
+    private UndergroundComplex.Park? TheGreenOnThisFloor(SurfaceExcursion ex)
+    {
+        if (_parkFor != (ex.Stop.Body.Id, ex.Floor))
+        {
+            _parkFor = (ex.Stop.Body.Id, ex.Floor);
+            _park = UndergroundComplex.Build(
+                ex.Stop.Body.Id, ex.Floor, MoonSurface.ExpeditionField()).Park;
+        }
+
+        return _park;
     }
 
     // ── #709 · STOPPING AT SOMEBODY'S TABLE ──────────────────────────────────────────────────────────────

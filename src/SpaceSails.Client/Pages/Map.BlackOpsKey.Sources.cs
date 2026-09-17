@@ -39,13 +39,26 @@ public sealed partial class Map
     /// being reached through. Both are ephemeris body ids, which is what lets the two share one tag.</summary>
     private bool ThisPortHasAlreadyDealtAKey(string? portId) =>
         portId is null
-        || _roomsTurnedOver.Contains(BlackOpsKey.ThePortHasDealtOne(portId, BlackOpsKey.FenceWindow(SimTime)));
+        || _roomsTurnedOver.Contains(BlackOpsKey.ThePortHasDealtOne(portId, BlackOpsKey.FenceWindow(SimTime)))
+
+        // #1062 slice 2 · …OR SOMEBODY HAS BEEN THROUGH IT AHEAD OF THE CAPTAIN. The burn a tail costs is
+        // spent here and nowhere else, because this is already the one question both of a port's quiet verbs
+        // ask before they deal anything — and those two agreeing about what a port has left is the whole
+        // reason #535 wrote it this way. Neither row is ever drawn to be refused, so the captain is never
+        // told "the fence has nothing because you were followed": the row is simply not there, and the PLACE
+        // says the rest of it when he walks in (TheBurnIsToldHere).
+        || ThisPlaceWasWalkedFirst(portId);
 
     /// <summary>#535 slice 2 · Strike this port off for this watch. Called by BOTH sources, so neither can
-    /// forget what the other did.</summary>
+    /// forget what the other did.
+    ///
+    /// <para>#1062 slice 2 · …and it is therefore also the one place that knows the captain has just done
+    /// something at this port that says where he goes. If there is a man on the floor behind him while he
+    /// does it, the place is burned — silently, deterministically, and told later at the place itself.</para></summary>
     private void ThisPortHasNowDealtAKey(string portId)
     {
         _roomsTurnedOver.Add(BlackOpsKey.ThePortHasDealtOne(portId, BlackOpsKey.FenceWindow(SimTime)));
+        TheyBurnThisPlaceIfSomebodyIsWatching(portId);
     }
 
     /// <summary>

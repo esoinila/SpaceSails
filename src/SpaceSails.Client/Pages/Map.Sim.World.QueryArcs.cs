@@ -67,6 +67,30 @@ public partial class Map
                 _ => null,
             };
         }
+        else if (pair.StartsWith("tailed=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #1062 slice 2 dev cheat: /map?tailed=1 puts a man behind the captain at whatever berth he docks
+            // at, whatever the outfit's folder says; /map?tailed=0 keeps the concourse empty.
+            //
+            // Same argument as ?rep= and ?kolt= above, and the sharpest case of the three. What puts him
+            // there is #715 heat at the band where an outfit wants a face, and an honest route to that band
+            // is a whole femme-fatale walk-in or a compromising chip sold at a dark-web desk — several
+            // voyages, through content that has its own rarity on top. Without a lever the entire half of
+            // #1062 (the chair that faces the door, the same coat through two doorways, the run of ticks that
+            // shakes him, the line, the note) is unreachable in a session: "a scene nobody can reach on
+            // demand is a scene that ships broken".
+            //
+            // It forces WHETHER and never WHO or WHAT: where he stands, how near he keeps, what makes him
+            // findable, what it takes to lose him and every word said about any of it are the ones a captain
+            // gets. Combine freely: /map?tailed=1&ashore=1&dock=selene-gate
+            string candidate = Uri.UnescapeDataString(pair["tailed=".Length..]).ToLowerInvariant();
+            _tailedCheat = candidate switch
+            {
+                "1" or "true" or "yes" or "now" => true,
+                "0" or "false" or "no" or "never" => false,
+                _ => null,
+            };
+        }
         else if (pair.StartsWith("kolt=", StringComparison.OrdinalIgnoreCase))
         {
             // #1061 beat 2 dev cheat: /map?kolt=1 puts Brem Kolt on this ground whatever his rota says;
@@ -295,6 +319,17 @@ public partial class Map
             string candidate = Uri.UnescapeDataString(pair["land=".Length..]).ToLowerInvariant();
             _landCheat = candidate.Length > 0;
             _landBodyCheat = candidate is "1" or "true" or "yes" ? null : candidate;
+        }
+        else if (pair.StartsWith("parcel=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #711 slice 2 dev cheat: /map?parcel=1 boots with an UNLISTED PARCEL already in the pocket and
+            // rides ?land='s own descent down onto the ground that parcel is actually for — so the job row,
+            // the walk, the DIG HERE press and the delivery are one URL instead of a berth re-roll and a
+            // watch of waiting. It forges nothing: the parcel is minted the way the DESK mints one and the
+            // cheat chooses only WHICH WINDOW, looking for a drop this berth can reach. Documented in
+            // docs/testing-links-2026-09-17.md.
+            string parcelWanted = Uri.UnescapeDataString(pair["parcel=".Length..]).ToLowerInvariant();
+            _parcelCheat = parcelWanted is "1" or "true" or "yes";
         }
         else
         {
