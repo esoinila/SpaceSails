@@ -229,10 +229,18 @@ public class TheSkyIsTheSameSkyOneShipAtATimeTests
         //
         // Red proof: replace RunSliceBySlice's body with two half-duration Run calls and this reddens on
         // every slice size, on SimTime first.
+        //
+        // THE DURATION IS NOT A ROUND ONE, AND THAT IS THE WHOLE TEST. The first draft of this law used a
+        // flat forty days — 480 steps of 7,200 s, exactly — and the two-half-Runs red PASSED it, because
+        // two halves of an exact multiple are themselves exact multiples and the step count comes out the
+        // same. A law that cannot fail on the wrong implementation is not a law, so the duration now has an
+        // awkward tail on it, which is what a real catch-up (`baseSimTime - virtualDeparture`, an arbitrary
+        // double) always has: the halves then land mid-step, the second run's end time is computed off an
+        // accumulated clock, and the run takes 482 steps where it should take 481.
         CircularOrbitEphemeris sol = Sol();
         NpcShip hauler = TrafficSchedule.Generate(sol, BootSeed, BootCount)[0];
         var sim = new Simulator(sol, timeStepSeconds: 7200);
-        double duration = 40 * 86400;
+        double duration = (40 * 86400) + 1234.5;
 
         foreach (ManeuverPlan? plan in new[] { hauler.Plan, null })
         {
