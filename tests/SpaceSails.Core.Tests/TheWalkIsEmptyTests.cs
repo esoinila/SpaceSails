@@ -278,33 +278,91 @@ public sealed class TheWalkIsEmptyTests
     // ── 3 · THE WAIT ────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// #1199 · THE WAIT IS A FRACTION OF THE ROOM'S OWN WATCH AND NOT A NUMBER OF ITS OWN. The game has one
-    /// statement of "long enough to stop expecting somebody through a doorway" and this is it, read from the
-    /// other side.
+    /// #1199 · THE WAIT IS A FRACTION OF THE ROOM'S OWN WATCH AND NOT A NUMBER OF ITS OWN.
     ///
-    /// <para><b>A value assertion cannot carry this one, and that was measured.</b> A wait written as the
-    /// literal <c>3600.0</c> is the same number as a quarter of a watch TODAY, so
-    /// <c>Assert.Equal(Escort.PatienceSeconds, …)</c> stayed green on exactly the revert this guard exists
-    /// to catch. What is wrong with a literal is not its value, it is that it stops meaning a quarter of a
-    /// watch the day a watch changes length — so the thing asserted has to be the DERIVATION, which lives in
-    /// the source. Both halves are here: the numbers agree, and the expression that makes them agree is the
-    /// rota's own.</para>
+    /// <para><b>A value assertion cannot carry this one, and that was measured.</b> A wait written as a
+    /// literal is the same number as its fraction on the day it ships, so a plain
+    /// <c>Assert.Equal(…Seconds, …)</c> stayed green on exactly the revert this guard exists to catch. What
+    /// is wrong with a literal is not its value, it is that it stops meaning anything about a watch the day
+    /// a watch changes length — so the thing asserted has to be the DERIVATION, which lives in the source.
+    /// Both halves are here: the numbers agree, and the expression that makes them agree is the rota's own.</para>
     ///
-    /// <para><b>Revert that reddened it:</b> <c>TheWaitSeconds => 3600.0</c> — <i>"the wait is a number of
+    /// <para><b>#1199, second pass — WHOSE fraction it is.</b> It was the escort's
+    /// (<see cref="Escort.PatienceFraction"/>), read from the other side of the same fiction, and the owner
+    /// played it at warp 1 and said to shorten it. It is now the walk's own — see
+    /// <see cref="TheWaitCanBeSatThroughAtWarpOne"/> for the band it is chosen against and
+    /// <see cref="TheEscortsOwnPatienceDidNotMove"/> for the half of this change that is about everything it
+    /// did NOT touch.</para>
+    ///
+    /// <para><b>Reverts that reddened it:</b> <c>TheWaitSeconds => 180.0</c> — <i>"the wait is a number of
     /// its own"</i>.</para>
     /// </summary>
     [Fact]
     public void TheWaitIsAWatchFractionAndNeverASecondConstant()
     {
-        Assert.Equal(Escort.PatienceSeconds, ObservationWalk.TheWaitSeconds);
-        Assert.Equal(PatronRota.WatchSeconds * Escort.PatienceFraction, ObservationWalk.TheWaitSeconds);
+        Assert.Equal(PatronRota.WatchSeconds * ObservationWalk.WaitFraction, ObservationWalk.TheWaitSeconds);
         Assert.True(ObservationWalk.TheWaitSeconds > 0);
         Assert.True(ObservationWalk.TheWaitSeconds < PatronRota.WatchSeconds,
             "a wait as long as a whole watch is not a fraction of one — the room would forget first.");
 
         string src = File.ReadAllText(
             Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Core", "ObservationWalk.cs"));
-        Assert.Contains("TheWaitSeconds => Interior.Escort.PatienceSeconds;", src, StringComparison.Ordinal);
+        Assert.Contains(
+            "TheWaitSeconds => Interior.PatronRota.WatchSeconds * WaitFraction;", src, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// #1199 · <b>IT CAN BE SAT THROUGH AT WARP 1, AND THAT IS THE WHOLE OF THE OWNER'S ASK.</b>
+    ///
+    /// <para>Every NPC-patience clock in this game is SIM time, and warp 1 is one sim second per second of
+    /// the player's own evening — so the wall-clock reading of this constant is not a derived curiosity, it
+    /// is the thing the owner played and the thing he asked to change. A BAND and not a point: long enough
+    /// that the captain walks the tube, gets out to the rail and stands there a moment before the game admits
+    /// nobody is coming, and short enough to be sat through rather than warped past.</para>
+    ///
+    /// <para><b>And where it is spent.</b> The walk is only dealt after last call
+    /// (<see cref="Egress.LastCallFraction"/> of the shift), which leaves a quarter of a watch on the far
+    /// side of it. The old wait was itself a quarter-watch — it filled that entire remainder exactly, which
+    /// is the arithmetic that made an hour of wall clock the ordinary case rather than the worst one.</para>
+    ///
+    /// <para><b>Red:</b> put the wait back on <see cref="Escort.PatienceFraction"/> and both assertions here
+    /// redden — 3,600 s of wall clock against a 300 s ceiling, and a wait ten times the room it is spent
+    /// in.</para>
+    /// </summary>
+    [Fact]
+    public void TheWaitCanBeSatThroughAtWarpOne()
+    {
+        const double simSecondsPerWallSecondAtWarpOne = 1.0;
+        double wallClockSeconds = ObservationWalk.TheWaitSeconds / simSecondsPerWallSecondAtWarpOne;
+
+        Assert.InRange(wallClockSeconds, 90, 300);
+
+        double afterLastCall = PatronRota.WatchSeconds * (1.0 - Egress.LastCallFraction);
+        Assert.True(ObservationWalk.TheWaitSeconds * 10 < afterLastCall,
+            $"the wait is {ObservationWalk.TheWaitSeconds} s and the room has only {afterLastCall} s left "
+            + "after last call — a wait that fills the window it is spent in is a beat the watch ends before "
+            + "the captain does.");
+    }
+
+    /// <summary>
+    /// #1199 · <b>AND NO OTHER PATIENCE CLOCK MOVED WITH IT.</b> The walk's wait used to BE
+    /// <see cref="Escort.PatienceSeconds"/>, so the cheapest way to shorten it was to turn
+    /// <see cref="Escort.PatienceFraction"/> down — and that would have quietly given every escort in the
+    /// game three minutes of patience instead of an hour, out of a lane whose whole subject is one tube on
+    /// one station. This is the law that says it did not happen.
+    ///
+    /// <para><b>Red:</b> <c>PatienceFraction = ObservationWalk.WaitFraction</c> — the shortcut — reddens
+    /// here, and <see cref="TheWaitIsAWatchFractionAndNeverASecondConstant"/> beside it stays green, which is
+    /// the argument for this test existing at all.</para>
+    /// </summary>
+    [Fact]
+    public void TheEscortsOwnPatienceDidNotMove()
+    {
+        Assert.Equal(0.25, Escort.PatienceFraction);
+        Assert.Equal(PatronRota.WatchSeconds * 0.25, Escort.PatienceSeconds);
+        Assert.True(ObservationWalk.WaitFraction < Escort.PatienceFraction,
+            "the walk is supposed to be the SHORT one — if it is not, this lane did nothing.");
+        Assert.NotEqual(Escort.PatienceSeconds, ObservationWalk.TheWaitSeconds);
     }
 
     // ── 4 · SPENT ONCE, AND IT RIDES THE FILE ───────────────────────────────────────────────────────────
