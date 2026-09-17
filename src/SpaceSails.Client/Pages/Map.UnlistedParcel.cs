@@ -69,10 +69,15 @@ public sealed partial class Map
 
     /// <summary>#711 · Is there a parcel to be had across this desk? Drawn where it applies rather than
     /// shown and denied (#212): the desk has to be open, the captain must not already be carrying one (there
-    /// is one per hull at a time), and the pocket has to have room for it.</summary>
+    /// is one per hull at a time), and the pocket has to have room for it.
+    ///
+    /// <para>#711 slice 2 · …and nobody has anything for a hull somebody's box was just taken off
+    /// (<see cref="TheDeskHasNothingForThisHull"/>). It is the same shape as the three clauses above it, and
+    /// that is the point: an ABSENCE, in the row's own vocabulary, with no sentence attached to it.</para></summary>
     private bool ParcelOnOffer() =>
         DarkWebCanTrade()
         && !UnlistedParcel.Held(_satchel)
+        && !TheDeskHasNothingForThisHull()
         && TheParcelOnThisDesk() is { } parcel
         && Core.Satchel.CanTake(_satchel, parcel);
 

@@ -155,3 +155,46 @@ Choose the place you die in by combining: `?nopattern=1&death=collector` (the BU
   it, which is what a plate is for.
 - **Both shard texts.** `holders-tell` and `adjuster-tell` read exactly as they always did; the two
   sentences simply exist once now, as consts the shards quote back.
+
+---
+
+## 5 · The box has somewhere to be (#711 slice 2, with #319 and #794)
+
+Slice 1 ([PR #1196](https://github.com/esoinila/SpaceSails/pull/1196)) shipped the **UNLISTED PARCEL** and
+the fine that closes a folder, and said what it was still missing out loud: *"what the parcel is FOR — no
+delivery, no payer yet, so a captain never inspected has carried a box for nothing."* This is that, on the
+owner's own rail from [#794](https://github.com/esoinila/SpaceSails/issues/794) — the counterparty never
+shows a face, the goods are physical, and the drop is the delivery.
+
+Nothing new is saved for any of it. The job is the parcel's own id; the delivery is
+[#319](https://github.com/esoinila/SpaceSails/issues/319)'s hole; the pending payment **is** that hole, due
+off its own burial stamp; and the quiet after a confiscation rides the same durable register the fence's
+one-key-per-window already rides.
+
+| what | link | what to look for |
+| --- | --- | --- |
+| **The whole run in one URL** (#711 slice 2, this PR) | [`?dock=the-tilt&parcel=1`](https://esoinila.github.io/SpaceSails-play/map?dock=the-tilt&parcel=1) — boots clamped at The Tilt with an **UNLISTED PARCEL** already in the pocket, and rides `?land=`'s own descent down onto **the ground that parcel is actually for**. The cheat forges nothing: it mints real parcels the way the desk mints them and only chooses which *window*, looking for a drop this berth can reach. A pulse names the ground it picked. | You are standing on the regolith with the box. Walk out, press **⛏ DIG HERE** and bury it (satchel → *BURY A THING FROM THE SATCHEL* is the row the shuttle door offers; the cheat lands you with the box already on you). The dig's own pulse reads exactly as it always has — *"⛏ In the ground — 1 thing from the satchel off the books. The ✗ marks this spot. …"* — and then **one sentence more**: *"In the ground, where somebody who has never seen your face will know to dig."* Open the satchel's **NOTES**: one entry, in the captain's own hand, *"a parcel, put in the ground at Phobos · The Ridge Camp for nobody you have met"*, filed under that place on **THREADS**. |
+| **The job on the row it came across** (#711 slice 2) | any berth with the desk open — [`?dock=the-tilt&parcel=1`](https://esoinila.github.io/SpaceSails-play/map?dock=the-tilt&parcel=1) then fly back up, or take one by hand at **Comms → 🕸 Dark web market** | While you carry one, the desk's fourth row stops offering and starts **instructing**: the plate, then *"No name. A moon, a bearing, a depth. Put it in the ground and leave."*, then one functional line — `📍 PHOBOS · THE RIDGE CAMP`. **No price, then or now.** No new panel, no quest entry, no tab: the job lives on the row the box came across and nowhere else. |
+| **The money, with nobody's name on it** (#711 slice 2) | bury it, then **warp** — the lag is **2–4 watches** of sim time (8–16 h), seeded off that parcel — then dock anywhere and open **Comms → 🕸 Dark web market** | The instant the desk opens: *"💳 A payment with no sender. Somebody dug. +NNN cr"*, and the purse has it. Open the ledger's hoard: **the chest is gone from the ground.** Fly back out to that site and walk to where the ✗ was — there is a **disturbed-ground mark** there now, dated by #316's own three bands (*"Still smoking."* → *"…weeks old."*) off the moment it came due, not off the moment you were told. Nothing anywhere says who held the shovel. |
+| **…and it only comes once** (#711 slice 2) | close the desk and open it again | Nothing. There is no flag to clear: the hole was the record, and somebody dug it. Two drops that came due together are two payments on two visits, one sentence each. |
+| **The wrong moon is just a hole** (#711 slice 2 / #319) | [`?dock=the-tilt&parcel=1`](https://esoinila.github.io/SpaceSails-play/map?dock=the-tilt&parcel=1), then at the boarding panel pick a **different site** before you go down (or fly to another moon) | Bury it there and the pulse is the ordinary one — no extra sentence, no note, no money, ever. The ✗ is on the map, the odds are the chest's own, and you can walk back and dig your box up. A parcel in the wrong ground is a buried parcel, which is exactly what it is. |
+| **A man with a form took it, and the work dries up** (#711 slice 1 + 2) | [`?dock=the-tilt&parcel=1`](https://esoinila.github.io/SpaceSails-play/map?dock=the-tilt&parcel=1) → walk into a **HIVE** floor with the box on you and let a round stop you (slice 1's beat) | The card is slice 1's, unchanged: fined, filed, and the box carried off. Then fly up and open the dark-web desk: **the parcel row is simply not there.** Not greyed, not refusing, not explaining — absent, for two to four watches seeded off the box that was lost. Nothing anywhere says why. Come back a day later and the row is back. |
+
+**Reading the clock while you play.** Both lags are **sim** time and both are measured in the four-hour
+watch every roster, patience and fence in this game already turns on. The warp slider is the fast-forward;
+there is nothing to sit through.
+
+**And the half that must look exactly the same.**
+
+- **Every other buried thing.** Coin, cargo, the chip, a folded sheet, a round: identical pulse, identical
+  ✗, identical `CacheSafety` line, identical return dig. There is one extra sentence on exactly one hole in
+  the sky and nothing else about the shovel moved.
+- **Slice 1's whole beat.** The desk row that hands one over, the look card, the fine, the tell, the folder
+  that closes, the outfit that keeps looking — all verbatim and all untouched. The only new clause on the
+  offer is the absence above.
+- **The dark-web desk's other three rows.** The chip's buyer, the inspector's card and the fence's key are
+  priced, worded and gated exactly as they were; the job row carries no price because no coin moves *to*
+  the desk.
+- **Every other death.** A captain who dies with an undelivered box in his coat wakes with it still in his
+  coat, and a delivery already in the ground still pays — to whoever is holding the licence. Nothing was
+  written for that: the wake has never reached the satchel or the hoard, and the payer never saw a face.

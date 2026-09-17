@@ -320,6 +320,17 @@ public partial class Map
             _landCheat = candidate.Length > 0;
             _landBodyCheat = candidate is "1" or "true" or "yes" ? null : candidate;
         }
+        else if (pair.StartsWith("parcel=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #711 slice 2 dev cheat: /map?parcel=1 boots with an UNLISTED PARCEL already in the pocket and
+            // rides ?land='s own descent down onto the ground that parcel is actually for — so the job row,
+            // the walk, the DIG HERE press and the delivery are one URL instead of a berth re-roll and a
+            // watch of waiting. It forges nothing: the parcel is minted the way the DESK mints one and the
+            // cheat chooses only WHICH WINDOW, looking for a drop this berth can reach. Documented in
+            // docs/testing-links-2026-09-17.md.
+            string parcelWanted = Uri.UnescapeDataString(pair["parcel=".Length..]).ToLowerInvariant();
+            _parcelCheat = parcelWanted is "1" or "true" or "yes";
+        }
         else
         {
             return false;

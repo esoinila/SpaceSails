@@ -30,13 +30,16 @@ public sealed class CircularOrbitEphemeris : ICelestialEphemeris
     public static CircularOrbitEphemeris FromScenario(ScenarioDefinition scenario) =>
         new(scenario.Bodies.Select(b => new CelestialBody(
             b.Id, b.Name, b.ParentId, b.Mu, b.BodyRadiusM, b.OrbitRadiusM, b.OrbitPeriodS, b.InitialPhaseRad,
-            ParseKind(b.Kind), b.Haven, ParseAtmosphere(b.Atmosphere), b.Eccentricity, b.ArgPeriapsisRad)),
+            KindOf(b.Kind), b.Haven, ParseAtmosphere(b.Atmosphere), b.Eccentricity, b.ArgPeriapsisRad)),
             scenario.Traffic);
 
     private static Atmosphere? ParseAtmosphere(AtmosphereDefinition? atm) =>
         atm is null ? null : new Atmosphere(atm.RefDensity, atm.ScaleHeightM, atm.TopAltitudeM);
 
-    private static BodyKind ParseKind(string kind) => kind switch
+    /// <summary>What a scenario file's <c>kind</c> word means, and it is this one answer. Public since #711
+    /// slice 2, which reads the SCENARIO rather than the built sky (the cheats append bodies to the sky) and
+    /// must not grow a second opinion about which word means a moon.</summary>
+    public static BodyKind KindOf(string kind) => kind switch
     {
         "moon" => BodyKind.Moon,
         "station" => BodyKind.Station,

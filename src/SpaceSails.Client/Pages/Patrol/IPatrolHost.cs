@@ -140,6 +140,13 @@ public partial class Map
         /// (<c>BustedRule.MinBerthFeeCr</c>) belongs to a confiscation, not to a form.</summary>
         void PayTheFine(int credits);
 
+        /// <summary>#711 slice 2 · The box has been carried off, so nobody has anything for this hull for a
+        /// deterministic while (<c>ParcelDrop.QuietWatches</c>, seeded off the parcel that was lost). The
+        /// page writes it into the captain's own durable register of ground already gone through; a round
+        /// has no register of its own and must not grow one. What the captain meets is an ABSENCE at the
+        /// desk — never a refusal, never a greyed row, and never a sentence about it.</summary>
+        void TheDeskHasNothingForAWhile(string parcelId);
+
         // ── WHAT IS IN FRONT OF THE CAPTAIN ───────────────────────────────────────────────────────────
 
         /// <summary>The card standing in front of the captain, or null. Read as a GATE by everything that
