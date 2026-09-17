@@ -102,7 +102,16 @@ public partial class Map
             Math.Clamp(_forcedSiteIndex ?? 0, 0, LandingSites.For(target.Body.Id).Count - 1)];
         // Bring the sling down loaded — a cheat that lands you empty-handed made [T] look broken
         // (owner: "why are there no sentries to plant?" / "Button T stopped working?").
-        await BeginSurfaceExcursion(target, ShuttleExcursion.Pack(0, _credits, []), botsToBring: 2, site: site);
+        //
+        // #1227 · …AND WITH THE ONE THING OUT OF THE COAT THE BOARDING CARD WOULD HAVE ASKED ABOUT. This
+        // descent skips the boarding panel by design, and that panel is where the shipped path makes the pick
+        // the whole of #711 slice 2 turns on — `🎒 BURY A THING FROM THE SATCHEL → ○ 📦 UNLISTED PARCEL`. So
+        // `?parcel=1` landed a tester with the box in his pocket and nothing in the shovel's hand, and `E` on
+        // the regolith PROBED instead of burying. The pick rides `Pack`, the one builder both routes go
+        // through, so the cheat's chest is weighed by the same rule, carried by the same excursion and spent
+        // by the same shovel. It is null on every other landing in the game, which packs what it always did.
+        await BeginSurfaceExcursion(
+            target, ShuttleExcursion.Pack(0, _credits, [], _parcelForTheHole), botsToBring: 2, site: site);
 
         // #470: and put the boots OUT ON THE GROUND, not at the tube mouth. The cheat exists so the surface
         // can be playtested at all; landing at the threshold still left a long walk down-field before

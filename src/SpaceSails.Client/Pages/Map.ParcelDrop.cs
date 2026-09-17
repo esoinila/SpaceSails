@@ -178,6 +178,23 @@ public sealed partial class Map
     /// for. Documented in <c>docs/testing-links-2026-09-17.md</c>.</summary>
     private bool _parcelCheat;
 
+    /// <summary>
+    /// #1227 · <b>…AND THE BOX THE SHOVEL IS HOLDING, not merely the one in the pocket.</b>
+    ///
+    /// <para>The cheat put the parcel in the satchel and rode <c>?land=</c>'s descent — and that descent
+    /// never opens the shuttle's boarding card, which is where the shipped path makes the one choice the
+    /// whole beat turns on: <c>🎒 BURY A THING FROM THE SATCHEL → ○ 📦 UNLISTED PARCEL</c>. So the box went
+    /// down as pocket contents with nothing picked, and <kbd>E</kbd> on the regolith PROBED
+    /// (<i>"Nothing but regolith down there"</i>) instead of burying. A tester who trusted the link concluded
+    /// the burial was broken; it is not, and the family's own law is that a cheat which shows a tester a
+    /// different scene is worse than no cheat at all.</para>
+    ///
+    /// <para>It is a POINTER at a row that stays in the satchel, exactly as the chooser's pick is: the
+    /// descent hands it to <see cref="ShuttleExcursion.Pack"/>, the one builder both routes go through, so
+    /// the cheat's chest is weighed by the same rule and spent by the same shovel. Null is every other boot
+    /// in the game.</para></summary>
+    private Satchel.Item? _parcelForTheHole;
+
     /// <summary>How many consecutive windows the cheat will mint a parcel on looking for one whose ground
     /// this berth can actually reach. A parcel's destination is drawn off its own id and its id carries the
     /// watch, so successive windows are successive draws — the cheat picks a WINDOW and never a
@@ -231,6 +248,8 @@ public sealed partial class Map
             }
 
             _satchel = [.. Satchel.Add(_satchel, parcel)];
+            // #1227 · …and the pick the boarding card would have made, because this descent never raises one.
+            _parcelForTheHole = parcel;
             _landBodyCheat = where.BodyId;
             _forcedSiteIndex = where.SiteIndex;
             _landCheat = true;
