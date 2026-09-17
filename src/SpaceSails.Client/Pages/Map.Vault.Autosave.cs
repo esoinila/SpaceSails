@@ -28,9 +28,17 @@ public partial class Map
     // single write, so a burst (dock → payment → deck) costs one serialize, not three.
     private bool _autosaveDirty;
 
+    /// <summary>#640 · THE RUN IS OVER AND THE PEN IS DOWN. Set the moment a captain with no pattern on
+    /// file dies (<c>Map.Combat.Busted.Wake</c>): from there the autosave writes nothing more. The last
+    /// autosave this thread ever wrote is the one from before the death, which is honest — it is the moment
+    /// the captain was last alive — and the alternative is worse than untidy: a rolling write landing after
+    /// the death would stamp the registry and hand the front door a run whose captain does not exist.</summary>
+    private bool _threadIsOver;
+
     /// <summary>Request an autosave (debounced). Wired to every durable event: dock, undock, payment,
-    /// boarding resolution, bury/dig, and every bank transaction.</summary>
-    private void RequestVaultSave() => _autosaveDirty = true;
+    /// boarding resolution, bury/dig, and every bank transaction — and ignored once the thread is over
+    /// (#640), because a closed thread has nothing left to record.</summary>
+    private void RequestVaultSave() => _autosaveDirty = !_threadIsOver;
 
     private void FlushVaultSaveIfDirty()
     {

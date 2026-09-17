@@ -60,9 +60,13 @@ public partial class Map
         // SurfaceEnd (Evening wind #20): a nerve-overdraw death out on the regolith — no collector, no dice.
         // Its own freeze-beat (the cause art + the place-dependent line) before the shared resurrection.
         // #535 · NoContactLogged is the fifth exit: a key was presented and the encounter never happened.
+        // #640 · NoRestore is the page the card had never turned to: the death after a captain purged their
+        // OWN pattern out of a cold-archive node, where the clinic does not play and nobody comes. It is the
+        // one terminal stage in the enum — every other death stage is a page in a chain that ends at
+        // Resurrected, and this one ends the run.
         // Appended, like every stage that has joined this list before it — the markup switches on these arms
         // and several guards name one by hand, so a stage slipped into the middle would re-page all of them.
-        public enum Stage { Demand, Confiscated, BribedOff, ResistWon, ResistLost, Bolivia, Fled, FreezeFrame, Resurrected, Impact, SurfaceEnd, NoContactLogged }
+        public enum Stage { Demand, Confiscated, BribedOff, ResistWon, ResistLost, Bolivia, Fled, FreezeFrame, Resurrected, Impact, SurfaceEnd, NoContactLogged, NoRestore }
 
         public required string HunterId { get; init; }
         public required string HunterCallsign { get; init; }

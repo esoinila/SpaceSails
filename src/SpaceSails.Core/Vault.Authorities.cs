@@ -55,6 +55,15 @@ public sealed record NebulaSection
     /// re-fires on a reload — the analog of <see cref="NerveSection.MonolithSeen"/>. Defaults false (a pre-#422
     /// file, or one saved before the two arcs met).</summary>
     public bool ConvergenceSeen { get; init; }
+
+    /// <summary>#640 · True once this captain's lineage pulled the purge handle on a node holding their OWN
+    /// pattern (<see cref="NebulaProgress.PolicyClosed"/>). Nebula has nothing on file, so the next death is
+    /// the last one — which makes this the most consequential bit in the section, and the reason it is
+    /// STORED rather than re-derived: nothing else in a save records which hull's handle was pulled, and the
+    /// wrecks are seeded scenery that a reload re-rolls into being. Defaults false: every save written
+    /// before 2026-09-17, and every captain who left the handle alone or pulled it on somebody else's
+    /// jar.</summary>
+    public bool PolicyClosed { get; init; }
 }
 
 // ── The resume berth (owner's law): where the pirate wakes, always docked. ──

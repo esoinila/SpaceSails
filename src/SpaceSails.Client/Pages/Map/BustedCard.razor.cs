@@ -46,6 +46,10 @@ public partial class BustedCard
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
     [Parameter] public Func<int, string> HeatFlames { get; set; } = default!;
     [Parameter] public string HotGlossTitle { get; set; } = default!;
+    /// <summary>#640 · The way off the NoRestore panel, which is the one death page that does not turn to
+    /// another: it closes the card and opens the front door, because the thread it belonged to is over.</summary>
+    [Parameter] public Action LeaveTheClosedThread { get; set; } = default!;
+
     [Parameter] public Action OpenLogbookFromDeath { get; set; } = default!;
     [Parameter] public Func<Action, Task> PressAndRefocus { get; set; } = default!;
     [Parameter] public BustedEncounter bust { get; set; } = default!;

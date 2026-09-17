@@ -99,7 +99,11 @@ public sealed class TheKeyLeavesNoTraceTests
     }
 
     /// <summary>The stage really is the fifth exit's own, and it is APPENDED — every arm that was on this
-    /// enum before it keeps the ordinal several guards in this suite name by hand.</summary>
+    /// enum before it keeps the ordinal several guards in this suite name by hand.
+    ///
+    /// <para>#640 appended a further arm after it (<c>NoRestore</c>, the death where nobody comes), which
+    /// is exactly what appending is supposed to look like: this guard's subject did not move, so it is
+    /// asked for by POSITION rather than by being last. Nothing named an ordinal changed.</para></summary>
     [Fact]
     public void TheStageIsAppendedAndNotSlippedIntoTheMiddle()
     {
@@ -107,8 +111,9 @@ public sealed class TheKeyLeavesNoTraceTests
             .GetNestedType("Stage")!;
         string[] arms = Enum.GetNames(stage);
 
-        Assert.Equal("NoContactLogged", arms[^1]);
         Assert.Equal("Demand", arms[0]);
+        Assert.Equal("NoContactLogged", arms[11]); // the fifth exit, at the ordinal it was appended at
+        Assert.Equal("NoRestore", arms[^1]);       // #640's, appended after it and moving nothing
     }
 
     // ── The burn ────────────────────────────────────────────────────────────────────────────────────────

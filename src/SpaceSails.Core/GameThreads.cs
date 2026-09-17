@@ -64,6 +64,28 @@ public sealed record GameThreadInfo
     /// wall of fame is per-life (owner #398, a quiet Fail Forward beat). Appended by
     /// <see cref="GameThreadRegistry.AddSelfie"/>, deduped by <see cref="CapturedSelfie.SpotId"/>.</summary>
     public IReadOnlyList<CapturedSelfie> Selfies { get; init; } = [];
+
+    // ── #640 · AND WHEN IT IS OVER ───────────────────────────────────────────────────────────────────
+    //
+    // Owner ruling, 2026-09-17: a captain who purges their OWN pattern out of a cold-archive node has no
+    // rebirth left, and the next death is the last one. That is the first permadeath this game has ever
+    // had, and a thread it happens to is not a run any more — so the front door must stop offering to
+    // Continue into it. It still LISTS: the captain, the retirees, the selfies and every banked moment
+    // stay exactly where they are, because a run ending is not a record being deleted.
+    //
+    // WRITTEN ONLY WHEN IT IS TRUE, like #563's grave: `false` is not emitted at all, so a registry
+    // written by this build for a shelf with no ended thread on it is BYTE-IDENTICAL to the one its
+    // predecessor wrote. The registry is the index every universe is found through; a silent rewrite of
+    // it is not a small thing.
+
+    /// <summary>#640 · This thread's run is OVER — the captain closed their own policy and then died, so
+    /// there is no successor and never will be. <see cref="GameThreadRegistry.Active"/> and
+    /// <see cref="GameThreadRegistry.Newest"/> skip it (Continue may not resume a dead run);
+    /// <see cref="GameThreadRegistry.List"/> still returns it, because the logbook has to be able to show
+    /// the player what became of that captain. Set once, by <see cref="GameThreadRegistry.Close"/>, and
+    /// never cleared.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public bool Ended { get; init; }
 }
 
 /// <summary>One former captain kept in a thread's history (Evening wind #20): the name that held the
@@ -128,12 +150,20 @@ public sealed class GameThreadRegistry
             .ThenBy(t => t.Id, StringComparer.Ordinal)];
     }
 
-    /// <summary>The most-recently-active thread (greatest tick), or null when no thread exists yet.</summary>
+    /// <summary>The most-recently-active thread the game can still be PLAYED in (greatest tick), or null
+    /// when no such thread exists. #640: an <see cref="GameThreadInfo.Ended"/> thread is skipped — its
+    /// captain has no pattern on file and no successor, so resuming it is resuming a dead run. It is still
+    /// on the shelf (<see cref="List"/>); it is simply not a candidate for Continue.</summary>
     public GameThreadInfo? Newest()
     {
         GameThreadInfo? best = null;
         foreach (GameThreadInfo t in ReadIndex().Threads)
         {
+            if (t.Ended)
+            {
+                continue; // #640 · the run is over; Continue does not lead here
+            }
+
             if (best is null || t.LastActiveTicks > best.LastActiveTicks
                 || (t.LastActiveTicks == best.LastActiveTicks && string.CompareOrdinal(t.Id, best.Id) < 0))
             {
@@ -144,13 +174,16 @@ public sealed class GameThreadRegistry
         return best;
     }
 
-    /// <summary>The thread the game should resume: the explicitly-active one if it still exists, else the
-    /// newest. This is "the run I was last in" (owner's Continue law), robust to an active id that was
-    /// since deleted.</summary>
+    /// <summary>The thread the game should resume: the explicitly-active one if it still exists and is
+    /// still playable, else the newest that is. This is "the run I was last in" (owner's Continue law),
+    /// robust to an active id that was since deleted — and, since #640, to one whose captain died with no
+    /// pattern on file. A shelf on which EVERY thread has ended answers null, exactly as an empty one
+    /// does: there is nothing to continue, and the door offers a new voyage.</summary>
     public GameThreadInfo? Active()
     {
         Index idx = ReadIndex();
-        if (idx.ActiveId is { } id && idx.Threads.FirstOrDefault(t => t.Id == id) is { } active)
+        if (idx.ActiveId is { } id
+            && idx.Threads.FirstOrDefault(t => t.Id == id) is { Ended: false } active)
         {
             return active;
         }
@@ -186,6 +219,11 @@ public sealed class GameThreadRegistry
         // succession does (CaptainSuccession.Succeed).
         IReadOnlyList<RetiredCaptain> retired = existing?.Retired ?? [];
         IReadOnlyList<CapturedSelfie> selfies = existing?.Selfies ?? [];
+        // #640 · …and so is the END. A touch is a stamp, not a resurrection: if this thread's captain died
+        // with no pattern on file, no later write of any kind puts the run back on its feet. Carried like
+        // the born-on stamp for exactly that reason — a stray autosave landing after the last death must
+        // not quietly hand Continue a dead run back.
+        bool ended = existing?.Ended ?? false;
         idx.Threads.RemoveAll(t => t.Id == id);
         idx.Threads.Add(new GameThreadInfo
         {
@@ -198,9 +236,55 @@ public sealed class GameThreadRegistry
             AvatarIndex = avatar,
             Retired = retired,
             Selfies = selfies,
+            Ended = ended,
         });
         idx.ActiveId = id;
         WriteIndex(idx);
+    }
+
+    /// <summary>
+    /// #640 · CLOSE THE THREAD — the run is over, and this is the only thing in the game that says so.
+    ///
+    /// <para>Owner ruling 2026-09-17, option A: a captain who pulled the purge handle on a node holding
+    /// their OWN pattern has nothing on file, so their next death is the last one. No successor is issued,
+    /// the clinic never plays, and this marks the universe they leave behind.</para>
+    ///
+    /// <para><b>What it does NOT do.</b> It deletes nothing: the ten-slot book, the retirees, the graves
+    /// and the selfies are all exactly where they were, and <see cref="List"/> still returns the row so
+    /// the logbook can show the player what became of that captain. It does not touch any other thread,
+    /// and it does not bump a clock — dying is not activity. What it does is make the row unreachable by
+    /// <see cref="Active"/> and <see cref="Newest"/>, which is what "Continue does not lead here" means in
+    /// this codebase, and clear the stored active id if it pointed here so the front door is not holding a
+    /// dead run by the hand.</para>
+    ///
+    /// <para>Idempotent: returns the row (already ended or now ended), or null if the thread is unknown —
+    /// a legacy, unindexed run, which the client guards, and which simply has no row to close.</para>
+    /// </summary>
+    public GameThreadInfo? Close(string id)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(id);
+        Index idx = ReadIndex();
+        GameThreadInfo? existing = idx.Threads.FirstOrDefault(t => t.Id == id);
+        if (existing is null)
+        {
+            return null;
+        }
+
+        if (existing.Ended)
+        {
+            return existing; // already closed — pulling a handle twice does not end a run twice
+        }
+
+        GameThreadInfo ended = existing with { Ended = true };
+        idx.Threads.RemoveAll(t => t.Id == id);
+        idx.Threads.Add(ended);
+        if (idx.ActiveId == id)
+        {
+            idx.ActiveId = null; // the door falls back to the newest thread that is still a run
+        }
+
+        WriteIndex(idx);
+        return ended;
     }
 
     /// <summary>Issue a NEW CAPTAIN onto a thread after a death-resurrection (Evening wind #20): roll a

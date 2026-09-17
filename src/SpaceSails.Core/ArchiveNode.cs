@@ -433,9 +433,31 @@ public static class ArchiveNode
         + "down. The compartment is exactly as interesting as every other dead fitting on this ship. There "
         + "is nothing here to look at, and there never will be again.");
 
+    /// <summary>
+    /// #640 · DOES PULLING THE HANDLE ON THIS JAR CLOSE THE CAPTAIN'S OWN POLICY? The one-line rule the
+    /// whole feature was waiting on an owner ruling for, and it got one on 2026-09-17 — <b>option A, the
+    /// run ends</b>: <i>"yes let's have that possibility … it is very film noir for the characters to want
+    /// that kind of things and it certainly closes a story arc for that captain."</i>
+    ///
+    /// <para>Only <see cref="Resident.YourOwn"/>. A stranger's jar costs nothing you will ever learn about;
+    /// a delinquent's pays a heat thread off. Yours is the one the label was written for.</para>
+    ///
+    /// <para>Pure, and named here rather than inlined at the handle, because the death path has to ask the
+    /// SAME question the purge answered — and because the sentence the death card reads
+    /// (<see cref="NoRestoreLine"/>) is written against this predicate and nothing else. The sim doing one
+    /// thing while a sentence reports another is the bug class this beat waited two months not to be.</para>
+    /// </summary>
+    public static bool ClosesThePolicy(Resident who) => who is Resident.YourOwn;
+
     /// <summary>The line the resurrection card reads, ONCE, on the death after a captain purged their own
     /// pattern — the smallest change in the whole feature and the thing everything else is for. The card
-    /// has never read this before and will never read it again.</summary>
+    /// has never read this before and will never read it again.
+    ///
+    /// <para><b>It is now true.</b> It shipped authored and unread for two months precisely because it was
+    /// not: printing POLICY CLOSED on a card that then resurrected you would have been the sentence-vs-sim
+    /// bug, deliberately committed. Since the owner's ruling (see <see cref="ClosesThePolicy"/>) the clinic
+    /// really does not play, nobody really does come, and the thread really is over — so the card can read
+    /// it, and this is the whole of what #640 shipped.</para></summary>
     public const string NoRestoreLine =
         "NO PATTERN ON FILE — POLICY CLOSED AT SUBSCRIBER REQUEST. The clinic's welcome loop does not play. " +
         "Nobody comes. You did read the label.";
