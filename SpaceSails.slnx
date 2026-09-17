@@ -49,5 +49,6 @@
     <Project Path="labs/41-can-you-get-there/Lab41.csproj" />
     <Project Path="labs/48-a-lab-about-the-lab/Lab48.csproj" />
     <Project Path="labs/45-what-a-frame-costs/Lab45.csproj" />
+    <Project Path="labs/49-the-paint-job/Lab49.csproj" />
   </Folder>
 </Solution>
