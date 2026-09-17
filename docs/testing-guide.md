@@ -652,7 +652,7 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?oracle=1`** | **Seat the station oracle — Solenne “Static” Marsh — in the port-back corner of whatever bar you dock at, every watch. Unforced she is a fixture only ~55 % of watches, so her whole scene was a coin flip to open (#428). Pair with `&dock=<berth>`.** |
 | **`?nebula=N\|all`** | **Assemble the first N NEBULA MUTUAL fragments (canonical order), or `all` — arc 2's intel readout, its state transitions, and (only at `all`, which is the only value that includes the capstone contract) the one-time "true terms" notice, without a playthrough (#422).** |
 | **`?nebula=adjuster`** | **Seat the rare Nebula Mutual adjuster at whatever bar you dock at, every watch — the tell (fragment 3) becomes playable on demand instead of merely grantable (#422). Pair with `&dock=<berth>`.** |
-| **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold) and fire THE CONVERGENCE — the marquee one-time reveal — from a single URL (#422).** |
+| **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold, including the two shards the card quotes) and fire THE CONVERGENCE — the marquee one-time COLLISION — from a single URL (#422).** |
 | **`?archive=1`** | **Board a derelict that is CARRYING A COLD-ARCHIVE NODE — arc 2's only in-person scene. Implies `?wreck=ventedbyoneoftheirown`, the one cause Core guarantees a node on.** |
 | **`?death=<cause>`** | **KILL THE CAPTAIN AT BOOT, through the real pipeline — the death card, the freeze beat and the brain-backup wake, without dying for them (#621).** Every cause has a lane now: `?death=void` was the last one that did not, and #638 gave it the twenty-day adrift clock (`VoidRule`). |
 | **`?ashore=1`** | **Boot docked AND ALREADY STANDING IN THE BAR — the ship → airlock → tube → immigration hall → bar walk already walked (#428). Every bar beat begins with that walk; in a hidden/automated tab it cannot be walked at all. Pairs with `?dock=` / `?start=`, and with every bar cheat.** |
@@ -1332,12 +1332,22 @@ the assembled shard texts readable beneath it (mirrors the KAAMOS readout).
   now pins it.)
 - `/map?nebula=3` is the fastest look at the mid-arc card; `/map?nebula=all` is the end state.
 - **`?converge=1`** is the marquee smoke test: it seeds exactly the joint threshold on **both** arcs
-  (3 KAAMOS intel + 3 NEBULA intel) and fires **THE CONVERGENCE** — a full staged reveal card, above
-  everything, stating that the sealed ice-moon berth and your brain-backup insurance are the same story.
-  It fires **once per universe** (the seen-bit is persisted in the vault); reload and it does not replay.
-  **Note the bar:** 3 NEBULA intel is *below* this arc's own capstone gate of 4, so the convergence card can
-  and normally does arrive **before** `policy-terms` — see the open structural question on
-  [#422](https://github.com/esoinila/SpaceSails/issues/422).
+  (3 KAAMOS intel + 3 NEBULA intel, including the two shards the card quotes) and fires **THE
+  CONVERGENCE**, above everything. It fires **once per universe** (the seen-bit is persisted in the vault);
+  reload and it does not replay.
+  - **What you should see (2026-09-17, #422 option B).** Not a paragraph. A stamp of two marks, the plate,
+    then two sentences one above the other with **nobody named over either of them** — *"It still calls the
+    manifest in…"* (the KAAMOS berth-holder) and *"I've filed the same subscriber six times…"* (the Nebula
+    adjuster) — then one closing line, *"You have been carrying both of these for a while."*, and a plain
+    **Close**. If you see exposition about copies, premiums, archives or Vantar, something has been put
+    back that the ruling took out.
+  - **Both lines are already in the captain's ledger when the card opens.** That is what the bar's named
+    shards are for: it is still 3 + 3, but one of each three is the shard the card quotes (`holders-tell`,
+    `adjuster-tell`). Close the card, open the Captain's ledger, and read both of them there.
+  - **Note the bar:** 3 NEBULA intel is still *below* this arc's own capstone gate of 4, so the convergence
+    arrives **before** `policy-terms` — deliberately, because the recognition is a mid-dig sensation. The
+    card no longer spends the capstone's reveal, which was the actual complaint on
+    [#422](https://github.com/esoinila/SpaceSails/issues/422).
 
 **The seat (this lets a rare beat be PLAYED, not granted):**
 

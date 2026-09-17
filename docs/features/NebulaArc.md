@@ -34,7 +34,9 @@ exactly as-is** — it authors the pool and the assembly logic only, and touches
 ## 2. The truth (invented — original, homage-not-reproduction)
 
 > Kept out of the game text on purpose. This section is the writers' bible; **no single fragment states
-> it**, and the deepest reveal (the convergence) is delivered only by a later lane.
+> it**, and since 2026-09-17 **no card states it either** — the convergence used to (§6), and does not
+> now. The nearest the game comes is this arc's own capstone, `policy-terms`, which the captain has to
+> earn.
 
 **Nebula Mutual is a salvage underwriter that got hold of Dr. Vantar's LATTICE** — the standing-wave
 copy rig from his sealed labs (`VantarLore`: the backup kept "wet and dreaming in the jar"; the core
