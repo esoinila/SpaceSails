@@ -210,7 +210,11 @@ public static class ParkDay
     /// </summary>
     public static double FirstJustBeforeMorning(string siteId)
     {
-        double dawnAt = PeriodSeconds * Frac(NightFraction - OffsetFraction(siteId));
+        // A second PAST the boundary, not on it. A phase edge is where a double is least trustworthy — the
+        // arithmetic that lands exactly on 0.20 of a cycle lands on either side of it depending on the last
+        // bit — and a frame arrives where a frame arrives anyway. One second of sim time costs the tester
+        // nothing and makes the door's promise a thing that can be asserted.
+        double dawnAt = (PeriodSeconds * Frac(NightFraction - OffsetFraction(siteId))) + 1.0;
         for (int cycle = 0; cycle < 64; cycle++)
         {
             double at = dawnAt + (cycle * PeriodSeconds) - MorningLeadSeconds;
