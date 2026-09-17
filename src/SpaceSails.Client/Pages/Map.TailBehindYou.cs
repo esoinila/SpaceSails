@@ -71,6 +71,12 @@ public partial class Map
     /// <summary>#1062 · <inheritdoc cref="_coatLastX"/></summary>
     private double _coatLastY = double.NaN;
 
+    /// <summary>#1062 · Which ports this VISIT burned, so a burn is never told to the captain in the same
+    /// breath as the act that made it. The burn itself is durable (it is a tag in the register that already
+    /// rides the vault); this is only "not yet", and it is forgotten on casting off — which is exactly what
+    /// <i>the next time he comes back</i> means, and is why the durable half needs no visit stamp in it.</summary>
+    private readonly HashSet<string> _coatBurnedThisVisit = new(StringComparer.Ordinal);
+
     /// <summary>#1062 QA · <c>?tailed=1</c> — put a man behind the captain at this berth whatever the folder
     /// says. Set in the cheat parse. Null is "ask the world", which is what a captain gets.</summary>
     private bool? _tailedCheat;
@@ -165,6 +171,7 @@ public partial class Map
         _coatLastX = double.NaN;
         _coatLastY = double.NaN;
         _coatDoors.Clear();
+        _coatBurnedThisVisit.Clear();
     }
 
     // ── WHERE A MAN KEEPING STATION STANDS ───────────────────────────────────────────────────────────────
@@ -397,6 +404,88 @@ public partial class Map
         _coatSeen = true;
         ShowPulseMessage(line, PulseRank.Beat);
         return true;
+    }
+
+    // ── THE BURN ─────────────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>#1062 · Is there a man on this floor right now with the captain's back in front of him? The
+    /// walker list is the truth about who is afoot, so it is counted rather than tracked — and a man who has
+    /// been shaken is not on it, which is the whole of what shaking him buys.</summary>
+    private bool TheCoatIsAfoot()
+    {
+        foreach (Walker w in _barAfoot)
+        {
+            if (w.For == Errand.BehindYou)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// #1062 · <b>THE PLACE IS BURNED, AND NOTHING IS SAID ABOUT IT.</b> Called from the ONE strike-off both
+    /// of a berth's quiet verbs already share, so the favour across a table and the code bought at a desk
+    /// cannot come to two views of what being watched costs.
+    ///
+    /// <para><b>It is DETERMINISTIC and it is SILENT.</b> No roll decides it — a man was standing behind the
+    /// captain while he did a thing that says where he goes, and that is the whole condition. And not one
+    /// word is raised on this frame: the captain gets what he came for, walks out, and finds out later. That
+    /// is #761 read exactly as it is written, and it is also the only version of this beat that is any good —
+    /// a warning at the moment of the act would turn the tail into a mechanic the player manages, and the
+    /// entire feature is that he does not know.</para>
+    ///
+    /// <para><b>He has to be able to see it.</b> A captain who shook the man first, or who never let him onto
+    /// the floor, does his business unwatched — which is the counter-play, and it is made of the same nine
+    /// seconds of stone the rest of this file is made of.</para>
+    /// </summary>
+    private void TheyBurnThisPlaceIfSomebodyIsWatching(string portId)
+    {
+        if (_coatLost || !TheCoatIsAfoot())
+        {
+            return;
+        }
+
+        _roomsTurnedOver.Add(TheTailBehindYou.BurnTag(portId));
+        _coatBurnedThisVisit.Add(portId);
+        RequestVaultSave();
+    }
+
+    /// <summary>#1062 · Has somebody been through this place ahead of the captain? Asked by the one question
+    /// a port's quiet verbs already ask before they deal anything, so the burn needs no second refusal of its
+    /// own anywhere in the game.</summary>
+    private bool ThisPlaceWasWalkedFirst(string portId) =>
+        _roomsTurnedOver.Contains(TheTailBehindYou.BurnTag(portId));
+
+    /// <summary>
+    /// #1062 · <b>AND WHEN HE COMES BACK, IT IS TIDY.</b> One pulse and one line in the book, at the burned
+    /// place, on the visit AFTER the one that burned it — and then the burn is spent.
+    ///
+    /// <para>Spending it here rather than counting watches is the smallest honest shape: the cost is one
+    /// visit's worth of what that port deals, the telling and the spending are the same event, and there is
+    /// no window a captain can miss. A burn that expired on a clock would be a consequence the player could
+    /// fail to be told about, which is the one thing #761 forbids.</para>
+    ///
+    /// <para>The note goes through the one funnel under the PLACE, so it stacks on THREADS with the losing
+    /// note from the same evening and the captain reads the two of them in the order they happened — which
+    /// is the whole of the inference: <i>he was behind me, and then this place had been gone through</i>. The
+    /// book never says that. It says what happened.</para>
+    /// </summary>
+    private void TheBurnIsToldHere(string portId)
+    {
+        if (_coatBurnedThisVisit.Contains(portId) || !ThisPlaceWasWalkedFirst(portId) || !_ashore)
+        {
+            return;
+        }
+
+        _roomsTurnedOver.Remove(TheTailBehindYou.BurnTag(portId));
+        ShowPulseMessage(TheTailBehindYou.TheBurnLine, PulseRank.Beat);
+
+        string place = DockedStationName();
+        FileNoteAbout(
+            TheTailBehindYou.BurnNote(place), TheTailBehindYou.Glyph, TheTailBehindYou.BurnSubjects(place));
+        RequestVaultSave();
     }
 
     /// <summary>#1062 · The last place he had the captain, or null if he has not had him yet or is already

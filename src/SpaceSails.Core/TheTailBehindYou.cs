@@ -283,6 +283,54 @@ public static class TheTailBehindYou
     /// that reads this type's prose sees it too.</summary>
     public const string Plate = "GREY COAT";
 
+    // ── THE BURN ────────────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #1062 · <b>WHAT A PLACE-REVEALING ACT COSTS WHEN SOMEBODY IS STANDING BEHIND YOU DOING IT.</b>
+    ///
+    /// <para>#1062: <i>"Failing: Fail Forward, never game-over — the place you were going is burned, and
+    /// leading a tail to the dead-drop is how a dead-drop dies."</i> The dead drop is on a moon and this
+    /// figure is not, so the honest ashore equivalent is what a captain actually goes to a berth to do
+    /// quietly: take a favour across a contact's table, or buy a code off a fence at a dark-web desk. Both
+    /// already run through ONE strike-off (<see cref="BlackOpsKey.ThePortHasDealtOne"/>) in the captain's own
+    /// durable register of ground already gone through — which is why this burn needs no state of its own. It
+    /// is a second tag in the same set, and it rides the vault for free.</para>
+    ///
+    /// <para><b>Silent at the moment.</b> Nothing whatever is said on the frame the act is performed. The
+    /// place simply has nothing for the captain the next time he walks into it, and THAT is when the telling
+    /// happens — #761's own rule, the same one slice 1 obeys about a burned lead.</para>
+    ///
+    /// <para><b>And it is the smallest burn the shipped state supports.</b> One port, one visit's worth of
+    /// what that port deals. Not a goodwill band — that would be a contact having decided something about the
+    /// captain, and in this fiction nobody has told anybody anything. Not a lost item, not a fine, not a
+    /// heat point. Somebody got there first, and that is the whole of it.</para>
+    /// </summary>
+    public static string BurnTag(string portId)
+    {
+        ArgumentNullException.ThrowIfNull(portId);
+        return $"tail-burn:{portId}";
+    }
+
+    /// <summary>#1062 · <b>WHAT THE PLACE IS LIKE WHEN YOU COME BACK.</b> Authored (Fable), verbatim — and it
+    /// is a sentence about HOUSEKEEPING. It names nobody, accuses nobody and explains nothing; what it
+    /// reports is an absence of mess, which is the only evidence a place that has been gone through carefully
+    /// ever offers.</summary>
+    public const string TheBurnLine = "Tidy, in the way a place is after somebody has been through it first.";
+
+    /// <summary>#1062 · …and what the book writes about it. Authored (Fable), verbatim, with the place the
+    /// game has printed substituted and no other word composed. Filed under the PLACE for the reason the
+    /// losing note is: there is still no face, and there never will be one.</summary>
+    public static string BurnNote(string place)
+    {
+        ArgumentNullException.ThrowIfNull(place);
+        return $"{place} — walked before you got there, by somebody who knew where to walk";
+    }
+
+    /// <summary>#1062 · The burn's subject, minted in Core beside the sentence that prints it (#741). The
+    /// same subject as the losing note, deliberately: both entries are about one place, so THREADS stacks
+    /// them under one heading and the captain reads the evening in order.</summary>
+    public static string BurnSubjects(string place) => Subjects(place);
+
     /// <summary>#1062 · Every player-facing string this half publishes, and there are no others. The
     /// <c>AllProse</c> discipline every prose-bearing type in Core keeps, and the list the reserved-word and
     /// pattern-word sweeps walk.</summary>
@@ -293,6 +341,8 @@ public static class TheTailBehindYou
         yield return TwoDoorsLine;
         yield return LostLine;
         yield return NoteLine(place);
+        yield return TheBurnLine;
+        yield return BurnNote(place);
     }
 
     // ── THE DECLARATION #793 LEFT A SEAM FOR ────────────────────────────────────────────────────────────

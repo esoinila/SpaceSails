@@ -211,6 +211,7 @@ public partial class Map
         AdvanceTheFinder(bar);   // #417 · …and the finder, when there is a case or an account to settle
         AdvanceTheWalk(bar);     // #1199 · …and whoever the evening has crossing the floor with YOU behind them
         AdvanceTheCoat(bar);     // #1062 slice 2 · …and whoever an outfit has crossing it behind YOU
+        TheBurnIsToldHere(bar.BodyId);   // #1062 slice 2 · …and whether somebody walked this place first
     }
 
     /// <summary>#973 L0 · CASTING OFF IS THE ROOM FORGETTING. Same law a turned shift is underground: what

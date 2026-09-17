@@ -355,7 +355,7 @@ public sealed class TheTailBehindYouTests
     {
         const string place = "SELENE GATE";
         string[] said = [.. TheTailBehindYou.AllProse(place)];
-        Assert.Equal(4, said.Length);
+        Assert.Equal(6, said.Length);
 
         Assert.Equal(
             "From this chair you can see the door. So can the man who came in after you, and he has not ordered.",
@@ -368,6 +368,10 @@ public sealed class TheTailBehindYouTests
             TheTailBehindYou.LostLine);
         Assert.Equal("a tail, lost at SELENE GATE — a grey coat, never a face",
             TheTailBehindYou.NoteLine(place));
+        Assert.Equal("Tidy, in the way a place is after somebody has been through it first.",
+            TheTailBehindYou.TheBurnLine);
+        Assert.Equal("SELENE GATE — walked before you got there, by somebody who knew where to walk",
+            TheTailBehindYou.BurnNote(place));
 
         // #741 · the subject is the author's, and it is a PLACE.
         var note = new FieldNote(
@@ -376,6 +380,23 @@ public sealed class TheTailBehindYouTests
         CaseSubjects.Subject filed = Assert.Single(CaseSubjects.On(in note));
         Assert.Equal(CaseSubjects.Kind.Place, filed.Of);
         Assert.Equal(place, filed.Name);
+
+        // …and the burn is filed under the SAME place, so THREADS stacks the evening in the order it
+        // happened: he was behind me, and then this place had been gone through.
+        var burn = new FieldNote(
+            TheTailBehindYou.BurnNote(place), 0, place, TheTailBehindYou.Glyph,
+            TheTailBehindYou.BurnSubjects(place));
+        CaseSubjects.Subject onTheBurn = Assert.Single(CaseSubjects.On(in burn));
+        Assert.Equal(CaseSubjects.Kind.Place, onTheBurn.Of);
+        Assert.Equal(filed, onTheBurn);
+
+        // The burn's tag is a durable key in the register the game already keeps, and it is per PORT — one
+        // place burned, not a captain marked.
+        Assert.NotEqual(TheTailBehindYou.BurnTag("selene-gate"), TheTailBehindYou.BurnTag("the-space-bar"));
+        Assert.Contains("selene-gate", TheTailBehindYou.BurnTag("selene-gate"), StringComparison.Ordinal);
+        Assert.NotEqual(
+            SpaceSails.Core.BlackOpsKey.ThePortHasDealtOne("selene-gate", 0),
+            TheTailBehindYou.BurnTag("selene-gate"));
 
         // …and the glyph is the game's own watched-from-somewhere mark, borrowed and never re-typed.
         Assert.Equal(ReeverObservation.FixedOnYouGlyph, TheTailBehindYou.Glyph);
