@@ -18,9 +18,13 @@ public partial class Map
     /// A course is plotted TO somewhere, so when there is a somewhere, the tooltip names it.</summary>
     private string PlotButtonTip()
     {
+        // #440 · …and it names its KEY. The plotting table has a hotkey (P, Map.Sim.Keys) that was written
+        // down in the Captain's Guide and nowhere on the glass — and the hover of the button it opens is the
+        // one place in the game a captain asks this button's question. Said the way the orbit box and the ?
+        // card already say theirs: in the tail of the sentence that was already there, not as new chrome.
         if (PlotMode)
         {
-            return "Back to flying live — the sky starts moving again and the plotting table closes.";
+            return "Back to flying live — the sky starts moving again and the plotting table closes. (P)";
         }
 
         string what = _destinationBodyId is { } destId
@@ -31,7 +35,7 @@ public partial class Map
             ? " Pick a destination on the map first and this aims at it."
             : "";
 
-        return $"{what} — the sky pauses so you can scrub the path ahead, add burns at the scrub, and arm the arrival.{aim}";
+        return $"{what} — the sky pauses so you can scrub the path ahead, add burns at the scrub, and arm the arrival.{aim} (P)";
     }
 
     // ───────────────────────── #963 · THE DIRECT NAV ACTIONS ARE EMERGENCY GEAR ─────────────────────────
