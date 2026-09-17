@@ -402,6 +402,18 @@ public sealed class ThePlayerIsToldTests
         new("the corridor behind you is empty, and the man who was in it has gone",
             Surface.RankedPulse, "Map.TailBehindYou.cs", "HeGoesAndAsksTheWrongFloor",
             "ShowPulseMessage(TheTailBehindYou.LostLine, PulseRank.Beat);"),
+
+        // #1062 slice 2 · THE BURN, and the row's whole content is WHERE it is not said. Nothing is raised on
+        // the frame a watched captain does a quiet thing at a berth — #761's law about a burned lead, which
+        // slice 1 obeys at the other end. The telling waits until he walks back into the place and finds it
+        // has nothing for him, and then it is one line about housekeeping and one entry in the book under
+        // the same PLACE the losing note went under, so THREADS stacks the evening in order.
+        //
+        // Ranked, not carded: a card would stop the world to announce a consequence, and what has happened is
+        // that a room is tidy.
+        new("the place you did your quiet business in has been walked through ahead of you",
+            Surface.RankedPulse, "Map.TailBehindYou.cs", "TheBurnIsToldHere",
+            "ShowPulseMessage(TheTailBehindYou.TheBurnLine, PulseRank.Beat);"),
     ];
 
     /// <summary>

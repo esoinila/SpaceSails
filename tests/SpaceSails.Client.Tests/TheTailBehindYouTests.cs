@@ -14,8 +14,8 @@ namespace SpaceSails.Client.Tests;
 /// <summary>
 /// #1062 slice 2 · <b>THE MAN BEHIND THE CAPTAIN</b>, driven at a real berth on a real deck.
 ///
-/// <para>Owner, 2026-09-01: <i>"… or trying to lose a tail our selves :-D"</i>. Six claims, each with its own
-/// revert:</para>
+/// <para>Owner, 2026-09-01: <i>"… or trying to lose a tail our selves :-D"</i>. Nine claims, each with its
+/// own revert:</para>
 ///
 /// <list type="number">
 /// <item>nobody is behind a captain nobody has written anything about — and the folder is what changes it;</item>
@@ -24,7 +24,10 @@ namespace SpaceSails.Client.Tests;
 /// <item>the chair that faces the door pays off, and only while you are actually sitting in it;</item>
 /// <item>the same coat through two doorways pays off — and a LOCKED leaf is not a doorway;</item>
 /// <item>breaking his line for long enough loses him, he leaves, the line plays and the book files it under
-/// the PLACE — and a captain who never noticed him is told nothing at all.</item>
+/// the PLACE — and a captain who never noticed him is told nothing at all;</item>
+/// <item>a quiet verb done with him watching BURNS the place, <b>and nothing is said at the moment</b>;</item>
+/// <item>…and when the captain comes back it is tidy, the book says why, and the burn is spent;</item>
+/// <item>…and a captain who shook him first pays nothing, which is what the nine seconds of stone buy.</item>
 /// </list>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
@@ -402,6 +405,133 @@ public sealed class TheTailBehindYouTests
         Assert.Null(PulseSaying(map));
         Assert.Null(Field(map, "_storyCard"));
         Assert.Empty((IEnumerable<FieldNote>)Field(map, "_fieldNotes")!);
+    }
+
+    // ── 7 · THE BURN ────────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #1062 · <b>A QUIET VERB DONE WITH SOMEBODY WATCHING BURNS THE PLACE — AND NOTHING IS SAID.</b>
+    ///
+    /// <para>Driven through `ThisPortHasNowDealtAKey`, which is not a shortcut: it is the ONE strike-off both
+    /// of a berth's quiet verbs already run through (the favour across a contact's table, the code bought off
+    /// a fence at a desk), and the burn hangs on it precisely so the two of them cannot come to two views of
+    /// what being watched costs.</para>
+    ///
+    /// <para>Three claims: the port is struck, **not one word is raised on the frame it happens** (#761 — the
+    /// burn is told when the book shows it, and never at the moment), and the port's own question now answers
+    /// "nothing left here" so neither row is ever drawn to be refused.</para>
+    ///
+    /// <para><b>Revert that reddened it:</b> `TheyBurnThisPlaceIfSomebodyIsWatching` raising the line on the
+    /// spot — <i>the game warning the captain that the deal he just did was watched, which turns the man on
+    /// the floor into a meter the player manages</i>.</para>
+    /// </summary>
+    [Fact]
+    public void AQuietVerbWithSomebodyWatchingBurnsThePlaceAndSaysNothingAtTheMoment()
+    {
+        Pages.Map map = Tailed(Berth);
+        StandCaptainAt(map, HavenInterior.BarThreshold.X, HavenInterior.BarThreshold.Y + 6);
+        RunFrames(map, 1);
+        Assert.NotNull(TheCoat(map));
+
+        Assert.False((bool)Invoke(map, "ThisPlaceWasWalkedFirst", Berth)!);
+        Invoke(map, "ThisPortHasNowDealtAKey", Berth);
+
+        Assert.True((bool)Invoke(map, "ThisPlaceWasWalkedFirst", Berth)!);
+        Assert.True((bool)Invoke(map, "ThisPortHasAlreadyDealtAKey", Berth)!);
+
+        // SILENT. On this frame and on a hundred more.
+        RunFrames(map, 100);
+        Assert.Null(PulseSaying(map));
+        Assert.Null(Field(map, "_storyCard"));
+        Assert.Empty((IEnumerable<FieldNote>)Field(map, "_fieldNotes")!);
+    }
+
+    /// <summary>
+    /// #1062 · <b>AND WHEN HE COMES BACK, IT IS TIDY.</b> The captain casts off and docks again; on the next
+    /// visit the place says the one authored sentence, the book files the one authored line under the PLACE,
+    /// and the burn is spent — the visit after that says nothing.
+    ///
+    /// <para>Coming back is done the way the game does it, through the one place that knows the berth has
+    /// changed (`ForgetTheBarsFeet`), rather than by reaching in and clearing the visit's own set.</para>
+    ///
+    /// <para><b>Revert that reddened it:</b> the `_coatBurnedThisVisit` clause dropped from
+    /// `TheBurnIsToldHere` — <i>the place told the captain it had been gone through on the same frame he
+    /// finished going through it, which is the burn arriving at the moment</i>.</para>
+    /// </summary>
+    [Fact]
+    public void AndWhenYouComeBackItIsTidyAndTheBookSaysWhy()
+    {
+        Pages.Map map = Tailed(Berth);
+        StandCaptainAt(map, HavenInterior.BarThreshold.X, HavenInterior.BarThreshold.Y + 6);
+        RunFrames(map, 1);
+        Assert.NotNull(TheCoat(map));
+        Invoke(map, "ThisPortHasNowDealtAKey", Berth);
+        RunFrames(map, 50);
+        Assert.Null(PulseSaying(map));
+
+        // Cast off, and come back. The room forgets; the register does not.
+        Invoke(map, "ForgetTheBarsFeet", (string?)null);
+        Invoke(map, "ForgetTheBarsFeet", Berth);
+        RunFrames(map, 1);
+
+        Assert.Equal(TheTailBehindYou.TheBurnLine, PulseSaying(map));
+
+        var book = (IReadOnlyList<FieldNote>)Field(map, "_fieldNotes")!;
+        FieldNote note = Assert.Single(book);
+        string place = (string)Invoke(map, "DockedStationName")!;
+        Assert.Equal(TheTailBehindYou.BurnNote(place), note.Text);
+        Assert.Equal(TheTailBehindYou.BurnSubjects(place), note.Subjects);
+        CaseSubjects.Subject filed = Assert.Single(CaseSubjects.On(in note));
+        Assert.Equal(CaseSubjects.Kind.Place, filed.Of);
+
+        // SPENT. The tag is gone, the port deals again, and the next evening says nothing.
+        Assert.False((bool)Invoke(map, "ThisPlaceWasWalkedFirst", Berth)!);
+        Set(map, "_pulse", default(PulseSlot));
+        Invoke(map, "ForgetTheBarsFeet", (string?)null);
+        Invoke(map, "ForgetTheBarsFeet", Berth);
+        RunFrames(map, 100);
+        Assert.Null(PulseSaying(map));
+        Assert.Single((IReadOnlyList<FieldNote>)Field(map, "_fieldNotes")!);
+    }
+
+    /// <summary>
+    /// #1062 · <b>AND A CAPTAIN WHO SHOOK HIM FIRST PAYS NOTHING.</b> The same verb at the same port with the
+    /// man off the floor, and the place is not burned — which is the counter-play, and the reason the nine
+    /// seconds of stone are worth spending.
+    ///
+    /// <para>Anti-vacuity: it is the SAME page, the same berth and the same call as the guard above, so the
+    /// only difference between burned and not burned is whether anybody was there to watch.</para>
+    ///
+    /// <para><b>Revert that reddened it:</b> the `TheCoatIsAfoot` clause dropped from
+    /// `TheyBurnThisPlaceIfSomebodyIsWatching` — <i>every quiet verb at a berth the captain has ever been
+    /// followed at burns that berth, whether or not anybody is still behind him</i>.</para>
+    /// </summary>
+    [Fact]
+    public void AVerbDoneAfterYouHaveShakenHimCostsNothing()
+    {
+        Pages.Map map = Tailed(Berth);
+        StandCaptainAt(map, HavenInterior.BarThreshold.X, HavenInterior.BarThreshold.Y + 6);
+        RunFrames(map, 1);
+        Assert.NotNull(TheCoat(map));
+
+        // Shake him honestly — down the gangway, and wait him out.
+        StandCaptainAt(map, 2.5, 6);
+        for (int i = 0; i < 1200 && TheCoat(map) is not null; i++)
+        {
+            RunFrames(map, 1);
+        }
+        Assert.Null(TheCoat(map));
+        Assert.True((bool)Field(map, "_coatLost")!);
+
+        Invoke(map, "ThisPortHasNowDealtAKey", Berth);
+        Assert.False((bool)Invoke(map, "ThisPlaceWasWalkedFirst", Berth)!);
+
+        Invoke(map, "ForgetTheBarsFeet", (string?)null);
+        Invoke(map, "ForgetTheBarsFeet", Berth);
+        StandCaptainAt(map, HavenInterior.BarThreshold.X, HavenInterior.BarThreshold.Y + 6);
+        Set(map, "_pulse", default(PulseSlot));
+        RunFrames(map, 100);
+        Assert.Null(PulseSaying(map));
     }
 
     // ── PLUMBING ─────────────────────────────────────────────────────────────────────────────────────────

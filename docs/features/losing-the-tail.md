@@ -81,6 +81,34 @@ Lost, he goes, and if you had noticed him you are told once:
 **A captain who never noticed him is told nothing at all, ever.** He stood about, he gave up, he left, and no
 pulse, card or book entry in this game will ever mention that anybody was there.
 
+## 4b. Failing forward — the burn
+
+> #1062: *"Fail Forward, never game-over — the place you were going is burned, and leading a tail to the
+> dead-drop is how a dead-drop dies."*
+
+The dead drop is on a moon and this figure is not, so the ashore equivalent is what a captain actually goes
+to a berth to do quietly: **take a favour across a contact's table**, or **buy a code off a fence at a
+dark-web desk**. Both already run through one strike-off (`BlackOpsKey.ThePortHasDealtOne`), and the burn
+hangs on that one seam so the two of them cannot come to two views of what being watched costs.
+
+**Do either with a man on the floor behind you and the place is burned.** Deterministic — no roll, the
+condition is simply that somebody was there to see it. **And nothing whatever is said at the moment.** You
+get what you came for and walk out.
+
+You find out the next time you walk in, and the place has nothing for you:
+
+> *"Tidy, in the way a place is after somebody has been through it first."*
+
+> 👁 *SELENE GATE — walked before you got there, by somebody who knew where to walk*
+
+Filed under the same **place** as the losing note, so THREADS stacks the evening in the order it happened —
+*he was behind me, and then this place had been gone through*. The book never draws that line; it says what
+happened, and the captain draws it.
+
+The burn costs **one visit's worth of what that port deals**, and it is spent by being told: there is no
+window to miss. Shake him first and it costs nothing at all, which is the counter-play and the reason the
+nine seconds of stone are worth spending.
+
 ## 5. The laws it is built on
 
 - **One sightline oracle.** `SurfaceCollision.HasLineOfSight` — reached through `PatrolBeat.EyesOn` and
