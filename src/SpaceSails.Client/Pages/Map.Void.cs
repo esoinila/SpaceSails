@@ -56,14 +56,22 @@ public partial class Map
         bool aPlanStepCanFire = APlanStepCanStillFire();
 
         // The three cheap arms decide whether the expensive one is even worth asking. A ship with fuel, a
-        // clamp on a berth, or one plotted burn left in her is not adrift and never sweeps.
+        // clamp on a berth or a planetary market's catchment around her, or one plotted burn left in her is
+        // not adrift and never sweeps.
+        //
+        // #1225 · THE GATE BELOW DELIBERATELY STILL ASKS `_docked` ALONE, and the asymmetry is the point: it
+        // is a CACHE question — "is the swept answer worth refreshing today" — not the law. Widening it to
+        // the clamp would let a sweep taken while she was tied up survive a SAME-DAY cast-off, and a stale
+        // "a haven still takes her" is the one way narrowing a cache changes an outcome. The law, one line
+        // below, is where the clamp belongs.
         if (_reactionMassPulses <= 0 && !_docked && !aPlanStepCanFire && today != _voidSweptDay)
         {
             _voidHavenInReach = AHavenStillTakesHer();
             _voidSweptDay = today;
         }
 
-        bool adrift = VoidRule.IsAdrift(_reactionMassPulses, _docked, aPlanStepCanFire, _voidHavenInReach);
+        bool adrift = VoidRule.IsAdrift(
+            _reactionMassPulses, AClampOnABerthOrAPortZone(), aPlanStepCanFire, _voidHavenInReach);
 
         if (!adrift)
         {
@@ -106,6 +114,34 @@ public partial class Map
             TheVoidTakesHer();
         }
     }
+
+    /// <summary>
+    /// #1225 · <b>"A CLAMP ON A BERTH" — ASKED OF THE CLAMP.</b> The watch's own sentence names three things
+    /// that are not adrift — fuel, <i>a clamp on a berth</i>, a plotted burn — and the argument it handed the
+    /// law was <c>_docked</c>, which is not the clamp. <c>_docked</c> is <c>UpdateDockStatus</c>'s port-zone
+    /// flag: true within 0.067 AU of earth/mars/venus, and FALSE at the four outer berths in
+    /// <c>sol.json</c> (The Tilt, The Deep, the Red Eye, Ringside). A dry, plan-less ship tied up at The Tilt
+    /// was kept off the twenty-day clock by the THIRD arm — <see cref="AHavenStillTakesHer"/>, which cannot
+    /// help seeing the berth it is sitting on — and never by the flag the sentence named. Found by #1223's
+    /// audit of every reader of the dock fields, reported there and fixed here (#1225).
+    ///
+    /// <para><b>The audit, and why the port zone STAYS an arm.</b> The obvious fix — pass the clamp alone —
+    /// would change an outcome in a world the game really builds: a dry, plan-less ship free-flying inside
+    /// Earth's catchment is saved today by <c>_docked</c>, and clamp-only would put a death clock on her.
+    /// That is not a wrong outcome to correct. This whole page already treats the port zone as <i>somewhere,
+    /// and not the void</i>: the ship's own <c>Adrift</c> flag is
+    /// <c>_reactionMassPulses == 0 &amp;&amp; !_docked</c>, #266's rescue offer stands up on exactly that,
+    /// and a tow is one press away inside a planetary market's catchment. So both are arms, both are named
+    /// here, and the sentence over the gate now names both instead of one.</para>
+    ///
+    /// <para><b>What this changes, honestly: nothing</b> — for any world the shipping game can build. The
+    /// third arm gets there first at every berth in the scenario, and
+    /// <c>TheVoidWatchAsksTheClampTests</c> proves that at all of them. What it removes is a LATENT hazard:
+    /// the clamp is now load-bearing on its own, so a sweep that went blind for any reason cannot hang a
+    /// death clock on a ship with an arm on her. That is the guard in that file which reddens on this
+    /// method's old body, and it is honest about being a hazard rather than a live bug.</para>
+    /// </summary>
+    private bool AClampOnABerthOrAPortZone() => _dockedHavenId is not null || _docked;
 
     /// <summary>
     /// Is there a move left in the plan — a burn that has not fired and has not been struck, or an arrival the

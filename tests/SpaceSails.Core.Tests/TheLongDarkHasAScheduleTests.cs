@@ -61,7 +61,7 @@ public class TheLongDarkHasAScheduleTests
         // Tank empty, plan spent, ship free — every other arm of ADRIFT is TRUE, and she is still not adrift,
         // because a berth is in front of her.
         Assert.False(VoidRule.IsAdrift(
-            reactionMassPulses: 0, docked: false, aPlanStepCanStillFire: false,
+            reactionMassPulses: 0, berthedOrInAPortZone: false, aPlanStepCanStillFire: false,
             aHavenStillTakesHer: VoidRule.AHavenStillTakesHer([reachable], RibbonEnd, SampleStep)));
     }
 
@@ -76,7 +76,7 @@ public class TheLongDarkHasAScheduleTests
         Assert.False(VoidRule.AHavenStillTakesHer([beyond], RibbonEnd, SampleStep));
 
         Assert.True(VoidRule.IsAdrift(
-            reactionMassPulses: 0, docked: false, aPlanStepCanStillFire: false,
+            reactionMassPulses: 0, berthedOrInAPortZone: false, aPlanStepCanStillFire: false,
             aHavenStillTakesHer: VoidRule.AHavenStillTakesHer([beyond], RibbonEnd, SampleStep)));
     }
 
@@ -125,11 +125,15 @@ public class TheLongDarkHasAScheduleTests
     {
         const bool noHaven = false;
 
-        Assert.True(VoidRule.IsAdrift(0, docked: false, aPlanStepCanStillFire: false, aHavenStillTakesHer: noHaven));
+        Assert.True(VoidRule.IsAdrift(
+            0, berthedOrInAPortZone: false, aPlanStepCanStillFire: false, aHavenStillTakesHer: noHaven));
 
-        Assert.False(VoidRule.IsAdrift(1, docked: false, aPlanStepCanStillFire: false, aHavenStillTakesHer: noHaven));
-        Assert.False(VoidRule.IsAdrift(0, docked: true, aPlanStepCanStillFire: false, aHavenStillTakesHer: noHaven));
-        Assert.False(VoidRule.IsAdrift(0, docked: false, aPlanStepCanStillFire: true, aHavenStillTakesHer: noHaven));
+        Assert.False(VoidRule.IsAdrift(
+            1, berthedOrInAPortZone: false, aPlanStepCanStillFire: false, aHavenStillTakesHer: noHaven));
+        Assert.False(VoidRule.IsAdrift(
+            0, berthedOrInAPortZone: true, aPlanStepCanStillFire: false, aHavenStillTakesHer: noHaven));
+        Assert.False(VoidRule.IsAdrift(
+            0, berthedOrInAPortZone: false, aPlanStepCanStillFire: true, aHavenStillTakesHer: noHaven));
     }
 
     /// <summary>An empty sweep is not a haven. (The list a caller hands over when the system has no arrivable
