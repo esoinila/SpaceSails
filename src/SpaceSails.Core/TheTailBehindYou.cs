@@ -35,13 +35,13 @@ namespace SpaceSails.Core;
 ///
 /// <h3>He is a person, and the numbers say which kind</h3>
 ///
-/// <para><b>His standoff is the game's own smear rung.</b> #832 already decided the range at which this game
-/// stops resolving a body into a face — <see cref="PatrolBeat.SmearFromDu"/>, the outer fifth of the eye,
-/// where the deck draws <i>a silhouette with no plate on it</i> because <i>"a captain who can read a name off
-/// a figure has resolved it, and out here they have not"</i>. That is not a range a tail would like; it is the
-/// range a tail IS. So <see cref="StandsOffDu"/> quotes it rather than choosing a number, and the canon line
-/// about him — <i>a grey coat, never a face</i> — is a description of what the renderer already does at that
-/// distance, not a claim this lane makes on top of it.</para>
+/// <para><b>His standoff is the range this game already calls "registering somebody".</b>
+/// <see cref="PatrolBeat.NoticeDu"/> is #832's own statement of <i>how close one person has to be before they
+/// register that somebody is standing there</i> — a third of the eye's reach, and the whole of the timing
+/// window the stealth game is played in. A man keeping station lives exactly on it: near enough to keep you,
+/// far enough that you have had no reason to have registered him. So <see cref="StandsOffDu"/> quotes that
+/// number rather than choosing one, and the far edge of his band is the range at which a body on a deck is
+/// legible at all (<see cref="FootTail.LegibleDu"/>) — past which he would be the one losing you.</para>
 ///
 /// <para><b>And he is mundane.</b> #1062 is explicit that this half <i>"takes NO position on #672"</i> — a
 /// tail here is a human being until some other issue says otherwise. He never confronts, never speaks, never
@@ -92,25 +92,33 @@ public static class TheTailBehindYou
 
     // ── THE BAND HE KEEPS ───────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>#1062 · How far back he stays — <see cref="PatrolBeat.SmearFromDu"/>, the range this game
-    /// already draws a body at without a name on it. Quoted and never chosen: see the type's own note.</summary>
-    public static double StandsOffDu => PatrolBeat.SmearFromDu;
+    /// <summary>#1062 · How close he ever comes — <see cref="PatrolBeat.NoticeDu"/>, this game's own
+    /// statement of the range at which one person registers that another is standing there. Quoted and never
+    /// chosen: see the type's own note.</summary>
+    public static double StandsOffDu => PatrolBeat.NoticeDu;
 
     /// <summary>#1062 · …and the range past which he would lose YOU, which is the same range at which a body
     /// on a deck is legible at all (<see cref="FootTail.LegibleDu"/>, itself
-    /// <see cref="PatrolBeat.MarkerSightDu"/>). His whole band is therefore exactly one rung of the game's
-    /// own sighting ladder — the smear — and there is no number in it that this lane invented.</summary>
+    /// <see cref="PatrolBeat.MarkerSightDu"/>). Both ends of his band are the game's own numbers and neither
+    /// was invented here.</summary>
     public static double LosesYouBeyondDu => FootTail.LegibleDu;
 
-    /// <summary>#1062 · Is he where a tail stands? Inside his own reach and no closer than the range at which
-    /// a face would start to resolve.</summary>
+    /// <summary>#1062 · Is he where a tail stands? No nearer than the range a person is registered at, and no
+    /// further than the range a body is legible at.</summary>
     public static bool HoldsHisBand(double rangeDu) =>
         rangeDu >= StandsOffDu && rangeDu <= LosesYouBeyondDu;
 
-    /// <summary>#1062 · Where he would rather be standing, when he has to move: the middle of his own band.
-    /// A target rather than a rule — the stone decides whether he gets it, exactly as it decides which side
-    /// of a bar top a body may stand on.</summary>
-    public static double ComfortableDu => (StandsOffDu + LosesYouBeyondDu) / 2.0;
+    /// <summary>
+    /// #1062 · <b>THE TWO RANGES HE TRIES, in order.</b> As far back as the room will let him, and if it will
+    /// not, as far back as his band allows at all.
+    ///
+    /// <para>Two and not one because a station bar is a ROOM: a single standoff would mean a man who can only
+    /// tail you across a concourse and simply fails to exist indoors, which is the worst of both — a feature
+    /// that is invisible exactly where the owner plays. And it is an ordered LIST rather than a search
+    /// between them, for this file's usual reason: a list can be read, and a search has to be trusted.</para>
+    /// </summary>
+    public static IReadOnlyList<double> TheRangesHeTries { get; } =
+        [(StandsOffDu + LosesYouBeyondDu) / 2.0, StandsOffDu];
 
     /// <summary>
     /// #1062 · <b>THE SIDES HE SOUNDS, in order</b> — the bearings, relative to the captain, that a standing

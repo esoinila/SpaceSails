@@ -280,13 +280,19 @@ public partial class Map
                 continue;
             }
 
-            // #1062 slice 2 · A GREY COAT WEARS NO NAME, and that is #832's law rather than this lane's.
-            // The man behind the captain holds the SMEAR rung of the game's own sighting ladder — the range
-            // at which the deck already draws "a silhouette without a plate on it, because a captain who can
-            // read a name off a figure has resolved it, and out here they have not". So he is drawn there,
-            // through the flag the pen already reads, and the feature's "never a face" costs no new ink and
-            // no new branch in the renderer. It also means his plate is never on screen: a tail with a name
-            // over his head would be this game telling the captain the one thing it must not.
+            // #1062 slice 2 · A GREY COAT WEARS NO NAME — through #832's own flag, and this is the one
+            // liberty the lane takes with it, taken deliberately and stated here.
+            //
+            // What the flag means in the pen is "the instrument is unsure, so DRAW LESS — a silhouette
+            // without a plate on it, because a captain who can read a name off a figure has resolved it, and
+            // out here they have not". Everywhere else in the game the reason for that unsureness is RANGE.
+            // Here it is the man: the captain never resolves him, that is the entire feature, and the canon
+            // he is written out of ends "never a face". The alternative was to author a NAME for him and
+            // print it over his head, which would be this game telling the captain the one thing it must
+            // not — and would give the tail away before a single piece of craft had been spent.
+            //
+            // No new ink, no new branch in the renderer, and no new token: the flag already draws exactly
+            // the figure this feature needs, for a reason one step to the side of the one it was written for.
             //
             // …AND #793's HELD BAR FINALLY HAS SOMEBODY UNDER IT. That branch shipped as a seam with its own
             // note — "NOTHING SHIPPED SETS IT: no mover in the game today is a tail". One is now, and it is

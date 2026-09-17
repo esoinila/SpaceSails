@@ -174,10 +174,25 @@ public partial class Map
     /// </summary>
     private DeckReachability.Point? TheSpotBehindYou(IReadOnlyList<SurfaceCollision.Segment> walls)
     {
+        foreach (double reach in TheTailBehindYou.TheRangesHeTries)
+        {
+            if (TheSpotBehindYouAt(reach, walls) is { } spot)
+            {
+                return spot;
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>#1062 · …the sounding itself, at one of his two reaches.</summary>
+    private DeckReachability.Point? TheSpotBehindYouAt(
+        double reach, IReadOnlyList<SurfaceCollision.Segment> walls)
+    {
         foreach (double bearing in TheTailBehindYou.TheSidesHeSounds)
         {
-            double x = _avatarX + (System.Math.Cos(bearing) * TheTailBehindYou.ComfortableDu);
-            double y = _avatarY + (System.Math.Sin(bearing) * TheTailBehindYou.ComfortableDu);
+            double x = _avatarX + (System.Math.Cos(bearing) * reach);
+            double y = _avatarY + (System.Math.Sin(bearing) * reach);
 
             // ── AND HE STAYS ON THE STATION SIDE ─────────────────────────────────────────────────────────
             //
