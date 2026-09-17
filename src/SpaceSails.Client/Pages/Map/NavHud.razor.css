@@ -26,7 +26,24 @@
     z-index: calc(var(--z-map-chrome) + 12);
     pointer-events: none;
     width: fit-content;
-    max-width: 100%;
+
+    /* #1219 · …AND IT STOPS WHERE THE CHIP COLUMN STARTS. `100%` let this column lay out all the way to
+       the glass's right edge, which is where `.desk-chip-strip` docks its 9.5rem of status chips — so with
+       the plotting table open and the toolbar grown to nine controls, `▶ Play` was laid out at x 1218…1294
+       on a 1440-wide window and the strip (from x 1280) painted over its last third. A click that landed
+       there switched desk instead of going back to flying live.
+
+       This is #997's own number getting its fourth reader — `.desk-layer`'s right padding and
+       `.map-scope`/`.map-scope-tile`/`.parrot-perch`'s `right` are the other three — rather than a new
+       literal or a z-index. `.btn-toolbar` has carried `flex-wrap: wrap` since #123/#195 precisely so the
+       row can break, so it breaks one button earlier now instead of sliding under the chips. The readouts
+       already sized themselves right up against the strip (measured x 12…1117 at 1280×720, a 3 px hairline
+       off it), so they give 13 px and wrap; nothing else in the column is as wide as the cap.
+
+       Unconditional, deliberately: on a phone the strip already owns 40% of the width and no clearance can
+       be had there, but a wrapped row of buttons you can press beats a row you cannot (#212), and it is the
+       same statement `.desk-layer` makes for every desk panel. */
+    max-width: calc(100% - var(--desk-chip-strip-clearance));
     padding-left: 0.75rem;
     margin-top: 0.4rem;
 
