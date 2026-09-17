@@ -53,6 +53,22 @@ public partial class Map
             return;
         }
 
+        // ── #640 · THE DEATH WHERE NOBODY COMES ──────────────────────────────────────────────────────
+        //
+        // Asked FIRST, before a single line of the wake runs, because the wake is exactly what does not
+        // happen. Owner ruling 2026-09-17, option A: a captain whose lineage pulled the purge handle on a
+        // node holding their own pattern has nothing on file, so this death is the last one — no clinic, no
+        // bill, no rustbucket, no successor, and no next captain to hand the ledger to.
+        //
+        // The flag is per-thread and durable (NebulaProgress.PolicyClosed → NebulaSection.PolicyClosed), so
+        // it survives the save, the vault and the reload between the handle and the death, which may be
+        // hours apart and is the whole point: you find out afterwards.
+        if (_nebula.PolicyClosed)
+        {
+            NoPatternOnFile(b);
+            return;
+        }
+
         // #422 arc 2 — how many times this THREAD has woken before (durable), read BEFORE the succession adds
         // this death's retiree, so it counts prior lives only. Gates the clinic's second page below.
         int priorDeaths = ActiveThreadInfo?.Retired.Count ?? 0;
@@ -169,6 +185,65 @@ public partial class Map
         _rebirthsSeen++;
 
         b.Phase = BustedEncounter.Stage.Resurrected;
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// #640 · THE RUN ENDS. The death after a captain purged their own pattern out of a cold-archive node.
+    ///
+    /// <para>Owner ruling 2026-09-17, option A: <i>"yes let's have that possibility … it is very film noir
+    /// for the characters to want that kind of things and it certainly closes a story arc for that
+    /// captain."</i> <see cref="ArchiveNode.NoRestoreLine"/> has been authored, tested for its wording and
+    /// read by nothing for two months, because the sentence says the policy is CLOSED and the sim went on
+    /// resurrecting you — the bug class this project has paid for three times. This method is what makes
+    /// the sentence true, and it is deliberately written as the LIST OF THINGS THAT DO NOT HAPPEN.</para>
+    ///
+    /// <list type="bullet">
+    /// <item>No <c>InsuranceRule.ApplyToRebirth</c>: no clinic, no bill, no rustbucket, no kit, no tank.</item>
+    /// <item>No <c>WakeAtNearestHaven</c>: the ship is not moved, because nobody is flying it.</item>
+    /// <item>No <c>IssueSuccessorCaptain</c>: no new name, no new face, no retiree row, no filing line —
+    /// the amnesia beat belongs to somebody who wakes up.</item>
+    /// <item>No rebirth glitch and no clinic ledger: both are things read AT a clinic, and the whole line
+    /// on the card is that the clinic's welcome loop does not play.</item>
+    /// <item>No <c>_rebirthsSeen++</c>.</item>
+    /// </list>
+    ///
+    /// <para>What DOES happen is the hunter losing interest in a ship nobody is coming back to, the
+    /// excursion being written off exactly as any death writes it off, the thread being closed in the
+    /// registry, and the card turning to the one page it has never turned to.</para>
+    /// </summary>
+    private void NoPatternOnFile(BustedEncounter b)
+    {
+        RemoveHunter(b.HunterId);
+
+        // The away gig ends the same way it ends on any death — as a failed trip, no payout — and the
+        // surface folds away so the map is under the card rather than a live excursion nobody is walking.
+        if (_surface is not null)
+        {
+            _surface = null;
+            _reevers.Clear();
+            _lastNearestReeverRange = null;
+            SetDeckForDock(null);
+            LogAutopilotEvent("🛬 The expedition is written off — the away team scrubs the gig, and this time there is nobody to fly the body to.");
+        }
+
+        // THE PEN GOES DOWN FIRST. Everything after this point must not be able to write a rolling autosave
+        // over the moment the captain was last alive, or to stamp the registry and quietly hand the front
+        // door a run with no captain in it.
+        _threadIsOver = true;
+
+        // …and the universe is closed in the index: Continue stops leading here, the row stays on the shelf
+        // so the logbook can still show what became of this captain, and no other thread is touched. A
+        // legacy run with no indexed thread simply has no row to close — Close answers null and the card
+        // still reads the line, because the line is about the policy and not about the bookkeeping.
+        if (!string.IsNullOrEmpty(_activeThreadId))
+        {
+            Threads.Close(_activeThreadId);
+            RefreshThreadList();
+            RefreshSlotList();
+        }
+
+        b.Phase = BustedEncounter.Stage.NoRestore;
         StateHasChanged();
     }
 

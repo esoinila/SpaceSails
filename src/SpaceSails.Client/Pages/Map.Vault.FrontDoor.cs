@@ -68,6 +68,35 @@ public partial class Map
         StateHasChanged();
     }
 
+    /// <summary>
+    /// #640 · THE ONLY WAY OFF THE LAST CARD. Every other death panel's dismiss turns a page — "…wake up"
+    /// leads to a clinic, "Board the rustbucket" leads to a new captain. This one leads nowhere, because
+    /// there is nowhere: the captain purged their own pattern, nobody came, and the thread is closed.
+    ///
+    /// <para>So it does three honest things and no fourth. It CLOSES the card — the house's general UI law
+    /// of 2026-08-24 (no pop-up that cannot be closed), and there is no page after this one to turn to. It
+    /// REBINDS off the dead run: <see cref="GameThreadRegistry.Active"/> now skips the ended thread, so the
+    /// page stops holding a universe with no captain in it, and answers null when that was the only run on
+    /// the shelf. And it opens the FRONT DOOR rather than the in-game logbook, because the in-game logbook
+    /// is a drawer in a ship's desk and the ship has nobody aboard: what the player needs is the whole
+    /// shelf — their other captains, their banked moments, and a new voyage.</para>
+    ///
+    /// <para>The ended thread is still ON that shelf, with its captain, its retirees and its banked
+    /// berths. A run ending is not a record being deleted.</para>
+    /// </summary>
+    private void LeaveTheClosedThread()
+    {
+        _busted = null;
+
+        _activeThreadId = Threads.Active()?.Id;
+        RefreshThreadList();
+        RefreshSlotList();
+
+        _showSaveDrawer = false;
+        _showStartPicker = true;
+        StateHasChanged();
+    }
+
     // The nine manual slot ids (1..9), for the drawer/front-door to render a bank-to row per slot.
     private static readonly string[] ManualSlotIds =
         [.. Enumerable.Range(1, SaveSlotBook.ManualSlotCount).Select(SaveSlotBook.ManualSlotId)];

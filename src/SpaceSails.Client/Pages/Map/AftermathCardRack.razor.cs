@@ -65,6 +65,8 @@ public partial class AftermathCardRack
     [Parameter] public Func<int, string> HeatFlames { get; set; } = default!;
     [Parameter] public string HotGlossTitle { get; set; } = default!;
     [Parameter] public Func<string, string> OldCrewHistoryLine { get; set; } = default!;
+    [Parameter] public Action LeaveTheClosedThread { get; set; } = default!;
+
     [Parameter] public Action OpenLogbookFromDeath { get; set; } = default!;
     [Parameter] public Action PayCompletedQuests { get; set; } = default!;
     [Parameter] public Action PresentTheBlackOpsKey { get; set; } = default!;

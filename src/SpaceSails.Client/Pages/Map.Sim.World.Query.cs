@@ -318,6 +318,29 @@ public partial class Map
                 q.WreckCauseCheat = ArchiveCheatCause;
             }
         }
+        else if (pair.StartsWith("nopattern=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #640 dev cheat: /map?nopattern=1 boots a captain WHOSE POLICY IS ALREADY CLOSED — the state a
+            // real captain reaches by pulling the purge handle on a cold-archive node holding their own
+            // pattern, which is a 1-in-20 seed behind a 1-in-3 hull behind a throw they have to pay for.
+            //
+            // The beat it exists to reach is not the handle, it is the DEATH AFTER the handle, so it is
+            // meant to be combined with ?death= — that is the whole scene, one URL, from cold:
+            //
+            //   /map?nopattern=1&death=impact                            on her own deck
+            //   /map?nopattern=1&death=collector                         the BUSTED ladder
+            //   /map?nopattern=1&death=suffocated&dock=the-tilt&land=1   a landing party
+            //
+            // It sets nothing but the flag the sim reads, so what you get is the real path: the real death,
+            // the real four-stage freeze beat, and then Map.Combat.Busted.Wake's own first question. Alone
+            // (/map?nopattern=1) it is a live run that has already spent its last life, which is the other
+            // thing worth playing — go and do something dangerous and find out the way the captain does.
+            string candidate = Uri.UnescapeDataString(pair["nopattern=".Length..]).ToLowerInvariant();
+            if (candidate is "1" or "true" or "yes")
+            {
+                q.NoPatternCheat = true;
+            }
+        }
         else
         {
             return false;
