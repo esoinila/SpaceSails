@@ -24,7 +24,7 @@ public partial class Map
     /// <summary>Where this boot ends: clamped on at a berth, at a named start point, or at the picker.</summary>
     private void ApplyTheStartPoint(BootQuery q)
     {
-        // #1213 · THE CLOCK IS SET BEFORE SHE ARRIVES, and it has to be. See TheClockTheBerthWasReachedAt.
+        // #1213 · THE CLOCK IS SET BEFORE SHE ARRIVES, and it has to be. See JumpTheClockBeforeSheArrives.
         JumpTheClockBeforeSheArrives(q);
 
         // Start point: an explicit /map?start=<id> jumps straight there (the renderer is live now, so
