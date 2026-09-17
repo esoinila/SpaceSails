@@ -231,6 +231,29 @@ public partial class Map
         /// everything else here (while you stand there it has no ending at all), which is what this enum is
         /// for.</para></summary>
         LettingYouPass,
+
+        /// <summary>
+        /// #1062 slice 2 · <b>SOMEBODY WALKING A ROUTE THAT IS ABOUT YOU.</b> The mirror of
+        /// <see cref="WalkingTheRoute"/>: a mundane human keeping station on the captain across a station's
+        /// concourse, at the range this game stops drawing a face at, ordering nothing.
+        ///
+        /// <para>It is its own errand because it is the one walk in this enum whose DESTINATION is the
+        /// captain — not his table, not a fixture, not a leaf, but the band around him
+        /// (<see cref="SpaceSails.Core.TheTailBehindYou"/>). It is also the only figure in this game that
+        /// ever declares itself to <c>FootTail</c> as a tail, which is the seam #793 shipped and nothing
+        /// filled until now.</para></summary>
+        BehindYou,
+
+        /// <summary>
+        /// #1062 slice 2 · <b>AND HE HAS BEEN SHAKEN.</b> The walk out, once the captain has spent as long
+        /// out of his sight as it took to notice him.
+        ///
+        /// <para>Its own ending, and not <see cref="Leaving"/>, for the reason <see cref="RepLeaving"/> is
+        /// its own: he is not one of the room's people and must not eat a slot of <c>Egress.MostAtOnce</c>
+        /// on his way out of a room he does not live in. <b>Nothing is said at the far end of it</b> unless
+        /// the captain had already noticed him — a man nobody spotted simply stops being in the
+        /// room.</para></summary>
+        AskingTheWrongFloor,
     }
 
     /// <summary>#731 · Every walker's slot is off-map when nobody is in it — the same idiom an unseen guard
@@ -251,9 +274,32 @@ public partial class Map
             // The EXISTING NPC pen and no new one: a plate that is not a guard's, a sweeper's or an Old
             // One's falls through DrawTheFigures to the ordinary grey, which is exactly right — the person
             // crossing the hall is one of the people who were sitting in it a minute ago.
-            buffer[slot] = i < afoot.Count
-                ? new DeckPlan.Droid(afoot[i].Walk.X, afoot[i].Walk.Y, afoot[i].Walk.Facing, afoot[i].Walk.Plate)
-                : new DeckPlan.Droid(-9999, -9999, 0, WalkerSlotName(i));
+            if (i >= afoot.Count)
+            {
+                buffer[slot] = new DeckPlan.Droid(-9999, -9999, 0, WalkerSlotName(i));
+                continue;
+            }
+
+            // #1062 slice 2 · A GREY COAT WEARS NO NAME, and that is #832's law rather than this lane's.
+            // The man behind the captain holds the SMEAR rung of the game's own sighting ladder — the range
+            // at which the deck already draws "a silhouette without a plate on it, because a captain who can
+            // read a name off a figure has resolved it, and out here they have not". So he is drawn there,
+            // through the flag the pen already reads, and the feature's "never a face" costs no new ink and
+            // no new branch in the renderer. It also means his plate is never on screen: a tail with a name
+            // over his head would be this game telling the captain the one thing it must not.
+            //
+            // …AND #793's HELD BAR FINALLY HAS SOMEBODY UNDER IT. That branch shipped as a seam with its own
+            // note — "NOTHING SHIPPED SETS IT: no mover in the game today is a tail". One is now, and it is
+            // asked through FootTail's own law, from FootTail's own mover, so the bench and the bar cannot
+            // come to two opinions about who is standing still because you did.
+            bool coat = afoot[i].For is Errand.BehindYou or Errand.AskingTheWrongFloor;
+            buffer[slot] = new DeckPlan.Droid(
+                afoot[i].Walk.X, afoot[i].Walk.Y, afoot[i].Walk.Facing, afoot[i].Walk.Plate,
+                Held: coat && SpaceSails.Core.FootTail.MustHold(
+                    CaptainIsSeated, _avatarX, _avatarY,
+                    SpaceSails.Core.TheTailBehindYou.AsAMover(afoot[i].Walk.X, afoot[i].Walk.Y),
+                    _deckPlan.CollisionField),
+                Smeared: coat);
         }
     }
 
