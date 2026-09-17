@@ -17,7 +17,9 @@ namespace SpaceSails.Core;
 ///
 /// <para><b>The law.</b> She counts as ADRIFT when three things are true at once:
 /// <list type="number">
-///   <item>reaction mass is zero (and she is not clamped to a berth — a clamped ship is home);</item>
+///   <item>reaction mass is zero, and she is nowhere the world already holds her — no arm on her at a berth,
+///   and not inside a planetary market's catchment either (#1225: both count, and the caller's argument is
+///   named for both, because "docked" read as the clamp while the client's flag meant the catchment);</item>
 ///   <item>no burn or arrival step of the current plan can still execute;</item>
 ///   <item>the current trajectory reaches no haven's capture.</item>
 /// </list>
@@ -130,13 +132,21 @@ public static class VoidRule
     /// </summary>
     /// <param name="reactionMassPulses">Pulses in the tank. Zero — the exact-integer sense the ship's own
     /// <c>Adrift</c> uses — is the first arm.</param>
-    /// <param name="docked">Clamped to a berth. A clamped ship is home, whatever the tank says.</param>
+    /// <param name="berthedOrInAPortZone">Somewhere the world already has a hold on her, rather than the
+    /// void: an arm on her at a berth, OR inside a planetary market's catchment. Either way she is home
+    /// enough, whatever the tank says.
+    /// <para><b>#1225 renamed this from <c>docked</c></b>, and the old name is the whole reason the client
+    /// handed it the wrong field for a year: "docked" reads as THE CLAMP, while the client's <c>_docked</c>
+    /// is the 0.067 AU market catchment and is false at four of the seven berths in the scenario. A parameter
+    /// named for one of the two things it accepts is a sentence-vs-sim bug waiting at the call site.</para>
+    /// </param>
     /// <param name="aPlanStepCanStillFire">Any non-stale, unexecuted, still-future step of the current plan —
     /// a plotted burn or an armed arrival. While the plan has a move left in it, she is flying, not drifting.</param>
     /// <param name="aHavenStillTakesHer"><see cref="AHavenStillTakesHer"/> over the plotted course.</param>
     public static bool IsAdrift(
-        int reactionMassPulses, bool docked, bool aPlanStepCanStillFire, bool aHavenStillTakesHer) =>
-        reactionMassPulses <= 0 && !docked && !aPlanStepCanStillFire && !aHavenStillTakesHer;
+        int reactionMassPulses, bool berthedOrInAPortZone, bool aPlanStepCanStillFire,
+        bool aHavenStillTakesHer) =>
+        reactionMassPulses <= 0 && !berthedOrInAPortZone && !aPlanStepCanStillFire && !aHavenStillTakesHer;
 
     // ===== THE CLOCK =====
 
