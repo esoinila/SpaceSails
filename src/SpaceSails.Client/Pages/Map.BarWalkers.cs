@@ -210,6 +210,8 @@ public partial class Map
         AdvanceTheWalkIn(bar);   // #973 L5b · …and whoever the evening has crossing the floor to your table
         AdvanceTheFinder(bar);   // #417 · …and the finder, when there is a case or an account to settle
         AdvanceTheWalk(bar);     // #1199 · …and whoever the evening has crossing the floor with YOU behind them
+        AdvanceTheCoat(bar);     // #1062 slice 2 · …and whoever an outfit has crossing it behind YOU
+        TheBurnIsToldHere(bar.BodyId);   // #1062 slice 2 · …and whether somebody walked this place first
     }
 
     /// <summary>#973 L0 · CASTING OFF IS THE ROOM FORGETTING. Same law a turned shift is underground: what
@@ -229,6 +231,11 @@ public partial class Map
         // changed. A notice latch carried across a casting-off would be somebody at a different station
         // already suspicious of a captain who has not walked behind them yet.
         ForgetTheWalk(berth);
+
+        // #1062 slice 2 · …and the man behind the captain, for the same reason and through the same one
+        // place. An exposure clock carried across a casting-off would be a captain half-way to noticing
+        // somebody at a station he is no longer tied to.
+        ForgetTheCoat(berth);
 
         // …and the evening with them. A different berth is a different room, and a chair emptied at the last
         // one is a chair belonging to a station this captain is no longer tied to. Null and not empty for the
