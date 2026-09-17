@@ -36,6 +36,32 @@ room the room has left after last call).
 
 ---
 
+## 1b · Losing YOUR tail — #1062's mirror half (this PR)
+
+The other half of the same issue: *"or trying to lose a tail our selves :-D"*. Somebody mundane and human is
+behind the captain, ashore, and **nothing in the game says a word about him** until the captain works it out.
+Full feature note: [`features/losing-the-tail.md`](features/losing-the-tail.md).
+
+| what | link | what to look for |
+| --- | --- | --- |
+| **Somebody came in after you** (#1062 slice 2) | `/map?tailed=1&ashore=1&dock=selene-gate` — ashore in **THE EARTHRISE BAR** with the dev row on. The row forces only WHETHER; the world's own route in is an outfit's #715 folder at the band where it wants a face (a femme-fatale walk-in that turned out to be a setup, or a compromising chip sold at a dark-web desk). | A grey figure follows you in through the bar's north door and settles **nine to thirty deck units behind you, with a line to you, and no name over him**. He never goes to the counter. **Nothing is pulsed, nothing is carded, nothing goes in the book.** |
+| **The chair that faces the door** | same link. Walk to a top with a clear line back to the bar's doorway and press `[E]` to take it. | After about **nine seconds in the chair**, one pulse: *"From this chair you can see the door. So can the man who came in after you, and he has not ordered."* Stand on your feet in the same room for the same nine seconds first and **nothing happens** — the sit is the whole cost. |
+| **The same coat, two doors running** | same link. Walk out of the bar, across the concourse, and **out onto `OBSERVATION WALK`** (edge 5, due west — #1199's tube). | He follows you through the bar's doorway and then to the mouth of the walk, which is the only place in a one-way room with a line to you. Two DISTINCT doorways is the tell: *"The same grey coat, two doors running. Nobody's errand takes them through both."* A locked cellar leaf never counts. |
+| **Losing him** | same link. Walk back **down your own gangway** toward the ship, and stay there. | He will not follow you down the umbilical. After about **nine seconds with nothing to look at** he gives up: *"The corridor behind you is only a corridor. Whoever it was is asking the wrong floor about you."* — and the field book takes one line, filed on **THREADS under the PLACE** (📍 SELENE GATE) and never under a name: *a tail, lost at … — a grey coat, never a face*. |
+| **…and the half that must look exactly the same** | `/map?tailed=0&ashore=1&dock=selene-gate`, and every other link in this file | **Nothing.** No man, no lines, no book entry — and the drawn frame is byte-identical: the frame-hash ledger did not move by one row in this lane. Slice 1's own beat (GILT-EYE and the empty walk, §1 above) plays exactly as it did. |
+
+**Reading the clocks while you play:** both of this half's clocks are counted in **real** seconds off the
+frame stamp, not in sim time — twelve of the game's own looks at `ReeverObservation.LookIntervalSeconds`,
+which is nine seconds whatever the warp slider says. The warp slider is not the fast-forward here and cannot
+be used to cheat either direction.
+
+**What would say this regressed:** a line about a tail arriving before you have done anything to earn it (the
+whole feature is that it does not announce itself); a name drawn over the grey figure; him following you down
+the gangway, or standing at the counter; him giving up the instant you step behind a wall, or never giving up
+at all.
+
+---
+
 ## 2 · The boot, with no long freeze in it (#161, this run)
 
 Nothing to play and nothing that looks different — this is the half that must look **exactly** the same.

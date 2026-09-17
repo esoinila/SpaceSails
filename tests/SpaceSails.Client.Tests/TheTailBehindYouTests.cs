@@ -221,14 +221,26 @@ public sealed class TheTailBehindYouTests
             map, "TheDoorwayHeIsIn", HavenInterior.BarThreshold.X, HavenInterior.BarThreshold.Y);
         Assert.NotNull(atTheBarDoor);
 
-        // …and the two leaves that never open are not doorways, however squarely a body stands in them.
+        // …and the two leaves that never open are not doorways AT ALL, however squarely a body stands in
+        // them. The assertion is NULL and not "some other index", which is the whole of what this guard is
+        // for — the first draft asked only that the cellar was not the BAR's door, and a cellar counted under
+        // its own index satisfies that while being exactly the bug: two leaves nobody can walk through, in
+        // one room, adding up to a tell a man earns by standing still. It stayed GREEN on the revert.
         Assert.NotEmpty(bar.Doors);
         foreach (UndergroundComplex.LockedDoor leaf in bar.Doors)
         {
-            int? counted = (int?)Invoke(
-                map, "TheDoorwayHeIsIn", leaf.X1, (leaf.Y1 + leaf.Y2) / 2);
-            Assert.True(counted != atTheBarDoor,
-                "a leaf the captain's own TRY is refused at was counted as the bar's own doorway.");
+            Assert.Null((int?)Invoke(map, "TheDoorwayHeIsIn", leaf.X1, (leaf.Y1 + leaf.Y2) / 2));
+        }
+
+        // …and the locked leaves really are ON the plan at those coordinates, so the claim above is about a
+        // door that exists rather than about empty floor.
+        DeckPlan plan = (DeckPlan)Field(map, "_deckPlan")!;
+        foreach (UndergroundComplex.LockedDoor leaf in bar.Doors)
+        {
+            Assert.Contains(plan.Doors, d =>
+                d.Locked
+                && Math.Abs(((d.X1 + d.X2) / 2) - leaf.X1) < DeckPlan.DoorOpenRadius
+                && Math.Abs(((d.Y1 + d.Y2) / 2) - ((leaf.Y1 + leaf.Y2) / 2)) < DeckPlan.DoorOpenRadius);
         }
 
         // The deck has more than one walkable doorway at all, which is what makes the move possible.
