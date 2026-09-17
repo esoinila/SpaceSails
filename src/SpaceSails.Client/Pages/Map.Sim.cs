@@ -221,17 +221,20 @@ public partial class Map
     /// asked. A beat the world raised is not an answer to whichever card happens to be up, and writing it into
     /// that card's outcome would put the tail's chair reading inside Ilse Varga's pitch.</para>
     ///
-    /// <para><b>One held line and not a queue</b>, which is <see cref="PulseHold"/>'s own settled law rather
-    /// than a new decision: the HUD has ONE slot with a dwell, so releasing two would write the second over
-    /// the first in the same frame and the captain would read exactly one of them anyway. The one that
-    /// survives is chosen by RANK — <i>the sentence that survives the card must be the sentence that would
-    /// have been on screen had no card been raised</i>.</para>
+    /// <para><b>#1230 · AND THE HOLD IS A QUEUE.</b> #1214 shipped with #768's one held line, on #768's own
+    /// argument — <i>the HUD has one slot, so releasing two would write the second over the first and the
+    /// captain would read exactly one of them anyway</i>. That is true inside one BREATH, which is all #768
+    /// ever held; it is false here, because this funnel holds lines the world raises MINUTES apart behind a
+    /// card the captain left open, and the loser was not overwritten — it was annihilated before it was ever
+    /// on screen. The tail's chair reading and its losing line, nine seconds apart under one open card, are
+    /// the case. So every line at the floor and above is kept, in order, and said one at a time as the slot
+    /// frees up (<see cref="PulseHold"/>, where the five clauses are written down).</para>
     /// </remarks>
     private void ShowPulseMessage(string message, PulseRank rank = PulseRank.Status)
     {
         if (rank.IsPlotSignificant() && ACardStopsTheWorld)
         {
-            _held = _held.Hold(message, rank);
+            _held = _held.Hold(message, rank, _lastTimestampMs ?? 0);
             return;
         }
 
