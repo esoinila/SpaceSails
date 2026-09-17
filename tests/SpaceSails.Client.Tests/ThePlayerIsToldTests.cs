@@ -381,6 +381,27 @@ public sealed class ThePlayerIsToldTests
         new("the person you lost is at a counter, and nothing is owed an explanation",
             Surface.RankedPulse, "Map.ObservationWalk.cs", "TheyAreAtTheCounter",
             "ShowPulseMessage(ObservationWalk.CounterLine(person), PulseRank.Beat);"),
+
+        // #1062 slice 2 · THE MIRROR HALF, and both of its rows are about a captain WORKING SOMETHING OUT
+        // rather than being handed it. That is why neither is a card: a card would be the house announcing
+        // "you have discovered a tail", and the whole of the feature is that the house says nothing until the
+        // captain has spent something — a sit that costs him the floor, or a detour that costs him his route.
+        //
+        // RANKED and not Status, because the line is the PAYOFF of that spend and the next instrument reading
+        // must not wipe it before it is read — #689's own failure, and the reason PulseRank.Beat exists. And
+        // there is nothing standing in front of him: he is on a deck, on his own feet, with no dialog open.
+        new("you have worked out that the man who came in after you is here for you",
+            Surface.RankedPulse, "Map.TailBehindYou.cs", "YouHaveNoticedHim",
+            "ShowPulseMessage(line, PulseRank.Beat);"),
+
+        // …and the other end of the same exchange. It is said ONLY to a captain who had already noticed him
+        // (HeGoesAndAsksTheWrongFloor gates it on that latch, and a guard of its own drives the case where he
+        // had not): a captain who never spotted the man is never told he has just lost him, because he never
+        // knew there was anything to lose. The book takes the same beat in the same breath, filed under the
+        // PLACE, so the line is readable again after the HUD has moved on.
+        new("the corridor behind you is empty, and the man who was in it has gone",
+            Surface.RankedPulse, "Map.TailBehindYou.cs", "HeGoesAndAsksTheWrongFloor",
+            "ShowPulseMessage(TheTailBehindYou.LostLine, PulseRank.Beat);"),
     ];
 
     /// <summary>
