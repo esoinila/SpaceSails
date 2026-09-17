@@ -108,18 +108,20 @@ public sealed class TheDeathWhereNobodyComesTests
     }
 
     [Fact]
-    public async Task NobodyIsIssuedALicence()
+    public async Task TheCardStopsAtTheStageThatEndsTheRun()
     {
-        // A succession writes two names onto the encounter — the retiring captain's and the successor's —
-        // and the card prints them side by side under a portrait. On this death neither is written, because
-        // the succession never runs, and the panel that would draw them is never reached.
+        // Read the encounter's own stage rather than inferring it from the pixels: the death chain's last
+        // page is Resurrected on every other death in the game and NoRestore on this one, and that single
+        // field is the whole of what BustedResurrect decided. (An earlier draft of this guard asserted the
+        // ABSENCE of the succession's names, and it passed on the reverted fix — because a bench boot mints
+        // no game thread, so no successor is named on either path. That is the fifth bug class exactly: a
+        // world that cannot tell pass from fail. This asks the one thing that moves.)
         using var bench = await DeskBench.BootAsync(TheLastLife);
-        DeskBench.Painted.Node card = TheCard(await WakeUpAsync(bench, TheLastLife), TheLastLife);
+        await WakeUpAsync(bench, TheLastLife);
 
-        Assert.True(card.Descendants().All(n => !n.HasClass("busted-succession-names")),
-            "a successor was named on the card of a captain nobody came for");
-        Assert.True(card.Descendants().All(n => !n.HasClass("succ-portrait")),
-            "a new face was painted onto the card of a captain nobody came for");
+        object encounter = bench.Peek("_busted")!;
+        object? stage = encounter.GetType().GetProperty("Phase")!.GetValue(encounter);
+        Assert.Equal("NoRestore", stage?.ToString());
     }
 
     // ── 3 · The way off the last card. ──
