@@ -50,7 +50,28 @@ public sealed partial class DeckView
         // Handed down whole from the sim's own clock (FrameGap over Map.Deck's SimStalenessSeconds), which
         // is the same clock the INPUT path is gated on: a HUD that says the world is live while a click is
         // being held would be this repo's sentence-vs-sim bug class aimed at the HUD itself.
-        string? StallBanner = null);
+        string? StallBanner = null,
+        // #440 · THE KEYBAR, OFF THE REGOLITH. The surface has had a CONTEXTUAL bar since #324 — the bot in
+        // the sling spells out [T], the chest in hand spells out [G] — and the ship's own deck had a fixed
+        // sentence naming three keys, whatever it was standing at. That is how B (the favour bank at a
+        // contact's table, Map.Quests.Bank) came to be bound on every deck in the game and named on none of
+        // them: an affordance you can only find by accident is a bug, not a secret (#212).
+        //
+        // Null keeps the fixed sentence below, so every caller that predates this (the warm first frame,
+        // the tests) draws exactly what it drew. The page hands the whole line down — see
+        // Map.Deck.Prompts.BuildDeckKeyHints — for the same reason SurfaceHud.KeyHints does: the bar is
+        // composed where the facts are, never worked out again in the renderer (#591).
+        string? KeyHints = null);
+
+    /// <summary>#440 · The deck's own keybar, docked at a haven — the one place the tube up into a bar is
+    /// worth naming. A <c>const</c> rather than a literal in the draw so that the page composing the
+    /// contextual bar and the renderer falling back to the fixed one are quoting ONE sentence.</summary>
+    public const string DockedKeyHints =
+        "docked ⚓ walk up through the airlock to go ashore ∙ WASD — move ∙ E — interact ∙ Q — helm";
+
+    /// <summary>#440 · The deck's own keybar under way. See <see cref="DockedKeyHints"/> for why it is a
+    /// const.</summary>
+    public const string DeckKeyHints = "WASD / arrows — move ∙ E — interact ∙ Q — back to the helm";
 
     /// <summary>#313 · Everything the surface excursion overlays on the grid: the timed dig channel
     /// (shovel + bar), a panic-dropped chest, own caches' ✗ marks, and the crude motion-tracker fan

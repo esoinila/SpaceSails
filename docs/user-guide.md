@@ -93,8 +93,12 @@ docking at a market. Run dry far from port and you drift on whatever orbit you b
 scales your velocity ±10%. Prograde only — pulses change your speed, never your heading.
 - `Shift` + pulse — **fine trim**, ±1%. For station-keeping and
 orbit matching.
-- `V` — vent charge (Electric scenarios).
+- `V` — vent charge (Electric scenarios). The ⚡ **Dump her charge** button names the key in
+its hover.
 - Pulses have a short cooldown and each costs one mass pulse.
+- The drive is the one control in the game with no button anywhere, so the **⛽ FUEL** gauge
+on the Nav desk carries it in its hover: *"+ / − (or ↑ / ↓) fires one; hold Shift for a
+±1% trim"*. The gauge that counts the pulses is where the question gets asked (#440).
 
 
 Rule of thumb: to go *inward* (Venus, Mercury), *brake* — losing speed drops
@@ -105,8 +109,9 @@ trading speed for altitude on an ellipse.
 
 ## 6. Plotting a course
 
-- **Plot** (on the Nav desk toolbar) opens the plotting table, or press `E` at the NAV POST
-console inside the ship. The sim pauses while you plan.
+- **Plot** (on the Nav desk toolbar) opens the plotting table — or press `P`, or press `E`
+at the NAV POST console inside the ship. The sim pauses while you plan. The button's hover
+names the key and the body it would aim at.
 - **Scrub slider** — slide into the future; every planet shows a
 *ghost* at the scrubbed time, tethered to its live position.
 - **Path length slider** — how far ahead your ribbon projects (5 days to
@@ -392,6 +397,10 @@ bar are Nebula Mutual selling you the policy that eases the clinic bill.
 `WASD`/arrows, interact with `E`, drag the map if the bow hides
 behind a panel. Crew: droids K-77 and R-3B stand by the shuttle; V-1K patrols.
 - `Q` returns to the helm (and the Nav desk) from anywhere on the deck.
+- The strip along the bottom of the deck is **contextual** (#440), the way the regolith's has
+  been since #324: it always spells out `WASD`, `E`, `Q` and `M` (mute), and it grows a
+  `💰 B — open an account at this table` the moment you are standing at a contact's table in
+  a bar. `B` is the favour bank — see §10 — and it works nowhere else.
 - Consoles are **bridge seats**: sit at one and press `E` to open its desk. **HELM** and
   **NAV POST** open Nav (the nav post also lights up the plotting table); **SCOPE** opens
   Sensors; **CANTINA** opens the Galley (rum — mind the third tot); **COMMS SEAT** opens
@@ -426,7 +435,11 @@ in a suit, and the ground keeps what you leave in it.
   the system). Roughly 1–6% a day, and the same distance that makes the walk dangerous is what
   makes the cache safe.
 - **`T` sets a sentry.** A deployed bot fires until its magazine reads `00`. Bots buy time,
-  never safety. Retrieve them before you lift off or they are written off.
+  never safety. Retrieve them before you lift off or they are written off. **`⇧T`** sets the
+  same bot to hold your line home instead.
+- **`H` is the captain's remote** — weapons tight, so the bots hold their fire and nothing on
+  this ground learns where you are. It works on the regolith exactly as it does aboard a
+  wreck, and since #440 the ground's keybar says so the moment you have a bot with you.
 - **The landing pad is fused rockcrete.** Nothing buries there — carry it out onto the
   regolith first.
 

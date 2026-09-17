@@ -179,6 +179,16 @@ public partial class Map
                 : ex.ShovelHasSomethingToBury ? "⛏ E — BURY IT HERE"
                 : "E — dig / use",
         };
+        // #440 · …AND THE REMOTE, ON THE GROUND TOO. The wreck's branch above has named H since #538 ("an
+        // affordance you cannot see is an affordance you do not have — and this is the one whose absence
+        // gets a captain shot"), and the regolith — where the sentries were invented, and where the pack
+        // actually comes — never did. The key is gated on `_surface is not null` (Map.Deck.Walk), so it has
+        // worked out here the whole time; the only thing missing was anybody being told. Same condition as
+        // aboard, same words, same place in the row.
+        if (ex.Bots.Count > 0)
+        {
+            parts.Add(_weaponsTight ? "🤖 H — WEAPONS TIGHT (press to free)" : "🤖 H — weapons tight");
+        }
         bool carryingBot = ex.Bots.Any(b => !b.Deployed);
         bool deployedUnderfoot = ex.Bots.Any(b => b.Deployed &&
             ((b.X - _avatarX) * (b.X - _avatarX)) + ((b.Y - _avatarY) * (b.Y - _avatarY))
