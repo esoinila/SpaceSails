@@ -86,15 +86,35 @@ public partial class Map
     /// </summary>
     private void LeaveTheClosedThread()
     {
+        // The door opens FIRST, and it opens whatever the shelf says. A player who cannot be shown their
+        // saves must still be able to get off the last card — the general UI law is about the card, not
+        // about localStorage, and localStorage is a thing that throws.
         _busted = null;
-
-        _activeThreadId = Threads.Active()?.Id;
-        RefreshThreadList();
-        RefreshSlotList();
-
         _showSaveDrawer = false;
         _showStartPicker = true;
+
+        _activeThreadId = ReadTheShelfAgain();
         StateHasChanged();
+    }
+
+    /// <summary>#640 · Re-bind to whatever universe is still a run, tolerantly — the same shape
+    /// <c>PeekSavedVault</c> uses, and for the same reason: the registry lives in localStorage, which a
+    /// private-mode browser or a full quota can refuse outright. A shelf that cannot be read leaves the
+    /// page bound to nothing, which is exactly what it should be after the last captain died.</summary>
+    private string? ReadTheShelfAgain()
+    {
+        try
+        {
+            string? next = Threads.Active()?.Id;
+            _activeThreadId = next;
+            RefreshThreadList();
+            RefreshSlotList();
+            return next;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     // The nine manual slot ids (1..9), for the drawer/front-door to render a bank-to row per slot.

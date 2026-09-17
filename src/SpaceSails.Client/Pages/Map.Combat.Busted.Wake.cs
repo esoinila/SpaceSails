@@ -227,14 +227,18 @@ public partial class Map
             LogAutopilotEvent("🛬 The expedition is written off — the away team scrubs the gig, and this time there is nobody to fly the body to.");
         }
 
-        // THE PEN GOES DOWN FIRST. Everything after this point must not be able to write a rolling autosave
-        // over the moment the captain was last alive, or to stamp the registry and quietly hand the front
-        // door a run with no captain in it.
+        // THE PEN GOES DOWN, AND THE CARD TURNS — both before anything touches storage. Everything after
+        // this point must not be able to write a rolling autosave over the moment the captain was last
+        // alive; and the beat itself may not be hostage to a shelf. The whole of what the player is owed
+        // here is the line and a way off it, and localStorage is a thing that throws (private mode, a full
+        // quota) — the ship's own store swallows that JS-side for exactly this reason. A captain who dies
+        // in a locked-down browser still gets told nobody came.
         _threadIsOver = true;
+        b.Phase = BustedEncounter.Stage.NoRestore;
 
-        // …and the universe is closed in the index: Continue stops leading here, the row stays on the shelf
-        // so the logbook can still show what became of this captain, and no other thread is touched. A
-        // legacy run with no indexed thread simply has no row to close — Close answers null and the card
+        // …and then the universe is closed in the index: Continue stops leading here, the row stays on the
+        // shelf so the logbook can still show what became of this captain, and no other thread is touched.
+        // A legacy run with no indexed thread simply has no row to close — Close answers null, and the card
         // still reads the line, because the line is about the policy and not about the bookkeeping.
         if (!string.IsNullOrEmpty(_activeThreadId))
         {
@@ -243,7 +247,6 @@ public partial class Map
             RefreshSlotList();
         }
 
-        b.Phase = BustedEncounter.Stage.NoRestore;
         StateHasChanged();
     }
 
