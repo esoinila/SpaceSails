@@ -36,43 +36,15 @@ public partial class Map
 
     // ---- PR-6: the dark space web ----
 
-    /// <summary>The body the player is currently orbiting (bound, M20 sense) or docked at — null
-    /// if neither, in which case the dark web has nowhere to set up shop.</summary>
-    private CelestialBody? DarkWebCurrentBody()
-    {
-        if (_ephemeris is null)
-        {
-            return null;
-        }
-
-        if (_docked && _dockBodyId is not null)
-        {
-            foreach (CelestialBody b in _ephemeris.Bodies)
-            {
-                if (b.Id == _dockBodyId) return b;
-            }
-        }
-
-        if (_nearestBody is { ParentId: not null } nb)
-        {
-            CelestialBody? parent = null;
-            foreach (CelestialBody candidate in _ephemeris.Bodies)
-            {
-                if (candidate.Id == nb.ParentId) { parent = candidate; break; }
-            }
-
-            if (parent is not null)
-            {
-                double hill = OrbitRule.HillRadius(nb, parent.Mu);
-                if (OrbitRule.IsBound(_ship, _nearestBodyPosition, _nearestBodyVelocity, nb, hill))
-                {
-                    return nb;
-                }
-            }
-        }
-
-        return null;
-    }
+    /// <summary>The body the player is currently berthed at, docked near or orbiting (bound, M20 sense) —
+    /// null if none of the three, in which case the dark web has nowhere to set up shop.
+    ///
+    /// <para>#1217: this used to ask its own question and forget the clamp, which left the desk offline at
+    /// every station haven in the game — the only places it was ever meant to open, and the only places the
+    /// fiction ever sends you. It now asks the one question <see cref="WhereTheShipIsStanding"/> states, so
+    /// the desk and the HUD banner can never again disagree about whether the ship is anywhere.</para>
+    /// </summary>
+    private CelestialBody? DarkWebCurrentBody() => WhereTheShipIsStanding();
 
     private bool DarkWebCanTrade()
     {
