@@ -37,7 +37,7 @@ public sealed partial class Map
     {
         if (_surface is not { } ex || ex.Floor >= 0)
         {
-            _parkDayCameInAt = null;
+            _parkDayCameIn = null;
             return;
         }
 
@@ -47,23 +47,21 @@ public sealed partial class Map
         // gate and back has not lingered through anything, and the sentence claims they did.
         if (TheGreenOnThisFloor(ex) is not { } green || !green.Contains(_avatarX, _avatarY))
         {
-            _parkDayCameInAt = null;
+            _parkDayCameIn = null;
             return;
         }
 
         // The moment of coming in, which is the half of the line the captain cannot see for themselves:
         // BOTH clocks are read here, and nothing is said on this tick, because nothing has changed yet.
-        if (_parkDayCameInAt != site)
+        if (_parkDayCameIn is not { } came || !string.Equals(came.Site, site, StringComparison.Ordinal))
         {
-            _parkDayCameInAt = site;
-            _parkDayCameInOn = ParkDay.PhaseAt(SimTime, site);
-            _parkDayBuildingWas = ParkDay.BuildingPhaseAt(SimTime);
+            _parkDayCameIn = (site, ParkDay.PhaseAt(SimTime, site), ParkDay.BuildingPhaseAt(SimTime));
             return;
         }
 
         string tag = ParkDay.NoticeTag(site);
         if (!ParkDay.WouldNotice(
-                _parkDayCameInOn, _parkDayBuildingWas, ParkDay.PhaseAt(SimTime, site),
+                came.Park, came.Building, ParkDay.PhaseAt(SimTime, site),
                 _roomsTurnedOver.Contains(tag)))
         {
             return;
@@ -77,14 +75,15 @@ public sealed partial class Map
         RequestVaultSave();
     }
 
-    /// <summary>#759 · Which site's park the captain is currently standing in, or null. The latch that makes
-    /// "came in" mean something: it is cleared the moment they are not on the gravel.</summary>
-    private string? _parkDayCameInAt;
-
-    /// <summary>#759 · What the lamps were doing when they walked in.</summary>
-    private ParkDay.Phase _parkDayCameInOn;
-
-    /// <summary>#759 · …and what the rest of the building was doing at that same moment, which is the claim
-    /// the second half of the line makes and the reason it is read at the gate rather than at the beat.</summary>
-    private ParkDay.Phase _parkDayBuildingWas;
+    /// <summary>
+    /// #759 · <b>THE GATE, REMEMBERED</b> — which site's park the captain is standing in, what its lamps
+    /// were doing when they walked in, and what the rest of the building was doing at that same moment.
+    /// Null the instant they are not on the gravel, which is the latch that makes "came in" mean something.
+    ///
+    /// <para>One field and not three. The three readings are taken in the same breath at the same moment
+    /// and are meaningless apart — a site without its two phases would say a captain had lingered through
+    /// nothing in particular — and the page's own field census is a thing a lane should add to once rather
+    /// than three times.</para>
+    /// </summary>
+    private (string Site, ParkDay.Phase Park, ParkDay.Phase Building)? _parkDayCameIn;
 }
