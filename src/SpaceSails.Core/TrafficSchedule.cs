@@ -82,6 +82,28 @@ public static class TrafficSchedule
     private const double CatchUpTimeStep = 7200;
     private const double Day = 86400;
 
+    /// <summary>#161 · How many catch-up steps a mid-flight hauler's integration hands back the frame after.
+    ///
+    /// <para>The catch-up is the longest single piece of work left in the whole boot once the two route
+    /// searches are yielded around: on the interpreted payload the worst of them measured 1.8–2.1 s. What
+    /// makes the size of this number matter is how MANY steps that is, and the answer is not the one the
+    /// "20–70 days" in the code above suggests. That is the LEAD — how long she still has to fly — and the
+    /// catch-up is everything before it: a Saturn→Mars transfer takes years, the lead is clamped to weeks,
+    /// so the integration behind her is of the order of <b>twelve thousand</b> steps at
+    /// <see cref="CatchUpTimeStep"/>, not eight hundred.</para>
+    ///
+    /// <para><b>Which is why this was measured rather than guessed, and the first guess was wrong.</b> At
+    /// 128 steps a slice the interpreted boot handed the browser 880 extra frames and went from 15 s to
+    /// 31 s — the blocks were tiny and the boot had doubled, because every yield costs a browser
+    /// turnaround. Two thousand and forty-eight puts a slice at about 0.3 s interpreted and 0.06 s AOT:
+    /// comfortably under the route searches that are now the boot's worst blocks, and about thirty extra
+    /// frames over the whole wave.</para>
+    ///
+    /// <para>It changes no number the sim produces: see <see cref="Simulator.RunSliceBySlice"/> for why the
+    /// slicing cannot move the run, and <c>TheSameRunHoweverItIsSliced</c> for the law that says so.</para>
+    /// </summary>
+    private const int CatchUpStepsPerSlice = 2048;
+
     // Central-space vs. outer-reaches split for scenario-driven routes: a route touching
     // anything past ~Mars's orbit counts as "long haul" (mid-flight ships spawned already deep
     // in transfer); everything inside stays "short" (scheduled departures). Threshold sits
@@ -121,6 +143,54 @@ public static class TrafficSchedule
         => GenerateShipByShip(ephemeris, seed, count, traffic).ToList();
 
     /// <summary>
+    /// #161 · ONE UNIT OF PLANNING WORK, AND THE SHIP WHEN THERE IS ONE.
+    ///
+    /// <para>The wave is handed over in steps rather than in ships because a SHIP is not a small enough
+    /// thing. <see cref="Ship"/> is non-null on exactly the step that finishes hauler
+    /// <see cref="ShipIndex"/>, and null on every step of work that gets part of the way there — so a
+    /// caller that wants the frame back between blocks can take it at every one of them, and a caller
+    /// that only wants the ships can filter, which is what <see cref="GenerateShipByShip"/> is.</para>
+    /// </summary>
+    public readonly record struct TrafficStep(int ShipIndex, int ShipCount, NpcShip? Ship);
+
+    /// <summary>
+    /// #161 · THE SAME WAVE, HANDED OVER ONE STEP OF WORK AT A TIME — the finer half of
+    /// <see cref="GenerateShipByShip"/>.
+    ///
+    /// <para><b>Why one ship was not small enough.</b> #1114 took the boot's fourteen-second block down to
+    /// eight by handing the wave over ship by ship, and the boot's own clock then said what the remaining
+    /// cost actually is: <c>2,743 + 3,081 + 3,137 + 4,234 + 83 + 98 + 435 + 277 ms</c> on the interpreted
+    /// payload. The wave is not eight equal ships; it is four mid-flight haulers costing seconds each and
+    /// four scheduled departures costing tenths, and the longest single block a browser was still being
+    /// handed was <b>one ship</b> at four and a quarter seconds — well inside the range Chrome will put a
+    /// "page unresponsive" dialog over.</para>
+    ///
+    /// <para><b>What a mid-flight hauler is made of.</b> Three pieces of work, each independently expensive:
+    /// a PROBE route planned from the wave's base time (which is how long the crossing takes, and therefore
+    /// how far back her virtual departure has to be), the REAL route planned from that departure, and a
+    /// catch-up integration forward over the 20–70 days she has already been flying. A scheduled departure
+    /// is one route search and nothing else. So this iterator yields after each of them: three steps for a
+    /// mid-flight hauler, one for a scheduled one, and the longest block the main thread is ever handed is
+    /// a third of the worst ship instead of the whole of her.</para>
+    ///
+    /// <para><b>It is the same wave, not a similar one</b> — the identical argument
+    /// <see cref="GenerateShipByShip"/>'s own docs make, one level down. An iterator suspends and resumes on
+    /// the same <see cref="DeterministicRandom"/> in the same state, and no draw happens between two of
+    /// these yields that did not happen between the same two lines before. <c>TheSkyIsTheSameSkyOneShip
+    /// AtATimeTests</c> walks the wave BOTH ways and compares it ship by ship, field by field.</para>
+    /// </summary>
+    public static IEnumerable<TrafficStep> GenerateStepByStep(
+        ICelestialEphemeris ephemeris, ulong seed, int count, TrafficDefinition? traffic = null)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
+
+        TrafficDefinition? effective = traffic ?? ephemeris.Traffic;
+        return effective is { Routes.Count: > 0 }
+            ? GenerateFromScenario(ephemeris, seed, count, effective)
+            : GenerateFromFixedTables(ephemeris, seed, count);
+    }
+
+    /// <summary>
     /// #161 · THE SAME WAVE, HANDED OVER ONE SHIP AT A TIME.
     ///
     /// <para>The boot's own measurement: planning eight founding freighters is a single synchronous block
@@ -139,14 +209,13 @@ public static class TrafficSchedule
     /// </summary>
     public static IEnumerable<NpcShip> GenerateShipByShip(
         ICelestialEphemeris ephemeris, ulong seed, int count, TrafficDefinition? traffic = null)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
-
-        TrafficDefinition? effective = traffic ?? ephemeris.Traffic;
-        return effective is { Routes.Count: > 0 }
-            ? GenerateFromScenario(ephemeris, seed, count, effective)
-            : GenerateFromFixedTables(ephemeris, seed, count);
-    }
+        // #161 · …and one step finer underneath, because one SHIP was still a four-second block. This is
+        // the same walk with the part-way steps filtered out, so everything the wave is — the rng, the
+        // order, the ships — is stated exactly once (see GenerateStepByStep). The argument check stays
+        // eager because the call below is made HERE rather than inside an iterator body.
+        => GenerateStepByStep(ephemeris, seed, count, traffic)
+            .Where(step => step.Ship is not null)
+            .Select(step => step.Ship!);
 
     /// <summary>
     /// The world keeps living (owner, 2026-07-05: after every ship arrived the sky emptied —
@@ -161,9 +230,10 @@ public static class TrafficSchedule
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(count);
 
         TrafficDefinition? effective = traffic ?? ephemeris.Traffic;
-        return effective is { Routes.Count: > 0 }
-            ? GenerateFromScenario(ephemeris, seed, count, effective, nowSimTime, waveNumber).ToList()
-            : GenerateFromFixedTables(ephemeris, seed, count, nowSimTime, waveNumber).ToList();
+        IEnumerable<TrafficStep> steps = effective is { Routes.Count: > 0 }
+            ? GenerateFromScenario(ephemeris, seed, count, effective, nowSimTime, waveNumber)
+            : GenerateFromFixedTables(ephemeris, seed, count, nowSimTime, waveNumber);
+        return steps.Where(step => step.Ship is not null).Select(step => step.Ship!).ToList();
     }
 
     /// <summary>A fresh pod wave, launching over the days after <paramref name="nowSimTime"/> —
@@ -179,7 +249,7 @@ public static class TrafficSchedule
             : GeneratePodsFromFixedLauncher(ephemeris, seed, count, nowSimTime, waveNumber);
     }
 
-    private static IEnumerable<NpcShip> GenerateFromFixedTables(
+    private static IEnumerable<TrafficStep> GenerateFromFixedTables(
         ICelestialEphemeris ephemeris, ulong seed, int count, double baseSimTime = 0, int wave = 0)
     {
         var rng = new DeterministicRandom(seed);
@@ -204,6 +274,8 @@ public static class TrafficSchedule
                 // (mid-course evasive bursts, the arrival brake) still execute live.
                 double lead = rng.NextDouble(20 * Day, 70 * Day);
                 NpcRoute probe = RoutePlanner.PlanRoute(ephemeris, origin, destination, baseSimTime, personality, Clone(rng));
+                yield return new TrafficStep(i, count, null);   // #161 · the crossing is measured
+
                 double transfer = probe.EstimatedArrivalTime - baseSimTime;
                 // The world does not wait for the player: the remaining lead can never exceed
                 // the transfer itself, or a short hop would "spawn mid-flight" at a departure
@@ -212,25 +284,36 @@ public static class TrafficSchedule
                 double virtualDeparture = baseSimTime - (transfer - lead);
 
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, origin, destination, virtualDeparture, personality, rng);
-                ShipState now = catchUpSim.Run(route.DepartureState, baseSimTime - virtualDeparture, route.Plan);
-                yield return new NpcShip(
+                yield return new TrafficStep(i, count, null);   // #161 · …and flown, from the departure it implies
+
+                // #161 · …and the catch-up, which is the longest of the three, taken a slice at a time. The
+                // LAST state is the answer (Simulator.RunSliceBySlice), so `now` simply keeps the newest.
+                ShipState now = route.DepartureState;
+                foreach (ShipState slice in catchUpSim.RunSliceBySlice(
+                             route.DepartureState, baseSimTime - virtualDeparture, route.Plan, CatchUpStepsPerSlice))
+                {
+                    now = slice;
+                    yield return new TrafficStep(i, count, null);
+                }
+
+                yield return new TrafficStep(i, count, new NpcShip(
                     id, callsign, cargo, origin, destination, personality,
                     virtualDeparture, now.SimTime, now, route.Plan, route.EstimatedArrivalTime,
-                    cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false);
+                    cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false));
             }
             else
             {
                 double departure = baseSimTime + Math.Floor(rng.NextDouble(3 * Day, 30 * Day));
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, origin, destination, departure, personality, rng);
-                yield return new NpcShip(
+                yield return new TrafficStep(i, count, new NpcShip(
                     id, callsign, cargo, origin, destination, personality,
                     departure, departure, route.DepartureState, route.Plan, route.EstimatedArrivalTime,
-                    cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false);
+                    cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false));
             }
         }
     }
 
-    private static IEnumerable<NpcShip> GenerateFromScenario(
+    private static IEnumerable<TrafficStep> GenerateFromScenario(
         ICelestialEphemeris ephemeris, ulong seed, int count, TrafficDefinition traffic,
         double baseSimTime = 0, int wave = 0)
     {
@@ -275,6 +358,8 @@ public static class TrafficSchedule
             {
                 double lead = rng.NextDouble(20 * Day, 70 * Day);
                 NpcRoute probe = RoutePlanner.PlanRoute(ephemeris, planFrom, planTo, baseSimTime, personality, Clone(rng));
+                yield return new TrafficStep(i, count, null);   // #161 · the crossing is measured
+
                 double transfer = probe.EstimatedArrivalTime - baseSimTime;
                 // Same clamp as the fixed tables: mid-flight means genuinely EN ROUTE as of the
                 // wave base time, even when the scenario routes are short hops.
@@ -282,22 +367,33 @@ public static class TrafficSchedule
                 double virtualDeparture = baseSimTime - (transfer - lead);
 
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, planFrom, planTo, virtualDeparture, personality, rng);
-                ShipState now = catchUpSim.Run(route.DepartureState, baseSimTime - virtualDeparture, route.Plan);
-                yield return new NpcShip(
+                yield return new TrafficStep(i, count, null);   // #161 · …and flown, from the departure it implies
+
+                // #161 · …and the catch-up, which is the longest of the three, taken a slice at a time. The
+                // LAST state is the answer (Simulator.RunSliceBySlice), so `now` simply keeps the newest.
+                ShipState now = route.DepartureState;
+                foreach (ShipState slice in catchUpSim.RunSliceBySlice(
+                             route.DepartureState, baseSimTime - virtualDeparture, route.Plan, CatchUpStepsPerSlice))
+                {
+                    now = slice;
+                    yield return new TrafficStep(i, count, null);
+                }
+
+                yield return new TrafficStep(i, count, new NpcShip(
                     id, callsign, chosen.Cargo, chosen.From, chosen.To, personality,
                     virtualDeparture, now.SimTime, now, route.Plan, route.EstimatedArrivalTime,
                     cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false,
-                    PublishesTimetable: chosen.PublishesTimetable);
+                    PublishesTimetable: chosen.PublishesTimetable));
             }
             else
             {
                 double departure = baseSimTime + Math.Floor(rng.NextDouble(3 * Day, 30 * Day));
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, planFrom, planTo, departure, personality, rng);
-                yield return new NpcShip(
+                yield return new TrafficStep(i, count, new NpcShip(
                     id, callsign, chosen.Cargo, chosen.From, chosen.To, personality,
                     departure, departure, route.DepartureState, route.Plan, route.EstimatedArrivalTime,
                     cargoUnits, NpcShip.DefaultManeuverBudget, IsPod: false,
-                    PublishesTimetable: chosen.PublishesTimetable);
+                    PublishesTimetable: chosen.PublishesTimetable));
             }
         }
     }

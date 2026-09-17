@@ -212,24 +212,36 @@ public partial class Map
         await BootPhaseAsync("plotting the traffic lanes — pods…", abandoned);
         IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(_ephemeris!, seed: 43, count: 3);
         SayTheBootStageCost("the traffic lanes — pods");
-        // #161 · THE FOURTEEN-SECOND BLOCK, TAKEN ONE SHIP AT A TIME. The measurement that opened this
-        // lane: planning these eight founding freighters costs 13.3–14.0 s on the interpreted payload —
-        // ninety-five percent of the whole boot, in ONE synchronous block. A phase yield in FRONT of it
+        // #161 · THE FOURTEEN-SECOND BLOCK, TAKEN ONE STEP OF WORK AT A TIME. The measurement that opened
+        // this lane: planning these eight founding freighters costs 13.3–14.0 s on the interpreted payload
+        // — ninety-five percent of the whole boot, in ONE synchronous block. A phase yield in FRONT of it
         // (which is all #318 could do) paints the door and then hands the browser a fourteen-second task
         // anyway, which is precisely the shape of thing Chrome puts a "page unresponsive" dialog over.
         //
-        // Each ship is independent of its neighbours except through the one rng they share, so Core now
-        // offers the same wave as an iterator (TrafficSchedule.GenerateShipByShip) and the frame goes
-        // back to the browser between ships. It is the SAME SKY — an iterator resumes on the same rng in
-        // the same state, which TheSkyIsTheSameSkyOneShipAtATimeTests holds ship by ship — and the
-        // longest block the main thread now owes the browser is one ship instead of eight.
+        // #1114 took it apart SHIP BY SHIP, and the boot's own clock then said what was left:
+        // 2,743 + 3,081 + 3,137 + 4,234 + 83 + 98 + 435 + 277 ms. The wave is not eight equal ships — it is
+        // four mid-flight haulers costing SECONDS each and four scheduled departures costing tenths, and
+        // one ship at four and a quarter seconds is still exactly the block Chrome puts a dialog over. So
+        // the handover is now one step FINER (TrafficSchedule.GenerateStepByStep): a mid-flight hauler is a
+        // probe route search, a real route search and a catch-up integration, and the frame goes back to
+        // the browser after each of the three. It is the SAME SKY — an iterator suspends and resumes on the
+        // same rng in the same state, which TheSkyIsTheSameSkyOneShipAtATimeTests holds ship by ship and
+        // field by field — and the longest block the main thread now owes the browser is a THIRD of the
+        // worst ship rather than the whole of her.
         await BootPhaseAsync("plotting the traffic lanes — freighters…", abandoned);
         var traffic = new List<NpcShip>(8);
-        foreach (NpcShip hauler in TrafficSchedule.GenerateShipByShip(_ephemeris!, seed: 42, count: 8))
+        foreach (TrafficSchedule.TrafficStep step in TrafficSchedule.GenerateStepByStep(_ephemeris!, seed: 42, count: 8))
         {
-            traffic.Add(hauler);
-            SayTheBootStageCost($"the traffic lanes — freighter {traffic.Count} of 8");
-            await BootPhaseAsync($"plotting the traffic lanes — freighter {traffic.Count} of 8…", abandoned);
+            if (step.Ship is { } hauler)
+            {
+                traffic.Add(hauler);
+            }
+
+            // The line names the ship being WORKED ON, finished or not. A captain reading "freighter 4 of
+            // 8" while that hauler's second route search runs is being told the truth; a line that only
+            // moved on completion would stand still across the three longest blocks of the whole boot.
+            SayTheBootStageCost($"the traffic lanes — freighter {step.ShipIndex + 1} of {step.ShipCount}");
+            await BootPhaseAsync($"plotting the traffic lanes — freighter {step.ShipIndex + 1} of {step.ShipCount}…", abandoned);
         }
         // The derelict roadster is a dead wreck, not a trading post — it's a station body only so its
         // map label reads at a sane zoom (the fetch-mission target). Drop the depot GenerateDepots

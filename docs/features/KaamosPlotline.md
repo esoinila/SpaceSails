@@ -307,12 +307,21 @@ KAAMOS"* over a log that is written specifically **not** to name the project (`V
 *"a moon off the charts, a project that runs on in the cold with the lights off"*). Making the connection
 is the player's job; the line now files the shard and says nothing else.
 
-**Open, for the owner (see [#411]):** `ArcConvergence.ConvergenceReveal` — the #422 marquee card, fired at
-**3** KAAMOS intel and reachable from one URL (`?converge=1`) — states this document's §2 truth in plain
-words: *"Vantar taught a lattice to keep whole crews awake in the dark… the wintering mind remembers
-Vantar… the same forty names, the same lucid dark."* That is the Enceladus reveal, spent early, as an
-announcement. Whatever the climax lane builds has to be designed **around** that card, or that card has to
-move. Not this lane's call.
+**CLOSED, 2026-09-17 (see [#411], [#422]):** the #422 marquee card used to state this document's §2 truth
+in plain words — *"Vantar taught a lattice to keep whole crews awake in the dark… the wintering mind
+remembers Vantar… the same forty names, the same lucid dark."* — at **3** KAAMOS intel, below this arc's
+own unlock, reachable from one URL. That was the Enceladus reveal, spent early, as an announcement.
+
+The owner picked **option B**: the bar stays where it is and the card stopped explaining. It now prints
+**the berth-holder's own sentence** (`KaamosLore.HolderConvergenceLine`, the quiet half of `holders-tell`)
+above the Nebula adjuster's, unannotated, and closes on *"You have been carrying both of these for a
+while."* Vantar is not named on it; neither is the project. **The climax lane no longer has to design
+around a spent reveal** — the ice moon still has its own to give, and `berth-code`'s text is pinned
+unchanged by `TheKaamosCapstoneTextIsUnchanged`. One thing the climax lane should know: the bar now names
+`holders-tell` as one of its three, so a captain who has seen the convergence has definitely met the
+berth-holder. See `NebulaArc.md` §6 for the card as it ships.
+
+[#422]: https://github.com/esoinila/SpaceSails/issues/422
 
 [#411]: https://github.com/esoinila/SpaceSails/issues/411
 [#409]: https://github.com/esoinila/SpaceSails/issues/409

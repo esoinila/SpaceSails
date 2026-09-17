@@ -31,16 +31,27 @@ is it buried?" question #293 is about.
 
 ## Load-speed budget (owner, cruise 2026-07-19: *"Maybe add CI test to catch too slow loads."*)
 
-The gate also **times** the boot path at three milestones it already awaits and fails if any regresses
+The gate also **times** the boot path at the milestones it already awaits and fails if any regresses
 past an honest budget — so a slow-load regression can never merge silently. The timings are logged on
 **every** run (pass or fail), giving a free perf time-series in the CI logs:
 
 | milestone | what it measures |
 | --- | --- |
 | front page interactive | nav → the Launch button is actionable and clicked |
+| **front door pressable** (#161) | Launch click → the start picker's first real verb on screen **and enabled** |
 | scenario boot complete | Launch click → a live desk tab bar (the WASM boot) |
 | desk switch responsive | Captain tab click → the captain's room painted |
 | whole canary (total) | the entire drive, as a backstop the per-milestone budgets don't localise |
+| **longest synchronous boot block** (#161) | the worst single stage of the boot, read off the game's own `[SpaceSails] boot ·` console lines |
+
+The last one is the only budget here about **the browser's dialog** rather than the captain's patience, and
+it is what #161's acceptance actually names — *no "page unresponsive" warning on a cold load*. That warning
+is not a function of how long the boot takes but of how long ONE uninterrupted block owns the main thread,
+and every other row above is blind to it: a boot that finishes in fifteen seconds as twenty short stages
+and one that finishes in fifteen seconds as four four-second freezes score identically on all of them, and
+only the second gets a dialog. The number is the **game's own** — the boot prints one line per stage, each
+stage sits between two yields, so a stage's cost is precisely a block the browser was not handed back — and
+the gate keeps the worst line it hears. Nothing is instrumented for it.
 
 **Budgets are keyed to the AOT build Pages ships** (issue #371 Phase 2). Measured on a dev box (3 runs,
 worst): front page 1.25 s · boot 4.27 s · desk switch 0.18 s · total 5.86 s. The #382 CI run put the whole

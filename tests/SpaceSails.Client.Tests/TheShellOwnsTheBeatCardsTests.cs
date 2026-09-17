@@ -193,7 +193,7 @@ public sealed class TheShellOwnsTheBeatCardsTests
     /// the source guard word for word and put a <c>display: contents</c> div between the card and its
     /// button — correct-looking markup, a silently unstuck foot.</para>
     ///
-    /// <para><b>The wording is asserted on purpose.</b> These feet are not ✕: they say "…sit with that",
+    /// <para><b>The wording is asserted on purpose.</b> These feet are not ✕: they say "Close",
     /// "Boots on, then.", "Raise a glass 🍻", "Back to the shuttle". The whole claim of the wave is that not
     /// one of those words moved, so the words are here — against Core's own constant where Core owns the
     /// line, and as a literal where the page does — and a change to any of them costs an edit to a test
@@ -205,7 +205,10 @@ public sealed class TheShellOwnsTheBeatCardsTests
     /// another one's name, which is this repository's first named bug class committed inside a test.</para>
     /// </summary>
     [Theory]
-    [InlineData("the Convergence", Docked, "convergence-card", "_convergenceRevealOpen", "…sit with that")]
+    // #422 (owner 2026-09-17): the convergence's way out used to read "…sit with that", which is the card
+    // telling the captain how to feel on the way to the door. It is the house's plain close now, the same
+    // word the galley and the lift use.
+    [InlineData("the Convergence", Docked, "convergence-card", "_convergenceRevealOpen", "Close")]
     [InlineData("the first ground", Ashore, "ground-lesson-card", "_groundLessonOpen", GroundLesson.Dismiss)]
     [InlineData("the map just got bigger", Ashore, "ground-grows-card", "_groundGrewOpen",
         GroundGrows.Dismiss)]
