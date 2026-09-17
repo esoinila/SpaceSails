@@ -605,6 +605,137 @@ public sealed class HudCollisionTests : IAsyncLifetime
                     + "left edge of the glass, not merely covered by something else (#997).");
     }
 
+    /// <summary>
+    /// #1219 · THE DESK-CHIP STRIP DOES NOT PAINT OVER THE NAV TOOLBAR EITHER.
+    ///
+    /// <para><b>The sighting</b> (played, 2026-09-17, 1440×1100): <c>/map?start=wreck&amp;dest=saturn</c>, then
+    /// <c>P</c> for the plotting table. The table grows the toolbar by four more buttons
+    /// (<c>⏭ next event</c>, <c>⏩ Long coast ahead — skip it</c>, <c>🚀 Long haul</c>, <c>Resume</c>) and the
+    /// row runs to the right edge of the window — where the desk-chip column is. Measured in the page:
+    /// <c>▶ Play</c> at <c>[x 1218, y 125, w 76, h 32]</c>, and
+    /// <c>elementFromPoint(right edge, middle)</c> came back <c>.desk-chip</c> (📡 Sensors). Roughly the last
+    /// third of the one control that gets you back to flying live, under a status chip, and a click that
+    /// lands there switches desk instead.</para>
+    ///
+    /// <para><b>It is #997's bug, a fourth time.</b> <c>.desk-chip-strip</c> docks a 9.5rem column off the
+    /// right edge; <c>.map-scope</c>, <c>.map-scope-tile</c> and <c>.parrot-perch</c> each had to be told it
+    /// was there. <c>.map-hud</c> — <c>width: fit-content; max-width: 100%</c> — never was, so the toolbar
+    /// inside it is free to lay out all the way to the glass's edge and the chips paint over whatever
+    /// reached. The fix is the same one number: <c>--desk-chip-strip-clearance</c> comes off the column's
+    /// <c>max-width</c>, and <c>.btn-toolbar</c>'s existing <c>flex-wrap: wrap</c> (#123/#195) does the rest —
+    /// the row wraps a button early instead of sliding under the strip.</para>
+    ///
+    /// <para><b>Why the gate above could not see it.</b> It measures the scope on a quiet Nav desk at
+    /// 1280×720. The toolbar only reaches the strip's column once the PLOTTING TABLE is open and the row has
+    /// grown, which is a state nothing in this gate had ever staged.</para>
+    ///
+    /// <para><b>Both premises are asserted out loud</b> — <c>▶ Play</c> on the glass, and a toolbar crowded
+    /// enough to be worth measuring — because a row that quietly stopped growing would make this pass while
+    /// proving nothing.</para>
+    ///
+    /// <para>RED PROOF: put <c>max-width: 100%</c> back on <c>.map-hud</c> in <c>NavHud.razor.css</c> and this
+    /// fails, naming the buttons and the pixels the strip takes off them.</para>
+    /// </summary>
+    [Fact]
+    public async Task The_desk_chip_strip_never_covers_the_nav_toolbar()
+    {
+        await _page.SetViewportSizeAsync(1440, 1100);
+
+        // The issue's own URL. `holdbeats=1` is #1148's latch — this gate presses a button and a story card
+        // landing mid-press would eat the click, exactly as it did on #1146's serial run.
+        await _page.GotoAsync(_host.BaseUrl + "/map?scenario=sol&start=wreck&dest=saturn&holdbeats=1",
+            new() { Timeout = BootTimeoutMs });
+        await _page.WaitForSelectorAsync(".map-loading",
+            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        await _page.Locator(".map-page").WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        ILocator plateClose = _page.Locator(".story-plate-close");
+        if (await plateClose.CountAsync() > 0 && await plateClose.IsVisibleAsync())
+        {
+            await plateClose.ClickAsync();
+        }
+
+        await _page.Locator("button.desk-tab", new() { HasTextString = "Nav" }).First.ClickAsync();
+        await _page.Locator("button.desk-tab.btn-info", new() { HasTextString = "Nav" }).First.WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        // Open the plotting table through the captain's own control, so the row this gate measures is the row
+        // a player is looking at.
+        await _page.Locator(".map-hud .btn-toolbar button.map-key-action").First.ClickAsync();
+        await _page.Locator(".map-plot").First.WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        ILocator play = _page.Locator(".map-hud .btn-toolbar button.map-key-action").First;
+        await play.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
+        string playLabel = (await play.InnerTextAsync()).Trim();
+        Assert.True(playLabel.Contains("Play", StringComparison.Ordinal),
+                    $"the plotting table's own button reads '{playLabel}' rather than '▶ Play' — the table "
+                    + "never opened, so this gate measured the wrong row (#1219).");
+
+        // Every control on the toolbar, as the browser laid it out.
+        var buttons = new List<(string Name, float X, float Y, float W, float H)>();
+        ILocator controls = _page.Locator(".map-hud .btn-toolbar button, .map-hud .btn-toolbar a.btn");
+        int count = await controls.CountAsync();
+        for (int i = 0; i < count; i++)
+        {
+            ILocator control = controls.Nth(i);
+            if (!await control.IsVisibleAsync()
+                || await control.BoundingBoxAsync() is not { Width: > 0, Height: > 0 } box)
+            {
+                continue;
+            }
+            string text = (await control.InnerTextAsync()).Replace('\n', ' ').Trim();
+            buttons.Add((text.Length > 34 ? text[..34] : text, box.X, box.Y, box.Width, box.Height));
+        }
+
+        Assert.True(buttons.Count >= 8,
+                    $"the Nav toolbar drew only {buttons.Count} control(s) with the plotting table open. The "
+                    + "row #1219 is about carries the warp pause, the two coast/haul skips, Resume, both "
+                    + "Follows, both zooms and ▶ Play — a shorter row never reaches the desk-chip column, so "
+                    + "this gate would be green about nothing.");
+
+        var chips = new List<(float X, float Y, float W, float H)>();
+        ILocator chipLocator = _page.Locator(".desk-chip, .desk-chip-strip");
+        int chipCount = await chipLocator.CountAsync();
+        for (int i = 0; i < chipCount; i++)
+        {
+            ILocator chip = chipLocator.Nth(i);
+            if (await chip.IsVisibleAsync()
+                && await chip.BoundingBoxAsync() is { Width: > 0, Height: > 0 } box)
+            {
+                chips.Add((box.X, box.Y, box.Width, box.Height));
+            }
+        }
+
+        Assert.True(chips.Count > 0,
+                    "no desk chip was on the glass at all — #994's gate says the strip is on every desk, so "
+                    + "this one has nothing to measure the toolbar against.");
+
+        var collisions = new List<string>();
+        foreach ((string Name, float X, float Y, float W, float H) button in buttons)
+        {
+            foreach ((float X, float Y, float W, float H) chip in chips)
+            {
+                if (!Overlaps(button, chip))
+                {
+                    continue;
+                }
+                float ox = Math.Min(button.X + button.W, chip.X + chip.W) - Math.Max(button.X, chip.X);
+                float oy = Math.Min(button.Y + button.H, chip.Y + chip.H) - Math.Max(button.Y, chip.Y);
+                collisions.Add(
+                    $"'{button.Name}' at ({button.X:0},{button.Y:0}) {button.W:0}×{button.H:0} is under the "
+                    + $"desk-chip column at ({chip.X:0},{chip.Y:0}) {chip.W:0}×{chip.H:0} — {ox:0}×{oy:0} px "
+                    + "of it, and a click there switches desk instead");
+            }
+        }
+
+        Assert.True(collisions.Count == 0,
+                    "the desk-chip strip is painting over the Nav toolbar — a button you cannot press whole "
+                    + "is one you do not have (#212), and ▶ Play is the way back to the sky (#1219):\n  "
+                    + string.Join("\n  ", collisions));
+    }
+
     private static bool Overlaps(
         (string Name, float X, float Y, float W, float H) a, (float X, float Y, float W, float H) b) =>
         a.X < b.X + b.W && a.X + a.W > b.X && a.Y < b.Y + b.H && a.Y + a.H > b.Y;
