@@ -161,6 +161,40 @@ public sealed class TheDeskDealsWhereTheClampIsTests
             + "berth:\n  " + string.Join("\n  ", missing));
     }
 
+    /// <summary>
+    /// #1217 · <b>…AND FROM THE URL THE ISSUE WAS FILED WITH.</b> Everything above goes through
+    /// <c>ClampOntoHaven</c>, which is the one door every berthing shares. This one starts a step further
+    /// out, at the <c>?dock=&lt;id&gt;</c> boot itself — the page's own <c>ResolveDockStartId</c> turning the
+    /// query value into a berth, and <c>StartDockedAtHaven</c> doing what the boot does with the answer — so
+    /// the repro line in the issue (<c>/map?dock=the-tilt</c> → Comms → 🕸 Dark web market) is the line this
+    /// suite walks, for every berth in the scenario rather than the one that was played.
+    /// </summary>
+    [Fact]
+    public void TheDeskDealsAfterTheDockBootStartAtEveryBerth()
+    {
+        var shut = new List<string>();
+        foreach (CelestialBody berth in TheBerths)
+        {
+            Pages.Map map = Boot("darkweb-dock-cheat");
+
+            var resolved = (string?)Invoke(map, "ResolveDockStartId", berth.Id);
+            Assert.Equal(berth.Id, resolved);
+
+            Invoke(map, "StartDockedAtHaven", resolved!);
+            Frame(map);
+
+            Assert.Equal(berth.Id, (string?)Read(map, "_dockedHavenId"));
+            if (!(bool)Invoke(map, "DarkWebCanTrade")!)
+            {
+                shut.Add($"/map?dock={berth.Id} — \"{Invoke(map, "DarkWebDisabledReason")}\"");
+            }
+        }
+
+        Assert.True(shut.Count == 0,
+            "booted straight onto a berth by the cheat the testing guide documents, the dark-web desk is "
+            + "still offline:\n  " + string.Join("\n  ", shut));
+    }
+
     // ── (b) THE LAW: WHICH WORLDS THE GAME CAN ACTUALLY BUILD ─────────────────────────────────────────
 
     /// <summary>
