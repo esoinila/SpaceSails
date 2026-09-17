@@ -63,6 +63,14 @@ public partial class Map
     /// an ordinary route and ends the ordinary way.</summary>
     private bool _coatLost;
 
+    /// <summary>#1062 · <b>WHERE HE LAST HAD THE CAPTAIN.</b> The only thing he knows when the stone comes
+    /// between them, and the only place a man who has lost you has any reason to walk to. NaN is a man who
+    /// has not had you yet.</summary>
+    private double _coatLastX = double.NaN;
+
+    /// <summary>#1062 · <inheritdoc cref="_coatLastX"/></summary>
+    private double _coatLastY = double.NaN;
+
     /// <summary>#1062 QA · <c>?tailed=1</c> — put a man behind the captain at this berth whatever the folder
     /// says. Set in the cheat parse. Null is "ask the world", which is what a captain gets.</summary>
     private bool? _tailedCheat;
@@ -154,6 +162,8 @@ public partial class Map
         _coatExposure = 0;
         _coatBlind = 0;
         _coatLost = false;
+        _coatLastX = double.NaN;
+        _coatLastY = double.NaN;
         _coatDoors.Clear();
     }
 
@@ -258,6 +268,11 @@ public partial class Map
         // south wall with its one doorway, the ring's sealed edges, the gangway, and at Selene Gate a glass
         // tube with a blind end. Nothing ashore can be shut, so nothing here pretends a door helps.
         _coatBlind = inSight ? 0 : _coatBlind + dt;
+        if (inSight)
+        {
+            (_coatLastX, _coatLastY) = (_avatarX, _avatarY);
+        }
+
         if (TheTailBehindYou.HeIsLost(_coatBlind))
         {
             return HeGoesAndAsksTheWrongFloor(who, walls, slot);
@@ -301,12 +316,28 @@ public partial class Map
         }
 
         who.Walk.LookTowards(_avatarX, _avatarY);
+
+        // ── AND A MAN WHO CANNOT SEE YOU DOES NOT KNOW WHERE TO GO ───────────────────────────────────────
+        //
+        // This clause is the whole of what makes breaking his line a MOVE rather than a pause. Without it he
+        // re-plots onto wherever the captain actually is, every frame, through stone he cannot see through —
+        // which is not a tail, it is a tracker, and it would put the losing rule above out of reach: he would
+        // simply walk round whatever the captain hid behind and pick the line straight back up.
+        //
+        // So: while he HAS the captain he keeps his band. Blind, the ONLY place he has any reason to walk to
+        // is where he last had him — and when he gets there and it is empty, the clock above runs out and he
+        // is done. That is the honest reading of the beat as well: what nine seconds of stone buys the
+        // captain is not invisibility, it is the man's last good guess going stale.
         if (inSight && TheTailBehindYou.HoldsHisBand(rangeDu))
         {
             return told;
         }
 
-        if (TheSpotBehindYou(walls) is { } spot
+        DeckReachability.Point? going = inSight
+            ? TheSpotBehindYou(walls)
+            : WhereHeLastHadYou(who.Walk.X, who.Walk.Y);
+
+        if (going is { } spot
             && OnFoot(TheTailBehindYou.Plate, new NpcWalk.Bound("", spot.X, spot.Y),
                       new DeckReachability.Point(who.Walk.X, who.Walk.Y), walls) is { } next)
         {
@@ -366,6 +397,22 @@ public partial class Map
         _coatSeen = true;
         ShowPulseMessage(line, PulseRank.Beat);
         return true;
+    }
+
+    /// <summary>#1062 · The last place he had the captain, or null if he has not had him yet or is already
+    /// standing on it. It is a PLACE and never a direction: a man who has lost you walks to where you were,
+    /// and if you are not there any more that is the end of it.</summary>
+    private DeckReachability.Point? WhereHeLastHadYou(double x, double y)
+    {
+        if (double.IsNaN(_coatLastX))
+        {
+            return null;
+        }
+
+        double dx = _coatLastX - x, dy = _coatLastY - y;
+        return (dx * dx) + (dy * dy) > DeckPlan.InteractRadius * DeckPlan.InteractRadius
+            ? new DeckReachability.Point(_coatLastX, _coatLastY)
+            : null;
     }
 
     /// <summary>#1062 · Which of the deck's own doorways he is standing in, or null. The plan's UNLOCKED

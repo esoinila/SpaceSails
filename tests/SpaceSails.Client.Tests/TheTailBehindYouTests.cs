@@ -263,11 +263,18 @@ public sealed class TheTailBehindYouTests
         Assert.NotEmpty(seen);
         Assert.False((bool)Field(map, "_coatSeen")!, "one doorway is not a tell.");
 
-        // …and now out to the blind end of the walk, where his band leaves him one place to stand.
+        // …and now the captain WALKS — at a walking pace, out of the bar, across the concourse and out to the
+        // blind end of #1199's tube, where the only spot in the room with a line to him is its own mouth. He
+        // is never teleported: a captain who blinked across the floor would break the man's line for him, and
+        // this guard would be testing the LOSING rule by accident.
+        DeckReachability.Point mouth = HavenInterior.TheWalksMouthAt(Berth)!.Value;
         DeckReachability.Point rail = HavenInterior.TheRailAt(Berth)!.Value;
-        StandCaptainAt(map, rail.X, rail.Y);
+        WalkCaptainTo(map, HavenInterior.BarThreshold.X, HavenInterior.BarThreshold.Y - 4);
+        WalkCaptainTo(map, 2.5, 40);
+        WalkCaptainTo(map, mouth.X, mouth.Y);
+        WalkCaptainTo(map, rail.X, rail.Y);
 
-        for (int i = 0; i < 2000 && !(bool)Field(map, "_coatSeen")!; i++)
+        for (int i = 0; i < 900 && !(bool)Field(map, "_coatSeen")!; i++)
         {
             RunFrames(map, 1);
         }
@@ -300,6 +307,7 @@ public sealed class TheTailBehindYouTests
         StandCaptainAt(map, HavenInterior.BarThreshold.X, HavenInterior.BarThreshold.Y + 6);
         RunFrames(map, 1);
         Assert.NotNull(TheCoat(map));
+        Settle(map);
 
         // He has to have been NOTICED for a word of this to be said, so the chair is taken first.
         Assert.True(SitAtATopThatSeesTheDoor(map, HavenInterior.BarBand(Berth)!.Value));
@@ -312,6 +320,7 @@ public sealed class TheTailBehindYouTests
 
         // Down the gangway — out of the room, out of his line, and he will not follow.
         Invoke(map, "StandUpFromTable");
+        Set(map, "_pulse", default(PulseSlot));   // the chair says its own line on the way up; not ours.
         StandCaptainAt(map, 2.5, 6);
 
         // A frame or two is NOT losing him: the exchange costs what the finding cost.
@@ -476,6 +485,45 @@ public sealed class TheTailBehindYouTests
         double dx = CoatX(coat) - (double)Field(map, "_avatarX")!;
         double dy = CoatY(coat) - (double)Field(map, "_avatarY")!;
         return Math.Sqrt((dx * dx) + (dy * dy));
+    }
+
+    /// <summary>Let the man reach wherever he set off for, so a guard about what he does when he is STANDING
+    /// is not asked of a body that is still walking.</summary>
+    private static void Settle(Pages.Map map)
+    {
+        for (int i = 0; i < 900 && TheCoat(map) is { } coat && Afoot(coat); i++)
+        {
+            RunFrames(map, 1);
+        }
+    }
+
+    /// <summary>
+    /// WALK the captain there, at the pace a person walks, one frame at a time.
+    ///
+    /// <para>Every other guard in this file puts him somewhere and gets on with it, which is fine when the
+    /// claim is about a spot. It is NOT fine when the claim is about somebody following him: a captain who
+    /// blinks eighteen deck units breaks the man's line himself, and the guard would quietly become a test of
+    /// the losing rule. The step is <c>NpcWalk.PaceDu</c> per second — the man's own pace, so he can keep
+    /// up.</para>
+    /// </summary>
+    private static void WalkCaptainTo(Pages.Map map, double x, double y, double dt = 0.1)
+    {
+        double step = NpcWalk.PaceDu * dt;
+        for (int guard = 0; guard < 4000; guard++)
+        {
+            double atX = (double)Field(map, "_avatarX")!, atY = (double)Field(map, "_avatarY")!;
+            double dx = x - atX, dy = y - atY;
+            double left = Math.Sqrt((dx * dx) + (dy * dy));
+            if (left <= step)
+            {
+                StandCaptainAt(map, x, y);
+                RunFrames(map, 1, dt);
+                return;
+            }
+
+            StandCaptainAt(map, atX + (dx / left * step), atY + (dy / left * step));
+            RunFrames(map, 1, dt);
+        }
     }
 
     /// <summary>Put the captain somewhere, and tell the motion rule he has been there a while — so a
