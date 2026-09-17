@@ -189,7 +189,7 @@ public class TheNebulaLedgerTellsTheTruthTests
             NebulaLore.TruthLedgerLine,
             NebulaLore.PosterFirstReadLine,
             ArcConvergence.ConvergenceReveal,
-            ArcConvergence.ConvergenceFoot,
+            NebulaLore.AdjusterConvergenceLine,
         };
         copy.AddRange(NebulaLore.Fragments.Select(f => f.Lore));
         copy.AddRange(NebulaLore.Fragments.Select(f => f.Title));
@@ -236,13 +236,17 @@ public class TheNebulaLedgerTellsTheTruthTests
     // ── 5 · The marquee card does not say the same thing twice. ──
 
     [Fact]
-    public void TheConvergenceCardsFootIsNotACopyOfItsBody()
+    public void TheConvergenceCardsClosingLineIsNotACopyOfEitherQuotedLine()
     {
-        // The foot is the beat after the beat. It closed on two sentences lifted verbatim out of the
-        // paragraph directly above it, so the biggest card in the game repeated itself to the player's face.
-        Assert.False(string.IsNullOrWhiteSpace(ArcConvergence.ConvergenceFoot));
+        // The card's one authored sentence closes two quoted ones. It must not be a recap of either: the
+        // old card's foot was two sentences lifted verbatim out of the paragraph directly above it, so the
+        // biggest card in the game repeated itself to the player's face. The shape changed (#422 option B,
+        // owner 2026-09-17: two voices, then one line); the rule did not.
+        Assert.False(string.IsNullOrWhiteSpace(ArcConvergence.ConvergenceReveal));
 
-        foreach (string sentence in ArcConvergence.ConvergenceFoot.Split('.', StringSplitOptions.RemoveEmptyEntries))
+        string bothVoices = KaamosLore.HolderConvergenceLine + " " + NebulaLore.AdjusterConvergenceLine;
+
+        foreach (string sentence in ArcConvergence.ConvergenceReveal.Split('.', StringSplitOptions.RemoveEmptyEntries))
         {
             string s = sentence.Trim();
             if (s.Length < 12)
@@ -250,8 +254,8 @@ public class TheNebulaLedgerTellsTheTruthTests
                 continue; // a fragment too short to be a repeat of anything
             }
 
-            Assert.False(ArcConvergence.ConvergenceReveal.Contains(s, StringComparison.OrdinalIgnoreCase),
-                $"the convergence card's foot repeats its own body: \"{s}\"");
+            Assert.False(bothVoices.Contains(s, StringComparison.OrdinalIgnoreCase),
+                $"the convergence card's closing line repeats a line it is quoting: \"{s}\"");
         }
     }
 

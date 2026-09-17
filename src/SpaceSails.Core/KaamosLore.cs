@@ -91,6 +91,20 @@ public sealed record RevealPlate(string Title, string ArtFile, string Caption);
 /// </summary>
 public static class KaamosLore
 {
+    /// <summary>
+    /// #422 · THE HOLDER'S LINE — the KAAMOS half of the convergence card, written HERE and nowhere else.
+    ///
+    /// <para>It is the quiet half of the <c>holders-tell</c> shard below, which quotes this const back by
+    /// name so the sentence exists once. The convergence card no longer explains anything (owner ruling
+    /// 2026-09-17, option B): it sets this line beside the Nebula adjuster's
+    /// (<see cref="NebulaLore.AdjusterConvergenceLine"/>), one above the other, unannotated, and lets the
+    /// captain do the arithmetic. The card binds to THIS const, so re-authoring the sentence moves both
+    /// places at once; a guard pins that the shard still contains it word for word.</para>
+    /// </summary>
+    public const string HolderConvergenceLine =
+        "It still calls the manifest in. Every window, right on the tick. Same forty names. " +
+        "I stopped reading who was speaking them.";
+
     /// <summary>The seeded fragment pool, in authored (canonical) order. Deterministic — no wall clock,
     /// no RNG: the same pieces exist in every universe, and only WHICH the player has ASSEMBLED differs
     /// (that lives per-thread in <see cref="KaamosProgress"/>). Five intel shards from five systems, and
@@ -123,8 +137,7 @@ public static class KaamosLore
         new("holders-tell", "The berth-holder's tell", KaamosSource.BarRumor, false,
             "The one who used to run the KAAMOS berth drinks alone and answers only sideways: \"You don't " +
             "file for that berth, spacer. You keep it. There's a difference, and I learned it late.\" Pressed, " +
-            "quieter: \"It still calls the manifest in. Every window, right on the tick. Same forty names. " +
-            "I stopped reading who was speaking them.\" Then the glass is empty and the conversation with it.",
+            "quieter: \"" + HolderConvergenceLine + "\" Then the glass is empty and the conversation with it.",
             "the holder's tick"),
 
         new("bought-coordinate", "The bought coordinate", KaamosSource.BoughtTip, false,

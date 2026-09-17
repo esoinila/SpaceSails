@@ -105,6 +105,19 @@ public sealed record NebulaFragment(string Id, string Title, NebulaSource Source
 /// </summary>
 public static class NebulaLore
 {
+    /// <summary>
+    /// #422 · THE ADJUSTER'S LINE — the NEBULA half of the convergence card, written HERE and nowhere else.
+    ///
+    /// <para>It is the quiet half of the <c>adjuster-tell</c> shard below, which quotes this const back by
+    /// name so the sentence exists once. The convergence card sets it under the KAAMOS berth-holder's
+    /// (<see cref="KaamosLore.HolderConvergenceLine"/>), unannotated, and explains neither: two things the
+    /// captain is already carrying, put side by side. A guard pins that the shard still contains it word
+    /// for word.</para>
+    /// </summary>
+    public const string AdjusterConvergenceLine =
+        "I've filed the same subscriber six times. Different faces, same number. Every one of them shook " +
+        "my hand certain they were the first.";
+
     /// <summary>The seeded fragment pool, in authored (canonical) order. Deterministic — no wall clock, no
     /// RNG: the same pieces exist in every universe, and only WHICH the player has ASSEMBLED differs (that
     /// lives per-thread in <see cref="NebulaProgress"/>). Five intel shards from five systems that touch the
@@ -130,9 +143,8 @@ public static class NebulaLore
         new("adjuster-tell", "The adjuster's tell", NebulaSource.Adjuster, false,
             "The Nebula adjuster works the ports like the fences do, but sells the one thing you can't fence: " +
             "your afterlife. Deep in a drink they answer sideways. \"People think a policy's a spare life. " +
-            "It's a lease, spacer. On the life you've already got.\" Pressed, quieter: \"I've filed the same " +
-            "subscriber six times. Different faces, same number. Every one of them shook my hand certain they " +
-            "were the first.\" Then they buy their own next round and stop talking."),
+            "It's a lease, spacer. On the life you've already got.\" Pressed, quieter: \"" +
+            AdjusterConvergenceLine + "\" Then they buy their own next round and stop talking."),
 
         new("collector-writ", "The collector's writ", NebulaSource.CollectorWrit, false,
             "The debt collectors were never only repo men — you get a look at the writ one carries and it is " +

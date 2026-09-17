@@ -35,23 +35,33 @@
         <div class="convergence-backdrop" @onclick="() => Dismiss(CloseConvergenceReveal)">
             <OverlayShell class="convergence-card" StopClicks="true"
                           Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="btn btn-light convergence-close" DismissFace="…sit with that"
+                          DismissClass="btn btn-light convergence-close" DismissFace="Close"
                           OnClose="() => Dismiss(CloseConvergenceReveal)">
-                <div class="convergence-stamp">◼ ❄ THE THREADS CROSS</div>
-                <div class="convergence-head">Two mysteries. One truth.</div>
-                <div class="convergence-sub">PROJEKTI KAAMOS · NEBULA MUTUAL — the same held breath</div>
+                @* The stamp is two marks and no words. It used to read "THE THREADS CROSS" over a headline
+                   reading "Two mysteries. One truth." — which is the card announcing its own conclusion
+                   before the captain has read a line of it. The marks are the two arcs; that is all the
+                   card is willing to say in its own voice. *@
+                <div class="convergence-stamp">◼ ❄</div>
                 @* #528 · THE PLATE. The biggest reveal in the game was a text div while a routine collector
-                   shakedown had a painted portrait. It is a PLATE, not an illustration of the paragraph
-                   below it: two filing systems that were always one building, and nobody in the room to
-                   react. onerror-hides, so a missing file leaves this card exactly as it was. *@
-                <img class="convergence-img" src="@ArcConvergence.ArtFile" alt="Two mysteries. One truth."
+                   shakedown had a painted portrait. It is a PLATE, not an illustration of the lines below
+                   it: two filing systems that were always one building, and nobody in the room to react.
+                   The alt text describes the PICTURE and not the plot, for the same reason. onerror-hides,
+                   so a missing file leaves this card exactly as it was. *@
+                <img class="convergence-img" src="@ArcConvergence.ArtFile"
+                     alt="Two filing systems, one warm and papered and one cold and steel, meeting at a single shared cabinet."
                      onerror="this.style.display='none'" />
-                <div class="convergence-body">@ArcConvergence.ConvergenceReveal</div>
-                @* The foot is the beat AFTER the beat, and it must not be a recap: it used to close on two
-                   sentences copied verbatim out of the paragraph directly above it, so the biggest card in
-                   the game repeated itself to the player's face. Core owns the line now, and a guard pins
-                   that no sentence of it appears in the body (#422 story pass). *@
-                <div class="convergence-foot">@ArcConvergence.ConvergenceFoot</div>
+                @* #422 · THE COLLISION (owner ruling 2026-09-17, option B). Two sentences the captain is
+                   already carrying, one above the other, UNANNOTATED — no names, no labels, no joining
+                   sentence, nothing saying which port they came from or what they add up to. Both are
+                   bound to the shard that authored them, so the card can never quote a line the world
+                   does not say; ArcConvergence.KaamosSideShard / NebulaSideShard make sure both are in
+                   the ledger before this card can open. *@
+                <div class="convergence-body">“@KaamosLore.HolderConvergenceLine”</div>
+                <div class="convergence-body">“@NebulaLore.AdjusterConvergenceLine”</div>
+                @* The closing line is the one thing the card says for itself, and it is not an
+                   explanation — it names no fact either voice has not already named. The card used to
+                   close on eight sentences of exposition that spent both arcs' capstone reveals. *@
+                <div class="convergence-foot">@ArcConvergence.ConvergenceReveal</div>
             </OverlayShell>
         </div>
 @* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
