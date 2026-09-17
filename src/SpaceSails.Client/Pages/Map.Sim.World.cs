@@ -277,6 +277,13 @@ public partial class Map
         SayTheBootStageCost("the URL read");
 
         ScenarioDefinition scenario = await FetchTheScenarioAsync(q, abandoned);
+
+        // #711 slice 2 · THE GROUND A DEAD DROP MAY NAME IS THE SCENARIO'S OWN, taken HERE — before the
+        // cheats hang their rocks off the berth. Every one of those appended bodies is a landable moon, and
+        // a pool that counted them would move every taken parcel's destination for a boot that used one,
+        // which is a desk row lying about a job the captain has already accepted.
+        RememberTheGroundADropMayName(scenario);
+
         scenario = AppendTheBodiesTheCheatsAskFor(scenario, q);
         SayTheBootStageCost("the scenario fetched and parsed");
 

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using SpaceSails.Client.Rendering;
+using SpaceSails.Contracts;
 using SpaceSails.Core;
 using SpaceSails.Core.Interior;
 
@@ -31,24 +32,39 @@ namespace SpaceSails.Client.Pages;
 public sealed partial class Map
 {
     /// <summary>
-    /// #711 · <b>EVERY GROUND IN THIS SKY A SHUTTLE COULD BE FLOWN DOWN TO.</b> Read off the loaded
-    /// scenario's own bodies, never a list, so the generator cannot name a place that is not there.
-    ///
-    /// <para>Empty before the world is built, which is the honest answer at that moment and the one case
-    /// <see cref="ParcelDrop.For(string, IReadOnlyList{string})"/> hands back null for.</para>
+    /// #711 · <b>EVERY GROUND IN THIS SKY A SHUTTLE COULD BE FLOWN DOWN TO</b> — the scenario's own moons,
+    /// snapshotted at boot. Empty before the world is built, which is the honest answer at that moment and
+    /// the one case <see cref="ParcelDrop.For(string, IReadOnlyList{string})"/> hands back null for.
     /// </summary>
-    private IReadOnlyList<string> TheLandableGround()
+    private readonly List<string> _groundADropMayName = [];
+
+    /// <summary>
+    /// #711 · <b>TAKEN FROM THE FILE, NOT FROM THE LIVE SKY.</b> Filtered with
+    /// <see cref="ShuttleExcursion.IsLandableSurface"/> — the same predicate the shuttle-bay board is built
+    /// out of — so a place a job can name is a place the shuttle flies to, and there is no list of moons
+    /// typed anywhere in this feature for a new scenario to make wrong.
+    ///
+    /// <para><b>Why the scenario and not <c>_ephemeris.Bodies</c>.</b> Four cheats hang extra bodies off the
+    /// berth before the ephemeris is built (the Kepler demo rock, the expedition site, the deflection rock,
+    /// the wreck) and every one of them is a <c>moon</c>. A pool that counted those would answer a DIFFERENT
+    /// destination on a boot that used one — and the parcel in the captain's pocket does not know which URL
+    /// he opened the tab with. The job is a promise made once at a desk, so the ground it may name is a fact
+    /// about the SKY THE SCENARIO SHIPS and nothing else.</para>
+    /// </summary>
+    private void RememberTheGroundADropMayName(ScenarioDefinition scenario)
     {
-        var ground = new List<string>();
-        foreach (CelestialBody body in _ephemeris?.Bodies ?? [])
+        _groundADropMayName.Clear();
+        foreach (BodyDefinition body in scenario?.Bodies ?? [])
         {
-            if (ShuttleExcursion.IsLandableSurface(body.Kind))
+            if (ShuttleExcursion.IsLandableSurface(CircularOrbitEphemeris.KindOf(body.Kind)))
             {
-                ground.Add(body.Id);
+                _groundADropMayName.Add(body.Id);
             }
         }
-        return ground;
     }
+
+    /// <summary>#711 · The pool, as Core wants it.</summary>
+    private IReadOnlyList<string> TheLandableGround() => _groundADropMayName;
 
     /// <summary>#711 · Where the box in the captain's pocket is going, or null when there is no box.</summary>
     private ParcelDrop.Destination? TheParcelsDestination() =>
