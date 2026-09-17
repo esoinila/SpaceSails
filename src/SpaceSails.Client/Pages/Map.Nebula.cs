@@ -326,13 +326,30 @@ public partial class Map
     // (and any smoke test) can verify the marquee beat from one URL. Uses each side's joint threshold exactly.
     private void SeedConvergeCheat()
     {
-        foreach (KaamosFragment f in KaamosLore.IntelFragments.Take(ArcConvergence.KaamosSideThreshold))
+        // #422 · The named shard FIRST, then fill from canonical order up to the threshold. The card quotes
+        // the berth-holder's tell and the adjuster's tell, so the bar requires both — and seeding the plain
+        // first three would leave the KAAMOS side one shard short of a card that says you have been
+        // carrying both of these for a while. Still exactly KaamosSideThreshold + NebulaSideThreshold
+        // intel: the named shard is one OF the three, not a fourth.
+        _kaamos.Assemble(ArcConvergence.KaamosSideShard);
+        foreach (KaamosFragment f in KaamosLore.IntelFragments)
         {
+            if (_kaamos.IntelAssembled >= ArcConvergence.KaamosSideThreshold)
+            {
+                break;
+            }
+
             _kaamos.Assemble(f.Id);
         }
 
-        foreach (NebulaFragment f in NebulaLore.IntelFragments.Take(ArcConvergence.NebulaSideThreshold))
+        _nebula.Assemble(ArcConvergence.NebulaSideShard);
+        foreach (NebulaFragment f in NebulaLore.IntelFragments)
         {
+            if (_nebula.IntelAssembled >= ArcConvergence.NebulaSideThreshold)
+            {
+                break;
+            }
+
             _nebula.Assemble(f.Id);
         }
 

@@ -71,21 +71,23 @@ which is not service — it is noise. `RevealPlatesArePaintedTests` pins that de
 
 ## 3. `art/convergence.jpg` — TWO MYSTERIES. ONE TRUTH. ★
 
-- **Slot:** `ArcConvergence.ArtFile`, rendered in the `convergence-card` (`Map.razor`) between the subtitle
-  and the body, `onerror`-hiding like every other slot. Fires once per universe from
+- **Slot:** `ArcConvergence.ArtFile`, rendered in `ConvergenceRevealCard.razor` between the stamp and the
+  two quoted lines, `onerror`-hiding like every other slot. Fires once per universe from
   `Map.Nebula.MaybeFireConvergence`.
 - **Reach it:** `/map?converge=1`.
-- **It is a PLATE, not an illustration.** The card's copy is live — the arc's own passes keep moving it,
-  and #422 has an open recommendation on the body — so an image that depicted the paragraph would need
-  repainting every time a sentence changed, and worse, it would say the thing out loud.
+- **It is a PLATE, not an illustration.** That call paid for itself on **2026-09-17**: the card's whole body
+  was replaced (#422 option B — the paragraph became two quoted sentences and one closing line) and **the
+  plate did not change by a pixel**, because it was painted against the SHAPE of the reveal rather than
+  against any sentence in it. An image of the paragraph would have been repainted, and worse, it would have
+  said the thing out loud — which is now the one thing the card refuses to do.
 - **What it shows instead is the SHAPE of the reveal:** two entirely different filing systems — one warm,
   wooden, papered, a bureaucracy; one cold, steel, frosted, a cold store — running toward each other down
   one aisle and meeting at a single shared cabinet, the joinery seamless, as though it had always been one
   building. Two mysteries; one truth. **Nobody in the room**, because a figure looking at it would be the
   game telling the captain how to feel about the biggest thing that has ever happened to them.
-- **CSS:** `.convergence-img` is capped at `34vh` rather than the view-object's `70vh`. This card is mostly
-  prose and the picture is its establishing shot, not its subject — the paragraph has to stay on screen
-  with it.
+- **CSS:** `.convergence-img` is capped at `34vh` rather than the view-object's `70vh`. The picture is this
+  card's establishing shot, not its subject — the three short lines under it have to stay on screen with
+  it, and since the ruling there is far less text to keep company, so the cap has room to spare.
 
 > **Prompt used:** An enormous cold records hall seen straight down its own centre aisle, where two
 > completely different filing systems run toward each other and meet. On the left, warm brown wooden ledger

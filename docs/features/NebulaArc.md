@@ -34,7 +34,9 @@ exactly as-is** — it authors the pool and the assembly logic only, and touches
 ## 2. The truth (invented — original, homage-not-reproduction)
 
 > Kept out of the game text on purpose. This section is the writers' bible; **no single fragment states
-> it**, and the deepest reveal (the convergence) is delivered only by a later lane.
+> it**, and since 2026-09-17 **no card states it either** — the convergence used to (§6), and does not
+> now. The nearest the game comes is this arc's own capstone, `policy-terms`, which the captain has to
+> earn.
 
 **Nebula Mutual is a salvage underwriter that got hold of Dr. Vantar's LATTICE** — the standing-wave
 copy rig from his sealed labs (`VantarLore`: the backup kept "wet and dreaming in the jar"; the core
@@ -175,13 +177,22 @@ have met, never delivers the reveal. It reads `KaamosProgress` strictly **READ-O
 ```csharp
 ArcConvergence.HasConverged(kaamos, nebula)
     == KaamosLore.IntelAssembled(kaamos) >= KaamosSideThreshold   // == 3
+       && kaamos.Has(KaamosSideShard)                             // == "holders-tell"
        && NebulaLore.IntelAssembled(nebula) >= NebulaSideThreshold // == 3
+       && nebula.Has(NebulaSideShard)                             // == "adjuster-tell"
 ```
 
 - **Its own bar, not either arc's unlock.** Convergence is a **separate, joint** threshold: the player
   must have seen enough of BOTH shapes for the recognition to land. It does **not** require either arc
   finished — you need not have reached Enceladus, nor hold the whole contract. Noticing the rabbit
   holes meet comes *before* finishing either dig.
+- **The bar names one of the three (2026-09-17).** Three intel a side, as before — but on each side one
+  of the three is the shard the card *quotes*. The card's closing line says *"You have been carrying
+  both of these for a while"*, and a bare count cannot make that sentence true: the five KAAMOS shards
+  come from five different systems, so a captain could reach three having never sat down with the
+  berth-holder, and the card would hand them a line they had never heard. (The adjuster is the rarer of
+  the two — roughly one watch in five at a given bar.) Pinned by
+  `KaamosSideDoesNotConverge_WithoutTheTellTheCardQuotes` and its Nebula twin.
 - **One arc alone never converges.** A captain who has solved the whole ice moon but never questioned
   their deaths has not converged, and vice versa. (Pinned by `KaamosAlone_HoweverDeep_DoesNotConverge`
   and its Nebula twin.)
@@ -189,16 +200,35 @@ ArcConvergence.HasConverged(kaamos, nebula)
   edge the wiring lane watches, and `NebulaProgress.MarkConvergenceSeen()` closes it (persisted in the
   vault, the analog of `NerveSection.MonolithSeen`).
 
-### The convergence reveal (verbatim, `ArcConvergence.ConvergenceReveal`)
+### The convergence card — a COLLISION, not a reveal (owner ruling 2026-09-17, option B)
 
-> The two threads pull taut and cross. The berth nobody files for and the policy you can never let lapse
-> were always the same knot: Vantar taught a lattice to keep whole crews awake in the dark, and Nebula
-> bought the trick and sold it cheap, and both the ice-moon and the cold archive that keeps bringing you
-> back are the same held breath. The wintering mind remembers Vantar — and it knows your policy number,
-> because a copy of you has been filed down there in the sunless water since your first premium, waking
-> every so often, certain it is the one who was here first. Every death you have died was a withdrawal.
-> The same forty names, the same lucid dark. You did not find two mysteries. You found out where you go
-> when you die, and that it has been waiting for you to arrive in person.
+The card used to be eight sentences of third-person exposition, and the #422 story pass found what that
+cost: it stated all three degrees of §2's fine print outright — the fresh copy that wakes certain it was
+always you, the ORIGINAL kept in the cold archive since your first premium, the archive that is awake —
+at a bar (3) *strictly below* this arc's own capstone gate (4 + `policy-terms`). So the capstone resolved
+nothing the player had not been told, and the loudest rule in the house was broken twice over: nobody
+**spoke** the card, so it was the GAME confirming the plot in a full-screen modal, and the way out of the
+modal editorialised (*"…sit with that"*).
+
+The owner picked **option B**: keep the bar, change the shape. What the card shows now, in order:
+
+| row | text | where it is authored |
+| --- | --- | --- |
+| stamp | `◼ ❄` — two marks, no words | the markup |
+| plate | `art/convergence.jpg` | `ArcConvergence.ArtFile` |
+| first line | *"It still calls the manifest in. Every window, right on the tick. Same forty names. I stopped reading who was speaking them."* | `KaamosLore.HolderConvergenceLine` — quoted back by the `holders-tell` shard |
+| second line | *"I've filed the same subscriber six times. Different faces, same number. Every one of them shook my hand certain they were the first."* | `NebulaLore.AdjusterConvergenceLine` — quoted back by the `adjuster-tell` shard |
+| closing | *"You have been carrying both of these for a while."* | `ArcConvergence.ConvergenceReveal` |
+| way out | `Close` | the house's plain close |
+
+**Unannotated** is the rule: no speaker named, no arc named, nothing joining the two lines. **No fact is
+withheld** — both sentences are already in the ledger when the card opens, which is what the bar's named
+shards guarantee — and **none is confirmed**. The arithmetic is the player's, and each arc's capstone
+keeps its own reveal to give. Nothing on the card touches the Old Ones.
+
+Each sentence exists in exactly **one** place: the shard's lore concatenates the const, so re-authoring a
+line moves the world and the card together. Held by `TheConvergenceCardIsACollisionTests` in both suites
+(Core pins the strings and both capstones; Client boots `?converge=1` and reads the painted card).
 
 **The convergence's sanity cost** — `ArcConvergence.ConvergenceSanityShockHook` = `64.0`, a **hook value
 only**, strictly greater than `KaamosLore.RevealSanityShockHook` (40) and `NebulaLore.TruthSanityShockHook`

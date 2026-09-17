@@ -21,20 +21,22 @@ not by a sensor. `KaamosPlotline.md` §2 is a writers' bible and it stays one. E
 *evidence*: a plate that names a department, a room that is made up, a board with one line lit, a log
 that files on the tick. The arithmetic is the player's, or it is nobody's.
 
-This matters more here than anywhere else in the game, for a reason that is already filed:
-**`ArcConvergence.ConvergenceReveal` (#422) already spends the bible's §2 truth in plain words**, at a
-lower bar than this arc's own unlock, reachable from one URL. That is an open decision (recommendation B
-pending the owner) and **this build does not resolve it and does not lean on it**. The head office is
-designed so that it lands whether or not the player has seen that card:
+This mattered more here than anywhere else in the game, because of something that was filed and is now
+fixed: **`ArcConvergence.ConvergenceReveal` (#422) used to spend the bible's §2 truth in plain words**, at
+a lower bar than this arc's own unlock, reachable from one URL. The owner resolved it on **2026-09-17**
+(option B): the convergence card no longer explains anything — it sets the berth-holder's own line beside
+the Nebula adjuster's, unannotated, and closes on *"You have been carrying both of these for a while."*
+
+This build was designed not to lean on that card either way, and it still does not:
 
 | the player has… | what the head office is |
 | --- | --- |
 | never seen the convergence card | a place that is impossibly well-kept and has nobody in it, filing for a delivery |
-| seen the convergence card | the same place, and they now know what the forty-first bed is for |
+| seen the convergence card | the same place, and two voices in their ledger that do not explain it |
 
-Neither reading is confirmed on screen. The convergence card's own last line — *"it has been waiting for
-you to arrive in person"* — is the one place the two arcs touch, and arriving in person is exactly what
-this feature is. It sets the appointment. The head office keeps it and says nothing.
+Neither reading is confirmed on screen — and since the ruling, **nothing confirms it anywhere**. What the
+convergence leaves the captain holding is two testimonies and a coincidence, and arriving in person is
+what the coincidence costs. The head office keeps the appointment and says nothing.
 
 ---
 
