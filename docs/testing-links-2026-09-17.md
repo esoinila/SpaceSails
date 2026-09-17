@@ -198,3 +198,49 @@ there is nothing to sit through.
 - **Every other death.** A captain who dies with an undelivered box in his coat wakes with it still in his
   coat, and a delivery already in the ground still pays — to whoever is holding the licence. Nothing was
   written for that: the wake has never reached the satchel or the hoard, and the payer never saw a face.
+
+---
+
+## 6 · The light keeps its own day (#759, this PR)
+
+The last named remainder of the park behind the bar, and the only one that is arithmetic rather than
+geometry. Owner, filing the room: *"The light keeps its own day — a grow-cycle that matches no watch of the
+building above or below. Anyone who lingers notices the park's morning arriving at the wrong time. **Subtly
+wrong is the register: never broken, never right.**"*
+
+Until now the five floodlight masts against the far wall were posts on the plan and the "artificial day" was
+a word in a comment. The park now runs a **photoperiod of 4.618034 watches — 18 h 28 m of sim time**, lit for
+four fifths of it, with a phase offset seeded per site. The ratio to the building's own four-hour watch is
+four watches and the *golden section* of a fifth: the worst-approximable number there is, so the park's
+morning walks around the building's clock for ever and never settles on it. Over 2,000 watches the two
+clocks disagree on **80%** of them — a majority, and not all.
+
+**Nothing on the glass ever says what time it is in there.** No HUD row, no clock, no plate, no card, no
+bark. A source sweep holds it: four files in the whole client may reach for the number, and none of them is
+a sentence.
+
+| what | link | what to look for |
+| --- | --- | --- |
+| **The park at the bottom of its cycle** (#759, this PR) | [`?park=1&parkphase=night`](https://esoinila.github.io/SpaceSails-play/map?park=1&parkphase=night) — inside the park on B1 of a deep site, with the sim clock jumped so **this site's** park is at the middle of its dark. The arithmetic has to be done for you: the cycle carries a per-site offset, so one number of `?simhours=` is this park's afternoon and the next park's night. | The gravel reads **dim** — the floor art at 55% of the alpha it wears at noon, never less, because a room whose paths you cannot see has *broken* rather than drifted. The five masts against the far wall are **small dark heads**. Everything else on the floor is exactly as it was: the beds, the benches, the lone figure, the window wall, the plate at the gate. |
+| **…and at the top of it** | [`?park=1&parkphase=day`](https://esoinila.github.io/SpaceSails-play/map?park=1&parkphase=day), and `dusk` / `dawn` for the two shoulders | Same room, same plan, different hour. Each mast is now a **wash of cold horticultural white** — deliberately not the warm amber every *other* light on this deck is drawn in, because the park is not lit by the building's lamps. On `dawn` and `dusk` the discs are half up: the ramp is a ramp, not a switch. |
+| **Standing in it when the morning comes up** (#759, this PR) | [`?park=1&parkphase=morning`](https://esoinila.github.io/SpaceSails-play/map?park=1&parkphase=morning) — set down on the gravel **five sim-minutes** before this park's own dawn, on a cycle the rest of the building is *not* having a morning on. | Stand still, or take a bench — it makes no difference which, because what is being noticed is a thing about the **room**. Watch the masts come up. **One pulse**, ranked so nothing displaces it: *"It is coming up to morning in here. It was not morning anywhere else in the building when you came in."* Open the satchel's **NOTES**: one entry, lower case, *"the park keeps a day of its own — set to nobody's watch"*, filed on **THREADS under the PLACE** and never under a name. **No card. No explanation anywhere of why.** |
+| **…and it is the CHANGE, not the room** | same link. Before the five minutes are up, walk **out of the gate and back in**. | **Nothing lands, ever.** You came in again, on a morning, and the sentence claims you did not. Same for a second captain-visit to the same park once it has been spent: one pulse per captain per site, in the register that rides the vault, so a reload does not hand it to you twice. |
+| **Two parks are not keeping the same day** | `?park=1&parkphase=day`, then boot the same key at a different site | The three sites a captain actually walks have offsets an eighth of a cycle apart or better (luna 0.177, phobos 0.294, titan 0.791). At the pinned frame time of 880 s, **phobos' and titan's parks are in broad day while luna's is dark** — the same instant, three rooms, three hours. |
+| **…and the half that must look exactly the same** | `/map?park=1`, `/map?park=1&spread=1`, `/map?parkback=1`, `/map?parkwalk=1`, `/map?counter=1`, `/map?stool=1`, and every other link in this file | **Everything but the light.** The park's geometry, its walk, its twelve beds and their stencils, the six benches and the sit verb, the lone figure, the gate, the window wall, the attendance note on your first step — untouched. Off that one floor **nothing changed at all**: the frame-hash ledger moved on exactly the five cases with a park in them (+5 marks each, one per mast) and the other twenty-eight are byte-identical. |
+
+**Reading the clock while you play.** The cycle is **sim** time, so the warp slider is the fast-forward if
+you want it — but `?parkphase=morning` is set at five sim-minutes precisely so you should not need it. The
+masts move continuously: the shoulders are straight ramps about 55 sim-minutes long, so at warp 1 a dawn
+takes about an hour of the player's evening to complete and is visibly under way the whole time.
+
+**What would say this regressed:** a number, a phase name or a clock **anywhere on the glass** (the whole
+feature is that the player can only *see* it); the pulse arriving the instant you walk in, or arriving on a
+morning the building is also having; a park you cannot make out the paths in at the bottom of the cycle
+(that is broken, not subtly wrong); the masts snapping between dark and lit instead of ramping; or two sites'
+parks turning over together.
+
+**The law behind it.** `TheParkKeepsItsOwnDayTests` — twelve guards, every one shown RED before it was
+trusted: the incommensurability bound (stated as *q²·|r − p/q| ≥ 0.35* for every denominator up to 200,
+because Dirichlet says a list of fractions cannot be the law), both ends of "never broken, never right", the
+morning that lands in all 100 hundredths of a watch over 500 cycles, the beat enumerated over its 128 inputs,
+and the source sweep above.
