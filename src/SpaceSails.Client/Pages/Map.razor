@@ -217,7 +217,8 @@
                       RipItUp="@RipItUp" RunThePenDownTheStack="@RunThePenDownTheStack" SatchelLabel="@SatchelLabel"
                       ScanHint="@ScanHint" ScanIsOffered="@ScanIsOffered" ScanWithTheKit="@ScanWithTheKit"
                       BurnIsOffered="@BurnIsOffered" BurnTheBlackOpsKey="@BurnTheBlackOpsKey"
-                      SheetStacks="@SheetStacks" SpreadableFinds="@SpreadableFinds"
+                      SheetStacks="@SheetStacks" SplitHint="@SplitHint" SplitIsOffered="@SplitIsOffered"
+                      SplitTheDocument="@SplitTheDocument" SpreadableFinds="@SpreadableFinds"
                       SpreadDigClicked="@SpreadDigClicked" SpreadDoorHint="@SpreadDoorHint"
                       SpreadRefusal="@SpreadRefusal" SpreadRowVerb="@SpreadRowVerb"
                       TakeUpTheRedPen="@TakeUpTheRedPen" TargetFor="@TargetFor" TheBookThreads="@TheBookThreads"
@@ -294,12 +295,15 @@
                         AdvanceDeflectionStory="@AdvanceDeflectionStory" AvailableBots="@AvailableBots"
                         Board="@Board" BoardingAWreck="@BoardingAWreck" BoardingHoldQuote="@BoardingHoldQuote"
                         BoardingHoldSeverity="@BoardingHoldSeverity" BodyName="@BodyName"
-                        BotMusterLine="@BotMusterLine" CancelBoarding="@CancelBoarding"
+                        BoardDepositIs="@BoardDepositIs" BotMusterLine="@BotMusterLine"
+                        BuriableInTheSatchel="@BuriableInTheSatchel" CancelBoarding="@CancelBoarding"
+                        ChooseBoardDeposit="@ChooseBoardDeposit"
                         ConfirmBoarding="@ConfirmBoarding" DeflectionPanelArtCss="@DeflectionPanelArtCss"
                         Dismiss="@Dismiss" DismissExpeditionBrief="@DismissExpeditionBrief"
                         DismissExpeditionReveal="@DismissExpeditionReveal" DismissMapCard="@DismissMapCard"
                         ExpeditionBriefArtCss="@ExpeditionBriefArtCss" FormatDuration="@FormatDuration"
                         HotHoldUnits="@HotHoldUnits" LoadedBotsSummary="@LoadedBotsSummary"
+                        SatchelLabel="@SatchelLabel"
                         SelectBoardSite="@SelectBoardSite" SetBoardCoin="@SetBoardCoin"
                         SurfaceGroundInteract="@SurfaceGroundInteract" TreasureMapArtCss="@TreasureMapArtCss"
                         TryBoard="@TryBoard" />
@@ -452,7 +456,8 @@
                 _weaponsTight="@_weaponsTight"
                 _workingStopsSinceShoreLeave="@_workingStopsSinceShoreLeave" _worldReady="@_worldReady"
                 AcknowledgeAlert="@AcknowledgeAlert" ActiveCaptainName="@ActiveCaptainName"
-                ActiveCargoRunTo="@ActiveCargoRunTo" ActiveTutorialIndex="@ActiveTutorialIndex"
+                ActiveCargoRunTo="@ActiveCargoRunTo" ActiveConditions="@ActiveConditions"
+                ActiveTutorialIndex="@ActiveTutorialIndex"
                 AddArriveAtScrub="@AddArriveAtScrub" AddBurnAtScrub="@AddBurnAtScrub"
                 AddCastOffAtTop="@AddCastOffAtTop" AddSkimBurn="@AddSkimBurn"
                 AddSlingBurn="@AddSlingBurn" AllStationChips="@AllStationChips"
@@ -473,7 +478,7 @@
                 BestWireLenderId="@BestWireLenderId" Board="@Board" BodyName="@BodyName"
                 BribeShip="@BribeShip" BurnGlanceLine="@BurnGlanceLine" BuyAmmo="@BuyAmmo"
                 BuyFuel="@BuyFuel" BuyNetJammer="@BuyNetJammer"
-                BuyTheInspectorCard="@BuyTheInspectorCard" BuyUpgrade="@BuyUpgrade"
+                BuyTheInspectorCard="@BuyTheInspectorCard" BuyTheKeyFromTheFence="@BuyTheKeyFromTheFence" ParcelOnOffer="@ParcelOnOffer" TakeTheUnlistedParcel="@TakeTheUnlistedParcel" BuyUpgrade="@BuyUpgrade"
                 CallInFavorAtPump="@CallInFavorAtPump" CancelFiringSolution="@CancelFiringSolution"
                 CancelRenameCaptain="@CancelRenameCaptain" CanFollowDestination="@CanFollowDestination"
                 CanWarnInterest="@CanWarnInterest" CaptainCrashNote="@CaptainCrashNote"
@@ -509,15 +514,17 @@
                 FlightPlanStepCount="@FlightPlanStepCount" FollowDestTip="@FollowDestTip"
                 FollowShip="@FollowShip" FormatDistance="@FormatDistance"
                 FormatDuration="@FormatDuration" FormatHorizon="@FormatHorizon"
-                FormatSimTime="@FormatSimTime" FormatZoom="@FormatZoom" FrameOptions="@FrameOptions"
+                FormatSimTime="@FormatSimTime" FormatZoom="@FormatZoom"
+                FrameMotionTipLine="@FrameMotionTipLine" FrameOptions="@FrameOptions"
                 FramePickerGroups="@FramePickerGroups" FrameSpeedReadout="@FrameSpeedReadout"
                 FuelDirectionsLine="@FuelDirectionsLine" HarborClassOf="@HarborClassOf"
                 HeadingAlongCourseAt="@HeadingAlongCourseAt" HorizonSliderValue="@HorizonSliderValue"
-                InspectorCardPrice="@InspectorCardPrice" IntelStaleInDays="@IntelStaleInDays"
+                InspectorCardPrice="@InspectorCardPrice" TheFencesKeyPrice="@TheFencesKeyPrice" TheFencesKeyPriceText="@TheFencesKeyPriceText" IntelStaleInDays="@IntelStaleInDays"
                 InterestDistanceNow="@InterestDistanceNow" InterestTargetName="@InterestTargetName"
                 IsDockableHaven="@IsDockableHaven" IsHiddenAtHaven="@IsHiddenAtHaven"
                 LedgerAccounts="@LedgerAccounts" LedgerMaps="@LedgerMaps"
-                LedgerTipsAsRemembered="@LedgerTipsAsRemembered" LiveRounds="@LiveRounds"
+                LedgerTipsAsRemembered="@LedgerTipsAsRemembered"
+                LiveQuestScopeTargets="@LiveQuestScopeTargets" LiveRounds="@LiveRounds"
                 LocalContacts="@LocalContacts" LocalSpaceBodyId="@LocalSpaceBodyId"
                 LongCoastAheadReadout="@LongCoastAheadReadout"
                 LongHaulCaptureRange="@LongHaulCaptureRange"
@@ -554,6 +561,12 @@
                 ReadTheGreyPage="@ReadTheGreyPage" RemoveArriveStep="@RemoveArriveStep"
                 RemoveTheCastOff="@RemoveTheCastOff" RenameKeyDown="@RenameKeyDown"
                 ReopenStartPicker="@ReopenStartPicker" RestockSentries="@RestockSentries"
+                ChandleryOpen="@(() => ChandleryHouse is not null)"
+                ChandleryTankPrice="@(() => ExtendedTankPrice)"
+                ChandleryTanksAboard="@(() => ExtendedTanksAboard)"
+                ChandleryPillsMissing="@(() => MedKitPillsMissing)"
+                ChandleryRefillPrice="@(() => MedKitRefillPrice)"
+                BuyExtendedTank="@BuyExtendedTank" BuyMedKitRefill="@BuyMedKitRefill"
                 RetimeToScrub="@RetimeToScrub" RibbonHorizonNote="@RibbonHorizonNote"
                 RouteLabel="@RouteLabel" RunSkimSolveAsync="@RunSkimSolveAsync"
                 RunSlingSolveAsync="@RunSlingSolveAsync" Say="@Say"
@@ -655,6 +668,7 @@
                        _faceScene="@_faceScene" _faceSceneReply="@_faceSceneReply"
                        _groundGrewOpen="@_groundGrewOpen" _groundGrewWhere="@_groundGrewWhere"
                        _groundLessonOpen="@_groundLessonOpen" _hasNetJammer="@_hasNetJammer" _hotCargo="@_hotCargo"
+                       _missionMoment="@_missionMoment"
                        _reactionMassPulses="@_reactionMassPulses" _showSaveDrawer="@_showSaveDrawer"
                        _tubeRearmOpen="@_tubeRearmOpen" AnswerTheFace="@AnswerTheFace" Board="@Board"
                        BustedBoliviaChoose="@BustedBoliviaChoose" BustedBribe="@BustedBribe"
@@ -665,10 +679,12 @@
                        CloseGroundGrew="@CloseGroundGrew" CloseGroundLesson="@CloseGroundLesson"
                        CloseTheFaceScene="@CloseTheFaceScene" CloseTubeRearm="@CloseTubeRearm"
                        DeathNerveLedgerLines="@DeathNerveLedgerLines" Dismiss="@Dismiss"
-                       DismissCelebration="@DismissCelebration" HeatFlames="@HeatFlames"
+                       DismissCelebration="@DismissCelebration" DismissMissionMoment="@DismissMissionMoment"
+                       HeatFlames="@HeatFlames"
                        HotGlossTitle="@HotGlossTitle" OldCrewHistoryLine="@OldCrewHistoryLine"
                        OpenLogbookFromDeath="@OpenLogbookFromDeath" PayCompletedQuests="@PayCompletedQuests"
-                       PresentTheBlackOpsKey="@PresentTheBlackOpsKey" PressAndRefocus="@PressAndRefocus" Say="@Say" />
+                       PresentTheBlackOpsKey="@PresentTheBlackOpsKey" PressAndRefocus="@PressAndRefocus" Say="@Say"
+                       ShowMeTheMissionMoment="@ShowMeTheMissionMoment" />
 
     @* M28: the ship's parrot — a small perch visible on every desk, one squawk at a time. *@
     <div class="parrot-perch" aria-live="polite" title="the ship's parrot">
@@ -702,6 +718,26 @@
         @if (sharedHistory.Length > 0)
         {
             <div class="old-crew-history small text-secondary">@display — @sharedHistory</div>
+        }
+        @* #535 slice 2 · THE FAVOUR. One more verb on the seat's card the captain is already looking at —
+           no pop-up, no new doorway — and closing the card declines it, which is why there is no decline
+           button: the offer stands and can be taken at a later sit.
+
+           The line is the CONTACT speaking and it is printed before the press, not after it. Every other
+           beat in this game narrates what just happened; this one says why it is happening, in their voice,
+           and then the captain decides. It is drawn only where the law holds (TheFavourIsOnTheTable — Core's
+           top goodwill band, no lie on the book, not already spent, and a port that has not dealt one this
+           watch), never greyed: a disabled verb under somebody's name would announce that this person has
+           something, which is the one thing this object is written against.
+
+           The button carries no title, the same way the BUSTED card's fifth exit carries none. *@
+        @if (!TheyWouldNoticeTheFace(giver) && TheFavourIsOnTheTable(giver))
+        {
+            <div class="contact-offer-row">
+                <span class="bar-offer-moment small">@SpaceSails.Core.BlackOpsKey.FavourLine</span>
+                <button type="button" class="btn btn-sm btn-outline-info"
+                        @onclick="@(() => TakeTheFavour(giver))">@SpaceSails.Core.BlackOpsKey.Glyph @SpaceSails.Core.BlackOpsKey.FavourVerb</button>
+            </div>
         }
         @* #1013 · A CONTACT ROW IS NOT THE CARD'S OWN FOOT. `.deck-offer-actions` is `position: sticky;
            bottom: 0` (the pinned way-out row, #735/#780) — fine for the ONE true foot at the end of a

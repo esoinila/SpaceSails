@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Core;
@@ -322,7 +322,7 @@ public class TheTreadmillTests
     [Fact]
     public void ALongStraightWalk_CostsOneRebuildPerTileCrossing()
     {
-        var stream = new SurfaceStream();
+        var stream = new SurfaceStream(SuitAir.PlayBudget(extendedTank: false));
         (double x, double y) = SurfaceTiles.TubeMouth();
         y -= 30.0;
 
@@ -356,7 +356,7 @@ public class TheTreadmillTests
     [Fact]
     public void GroundEvictedByTheChunk_ComesBackTheSame()
     {
-        var stream = new SurfaceStream();
+        var stream = new SurfaceStream(SuitAir.PlayBudget(extendedTank: false));
         (double x, double y) = SurfaceTiles.TubeMouth();
         y -= 30.0;
 
@@ -397,7 +397,7 @@ public class TheTreadmillTests
     public void TheBackstop_SitsFarPastThePointOfNoReturn()
     {
         double noReturn = 0.0;
-        for (double d = 0.0; d < SurfaceTiles.BackstopRadiusDu; d += 10.0)
+        for (double d = 0.0; d < SurfaceTiles.BackstopRadiusDu(SuitAir.PlayBudget(extendedTank: false)); d += 10.0)
         {
             // What is left in the tank after walking d out, and whether the walk home is still affordable.
             double left = SuitAir.TankSeconds - (d / SuitAir.WalkSpeedDu);
@@ -409,8 +409,8 @@ public class TheTreadmillTests
         }
 
         Assert.True(noReturn > 0.0, "a captain can walk to the backstop and still get home — the tank is a lie.");
-        Assert.True(SurfaceTiles.BackstopRadiusDu > noReturn * 2.0,
-            $"the backstop is at {SurfaceTiles.BackstopRadiusDu:F0} du and the walk home stops being " +
+        Assert.True(SurfaceTiles.BackstopRadiusDu(SuitAir.PlayBudget(extendedTank: false)) > noReturn * 2.0,
+            $"the backstop is at {SurfaceTiles.BackstopRadiusDu(SuitAir.PlayBudget(extendedTank: false)):F0} du and the walk home stops being " +
             $"affordable at {noReturn:F0} du — that is close enough to meet.");
     }
 
@@ -423,17 +423,17 @@ public class TheTreadmillTests
     {
         foreach ((string body, string salt) in Sites())
         {
-            double first = SurfaceEdge.BackstopRadiusAt(body, salt, 0.0);
-            Assert.Equal(first, SurfaceEdge.BackstopRadiusAt(body, salt, Math.Tau), 6);
+            double first = SurfaceEdge.BackstopRadiusAt(body, salt, 0.0, SuitAir.PlayBudget(extendedTank: false));
+            Assert.Equal(first, SurfaceEdge.BackstopRadiusAt(body, salt, Math.Tau, SuitAir.PlayBudget(extendedTank: false)), 6);
 
             var radii = new List<double>();
             for (int i = 0; i < 180; i++)
             {
-                double r = SurfaceEdge.BackstopRadiusAt(body, salt, i * Math.Tau / 180.0);
+                double r = SurfaceEdge.BackstopRadiusAt(body, salt, i * Math.Tau / 180.0, SuitAir.PlayBudget(extendedTank: false));
                 Assert.True(r > 0.0);
                 radii.Add(r);
             }
-            double wander = (radii.Max() - radii.Min()) / SurfaceTiles.BackstopRadiusDu;
+            double wander = (radii.Max() - radii.Min()) / SurfaceTiles.BackstopRadiusDu(SuitAir.PlayBudget(extendedTank: false));
             Assert.True(wander > 0.02, $"{body}/{salt}: the backstop wanders {wander:P1} — that is a circle.");
         }
     }
@@ -444,7 +444,7 @@ public class TheTreadmillTests
     [Fact]
     public void TheBackstop_StopsYouFromEveryBearing()
     {
-        double r = SurfaceTiles.BackstopRadiusDu;
+        double r = SurfaceTiles.BackstopRadiusDu(SuitAir.PlayBudget(extendedTank: false));
         (double cx, double cy) = SurfaceTiles.TubeMouth();
 
         foreach ((string body, string salt) in Sites())
@@ -456,9 +456,9 @@ public class TheTreadmillTests
                 double inside = r * (1.0 - SurfaceEdge.BackstopWanderFraction - 0.01);
 
                 Assert.True(SurfaceEdge.BeyondBackstop(
-                    body, salt, cx + (outside * Math.Cos(b)), cy + (outside * Math.Sin(b))));
+                    body, salt, cx + (outside * Math.Cos(b)), cy + (outside * Math.Sin(b)), SuitAir.PlayBudget(extendedTank: false)));
                 Assert.False(SurfaceEdge.BeyondBackstop(
-                    body, salt, cx + (inside * Math.Cos(b)), cy + (inside * Math.Sin(b))));
+                    body, salt, cx + (inside * Math.Cos(b)), cy + (inside * Math.Sin(b)), SuitAir.PlayBudget(extendedTank: false)));
             }
         }
     }

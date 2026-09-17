@@ -168,6 +168,25 @@ public partial class DeskPanels
 
     /// <summary>#1149 · Buy it. Map moves the coin and puts the laminate in the wallet.</summary>
     [Parameter] public Action BuyTheInspectorCard { get; set; } = default!;
+
+    /// <summary>#535 slice 2 · What the desk's fence wants for one black-ops key, or null when this port has
+    /// already dealt its one for the watch — Map's own <c>TheFencesKeyPrice</c>, three times the BUSTED
+    /// card's bribe through that card's own function and never typed.</summary>
+    [Parameter] public Func<int?> TheFencesKeyPrice { get; set; } = default!;
+
+    /// <summary>#535 slice 2 · That price in the desk's one credit typography, composed by Map.</summary>
+    [Parameter] public Func<string> TheFencesKeyPriceText { get; set; } = default!;
+
+    /// <summary>#535 slice 2 · Buy it — Map moves the coin and strikes the port off for the watch.</summary>
+    [Parameter] public Action BuyTheKeyFromTheFence { get; set; } = default!;
+
+    /// <summary>#711 slice 1 · Whether the desk has an unlisted parcel to hand over — Map's own
+    /// <c>ParcelOnOffer</c>. A bool and not a price: no coin moves through that row.</summary>
+    [Parameter] public Func<bool> ParcelOnOffer { get; set; } = default!;
+
+    /// <summary>#711 slice 1 · Take it. Map puts it in the pocket; nothing else moves.</summary>
+    [Parameter] public Action TakeTheUnlistedParcel { get; set; } = default!;
+
     [Parameter] public Action SellTheChipToTheFence { get; set; } = default!;
     [Parameter] public Func<NpcShip, string> DepartureLabel { get; set; } = default!;
     [Parameter] public Action DismissCrashNote { get; set; } = default!;
@@ -218,6 +237,19 @@ public partial class DeskPanels
     [Parameter] public Action<KeyboardEventArgs> RenameKeyDown { get; set; } = default!;
     [Parameter] public Action ReopenStartPicker { get; set; } = default!;
     [Parameter] public EventCallback RestockSentries { get; set; }
+
+    // -- #325/#332 - THE CHANDLERY'S SEVEN WIRES ------------------------------------------------------
+    //  Funcs rather than values, the same shape SentryRoundsMissing/SentryRestockCost use, so the markup
+    //  reads the page's ONE property each render instead of a copy that was correct when the parameter was
+    //  last set. A chandlery row that quoted a stale price would be the same bug the armory's #562 note
+    //  further down this file is about, one card lower in the column.
+    [Parameter] public Func<bool> ChandleryOpen { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryTankPrice { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryTanksAboard { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryPillsMissing { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryRefillPrice { get; set; } = default!;
+    [Parameter] public EventCallback BuyExtendedTank { get; set; }
+    [Parameter] public EventCallback BuyMedKitRefill { get; set; }
     [Parameter] public Func<NpcShip, string> RouteLabel { get; set; } = default!;
     [Parameter] public Action ScanFiringWindows { get; set; } = default!;
     [Parameter] public Func<string, ScopeIntel?> ScopeIntelById { get; set; } = default!;

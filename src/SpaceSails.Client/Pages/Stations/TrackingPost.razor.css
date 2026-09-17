@@ -179,6 +179,14 @@
 
 .sensor-task-done { opacity: 0.55; }
 
+/* #238 item 3: "sweep holds the scope — 🔭 Roadster fix waits behind it". A complaint and not a state, so it
+   wears no chip and does not line up with the columns — it is a sentence under the work that is in the way. */
+.sensor-task-held {
+    color: #ffd27d;
+    font-size: 0.76rem;
+    padding-left: 1.2rem;
+}
+
 /* PR-D: the cold-case board — lost locks with live search areas. */
 .sensor-lost-box {
     border: 1px solid rgba(255, 150, 100, 0.5);

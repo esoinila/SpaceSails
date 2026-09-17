@@ -207,13 +207,71 @@ public readonly record struct ContactHistory(
     /// is still one story running.</summary>
     public ContactHistory WithLie() => WasLiedTo ? this : this with { WasLiedTo = true };
 
+    /// <summary>#535 slice 2 · <b>THE BOOK MARKS THE FAVOUR.</b> Set when this contact handed the captain a
+    /// black-ops key across a table (<see cref="BlackOpsKey.FavourIsOnTheTable"/>). ONE PER CONTACT PER
+    /// CAPTAIN-LIFETIME, which is why it is a flag on the book and not merely the goodwill debit the favour
+    /// costs: the debit is what it COST, and goodwill can be bought back a round at a time, so a ledger that
+    /// remembered only the cost would sell one person's one favour over and over.
+    ///
+    /// <para>It sits in the same register as <see cref="WasLiedTo"/> and for the same reason — a fact about
+    /// what has passed between these two people, kept because a later beat has to know it. Additive and
+    /// SAVED, defaulting to false on every pre-existing construction: an old vault loads with everybody's
+    /// favour unspent, which is the truth about a save written before anybody could ask for one.</para></summary>
+    public bool FavourSpent { get; init; }
+
+    /// <summary>#535 slice 2 · Mark that this contact has spent their one favour. Idempotent — a favour
+    /// recorded twice is still one key across one table.</summary>
+    public ContactHistory WithFavourSpent() => FavourSpent ? this : this with { FavourSpent = true };
+
+    /// <summary>
+    /// #711 · <b>THE BOOK MARKS THE FOLDER THIS OUTFIT CLOSED.</b> Set when somebody on their rota found a
+    /// parcel aboard, fined it and filed it (<see cref="UnlistedParcel"/>).
+    ///
+    /// <para>Canon design (head coder, 2026-08-09): <i>"being caught at Layer 1 writes a record, and that
+    /// record is armor — an entity that has already caught you once has an answer for you, and answers are
+    /// never re-questioned without new cause."</i> This is that record, in the book #715 already keeps for
+    /// exactly this holder: one outfit's memory of one captain, filed under nobody else's name.</para>
+    ///
+    /// <para>It is deliberately NOT <see cref="HeatOwed"/> with a different sign on it, and not a subtraction
+    /// from it. Heat is what they think of you and it cools with the hours; this is what they have ON you,
+    /// and paper does not cool. One number made to mean both would be the two-meters-that-must-agree bug
+    /// this house keeps a table of.</para>
+    ///
+    /// <para>Additive and SAVED like the rest of the book, defaulting to false on every pre-existing
+    /// construction — an old vault loads with nobody's folder closed, which is the truth about a save
+    /// written before anything could close one.</para>
+    /// </summary>
+    public bool FolderClosed { get; init; }
+
+    /// <summary>
+    /// #711 · <b>WHICH BAND THEIR METER STOOD AT WHEN THE FOLDER WAS CLOSED</b>, and it is a band rather
+    /// than a raw count on purpose: <see cref="IllegalHeat.StartingRung"/> is the one function in this game
+    /// that says a band has moved, and "new cause" is defined as that function's answer getting bigger.
+    ///
+    /// <para>Nought is a real, ordinary value here — most folders are closed on a captain nobody remembers —
+    /// so <see cref="FolderClosed"/> and not this number is what says a folder exists at all. A defaulted 0
+    /// on a row with no folder is therefore never read.</para>
+    /// </summary>
+    public int FolderClosedAtRung { get; init; }
+
+    /// <summary>#711 · Close this outfit's folder at the band their meter stands at NOW. Not idempotent in
+    /// the rung, deliberately: a folder re-opened by new cause and closed again is closed against the higher
+    /// band, or the second filing would be armour that expired the moment it was written.</summary>
+    public ContactHistory WithFolderClosed(int atRung) =>
+        this with { FolderClosed = true, FolderClosedAtRung = Math.Max(0, atRung) };
+
     /// <summary>True once we've learned what this contact drinks.</summary>
     public bool FavoriteKnown => !string.IsNullOrEmpty(KnownFavorite);
 
     /// <summary>True once there is any history to read — an honest job done, a hull we robbed, coin
     /// in the air (banked with them or owed to them), a round stood them (goodwill), a tell slipped,
-    /// their favourite learned, or (#715) an outfit that remembers being crossed.</summary>
-    public bool HasHistory => MissionsCompleted > 0 || Hostile || CreditBalance != 0 || Transactions.Length > 0 || Goodwill != 0 || KnownTells.Length > 0 || FavoriteKnown || HeatOwed > 0 || KnewTheOldFace;
+    /// their favourite learned, (#715) an outfit that remembers being crossed, or (#535) a favour already
+    /// spent. The favour belongs on this list for the reason every other term does: a contact whose goodwill
+    /// has been debited back to nothing by the favour they did you is still somebody you have dealt with.
+    ///
+    /// <para>#711 · …and a closed folder, for that same reason pointed the other way: an outfit whose heat
+    /// has cooled all the way back to nothing still has a form with your ship's name on it in a drawer.</para></summary>
+    public bool HasHistory => MissionsCompleted > 0 || Hostile || CreditBalance != 0 || Transactions.Length > 0 || Goodwill != 0 || KnownTells.Length > 0 || FavoriteKnown || HeatOwed > 0 || KnewTheOldFace || FavourSpent || FolderClosed;
 }
 
 /// <summary>
@@ -362,6 +420,60 @@ public sealed class ContactLedger
             ? existing with { DisplayName = displayName }
             : ContactHistory.New(contactId, displayName);
         ContactHistory updated = current.WithLie();
+        _byId[contactId] = updated;
+        return updated;
+    }
+
+    /// <summary>
+    /// #535 slice 2 · <b>THE FAVOUR, BOOKED.</b> The ONE mutation the black-ops favour performs, and it is
+    /// one method because it is two writes that must never come apart: the standing is debited by the band
+    /// that qualified it (<see cref="BlackOpsKey.FavourCostsGoodwill"/>) and the book is marked so it can
+    /// never be asked for twice. A caller that did these separately could be interrupted between them, and
+    /// the half that survived would be either a free key or a charge for nothing.
+    ///
+    /// <para>Refuses a contact who is not owed one: <see cref="BlackOpsKey.FavourIsOnTheTable"/> is asked
+    /// HERE, of the book itself, so the client's drawn verb and the ledger's write read one predicate and a
+    /// press that raced the state cannot bank a key the law would not have offered. Returns the updated
+    /// history, or null when nothing was booked.</para>
+    /// </summary>
+    public ContactHistory? RecordFavourGiven(string contactId, string displayName)
+    {
+        ContactHistory current = _byId.TryGetValue(contactId, out ContactHistory existing)
+            ? existing with { DisplayName = displayName }
+            : ContactHistory.New(contactId, displayName);
+
+        if (!BlackOpsKey.FavourIsOnTheTable(current))
+        {
+            return null;
+        }
+
+        ContactHistory updated = current
+            .WithGoodwill(-BlackOpsKey.FavourCostsGoodwill)
+            .WithFavourSpent();
+        _byId[contactId] = updated;
+        return updated;
+    }
+
+    /// <summary>
+    /// #711 · <b>CLOSE THIS OUTFIT'S FOLDER — the write a fine makes, and the only one that makes it.</b>
+    ///
+    /// <para>Called with the band their meter stands at AFTER the find's own heat has been banked, which is
+    /// the ordering the whole mechanic rests on: the rung is read from the book as it will be from now on,
+    /// so the point this crossing added can never itself read as the "new cause" that re-opens what it just
+    /// closed. <see cref="UnlistedParcel.TheParcelIsWhatIsFound"/> is the one caller and does both in one
+    /// breath for exactly that reason.</para>
+    ///
+    /// <para>Creates the row on first filing, like every other recording mutator here — an outfit that has
+    /// never heard of the captain until the afternoon they fined him is the ordinary case.</para>
+    /// </summary>
+    /// <returns>The updated history, so a caller can read the filed band back without a second lookup.</returns>
+    public ContactHistory CloseTheFolder(string contactId, string displayName, int atRung)
+    {
+        ContactHistory current = _byId.TryGetValue(contactId, out ContactHistory existing)
+            ? existing with { DisplayName = displayName }
+            : ContactHistory.New(contactId, displayName);
+
+        ContactHistory updated = current.WithFolderClosed(atRung);
         _byId[contactId] = updated;
         return updated;
     }

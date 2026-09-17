@@ -261,6 +261,17 @@ public partial class Map
     {
         string objective = _trackingPost?.ObjectiveSummary(SimTime) ?? "no watch set";
         string tracks = $"{_trackingPost?.Entries.Count ?? 0}/{_telescopeLevel + 1} tracks";
+
+        // #238 item 3 · SWEEP HOLDS THE SCOPE, on the chip, IN THE PANEL'S OWN WORDS. The desk's own
+        // ScopeHoldLine, read and not re-composed: the Sensor-tasks panel prints this same string, and the
+        // captain who reads the complaint on the chip and then opens the desk must find the same sentence
+        // there or he has been told two things (#203, one voice).
+        //
+        // It takes the TRACK COUNT'S line rather than the beacon's, and that is the judgement call. A chip
+        // has three lines; the count is the one that is a standing number a captain can go and read at any
+        // time, and this is an obstruction that is true for the next few minutes only. The beacon line below
+        // is a WARNING about what the world can see of us and never gets stood on.
+        string? held = _trackingPost?.ScopeHoldLine;
         // M29: the beacon state rides the chip — the captain should never wonder aloud what
         // story the transponder is telling.
         string? beacon = _transponderMode switch
@@ -269,7 +280,7 @@ public partial class Map
             TransponderMode.Fake => "🎭 FALSE COLORS — ghost on course",
             _ => null,
         };
-        return new(ShipDesk.Sensors, "📡", "Sensors", objective, tracks, beacon);
+        return new(ShipDesk.Sensors, "📡", "Sensors", objective, held ?? tracks, beacon);
     }
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData WarRoomChip()

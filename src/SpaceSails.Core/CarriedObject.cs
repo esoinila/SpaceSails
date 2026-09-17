@@ -112,6 +112,13 @@ public static class CarriedObject
             // what the object is — two faces and a clock — and stops there.
             Satchel.Kind.Dirt when CompromisingChip.IsTheChip(item) => CompromisingChip.Card,
 
+            // #711 · THE PARCEL. Caption-only (#528's deliberate no-picture idiom, the call the key and the
+            // cutting rig both make above): there is no painting of a cardboard box, and a generated one
+            // would be the game insisting the object is interesting. #614's law to the letter — it says what
+            // the thing IS, names nobody, and says nothing whatever about what happens if it is found.
+            Satchel.Kind.Parcel
+                => new Reveal(string.Empty, UnlistedParcel.CardLabel, UnlistedParcel.LookCardLine),
+
             _ => null,
         };
     }

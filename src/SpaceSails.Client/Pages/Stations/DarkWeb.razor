@@ -144,6 +144,65 @@
                 </table>
             }
 
+            @* #535 slice 2 · THE FENCE'S OWN STOCK. A ROW, never an announcement: the object's own plate
+               and its own look-card line read off Core, the fence's one authored line under them, and a
+               price Map composed. The row exists only while it applies — this port has not dealt its one
+               key this watch and the pocket has room — so there is no verb here that has to refuse.
+
+               The disabled-below-price is this desk's existing refusal for insufficient credits, shared
+               with the chip's row and the inspector's card: a price you cannot meet is a price you are
+               allowed to see. Nothing here says where the key came from. *@
+            @if (KeyPrice is { } keyPrice)
+            {
+                <table class="table table-sm table-dark mb-2">
+                    <tbody>
+                        <tr>
+                            <td>
+                                @BlackOpsKey.CardLabel
+                                <div class="text-secondary">@BlackOpsKey.LookCardLine</div>
+                                <div class="text-secondary">@BlackOpsKey.FenceRowLine</div>
+                            </td>
+                            <td class="text-end align-middle text-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
+                                        disabled="@(Credits < keyPrice)"
+                                        @onclick="() => OnBuyKey.InvokeAsync()">
+                                    @BlackOpsKey.FenceVerb · @KeyPriceText cr
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            }
+
+            @* #711 slice 1 · THE ONE THING ON THIS DESK THAT COSTS NOTHING AND IS NOT FREE. A parcel is
+               handed across, not sold: nobody pays a hauler up front for a box they are not listing, and
+               what it costs the captain is a pocket and whatever a man with a form decides about it later.
+               So the row carries no price and no coin moves through it.
+
+               Like the three rows above it, it exists only while it applies — the desk is open, the captain
+               is not already carrying one (there is one per hull at a time), and the pocket has room — so
+               there is no verb here that has to refuse. Its plate and its look-card line are read off Core:
+               the desk never describes a thing it does not own. *@
+            @if (ParcelOnOffer)
+            {
+                <table class="table table-sm table-dark mb-2">
+                    <tbody>
+                        <tr>
+                            <td>
+                                @UnlistedParcel.Plate
+                                <div class="text-secondary">@UnlistedParcel.LookCardLine</div>
+                            </td>
+                            <td class="text-end align-middle text-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1"
+                                        @onclick="() => OnTakeParcel.InvokeAsync()">
+                                    @UnlistedParcel.DeskVerb
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            }
+
             <div class="text-secondary mb-1">Your sellable tracks (quality ≥ 50%):</div>
             @if (!SellableTracks.Any())
             {

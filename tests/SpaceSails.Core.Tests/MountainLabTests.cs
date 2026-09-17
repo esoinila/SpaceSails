@@ -57,32 +57,44 @@ public sealed class MountainLabTests
     }
 
     /// <summary>
-    /// THE CARD WORKS BOTH WAYS, and that is what stops the lock being a free win. Without it a captain cannot
-    /// lock and cannot unlock; with it they gain the power to shut the pack out permanently AND to shut
-    /// themselves in permanently, in the same gesture.
+    /// #563 · A KEYED DOOR DOES NOT ANSWER HANDS — ANY HANDS. Owner ruling, 2026-09-13: <i>"I like the time
+    /// instead of a key."</i> This test used to be <c>WithoutTheCardYouCanNeitherLockNorUnlock</c> and it
+    /// asserted the opposite: that a carried card turned a lock. There is no card in the signature any more,
+    /// so there is nothing to carry and nothing to find — a keyed leaf costs
+    /// <see cref="LockedDoor.ForceSeconds"/> or a round, and those are the only two answers there are.
     /// </summary>
     [Fact]
-    public void WithoutTheCardYouCanNeitherLockNorUnlock()
+    public void AKeyedDoorDoesNotAnswerHands()
     {
-        Assert.False(LockedDoor.MayLock(LockedDoor.State.Shut, hasKey: false));
-        Assert.True(LockedDoor.MayLock(LockedDoor.State.Shut, hasKey: true));
+        Assert.False(LockedDoor.MayOpen(LockedDoor.State.Locked));
+        Assert.True(LockedDoor.MayOpen(LockedDoor.State.Shut));
 
-        Assert.False(LockedDoor.MayOpen(LockedDoor.State.Locked, hasKey: false));
-        Assert.True(LockedDoor.MayOpen(LockedDoor.State.Locked, hasKey: true));
+        // …and a keyed door does not move for a press at all.
+        Assert.Equal(LockedDoor.State.Locked, LockedDoor.Next(LockedDoor.State.Locked));
 
-        // …and a keyed door does not move at all for somebody without it.
-        Assert.Equal(LockedDoor.State.Locked, LockedDoor.Next(LockedDoor.State.Locked, hasKey: false));
+        // What it DOES answer: time, and a round.
+        Assert.True(LockedDoor.MayForce(LockedDoor.State.Locked));
+        Assert.True(LockedDoor.MayShootTheLock(LockedDoor.State.Locked, armed: true));
     }
 
-    /// <summary>Pressing a door walks it round a cycle that always makes sense — and never skips a state, so a
-    /// captain cannot lock something by accident on the way past.</summary>
+    /// <summary>Pressing a door walks it round a cycle that always makes sense — and it can no longer reach
+    /// LOCKED at all, because that rung WAS the card.</summary>
     [Fact]
     public void PressingADoorNeverSkipsAState()
     {
-        Assert.Equal(LockedDoor.State.Shut, LockedDoor.Next(LockedDoor.State.Open, hasKey: true));
-        Assert.Equal(LockedDoor.State.Locked, LockedDoor.Next(LockedDoor.State.Shut, hasKey: true));
-        Assert.Equal(LockedDoor.State.Shut, LockedDoor.Next(LockedDoor.State.Locked, hasKey: true));
-        Assert.Equal(LockedDoor.State.Open, LockedDoor.Next(LockedDoor.State.Shut, hasKey: false));
+        Assert.Equal(LockedDoor.State.Shut, LockedDoor.Next(LockedDoor.State.Open));
+        Assert.Equal(LockedDoor.State.Open, LockedDoor.Next(LockedDoor.State.Shut));
+
+        // #563 · No press anywhere in the cycle KEYS a door: a leaf that was not locked cannot become
+        // locked by being pressed, and a locked one does not move at all.
+        foreach (LockedDoor.State s in Enum.GetValues<LockedDoor.State>())
+        {
+            if (s != LockedDoor.State.Locked)
+            {
+                Assert.NotEqual(LockedDoor.State.Locked, LockedDoor.Next(s));
+            }
+        }
+        Assert.Equal(LockedDoor.State.Locked, LockedDoor.Next(LockedDoor.State.Locked));
     }
 
     /// <summary>The door tells the captain what it will do BEFORE they press it, in every state — an affordance
@@ -92,14 +104,11 @@ public sealed class MountainLabTests
     {
         foreach (LockedDoor.State s in Enum.GetValues<LockedDoor.State>())
         {
-            foreach (bool key in new[] { true, false })
-            {
-                Assert.False(string.IsNullOrWhiteSpace(LockedDoor.Label(s, key)));
-            }
+            Assert.False(string.IsNullOrWhiteSpace(LockedDoor.Label(s)));
         }
 
-        Assert.Contains("lock", LockedDoor.Label(LockedDoor.State.Shut, true), StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("open", LockedDoor.Label(LockedDoor.State.Shut, false), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("open", LockedDoor.Label(LockedDoor.State.Shut), StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("LOCKED", LockedDoor.Label(LockedDoor.State.Locked), StringComparison.Ordinal);
     }
 
     /// <summary>Shutting one names what it buys AND what it does not. A door that advertised only the good half
@@ -329,9 +338,13 @@ public sealed class MountainLabTests
     }
 
     /// <summary>
-    /// AND LOCKDOWN IS THE POINT OF ALL OF IT. The owner's cool feature turned against him: every door keyed at
-    /// once, including the way out — and the only thing that opens them is in the deepest room. The two lines
-    /// have to say plainly which of those two situations the captain is in.
+    /// AND LOCKDOWN IS THE POINT OF ALL OF IT. The owner's cool feature turned against him: every door keyed
+    /// at once, including the way out.
+    ///
+    /// <para>#563 · The two card sentences this used to pin are RETIRED (owner ruling, 2026-09-13: a locked
+    /// door is TIME, never a key), so what is pinned now is that they cannot come back — a sentence promising
+    /// a way out the sim no longer has is the third named bug class, and a merge is exactly how one returns.
+    /// RED by re-adding either const.</para>
     /// </summary>
     [Fact]
     public void LockdownTellsYouWhichSideOfItYouAreOn()
@@ -339,8 +352,11 @@ public sealed class MountainLabTests
         Assert.Contains("every door", LabSecurity.LockdownLine, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("came in through", LabSecurity.LockdownLine, StringComparison.OrdinalIgnoreCase);
 
-        Assert.Contains("you can walk past it", LabSecurity.LockdownWithTheCardLine, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("where you did not go", LabSecurity.LockdownWithoutTheCardLine, StringComparison.OrdinalIgnoreCase);
+        foreach (string gone in new[] { "LockdownWithTheCardLine", "LockdownWithoutTheCardLine" })
+        {
+            Assert.Empty(typeof(LabSecurity).GetMember(
+                gone, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static));
+        }
     }
 
     // ── The muscle, and what hiding from it is worth ──────────────────────────────────────────────────

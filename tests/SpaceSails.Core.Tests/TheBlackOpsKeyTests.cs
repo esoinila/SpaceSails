@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -195,8 +195,12 @@ public sealed class TheBlackOpsKeyTests
         // APPENDED, NEVER INSERTED. The ordinal is what a saved satchel stores, so the whole ORDER is the
         // vault's schema — asking only "is the key last" would stay green while a kind slipped in above it
         // silently reinterpreted every relic in every existing save as a chit.
+        // #711 · …and the tenth row, APPENDED: the unlisted parcel. This baseline moved by exactly one
+        // entry at the END, which is the whole of what it is here to police — every ordinal below it is
+        // untouched, so no existing save reads back as a different object.
         Assert.Equal(
-            ["Authority", "Paper", "Rounds", "Dirt", "Relic", "Chit", "Badge", "Tool", "BlackOpsKey"],
+            ["Authority", "Paper", "Rounds", "Dirt", "Relic", "Chit", "Badge", "Tool", "BlackOpsKey",
+             "Parcel"],
             Enum.GetNames<Satchel.Kind>());
     }
 
@@ -341,6 +345,11 @@ public sealed class TheBlackOpsKeyTests
             BlackOpsKey.BurnLine,
             BlackOpsKey.CardLabel,      // the canon name, shouted — the plate typography, not a second name
             BlackOpsKey.ScrubReason,    // a ledger reason, never rendered
+            // #535 slice 2 · the other two sources' canon, authored on the issue and copied in verbatim.
+            BlackOpsKey.FavourLine,
+            BlackOpsKey.FavourVerb,
+            BlackOpsKey.FenceRowLine,
+            BlackOpsKey.FenceVerb,
         ];
 
         string[] stray =

@@ -186,6 +186,7 @@ public partial class FlowColumn
     [Parameter] public bool _worldReady { get; set; }
     [Parameter] public Action<AlertKind> AcknowledgeAlert { get; set; } = default!;
     [Parameter] public string ActiveCaptainName { get; set; } = default!;
+    [Parameter] public Func<ConditionsReading?> ActiveConditions { get; set; } = default!;
     [Parameter] public Func<string, Quest?> ActiveCargoRunTo { get; set; } = default!;
     [Parameter] public Func<int> ActiveTutorialIndex { get; set; } = default!;
     [Parameter] public Action<ArrivalStepRule.ArrivalKind> AddArriveAtScrub { get; set; } = default!;
@@ -228,6 +229,24 @@ public partial class FlowColumn
     [Parameter] public Action<int> BuyFuel { get; set; } = default!;
     [Parameter] public EventCallback BuyNetJammer { get; set; }
     [Parameter] public Action BuyTheInspectorCard { get; set; } = default!;
+
+    /// <summary>#535 slice 2 · The fence's key row: what it costs, how the desk prints it, and the press.
+    /// All three are Map's, passed straight through — this shell composes nothing.</summary>
+    [Parameter] public Func<int?> TheFencesKeyPrice { get; set; } = default!;
+
+    /// <summary>#535 slice 2 · The price in the desk's one credit typography.</summary>
+    [Parameter] public Func<string> TheFencesKeyPriceText { get; set; } = default!;
+
+    /// <summary>#535 slice 2 · Buy it.</summary>
+    [Parameter] public Action BuyTheKeyFromTheFence { get; set; } = default!;
+
+    /// <summary>#711 slice 1 · Whether the desk has an unlisted parcel to hand over — Map's own
+    /// <c>ParcelOnOffer</c>. A bool and not a price: no coin moves through that row.</summary>
+    [Parameter] public Func<bool> ParcelOnOffer { get; set; } = default!;
+
+    /// <summary>#711 slice 1 · Take it. Map puts it in the pocket; nothing else moves.</summary>
+    [Parameter] public Action TakeTheUnlistedParcel { get; set; } = default!;
+
     [Parameter] public Action<string> BuyUpgrade { get; set; } = default!;
     [Parameter] public EventCallback CallInFavorAtPump { get; set; }
     [Parameter] public Action CancelFiringSolution { get; set; } = default!;
@@ -301,6 +320,7 @@ public partial class FlowColumn
     [Parameter] public Func<double, string> FormatHorizon { get; set; } = default!;
     [Parameter] public Func<double, string> FormatSimTime { get; set; } = default!;
     [Parameter] public Func<double, string> FormatZoom { get; set; } = default!;
+    [Parameter] public Func<(string Line, string Readout)?> FrameMotionTipLine { get; set; } = default!;
     [Parameter] public Func<List<FrameOption>> FrameOptions { get; set; } = default!;
     [Parameter] public Func<List<(string Label, List<CelestialBody> Members)>> FramePickerGroups { get; set; } = default!;
     [Parameter] public Func<string> FrameSpeedReadout { get; set; } = default!;
@@ -317,6 +337,9 @@ public partial class FlowColumn
     [Parameter] public Func<Stations.Captain.AccountRow[]> LedgerAccounts { get; set; } = default!;
     [Parameter] public Func<Stations.Captain.CacheMapItem[]> LedgerMaps { get; set; } = default!;
     [Parameter] public Func<Stations.Captain.LedgerTip[]> LedgerTipsAsRemembered { get; set; } = default!;
+    /// <summary>#238 item 3 · the page's own <c>LiveQuestScopeTargets()</c>, passed straight through to the
+    /// Sensors desk layer.</summary>
+    [Parameter] public Func<IReadOnlyList<QuestScopeTarget>> LiveQuestScopeTargets { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<Stations.WarRoom.LiveRound>> LiveRounds { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<CommerceRule.LocalContact>> LocalContacts { get; set; } = default!;
     [Parameter] public string? LocalSpaceBodyId { get; set; }
@@ -382,6 +405,15 @@ public partial class FlowColumn
     [Parameter] public Action<KeyboardEventArgs> RenameKeyDown { get; set; } = default!;
     [Parameter] public Action ReopenStartPicker { get; set; } = default!;
     [Parameter] public EventCallback RestockSentries { get; set; }
+
+    // #325/#332 - the chandlery's wires, forwarded to DeskPanels untouched.
+    [Parameter] public Func<bool> ChandleryOpen { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryTankPrice { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryTanksAboard { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryPillsMissing { get; set; } = default!;
+    [Parameter] public Func<int> ChandleryRefillPrice { get; set; } = default!;
+    [Parameter] public EventCallback BuyExtendedTank { get; set; }
+    [Parameter] public EventCallback BuyMedKitRefill { get; set; }
     [Parameter] public Action<PlanNode> RetimeToScrub { get; set; } = default!;
     [Parameter] public Func<(string Text, bool Warn)?> RibbonHorizonNote { get; set; } = default!;
     [Parameter] public Func<NpcShip, string> RouteLabel { get; set; } = default!;

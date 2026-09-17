@@ -36,6 +36,21 @@ public partial class Map
             return;
         }
 
+        // ── #563 · AND A MARK IN THE REGOLITH IS AT YOUR FEET TOO ──
+        //
+        // Owner ruling, 2026-09-13: "I love the own lineage. If not enough material, fill in with strangers,
+        // preferably NPCs we know something about." A breadcrumb is an object on the ground with a name on
+        // it, so the key that finds things is the key that reads it — and it sits HERE, with the recovery
+        // ring, by the same argument: standing on a thing must never mean walking off it to look at it.
+        //
+        // It answers ONCE per mark and then falls through for ever (the latch rides the ground ledger), so
+        // the very next press is BURY THE CHEST HERE again. A grave a captain can never bury a chest beside
+        // is the complaint #316 already records against hanging a reading on this key.
+        if (TryReadTheMarkAtYourFeet())
+        {
+            return;
+        }
+
         // ── #828 · AND THE BIN TAKES THE KEY WHEN YOU ARE STANDING AT ONE ──
         //
         // Owner, evening playtest at his own table: "I think the trash could be an e-use ... where we select

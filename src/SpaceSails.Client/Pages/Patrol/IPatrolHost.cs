@@ -126,6 +126,20 @@ public partial class Map
         /// and the round never has to know how.</summary>
         string NameOnYourOwnPapers { get; }
 
+        /// <summary>#711 · Which UNIVERSE this is, as a seed — the active game thread's, folded once by the
+        /// page. Read by exactly one thing: the one outfit in a world that finds a parcel and does not reach
+        /// for the fine book (<c>UnlistedParcel.TheOneWhoKeepsLooking</c>). Handed down rather than
+        /// re-derived here, so the floor and the page can never come to two answers about which world the
+        /// captain is standing in.</summary>
+        ulong WorldSeed { get; }
+
+        /// <summary>#711 · Coin out of the purse, for a fine paid on somebody's floor. The amount is
+        /// <c>BustedRule.BribeDemand</c>'s, computed by Core and never composed here; this member exists
+        /// because the purse is the page's and a round has never had a reason to touch it before. Never
+        /// below zero — a captain cannot be fined into debt, and the mercy floor this game already keeps
+        /// (<c>BustedRule.MinBerthFeeCr</c>) belongs to a confiscation, not to a form.</summary>
+        void PayTheFine(int credits);
+
         // ── WHAT IS IN FRONT OF THE CAPTAIN ───────────────────────────────────────────────────────────
 
         /// <summary>The card standing in front of the captain, or null. Read as a GATE by everything that

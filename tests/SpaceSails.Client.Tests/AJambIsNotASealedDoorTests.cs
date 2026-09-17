@@ -369,7 +369,11 @@ public sealed class AJambIsNotASealedDoorTests
         Assert.Equal(9, claims.Count);
         Assert.Single(claims.FindAll(c => c.StartsWith("SentryDoctrine.cs:", StringComparison.Ordinal)));
         Assert.Contains(claims, c => c.StartsWith("DeckPlan.cs:", StringComparison.Ordinal));
-        Assert.Contains(claims, c => c.StartsWith("Map.SweepTeam.cs:", StringComparison.Ordinal));
+        // #251 · RE-PATHED, for the third time in this block and the same reason as the two above it: the
+        // sweep team is four partials by subject now, so the prefix names the FAMILY rather than one file
+        // of it. `Map.SweepTeam.` is exactly those files, and the claim sits in `Map.SweepTeam.Walk.cs`
+        // with the rest of the walking.
+        Assert.Contains(claims, c => c.StartsWith("Map.SweepTeam.", StringComparison.Ordinal));
         Assert.Equal(2, claims.FindAll(c => c.StartsWith("NpcWalk.cs:", StringComparison.Ordinal)).Count);
         Assert.Single(claims.FindAll(c => c.StartsWith("Map.Walkers.", StringComparison.Ordinal)));
 

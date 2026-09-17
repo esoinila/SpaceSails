@@ -39,6 +39,19 @@ public partial class Map
                 continue;
             }
 
+            // #1062 slice 1 · …and the one walk on this floor that is READ FROM BEHIND. It is its own branch
+            // for the reason the rep's is: the clock below ends a walk when the route runs out, and this walk
+            // does not end there — it ends when there is nobody standing at the far end of it.
+            if (w.For is Errand.WalkingTheRoute or Errand.LettingYouPass)
+            {
+                if (StepThePersonOfInterest(w, dt, walls, i))
+                {
+                    anybodyLanded = true;
+                }
+
+                continue;
+            }
+
             if (w.For == Errand.Approaching)
             {
                 if (StepAnApproach(bar, w, dt, walls, i))

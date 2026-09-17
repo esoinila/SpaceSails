@@ -648,8 +648,15 @@ public partial class Map
         // #613 · Each paper by its own name. Owner: "the operational papers could have individual short
         // titles… now they look identical in inventory." The certainty stays on the end, because that is the
         // one thing about a paper worth comparing across a pocketful of them.
+        // #798 item 2 · …and a document that has come apart says WHICH PART OF ITSELF this row is, between
+        // its own title and its own short word. It is a citation and not a second name (Core owns it, and
+        // owns why): both halves of a split are still the document they came out of — same title, same
+        // certainty, rolled off the same id — and what a captain holding two rows off one file needs is
+        // which of them is the page and which is the rest. An empty string on anything still whole, so the
+        // row of an unsplit paper is the row it has always been, character for character.
         Core.Satchel.Kind.Paper =>
-            $"📋 {Core.FieldClue.Title(item.Id)} — {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(item.Id))}",
+            $"📋 {Core.FieldClue.Title(item.Id)}{Core.PageGranularity.RowCitation(item.Id)}"
+                + $" — {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(item.Id))}",
         Core.Satchel.Kind.Rounds => item.Id == Ammunition.LabTwoStage.Id
             ? $"🔫 {item.Count} × {Ammunition.LabTwoStage.Name}"
             : $"🔫 {item.Count} loose round{(item.Count == 1 ? "" : "s")}",
@@ -688,11 +695,40 @@ public partial class Map
         // the third named bug class in a row of a list.
         Core.Satchel.Kind.BlackOpsKey => $"{Core.BlackOpsKey.Glyph} {Core.BlackOpsKey.Name}",
 
+        // #711 · The parcel, by its own plate. An arm of its own for the key's reason one arm up: without
+        // one a box falls through to the default and reads as a file on somebody — the third named bug
+        // class, and a lie about the one object in this game whose whole worth is that it is exactly as
+        // boring as it looks.
+        Core.Satchel.Kind.Parcel => $"{Core.UnlistedParcel.Glyph} {Core.UnlistedParcel.Plate}",
+
         // #233 · The chip out of the roadster. It IS a file on somebody — that is precisely why it rides in
         // this kind — but it is a NAMED one, and the row says so, because a captain carrying two kinds of
         // leverage has to be able to tell which of them a client is asking for back.
         Core.Satchel.Kind.Dirt when Core.CompromisingChip.IsTheChip(item) => Core.CompromisingChip.RowLabel,
 
-        _ => "🗃 a file on somebody",
+        // ── #798 item 2, second cut · …AND A FILE ON SOMEBODY SAYS WHICH PART OF ITSELF IT IS ───────────
+        //
+        // Owner: "a compromising FILE is not uniform… rip out the most compromising evidence and toss the
+        // rest inconspicuously." A dossier is the object that sentence is ABOUT, and the first cut of the
+        // split left it out for one reason only: a file on somebody has no title, so there was nothing for
+        // the page citation to sit after. That reason does not survive being looked at. The citation is a
+        // citation and not a name — what it needs in front of it is a HEADING, and this row has carried one
+        // since the day the kind existed. "🗃 a file on somebody, page 2 of 3" and "🗃 a file on somebody,
+        // 2 pages of 3" are two rows a captain can tell apart, which is the whole job.
+        //
+        // Nothing was invented to make that true: no subject name is rolled, no dossier prose is composed,
+        // and no new field goes in the vault. The heading is the same string the default arm below prints
+        // (they share the one constant, because two spellings of one row is how they come to disagree), and
+        // Core owns the citation — the same RowCitation the paper arm asks for, empty on anything whole, so
+        // an unsplit file is the row it has always been character for character.
+        Core.Satchel.Kind.Dirt => AFileOnSomebody + Core.PageGranularity.RowCitation(item.Id),
+
+        _ => AFileOnSomebody,
     };
+
+    /// <summary>#798 item 2 · The heading a dossier row wears — the only thing a file on somebody has ever
+    /// said about itself, and therefore the thing the page citation hangs on. One constant, because the
+    /// Dirt arm and the catch-all above print the same words and a second spelling of them would drift.
+    /// </summary>
+    private const string AFileOnSomebody = "🗃 a file on somebody";
 }

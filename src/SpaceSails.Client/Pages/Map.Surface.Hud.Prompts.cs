@@ -37,16 +37,22 @@ public partial class Map
                 $"({Core.Processing.SecondsLeft(paper.Elapsed, ProcessingSeconds):F0} s). Step away and it is lost.";
         }
 
-        if (!ex.Carrying)
+        if (!ex.ShovelHasSomethingToBury)
         {
             return null; // nothing owed — the ground goes quiet again
         }
         // #723 · The floor rides along, so this line stops promising a burial on a Hive corridor. Underground
         // it now reads "walk out onto the regolith" — which is the honest instruction down there, because the
         // way to bury a chest 150 m under a facility is the lift.
+        //
+        // #319 · …and the NOUN rides along too. A captain walking with nothing but a folded sheet in his coat
+        // is not "CARRYING THE CHEST", and a standing HUD line that said so would be the one this repo has
+        // paid for three times — the sim doing one thing while a sentence reports another. What it must NOT
+        // do is name the thing: the line says there is something to put down, never what.
+        string holding = ex.Carrying ? "CARRYING THE CHEST" : "SOMETHING TO PUT IN THE GROUND";
         return MoonSurface.IsDiggableGround(_avatarX, _avatarY, ex.Floor)
-            ? "⛏ CARRYING THE CHEST — press E to BURY IT HERE"
-            : "⛏ CARRYING THE CHEST — walk out onto the regolith, then E to bury it";
+            ? $"⛏ {holding} — press E to BURY IT HERE"
+            : $"⛏ {holding} — walk out onto the regolith, then E to bury it";
     }
 
     /// <summary>#562 + #696 · WHICH slow thing the one bar is showing. A ladder rather than four inline
@@ -119,6 +125,12 @@ public partial class Map
                 aboard.Add($"🎒 I — items ({_satchel.Count})");
             }
 
+            // #563 · …and the fast road at a door, only where it exists. See ShootTheLockPlate.
+            if (ShootTheLockPlate() is { } aboardPlate)
+            {
+                aboard.Add(aboardPlate);
+            }
+
             // #537 · A VERB NOBODY IS TOLD ABOUT IS A VERB NOBODY HAS. Caught by booting the scene and
             // reading the hint bar, which is the owner's own method: the knock was bound, the clock ran, the
             // sweep team heard it — and the strip along the bottom never mentioned K existed.
@@ -152,10 +164,19 @@ public partial class Map
             // asks: your feet first, then the bucket you are standing at, then the ground. Underground this
             // strip read "E — use" everywhere, which is exactly nothing at the one spot where the key opens
             // the sleeve over a bin — and a verb nobody is told about is a verb nobody has (#212/#537).
+            // #563 · …AND SO DOES A MARK IN THE REGOLITH, in the same ladder and the same order, one rung
+            // under the recovery ring because that is where the [E] dispatch put it. This one is easy to
+            // never discover: the captain is standing over a chest-burying key with a body under his boots.
+            // The plate is the mark's own (LineageMark.Plate) and deliberately says nothing about WHOSE it
+            // is — walking over to find that out is the whole beat.
             StandingOnWhatYouLeft() ? LeftBehind.ReachPrompt
+                : TheMarkTakingYourPress() is not null ? $"🪦 E — {LineageMark.Plate}"
                 : TheBinTakingYourPress() is { } atTheBin ? RipAndBin.KeyPrompt(atTheBin.Tier)
                 : !MoonSurface.ShovelWorksOnThisFloor(ex.Floor) ? "E — use"
+                // #319 · The key takes a thing out of the coat as readily as a chest out of the sling, and
+                // the strip says which one it would be putting down.
                 : ex.Carrying ? "⛏ E — BURY THE CHEST HERE"
+                : ex.ShovelHasSomethingToBury ? "⛏ E — BURY IT HERE"
                 : "E — dig / use",
         };
         bool carryingBot = ex.Bots.Any(b => !b.Deployed);
@@ -181,6 +202,16 @@ public partial class Map
         if (_satchel.Count > 0)
         {
             parts.Add($"🎒 I — items ({_satchel.Count})");
+        }
+
+        // #563 · THE FAST ROAD, ON THE DOOR PROMPT ROW. Owner ruling, 2026-09-13: a locked door is TIME,
+        // never a key — and one of the times a captain may spend is a round. The plate joins the row the
+        // other keys are on, and ONLY where the verb exists: armed, above ground, standing at something with
+        // a lock still on it. An affordance you cannot read is one you do not have (#212); one you can read
+        // where it will not answer is worse, which is the lesson #723 paid for with "E — dig" on rockcrete.
+        if (ShootTheLockPlate() is { } plate)
+        {
+            parts.Add(plate);
         }
         parts.Add(_audioEnabled ? "🔊 M — mute" : "🔇 M — unmute"); // #338: the first-sound switch, always spelled out
         return string.Join(" ∙ ", parts);
@@ -226,7 +257,12 @@ public partial class Map
         {
             lines.Add(ex.Carrying
                 ? "⛏ E on the regolith — bury the chest where you stand"
-                : "🪛 E on the regolith — probe for shallow treasure");
+                // #319 · …and the same one key, for the thing out of the satchel. A captain who walked down
+                // with something to put in the ground and was offered a fishing expedition would have been
+                // told his own errand was not on the list (#212, affordances never hide).
+                : ex.ShovelHasSomethingToBury
+                    ? "⛏ E on the regolith — bury it where you stand"
+                    : "🪛 E on the regolith — probe for shallow treasure");
         }
         if (ownMarkCount > 0)
         {

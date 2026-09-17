@@ -71,12 +71,24 @@ public partial class Map
         // #394: is this landing the deflection gig's inbound rock? Then the excursion arms the drilling.
         bool isDeflectionRock = _deflection is { } dgig && dgig.RockBodyId == stop.Body.Id;
 
-        var excursion = new SurfaceExcursion
+        // #325 · THE BOTTLE GOES ON HERE, and this is the only place it can. An extended tank is fitted to
+        // a suit before the suit goes down; there is no walking back to the ship's stores from four thousand
+        // du out. FitExtendedTankForExcursion spends one from stores and hands back the one bit the whole
+        // rest of the excursion derives its air from — the budget, the tile lattice's extent, the backstop
+        // radius, the meter's full mark and the shelter rack's fill cap all read SuitAir.PlayBudget off it.
+        // Nothing here is conditional on having one: no tank means a standard walk, exactly as before.
+        bool extendedTankFitted = FitExtendedTankForExcursion();
+
+        var excursion = new SurfaceExcursion(extendedTankFitted)
         {
             Stop = stop,
             RestoreHavenId = _dockedHavenId,
             PendingCoin = chest.Coin,
             PendingCargo = [.. chest.Cargo],
+            // #319 · …and the one thing out of the captain's own coat the chooser picked to put in the
+            // ground. It rides the excursion as a POINTER at a row that is still in the satchel: the pocket
+            // goes on being the pocket for the whole walk, and only the shovel spends it.
+            PendingDeposit = chest.Deposit,
             ThreatSeed = ReeverSeed(stop.Body.Id),
             Expedition = isExpeditionSite,
             Deflection = isDeflectionRock,
@@ -125,6 +137,11 @@ public partial class Map
         // #316 law 1, second half · …AND WHAT SOMEBODY ELSE LEFT. A hole where one of our ✗ marks used to
         // be, and any sentry a rival crew walked away from. Same moment, same reason, same ledger.
         SeedTheScarsLeftHere(excursion);
+
+        // #563 · …AND THE ONES WHO CAME BEFORE YOU. Same moment, same reason, one source further out: the
+        // captains this universe has buried on THIS ground, out of the roster the thread has kept since
+        // Evening wind #20. Derived rather than stored — the roster IS the record (SeedTheLineageLyingHere).
+        SeedTheLineageLyingHere(excursion);
 
         _surface = excursion;
 

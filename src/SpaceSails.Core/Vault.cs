@@ -159,6 +159,15 @@ public sealed class Vault
     /// <c>ALegacyVaultRoundTripsByteForByteAcrossTheVoid</c> in the Core suite holds that line.</para></summary>
     public VoidSection? Void { get; init; }
 
+    /// <summary>#325/#332 · WHAT THE CHANDLERY SOLD HER — spare suit bottles in stores and the pill cabinet
+    /// as it stands.
+    ///
+    /// <para>Its own section for the reason <see cref="Void"/> is: the checksum is taken over the payload,
+    /// so a key added to a section every save already writes changes the digest of every vault ever written
+    /// and hangs the 📛 tampered marker on an honest voyage. A section the writer simply omits leaves an old
+    /// file byte for byte as it was.</para></summary>
+    public ChandlerySection? Chandlery { get; init; }
+
     /// <summary>Set true by <see cref="VaultSerializer.Load"/> when the stored checksum did not match
     /// the payload — the file was edited outside the game. The vault still loads (honesty speed-bump,
     /// not DRM); the game surfaces a permanent 📛 marker line in the Captain's ledger. Never persisted

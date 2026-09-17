@@ -74,7 +74,8 @@ public partial class Map
     private void HoldAtTheBackstop(SurfaceExcursion ex)
     {
         SurfaceEdge.BackstopVoice.Refusal refused =
-            ex.Backstop.Step(ex.Stop.Body.Id, ex.Site.LayoutSalt, _avatarX, _avatarY);
+            ex.Backstop.Step(
+                ex.Stop.Body.Id, ex.Site.LayoutSalt, _avatarX, _avatarY, ex.AirBudgetSeconds);
         if (refused.Line is { } line)
         {
             ShowPulseMessage(line);

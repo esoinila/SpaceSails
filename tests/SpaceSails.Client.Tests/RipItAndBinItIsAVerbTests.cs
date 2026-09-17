@@ -228,7 +228,11 @@ public sealed class RipItAndBinItIsAVerbTests
             StringComparison.Ordinal);
 
         // …and the TIER is on the filed fact, which is the whole of a tier's mechanical existence today.
-        Assert.Contains("DisposalNote(label, bin.Tier)", act, StringComparison.Ordinal);
+        // #798 item 2 · the note takes a third argument now — whether what went in was the BULK of a split
+        // file — so the pin stops at the comma. The claim it has always made is unchanged, which is why it
+        // is narrowed rather than deleted: the tier reaches the book, read off the bin the captain is
+        // standing at and never off anything the act made up.
+        Assert.Contains("DisposalNote(label, bin.Tier,", act, StringComparison.Ordinal);
         Assert.Contains("RippedLine(label, bin.Tier)", act, StringComparison.Ordinal);
     }
 

@@ -161,6 +161,12 @@ public partial class Map
             return;
         }
 
+        // #563 · AND THE HOLD IS HEARD, every tick of it, at the door. Owner ruling 2026-09-13: a locked
+        // door costs time, noise or danger and never a key. The cadence is the shovel's own (one emit per
+        // channel tick, at the anchor) and the loudness is Clatter, so the tide inside twelve du converges
+        // on the frame you have both hands on while you still have both hands on it.
+        TheHoldIsHeard(ch);
+
         ch.Progress += dtRealSeconds / SurfaceOutpost.ForceSeconds;
         if (ch.Progress >= 1.0)
         {
@@ -200,7 +206,7 @@ public partial class Map
         // The ground just grew. On an ordinary moon this is now the FIRST way that can ever happen to a
         // captain, so the card that explains it belongs here more than anywhere — and #584's WHERE with it,
         // through the one writer: the hatch that gave is the mouth of the room that arrived.
-        TheGroundJustGrew(ex, hatchX, hatchY);
+        TheGroundJustGrew(ex, hatchX, hatchY, teachTheRule: true);
         RequestVaultSave();
     }
 

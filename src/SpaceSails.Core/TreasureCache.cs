@@ -70,6 +70,23 @@ public readonly record struct CacheCargo(string CargoClass, int Units, bool Hot)
 /// the carry is a HISTORICAL FACT about a walk somebody made: a field that is later retuned must not
 /// silently re-price a chest that is already in the ground. Null (and unwritten) for a legacy or rumour
 /// chest.</param>
+/// <param name="Deposit">#319 · <b>WHAT WENT IN OUT OF THE SATCHEL</b> — the things the captain was carrying
+/// on him that are now under the regolith instead. Owner: <i>"hiding evidence of our piracy without losing
+/// it… something too important to risk carrying it around."</i>
+///
+/// <para>It rides the SAME record the coin and the cargo ride, and that is the whole of the feature rather
+/// than a convenience. One record is one ledger, one vault section, one rebirth, one
+/// <see cref="CacheSafety"/> read on the way out and one set of #316 marks when a rival gets there first —
+/// every promise clauses 2 and 3 of the issue make is a promise the chest already keeps, and the only way to
+/// keep it EXACTLY is to be the chest.</para>
+///
+/// <para><b>Off the ship by construction.</b> Everything in this game that asks what evidence the captain
+/// has on him asks the one satchel; a thing in here is a thing that left it. There is no flag to set and no
+/// reader to teach — the same seam <see cref="CacheLedger"/>'s own header states for coin and cargo, stated
+/// once more for the things a man carries in his coat.</para>
+///
+/// <para>Null (and unwritten in the vault) for every chest, every rumour map and every cache saved before
+/// this field existed, so a legacy save round-trips byte for byte.</para></param>
 public readonly record struct TreasureCache(
     string Id,
     string BodyId,
@@ -86,7 +103,8 @@ public readonly record struct TreasureCache(
     double? DigY = null,
     int? SiteIndex = null,
     bool? Buried = null,
-    double? PadDistance = null)
+    double? PadDistance = null,
+    IReadOnlyList<Satchel.Item>? Deposit = null)
 {
     /// <summary>#455 · How safe this hiding place reads — the ONE oracle, forwarded. The bury-time line, the
     /// ledger row and the return-trip discovery roll all come through here, so the promise the game made and
@@ -113,8 +131,16 @@ public readonly record struct TreasureCache(
     /// <summary>Hot (stolen-flagged) cargo units in the chest — the evidence buried here.</summary>
     public int HotCargoUnits => Cargo?.Where(c => c.Hot).Sum(c => c.Units) ?? 0;
 
-    /// <summary>True when the chest holds anything at all worth digging up.</summary>
-    public bool HasContents => Coin > 0 || TotalCargoUnits > 0;
+    /// <summary>#319 · How many things out of the satchel are in this hole. Zero for every chest, every
+    /// rumour map and every cache minted before the field existed.</summary>
+    public int DepositCount => Deposit?.Count ?? 0;
+
+    /// <summary>True when the chest holds anything at all worth digging up.
+    ///
+    /// <para>#319 · …and a hole with nothing in it but a file on somebody is worth digging up. This read is
+    /// what tells a captain whether his own ✗ still means anything, so a deposit-only cache that answered
+    /// <c>false</c> here would be the game quietly writing off the one thing the whole issue is about.</para></summary>
+    public bool HasContents => Coin > 0 || TotalCargoUnits > 0 || DepositCount > 0;
 
     /// <summary>#650 · True when this chest knows which of the body's landing sites it is under. False for
     /// every legacy save and every rumour/NPC chest, which stay body-wide exactly as they are today.</summary>
@@ -158,6 +184,14 @@ public readonly record struct TreasureCache(
         {
             int hot = HotCargoUnits;
             parts.Add(hot > 0 ? $"{TotalCargoUnits} units ({hot} hot)" : $"{TotalCargoUnits} units");
+        }
+        // #319 · …and what came out of the captain's own coat, COUNTED and never named
+        // (CacheDeposit.ManifestLine owns why). A chest with nothing else in it reads "1 thing from the
+        // satchel" rather than "empty", which is the difference between a ✗ worth walking back to and one
+        // the captain would talk himself out of.
+        if (DepositCount > 0)
+        {
+            parts.Add(CacheDeposit.ManifestLine(DepositCount));
         }
         return parts.Count == 0 ? "empty" : string.Join(" + ", parts);
     }

@@ -42,6 +42,18 @@ public sealed record ContactRecord
     /// <summary>#973 L5a — the captain told this contact the reactor-seal story. <i>The book marks the
     /// lie.</i> Defaults false.</summary>
     public bool WasLiedTo { get; init; }
+    /// <summary>#535 slice 2 — this contact has already handed the captain their one black-ops key.
+    /// <i>The book marks the favour.</i> Defaults false, so a vault written before slice 2 loads with
+    /// everybody's favour still unspent — which is what was true when it was written.</summary>
+    public bool FavourSpent { get; init; }
+    /// <summary>#711 — this outfit fined the captain over an unlisted parcel and filed him under ordinary.
+    /// <i>The book marks the folder.</i> Defaults false, so a vault written before anything could close one
+    /// loads with every drawer empty — which is what was true when it was written.</summary>
+    public bool FolderClosed { get; init; }
+    /// <summary>#711 — the band their meter stood at when that folder was closed, which is the number "new
+    /// cause" is measured against. Only meaningful while <see cref="FolderClosed"/> is true, which is why a
+    /// defaulted 0 costs an old file nothing.</summary>
+    public int FolderClosedAtRung { get; init; }
     public IReadOnlyList<CreditTxnRecord> Transactions { get; init; } = [];
 }
 
@@ -125,6 +137,20 @@ public sealed record CacheRecord
     [System.Text.Json.Serialization.JsonIgnore(
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public double? PadDistance { get; init; }
+
+    /// <summary>#319 · The things out of the captain's own satchel that are in this hole, each as the one
+    /// string a satchel row is saved as anywhere in this game (<see cref="Satchel.Item.Stored"/>) — the same
+    /// three-part <c>kind:count:id</c> shape the satchel's own section writes, read back through the same
+    /// <see cref="Satchel.Item.TryParse"/>. Deliberately not a shape of its own: two spellings of one row is
+    /// how a chest dug up after a reload comes back holding something the captain never buried.
+    ///
+    /// <para>Null (and unwritten) when the hole holds no such thing, which is every chest, every rumour map
+    /// and every cache in every vault written before #319. That is not tidiness — the digest is taken over
+    /// the PAYLOAD, so one extra <c>"deposit": null</c> per chest changes the checksum of every hoard ever
+    /// saved and opens an honest captain's voyage flying the 📛 tampered flag.</para></summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? Deposit { get; init; }
 }
 
 public sealed record CacheCargoRecord(string CargoClass, int Units, bool Hot);

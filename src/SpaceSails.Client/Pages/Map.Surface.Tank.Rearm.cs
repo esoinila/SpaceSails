@@ -161,19 +161,36 @@ public partial class Map
     /// <param name="ex">The live excursion — the fan's mark is filed on it.</param>
     /// <param name="mouthX">Where the ground joined: the door/hatch that gave, in field coordinates.</param>
     /// <param name="mouthY">The same.</param>
-    private bool TheGroundJustGrew(SurfaceExcursion ex, double mouthX, double mouthY)
+    /// <param name="teachTheRule">
+    /// #1063 slice 2 · Whether this arrival may raise the once-per-captain RULE card (<see cref="GroundGrows"/>
+    /// — <i>"a wall is not always the end of the site … what is behind one is worth the time it costs to
+    /// open"</i>).
+    ///
+    /// <para><b>A required parameter and not a defaulted one</b>, because the two halves of this method have
+    /// stopped being one decision and a default would answer the new question silently for every caller: the
+    /// fan's ring and the plate are <b>navigation</b> and are owed to any ground that joins the plan, while
+    /// the card is a PROMISE about what sealed things contain — and there is now exactly one sealed thing in
+    /// the game that contains nothing (<see cref="EmptySeal"/>). Teaching the rule over a bare recess would
+    /// be the house promising a reward while handing over the one room that has none, which is precisely the
+    /// pattern #1063 spends that room to break.</para>
+    /// </param>
+    private bool TheGroundJustGrew(SurfaceExcursion ex, double mouthX, double mouthY, bool teachTheRule)
     {
         ArgumentNullException.ThrowIfNull(ex);
 
         // The instrument first, so it is already pointing when the card comes down — and unconditionally,
         // because the card is once per CAPTAIN and the second door a captain ever forces is the one they are
         // most likely to walk away from without noticing.
+        //
+        // #584's law is a NAVIGATION law and it holds for every arrival without exception, the empty seal
+        // included: the recess is real ground on the live plan, the captain can walk into it, and an
+        // instrument that did not know where the plan grew would be the map lying about its own shape.
         ex.NewGround.Add((mouthX, mouthY, ex.Floor));
 
         _groundGrewWhere = GroundGrows.Where(
             ex.Stop.Body.Id, ex.Floor, mouthX - _avatarX, mouthY - _avatarY);
 
-        return ShowGroundGrewCardOnce();
+        return teachTheRule && ShowGroundGrewCardOnce();
     }
 
     /// <summary>#563 · Raise the map-just-grew card, but only ever once per captain. Reached through

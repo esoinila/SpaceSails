@@ -54,6 +54,32 @@ public static class Derelict
     /// the id typed into five files and no predicate could answer "is that body a wreck".</summary>
     public const string RoadsterBodyId = "derelict-roadster";
 
+    /// <summary>#238 · <b>WHERE SHE IS, IN THREE WORDS, ONCE.</b> The roadster's bearing phrase — the
+    /// owner's own — and the one the transponder fix, the ledger's job line, the Fixer's offer blurb and the
+    /// test start have each been carrying as their own typed literal. #238's reveal headline wanted a fifth
+    /// copy and got this instead: where she is is a FACT about the scenario's wreck, and a fact lives in one
+    /// place (§5). Nothing computes it — she is hand-placed sunward of Mars — which is exactly why it must
+    /// not be re-typed: four literals are four chances for the sentence and the map to part company.</summary>
+    public const string RoadsterBearingPhrase = "sunward of Mars";
+
+    /// <summary>#238 · What the found-her beat calls her out loud. The owner's own headline names <i>the
+    /// roadster</i> and not the body's charted name ("Derelict Roadster") — the moment is a shout across a
+    /// bridge, not a label on a chart — so the two are kept apart deliberately.</summary>
+    public const string RoadsterRevealName = "the roadster";
+
+    /// <summary>#238 item 3 · What the telescope's own complaint calls the aimed job that is waiting on her.
+    /// The queue's label for that job is built from the intel card's headline (<i>"intel fix · 🔭 Roadster
+    /// orbit fix"</i>) and the owner's sentence is shorter than that on purpose — <i>"sweep holds the scope —
+    /// 🔭 Roadster fix waits behind it"</i> — because a line that also has to fit on a desk chip is not a
+    /// queue row. Spelled here beside <see cref="RoadsterRevealName"/> for the same reason that one is: a name
+    /// the owner gave her is a FACT about the scenario's wreck, and a fact lives in one place (§5).</summary>
+    public const string RoadsterScopeJobName = "🔭 Roadster fix";
+
+    /// <summary>#238 · What came out of her, in the owner's own words: <i>"💾 GOT IT — the wallet, from
+    /// between the seats"</i>. The same closing words the fetch's own receipt has said since PR-A; spelled
+    /// here so the beat and the receipt cannot drift into two accounts of one hand in one gap.</summary>
+    public const string WalletBetweenTheSeats = "the wallet, from between the seats";
+
     /// <summary>#241 · IS THIS BODY A DEAD HULL? Every generated wreck (<see cref="BodyIdPrefix"/>) and the
     /// scenario's own roadster. One question, one answer — so an instrument that must not call a three-metre
     /// wreck a planet, and a code path that must not promise a clamp on one, are asking the same thing.</summary>

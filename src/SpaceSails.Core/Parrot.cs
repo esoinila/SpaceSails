@@ -35,6 +35,12 @@ public static class Parrot
         // every sentence below it to the wrong event.
         CarHunt,
         CarFound,
+
+        // #238 · THE BIRD SEES HER FIRST. Owner, endorsing his own idea: "Love that thought of Parrot
+        // reacting to the glint from telescope" — the perch is at the scope alcove, so the squawk lands
+        // half a beat ahead of the THERE-SHE-IS card and the crew reacts before the paperwork does.
+        // Appended at the end like its two siblings above, and for the same reason they were.
+        CarGlimpsed,
     }
 
     /// <summary>One squawk at a time, and then the bird sulks this long (real seconds).</summary>
@@ -95,6 +101,11 @@ public static class Parrot
         ["DUDE. WHERE. Is. The CAR?!"],
         // CarFound (#233) — the punchline, at the moment the pickup unlocks. Owner-authored, verbatim.
         ["You found your CAAAR!"],
+        // CarGlimpsed (#238) — the GLINT, four beats before the punchline: the scope crosses her and the
+        // bird, who lives at the alcove, is the first one to say so. ONE line for the same reason CarHunt
+        // has one — a beat of a three-beat gag that rotated would be a different joke each hunt.
+        // Owner-authored, verbatim.
+        ["DUDE. THERE. Is. The CAR!"],
     ];
 
     /// <summary>The squawk text for an event: a fixed rotation over that event's small line

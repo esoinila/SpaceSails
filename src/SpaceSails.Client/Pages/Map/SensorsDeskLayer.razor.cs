@@ -39,6 +39,9 @@ public partial class SensorsDeskLayer
     private SpaceSails.Client.Pages.Stations.TrackingPost? _trackingPost { get => _trackingPostValue; set { _trackingPostValue = value; _trackingPostSet(value); } }
     [Parameter] public TransponderMode _transponderMode { get; set; } = default!;
     [Parameter] public Action CenterShipOnMap { get; set; } = default!;
+    /// <summary>#238 item 3 · the page's own <c>LiveQuestScopeTargets()</c>, so the desk can tell an aimed
+    /// quest job in its queue from a patch of sky somebody picked.</summary>
+    [Parameter] public Func<IReadOnlyList<QuestScopeTarget>> LiveQuestScopeTargets { get; set; } = default!;
     [Parameter] public Action<AreaScanCoverage> OnAreaScanCovered { get; set; } = default!;
     [Parameter] public Action<bool> SetActiveRadar { get; set; } = default!;
     [Parameter] public Action<string> SetInterestTarget { get; set; } = default!;

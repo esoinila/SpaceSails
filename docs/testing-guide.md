@@ -766,13 +766,48 @@ code path the game does not have.
 - **search the first room on that floor**: the maintenance ledger — *"Sub-level access no longer required.
   Filled and remediated per instruction."* Then count the instruction numbers in it. There are none.
 - **the wire has one cheerful line about drainage**, once, and ✂ CLIP files it under the site's own operator.
+- **then open the field book** (#1063 slice 2). Under that ground there are now **two** entries, not one: the
+  ledger you just carried out, and under a mark you have never seen before — **⬚** — the captain's own hand:
+  *"Looked for the paper a raise this size leaves: permit, complaint, invoice. Nothing under either story. The
+  absence has a shape, and I have measured it."* Nothing on screen said that when you picked the ledger up;
+  he wrote it because you read the paper. **It is written once per ground** — search the room again, or come
+  back a month later, and there is still exactly one of it — and the ledger's own entry is untouched beside
+  it. On the THREADS page it stacks under the site's operator, beside the rag's clipping if you kept one.
 
 **And what a tester must NOT see:** any card, pulse, beat, nerve shock, HUD marker, stat, sensor return or
 sentence anywhere saying that a ground was buried, that anything was hidden, or who did it. A build that grew
 one has a bug. The field book is the only witness, and **nothing the burial does may remove or change one
 entry in it** — a note, a clipped story, a red thread or a satchel row taken out of those galleries before the
 fill still reads exactly as it read. In the save file the `progress` section grows `hallsBuried` beside
-`hallsOpened`, and that is the only place any of it is written down.
+`hallsOpened`, and that is the only place any of it is written down. Slice 2 adds one more field beside them,
+`emptySealSpentOn`, and that is likewise the only place the disappointment below is written down.
+
+### The one seal that is empty — no cheat, on purpose (#1063 slice 2)
+
+There is no query flag for this and there should not be: the whole point is that it happens **once, early,
+before you have a theory**, and a cheat that produced it on demand would be a cheat that let you compare two
+of them.
+
+Take an away-expedition site (any `⚙ SEALED DOOR` on the ground) and **force every door on it**. One of them
+— the same one on that moon every time, seeded on the body — opens on a room with **nothing in it**: no
+landmark over it, no `🗝 DISCOVERY CACHE` to claim, no credits, no name. It is real ground: walk in, the fog
+lifts, you can stand in the middle of it. The captain says, once: *"Sealed, and empty. A room somebody closed
+because there was nothing in it, which is a reason."* — and that goes in the book under ⚙.
+
+**What a tester should check:**
+
+- **there is no reveal cue, no card, and no ring on the fan** for that one. A recess with nothing in it is not
+  a discovery, and every one of those channels would be the house insisting it was.
+- **it never happens twice.** Force every door on the next three expedition sites you land on: every one of
+  them pays. Once the empty one is spent it is spent for the life of that save, and the file says so.
+- **it stays empty.** Reload, or come back to that moon on a later voyage and force the same leaf again: the
+  room is still bare and there is still no cache in it — but the sentence is not written into the book a
+  second time. (The screen still answers the press, because a press that finishes in silence reads as a
+  swallowed keypress.)
+- **it never costs a route.** The empty one is always a door with nothing further behind it, so no depth-2
+  chamber is ever lost to it.
+- **it is never the kept specimen.** The preserved doorway on a buried ground's listed bottom is a different
+  object entirely: it is not forced, it opens on nothing by design, and it is unchanged.
 
 ### The working that was closed while you were away — `?stopped=1` (#1074)
 

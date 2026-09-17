@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace SpaceSails.Core;
@@ -169,12 +169,180 @@ public static class BlackOpsKey
     /// ledger can be told apart from an hour of absence.</summary>
     public const string ScrubReason = "a key burned cold";
 
-    /// <summary>Every sentence this feature can put on a screen, for the audit that reads them all. Two, and
-    /// the plate is one of them.</summary>
+    // ── THE OTHER TWO SOURCES · A FAVOUR AND A FENCE ────────────────────────────────────────────────────
+    //
+    // #535 · SLICE 2. Slice 1 dealt the key ONE way: lying in the crew spaces of a hull that fought. That
+    // made it a thing that happens TO a captain and never a thing a captain can go and get, and the issue
+    // names the two roads still open — a fence, a favour. Both are here, and neither of them is a second
+    // answer to what a key IS: they mint the same `Satchel.Kind.BlackOpsKey` row through this same file, so
+    // there is exactly one object in this game with exactly two spends, however it got into the pocket.
+    //
+    // Canon pass (Fable, on the issue) authors the four strings below and nothing else. The favour's line is
+    // the contact SPEAKING, on the card the verb sits on; the fence's line is a ROW on a desk. Neither
+    // announces a source, because a source that announced itself would be a quest marker — and this object's
+    // whole register is that nobody says anything (see the plate, above).
+
+    /// <summary>Canon. What the contact says as they hand it over — the line on the verb's own card, and the
+    /// whole of what is ever said about the favour. It names the reason (<i>you never lied to me</i>) and
+    /// refuses the gratitude, which is why <see cref="ContactHistory.WasLiedTo"/> is the gate and not a flag
+    /// invented for this beat: the sentence and the predicate are the same fact.</summary>
+    public const string FavourLine =
+        "You never lied to me. That is rarer than what I'm about to hand you. Don't bring it back.";
+
+    /// <summary>Canon. The favour's verb, on the seat's existing card beside the round.</summary>
+    public const string FavourVerb = "Take the favour";
+
+    /// <summary>Canon. The fence's row on the dark-web desk. He prices a clean record and never says what
+    /// the thing is — the row he sits in already does, in the object's own words.</summary>
+    public const string FenceRowLine =
+        "Fresh this cycle. Ask me what it costs and I'll ask you what a clean record costs.";
+
+    /// <summary>Canon. The fence's verb.</summary>
+    public const string FenceVerb = "Buy the key";
+
+    /// <summary>
+    /// #535 slice 2 · <b>THE TOP GOODWILL BAND, AND IT IS NOT A NUMBER THIS FILE INVENTED.</b>
+    ///
+    /// <para>The ledger has no bands of its own — <see cref="ContactHistory.Goodwill"/> is a running int and
+    /// nothing in it says where "close" begins. So this reads the HIGHEST threshold anything already reads
+    /// that number against: <see cref="StrangerBond.AlreadyCloseGoodwill"/>, <i>"goodwill at or above which a
+    /// contact is already close"</i> — the one the bond lane filters acquaintances by before it offers to
+    /// deepen them, because a true friend has nothing left to add. Above it are people who would hand you
+    /// something; below it are people you have been buying drinks for.</para>
+    ///
+    /// <para>The two lower thresholds in the same family are deliberately NOT used.
+    /// <see cref="ContactDrink.WarmThreshold"/> (3) is a contact who relaxes;
+    /// <see cref="ContactDrink.TrustForBusiness"/> (5) is a contact who will trade with you. Trading with you
+    /// is not the same as spending their own standing on you, which is what this is.</para>
+    /// </summary>
+    public static int TopGoodwillBand => StrangerBond.AlreadyCloseGoodwill;
+
+    /// <summary>
+    /// #535 slice 2 · <b>WHAT THE FAVOUR COSTS THEM, AND IT IS EXACTLY THE BAND THAT QUALIFIED IT.</b>
+    ///
+    /// <para>A favour is spent, not banked: the standing that made the offer possible is the standing that
+    /// pays for it. So the debit IS <see cref="TopGoodwillBand"/> — the whole band — which means a contact
+    /// who was just close enough is back at the bottom afterwards, and one who was far past it is merely
+    /// close. One number, derived, read in both directions; retune the band and the price follows it instead
+    /// of drifting away from it.</para>
+    /// </summary>
+    public static int FavourCostsGoodwill => TopGoodwillBand;
+
+    /// <summary>
+    /// #535 slice 2 · <b>IS THE FAVOUR ON THE TABLE?</b> Three questions, and all three are the ledger's
+    /// own: they are in the top band, the book marks no lie, and they have not already done this.
+    ///
+    /// <para><b>Why the lie and not, say, missions completed.</b> The canon line is the gate stated out
+    /// loud — <i>"You never lied to me"</i> — and <see cref="ContactHistory.WasLiedTo"/> is the one place
+    /// this game records having lied to somebody. A second predicate meaning "trustworthy" would be a number
+    /// that stops agreeing with the sentence the first afternoon either is touched.</para>
+    /// </summary>
+    public static bool FavourIsOnTheTable(ContactHistory history) =>
+        !history.WasLiedTo
+        && !history.FavourSpent
+        && history.Goodwill >= TopGoodwillBand;
+
+    /// <summary>The key a contact hands over. Its id is the CONTACT, for the reason <see cref="FoundOn"/>'s
+    /// is the hull: only rounds stack, so a shared id would silently make two people's favours one key.</summary>
+    public static Satchel.Item FavourFrom(string contactId)
+    {
+        ArgumentNullException.ThrowIfNull(contactId);
+        return new Satchel.Item(Satchel.Kind.BlackOpsKey, "favour:" + contactId);
+    }
+
+    // ── THE FENCE ───────────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>#535 slice 2 · The purpose tag the fence's stream is salted with, so his price can never move
+    /// with anything else rolled off the same port on the same watch.</summary>
+    public const string FenceSeedTag = "black-ops-key-fence";
+
+    /// <summary>
+    /// #535 slice 2 · <b>THE ROTATION WINDOW IS A WATCH.</b> Slice 1 built no rotation of any kind — the
+    /// salvage roll is seeded off a hull id and has no clock in it at all — so the fence needs one, and it is
+    /// the world's own shift rather than a number typed here: <see cref="Interior.PatronRota.WatchIndex"/>,
+    /// the four-sim-hour beat the seated regulars, the escort's patience and the oracle's corner all turn on.
+    /// <i>"Fresh this cycle"</i> is that cycle.
+    /// </summary>
+    public static long FenceWindow(double simTime) => Interior.PatronRota.WatchIndex(simTime);
+
+    /// <summary>The fence's seed at one port on one watch. A stable char-sum of the port id, the idiom the
+    /// booth's own deals are salted with (<see cref="CompromisingChip.Seed"/>) — so two ports quote two
+    /// prices, and one port quotes ONE price for the whole watch however many times the desk is opened.</summary>
+    public static ulong FenceSeed(string portId, long window)
+    {
+        ArgumentNullException.ThrowIfNull(portId);
+        long salt = 0;
+        foreach (char c in portId)
+        {
+            salt += c;
+        }
+
+        return DiceRule.Seed(FenceSeedTag, window, salt);
+    }
+
+    /// <summary>#535 slice 2 · How many bribes the fence wants. THREE — the design's own number, and the only
+    /// constant in this half of the file.</summary>
+    public const int FenceAsksThisManyBribes = 3;
+
+    /// <summary>
+    /// #535 slice 2 · <b>WHAT THE FENCE WANTS, AND IT IS THE BUSTED CARD'S OWN ARITHMETIC.</b>
+    ///
+    /// <para>Three times the bribe — <see cref="BustedRule.BribeDemand"/>, <b>called</b>, never restated. That
+    /// is the joke the fence's own line makes out loud (<i>"I'll ask you what a clean record costs"</i>): the
+    /// price of the thing that makes a catch unhappen is three times the price of buying your way out of one
+    /// catch, so it is only worth the coin to a captain who expects three.</para>
+    ///
+    /// <para>It moves with the captain's heat because the bribe does, and that is the fiction rather than a
+    /// quirk: the fence is pricing what a clean record is worth TO YOU, and he can read the same meter the
+    /// collector reads.</para>
+    ///
+    /// <para><b>There is deliberately no heat floor here, and the red-proof is why.</b> The first cut wrote
+    /// <c>Math.Max(1, heat)</c> — the repo boat's own line, copied across. Reverting it did not turn a single
+    /// guard red, because <see cref="BustedRule.BribeDemand"/>'s own band table already answers
+    /// <c>&lt;= 1</c> with one arm: the floor was a SECOND opinion about a question the bribe had already
+    /// settled, and the only thing it could ever do is disagree with it — silently, on the afternoon somebody
+    /// gives that table a heat-zero arm. So the heat goes through whole and the bribe decides what a cold
+    /// captain is quoted, the way it decides what a hot one is.</para>
+    /// </summary>
+    public static int FencePrice(int heat, ulong seed) =>
+        FenceAsksThisManyBribes * BustedRule.BribeDemand(heat, seed).Total;
+
+    /// <summary>The key the fence sells. Its id is the port and the watch, so two windows are two keys and
+    /// one window is one key however many times the row is looked at.</summary>
+    public static Satchel.Item FromTheFence(string portId, long window)
+    {
+        ArgumentNullException.ThrowIfNull(portId);
+        return new Satchel.Item(Satchel.Kind.BlackOpsKey, $"fence:{portId}@{window}");
+    }
+
+    /// <summary>
+    /// #535 slice 2 · <b>ONE KEY PER PORT PER WINDOW, COUNTING BOTH NEW SOURCES TOGETHER.</b>
+    ///
+    /// <para>This is the strike-off the favour and the fence BOTH write and BOTH read, kept in the captain's
+    /// register of ground already gone through (#615's <c>_roomsTurnedOver</c> — the same durable set slice 1
+    /// strikes a spent hull off in). One tag, two writers, which is the only shape under which the law holds:
+    /// a captain cannot take the favour at the bar and then walk to the desk and buy the second one on the
+    /// same watch, and the two sources cannot come to two opinions about whether this port has dealt today.</para>
+    ///
+    /// <para>A prefix of its own, and nothing <c>KeepOrLeave.TryReadKey</c> can parse as a Hive room — it
+    /// walks straight past this the way it walks past slice 1's <c>wreck-key:</c>.</para>
+    /// </summary>
+    public static string ThePortHasDealtOne(string portId, long window)
+    {
+        ArgumentNullException.ThrowIfNull(portId);
+        return $"port-key:{portId}@{window}";
+    }
+
+    /// <summary>Every sentence this feature can put on a screen, for the audit that reads them all. Slice 1
+    /// published three; slice 2 adds the favour's line, the fence's row, and the two verbs they sit on.</summary>
     public static IEnumerable<string> EveryLine()
     {
         yield return LookCardLine;
         yield return BurnLine;
         yield return NoContactLoggedPlate;
+        yield return FavourLine;
+        yield return FavourVerb;
+        yield return FenceRowLine;
+        yield return FenceVerb;
     }
 }

@@ -143,3 +143,62 @@
     line-height: 1.35;
     margin: 0.2rem 0 0.5rem;
 }
+
+/* #319 · THE SECOND CHOICE — one thing out of the satchel, carried down to go in the ground.
+
+   The same block the landing-site chooser is built out of, deliberately: it is the same GRAMMAR (a
+   headed list of rows, one of them ringed) and elegant minimalism is a small set of shapes used again
+   rather than a new shape per feature. What differs is one line of it — the rows are a single line
+   each, because a satchel row is already a complete sentence about the thing. */
+.bury-deposit {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin: 0.4rem 0 0.55rem;
+    padding: 0.4rem 0.45rem 0.5rem;
+    border: 1px solid rgba(120, 160, 210, 0.22);
+    border-radius: 0.35rem;
+    background: rgba(20, 30, 46, 0.5);
+}
+
+.bury-deposit-head {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #b9c8e0;
+    letter-spacing: 0.06em;
+}
+
+.bury-deposit-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    width: 100%;
+    text-align: left;
+    padding: 0.3rem 0.5rem;
+    border: 1px solid rgba(120, 160, 210, 0.28);
+    border-radius: 0.3rem;
+    background: rgba(14, 20, 32, 0.6);
+    color: #cfe0f5;
+    cursor: pointer;
+    transition: border-color 0.12s, background 0.12s;
+}
+
+.bury-deposit-row:hover {
+    border-color: rgba(255, 212, 121, 0.6);
+    background: rgba(30, 40, 58, 0.7);
+}
+
+.bury-deposit-sel {
+    border-color: #ffd479;
+    background: rgba(60, 46, 18, 0.55);
+    box-shadow: 0 0 0 1px rgba(255, 212, 121, 0.35) inset;
+}
+
+.bury-deposit-mark {
+    color: #ffd479;
+}
+
+.bury-deposit-name {
+    color: #e8eef8;
+    line-height: 1.25;
+}

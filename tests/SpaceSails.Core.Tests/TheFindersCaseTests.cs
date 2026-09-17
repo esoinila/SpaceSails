@@ -67,6 +67,15 @@ public sealed class TheFindersCaseTests
         "Selene Gate sends a boat. Varga does not come to see it.",
 
         "The account clears before he does. Varga will hear; she always does.",
+
+        // #417 slice 2a · the witness's own three, retyped from the same issue. They are LAST because
+        // AllProse is read POSITIONALLY below, and a later slice's sentences must not renumber the eleven
+        // that were checked against the canon pass on the day they shipped.
+        "I work the rota. I don't work for you.",
+
+        "Keep it. I'm on shift.",
+
+        "One drink. Then I never saw you.",
     ];
 
     // ══ THE WORLD THE GUARDS RUN IN ══════════════════════════════════════════════════════════════════════
@@ -447,8 +456,9 @@ public sealed class TheFindersCaseTests
     // ══ THE WORDS ════════════════════════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// <b>THE ELEVEN SENTENCES ARE THE CANON PASS, CHARACTER FOR CHARACTER</b>, checked against the copy
-    /// retyped at the top of this file rather than against the constants themselves.
+    /// <b>THE FOURTEEN SENTENCES ARE THE CANON PASS, CHARACTER FOR CHARACTER</b> — slice 1's eleven and
+    /// slice 2a's three for the witness — checked against the copy retyped at the top of this file rather
+    /// than against the constants themselves.
     ///
     /// <para><b>Watched RED:</b> the em-dash in <see cref="FinderCase.Payoff"/> replaced with a hyphen —
     /// <i>"Assert.Equal() Failure: Strings differ · ↓ (pos 21) · Paid. Don't thank me - the next one…"</i>.</para>
@@ -493,7 +503,10 @@ public sealed class TheFindersCaseTests
         };
         List<string> invented = [];
 
-        foreach (string file in (string[])["FinderCase.cs", "FinderCase.Keeping.cs"])
+        // #417 slice 2a · THE WITNESS'S FILE IS SWEPT TOO. A sweep that names its files by hand is a sweep
+        // a new partial walks straight past, so the list grows with the type — and `TheSweepReadsEveryPiece
+        // OfThisType` below makes sure it is the WHOLE type and not whichever files somebody remembered.
+        foreach (string file in CaseFiles)
         {
             foreach (string literal in Literals(CoreSource(file)))
             {
@@ -511,6 +524,38 @@ public sealed class TheFindersCaseTests
         Assert.True(invented.Count == 0,
             "the finder's case authors sentences the canon pass never wrote:\n  "
             + string.Join("\n  ", invented.Select(s => $"\"{s}\"")));
+    }
+
+    /// <summary>
+    /// <b>…AND THE SWEEP ABOVE READS THE WHOLE TYPE.</b> <c>FinderCase</c> is a partial spread over several
+    /// files and the sweep names its files by hand, so the day somebody adds a fourth the sweep would go on
+    /// passing while an unauthored sentence sat in the file it had never heard of — a guard that stopped
+    /// being able to tell pass from fail without anybody touching it, which is this house's fifth named bug
+    /// class arriving by the back door.
+    ///
+    /// <para><b>Watched RED:</b> <c>FinderCase.TheWitness.cs</c> dropped from <see cref="CaseFiles"/> —
+    /// <i>"the no-twelfth-string sweep does not read every file FinderCase is written across:
+    /// FinderCase.TheWitness.cs"</i>.</para>
+    /// </summary>
+    [Fact]
+    public void TheSweepReadsEveryFileTheCaseIsWrittenAcross()
+    {
+        string[] onDisk = [.. Directory
+            .EnumerateFiles(CoreRoot(), "FinderCase*.cs", SearchOption.TopDirectoryOnly)
+            .Select(Path.GetFileName)
+            .Where(f => f is not null)
+            .Select(f => f!)
+            .OrderBy(f => f, StringComparer.Ordinal)];
+
+        Assert.NotEmpty(onDisk);
+        string[] missed = [.. onDisk.Except(CaseFiles, StringComparer.Ordinal)];
+        Assert.True(missed.Length == 0,
+            "the no-twelfth-string sweep does not read every file FinderCase is written across: "
+            + string.Join(", ", missed));
+
+        // …and the other way round: a name in the list that is not on disk would read as covered while
+        // covering nothing, and `CoreSource` would throw rather than say so.
+        Assert.Empty(CaseFiles.Except(onDisk, StringComparer.Ordinal));
     }
 
     /// <summary>
@@ -603,7 +648,15 @@ public sealed class TheFindersCaseTests
 
     // ══ READING THE SHIPPED SOURCE ═══════════════════════════════════════════════════════════════════════
 
-    private static string CoreSource(string file)
+    /// <summary>Every file the <c>FinderCase</c> type is written across, as the no-twelfth-string sweep
+    /// walks them. Named here rather than inline because two guards read it — the sweep, and the one that
+    /// says this list is the whole type.</summary>
+    private static readonly string[] CaseFiles =
+    [
+        "FinderCase.cs", "FinderCase.Keeping.cs", "FinderCase.TheWitness.cs",
+    ];
+
+    private static string CoreRoot()
     {
         DirectoryInfo? at = new(AppContext.BaseDirectory);
         while (at is not null && !Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Core")))
@@ -611,10 +664,12 @@ public sealed class TheFindersCaseTests
             at = at.Parent;
         }
 
-        return File.ReadAllText(Path.Combine(
+        return Path.Combine(
             at?.FullName ?? throw new DirectoryNotFoundException("no repo root above the test binary"),
-            "src", "SpaceSails.Core", file));
+            "src", "SpaceSails.Core");
     }
+
+    private static string CoreSource(string file) => File.ReadAllText(Path.Combine(CoreRoot(), file));
 
     /// <summary>
     /// Every string literal in a source file, comments and doc-comments stripped first — a paragraph

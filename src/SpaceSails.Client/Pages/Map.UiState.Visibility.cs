@@ -50,6 +50,18 @@ public partial class Map
         {
             ShowPulseMessage(reason);
             RendererInterop.PlayCue("reveal");
+
+            // #238 · …AND IT IS A MISSION EVENT. Owner, mid-car-hunt: "Is there a big pop-up when we find
+            // the car in the scans? It is a kind of mission event like when we get paid?" — it used to be
+            // the two lines above and nothing else, which at 10,000× warp is a banner that was on the glass
+            // for a third of a second. `announce` is exactly the right gate and already existed: the two
+            // callers that pass false are the boot cheats that park you ALONGSIDE her, and a found-her
+            // fanfare for a body you were sitting on all along is the joke played on the wrong person.
+            //
+            // Raised HERE and not at the scan, so the law belongs to the REVEAL and not to the telescope:
+            // the next hidden target to arrive (a secret station, a #223 rumour cache once discovery
+            // scanning does) charts through this same method and gets the beat without knowing it exists.
+            TheMomentTheyEarnedIt(RevealMomentFor(id));
         }
         _passDirty = true;
         StateHasChanged();

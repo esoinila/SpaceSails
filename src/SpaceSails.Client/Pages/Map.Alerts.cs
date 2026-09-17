@@ -556,7 +556,7 @@ public partial class Map
         }
         var lines = new List<string>
         {
-            $"Last transponder fix: sunward of Mars, r ≈ {auHere.ToString("F2", CultureInfo.InvariantCulture)} AU, period ≈ {periodDays.ToString("F0", CultureInfo.InvariantCulture)} d.",
+            $"Last transponder fix: {Derelict.RoadsterBearingPhrase}, r ≈ {auHere.ToString("F2", CultureInfo.InvariantCulture)} AU, period ≈ {periodDays.ToString("F0", CultureInfo.InvariantCulture)} d.",
             $"She bore ~{phaseDeg.ToString("F0", CultureInfo.InvariantCulture)}° off the sun then, creeping prograde — near-circular, so she hasn't gone far.",
             $"She should cross the predicted phase around {FormatSimTime(aimTime)}. Point the scope there and she'll glint.",
         };

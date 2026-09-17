@@ -149,6 +149,28 @@ public static class IllegalHeat
         /// their file.</para>
         /// </summary>
         SheWentAtTheirBerth,
+
+        /// <summary>
+        /// #711 · <b>SOMEBODY ON THEIR ROTA FOUND A BOX ABOARD THAT IS ON NOBODY'S MANIFEST.</b> Appended,
+        /// like every member before it, because several switches name these arms by hand.
+        ///
+        /// <para>Canon design (head coder, 2026-08-09): <i>"a captain skimming a little — an unlisted parcel,
+        /// a bent filing … petty crime is the expected secret of a small hauler. The inspector who finds it
+        /// fines you, files you under 'ordinary,' and closes the folder."</i></para>
+        ///
+        /// <para>It is the CHEAPEST thing on this ladder, and that is design rather than saving. Every other
+        /// row here is an evening going wrong; this one is an evening going exactly the way the building
+        /// expects one to. A man found a box, wrote a number on a form and went back to work — so it costs
+        /// what a machine's no costs (<see cref="UndergroundComplex.RefusedCardHeat"/>, quoted rather than
+        /// typed), and one of them can never move a band on its own.</para>
+        ///
+        /// <para><b>That last clause is load-bearing and is not decoration.</b> A band moving is exactly what
+        /// re-opens the folder this same find just closed
+        /// (<see cref="UnlistedParcel.TheFolderIsClosed"/>). A weight big enough to move one would be a
+        /// crossing that undoes its own consequence on the frame it is banked, which is why the number is
+        /// read off the cheapest rung in the game rather than chosen.</para>
+        /// </summary>
+        AnUnlistedParcelAboard,
     }
 
     /// <summary>What one crossing costs. Small numbers on purpose: the pressure in this meter comes from
@@ -164,6 +186,7 @@ public static class IllegalHeat
         Crossing.ShotOnTheirFloor => 3,
         Crossing.TheKickOut => 4,
         Crossing.SheWentAtTheirBerth => Ceiling,
+        Crossing.AnUnlistedParcelAboard => UndergroundComplex.RefusedCardHeat,
         _ => 0,
     };
 

@@ -316,6 +316,54 @@ public partial class TrackingPost
         }
     }
 
+    /// <summary>
+    /// #238 item 3 / #239 item 2 · <b>SWEEP HOLDS THE SCOPE — one string, and null nearly always.</b> Owner,
+    /// filing it: <i>"the owner ran a 77% manual sweep unaware the real instrument was queued beneath it."</i>
+    ///
+    /// <para>Read by two surfaces — the Sensor-tasks panel's running row and the Sensors desk chip's second
+    /// line — and composed by neither. Both of them render THIS property, so the panel and the chip cannot
+    /// come to word one fact differently (#203, one voice); the words themselves are
+    /// <see cref="ScopeHold.Line"/>'s and live in Core.</para>
+    /// </summary>
+    public string? ScopeHoldLine => ScopeHold.LineFor(ScopeWork());
+
+    /// <summary>
+    /// #238 item 3 · Everything the telescope is doing or owes, as <see cref="ScopeHold"/> needs to see it —
+    /// and the first row is the one the task list has never had.
+    ///
+    /// <para>A manual sweep does not enter the queue: it takes the instrument out from under the whole
+    /// carousel (<see cref="TelescopeSchedule.Interrupt"/>, called from <c>RunScheduledInstrument</c>), so
+    /// while one runs NOTHING in the task list is RUNNING and the panel's four honest words are all still
+    /// true and all still silent. That is exactly the picture the owner read as "nothing is happening yet".
+    /// So the holder gets a row here, and it is never quest-critical — nobody aims a hand-flown sweep at a
+    /// contract; the whole complaint is that it is not the aimed job.</para>
+    ///
+    /// <para><b>The passive watch is NOT a holder</b>, and that is a real distinction rather than a tidy one.
+    /// The idle survey starts by itself whenever the queue is empty and stands down by itself the instant
+    /// anything is queued (<c>RunScheduledInstrument</c>: "real tasks outrank the idle watch") — so between
+    /// the press that queues the roadster fix and the next tick there is one frame in which the watch still
+    /// holds the glass. Reporting that frame would put the owner's complaint on screen about an instrument
+    /// that is already handing itself over, and the captain has not been asked to do anything about it. The
+    /// hand-flown sweep is the only thing that HOLDS: it is the one that has to be stopped.</para>
+    /// </summary>
+    private IEnumerable<ScopeHold.Work> ScopeWork()
+    {
+        if (_activeJob is not null && !_passiveJobRunning)
+        {
+            yield return new ScopeHold.Work(
+                ScopeHold.ManualSweepName, SensorTaskState.Running, QuestCritical: false);
+        }
+
+        foreach (SensorTask task in _schedule.Queue)
+        {
+            // #239's law, unchanged and reused: the state is READ off the schedule, never inferred from a
+            // percentage. A waiter is only a waiter because the schedule says it is behind something.
+            SensorTaskState state = _schedule.StateOf(task.Id) ?? SensorTaskState.Queued;
+            string? questName = ScopeHold.WaiterName(task, LiveQuestTargets);
+            yield return new ScopeHold.Work(questName ?? task.Label, state, questName is not null);
+        }
+    }
+
     /// <summary>The lost-track case board, for the map's search-region circles.</summary>
     public IReadOnlyCollection<LostTrack> LostTrackEntries => _lostTracks.Entries;
 

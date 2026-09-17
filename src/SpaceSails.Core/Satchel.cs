@@ -113,6 +113,24 @@ public static class Satchel
         /// being written at all, it works once, and it is never offered to a door, because a shaft files
         /// nothing about you and there is nothing there for a key to unfile.</para></summary>
         BlackOpsKey,
+
+        /// <summary>#711 · AN UNLISTED PARCEL. Somebody's small box, aboard, on nobody's manifest.
+        ///
+        /// <para>Appended, never inserted, for the fifth time and the same reason: the ordinal is what a
+        /// saved satchel stores, and a kind slipped into the middle would silently reinterpret every item in
+        /// every existing vault.</para>
+        ///
+        /// <para><b>It is CARGO and it is not EVIDENCE, and that separation is the whole object.</b>
+        /// <see cref="RipAndBin.IsEvidence"/> knows two kinds — <see cref="Paper"/> and <see cref="Dirt"/>,
+        /// the two that ride the document sleeve — and a parcel is neither: nobody reads a box over your
+        /// shoulder, there is nothing in it to dig, and tearing it up is not a verb. A parcel that rode the
+        /// sleeve would be a thing the bin picker offered to shred and the seated spread offered to work,
+        /// which is three systems being told a lie about one object.</para>
+        ///
+        /// <para>It is BULKY, so it rides the pockets proper — <see cref="CompartmentOf"/>'s safe default,
+        /// taken deliberately here rather than by omission, because the honest price of carrying somebody
+        /// else's box is not carrying something of your own.</para></summary>
+        Parcel,
     }
 
     /// <summary>One thing in the pocket.</summary>
@@ -225,7 +243,64 @@ public static class Satchel
         _ => PocketCapacity,
     };
 
-    /// <summary>How many distinct things are in one compartment right now.</summary>
+    // ── #798 item 2 · THE TORN SHEET IS A CHEAPER CARRY, AND THAT IS THE WHOLE REWARD FOR THE TRADECRAFT ─
+    //
+    // Owner, on what the split produces: "pocket the one damning sheet (SMALL, HIDEABLE, the photograph
+    // already in the book) and bin the innocent bulk."
+    //
+    // #1185 shipped the split with both halves costing the sleeve exactly what the whole document cost, and
+    // said so out loud in its own judgement calls: "the sheet rides in the document sleeve rather than
+    // somewhere flatter, so 'small, hideable' is narrative rather than mechanical for now." A captain who
+    // did the professional thing — sat down, dug the file, tore out the one page that mattered and binned a
+    // folder that explains itself — walked away carrying exactly as much as the captain who stuffed the
+    // whole folder in their coat. The tradecraft bought nothing the arithmetic could see.
+    //
+    // It is a WEIGHT CLASS and deliberately not a new Kind. Four guards sweep every evidence kind and ask
+    // each one for a full gist, a glance and a dig — AGlanceIsNotADig's completeness law and its
+    // one-paragraph law, TheDisposalYouWatch's glance-purity law and its no-unworked-dug-sheet law — and
+    // every one of them builds its item with a PLAIN id. A Kind.Sheet would therefore be constructed by all
+    // four in a shape the world can never produce (a sheet that is not a page of anything) and then asked
+    // for a dig of its own, which is a lie about the one object whose entire point is that its dig already
+    // happened. It would also cost the sheet every verb paper already has. The compartment is not touched —
+    // LeftBehind.GistOf asks CompartmentOf(kind) to decide what is a document at all, and a sheet that
+    // rode somewhere else would stop being one to the book on the way past.
+    //
+    // What changes is one number: what a thing COSTS the compartment it rides in.
+
+    /// <summary>
+    /// #798 item 2 · WHAT A PAGE FOLDED TWICE COSTS THE SLEEVE. Nothing.
+    ///
+    /// <para>The satchel's arithmetic has always been about BULK — #688's own words, one comment up:
+    /// <i>"what costs a captain room is BULK, and a card and a manifest have none"</i> — and the wallet
+    /// already states the end of that ladder for the flat things, <i>flat, thin, and never full</i>. A
+    /// single page out of a folder, folded twice to go where the field book goes, is the flattest object
+    /// this game has; it is the thing the whole verb exists to produce, and the owner's word for it is
+    /// <i>hideable</i>.</para>
+    ///
+    /// <para>It is a named constant rather than a literal at the one call site because it is the answer to
+    /// <b>"what does a sheet weigh"</b>, and this project has paid four times for a fact transcribed at its
+    /// call sites. Every guard that states the sheet is cheaper measures against THIS.</para>
+    /// </summary>
+    public const int FoldedSheetSpace = 0;
+
+    /// <summary>
+    /// #798 item 2 · WHAT ONE THING COSTS THE COMPARTMENT IT RIDES IN — one for everything a captain
+    /// carries, and <see cref="FoldedSheetSpace"/> for the page torn out of a document.
+    ///
+    /// <para>Asked of the ITEM and not of the kind, because the sheet and the folder it came out of are the
+    /// same kind and the same compartment and are told apart by the id they wear
+    /// (<see cref="PageGranularity.PartOf"/>) — the split keeps no state anywhere and this arithmetic is not
+    /// allowed to be the place that starts. The BULK is deliberately full price: it is the folder, it is
+    /// exactly as thick as it looks, and it is on its way to a bin.</para>
+    /// </summary>
+    public static int SpaceCostOf(Item item) =>
+        PageGranularity.PartOf(item.Id) == PageGranularity.Part.TheSheet ? FoldedSheetSpace : 1;
+
+    /// <summary>How much room the things in one compartment are taking up right now.
+    ///
+    /// <para>#798 item 2 · A SUM and no longer a count, because one row in the sleeve stopped being worth
+    /// one space the day a document could come apart. Every other thing in this game costs exactly one, so
+    /// this answers what it always answered for every satchel that holds no torn sheet.</para></summary>
     public static int Used(IReadOnlyList<Item>? carried, Compartment where)
     {
         int n = 0;
@@ -233,7 +308,7 @@ public static class Satchel
         {
             if (CompartmentOf(i.Kind) == where)
             {
-                n++;
+                n += SpaceCostOf(i);
             }
         }
         return n;
@@ -253,6 +328,19 @@ public static class Satchel
     /// manifest, and it is never full for a card.</para></summary>
     public static bool IsFull(IReadOnlyList<Item>? carried, Kind kind) =>
         SpaceLeft(carried, CompartmentOf(kind)) <= 0;
+
+    /// <summary>#798 item 2 · …and the same question asked of the THING rather than of its kind, which is
+    /// the only form <see cref="Add"/> and <see cref="CanTake"/> may use.
+    ///
+    /// <para>A sleeve with no room left in it for another folder still has room for a page folded twice
+    /// (<see cref="FoldedSheetSpace"/>), so "is this full" stopped having a kind-sized answer the moment a
+    /// document could come apart — the same shape of change #688 made when one number stopped being able to
+    /// speak for three compartments. The kind-shaped overload above is kept for the callers that are asking
+    /// about a compartment before they have a thing to put in it (the keep-or-leave prompt, the sleeve's own
+    /// subtitle), and it answers what it always answered, because everything in this game except a torn
+    /// sheet costs one.</para></summary>
+    public static bool IsFull(IReadOnlyList<Item>? carried, Item item) =>
+        SpaceLeft(carried, CompartmentOf(item.Kind)) < SpaceCostOf(item);
 
     /// <summary>#688 · What the satchel says about its own room, naming what it counts.
     ///
@@ -301,7 +389,7 @@ public static class Satchel
             return list;
         }
 
-        if (IsFull(list, item.Kind))
+        if (IsFull(list, item))
         {
             // Full — the compartment THIS thing rides in, which is the only one that has any say. The caller
             // says so; silently dropping a find would be the worse bug.
@@ -337,7 +425,11 @@ public static class Satchel
             return false;   // Add would refuse this outright, so nothing was ever going to enter the pocket.
         }
 
-        return !IsFull(carried, item.Kind)
+        // #798 item 2 · Asked of the ITEM, not of its kind — a torn-out sheet costs the sleeve nothing
+        // (FoldedSheetSpace), so a sleeve that is full of folders still takes one. Answering this off the
+        // kind would refuse the one object the whole split verb exists to hand the captain, at the one
+        // moment they have earned it, which is #678's bug with a better disguise.
+        return !IsFull(carried, item)
             || (carried ?? []).Any(i => i.Kind == item.Kind
                 && string.Equals(i.Id, item.Id, StringComparison.Ordinal));
     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.AspNetCore.Components;
@@ -61,7 +61,7 @@ public class TheWayBackIsAlwaysOnTheFanTests
         {
             foreach (LandingSite site in LandingSites.For(body))
             {
-                foreach (double range in new[] { 5.0, 60.0, 400.0, 2_500.0, 9_000.0, SurfaceTiles.BackstopRadiusDu })
+                foreach (double range in new[] { 5.0, 60.0, 400.0, 2_500.0, 9_000.0, SurfaceTiles.BackstopRadiusDu(SuitAir.PlayBudget(extendedTank: false)) })
                 {
                     for (int i = 0; i < 6; i++)
                     {

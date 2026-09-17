@@ -63,7 +63,8 @@ public partial class Map
         // A hull has no regolith to seed and no shelters on it; that has been true since #585 and is asked
         // here so that every road into a shelter passes the same gate.
         IReadOnlyList<SurfaceStructure.Spec> specs =
-            Derelict.TryParseWreckId(ex.Stop.Body.Id, out _) || !SurfaceTiles.WithinBackstop(a)
+            Derelict.TryParseWreckId(ex.Stop.Body.Id, out _)
+            || !SurfaceTiles.WithinBackstop(a, ex.AirBudgetSeconds)
                 ? []
                 : SurfaceTiles.Shelters(ex.Stop.Body.Id, ex.Site.LayoutSalt, a);
         ex.ShelterSpecs[a] = specs;

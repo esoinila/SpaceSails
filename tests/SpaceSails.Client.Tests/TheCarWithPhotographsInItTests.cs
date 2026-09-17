@@ -29,6 +29,9 @@ public sealed class TheCarWithPhotographsInItTests
 
     private const string TheHunt = "DUDE. WHERE. Is. The CAR?!";
     private const string TheFind = "You found your CAAAR!";
+
+    /// <summary>#238 · Beat two, between the asking and the finding: the glint off the port scope.</summary>
+    private const string TheGlimpse = "DUDE. THERE. Is. The CAR!";
     private const int TheContract = 4200;
 
     // ── BEAT ONE · THE SCOPE GOES HUNTING ─────────────────────────────────────────────────────────────
@@ -85,9 +88,22 @@ public sealed class TheCarWithPhotographsInItTests
 
     // ── BEAT TWO · THE GLINT ──────────────────────────────────────────────────────────────────────────
 
-    /// <summary>#240's crossing keeps its own first responder, unchanged — the pulse and the reveal cue that
-    /// have always answered a resolved wreck. This feature adds nothing here and must not: a second sentence
-    /// at the glint would be two things speaking for one moment.</summary>
+    /// <summary>
+    /// THE BIRD IS THE FIRST RESPONDER AT THE GLINT — <b>#238 REVERSES WHAT THIS GUARD USED TO SAY</b>, and
+    /// the owner reversed it himself.
+    ///
+    /// <para>It used to read <i>"the bird does not talk over the scope's own moment"</i> and assert silence
+    /// here, on the reasoning that a second sentence at the glint would be two things speaking for one
+    /// moment. Owner, on #238: <i>"Love that thought of Parrot reacting to the glint from telescope"</i> —
+    /// and then the ordering, in his own words: the parrot squawks <b>a half-beat BEFORE the pop-up lands</b>,
+    /// <i>"because the bird lives at the scope alcove and would see it first. Squawk → THERE-SHE-IS card →
+    /// marker + show-me jump. Tiny ordering detail, big theater: the crew reacts before the paperwork
+    /// does."</i></para>
+    ///
+    /// <para>So what is asserted is not silence but the ORDER and the WORDS: the instrument's own sentence
+    /// still leads (the scope reports, and it reports first), and the bird's line is the GLINT's — beat two
+    /// of a three-beat gag — and not beat three's punchline four beats early.</para>
+    /// </summary>
     [Fact]
     public void TheGlint_IsStillTheFirstResponderThatAlreadyShipped()
     {
@@ -100,7 +116,8 @@ public sealed class TheCarWithPhotographsInItTests
         Assert.False((bool)Invoke(map, "IsBodyHidden", Derelict.RoadsterBodyId)!);
 
         Assert.Contains("cherry-red glint", Pulse(map), StringComparison.Ordinal);
-        Assert.Null(Bubble(map)); // the bird does not talk over the scope's own moment
+        Assert.Equal(TheGlimpse, Bubble(map));            // #238 · the bird saw her first
+        Assert.NotEqual(TheFind, Bubble(map));            // …and it is NOT the punchline, four beats early
     }
 
     // ── BEATS THREE AND FOUR · ALONGSIDE, AND ABOARD ──────────────────────────────────────────────────
@@ -302,7 +319,16 @@ public sealed class TheCarWithPhotographsInItTests
         int ends = dig.IndexOf("\n    }", at, StringComparison.Ordinal);
         string body = dig[at..ends];
 
-        Assert.Contains("TheChipGoesInTheChest(ex.PendingCargo)", body, StringComparison.Ordinal);
+        // #319 · The list is named `manifest` now rather than spelled `ex.PendingCargo` at this call — the
+        // bury learned to put things in a hole with no chest in it, and a captain who dropped his chest to
+        // sprint and then buried the file in his coat must not have the dropped chest's cargo go in with it.
+        // So this guard makes the CLAIM it was always making, and makes it stronger: the chip joins the very
+        // list the cache is minted from, whatever that list is called. A rename that quietly pointed the chip
+        // at a list nobody buries is exactly what it is here to catch.
+        Assert.Contains("TheChipGoesInTheChest(manifest)", body, StringComparison.Ordinal);
+        Assert.Contains("_caches.Bury(\n            ex.Stop.Body.Id, coin, manifest,".ReplaceLineEndings(),
+            body.ReplaceLineEndings(), StringComparison.Ordinal);
+
         // …and it joins the manifest AFTER the hold has been settled, because the chip was never in the hold
         // and HoldAfterBurying must not be asked to subtract it from anything.
         Assert.True(

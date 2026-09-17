@@ -345,6 +345,34 @@ public static class DeathNarration
         _ => "WHAT HAPPENED",
     };
 
+    // ── #563 · THE ONE WORD A LATER CAPTAIN GETS ──────────────────────────────────────────────────────
+    //
+    // Owner ruling, 2026-09-13, on the third open question of #563: "I love the own lineage. If not enough
+    // material, fill in with strangers, preferably NPCs we know something about."
+    //
+    // A breadcrumb note about a predecessor has to say WHAT HAPPENED TO HIM, and there was exactly one place
+    // in this game that has ever answered that question — the block above the brain-backup copy. So the note
+    // does not get a sentence of its own: it gets THAT one, with the plate's own lead stripped off it. A
+    // projection, deliberately, and not a second pool — the day somebody rewrites a headline the field book's
+    // entry moves with it, which is the whole of law 5 in this repository ("two places computing one fact is
+    // the bug, even while they agree"). The guard asserts by CALLING Headline, so the two can never drift.
+
+    /// <summary>The plate's own lead, stripped to leave the clause. Lives here rather than at the caller so
+    /// there is one spelling of it in the game.</summary>
+    private const string HeadlineLead = "WHAT HAPPENED — ";
+
+    /// <summary>#563 · The short WHAT-HAPPENED clause on its own, sentence-cased and WITHOUT a full stop —
+    /// the caller's template supplies that. Read straight off <see cref="Headline"/>, so this is the death
+    /// card's own words about that cause and never a second authoring of them.</summary>
+    public static string CauseWord(DeathCause cause)
+    {
+        string plate = Headline(cause);
+        string clause = plate.StartsWith(HeadlineLead, StringComparison.Ordinal)
+            ? plate[HeadlineLead.Length..]
+            : plate;
+        return clause.Length == 0 ? clause : char.ToUpperInvariant(clause[0]) + clause[1..];
+    }
+
     // ── The house-voice line pools (place-dependent) ─────────────────────────────────────────────────
     //
     // One to two sentences, in the house voice, that narrate the death WHERE it happened. {body} is filled by

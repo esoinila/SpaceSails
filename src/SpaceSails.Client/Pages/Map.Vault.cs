@@ -58,6 +58,11 @@ public partial class Map
             _shipBots.Add(new ShipBot(unit, SentryBot.MaxMagazine));
         }
 
+        // #325/#332 · The chandlery's two: no spare bottles in stores (they are bought, never issued), and a
+        // full pill cabinet — the same stake every captain has opened with since #343.
+        _extendedTanks = 0;
+        _pills = Chandlery.MedKitFullStock;
+
         // Upgrades back to base (and the tank to the base capacity that implies), sensor rebuilt.
         _massLevel = 0;
         _sensorLevel = 0;
@@ -187,6 +192,11 @@ public partial class Map
                 SentryMagazines = _shipBots.Select(b => b.Rounds).ToList(), // #314
             },
             Cargo = new CargoSection(hold, VaultMapper.ToHotLines(_hotCargo)),
+
+            // #325/#332 · The chandlery's stores, always written by a live game: a captain always has a
+            // cabinet, even an empty one, and "what is in it" is exactly the fact this section exists to
+            // carry. Only a vault written before the lane lacks the section.
+            Chandlery = new ChandlerySection { ExtendedTanks = _extendedTanks, MedKitPills = _pills },
             Heat = new HeatSection(_heat.Level, _heat.RaisedAtSimTime),
             Contacts = VaultMapper.ToSection(_contacts),
             Caches = VaultMapper.ToSection(_caches),
@@ -230,6 +240,18 @@ public partial class Map
                 // empty law, same reason. A burial that forgot across a reload would un-bury a ground the
                 // field book says is gone, and the book being the only witness is the whole feature.
                 HallsBuried = _hallsBuried.Count > 0 ? [.. _hallsBuried] : null,
+                // #1063 slice 2 · …and the one seal this captain has forced and found empty. Same
+                // null-while-unspent law and the same reason one rung harder: a spend a reload forgot would
+                // put the cache back into a room the book says was bare AND leave him a second empty room to
+                // find later, and two of them is a rate rather than a disappointment (EmptySeal).
+                EmptySealSpentOn = _emptySealSpentOn,
+                // #1199 · …and the one person this captain has followed onto an observation walk and not
+                // found, with the counter the world has since handed them back at. Same null-while-unspent
+                // law and the same reason one rung harder again: a spend a reload forgot would let the same
+                // person be walked into the same tube twice, and a thing that happens twice is a mechanic
+                // rather than a moment (ObservationWalk).
+                ObservationWalkSpentOn = _observationWalkSpentOn,
+                ObservationWalkSightingAt = _observationWalkSightingAt,
                 // #1068 · …and which of them the world has since declined on, WITH the window each declined
                 // in. Same null-while-empty law, same reason; the window rides along because the door is
                 // chosen against it, and a reload that forgot the number would shut a different leaf.
@@ -380,6 +402,27 @@ public partial class Map
             {
                 _shipBots.Add(new ShipBot(SentryBot.RosterUnits[i], mags[i]));
             }
+
+        }
+
+        // ── #325/#332 · THE CHANDLERY'S STORES ─────────────────────────────────────────────────────────
+        //
+        //  Its own section, and read outside the ship block on purpose: a vault written before this lane
+        //  simply has no chandlery section, and such a file has nothing to say about either count. It opens
+        //  the way every captain has opened until now — nothing in stores, a full cabinet — which is what
+        //  the field initialisers already hold, so the absent case is the no-op it should be.
+        if (vault.Chandlery is { } chandlery)
+        {
+            // Spare bottles: clamped at zero and nothing else. A count of stores has no ceiling the game
+            // imposes — they stack by the owner's own ask — and a save is not the place to invent one.
+            _extendedTanks = Math.Max(0, chandlery.ExtendedTanks);
+
+            // The cabinet. A NULL here is a section that carries no pill key and genuinely has nothing to
+            // say, so it loads FULL. A recorded zero is an EMPTY cabinet and stays empty: rounding it up on
+            // load would be a free restock for anybody who reloads, which is the same exploit shape the heat
+            // section exists to refuse.
+            _pills = Math.Clamp(
+                chandlery.MedKitPills ?? Core.Chandlery.MedKitFullStock, 0, Core.Chandlery.MedKitFullStock);
         }
 
         if (vault.Upgrades is { } up)
@@ -465,6 +508,17 @@ public partial class Map
         {
             _hallsBuried = [.. buried];
         }
+
+        // #1063 slice 2: and the one seal already found empty. Assigned rather than guarded on null, so a
+        // thread that never spent it loads as unspent and a file written before this shipped does too — the
+        // one rule this latch has is that it only ever goes from null to a key, never back.
+        _emptySealSpentOn = vault.Progress?.EmptySealSpentOn;
+
+        // #1199: and the one person already followed and not found, with the counter the sighting was paid
+        // at. Assigned rather than guarded on null for the identical reason — a voyage that never spent it
+        // loads unspent, and a file written before this shipped does too.
+        _observationWalkSpentOn = vault.Progress?.ObservationWalkSpentOn;
+        _observationWalkSightingAt = vault.Progress?.ObservationWalkSightingAt;
 
         // #1068: and which of them the world has since declined on, with the window each declined in.
         // Restored rather than re-derived for the hardest version of the reason again: the window is what

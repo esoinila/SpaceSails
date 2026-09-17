@@ -73,6 +73,24 @@ public sealed record RetiredCaptain(string Name, int SimDay)
     /// <summary>Parameterless default for tolerant JSON round-trips (a garbled entry reads as blanks
     /// rather than throwing the whole index).</summary>
     public RetiredCaptain() : this("", 0) { }
+
+    // ── #563 · AND WHERE HE FELL ─────────────────────────────────────────────────────────────────────
+    //
+    // Owner ruling, 2026-09-13: "I love the own lineage. If not enough material, fill in with strangers,
+    // preferably NPCs we know something about." A breadcrumb out of your own lineage needs a PLACE, and a
+    // name-and-a-day is not one. Written once, by the succession, off the death record the client is
+    // already holding; read back by every later excursion that walks that ground.
+    //
+    // WRITTEN ONLY WHEN IT IS WRITEABLE. Null for every death that did not happen standing on a landing
+    // party's regolith (CaptainGrave.CanRecord), and null for every retiree recorded before this existed —
+    // and in that case the JSON says nothing at all rather than `"Grave":null`, so a registry written by
+    // this build for a save with no graves in it is BYTE-IDENTICAL to the one its predecessor wrote. The
+    // registry is the index every universe is found through; a silent rewrite of it is not a small thing.
+
+    /// <summary>#563 · The ground this captain died on, or null — either the death had no ground, or the
+    /// row predates the record. See <see cref="CaptainGrave"/>.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public CaptainGrave? Grave { get; init; }
 }
 
 /// <summary>
@@ -190,7 +208,10 @@ public sealed class GameThreadRegistry
     /// onto the row (the identity is editable data). Returns the updated row so the caller can narrate the
     /// hand-over, or null if the thread is unknown (e.g. a legacy/unindexed run). Keeps the thread active —
     /// it is still the run you are in — without bumping its clocks.</summary>
-    public GameThreadInfo? IssueSuccessor(string id, int retiredSimDay)
+    /// <param name="grave">#563 · The ground the retiring captain died on, when there was one — handed
+    /// straight down to <see cref="CaptainSuccession.Succeed"/>, which is the rule that decides whether it
+    /// is keepable. Null on every death that happened anywhere but a landing party's regolith.</param>
+    public GameThreadInfo? IssueSuccessor(string id, int retiredSimDay, CaptainGrave? grave = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(id);
         Index idx = ReadIndex();
@@ -200,7 +221,7 @@ public sealed class GameThreadRegistry
             return null; // no row to succeed — a legacy run narrates generically, the client guards this
         }
 
-        GameThreadInfo successor = CaptainSuccession.Succeed(existing, retiredSimDay);
+        GameThreadInfo successor = CaptainSuccession.Succeed(existing, retiredSimDay, grave);
         idx.Threads.RemoveAll(t => t.Id == id);
         idx.Threads.Add(successor);
         idx.ActiveId = id;

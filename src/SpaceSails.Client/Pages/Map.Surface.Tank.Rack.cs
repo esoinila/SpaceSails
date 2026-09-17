@@ -75,7 +75,10 @@ public partial class Map
     private double DrawFromRack(SurfaceExcursion ex, double held, double dt, out double pumped)
     {
         double made = SurfaceShelter.Produce(held, dt);
-        pumped = SurfaceShelter.Transfer(ex.AirSeconds, made, SuitAir.TankSeconds, dt);
+        // #325 · The rack fills to THIS excursion's tank, not the standard one — a captain who bought a
+        // bigger bottle and found the shelter refusing to fill past half of it would have been sold margin
+        // the world declined to honour.
+        pumped = SurfaceShelter.Transfer(ex.AirSeconds, made, ex.AirBudgetSeconds, dt);
         if (pumped > 0)
         {
             ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, pumped);
@@ -196,7 +199,7 @@ public partial class Map
     /// machine, so the shed on the regolith and the refuge eleven floors down can never describe the same
     /// state in two different ways.</summary>
     private static string RackGaugeLine(SurfaceExcursion ex, double held) =>
-        ex.AirSeconds >= SuitAir.TankSeconds * SurfaceShelter.FillToFraction
+        ex.AirSeconds >= ex.AirBudgetSeconds * SurfaceShelter.FillToFraction
             ? SurfaceShelter.PumpDoneLine
             : held > SurfaceShelter.ReservoirSeconds * 0.1
                 ? SurfaceShelter.PumpingLine

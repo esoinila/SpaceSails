@@ -67,6 +67,14 @@ public partial class Map
         // #727 · through the one writer, like the wallet beside it.
         AdvanceMission(q, QuestState.PickedUp, CompromisingChip.LookCardLine);
         RendererInterop.PlayCue("board");
+
+        // #238 · …and the same GOT-IT beat as the wallet, for the same reason and with the same words about
+        // where the hand went. This is NOT the look card the paragraph above refuses: it names the object by
+        // its canon name and stops, and what is ON the chip is still only ever seen at 🔍 in the satchel. A
+        // twin that prised silently while its sibling got a moment would be the owner asking "did that just
+        // happen?" of the one car in four that has the whole arc in it.
+        TheMomentTheyEarnedIt(MissionMoments.Pickup(
+            CompromisingChip.PickupItem, Parrot.Squawk.CarFound, _parrotCounter));
         RequestVaultSave();
     }
 
@@ -163,9 +171,10 @@ public partial class Map
         SquawkNow(Parrot.Squawk.CarHunt, _lastTimestampMs ?? 0, force: true);
     }
 
-    /// <summary>Beat three: alongside. Owner's own framing — <i>"when the ship comes alongside the wreck (the
-    /// moment the fetch pickup unlocks)"</i> — so it rides the pickup's own edge and needs no latch of its
-    /// own: the state pattern that lets the prise happen once lets this happen once with it.</summary>
-    private void SquawkTheCarFound() =>
-        SquawkNow(Parrot.Squawk.CarFound, _lastTimestampMs ?? 0, force: true);
+    // Beat three of the gag — ALONGSIDE — used to be a method of its own here, called from CheckFetchPickup
+    // ahead of both prises. #238 folded it into the GOT-IT beat that now fires at that same instant: the
+    // squawk travels INSIDE the MissionMoment (Parrot.Squawk.CarFound), so the card's line and the bubble's
+    // line are one lookup instead of two, and the bird still lands where the owner put it — "when the ship
+    // comes alongside the wreck (the moment the fetch pickup unlocks)". Both prises raise it; neither needs
+    // a latch, because the state pattern that lets the prise happen once lets this happen once with it.
 }

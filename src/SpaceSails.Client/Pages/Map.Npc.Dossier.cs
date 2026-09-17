@@ -309,8 +309,11 @@ public partial class Map
         int boardReady = 0;
         if (isPrey)
         {
-            bool within = distance <= CaptureRule.CaptureRadiusMeters;
-            bool slow = relSpeed <= CaptureRule.MaxRelativeSpeed;
+            // #243 · …and these two lines used to BE the comparison rather than ask for it. They are the
+            // window's own halves now (CaptureRule.IsInWindow is written in terms of the same two), so the
+            // verdict sentence under the chips and the chips themselves cannot disagree at a boundary.
+            bool within = CaptureRule.RangeInWindow(distance);
+            bool slow = CaptureRule.SpeedInWindow(relSpeed);
             boardReady = within && slow ? 2 : within ? 1 : 0;
         }
 

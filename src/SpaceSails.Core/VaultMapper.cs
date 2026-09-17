@@ -42,6 +42,15 @@ public static class VaultMapper
                 HeatOwed = h.HeatOwed,
                 KnewTheOldFace = h.KnewTheOldFace,
                 WasLiedTo = h.WasLiedTo,
+                // #535 slice 2 — the favour is once per contact per captain-lifetime, so it has to survive
+                // a reload; a restart that forgot it would be an unlimited supply of a consumable.
+                FavourSpent = h.FavourSpent,
+                // #711 — the folder an outfit closed on the captain, saved for the reason heat is: an
+                // answer that evaporated when the tab was closed would not be a memory, and this one is
+                // ARMOUR — a restart that forgot it would quietly re-open every folder the captain paid a
+                // fine to close.
+                FolderClosed = h.FolderClosed,
+                FolderClosedAtRung = h.FolderClosedAtRung,
                 HeatStampSimTime = h.HeatStampSimTime,
                 Transactions = h.Transactions
                     .Select(t => new CreditTxnRecord((int)t.Kind, t.Amount, t.SimTime, t.Note))
@@ -81,6 +90,11 @@ public static class VaultMapper
                 HeatOwed = r.HeatOwed,
                 KnewTheOldFace = r.KnewTheOldFace,
                 WasLiedTo = r.WasLiedTo,
+                FavourSpent = r.FavourSpent,
+                // #711 — absent on any vault written before a folder could be closed, which reads as
+                // false/0: nobody has an answer for this captain, which is exactly what was true.
+                FolderClosed = r.FolderClosed,
+                FolderClosedAtRung = r.FolderClosedAtRung,
                 HeatStampSimTime = r.HeatStampSimTime,
                 Transactions = txns,
             };
@@ -137,13 +151,39 @@ public static class VaultMapper
         SiteIndex = c.SiteIndex, // #650 · which ground; null (and unwritten) for every body-wide chest
         Buried = c.Buried,           // #455 · shovel or open ground; null (and unwritten) for a legacy chest
         PadDistance = c.PadDistance, // #455 · the carry from the pad; null (and unwritten) likewise
+        // #319 · …and the things out of the captain's coat, each as the ONE string a satchel row is saved as
+        // anywhere in this game. Null (and unwritten) for a hole that holds none, which is every chest ever
+        // saved before the field existed — the byte-for-byte legacy round-trip.
+        Deposit = c.Deposit is { Count: > 0 } things ? [.. things.Select(i => i.Stored)] : null,
     };
 
     private static TreasureCache ToCache(CacheRecord r) => new(
         r.Id, r.BodyId, r.LandmarkName, r.Bearing, r.Paces, r.Coin,
         (r.Cargo ?? []).Select(g => new CacheCargo(g.CargoClass, g.Units, g.Hot)).ToList(),
         r.BuriedSimTime, r.Owner, r.PlayerOwned, r.ReeverLevel, r.DigX, r.DigY, r.SiteIndex,
-        r.Buried, r.PadDistance);
+        r.Buried, r.PadDistance, ReadDeposit(r.Deposit));
+
+    /// <summary>#319 · The satchel rows out of a saved hole, read back through <see cref="Satchel.Item"/>'s
+    /// OWN parser — the same tolerance the satchel section itself has: a row this build cannot parse is
+    /// dropped rather than thrown over, because a mystery object is not worth losing a voyage for. Null when
+    /// nothing survives, so a re-save of a hole full of nothing writes no key at all.</summary>
+    private static IReadOnlyList<Satchel.Item>? ReadDeposit(IReadOnlyList<string>? stored)
+    {
+        if (stored is null || stored.Count == 0)
+        {
+            return null;
+        }
+
+        var things = new List<Satchel.Item>(stored.Count);
+        foreach (string row in stored)
+        {
+            if (Satchel.Item.TryParse(row, out Satchel.Item item))
+            {
+                things.Add(item);
+            }
+        }
+        return things.Count > 0 ? things : null;
+    }
 
     // ── Hot cargo (the stolen-while-heated flags). These ride in CargoSection.Hot. ──
 

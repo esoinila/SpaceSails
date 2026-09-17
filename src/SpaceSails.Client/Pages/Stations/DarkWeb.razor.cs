@@ -85,6 +85,32 @@ public partial class DarkWeb
     /// wallet; the desk only carries the press.</summary>
     [Parameter] public EventCallback OnBuyInspectorCard { get; set; }
 
+    /// <summary>#535 slice 2 · What this desk's fence wants for one black-ops key, or null when there is
+    /// nothing here to sell — this port has already dealt its one for the watch, the pocket has no room, or
+    /// the desk is shut. Priced by Map off <see cref="BlackOpsKey.FencePrice"/> (three times the BUSTED
+    /// card's own bribe, through the very same function); this component never does arithmetic about it,
+    /// exactly as it never does any about the chip or the card.</summary>
+    [Parameter] public int? KeyPrice { get; set; }
+
+    /// <summary>#535 slice 2 · The price as the desk prints it, composed by Map in the one credit typography
+    /// its three off-the-books rows share. Passed as text rather than re-formatted here so this desk cannot
+    /// grow a second way of writing a number.</summary>
+    [Parameter] public string KeyPriceText { get; set; } = "";
+
+    /// <summary>#535 slice 2 · Raised when the captain buys the key. Map moves the coin, puts it in the
+    /// pocket and strikes this port off for the watch; the desk only carries the press.</summary>
+    [Parameter] public EventCallback OnBuyKey { get; set; }
+
+    /// <summary>#711 slice 1 · Whether there is an unlisted parcel to be had across this desk — the desk is
+    /// open, the captain is not already carrying one, and the pocket has room. A bool rather than a price
+    /// because no coin moves: a parcel is handed over, and what it costs is not credits. Map answers it;
+    /// this component does no arithmetic about it, exactly as it does none about the other three rows.</summary>
+    [Parameter] public bool ParcelOnOffer { get; set; }
+
+    /// <summary>#711 slice 1 · Raised when the captain takes the parcel. Map puts it in the pocket; the desk
+    /// only carries the press.</summary>
+    [Parameter] public EventCallback OnTakeParcel { get; set; }
+
     private IEnumerable<TrackedShipInfo> SellableTracks =>
         TrackedShips.Where(t => IntelMarket.CanSellTrack(t.Quality));
 

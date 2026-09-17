@@ -241,6 +241,12 @@ public partial class Map
     {
         if (!_scopeMinimized && _scopeView is not null)
         {
+            // #243 · the conditions strip's verdict, handed to the glass the way the lock label already is —
+            // resolved in the frame that is resolving everything else, out of ONE call to the same question
+            // the HUD strip asks, so the corner cannot say ✓✓ over a strip showing a red chip. Empty
+            // whenever no gate is live, which leaves the eyepiece exactly as it has always been.
+            _scopeView.GateSummary = ConditionsScopeSummary();
+            _scopeView.GateMet = ConditionsScopeMet();
             _scopeView.Draw(ScopeSizePx, SimTime, _ship.Position, _ship.Velocity, PickScopeTarget());
         }
     }

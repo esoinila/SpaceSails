@@ -51,11 +51,15 @@ public sealed class CacheLedger
 
     /// <summary>Bury a freshly minted chest: it goes to the front of the ledger and its map is now
     /// ours to view any time. Returns the stored cache (with its final id and map text).</summary>
-    public TreasureCache Bury(string bodyId, int coin, IReadOnlyList<CacheCargo> cargo, double simTime, string owner, bool playerOwned, int reeverLevel = 0, double? digX = null, double? digY = null, int? siteIndex = null, bool? buried = null, double? padDistance = null)
+    public TreasureCache Bury(string bodyId, int coin, IReadOnlyList<CacheCargo> cargo, double simTime, string owner, bool playerOwned, int reeverLevel = 0, double? digX = null, double? digY = null, int? siteIndex = null, bool? buried = null, double? padDistance = null, IReadOnlyList<Satchel.Item>? deposit = null)
     {
         int mint = _seq++;
         string id = $"cache-{(playerOwned ? "you" : "npc")}-{mint}";
-        TreasureCache cache = CacheMint.Bury(id, bodyId, mint, coin, cargo, simTime, owner, playerOwned, reeverLevel, digX, digY, siteIndex, buried, padDistance);
+        // #319 · …and the things out of the captain's own coat go in through the SAME mint. There is no
+        // second Bury for a deposit and there must never be one: the chest's id, its map text, its site and
+        // its safety terms are what make a hole findable again, and a parallel mint would be a second thing
+        // to remember to keep in step with all four.
+        TreasureCache cache = CacheMint.Bury(id, bodyId, mint, coin, cargo, simTime, owner, playerOwned, reeverLevel, digX, digY, siteIndex, buried, padDistance, deposit);
         _caches.Insert(0, cache);
         return cache;
     }
@@ -162,6 +166,15 @@ public sealed class CacheLedger
         if (units > 0)
         {
             parts.Add(hot > 0 ? $"{units} units ({hot} hot)" : $"{units} units");
+        }
+        // #319 · …and the things out of the captain's coat, counted with the rest of it. Without this line a
+        // captain whose whole hoard is three buried files reads "nothing left worth digging" on the one page
+        // that is supposed to tell him what he still has out there — the sim doing one thing while a sentence
+        // reports another, which is this repo's third named bug class, on the ledger.
+        int things = _caches.Where(c => c.PlayerOwned).Sum(c => c.DepositCount);
+        if (things > 0)
+        {
+            parts.Add(CacheDeposit.ManifestLine(things));
         }
         string what = parts.Count == 0 ? "nothing left worth digging" : string.Join(" + ", parts);
         string where = chests == 1 ? "one cache" : $"{chests} caches";

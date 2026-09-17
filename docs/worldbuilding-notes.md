@@ -275,6 +275,23 @@ burial does removes or rewrites one field-book note, clipped story, red thread o
 record is the only witness and it stays correct, which is what the player stands on. Cheat `?buried=1`.
 Details: `features/the-landing-site.md` §13.30.
 
+**Shipped (#1063, slice 2 — THE MISSING MIDDLE, and SEALED ≠ FULL).** The quest shape the issue names, and
+the protection it makes mandatory. A slow honest raise leaves permits, complaints and invoices; a sudden
+burial leaves rumour — so the captain **works the maintenance ledger on a buried ground** (a thing he does,
+never an announcement) and looks for the paper trail that must exist under either story. He finds neither, and
+his own hand goes into the field book under **a note kind of its own**: *"Looked for the paper a raise this
+size leaves: permit, complaint, invoice. Nothing under either story. The absence has a shape, and I have
+measured it."* Once per ground, filed beside the find and never instead of it, and declared (per #741) to be
+about the site's operator and the ground — so it stacks under the same heading as the rag's own cheerful
+account of the job. And the protection: **at least once in a captain's life a forced seal is exactly, boringly
+empty.** One leaf per ground is nominated off the world's own seed; the first nominated leaf he forces opens
+on a plain recess with no cache, no name and no reward, and he says so once — *"Sealed, and empty. A room
+somebody closed because there was nothing in it, which is a reason."* Spent once and never again, and only
+**early**, before that ground has a burial to read the emptiness into. It exists because the alternative was a
+game in which every sealed door pays, which is the game quietly proving that a closed door means something is
+behind it — the one inference §672 forbids the world to hand out. Details:
+`features/the-landing-site.md` §13.30b.
+
 **Still open and deliberately unbuilt: any inhabitant content.**
 
 ### The Old Ones use doors (owner ruling, 2026-09-06 — #563 question 2)
@@ -318,6 +335,68 @@ well — not every change is the whole class leaving the room; some leave mid-se
 tech is absolutely necessary to survive, the really big survivor-doors make little sense unless there was
 terraforming that later faded — so out here the doors are legacy and nostalgia still (the gramophone rule,
 #563). The game states none of this.
+
+
+**§10 addendum — A DOOR IS A PHYSICAL UI, AND A LOCKED ONE IS TIME** (owner rulings, 2026-09-13, filed
+from #563 questions 1 and 2). Documentation only — never a card, never a plate, never a line in the game.
+
+**Q2, why they keep doors at all**, owner verbatim:
+
+> *"We still use open-flame BBQ. It is convenient, and doors act as a physical UI in their interactions with
+> other Old Ones — the lowest common standard of access, a bit like a modem starting from a high standard and
+> settling to the lowest common one even at low speed."*
+
+> *"The Old Ones can display the five UAP observation criteria though, when needed for plot reasons. But
+> generally they lie to use doors."*
+
+Fable gloss, beside it: *"The five observables (instantaneous acceleration, hypersonic speed without
+signatures, trans-medium travel, low observability, positive lift) are the ceiling; the door is the floor they
+choose to be seen at. §10.4c's parental law stands: what they could do instead is never shown unless the plot
+spends it, once."*
+
+So the 2026-09-06 gramophone is sharpened rather than replaced: a door is not only nostalgia, it is a
+HANDSHAKE — the lowest common standard two of them can both be certain of, the way a modem falls back until
+both ends agree even though either could go faster alone. That is why a hall a hundred thousand years old has
+a leaf in it that a man can lean on: it was never built for a man, it was built to be the slowest, most
+legible thing in the building.
+
+### The Kosh principle
+
+Owner, 2026-09-13, verbatim in spirit:
+
+> *"Ambassador Kosh in Babylon 5: in public he is an alien in an encounter suit, because almost everybody
+> would instantly recognise who and what he is otherwise. The five observables are played more to special
+> connections, or used when Kosh himself is in danger. The moments when the Old Ones do not use doors are
+> special or private, part of a bigger plan that is not yet clear. In X-Files terms these are grandeur
+> reveals — used sparingly, because otherwise they lose their dramatic potency. When they use them, we make a
+> show of it and tell it well, with graphics and pop-ups."*
+
+Fable gloss: *"An observable is a budget the plot spends once per arc. The show is a told beat, art and card,
+never a mechanic the player can repeat — and the absence can be the show: a dead end with one way in, and
+nobody there."*
+
+**Q1, what a locked door costs**, owner verbatim:
+
+> *"I like the time instead of a key, considering we have firepower and tools. We can create the same effect
+> as needing a key by making it slow, too noisy, or dangerous in other ways."*
+
+**A locked door is TIME, never a key.** A key would make a door an inventory hunt — walk the level until the
+card falls out of a drawer — and this game already has three better clocks (the tether, the tracker and the
+pack). So a locked door charges one of three prices and never a carried item:
+
+| price | what it is | what it costs |
+| --- | --- | --- |
+| **SLOW** | your shoulder on it | `LockedDoor.ForceSeconds` (25 s) on a keyed leaf, `ExpeditionRegions.DoorForceSeconds` (5 s) on a seal that rotted — and the tracker sweeps the whole time |
+| **NOISY** | the hold is heard | `ReeverHearing.Noise.Clatter` at the door, every tick of the hold, 12 du. A shut leaf goes on hiding you from SIGHT and never from ears |
+| **DANGEROUS** | a round through the hasp | one round, instantly, `Noise.Gunfire` at 34 du — and the leaf is DESTROYED: never shut, never locked, never a refuge again |
+
+The third one is the sentries' own law arriving at a doorway: *buys time, never safety*. The captain spends
+the door's entire future — every retreat it would ever have covered — for twenty-five seconds now, and the
+game says nothing at all about that trade. The pack walking in through the hole later is the telling.
+
+Vantar's card survives this as a **credential a panel respects** and nothing with hinges: no door in the game
+is gated by a carried item.
+
 
 ## Suggested landing spots
 

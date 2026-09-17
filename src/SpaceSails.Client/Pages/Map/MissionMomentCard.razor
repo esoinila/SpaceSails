@@ -1,0 +1,46 @@
+@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SpaceSails.Core
+@*
+    #238 · THE MISSION EVENT, AT THE SMALLER SIZE — the celebration family's second and third members on
+    one card, because they are ONE BEAT with two headlines.
+
+    Owner, mid-car-hunt: "Is there a big pop-up when we find the car in the scans? It is a kind of mission
+    event like when we get paid?" — and again, live, at the other end of the same job: he prised the wallet
+    mid-coast and had to ASK whether the loot was aboard. His rule out of that session is the whole spec:
+    "if the player can ask 'did that just happen?', the game owed them a moment."
+
+    NO NEW PANEL, which is the binding half of the brief. The backdrop is the celebration's own
+    (.mission-celebration-backdrop), the card is the celebration's own (.mission-celebration), and the way
+    out is the shell's — so this surface inherits #185's geometry, #735's sticky foot, #997's dismiss
+    mechanism and the beat-card law that watches all three, and adds exactly one class of its own for the
+    smaller size. What it does NOT inherit is the payday's content, because a found-her has no giver, no
+    purse and no history: it has a headline, a bird, and somewhere to look.
+
+    TWO WAYS OUT, AND BOTH ARE THE POINT (#824 · no pop-up that cannot be closed). `show me` is the owner's
+    own label and the reason a card beats a banner here — it answers "there she is" by actually showing her.
+    It is drawn only when there IS somewhere to go: a pickup happens at arm's length, so a camera jump would
+    be a button that moves nothing, and a button that does nothing is worse than no button at all.
+*@
+@{
+@* ── MARKUP BEGINS · the block the rack's gate draws ─────────────────────────────────────────────────── *@
+    <div class="mission-celebration-backdrop" @onclick="DismissMissionMoment">
+        <OverlayShell class="mission-celebration mission-moment" StopClicks="true"
+                      Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                      DismissClass="btn btn-outline-light btn-sm mt-2"
+                      DismissFace="@MissionMoments.DismissFace"
+                      DismissTitle="Clear the beat and get back to the helm"
+                      OnClose="DismissMissionMoment"
+                      BesideClass="btn btn-warning btn-sm mt-2 ms-2"
+                      BesideFace="@ShowMeFace"
+                      BesideTitle="Put the new marker under the map camera"
+                      OnBeside="@ShowMePress">
+            <div class="mm-headline">@moment.Headline</div>
+            @if (moment.ParrotLine is { Length: > 0 } squawk)
+            {
+                <div class="mc-parrot">🦜 @squawk</div>
+            }
+        </OverlayShell>
+    </div>
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
+}

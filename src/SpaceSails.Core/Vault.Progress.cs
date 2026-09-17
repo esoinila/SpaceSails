@@ -291,4 +291,54 @@ public sealed record ProgressSection
     [System.Text.Json.Serialization.JsonIgnore(
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public PendingWritRecord? WritPending { get; init; }
+
+    /// <summary>
+    /// #1063 slice 2 · <b>THE ONE SEAL THIS CAPTAIN HAS FOUND EMPTY</b> (<see cref="EmptySeal.Key"/>), or
+    /// null while he still has the disappointment to spend — which is most of every voyage.
+    ///
+    /// <para>It rides the file for a harder version of <see cref="HallsBuried"/>'s reason. A spend a reload
+    /// forgot would put the cache BACK into a room the captain's own field book says was bare, and the book
+    /// being the only witness is the whole of #1063; worse, it would let him find a SECOND empty room later,
+    /// and two of them is a rate. The point of the beat is that it happens once — a captain who can work out
+    /// how often a seal is empty can work out what a full one proves, and that is the inference #672 exists
+    /// to refuse.</para>
+    ///
+    /// <para><b>Written only when it has been spent</b>, the #1057/#1066/#1074 law: the checksum is taken
+    /// over the payload, so an eager <c>"emptySealSpentOn": null</c> on every save would change the digest of
+    /// every vault ever written and hang the 📛 tampered marker on an honest voyage. A pre-#1063 file simply
+    /// lacks the field and loads with the disappointment unspent, which is the truth about every voyage
+    /// played before there was one to spend.</para>
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? EmptySealSpentOn { get; init; }
+
+    /// <summary>
+    /// #1199 · <b>THE ONE PERSON THIS CAPTAIN HAS FOLLOWED ONTO AN OBSERVATION WALK AND NOT FOUND</b>
+    /// (<see cref="ObservationWalk.Key"/>), or null while the beat is still unspent — which is most of every
+    /// voyage and all of most of them.
+    ///
+    /// <para>It rides the file for <see cref="EmptySealSpentOn"/>'s reason, one rung harder again. The owner's
+    /// whole argument for this beat is that it is spent sparingly — <i>"used sparingly, because otherwise
+    /// they lose their dramatic potency"</i> — so a spend a reload forgot would not merely repeat a card: it
+    /// would let the captain walk the same person into the same tube twice, and a thing that happens twice
+    /// is a mechanic rather than a moment. It is also the key the later sighting is fired against, so a save
+    /// that dropped it would leave a pulse owed to nobody.</para>
+    ///
+    /// <para><b>Written only when it has been spent</b>, the #1057/#1066/#1074 law: the checksum is taken
+    /// over the payload, so an eager null on every save would change the digest of every vault ever written
+    /// and hang the 📛 tampered marker on an honest voyage. A pre-#1199 file simply lacks the field and loads
+    /// with the beat unspent, which is the truth about every voyage played before there was one.</para>
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? ObservationWalkSpentOn { get; init; }
+
+    /// <summary>#1199 · …and WHERE the world handed them back — the body id of the counter the one later
+    /// sighting was said at, or null while it is still owed. A separate written fact from the spend and not
+    /// a suffix on it, for <see cref="ObservationWalk.SightingIsOwed"/>'s reason: a key earns its keep by
+    /// being compared rather than parsed. Same null-while-unpaid law as every field above it.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? ObservationWalkSightingAt { get; init; }
 }
