@@ -107,7 +107,7 @@ public sealed partial class Map
         FileNoteAbout(
             ParcelDrop.TheFieldBookEntry(place),
             UnlistedParcel.Glyph,
-            CaseSubjects.Line(CaseSubjects.Place(place)));
+            ParcelDrop.TheFieldBookSubjects(place));
 
         return " " + ParcelDrop.DeliveredLine;
     }
@@ -147,23 +147,6 @@ public sealed partial class Map
             $"💳 {ParcelDrop.PaymentLine} +{paid.Amount.ToString("N0", CultureInfo.InvariantCulture)} cr");
         RequestVaultSave();
         StateHasChanged();
-    }
-
-    /// <summary>#711 · The hole a stranger left behind, written into the ground's own memory through
-    /// #316's own key. A chest with no site under it leaves no mark, for
-    /// <c>Map.Surface.Forensics</c>'s stated reason: without a ground there is nowhere to put one.</summary>
-    private void SomebodyDugIt(TreasureCache lifted, double whenSimTime)
-    {
-        if (lifted.SiteIndex is not { } index)
-        {
-            return;
-        }
-
-        string salt = LandingSites.At(lifted.BodyId, index).LayoutSalt;
-        (double x, double y) = MoonSurface.CacheSpot(lifted);
-        _groundMemory.Remember(
-            GroundMemory.ScarKey(
-                lifted.BodyId, salt, new GroundMemory.Scar(GroundMemory.ScarKind.Pit, x, y, whenSimTime)));
     }
 
     // ── AND THE AFTERNOONS WHEN THERE IS NO ROW ─────────────────────────────────────────────────────────

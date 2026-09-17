@@ -94,7 +94,22 @@ public sealed partial class ThePatrolKeepsItsOwnStateTests
         //
         // Everything else the find needs — the ledger and the sim clock — is threaded through
         // AdvancePatrol's own parameters, which is why this is two and not four.
-        const int TheRatchet = 23;
+        //
+        // #711 slice 2 · RAISED 23 → 24, ARGUED. The box is a JOB now, so losing it costs the captain the
+        // work as well as the box — nobody has anything for that hull for a deterministic while:
+        //
+        //   TheDeskHasNothingForAWhile(parcelId) — a VERB, and the whole of what the round is allowed to
+        //                know about it. The quiet is written into the captain's own durable register of
+        //                ground already gone through (_roomsTurnedOver, the same set the fence's
+        //                one-key-per-window strikes off in), which is the PAGE's and rightly so: a round on
+        //                a floor has no register, must not grow one, and must not learn what a watch index
+        //                is. The round hands over the id of the box it just took, and nothing else.
+        //
+        // It is one member and not two because the round never reads the quiet back — the DESK does, and the
+        // desk is not on this floor. And it is a verb rather than the register itself because the
+        // alternative is the round holding a HashSet<string> of the captain's, which is exactly the
+        // machinery-instead-of-an-answer shape this note exists to refuse.
+        const int TheRatchet = 24;
 
         List<string> members = HostMembers();
 

@@ -379,6 +379,19 @@ public static class ParcelDrop
     public static string TheFieldBookEntry(string siteName) =>
         string.Format(CultureInfo.InvariantCulture, FieldBookEntry, siteName ?? string.Empty);
 
+    /// <summary>
+    /// #711 · <b>…AND WHAT THAT ENTRY IS ABOUT, DECLARED HERE.</b> #741's law to the letter: <i>a subject
+    /// comes from the AUTHOR, never from the prose.</i> This file wrote the sentence out of a place, so this
+    /// file is what says so — the client hands the words and the subjects across together and works neither
+    /// of them out (<c>TheThreadsPageIsInTheSatchelTests</c> sweeps the whole client tree for a page that
+    /// mints one, and caught this crew doing it).
+    ///
+    /// <para>ONE subject, and it is the PLACE, because the place is the only thing in that sentence the game
+    /// has printed. There is no person in it and there is never going to be.</para>
+    /// </summary>
+    public static string TheFieldBookSubjects(string siteName) =>
+        CaseSubjects.Line(CaseSubjects.Place(siteName ?? string.Empty));
+
     /// <summary>#711 · The destination as the desk PRINTS it — a functional line in the row format the
     /// desk's other off-the-books rows already use, and deliberately not a sentence. It is composed out of
     /// the caption the treasure map has always used for a sited chest (BODY · SITE), so the row a captain

@@ -236,8 +236,11 @@ public sealed class ADropForNobodyYouHaveMetTests
         Assert.Contains("return \" \" + ParcelDrop.DeliveredLine;", drop, StringComparison.Ordinal);
         Assert.Equal(1, Count(drop, "ParcelDrop.DeliveredLine"));
 
-        // The book's entry declares its subject (#741) rather than leaving a regex to find one.
-        Assert.Contains("CaseSubjects.Line(CaseSubjects.Place(place))", drop, StringComparison.Ordinal);
+        // The book's entry declares its subject (#741) rather than leaving a regex to find one — and the
+        // subject is minted by the CORE author beside the sentence, never here. The client tree is swept for
+        // a page that mints one by `TheThreadsPageIsInTheSatchelTests`, which caught this crew doing it.
+        Assert.Contains("ParcelDrop.TheFieldBookSubjects(place)", drop, StringComparison.Ordinal);
+        Assert.DoesNotContain("CaseSubjects.", drop, StringComparison.Ordinal);
         Assert.Contains("FieldNotes.PlaceLabel(BodyName(cache.BodyId), cache.SiteName)", drop,
             StringComparison.Ordinal);
     }
@@ -290,9 +293,18 @@ public sealed class ADropForNobodyYouHaveMetTests
         Assert.Contains("_credits += paid.Amount;", drop, StringComparison.Ordinal);
         Assert.Contains("ParcelDrop.PaymentLine", drop, StringComparison.Ordinal);
 
-        // …and the hole a stranger left is dated with the moment it came DUE, never with now.
+        // …and the hole a stranger left is dated with the moment it came DUE, never with now — and it is
+        // MINTED IN THE ONE FILE that mints somebody else's marks (#1105's law, enforced next door by
+        // `TheGroundKeepsSomebodyElsesFootprintsTests`, which caught this crew opening a second site).
         Assert.Contains("SomebodyDugIt(lifted, paid.DueAtSimTime)", drop, StringComparison.Ordinal);
-        Assert.Contains("GroundMemory.ScarKind.Pit", drop, StringComparison.Ordinal);
+        Assert.DoesNotContain("GroundMemory.ScarKey", drop, StringComparison.Ordinal);
+
+        string forensics = Code(Read("src", "SpaceSails.Client", "Pages", "Map.Surface.Forensics.cs"));
+        Assert.Contains("private void SomebodyDugIt(TreasureCache lifted, double whenSimTime)", forensics,
+            StringComparison.Ordinal);
+        Assert.Contains("GroundMemory.ScarKind.Pit", forensics, StringComparison.Ordinal);
+        Assert.Contains("GroundSaltFor(lifted)", forensics, StringComparison.Ordinal);
+        Assert.Contains("MoonSurface.CacheSpot(lifted)", forensics, StringComparison.Ordinal);
 
         // Nothing here introduces a payer: no contact row is written and no name is filed.
         Assert.DoesNotContain("ContactLedger", drop, StringComparison.Ordinal);

@@ -102,6 +102,39 @@ public partial class Map
         }
     }
 
+    /// <summary>
+    /// #711 slice 2 · <b>SOMEBODY DUG, AND THE GROUND KEEPS THAT TOO.</b> A dead drop that has been paid for
+    /// is a hole a stranger opened: the chest is gone from the ledger and there is a
+    /// <see cref="GroundMemory.ScarKind.Pit"/> where the ✗ was.
+    ///
+    /// <para><b>It lives in THIS file because somebody else's marks have one writer</b>
+    /// (<c>TheGroundKeepsSomebodyElsesFootprintsTests</c>, #1105's law one issue on): a second minting site
+    /// is a second place to forget the vault. Nothing new is invented here — the same
+    /// <see cref="MoonSurface.CacheSpot"/> projection, so the hole is where the mark was and not near it,
+    /// and the same <see cref="GroundSaltFor"/> refusal for a body-wide chest.</para>
+    ///
+    /// <para><b>Stamped with the moment it came DUE</b>, not with now, for
+    /// <see cref="TheRivalsLeftTheirMarks"/>'s own reason: a captain who flies back a fortnight later should
+    /// read a fortnight of dust rather than a fresh kill that lies about when he was beaten to it. Here the
+    /// moment is the payment's, because a payment on the desk IS the report that the hole was opened.</para>
+    ///
+    /// <para>The caller saves the file — it has coin to move and a pulse to say in the same breath — so this
+    /// method does not, which is the one difference from its sibling above and the reason it is written as a
+    /// question the caller answers rather than as a second <c>RequestVaultSave</c>.</para>
+    /// </summary>
+    private void SomebodyDugIt(TreasureCache lifted, double whenSimTime)
+    {
+        if (GroundSaltFor(lifted) is not { } salt)
+        {
+            return;   // body-wide chest: no ground to file it against (see GroundSaltFor)
+        }
+
+        (double x, double y) = MoonSurface.CacheSpot(lifted);
+        _groundMemory.Remember(
+            GroundMemory.ScarKey(
+                lifted.BodyId, salt, new GroundMemory.Scar(GroundMemory.ScarKind.Pit, x, y, whenSimTime)));
+    }
+
     /// <summary>What the ground kept that is not a body, before the first frame of this visit is drawn — the
     /// sibling of <see cref="SeedTheHusksLeftHere"/>, in the same place and for the same reason. Core reads
     /// its own rows; nothing here knows the key format, and nothing here rolls.</summary>
