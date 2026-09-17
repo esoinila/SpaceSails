@@ -4,6 +4,24 @@
 `https://esoinila.github.io/SpaceSails-play/map?…` straight into the situation, using only cheats that
 exist in the query whitelist. Read Appendix A for what each key does.*
 
+> ## 🎮 Played, not derived — the 2026-09-17 sweep
+>
+> Several of the rows below were written from the code and **never opened in a browser**; the crews that
+> shipped them said so. Every row now carries a **`played`** column, filled by booting the link in a real
+> headless Chromium against a Release publish of `our-own-ship-has-compartments` @ `6692af54`, screenshotting
+> it, reading the console, and driving the row's own "what to do" as far as keys and clicks reach.
+>
+> | mark | means |
+> | --- | --- |
+> | ✅ `09-17` | booted, driven and **seen** to do what the row says |
+> | ⚠ `09-17` | booted and seen, with a caveat named in the row |
+> | ❌ `09-17` | booted, driven, and it **did not** do what the row says — issue filed |
+> | 🚫 `09-17` | could not be driven from a headless tab; the reason is named in the row |
+>
+> **A mark is only ever put here for something somebody actually looked at.** A row with no mark is a row
+> this sweep did not reach. Timings are deliberately absent: an automated tab is `document.hidden`-adjacent,
+> rAF-throttled and shares a machine with other lanes, so its numbers say nothing about the game.
+
 Two owner rulings from 2026-09-17, both of them "what shipped is right, the *clock* on it is wrong" —
 and two more the same morning, on the two story passes that had been waiting for a decision (§4).
 
@@ -23,9 +41,9 @@ call**, the card, the note through the one funnel, the spent-once key and the la
 and **no other patience clock moved** — an escort still stands in a cabinet doorway for a full hour of
 station time.
 
-| what | link | what to look for |
-| --- | --- | --- |
-| **The walk is empty, and you can play the wait** (#1199 / #1062, this PR) | `/map?dock=selene-gate&ashore=1&simhours=4` — clamped at Selene Gate, ashore in **THE EARTHRISE BAR**, with the station clock four hours in so the room is **past last call** (the walk is only dealt in the last quarter of a watch; last call is at 10,800 s of 14,400). The person of interest at this berth is the haven's own named regular, **GILT-EYE**, and the rota has him at the bar on this watch. | He gets up from his top and crosses the concourse **due west**, out onto `OBSERVATION WALK` — glass floor, the limb under it, a rail at the blind end. Follow him: stay inside legible range with a clear line and **he stops and waits for you to go past** (no card, no line — he just turns). Break the line, and on a frame nobody is looking at him he is simply **not on the floor any more**. Then walk out to the rail yourself. **At warp 1 the card comes up about three minutes after the last moment you had eyes on him** — it used to be an hour. The card is the absence; the note files under his own name on THREADS; nothing is pulsed over the card. |
+| what | link | what to look for | played |
+| --- | --- | --- | --- |
+| **The walk is empty, and you can play the wait** (#1199 / #1062, this PR) | `/map?dock=selene-gate&ashore=1&simhours=4` — clamped at Selene Gate, ashore in **THE EARTHRISE BAR**, with the station clock four hours in so the room is **past last call** (the walk is only dealt in the last quarter of a watch; last call is at 10,800 s of 14,400). The person of interest at this berth is the haven's own named regular, **GILT-EYE**, and the rota has him at the bar on this watch. | He gets up from his top and crosses the concourse **due west**, out onto `OBSERVATION WALK` — glass floor, the limb under it, a rail at the blind end. Follow him: stay inside legible range with a clear line and **he stops and waits for you to go past** (no card, no line — he just turns). Break the line, and on a frame nobody is looking at him he is simply **not on the floor any more**. Then walk out to the rail yourself. **At warp 1 the card comes up about three minutes after the last moment you had eyes on him** — it used to be an hour. The card is the absence; the note files under his own name on THREADS; nothing is pulsed over the card. | ❌ `09-17` — **the link does not reach the beat**, see below |
 
 **Reading the wait off the clock while you play:** the wait is measured from the last frame he was visible,
 in **sim** seconds, so the warp slider is the fast-forward if you want it — but the point of this change is
@@ -35,6 +53,21 @@ that you should not need it. Sit at the rail at warp 1 and the beat lands inside
 waited), or the watch turning over before it arrives at all (the wait grew back past the quarter-watch of
 room the room has left after last call).
 
+> ❌ **Played 2026-09-17 and it does not play — [#1213](https://github.com/esoinila/SpaceSails/issues/1213).**
+> The `&simhours=4` in the link is the thing that breaks it. `?dock=` clamps the ship *before* `?simhours=`
+> jumps the clock, so the bar's watch is frozen at **watch 0** whatever hour you ask for — and the jumped
+> clock then lands past **every** scheduled departure at once, so the room deals its whole evening in the
+> first frames and **GILT-EYE is out of his chair ~1.5 s after boot**, before a tester can see him. Booted
+> side by side at the same settle: without `simhours` the tops read `Coil · MADAM COIL` **and**
+> `Gilt-Eye · GILT-EYE`; with `&simhours=4` they read `MADAM COIL`, `Silas` at the cellar door, and no
+> GILT-EYE at all. Played on for 105 s at warp 1 at the documented URL: nobody crosses the concourse, the
+> walk stays empty, no card, no note, and nothing is ever said out loud. The walk itself is fine — the room,
+> the tube, the plate and the rail are all where the row says, and the captain can walk out to the rail; it
+> is only the *person* who is missing. **No `simhours` value is known to work**, because the frozen watch is
+> pinned to 0 and GILT-EYE is one of watch 0's leavers, so any clock past last call is also past his
+> departure. Until #1213 is ruled on, there is **no link in this file that reaches §1's beat** — do not
+> re-derive one; play it.
+
 ---
 
 ## 1b · Losing YOUR tail — #1062's mirror half (this PR)
@@ -43,14 +76,14 @@ The other half of the same issue: *"or trying to lose a tail our selves :-D"*. S
 behind the captain, ashore, and **nothing in the game says a word about him** until the captain works it out.
 Full feature note: [`features/losing-the-tail.md`](features/losing-the-tail.md).
 
-| what | link | what to look for |
-| --- | --- | --- |
-| **Somebody came in after you** (#1062 slice 2) | `/map?tailed=1&ashore=1&dock=selene-gate` — ashore in **THE EARTHRISE BAR** with the dev row on. The row forces only WHETHER; the world's own route in is an outfit's #715 folder at the band where it wants a face (a femme-fatale walk-in that turned out to be a setup, or a compromising chip sold at a dark-web desk). | A grey figure follows you in through the bar's north door and settles **nine to thirty deck units behind you, with a line to you, and no name over him**. He never goes to the counter. **Nothing is pulsed, nothing is carded, nothing goes in the book.** |
-| **The chair that faces the door** | same link. Walk to a top with a clear line back to the bar's doorway and press `[E]` to take it. | After about **nine seconds in the chair**, one pulse: *"From this chair you can see the door. So can the man who came in after you, and he has not ordered."* Stand on your feet in the same room for the same nine seconds first and **nothing happens** — the sit is the whole cost. |
-| **The same coat, two doors running** | same link. Walk out of the bar, across the concourse, and **out onto `OBSERVATION WALK`** (edge 5, due west — #1199's tube). | He follows you through the bar's doorway and then to the mouth of the walk, which is the only place in a one-way room with a line to you. Two DISTINCT doorways is the tell: *"The same grey coat, two doors running. Nobody's errand takes them through both."* A locked cellar leaf never counts. |
-| **Losing him** | same link. Walk back **down your own gangway** toward the ship, and stay there. | He will not follow you down the umbilical. After about **nine seconds with nothing to look at** he gives up: *"The corridor behind you is only a corridor. Whoever it was is asking the wrong floor about you."* — and the field book takes one line, filed on **THREADS under the PLACE** (📍 SELENE GATE) and never under a name: *a tail, lost at … — a grey coat, never a face*. |
-| **Failing forward — the burn** (#1062 slice 2b) | same link, plus a quiet verb at that berth while he is still on the floor: **take the favour** at a `◈` contact's table (press `B` at a table where the account is on offer), or **buy the fence's key** at the Comms desk's dark-web board. | **Nothing happens.** No line, no card, no warning — you get what you came for and walk out. Cast off, come back, and the port has **no favour and no fence row at all**, and the place says one thing: *"Tidy, in the way a place is after somebody has been through it first."* The book takes *SELENE GATE — walked before you got there, by somebody who knew where to walk*, filed under the **same PLACE** as the losing note so THREADS stacks the evening in order. Shake him first and the same verb costs nothing. |
-| **…and the half that must look exactly the same** | `/map?tailed=0&ashore=1&dock=selene-gate`, and every other link in this file | **Nothing.** No man, no lines, no book entry — and the drawn frame is byte-identical: the frame-hash ledger did not move by one row in this lane. Slice 1's own beat (GILT-EYE and the empty walk, §1 above) plays exactly as it did. |
+| what | link | what to look for | played |
+| --- | --- | --- | --- |
+| **Somebody came in after you** (#1062 slice 2) | `/map?tailed=1&ashore=1&dock=selene-gate` — ashore in **THE EARTHRISE BAR** with the dev row on. The row forces only WHETHER; the world's own route in is an outfit's #715 folder at the band where it wants a face (a femme-fatale walk-in that turned out to be a setup, or a compromising chip sold at a dark-web desk). | A grey figure follows you in through the bar's north door and settles **nine to thirty deck units behind you, with a line to you, and no name over him**. He never goes to the counter. **Nothing is pulsed, nothing is carded, nothing goes in the book.** | ✅ `09-17` |
+| **The chair that faces the door** | same link. Walk to a top with a clear line back to the bar's doorway and press `[E]` to take it. | After about **nine seconds in the chair**, one pulse: *"From this chair you can see the door. So can the man who came in after you, and he has not ordered."* Stand on your feet in the same room for the same nine seconds first and **nothing happens** — the sit is the whole cost. | ✅ `09-17` |
+| **The same coat, two doors running** | same link. Walk out of the bar, across the concourse, and **out onto `OBSERVATION WALK`** (edge 5, due west — #1199's tube). | He follows you through the bar's doorway and then to the mouth of the walk, which is the only place in a one-way room with a line to you. Two DISTINCT doorways is the tell: *"The same grey coat, two doors running. Nobody's errand takes them through both."* A locked cellar leaf never counts. | ✅ `09-17` |
+| **Losing him** | same link. Walk back **down your own gangway** toward the ship, and stay there. | He will not follow you down the umbilical. After about **nine seconds with nothing to look at** he gives up: *"The corridor behind you is only a corridor. Whoever it was is asking the wrong floor about you."* — and the field book takes one line, filed on **THREADS under the PLACE** (📍 SELENE GATE) and never under a name: *a tail, lost at … — a grey coat, never a face*. | ✅ `09-17` |
+| **Failing forward — the burn** (#1062 slice 2b) | same link, plus a quiet verb at that berth while he is still on the floor: **take the favour** at a `◈` contact's table (press `B` at a table where the account is on offer), or **buy the fence's key** at the Comms desk's dark-web board. | **Nothing happens.** No line, no card, no warning — you get what you came for and walk out. Cast off, come back, and the port has **no favour and no fence row at all**, and the place says one thing: *"Tidy, in the way a place is after somebody has been through it first."* The book takes *SELENE GATE — walked before you got there, by somebody who knew where to walk*, filed under the **same PLACE** as the losing note so THREADS stacks the evening in order. Shake him first and the same verb costs nothing. | 🚫 `09-17` — needs a cast-off and a return; not drivable in one headless session |
+| **…and the half that must look exactly the same** | `/map?tailed=0&ashore=1&dock=selene-gate`, and every other link in this file | **Nothing.** No man, no lines, no book entry — and the drawn frame is byte-identical: the frame-hash ledger did not move by one row in this lane. Slice 1's own beat (GILT-EYE and the empty walk, §1 above) plays exactly as it did. | ⚠ `09-17` — no man, no line, no entry with `tailed=0`; frame-hash ledger not re-run here, and §1 above is ❌ (#1213) |
 
 **Reading the clocks while you play:** both of this half's clocks are counted in **real** seconds off the
 frame stamp, not in sim time — twelve of the game's own looks at `ReeverObservation.LookIntervalSeconds`,
@@ -61,6 +94,20 @@ be used to cheat either direction.
 whole feature is that it does not announce itself); a name drawn over the grey figure; him following you down
 the gangway, or standing at the counter; him giving up the instant you step behind a wall, or never giving up
 at all.
+
+> ✅ **Played 2026-09-17, and this half plays.** The man is on the floor with `tailed=1` and gone with
+> `tailed=0` — one extra unnamed grey figure, off the counter, inside the band, and not a word said about
+> him. All three of his lines came up verbatim, in this order: the chair reading after the sit, *"The same
+> grey coat, two doors running…"* on the way west across the concourse, and *"The corridor behind you is only
+> a corridor…"* on the gangway. The book then held exactly one entry, **👁 a tail, lost at Selene Gate — a
+> grey coat, never a face**, marked *loose end* and filed under the place with no name on it.
+>
+> Two things found while sitting through those clocks, both filed rather than fixed:
+> [#1214](https://github.com/esoinila/SpaceSails/issues/1214) — the chair reading can be **pulsed behind a
+> story card's backdrop** (the finder crosses the room on the same nine seconds) and is then spent, drawn
+> and unreadable; and [#1215](https://github.com/esoinila/SpaceSails/issues/1215) — the #429 stranger-bond
+> fires **out on the concourse and inside the walk**, hands the captain a cognac "on the counter" and ticks
+> the tot ledger in a room with no counter in it.
 
 ---
 
@@ -78,6 +125,16 @@ falls from **5.09 s to 1.54 s** on a dev (interpreted) build. **What a tester sh
 a loading line that now counts the freighters up in smaller steps. Open the browser console and the boot
 narrates its own stages under `[SpaceSails] boot ·`, each with what that stage cost; the gate reads the
 worst of those lines as a budget of its own.
+
+> ✅ `09-17` **Played.** Booted from cold in a headless Chromium: no "page unresponsive" dialog, the front
+> door paints and is pressable long before the world is finished, the loading line counts *"plotting the
+> traffic lanes — freighter 1 of 8…"* up through 8, and the console carries the whole narration —
+> `[SpaceSails] boot · the URL read`, `· the scenario fetched and parsed`, `· the ephemeris built and the
+> vault read — THE FRONT DOOR IS LIVE`, `· the mission catalog, the plasma and the two simulators`, `· the
+> ship laid down and her arc projected`, then `· the traffic lanes — pods` and one line per piece of work
+> per freighter. Zero console errors and zero failed requests on every link in this file. **The numbers on
+> those lines are deliberately not quoted here:** they came out of a throttled automated tab sharing a
+> machine with three other lanes, and a perf claim read off one of those is worthless.
 
 ---
 
