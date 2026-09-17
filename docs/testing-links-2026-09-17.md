@@ -21,6 +21,29 @@ exist in the query whitelist. Read Appendix A for what each key does.*
 > **A mark is only ever put here for something somebody actually looked at.** A row with no mark is a row
 > this sweep did not reach. Timings are deliberately absent: an automated tab is `document.hidden`-adjacent,
 > rAF-throttled and shares a machine with other lanes, so its numbers say nothing about the game.
+>
+> ### 🔁 …and the re-play, 2026-09-18
+>
+> Five fix PRs landed on the back of that sweep — **#1221** (the boot cheats and `simhours` order), **#1222**
+> (the stranger bond's room scope, and a held pulse under a scrim), **#1223** (the dark-web desk deals at a
+> berth), **#1224** (the Nav toolbar clear of the chip column). **A guard is not a play**, so every fixed row
+> was opened again in a real headless Chromium against a Release publish of
+> `our-own-ship-has-compartments` @ **`1bb0748a`**. A `09-18` mark is that re-play; a `09-17` mark is the
+> first sweep and was not re-driven. Two issues that never had a row of their own were re-played too:
+>
+> - **[#1216](https://github.com/esoinila/SpaceSails/issues/1216) ✅ `09-18`** — `/map?scenario=not-a-real-scenario`
+>   now comes up on Sol's own front door with the berth picker instead of the error page, and the app raises
+>   nothing; the only console line is the browser's own `404` for the file that genuinely is not there.
+>   `/map?scenario=sol-eu&start=wreck` opens the Ringside Exchange picker with no exception.
+> - **[#1219](https://github.com/esoinila/SpaceSails/issues/1219) ✅ `09-18`** — at **1440 × 1100** with the
+>   plotting table open the Nav toolbar wraps and **`▶ Play` sits at x 20–96 on its own row** with `?` and
+>   `📋 checklist` beside it; `elementFromPoint` at its left edge, middle **and right edge** all return the
+>   `▶ Play` button. The desk-status chips start at x 1280 — 1,142 px clear. (Before: `▶ Play` at x 1218,
+>   its right third under the Sensors chip.)
+>
+> Four rows already marked ✅ were sampled again for regressions and none had moved: `?converge=1`'s two
+> sentences and closing line, `?nopattern=1&death=impact`'s one sentence and its single `Close the book`,
+> §3's `P` tip and toolbar, and the boot narration's clean console.
 
 Two owner rulings from 2026-09-17, both of them "what shipped is right, the *clock* on it is wrong" —
 and two more the same morning, on the two story passes that had been waiting for a decision (§4).
@@ -43,7 +66,7 @@ station time.
 
 | what | link | what to look for | played |
 | --- | --- | --- | --- |
-| **The walk is empty, and you can play the wait** (#1199 / #1062, this PR) | `/map?dock=selene-gate&ashore=1&simhours=7.5` — clamped at Selene Gate, ashore in **THE EARTHRISE BAR**, with the station clock seven and a half hours in so the room is **past last call** (the walk is only dealt in the last quarter of a watch; last call is at 10,800 s of 14,400). The person of interest at this berth is the haven's own named regular, **GILT-EYE**, and the rota has him at the bar on this watch. | He gets up from his top and crosses the concourse **due west**, out onto `OBSERVATION WALK` — glass floor, the limb under it, a rail at the blind end. Follow him: stay inside legible range with a clear line and **he stops and waits for you to go past** (no card, no line — he just turns). Break the line, and on a frame nobody is looking at him he is simply **not on the floor any more**. Then walk out to the rail yourself. **At warp 1 the card comes up about three minutes after the last moment you had eyes on him** — it used to be an hour. The card is the absence; the note files under his own name on THREADS; nothing is pulsed over the card. | ❌ `09-17` — the link did not reach the beat ([#1213](https://github.com/esoinila/SpaceSails/issues/1213)); **fixed in #1221, re-play pending** — the link above is the repointed one, see below |
+| **The walk is empty, and you can play the wait** (#1199 / #1062, this PR) | `/map?dock=selene-gate&ashore=1&simhours=7.5` — clamped at Selene Gate, ashore in **THE EARTHRISE BAR**, with the station clock seven and a half hours in so the room is **past last call** (the walk is only dealt in the last quarter of a watch; last call is at 10,800 s of 14,400). The person of interest at this berth is the haven's own named regular, **GILT-EYE**, and the rota has him at the bar on this watch. | He gets up from his top and crosses the concourse **due west**, out onto `OBSERVATION WALK` — glass floor, the limb under it, a rail at the blind end. Follow him: stay inside legible range with a clear line and **he stops and waits for you to go past** (no card, no line — he just turns). Break the line, and on a frame nobody is looking at him he is simply **not on the floor any more**. Then walk out to the rail yourself. **At warp 1 the card comes up about three minutes after the last moment you had eyes on him** — it used to be an hour. The card is the absence; the note files under his own name on THREADS; nothing is pulsed over the card. | ✅ `09-18` — **played, whole, on the repointed link**: seated at his top, up after last call, across the concourse due west, into the tube; gone off the floor on a frame nobody was looking; the card at the rail after the wait, verbatim, nothing over it |
 
 **Reading the wait off the clock while you play:** the wait is measured from the last frame he was visible,
 in **sim** seconds, so the warp slider is the fast-forward if you want it — but the point of this change is
@@ -76,6 +99,34 @@ room the room has left after last call).
 > shipping metabolism from that URL's boot state and finds him afoot on the route to the rail — but a guard
 > is not a play, so the ❌ above stands until somebody opens it in a browser.
 
+> ✅ **Re-played 2026-09-18 in a browser, and the whole beat plays.** Booted headless at
+> `?dock=selene-gate&ashore=1&simhours=7.5` against a Release publish of `our-own-ship-has-compartments`
+> @ `1bb0748a`. **GILT-EYE is at a top in THE EARTHRISE BAR at boot** (his name over a figure in the
+> south-west of the room, the barkeep and MADAM COIL where the rota puts them). He does not move while the
+> captain has a line to him — that is slice 1's own *"he stops and waits for you to go past"*, and it is the
+> first thing a tester meets: **stand still in the bar and nothing happens, for as long as you like**. Walk
+> away and he gets out of the chair, crosses the concourse **due west** and goes out onto `OBSERVATION WALK`;
+> follow him in and he holds again at the mouth. Break the line — walk back out of the tube and down the
+> concourse — and on a frame nobody is looking at him **he is off the floor**. Walk back out to the rail and
+> the card comes up:
+>
+> > **👁 THE OBSERVATION WALK** — *"The walk is lit the whole way out. The floor is glass and the drop is
+> > under it, and the far end is a wall with a rail. There is nobody here, and there is nowhere here to be."*
+> > — one button, `…go on`.
+>
+> Verbatim against `ObservationWalk.CardTitle` / `CardBody`, the plate art under it, **nothing pulsed over
+> it**, nothing clipped. **The wait is waited**: a screenshot taken at the rail before the card shows the
+> captain standing at the blind end with an ordinary ambient line on the HUD and no card — it arrives later,
+> which is the half of #1201's follow-up that #1199 was re-opened for. The book then holds the note,
+> verbatim, in the captain's ledger under `🍺 Selene Gate · THE EARTHRISE BAR`:
+> **👁 *"Followed GILT-EYE out onto the observation walk. One way in, glass underfoot, the drop below. Waited
+> at the mouth. Went in. Nobody there."*** Two things this re-play did **not** see, so nobody should read
+> them here: the **spent-once** re-entry (the second walk-in was driven with the Captain's desk open, so the
+> captain never moved) and the **later sighting** at another counter.
+>
+> Screenshots: `D:/repo12/wt/replay/.qa-scratch/r1j-j5_card.png` (the card), `r1j-j4b.png` (at the rail,
+> before it), `r1b-t000.png` (seated at boot), `r1m-m2_ledger.png` (the note).
+
 ---
 
 ## 1b · Losing YOUR tail — #1062's mirror half (this PR)
@@ -90,8 +141,8 @@ Full feature note: [`features/losing-the-tail.md`](features/losing-the-tail.md).
 | **The chair that faces the door** | same link. Walk to a top with a clear line back to the bar's doorway and press `[E]` to take it. | After about **nine seconds in the chair**, one pulse: *"From this chair you can see the door. So can the man who came in after you, and he has not ordered."* Stand on your feet in the same room for the same nine seconds first and **nothing happens** — the sit is the whole cost. | ✅ `09-17` |
 | **The same coat, two doors running** | same link. Walk out of the bar, across the concourse, and **out onto `OBSERVATION WALK`** (edge 5, due west — #1199's tube). | He follows you through the bar's doorway and then to the mouth of the walk, which is the only place in a one-way room with a line to you. Two DISTINCT doorways is the tell: *"The same grey coat, two doors running. Nobody's errand takes them through both."* A locked cellar leaf never counts. | ✅ `09-17` |
 | **Losing him** | same link. Walk back **down your own gangway** toward the ship, and stay there. | He will not follow you down the umbilical. After about **nine seconds with nothing to look at** he gives up: *"The corridor behind you is only a corridor. Whoever it was is asking the wrong floor about you."* — and the field book takes one line, filed on **THREADS under the PLACE** (📍 SELENE GATE) and never under a name: *a tail, lost at … — a grey coat, never a face*. | ✅ `09-17` |
-| **Failing forward — the burn** (#1062 slice 2b) | same link, plus a quiet verb at that berth while he is still on the floor: **take the favour** at a `◈` contact's table (press `B` at a table where the account is on offer), or **buy the fence's key** at the Comms desk's dark-web board. | **Nothing happens.** No line, no card, no warning — you get what you came for and walk out. Cast off, come back, and the port has **no favour and no fence row at all**, and the place says one thing: *"Tidy, in the way a place is after somebody has been through it first."* The book takes *SELENE GATE — walked before you got there, by somebody who knew where to walk*, filed under the **same PLACE** as the losing note so THREADS stacks the evening in order. Shake him first and the same verb costs nothing. | 🚫 `09-17` — needs a cast-off and a return; not drivable in one headless session |
-| **…and the half that must look exactly the same** | `/map?tailed=0&ashore=1&dock=selene-gate`, and every other link in this file | **Nothing.** No man, no lines, no book entry — and the drawn frame is byte-identical: the frame-hash ledger did not move by one row in this lane. Slice 1's own beat (GILT-EYE and the empty walk, §1 above) plays exactly as it did. | ⚠ `09-17` — no man, no line, no entry with `tailed=0`; frame-hash ledger not re-run here, and §1 above is ❌ (#1213) |
+| **Failing forward — the burn** (#1062 slice 2b) | same link, plus a quiet verb at that berth while he is still on the floor: **take the favour** at a `◈` contact's table (press `B` at a table where the account is on offer), or **buy the fence's key** at the Comms desk's dark-web board. | **Nothing happens.** No line, no card, no warning — you get what you came for and walk out. Cast off, come back, and the port has **no favour and no fence row at all**, and the place says one thing: *"Tidy, in the way a place is after somebody has been through it first."* The book takes *SELENE GATE — walked before you got there, by somebody who knew where to walk*, filed under the **same PLACE** as the losing note so THREADS stacks the evening in order. Shake him first and the same verb costs nothing. | ⚠ `09-18` — the **quiet verb now plays**: with #1223 the fence's row is reachable at the berth and `Buy the key · 1,011 cr` takes the coin (1,500 → 489 cr), the row goes, and **nothing is said** — no line, no card, no warning, nine seconds of watching the HUD for it. The cast-off-and-return half is still not drivable headless |
+| **…and the half that must look exactly the same** | `/map?tailed=0&ashore=1&dock=selene-gate`, and every other link in this file | **Nothing.** No man, no lines, no book entry — and the drawn frame is byte-identical: the frame-hash ledger did not move by one row in this lane. Slice 1's own beat (GILT-EYE and the empty walk, §1 above) plays exactly as it did. | ⚠ `09-17` — no man, no line, no entry with `tailed=0`; frame-hash ledger not re-run here. (§1's own beat is now ✅ `09-18`, played whole) |
 
 **Reading the clocks while you play:** both of this half's clocks are counted in **real** seconds off the
 frame stamp, not in sim time — twelve of the game's own looks at `ReeverObservation.LookIntervalSeconds`,
@@ -118,6 +169,23 @@ at all.
 > the tot ledger in a room with no counter in it. ✅ **Both fixed in #1222 — re-play pending:** a
 > plot-significant pulse raised while any scrim is up is now held and said on the frame the glass clears, and
 > the bond is scoped to the bar's own floor by the same predicate every other beat in that room uses.
+>
+> ✅ **[#1215](https://github.com/esoinila/SpaceSails/issues/1215) re-played 2026-09-18 and it is fixed.**
+> `?bond=1&ashore=1&dock=selene-gate` forces every scare to bond. **In the bar it still fires**: the first
+> shudder brings up *TWO GLASSES, AND THE SHUDDER STOPS*, the cognac line, and the Galley chip ticks to
+> `1 tot poured`. Then walk west out of the bar and stand **inside the observation walk**: over 130 s
+> **three** scares landed — the shudder, the caution PA and the distant tone, all still spoken — and there
+> was **no card, no cognac and no second tot** (the ledger stayed at the one poured in the bar). Screenshots
+> `r1215a-bar.png`, `r1215b-after.png`.
+>
+> ⚠ **[#1214](https://github.com/esoinila/SpaceSails/issues/1214) — the bug's signature is gone, but the
+> released sentence was not seen.** With `?tailed=1&bond=1` the captain was sat at a top and the finder's
+> card (*Ilse Varga*) plus the bond card both won the race: through both scrims **the chair sentence was
+> never in the DOM**, which is exactly the opposite of what #1214 filed (the sentence drawn at (400, 96)
+> under a z-1320 backdrop). What this sweep could **not** do is watch it come out the other side: the chair
+> reading never fired at all in five runs — including a **no-card control at the same seat**, which is why
+> this is a caveat about the play and not a claim about the fix. Whoever plays it next needs a top the grey
+> coat is actually in sight from.
 
 ---
 
@@ -269,12 +337,12 @@ one-key-per-window already rides.
 
 | what | link | what to look for | played |
 | --- | --- | --- | --- |
-| **The whole run in one URL** (#711 slice 2, this PR) | [`?dock=the-tilt&parcel=1`](https://esoinila.github.io/SpaceSails-play/map?dock=the-tilt&parcel=1) — boots clamped at The Tilt with an **UNLISTED PARCEL** already in the pocket, and rides `?land=`'s own descent down onto **the ground that parcel is actually for**. The cheat forges nothing: it mints real parcels the way the desk mints them and only chooses which *window*, looking for a drop this berth can reach. A pulse names the ground it picked. | You are standing on the regolith with the box. Walk out, press **⛏ DIG HERE** and bury it (satchel → *BURY A THING FROM THE SATCHEL* is the row the shuttle door offers; the cheat lands you with the box already on you). The dig's own pulse reads exactly as it always has — *"⛏ In the ground — 1 thing from the satchel off the books. The ✗ marks this spot. …"* — and then **one sentence more**: *"In the ground, where somebody who has never seen your face will know to dig."* Open the satchel's **NOTES**: one entry, in the captain's own hand, *"a parcel, put in the ground at Phobos · The Ridge Camp for nobody you have met"*, filed under that place on **THREADS**. | ⚠ `09-17` — the box is really in the satchel, but the pulse that names the ground is never readable and the burial cannot be done the way this row says; see below |
-| **The job on the row it came across** (#711 slice 2) | any berth with the desk open — [`?dock=the-tilt&parcel=1`](https://esoinila.github.io/SpaceSails-play/map?dock=the-tilt&parcel=1) then fly back up, or take one by hand at **Comms → 🕸 Dark web market** | While you carry one, the desk's fourth row stops offering and starts **instructing**: the plate, then *"No name. A moon, a bearing, a depth. Put it in the ground and leave."*, then one functional line — `📍 PHOBOS · THE RIDGE CAMP`. **No price, then or now.** No new panel, no quest entry, no tab: the job lives on the row the box came across and nowhere else. | ❌ `09-17` — the dark-web desk is **offline at every haven** ([#1217](https://github.com/esoinila/SpaceSails/issues/1217)), so no row of it can be seen |
-| **The money, with nobody's name on it** (#711 slice 2) | bury it, then **warp** — the lag is **2–4 watches** of sim time (8–16 h), seeded off that parcel — then dock anywhere and open **Comms → 🕸 Dark web market** | The instant the desk opens: *"💳 A payment with no sender. Somebody dug. +NNN cr"*, and the purse has it. Open the ledger's hoard: **the chest is gone from the ground.** Fly back out to that site and walk to where the ✗ was — there is a **disturbed-ground mark** there now, dated by #316's own three bands (*"Still smoking."* → *"…weeks old."*) off the moment it came due, not off the moment you were told. Nothing anywhere says who held the shovel. | ⚠ `09-17` — the money arrives (1,500 → 1,730 cr after the lag, and 0 → 230 cr on a second run) but the `💳` sentence is never drawn |
+| **The whole run in one URL** (#711 slice 2, this PR) | [`?dock=the-tilt&parcel=1`](https://esoinila.github.io/SpaceSails-play/map?dock=the-tilt&parcel=1) — boots clamped at The Tilt with an **UNLISTED PARCEL** already in the pocket, and rides `?land=`'s own descent down onto **the ground that parcel is actually for**. The cheat forges nothing: it mints real parcels the way the desk mints them and only chooses which *window*, looking for a drop this berth can reach. A pulse names the ground it picked. | You are standing on the regolith with the box. Walk out, press **⛏ DIG HERE** and bury it (satchel → *BURY A THING FROM THE SATCHEL* is the row the shuttle door offers; the cheat lands you with the box already on you). The dig's own pulse reads exactly as it always has — *"⛏ In the ground — 1 thing from the satchel off the books. The ✗ marks this spot. …"* — and then **one sentence more**: *"In the ground, where somebody who has never seen your face will know to dig."* Open the satchel's **NOTES**: one entry, in the captain's own hand, *"a parcel, put in the ground at Phobos · The Ridge Camp for nobody you have met"*, filed under that place on **THREADS**. | ⚠ `09-18` — **the burial plays and its pulse is verbatim** (taken by hand at the desk, chosen on the shuttle's own `🎒 BURY A THING FROM THE SATCHEL` row, buried on Miranda · The Wild Plain): *"…Now get back to the shuttle. **In the ground, where somebody who has never seen your face will know to dig.**"* Two caveats stand, both re-seen: the `?parcel=1` cheat's own ground-naming pulse is still never readable ([#1225](https://github.com/esoinila/SpaceSails/issues/1225)), and the prefix reads *"⛏ Chest buried — 5 units + 1 thing…"* while the hold is not empty |
+| **The job on the row it came across** (#711 slice 2) | any berth with the desk open — [`?dock=the-tilt&parcel=1`](https://esoinila.github.io/SpaceSails-play/map?dock=the-tilt&parcel=1) then fly back up, or take one by hand at **Comms → 🕸 Dark web market** | While you carry one, the desk's fourth row stops offering and starts **instructing**: the plate, then *"No name. A moon, a bearing, a depth. Put it in the ground and leave."*, then one functional line — `📍 PHOBOS · THE RIDGE CAMP`. **No price, then or now.** No new panel, no quest entry, no tab: the job lives on the row the box came across and nowhere else. | ✅ `09-18` — with #1223 the desk deals at the clamp: `📦 Take it` turns the row into the job, verbatim — the plate, *"No name. A moon, a bearing, a depth. Put it in the ground and leave."*, then `📍 MIRANDA · THE WILD PLAIN`. No price, no panel, no quest entry, and re-opening the desk shows the same row |
+| **The money, with nobody's name on it** (#711 slice 2) | bury it, then **warp** — the lag is **2–4 watches** of sim time (8–16 h), seeded off that parcel — then dock anywhere and open **Comms → 🕸 Dark web market** | The instant the desk opens: *"💳 A payment with no sender. Somebody dug. +NNN cr"*, and the purse has it. Open the ledger's hoard: **the chest is gone from the ground.** Fly back out to that site and walk to where the ✗ was — there is a **disturbed-ground mark** there now, dated by #316's own three bands (*"Still smoking."* → *"…weeks old."*) off the moment it came due, not off the moment you were told. Nothing anywhere says who held the shovel. | ⚠ `09-17` — the money arrives (1,500 → 1,730 cr after the lag, and 0 → 230 cr on a second run) but the `💳` sentence is never drawn. **Not re-driven 09-18** — the lag needs a warp and a re-dock after the burial, and the run ran out of session before it got there; the `💳` claim in this row is still unwitnessed |
 | **…and it only comes once** (#711 slice 2) | close the desk and open it again | Nothing. There is no flag to clear: the hole was the record, and somebody dug it. Two drops that came due together are two payments on two visits, one sentence each. | ✅ `09-17` — selecting the node again adds nothing |
 | **The wrong moon is just a hole** (#711 slice 2 / #319) | [`?dock=the-tilt&parcel=1`](https://esoinila.github.io/SpaceSails-play/map?dock=the-tilt&parcel=1), then at the boarding panel pick a **different site** before you go down (or fly to another moon) | Bury it there and the pulse is the ordinary one — no extra sentence, no note, no money, ever. The ✗ is on the map, the odds are the chest's own, and you can walk back and dig your box up. A parcel in the wrong ground is a buried parcel, which is exactly what it is. | ✅ `09-17` — ordinary pulse, no extra sentence, no note, no money |
-| **A man with a form took it, and the work dries up** (#711 slice 1 + 2) | [`?dock=the-tilt&parcel=1`](https://esoinila.github.io/SpaceSails-play/map?dock=the-tilt&parcel=1) → walk into a **HIVE** floor with the box on you and let a round stop you (slice 1's beat) | The card is slice 1's, unchanged: fined, filed, and the box carried off. Then fly up and open the dark-web desk: **the parcel row is simply not there.** Not greyed, not refusing, not explaining — absent, for two to four watches seeded off the box that was lost. Nothing anywhere says why. Come back a day later and the row is back. | 🚫 `09-17` — The Tilt has no HIVE floor, and the after-check is unobservable while #1217 stands |
+| **A man with a form took it, and the work dries up** (#711 slice 1 + 2) | [`?dock=the-tilt&parcel=1`](https://esoinila.github.io/SpaceSails-play/map?dock=the-tilt&parcel=1) → walk into a **HIVE** floor with the box on you and let a round stop you (slice 1's beat) | The card is slice 1's, unchanged: fined, filed, and the box carried off. Then fly up and open the dark-web desk: **the parcel row is simply not there.** Not greyed, not refusing, not explaining — absent, for two to four watches seeded off the box that was lost. Nothing anywhere says why. Come back a day later and the row is back. | 🚫 `09-18` — The Tilt has no HIVE floor; #1217 is fixed so the after-check is now observable in principle, but the confiscation itself was not reached this sweep |
 
 **Reading the clock while you play.** Both lags are **sim** time and both are measured in the four-hour
 watch every roster, patience and fence in this game already turns on. The warp slider is the fast-forward;
@@ -309,6 +377,21 @@ there is nothing to sit through.
 > **[#1218](https://github.com/esoinila/SpaceSails/issues/1218)** — at your own ✗ on a haunted ground the
 > cache line and the `🗺 DIG AT THE X` plate are drawn on the same pixel and come out as
 > `yours ⛏ DIG AT THE ✗ ear it`.
+
+> ✅ **Re-played 2026-09-18 — [#1217](https://github.com/esoinila/SpaceSails/issues/1217) is fixed and the
+> desk half plays.** The dark-web market was opened at **all seven** dockable havens (`cinder-roost`,
+> `selene-gate`, `the-space-bar`, `red-eye`, `ringside-exchange`, `the-tilt`, `the-deep`): every one is
+> badged **`open`**, every one draws all four rows (the leads board, the favour bank, INSPECTORATE, the
+> BLACK-OPS KEY at its own per-berth price, and the UNLISTED PARCEL), and the words *"offline"* and
+> *"Not orbiting or docked anywhere"* appear **nowhere** in any of them. `📦 Take it` then turns the fourth
+> row into the job (above), and the shuttle's boarding card offers
+> **`🎒 BURY A THING FROM THE SATCHEL` with `○ 📦 UNLISTED PARCEL` in the pick** — so the round trip the
+> 09-17 sweep had to make is not the shipped path after all: it is only the `?parcel=1` cheat that lands you
+> without the box selected as the deposit, which is [#1225](https://github.com/esoinila/SpaceSails/issues/1225).
+> Buried on the ground the job names, the dig pulse carries the one extra sentence verbatim.
+>
+> Screenshots: `D:/repo12/wt/replay/.qa-scratch/r5c-taken.png` (the job row), `r5j-panel.png` and the
+> satchel pick behind it, `r5l-dug.png` (the burial pulse), `havensweep.log` (all seven desks).
 
 **And the half that must look exactly the same.**
 
