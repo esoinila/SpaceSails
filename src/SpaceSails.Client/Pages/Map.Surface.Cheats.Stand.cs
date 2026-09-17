@@ -138,6 +138,38 @@ public partial class Map
     /// <summary>#759 QA · <c>?park=1</c> — the route to the park, booted. Set in Map.Sim's cheat parse.</summary>
     private bool _parkCheat;
 
+    /// <summary>#759 QA · <c>?parkphase=night|dawn|day|dusk</c> — which part of its own grow-cycle the park
+    /// should be in when the captain arrives. Set in Map.Sim's cheat parse.</summary>
+    private ParkDay.Phase? _parkPhaseCheat;
+
+    /// <summary>#759 QA · <c>?parkphase=morning</c> — the one that lands the BEAT: set down five sim-minutes
+    /// before the park's own dawn. Set in Map.Sim's cheat parse.</summary>
+    private bool _parkMorningCheat;
+
+    /// <summary>
+    /// #759 QA · Jump the sim clock so this site's park is where <c>?parkphase=</c> asked for it to be.
+    /// Here rather than in the query reader because the answer depends on WHICH site: the grow-cycle
+    /// carries a per-site phase offset, so one sim-time is this park's afternoon and the next park's dark.
+    ///
+    /// <para>The arithmetic is Core's (<see cref="ParkDay.FirstMiddleOf"/> /
+    /// <see cref="ParkDay.FirstJustBeforeMorning"/>) and not this file's, so a dev door cannot become a
+    /// second answer to what time it is in there.</para>
+    /// </summary>
+    private void SetTheParksClockIfAsked(SurfaceExcursion ex)
+    {
+        double? at = _parkMorningCheat ? ParkDay.FirstJustBeforeMorning(ex.Stop.Body.Id)
+            : _parkPhaseCheat is { } want ? ParkDay.FirstMiddleOf(want, ex.Stop.Body.Id)
+            : null;
+
+        if (at is not { } when)
+        {
+            return;
+        }
+
+        _ship = _ship with { SimTime = when };
+        SimTime = when;
+    }
+
     /// <summary>#759 QA · Stand the captain INSIDE THE PARK when <c>?park=1</c> asked for it.
     ///
     /// <para>On the park's own published plate spot — just inside the gate, looking down the first bend of
@@ -155,6 +187,11 @@ public partial class Map
         {
             return;
         }
+
+        // #759 · …and at the hour ?parkphase= asked for, BEFORE the captain is stood anywhere: the poll
+        // that notices the park's morning reads both clocks on the first tick it finds you on the gravel,
+        // and a clock jumped after that would have you coming in at one time and lingering from another.
+        SetTheParksClockIfAsked(ex);
 
         // #793 · …and ?park=1&spread=1 goes one leg further — onto a BENCH, with three finds in the sleeve
         // and the whole plank to yourself. Through the same handler [E] reaches, at one of the room's own

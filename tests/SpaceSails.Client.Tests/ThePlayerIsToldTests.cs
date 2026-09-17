@@ -414,6 +414,21 @@ public sealed class ThePlayerIsToldTests
         new("the place you did your quiet business in has been walked through ahead of you",
             Surface.RankedPulse, "Map.TailBehindYou.cs", "TheBurnIsToldHere",
             "ShowPulseMessage(TheTailBehindYou.TheBurnLine, PulseRank.Beat);"),
+
+        // #759 · THE PARK'S MORNING ARRIVES AT THE WRONG TIME. Plot-significant because it is the only
+        // moment the building ever admits the park is not the thing the plate at the gate says it is, and
+        // the captain has to still be standing in the room to catch it — sent down the same road at Status
+        // it could be displaced by the next instrument reading, and the one beat the room gives away would
+        // have been told to nobody.
+        //
+        // RANKED AND NOT CARDED, and this is the clearest case of that rule in the game. A card stops the
+        // world to announce something; what has happened is that some lamps came on. The register #759 asks
+        // for is "subtly wrong — never broken, never right", and a full-screen plate would spend the beat in
+        // the act of delivering it. The book takes the other half in the same breath, filed under the PLACE,
+        // so it is readable again after the HUD has moved on.
+        new("the park's morning comes up at an hour nobody else in the building is keeping",
+            Surface.RankedPulse, "Map.ParkDay.cs", "CheckTheParksOwnDay",
+            "SayItWhereTheyAreLooking(ParkDay.LingerLine, PulseRank.Beat);"),
     ];
 
     /// <summary>

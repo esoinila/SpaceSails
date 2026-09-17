@@ -94,7 +94,7 @@ public sealed partial class DeckView
         //    this floor because there is no ship" is a reading, and a row that came and went between
         //    frames would be a table that changes shape while you read it.
 
-        PaintTheGround(plan, scale, ox, oy, project);
+        PaintTheGround(plan, scale, ox, oy, simTime, project);
         _perf?.Mark("PaintTheGround");
         HideWhatNobodyHasLookedInto(darkRegions, scale, project);
         _perf?.Mark("HideWhatNobodyHasLookedInto");

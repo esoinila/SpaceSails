@@ -613,6 +613,24 @@ public sealed class TheParkIsWalkableTests
         Assert.True(from >= 0, "could not find the member that files the park's note.");
         string block = text[from..(to < 0 ? text.Length : to)];
 
+        // #759 · RE-PATHED, NEVER RE-NEEDLED. The poll asks a sibling member for this floor's park now:
+        // #759's grow-cycle beat is a SECOND reader of the same cache, and the attendance poll stands down
+        // for good the moment it has fired, so the two could not go on sharing a cache the fired one owned.
+        // Not one needle or Assert below moved — the BLOCK this guard reads is the poll plus the member it
+        // delegates to, which is the same claim about the same code in a different container. The day the
+        // delegation goes away the concatenation is a no-op and every line below reads the poll's own body
+        // exactly as it did.
+        const string Accessor = "TheGreenOnThisFloor";
+        if (block.Contains($"{Accessor}(", StringComparison.Ordinal))
+        {
+            int helper = text.IndexOf(
+                $"\n    private UndergroundComplex.Park? {Accessor}(", StringComparison.Ordinal);
+            Assert.True(helper >= 0,
+                $"the park poll delegates to {Accessor}, and no such member is in the same file.");
+            int helperEnd = text.IndexOf("\n    private ", helper + 1, StringComparison.Ordinal);
+            block += text[helper..(helperEnd < 0 ? text.Length : helperEnd)];
+        }
+
         Assert.True(block.Contains("ex.HiveParkNoteFiled = true", StringComparison.Ordinal),
             "the filing of ParkNote never SPENDS ex.HiveParkNoteFiled — a latch that is written nowhere "
             + "never closes.");

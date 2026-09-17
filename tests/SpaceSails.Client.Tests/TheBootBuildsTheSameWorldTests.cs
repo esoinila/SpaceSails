@@ -249,6 +249,17 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?oldcrew=1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?nonsense=1&start=there-is-no-such-start&dock=NOT+A+HAVEN&site=-3&floor=0"] = "b8fdc213e24f2c7c961912adf8eea626",
             ["/map?park=1"] = "547100920bc1996d5f6cf2a6a8a435c9",
+            // #759 · TWO NEW ROWS, AND NOTHING ELSE MOVED. `?parkphase=` jumps the sim clock so the park at
+            // THIS site is at a chosen point of its own grow-cycle — and because it is a clock jump, these
+            // are the only two URLs in the catalogue whose booted world differs from `?park=1`'s at all.
+            // Dumped with SPACESAILS_BOOT_FINGERPRINT_DUMP and diffed against the pinned dictionary:
+            // 86 rows in, 88 rows out, the two below ADDED and not one existing row changed by a character.
+            // The five fields this lane puts on the page (the beat's three-field memory of what the two
+            // clocks said at the gate, and the cheat's two) are all at their defaults on a fresh boot, and
+            // this sweep diffs a booted page against a virgin one — so they are invisible to it by
+            // construction, which is why `?park=1` itself is byte-identical.
+            ["/map?park=1&parkphase=morning"] = "1f25b5a291d59c663a99e310e770ae6a",
+            ["/map?park=1&parkphase=night"] = "83f65e81a8b88501af640e767fdfbfbd",
             ["/map?park=1&spread=1"] = "155785dfb2775703a2aed201cfcbd5cc",
             ["/map?parkback=1"] = "10f928036d29e8772bf5d4288db95897",
             ["/map?parkwalk=1"] = "f1fce2c72fab52a59b1f251884876127",

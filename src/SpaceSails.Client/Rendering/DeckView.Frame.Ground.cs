@@ -16,15 +16,44 @@ public sealed partial class DeckView
     /// overlay, the grid's cold ribs, #563's scenery, and the falloff into the dark at an unseen bound.
     /// The first pass of the frame: every pass after it is drawn ON this.</summary>
     private void PaintTheGround(
-        DeckPlan plan, float scale, float ox, float oy, Func<double, double, (float X, float Y)> project)
+        DeckPlan plan, float scale, float ox, float oy, double simTime,
+        Func<double, double, (float X, float Y)> project)
     {
+        // #759 · WHAT TIME IT IS IN THE PARK — asked once per frame, and of Core. Not a clock: a pure
+        // function of the sim-time this frame is being drawn at and of the site whose green it is, which is
+        // exactly why it is asked HERE, at the pen, rather than baked into the plan when the captain walked
+        // in. 1 on every deck in the game that is not a park, so every line below that reads it is
+        // arithmetic that changes nothing at all off that one floor.
+        double grow = plan.Grow is { } rig ? ParkDay.LevelAt(simTime, rig.SiteId) : 1.0;
+
         // Room backdrops sit UNDER every vector overlay (walls, consoles, avatar, labels stay on top
         // for legibility — the hybrid look). Each is top-left at (X, Y) deck-units, W×H deck-units.
         // Registration is idempotent, so calling it per frame is cheap.
         foreach (DeckPlan.Backdrop bd in plan.Backdrops)
         {
             (float bx, float by) = project(bd.X, bd.Y);
-            _renderer.DrawImage(_renderer.RegisterImage(bd.Url), bx, by, bd.W * scale, bd.H * scale, bd.Alpha);
+            // #759 · …and the gravel is lit by something other than the building. SUBTLY: the room stays
+            // legible at the bottom of the cycle, because the register is "never broken, never right" and a
+            // park you cannot see the paths in has broken rather than drifted. The loud half of the reading
+            // is the lamps themselves, in the pass immediately below.
+            float alpha = bd.GrowLight ? bd.Alpha * (float)(GrowFloor + (GrowSwing * grow)) : bd.Alpha;
+            _renderer.DrawImage(_renderer.RegisterImage(bd.Url), bx, by, bd.W * scale, bd.H * scale, alpha);
+        }
+
+        // #759 · THE MASTS KEEP THE DAY. Five posts against the far wall, drawn as lamp heads whose reach
+        // and warmth are the cycle's own level — small dark discs at the bottom of it, a wash of
+        // horticultural white at the top. ALWAYS drawn and never skipped when the lamps are off: a mark
+        // that comes and goes is a frame whose call count depends on the hour, and a lamp that is off is
+        // still a lamp.
+        if (plan.Grow is { } lamps)
+        {
+            foreach ((float mx, float my) in lamps.Masts)
+            {
+                (float lx, float ly) = project(mx, my);
+                _renderer.DrawCircle(
+                    lx, ly, (float)(GrowHeadDu + (GrowReachDu * grow)) * scale,
+                    GrowLampFill(grow), GrowLampEdge(grow), 1f);
+            }
         }
 
         for (int gx = -22; gx <= 28; gx += 4)
