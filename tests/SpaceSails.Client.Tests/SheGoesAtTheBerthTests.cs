@@ -59,6 +59,15 @@ public sealed class SheGoesAtTheBerthTests
 
         ArmHerCharges(map);
 
+        // #1214 · …AND IT IS SAID ON THE FRAME THE GLASS CLEARS, NOT UNDER THE PANEL HE ARMED HER FROM.
+        //
+        // The keys are turned with the ship-scuttle panel OPEN, and that panel wears a full-viewport scrim
+        // (`_showShipScuttlePanel`, in TheScrimCensus). The PA call is plot-significant, so it is now HELD
+        // rather than written into a slot no eye can reach, and SayWhatTheScrimWasStandingOn says it on the
+        // next frame. That is not a weaker claim than this line made before — it is a stronger one: until
+        // #1214 this assertion passed over a sentence that was, on the glass, invisible.
+        Frame(map);
+
         // ── THE PORT'S OWN VOICE, once, naming the slot she is actually in.
         object pulse = Read(map, "_pulse")!;
         Assert.Equal(BerthScuttle.PaCall(BerthScuttle.BerthNumber(slot)), (string?)Get(pulse, "Message"));

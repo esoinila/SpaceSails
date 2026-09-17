@@ -72,6 +72,7 @@ public partial class Map
         ReprojectThePassesOnTheirCadence(highResTimestampMs);
         ReprojectTheTrajectoryWhenItIsDue(highResTimestampMs);
 
+        SayWhatTheScrimWasStandingOn();
         _pulse = _pulse.Expire(highResTimestampMs);
         SoundTheArcOnItsRisingEdge();
 
