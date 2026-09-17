@@ -135,7 +135,14 @@
                             <div class="fuel-desk card bg-dark bg-opacity-50 text-light mb-2">
                                 <div class="card-body p-2">
                                     <div class="fuel-desk-title fw-bold">⛽ FUEL</div>
-                                    <div class="fuel-gauge @_fuelBandClass" title="Reaction mass: @_fuelPulses of @_fuelCap pulses">
+                                    @* #440 · AND HOW ONE IS SPENT. The drive is the first thing a captain ever
+                                       does and the only control in this game with no button anywhere: the
+                                       ±10% pulse, the ±1% trim and the arrows that fire them were written
+                                       down in the Captain's Guide and nowhere on the glass. The gauge that
+                                       counts the pulses is where that question gets asked, so it is where
+                                       the answer goes — a hover on a readout already on screen, never a new
+                                       control (the house minimalism: no new chrome). *@
+                                    <div class="fuel-gauge @_fuelBandClass" title="Reaction mass: @_fuelPulses of @_fuelCap pulses — + / − (or ↑ / ↓) fires one; hold Shift for a ±1% trim">
                                         <div class="fuel-gauge-fill" style="width:@(((int)(_fuelFrac * 100)))%"></div>
                                         <div class="fuel-gauge-readout">@_fuelPulses<span class="fuel-gauge-cap"> / @_fuelCap p</span></div>
                                     </div>

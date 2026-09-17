@@ -342,12 +342,15 @@ public sealed class TheBundleIsTheSameCascadeTests
         Assert.True(cascade.Count > 700, $"only {cascade.Count} rule(s) parsed out of the Map cascade.");
         Assert.True(cascade.Select(r => r.Sheet).Distinct(StringComparer.Ordinal).Count() > 40,
             "the cascade came out of too few sheets — the split is not being read.");
-        // #1110 · 780 at #1109's head, 759 now. Twenty-one rules that could never have painted anything
-        // came out — seventeen dead selectors deleted, four moved into Pages/Stations/Captain.razor.css,
-        // which is outside this cascade. Re-measured off the file (whose header says which and why), never
-        // edited until it matched: a count nudged to fit is a guard reporting a number nobody asked of the
-        // world.
-        Assert.Equal(759, Baseline().Count);
+        // #1110 · 780 at #1109's head, 759 after it, 758 now. Twenty-one rules that could never have
+        // painted anything came out under #1110 — seventeen dead selectors deleted, four moved into
+        // Pages/Stations/Captain.razor.css, which is outside this cascade — and #422 took one more on
+        // 2026-09-17: the convergence card lost its subtitle when the owner's ruling turned it into a
+        // collision, and `.convergence-sub` is a class no other surface writes, so #1110's own guard
+        // caught the residue the same day it was made. Re-measured off the file (whose header says which
+        // and why), never edited until it matched: a count nudged to fit is a guard reporting a number
+        // nobody asked of the world.
+        Assert.Equal(758, Baseline().Count);
 
         // Named rules, not counts: a parser that silently stopped at the first prose comment containing a
         // brace would still count high.

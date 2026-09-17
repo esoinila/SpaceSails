@@ -128,8 +128,11 @@ public partial class Map
         _headOfficeBeatsSeen.Clear();
 
         // #422/#425: likewise the NEBULA shards, and the oracle's per-visit reading state — a fresh universe
-        // has never leaned on Static's corner.
+        // has never leaned on Static's corner. #640: NebulaProgress.Clear takes the closed policy with it —
+        // a new captain has a pattern on file, whatever the last one did to theirs — and the pen comes back
+        // up here for the same reason.
         _nebula.Clear();
+        _threadIsOver = false;
 
         // #422 story pass · the two run-scoped counters arc 2 gates its beats on, which this method (whose
         // contract is "the exact inverse of BuildVault", the #563 lesson) was quietly not resetting. Both
@@ -370,6 +373,11 @@ public partial class Map
         _scopeIntel.Clear();
         _kaamos.Clear(); // #411: the loaded life brings its OWN assembled shards (applied below), not the last run's
         _nebula.Clear(); // #422/#425: same for the Nebula shards — the load re-hydrates its own set below
+
+        // #640 · …and the pen comes back up. Loading a banked moment is boarding a life that was still being
+        // lived; whether ITS captain had a pattern on file is a fact in the payload below
+        // (NebulaSection.PolicyClosed), never a fact about whichever run happened to end in this tab.
+        _threadIsOver = false;
 
         // #948 · the name comes back with the life. A vault carries the captain's name in its own payload,
         // so an IMPORTED file (which arrives into a brand-new thread with a freshly seeded roster name) still

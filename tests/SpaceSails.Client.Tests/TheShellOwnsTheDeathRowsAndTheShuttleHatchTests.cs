@@ -46,9 +46,20 @@ namespace SpaceSails.Client.Tests;
 [SlowGate] // #251 · 53 s over 18 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
 public sealed class TheShellOwnsTheDeathRowsAndTheShuttleHatchTests
 {
-    /// <summary>The four panels a death can end on — #970's own list, and the four rows this wave moved.
-    /// Each pairs the stage with the face of its FIRST way out, which is the word on the screen and the
-    /// thing a rename would have to move through this file rather than round it.</summary>
+    /// <summary>
+    /// The four panels a death can end on that offer #951's TWO answers — #970's own list, and the four
+    /// rows this wave moved. Each pairs the stage with the face of its FIRST way out, which is the word on
+    /// the screen and the thing a rename would have to move through this file rather than round it.
+    ///
+    /// <para><b>#640's fifth panel is deliberately not in this list.</b> <c>NoRestore</c> — the death after
+    /// a captain purged their own pattern — wears the same <c>.busted-close-row</c> and is the same shell,
+    /// and the census above counts it. What it does not have is a SECOND control, because #951's ruling is
+    /// that a death offers two true answers, <i>wake up in the clinic</i> or <i>board a moment you
+    /// banked</i>, and on this one the first does not exist: nobody comes. Its single control closes the
+    /// card and opens the FRONT door, which is the same save surface the shelf button opens and then
+    /// some — two buttons onto one surface would be noise. It is pressed in
+    /// <c>TheDeathWhereNobodyComesTests</c>, which is also where the line it carries is read.</para>
+    /// </summary>
     public static TheoryData<string, string> TheDeathPanels => new()
     {
         { "FreezeFrame", "…wake up" },
@@ -104,11 +115,13 @@ public sealed class TheShellOwnsTheDeathRowsAndTheShuttleHatchTests
             + "logbook on OnBeside. A hand-rolled one is two ways out on the panel every dying player "
             + "meets, and the shell's audit only knows about its own.");
 
-        Assert.True(rows == 4,
-            $"{rows} close rows wear .busted-close-row and #970's four death panels are FreezeFrame, "
-            + "Impact, SurfaceEnd and Resurrected. If a fifth panel has been added it needs a case in "
-            + "TheDeathPanels below, which is what actually presses it; if one has gone, #970 will say so "
-            + "first and this number follows it.");
+        Assert.True(rows == 5,
+            $"{rows} close rows wear .busted-close-row. #970's four death panels are FreezeFrame, Impact, "
+            + "SurfaceEnd and Resurrected, and #640 added the fifth — NoRestore, the death after a captain "
+            + "purged their own pattern, whose row is the shell's too and is pressed in "
+            + "TheDeathWhereNobodyComesTests. If a SIXTH has been added it needs a case in TheDeathPanels "
+            + "below, which is what actually presses it; if one has gone, #970 will say so first and this "
+            + "number follows it.");
     }
 
     // ── The rows, read off what was actually drawn, and pressed ───────────────────────────────────────

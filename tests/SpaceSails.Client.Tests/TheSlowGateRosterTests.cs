@@ -109,6 +109,11 @@ public sealed class TheSlowGateRosterTests
             // ── The swallowed re-render, driven (#1135), measured 2026-09-06: three presses, each on its
             //    own booted world, 11 s for the class ──
             { nameof(ThePressPaintsOnItsOwnTickTests), 11 },
+
+            // ── The death where nobody comes (#640), measured 2026-09-17 rather than in the 09-02
+            //    baseline: six tests, six booted worlds, each one staging a real death and pressing the
+            //    real "…wake up" — 23 s for the class ──
+            { nameof(TheDeathWhereNobodyComesTests), 23 },
         };
 
     /// <summary>

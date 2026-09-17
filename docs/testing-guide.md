@@ -652,9 +652,10 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?oracle=1`** | **Seat the station oracle — Solenne “Static” Marsh — in the port-back corner of whatever bar you dock at, every watch. Unforced she is a fixture only ~55 % of watches, so her whole scene was a coin flip to open (#428). Pair with `&dock=<berth>`.** |
 | **`?nebula=N\|all`** | **Assemble the first N NEBULA MUTUAL fragments (canonical order), or `all` — arc 2's intel readout, its state transitions, and (only at `all`, which is the only value that includes the capstone contract) the one-time "true terms" notice, without a playthrough (#422).** |
 | **`?nebula=adjuster`** | **Seat the rare Nebula Mutual adjuster at whatever bar you dock at, every watch — the tell (fragment 3) becomes playable on demand instead of merely grantable (#422). Pair with `&dock=<berth>`.** |
-| **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold) and fire THE CONVERGENCE — the marquee one-time reveal — from a single URL (#422).** |
+| **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold, including the two shards the card quotes) and fire THE CONVERGENCE — the marquee one-time COLLISION — from a single URL (#422).** |
 | **`?archive=1`** | **Board a derelict that is CARRYING A COLD-ARCHIVE NODE — arc 2's only in-person scene. Implies `?wreck=ventedbyoneoftheirown`, the one cause Core guarantees a node on.** |
 | **`?death=<cause>`** | **KILL THE CAPTAIN AT BOOT, through the real pipeline — the death card, the freeze beat and the brain-backup wake, without dying for them (#621).** Every cause has a lane now: `?death=void` was the last one that did not, and #638 gave it the twenty-day adrift clock (`VoidRule`). |
+| **`?nopattern=1`** | **Boot a captain whose POLICY IS ALREADY CLOSED — the purge handle, pulled on their own jar (#640). Combine with `?death=` for the death where nobody comes: no clinic, no successor, and the thread ends.** |
 | **`?ashore=1`** | **Boot docked AND ALREADY STANDING IN THE BAR — the ship → airlock → tube → immigration hall → bar walk already walked (#428). Every bar beat begins with that walk; in a hidden/automated tab it cannot be walked at all. Pairs with `?dock=` / `?start=`, and with every bar cheat.** |
 | **`?watchers=1`** | **Open the MONOLITH GROUND'S attentive window and cut the dwell from forty seconds to two, so the strange-things-happen beat (#649) can be watched on demand. Stand at the stone. It is rare by design — one visit-window in three, and then only if you stay — and this changes the GATES and nothing else, so what you see is what a captain sees. Pair with `&dock=the-space-bar&body=phobos&site=0&land=1`, and with `&reevers=3` for the variant that needs a pack on the field.** |
 | **`?nerve=N`** | **Seed the nerve gauge at N of 10 whole pips at boot (#428/#480). Clamps to the gauge; `?nerve=10` is the shipped default. The only way to reach a sanity beat without being hunted for minutes first. #784 adds three WORDS beside the number, for links a person has to read: `?nerve=shot` (0), `?nerve=low` (2), `?nerve=half` (5). Same flag, same clamp — the words are spellings of the number and never a second parser.** |
@@ -1104,10 +1105,37 @@ design in [features/the-archive-node.md](features/the-archive-node.md).
 | **You can pull it without paying** | The handle stands 3.5 du from the column, deliberately outside the confront radius: you may reach it, pull it, and never find out what you did. |
 | **The record of a purge is the silence** | The line at the handle is the same sentence whatever was inside. If it ever names the resident, the whole §5 shape is gone. |
 
-> **Not in this lane, and deliberately so:** the resurrection card's `NO PATTERN ON FILE` line (the feature
-> doc's build step 5). It needs the owner to rule on whether purging your own pattern actually *ends* the
-> policy — and a card that says the policy is closed while the rebirth still fires is the sentence-versus-sim
-> bug this project has paid for three times. Filed rather than guessed.
+### THE DEATH WHERE NOBODY COMES — `?nopattern=1` (#640)
+
+The other half of the handle, and it landed on **2026-09-17** on an owner ruling (option A, the run ends).
+This section used to say the `NO PATTERN ON FILE` line could not ship until the sim backed it. The sim
+backs it now.
+
+```
+/map?nopattern=1&death=impact                             on her own deck — the shortest road
+/map?nopattern=1&death=collector                          the BUSTED ladder
+/map?nopattern=1&death=suffocated&dock=the-tilt&land=1    a landing party
+/map?nopattern=1                                          a live run that has already spent its last life
+```
+
+`?nopattern=1` boots a captain whose lineage **already pulled the purge handle on a node holding their own
+pattern** — reaching that honestly is a 1-in-20 resident behind a 1-in-3 hull behind a throw you pay nerve
+for, and then a death. It sets the flag and nothing else, so what follows is the real death through the
+real pipeline. Combine it with any `?death=` to choose the place; alone, it is a run to go and be reckless
+in.
+
+| What to check | What you should see |
+|---|---|
+| **The freeze beat is untouched** | The ordinary four-stage death: the art, the seeded house-voice line, `…wake up`. Nothing warns you, because nothing knows yet. |
+| **Press `…wake up` and watch what does not happen** | No clinic, no bill, no rustbucket, no successor, no new face, no filing line, no rebirth glitch. One sentence: *NO PATTERN ON FILE — POLICY CLOSED AT SUBSCRIBER REQUEST. The clinic's welcome loop does not play. Nobody comes. You did read the label.* |
+| **One way out, and it is not "…wake up"** | `Close the book`. It closes the card and opens the **front door** — the whole shelf — because there is no ship to go back to. |
+| **The thread reads as ended** | That captain is still on the shelf with their retirees, their selfies and every banked berth. What is gone is Continue: it will not resume that run, and if it was your only one the door offers a new voyage instead. |
+| **Nothing else moved** | Another captain's thread, and every save in it, is exactly as it was. |
+| **A banked moment still loads** | A save is a moment that was still being lived; boarding one is allowed, and it is the honest meaning of *the run ended, the record did not*. |
+
+> **Nothing was added to the handle**, and that is the whole beat: the label always said `RESIDENT PATTERN
+> NOT RECOVERABLE`, and the collar — which a bad throw buys you *before* you pull — says whose number is on
+> the jar. If you ever see a confirmation dialog there, something has gone wrong.
 
 ### The quantized nerve — reading the pips and the ledger (#480)
 
@@ -1332,12 +1360,22 @@ the assembled shard texts readable beneath it (mirrors the KAAMOS readout).
   now pins it.)
 - `/map?nebula=3` is the fastest look at the mid-arc card; `/map?nebula=all` is the end state.
 - **`?converge=1`** is the marquee smoke test: it seeds exactly the joint threshold on **both** arcs
-  (3 KAAMOS intel + 3 NEBULA intel) and fires **THE CONVERGENCE** — a full staged reveal card, above
-  everything, stating that the sealed ice-moon berth and your brain-backup insurance are the same story.
-  It fires **once per universe** (the seen-bit is persisted in the vault); reload and it does not replay.
-  **Note the bar:** 3 NEBULA intel is *below* this arc's own capstone gate of 4, so the convergence card can
-  and normally does arrive **before** `policy-terms` — see the open structural question on
-  [#422](https://github.com/esoinila/SpaceSails/issues/422).
+  (3 KAAMOS intel + 3 NEBULA intel, including the two shards the card quotes) and fires **THE
+  CONVERGENCE**, above everything. It fires **once per universe** (the seen-bit is persisted in the vault);
+  reload and it does not replay.
+  - **What you should see (2026-09-17, #422 option B).** Not a paragraph. A stamp of two marks, the plate,
+    then two sentences one above the other with **nobody named over either of them** — *"It still calls the
+    manifest in…"* (the KAAMOS berth-holder) and *"I've filed the same subscriber six times…"* (the Nebula
+    adjuster) — then one closing line, *"You have been carrying both of these for a while."*, and a plain
+    **Close**. If you see exposition about copies, premiums, archives or Vantar, something has been put
+    back that the ruling took out.
+  - **Both lines are already in the captain's ledger when the card opens.** That is what the bar's named
+    shards are for: it is still 3 + 3, but one of each three is the shard the card quotes (`holders-tell`,
+    `adjuster-tell`). Close the card, open the Captain's ledger, and read both of them there.
+  - **Note the bar:** 3 NEBULA intel is still *below* this arc's own capstone gate of 4, so the convergence
+    arrives **before** `policy-terms` — deliberately, because the recognition is a mid-dig sensation. The
+    card no longer spends the capstone's reveal, which was the actual complaint on
+    [#422](https://github.com/esoinila/SpaceSails/issues/422).
 
 **The seat (this lets a rare beat be PLAYED, not granted):**
 

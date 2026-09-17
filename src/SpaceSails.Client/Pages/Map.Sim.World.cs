@@ -65,6 +65,7 @@ public partial class Map
         public string? NebulaCheat; // #422 /map?nebula=N|all: assemble N NEBULA fragments (or all) so the readout + truth notice are testable; ?nebula=adjuster instead SEATS the rare bar contact so the tell can be EARNED
         public bool ConvergeCheat; // #422 /map?converge=1: seed enough of BOTH arcs to fire THE CONVERGENCE for a one-URL smoke test
         public DeathCause? DeathCheat; // #621 /map?death=<cause>: stage the REAL death at boot; the world you booted into decides the PLACE
+        public bool NoPatternCheat; // #640 /map?nopattern=1: boot with the policy ALREADY CLOSED (the purge handle, pulled on your own jar) — combine with ?death= to reach the death where nobody comes
         public readonly List<string> RevealCheats = new List<string>(); // /map?reveal=<bodyId> (repeatable): chart a hidden body at boot
         public bool TableSceneCheat; // #746 /map?tablescene=1: boot the B1 canteen with the table scene in reach
         public bool OldCrewCheat; // #973 L5a /map?oldcrew=1: boot ashore with the four shipmates working THIS berth and one captain already buried, so "you look different" can be played

@@ -83,6 +83,19 @@ public partial class Map
             _nerve = NervePips.FromPips(seedPips);
         }
 
+        // #640 · ?nopattern=1 — the policy is already closed. HERE, beside the nerve seed and for the same
+        // reason: the death staged a few lines below READS this. BustedResurrect asks the holder whether
+        // there is a pattern on file as its very first question, so a flag set after the death was staged
+        // would hand the captain the ordinary clinic, and the cheat would prove the opposite of the scene
+        // it exists to reach. Set on the LIVE holder rather than through a vault round-trip, because the
+        // round-trip is a separate claim with its own guard, and a cheat should stand up the state rather
+        // than the plumbing.
+        if (q.NoPatternCheat)
+        {
+            _nebula.MarkPolicyClosed();
+            ShowPulseMessage("🧪 Test: NO PATTERN ON FILE — this captain's policy is closed. The next death is the last one, and nothing in the world will mention it again.");
+        }
+
         if (_pendingExpeditionCheat is not null)
         {
             InjectExpeditionCheat(); // #370: after the clamp — the accepted gig lands on a live, docked world

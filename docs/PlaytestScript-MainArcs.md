@@ -26,7 +26,7 @@ Base: `http://localhost:5073`
 | 10 | [The adjuster](http://localhost:5073/map?ashore=1&nebula=adjuster) `?ashore=1&nebula=adjuster` | *"Six times. Different faces, same number."* He has a face now. No button spends silently. |
 | 11 | [Policy terms](http://localhost:5073/map?nebula=all&ashore=1) `?nebula=all&ashore=1` | The capstone names no shard; the truth notice rides its cold-archive plate. |
 | 12 | [The archive node](http://localhost:5073/map?nerve=2&archive=1&land=1) `?nerve=2&archive=1&land=1` | The hold is three degrees warm, no warning, no noun. Five visions; at nerve 2 you can barely afford the dwell. |
-| 13 | [THE CONVERGENCE](http://localhost:5073/map?converge=1) `?converge=1` | **Known open #422**: this card still announces the truth. Judge rec B (collision of testimonies) against what you feel here. |
+| 13 | [THE CONVERGENCE](http://localhost:5073/map?converge=1) `?converge=1` | **#422 option B shipped 2026-09-17**: a collision of testimonies, not an announcement. Two lines, nobody named over either, one closing sentence, plain Close. Both lines are in the ledger behind the card — check. |
 
 ## Act 3 — the world that isn't ours
 

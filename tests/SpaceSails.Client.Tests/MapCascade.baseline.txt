@@ -487,7 +487,6 @@
 .convergence-x:hover, .convergence-x:focus-visible
 .convergence-stamp
 .convergence-head
-.convergence-sub
 .convergence-img
 .convergence-body
 .convergence-foot

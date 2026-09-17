@@ -23,6 +23,25 @@ namespace SpaceSails.Core.Tests;
 /// enumerable twice into one list (the classic double-enumeration slip) and the count law reddens at
 /// sixteen. Neither is caught by any other test in this suite: nothing else asks the traffic planner the
 /// same question twice.</para>
+///
+/// <h3>#161, second pass · ONE SHIP WAS NOT SMALL ENOUGH</h3>
+///
+/// <para>Ship-by-ship took the boot's worst block from fourteen seconds to four and a quarter, and then the
+/// boot's own clock said why it stopped there: the wave is <c>2,743 + 3,081 + 3,137 + 4,234 + 83 + 98 +
+/// 435 + 277 ms</c>, which is not eight equal ships but four mid-flight haulers costing SECONDS each and
+/// four scheduled departures costing tenths. A four-second block is still a block a browser will put a
+/// "page unresponsive" dialog over, so <see cref="TrafficSchedule.GenerateStepByStep"/> hands the same wave
+/// over one PIECE OF WORK at a time — a mid-flight hauler is a probe route search, a real route search and
+/// a catch-up integration — and <see cref="TrafficSchedule.GenerateShipByShip"/> is now nothing but that
+/// walk with the part-way steps filtered out.</para>
+///
+/// <para><b>What the second pass holds, and its reds.</b> That the steps build the SAME SHIPS
+/// (<see cref="TheSameEightShipsHoweverFinelyTheWaveIsWalked"/>); that no ship is planned in one block
+/// (<see cref="NoShipIsHandedOverInASinglePiece"/> — collapse the three yields of a mid-flight hauler back
+/// into one and it reddens with every ship at one step); and that taking one STEP is materially cheaper
+/// than taking one SHIP (<see cref="TakingOneStepIsCheaperThanTakingOneShip"/>), which is the only one of
+/// the three that can tell a real handover from a cosmetic one — an iterator that did all three pieces of
+/// work and then yielded three times would pass both of the others.</para>
 /// </summary>
 public class TheSkyIsTheSameSkyOneShipAtATimeTests
 {
@@ -50,11 +69,19 @@ public class TheSkyIsTheSameSkyOneShipAtATimeTests
             oneAtATime.Add(ship);
         }
 
-        Assert.Equal(inOneBreath.Count, oneAtATime.Count);
+        AssertTheSameWave(inOneBreath, oneAtATime);
+    }
+
+    /// <summary>The wave, ship by ship and field by field. Shared by the ship-at-a-time law above and the
+    /// step-at-a-time law below, so the two finenesses are held to ONE definition of "the same sky" — a
+    /// second copy of this comparison is how one of them ends up quietly weaker than the other.</summary>
+    private static void AssertTheSameWave(IReadOnlyList<NpcShip> inOneBreath, IReadOnlyList<NpcShip> walked)
+    {
+        Assert.Equal(inOneBreath.Count, walked.Count);
         for (int i = 0; i < inOneBreath.Count; i++)
         {
             NpcShip a = inOneBreath[i];
-            NpcShip b = oneAtATime[i];
+            NpcShip b = walked[i];
             string where = $"ship {i + 1} of {inOneBreath.Count}";
 
             Assert.Equal(a.Id, b.Id);
@@ -82,6 +109,170 @@ public class TheSkyIsTheSameSkyOneShipAtATimeTests
                 Assert.Equal(a.Plan.Nodes[n], b.Plan.Nodes[n]);
             }
         }
+    }
+
+    [Fact]
+    public void TheSameEightShipsHoweverFinelyTheWaveIsWalked()
+    {
+        // …and the same question one fineness down. The step walk yields part-way steps carrying no ship at
+        // all; the ships that DO come out of it must be the wave, in order, to the metre.
+        CircularOrbitEphemeris sol = Sol();
+
+        IReadOnlyList<NpcShip> inOneBreath = TrafficSchedule.Generate(sol, BootSeed, BootCount);
+
+        var stepByStep = new List<NpcShip>();
+        foreach (TrafficSchedule.TrafficStep step in TrafficSchedule.GenerateStepByStep(sol, BootSeed, BootCount))
+        {
+            if (step.Ship is { } finished)
+            {
+                stepByStep.Add(finished);
+            }
+        }
+
+        AssertTheSameWave(inOneBreath, stepByStep);
+    }
+
+    [Fact]
+    public void NoShipIsHandedOverInASinglePiece()
+    {
+        // THE SHAPE OF THE HANDOVER. A ship finishes on exactly one step, so a wave handed over ship by ship
+        // has exactly `count` steps — which is what this lane set out to stop being true. The mid-flight
+        // haulers (the expensive ones; the whole reason for this file) must each arrive over THREE steps.
+        CircularOrbitEphemeris sol = Sol();
+
+        var stepsPerShip = new Dictionary<int, int>();
+        var finishedOn = new Dictionary<int, int>();
+        int total = 0;
+        foreach (TrafficSchedule.TrafficStep step in TrafficSchedule.GenerateStepByStep(sol, BootSeed, BootCount))
+        {
+            total++;
+            stepsPerShip[step.ShipIndex] = stepsPerShip.GetValueOrDefault(step.ShipIndex) + 1;
+            if (step.Ship is not null)
+            {
+                finishedOn[step.ShipIndex] = finishedOn.GetValueOrDefault(step.ShipIndex) + 1;
+            }
+
+            Assert.Equal(BootCount, step.ShipCount);
+        }
+
+        Assert.Equal(BootCount, stepsPerShip.Count);
+        Assert.True(total > BootCount,
+            $"the wave came over in {total} steps for {BootCount} ships — that is one step per ship, which is "
+            + "the block this lane exists to break up.");
+
+        // Exactly one step per ship CARRIES that ship: a wave that yielded a ship twice would be a doubled
+        // sky that every other law in this file would still call identical.
+        //
+        // And the shape is one of exactly two. A SCHEDULED departure is one route search and nothing else,
+        // so she arrives on a single step and there is nothing to break up. A MID-FLIGHT hauler — the whole
+        // reason for this file — is a probe search, a real search, at least one slice of catch-up
+        // integration and the step that finishes her: four at the very least, and more the longer she has
+        // already been flying. Anything in between means a piece of her planning has been put back into one
+        // block.
+        foreach (int index in stepsPerShip.Keys)
+        {
+            Assert.Equal(1, finishedOn.GetValueOrDefault(index));
+            Assert.True(stepsPerShip[index] == 1 || stepsPerShip[index] >= 4,
+                $"ship {index + 1} came over in {stepsPerShip[index]} steps — a hauler is either one scheduled "
+                + "route search or a mid-flight plan broken into at least four pieces, never anything between.");
+        }
+
+        // …and this wave genuinely contains the expensive kind: `count * 6 / 10` of the eight are mid-flight
+        // by construction, so a run where they all arrived in one step would be this law reading a wave that
+        // has nothing in it to break up.
+        Assert.True(stepsPerShip.Values.Count(n => n >= 4) >= BootCount * 6 / 10,
+            "fewer mid-flight haulers than the planner builds — this law is reading the wrong wave.");
+    }
+
+    [Fact]
+    public void TakingOneStepIsCheaperThanTakingOneShip()
+    {
+        // THE ONLY ONE OF THE THREE THAT CAN TELL A REAL HANDOVER FROM A COSMETIC ONE. An iterator that did
+        // all of a ship's work and then yielded three times would satisfy the shape law above and the same-
+        // sky law beside it, and would hand the browser the identical four-second block. So the measurement
+        // is a ratio, in the idiom TheWaveIsLazyUntilItIsWalked already uses: the FIRST STEP against the
+        // FIRST SHIP, out of the same wave. The first ship is mid-flight — a probe search, a real search and
+        // a catch-up — so one step of her is about a third; the 2x margin is the honest half of that.
+        CircularOrbitEphemeris sol = Sol();
+        _ = TrafficSchedule.Generate(sol, BootSeed, 1); // warm the planner's own first-call costs
+
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        NpcShip firstShip = TrafficSchedule.GenerateShipByShip(sol, BootSeed, BootCount).First();
+        long oneShipMs = clock.ElapsedMilliseconds;
+
+        clock.Restart();
+        TrafficSchedule.TrafficStep firstStep = TrafficSchedule.GenerateStepByStep(sol, BootSeed, BootCount).First();
+        long oneStepMs = clock.ElapsedMilliseconds;
+
+        Assert.NotNull(firstShip.Id);
+        Assert.Null(firstStep.Ship); // the first step of a mid-flight hauler finishes nothing
+        Assert.True(oneStepMs * 2 < oneShipMs,
+            $"one STEP of the first hauler cost {oneStepMs} ms against {oneShipMs} ms for the whole of her — "
+            + "the step handover is not breaking her planning up, so the boot still owes the browser one "
+            + "block per ship.");
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(7)]
+    [InlineData(128)]
+    [InlineData(1_000)]
+    [InlineData(100_000)]
+    public void TheSameRunHoweverItIsSliced(int stepsPerSlice)
+    {
+        // THE THIRD PIECE OF A MID-FLIGHT HAULER — the catch-up integration over the 20–70 days she has
+        // already been flying — is the longest single block left once the two route searches are yielded
+        // around, so it is sliced too (Simulator.RunSliceBySlice). Slicing an integration is the kind of
+        // change that looks free and is not: a run cut into two shorter Runs computes its second end time
+        // off an ACCUMULATED SimTime, and a last-bit difference there decides whether the loop takes one
+        // more step — two hours of a hauler's flight, and a different sky.
+        //
+        // Red proof: replace RunSliceBySlice's body with two half-duration Run calls and this reddens on
+        // every slice size, on SimTime first.
+        //
+        // THE DURATION IS NOT A ROUND ONE, AND THAT IS THE WHOLE TEST. The first draft of this law used a
+        // flat forty days — 480 steps of 7,200 s, exactly — and the two-half-Runs red PASSED it, because
+        // two halves of an exact multiple are themselves exact multiples and the step count comes out the
+        // same. A law that cannot fail on the wrong implementation is not a law, so the duration now has an
+        // awkward tail on it, which is what a real catch-up (`baseSimTime - virtualDeparture`, an arbitrary
+        // double) always has: the halves then land mid-step, the second run's end time is computed off an
+        // accumulated clock, and the run takes 482 steps where it should take 481.
+        CircularOrbitEphemeris sol = Sol();
+        NpcShip hauler = TrafficSchedule.Generate(sol, BootSeed, BootCount)[0];
+        var sim = new Simulator(sol, timeStepSeconds: 7200);
+        double duration = (40 * 86400) + 1234.5;
+
+        foreach (ManeuverPlan? plan in new[] { hauler.Plan, null })
+        {
+            ShipState inOneRun = sim.Run(hauler.InitialState, duration, plan);
+            List<ShipState> sliced = [.. sim.RunSliceBySlice(hauler.InitialState, duration, plan, stepsPerSlice)];
+            ShipState answer = sliced[^1];
+            string where = $"slice {stepsPerSlice}, plan {(plan is null ? "none" : $"{plan.Nodes.Count} nodes")}";
+
+            Assert.True(inOneRun.SimTime == answer.SimTime, $"{where}: her clock reads differently");
+            Assert.True(inOneRun.Position == answer.Position, $"{where}: she is somewhere else");
+            Assert.True(inOneRun.Velocity == answer.Velocity, $"{where}: she is going somewhere else");
+            Assert.True(inOneRun.Charge == answer.Charge, $"{where}: she is carrying a different charge");
+
+            // …and it really did hand the caller something to breathe on. A slice size under the run's own
+            // step count must produce more than the one final state, or "sliced" is a word and not a fact.
+            if (stepsPerSlice <= 100)
+            {
+                Assert.True(sliced.Count > 1,
+                    $"{where}: the whole run came back as one element — nothing was handed back mid-run.");
+            }
+        }
+    }
+
+    [Fact]
+    public void ANonsenseCountIsRefusedAtTheASKOfTheSteps()
+    {
+        // The same eager-check law as the ship walk's, one fineness down: GenerateStepByStep validates and
+        // then RETURNS the iterator, so a bad count is refused at the call and not inside somebody's foreach.
+        CircularOrbitEphemeris sol = Sol();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => TrafficSchedule.GenerateStepByStep(sol, BootSeed, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => TrafficSchedule.GenerateStepByStep(sol, BootSeed, -3));
     }
 
     [Fact]

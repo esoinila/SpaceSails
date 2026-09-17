@@ -332,7 +332,7 @@ public partial class Map
         _deckView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime, new DeckView.State(
             _avatarX, _avatarY, _avatarHeading,
             _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null,
-            Docked: _dockedHavenId is not null && HavenInterior.HasInterior(_dockedHavenId),
+            Docked: DockedSomewhereWithAFloorAboveIt,
             // #330: the nerve gauge rides every walk mode — full-size on the regolith, a compact
             // whisper aboard the ship or in a haven bar. (Flight never draws a DeckView, so it
             // stays gauge-free by construction.)
@@ -352,7 +352,11 @@ public partial class Map
             // (the table panel IS the chair, #757) and the figure is drawn from that one answer.
             Seated: CaptainIsSeated,
             // #825 · and whether the MACHINE is keeping up, off the one clock the input path reads.
-            StallBanner: TheStallBanner()),
+            StallBanner: TheStallBanner(),
+            // #440 · …and the keybar, off the regolith, now that it has something to say there — the bank's
+            // B at a contact's table and the mute. Null off a walked deck and on an excursion, where the
+            // surface hud's own bar has owned the strip since #324.
+            KeyHints: BuildDeckKeyHints()),
             _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
     }
     // Plasma stream ribbons (M7): one translucent wide segment per stream, between the two

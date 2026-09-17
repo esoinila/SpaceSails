@@ -50,6 +50,39 @@ public sealed class NebulaProgress
     /// <see cref="Clear"/> on a new voyage.</summary>
     public bool ConvergenceSeen { get; private set; }
 
+    /// <summary>
+    /// #640 · THE POLICY IS CLOSED — this captain's lineage pulled the purge handle on a node whose
+    /// resident was their OWN pattern (<see cref="ArchiveNode.Resident.YourOwn"/>), and Nebula has nothing
+    /// left on file. Owner ruling 2026-09-17, option A: <i>"yes let's have that possibility … it is very
+    /// film noir for the characters to want that kind of things and it certainly closes a story arc for
+    /// that captain."</i>
+    ///
+    /// <para><b>It lives here because the policy is arc 2's.</b> The handle is the archive node's, but what
+    /// it CLOSES is the insurance — the thing this holder has always been the per-thread record of — so it
+    /// rides the same vault section as the fragments (<see cref="NebulaSection.PolicyClosed"/>), is wiped
+    /// by <see cref="Clear"/> on a new voyage like everything else in this universe, and survives a reload
+    /// exactly as <see cref="ConvergenceSeen"/> does.</para>
+    ///
+    /// <para><b>Nothing announces it.</b> Not the handle, not the ledger, not a warning. The label on the
+    /// housing said <c>RESIDENT PATTERN NOT RECOVERABLE</c> and was telling the truth; the captain finds
+    /// out the way the man in the cartoon did, at the next death, when nobody comes.</para>
+    /// </summary>
+    public bool PolicyClosed { get; private set; }
+
+    /// <summary>Close the policy for this thread — the purge handle, pulled on the captain's own pattern.
+    /// Idempotent: returns true only on the edge that first closes it. There is no re-opening it, here or
+    /// anywhere; the only thing that clears it is <see cref="Clear"/>, which is a different universe.</summary>
+    public bool MarkPolicyClosed()
+    {
+        if (PolicyClosed)
+        {
+            return false;
+        }
+
+        PolicyClosed = true;
+        return true;
+    }
+
     /// <summary>Assemble a fragment by id — idempotent, and it must be a REAL pool fragment (a typo'd or
     /// retired id is refused, so the set can never hold a phantom). Returns true only on the edge that first
     /// adds a recognised piece, so a caller can save-on-change and narrate a genuinely new find.</summary>
@@ -80,11 +113,19 @@ public sealed class NebulaProgress
     /// <summary>Rehydrate from a saved section (the vault load path), tolerant: unknown ids are skipped,
     /// duplicates collapse, order is irrelevant. Additive over whatever is already held; the convergence flag
     /// is OR-ed in so a save that recorded the reveal keeps it seen.</summary>
-    public void Load(IEnumerable<string>? assembledIds, bool convergenceSeen = false)
+    public void Load(IEnumerable<string>? assembledIds, bool convergenceSeen = false, bool policyClosed = false)
     {
         if (convergenceSeen)
         {
             ConvergenceSeen = true;
+        }
+
+        // #640 · OR-ed in for the same reason the convergence bit is, and with more at stake: a closed
+        // policy is the one fact about this thread that must never be lost on a round-trip, because the
+        // sentence the death card reads is written against it.
+        if (policyClosed)
+        {
+            PolicyClosed = true;
         }
 
         if (assembledIds is null)
@@ -107,6 +148,7 @@ public sealed class NebulaProgress
     {
         _assembled.Clear();
         ConvergenceSeen = false;
+        PolicyClosed = false;   // #640 · a new voyage is a new universe, and its captain has a policy
     }
 
     // ── Convenience reads that defer to the pure fine-print logic, so callers touch one object. ──

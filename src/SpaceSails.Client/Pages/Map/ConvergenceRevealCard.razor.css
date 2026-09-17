@@ -1,7 +1,10 @@
 ﻿/* #251 item 3 · ConvergenceRevealCard's OWN RULES, moved verbatim out of Map.razor.css.
 
-   8 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
-   is the same characters, in the same order, under a different name. The scope is still the PAGE's
+   7 rule block(s), in the order Map.razor.css wrote them. Nothing here was retyped: this file
+   is the same characters, in the same order, under a different name. (`.convergence-sub` was the
+   eighth and is gone: #422's ruling took the card's subtitle off the screen on 2026-09-17, and this
+   card was the only surface that ever wrote that class — #1110's guard is what found the residue.)
+   The scope is still the PAGE's
    (`b-4dqsdx4p75`, pinned in SpaceSails.Client.csproj by #251 item 1), so every selector compiles to
    exactly the string it compiled to before the move and matches exactly the elements it matched.
 
@@ -50,14 +53,6 @@
     letter-spacing: 0.02em;
     color: #e7f1ff;
     margin-bottom: 0.15rem;
-}
-
-.convergence-sub {
-    font-size: 0.82rem;
-    font-style: italic;
-    letter-spacing: 0.03em;
-    color: #93b2d4;
-    margin-bottom: 0.75rem;
 }
 
 /* #528 · the convergence's plate. Kept SHORT (a capped height, not the view-object's 70vh) because this

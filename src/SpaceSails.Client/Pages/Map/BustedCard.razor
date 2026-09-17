@@ -37,7 +37,7 @@
 
 @{
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────────── *@
-        <div class="busted-backdrop @(bust.Phase is BustedEncounter.Stage.FreezeFrame or BustedEncounter.Stage.Impact or BustedEncounter.Stage.SurfaceEnd ? "busted-sepia" : "")">
+        <div class="busted-backdrop @(bust.Phase is BustedEncounter.Stage.FreezeFrame or BustedEncounter.Stage.Impact or BustedEncounter.Stage.SurfaceEnd or BustedEncounter.Stage.NoRestore ? "busted-sepia" : "")">
             @* ═══════════════════════════════════════════════════════════════════════════════════════════
                #997 wave 3 · THE LAST MODE, ON THE ONE SURFACE IT WAS BUILT FOR.
 
@@ -474,6 +474,33 @@
                                       OnBeside="OpenLogbookFromDeath">
                             @* #951 — and here too, at the last page of the death chain: the new captain's rustbucket is one way on, a moment you banked is the other. *@
                         </OverlayShell>
+                        break;
+
+                    case BustedEncounter.Stage.NoRestore:
+                        @* #640 · THE PAGE THE CARD HAD NEVER TURNED TO. Owner ruling 2026-09-17, option A —
+                           the run ends. The captain's lineage pulled the purge handle on a cold-archive node
+                           holding their OWN pattern, and this is the death that follows it: no clinic, no
+                           bill, no rustbucket, no successor. Map.Combat.Busted.Wake.NoPatternOnFile is the
+                           sim side, and it runs BEFORE any of the wake does, so nothing on this panel is
+                           describing something that also happened.
+
+                           EVERYTHING IS ABSENT ON PURPOSE. No art (the four visions and the purged plate
+                           spent this feature's pictures, and a painting of nobody arriving would be the game
+                           telling the captain how to feel about it). No headline. No stamp. One line, which
+                           is Core's and is read VERBATIM — ArchiveNode.NoRestoreLine, authored two months
+                           before anything could truthfully print it — and one way out. *@
+                        <div class="busted-freeze">
+                            <div class="busted-quote">@ArchiveNode.NoRestoreLine</div>
+                            @* ONE control, and it is not "…wake up", because nobody does. It closes the card
+                               (the general UI law of 2026-08-24) and opens the FRONT door — the whole shelf,
+                               where this captain's thread is now listed as ended and Continue no longer
+                               leads into it. The other threads and every banked moment are exactly where
+                               they were. *@
+                            <OverlayShell class="busted-close-row" Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
+                                          DismissClass="btn btn-light busted-close" DismissFace="Close the book"
+                                          OnClose="() => Dismiss(LeaveTheClosedThread)">
+                            </OverlayShell>
+                        </div>
                         break;
                 }
             </OverlayShell>

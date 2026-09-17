@@ -359,6 +359,17 @@ public static class DevStarts
         new("⛓", "CAUGHT — the hail, hosted by its own card",
             "Heat raised, muscle sent, and the grapples across the frame the moment the world is ready. The demand panel carries the collector-hail painting AND the beat's own sentence; the log behind it has the same words filed once; nothing stacks a second card on top (#777, #621).",
             "/map?death=collector&dock=selene-gate"),
+        // #640 · THE DEATH WHERE NOBODY COMES, and the only road to it. Reaching this honestly is a 1-in-20
+        // resident behind a 1-in-3 hull behind a throw the captain pays nerve for — and then a death. That is
+        // most of a career for one card, and the house rule written beside these cheats is that a scene
+        // nobody can reach on demand is a scene that ships broken. ?nopattern=1 combines with any ?death=,
+        // which is how you choose the place; this row takes the shortest one.
+        new("🕯", "NO PATTERN ON FILE — the run ends",
+            "A captain whose lineage already pulled the purge handle on a cold-archive node holding their OWN "
+            + "pattern, killed on her own deck. Press \"…wake up\" and watch what does not happen: no clinic, "
+            + "no bill, no rustbucket, no successor, no new face. One line, and the thread is closed — the "
+            + "front door lists that captain afterwards and will not Continue into them (#640, #639).",
+            "/map?nopattern=1&death=impact"),
         new("☄", "The rock that must not arrive",
             "The asteroid-deflection gig accepted, the rock inbound, ship docked at Ringside — the whole clock running (#394).",
             "/map?deflection=1"),

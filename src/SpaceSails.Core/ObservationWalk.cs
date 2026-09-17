@@ -109,17 +109,37 @@ public static class ObservationWalk
     // ── THE WAIT ──────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// #1199 · <b>HOW LONG "THEY MUST HAVE FINISHED THE VIEW" IS.</b>
+    /// #1199 · <b>HOW LONG "THEY MUST HAVE FINISHED THE VIEW" IS, AS A FRACTION OF THE ROOM'S OWN WATCH.</b>
     ///
-    /// <para><see cref="Interior.Escort.PatienceSeconds"/> — a quarter of the bar's own watch
-    /// (<see cref="Interior.PatronRota.WatchSeconds"/>), and NOT a number of this feature's own. The game
-    /// already owns exactly one statement of "long enough to stop waiting for somebody to come through a
-    /// doorway", argued from both ends on #731's escort: <i>"an hour of station time is that grace"</i>. The
-    /// escort waits that long in a doorway for the captain; here the captain waits that long at a mouth for
-    /// somebody else. One fact, one clock, read from both sides — a second constant meaning the same thing
-    /// is this repository's one-source-of-truth law with a stopwatch in it.</para>
+    /// <para><b>It was a quarter — <see cref="Interior.Escort.PatienceFraction"/>, the escort's own — and the
+    /// owner played it.</b> The two waits looked like one fact read from both sides, and as a piece of
+    /// fiction they still are: the escort stands in a doorway expecting you, and here you stand at a mouth
+    /// expecting somebody else. What the sharing missed is that the two are not waited THROUGH the same way.
+    /// The escort's hour is the ceiling on a beat the captain ends by walking over — it is how long she will
+    /// put up with being ignored, and the ordinary play of it is over in seconds. This one has nothing for
+    /// the captain to do: he has already followed them in, they are already not there, and the wait is the
+    /// whole of what happens next. <b>Waited out at warp 1, a quarter-watch is an hour of the player's own
+    /// evening spent looking at an empty tube</b> — owner, 2026-09-17: <i>"YES, shorten the wait."</i></para>
+    ///
+    /// <para><b>So it is a fraction of its own, and the escort's has not moved.</b> One eightieth of a watch —
+    /// <b>three minutes of the player's clock at warp 1</b>, which is the number this fraction is actually
+    /// chosen against: long enough that the captain walks the tube, reaches the rail and has a moment of
+    /// standing there before the game admits nobody is coming, and short enough to be played rather than
+    /// warped past. It stays a fraction of <see cref="Interior.PatronRota.WatchSeconds"/> rather than becoming
+    /// a literal 180, for the reason the escort's own docs give: a wait written as a number stops meaning
+    /// anything about a watch the day a watch changes length.</para>
+    ///
+    /// <para><b>And it now fits where it is spent.</b> The walk is only dealt after last call — past
+    /// <see cref="Interior.Egress.LastCallFraction"/> of the shift — which leaves a quarter of a watch of room
+    /// on the far side of it. A wait that was itself a quarter-watch filled the whole of that remainder
+    /// exactly; a wait of one eightieth sits inside it twenty times over.</para>
     /// </summary>
-    public static double TheWaitSeconds => Interior.Escort.PatienceSeconds;
+    public const double WaitFraction = 1.0 / 80.0;
+
+    /// <summary>#1199 · …in seconds, off the rota's own shift — the same derivation
+    /// <see cref="Interior.Escort.PatienceSeconds"/> makes from <see cref="WaitFraction"/>'s sibling, and
+    /// never a second number.</summary>
+    public static double TheWaitSeconds => Interior.PatronRota.WatchSeconds * WaitFraction;
 
     // ── THE CANON (Fable, verbatim; nothing else authored) ────────────────────────────────────────────
 

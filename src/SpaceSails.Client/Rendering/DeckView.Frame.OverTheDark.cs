@@ -480,11 +480,16 @@ public sealed partial class DeckView
         // Blind-UI audit finding: with the tube off-camera, nothing said the ship was docked or
         // how to go ashore — the tester could only guess "airlock" by genre convention. On the surface
         // the keybar turns contextual (#324): the deploy/drop keys spell themselves out while they matter.
+        // #440 · …and OFF the surface it turns contextual too. The ladder is the same shape it always was
+        // with one rung added in the middle: the excursion's bar wins where there is an excursion, then the
+        // deck's own composed bar (the bank's B at a contact's table, the mute), then the fixed sentence for
+        // every caller that hands neither down. The two fixed sentences are DeckView's own consts so the
+        // page composing the rung above them quotes them rather than re-typing them.
         string bottomHint = surface is { KeyHints: { Length: > 0 } hints }
             ? hints
-            : state.Docked
-                ? "docked ⚓ walk up through the airlock to go ashore ∙ WASD — move ∙ E — interact ∙ Q — helm"
-                : "WASD / arrows — move ∙ E — interact ∙ Q — back to the helm";
+            : state.KeyHints is { Length: > 0 } deckHints
+                ? deckHints
+                : state.Docked ? DockedKeyHints : DeckKeyHints;
         _renderer.DrawText(ox, heightPx - 10, bottomHint, TextDim, "11px monospace", TextAlign.Center);
 
         // #440: the standing prompt rides just ABOVE the keybar, bright and a size up — the same eyeline the

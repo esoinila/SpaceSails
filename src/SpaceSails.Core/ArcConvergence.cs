@@ -37,19 +37,47 @@ public static class ArcConvergence
     /// it, not the finished contract.</summary>
     public const int NebulaSideThreshold = 3;
 
+    /// <summary>
+    /// #422 · THE KAAMOS SIDE'S NAMED SHARD — the berth-holder's tell, one of the three the KAAMOS side
+    /// counts, and the one the card QUOTES.
+    ///
+    /// <para><b>Why the bar names a shard and not only a number.</b> The card is a collision, not an
+    /// explanation: it prints <see cref="KaamosLore.HolderConvergenceLine"/> and
+    /// <see cref="NebulaLore.AdjusterConvergenceLine"/> unannotated and closes on
+    /// <see cref="ConvergenceReveal"/> — <i>"You have been carrying both of these for a while."</i> A count
+    /// alone cannot make that sentence true. The KAAMOS shards come from five different systems, and the
+    /// plaque, the pod and the lab log are three of them: a captain could cross a bare 3-intel bar having
+    /// never once sat down with the berth-holder, and the card would then hand them a line they had never
+    /// heard while claiming they had been carrying it. That is the house's named bug class — the sim doing
+    /// one thing while a sentence reports another — so the bar names the shard the card quotes.</para>
+    ///
+    /// <para><b>The bar is still 3 + 3.</b> This does not raise the threshold (owner ruling 2026-09-17 kept
+    /// option B's bar and rejected option A's): it says which ONE of the three has to be in hand. The
+    /// Nebula side needs no widening — <c>adjuster-tell</c> is already inside its first three — and on the
+    /// KAAMOS side the effect is only that the tell must be one of your three.</para>
+    /// </summary>
+    public const string KaamosSideShard = "holders-tell";
+
+    /// <summary>#422 · THE NEBULA SIDE'S NAMED SHARD — the adjuster's tell, the line the card quotes on the
+    /// lower half. Same reason as <see cref="KaamosSideShard"/>: the closing line says the captain has been
+    /// carrying both of these, so both must be in the ledger when the card opens.</summary>
+    public const string NebulaSideShard = "adjuster-tell";
+
     /// <summary>True once the KAAMOS side is far enough along to converge — a pure, READ-ONLY read of the
-    /// ice-moon progress (never mutates it).</summary>
+    /// ice-moon progress (never mutates it). Enough intel AND the one shard the card quotes
+    /// (<see cref="KaamosSideShard"/>).</summary>
     public static bool KaamosSideReady(KaamosProgress kaamos)
     {
         ArgumentNullException.ThrowIfNull(kaamos);
-        return KaamosLore.IntelAssembled(kaamos) >= KaamosSideThreshold;
+        return KaamosLore.IntelAssembled(kaamos) >= KaamosSideThreshold && kaamos.Has(KaamosSideShard);
     }
 
-    /// <summary>True once the NEBULA side is far enough along to converge.</summary>
+    /// <summary>True once the NEBULA side is far enough along to converge — enough intel AND the one shard
+    /// the card quotes (<see cref="NebulaSideShard"/>).</summary>
     public static bool NebulaSideReady(NebulaProgress nebula)
     {
         ArgumentNullException.ThrowIfNull(nebula);
-        return NebulaLore.IntelAssembled(nebula) >= NebulaSideThreshold;
+        return NebulaLore.IntelAssembled(nebula) >= NebulaSideThreshold && nebula.Has(NebulaSideShard);
     }
 
     /// <summary>
@@ -72,30 +100,31 @@ public static class ArcConvergence
         return HasConverged(kaamos, nebula) && !nebula.ConvergenceSeen;
     }
 
-    /// <summary>The CONVERGENCE reveal — the one-time line the wiring lane delivers when the two rabbit holes
-    /// meet (issue #422). The Expanse beat, verbatim: the moment the player's own resurrections and the sealed
-    /// ice-moon berth resolve into a single truth, recontextualising every death they have had. Authored Core
-    /// copy, never a fragment (no shard states it); delivered once, under the biggest #391 throw. Kept here so
-    /// the fiction lives with the predicate, and the sanity/#226 lane and the world lane bind to one agreed
-    /// string.</summary>
-    public const string ConvergenceReveal =
-        "The two threads pull taut and cross. The berth nobody files for and the policy you can never let " +
-        "lapse were always the same knot: Vantar taught a lattice to keep whole crews awake in the dark, and " +
-        "Nebula bought the trick and sold it cheap, and both the ice-moon and the cold archive that keeps " +
-        "bringing you back are the same held breath. The wintering mind remembers Vantar — and it knows your " +
-        "policy number, because a copy of you has been filed down there in the sunless water since your first " +
-        "premium, waking every so often, certain it is the one who was here first. Every death you have died " +
-        "was a withdrawal. The same forty names, the same lucid dark. You did not find two mysteries. You " +
-        "found out where you go when you die, and that it has been waiting for you to arrive in person.";
-
-    /// <summary>The line the reveal card rests on, under <see cref="ConvergenceReveal"/> — the beat after the
-    /// beat, the thing the captain is left holding. It must say something the body has NOT already said: the
-    /// card used to close on <i>"Every death you have died was a withdrawal. The same forty names, the same
-    /// lucid dark."</i>, which is two sentences copied verbatim out of the paragraph directly above it, so the
-    /// biggest card in the game repeated itself to the player's face (found by the #422 story pass,
-    /// 2026-08-02). What is left to say is not a recap; it is the bill, which has not stopped.</summary>
-    public const string ConvergenceFoot =
-        "The premium comes due again next port. You will pay it, and now you will know what for.";
+    /// <summary>
+    /// The CONVERGENCE reveal — and it is now ONE LINE, because the card stopped explaining (owner ruling
+    /// 2026-09-17, the #422 story pass's option B).
+    ///
+    /// <para><b>What it used to be.</b> Eight sentences of third-person exposition that spent every secret
+    /// both arcs still had to give: that the resurrection is a fresh copy which wakes certain it was always
+    /// you, that Nebula keeps the ORIGINAL filed in the cold archive from your first premium, and that the
+    /// archive is awake. All three are <c>NebulaArc.md</c> §2's fine print, and two of them are the
+    /// <c>policy-terms</c> capstone's own reveal — which the card, firing at a strictly lower bar, reached
+    /// first on every path, leaving arc 2's capstone to recap what the player had already been told. It
+    /// also broke the house's loudest rule twice over: nobody spoke it, so it was the GAME confirming the
+    /// plot in a full-screen modal, and the way out of the modal editorialised ("…sit with that").</para>
+    ///
+    /// <para><b>What it is now.</b> The card is a COLLISION. It sets the berth-holder's line
+    /// (<see cref="KaamosLore.HolderConvergenceLine"/>) above the adjuster's
+    /// (<see cref="NebulaLore.AdjusterConvergenceLine"/>), unannotated — no names, no labels, no joining
+    /// sentence — and closes on this one line, which is not an explanation. Both sentences are already in
+    /// the captain's ledger when it opens (<see cref="KaamosSideShard"/>, <see cref="NebulaSideShard"/>),
+    /// so no fact is withheld and none is confirmed: the arithmetic is the player's. Each arc's capstone
+    /// keeps its own reveal to give.</para>
+    ///
+    /// <para>Authored Core copy, never a fragment; delivered once per thread, under the biggest #391 throw.
+    /// Kept here so the fiction lives with the predicate.</para>
+    /// </summary>
+    public const string ConvergenceReveal = "You have been carrying both of these for a while.";
 
     /// <summary>#528 · THE PLATE. The biggest reveal in the game was a text div, while a routine collector
     /// shakedown got a painted portrait — the exact inversion #528 was filed about.
