@@ -15,12 +15,17 @@ field in the walk loop, the confrontation card, the handle — with the two stat
 `VentedWreckTests`, `TheArchiveNodeIsOnTheDeckTests`. Art tracked in
 [../art-manifest-visions.md](../art-manifest-visions.md).
 
-**Still open, deliberately — §7 step 5, the death line.** `ArchiveNode.NoRestoreLine` exists and nothing
-reads it. Printing `NO PATTERN ON FILE — POLICY CLOSED` on a resurrection card that then resurrects you
-anyway is the sentence-vs-sim bug this project has paid for three times, so the card stays silent until
-the owner rules on whether purging your own pattern actually **ends** the policy. Filed as an issue
-rather than guessed. Until then `Resident.YourOwn` is a warning a careful captain can read on the collar
-and heed — and nothing more.
+**CLOSED, 2026-09-17 — §7 step 5, the death line, is BUILT.** `ArchiveNode.NoRestoreLine` had been
+authored, wording-tested and **read by nothing** for two months, because printing `NO PATTERN ON FILE —
+POLICY CLOSED` on a resurrection card that then resurrects you is the sentence-vs-sim bug this project has
+paid for three times. It was filed as a decision rather than guessed ([#640]), and the owner ruled
+**option A, THE RUN ENDS**: *"yes let's have that possibility … it is very film noir for the characters to
+want that kind of things and it certainly closes a story arc for that captain."*
+
+`Resident.YourOwn` now has mechanical bite, and the line is simply true — see **§5a**. Reach it on demand
+with `/map?nopattern=1&death=impact`.
+
+[#640]: https://github.com/esoinila/SpaceSails/issues/640
 
 > "Somehow this reminds me of the Space Madness episode in Ren & Stimpy, where cadet Stimpy is left to
 > patrol a big red button named 'history eraser button', that nobody knows what it does. At the end
@@ -191,6 +196,45 @@ their policy can simply not pull an unread handle. The information was always pu
 
 ---
 
+## 5a. THE RUN ENDS — what case 3 actually does (#640, owner ruling 2026-09-17)
+
+> *"yes let's have that possibility … it is very film noir for the characters to want that kind of things
+> and it certainly closes a story arc for that captain."*
+
+**At the handle.** Nothing. `ArchiveNode.ClosesThePolicy(Resident.YourOwn)` is true, so
+`NebulaProgress.MarkPolicyClosed()` is called and the flag rides the vault
+(`NebulaSection.PolicyClosed`), which is what lets the handle and the death be hours and a reload apart.
+No pulse, no log line, no ledger entry, and — the owner's standing instruction for this beat — **nothing is
+added to the label**. It said `RESIDENT PATTERN NOT RECOVERABLE` and was telling the truth.
+
+**At the next death.** `BustedResurrect` asks the flag as its FIRST question and hands off to
+`NoPatternOnFile`, which is written as the list of things that do not happen:
+
+| the ordinary wake | this one |
+| --- | --- |
+| `InsuranceRule.ApplyToRebirth` → clinic, bill, rustbucket, kit, full tank | none of it |
+| `WakeAtNearestHaven` moves the ship | the ship is not moved; nobody is flying it |
+| `IssueSuccessorCaptain` → new name, new face, retiree row, the filing line | no successor, ever |
+| the rebirth glitch and the clinic's second page | both are things read AT a clinic |
+| `Stage.Resurrected` | `Stage.NoRestore` — one line, `ArchiveNode.NoRestoreLine`, verbatim |
+
+**What "the thread closes" means.** `GameThreadRegistry.Close(id)` marks the row
+`GameThreadInfo.Ended`, and `Active()`/`Newest()` skip ended rows — so **Continue no longer leads into a
+run with no captain in it**, and a shelf whose every thread has ended answers null exactly as an empty one
+does. The client also puts its autosave pen down (`_threadIsOver`), so the last autosave that thread ever
+wrote is the moment the captain was last alive.
+
+**What it does NOT mean.** Nothing is deleted. The captain, the retirees, the graves, the selfies and all
+ten save berths stay on the shelf and the logbook still lists them — a run ending is not a record being
+erased. **No other thread is touched.** And the way off the last card is a single control, `Close the
+book`, which closes the card (the general UI law of 2026-08-24) and opens the FRONT door rather than the
+ship's own drawer, because there is no ship to go back to.
+
+**Reach it on demand:** `/map?nopattern=1&death=impact` — the flag, then the real death through the real
+pipeline. Combine `?nopattern=1` with any `?death=` to choose the place.
+
+---
+
 ## 6. How it feeds the big plots
 
 - **Arc 2 (Nebula, #422)** gets a *delivery system with a price*. Fragments 1, 3 and the capstone all
@@ -217,10 +261,11 @@ their policy can simply not pull an unread handle. The information was always pu
 4. **Client wiring** — ✅ **landed.** The node as two `WreckInterior` consoles (the column and the
    handle, 3.5 du apart so the handle can be pulled without a throw) + a dwell field in the deck loop,
    the confrontation card, the switch, and the `?archive=1` quick start.
-5. **The death line** — the one new line on the resurrection card for case 3. Smallest change in the
-   whole feature and the one everything else is for. **Blocked on an owner ruling**: does purging your
-   own pattern actually close the policy, or does the card merely read differently? The line cannot ship
-   until the sim backs it.
+5. **The death line** — ✅ **landed (#640, 2026-09-17).** The one new page on the death card for case 3,
+   and the one everything else was for. It was blocked on an owner ruling — *does purging your own
+   pattern actually close the policy, or does the card merely read differently?* — because the line
+   cannot ship until the sim backs it. The owner ruled **option A, the run ends**, so the sim backs it:
+   see §5a for exactly what happens, and `/map?nopattern=1&death=impact` to watch it.
 
 ### What the vision cards hand over (decided in the client lane, flagged for the owner)
 

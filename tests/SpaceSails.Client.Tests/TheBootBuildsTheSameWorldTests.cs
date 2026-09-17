@@ -99,6 +99,16 @@ namespace SpaceSails.Client.Tests;
 /// unchanged, <c>/map?scenario=sol-eu</c></b> — the one scenario in the list that has none of the three
 /// berths in it. A re-pin that had moved a third field, split a hash group, or moved <c>sol-eu</c> would
 /// have been a different lane's bug wearing this lane's clothes.</para>
+///
+/// <h3>#640 · EIGHTY-FIVE UNCHANGED, ONE ADDED</h3>
+///
+/// <para>The dev door onto the death where nobody comes (<c>?nopattern=1&amp;death=impact</c>) joins the
+/// sweep, and <b>exactly one line moved: its own, and it was an ADDITION.</b> That is what a new URL is
+/// supposed to look like here, and it is the structural proof that <c>?nopattern=</c> built no new world:
+/// the flag it sets lives on the NEBULA progress holder, which this fingerprint does not read, and the key
+/// appends no body, moves no berth and spends nothing — so it hashes to the byte identically to
+/// <c>?death=impact</c>. The query sweep next door re-pinned all 86 for the fourth time, for the reason
+/// written in its own docblock: a new <c>BootQuery</c> field joins the text of every URL.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 [SlowGate] // #251 · 148 s over 3 test(s) in the 2026-09-02 baseline; see TheSlowGateRosterTests.
@@ -208,6 +218,13 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?kaamos=hq&land=1"] = "670d489072238ee0c73a347c95eedf75",
             ["/map?kaamos=pod&nebula=adjuster&arrivalphase=7"] = "b441722a930d6e0989b5919c8b5f8426",
             ["/map?nebula=all"] = "7967bfa61ca6f178dc3ecce9012775ca",
+            // #640 · the door onto the death where nobody comes, and it hashes IDENTICALLY to
+            // ?death=impact above — which is correct and worth saying out loud. ?nopattern=1 closes the
+            // policy on the live NebulaProgress, which is a holder this fingerprint does not read, and it
+            // appends no body, moves no berth and spends no money. What the URL ANSWERS differently is
+            // pinned next door in TheBootReadsTheSameQueryTests; what it LEADS to is proved on the
+            // shipping card, in TheDeathWhereNobodyComesTests, which presses the real "…wake up".
+            ["/map?nopattern=1&death=impact"] = "933925096fa5f0ea4a52c9f3a29c4b3f",
             ["/map?oldcrew=1"] = "933925096fa5f0ea4a52c9f3a29c4b3f",
             ["/map?nonsense=1&start=there-is-no-such-start&dock=NOT+A+HAVEN&site=-3&floor=0"] = "7967bfa61ca6f178dc3ecce9012775ca",
             ["/map?park=1"] = "977477e634d4b871b28b57cd8ea9aaa4",

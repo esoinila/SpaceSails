@@ -655,6 +655,7 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | **`?converge=1`** | **Seed JUST ENOUGH of BOTH arcs (each side's joint threshold) and fire THE CONVERGENCE — the marquee one-time reveal — from a single URL (#422).** |
 | **`?archive=1`** | **Board a derelict that is CARRYING A COLD-ARCHIVE NODE — arc 2's only in-person scene. Implies `?wreck=ventedbyoneoftheirown`, the one cause Core guarantees a node on.** |
 | **`?death=<cause>`** | **KILL THE CAPTAIN AT BOOT, through the real pipeline — the death card, the freeze beat and the brain-backup wake, without dying for them (#621).** Every cause has a lane now: `?death=void` was the last one that did not, and #638 gave it the twenty-day adrift clock (`VoidRule`). |
+| **`?nopattern=1`** | **Boot a captain whose POLICY IS ALREADY CLOSED — the purge handle, pulled on their own jar (#640). Combine with `?death=` for the death where nobody comes: no clinic, no successor, and the thread ends.** |
 | **`?ashore=1`** | **Boot docked AND ALREADY STANDING IN THE BAR — the ship → airlock → tube → immigration hall → bar walk already walked (#428). Every bar beat begins with that walk; in a hidden/automated tab it cannot be walked at all. Pairs with `?dock=` / `?start=`, and with every bar cheat.** |
 | **`?watchers=1`** | **Open the MONOLITH GROUND'S attentive window and cut the dwell from forty seconds to two, so the strange-things-happen beat (#649) can be watched on demand. Stand at the stone. It is rare by design — one visit-window in three, and then only if you stay — and this changes the GATES and nothing else, so what you see is what a captain sees. Pair with `&dock=the-space-bar&body=phobos&site=0&land=1`, and with `&reevers=3` for the variant that needs a pack on the field.** |
 | **`?nerve=N`** | **Seed the nerve gauge at N of 10 whole pips at boot (#428/#480). Clamps to the gauge; `?nerve=10` is the shipped default. The only way to reach a sanity beat without being hunted for minutes first. #784 adds three WORDS beside the number, for links a person has to read: `?nerve=shot` (0), `?nerve=low` (2), `?nerve=half` (5). Same flag, same clamp — the words are spellings of the number and never a second parser.** |
@@ -1104,10 +1105,37 @@ design in [features/the-archive-node.md](features/the-archive-node.md).
 | **You can pull it without paying** | The handle stands 3.5 du from the column, deliberately outside the confront radius: you may reach it, pull it, and never find out what you did. |
 | **The record of a purge is the silence** | The line at the handle is the same sentence whatever was inside. If it ever names the resident, the whole §5 shape is gone. |
 
-> **Not in this lane, and deliberately so:** the resurrection card's `NO PATTERN ON FILE` line (the feature
-> doc's build step 5). It needs the owner to rule on whether purging your own pattern actually *ends* the
-> policy — and a card that says the policy is closed while the rebirth still fires is the sentence-versus-sim
-> bug this project has paid for three times. Filed rather than guessed.
+### THE DEATH WHERE NOBODY COMES — `?nopattern=1` (#640)
+
+The other half of the handle, and it landed on **2026-09-17** on an owner ruling (option A, the run ends).
+This section used to say the `NO PATTERN ON FILE` line could not ship until the sim backed it. The sim
+backs it now.
+
+```
+/map?nopattern=1&death=impact                             on her own deck — the shortest road
+/map?nopattern=1&death=collector                          the BUSTED ladder
+/map?nopattern=1&death=suffocated&dock=the-tilt&land=1    a landing party
+/map?nopattern=1                                          a live run that has already spent its last life
+```
+
+`?nopattern=1` boots a captain whose lineage **already pulled the purge handle on a node holding their own
+pattern** — reaching that honestly is a 1-in-20 resident behind a 1-in-3 hull behind a throw you pay nerve
+for, and then a death. It sets the flag and nothing else, so what follows is the real death through the
+real pipeline. Combine it with any `?death=` to choose the place; alone, it is a run to go and be reckless
+in.
+
+| What to check | What you should see |
+|---|---|
+| **The freeze beat is untouched** | The ordinary four-stage death: the art, the seeded house-voice line, `…wake up`. Nothing warns you, because nothing knows yet. |
+| **Press `…wake up` and watch what does not happen** | No clinic, no bill, no rustbucket, no successor, no new face, no filing line, no rebirth glitch. One sentence: *NO PATTERN ON FILE — POLICY CLOSED AT SUBSCRIBER REQUEST. The clinic's welcome loop does not play. Nobody comes. You did read the label.* |
+| **One way out, and it is not "…wake up"** | `Close the book`. It closes the card and opens the **front door** — the whole shelf — because there is no ship to go back to. |
+| **The thread reads as ended** | That captain is still on the shelf with their retirees, their selfies and every banked berth. What is gone is Continue: it will not resume that run, and if it was your only one the door offers a new voyage instead. |
+| **Nothing else moved** | Another captain's thread, and every save in it, is exactly as it was. |
+| **A banked moment still loads** | A save is a moment that was still being lived; boarding one is allowed, and it is the honest meaning of *the run ended, the record did not*. |
+
+> **Nothing was added to the handle**, and that is the whole beat: the label always said `RESIDENT PATTERN
+> NOT RECOVERABLE`, and the collar — which a bad throw buys you *before* you pull — says whose number is on
+> the jar. If you ever see a confirmation dialog there, something has gone wrong.
 
 ### The quantized nerve — reading the pips and the ledger (#480)
 
