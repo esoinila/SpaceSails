@@ -437,7 +437,22 @@ public sealed class TheTailBehindYouTests
         Invoke(map, "ThisPortHasNowDealtAKey", Berth);
 
         Assert.True((bool)Invoke(map, "ThisPlaceWasWalkedFirst", Berth)!);
+
+        // …and the port's own question answers "nothing left here" for a reason the WATCH cannot explain.
+        //
+        // Asking it on this watch would be vacuous — the act just struck the port off for this watch anyway,
+        // so the answer is true whether or not the burn exists, and the first draft of this line stayed GREEN
+        // with the burn clause deleted from `ThisPortHasAlreadyDealtAKey`. The burn's whole claim is that it
+        // OUTLIVES the watch that made it, so the clock is wound on to a watch with no strike-off in it and
+        // the question is asked there.
+        double was = (double)Field(map, "SimTime")!;
+        Set(map, "SimTime", was + PatronRota.WatchSeconds);
+        Assert.False(
+            ((System.Collections.Generic.HashSet<string>)Field(map, "_roomsTurnedOver")!)
+                .Contains(BlackOpsKey.ThePortHasDealtOne(Berth, BlackOpsKey.FenceWindow((double)Field(map, "SimTime")!))),
+            "the next watch already has a strike-off of its own, so this question could not tell them apart.");
         Assert.True((bool)Invoke(map, "ThisPortHasAlreadyDealtAKey", Berth)!);
+        Set(map, "SimTime", was);
 
         // SILENT. On this frame and on a hundred more.
         RunFrames(map, 100);
