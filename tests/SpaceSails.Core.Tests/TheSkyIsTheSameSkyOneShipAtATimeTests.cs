@@ -162,13 +162,26 @@ public class TheSkyIsTheSameSkyOneShipAtATimeTests
 
         // Exactly one step per ship CARRIES that ship: a wave that yielded a ship twice would be a doubled
         // sky that every other law in this file would still call identical.
+        //
+        // And the shape is one of exactly two. A SCHEDULED departure is one route search and nothing else,
+        // so she arrives on a single step and there is nothing to break up. A MID-FLIGHT hauler — the whole
+        // reason for this file — is a probe search, a real search, at least one slice of catch-up
+        // integration and the step that finishes her: four at the very least, and more the longer she has
+        // already been flying. Anything in between means a piece of her planning has been put back into one
+        // block.
         foreach (int index in stepsPerShip.Keys)
         {
             Assert.Equal(1, finishedOn.GetValueOrDefault(index));
-            Assert.Contains(stepsPerShip[index], new[] { 1, 3 });
+            Assert.True(stepsPerShip[index] == 1 || stepsPerShip[index] >= 4,
+                $"ship {index + 1} came over in {stepsPerShip[index]} steps — a hauler is either one scheduled "
+                + "route search or a mid-flight plan broken into at least four pieces, never anything between.");
         }
 
-        Assert.Contains(stepsPerShip.Values, n => n == 3);
+        // …and this wave genuinely contains the expensive kind: `count * 6 / 10` of the eight are mid-flight
+        // by construction, so a run where they all arrived in one step would be this law reading a wave that
+        // has nothing in it to break up.
+        Assert.True(stepsPerShip.Values.Count(n => n >= 4) >= BootCount * 6 / 10,
+            "fewer mid-flight haulers than the planner builds — this law is reading the wrong wave.");
     }
 
     [Fact]
@@ -197,6 +210,50 @@ public class TheSkyIsTheSameSkyOneShipAtATimeTests
             $"one STEP of the first hauler cost {oneStepMs} ms against {oneShipMs} ms for the whole of her — "
             + "the step handover is not breaking her planning up, so the boot still owes the browser one "
             + "block per ship.");
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(7)]
+    [InlineData(128)]
+    [InlineData(1_000)]
+    [InlineData(100_000)]
+    public void TheSameRunHoweverItIsSliced(int stepsPerSlice)
+    {
+        // THE THIRD PIECE OF A MID-FLIGHT HAULER — the catch-up integration over the 20–70 days she has
+        // already been flying — is the longest single block left once the two route searches are yielded
+        // around, so it is sliced too (Simulator.RunSliceBySlice). Slicing an integration is the kind of
+        // change that looks free and is not: a run cut into two shorter Runs computes its second end time
+        // off an ACCUMULATED SimTime, and a last-bit difference there decides whether the loop takes one
+        // more step — two hours of a hauler's flight, and a different sky.
+        //
+        // Red proof: replace RunSliceBySlice's body with two half-duration Run calls and this reddens on
+        // every slice size, on SimTime first.
+        CircularOrbitEphemeris sol = Sol();
+        NpcShip hauler = TrafficSchedule.Generate(sol, BootSeed, BootCount)[0];
+        var sim = new Simulator(sol, timeStepSeconds: 7200);
+        double duration = 40 * 86400;
+
+        foreach (ManeuverPlan? plan in new[] { hauler.Plan, null })
+        {
+            ShipState inOneRun = sim.Run(hauler.InitialState, duration, plan);
+            List<ShipState> sliced = [.. sim.RunSliceBySlice(hauler.InitialState, duration, plan, stepsPerSlice)];
+            ShipState answer = sliced[^1];
+            string where = $"slice {stepsPerSlice}, plan {(plan is null ? "none" : $"{plan.Nodes.Count} nodes")}";
+
+            Assert.True(inOneRun.SimTime == answer.SimTime, $"{where}: her clock reads differently");
+            Assert.True(inOneRun.Position == answer.Position, $"{where}: she is somewhere else");
+            Assert.True(inOneRun.Velocity == answer.Velocity, $"{where}: she is going somewhere else");
+            Assert.True(inOneRun.Charge == answer.Charge, $"{where}: she is carrying a different charge");
+
+            // …and it really did hand the caller something to breathe on. A slice size under the run's own
+            // step count must produce more than the one final state, or "sliced" is a word and not a fact.
+            if (stepsPerSlice <= 100)
+            {
+                Assert.True(sliced.Count > 1,
+                    $"{where}: the whole run came back as one element — nothing was handed back mid-run.");
+            }
+        }
     }
 
     [Fact]

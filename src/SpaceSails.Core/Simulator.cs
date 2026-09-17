@@ -165,6 +165,53 @@ public sealed class Simulator
     }
 
     /// <summary>
+    /// #161 · <see cref="Run"/>, WITH SOMEWHERE FOR THE CALLER TO BREATHE — the same run, handed back every
+    /// <paramref name="stepsPerSlice"/> steps, the LAST element being the answer <see cref="Run"/> returns.
+    ///
+    /// <para><b>Why it is not a loop of shorter Runs.</b> The traffic planner's catch-up integration — the
+    /// 20–70 days a mid-flight hauler has already been flying — is the longest single block left in the boot
+    /// after #1114, at 1.8–2.1 s on the interpreted payload. The obvious fix is to call <see cref="Run"/>
+    /// twice for half the duration each; the obvious fix is wrong, because the end time would then be
+    /// computed off an ACCUMULATED <c>SimTime</c> rather than the original one, and a last-bit difference
+    /// there decides whether the loop takes one more step. One step at this timestep is two hours of a
+    /// hauler's flight, and this repository's fingerprint guards would call that a different sky.</para>
+    ///
+    /// <para><b>So it is the same loop.</b> The same <c>endTime</c>, computed once from the same state; the
+    /// same condition; the same <see cref="Step"/> calls in the same order. The only thing that has been
+    /// added is a yield — and an iterator suspends and resumes on values it already holds, so the run is
+    /// byte-identical by construction rather than by argument. <c>TheSameRunHoweverItIsSliced</c> holds it
+    /// anyway, at every slice size, because "by construction" is exactly the claim that stays true until
+    /// somebody moves a line.</para>
+    /// </summary>
+    public IEnumerable<ShipState> RunSliceBySlice(
+        ShipState state, double durationSeconds, ManeuverPlan? plan, int stepsPerSlice)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(stepsPerSlice);
+
+        return Slices(state, durationSeconds, plan, stepsPerSlice);
+
+        IEnumerable<ShipState> Slices(ShipState state, double durationSeconds, ManeuverPlan? plan, int stepsPerSlice)
+        {
+            double endTime = state.SimTime + durationSeconds;
+            int stepsSinceTheLastBreath = 0;
+            while (state.SimTime < endTime)
+            {
+                state = Step(state, plan);
+                if (++stepsSinceTheLastBreath == stepsPerSlice)
+                {
+                    stepsSinceTheLastBreath = 0;
+                    yield return state;
+                }
+            }
+
+            // The answer, always — even when the run happened to end exactly on a slice boundary and the
+            // caller has just been handed this very state. A caller taking the LAST element is then reading
+            // the same thing Run would have returned, with no special case of its own to get wrong.
+            yield return state;
+        }
+    }
+
+    /// <summary>
     /// Project the trajectory forward as a polyline (used by plotting mode and trajectory ribbons).
     /// Runs the exact same integration as <see cref="Step"/>, sampling every
     /// <paramref name="sampleEverySteps"/> steps. The first point is the current position.

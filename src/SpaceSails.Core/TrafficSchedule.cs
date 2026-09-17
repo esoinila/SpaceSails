@@ -82,6 +82,20 @@ public static class TrafficSchedule
     private const double CatchUpTimeStep = 7200;
     private const double Day = 86400;
 
+    /// <summary>#161 · How many catch-up steps a mid-flight hauler's integration hands back the frame after.
+    ///
+    /// <para>The catch-up is the longest single piece of work left in the whole boot once the two route
+    /// searches are yielded around: 20–70 days at <see cref="CatchUpTimeStep"/> is 240–840 steps, and on the
+    /// interpreted payload the worst of them measured 1.8–2.1 s. A hundred and twenty-eight steps is ten
+    /// days of a hauler's flight and about a fifth of that — small enough that the block stops being the
+    /// boot's worst, large enough that the frames handed back are counted in tens rather than hundreds
+    /// (every one of them costs a browser turnaround, and the boot's total is the thing they buy from).</para>
+    ///
+    /// <para>It changes no number the sim produces: see <see cref="Simulator.RunSliceBySlice"/> for why the
+    /// slicing cannot move the run, and <c>TheSameRunHoweverItIsSliced</c> for the law that says so.</para>
+    /// </summary>
+    private const int CatchUpStepsPerSlice = 128;
+
     // Central-space vs. outer-reaches split for scenario-driven routes: a route touching
     // anything past ~Mars's orbit counts as "long haul" (mid-flight ships spawned already deep
     // in transfer); everything inside stays "short" (scheduled departures). Threshold sits
@@ -264,7 +278,16 @@ public static class TrafficSchedule
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, origin, destination, virtualDeparture, personality, rng);
                 yield return new TrafficStep(i, count, null);   // #161 · …and flown, from the departure it implies
 
-                ShipState now = catchUpSim.Run(route.DepartureState, baseSimTime - virtualDeparture, route.Plan);
+                // #161 · …and the catch-up, which is the longest of the three, taken a slice at a time. The
+                // LAST state is the answer (Simulator.RunSliceBySlice), so `now` simply keeps the newest.
+                ShipState now = route.DepartureState;
+                foreach (ShipState slice in catchUpSim.RunSliceBySlice(
+                             route.DepartureState, baseSimTime - virtualDeparture, route.Plan, CatchUpStepsPerSlice))
+                {
+                    now = slice;
+                    yield return new TrafficStep(i, count, null);
+                }
+
                 yield return new TrafficStep(i, count, new NpcShip(
                     id, callsign, cargo, origin, destination, personality,
                     virtualDeparture, now.SimTime, now, route.Plan, route.EstimatedArrivalTime,
@@ -338,7 +361,16 @@ public static class TrafficSchedule
                 NpcRoute route = RoutePlanner.PlanRoute(ephemeris, planFrom, planTo, virtualDeparture, personality, rng);
                 yield return new TrafficStep(i, count, null);   // #161 · …and flown, from the departure it implies
 
-                ShipState now = catchUpSim.Run(route.DepartureState, baseSimTime - virtualDeparture, route.Plan);
+                // #161 · …and the catch-up, which is the longest of the three, taken a slice at a time. The
+                // LAST state is the answer (Simulator.RunSliceBySlice), so `now` simply keeps the newest.
+                ShipState now = route.DepartureState;
+                foreach (ShipState slice in catchUpSim.RunSliceBySlice(
+                             route.DepartureState, baseSimTime - virtualDeparture, route.Plan, CatchUpStepsPerSlice))
+                {
+                    now = slice;
+                    yield return new TrafficStep(i, count, null);
+                }
+
                 yield return new TrafficStep(i, count, new NpcShip(
                     id, callsign, chosen.Cargo, chosen.From, chosen.To, personality,
                     virtualDeparture, now.SimTime, now, route.Plan, route.EstimatedArrivalTime,
