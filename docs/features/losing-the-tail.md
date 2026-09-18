@@ -34,18 +34,39 @@ to him: *get out*.
 
 ## 2. What he does
 
-He comes in **after you**, through the door you came in by. He keeps a distance band — no nearer than
-`PatrolBeat.NoticeDu` (this game's own range for *one person registering that another is standing there*) and
-no further than `FootTail.LegibleDu` (the range a body on a deck is legible at all). He stands where he can
-see you. **He never goes to the counter**, which is the one place in the room where service happens: the code
-never so much as asks the room where it is.
+He comes in **after you** — dealt on the *concourse* side of the room's own doorway and walking in behind
+you, never on the spot you are standing on. What he does once he is in has **two shapes**, and the room
+chooses between them:
+
+**In a room off the ring — the bar, or the observation walk — he takes a POST.** A standing place inside
+that room, against the room's own stone, with a line of sight to you, **nearest the doorway he came in by**.
+Never the counter, and never a top: he has not ordered, and a seat would make him a patron. He walks there at
+his own 2 du/s and **stays** — a post is kept until the *line* breaks, so he does not shuffle along the wall
+after a captain crossing the floor. The chair reading is then exactly what it was written to be: you sit
+facing the door, and he is the man by the door who has not ordered.
+
+**Out on the ring he keeps a distance band** — no nearer than `PatrolBeat.NoticeDu` (this game's own range
+for *one person registering that another is standing there*) and no further than `FootTail.LegibleDu` (the
+range a body on a deck is legible at all).
+
+> **Why two, and how the room chooses.** Measured, at every haven: the bar reaches about **twenty-three deck
+> units** in its longest walkable line from its own doorway, and the band's far edge is **thirty**. A man
+> told to keep a 9–30 du band in a room that size cannot hold it as his subject crosses the floor — which is
+> what #1229/#1231 watched happen: the stone pushed him out through the one doorway, he lost a captain he had
+> never been in the room with, and he gave up silently three seconds later. The ring reaches well past thirty
+> from the same doorway, so out there the band is keepable and is kept.
+
+**When you leave the room, he waits one look and follows you through the same doorway.** That is what makes
+the two-door tell a *sequence* — posted inside, you go, he comes out after you, you take a second doorway, he
+comes through that one — rather than an accident of where he happened to be standing beforehand.
 
 He never confronts you, never speaks, never blocks a door, and is never put on a pathfinder an Old One could
 be put on. He is drawn as a figure with **no name over him** — #832's own "draw less when you cannot resolve
 it" — because the canon he is written out of ends *never a face*.
 
-**And a man who cannot see you does not know where to go.** While he has you, he keeps his band. Blind, the
-only place he has any reason to walk to is where he last had you.
+**And a man who cannot see you does not know where to go.** While he has you, he holds his place. Blind, the
+only place he has any reason to walk to is where he last had you — and, if he was posted, a *wall spot* with
+a line to that place rather than the open floor of it.
 
 ## 3. Finding him — two pieces of craft
 
@@ -123,6 +144,12 @@ nine seconds of stone are worth spending.
   somebody under it.
 - **Fail Forward.** There is no game over in it and no combat in it. The worst thing that happens is that you
   never notice.
+- **Two behaviours, and the room chooses by measurement.** A post in a room off the ring, a band on the ring —
+  never by the room's name. `TheTailBehindYou.PostsAlong` cuts a wall into body-wide slices and offers the
+  middle of each one body clear of the stone, on the captain's side; the client keeps the ones the whole room
+  allows and takes the one nearest the doorway he came in by. No dice, no search, no second pathfinder, and
+  the walls are the deck plan's own — so a room redrawn tomorrow gives the same man a different corner with
+  no edit anywhere.
 
 ## 6. Playing it on demand
 

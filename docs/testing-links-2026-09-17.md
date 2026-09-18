@@ -137,8 +137,8 @@ Full feature note: [`features/losing-the-tail.md`](features/losing-the-tail.md).
 
 | what | link | what to look for | played |
 | --- | --- | --- | --- |
-| **Somebody came in after you** (#1062 slice 2) | `/map?tailed=1&ashore=1&dock=selene-gate` — ashore in **THE EARTHRISE BAR** with the dev row on. The row forces only WHETHER; the world's own route in is an outfit's #715 folder at the band where it wants a face (a femme-fatale walk-in that turned out to be a setup, or a compromising chip sold at a dark-web desk). | A grey figure follows you in through the bar's north door and settles **nine to thirty deck units behind you, with a line to you, and no name over him**. He never goes to the counter. **Nothing is pulsed, nothing is carded, nothing goes in the book.** | ✅ `09-17` |
-| **The chair that faces the door** | same link. Walk to a top with a clear line back to the bar's doorway and press `[E]` to take it. | After about **nine seconds in the chair**, one pulse: *"From this chair you can see the door. So can the man who came in after you, and he has not ordered."* Stand on your feet in the same room for the same nine seconds first and **nothing happens** — the sit is the whole cost. | ✅ `09-17` |
+| **Somebody came in after you** (#1062 slice 2) | `/map?tailed=1&ashore=1&dock=selene-gate` — ashore in **THE EARTHRISE BAR** with the dev row on. The row forces only WHETHER; the world's own route in is an outfit's #715 folder at the band where it wants a face (a femme-fatale walk-in that turned out to be a setup, or a compromising chip sold at a dark-web desk). | A grey figure follows you in through the bar's north door and settles **nine to thirty deck units behind you, with a line to you, and no name over him**. He never goes to the counter. **Nothing is pulsed, nothing is carded, nothing goes in the book.** #1233 · in a room he takes a POST instead of a band — against the wall, nearest the doorway, never at the counter and never at a top — so look for him **by the door** rather than at a distance. | ✅ `09-17`, and the post is **#1233 — re-play pending** |
+| **The chair that faces the door** | same link. Walk to a top with a clear line back to the bar's doorway and press `[E]` to take it. | After about **nine seconds in the chair**, one pulse: *"From this chair you can see the door. So can the man who came in after you, and he has not ordered."* Stand on your feet in the same room for the same nine seconds first and **nothing happens** — the sit is the whole cost. | ✅ **fixed in #1233 — re-play pending** (was ❌ `09-18`; cause [#1229](https://github.com/esoinila/SpaceSails/issues/1229), see the note below) |
 | **The same coat, two doors running** | same link. Walk out of the bar, across the concourse, and **out onto `OBSERVATION WALK`** (edge 5, due west — #1199's tube). | He follows you through the bar's doorway and then to the mouth of the walk, which is the only place in a one-way room with a line to you. Two DISTINCT doorways is the tell: *"The same grey coat, two doors running. Nobody's errand takes them through both."* A locked cellar leaf never counts. | ✅ `09-17` |
 | **Losing him** | same link. Walk back **down your own gangway** toward the ship, and stay there. | He will not follow you down the umbilical. After about **nine seconds with nothing to look at** he gives up: *"The corridor behind you is only a corridor. Whoever it was is asking the wrong floor about you."* — and the field book takes one line, filed on **THREADS under the PLACE** (📍 SELENE GATE) and never under a name: *a tail, lost at … — a grey coat, never a face*. | ✅ `09-17` |
 | **Failing forward — the burn** (#1062 slice 2b) | same link, plus a quiet verb at that berth while he is still on the floor: **take the favour** at a `◈` contact's table (press `B` at a table where the account is on offer), or **buy the fence's key** at the Comms desk's dark-web board. | **Nothing happens.** No line, no card, no warning — you get what you came for and walk out. Cast off, come back, and the port has **no favour and no fence row at all**, and the place says one thing: *"Tidy, in the way a place is after somebody has been through it first."* The book takes *SELENE GATE — walked before you got there, by somebody who knew where to walk*, filed under the **same PLACE** as the losing note so THREADS stacks the evening in order. Shake him first and the same verb costs nothing. | ⚠ `09-18` — the **quiet verb now plays**: with #1223 the fence's row is reachable at the berth and `Buy the key · 1,011 cr` takes the coin (1,500 → 489 cr), the row goes, and **nothing is said** — no line, no card, no warning, nine seconds of watching the HUD for it. The cast-off-and-return half is still not drivable headless |
@@ -186,6 +186,43 @@ at all.
 > reading never fired at all in five runs — including a **no-card control at the same seat**, which is why
 > this is a caveat about the play and not a claim about the fix. Whoever plays it next needs a top the grey
 > coat is actually in sight from.
+>
+> ❌ **2026-09-18 — the cause is found, and it is not #1222 and not the seat.**
+> [#1229](https://github.com/esoinila/SpaceSails/issues/1229). Re-played headless against a Release publish
+> of `our-own-ship-has-compartments` @ `b668bd08` with **no card up at all**: the captain sits at a top the
+> door is plainly visible from and the sentence never enters the DOM in seventy-five seconds. Reproduced
+> frame by frame in the client bench, booting ashore the way `?ashore=1` does and taking the seat through
+> the shipped `[E]`: the exposure clock reaches **2.0 s** and resets to zero, because the man **settles
+> outside the room** — `TheSpotBehindYouAt` refuses only the gangway line, so at Selene Gate
+> the first bearing the stone allows for a captain anywhere on the doorway's own column is **due south,
+> nineteen units out onto the concourse**. The bar's south wall is between them within three seconds, his
+> blind clock runs, and at nine seconds he gives up and leaves — silently, because he was never noticed.
+> The chair is fine (five of the room's seven tops have a clear line to the doorway); the man's standing
+> place is not. **Not fixed here:** every narrow repair trades this beat against the two-door tell, whose
+> own guard is green only because the man was standing outside the door already. Design call needed.
+>
+> ✅ **Fixed in #1233 — re-play pending.** The design call, made and shipped: **in a room off the ring he
+> takes a POST** — inside it, against the room's own stone, with a line to you, nearest the doorway he came
+> in by, never the counter and never a chair — and he keeps his band only out on the ring, where the room is
+> measurably big enough to hold one. He is dealt on the concourse side of the doorway and walks in after you,
+> and when you leave he waits one look and follows you through the same doorway, which is what makes the
+> two-door tell an honest sequence instead of an accident of where he was planted. Measured after the fix:
+> **the chair reading fires from every top a captain can take that sees the door, at all seven haven bars in
+> `sol.json`, nine seconds after the sit.** What to watch for on the re-play: he should be standing **by the
+> door**, not out on the concourse, from the moment you turn round.
+>
+> ⚠ **…and #1222's hold has a second hole of its own, audited in the same lane:**
+> [#1230](https://github.com/esoinila/SpaceSails/issues/1230). The release itself is healthy (it runs in
+> `OnTick` above every early stop but the jump freeze), but `PulseHold` keeps **one** line, so a second
+> plot-significant beat raised behind the same open card annihilates the first — and the two lines this half
+> says are pulse-only and spent once, so one of them can be destroyed without a trace anywhere in the save.
+>
+> ✅ **Fixed in #1232 — re-play pending.** The hold is a QUEUE now: every line at the telling floor and above
+> is kept, in order, and said one at a time as the slot frees up, each for its own full dwell. Rank no longer
+> DROPS a line — it only orders lines raised in the same frame, highest first — an identical sentence already
+> waiting is not queued twice, and the bound is soft so it can never cost a beat. What to watch for on the
+> re-play: leave a card open, let **two** once-only beats fire behind it (the chair reading and then the
+> losing line is the case this was filed for), close the card, and read **both**, in the order they happened.
 
 ---
 
@@ -392,6 +429,12 @@ there is nothing to sit through.
 >
 > Screenshots: `D:/repo12/wt/replay/.qa-scratch/r5c-taken.png` (the job row), `r5j-panel.png` and the
 > satchel pick behind it, `r5l-dug.png` (the burial pulse), `havensweep.log` (all seven desks).
+>
+> ✅ **[#1227](https://github.com/esoinila/SpaceSails/issues/1227) fixed 2026-09-18.** The cheat now makes
+> the pick the boarding card would have made — the parcel rides `ShuttleExcursion.Pack`'s deposit, which is
+> the one builder the shipped path goes through too — so `?parcel=1` lands you with the box **in the
+> shovel's hand** and `E` on the regolith buries instead of probing. Guarded end to end from the URL
+> (`ADropForNobodyYouHaveMetTests.TheDevDoorPutsTheBoxInTheShovelsHandAndNotOnlyInThePocket`).
 
 **And the half that must look exactly the same.**
 

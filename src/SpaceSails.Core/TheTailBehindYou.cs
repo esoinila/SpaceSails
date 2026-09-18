@@ -137,6 +137,86 @@ public static class TheTailBehindYou
         Math.PI / 4, -Math.PI / 4, 0.0,
     ];
 
+    // ── #1229 · …AND THE OTHER BEHAVIOUR, WHICH THE BRIEF HAD FROM THE START ─────────────────────────────
+    //
+    // #1062's brief said it in one sentence — "enters the room after the captain, KEEPS A DISTANCE BAND,
+    // TAKES A SEAT/STANDING SPOT WITH A SIGHTLINE TO HIM, orders nothing" — and only the first half shipped.
+    // A man who can only keep a band is a man a station bar cannot hold: #1231 measured it at Selene Gate,
+    // where the reach he keeps is longer than the room has in every direction but its corners, so the stone
+    // pushed him OUT through the one doorway and he lost a captain he had never been in the room with. The
+    // spot-finder had exactly one place clause in it, and that clause was about a gangway.
+    //
+    // So there are two behaviours and the ROOM chooses between them, by measurement and never by name:
+    //   · the room can hold the reach he keeps  → he KEEPS THE BAND, unchanged, which is a concourse;
+    //   · it cannot                             → he takes a POST, which is a bar.
+    // A post is a standing place against the room's own stone, inside the room, with a line to the captain,
+    // nearest the doorway he came in by — and never the counter and never a chair, because he has not
+    // ordered and a seat would make him a patron. The chair reading then reads as it was always meant to:
+    // you sit facing the door, and he is the man by the door who has not ordered.
+
+    /// <summary>#1229 · <b>THE REACH A BAND IS ACTUALLY KEPT AT</b> — the first of
+    /// <see cref="TheRangesHeTries"/>, named so that the question <i>can this room hold his band?</i> and the
+    /// sounding that places him are asking about one number rather than two.</summary>
+    public static double TheReachHeKeeps => TheRangesHeTries[0];
+
+    /// <summary>#1229 · How far off the stone a POST stands: one body ACROSS, the same step the haven uses to
+    /// stand a body beside a table (<c>HavenInterior.BesideATop</c>) and the ashore boot uses to stand the
+    /// captain wholly inside a room. A body-width and never a coordinate.</summary>
+    public static double StandsOffTheWallBy(double bodyRadius) => 2 * bodyRadius;
+
+    /// <summary>
+    /// #1229 · <b>THE PLACES A PIECE OF THE ROOM'S OWN STONE OFFERS A MAN TO STAND.</b>
+    ///
+    /// <para>One wall, sounded: its length cut into body-wide slices and a standing place offered at the
+    /// middle of each, one body clear of the stone, on the side the captain is standing on. Pure arithmetic
+    /// on a segment and a point — no dice, no search, no pathfinder, and the same list in the same order on
+    /// every machine for ever. Whether any of them is a place a body may actually BE is the caller's
+    /// question, because only the caller has the room's whole stone and the one sightline oracle.</para>
+    ///
+    /// <para>The slicing is a body's width for the reason the offset is: it is the only unit a room like this
+    /// has. A wall shorter than one body still offers its own middle, so no piece of a room is silently
+    /// unavailable — a wall that offered nothing would be a corner a man could never stand in, and the tell
+    /// this feature is built on is a man standing where you did not expect one.</para>
+    /// </summary>
+    /// <param name="x1">One end of the wall.</param>
+    /// <param name="y1">One end of the wall.</param>
+    /// <param name="x2">The other end.</param>
+    /// <param name="y2">The other end.</param>
+    /// <param name="bodyRadius">The width of the person being stood, in the deck's own units.</param>
+    /// <param name="towardsX">The captain — which decides WHICH SIDE of the stone is the room.</param>
+    /// <param name="towardsY">The captain.</param>
+    public static IReadOnlyList<(double X, double Y)> PostsAlong(
+        double x1, double y1, double x2, double y2, double bodyRadius, double towardsX, double towardsY)
+    {
+        double dx = x2 - x1, dy = y2 - y1;
+        double length = Math.Sqrt((dx * dx) + (dy * dy));
+        if (length <= 0 || bodyRadius <= 0 || double.IsNaN(length))
+        {
+            return [];   // a wall with no length is not a wall, and it offers nowhere to stand
+        }
+
+        double ux = dx / length, uy = dy / length;
+        double step = StandsOffTheWallBy(bodyRadius);
+
+        // The normal that points INTO the room, which is the side the captain is on. A wall has two faces and
+        // only one of them is somewhere a man in this room could be standing.
+        double nx = -uy, ny = ux;
+        if (((towardsX - x1) * nx) + ((towardsY - y1) * ny) < 0)
+        {
+            (nx, ny) = (-nx, -ny);
+        }
+
+        int slices = Math.Max(1, (int)(length / step));
+        var posts = new List<(double X, double Y)>(slices);
+        for (int i = 0; i < slices; i++)
+        {
+            double along = (i + 0.5) * (length / slices);
+            posts.Add((x1 + (ux * along) + (nx * step), y1 + (uy * along) + (ny * step)));
+        }
+
+        return posts;
+    }
+
     // ── THE CLOCK BOTH HALVES ARE READ ON ───────────────────────────────────────────────────────────────
 
     /// <summary>#1062 · One exposure tick — <see cref="ReeverObservation.LookIntervalSeconds"/>, the cadence
@@ -144,6 +224,23 @@ public static class TheTailBehindYou
     /// a Reever's glance are counted in the same unit, and so the day that cadence is tuned this feature is
     /// tuned with it instead of drifting away from it.</summary>
     public static double TickSeconds => ReeverObservation.LookIntervalSeconds;
+
+    /// <summary>
+    /// #1229 · <b>HOW LONG HE LETS YOU GET AHEAD BEFORE HE COMES AFTER YOU.</b> ONE look — the cadence
+    /// above, not a number of its own.
+    ///
+    /// <para>It is the whole of what makes the two-door tell an honest sequence rather than an accident of
+    /// where he happened to be planted. A man posted inside a room does not leave it the instant his subject
+    /// does; he gives it a beat and then comes through the same doorway. <b>That beat is the tell</b> — the
+    /// same coat through the doorway you just used, and then through the next one — and it is why the
+    /// count is of DISTINCT doorways: what the captain reads is a sequence, not a position.</para>
+    ///
+    /// <para>One look and not two, argued at both ends: none at all and he is a shadow welded to the
+    /// captain's heels, which is not a man; more than a look and a captain at his own pace is out of the
+    /// room, across the concourse and through the next doorway before the man has moved, which is not a
+    /// tail.</para>
+    /// </summary>
+    public static double SecondsBeforeHeFollowsYouOut => TickSeconds;
 
     /// <summary>
     /// #1062 · <b>HOW MANY TICKS OF HAVING HIM IN FRONT OF YOU MAKE IT A FACT.</b>

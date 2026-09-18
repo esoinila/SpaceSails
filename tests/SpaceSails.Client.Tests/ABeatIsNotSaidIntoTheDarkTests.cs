@@ -43,6 +43,13 @@ public sealed class ABeatIsNotSaidIntoTheDarkTests
     private const string TheBeat = "From this chair you can see the door.";
     private const string TheWeather = "〜 A distant tone climbs somewhere past the bulkheads…";
 
+    /// <summary>#1230 · the two sentences the ruling is about, in the game's own words rather than in two
+    /// strings composed here. Both are spent ONCE by construction and neither writes a durable record, which
+    /// is why the one the old hold threw away was gone with no trace in the save.</summary>
+    private const string TheChairReading = TheTailBehindYou.FromThisChairLine;
+
+    private const string TheLosingLine = TheTailBehindYou.LostLine;
+
     // ── THE REPORTED CASE ────────────────────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -148,9 +155,9 @@ public sealed class ABeatIsNotSaidIntoTheDarkTests
     [Fact]
     public void TheHeldWinnerIsChosenByRankAndNotByOrder()
     {
-        // PulseHold's own law, unchanged and re-asked here because this funnel is now its biggest caller:
-        // the sentence that survives the card is the sentence that would have been on screen had no card
-        // been raised.
+        // PulseHold's own law, re-asked here because this funnel is its biggest caller: the FIRST sentence
+        // said when the glass clears is the sentence that would have been on screen had no card been raised.
+        // #1230 · and it is the first of several now rather than the only one — see the queue guards below.
         SpaceSails.Client.Pages.Map map = Boot(CanvasId);
         Set(map, "_showSatchel", true);
 
@@ -162,6 +169,151 @@ public sealed class ABeatIsNotSaidIntoTheDarkTests
 
         Assert.Equal("THE WHOLE POINT OF THE FEATURE.", OnScreen(map));
     }
+
+    // ── #1230 · AND THE HOLD IS A QUEUE ──────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void TWOBeatsRaisedSecondsApartUnderOneCardAreBOTHSaidInOrder()
+    {
+        // The ruling's case, driven through the page that actually holds them. Under the one-slot body the
+        // second beat annihilated the first while the card was still up, and the captain — who had paid for
+        // both — read one of the two. The card is open across both raisings and closes once, which is the
+        // shape #1231 measured: the tail's chair reading and its losing line, nine seconds apart, under the
+        // finder's pitch. Neither of them writes a durable record, so the one that lost was simply gone.
+        SpaceSails.Client.Pages.Map map = Boot(CanvasId);
+        RaiseTheFindersCard(map);
+
+        Say(map, TheChairReading, PulseRank.Beat);
+        RunFrames(map, 9.0);                                // the tail's own nine seconds, on real frames
+        Say(map, TheLosingLine, PulseRank.Beat);
+
+        Assert.Equal(2, HowManyAreWaiting(map));
+
+        Invoke(map, "CloseTheFindersCard");
+        Assert.Equal(
+            [TheChairReading, TheLosingLine],
+            WhatTheCaptainReads(map, [TheChairReading, TheLosingLine], seconds: 40.0));
+    }
+
+    [Fact]
+    public void EachHeldLineGetsItsOwnFullDwellBeforeTheNextTakesTheSlot()
+    {
+        // "One at a time, each for its own full duration, the next only after the previous expires." So the
+        // first line is still the one on screen for its whole dwell after the card closes, and the second has
+        // not jumped it — a release that drained the hold in one frame would show only the last one.
+        SpaceSails.Client.Pages.Map map = Boot(CanvasId);
+        RaiseTheFindersCard(map);
+        Say(map, TheChairReading, PulseRank.Beat);
+        Say(map, TheLosingLine, PulseRank.Beat);
+
+        Invoke(map, "CloseTheFindersCard");
+        Frame(map);
+        Assert.Equal(TheChairReading, OnScreen(map));
+
+        // Up to a frame short of the first line's own dwell, the SECOND one has not taken the slot and is
+        // still waiting its turn. (What is asserted is the second line's absence rather than the first line's
+        // presence: the ship's weather may legitimately take the slot from a beat once its breath is up, and
+        // that is #766's dwell law, not this one's business.)
+        double until = (double)Get(Read(map, "_pulse")!, "ExpiresMs")!;
+        while (Convert.ToDouble(Read(map, "_lastTimestampMs")) < until - (FrameSeconds * 1000))
+        {
+            Frame(map);
+            Assert.NotEqual(TheLosingLine, OnScreen(map));
+            Assert.True(SomethingIsHeld(map), "the second line left the queue before the first had its time.");
+        }
+
+        RunFrames(map, 1.0);
+        Assert.Equal(TheLosingLine, OnScreen(map));
+    }
+
+    [Fact]
+    public void TheSAMESentenceRaisedTwiceBehindOneCardIsSaidOnce()
+    {
+        SpaceSails.Client.Pages.Map map = Boot(CanvasId);
+        RaiseTheFindersCard(map);
+
+        Say(map, TheChairReading, PulseRank.Beat);
+        RunFrames(map, 2.0);
+        Say(map, TheChairReading, PulseRank.Beat);
+
+        Assert.Equal(1, HowManyAreWaiting(map));
+
+        Invoke(map, "CloseTheFindersCard");
+        Assert.Equal([TheChairReading], WhatTheCaptainReads(map, [TheChairReading], seconds: 40.0));
+    }
+
+    [Fact]
+    public void WeatherRaisedBehindACardNeverJoinsTheQueueAtAll()
+    {
+        // Clause 4, at the funnel: the queue is for lines at the floor and above, and four hundred
+        // instrument, price and refusal lines do not start piling up behind an open satchel. The weather
+        // goes straight into the slot nobody can see, exactly as it always did, and is simply missed.
+        SpaceSails.Client.Pages.Map map = Boot(CanvasId);
+        RaiseTheFindersCard(map);
+
+        Say(map, TheBeat, PulseRank.Beat);
+        for (int i = 0; i < 20; i++)
+        {
+            Say(map, $"{TheWeather} {i}", PulseRank.Status);
+        }
+
+        Assert.Equal(1, HowManyAreWaiting(map));
+
+        Invoke(map, "CloseTheFindersCard");
+        Assert.Equal([TheBeat], WhatTheCaptainReads(map, [TheBeat], seconds: 40.0));
+    }
+
+    [Fact]
+    public void EightBeatsBehindACardLeftOpenAllEveningAreALLSaid()
+    {
+        // The soft bound, at the page. Eight beats is a card the captain walked away from; not one of them
+        // may be dropped on the way, and they come out in the order the evening raised them.
+        SpaceSails.Client.Pages.Map map = Boot(CanvasId);
+        RaiseTheFindersCard(map);
+
+        var raised = new List<string>();
+        for (int i = 0; i < PulseHold.TheBound; i++)
+        {
+            string line = $"🕵 Something once-only happened, number {i}.";
+            raised.Add(line);
+            Say(map, line, PulseRank.Beat);
+            RunFrames(map, 1.0);
+        }
+
+        Assert.Equal(PulseHold.TheBound, HowManyAreWaiting(map));
+
+        Invoke(map, "CloseTheFindersCard");
+        Assert.Equal(raised, WhatTheCaptainReads(map, raised, seconds: 180.0));
+    }
+
+    /// <summary>Which of OUR sentences a captain who closes the card and then watches the HUD actually reads,
+    /// in order, with a line still on screen not counted twice — the page's own frames, the page's own dwell,
+    /// nothing set by hand.
+    ///
+    /// <para>The world keeps talking while he watches: <c>StepTheAmbientBeats</c> runs every frame and the
+    /// ship's weather takes the slot between our lines exactly as it always has. That is the behaviour clause
+    /// 4 preserves, so it is filtered out here rather than suppressed — a bench with the weather turned off
+    /// would be proving the law in a world the game does not build.</para></summary>
+    private static List<string> WhatTheCaptainReads(
+        SpaceSails.Client.Pages.Map map, IReadOnlyCollection<string> ours, double seconds)
+    {
+        var read = new List<string>();
+        for (int frame = 0; frame < (int)(seconds / FrameSeconds); frame++)
+        {
+            Frame(map);
+            if (OnScreen(map) is { } line && ours.Contains(line) && (read.Count == 0 || read[^1] != line))
+            {
+                read.Add(line);
+            }
+        }
+
+        Assert.False(SomethingIsHeld(map),
+            $"{HowManyAreWaiting(map)} line(s) never made it onto the glass in {seconds} s.");
+        return read;
+    }
+
+    private static int HowManyAreWaiting(SpaceSails.Client.Pages.Map map) =>
+        (int)Get(Read(map, "_held")!, "Count")!;
 
     // ── How this file drives and reads the page ──────────────────────────────────────────────────────────
 

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using SpaceSails.Client.Rendering;
 using SpaceSails.Contracts;
 using SpaceSails.Core;
 using SpaceSails.Core.Interior;
@@ -441,5 +443,81 @@ public sealed class ADropForNobodyYouHaveMetTests
         // …and a dev door nobody wrote down is a dev door nobody uses.
         Assert.Contains("parcel=1", links, StringComparison.Ordinal);
         Assert.Contains("#711 slice 2", links, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// #1227 · <b>…AND IT PUTS THE BOX IN THE SHOVEL'S HAND, NOT ONLY IN THE POCKET.</b>
+    ///
+    /// <para><b>Played, not derived</b> (2026-09-18, headless, Release publish). <c>?parcel=1</c> really did
+    /// put <c>📦 UNLISTED PARCEL</c> in the satchel and really did set the ship down on the ground the desk's
+    /// own row names — and then <kbd>E</kbd> on the regolith answered <i>"Nothing but regolith down there.
+    /// The detector stays quiet"</i>, twice, on two squares. The shipped path works; the dev door skipped the
+    /// one screen that arms it. The boarding card is where <c>🎒 BURY A THING FROM THE SATCHEL</c> is chosen,
+    /// <c>?land=</c>'s descent never raises one, and the excursion therefore went down with
+    /// <c>PendingDeposit</c> null — which is exactly the difference between the shovel and the detector.</para>
+    ///
+    /// <para><b>The whole cheat is booted</b>, from the URL, through <c>BootTheWorldAsync</c> — the parcel is
+    /// minted by the desk's own mint, the descent is <c>?land=</c>'s own, and what is asked at the end is the
+    /// shipping press on shipping ground. Nothing here sets <c>PendingDeposit</c> by hand; if it did, the
+    /// guard would be proving that the field works rather than that the cheat arms it.</para>
+    ///
+    /// <para><b>RED</b> by putting <c>ShuttleExcursion.Pack(0, _credits, [])</c> back in
+    /// <c>RideTheShuttleDownForCheatAsync</c>: <i>the box rides down in the pocket, the press probes, and the
+    /// line is the detector's</i>. <b>RED</b> by dropping <c>_parcelForTheHole = parcel;</c> from
+    /// <c>TakeAParcelForCheat</c>: <i>the descent is handed a pick that was never made</i>.</para>
+    /// </summary>
+    [Fact]
+    public async Task TheDevDoorPutsTheBoxInTheShovelsHandAndNotOnlyInThePocket()
+    {
+        DeskBench bench = await DeskBench.BootAsync("/map?dock=the-tilt&parcel=1");
+        await bench.RenderAsync();
+
+        // The premise, and the anti-vacuity for all of it: the cheat really did mint a real parcel into the
+        // pocket and really did ride the descent down onto ground. Without these two the rest would be a
+        // guard about a boot that never happened.
+        Satchel.Item parcel = Assert.Single(
+            (IEnumerable<Satchel.Item>)bench.Peek("_satchel")!,
+            UnlistedParcel.IsAParcel);
+        Assert.True(bench.OnSurface, "?parcel=1 did not put the ship down on any ground at all.");
+
+        object ex = bench.Peek("_surface")!;
+
+        // THE PICK THE BOARDING CARD WOULD HAVE MADE. It is a POINTER: the row is still in the pocket for the
+        // whole walk, exactly as the chooser's own pick is, and only the shovel spends it.
+        Assert.Equal((Satchel.Item?)parcel, (Satchel.Item?)Get(ex, "PendingDeposit"));
+        Assert.False((bool)Get(ex, "Carrying")!, "there is no chest — this is the coat's own errand.");
+        Assert.True((bool)Get(ex, "ShovelHasSomethingToBury")!);
+
+        // …AND THE PRESS IS THE SHOVEL AND NOT THE DETECTOR. The shipping [E] on shipping ground, and what
+        // comes out of it is a BURY channel — which is the one press the cheat exists to demonstrate.
+        SurfaceLayout.Field field = SurfaceLayout.DefaultField;
+        double x = field.HomeX, y = field.LandingBandY - 40;
+        Assert.True(Client.Rendering.MoonSurface.IsDiggableGround(x, y, 0),
+            "the bench is standing where the shipping game says no shovel works — this guard has drifted.");
+        bench.Poke("_avatarX", x);
+        bench.Poke("_avatarY", y);
+        Set(ex, "Floor", 0);
+
+        bench.CallOnTheDispatcher("SurfaceGroundInteract");
+
+        object channel = Get(ex, "Channel")
+            ?? throw new InvalidOperationException("the press opened no channel at all.");
+        Assert.Equal("Bury", Get(channel, "Kind")!.ToString());
+        Assert.Empty(bench.EscapedPastTheGate);
+    }
+
+    private static object? Get(object instance, string member) =>
+        instance.GetType().GetProperty(member, TestTree.AnythingAtAll)?.GetValue(instance)
+        ?? instance.GetType().GetField(member, TestTree.AnythingAtAll)?.GetValue(instance);
+
+    private static void Set(object instance, string member, object? value)
+    {
+        if (instance.GetType().GetProperty(member, TestTree.AnythingAtAll) is { } p)
+        {
+            p.SetValue(instance, value);
+            return;
+        }
+
+        instance.GetType().GetField(member, TestTree.AnythingAtAll)!.SetValue(instance, value);
     }
 }

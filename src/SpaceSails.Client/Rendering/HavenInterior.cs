@@ -350,6 +350,18 @@ public static partial class HavenInterior
     /// wholly inside the room rather than straddling the door line they just crossed.</summary>
     private const double AshoreStepDeckUnits = 2 * DeckPlan.AvatarRadius;
 
+    /// <summary>#1229 · <b>THE SAME DOORWAY, FROM THE OTHER SIDE</b> — one step SHORT of the bar's south
+    /// wall, out on the concourse. Where somebody who is about to follow the captain into the room is
+    /// standing before he does.
+    ///
+    /// <para>It exists because <see cref="BarThreshold"/> is where the <c>?ashore=1</c> boot stands the
+    /// CAPTAIN, and a man dealt onto that spot is dealt on the captain's feet — which is what shipped, and
+    /// it is not a tail, it is a collision. Derived from the same two jambs and the same hall edge as its
+    /// twin, mirrored across the wall by the same one step, so the two of them cannot come to two views of
+    /// where this doorway is.</para></summary>
+    public static (double X, double Y) TheDoorstepOutsideTheBar =>
+        ((BarDoorLeft + BarDoorRight) / 2.0, HallTopY - AshoreStepDeckUnits);
+
     // ── #973 L0 · THE BAR AS A ROOM WITH A METABOLISM ────────────────────────────────────────────────────
     //
     // Owner's favourite room is The Red Eye's bar, and until this lane it was the one place in the game where
