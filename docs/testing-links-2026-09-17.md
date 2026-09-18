@@ -206,6 +206,13 @@ at all.
 > `OnTick` above every early stop but the jump freeze), but `PulseHold` keeps **one** line, so a second
 > plot-significant beat raised behind the same open card annihilates the first — and the two lines this half
 > says are pulse-only and spent once, so one of them can be destroyed without a trace anywhere in the save.
+>
+> ✅ **Fixed in #1232 — re-play pending.** The hold is a QUEUE now: every line at the telling floor and above
+> is kept, in order, and said one at a time as the slot frees up, each for its own full dwell. Rank no longer
+> DROPS a line — it only orders lines raised in the same frame, highest first — an identical sentence already
+> waiting is not queued twice, and the bound is soft so it can never cost a beat. What to watch for on the
+> re-play: leave a card open, let **two** once-only beats fire behind it (the chair reading and then the
+> losing line is the case this was filed for), close the card, and read **both**, in the order they happened.
 
 ---
 
