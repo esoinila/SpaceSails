@@ -203,12 +203,18 @@ public sealed class TheFollowDestButtonIsRealTests : IAsyncLifetime
         // destination already in it. No sleep, and nothing left to be lucky about.
         // (Attached first, then detached — `GotoAsync` returns while the page is still an empty shell, and
         // a bare "wait until it is gone" is satisfied instantly by a door that has not been hung yet.)
-        await _page.WaitForSelectorAsync(".map-loading",
-            new() { State = WaitForSelectorState.Attached, Timeout = BootTimeoutMs });
-        await _page.WaitForSelectorAsync(".map-loading",
-            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        //
+        // #1234 · AND THE DOOR IS STILL NOT THE WHOLE ANSWER. A world that is READY is not a row that has
+        // stopped being written. Eight hundred milliseconds after this door comes down the long-coast advert
+        // re-reads its own countdown from "(30 d)" to "(29 d 23 h)" — 31 px wider — and the wrap carries
+        // Follow dest onto the next line, which is the y 165 CI printed on 2026-09-18. Which of the two rows
+        // this gate measured was decided by how long the box took to get from here to the bounding box: ~20 ms
+        // on a quiet dev box, long enough on a CI runner boiling four Chromiums. `SettledAsync` replaces that
+        // luck with a measured fact — nothing under the HUD has moved for three quarters of a second.
+        await _page.BootDoorClosedAsync(BootTimeoutMs);
         await _page.Locator(FollowShip).WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
+        await _page.SettledAsync(Toolbar + " button");
     }
 
     /// <summary>Uncaught JS and console errors seen since the page opened — a follow that engaged by throwing

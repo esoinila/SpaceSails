@@ -186,5 +186,10 @@ public sealed class TallCardTests : IAsyncLifetime
         // The wake receipt is the restore card's own fingerprint — the freeze beat has no receipt.
         await _page.Locator(".busted-card .busted-receipt").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
+
+        // #1234 · …and the card has finished growing before anything on it is measured. This card is
+        // assembled in a cascade (the freeze beat, the wake, the receipt), and every step of it changes how
+        // tall it is — which is the one thing these three guards are about.
+        await _page.SettledAsync(".busted-card");
     }
 }

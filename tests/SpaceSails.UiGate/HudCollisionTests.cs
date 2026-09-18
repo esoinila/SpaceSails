@@ -100,6 +100,10 @@ public sealed class HudCollisionTests : IAsyncLifetime
     {
         await BootIntoTheDeck();
 
+        // #1234 · nothing under the map may have moved for three quarters of a second before a box is
+        // read: a geometry assertion made on a layout still being written is a coin toss (see GateReady).
+        await _page.SettledAsync(string.Join(", ", HudControls));
+
         // Which arrangement are we in? The desk tab bar is hidden outright on an excursion (#330), which is
         // the same fact the gauge's own compact/full switch is made on.
         bool onSurface = await _page.Locator(".desk-tab-bar").CountAsync() == 0;
@@ -192,6 +196,8 @@ public sealed class HudCollisionTests : IAsyncLifetime
             await _page.Locator("button.desk-tab.btn-info", new() { HasTextString = tab }).WaitForAsync(
                 new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
 
+            await _page.SettledAsync($"{header}, .map-layers, .nav-search");   // #1234 — the desk has finished arriving before it is measured
+
             ILocator title = _page.Locator(header).First;
             await title.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
 
@@ -273,6 +279,8 @@ public sealed class HudCollisionTests : IAsyncLifetime
             ILocator strip = _page.Locator(".desk-chip-strip").First;
             await strip.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
 
+            await _page.SettledAsync(".desk-chip-strip");   // #1234 — the desk has finished arriving before it is measured
+
             string position = await strip.EvaluateAsync<string>("el => getComputedStyle(el).position");
             if (position != "absolute")
             {
@@ -345,6 +353,10 @@ public sealed class HudCollisionTests : IAsyncLifetime
                     "no story plate is on the screen at the berth — the Sol boot used to raise one, and "
                     + "without it this gate has nothing to measure the Plotting panel against (#994).");
 
+        // #1234 · nothing under the map may have moved for three quarters of a second before a box is
+        // read: a geometry assertion made on a layout still being written is a coin toss (see GateReady).
+        await _page.SettledAsync(".story-plate, .map-plot");
+
         if (await plate.BoundingBoxAsync() is not { } a || await panel.BoundingBoxAsync() is not { } b)
         {
             throw new InvalidOperationException("the plate or the panel has no box — nothing was measured");
@@ -394,8 +406,7 @@ public sealed class HudCollisionTests : IAsyncLifetime
         await _page.GotoAsync(
             _host.BaseUrl + "/map?scenario=sol&oldcrew=1&holdbeats=1", new() { Timeout = BootTimeoutMs });
 
-        await _page.WaitForSelectorAsync(".map-loading",
-            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        await _page.BootDoorClosedAsync(BootTimeoutMs);   // #1234 — both halves, through GateReady
         await _page.Locator(".map-page").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
 
@@ -453,6 +464,10 @@ public sealed class HudCollisionTests : IAsyncLifetime
         // is the one condition every sticky `.deck-offer-actions` sibling needs to race the real foot for the
         // same pinned rectangle (#1013).
         await _page.SetViewportSizeAsync(1280, 420);
+
+        // #1234 — a viewport change is a reflow, and the card re-lays itself out inside it. Read nothing
+        // until it has stopped.
+        await _page.SettledAsync(".deck-offer-card .contact-offer-row, .deck-offer-card .deck-offer-actions");
 
         // Every row in the card's body — each present contact's offer row, plus the one true foot — read
         // off the DOM in source order, which is paint/scroll order here.
@@ -531,6 +546,10 @@ public sealed class HudCollisionTests : IAsyncLifetime
         ILocator scope = _page.Locator(".map-scope").First;
         await scope.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
 
+        // #1234 · nothing under the map may have moved for three quarters of a second before a box is
+        // read: a geometry assertion made on a layout still being written is a coin toss (see GateReady).
+        await _page.SettledAsync(".desk-chip-strip, .map-scope, .parrot-perch");
+
         var boxes = new List<(string Name, float X, float Y, float W, float H)>();
         foreach ((string name, ILocator locator) in new (string, ILocator)[]
                  {
@@ -597,6 +616,10 @@ public sealed class HudCollisionTests : IAsyncLifetime
         ILocator scope = _page.Locator(".map-scope").First;
         await scope.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
 
+        // #1234 · nothing under the map may have moved for three quarters of a second before a box is
+        // read: a geometry assertion made on a layout still being written is a coin toss (see GateReady).
+        await _page.SettledAsync(".map-scope");
+
         var box = await scope.BoundingBoxAsync();
         Assert.True(box is { Width: > 0, Height: > 0 }, "the scope had no box at all on Nav at 390×700");
 
@@ -645,8 +668,7 @@ public sealed class HudCollisionTests : IAsyncLifetime
         // landing mid-press would eat the click, exactly as it did on #1146's serial run.
         await _page.GotoAsync(_host.BaseUrl + "/map?scenario=sol&start=wreck&dest=saturn&holdbeats=1",
             new() { Timeout = BootTimeoutMs });
-        await _page.WaitForSelectorAsync(".map-loading",
-            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        await _page.BootDoorClosedAsync(BootTimeoutMs);   // #1234 — both halves, through GateReady
         await _page.Locator(".map-page").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
 
@@ -665,6 +687,13 @@ public sealed class HudCollisionTests : IAsyncLifetime
         await _page.Locator(".map-hud .btn-toolbar button.map-key-action").First.ClickAsync();
         await _page.Locator(".map-plot").First.WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        // #1234 · THE ROW IS STILL BEING WRITTEN WHEN THE TABLE OPENS. The long-coast advert re-reads its
+        // own countdown, the haul chip its pulses; each changes a button's WIDTH and so the wrap point. The
+        // eleven boxes below are read one CDP round-trip at a time, so a row that moves between them is a row
+        // that never existed on the screen. Nothing may have moved for three quarters of a second first.
+        await _page.SettledAsync(
+            ".map-hud .btn-toolbar button, .map-hud .btn-toolbar a.btn, .desk-chip, .desk-chip-strip");
 
         ILocator play = _page.Locator(".map-hud .btn-toolbar button.map-key-action").First;
         await play.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
@@ -746,8 +775,10 @@ public sealed class HudCollisionTests : IAsyncLifetime
         await _page.GotoAsync(_host.BaseUrl + "/", new() { Timeout = BootTimeoutMs });
         await _page.Locator("a.btn-primary[href*='scenario=sol']").ClickAsync();
 
-        await _page.WaitForSelectorAsync(".map-loading",
-            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        // #1234 · BOTH HALVES OF THE DOOR. `GotoAsync` returns while the page is still an empty shell, so a
+        // bare "wait until .map-loading is gone" is satisfied by a door that has not been hung yet — this
+        // waited only for the second half. GateReady owns the pair now.
+        await _page.BootDoorClosedAsync(BootTimeoutMs);
 
         await _page.Locator(".start-picker-backdrop").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
@@ -767,8 +798,10 @@ public sealed class HudCollisionTests : IAsyncLifetime
         await _page.GotoAsync(_host.BaseUrl + "/", new() { Timeout = BootTimeoutMs });
         await _page.Locator("a.btn-primary[href*='scenario=sol']").ClickAsync();
 
-        await _page.WaitForSelectorAsync(".map-loading",
-            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        // #1234 · BOTH HALVES OF THE DOOR. `GotoAsync` returns while the page is still an empty shell, so a
+        // bare "wait until .map-loading is gone" is satisfied by a door that has not been hung yet — this
+        // waited only for the second half. GateReady owns the pair now.
+        await _page.BootDoorClosedAsync(BootTimeoutMs);
 
         await _page.Locator(".start-picker-backdrop").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });

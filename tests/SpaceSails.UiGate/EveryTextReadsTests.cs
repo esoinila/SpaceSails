@@ -89,6 +89,10 @@ public sealed class EveryTextReadsTests : IAsyncLifetime
         await _page.Locator(".bar-menu").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
 
+        // #1234 · every run's box and the canvas pixels under it are read here; read none of them until
+        // the screen has stopped moving (see GateReady).
+        await _page.SettledAsync(".deck-offer-card, .bar-menu");
+
         Reading[] words = await Probe(".map-page");
 
         // ── The anti-vacuous half, said out loud ────────────────────────────────────────────────────────
