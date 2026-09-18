@@ -10,10 +10,19 @@ namespace SpaceSails.Client.Pages;
 // Owner, 2026-09-01, verbatim: "following one of the customers covertly without them noticing us would be
 // classic spy / detective stuff :-D … or trying to lose a tail our selves :-D"
 //
-// WHAT IS HERE. A man who comes into the bar after the captain, keeps a distance band, stands where he can
-// see him, and orders nothing. The two ways a captain can find that out — a chair with the door in front of
-// it, and the same coat through two doorways — and the one way to be rid of him, which is to spend as long
-// out of his sight as it took to notice him.
+// WHAT IS HERE. A man who comes into the bar after the captain, takes a place he can see him from, and orders
+// nothing. The two ways a captain can find that out — a chair with the door in front of it, and the same coat
+// through two doorways — and the one way to be rid of him, which is to spend as long out of his sight as it
+// took to notice him.
+//
+// #1229 · AND "A PLACE" IS TWO PLACES, because the brief said so from the start and only half of it shipped:
+// "enters the room after the captain, keeps a distance band, TAKES A SEAT/STANDING SPOT WITH A SIGHTLINE TO
+// HIM, orders nothing." In a room off the ring he takes a POST — inside it, against the room's own stone,
+// with a line, nearest the doorway he came in by, never the counter and never a chair. Out on the ring he
+// keeps the BAND, unchanged. The room chooses, by its own published walls, and the reason it has to is
+// measured: a bar reaches about twenty-three deck units from its doorway and the band's far edge is thirty,
+// so a man told to hold a band in one is a man the stone pushes out through the door — which is exactly what
+// #1231 watched happen, three seconds at a time.
 //
 // WHAT IS DELIBERATELY NOT. No pathfinder (OnFoot, the one planner). No sightline (FootTail.InPlainSight →
 // PatrolBeat.EyesOn → SurfaceCollision.HasLineOfSight, the one oracle, which is also the one slice 1 uses).
