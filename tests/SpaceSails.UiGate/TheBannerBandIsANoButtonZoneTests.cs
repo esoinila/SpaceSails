@@ -296,10 +296,13 @@ public sealed class TheBannerBandIsANoButtonZoneTests : IAsyncLifetime
         // than described, so its row is a fact.
         await _page.GotoAsync(_host.BaseUrl + "/", new() { Timeout = BootTimeoutMs });
         await _page.Locator("a.btn-primary[href*='scenario=sol']").ClickAsync();
-        await _page.WaitForSelectorAsync(".map-loading",
-            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        // #1234 · BOTH HALVES OF THE DOOR, through GateReady. `GotoAsync` returns while the page is still an
+        // empty shell, so a bare "wait until .map-loading is gone" is satisfied by a door that has not been
+        // hung yet — this waited only for the second half.
+        await _page.BootDoorClosedAsync(BootTimeoutMs);
         await _page.Locator(".start-picker-newvoyage").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+        await _page.SettledAsync($".map-topstack, {GateReady.EveryPressable}");   // #1234 — the picker has finished laying out before it is swept
         await Sweep("the berth picker gate");
 
         // ── World one: the Sol boot at the berth, every desk, at the narrowest desktop the game is laid
@@ -317,6 +320,7 @@ public sealed class TheBannerBandIsANoButtonZoneTests : IAsyncLifetime
         // any desktop run ever sees — the case a typed clearance is worst at and a flow column cannot get
         // wrong. (#735's viewport, for the same reason: the owner's second screen is a phone.)
         await _page.SetViewportSizeAsync(390, 700);
+        await _page.SettledAsync($".map-topstack, {GateReady.EveryPressable}");   // #1234 — a viewport change is a reflow; let it finish
         foreach (string tab in TheDesks)
         {
             await SitAt(tab, dispatch: true);   // see SitAt: the strip lies over the wrapped tab bar here
@@ -478,14 +482,21 @@ public sealed class TheBannerBandIsANoButtonZoneTests : IAsyncLifetime
 
         await _page.Locator("button.desk-tab.btn-info", new() { HasTextString = tab }).First.WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        // #1234 · …and the desk has finished arriving. Twenty-three screens are swept here and every one of
+        // them is measured — the band's own height among them — so the settle belongs at the seam they all
+        // come through rather than at twenty-three call sites.
+        await _page.SettledAsync($".map-topstack, {GateReady.EveryPressable}");
     }
 
     private async Task BootSol()
     {
         await _page.GotoAsync(_host.BaseUrl + "/", new() { Timeout = BootTimeoutMs });
         await _page.Locator("a.btn-primary[href*='scenario=sol']").ClickAsync();
-        await _page.WaitForSelectorAsync(".map-loading",
-            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        // #1234 · BOTH HALVES OF THE DOOR, through GateReady. `GotoAsync` returns while the page is still an
+        // empty shell, so a bare "wait until .map-loading is gone" is satisfied by a door that has not been
+        // hung yet — this waited only for the second half.
+        await _page.BootDoorClosedAsync(BootTimeoutMs);
         await _page.Locator(".start-picker-backdrop").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
         await _page.Locator(".start-picker-newvoyage").ClickAsync();
@@ -497,8 +508,10 @@ public sealed class TheBannerBandIsANoButtonZoneTests : IAsyncLifetime
     private async Task BootAt(string url)
     {
         await _page.GotoAsync(_host.BaseUrl + url, new() { Timeout = BootTimeoutMs });
-        await _page.WaitForSelectorAsync(".map-loading",
-            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        // #1234 · BOTH HALVES OF THE DOOR, through GateReady. `GotoAsync` returns while the page is still an
+        // empty shell, so a bare "wait until .map-loading is gone" is satisfied by a door that has not been
+        // hung yet — this waited only for the second half.
+        await _page.BootDoorClosedAsync(BootTimeoutMs);
         await _page.Locator(".map-page").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
     }

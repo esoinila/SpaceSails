@@ -278,20 +278,86 @@ public static partial class HavenInterior
     public static bool HasObservationWalk(string bodyId) =>
         string.Equals(bodyId, ObservationWalk.HavenId, StringComparison.Ordinal) && HasInterior(bodyId);
 
+    // ── #1199 (2026-09-18) · THE GALLERY — THE CROSSBAR ──────────────────────────────────────────────────
+    //
+    // Owner, live: "a wider place at the far end of the observation place… a tube, then an area to view…
+    // like the letter T — now we have the foot of the letter ready."
+    //
+    // The stem is the tube above, unchanged. The crossbar is measured off the SAME numbers: the tube's own
+    // blind x becomes the gallery's back wall, and the room grows due west from it, square across the tube's
+    // axis and centred on it. HOW WIDE and HOW DEEP are Core's (ObservationWalk.GalleryWidthDu /
+    // GalleryDepthDu); WHERE is this file's, because it is a fact about this hall's geometry and nothing
+    // else. Nothing here is typed in — unaudited client geometry literals are this project's oldest and
+    // most reliably wrong bug class, and a room measured twice is a room that will eventually be two rooms.
+
+    /// <summary>#1199 · The axis the whole T is built on — the middle of the tube, which is the middle of
+    /// the doorway the ring was cut at. Stated once, because the tube's walls, the gallery's centre, the rail
+    /// and every fixture in the room are all hung off it.</summary>
+    private static float TheWalksAxisY => (TheWalk.NorthJambY + TheWalk.SouthJambY) / 2f;
+
+    /// <summary>#1199 · The gallery's own box — <c>(west, south, east, north)</c>. The east face is the
+    /// tube's blind x, which is why the crossbar and the stem cannot drift apart; the other three are
+    /// Core's two dimensions laid off it and the axis.</summary>
+    private static readonly (float WestX, float SouthY, float EastX, float NorthY) TheGallery =
+        MeasureTheGallery();
+
+    private static (float, float, float, float) MeasureTheGallery()
+    {
+        float half = (float)(ObservationWalk.GalleryWidthDu / 2.0);
+        float axis = (TheWalk.NorthJambY + TheWalk.SouthJambY) / 2f;
+        return (
+            TheWalk.BlindX - (float)ObservationWalk.GalleryDepthDu,
+            axis - half,
+            TheWalk.BlindX,
+            axis + half);
+    }
+
     /// <summary>
-    /// #1199 · <b>THE WALK, AS A PLACE A BODY CAN BE PUT.</b> The far half of the tube — where the rail is,
-    /// and the only ground in this station that is out of sight of the concourse — handed out as a point so
-    /// the tail's last leg and the beat's own trigger are aimed at the same spot the walls were built round.
+    /// #1199 · <b>THE WALK, AS A PLACE A BODY CAN BE PUT.</b> Where the rail is — the only ground in this
+    /// station that is out of sight of the concourse — handed out as a point so the tail's last leg, the
+    /// wait's own clock and the beat's trigger are aimed at the same spot the walls were built round.
     ///
-    /// <para>Half a walk short of the blind wall, so a body that stops there is standing AT the rail rather
-    /// than in it, and one avatar clear of the glass either side by construction (the tube is the doorway's
-    /// own width). Null at every other berth in the game, which is all of them but one.</para>
+    /// <para><b>2026-09-18 · the rail moved with the room, and it is stated HERE and nowhere else.</b> It
+    /// was half a walk short of the tube's blind wall; the blind wall is a doorless opening into the gallery
+    /// now, and the rail is what it always was in the fiction — the thing you stand at, at the outer glass,
+    /// with the drop under you. One body clear of the gallery's west wall, which is as close to the glass as
+    /// a body gets.</para>
+    ///
+    /// <para><b>And half a hat NORTH of the axis, which is the whole mechanic.</b> Owner, 2026-09-18:
+    /// <i>"The T could even be curved — both leg and hat. For tailing it would make sense."</i> What the
+    /// curve is FOR is a rail the tube's mouth cannot see and a mouth the rail cannot see — a straight tube
+    /// with the rail dead centre keeps the person being followed in the captain's line down its whole
+    /// length, he holds at the mouth for ever and the beat stalls, which is the stall the owner watched
+    /// happen. This room gets that property out of its own walls instead of out of an arc: at a quarter of
+    /// the hat's width off the axis, the line from here to the doorway runs into the gallery's own back wall
+    /// (the north stub between the crossbar and the tube's north jamb), and it is blocked in both
+    /// directions. It is the one stretch of this rail the way in cannot see, which is where somebody who did
+    /// not want to be watched would stand, and it is measured — two guards drive the line and go RED when
+    /// the rail is put back on the axis.</para>
+    ///
+    /// <para>Every reader of "the rail" in the game asks this one method: the route the person of interest
+    /// walks, the distance the card is gated on, and the place the note says nobody was. Null at every other
+    /// berth in the game, which is all of them but one.</para>
     /// </summary>
     public static DeckReachability.Point? TheRailAt(string bodyId) =>
         HasObservationWalk(bodyId)
             ? new DeckReachability.Point(
-                TheWalk.BlindX + (2 * DeckPlan.AvatarRadius),
-                (TheWalk.NorthJambY + TheWalk.SouthJambY) / 2.0)
+                TheGallery.WestX + (2 * DeckPlan.AvatarRadius),
+                TheWalksAxisY + (float)(ObservationWalk.GalleryWidthDu / 4.0))
+            : null;
+
+    /// <summary>
+    /// #1199 (2026-09-18) · <b>THE THROAT — where the leg meets the hat.</b> The doorless opening the tube
+    /// makes into the gallery, by its middle: the one place anybody entering this room has to come through,
+    /// and therefore the thing a stakeout seat is a stakeout OF.
+    ///
+    /// <para>Published because three things must mean the same opening — the walls that stop either side of
+    /// it, the guard that proves the cafeteria's seats can see it, and the guard that proves the rail cannot
+    /// see past it to the concourse.</para>
+    /// </summary>
+    public static DeckReachability.Point? TheThroatAt(string bodyId) =>
+        HasObservationWalk(bodyId)
+            ? new DeckReachability.Point(TheGallery.EastX, TheWalksAxisY)
             : null;
 
     /// <summary>#1199 · Where the MOUTH of it is — the doorway's own middle, on the hall side of the line.
@@ -304,21 +370,160 @@ public static partial class HavenInterior
                 (TheWalk.NorthJambY + TheWalk.SouthJambY) / 2.0)
             : null;
 
-    /// <summary>#1199 · The box the walls were laid on — <c>(x0, y0, x1, y1)</c>, blind end to mouth, south
-    /// jamb to north. Published because "is that door on the walk" and "is the captain in the walk" are the
-    /// same question about the same rectangle, and a guard that re-measured it from two points would be a
-    /// second geometry agreeing with whatever the first one did.</summary>
+    /// <summary>#1199 · The box the TUBE's walls were laid on — <c>(x0, y0, x1, y1)</c>, gallery end to
+    /// mouth, south jamb to north. Published because "is that door on the walk" and "is the captain in the
+    /// walk" are the same question about the same rectangle, and a guard that re-measured it from two points
+    /// would be a second geometry agreeing with whatever the first one did.
+    ///
+    /// <para>The STEM only, since 2026-09-18 — <see cref="TheGalleryBox"/> is the crossbar. Two rectangles
+    /// and not one, because the T is not a rectangle and a bounding box round it would claim the two corners
+    /// of open station either side of the tube, which is outside the building.</para></summary>
     public static (double X0, double Y0, double X1, double Y1)? TheWalksBox(string bodyId) =>
         HasObservationWalk(bodyId)
             ? (TheWalk.BlindX, TheWalk.SouthJambY, TheWalk.MouthX, TheWalk.NorthJambY)
             : null;
 
-    /// <summary>#1199 · Is this point inside the walk? The box and nothing else — the same shape
+    /// <summary>#1199 · …and the box the GALLERY's walls were laid on, in the same shape and the same order.
+    /// The east face is the tube's own blind x, so the stem and the crossbar share an edge by construction
+    /// rather than by agreement.</summary>
+    public static (double X0, double Y0, double X1, double Y1)? TheGalleryBox(string bodyId) =>
+        HasObservationWalk(bodyId)
+            ? (TheGallery.WestX, TheGallery.SouthY, TheGallery.EastX, TheGallery.NorthY)
+            : null;
+
+    /// <summary>#1199 · Is this point inside the walk? The two boxes and nothing else — the same shape
     /// <c>UndergroundComplex.Room.Contains</c> answers with, so "in the walk" is one question with one answer
-    /// rather than a threshold typed into whichever file asked last.</summary>
+    /// rather than a threshold typed into whichever file asked last.
+    ///
+    /// <para>The layer label, the beat's own gate and the deck's location strip all come through here, which
+    /// is what keeps <c>OBSERVATION WALK</c> on the WHOLE T: a captain at the rail, a captain at a table in
+    /// the cafeteria and a captain halfway down the tube are all in the same named room, because there is
+    /// only one room.</para></summary>
     public static bool InTheObservationWalk(string bodyId, double x, double y) =>
-        TheWalksBox(bodyId) is { } box
-        && x >= box.X0 && x <= box.X1 && y >= box.Y0 && y <= box.Y1;
+        Inside(TheWalksBox(bodyId), x, y) || Inside(TheGalleryBox(bodyId), x, y);
+
+    /// <summary>#1199 · Is this point in that box? One inclusive test, so the stem and the crossbar cannot
+    /// come to two opinions about an edge they share.</summary>
+    private static bool Inside((double X0, double Y0, double X1, double Y1)? box, double x, double y) =>
+        box is { } b && x >= b.X0 && x <= b.X1 && y >= b.Y0 && y <= b.Y1;
+
+    /// <summary>#1199 · Is this point in the GALLERY specifically? Asked by the beat (GILT-EYE's route ends
+    /// in here and he vanishes in here) and by the guards that hold the cafeteria's fixtures to being inside
+    /// the room they furnish.</summary>
+    public static bool InTheGallery(string bodyId, double x, double y) =>
+        Inside(TheGalleryBox(bodyId), x, y);
+
+    /// <summary>#1199 · Is this point in the CAFETERIA BAND — the inner half, against the back wall, where
+    /// the machines and the tables stand? Core owns the depth of the band
+    /// (<see cref="ObservationWalk.CafeteriaBandDu"/>); this is where it lands on this deck. The rail half is
+    /// everything else, and the guards hold every fixture but the binoculars to this side of the line.</summary>
+    public static bool InTheCafeteriaBand(string bodyId, double x, double y) =>
+        InTheGallery(bodyId, x, y) && x >= TheGallery.EastX - ObservationWalk.CafeteriaBandDu;
+
+    // ── #1199 (2026-09-18) · THE VENDING CAFETERIA ───────────────────────────────────────────────────────
+    //
+    // Owner, live: "maybe even a small vending machine cafeteria with a couple of tables there… the station
+    // likes to get the tourist money." Two machines flush to the back wall at the far ends of it, two steel
+    // tables in front of them, and the coin binoculars out at the glass. Everything below is measured off the
+    // gallery's own box and a body's own width — no typed-in coordinates, for the reason the room above gives.
+    //
+    // NOBODY IS THERE, and the fixtures are chosen so it stays that way: a vending machine is unstaffed by
+    // definition, which is why the owner's cafeteria can be busy furniture in a room whose whole content is
+    // that there is no one in it. The lore does not move an inch.
+
+    /// <summary>#1199 · How deep a vending machine stands off the wall it is bolted to — one body's width,
+    /// the game's own smallest real dimension, so a machine is a thing you walk round rather than a line.
+    ///
+    /// <para><c>const</c> and not <c>static readonly</c>, deliberately. A body's width is a constant
+    /// expression, and a COMPUTED static in a partial class is the one member a concern-shaped split may not
+    /// move — this file's own remarks say so and <c>NoPartialClassSpreadsItsStaticFieldsTests</c> enforces
+    /// it. A pair the compiler folds cannot be re-ordered by a file name.</para></summary>
+    private const float VendorDepth = (float)(2 * DeckPlan.AvatarRadius);
+
+    /// <summary>#1199 · …and how wide it is. The same number: a machine is square in plan, which is what a
+    /// drinks cabinet actually is, and two numbers for one box would be two numbers to keep in step.</summary>
+    private const float VendorWidth = VendorDepth;
+
+    /// <summary>#1199 · How far off the ends of the gallery the two machines stand — one machine's own width
+    /// clear of the side glass, so neither is jammed into a corner the captain cannot walk round.</summary>
+    private static float VendorInsetY => VendorWidth * 2f;
+
+    /// <summary>#1199 · <b>THE TWO MACHINES, AS DRAWN BLOCKS</b> — flush to the gallery's back wall, one
+    /// toward each end. Filled rectangles in the pen's own furniture grammar (<c>DeckPlan.FurnitureSpot</c>,
+    /// #868), which is how every other solid fitting in this game is drawn; no new renderer and no new
+    /// token.</summary>
+    public static IReadOnlyList<(double X0, double Y0, double X1, double Y1)> TheVendingMachineBlocks(
+        string bodyId)
+    {
+        if (!HasObservationWalk(bodyId))
+        {
+            return [];
+        }
+
+        float half = VendorWidth / 2f;
+        return
+        [
+            (TheGallery.EastX - VendorDepth, NorthVendorY - half, TheGallery.EastX, NorthVendorY + half),
+            (TheGallery.EastX - VendorDepth, SouthVendorY - half, TheGallery.EastX, SouthVendorY + half),
+        ];
+    }
+
+    private static float NorthVendorY => TheGallery.NorthY - VendorInsetY;
+
+    private static float SouthVendorY => TheGallery.SouthY + VendorInsetY;
+
+    /// <summary>#1199 · Where a captain stands to use a machine — one body clear of its face, on the room's
+    /// side of it, which is the same standoff the bar's own counter console keeps from the counter. Two of
+    /// them, north first, in the room's own order.</summary>
+    public static IReadOnlyList<DeckReachability.Point> TheVendorsAt(string bodyId) =>
+        HasObservationWalk(bodyId)
+            ?
+            [
+                new DeckReachability.Point(VendorFaceX, NorthVendorY),
+                new DeckReachability.Point(VendorFaceX, SouthVendorY),
+            ]
+            : [];
+
+    private static float VendorFaceX => TheGallery.EastX - VendorDepth - (float)(2 * DeckPlan.AvatarRadius);
+
+    /// <summary>
+    /// #1199 · <b>THE TWO STEEL TABLES</b>, by their centres — in the cafeteria band, one in front of each
+    /// machine and well clear of the tube's mouth so nothing stands in the way in.
+    ///
+    /// <para>Published as its own list and deliberately NOT appended to <see cref="BarFloor.Tops"/>: the
+    /// bar's tops are what the room's own walkers cross the floor to, and a regular who wandered out to the
+    /// end of the observation walk for a sit-down would be the one thing this whole feature cannot survive.
+    /// The gallery is a room nobody is in. The SEAT is the same seat (<c>Seating.BarTop</c>, through
+    /// <c>TheBarTopUnderfoot</c>) because a table is a table; what it is not is the bar.</para>
+    /// </summary>
+    public static IReadOnlyList<DeckReachability.Point> GalleryTops(string bodyId) =>
+        HasObservationWalk(bodyId)
+            ?
+            [
+                new DeckReachability.Point(TableX, NorthTableY),
+                new DeckReachability.Point(TableX, SouthTableY),
+            ]
+            : [];
+
+    /// <summary>#1199 · The tables stand down the MIDDLE of the cafeteria band — Core's own dimension,
+    /// halved, so they are as far from the back wall as they are from the line past which nothing but the
+    /// binoculars may stand.</summary>
+    private static float TableX => TheGallery.EastX - (float)(ObservationWalk.CafeteriaBandDu / 2.0);
+
+    private static float NorthTableY => TheWalksAxisY + ((TheGallery.NorthY - TheWalksAxisY) / 2f);
+
+    private static float SouthTableY => TheWalksAxisY - ((TheWalksAxisY - TheGallery.SouthY) / 2f);
+
+    /// <summary>
+    /// #1199 · <b>THE COIN BINOCULARS</b> — the one fixture allowed past the cafeteria line, because a pair
+    /// of binoculars anywhere but at the glass is a telescope pointed at a wall.
+    ///
+    /// <para>On the rail itself, on the T's own axis: the middle of the ten people standing side by side,
+    /// which is where a station bolts the thing it wants the coins out of. That is also the spot the beat's
+    /// own trigger is measured to (<see cref="TheRailAt"/>), and deliberately so — a captain who has walked
+    /// all the way out to look for somebody is standing exactly where the machine is.</para>
+    /// </summary>
+    public static DeckReachability.Point? TheBinocularsAt(string bodyId) => TheRailAt(bodyId);
 
     // --- The bar, off the hall's north door — big and cavernous, a local-planet view along the back ---
     private const float BarLeft = -14f;

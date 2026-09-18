@@ -62,7 +62,10 @@ public partial class Map
         }
         if (_credits < price)
         {
-            ShowPulseMessage($"🛒 {item} — {price} cr. The slot blinks INSUFFICIENT FUNDS in a dead language. Empty pockets, captain.");
+            // #1199 · The clause is CoinSlot.ShortLine now, and nothing the player reads has moved: this
+            // sentence has been the kiosk's refusal since #379, and the gallery's coin binoculars and vending
+            // machine needed the same one. Two machines refusing in two registers would be two houses.
+            ShowPulseMessage($"🛒 {item} — {price} cr. {CoinSlot.ShortLine}");
             return;
         }
         _credits -= price;

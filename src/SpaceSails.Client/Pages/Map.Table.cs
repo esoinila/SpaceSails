@@ -439,8 +439,18 @@ public partial class Map
         /// no table. It is always the docked strip anyway (nobody ever comes aboard), and the strip draws no
         /// art — but a field that would answer wrongly if it were ever asked is a lie waiting for a
         /// caller.</para>
+        /// <para>#1199 (2026-09-18) · <b>…UNLESS THE SEAT HAS A WINDOW IN FRONT OF IT</b>, in which case that
+        /// is what the captain is looking at. The stool's own rule one room over (<c>Interior.TheStools</c>,
+        /// #756/#759 — owner: <i>"I do not see the park through the bar windows?"</i>): standing at a fixture
+        /// you are looking AT the fixture, and once you have sat down you are looking out of whatever is in
+        /// front of it. A table in the observation walk's gallery has the rail, the glass and the Earth in
+        /// front of it, and the room already owns that canvas. Carried ON THE SEAT rather than decided here,
+        /// because which room a chair is in is the room's answer and never a panel's.</para>
+        public string? Window { get; init; }
+
         public string? ArtUrl =>
-            !Bench && !Stool && Who == CanteenTable.Who.None ? SittingAlone.ArtFor(Relaxed) : null;
+            Window
+            ?? (!Bench && !Stool && Who == CanteenTable.Who.None ? SittingAlone.ArtFor(Relaxed) : null);
 
         /// <summary>How many the top seats, and how many chairs are still empty — the fact that let you
         /// ask to join in the first place, kept so the panel can say it.</summary>

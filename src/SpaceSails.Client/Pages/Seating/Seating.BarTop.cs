@@ -113,6 +113,10 @@ public partial class Map
                 // the captain's berth is YOUR OWN DESK — carried on the answer for the same reason the
                 // setting is, because the room knows what it is called and a chair does not.
                 Plate = top.Plate,
+                // #1199 (2026-09-18) · …and the VIEW, for a seat that has one. Null everywhere but the
+                // observation walk's gallery, where sitting down puts the rail and the Earth in front of you
+                // — the stool's own rule (#756/#759), asked of the SEAT rather than decided by the panel.
+                Window = top.Window,
                 Scene = sat,
                 Seats = top.Seats,
                 // One of them is yours now. The room can see you sitting alone, which is the whole premise —

@@ -74,6 +74,10 @@ public sealed class PlotPanelFitsTheWindowTests : IAsyncLifetime
         await BuildTheOwnersPlan();
 
         ILocator panel = _page.Locator(".map-plot");
+        // #1234 · nothing may have moved for three quarters of a second before a box is read — a
+        // geometry assertion made on a layout still being written is a coin toss (see GateReady).
+        await _page.SettledAsync(".map-plot");
+
         if (await panel.BoundingBoxAsync() is not { } box)
         {
             throw new InvalidOperationException("the Plotting panel has no box at all — nothing was measured");
@@ -129,6 +133,10 @@ public sealed class PlotPanelFitsTheWindowTests : IAsyncLifetime
         // was among the things below the bottom edge.
         ILocator remove = _page.Locator(".map-plan-step-open .map-plan-step-edit .btn-outline-danger").Last;
         await remove.ScrollIntoViewIfNeededAsync(new() { Timeout = ActionTimeoutMs });
+        // #1234 · nothing may have moved for three quarters of a second before a box is read — a
+        // geometry assertion made on a layout still being written is a coin toss (see GateReady).
+        await _page.SettledAsync(".map-plot, .map-plan-step-open .map-plan-step-edit .btn-outline-danger");
+
         if (await remove.BoundingBoxAsync() is not { } box)
         {
             throw new InvalidOperationException("the open step editor shows no remove control at all");
@@ -173,8 +181,10 @@ public sealed class PlotPanelFitsTheWindowTests : IAsyncLifetime
         // DEFERS such a beat rather than dropping it, and leaves plates alone. See
         // StoryBeats.HoldQueryFlag.
         await _page.GotoAsync(_host.BaseUrl + "/map?dock=red-eye&holdbeats=1", new() { Timeout = BootTimeoutMs });
-        await _page.WaitForSelectorAsync(".map-loading",
-            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        // #1234 · BOTH HALVES OF THE DOOR, through GateReady. `GotoAsync` returns while the page is still an
+        // empty shell, so a bare "wait until .map-loading is gone" is satisfied by a door that has not been
+        // hung yet — this waited only for the second half.
+        await _page.BootDoorClosedAsync(BootTimeoutMs);
         await _page.Locator(".desk-tab-bar").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
 

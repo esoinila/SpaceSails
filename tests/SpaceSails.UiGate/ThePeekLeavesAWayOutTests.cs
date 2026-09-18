@@ -293,9 +293,10 @@ public sealed class ThePeekLeavesAWayOutTests : IAsyncLifetime
         await _page.Locator(".map-page.map-peek").WaitForAsync(
             new() { State = WaitForSelectorState.Attached, Timeout = ActionTimeoutMs });
 
-        // The fade is a 0.12s transition and the hit-testing switches with it, so give the paint a beat
-        // before asking the layout anything. Generous, and still nothing next to the boot.
-        await _page.WaitForTimeoutAsync(600);
+        // #1234 · The fade is a 0.12s transition and the hit-testing switches with it. This used to be a
+        // 600 ms sleep and a hope; it is the page's own answer now — nothing under .map-page has moved for
+        // three quarters of a second, so the transition is over as a measured fact.
+        await _page.SettledAsync(".map-hud .btn-toolbar button");
     }
 
     /// <summary>Boot docked at The Red Eye — the same berth the Plotting-panel gates use, so the flight deck
@@ -309,8 +310,10 @@ public sealed class ThePeekLeavesAWayOutTests : IAsyncLifetime
         // DEFERS such a beat rather than dropping it, and leaves plates alone. See
         // StoryBeats.HoldQueryFlag.
         await _page.GotoAsync(_host.BaseUrl + "/map?dock=red-eye&holdbeats=1", new() { Timeout = BootTimeoutMs });
-        await _page.WaitForSelectorAsync(".map-loading",
-            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        // #1234 · BOTH HALVES OF THE DOOR, through GateReady. `GotoAsync` returns while the page is still an
+        // empty shell, so a bare "wait until .map-loading is gone" is satisfied by a door that has not been
+        // hung yet — this waited only for the second half.
+        await _page.BootDoorClosedAsync(BootTimeoutMs);
         await _page.Locator(".desk-tab-bar").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
 
@@ -330,5 +333,8 @@ public sealed class ThePeekLeavesAWayOutTests : IAsyncLifetime
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
         await _page.Locator(".map-hud").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        // #1234 · …and the deck has stopped moving before a box or a hit-test is read off it.
+        await _page.SettledAsync(".map-hud .btn-toolbar button, " + ThePage);
     }
 }
