@@ -388,10 +388,13 @@ public sealed partial class DeckView
             // roughly three quarters down the panel (canvas draws text from its alphabetic baseline).
             float w = (text.Length * px * 0.62f) + (px * 0.9f);
             float h = px * 1.32f;
-            float x0 = bxp - (w / 2f), y0 = byp - (h * 0.77f);
+            float x0 = bxp - (w / 2f);
+            // #1218 · Signage goes in the band book on its PLATE, which is the shape that occupies the wall;
+            // the baseline keeps its own seat inside it.
+            float y0 = (float)SeatTheBand(x0, x0 + w, byp - (h * 0.77f), byp - (h * 0.77f) + h);
             FillRect(x0, y0, w, h, StencilPlate);
             DrawRectOutline(x0, y0, w, h, new RgbaColor(ink.R, ink.G, ink.B, 90));
-            _renderer.DrawText(bxp, byp, text, ink, $"bold {px:0}px monospace", TextAlign.Center);
+            _renderer.DrawText(bxp, y0 + (h * 0.77f), text, ink, $"bold {px:0}px monospace", TextAlign.Center);
         }
 
         foreach ((float lx, float ly, string text) in plan.RoomLabels)
@@ -404,7 +407,9 @@ public sealed partial class DeckView
             (float lxp, float lyp) = project(lx, ly);
             if (ls == 1)
             {
-                _renderer.DrawText(lxp, lyp, text, ExploredText, "10px monospace", TextAlign.Center);
+                // #1218 · An explored room's name wears no plate, so its own ink is its band.
+                _renderer.DrawText(lxp, SeatTheCaption(lxp, lyp, text, 10.0, TextAlign.Center), text,
+                    ExploredText, "10px monospace", TextAlign.Center);
             }
             else
             {
@@ -462,14 +467,31 @@ public sealed partial class DeckView
                 _renderer.DrawText(sx, sy + 4, "✗", xcol, "bold 16px monospace", TextAlign.Center);
                 if (haunted)
                 {
-                    _renderer.DrawText(sx, sy - 12, "yours · something walks near it", new RgbaColor(230, 120, 90, 170), "8px monospace", TextAlign.Center);
+                    // #1218 · …AND THE FORENSIC LINE IS A ROW OF THE CACHE'S OWN PLATE. It used to be typed at
+                    // sy - 12 while MoonSurface.Layout seeds a DigSite console at the SAME (x, y) by
+                    // construction, and that console's plate was typed at sy - 10: two authors, two literals,
+                    // two pixels apart, and the owner read one printed through the other at his own ✗. Both
+                    // ask for the mark's row now (the ✗ is bold 16px, so its ink reaches about half that
+                    // above its anchor) and whichever is drawn second takes the row above it.
+                    const double exMarkHalfPx = 8.0, linePx = 8.0;
+                    const string line = "yours · something walks near it";
+                    _renderer.DrawText(
+                        sx, SeatAboveAMark(sx, sy, exMarkHalfPx, line, linePx, TextAlign.Center),
+                        line, new RgbaColor(230, 120, 90, 170), "8px monospace", TextAlign.Center);
                 }
             }
             if (hud.HasDroppedChest)
             {
                 (float dx2, float dy2) = project(hud.DropX, hud.DropY);
                 _renderer.DrawText(dx2, dy2 + 5, "🧰", new RgbaColor(200, 160, 90, 240), "15px monospace", TextAlign.Center);
-                _renderer.DrawText(dx2, dy2 - 11, "dropped chest", new RgbaColor(200, 160, 90, 180), "8px monospace", TextAlign.Center);
+                // #1218 · A FIFTH upward literal the issue's own audit missed — `dy2 - 11`, and it is the
+                // same lift over the same kind of mark as the ✗ two blocks up. The chest is 15px, so its ink
+                // reaches about seven and a half above the anchor it is drawn a little below.
+                const double chestHalfPx = 7.5, chestLinePx = 8.0;
+                const string chestLine = "dropped chest";
+                _renderer.DrawText(
+                    dx2, SeatAboveAMark(dx2, dy2, chestHalfPx, chestLine, chestLinePx, TextAlign.Center),
+                    chestLine, new RgbaColor(200, 160, 90, 180), "8px monospace", TextAlign.Center);
             }
             // #314: husks of downed Old Ones — dim marks left where they fell (the forensic seed, #316).
             if (hud.Husks is { } husks)
