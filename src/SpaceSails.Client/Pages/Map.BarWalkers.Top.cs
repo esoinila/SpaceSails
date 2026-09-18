@@ -60,9 +60,15 @@ public partial class Map
     /// gumshoe rule refuses the spread out loud. Owner: <i>"Our on ship bar can be upgraded to match the
     /// other bars."</i> It is carried and never derived from a plate or a room name, for the reason every
     /// other field on this record is: the ROOM knows what its furniture is, and a chair does not.</param>
+    /// <param name="Window">#1199 (2026-09-18) · <b>WHAT YOU ARE LOOKING AT ONCE YOU ARE SITTING IN IT</b>, or
+    /// null for a seat whose view is the room it is in. The stool's own shape (<c>TheStools.SeatedArtUrl</c>,
+    /// #756/#759: <i>"I do not see the park through the bar windows?"</i>) — standing at a fixture you are
+    /// looking AT the fixture, and sitting down you are looking out of whatever is in front of it. At a table
+    /// in the observation walk's gallery, what is in front of it is the rail, the glass and the Earth, which
+    /// is the plate the room already wears as its floor.</param>
     private readonly record struct BarTopUnderfoot(
         int Index, string Key, long Watch, double ChairX, double ChairY, int Seats, string Setting,
-        string Plate, bool Quiet, bool Aboard, bool Stool = false);
+        string Plate, bool Quiet, bool Aboard, bool Stool = false, string? Window = null);
 
 
     /// <summary>
@@ -197,7 +203,12 @@ public partial class Map
                 // cabinets, no curtains and nothing to dog, which is what Quiet is a question about. The one
                 // thing that is different about it is that nobody ever does walk in, and that is a fact about
                 // the WORLD rather than about this seat's rung.
-                Quiet: false, Aboard: false);
+                Quiet: false, Aboard: false,
+                // …AND THE VIEW, which is the answer to how a room made of windows gets its window into a
+                // panel. Standing in the gallery the plate is the floor under the glass; sat down at a table
+                // with your back to the machines it is what is through the rail — one canvas, the room's own,
+                // exactly as the counter's stool wears the park (#756/#759).
+                Window: GalleryFixtures.CafeteriaArtUrl);
         }
 
         return null;
