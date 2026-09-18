@@ -221,7 +221,19 @@ public sealed partial class DeckView
         // one-reach lesson: the renderer working out for itself what the sim already knows is how two
         // instruments come to disagree — and there is nothing worse to disagree about than whether the
         // captain can breathe).
-        SuitAir.Supply AirSupply = SuitAir.Supply.Tanks);
+        SuitAir.Supply AirSupply = SuitAir.Supply.Tanks,
+        // #336 · THE BOAT'S LEGS — the visible geometry behind the ride home (#212/#253: no hidden radii).
+        // Owner ruling (2026-07-18): "As long as the ship is in shuttle range (shown on map) and is not
+        // moving too fast away, we should be able to fly back to it from a landing site." A link the captain
+        // cannot SEE is a link he has to guess at, and the whole point of range-instead-of-dockage is that a
+        // drifting ship is now a judgement call rather than a verdict.
+        //
+        // RangeFraction is the honest gap over one shuttle hop (ShuttleRange.RangeMeters), handed down from
+        // the sim's own measurement rather than re-derived here — the #591 one-reach lesson, pointed at the
+        // one number that decides whether this excursion has a way home. Rung is
+        // ShuttleLink.Stage as an int, or 3 for a window that is closed and coming back (#955 NAV-2), which
+        // is neither a rung nor a maroon. Null aboard, and on any ground with no mothership to catch.
+        (double RangeFraction, int Rung)? ShuttleLegs = null);
 
     // #708 · The pen, and the mask that can be slipped over it. `_renderer` is what every draw in this file
     // writes to; for the world phase of a DARK floor it is the LampMask, and for everything else — the

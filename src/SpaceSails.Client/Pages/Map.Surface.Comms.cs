@@ -38,6 +38,27 @@ public partial class Map
             return doom;
         }
 
+        // ─────────────────────────────────────────────────────────────────────────────────────────────
+        // #336 · WHETHER IT MATTERS OUTRANKS WHY IT IS HAPPENING.
+        //
+        // Owner ruling (2026-07-18): "Orbit-hold remains WHY she drifts; range is WHETHER it matters." The
+        // #331 ladder below answers the first question superbly and cannot answer the second at all — it
+        // reads the tank and the trim bill, and a captain standing on the regolith does not want to know
+        // about the tank, he wants to know whether there is a ride.
+        //
+        // So the strip says the most urgent TRUE thing. An amber or lost RANGE outranks everything under it,
+        // INCLUDING the docked line, because it is the fact that decides whether this excursion has a way
+        // home — and a strip reading "docked, the station holds the ship" while the moon under the captain's
+        // boots carries him past the boat's legs is this repository's third named bug class: the sentence
+        // saying one thing while the sim does another. Below that rung the old readings stand exactly as
+        // they were: clamped on says so, and a kept orbit counts its hold down — the WHY, with its runway.
+        // ─────────────────────────────────────────────────────────────────────────────────────────────
+        ShuttleLink.Stage? rung = TheShuttleLinkRung();
+        if (rung is ShuttleLink.Stage.Amber or ShuttleLink.Stage.Lost)
+        {
+            return (ShuttleLink.Line(rung.Value), ShuttleLink.Severity(rung.Value));
+        }
+
         if (_dockedHavenId is not null)
         {
             // Owner ruling (#331 follow-up): docked at a station, its mass holds the orbit for us — no
@@ -53,9 +74,21 @@ public partial class Map
             return (OrbitHold.Comms(stage, remaining), OrbitHold.Severity(stage));
         }
 
-        // Not keeping. If we boarded WITH a hold, the keeper has since given up (the tank ran dry, a loud
-        // handback) — the orbit is degrading: the maroon, announced. If we never had a hold, no one was
-        // ever trimming it — a standing red the whole excursion. Either way, loud, never silent.
+        // #336 · SHE IS ADRIFT, AND SHE IS STILL CATCHABLE — and that is now a calm line rather than a red
+        // one. This is the exact case the owner filed the issue about: undocked, drifting, orbit degraded,
+        // and none of it alone breaks the link. What used to stand here was "⚠ the ship has slipped its
+        // orbit — it's adrift; the shuttle rides its own way home", an alarm about a situation the captain
+        // can simply fly out of. The two OrbitHold lines below it are not dead — they are what the captain's
+        // remote says about WHY she is drifting (AwayWindowRemoteSubLine), and the tank still counts down.
+        if (rung is ShuttleLink.Stage.Calm)
+        {
+            return (ShuttleLink.Line(ShuttleLink.Stage.Calm), ShuttleLink.Severity(ShuttleLink.Stage.Calm));
+        }
+
+        // Not keeping, and the window is CLOSED rather than lost (#955 NAV-2's periodic geometry: the gap is
+        // past a hop right now and the rails bring it back). Nobody is stranded and nothing here may say so.
+        // If we boarded WITH a hold, the keeper has since given up — the orbit is degrading, announced. If we
+        // never had a hold, no one was ever trimming it. Either way, loud, never silent.
         return _orbitHoldAtBoarding > 0
             ? (OrbitHold.Comms(OrbitHold.Stage.Lost, 0), OrbitHold.Severity(OrbitHold.Stage.Lost))
             : (OrbitHold.NotHoldingComms, 2);
