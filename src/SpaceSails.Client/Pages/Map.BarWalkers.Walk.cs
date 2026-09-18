@@ -57,7 +57,7 @@ public partial class Map
             // it ends when he has had nothing to look at for long enough to give up.
             if (w.For is Errand.BehindYou or Errand.AskingTheWrongFloor)
             {
-                if (StepTheCoat(w, dt, walls, i))
+                if (StepTheCoat(w, dt, in bar, walls, i))
                 {
                     anybodyLanded = true;
                 }

@@ -75,19 +75,26 @@ public sealed class TheTailBehindYouTests
     // ── 2 · WHAT HE DOES ────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// #1062 · <b>HE COMES IN AFTER YOU, KEEPS HIS BAND, AND ORDERS NOTHING.</b>
+    /// #1062 · <b>HE COMES IN AFTER YOU, TAKES A PLACE IN THE ROOM, AND ORDERS NOTHING.</b>
     ///
     /// <para>Three claims about one body. He is not on the floor while the captain is still in the concourse
     /// (the whole shape of the beat is that he follows you in). Once the captain is in the room he is, and he
-    /// settles inside the band Core publishes. And he never goes to the counter — the one fixture in this
-    /// room where service happens, and the one spot the canon line says he has not been to.</para>
+    /// settles somewhere IN it. And he never goes to the counter — the one fixture in this room where service
+    /// happens, and the one spot the canon line says he has not been to.</para>
+    ///
+    /// <para>#1229 · <b>the middle claim was "inside the band Core publishes", and it was the bug.</b> A
+    /// 9–30 du band does not fit in a station bar, so the sounding's first answer was nineteen units down the
+    /// concourse — outside the room, through the one doorway — and the assertion passed because it only asked
+    /// the RANGE. It asks the room now: he is on the captain's own side of the bar's own south wall, which is
+    /// where a man who came in after you is by definition. What he does in here is take a POST rather than
+    /// keep a band, and that is <c>TheManTakesAPostTests</c>' subject.</para>
     ///
     /// <para><b>Revert that reddened it:</b> the <c>InTheBar</c> clause deleted from <c>AdvanceTheCoat</c> —
     /// <i>the man is already standing in the bar on the frame the captain clamps on, which is not a tail, it
     /// is a fixture</i>.</para>
     /// </summary>
     [Fact]
-    public void HeComesInAfterYouKeepsHisBandAndNeverGoesToTheCounter()
+    public void HeComesInAfterYouTakesAPlaceInTheRoomAndNeverGoesToTheCounter()
     {
         Pages.Map map = Tailed(Berth);
 
@@ -102,24 +109,37 @@ public sealed class TheTailBehindYouTests
         object coat = TheCoat(map) ?? throw new InvalidOperationException("nobody followed the captain in.");
         Assert.Equal("BehindYou", Get(coat, "For")!.ToString());
 
-        // He settles, and where he settles is inside the band Core publishes.
+        // …and he is dealt OUTSIDE the room, not on the captain's feet: he comes in AFTER you.
+        HavenInterior.BarFloor bar = HavenInterior.BarBand(Berth)!.Value;
+        Assert.True(CoatY(coat) < bar.FloorY,
+            "he was dealt inside the room the captain is already standing in, which is not following him in.");
+
+        // He settles, and where he settles is IN THE ROOM WITH THE CAPTAIN.
         for (int i = 0; i < 600 && Afoot(TheCoat(map)!); i++)
         {
             RunFrames(map, 1);
         }
 
         coat = TheCoat(map)!;
-        Assert.True(TheTailBehindYou.HoldsHisBand(RangeToCoat(map, coat)),
-            "he walked to a spot outside the band he is supposed to keep.");
+        Assert.True(CoatY(coat) > bar.FloorY,
+            $"he settled at ({CoatX(coat):F2},{CoatY(coat):F2}) — the captain is in the bar and he is not in " +
+            "it with him (#1229).");
 
-        // ORDERS NOTHING. The room publishes exactly one place where service happens; he is not at it, and
-        // the code never so much as asks the room where it is.
-        HavenInterior.BarFloor bar = HavenInterior.BarBand(Berth)!.Value;
-        foreach (DeckReachability.Point counter in bar.Fixtures)
+        // ORDERS NOTHING. The room publishes exactly one place where service happens, and seven tops a patron
+        // sits at; he is at none of them. #1229 · the tops are in this sweep now as well as the counter,
+        // because a POST is against the room's own stone and so is a bar's furniture.
+        foreach (DeckReachability.Point service in bar.Fixtures)
         {
-            double dx = counter.X - CoatX(coat), dy = counter.Y - CoatY(coat);
+            double dx = service.X - CoatX(coat), dy = service.Y - CoatY(coat);
             Assert.True(Math.Sqrt((dx * dx) + (dy * dy)) > DeckPlan.InteractRadius,
                 "he is standing at the counter — the one thing the canon says he has not done.");
+        }
+
+        foreach (DeckReachability.Point top in bar.Tops)
+        {
+            double dx = top.X - CoatX(coat), dy = top.Y - CoatY(coat);
+            Assert.True(Math.Sqrt((dx * dx) + (dy * dy)) > DeckPlan.InteractRadius,
+                "he is standing at a top — a seat would make him a patron, and he has not ordered.");
         }
     }
 
@@ -268,6 +288,7 @@ public sealed class TheTailBehindYouTests
     public void TheSameCoatThroughTwoDoorwaysIsTheTell()
     {
         Pages.Map map = Tailed(Berth);
+        HavenInterior.BarFloor bar = HavenInterior.BarBand(Berth)!.Value;
         StandCaptainAt(map, HavenInterior.BarThreshold.X, HavenInterior.BarThreshold.Y + 6);
         RunFrames(map, 1);
         Assert.NotNull(TheCoat(map));
@@ -277,6 +298,24 @@ public sealed class TheTailBehindYouTests
         var seen = (ICollection<int>)Field(map, "_coatDoors")!;
         Assert.NotEmpty(seen);
         Assert.False((bool)Field(map, "_coatSeen")!, "one doorway is not a tell.");
+
+        // #1229 · THE HONEST QUESTION, AND THE WHOLE POINT OF RE-GROUNDING THIS GUARD. The captain walks in,
+        // the way a player does, and the man settles WHERE HE IS — in the room with him, on the captain's own
+        // side of the bar's south wall. Until #1229 he was planted nineteen units down the concourse, on the
+        // exit path, before the captain had moved at all: this test was green BECAUSE of that bug, and the
+        // sequence it claimed to be watching (posted inside → captain exits → he follows through door one →
+        // captain takes a second doorway → he follows through door two) never happened.
+        WalkCaptainTo(map, bar.Tops[2].X, bar.Tops[2].Y);
+        for (int i = 0; i < 600 && Afoot(TheCoat(map)!); i++)
+        {
+            RunFrames(map, 1);
+        }
+
+        object inTheRoom = TheCoat(map)!;
+        Assert.True(CoatY(inTheRoom) > bar.FloorY,
+            $"before the captain moves a step, the man is standing at ({CoatX(inTheRoom):F2}," +
+            $"{CoatY(inTheRoom):F2}) and the room's south wall is at y={bar.FloorY:F2} — he is NOT in the " +
+            "room with the captain, so whatever this guard sees next is not a man following him out (#1229).");
 
         // …and now the captain WALKS — at a walking pace, out of the bar, across the concourse and out to the
         // blind end of #1199's tube, where the only spot in the room with a line to him is its own mouth. He

@@ -54,6 +54,25 @@ public partial class Map
     /// him.</summary>
     private double _coatBlind;
 
+    /// <summary>#1229 · …and the third: seconds the captain has been in a DIFFERENT ROOM from him. A man
+    /// posted inside a room does not leave it on the frame his subject does — he gives it one look
+    /// (<see cref="TheTailBehindYou.SecondsBeforeHeFollowsYouOut"/>) and then comes out through the same
+    /// doorway, which is what makes the two-door tell a SEQUENCE the captain reads rather than an accident of
+    /// where the man happened to be planted beforehand. Zeroed the moment they are in one room again.</summary>
+    private double _coatARoomBehind;
+
+    /// <summary>#1229 · Is he on a POST — a standing place against the room's own stone — rather than keeping
+    /// a band? Written on the frame he is SENT to one, so it is a fact about the man and not a re-derivation
+    /// of the room he happens to be in this instant. A post is kept until the LINE breaks; a band is kept
+    /// until the captain walks out of it. Two behaviours, one field to tell them apart.</summary>
+    private bool _coatPosted;
+
+    /// <summary>#1229 · Which doorway he last came through, by its index in the plan — the way OUT, from where
+    /// he is standing. It is what a band is measured against (he keeps himself between the captain and it) and
+    /// what a post is measured to (nearest it). Null until he has been in one, which is the bar's own
+    /// threshold by default. A visit's state, like everything else in this file.</summary>
+    private int? _coatCameInBy;
+
     /// <summary>#1062 · Which of the deck's own doorways he has been seen coming through, by their index in
     /// the plan. A SET, because the tell is two DISTINCT doors and a man loitering in one of them for a whole
     /// watch is a man in a doorway.</summary>
@@ -133,15 +152,19 @@ public partial class Map
             return;
         }
 
-        // He comes in the way you came in — the room's own published doorway (HavenInterior.BarThreshold,
-        // the same spot ?ashore=1 stands the captain on), never a coordinate typed into a client file.
-        (double doorX, double doorY, _) = HavenInterior.BarThreshold;
+        // He comes in the way you came in — the room's own published doorway, never a coordinate typed into a
+        // client file. #1229 · and he is dealt on the CONCOURSE SIDE of it (HavenInterior.TheDoorstepOutside
+        // TheBar) and walks in, because HavenInterior.BarThreshold is where `?ashore=1` stands the CAPTAIN: a
+        // man dealt there is dealt on the captain's feet, and a tail standing on your toes on the frame you
+        // boot is not a tail. He comes in AFTER you, which is the whole shape of the beat, and now the code
+        // says so as well as the docblock.
+        (double outsideX, double outsideY) = HavenInterior.TheDoorstepOutsideTheBar;
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
-        var doorstep = new DeckReachability.Point(doorX, doorY);
+        var doorstep = new DeckReachability.Point(outsideX, outsideY);
 
         _coatDealt = true;
 
-        if (TheSpotBehindYou(walls) is not { } spot
+        if (WhereHeStands(in bar, walls) is not { } spot
             || OnFoot(TheTailBehindYou.Plate, new NpcWalk.Bound("", spot.X, spot.Y), doorstep, walls)
                is not { } walk)
         {
@@ -167,6 +190,9 @@ public partial class Map
         _coatSeen = false;
         _coatExposure = 0;
         _coatBlind = 0;
+        _coatARoomBehind = 0;
+        _coatPosted = false;
+        _coatCameInBy = null;
         _coatLost = false;
         _coatLastX = double.NaN;
         _coatLastY = double.NaN;
@@ -189,11 +215,12 @@ public partial class Map
     /// <para>He never sounds a fixture. The counter is the one spot in this room where service happens, and
     /// the whole of the canon line about him is that he has not ordered.</para>
     /// </summary>
-    private DeckReachability.Point? TheSpotBehindYou(IReadOnlyList<SurfaceCollision.Segment> walls)
+    private DeckReachability.Point? TheSpotBehindYou(
+        in HavenInterior.BarFloor bar, IReadOnlyList<SurfaceCollision.Segment> walls)
     {
         foreach (double reach in TheTailBehindYou.TheRangesHeTries)
         {
-            if (TheSpotBehindYouAt(reach, walls) is { } spot)
+            if (TheSpotBehindYouAt(reach, in bar, walls) is { } spot)
             {
                 return spot;
             }
@@ -204,36 +231,222 @@ public partial class Map
 
     /// <summary>#1062 · …the sounding itself, at one of his two reaches.</summary>
     private DeckReachability.Point? TheSpotBehindYouAt(
-        double reach, IReadOnlyList<SurfaceCollision.Segment> walls)
+        double reach, in HavenInterior.BarFloor bar, IReadOnlyList<SurfaceCollision.Segment> walls)
     {
         foreach (double bearing in TheTailBehindYou.TheSidesHeSounds)
         {
             double x = _avatarX + (System.Math.Cos(bearing) * reach);
             double y = _avatarY + (System.Math.Sin(bearing) * reach);
-
-            // ── AND HE STAYS ON THE STATION SIDE ─────────────────────────────────────────────────────────
-            //
-            // <see cref="StationFloorY"/> is the page's own line between a berth and the umbilical, and it is
-            // the one clause here that is about WHO he is rather than about the stone. A man paid to put a
-            // face to a hull does not follow the captain down his own gangway and stand in his airlock: that
-            // is not a tail any more, it is a boarding, and #1062 is explicit that until some other issue
-            // rules otherwise this figure is a mundane human being.
-            //
-            // It is also what the audit left the feature instead of the move #1062 sketched. The issue offers
-            // "a lift timed at the close" and a door shut between you; ashore this game has no lift, no
-            // interlock and no door that blocks anything at all. What it has is a gangway he will not walk
-            // down — so walking aboard your own ship is the timed close, and it is made of geography.
-            if (y <= StationFloorY
-                || SurfaceCollision.Blocked(x, y, DeckPlan.AvatarRadius, walls)
-                || !SurfaceCollision.HasLineOfSight(_avatarX, _avatarY, x, y, walls))
+            if (HeCouldStandAt(x, y, _avatarX, _avatarY, in bar, walls))
             {
-                continue;
+                return new DeckReachability.Point(x, y);
             }
-
-            return new DeckReachability.Point(x, y);
         }
 
         return null;
+    }
+
+    /// <summary>#1229 · <b>THE DOORWAY HE CAME IN BY</b> — the last one he was seen standing in, by the plan's
+    /// own index, or the bar's published threshold before he has been in one. It is what "behind you" is
+    /// measured from and what a post is measured to, so the two of them cannot disagree about which way is
+    /// out.</summary>
+    private (double X, double Y) TheDoorwayHeCameInBy(in HavenInterior.BarFloor bar)
+    {
+        DeckPlan.Door[] doors = _deckPlan.Doors;
+        if (_coatCameInBy is { } leaf && leaf >= 0 && leaf < doors.Length)
+        {
+            return ((doors[leaf].X1 + doors[leaf].X2) / 2.0, (doors[leaf].Y1 + doors[leaf].Y2) / 2.0);
+        }
+
+        (double x, double y, _) = HavenInterior.BarThreshold;
+        return (x, y);
+    }
+
+    /// <summary>
+    /// #1229 · <b>CAN A MAN KEEPING STATION ACTUALLY STAND HERE?</b> The four clauses that were spread over
+    /// two methods and one of which did not exist, in one place, so the band and the post are placed by one
+    /// rule and cannot come to two opinions about what a standing place is.
+    ///
+    /// <list type="number">
+    ///   <item><b>THE ROOM.</b> The captain's own side of the bar's own south wall
+    ///   (<see cref="HavenInterior.BarFloor.FloorY"/>, the one line that answers "is the captain in the bar"),
+    ///   because <b>this is the clause that was missing and it is the whole of #1229</b>. Until now the only
+    ///   place clause in the sounding was the gangway one below, and nothing asked whether the spot was in the
+    ///   room the captain was standing in — so at Selene Gate the first bearing the stone allowed was due
+    ///   south, out through the one doorway and nineteen units down the concourse. The wall closed three
+    ///   seconds later and he gave up, silently, having never been in the room at all.</item>
+    ///   <item><b>THE GANGWAY.</b> <see cref="StationFloorY"/> is the page's own line between a berth and the
+    ///   umbilical, and it is the one clause here about WHO he is rather than about the stone. A man paid to
+    ///   put a face to a hull does not follow the captain down his own gangway and stand in his airlock: that
+    ///   is not a tail any more, it is a boarding. It is also what the audit left this feature in place of the
+    ///   lift #1062 sketched — ashore this game has no lift, no interlock and no door that blocks anything, so
+    ///   walking aboard your own ship is the timed close and it is made of geography.</item>
+    ///   <item><b>THE STONE</b>, and <b>the one look over it</b> — the same oracle every other question about
+    ///   what can be seen from a spot on a deck goes through.</item>
+    ///   <item><b>AND HE HAS NOT ORDERED.</b> Never the counter and never a chair
+    ///   (<see cref="HeWouldBeAPatronAt"/>), which the canon line says and the code now asks.</item>
+    /// </list>
+    /// </summary>
+    private bool HeCouldStandAt(
+        double x, double y, double towardsX, double towardsY,
+        in HavenInterior.BarFloor bar, IReadOnlyList<SurfaceCollision.Segment> walls) =>
+        TheSameRoom(x, y, towardsX, towardsY, in bar)
+        && y > StationFloorY
+        && !SurfaceCollision.Blocked(x, y, DeckPlan.AvatarRadius, walls)
+        && !HeWouldBeAPatronAt(x, y, in bar)
+        && SurfaceCollision.HasLineOfSight(towardsX, towardsY, x, y, walls);
+
+    /// <summary>#1229 · Are these two places in one ROOM? The bar's own south wall is the line, which is the
+    /// same line <see cref="InTheBar"/> is — so a room that moves moves for the man behind the captain at the
+    /// same moment it moves for the captain.
+    ///
+    /// <para>It takes the other place rather than reading the captain's, because a BLIND man posts himself
+    /// against where he LAST had him and not against where the captain has since got to. A room test that
+    /// quietly read the live position would be the tracker this file refuses to build.</para>
+    ///
+    /// <para><b>Two walls, because a berth has two rooms off its ring</b> — the bar, off the hall's north
+    /// edge, and #1199's observation walk, off its west one. Both are published by the haven itself
+    /// (<see cref="HavenInterior.BarFloor.FloorY"/> and
+    /// <see cref="HavenInterior.InTheObservationWalk"/>) and neither is measured a second time here. The walk
+    /// matters as much as the bar does: it is a room with ONE way in, so a captain who steps into it has put
+    /// a doorway between the two of them, and the doorway is the whole of the second tell.</para></summary>
+    private bool TheSameRoom(
+        double x, double y, double asX, double asY, in HavenInterior.BarFloor bar) =>
+        (y > bar.FloorY) == (asY > bar.FloorY)
+        && HavenInterior.InTheObservationWalk(bar.BodyId, x, y)
+           == HavenInterior.InTheObservationWalk(bar.BodyId, asX, asY);
+
+    /// <summary>#1229 · <b>HE HAS NOT ORDERED.</b> The counter is the one spot in this room where service
+    /// happens and a top is where a patron sits; a man standing at either is a customer, and the whole of
+    /// what the canon line says about him is that he is not one. The reach is
+    /// <see cref="DeckPlan.InteractRadius"/> — the game's own statement of being AT a thing — so a chair
+    /// beside a top (one body off its centre) is inside it by construction.
+    ///
+    /// <para>#1062 shipped this as an absence: <i>"the code never so much as asks the room where its fixtures
+    /// are"</i>. That was true of a man who could only ever be nineteen units behind you. A POST is against
+    /// the room's own stone, and a bar's counter is against the room's own stone, so the question now has to
+    /// be asked out loud.</para></summary>
+    private static bool HeWouldBeAPatronAt(double x, double y, in HavenInterior.BarFloor bar)
+    {
+        foreach (DeckReachability.Point service in bar.Fixtures)
+        {
+            double fx = service.X - x, fy = service.Y - y;
+            if ((fx * fx) + (fy * fy) <= DeckPlan.InteractRadius * DeckPlan.InteractRadius)
+            {
+                return true;
+            }
+        }
+
+        foreach (DeckReachability.Point top in bar.Tops)
+        {
+            double tx = top.X - x, ty = top.Y - y;
+            if ((tx * tx) + (ty * ty) <= DeckPlan.InteractRadius * DeckPlan.InteractRadius)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    // ── #1229 · THE TWO BEHAVIOURS, AND THE ROOM CHOOSES BETWEEN THEM ────────────────────────────────────
+
+    /// <summary>
+    /// #1229 · <b>WHERE HE GOES — a POST or his BAND, and the stone decides which.</b>
+    ///
+    /// <para>#1062's brief named both from the start — <i>"enters the room after the captain, keeps a
+    /// distance band, takes a seat/standing spot with a sightline to him, orders nothing"</i> — and only the
+    /// band shipped. A 9–30 du band does not fit inside a station bar, so the sounding's first answer was
+    /// always outside the room and the man lost a captain he had never been in with.</para>
+    ///
+    /// <para>So the room is ASKED, by sounding it, and never named: if the reach he keeps has a standing
+    /// place in this room he keeps his band, which is a concourse; if it has none, the room is smaller than
+    /// his band and he takes a post, which is a bar. One measurement, deterministic, on the room's own
+    /// stone — so a room redrawn tomorrow chooses again with no edit here.</para>
+    /// </summary>
+    private DeckReachability.Point? WhereHeStands(
+        in HavenInterior.BarFloor bar, IReadOnlyList<SurfaceCollision.Segment> walls)
+    {
+        _coatPosted = !ThisRoomCanHoldHisBand(in bar, walls);
+        return _coatPosted
+            ? ThePostInThisRoom(_avatarX, _avatarY, in bar, walls)
+            : TheSpotBehindYou(in bar, walls);
+    }
+
+    /// <summary>
+    /// #1229 · <b>CAN THE ROOM THE CAPTAIN IS STANDING IN HOLD A BAND AT ALL?</b>
+    ///
+    /// <para>A berth has a RING and it has two rooms off it: the bar, off the hall's north edge, and #1199's
+    /// observation walk, off its west one. Each is one room with ONE doorway, and each is <b>smaller than his
+    /// band</b> — measured, not assumed: sound <see cref="TheTailBehindYou.TheReachHeKeeps"/> across the
+    /// published sides from a captain sitting at any of the bar's seven tops and not one of the answers is
+    /// inside the room. That is #1231's finding in one sentence, and
+    /// <c>TheManTakesAPostTests.TheBarIsSmallerThanHisBandAtEveryHavenInSolJson</c> is where it is pinned, at
+    /// every haven, so this predicate cannot drift away from the geometry that justifies it.</para>
+    ///
+    /// <para>The ring is not: it is the hall plus its welded wings plus the gangway, and the sounding finds
+    /// his reach on it. So OUT THERE HE KEEPS HIS BAND, unchanged, and in here he takes a POST.</para>
+    ///
+    /// <para><b>Why the ROOM and not the instant.</b> A sounding taken from wherever the captain is standing
+    /// this frame answers differently two paces apart — a captain on the bar's own threshold has the whole
+    /// depth of the room in front of him and one at a top has not — and a man who changed his mind about what
+    /// he was doing every time his subject crossed a floor would not be keeping station, he would be
+    /// fidgeting. The room is the unit the behaviour belongs to, and the room's own published walls are what
+    /// say which one the captain is in.</para>
+    /// </summary>
+    private bool ThisRoomCanHoldHisBand(
+        in HavenInterior.BarFloor bar, IReadOnlyList<SurfaceCollision.Segment> walls) =>
+        !InTheBar(in bar)
+        && !HavenInterior.InTheObservationWalk(bar.BodyId, _avatarX, _avatarY);
+
+    /// <summary>
+    /// #1229 · <b>THE POST</b> — a standing place INSIDE the room, against the room's own stone, with a line
+    /// to the captain, <b>nearest the doorway he came in by</b>.
+    ///
+    /// <para>Sounded rather than searched, and sounded on the room's OWN WALLS: Core cuts each wall into
+    /// body-wide slices and offers the middle of each one body clear of the stone, on the captain's side
+    /// (<see cref="TheTailBehindYou.PostsAlong"/>); this side keeps the ones the whole room allows
+    /// (<see cref="HeCouldStandAt"/>) and takes the one nearest the doorway. No dice, no pathfinder, no new
+    /// geometry — the walls are the deck plan's own <c>CollisionSegments</c>, in the order the plan holds
+    /// them, so the same room gives the same man the same corner for ever.</para>
+    ///
+    /// <para><b>Nearest the DOORWAY and not nearest the captain</b>, which is the beat: a man who has come in
+    /// after you and stopped just inside the door is a man who has not committed to being in the room. The
+    /// chair reading then says exactly what it was written to say — <i>you sit facing the door, and he is the
+    /// man by the door who has not ordered</i>.</para>
+    /// </summary>
+    /// <param name="towardsX">Whom the post must have a line to: the captain, or — when the man is blind —
+    /// the last place he had him, because a man who cannot see you cannot post himself on you.</param>
+    /// <param name="towardsY">As above.</param>
+    private DeckReachability.Point? ThePostInThisRoom(
+        double towardsX, double towardsY,
+        in HavenInterior.BarFloor bar, IReadOnlyList<SurfaceCollision.Segment> walls)
+    {
+        (double doorX, double doorY) = TheDoorwayHeCameInBy(in bar);
+        DeckReachability.Point? post = null;
+        double nearestToTheDoor = double.MaxValue;
+
+        foreach (SurfaceCollision.Segment wall in _deckPlan.CollisionSegments)
+        {
+            foreach ((double x, double y) in TheTailBehindYou.PostsAlong(
+                         wall.X1, wall.Y1, wall.X2, wall.Y2, DeckPlan.AvatarRadius, towardsX, towardsY))
+            {
+                if (!HeCouldStandAt(x, y, towardsX, towardsY, in bar, walls))
+                {
+                    continue;
+                }
+
+                double dx = x - doorX, dy = y - doorY;
+                double toTheDoor = (dx * dx) + (dy * dy);
+                if (toTheDoor < nearestToTheDoor)
+                {
+                    nearestToTheDoor = toTheDoor;
+                    post = new DeckReachability.Point(x, y);
+                }
+            }
+        }
+
+        return post;
     }
 
     // ── ONE FRAME OF BEING FOLLOWED ──────────────────────────────────────────────────────────────────────
@@ -248,7 +461,9 @@ public partial class Map
     /// declares itself rather than by a bench inferring a tail out of two positions.</para>
     /// </summary>
     /// <returns>Whether anything happened that the page should redraw for.</returns>
-    private bool StepTheCoat(Walker who, double dt, IReadOnlyList<SurfaceCollision.Segment> walls, int slot)
+    private bool StepTheCoat(
+        Walker who, double dt, in HavenInterior.BarFloor bar,
+        IReadOnlyList<SurfaceCollision.Segment> walls, int slot)
     {
         // ── HE HAS BEEN SHAKEN, AND HE IS LEAVING ────────────────────────────────────────────────────────
         if (who.For == Errand.AskingTheWrongFloor)
@@ -305,24 +520,61 @@ public partial class Map
         }
 
         // ── (ii) THE SAME COAT THROUGH TWO DOORS ─────────────────────────────────────────────────────────
+        //
+        // #1229 · The doorway he is standing in is also the way OUT from where he is standing, whether or not
+        // the captain happened to be looking — which is why it is written down outside the sight clause. What
+        // the captain SEES is the tell; what the man knows is the room he is in and the door he came through.
+        if (TheDoorwayHeIsIn(who.Walk.X, who.Walk.Y) is { } inADoorway)
+        {
+            _coatCameInBy = inADoorway;
+        }
+
         if (inSight && TheDoorwayHeIsIn(who.Walk.X, who.Walk.Y) is { } leaf && _coatDoors.Add(leaf)
             && TheTailBehindYou.TwoDoorsRunning(_coatDoors.Count))
         {
             told = YouHaveNoticedHim(TheTailBehindYou.TwoDoorsLine) || told;
         }
 
-        // ── AND THE BAND HE KEEPS ────────────────────────────────────────────────────────────────────────
+        // ── AND HE IS A ROOM BEHIND YOU ──────────────────────────────────────────────────────────────────
         //
-        // He is re-plotted only when his own route has run out AND the captain has walked out of the band he
-        // is paid to hold. A man who is already standing where he can see you does not shuffle every frame,
-        // and a route re-plotted under a walking body is the one thing the planner must never be asked for.
+        // #1229 · The captain has walked out and the man is still inside. He gives it ONE look and then comes
+        // through the same doorway — which is the two-door tell being an honest SEQUENCE for the first time:
+        // posted inside, the captain goes, he follows through door one, the captain takes a second doorway,
+        // he follows through door two, told. Until now the tell was green because he was PLANTED outside the
+        // room before the captain moved and was therefore already on the exit path (#1208/#1231).
+        bool aRoomBehind = !TheSameRoom(who.Walk.X, who.Walk.Y, _avatarX, _avatarY, in bar);
+        _coatARoomBehind = aRoomBehind ? _coatARoomBehind + dt : 0;
+        bool heMayFollow = !aRoomBehind || _coatARoomBehind >= TheTailBehindYou.SecondsBeforeHeFollowsYouOut;
+
+        // ── AND THE ROUTE HE IS ON ───────────────────────────────────────────────────────────────────────
+        //
+        // The docblock has always said he is re-plotted when his route has run out AND the captain has walked
+        // out from under it. #1229 · the second half of that `and` is now TRUE: a route whose far end is no
+        // longer a place he could stand and see the captain from is a route to nowhere, and walking it out
+        // before noticing is how a man ends up staring at a wall the captain left thirty seconds ago.
+        //
+        // It is asked only while he HAS the captain, for the reason the blind clause below exists: a man who
+        // cannot see you has nothing to re-plot against, and dropping his route every frame would make him a
+        // tracker that never commits to anything.
         if (who.Walk.Afoot)
         {
             who.Walk.Step(dt, walls, _avatarX, _avatarY);
-            return told || !who.Walk.Afoot;
+            if (who.Walk.Afoot
+                && !(inSight && heMayFollow && !aRoomBehind
+                     && HisRouteHasGoneStale(who.Walk, in bar, walls)))
+            {
+                return told || !who.Walk.Afoot;
+            }
+        }
+        else
+        {
+            who.Walk.LookTowards(_avatarX, _avatarY);
         }
 
-        who.Walk.LookTowards(_avatarX, _avatarY);
+        if (!heMayFollow)
+        {
+            return told;   // one look, and then he comes after you. Not this frame.
+        }
 
         // ── AND A MAN WHO CANNOT SEE YOU DOES NOT KNOW WHERE TO GO ───────────────────────────────────────
         //
@@ -331,18 +583,31 @@ public partial class Map
         // which is not a tail, it is a tracker, and it would put the losing rule above out of reach: he would
         // simply walk round whatever the captain hid behind and pick the line straight back up.
         //
-        // So: while he HAS the captain he keeps his band. Blind, the ONLY place he has any reason to walk to
+        // So: while he HAS the captain he holds his place. Blind, the ONLY place he has any reason to walk to
         // is where he last had him — and when he gets there and it is empty, the clock above runs out and he
         // is done. That is the honest reading of the beat as well: what nine seconds of stone buys the
         // captain is not invisibility, it is the man's last good guess going stale.
-        if (inSight && TheTailBehindYou.HoldsHisBand(rangeDu))
+        //
+        // #1229 · "holds his place" is now the two behaviours and not one. In a room too small for his band
+        // he is POSTED, and a post is kept until the LINE breaks — he does not shuffle along the wall after a
+        // captain crossing the room, because the whole of what he is doing is standing by the door. Out where
+        // the band fits, the band is what he holds, exactly as before.
+        if (!aRoomBehind && inSight && !who.Walk.Afoot
+            && HeIsAlreadyWhereHeShouldBe(rangeDu, in bar, walls))
         {
             return told;
         }
 
-        DeckReachability.Point? going = inSight
-            ? TheSpotBehindYou(walls)
-            : WhereHeLastHadYou(who.Walk.X, who.Walk.Y);
+        // #1229 · A ROOM BEHIND, HE GOES TO THE DOORWAY — and to the doorway itself, not to a standing place
+        // chosen against a captain who is no longer in the room. It is the one thing he knows: he watched the
+        // man he is paid to keep go through it. Whether he can still SEE him is beside the point, and this is
+        // the one place in this file where that is true — everywhere else a man who cannot see you does not
+        // know where to go, and he still does not: the doorway is not where the captain IS, it is where the
+        // captain WENT.
+        DeckReachability.Point? going =
+            aRoomBehind ? TheDoorwayBetweenYou(who.Walk.X, who.Walk.Y, in bar)
+            : inSight ? WhereHeStands(in bar, walls)
+            : WhereHeLooksForYouLast(who.Walk.X, who.Walk.Y, in bar, walls);
 
         if (going is { } spot
             && OnFoot(TheTailBehindYou.Plate, new NpcWalk.Bound("", spot.X, spot.Y),
@@ -354,6 +619,93 @@ public partial class Map
 
         return told;
     }
+
+    /// <summary>#1229 · <b>THE DOORWAY BETWEEN THE TWO OF THEM</b> — the room's own published one, taken from
+    /// the side the CAPTAIN is on, so a man following him out steps through it and a man following him back in
+    /// steps through it the other way. One step past the line either way
+    /// (<see cref="HavenInterior.BarThreshold"/> and its mirror), never a coordinate typed here.
+    ///
+    /// <para>He is not on a post while he is walking through a door, so the flag comes off: what he does when
+    /// he arrives is decided by the room he arrives in.</para></summary>
+    private DeckReachability.Point TheDoorwayBetweenYou(
+        double hisX, double hisY, in HavenInterior.BarFloor bar)
+    {
+        _coatPosted = false;
+
+        // #1199's walk is a room with ONE way in, and its mouth is that way — for a captain who has stepped
+        // into it and for a man who is standing in it while the captain is not.
+        if (HavenInterior.InTheObservationWalk(bar.BodyId, _avatarX, _avatarY)
+                != HavenInterior.InTheObservationWalk(bar.BodyId, hisX, hisY)
+            && HavenInterior.TheWalksMouthAt(bar.BodyId) is { } mouth)
+        {
+            return mouth;
+        }
+
+        if (_avatarY > bar.FloorY)
+        {
+            (double inX, double inY, _) = HavenInterior.BarThreshold;
+            return new DeckReachability.Point(inX, inY);
+        }
+
+        (double outX, double outY) = HavenInterior.TheDoorstepOutsideTheBar;
+        return new DeckReachability.Point(outX, outY);
+    }
+
+    /// <summary>#1229 · <b>IS HE ALREADY STANDING WHERE THIS ROOM WANTS HIM?</b> A post is kept until the
+    /// LINE breaks — he does not shuffle along a wall after a captain crossing the room, because the whole of
+    /// what he is doing is standing by the door. A band is kept until the captain walks out of it, exactly as
+    /// before. Asked only while he has the captain: a blind man is not choosing anything.</summary>
+    private bool HeIsAlreadyWhereHeShouldBe(
+        double rangeDu, in HavenInterior.BarFloor bar, IReadOnlyList<SurfaceCollision.Segment> walls) =>
+        ThisRoomCanHoldHisBand(in bar, walls)
+            ? !_coatPosted && TheTailBehindYou.HoldsHisBand(rangeDu)
+            : _coatPosted;
+
+    /// <summary>#1229 · <b>IS THE WALK HE IS ON STILL WORTH WALKING?</b> Two ways it stops being: the captain
+    /// has walked out from under its far end, or the ROOM has changed its mind about what he should be doing
+    /// — a man who set off to keep a band while the captain was by the door, and is half-way across a room
+    /// that cannot hold one now the captain has sat down at a top, is walking to the wrong place. Finishing
+    /// first is how he ends up standing in the middle of the floor doing nothing.</summary>
+    private bool HisRouteHasGoneStale(
+        NpcWalk walk, in HavenInterior.BarFloor bar, IReadOnlyList<SurfaceCollision.Segment> walls) =>
+        TheCaptainHasWalkedOutFromUnder(walk, in bar, walls)
+        || ThisRoomCanHoldHisBand(in bar, walls) == _coatPosted;
+
+    /// <summary>
+    /// #1229 · <b>WHERE A BLIND MAN GOES.</b> Where he last had the captain — and, when the room is too small
+    /// for his band, a WALL SPOT with a line to that place rather than the place itself.
+    ///
+    /// <para>The design's own clause: <i>he re-posts only when the line is broken, and only to another wall
+    /// spot</i>. A posted man who lost his line and then walked out into the middle of the room to stand on
+    /// the square the captain was last on would not be keeping station any more; he would be searching, in
+    /// the open, which is the opposite of what a man who has not ordered is doing. Where the band fits, the
+    /// spot itself is where he goes, exactly as before — there are no walls to hug on a concourse.</para>
+    ///
+    /// <para>Null all the way down is a man with nowhere to go, which the caller reads as "stay put": the
+    /// blind clock is running either way and it is the thing that ends him.</para></summary>
+    private DeckReachability.Point? WhereHeLooksForYouLast(
+        double x, double y, in HavenInterior.BarFloor bar, IReadOnlyList<SurfaceCollision.Segment> walls)
+    {
+        if (WhereHeLastHadYou(x, y) is not { } last)
+        {
+            return null;
+        }
+
+        return _coatPosted
+            ? ThePostInThisRoom(last.X, last.Y, in bar, walls) ?? last
+            : last;
+    }
+
+    /// <summary>#1229 · <b>HAS THE CAPTAIN WALKED OUT FROM UNDER HIS ROUTE?</b> The far end of a walk is a
+    /// place that was chosen because a man standing on it could see the captain from it. When it stops being
+    /// one — the captain has left the room it is in, or put stone between it and himself — the walk is a walk
+    /// to nowhere, and finishing it first is how a man ends up staring at a wall.
+    ///
+    /// <para>Asked of the route's own bound (<see cref="NpcWalk.For"/>) rather than of a copy kept here: two
+    /// records of where somebody is going is the seam this house has been bitten by before.</para></summary>
+    private bool TheCaptainHasWalkedOutFromUnder(
+        NpcWalk walk, in HavenInterior.BarFloor bar, IReadOnlyList<SurfaceCollision.Segment> walls) =>
+        !HeCouldStandAt(walk.For.X, walk.For.Y, _avatarX, _avatarY, in bar, walls);
 
     /// <summary>
     /// #1062 · <b>THE CORRIDOR BEHIND YOU IS ONLY A CORRIDOR.</b> He has had nothing to look at for as long
