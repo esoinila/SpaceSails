@@ -170,7 +170,24 @@ public static partial class UndergroundComplex
         /// the blind end — and a second way out of it would have to go somewhere, which is the one thing
         /// there is nowhere for it to go. Declared and never measured: it is long
         /// (<see cref="ObservationWalk.LengthDu"/> is three times the bedroom-small threshold), so no number
-        /// could ever let it off, and that is precisely why it has to be named.</summary>
+        /// could ever let it off, and that is precisely why it has to be named.
+        ///
+        /// <para>#1199 (2026-09-18) · <b>The reason is re-stated for the T, because the room grew.</b> The
+        /// walk is a tube AND the gallery across the end of it now — <see cref="ObservationWalk.GalleryWidthDu"/>
+        /// of glass with a rail along it, a vending cafeteria against its back wall, and ten people's worth
+        /// of standing room. That is a bigger room and a busier one, and the honest question is whether
+        /// growing it has quietly turned one exemption into a licence. It has not, and the reason is
+        /// unchanged in every word: <b>the whole T is ONE space with ONE doorway</b> — the tube opens into
+        /// the gallery across its full width, with no leaf and no jambs, the way a corridor opens into the
+        /// room it belongs to — and a second way out would still have to go somewhere. There is nowhere for
+        /// it to go, because the other three walls are the drop. What the crossbar adds is DISTANCE from
+        /// that one door, and distance is what a fire code is normally about; the answer is the same as it
+        /// was at 24 du of bare tube, because the objection was never the length. It is a structure hung off
+        /// the side of a station over vacuum, and the way out of it is the way in.</para>
+        ///
+        /// <para>ONE member covers the whole T on purpose. A second member for the gallery would be the
+        /// list growing by arithmetic — one more name every time the same room gets bigger — which is the
+        /// exact drift <see cref="ReasonFor"/> exists to stop.</para></summary>
         ObservationWalk = 2,
     }
 

@@ -131,6 +131,7 @@ public partial class Map
         _walkNoticed = false;
         _walkGoneSince = double.NaN;
         _walkDealt = false;
+        ForgetTheGallerysMachines();
     }
 
     // ── THE ROUTE ────────────────────────────────────────────────────────────────────────────────────────
