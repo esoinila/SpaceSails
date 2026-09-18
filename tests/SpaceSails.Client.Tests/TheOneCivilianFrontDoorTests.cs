@@ -33,13 +33,28 @@ namespace SpaceSails.Client.Tests;
 /// bench URL ending at the door on purpose, and <see cref="ABootUrlRefusesRatherThanCrashesTests"/> owns
 /// that. The law here is about which URLs are OFFERED the door in the first place.</para>
 ///
-/// <para><b>Proven red on revert</b>, and the reverts are quoted in the PR body. Putting the old
-/// four-key condition back (<c>q.DockCheat is null &amp;&amp; q.StartId is null &amp;&amp; …</c>) reddens
-/// <see cref="EveryCheatUrlTheGameOffersIsRefusedTheDoor"/> on 54 URLs and
-/// <see cref="TheRuleCanSayBench"/> on 8 of its 13 rows, while every civilian assertion here stays green —
-/// which is the shape of the bug: the old rule could not tell a bench URL from a bookmark. Making the rule
-/// answer TRUE always reddens the bench half and leaves the civilian half green; making it answer FALSE
-/// always reddens <see cref="EveryShippedScenarioDeepLinkOpensTheLogbook"/> and the bare <c>/map</c>.</para>
+/// <para><b>Proven red on revert, and the measurement said something worth writing down.</b> Putting the
+/// old four-key condition back verbatim — parse the query, default a berth for the cheats that need one,
+/// then <c>q.DockCheat is null &amp;&amp; q.StartId is null &amp;&amp; q.SlingCheat is null &amp;&amp;
+/// q.SkimCheat is null</c> — turns <b>2 of these 27 tests red</b>:
+/// <see cref="EveryCheatUrlTheGameOffersIsRefusedTheDoor"/>, naming <b>54 URLs</b>, and
+/// <see cref="AndTheWholeBootAgreesWithThatDecision"/>, on 7 of its 10. They are the same 54 URLs whose
+/// fingerprints <see cref="TheBootBuildsTheSameWorldTests"/> re-pinned — a second, independent road to the
+/// same number.</para>
+///
+/// <para><b>And the civilian half stays GREEN under that revert</b>, which is not a hole in the guard but
+/// the honest state of the base, said out loud rather than glossed: claiming a fix for something that was
+/// no longer broken is its own kind of green number. #310 and #161 reshaped the boot long after #323 was
+/// filed, and a side effect was that a bare <c>?scenario=</c> reached the picker again — the old condition
+/// asked about four CHEAT keys and <c>?scenario=</c> is not one of them, so the door went up for the right
+/// URL <i>by accident</i>. What that same accident also did was put the door up for the sixty-odd bench
+/// URLs that had asked for a situation instead. The civilian assertions here are a LOCK on behaviour that
+/// is already right and had nothing holding it: take the <c>_showStartPicker = true</c> out of the raise
+/// and all of them redden at once.</para>
+///
+/// <para>The rule table is red on either kind of broken predicate: one that answers TRUE always reddens
+/// <see cref="TheRuleCanSayBench"/> on all 13 rows, one that answers FALSE always reddens
+/// <see cref="TheRuleCanSayCivilian"/> on all 8.</para>
 /// </summary>
 [SlowGate]
 public sealed class TheOneCivilianFrontDoorTests
