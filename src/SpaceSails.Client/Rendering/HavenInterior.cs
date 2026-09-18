@@ -432,12 +432,17 @@ public static partial class HavenInterior
     // that there is no one in it. The lore does not move an inch.
 
     /// <summary>#1199 · How deep a vending machine stands off the wall it is bolted to — one body's width,
-    /// the game's own smallest real dimension, so a machine is a thing you walk round rather than a line.</summary>
-    private static readonly float VendorDepth = (float)(2 * DeckPlan.AvatarRadius);
+    /// the game's own smallest real dimension, so a machine is a thing you walk round rather than a line.
+    ///
+    /// <para><c>const</c> and not <c>static readonly</c>, deliberately. A body's width is a constant
+    /// expression, and a COMPUTED static in a partial class is the one member a concern-shaped split may not
+    /// move — this file's own remarks say so and <c>NoPartialClassSpreadsItsStaticFieldsTests</c> enforces
+    /// it. A pair the compiler folds cannot be re-ordered by a file name.</para></summary>
+    private const float VendorDepth = (float)(2 * DeckPlan.AvatarRadius);
 
     /// <summary>#1199 · …and how wide it is. The same number: a machine is square in plan, which is what a
     /// drinks cabinet actually is, and two numbers for one box would be two numbers to keep in step.</summary>
-    private static readonly float VendorWidth = VendorDepth;
+    private const float VendorWidth = VendorDepth;
 
     /// <summary>#1199 · How far off the ends of the gallery the two machines stand — one machine's own width
     /// clear of the side glass, so neither is jammed into a corner the captain cannot walk round.</summary>
