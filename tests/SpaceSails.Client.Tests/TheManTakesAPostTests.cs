@@ -34,17 +34,30 @@ namespace SpaceSails.Client.Tests;
 /// (<see cref="HavenInterior.InteriorBodyIds"/>), because a beat proved in one room is a beat about one
 /// room.</para>
 ///
-/// <h3>Red proof — the reverts each of these was watched under</h3>
+/// <h3>Red proof — the reverts these were watched under</h3>
 ///
 /// <list type="bullet">
-///   <item><b>The room clause out of <c>HeCouldStandAt</c></b> (the shipped spot-finder's only place clause
-///   was the gangway line): the chair sweep goes RED at every haven — he is sounded a standing place outside
-///   the room and the reading never fires.</item>
-///   <item><b><c>ThisRoomCanHoldHisBand</c> written as <c>true</c></b> (i.e. the man keeps a band indoors, as
-///   shipped): the post guards go RED — he is not against the stone and not by the door.</item>
-///   <item><b>The deal put back on <c>HavenInterior.BarThreshold</c></b>: <see cref="HeIsNeverDealtOnTheCaptainsFeet"/>
-///   goes RED at every haven, on the captain's own boot spot.</item>
+///   <item><b>THE SHIPPED SPOT-FINDER, EXACTLY</b> — <c>ThisRoomCanHoldHisBand</c> written as <c>true</c>
+///   (he only ever keeps a band, indoors and out) with the room clause taken back out of
+///   <c>HeCouldStandAt</c>, so the only place clause left is the gangway line, which is what shipped.
+///   <b>4 RED:</b> <see cref="TheChairReadingFiresFromEveryTopThatSeesTheDoorAtEveryHaven"/> at every haven
+///   in sol.json, <see cref="HisPostIsAgainstTheStoneAndNeverTheCounterOrAChair"/>,
+///   <see cref="HeDoesNotShuffleWhileHisLineHolds"/>, and <c>TheTailBehindYouTests.HeComesInAfterYouTakes
+///   APlaceInTheRoomAndNeverGoesToTheCounter</c>.</item>
+///   <item><b>The deal put back on <c>HavenInterior.BarThreshold</c></b> — the spot <c>?ashore=1</c> stands
+///   the CAPTAIN on. <b>2 RED:</b> <see cref="HeIsNeverDealtOnTheCaptainsFeet"/> at every haven, and the
+///   same #1062 guard.</item>
+///   <item><b>The follow-out branch dropped</b> (he never goes to the doorway between them). <b>1 RED:</b>
+///   <c>TheTailBehindYouTests.TheSameCoatThroughTwoDoorwaysIsTheTell</c>, which is the point of
+///   re-grounding it.</item>
 /// </list>
+///
+/// <para><b>And one clause that could NOT be made to go red, reported rather than dressed up.</b> The room
+/// clause in <c>HeCouldStandAt</c> on its own — taken out while the post branch stays — reddens nothing at
+/// today's geometry: indoors the post branch already keeps him in the room, and out on the ring the sounding's
+/// own bearing order never happens to pick a spot through the bar's doorway, even from a captain standing on
+/// its own doorstep. It is kept because it is the law and because it is reddened by the shipped-body revert
+/// above, not because a guard here is watching it.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheManTakesAPostTests
@@ -351,6 +364,52 @@ public sealed class TheManTakesAPostTests
         }
     }
 
+    /// <summary>
+    /// #1229 · <b>AND ON THE RING HE KEEPS HIS BAND — ON THE RING.</b> The other half of the room clause, and
+    /// the half the post branch cannot cover for: a captain standing on the concourse a few paces from the
+    /// bar's doorway has a whole room visible through it, and the shipped sounding would happily stand his
+    /// tail INSIDE the bar, through a door, in a room the captain is not in. Out here the band is unchanged;
+    /// what is new is that the room is.
+    /// </summary>
+    [Fact]
+    public void OutOnTheRingHeKeepsHisBandAndNeverThroughTheDoorwayIntoTheBar()
+    {
+        var wrong = new List<string>();
+        int berths = 0;
+
+        foreach (string berth in EveryHavenBar())
+        {
+            berths++;
+            Pages.Map map = Tailed(berth);
+            HavenInterior.BarFloor bar = HavenInterior.BarBand(berth)!.Value;
+
+            // in first, so there is a man on the floor at all — then back out onto the ring and along it
+            RunFrames(map, 1);
+            WalkCaptainTo(map, bar.Tops[2].X, bar.Tops[2].Y);
+            Settle(map);
+            WalkCaptainTo(map, HavenInterior.BarThreshold.X, HavenInterior.BarThreshold.Y - 6);
+            WalkCaptainTo(map, 2.5, 44);
+            (double outX, double outY) = HavenInterior.TheDoorstepOutsideTheBar;
+            WalkCaptainTo(map, outX, outY);   // …and back to the doorway, where the whole room is in view
+            Settle(map);
+
+            if (TheCoat(map) is not { } coat)
+            {
+                continue;   // he gave up on the way; the losing rule is somebody else's guard
+            }
+
+            if (CoatY(coat) > bar.FloorY)
+            {
+                wrong.Add($"{berth}: the captain is on the ring at ({Ax(map):F1},{Ay(map):F1}) and his tail " +
+                    $"is at ({CoatX(coat):F2},{CoatY(coat):F2}) — inside the BAR, through the doorway, in a " +
+                    "room the captain is not in (#1229).");
+            }
+        }
+
+        Assert.True(berths > 5, $"only {berths} haven(s) swept.");
+        Assert.True(wrong.Count == 0, string.Join("\n  ", wrong.Take(8)));
+    }
+
     // ── AND HE STILL WILL NOT WALK DOWN THE GANGWAY ─────────────────────────────────────────────────────
 
     /// <summary>#1062/#1229 · The one clause in the spot-finder that is about WHO he is rather than about the
@@ -446,7 +505,8 @@ public sealed class TheManTakesAPostTests
 
     /// <summary>WALK him there, at the captain's own pace, one frame at a time — never a teleport, which
     /// would break the man's line for him and turn every guard here into a test of the losing rule.</summary>
-    private static void WalkCaptainTo(Pages.Map map, double x, double y, double dt = 0.1)
+    private static void WalkCaptainTo(
+        Pages.Map map, double x, double y, double dt = 0.1, Action<Pages.Map>? watch = null)
     {
         double step = AvatarSpeed * dt;
         for (int guard = 0; guard < 4000; guard++)
@@ -458,11 +518,13 @@ public sealed class TheManTakesAPostTests
             {
                 StandCaptainAt(map, x, y);
                 RunFrames(map, 1, dt);
+                watch?.Invoke(map);
                 return;
             }
 
             StandCaptainAt(map, atX + (dx / left * step), atY + (dy / left * step));
             RunFrames(map, 1, dt);
+            watch?.Invoke(map);
         }
     }
 
