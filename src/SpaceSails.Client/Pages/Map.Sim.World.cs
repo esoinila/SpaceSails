@@ -178,19 +178,60 @@ public partial class Map
         }
     }
 
-    /// <summary>#310 · The front door, raised while the reactor is still warming.</summary>
-    private void RaiseTheFrontDoorWhileTheReactorWarms(BootQuery q)
+    /// <summary>
+    /// #323 · <b>THE ONE CIVILIAN FRONT DOOR, AND THE ONE SENTENCE THAT DECIDES IT.</b>
+    ///
+    /// <para>Owner, live (2026-07-18): <i>"The scenario urls still use the old boot… I had to empty the URL
+    /// to get the new one."</i> A returning captain's bookmark is <c>/map?scenario=sol</c> — the Launch
+    /// button on the home page writes exactly that, and so does every "any voyage loads straight from a
+    /// link" line in the guide — and that URL used to be decided by a condition that asked about four
+    /// CHEATS (<c>?dock=</c>, <c>?start=</c>, <c>?sling=</c>, <c>?skim=</c>) and nothing else. Whether a
+    /// captain is offered their saves is not a question about four cheat keys.</para>
+    ///
+    /// <para><b>The rule, stated once and nowhere else:</b> a query is <b>civilian</b> — it goes through the
+    /// logbook door — <b>iff it carries nothing but <c>scenario</c></b>. An empty query is civilian; so is
+    /// <c>?scenario=wheel</c>. Anything else is a deliberate bench incantation out of
+    /// <c>docs/testing-guide.md</c> Appendix A, and every one of those keeps the direct boot the smoke
+    /// sweeps are written against (#297/#132). There is no list of cheat keys here on purpose: a list is a
+    /// second source that goes stale the day the ninety-first key is added, and the honest question is not
+    /// "is this one of the cheats I know" but "did this URL ask for anything at all beyond a sky".</para>
+    ///
+    /// <para><b>What <c>scenario</c> then means on a civilian boot:</b> exactly what it always meant to the
+    /// world — the sky that gets built — and nothing more to the door. The berth list the picker offers is
+    /// <see cref="BerthStarts"/> off that scenario's own ephemeris, so naming a scenario PRESELECTS what
+    /// "New voyage" launches without deciding, for the captain, that a new voyage is what they wanted.</para>
+    ///
+    /// <para><b>It composes with #1221 rather than fighting it.</b> That lane made
+    /// <c>?scenario=&lt;unknown&gt;</c> fall back to Sol (in the FETCH, below) and an unanchorable
+    /// <c>?start=</c> refuse to the picker (in <c>ApplyTheStartPoint</c>, four stages further on). Neither
+    /// is a door decision: the first has already happened to the scenario NAME by the time the sky is
+    /// fetched, and the second raises the door again by itself, after this. A bare
+    /// <c>?scenario=electric</c> is still civilian — it is a sky that does not exist, asked for civilly —
+    /// and it now opens the logbook over Sol instead of booting a stranger into a fresh life in the wrong
+    /// world.</para>
+    ///
+    /// <para>#310's original reason for raising it HERE, at the top of the boot, is untouched: the door goes
+    /// up in its "warming the reactor" state before the fourteen seconds of route planning, so the WASM
+    /// warm-up never reads as a broken, click-eating menu. It flips to the live slots once the front door
+    /// OPENS, which since #161 is stages before the world behind it is finished.</para>
+    /// </summary>
+    private void RaiseTheFrontDoorWhileTheReactorWarms(Uri uri)
     {
-        // #310 honest boot state: if this boot will end at the load view (no direct start/dock cheat),
-        // raise the front door NOW in its "warming the reactor" state, so the WASM warm-up never reads as
-        // a broken, click-eating menu. It flips to the live slots once the front door OPENS — which,
-        // since #161, is stages before the world behind it is finished (see OpenTheFrontDoor).
-        if (q.DockCheat is null && q.StartId is null && q.SlingCheat is null && q.SkimCheat is null)
+        if (TheQueryIsCivilian(uri.Query))
         {
             _showStartPicker = true;
             StateHasChanged();
         }
     }
+
+    /// <summary>#323 · The whole of the civilian test, as a pure function of the query string so that a
+    /// guard can ask it of a link in a document without booting anything. See
+    /// <see cref="RaiseTheFrontDoorWhileTheReactorWarms"/> for why it is spelled this way round.</summary>
+    internal static bool TheQueryIsCivilian(string query) =>
+        query.TrimStart('?')
+            .Split('&')
+            .All(static pair =>
+                pair.Length == 0 || pair.StartsWith("scenario=", StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// #161 · THE FRONT DOOR OPENS BEFORE THE WORLD BEHIND IT IS BUILT.
@@ -224,10 +265,11 @@ public partial class Map
     /// </summary>
     private async Task OpenTheFrontDoorAsync(BootQuery q, CancellationToken abandoned)
     {
-        // The two starts that reach the picker branch of ApplyTheStartPoint but never SHOW the door
-        // (?sling= / ?skim= suppress it again below) still want their vault peeked — it is where
-        // "the tutorial was already played" comes from — so the condition here is the peek's own, not
-        // the door's. Off a browser there is no localStorage to peek and no module to reach it through.
+        // The condition here is the PEEK's own and not the door's, and #323 did not change that. Every
+        // bench URL that names no berth — ?sling=, ?skim=, ?fuel=, ?kaamos=all — reaches the else branch of
+        // ApplyTheStartPoint without ever showing the door, and still wants its vault peeked, because the
+        // peek is where "the tutorial was already played" comes from. Off a browser there is no
+        // localStorage to peek and no module to reach it through.
         if (q.DockCheat is not null || q.StartId is not null || !OperatingSystem.IsBrowser())
         {
             return;
@@ -278,7 +320,7 @@ public partial class Map
         var uri = new Uri(Navigation.Uri);
         BootQuery q = ReadEveryQueryKey(uri);
         DefaultABerthForTheCheatsThatNeedOne(q);
-        RaiseTheFrontDoorWhileTheReactorWarms(q);
+        RaiseTheFrontDoorWhileTheReactorWarms(uri);
         SayTheBootStageCost("the URL read");
 
         ScenarioDefinition scenario = await FetchTheScenarioAsync(q, abandoned);
