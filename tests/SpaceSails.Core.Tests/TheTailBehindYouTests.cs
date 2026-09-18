@@ -182,6 +182,95 @@ public sealed class TheTailBehindYouTests
         Assert.True(TheTailBehindYou.TwoDoorsRunning(7));
     }
 
+    // ── 4b · #1229 · THE OTHER BEHAVIOUR: THE POST ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// #1229 · <b>A WALL OFFERS PLACES TO STAND, AND THEY ARE ARITHMETIC.</b>
+    /// <see cref="TheTailBehindYou.PostsAlong"/> cuts one wall into body-wide slices and offers the middle of
+    /// each, one body clear of the stone, ON THE SIDE THE CAPTAIN IS ON. Everything about it is pinned here
+    /// because a client file that sounded its own wall geometry would be this repository's oldest and most
+    /// reliably wrong bug class with a man leaning on it.
+    ///
+    /// <para><b>Reverts that reddened it:</b> the normal left un-flipped (<i>every post is on the far side of
+    /// the wall, in the next room</i>); the offset dropped to zero (<i>he stands INSIDE the stone</i>); the
+    /// slice count floored at zero rather than one (<i>a wall shorter than a body offers nowhere, so the
+    /// corners of a room silently stop existing</i>).</para>
+    /// </summary>
+    [Fact]
+    public void AWallOffersBodyWidePlacesOnTheSideTheCaptainIsOn()
+    {
+        const double r = 0.7;
+        double off = TheTailBehindYou.StandsOffTheWallBy(r);
+        Assert.Equal(2 * r, off);
+
+        // A wall along the x axis, ten long, with the captain to the NORTH of it.
+        IReadOnlyList<(double X, double Y)> north = TheTailBehindYou.PostsAlong(0, 0, 10, 0, r, 5, 5);
+        Assert.NotEmpty(north);
+        foreach ((double x, double y) in north)
+        {
+            Assert.Equal(off, y, 9);                 // one body clear of the stone, on the captain's side
+            Assert.InRange(x, 0, 10);                // …and on the wall, not off the end of it
+        }
+
+        // …and the same wall with the captain to the SOUTH offers the mirror of it and never the far side.
+        foreach ((double _, double y) in TheTailBehindYou.PostsAlong(0, 0, 10, 0, r, 5, -5))
+        {
+            Assert.Equal(-off, y, 9);
+        }
+
+        // The slicing is a body's width, so a longer wall offers more places and they do not bunch up.
+        Assert.True(
+            TheTailBehindYou.PostsAlong(0, 0, 20, 0, r, 5, 5).Count
+            > TheTailBehindYou.PostsAlong(0, 0, 10, 0, r, 5, 5).Count,
+            "twice the wall offers no more places to stand — the slicing is not a body's width.");
+
+        // A wall shorter than a body still offers its own middle: a piece of a room that offered nowhere
+        // would be a corner no man could ever stand in, which is where this whole beat happens.
+        Assert.Single(TheTailBehindYou.PostsAlong(0, 0, 0.5, 0, r, 5, 5));
+
+        // …and a wall with no length is not a wall.
+        Assert.Empty(TheTailBehindYou.PostsAlong(3, 3, 3, 3, r, 5, 5));
+
+        // Deterministic: the same wall and the same captain give the same list, for ever.
+        Assert.Equal(
+            TheTailBehindYou.PostsAlong(0, 0, 10, 0, r, 5, 5),
+            TheTailBehindYou.PostsAlong(0, 0, 10, 0, r, 5, 5));
+    }
+
+    /// <summary>
+    /// #1229 · <b>HE GIVES IT ONE LOOK BEFORE HE COMES AFTER YOU</b>, and the look is the cadence this game
+    /// already measures looking in — never a number of its own. That beat is what makes the two-door tell a
+    /// SEQUENCE rather than an accident of where he was standing beforehand.
+    ///
+    /// <para><b>Revert that reddened it:</b> <c>SecondsBeforeHeFollowsYouOut =&gt; 0</c> — <i>a shadow welded
+    /// to the captain's heels, through the doorway on the same frame, which is not a man</i>.</para>
+    /// </summary>
+    [Fact]
+    public void HeWaitsOneLookBeforeHeFollowsYouOutAndItIsTheGamesOwnCadence()
+    {
+        Assert.Equal(TheTailBehindYou.TickSeconds, TheTailBehindYou.SecondsBeforeHeFollowsYouOut);
+        Assert.Equal(ReeverObservation.LookIntervalSeconds, TheTailBehindYou.SecondsBeforeHeFollowsYouOut);
+
+        // …and it is ONE look and not the twelve the notice costs: a man who waited out the whole notice
+        // clock before leaving a room would never be in the second doorway at all.
+        Assert.True(
+            TheTailBehindYou.SecondsBeforeHeFollowsYouOut < TheTailBehindYou.NoticeSeconds,
+            "he waits longer to follow you out than it takes to notice him — the tell is unreachable.");
+        Assert.True(TheTailBehindYou.SecondsBeforeHeFollowsYouOut > 0,
+            "he follows on the same frame, which is not a man giving a room a beat.");
+    }
+
+    /// <summary>#1229 · The reach a band is actually kept at is the first of the two Core publishes, named so
+    /// that the question <i>can this room hold his band?</i> and the sounding that places him are asking about
+    /// one number rather than two.</summary>
+    [Fact]
+    public void TheReachABandIsKeptAtIsTheFirstOfTheTwoHeTries()
+    {
+        Assert.Equal(TheTailBehindYou.TheRangesHeTries[0], TheTailBehindYou.TheReachHeKeeps);
+        Assert.True(TheTailBehindYou.HoldsHisBand(TheTailBehindYou.TheReachHeKeeps),
+            "the reach a band is kept at is outside the band — the two have come apart.");
+    }
+
     // ── 5 · WHAT IT COSTS TO BE RID OF HIM ──────────────────────────────────────────────────────────────
 
     /// <summary>
