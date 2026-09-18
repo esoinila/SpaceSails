@@ -505,8 +505,7 @@ public sealed class TheManTakesAPostTests
 
     /// <summary>WALK him there, at the captain's own pace, one frame at a time — never a teleport, which
     /// would break the man's line for him and turn every guard here into a test of the losing rule.</summary>
-    private static void WalkCaptainTo(
-        Pages.Map map, double x, double y, double dt = 0.1, Action<Pages.Map>? watch = null)
+    private static void WalkCaptainTo(Pages.Map map, double x, double y, double dt = 0.1)
     {
         double step = AvatarSpeed * dt;
         for (int guard = 0; guard < 4000; guard++)
@@ -518,13 +517,11 @@ public sealed class TheManTakesAPostTests
             {
                 StandCaptainAt(map, x, y);
                 RunFrames(map, 1, dt);
-                watch?.Invoke(map);
                 return;
             }
 
             StandCaptainAt(map, atX + (dx / left * step), atY + (dy / left * step));
             RunFrames(map, 1, dt);
-            watch?.Invoke(map);
         }
     }
 
