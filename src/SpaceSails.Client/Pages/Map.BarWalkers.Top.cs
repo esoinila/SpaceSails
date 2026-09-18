@@ -136,7 +136,71 @@ public partial class Map
             }
         }
 
-        return TheShipsOwnSeatUnderfoot(spot);
+        return TheGallerysOwnSeatUnderfoot(spot) ?? TheShipsOwnSeatUnderfoot(spot);
+    }
+
+    /// <summary>
+    /// #1199 (2026-09-18) · <b>A TABLE IN THE OBSERVATION WALK'S GALLERY.</b> Owner, live: <i>"maybe even a
+    /// small vending machine cafeteria with a couple of tables there"</i>, and <i>"the tables at the hat would
+    /// be good stakeout positions to enjoy the vending machine … while enjoying the view."</i>
+    ///
+    /// <para><b>The same verb, the same sitting, the same chair-sounding — and NOT the bar.</b> It is asked
+    /// AFTER the bar's own list and before the ship's, and it reads its tops off
+    /// <see cref="HavenInterior.GalleryTops"/>, which is deliberately not part of
+    /// <c>BarFloor.Tops</c>: the bar's tops are what the room's own walkers cross the floor to, and a regular
+    /// who wandered out to the end of the observation walk for a sit-down would be the one thing this feature
+    /// cannot survive. The tail's post logic asks the BAR where its chairs are and gets the bar's chairs; a
+    /// captain's [E] asks the deck what is under his feet and gets this.</para>
+    ///
+    /// <para><b>The chair is <c>BesideThisTop</c>'s</b> — the one sounding, over the room's own stone — so a
+    /// seat here is refused honestly when the machines and the glass leave no side of a table free, rather
+    /// than sitting the captain inside a wall. That is also what makes these STAKEOUT seats without a second
+    /// oracle: the chair is a real position on the deck, and the game's one sightline
+    /// (<c>SurfaceCollision.HasLineOfSight</c>) answers from it about the throat like it answers about
+    /// anywhere else. A guard drives exactly that line.</para>
+    ///
+    /// <para><b>And there is NO new prose.</b> The setting is <c>SittingAlone.BarSetting</c> — the generator
+    /// #973 L5b wrote precisely because <i>"the room's own name, handed in"</i> is per-place and Core does not
+    /// know the berths — handed the room's own plate. What it produces is the walk's name and the walk's own
+    /// canon in one line: the room IS lit the whole way. Announcing this seat as a top in THE EARTHRISE BAR
+    /// would be the exact fault #973 L5b was opened for, three hundred metres of glass tube away from the
+    /// nearest counter.</para>
+    /// </summary>
+    private BarTopUnderfoot? TheGallerysOwnSeatUnderfoot(DeckPlan.ConsoleSpot spot)
+    {
+        if (spot.Kind != DeckPlan.ConsoleKind.BarTop || _dockedHavenId is not { } berth)
+        {
+            return null;
+        }
+
+        IReadOnlyList<DeckReachability.Point> tops = HavenInterior.GalleryTops(berth);
+        IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
+        for (int i = 0; i < tops.Count; i++)
+        {
+            DeckReachability.Point top = tops[i];
+            if (Math.Abs(top.X - spot.X) >= 0.5 || Math.Abs(top.Y - spot.Y) >= 0.5)
+            {
+                continue;
+            }
+
+            if (BesideThisTop(top, walls) is not { } chair)
+            {
+                return null;
+            }
+
+            return new BarTopUnderfoot(
+                i, $"gallery:{berth}:{BarWatch}:{i}", BarWatch, chair.X, chair.Y,
+                HavenInterior.BarTopSeats,
+                SittingAlone.BarSetting(ObservationWalk.Plate),
+                SittingAlone.OwnTablePlate,
+                // The gallery is ashore like the bar — anybody in the station could walk in — and it has no
+                // cabinets, no curtains and nothing to dog, which is what Quiet is a question about. The one
+                // thing that is different about it is that nobody ever does walk in, and that is a fact about
+                // the WORLD rather than about this seat's rung.
+                Quiet: false, Aboard: false);
+        }
+
+        return null;
     }
 
     /// <summary>#1016 QA · <c>?barcase=1</c> — the owner's own bug, in one URL. Set in Map.Sim's cheat

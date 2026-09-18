@@ -355,6 +355,34 @@ public partial class Map
             }
         }
 
+        // #1199 (2026-09-18) · …AND THE OBSERVATION WALK'S CAFETERIA COUNTS, though it is emphatically not
+        // the bar. The gallery grew two steel tables and two coin machines, and a man standing at any of them
+        // is a man buying something — which is the one thing the canon line says he never does. Asked of the
+        // haven's own published lists rather than by adding them to BarFloor.Tops, because that list is what
+        // the ROOM'S OWN WALKERS cross the floor to, and a regular sent out to the end of the walk for a
+        // sit-down would end the feature the gallery exists to carry.
+        //
+        // It also keeps the stakeout seats the CAPTAIN'S. Owner, 2026-09-18: "the tables at the hat would be
+        // good stakeout positions" — a chair with a line to the way in is worth taking precisely because the
+        // man who is following you cannot take it first.
+        foreach (DeckReachability.Point top in HavenInterior.GalleryTops(bar.BodyId))
+        {
+            double tx = top.X - x, ty = top.Y - y;
+            if ((tx * tx) + (ty * ty) <= DeckPlan.InteractRadius * DeckPlan.InteractRadius)
+            {
+                return true;
+            }
+        }
+
+        foreach (DeckReachability.Point machine in HavenInterior.TheVendorsAt(bar.BodyId))
+        {
+            double mx = machine.X - x, my = machine.Y - y;
+            if ((mx * mx) + (my * my) <= DeckPlan.InteractRadius * DeckPlan.InteractRadius)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 

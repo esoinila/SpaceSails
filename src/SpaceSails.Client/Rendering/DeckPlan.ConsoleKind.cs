@@ -132,6 +132,15 @@ public sealed partial class DeckPlan
         // and not a re-used RuinSalvage, for the reason every other split in this list is: a ruin's drawer is
         // a weighted roll with five faces and an empty room among them, and this is one object that either is
         // aboard or is not. One kind per verb — pick up the thing, and look at it.
-        WreckKey }
+        WreckKey,
+        // #1199 (2026-09-18) · THE OBSERVATION WALK'S TWO COIN MACHINES. Owner, live: "maybe one of those
+        // pay-coin-to-use binoculars common on sightseeing spots … use with E … same for the vending
+        // machine." Two kinds and not one, for the reason every other split in this list is: they are two
+        // FIXTURES with two verbs — look through a thing bolted to a rail, and buy a cold thing out of a
+        // slot — and the two must be able to disagree about their plate, their picture and what they
+        // alternate between. Neither is a re-used Kiosk: the souvenir kiosk sells the MOON YOU ARE STANDING
+        // ON (SurfaceSouvenir off the excursion's own body) and answers nothing at all at a berth, where
+        // there is no excursion to name — which is the #757 absence, not a refusal anybody can read.
+        CoinBinoculars, CoinVendor }
 
 }
