@@ -377,6 +377,14 @@ public partial class Map
             case DeckPlan.ConsoleKind.Kiosk:
                 VisitKiosk();
                 break;
+            // #1199 · The observation walk's gallery, and its two coin machines. Owner: "use with E … same
+            // for the vending machine." One arm each, because they are two fixtures with two verbs.
+            case DeckPlan.ConsoleKind.CoinBinoculars:
+                LookThroughTheBinoculars();
+                break;
+            case DeckPlan.ConsoleKind.CoinVendor:
+                UseTheVendingMachine();
+                break;
             case DeckPlan.ConsoleKind.WreckEvidence:
                 ExamineWreckEvidence(); // #488: read the derelict off what is bolted to her deck
                 break;

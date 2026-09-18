@@ -197,6 +197,14 @@ public sealed class StoryBeatsTests
     /// the game is allowed to acknowledge a disaster. The rationing that DOES exist is
     /// <see cref="NebulaClaims.TheDeskComesBack"/>, which is the caller's and is about the first claim rather
     /// than about repetition.</para>
+    ///
+    /// <para>#1199 (2026-09-18) · And the eighth and ninth, which are the plainest entries on this list: THE
+    /// CAPTAIN PAID. The observation walk's gallery has two coin machines in it, and a cadence that swallowed
+    /// the second press would take the coins and show nothing — which is not restraint, it is a fixture that
+    /// steals. <see cref="StoryBeats.Cadence.Cooled"/> was the near miss and it is wrong twice over: it would
+    /// put a clock on a transaction, and it would hide the half of the binoculars worth finding, because the
+    /// machine ALTERNATES and the second look is the one that swings the optics down through the floor. The
+    /// rationing that does exist is the purse, which is the world's and not this file's.</para>
     /// </summary>
     [Fact]
     public void OnlyRareMomentsFireEveryTime()
@@ -212,6 +220,8 @@ public sealed class StoryBeatsTests
                 StoryBeats.Beat.CollectorsSetDown,
                 StoryBeats.Beat.Flashback,
                 StoryBeats.Beat.TheClaim,
+                StoryBeats.Beat.TheWalksBinoculars,
+                StoryBeats.Beat.TheGalleryVendor,
             ],
             everyTime);
     }
