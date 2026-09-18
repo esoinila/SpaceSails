@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace SpaceSails.Core;
 
@@ -131,50 +132,178 @@ public readonly record struct PulseSlot(
 /// to a bigger line; it is losing to the whole HUD, and by the time the card is dismissed the dwell has run
 /// out and the sentence is gone. #680's family, arising from the world acting rather than from a press.</para>
 ///
-/// <para>So the event <b>holds</b> its sayings instead of saying them, and the card's dismissal lets the
-/// winner go. That is the queue shape #693 declined — deliberately, and it stays declined: this is not a
-/// lifecycle the pulse's 400-odd call sites share, it is one slot for one situation, and an event that
-/// raises no card never touches it (it releases on the spot, which is an ordinary pulse).</para>
+/// <para>So the event <b>holds</b> its sayings instead of saying them, and the card's dismissal lets them
+/// go.</para>
 ///
-/// <para><b>The winner is chosen by the same law, not by the order.</b> The lines an arrival holds were
-/// composed in one breath, so who survives the card is a question of RANK — a lower-ranked held line may not
-/// displace a higher-ranked one; among equals the last held wins. Identical to <see cref="PulseSlot.Write"/>
-/// minus the clock, because there is no clock inside a breath, and identical on purpose: the sentence that
-/// survives the card must be the sentence that would have been on screen had no card been raised. That
-/// equivalence is the guard.</para>
+/// <para><b>#1230 · AND THE HOLD IS A QUEUE, because one slot DESTROYED a spent beat.</b> #768 kept exactly
+/// one line and chose it by rank, and #1222 made this funnel the biggest one in the game — every
+/// plot-significant line the WORLD raises while any of the thirty-one scrims is up now comes here. The
+/// one-slot argument (<i>the captain would read exactly one of them anyway</i>) is true of #768's own
+/// one-breath case and false of #1222's: behind a card left open all evening two spent beats can be MINUTES
+/// apart, and the old <c>Hold</c> annihilated one of them. The tail's chair reading and its losing line,
+/// raised nine seconds apart under one open card, are the played case — and a once-only beat that is spent
+/// and never said is exactly the class #1214 was filed for, arriving through #1214's own fix.</para>
 ///
-/// <para>Releasing writes through <see cref="PulseSlot.Write"/>, so the freed line gets its ordinary dwell
+/// <para><b>The law now, in five clauses</b> (head coder's ruling, 2026-09-18 — correctness, not feel):</para>
+/// <list type="number">
+///   <item><b>Every line is kept, IN ORDER</b>, and said one at a time when the glass clears — each for its
+///   own full pulse duration, the next only after the previous has expired (<see cref="SayTheNextAfterMs"/>).
+///   The HUD still has one slot; what changed is that the queue waits for it rather than writing over
+///   itself.</item>
+///   <item><b>Rank never DROPS a line.</b> It may only ORDER lines raised in the SAME FRAME, highest first —
+///   which is #768's one-breath case and the whole of what rank was ever doing here. Across frames the order
+///   raised is the order said, absolutely: a beat from ten minutes ago is not re-sorted behind one from now
+///   because the newer one is bigger.</item>
+///   <item><b>An identical sentence already waiting is not queued twice.</b> A world that raises the same
+///   words twice behind one card has said one thing.</item>
+///   <item><b>Ambient is unchanged</b> — never held by <c>ShowPulseMessage</c>, so never queued by it.
+///   Weather is allowed to be missed, which is what makes it weather. (#768's own callers — an arrival
+///   holding its whole breath — still hand this queue their Status lines, and those are the only droppable
+///   things in it, which is clause 5.)</item>
+///   <item><b>The bound is SOFT.</b> <see cref="TheBound"/> lines; on overflow the OLDEST AMBIENT-MOST line
+///   is dropped, and <b>never</b> one at <see cref="Telling.Floor"/> or above. If eight beats are genuinely
+///   waiting, all eight are kept — a bound that ate a beat would be this bug with a number on it.</item>
+/// </list>
+///
+/// <para><b>Not persisted</b>, for #1222's own reason: a reload has already lost the card that caused the
+/// hold, and nothing in <c>TheScrimCensus</c> is in the vault either. What is deferred is the doorbell; the
+/// durable record was never deferred at all.</para>
+///
+/// <para>Releasing writes through <see cref="PulseSlot.Write"/>, so each freed line gets its ordinary dwell
 /// (#766's length-scaled reading time) and can itself be outranked afterwards. A held line is a line that
-/// has not been said yet — never a line with special powers.</para></summary>
-/// <param name="Message">The best thing held so far, or null for nothing held.</param>
-/// <param name="Rank">What that held message is, which is what decides whether a later one displaces it.</param>
-public readonly record struct PulseHold(string? Message, PulseRank Rank)
+/// has not been said yet — never a line with special powers: if the slot's own law refuses the write, the
+/// line keeps its place at the head of the queue and is offered again next frame.</para></summary>
+/// <param name="Lines">The sentences waiting, oldest first, or null/empty for nothing held.</param>
+/// <param name="SayTheNextAfterMs">When the line released last has finished its dwell — nothing else may be
+/// said before it, which is what "one at a time, each for its own full duration" is made of.</param>
+public readonly record struct PulseHold(IReadOnlyList<PulseHold.Waiting>? Lines, double SayTheNextAfterMs)
 {
+    /// <summary>One sentence waiting its turn, with what it is and the frame it was raised on. The frame is
+    /// carried rather than inferred because it is the whole of clause 2: rank may re-order lines raised in
+    /// the SAME frame and nothing else.</summary>
+    /// <param name="Message">The words.</param>
+    /// <param name="Rank">What they are (#693).</param>
+    /// <param name="RaisedAtMs">The client's real-time clock on the frame they were raised.</param>
+    public readonly record struct Waiting(string Message, PulseRank Rank, double RaisedAtMs);
+
+    /// <summary>How many lines may wait. Eight is a card left open a long while, not a leak; past it a
+    /// player is not going to read a backlog anyway. It is SOFT: see clause 5 — this bound may never cost a
+    /// line at <see cref="Telling.Floor"/> or above.</summary>
+    public const int TheBound = 8;
+
     /// <summary>Nothing held — the state every scene starts and ends in.</summary>
-    public static PulseHold Empty => new(null, PulseRank.Status);
+    public static PulseHold Empty => new(Array.Empty<Waiting>(), 0.0);
+
+    /// <summary>The queue, oldest first. Never null, so a defaulted struct reads as empty rather than
+    /// throwing.</summary>
+    public IReadOnlyList<Waiting> Queued => Lines ?? Array.Empty<Waiting>();
 
     /// <summary>Is there a sentence waiting for the card to close?</summary>
-    public bool Any => Message is not null;
+    public bool Any => Queued.Count > 0;
 
-    /// <summary>Keep <paramref name="message"/> back for now, or decline to because something bigger is
-    /// already being kept back. Returns the hold as it stands afterwards.</summary>
-    public PulseHold Hold(string message, PulseRank rank)
+    /// <summary>How many are waiting.</summary>
+    public int Count => Queued.Count;
+
+    /// <summary>The next thing that will be said, or null for nothing waiting.</summary>
+    public string? Message => Count > 0 ? Queued[0].Message : null;
+
+    /// <summary>What the next thing that will be said IS.</summary>
+    public PulseRank Rank => Count > 0 ? Queued[0].Rank : PulseRank.Status;
+
+    /// <summary>Keep <paramref name="message"/> back for now. Nothing is displaced and nothing is dropped
+    /// except under the soft bound; <paramref name="rank"/> decides only where in this frame's own run of
+    /// lines it goes. Returns the hold as it stands afterwards.</summary>
+    /// <param name="message">The sentence.</param>
+    /// <param name="rank">What it is (#693).</param>
+    /// <param name="raisedAtMs">The client's clock on this frame — two lines sharing it are two lines raised
+    /// in one breath, and those are the only two rank may ever re-order.</param>
+    public PulseHold Hold(string message, PulseRank rank, double raisedAtMs)
     {
         if (string.IsNullOrWhiteSpace(message))
         {
-            return this;   // an empty saying is not a saying; it must never displace a real one
+            return this;   // an empty saying is not a saying; it must never take a place in the queue
         }
 
-        // THE SAME LAW AS THE SLOT'S, and written out rather than borrowed, because the slot's is about a
-        // line that is ON SCREEN and this one is about lines that never got there. Only the rank decides.
-        return Message is not null && rank < Rank ? this : new(message, rank);
+        IReadOnlyList<Waiting> queued = Queued;
+        foreach (Waiting already in queued)
+        {
+            // CLAUSE 3. The words, and not the rank: a world that says the same sentence twice behind one
+            // card has said one thing, and saying it twice in a row would read as a stutter.
+            if (string.Equals(already.Message, message, StringComparison.Ordinal))
+            {
+                return this;
+            }
+        }
+
+        var next = new List<Waiting>(queued);
+        if (next.Count >= TheBound)
+        {
+            // CLAUSE 5. The oldest of the AMBIENT-most rank present — scanning forward and taking only a
+            // strictly lower rank lands on the FIRST line of the lowest rank, which is the oldest of them.
+            int drop = -1;
+            for (int i = 0; i < next.Count; i++)
+            {
+                if (!next[i].Rank.IsPlotSignificant() && (drop < 0 || next[i].Rank < next[drop].Rank))
+                {
+                    drop = i;
+                }
+            }
+
+            if (drop >= 0)
+            {
+                next.RemoveAt(drop);
+            }
+            else if (!rank.IsPlotSignificant())
+            {
+                // Nothing droppable is waiting and the newcomer is weather. A beat may not be dropped to
+                // make room for the weather, and the weather is the thing that is allowed to be missed.
+                return this;
+            }
+
+            // …otherwise eight beats are genuinely waiting and a ninth has arrived: ALL of them are kept and
+            // the bound gives way. That is the clause, written as the absence of a drop.
+        }
+
+        // CLAUSE 2. Walk back over the lines raised on THIS frame only, past any of lower rank, and sit in
+        // front of them. Lines from earlier frames are never passed, so the order raised is the order said.
+        int at = next.Count;
+        while (at > 0 && next[at - 1].RaisedAtMs == raisedAtMs && next[at - 1].Rank < rank)
+        {
+            at--;
+        }
+
+        next.Insert(at, new Waiting(message, rank, raisedAtMs));
+        return new PulseHold(next, SayTheNextAfterMs);
     }
 
-    /// <summary>The card is gone: say the winner. Returns the slot with the freed line written into it (by
-    /// the ordinary law, so it dwells and can be outranked like anything else) and an empty hold.
+    /// <summary>The glass is clear: say the NEXT one. Returns the slot with that line written into it (by the
+    /// ordinary law, so it dwells and can be outranked like anything else) and the hold with it gone.
+    ///
+    /// <para>One line per call, and never before <see cref="SayTheNextAfterMs"/> — the line released last has
+    /// its own full dwell before the next one takes the slot. Called once a frame from the tick, so a queue
+    /// simply drips.</para>
     ///
     /// <para>Nothing held is not an event: the slot comes back untouched, so a card dismissed on a quiet
-    /// screen never blanks or re-writes whatever the world has said since.</para></summary>
-    public (PulseSlot Slot, PulseHold Held) ReleaseInto(PulseSlot slot, double nowMs) =>
-        Message is null ? (slot, this) : (slot.Write(Message, Rank, nowMs), Empty);
+    /// screen never blanks or re-writes whatever the world has said since. Nor is a REFUSAL an event — if the
+    /// slot's own rank law will not take this line yet (something bigger is still inside its breath), the
+    /// line keeps its place and is offered again on the next frame rather than being spent on a write that
+    /// did not happen.</para></summary>
+    public (PulseSlot Slot, PulseHold Held) ReleaseInto(PulseSlot slot, double nowMs)
+    {
+        if (!Any || nowMs < SayTheNextAfterMs)
+        {
+            return (slot, this);
+        }
+
+        Waiting head = Queued[0];
+        PulseSlot after = slot.Write(head.Message, head.Rank, nowMs);
+        if (after == slot)
+        {
+            return (slot, this);   // the slot refused it; it has not been said, so it is not spent
+        }
+
+        var rest = new List<Waiting>(Queued);
+        rest.RemoveAt(0);
+        return (after, new PulseHold(rest, after.ExpiresMs));
+    }
 }

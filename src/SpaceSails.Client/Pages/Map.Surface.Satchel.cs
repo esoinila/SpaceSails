@@ -625,18 +625,23 @@ public partial class Map
     // card releases on the spot, which is an ordinary pulse and indistinguishable from one.
 
     /// <summary>#768 · Say it AND keep it — but not yet, if a card is about to stand in front of it. The book
-    /// gets it now; the screen gets the winner when the card closes. Pair every caller with
-    /// <see cref="ReleaseHeldSayingsUnlessACardStopsTheWorld"/> once the event's cards have been raised.</summary>
+    /// gets it now; the screen gets it when the card closes. Pair every caller with
+    /// <see cref="ReleaseHeldSayingsUnlessACardStopsTheWorld"/> once the event's cards have been raised.
+    ///
+    /// <para>#1230 · the hold is a QUEUE, so an arrival's whole breath is now SAID rather than sorted down to
+    /// one survivor — in this frame's own rank order, highest first, one line at a time. The clock handed in
+    /// is what makes "this frame's own" a thing the queue can ask (<see cref="PulseHold.Waiting"/>).</para>
+    /// </summary>
     private void HoldAndFile(string text, string glyph, PulseRank rank = PulseRank.Status)
     {
-        _held = _held.Hold(text, rank);
+        _held = _held.Hold(text, rank, _lastTimestampMs ?? 0);
         FileNote(text, glyph);
     }
 
     /// <summary>#768 · The same, for a line the book does not keep — a warning about the here and now rather
     /// than a durable find.</summary>
     private void HoldSaying(string text, PulseRank rank = PulseRank.Status) =>
-        _held = _held.Hold(text, rank);
+        _held = _held.Hold(text, rank, _lastTimestampMs ?? 0);
 
     /// <summary>#768 · Is something in front of the captain that a pulse would play UNDER? Asked of the world
     /// as it now stands rather than predicted from the conditions that raise them — a copy of those
@@ -658,8 +663,12 @@ public partial class Map
     private bool ACardStopsTheWorld => AScrimIsUp;
 
     /// <summary>#768 · The end of an event that had things to say: if nothing is in front of the captain the
-    /// held winner is simply pulsed, here and now, exactly as it always was. If a card IS up, it stays held
-    /// and <see cref="ReleaseHeldSayings"/> says it when that card is dismissed.</summary>
+    /// first held line is simply pulsed, here and now, exactly as it always was. If a card IS up, the queue
+    /// stays held and <see cref="SayWhatTheScrimWasStandingOn"/> drips it out once the glass clears.
+    ///
+    /// <para>#1230 · ONE line, because the queue says one at a time — the rest of the event's breath follows
+    /// from the frame check as the slot frees up, which is where a queue belongs rather than in a loop
+    /// here.</para></summary>
     private void ReleaseHeldSayingsUnlessACardStopsTheWorld()
     {
         if (ACardStopsTheWorld)
@@ -696,6 +705,11 @@ public partial class Map
     ///
     /// <para>Called from the tick beside <c>_pulse.Expire</c>, which is the pulse's own per-frame seam, so the
     /// held line is released into a slot on the same frame that slot is being aged.</para>
+    ///
+    /// <para>#1230 · <b>and it is what makes the QUEUE drip.</b> One line per frame at most, and the queue
+    /// itself refuses to hand over the next until the one before it has had its whole dwell. So a card closed
+    /// on three waiting beats says the first at once and the others as the slot comes free, in order, each
+    /// for as long as its own length earns.</para>
     /// </summary>
     private void SayWhatTheScrimWasStandingOn()
     {
