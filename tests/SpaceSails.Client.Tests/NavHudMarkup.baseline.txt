@@ -44,16 +44,30 @@
             <button type="button" class="btn btn-sm @(Paused ? "btn-warning" : "btn-outline-light") me-2" title="Pause or resume the flow of sim time" @onclick="TogglePause">
                 @(Paused ? "Resume" : "Pause")
             </button>
-            <button type="button" class="btn btn-sm @(FollowShip ? "btn-info" : "btn-outline-light")" title="Keep the camera locked on the ship as she flies" @onclick="ToggleFollow">
-                Follow Ship
-            </button>
-            @* #956 — …or on where she is GOING. Owner: "Let's have a follow nav destination option here in
-               addition to follow ship." Mutually exclusive with Follow Ship (one camera), and visible-but-
-               disabled with the reason when no destination is set (#212). *@
-            <button type="button" class="btn btn-sm @(_followDest && CanFollowDestination ? "btn-info" : "btn-outline-light") me-2"
-                    disabled="@(!CanFollowDestination)" title="@FollowDestTip()" @onclick="ToggleFollowDest">
-                Follow dest
-            </button>
+            @* #1234 · THE TWO FOLLOWS WRAP AS ONE, because they are one choice. Owner, asking for the second
+               one: "Let's have a follow nav destination option HERE in addition to follow ship" — and #956's
+               gate says the same back, that it stands "beside the follow it is the alternative to". They were
+               two loose children of a wrapping row, so which line each landed on was arithmetic: measured at
+               1280x900 on ?start=wreck&dest=saturn, once the long-coast advert re-read its countdown from
+               "(30 d)" to "(29 d 23 h)" — 31 px wider — the break fell BETWEEN them and Follow dest dropped to
+               the next line alone (y 165 against Follow Ship's 125). That is the state a captain actually
+               flies in; the gate had only ever seen it by accident, in the 800 ms before the advert settled,
+               and read the other row the rest of the time (#1234's whole sighting).
+
+               A nowrap pair is the fix in one place: the break can fall before them or after them, never
+               through them, at any width. `me-2` moves off the second button onto the pair, so the row's own
+               spacing is unchanged. One camera, two buttons, one line. *@
+            <div class="d-flex align-items-center gap-2 flex-nowrap me-2 map-follow-pair">
+                <button type="button" class="btn btn-sm @(FollowShip ? "btn-info" : "btn-outline-light")" title="Keep the camera locked on the ship as she flies" @onclick="ToggleFollow">
+                    Follow Ship
+                </button>
+                @* #956 — …or on where she is GOING. Mutually exclusive with Follow Ship (one camera), and
+                   visible-but-disabled with the reason when no destination is set (#212). *@
+                <button type="button" class="btn btn-sm @(_followDest && CanFollowDestination ? "btn-info" : "btn-outline-light")"
+                        disabled="@(!CanFollowDestination)" title="@FollowDestTip()" @onclick="ToggleFollowDest">
+                    Follow dest
+                </button>
+            </div>
             @* #237 — clickable zoom: not every captain has a mouse wheel (and automation drives one
                poorly). One real step per press, zooming toward the viewport centre. *@
             <button type="button" class="btn btn-sm btn-outline-light" title="Zoom the map in one step — no mouse wheel needed" @onclick="() => ZoomStep(zoomIn: true)">
