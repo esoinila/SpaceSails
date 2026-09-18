@@ -64,8 +64,10 @@ public sealed class TheCaptainsIdentRowIsStyledTests : IAsyncLifetime
         // the Captain tab, and it passed alone in 27 s. The latch DEFERS such a beat rather than
         // dropping it, and leaves plates alone. See StoryBeats.HoldQueryFlag.
         await _page.GotoAsync($"{_host.BaseUrl}/map?dock={BerthId}&holdbeats=1", new() { Timeout = BootTimeoutMs });
-        await _page.WaitForSelectorAsync(".map-loading",
-            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        // #1234 · BOTH HALVES OF THE DOOR, through GateReady. `GotoAsync` returns while the page is still an
+        // empty shell, so a bare "wait until .map-loading is gone" is satisfied by a door that has not been
+        // hung yet — this waited only for the second half.
+        await _page.BootDoorClosedAsync(BootTimeoutMs);
 
         await _page.Locator(".desk-tab-bar").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
