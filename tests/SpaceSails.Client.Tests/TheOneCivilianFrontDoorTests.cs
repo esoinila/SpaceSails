@@ -207,27 +207,16 @@ public sealed class TheOneCivilianFrontDoorTests
     [Fact]
     public async Task AndTheWholeBootAgreesWithThatDecision()
     {
-        // The expensive, narrow half: ten bench URLs booted all the way past the browser gate, because the
-        // raise is only the FIRST thing that touches this flag and a later stage could put the menu back up
-        // over the situation the cheat just built. Deliberately spread across the four shapes a bench URL
-        // has: one that names a berth, two seeded approaches, and six that name no berth at all — the last
-        // group being exactly the ones that used to end on the front door.
-        string[] benchUrls =
-        [
-            "/map?dock=the-tilt&site=0&land=1",
-            "/map?sling=jupiter",
-            "/map?skim=saturn",
-            "/map?ellipse=1",
-            "/map?credits=50000",
-            "/map?credits=1234&fuel=7&simhours=9",
-            "/map?kaamos=all",
-            "/map?converge=1",
-            "/map?secretlab=1",
-            "/map?expedition=mining",
-        ];
-
+        // The expensive half: every bench URL the product ships, booted all the way past the browser gate,
+        // because the raise is only the FIRST thing that touches this flag and a later stage could put the
+        // menu back up over the situation the cheat just built.
+        // EVERY dev-start URL the front door itself offers, plus the pinned sweep's hand-picked
+        // combinations — the whole bench catalogue, booted for real rather than a sample of it. The owner
+        // found this the expensive way on the live build: `/map?park=1`, `/map?park=1&parkphase=dawn` and
+        // `/map?counter=1` all sitting on the logbook instead of in the situation they name. A guard that
+        // boots ten of them would have missed which ten.
         var wrong = new List<string>();
-        foreach (string url in benchUrls)
+        foreach (string url in TheBenchUrlsTheProductShips())
         {
             PastTheGateBench.Boot booted = await PastTheGateBench.BootAsync(url);
 

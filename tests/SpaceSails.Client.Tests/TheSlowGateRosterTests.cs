@@ -52,11 +52,14 @@ public sealed class TheSlowGateRosterTests
             { nameof(EveryPopUpCanBeDismissedTests), 152 },
             { nameof(TheBootBuildsTheSameWorldTests), 148 },
             { nameof(TheBootStopsWhenYouLeaveTests), 14 },
-            // #323 · The front-door law. Measured on its own day rather than read off the 09-02 baseline,
-            // the way #1108's row was: 27 tests, 85 s, of which all but a second is the fifteen real boots
-            // — every shipped sky's deep link and ten bench URLs, each walked past the browser gate. The
-            // source sweep and the rule table beside them cost nothing.
-            { nameof(TheOneCivilianFrontDoorTests), 85 },
+            // #323 · The front-door law, and it is now the most expensive class in the assembly. Measured on
+            // its own day rather than read off the 09-02 baseline, the way #1108's row was: 34 tests, 381 s.
+            // Effectively all of it is REAL BOOTS — every shipped sky's civilian deep link, and then every
+            // bench URL the product ships (the whole ⚙ DEV START SITES catalogue plus the pinned sweep's
+            // combinations, ~90 of them) walked past the browser gate one at a time, because the owner found
+            // ?park=1 and ?counter=1 sitting on the logbook by playing them and a guard that booted a SAMPLE
+            // would have missed which ones. The rule table and the source sweep beside them cost nothing.
+            { nameof(TheOneCivilianFrontDoorTests), 381 },
 
             // ── The walkability audits: A* over every square of a floor ──
             { nameof(TheParkTakesAClickTests), 96 },
