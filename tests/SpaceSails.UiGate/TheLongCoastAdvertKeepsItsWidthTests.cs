@@ -25,10 +25,13 @@ namespace SpaceSails.UiGate;
 ///   at a time, and the advert measured after each. This reaches shapes the clock will not show a gate
 ///   inside a run — <c>(364 d)</c>, <c>(12.3 yr)</c>, the whole of <c>FormatHorizon</c>'s far end — and it
 ///   is a measurement of the shipped button with the shipped stylesheet on it, not a model of one.</item>
-///   <item><b>The boundary the advert's own clock really crosses</b>, sampled live across it. #1234
-///   measured that crossing at ~800 ms after the boot door on a quiet box, so this samples for five
-///   seconds and requires to have SEEN at least two different readings before it asserts anything — a run
-///   that never crossed has proved nothing and says so.</item>
+///   <item><b>The boundary the advert's own clock really crosses</b>, sampled live across it — with the
+///   shipping warp slider pushed to its stop, because waiting on the clock alone is not a guard. #1234
+///   measured its crossing at ~800 ms after the boot door on a quiet box; on a loaded runner the boot
+///   goes past it and the countdown then holds for as long as anyone watches (seen on this branch). At
+///   the stop the advert sheds an hour every ~0.36 s, and the guard requires to have seen readings of
+///   two different LENGTHS — a digit changing is what #1239 already normalises away; a character count
+///   changing is what broke the row — before it asserts anything, and it stops the moment it has one.</item>
 /// </list>
 ///
 /// <para>Neither test loosens #1239's normalisation, which stays exactly as it was: this is the product
@@ -54,7 +57,10 @@ public sealed class TheLongCoastAdvertKeepsItsWidthTests(Xunit.Abstractions.ITes
     /// minutes bands below it are unreachable and are not claimed here; everything from the hours band to
     /// <c>FormatHorizon</c>'s years is.</summary>
     private static readonly string[] EveryShapeTheLadderCanGive =
-        ["25 h", "47 h", "2 d 0 h", "11 d 11 h", "29 d 23 h", "30 d", "364 d", "1.0 yr", "12.3 yr"];
+    [
+        "(25 h)", "(47 h)", "(2 d 0 h)", "(11 d 11 h)", "(29 d 23 h)",
+        "(30 d)", "(364 d)", "(1.0 yr)", "(12.3 yr)",
+    ];
 
     private ClientHost _host = null!;
     private IPlaywright _pw = null!;
@@ -114,21 +120,33 @@ public sealed class TheLongCoastAdvertKeepsItsWidthTests(Xunit.Abstractions.ITes
     {
         IPage page = await ABootedTabAsync();
 
-        // NOT settled first, deliberately: the crossing this is about happens ~800 ms after the door, and a
-        // settle would stand and wait for the far side of the very event being measured.
+        // THE BENCH THAT SETS THE COUNTDOWN IS THE SHIPPING WARP SLIDER, pushed to its stop. Waiting on
+        // the clock alone is not a guard: the crossing #1234 caught (30 d → 29 d 23 h) lands ~800 ms after
+        // the boot door on a quiet box and BEFORE the door on a slow one, and a run that boots past it
+        // sits on one reading for as long as anyone watches — seen on this branch, three times running.
+        // At the stop the slider reads 10,000× and UpdateEffectiveWarp clamps it to ~1,000× here, so the
+        // advert sheds an hour of coast every ~3.6 s of real time, and the crossing that changes the text
+        // LENGTH (29 d 10 h → 29 d 9 h) is ~50 s out. The sampler below stops the moment it has one, so
+        // that is what this usually costs; the ceiling is there for a runner where the clock is pulled
+        // back rather than to be waited out. Machine-independent: warp multiplies REAL time, so a slow
+        // runner serves fewer frames of the same size rather than a slower clock.
+        await page.Locator(".map-warp-control input[type=range]").FillAsync("100");
+
+        // NOT settled, deliberately: this measures a screen that is deliberately being made to move, and a
+        // settle would stand and wait for the far side of the very thing being measured.
         string verdict = await page.EvaluateAsync<string>(LiveCrossingScript, new
         {
             toolbar = Toolbar,
-            sampleForMs = 5_000,
+            sampleForMs = 90_000,
             everyMs = 100,
         });
         output.WriteLine("[#1247 live crossing]\n" + verdict);
         await page.Context.CloseAsync();
 
         Assert.False(verdict.StartsWith("premise:", StringComparison.Ordinal),
-            "#1247 — this guard watched the advert for five seconds and its countdown never changed, so it "
-            + "never straddled a boundary and has asserted nothing. Find a start/destination whose coast "
-            + "crosses one inside the window:\n" + verdict);
+            "#1247 — this guard drove the warp slider to its stop and watched the advert, and it never "
+            + "crossed a boundary that changes the countdown's LENGTH — so it has asserted nothing. Either "
+            + "the warp control did not take, or something pulled the clock back to 1×:\n" + verdict);
         Assert.True(verdict.StartsWith("steady", StringComparison.Ordinal),
             "#1247 — the Nav toolbar re-laid itself out when the advert's countdown crossed a boundary, "
             + "which is #1234's sighting exactly:\n" + verdict);
@@ -182,21 +200,33 @@ public sealed class TheLongCoastAdvertKeepsItsWidthTests(Xunit.Abstractions.ITes
             }
 
             const was = slot.textContent;
+            const slotWidth = Math.round(slot.getBoundingClientRect().width * 100) / 100;
             const readings = [];
             try {
                 for (const shape of shapes) {
                     slot.textContent = shape;
+                    // The shape's OWN width, with the slot's floor lifted for the length of the read: the
+                    // headroom this rule has is then a measured number rather than a hope, and a shape that
+                    // has outgrown the slot is named rather than merely making two widths differ.
+                    slot.style.minWidth = '0';
+                    const natural = Math.round(slot.getBoundingClientRect().width * 100) / 100;
+                    slot.style.minWidth = '';
                     readings.push({
                         shape,
+                        natural,
                         width: Math.round(advert.getBoundingClientRect().width * 100) / 100,
                         rows: rows(),
                     });
                 }
             } finally {
                 slot.textContent = was;
+                slot.style.minWidth = '';
             }
 
-            const table = readings.map(r => ('  (' + r.shape + ')').padEnd(16) + ' advert w=' + r.width).join('\n');
+            const widest = readings.reduce((a, b) => (b.natural > a.natural ? b : a));
+            const table = readings.map(r =>
+                ('  ' + r.shape).padEnd(16) + ' natural w=' + String(r.natural).padEnd(7)
+                + ' advert w=' + r.width).join('\n');
             const widths = [...new Set(readings.map(r => r.width))];
             const layouts = [...new Set(readings.map(r => r.rows.key))];
 
@@ -209,7 +239,10 @@ public sealed class TheLongCoastAdvertKeepsItsWidthTests(Xunit.Abstractions.ITes
                      + '\n── with (' + b.shape + ') ──\n' + b.rows.shown;
             }
             return 'steady — all ' + readings.length + ' shape(s) leave the advert ' + widths[0]
-                 + ' px wide on the same rows:\n' + table + '\n' + readings[0].rows.shown;
+                 + ' px wide on the same rows. The slot is ' + slotWidth + ' px and its widest tenant '
+                 + widest.shape + ' is ' + widest.natural + ' px, so the headroom is '
+                 + (Math.round((slotWidth - widest.natural) * 100) / 100) + ' px:\n'
+                 + table + '\n' + readings[0].rows.shown;
         }
         """;
 
@@ -242,7 +275,8 @@ public sealed class TheLongCoastAdvertKeepsItsWidthTests(Xunit.Abstractions.ITes
 
             const byText = new Map();
             const started = performance.now();
-            while (performance.now() - started < limit) {
+            const lengthsSeen = () => new Set([...byText.keys()].map(t => t.length)).size;
+            while (performance.now() - started < limit && lengthsSeen() < 2) {
                 const advert = controls().find(b => (b.innerText || '').includes('Long coast ahead'));
                 if (advert) {
                     const slot = advert.querySelector('.map-coast-countdown');
@@ -260,9 +294,18 @@ public sealed class TheLongCoastAdvertKeepsItsWidthTests(Xunit.Abstractions.ITes
 
             const seen = [...byText.entries()];
             if (seen.length === 0) { return 'premise: the long-coast advert never appeared on this toolbar.'; }
-            const table = seen.map(([t, r]) => '  [' + r.at + ' ms] (' + t + ') advert w=' + r.width).join('\n');
+            const table = seen.map(([t, r]) => '  [' + r.at + ' ms] ' + t + ' advert w=' + r.width).join('\n');
             if (seen.length < 2) {
                 return 'premise: the advert read the same thing for the whole ' + limit + ' ms.\n' + table;
+            }
+            // …and it has to have crossed a boundary that changes the text's LENGTH. "29 d 23 h" becoming
+            // "29 d 22 h" is a digit, and a digit is what #1239 already normalises away; what broke the row
+            // was a CHARACTER COUNT changing. A window that only ever saw the former has watched the clock
+            // tick, not a boundary get crossed.
+            const lengths = [...new Set(seen.map(([t]) => t.length))];
+            if (lengths.length < 2) {
+                return 'premise: every reading in this window was ' + lengths[0] + ' characters long, so no '
+                     + 'boundary that could change the advert\'s WIDTH was crossed.\n' + table;
             }
 
             const widths = [...new Set(seen.map(([, r]) => r.width))];
@@ -271,8 +314,8 @@ public sealed class TheLongCoastAdvertKeepsItsWidthTests(Xunit.Abstractions.ITes
                 const [ta, a] = seen[0];
                 const [tb, b] = seen.find(([, r]) => r.width !== a.width || r.rows.key !== a.rows.key);
                 return 'MOVED across the crossing:\n' + table
-                     + '\n── at (' + ta + ') ──\n' + a.rows.shown
-                     + '\n── at (' + tb + ') ──\n' + b.rows.shown;
+                     + '\n── at ' + ta + ' ──\n' + a.rows.shown
+                     + '\n── at ' + tb + ' ──\n' + b.rows.shown;
             }
             return 'steady — ' + seen.length + ' distinct countdown reading(s), one advert width ('
                  + widths[0] + ' px) and one row layout:\n' + table + '\n' + seen[0][1].rows.shown;

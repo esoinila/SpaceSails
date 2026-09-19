@@ -297,15 +297,21 @@
    second number group, 31 px — and .btn-toolbar's flex-wrap (#123/#195) then breaks the row a button
    earlier. #1234's whole sighting was that break landing between Follow Ship and Follow dest ~800 ms
    after the boot door, and #1239's gate honestly failing on it (#1245's ui-gate).
-   So the words get a SLOT instead of a length. Sized on the widest shape the advert can reach — the
-   advert opens at 24 h and the ladder hands it "## d ## h" up to a month, with FormatHorizon's shorter
-   "## d" beyond — measured at 0.875rem (.btn-sm) with a rem of headroom, and centred so the shorter
-   forms sit in the middle of their slot rather than drifting against one bracket.
+   So the words get a SLOT instead of a length. Sized on the widest shape the advert can reach — it opens
+   at 24 h and the ladder hands it "(## d ## h)" up to a month, with FormatHorizon's shorter "(### d)"
+   and "(##.# yr)" beyond — measured at 0.875rem (.btn-sm), and centred so a brief coast sits in the
+   middle of its slot rather than drifting against one end. The BRACKETS are inside the slot, so the
+   slack falls in the word spacing either side of them rather than inside the brackets themselves.
    Tabular figures are the other half: without them "(11 d 11 h)" and "(29 d 23 h)" are different widths
-   in a proportional face, and the slot would only have moved the problem down to the last pixel. */
+   in a proportional face, and the slot would only have moved the problem down to the last two pixels.
+   `ch` AND NOT `rem`, because this number is a count of characters and CI does not have this box's
+   fonts. Measured here: 1ch = 7.786 px at 14 px, and the widest tenant "(29 d 23 h)" is 67.72 px =
+   8.70ch — so 9.5ch is the slot with a tenth of a character of headroom, and it stays that on a runner
+   whose sans-serif is wider, where a rem figure would have become too tight silently. The guard measures
+   the widest shape's own natural width against the slot, so the headroom is stated rather than hoped. */
 .map-coast-countdown {
     display: inline-block;
-    min-width: 5.1rem;
+    min-width: 9.5ch;
     text-align: center;
     font-variant-numeric: tabular-nums;
 }
