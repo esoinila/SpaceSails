@@ -675,8 +675,13 @@ public partial class Map
 
         // #804 · The site's own pass, printed as it is printed. It names the SITE, which is what makes a
         // wallet of them worth carrying and what a guard on another rock reads out loud when he refuses it.
-        Core.Satchel.Kind.Badge => PatrolBeat.SiteOfBadge(item.Id) is { Length: > 0 } badgeSite
-            ? $"{PatrolBeat.BadgeGlyph} {PatrolBeat.BadgeTitle(badgeSite)}"
+        // #605 · …AND THE TIER THAT IS ON IT. This read the SITE off the id and then composed the face at
+        // BadgeTier, which was every pass there was — so a found DEPARTMENT pass would have printed GENERAL
+        // HANDS in the one row a captain ever reads it in, while the man on the rota read the real thing out
+        // of the same wallet. One call now: the face off the pass's own id, the same one the chooser row and
+        // the drawer's own plate are composed from.
+        Core.Satchel.Kind.Badge => PatrolBeat.BadgeFaceOf(item.Id) is { Length: > 0 } face
+            ? $"{PatrolBeat.BadgeGlyph} {face}"
             : $"{PatrolBeat.BadgeGlyph} a site pass",
 
         // #763 · The kit, named as it is named. A tool this build does not know is still a tool and says so
