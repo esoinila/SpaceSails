@@ -464,13 +464,21 @@ public static partial class HavenInterior
             // #1199 (2026-09-18) · …AND THE GALLERY GETS ITS OWN CANVAS, which is the room itself.
             //
             // The tube's plate is a drop seen down a 24 × 3.5 slot, and it is already stretched nearly seven
-            // to one to fill that; the crossbar is 24 × 8, which is a different picture's shape and would
-            // have been the same picture at a visibly different stretch two du apart. So the gallery takes
-            // the plate painted FOR it — the two machines, the two steel tables, the rail, the glass and the
-            // Earth beyond — at the same 0.55 the tube's drop is held back to, so the deck's own floor still
-            // reads through it and the captain is plainly walking ON something.
+            // to one to fill that; the crossbar is a different shape again and would have been the same
+            // picture at a visibly different stretch two du apart. So the gallery takes a plate painted FOR
+            // it, at the same 0.55 the tube's drop is held back to, so the deck's own floor still reads
+            // through it and the captain is plainly walking ON something.
+            //
+            // #1199 (2026-09-18, PLAYED) · AND IT IS THE PORTRAIT ONE. Owner, on the merged room: "the hat
+            // is drawn TALL … and the 16:9 cafeteria plate is stretched ~3:1 into it — the vending machines
+            // read as tall slivers." The tube runs due west, so this rectangle is 8 ACROSS by 24 ALONG —
+            // 0.333 — and a 16:9 canvas laid in it is squeezed to under a fifth of its width. The landscape
+            // plate stays where landscape belongs (the vending card and the seated panel); the FLOOR wears
+            // the 9:16 one, which is the room's own shape and needs no rotation to sit right — the pen has
+            // no angle to give it (DrawImage takes x, y, w, h and an alpha), and a 9:16 canvas is already
+            // long in the axis this room is long in. TheRoomAndItsPlateAreTheSameShapeTests measures both.
             backdrops.Add(new(
-                GalleryFixtures.CafeteriaArtUrl,
+                GalleryFixtures.CafeteriaFloorArtUrl,
                 TheGallery.WestX, TheGallery.NorthY,
                 TheGallery.EastX - TheGallery.WestX, TheGallery.NorthY - TheGallery.SouthY,
                 0.55f));
