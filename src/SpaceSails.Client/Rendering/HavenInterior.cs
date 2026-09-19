@@ -459,17 +459,17 @@ public static partial class HavenInterior
     /// the room's own axis, its back edge exactly on the cafeteria line
     /// (<see cref="ObservationWalk.CafeteriaBandDu"/> — the furthest out of the room a machine is allowed to
     /// stand), so it is the first thing anybody coming out of the tube meets and it is square in the middle
-    /// of the sightline from the SOUTH stakeout table to the rail. <see cref="TheRailAt"/>'s own route runs
-    /// behind it for about three deck units, which at a walker's pace
-    /// (<c>Interior.NpcWalk.PaceDu</c>) is two of <c>ReeverObservation.LookIntervalSeconds</c>: long enough to
-    /// go behind it and not come out the other side.</para>
+    /// of the sightline from the SOUTH stakeout table to the rail. Of the 8.92 du he walks from the throat to
+    /// the rail, <b>4.13 du are out of that table’s sight</b> — and at a walker’s pace
+    /// (<c>Interior.NpcWalk.PaceDu</c>) one <c>ReeverObservation.LookIntervalSeconds</c> is 1.50 du, so he is
+    /// behind it for nearly three looks: long enough to go behind a machine and not come out the other side.</para>
     ///
     /// <para><b>One island and not two, and the reason is measured.</b> The two tables sit a quarter of the
     /// hat either side of the axis — twelve deck units apart, on opposite sides of the route — so the angle
     /// between "a line from the north table" and "a line from the south table" at any point on his walk is
-    /// between seventy and a hundred and twenty degrees. A machine is <see cref="VendorWidth"/> wide and a
-    /// body cannot stand closer to it than <c>2 × DeckPlan.AvatarRadius</c>, so the widest it can ever screen
-    /// is about forty degrees. <b>No single fitting can stand between him and both tables at once</b>, and a
+    /// 69° at the rail and wider still further in. A machine is <see cref="VendorWidth"/> wide and a body
+    /// cannot stand closer to it than <c>2 × DeckPlan.AvatarRadius</c>, so the widest it can ever screen is
+    /// 53.1°. <b>No single fitting can stand between him and both tables at once</b>, and a
     /// second island put there to force it would be furniture written to satisfy a guard. The north table
     /// keeps its clean view of the rail, which is what makes it the good seat — and what a captain in it
     /// loses him behind is the paper or the eyepiece, which is the beat the owner asked for in the first

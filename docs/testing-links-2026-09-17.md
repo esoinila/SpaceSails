@@ -81,7 +81,7 @@ is STANDING at the rail it takes only your eyes. Four ways to answer it, all of 
 | **the paper** | you are SITTING at one of the hat's two tables. Sitting is the cover; the seat panel's own **Read the news** is the eye holes, and nothing had to be wired to it |
 | **the eyepiece** | any card is up — the 🔭 **COIN BINOCULARS**' own among them, or a 🥤 vending card, or the satchel |
 | **the tube** | you are at the mouth or down the leg, and the throat's corner takes the line |
-| **the island** | *new* — a **third 🥤 VENDING MACHINE**, standing on its own in the middle of the gallery floor, on the room's axis. From the SOUTH table his walk to the rail goes behind it for about three deck units — longer than one look — so he goes behind a machine and does not come out the other side |
+| **the island** | *new* — a **third 🥤 VENDING MACHINE**, standing on its own in the middle of the gallery floor, on the room's axis. Of the 8.92 du he walks from the throat to the rail, **4.13 du are out of the SOUTH table’s sight** — one look at a walker’s pace is 1.50 du — so he goes behind a machine and does not come out the other side |
 
 **And if you never look away:** nothing happens to him. He finishes the view, turns round and walks back out
 past you — **no card, no note, and nothing spent.** The walk is still there on your next visit. (That is the
@@ -104,9 +104,9 @@ empty would be asking him to check what he is looking at.
 | Walk back into the bar and wait. | The buzzer still sounds there, unchanged, prose and all. | The beat has been scoped away from the room it is about. |
 
 **One thing that is measured and worth knowing:** the **north** table keeps a clean view of the rail, and the
-island machine does not change that. Two tables a quarter of the hat either side of the axis sit seventy to a
-hundred and twenty degrees apart as seen from his walk, and a machine a body-and-a-half wide screens about
-forty — **no single fitting can stand between him and both tables at once.** The north table is the good
+island machine does not change that. The two tables sit **69°** apart as seen from the rail (wider further in), and a machine this size screens at
+most **53.1°** from as close as a body may stand to it — **no single fitting can stand between him and both
+tables at once.** The north table is the good
 seat, and what loses him from it is the paper or the eyepiece rather than the furniture.
 
 ## 1 · The observation walk, at a wait you can sit through (#1199, PR #1201 follow-up)

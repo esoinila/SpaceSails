@@ -30,7 +30,7 @@ namespace SpaceSails.Client.Tests;
 ///
 /// <para>Every law below was RED before the rule changed, and each for its own reason. The seated ones,
 /// because #1245's throat held him for a captain inside <c>TooCloseToGoInDu</c> and sent him back out with
-/// the beat SPENT and no card — a captain sitting at the north table is 4.6 du from the rail, well inside
+/// the beat SPENT and no card — a captain sitting at the north table is 4.8 du from the rail, well inside
 /// two paces, so sitting down was the one thing that guaranteed you never saw the vanish. The eyepiece one,
 /// because a card in front of the world meant nothing to the old rule. The stare-through one, because the
 /// old ending spent the beat and this one must not. And <see cref="TheThirdMachineIsSomethingToWalkBehind"/>
@@ -62,7 +62,7 @@ public sealed class TheNewspaperWithEyeHolesTests
     /// (<c>TryTakeBarTop</c>, the eighth site), so what the walk reads is the seat's own seated state.</para>
     ///
     /// <para><b>RED on the shipped tree:</b> #1245's throat held him for a captain inside two paces and sent
-    /// him back out with the beat spent and no card — and this chair is four and a half du from the rail.</para>
+    /// him back out with the beat spent and no card — and this chair is 4.8 du from the rail.</para>
     /// </summary>
     [Fact]
     public void SeatedAtTheNorthTableHeReachesTheRailAndGoesBehindThePaper()
@@ -200,7 +200,7 @@ public sealed class TheNewspaperWithEyeHolesTests
     /// is where this parts company with #1245. Staring somebody down is a way to not get the scene today,
     /// never a way to lose it for ever.
     ///
-    /// <para>The captain stands at the good seat, four and a half du off the rail — well inside what used to
+    /// <para>The captain stands at the good seat, 4.8 du off the rail — well inside what used to
     /// be the throat's two-pace refusal, so on the shipped tree this captain got a man who would not come in
     /// at all and a beat spent for nothing.</para>
     /// </summary>
@@ -255,8 +255,8 @@ public sealed class TheNewspaperWithEyeHolesTests
     ///
     /// <para><b>The north table is not in this law, and that is measured too.</b> The two tables sit a
     /// quarter of the hat either side of the axis, on opposite sides of his route: the angle between a line
-    /// from one and a line from the other, taken at any point on his walk, is between seventy and a hundred
-    /// and twenty degrees, and a fitting a body-and-a-half wide can screen about forty. No single machine can
+    /// from one and a line from the other is 69° taken at the rail and wider further in, and a fitting this
+    /// size can screen 53.1° at the closest a body may stand to it. No single machine can
     /// stand between him and both tables at once — <see cref="TheTwoTablesCannotBothBeScreenedByOneFitting"/>
     /// is that arithmetic, written down so nobody re-opens it by adding furniture. The north table keeps its
     /// clean view of the rail, which is what makes it the good seat, and what a captain in it loses him
