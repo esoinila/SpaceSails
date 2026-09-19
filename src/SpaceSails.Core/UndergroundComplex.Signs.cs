@@ -44,6 +44,13 @@ public static partial class UndergroundComplex
         "ARCHIVE", "ISOLATION", "DEEP STORAGE", "UNMARKED",
     ];
 
+    /// <summary>#605 · The one plate in that stock that is not a department at all — a floor the directory
+    /// lists and nobody wrote a purpose on. Named here, beside the list that contains it, because the
+    /// department ladder (<see cref="PatrolBeat.ADepartmentOwnsTheFloor"/>) has to be able to say <i>nobody
+    /// owns this one</i> without the word being typed in a third file. Held against the list by a
+    /// guard.</summary>
+    public const string UnmarkedPlate = "UNMARKED";
+
     /// <summary>
     /// #411 · THE HEAD OFFICE'S OWN PLATES — twenty-four of them, one per floor, <b>none repeated</b>.
     ///

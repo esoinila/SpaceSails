@@ -331,5 +331,13 @@ public static partial class PatrolBeat
         yield return BadgeGist;
         yield return BadgeTitle("luna");
         yield return BadgeTier;
+
+        // #605 · The department ladder's own strings: the authored line, and a pass's face at every plate
+        // the branch stock prints — so the canon sweep reads a tier exactly as it reads a site code.
+        yield return ReadsItTwiceLine;
+        foreach (string plate in UndergroundComplex.Departments)
+        {
+            yield return BadgeTitle("luna", plate);
+        }
     }
 }
