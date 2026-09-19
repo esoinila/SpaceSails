@@ -279,7 +279,7 @@ public sealed class TheWalkIsATTests
 
         var offTheRail = new List<DeckReachability.Point>(HavenInterior.TheVendorsAt(Berth));
         offTheRail.AddRange(HavenInterior.GalleryTops(Berth));
-        Assert.Equal(4, offTheRail.Count);
+        Assert.Equal(5, offTheRail.Count);
 
         foreach (DeckReachability.Point spot in offTheRail)
         {
@@ -294,7 +294,7 @@ public sealed class TheWalkIsATTests
         Assert.True(HavenInterior.InTheGallery(Berth, glasses.X, glasses.Y));
         Assert.False(HavenInterior.InTheCafeteriaBand(Berth, glasses.X, glasses.Y));
 
-        // …and every one of the five is somewhere a body can get to and stand.
+        // …and every one of the six is somewhere a body can get to and stand.
         offTheRail.Add(glasses);
         foreach (DeckReachability.Point spot in offTheRail)
         {
@@ -309,7 +309,7 @@ public sealed class TheWalkIsATTests
     /// plate on them. Asked of the built plan, so a fixture measured here and hung somewhere else would show
     /// up as a missing press rather than as a passing test.</summary>
     [Fact]
-    public void TheDeckCarriesTheTwoCoinMachinesAndTwoTakeableTops()
+    public void TheDeckCarriesTheThreeCoinMachinesAndTwoTakeableTops()
     {
         DeckPlan deck = Deck;
 
@@ -320,7 +320,7 @@ public sealed class TheWalkIsATTests
 
         DeckPlan.ConsoleSpot[] vendors =
             deck.Consoles.Where(c => c.Kind == DeckPlan.ConsoleKind.CoinVendor).ToArray();
-        Assert.Equal(2, vendors.Length);
+        Assert.Equal(3, vendors.Length);
         Assert.All(vendors, v => Assert.Equal(GalleryFixtures.VendorPlate, v.Label));
 
         // A top the captain can take at each table, in the room's own label.
@@ -334,7 +334,7 @@ public sealed class TheWalkIsATTests
         }
 
         // …and the machines are drawn as blocks, so the walked room and the drawn room are one room.
-        Assert.Equal(2, HavenInterior.TheVendingMachineBlocks(Berth).Count);
+        Assert.Equal(3, HavenInterior.TheVendingMachineBlocks(Berth).Count);
         foreach ((double x0, double y0, double x1, double y1) in HavenInterior.TheVendingMachineBlocks(Berth))
         {
             Assert.Contains(deck.Furniture, f =>
@@ -482,13 +482,13 @@ public sealed class TheWalkIsATTests
             Assert.Equal(here, HavenInterior.TheGalleryBox(body) is not null);
             Assert.Equal(here, HavenInterior.TheThroatAt(body) is not null);
             Assert.Equal(here ? 2 : 0, HavenInterior.GalleryTops(body).Count);
-            Assert.Equal(here ? 2 : 0, HavenInterior.TheVendorsAt(body).Count);
-            Assert.Equal(here ? 2 : 0, HavenInterior.TheVendingMachineBlocks(body).Count);
+            Assert.Equal(here ? 3 : 0, HavenInterior.TheVendorsAt(body).Count);
+            Assert.Equal(here ? 3 : 0, HavenInterior.TheVendingMachineBlocks(body).Count);
 
             DeckPlan deck = HavenInterior.DockedDeck(body)!;
             Assert.Equal(here ? 1 : 0,
                 deck.Consoles.Count(c => c.Kind == DeckPlan.ConsoleKind.CoinBinoculars));
-            Assert.Equal(here ? 2 : 0,
+            Assert.Equal(here ? 3 : 0,
                 deck.Consoles.Count(c => c.Kind == DeckPlan.ConsoleKind.CoinVendor));
             Assert.Equal(here ? 1 : 0,
                 deck.Backdrops.Count(b => b.Url == GalleryFixtures.CafeteriaFloorArtUrl));

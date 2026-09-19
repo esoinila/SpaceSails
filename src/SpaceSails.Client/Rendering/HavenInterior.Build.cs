@@ -177,16 +177,26 @@ public static partial class HavenInterior
             walls.Add(new(TheGallery.EastX, TheGallery.SouthY, TheGallery.WestX, TheGallery.SouthY, true, true));
             walls.Add(new(TheGallery.WestX, TheGallery.NorthY, TheGallery.WestX, TheGallery.SouthY, true, true));
 
-            // …and the two machines are SOLID, the way the bar's counter is a real wall you belly up to
-            // rather than a picture you walk through. Face and two flanks; the fourth side is the station's
-            // own back wall, which the machine is bolted to. They are drawn as filled blocks below
+            // …and the machines are SOLID, the way the bar's counter is a real wall you belly up to rather
+            // than a picture you walk through. Face and two flanks; for the two BOLTED to the back wall the
+            // fourth side is the station's own stone, laid above. They are drawn as filled blocks below
             // (DeckPlan.FurnitureSpot, #868's grammar) so the walked room and the drawn room are one room —
             // this repository's third named bug class, with a drinks cabinet in it.
+            //
+            // #1199 (2026-09-19) · AND THE ISLAND GETS ITS FOURTH SIDE. The third machine stands clear of
+            // every wall in the room, so the side the other two share with the station has to be built for
+            // it — and it is the load-bearing one: it is the face the throat looks at, and a machine you can
+            // see straight through is a machine nobody can walk behind. The test is the box's own east edge
+            // against the room's, so nothing here has to know which of the three is the island.
             foreach ((double X0, double Y0, double X1, double Y1) box in TheVendingMachineBlocks(spec.BodyId))
             {
                 walls.Add(new((float)box.X0, (float)box.Y0, (float)box.X0, (float)box.Y1, false, false));
                 walls.Add(new((float)box.X0, (float)box.Y0, (float)box.X1, (float)box.Y0, false, false));
                 walls.Add(new((float)box.X0, (float)box.Y1, (float)box.X1, (float)box.Y1, false, false));
+                if (box.X1 < TheGallery.EastX)
+                {
+                    walls.Add(new((float)box.X1, (float)box.Y0, (float)box.X1, (float)box.Y1, false, false));
+                }
             }
 
             // The plate, a third of the way out along the STEM, so it is read on the way IN and is not

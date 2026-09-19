@@ -205,11 +205,20 @@ public sealed class TheObservationWalkTests
             ?? throw new InvalidOperationException("nobody got on the floor to be noticed.");
         object walk = Get(who, "Walk")!;
 
-        // …then stand right behind them, in the open, and do not move.
-        StandCaptainAt(map, (double)Get(walk, "X")! + 3.0, (double)Get(walk, "Y")!);
-
+        // …then stand right behind them, in the open, and stay there. Pinned three du off their back every
+        // frame rather than dropped once: the point of the law is a man who stops for somebody ON HIS HEELS,
+        // and a captain left standing where they used to be is a captain thirty du back by the time the
+        // notice latches.
+        //
+        // #1199 (2026-09-19) · …AND ON THE CONCOURSE, which is where standing aside means anything. Inside
+        // the walk he does not hold at all — there is nothing for the captain to be let past, the room has
+        // one end, and a man who stopped there would stop for ever (the owner's own stall, twice watched).
         for (int i = 0; i < 400 && !Noticed(map); i++)
         {
+            object onFoot = ThePersonAfoot(map, person)
+                ?? throw new InvalidOperationException("they came off the floor while the captain was looking.");
+            object theirLegs = Get(onFoot, "Walk")!;
+            StandCaptainAt(map, (double)Get(theirLegs, "X")! + 3.0, (double)Get(theirLegs, "Y")!);
             RunFrames(map, 1);
         }
 
@@ -219,6 +228,11 @@ public sealed class TheObservationWalkTests
             ?? throw new InvalidOperationException("they came off the floor while the captain was looking.");
         object theirWalk = Get(still, "Walk")!;
         double x = (double)Get(theirWalk, "X")!, y = (double)Get(theirWalk, "Y")!;
+        Assert.False(
+            SpaceSails.Client.Rendering.HavenInterior.InTheObservationWalk(ObservationWalk.HavenId, x, y),
+            "they were noticed inside the walk itself, where this law does not apply — the bench has to catch "
+            + "them on the concourse for it to be about anything.");
+        StandCaptainAt(map, x + 3.0, y);
 
         RunFrames(map, 60);
 
