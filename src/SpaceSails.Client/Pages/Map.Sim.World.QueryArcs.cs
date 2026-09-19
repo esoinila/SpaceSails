@@ -232,6 +232,12 @@ public partial class Map
                 "lo" or "low" or "no" => Encounter.Band.NoAnd,
                 _ => null,
             };
+
+            // #746 · …and THE ROUND gets it too, because the checkpoint is an encounter now (GuardStop) and
+            // a cheat that reached one scene and not the other would leave a tester unable to walk the four
+            // outcomes of the stop this very issue is named after. It is a field of the round rather than a
+            // twenty-second member of IPatrolHost, which may only shrink.
+            _patrol.RollCheat = _rollCheat;
         }
         else if (pair.StartsWith("tender=", StringComparison.OrdinalIgnoreCase))
         {

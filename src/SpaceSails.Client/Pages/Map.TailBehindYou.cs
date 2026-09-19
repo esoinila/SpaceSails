@@ -841,9 +841,15 @@ public partial class Map
         RequestVaultSave();
     }
 
-    /// <summary>#1062 · Has somebody been through this place ahead of the captain? Asked by the one question
-    /// a port's quiet verbs already ask before they deal anything, so the burn needs no second refusal of its
-    /// own anywhere in the game.</summary>
+    /// <summary>#1062 · <b>HAS SOMEBODY BEEN THROUGH THIS PLACE AHEAD OF THE CAPTAIN?</b> The ONE burn
+    /// predicate, and the only reader the tag has.
+    ///
+    /// <para>Slice 2 shipped it with a single caller — the strike-off the fence's key and the bar favour
+    /// already shared — so those two could not come to two views of what being watched costs. Slice 2c adds
+    /// the third quiet verb at a port, the unlisted parcel's row (<c>ParcelOnOffer</c>), and adds it by
+    /// asking THIS question rather than by minting a second predicate or a second tag: three verbs, one
+    /// question, one register. The burn still needs no refusal of its own anywhere in the game, because
+    /// every row that answers to it is drawn where it applies and absent where it does not.</para></summary>
     private bool ThisPlaceWasWalkedFirst(string portId) =>
         _roomsTurnedOver.Contains(TheTailBehindYou.BurnTag(portId));
 

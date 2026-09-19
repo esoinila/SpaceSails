@@ -41,12 +41,17 @@ public sealed partial class Map
         portId is null
         || _roomsTurnedOver.Contains(BlackOpsKey.ThePortHasDealtOne(portId, BlackOpsKey.FenceWindow(SimTime)))
 
-        // #1062 slice 2 · …OR SOMEBODY HAS BEEN THROUGH IT AHEAD OF THE CAPTAIN. The burn a tail costs is
-        // spent here and nowhere else, because this is already the one question both of a port's quiet verbs
-        // ask before they deal anything — and those two agreeing about what a port has left is the whole
-        // reason #535 wrote it this way. Neither row is ever drawn to be refused, so the captain is never
-        // told "the fence has nothing because you were followed": the row is simply not there, and the PLACE
-        // says the rest of it when he walks in (TheBurnIsToldHere).
+        // #1062 slice 2 · …OR SOMEBODY HAS BEEN THROUGH IT AHEAD OF THE CAPTAIN. This is the one question
+        // both of the KEY's sources ask before they deal anything, and those two agreeing about what a port
+        // has left is the whole reason #535 wrote it this way. Neither row is ever drawn to be refused, so
+        // the captain is never told "the fence has nothing because you were followed": the row is simply not
+        // there, and the PLACE says the rest of it when he walks in (TheBurnIsToldHere).
+        //
+        // #1062 slice 2c · The parcel's row asks ThisPlaceWasWalkedFirst directly rather than coming through
+        // here, and that is deliberate: this method is ALSO the key's one-per-watch strike-off, and a parcel
+        // row that read it would vanish because the captain bought a key — which is the two-meters-that-must-
+        // agree bug wearing the burn's coat. One burn predicate, asked by three verbs; one key register,
+        // asked by two.
         || ThisPlaceWasWalkedFirst(portId);
 
     /// <summary>#535 slice 2 · Strike this port off for this watch. Called by BOTH sources, so neither can
@@ -113,10 +118,15 @@ public sealed partial class Map
 
     // ── THE FENCE ────────────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>#535 slice 2 · The port the fence is trading from, or null when there is no desk open. The
+    /// <summary>#535 slice 2 · The port this desk is trading from, or null when there is no desk open. The
     /// dark web's own body (<c>DarkWebCurrentBody</c>), so the fence's stock rotates per PLACE and the row
-    /// cannot follow a captain across the system on one watch.</summary>
-    private string? TheFencesPort() => DarkWebCanTrade() ? DarkWebCurrentBody()?.Id : null;
+    /// cannot follow a captain across the system on one watch.
+    ///
+    /// <para>#1062 slice 2c · It was <c>TheFencesPort</c> while the fence was the only quiet row on this
+    /// board that had to name a place. The parcel's row asks the same question now (it asks the burn about
+    /// the port it is being offered at), and two expressions for one desk's port would have been two
+    /// opinions about WHICH place somebody walked first. One expression, three rows.</para></summary>
+    private string? TheDesksPort() => DarkWebCanTrade() ? DarkWebCurrentBody()?.Id : null;
 
     /// <summary>
     /// #535 slice 2 · <b>WHAT THE FENCE WANTS FOR ONE, OR NULL WHEN THERE IS NOTHING TO BUY.</b> The price is
@@ -130,7 +140,7 @@ public sealed partial class Map
     /// </summary>
     private int? TheFencesKeyPrice()
     {
-        if (TheFencesPort() is not { } port || ThisPortHasAlreadyDealtAKey(port))
+        if (TheDesksPort() is not { } port || ThisPortHasAlreadyDealtAKey(port))
         {
             return null;
         }
@@ -161,7 +171,7 @@ public sealed partial class Map
     /// </summary>
     private void BuyTheKeyFromTheFence()
     {
-        if (TheFencesPort() is not { } port || TheFencesKeyPrice() is not { } price || _credits < price)
+        if (TheDesksPort() is not { } port || TheFencesKeyPrice() is not { } price || _credits < price)
         {
             return;
         }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -297,6 +297,12 @@ public sealed class TheRoundIsWalkableTests
             "Patrol.cs", "Guard.cs", "IPatrolHost.cs",
             "Patrol.Floor.cs", "Patrol.Hide.cs", "Patrol.Round.cs",
             "Patrol.Challenge.cs", "Patrol.Escort.cs", "Patrol.Run.cs",
+
+            // #746 · THE TENTH PART, and it is the checkpoint as an ENCOUNTER: the scene the
+            // stop's card carries, which moves are on offer, the dice a rolled one casts, and the
+            // one place a move becomes an answer. Read LAST because it was added last; the count
+            // below is what stops an eleventh part going unread.
+            "Patrol.Stop.cs",
         ];
         Assert.Equal(state.Length, Directory.GetFiles(own, "*.cs").Length);
 
@@ -469,19 +475,35 @@ public sealed class TheRoundIsWalkableTests
     [Fact]
     public void TheChallengeCardWearsThePaintingAndThePaintingShipped()
     {
+        // #746 · TWO CARDS ARE RAISED ON THIS ROAD NOW AND THEY ARE THE SAME CARD: the arrival raises the
+        // SCENE (the opening, and four moves under it) and answering a move replaces it with the answer.
+        // Both are asserted, because a plate that forked between them would be the picture telling the
+        // captain how the read went before the man had read anything.
         string stop = Between(
             Patrol(), "private void TheRoundStopsAtYou(", "── WHERE THE PASS COMES FROM");
+        string family = Patrol();
+        int saysIt = family.IndexOf("private void TheStopSaysIt(", StringComparison.Ordinal);
+        Assert.True(saysIt > 0, "the one place a move becomes words is gone — this guard is reading a dead name.");
+        string answered = family[saysIt..];
 
         // The card the guard raises carries the plate, by its Core name.
         Assert.Contains("PatrolBeat.ChallengeArtUrl", stop, StringComparison.Ordinal);
-        Assert.Contains("read.Label, PatrolBeat.ChallengeArtUrl, read.Card, read.Told", stop, StringComparison.Ordinal);
+        Assert.Contains(
+            "opening.Label, PatrolBeat.ChallengeArtUrl, opening.Card, opening.Told",
+            stop, StringComparison.Ordinal);
+        Assert.Contains("PatrolBeat.ChallengeArtUrl", answered, StringComparison.Ordinal);
+        Assert.Contains(
+            "read.Label, PatrolBeat.ChallengeArtUrl, read.Card, read.Told", answered, StringComparison.Ordinal);
 
         // …and not a filename typed into a page, which is the drift this repo has already paid for once.
         Assert.DoesNotContain(".jpg", stop, StringComparison.Ordinal);
+        Assert.DoesNotContain(".jpg", answered, StringComparison.Ordinal);
 
-        // The one picture serves all four rungs: nothing here branches the plate on the read, because the
-        // man in it has not finished reading the wallet either (#736 keeps the verdict in the amber row).
+        // The one picture serves every rung and every move: nothing here branches the plate on the read,
+        // because the man in it has not finished reading the wallet either (#736 keeps the verdict in the
+        // amber row).
         Assert.DoesNotContain("read.Satisfied ?", stop, StringComparison.Ordinal);
+        Assert.DoesNotContain("read.Satisfied ?", answered, StringComparison.Ordinal);
 
         // AND IT IS ACTUALLY IN THE FOLDER. The art seam hides its own failure; this is the only assertion
         // in the suite that can see an empty frame.

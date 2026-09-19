@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -112,7 +112,11 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     [Fact]
     public void TheGuardIsHandedTheChosenPaperAndNeverTheWallet()
     {
-        string read = Method(Round("Patrol.Challenge.cs"), "private void TheRoundStopsAtYou(");
+        // #746 · RE-PATHED, never re-asserted. The stop is an ENCOUNTER now: the arrival raises the scene
+        // and the wallet is read when SHOW THE PASS is pressed, so the read this guard is about moved one
+        // method along (Patrol.Stop.cs) with every clause of it intact. What did NOT move is the law — the
+        // guard reads ONE chosen paper and never the wallet — and every assertion below is the one it was.
+        string read = Method(Round("Patrol.Stop.cs"), "private void TheWalletIsRead(");
         Assert.Contains("ThePaperHandedOver(", read, StringComparison.Ordinal);
         // #1149 · …and he reads it WHERE THE CAPTAIN IS STANDING, on the watch the floor was drawn on and
         // with the excursion's own inspection latch: one rung of the ladder is a fact about the floor and
@@ -120,7 +124,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
         // world that cannot tell that rung from a refusal.
         Assert.Contains("PatrolBeat.TheGuardReads(", read, StringComparison.Ordinal);
         Assert.Contains(
-            "bodyId, ex.Floor, ex.CanteenWatch, g.Plate, handed, ex.InspectionRunning)",
+            "bodyId, ex.Floor, ex.CanteenWatch, stop.Man.Plate, handed, ex.InspectionRunning)",
             read, StringComparison.Ordinal);
         Assert.DoesNotContain("TheGuardReads(bodyId, g.Plate, _host.Satchel", read, StringComparison.Ordinal);
 
@@ -139,20 +143,28 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     [Fact]
     public void EveryReadIsFiledIncludingTheOneThatWentWell()
     {
-        string read = Method(Round("Patrol.Challenge.cs"), "private void TheRoundStopsAtYou(");
+        // #746 · RE-PATHED with the read (see above), and the ORDER is asserted the same way it always was:
+        // the card, the captain's own paper trail, and only then what it cost. It is read off the three
+        // calls in the method's own text rather than off the early return the ending switch replaced.
+        string read = Method(Round("Patrol.Stop.cs"), "private void TheWalletIsRead(");
 
+        int said = read.IndexOf("TheStopSaysIt(", StringComparison.Ordinal);
         int filed = read.IndexOf("FileTheNameYouGave(", StringComparison.Ordinal);
-        int satisfied = read.IndexOf("if (read.Satisfied)", StringComparison.Ordinal);
+        int cost = read.IndexOf("TheStopEndsWith(", StringComparison.Ordinal);
         Assert.True(filed >= 0, "nothing files which name was given at the read.");
-        Assert.True(satisfied > filed,
-            "the name is filed after the satisfied arm returns, so a pass that worked is never written down.");
+        Assert.True(said >= 0 && said < filed,
+            "the name is filed before the card goes up, so the book could disagree with what was said.");
+        Assert.True(cost > filed,
+            "the name is filed after the read has been paid for, so a pass that worked is never written down.");
 
         // …and the line and the row are composed off the SAME outcome the card was.
         string file = Method(Round("Patrol.Challenge.cs"), "private void FileTheNameYouGave(");
+        // …and the filing itself did not move: it is still the challenge's, and still the only thing that
+        // writes the captain's paper trail.
         // #1149 · …and the outcome is asked ONCE, at the read, and HANDED to the filing. Asking it a second
         // time here was harmless while the ladder was a pure function of the paper and the site, and stopped
         // being harmless the moment one rung started depending on the floor and the watch.
-        string stops = Method(Round("Patrol.Challenge.cs"), "private void TheRoundStopsAtYou(");
+        string stops = Method(Round("Patrol.Stop.cs"), "private void TheWalletIsRead(");
         Assert.Contains("WalletChoice.WhatHappens(", stops, StringComparison.Ordinal);
         Assert.DoesNotContain("WalletChoice.WhatHappens(", file, StringComparison.Ordinal);
         Assert.Contains("WalletChoice.ShownNote(", file, StringComparison.Ordinal);

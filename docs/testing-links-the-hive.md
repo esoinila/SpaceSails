@@ -797,6 +797,43 @@ costs the same cooldown as being read, and nothing follows you.
 | only the cage chit | *"That's for the cage. This isn't the cage."* | walked back to the car |
 | nothing | *"He waits the entire time you are looking"* | walked back to the car |
 
+### #746 · THE STOP IS AN ENCOUNTER — four things you may do while his hand is out
+
+**The card is the same card** (same title, same painting of the same man, same body) and it now carries the
+scene's own opening in the amber row — he says **"Pass."** — with **four moves under it**. Press one and the
+answer replaces the row they sat in: one card, never two, and the **✕ is the fourth move**, so closing it is
+a decision rather than a dodge.
+
+| move | needs | what it is |
+| --- | --- | --- |
+| **SHOW THE PASS** | anything a palm is for in the wallet | the whole shipped read, one beat later. The paper is the one the fan put in your hand at the hail (#836), the ladder is the one in the table above, and the sentences are the ones in the table above — plus, where cover holds, *"He steps aside. Nothing is said."* |
+| **"I'M NEW. WHICH WAY IS THE MESS?"** | free, **once per guard per watch** | ROLLED. **YES** *"He points. It is not the way you came."* and he walks you to the lift **for nothing** — the same walk as an escort, with no heat, no pip and no line in any book. **YES-BUT** the same, and your name goes in a book: one rung of #715's heat, and **nothing says so**. **NO-AND** the escort, as a refusal |
+| **TALK ABOUT THE WORK** | a **name on you**: a file on somebody, or a pass for a department that is **not this floor's** | ROLLED. **YES** *"He has heard the name. He decides it is not his problem."* — passed this once, cover untouched. **YES-BUT** the same, and a rung of heat. **NO-AND** the escort |
+| **SAY NOTHING** | free, always there | the ladder's own empty-hand rung, word for word: *"He waits the entire time you are looking"*, and then the walk back |
+
+**Modifiers** are the encounter's own named stack, and only three of the five can be true in a corridor:
+`+1` a relevant paper on you · `−1` your nerve is marked · `−1` you already fumbled an ask in front of **this
+man**. The dice are printed into the event log (🎲) exactly as the table's are.
+
+```
+/map?badge=1                     THE FOUR MOVES, on a department floor. Boots on B2 (LABORATORIES) with
+                                 this site's GENERAL HANDS pass, the department pass this building keeps,
+                                 the cage chit and a FALSE ID in the wallet. Let the round find you and
+                                 read the card: "Pass.", and four buttons under it.
+/map?badge=1&roll=hi             …and every ROLLED move lands. Ask the way: he points, and walks you to
+                                 the lift for nothing. Talk about the work (the department pass is the
+                                 name on you): he has heard it, and walks on.
+/map?badge=1&roll=lo             …and every rolled move is refused: the escort, in the shipped words,
+                                 off a move that never touched your wallet. Never a dead wall.
+/map?badge=1&roll=mid            …the MIDDLE band. It reads exactly like YES, and that is the point:
+                                 the cost is a rung of heat at this outfit and nothing anywhere says so.
+```
+
+**What to watch for and report.** The ask is greyed on the second stop by the **same** man this watch (hover
+it — it says why). TALK ABOUT THE WORK is greyed while the only pass you carry is the floor's own — that is
+the paper you SHOW, and two moves doing one job would be the bug. And a **free** walk must never end on the
+regolith: if asking for directions ever gets you kicked out, that one is worth a screenshot.
+
 ### #605 · THE DEPARTMENT LADDER — which floors your tier covers
 
 **At twenty paces any pass of this site is a pass** (it is what the lift's own gate reads, #715). **At a
@@ -875,7 +912,7 @@ The pass is printed at the bottom of the cage.
 | `&book=N` | force catalog entry N of the odd books (#701) |
 | `&death=suffocated` | boot into the death you want to read |
 | `&credits=50000` | price anything without grinding for it |
-| `&roll=hi|lo` | force the encounter band at a table (#746) |
+| `&roll=hi|lo` | force the encounter band at a table **and at a guard stop** (#746); `mid` is the YES-BUT |
 | `&watch=N` | pin which SHIFT the hall is on (#751) — `2` heaves, `5` echoes, six to a day |
 | `?tablescene=free` | boot standing at a top with NOBODY at it (#757) — plated **SIT DOWN**, and the panel wears the table (#783) |
 | `&approach=1\|0` | force whether sitting a while brings somebody over (#757); `0` is the told nobody-came beat |

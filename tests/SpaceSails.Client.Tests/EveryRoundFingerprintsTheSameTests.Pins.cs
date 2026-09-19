@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -107,8 +107,25 @@ public sealed partial class EveryRoundFingerprintsTheSameTests
         ["one man walks the round, all the way round it"] = "1584a99dedef68f26a9bede1c55c7faecc54cdf244b1d0d7e87dc9283edc9844",
         // #920 · re-recorded (was 11047c53… / e28da120…) — the walk-up clock now stops when the walk-up does,
         // and the transcript writes the clock down. 1,972 lines, WalkUpFor and nothing else. See above.
-        ["he hails you and you walk away from it"] = "d2571d4d5d1e03a6974bc9816dfac58b95b4f926ef91917b5fe3a108a6dec620",
-        ["he crosses the floor, reads your papers, and walks you to the car"] = "62bfac54db0b728e288caa80e87b2428fa92f2a23e76cf68ae9511d57cb5fb29",
+        //
+        // #746 · RE-RECORDED, TWO ROWS AND ONLY TWO — the stop is an ENCOUNTER now, so the card a man raises
+        // when he gets to you carries the scene's opening and four moves instead of the verdict, and the
+        // verdict arrives when a move is pressed. The transcript writes down the card that is up, so both
+        // cases that reach one move and nothing else does.
+        //
+        //   · the walk-away case moves because the card's TEXT changed and for no other reason: this case
+        //     presses nothing, so the scene simply stands there being the scene.
+        //   · the escort case moves because its staging now PRESSES, which is what a captain does — SHOW THE
+        //     PASS (refused: this bench's captain carries nothing) and then SAY NOTHING, which is the
+        //     ladder's own empty-hand rung and byte for byte the read this case used to get for free. The
+        //     walk the case is named after is armed by that press.
+        //
+        // The third 1,800-frame case ("…and this time he does not press the button for your floor") is
+        // UNTOUCHED, and that is the anti-vacuous half: its staging books the watch full, so the sighting
+        // buys a RADIO CALL rather than a hail and no card is ever raised on it. A re-pin that had moved
+        // that row too would have been a lane reaching a road it has no business on.
+        ["he hails you and you walk away from it"] = "88fb450aa2da8c9363c4b734a21de6a76a858957ca50bd924b80b645a612f272",
+        ["he crosses the floor, reads your papers, and walks you to the car"] = "9dea49a8d8d03fb3d804312d9130377e60cdcaf161df058ec1b4861f3c7f8675",
         ["…and this time he does not press the button for your floor"] = "0189602951060c2b4607f72a210dcd853d82c01a6b5e2d72ec3e68bf33f84d47",
         ["he calls it in, comes at a run, and he has you"] = "b5f30b958844925a76d5c551e8be80fdc9748a31d7485247437872886099ef4d",
         ["he calls it in, and by the time he moves you are gone"] = "6e092abd4f8b4e53cf8f34cca65e0cdbbe875e9e56bde25c4d13eba597a42418",

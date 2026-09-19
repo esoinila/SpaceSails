@@ -48,8 +48,13 @@ public sealed partial class Map
     private Derelict.SalvageOutcome? _wreckOutcome;
 
     /// <summary>What the away team is standing and looking at — the wreck's own portrait of how she died,
-    /// raised when the cause's station is read.</summary>
-    public readonly record struct WreckLook(string Title, string Art, string Caption);
+    /// raised when the cause's station is read.
+    ///
+    /// <para>#533 · <paramref name="Anomaly"/> is the FOURTH line, and empty on nearly every hull: two
+    /// numbers this ship's own instruments read, side by side, on the card the captain is already holding.
+    /// It rides the card's record rather than a surface of its own because a second panel would announce
+    /// the hull before she was read (#761's law, and the anti-tell this whole lane rests on).</para></summary>
+    public readonly record struct WreckLook(string Title, string Art, string Caption, string Anomaly = "");
 
     private WreckLook? _wreckLook;
 
@@ -99,10 +104,17 @@ public sealed partial class Map
             string art = cleared ? Derelict.ArtFileCleared(w.Cause) : Derelict.ArtFile(w.Cause);
             string caption = cleared ? Derelict.EvidenceCleared(w.Cause) : Derelict.Evidence(w.Cause);
 
+            // #533 · AND THE FOURTH LINE, WHEN THIS HULL HAS ONE. The survey is where it belongs: the
+            // captain is already standing at the one station they walked here to read, and what they get is
+            // two numbers side by side and no finding. The book keeps it at the same moment, because a
+            // sentence that fades in eight seconds is a sentence you paid for and cannot read twice (#587).
+            string fourth = TheFourthLine();
             if (art.Length > 0)
             {
-                _wreckLook = new WreckLook(spot.Label.Replace("✔ ", ""), art, caption);
+                _wreckLook = new WreckLook(spot.Label.Replace("✔ ", ""), art, caption, fourth);
             }
+
+            FileTheAnomalyOnce();
         }
 
         // #654 · AND THE OTHER TWO STATIONS, ON EVERY HULL. The log and the manifest are not colour: they
@@ -125,6 +137,72 @@ public sealed partial class Map
             RendererInterop.PlayCue("reveal");
             RebuildWreckDeck();   // the station now reads ✔
         }
+    }
+
+    // ── #533 · THE ANOMALY: TWO INSTRUMENTS THAT DISAGREE ─────────────────────────────────────────────
+    //
+    // Owner: "The story ones are exceptional in some sense that we are left to wonder. Like what was such a
+    // rich ship doing there-kind of things 😎" — and the whole of the client's part in it is three lines:
+    // ask the hull, print the answer at the station the captain is already at, and write it in the book.
+    //
+    // NOTHING ELSE IN THE GAME MAY READ IT. That is the issue's second discipline — no note found later, no
+    // contact with an answer, no arc card three lanes on — and it is guarded as a source law
+    // (TwoInstrumentsDisagreeTests.NothingOutsideTheReadingAndTheBookReadsAnAnomaly): this file and Core's
+    // own are the only two in the tree allowed to name WreckAnomaly at all.
+
+    /// <summary>
+    /// What this hull's two instruments say, or null for the ordinary ship — which is nearly all of them.
+    ///
+    /// <para><b>A road we cannot ask about is not a road with no traffic.</b> Without a sky, or on a body
+    /// with no parent to name the berth she was found off, this answers null rather than handing Core a
+    /// zero: "nobody lists this road" is a FACT the captain can check, and a fact nobody asked for is the
+    /// one thing an anomaly may never be built out of.</para>
+    /// </summary>
+    private WreckAnomaly.Reading? TheAnomalyOnThisHull()
+    {
+        if (_wreck is not { } w || !OnWreck
+            || _ephemeris is not { } sky
+            || _surface?.Stop.Body.ParentId is not { } berth)
+        {
+            return null;
+        }
+
+        // The road she hangs on is the road that serves the berth she was found off — #541's own rule,
+        // which counts what is ON A BOARD across the whole system that berth is in. The Tilt and The Deep
+        // carry real tonnage and none of it is listed anywhere, which is exactly the sentence.
+        return WreckAnomaly.For(w, new WreckAnomaly.Facts(ArrivalTube.ScheduledTonnage(sky, berth)));
+    }
+
+    /// <summary>The anomaly's line for the survey card, or empty — the fourth line, and nothing else.</summary>
+    private string TheFourthLine() => TheAnomalyOnThisHull()?.Line ?? "";
+
+    /// <summary>
+    /// Put it in the field book, once: the same two facts in the book's own voice, under the hull it is
+    /// about (#741 — the subject is declared by the author of the sentence, never read back out of it). No
+    /// verdict travels with it, because there is none to travel.
+    ///
+    /// <para><b>THE BOOK IS ITS OWN LATCH.</b> "Have I written this down?" is a question the book can
+    /// answer, so it is asked of the book rather than of a flag beside it — and the flag would have been the
+    /// worse answer twice over: it resets on a reload, so a captain who saved aboard and came back would
+    /// file the same sentence a second time, and a fresh page field moves the boot sweep's roster and
+    /// therefore every frame fingerprint in the ledger, for a boolean the vault already knows.</para>
+    /// </summary>
+    private void FileTheAnomalyOnce()
+    {
+        if (TheAnomalyOnThisHull() is not { } reading)
+        {
+            return;
+        }
+
+        foreach (Core.FieldNote already in _fieldNotes)
+        {
+            if (string.Equals(already.Text, reading.Gist, StringComparison.Ordinal))
+            {
+                return;
+            }
+        }
+
+        FileNoteAbout(reading.Gist, WreckAnomaly.Glyph, reading.Subjects);
     }
 
     // The station's id, recovered from its label (the label carries a ✔ once read).

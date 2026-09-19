@@ -583,6 +583,12 @@ public sealed class TheEscortIsAWalkTests
             "Patrol.cs", "Guard.cs", "IPatrolHost.cs",
             "Patrol.Floor.cs", "Patrol.Hide.cs", "Patrol.Round.cs",
             "Patrol.Challenge.cs", "Patrol.Escort.cs", "Patrol.Run.cs",
+
+            // #746 · THE TENTH PART, and it is the checkpoint as an ENCOUNTER: the scene the
+            // stop's card carries, which moves are on offer, the dice a rolled one casts, and the
+            // one place a move becomes an answer. Read LAST because it was added last; the count
+            // below is what stops an eleventh part going unread.
+            "Patrol.Stop.cs",
         ];
         Assert.Equal(state.Length, Directory.GetFiles(own, "*.cs").Length);
 
@@ -664,10 +670,19 @@ public sealed class TheEscortIsAWalkTests
     {
         string patrol = Patrol();
 
-        string read = Between(patrol, "private void TheRoundStopsAtYou(", "── #833 · THE WALKED ESCORT");
-        Assert.Contains("EscortDue = g;", read, StringComparison.Ordinal);
+        // #746 · RE-PATHED. The stop is an ENCOUNTER, so the arrival raises the SCENE and the walk is armed
+        // where a MOVE is answered — the one place every ending of every move reaches a seam. The law is
+        // untouched: the walk is ARMED rather than taken, because the card saying so is standing in front of
+        // the captain at that exact moment, and nothing on this road places a body.
+        string read = Between(patrol, "private void TheStopEndsWith(", "private void TheStopSaysIt(");
+        Assert.Contains("EscortDue = stop.Man;", read, StringComparison.Ordinal);
         // The shipped shape, verbatim.
         Assert.DoesNotContain("StandCaptainAt(", read, StringComparison.Ordinal);
+
+        // …and the arrival itself arms nothing and places nobody: it opens a scene and stops.
+        string arrives = Between(patrol, "private void TheRoundStopsAtYou(", "── #833 · THE WALKED ESCORT");
+        Assert.DoesNotContain("EscortDue =", arrives, StringComparison.Ordinal);
+        Assert.DoesNotContain("StandCaptainAt(", arrives, StringComparison.Ordinal);
 
         string escort = Between(patrol, "private void WalkTheEscort(", "private static (double X, double Y) AheadOf(");
         Assert.Contains("SpendTheStride(g, dt, walls);", escort, StringComparison.Ordinal);
