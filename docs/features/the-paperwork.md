@@ -239,6 +239,63 @@ were two places holding one fact, and both had drifted. `TenHullsTenStoriesTests
 `EveryHullNamesItsOwnEvidenceTests` now walk **all ten causes** rather than asserting the three symptoms —
 the failure mode is a cause nobody wrote an arm for, and only walking all ten finds the eleventh.
 
+## 7c. The derived anomaly, and the audit of the other four (#533, 2026-09-19)
+
+> *"The story ones are exceptional in some sense that we are left to wonder. Like what was such a rich ship
+> doing there-kind of things 😎"* — owner, on this issue
+
+An **anomaly** is a fact you can verify and cannot explain: two numbers the game already computes, read off
+two instruments, that do not sit together — and **nobody aboard is left to ask.** `WreckAnomaly` (Core, pure,
+seeded off the hull's id) deals **zero or one per hull**, and only ever one her own numbers really support.
+
+**It is not a cause and never becomes one.** The report still names what happened; the anomaly is a fact in
+the field book beside it, filed under the hull as a `📍` subject (#741). `Derelict.WreckCause` does not grow
+a word for it, and a guard says so.
+
+### How often
+
+`WreckAnomaly.CarriesOneInN = 3` — one in three **of the hulls whose facts support one**, which is the only
+honest place for a rarity budget to sit: a hull the numbers cannot say anything about is never dealt one
+whatever the rate is. Measured over 400 seeded hulls on an unlisted road: **97 support one, 39 carry one** —
+about one hull in ten of the whole fleet. FLAGGED for tuning, and the number lives in that one constant.
+
+### The one that shipped
+
+| | |
+| --- | --- |
+| **RICH HULL, POOR ROAD** | `Derelict.Wreck.AssessedValueCr` — the value on her own manifest — against `ArrivalTube.ScheduledTonnage` at the berth she was found off: the traffic that is **on a board**. #541's rule already says The Tilt and The Deep carry real tonnage and **none of it is listed anywhere**, so the second number was waiting to be read. |
+| **the line** | *"Assessed at {value}. Traffic on this road, listed, this year: none."* |
+| **in the book** | *"{hull} — assessed at {value}, no listed traffic on this road this year, and nobody aboard to ask"* |
+| **"rich"** | the top quarter of the span every wreck's cargo is assessed inside (`Derelict.AssessedFloorCr … AssessedCeilingCr`), so retuning the span moves the threshold instead of leaving it behind. |
+
+### The four that did not, and exactly what each one is waiting for
+
+**Never invent a number to make one fit.** An anomaly the captain cannot go and check is not an anomaly, it
+is a caption. The canon lines below are Fable-authored and kept **here** rather than as constants in Core: a
+string in Core that nothing reads is a truth the game is not telling, and #646 found one of those the
+expensive way.
+
+| # | canon line | what it needs | status |
+| --- | --- | --- | --- |
+| 2 | *"Adrift {years} years. A search cone at this range closes in a season."* | an independent second number. `Derelict.SearchConeRadiusMeters` is `years × DriftConePerYearMeters` **and nothing else** — the two numbers the line puts side by side are one number written twice, so every inequality between them is true of every hull or of none. And nothing in the game prices a SEARCH, so "closes in a season" has nothing to be checked against. | **not derivable** — it would be a threshold that selects everything, this repo's fifth named bug class |
+| 3 | *"Manifest: {n} lines. Hold: {m} lots. Nobody signed for the difference."* | a count of manifest lines and a count of lots. The manifest is a value and a sentence; the hold has no lots. | waits on **`ShipPapers`** (§7, build order 1) |
+| 4 | *"Boat cradles: {c}, all empty. Crew, by the list: {k}."* | the crew list. The cradles are real and countable from the doorway (`WreckLayout.CradleCount`, `Derelict.LifeboatsLaunched`); **`{k}` does not exist anywhere in the game.** | waits on the **crew list and watch bill** (§7, build order 2) |
+| 5 | *"Hull laid down {y1}. The pump on the forward bulkhead was made {y2}."* | a year on a fitting. Her laid-down year is real (`ShipHistories.For`); no fitting on any hull in the game carries a year of manufacture. A pump with a date on it is authored content, not a derived fact. | needs **content**, and should be authored rather than derived |
+
+### The discipline, as guards
+
+- **It survives being filed** — `ThePaperworkGainsNoCause`: ten causes, ten causes, and `Derelict.cs` does not
+  name the feature.
+- **No resolution, ever** — `NothingOutsideTheReadingAndTheBookReadsAnAnomaly` sweeps the whole `src` tree:
+  exactly two files may name `WreckAnomaly`, the one that computes it and the one that reads it out and files
+  it. A contact who explains one, or an arc card that resolves one, turns that red.
+- **It concludes nothing** — `NoAnomalyStringConcludesAnything`: no causal word (*because, why, must, so that,
+  explains, means*) and no reserved word (*kaamos, nebula, reever, fraud, warship…*) in any line or gist.
+- **Only what her numbers support** — every dealt anomaly's inequality is re-derived from the hull's own
+  numbers over the whole seeded population, both on a listed road and on an unlisted one.
+- **The fittings stay identical** — the eight `StandardFittings` are untouched, the layout does not know the
+  feature exists, and the frame-hash ledger for the wreck scenes did not move a row.
+
 ## 8. Rules kept
 
 - **The station reports, it never concludes.** No page is ever labelled false by the game.
