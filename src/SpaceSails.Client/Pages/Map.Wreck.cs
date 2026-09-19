@@ -150,10 +150,6 @@ public sealed partial class Map
     // (TwoInstrumentsDisagreeTests.NothingOutsideTheReadingAndTheBookReadsAnAnomaly): this file and Core's
     // own are the only two in the tree allowed to name WreckAnomaly at all.
 
-    /// <summary>Whether the book already has this hull's anomaly, so a second look at the same station is a
-    /// second look rather than a second entry.</summary>
-    private bool _wreckAnomalyFiled;
-
     /// <summary>
     /// What this hull's two instruments say, or null for the ordinary ship — which is nearly all of them.
     ///
@@ -180,17 +176,32 @@ public sealed partial class Map
     /// <summary>The anomaly's line for the survey card, or empty — the fourth line, and nothing else.</summary>
     private string TheFourthLine() => TheAnomalyOnThisHull()?.Line ?? "";
 
-    /// <summary>Put it in the field book, once: the same two facts in the book's own voice, under the hull
-    /// it is about (#741 — the subject is declared by the author of the sentence, never read back out of
-    /// it). No verdict travels with it, because there is none to travel.</summary>
+    /// <summary>
+    /// Put it in the field book, once: the same two facts in the book's own voice, under the hull it is
+    /// about (#741 — the subject is declared by the author of the sentence, never read back out of it). No
+    /// verdict travels with it, because there is none to travel.
+    ///
+    /// <para><b>THE BOOK IS ITS OWN LATCH.</b> "Have I written this down?" is a question the book can
+    /// answer, so it is asked of the book rather than of a flag beside it — and the flag would have been the
+    /// worse answer twice over: it resets on a reload, so a captain who saved aboard and came back would
+    /// file the same sentence a second time, and a fresh page field moves the boot sweep's roster and
+    /// therefore every frame fingerprint in the ledger, for a boolean the vault already knows.</para>
+    /// </summary>
     private void FileTheAnomalyOnce()
     {
-        if (_wreckAnomalyFiled || TheAnomalyOnThisHull() is not { } reading)
+        if (TheAnomalyOnThisHull() is not { } reading)
         {
             return;
         }
 
-        _wreckAnomalyFiled = true;
+        foreach (Core.FieldNote already in _fieldNotes)
+        {
+            if (string.Equals(already.Text, reading.Gist, StringComparison.Ordinal))
+            {
+                return;
+            }
+        }
+
         FileNoteAbout(reading.Gist, WreckAnomaly.Glyph, reading.Subjects);
     }
 
