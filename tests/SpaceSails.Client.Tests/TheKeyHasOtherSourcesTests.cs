@@ -237,7 +237,7 @@ public sealed class TheKeyHasOtherSourcesTests
     public void ThePortDealsOneKeyAWatchWhicheverSourceDealtIt()
     {
         Pages.Map map = ABarWhereSomebodyOwesYouOne(out string port);
-        Assert.Equal(port, Invoke(map, "TheFencesPort"));
+        Assert.Equal(port, Invoke(map, "TheDesksPort"));
         Assert.NotNull(Invoke(map, "TheFencesKeyPrice"));
 
         Invoke(map, "TakeTheFavour", Giver);

@@ -144,10 +144,10 @@ public sealed class TheDeskDealsWhereTheClampIsTests
                 missing.Add($"{berth.Id}: the inspector's card is not for sale.");
             }
 
-            if ((string?)Invoke(map, "TheFencesPort") != berth.Id)
+            if ((string?)Invoke(map, "TheDesksPort") != berth.Id)
             {
                 missing.Add($"{berth.Id}: the fence is working from "
-                    + $"{Invoke(map, "TheFencesPort") ?? "nowhere"}, not this berth.");
+                    + $"{Invoke(map, "TheDesksPort") ?? "nowhere"}, not this berth.");
             }
 
             if (!(bool)Invoke(map, "ParcelOnOffer")!)
