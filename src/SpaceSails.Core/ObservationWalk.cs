@@ -181,6 +181,32 @@ public static class ObservationWalk
     /// </summary>
     public const double CafeteriaBandDu = GalleryDepthDu / 2.0;
 
+    /// <summary>
+    /// #1199 · <b>HOW CLOSE IS TOO CLOSE TO GO IN — and why it is NOT the legibility band.</b>
+    ///
+    /// <para>The tail's notice question and its en-route hold have read <c>FootTail.LegibleDu</c> since slice
+    /// 1, and that is right for them: it is the range at which this game has decided a person is a person you
+    /// can see. The decision AT THE THROAT is a different question — <i>will he walk into a blind room with
+    /// you behind him</i> — and the room's own geometry says the legibility band cannot answer it.</para>
+    ///
+    /// <para><b>Measured, and it is the whole argument.</b> The stem is <see cref="LengthDu"/> = 24 du, and
+    /// <c>FootTail.LegibleDu</c> is 30. <b>A captain standing at the MOUTH of the tube is 24 du from the
+    /// throat, which is inside the 30 du band</b> — so a throat gated on legibility holds for a captain
+    /// standing anywhere a following captain can stand, the vanish never happens, the wait never starts, and
+    /// the card is unreachable. That is the bug this lane was opened for, re-shipped in a new costume.</para>
+    ///
+    /// <para>So the throat borrows the number the room is BUILT from instead: <see cref="GalleryDepthDu"/>,
+    /// which is <see cref="UndergroundComplex.FireCodeSmallRoomDu"/> — the game's one statement of <i>a space
+    /// you can cross in two paces</i>. It says the honest thing: he will not step into the hat while you are
+    /// near enough to be through it behind him before he is out of sight. Two paces is on his heels; the
+    /// length of a corridor is a stranger in a station, which is exactly the distinction the inspector asked
+    /// for.</para>
+    ///
+    /// <para>A derivation of a number the room already has, in the room's own file — never a literal, and
+    /// never a second radius.</para>
+    /// </summary>
+    public const double TooCloseToGoInDu = GalleryDepthDu;
+
     // ── THE WAIT ──────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
