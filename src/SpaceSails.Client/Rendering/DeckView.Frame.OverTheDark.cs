@@ -97,8 +97,10 @@ public sealed partial class DeckView
 
                 // The readout: a dark scoreboard panel with the two big digits, anchored above the bot so
                 // it never covers the mark or its neighbours. Plate stays a steady size; only the number pops.
+                // #1218 · …and it clears the bot box at THE lift, not at a literal of its own: the drum is a
+                // plate like any other and joins the same rule (the head coder's ruling, in as many words).
                 float pw = 3.0f * scale, ph = 2.0f * scale;
-                float plateBottom = sy - 0.8f * scale;      // clears the bot box (half 0.55·scale) with a gap
+                float plateBottom = sy - (float)MarkBand.LiftAbove(0.55f * scale);
                 float plateTop = plateBottom - ph;
 
                 // #986 F2 · …EXCEPT WHERE THE SHIP IS TALKING. The top-centre band belongs to the mothership's
@@ -119,6 +121,14 @@ public sealed partial class DeckView
                     plateTop = (float)Math.Max(CommsBand.ReservedBottom, sy + (0.8f * scale));
                     plateBottom = plateTop + ph;
                 }
+
+                // #1218 · AND THEN IT TAKES ITS ROW IN THE BAND BOOK, as the sixth caption of the owner's
+                // DEEP HOLD pile. A drum is a BLOCK and not a line — sixty pixels of opaque scoreboard — so
+                // the whole plate is what is seated, and the digits keep their optical centre inside it.
+                float rise = plateTop - (float)SeatTheBand(sx - (pw / 2), sx + (pw / 2), plateTop, plateBottom);
+                plateTop -= rise;
+                plateBottom -= rise;
+
                 FillRect(sx - pw / 2, plateTop, pw, ph, new RgbaColor(16, 10, 10, 225));
                 float baseY = (plateTop + plateBottom) / 2f + fontPx * 0.35f; // optical centre for the fixed-px glyphs
                 _renderer.DrawText(sx, baseY, counter, digit,
@@ -194,7 +204,10 @@ public sealed partial class DeckView
         {
             (float bx, float by) = project(burn.X, burn.Y);
             float pw = 5.4f * scale, ph = 3.2f * scale;
-            float top = by - 2.4f * scale;
+            // #1218 · The same scoreboard, seated the same way: a block in the band book, and the digits keep
+            // their place inside it.
+            float top = (float)SeatTheBand(bx - (pw / 2), bx + (pw / 2), by - (2.4f * scale),
+                by - (2.4f * scale) + ph);
 
             FillRect(bx - pw / 2, top, pw, ph, new RgbaColor(20, 6, 6, 235));
             // A hard border so it reads as a fitted instrument rather than a floating label.
@@ -298,8 +311,17 @@ public sealed partial class DeckView
                 DrawServiceRun(console, c, near, project);
             }
 
-            _renderer.DrawCircle(sx, sy, near ? 5f : 3.5f, c, c);
-            _renderer.DrawText(sx, sy - 10, console.Label, near ? ConsoleNear : TextDim,
+            // #1218 · THE PLATE TAKES THE ROW ABOVE ITS OWN DOT, and the dot's own radius is what the lift is
+            // measured from — `sy - 10` was one of the five literals, and it is the one that printed through
+            // the forensic line at the owner's cache, because MoonSurface.Layout seeds a DigSite console at
+            // that ✗'s own (x, y) BY CONSTRUCTION. A room is named several passes earlier, so a plate that
+            // would land on a room's name takes the row over it rather than burying it.
+            float dot = near ? 5f : 3.5f;
+            double platePx = near ? 10.0 : 9.0;
+            _renderer.DrawCircle(sx, sy, dot, c, c);
+            _renderer.DrawText(
+                sx, SeatAboveAMark(sx, sy, dot, console.Label, platePx, TextAlign.Center),
+                console.Label, near ? ConsoleNear : TextDim,
                 near ? "bold 10px monospace" : "9px monospace", TextAlign.Center);
             if (near)
             {
@@ -308,7 +330,11 @@ public sealed partial class DeckView
                 // du away at the plate would be the game answering a press it looks like it is refusing.
                 (float ex, float ey) = console.NearestPointTo(state.AvatarX, state.AvatarY);
                 (float px, float py) = project(ex, ey);
+                // #1218 · …AND THE ROW BELOW STAYS [E]'S. The ruling reserves it: an offer that went hunting
+                // up the screen for clear space would be an offer pointing at the wrong fitting. It is
+                // written into the band book all the same, so nothing drawn after it prints through it.
                 _renderer.DrawText(px, py + 20, "[E]", ConsoleNear, "bold 11px monospace", TextAlign.Center);
+                ReserveTheRow(px, py + 20, "[E]", 11.0, TextAlign.Center);
             }
         }
 
@@ -393,7 +419,16 @@ public sealed partial class DeckView
             RgbaColor fillInk = dig.ChannelIsAid
                 ? new RgbaColor(120, 215, 175, 240)
                 : new RgbaColor(255, 200, 90, 240);
-            _renderer.DrawText(ax, ay - 1.6f * scale, dig.ChannelGlyph, glyphInk, "bold 15px monospace", TextAlign.Center);
+            // #1218 · The fourth literal, `ay - 1.6f * scale`, at THE lift over the captain's own body. It is
+            // a single glyph, so the band book hands it straight back where it asked to be (MarkBand.IsAMark:
+            // a mark stands FOR a thing rather than naming one, and the ground may not be shoved about) —
+            // what changed is that the clearance over the captain is now the same decision as over everybody
+            // else, instead of a number typed on this line.
+            _renderer.DrawText(
+                ax,
+                SeatAboveAMark(ax, ay, (float)DeckPlan.AvatarRadius * scale, dig.ChannelGlyph, 15.0,
+                    TextAlign.Center),
+                dig.ChannelGlyph, glyphInk, "bold 15px monospace", TextAlign.Center);
             float bw = 3.2f * scale, bh = 0.45f * scale;
             float bx0 = ax - bw / 2, by0 = ay + 1.1f * scale;
             FillRect(bx0, by0, bw, bh, new RgbaColor(20, 24, 30, 220));

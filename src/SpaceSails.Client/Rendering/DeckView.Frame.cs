@@ -27,6 +27,7 @@ public sealed partial class DeckView
     {
         _perf?.BeginDraw();     // #841 · null in every build nobody armed; see FramePerf
         _renderer = _canvas;    // never inherit a mask from a frame that threw
+        OpenTheBandBook();      // #1218 · a caption band is a fact about ONE frame; see DeckView.Frame.Captions
         _renderer.BeginFrame(widthPx, heightPx, state.Dark ? Pitch : Floor);
 
         Placement place = PlacementFor(plan, widthPx, heightPx, state.AvatarX, state.AvatarY, panX, panY);
