@@ -160,6 +160,41 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     }
 
     /// <summary>
+    /// #605/#741 · <b>A BLOW IS FILED UNDER THE PLACE. A READ THAT WORKED JOINS NO THREAD.</b>
+    ///
+    /// <para>Owner's second property of the mechanic: <i>"it blows for a REASON you can name
+    /// afterwards."</i> The reason has existed since #836 — <c>WalletChoice.Outcome</c> is the one ladder —
+    /// and the entry that carried it was filed with no subject at all, so the one heading a captain would
+    /// actually want the stack of (<i>this building, every time somebody stopped me in it</i>) joined no
+    /// thread. It does now, and the subject is declared by the author that writes the sentence rather than
+    /// worked out afterwards from its words (#741's law).</para>
+    ///
+    /// <para>The SILENCE is the other half, and it is a shape: the subject is minted only when
+    /// <c>WalletChoice.CoverBlew</c> says so. Cover holding is a state, and a heading that filled up with
+    /// the evenings nothing happened on would be the building telling the captain their disguise is
+    /// working — the one thing this feature may never say (§13.8).</para>
+    /// </summary>
+    /// <remarks>RED by minting the subject unconditionally (a clean read joins the thread), and by dropping
+    /// the argument from either <c>FileNote</c> call (a blow files with no subject and the stack is
+    /// empty).</remarks>
+    [Fact]
+    public void TheBlowIsFiledUnderThePlaceAndACleanReadJoinsNoThread()
+    {
+        string file = Method(Round("Patrol.Challenge.cs"), "private void FileTheNameYouGave(");
+
+        Assert.Contains("WalletChoice.CoverBlew(how)", file, StringComparison.Ordinal);
+        Assert.Contains("PatrolBeat.BlowSubjects(", file, StringComparison.Ordinal);
+        Assert.Contains("FieldNotes.PlaceLabel(", file, StringComparison.Ordinal);
+
+        // …and BOTH arms carry it — the paper that was handed over, and the empty hand, which is also a blow.
+        Assert.Equal(2, Regex.Matches(file, @"subjects\)").Count);
+
+        // …and the subject is the author's, not a regex pointed at the sentence it is filed beside.
+        Assert.DoesNotContain("CaseSubjects.Person(", file, StringComparison.Ordinal);
+        Assert.DoesNotContain("Regex", file, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// THE ROW IS THE CAPTAIN'S OWN KNOWLEDGE AND NOTHING ELSE: the glyph, the name on it, what it claims,
     /// and what the book filed about it here. Nothing in the dialog asks the guard's ladder how it would go —
     /// an omniscient hint is the sim leaking through the fiction.

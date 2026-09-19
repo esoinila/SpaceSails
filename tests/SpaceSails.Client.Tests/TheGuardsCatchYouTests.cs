@@ -609,8 +609,14 @@ public sealed class TheGuardsCatchYouTests
         string kick = Code(Between(patrol, "private void TheKickOut(", "/// #835 · THE BIG TEXT"));
 
         // The pass leaves the satchel, and it is SAID as it goes — and only when there was one to take.
-        Assert.Contains("Satchel.Remove(_host.Satchel, Satchel.Kind.Badge, PatrolBeat.BadgeId(bodyId))", kick,
-            StringComparison.Ordinal);
+        //
+        // #605 · EVERY pass of this site, at every tier. This read `Satchel.Remove(…, BadgeId(bodyId))`,
+        // which names ONE id, while the test beside it asked BadgeHeld — the DISTANCE read, which says yes
+        // to any tier. A captain walked out carrying a found department pass would have been told, in
+        // PassRevokedLine's own words, that the paper went into a man's breast pocket, with the paper still
+        // in his wallet: the sentence-vs-sim bug class, in the feature whose whole register is procedure.
+        Assert.Contains("PatrolBeat.TakeTheSitePasses(_host.Satchel, bodyId)", kick, StringComparison.Ordinal);
+        Assert.DoesNotContain("PatrolBeat.BadgeId(bodyId)", kick, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.BadgeHeld(bodyId, _host.Satchel)", kick, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.PassRevokedLine", kick, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.PassRevokedNote", kick, StringComparison.Ordinal);

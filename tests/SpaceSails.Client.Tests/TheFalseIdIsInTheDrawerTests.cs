@@ -147,17 +147,27 @@ public sealed class TheFalseIdIsInTheDrawerTests
         Assert.Equal(pass, shownHere);
         Assert.Equal(pass, shownThere);
 
-        Assert.Equal(WalletChoice.Outcome.WrongSite, WalletChoice.WhatHappens(here, -2, 0L, shownHere));
-        Assert.Equal(WalletChoice.Outcome.Worked, WalletChoice.WhatHappens(mintedFor, -2, 0L, shownThere));
+        // #605 · …ON A FLOOR A HAND BELONGS ON. This read B2 of both moons, which was every floor there was
+        // to talk about while a pass had one tier; B2 is LABORATORIES on every branch office in the game, so
+        // the second assert would now be testing the department ladder rather than the site code. Asked of
+        // the building instead: the site code is the claim this guard is about, and it is the same claim on
+        // whichever floor the tier is not the argument.
+        int onHome = AFloorAHandBelongsOn(mintedFor);
+        int onForeign = AFloorAHandBelongsOn(here);
 
-        Assert.False(PatrolBeat.TheGuardReads(here, -2, 0L, "A ROUND", shownHere, false).Satisfied);
-        Assert.True(PatrolBeat.TheGuardReads(mintedFor, -2, 0L, "A ROUND", shownThere, false).Satisfied);
+        Assert.Equal(
+            WalletChoice.Outcome.WrongSite, WalletChoice.WhatHappens(here, onForeign, 0L, shownHere));
+        Assert.Equal(
+            WalletChoice.Outcome.Worked, WalletChoice.WhatHappens(mintedFor, onHome, 0L, shownThere));
+
+        Assert.False(PatrolBeat.TheGuardReads(here, onForeign, 0L, "A ROUND", shownHere, false).Satisfied);
+        Assert.True(PatrolBeat.TheGuardReads(mintedFor, onHome, 0L, "A ROUND", shownThere, false).Satisfied);
 
         // …and the wrong-site arm's consequence is the one that was already written. Nothing new is added to
         // what a refusal costs — the issue's own scope for this lane.
         Assert.Equal(
             PatrolBeat.EscortLine,
-            PatrolBeat.TheGuardReads(here, -2, 0L, "A ROUND", shownHere, false).Consequence);
+            PatrolBeat.TheGuardReads(here, onForeign, 0L, "A ROUND", shownHere, false).Consequence);
     }
 
     /// <summary>
@@ -248,6 +258,58 @@ public sealed class TheFalseIdIsInTheDrawerTests
             "ShowAndFile(FoundPass.TakenLine"));
     }
 
+    // ── #605 · THE OTHER DRAWER ───────────────────────────────────────────────────────────────────────
+
+    /// <summary>The shipped grounds that keep a DEPARTMENT pass, in the scenario's own order.</summary>
+    private static List<string> GroundsThatKeepADepartmentPass() =>
+        [.. ShippedGrounds().Where(id => FoundPass.DepartmentRoomFor(id) is not null)];
+
+    /// <summary>
+    /// #605 · <b>THE SHIPPED WORLD REALLY CARRIES ONE, AND IT IS THIS BUILDING'S OWN PASS AT A TIER THE
+    /// CAPTAIN WAS NEVER ISSUED.</b>
+    ///
+    /// <para>The same lesson #1143 paid for, written down one drawer along: a sweep over invented body ids
+    /// cannot see a feature that is silently dead on every moon in <c>sol.json</c>. So the press is made on
+    /// a real ground, through the shipped verb, and what is then asked of the wallet is the thing the whole
+    /// ladder is for — the pass opens the floor it was found on, and the pass the captain was ISSUED does
+    /// not.</para>
+    ///
+    /// <para><b>RED</b> by deleting the department arm of <c>TheLockerHasAPassInIt</c> (the wallet comes
+    /// back empty), and by returning <c>true</c> from <c>PatrolBeat.ThePassFitsTheFloor</c> (the last assert
+    /// stops being a refusal, and the find is worth nothing).</para>
+    /// </summary>
+    [Fact]
+    public void TheDepartmentDrawerHandsOverATierYouWereNeverIssued()
+    {
+        List<string> keep = GroundsThatKeepADepartmentPass();
+        Assert.True(keep.Count > 0,
+            "not one ground in the shipped world keeps a department pass, so nothing a player can reach "
+            + "ever deals one and the department ladder is a rung only a cheat can climb.");
+        Assert.True(keep.Count < ShippedGrounds().Count,
+            "every shipped ground keeps one — that is a supply, not a find.");
+
+        string here = keep[0];
+        (int Level, int RoomIndex, string Department) at = FoundPass.DepartmentRoomFor(here)!.Value;
+        (Pages.Map map, object _) = InThisRoom(here, (at.Level, at.RoomIndex));
+
+        Invoke(map, "HiveHaulInteract");
+
+        Satchel.Item pass = TheOnlyPassIn(map);
+        Assert.Equal(here, PatrolBeat.SiteOfBadge(pass.Id));
+        Assert.Equal(at.Department, PatrolBeat.TierOfBadge(pass.Id));
+        Assert.Equal(UndergroundComplex.DepartmentOf(here, at.Level), at.Department);
+
+        // What it is worth: this floor, which the tier the site issues does not open.
+        Assert.Equal(WalletChoice.Outcome.Worked, WalletChoice.WhatHappens(here, at.Level, 0L, pass));
+        Assert.Equal(
+            WalletChoice.Outcome.WrongDepartment,
+            WalletChoice.WhatHappens(here, at.Level, 0L, PatrolBeat.Badge(here)));
+
+        // …and the room is gone through: a drawer is not a tap.
+        Invoke(map, "HiveHaulInteract");
+        Assert.Single(AllPassesIn(map));
+    }
+
     // ── One producer, two roads ───────────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -290,10 +352,16 @@ public sealed class TheFalseIdIsInTheDrawerTests
         {
             foreach (string call in Calls(File.ReadAllText(file), "PatrolBeat.Badge("))
             {
-                Assert.True(call is "bodyId" or "passBody",
+                // #605 · …and the TIERED form is on the same leash. `PatrolBeat.Badge(bodyId, department)`
+                // is the department pass, and `department` may only ever be the one Core designated for
+                // this building (FoundPass.DepartmentRoomFor): a client that picked a tier of its own would
+                // be a second answer to which pass is lying in this building, which is the identical shape
+                // the one-mint law was written against.
+                Assert.True(
+                    call is "bodyId" or "passBody" or "bodyId, department" or "passBody, department",
                     $"{Path.GetFileName(file)} mints a pass for `{call}` — if that is not the ground "
-                    + "underfoot it is a second answer to what a false ID is, and FoundPass is the only "
-                    + "place allowed to give one.");
+                    + "underfoot (at a tier Core designated) it is a second answer to what a found pass is, "
+                    + "and FoundPass is the only place allowed to give one.");
             }
         }
     }
@@ -321,11 +389,16 @@ public sealed class TheFalseIdIsInTheDrawerTests
     /// <summary>A live page standing on the drawer's own room on the mess floor of <paramref name="body"/>,
     /// with the world's real ephemeris under it — because the roster the pass is minted from is the
     /// scenario's own bodies and a page without one would deal nothing and prove nothing.</summary>
-    private static (Pages.Map Map, object Ex) InTheDrawersRoom(string body)
-    {
-        (int Level, int RoomIndex) at = FoundPass.RoomFor(body)
-            ?? throw new InvalidOperationException($"{body} keeps no pass — this bench has drifted.");
+    private static (Pages.Map Map, object Ex) InTheDrawersRoom(string body) =>
+        InThisRoom(
+            body,
+            FoundPass.RoomFor(body)
+            ?? throw new InvalidOperationException($"{body} keeps no pass — this bench has drifted."));
 
+    /// <summary>#605 · The same bench, pointed at whichever designated room the guard is about — the false
+    /// ID's drawer on the mess floor, or the department pass's on a floor of its own department.</summary>
+    private static (Pages.Map Map, object Ex) InThisRoom(string body, (int Level, int RoomIndex) at)
+    {
         var map = new Pages.Map();
         typeof(ComponentBase)
             .GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
@@ -357,6 +430,23 @@ public sealed class TheFalseIdIsInTheDrawerTests
         Set(map, "_avatarY", centre.Y);
 
         return (map, ex);
+    }
+
+    /// <summary>#605 · A patrolled floor of this building that the tier of the pass cannot be the argument
+    /// about — one no department owns, or one whose own plate says NO PASS REQUIRED
+    /// (<see cref="PatrolBeat.GeneralHandsBelongOn"/>). Asked of the building rather than typed, so a guard
+    /// about the SITE CODE stays about the site code on every ground in the scenario.</summary>
+    private static int AFloorAHandBelongsOn(string body)
+    {
+        foreach (int level in UndergroundComplex.FloorsOf(body))
+        {
+            if (PatrolBeat.IsPatrolled(body, level) && PatrolBeat.GeneralHandsBelongOn(body, level))
+            {
+                return level;
+            }
+        }
+
+        throw new InvalidOperationException($"{body} has no floor a general hand belongs on.");
     }
 
     private static IReadOnlyList<Satchel.Item> AllPassesIn(Pages.Map map) =>

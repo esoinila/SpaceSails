@@ -511,7 +511,12 @@ public sealed class TheRoundIsWalkableTests
 
         string issue = Between(
             Patrol(), "public void IssueTheSitePass(", "── DRAWING THEM");
-        Assert.Contains("PatrolBeat.BadgeHeld(", issue, StringComparison.Ordinal);
+        // #605 · …and the "not twice" clause asks for THIS EXACT LAMINATE. It asked PatrolBeat.BadgeHeld,
+        // which is the DISTANCE read and says yes to any tier of this site — so the day a captain turned up
+        // carrying a department pass they had found, the site would quietly have declined to put them on
+        // its books and the gig would have paid nothing at all.
+        Assert.Contains("WalletChoice.StillHeld(_host.Satchel, pass)", issue, StringComparison.Ordinal);
+        Assert.DoesNotContain("PatrolBeat.BadgeHeld(", issue, StringComparison.Ordinal);
         Assert.Contains("Satchel.CanTake(", issue, StringComparison.Ordinal);
         Assert.Contains("Satchel.Add(", issue, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.BadgeIssuedLine", issue, StringComparison.Ordinal);
