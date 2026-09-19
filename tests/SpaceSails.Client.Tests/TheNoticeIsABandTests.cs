@@ -65,13 +65,20 @@ public sealed class TheNoticeIsABandTests
         var walk = new ObservationWalkBench(CanvasId);
         walk.Notice();
 
-        // Behind him — the half the shipped law held for, and it still holds.
-        walk.StandTheCaptain(behindHimDu: FootTail.LegibleDu / 2);
+        // Three du along his own line of travel, each way. The SAME axis, the same distance and the same
+        // floor — so the only thing that differs between the two halves of this law is the sign, and the
+        // oracle is asked both times so the law cannot quietly become a law about a wall.
+        const double ThreeDu = 3.0;
+
+        Assert.True(
+            walk.StandTheCaptainAlongHisLine(-ThreeDu),
+            "the bench put the captain behind him somewhere with no line — this law would be about a wall.");
         walk.OneFrame();
         Assert.True(walk.HeIsHolding, "on his heels from behind he must stop and let the captain past.");
 
-        // …and in FRONT of him, at the very same range, he walks on.
-        walk.StandTheCaptain(behindHimDu: -(FootTail.LegibleDu / 2));
+        Assert.True(
+            walk.StandTheCaptainAlongHisLine(ThreeDu),
+            "the bench put the captain in front of him somewhere with no line — this law would be vacuous.");
         walk.OneFrame();
         Assert.False(
             walk.HeIsHolding,

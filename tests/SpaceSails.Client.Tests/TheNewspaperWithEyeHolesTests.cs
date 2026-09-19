@@ -90,15 +90,18 @@ public sealed class TheNewspaperWithEyeHolesTests
     }
 
     /// <summary>
-    /// #1199 · <b>AND FROM THE SOUTH TABLE HE GOES BEHIND THE THIRD MACHINE AND DOES NOT COME OUT.</b> Owner:
-    /// <i>"another vending machine or something else that only MOMENTARILY blocks the view."</i> The island
-    /// stands square in this table's line to the rail, so the man is lost on his LEGS rather than at the rail
-    /// — the same one rule, a different one of the four ways it can be answered.
+    /// #1199 · <b>AND FROM THE SOUTH TABLE HE IS LOST ON HIS LEGS AND NEVER REACHES THE RAIL.</b> The other
+    /// table has the other half of the room: the throat’s own corner and then the island machine stand
+    /// between this chair and his walk, so he goes behind something and does not come out the other side —
+    /// the same one rule, a different one of the four ways it can be answered.
     ///
-    /// <para>The captain is sitting, so the card comes to the table exactly as it does at the north one.</para>
+    /// <para>What the island buys HERE is length rather than existence — how much of his walk is screened is
+    /// measured in <see cref="TheThirdMachineIsSomethingToWalkBehind"/>, which is where it goes red. This law
+    /// is the beat: the captain is sitting, so the card comes to the table exactly as it does at the north
+    /// one.</para>
     /// </summary>
     [Fact]
-    public void SeatedAtTheSouthTableHeGoesBehindTheIslandMachine()
+    public void SeatedAtTheSouthTableHeIsLostOnHisLegsAndNeverReachesTheRail()
     {
         var walk = new ObservationWalkBench(CanvasId + "-south");
         walk.SitTheCaptainAt(SouthTable);

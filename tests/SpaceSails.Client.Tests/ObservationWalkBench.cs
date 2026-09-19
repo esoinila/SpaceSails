@@ -117,6 +117,24 @@ internal sealed class ObservationWalkBench
         Set(_map, "_avatarY", him.Walk.Y);
     }
 
+    /// <summary>#1199 · Put the captain that many deck units ALONG HIS OWN LINE OF TRAVEL — a positive
+    /// number in front of him, a negative one behind. The same axis both ways, so a law about which SIDE the
+    /// captain is on changes exactly one thing and never also the distance or the walls.</summary>
+    /// <returns>Whether the deck’s one oracle joins them from there — asked so a law about the side
+    /// cannot quietly become a law about a wall.</returns>
+    internal bool StandTheCaptainAlongHisLine(double du)
+    {
+        SpaceSails.Client.Pages.Map.Walker him = Him
+            ?? throw new InvalidOperationException("he is not on the floor.");
+        double dx = him.Walk.For.X - him.Walk.X, dy = him.Walk.For.Y - him.Walk.Y;
+        double len = Math.Sqrt((dx * dx) + (dy * dy));
+        Assert.True(len > 0.001, "he is standing on his own destination; there is no line of travel.");
+        StandTheCaptainAt(him.Walk.X + (dx / len * du), him.Walk.Y + (dy / len * du));
+        return SurfaceCollision.HasLineOfSight(
+            (double)Read(_map, "_avatarX")!, (double)Read(_map, "_avatarY")!,
+            him.Walk.X, him.Walk.Y, _walls);
+    }
+
     internal void StandTheCaptainAt(double x, double y)
     {
         Set(_map, "_avatarX", x);
