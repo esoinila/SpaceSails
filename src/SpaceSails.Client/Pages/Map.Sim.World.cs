@@ -75,6 +75,12 @@ public partial class Map
         public bool TableSceneCheat; // #746 /map?tablescene=1: boot the B1 canteen with the table scene in reach
         public bool OldCrewCheat; // #973 L5a /map?oldcrew=1: boot ashore with the four shipmates working THIS berth and one captain already buried, so "you look different" can be played
         public string? CrewCheat; // #663 /map?crew=petition: boot holding the voyage the crew send a deputation over — bodies left on a rock, and an honest ship that is poor because of it
+
+        /// <summary>#323 · <b>DID THIS URL ASK THE BOOT FOR A SITUATION?</b> True the moment any reader in the
+        /// chain claims a pair that is not <c>scenario=</c>. It is the front door's whole question and it is
+        /// answered by the parse itself rather than by a list of cheat keys kept somewhere else — see
+        /// <see cref="RaiseTheFrontDoorWhileTheReactorWarms"/>.</summary>
+        public bool AskedForASituation;
     }
 
     /// <summary>Read the URL once, key by key. Each reader answers TRUE when the pair was its own and
@@ -109,7 +115,7 @@ public partial class Map
         var q = new BootQuery();
         foreach (string pair in uri.Query.TrimStart('?').Split('&'))
         {
-            _ = ReadTheWorldAndTheJobs(pair, q)
+            bool claimed = ReadTheWorldAndTheJobs(pair, q)
                 || ReadTheBodiesACheatSpawns(pair, q)
                 || ReadTheClocksAndTheDeath(pair, q)
                 || ReadWhatTheSiteIsHiding(pair, q)
@@ -120,6 +126,14 @@ public partial class Map
                 || ReadTheRoomsOwnDice(pair, q)
                 || ReadWhereTheLandingGoes(pair, q)
                 || ReadTheLongArcsAndTheBar(pair, q);
+
+            // #323 · …AND WHETHER THAT PAIR WAS AN ASK. The front door's whole question is decided here and
+            // nowhere else — see RaiseTheFrontDoorWhileTheReactorWarms for the rule and why it is spelled
+            // this way round rather than as a list of cheat keys.
+            if (claimed && !pair.StartsWith("scenario=", StringComparison.OrdinalIgnoreCase))
+            {
+                q.AskedForASituation = true;
+            }
         }
 
         return q;
@@ -178,19 +192,77 @@ public partial class Map
         }
     }
 
-    /// <summary>#310 · The front door, raised while the reactor is still warming.</summary>
+    /// <summary>
+    /// #323 · <b>THE ONE CIVILIAN FRONT DOOR, AND THE ONE SENTENCE THAT DECIDES IT.</b>
+    ///
+    /// <para>Owner, live (2026-07-18): <i>"The scenario urls still use the old boot… I had to empty the URL
+    /// to get the new one."</i> A returning captain's bookmark is <c>/map?scenario=sol</c> — the Launch
+    /// button on the home page writes exactly that, and so does every "any voyage loads straight from a
+    /// link" line in the guide — and that URL used to be decided by a condition that asked about four
+    /// CHEATS (<c>?dock=</c>, <c>?start=</c>, <c>?sling=</c>, <c>?skim=</c>) and nothing else. Whether a
+    /// captain is offered their saves is not a question about four cheat keys.</para>
+    ///
+    /// <para><b>The rule, stated once and nowhere else:</b> a query is <b>civilian</b> — it goes through the
+    /// logbook door — <b>iff it asked the boot for nothing but a scenario</b>. An empty query is civilian; so
+    /// is <c>?scenario=wheel</c>. Anything the boot's own reader chain CLAIMS is a deliberate bench
+    /// incantation out of <c>docs/testing-guide.md</c> Appendix A, and every one of those keeps the direct
+    /// boot the smoke sweeps are written against (#297/#132).</para>
+    ///
+    /// <para><b>There is no list of cheat keys here, and that is the point.</b> A list is a second source
+    /// that goes stale the day the ninety-first key is added. The question is asked of the PARSE instead
+    /// (<see cref="BootQuery.AskedForASituation"/>, set in <see cref="ReadEveryQueryKey"/> the moment any
+    /// reader claims a pair that is not <c>scenario=</c>), so a key joins the bench side of the rule by being
+    /// readable and leaves it by being deleted — which is the only way the two can never drift.</para>
+    ///
+    /// <para><b>A key the boot does not read asked the boot for nothing</b>, and the two that exist are the
+    /// proof this is the right question rather than a convenient one. <c>?holdbeats=</c> (#1148) and
+    /// <c>?perf=1</c> (#841) are both read off the LIVE ADDRESS, every frame, never through
+    /// <see cref="BootQuery"/> — and both of their docblocks give the same reason in the same words: they
+    /// change nothing about the world, no body, no berth, no cheat. <c>?perf=1</c>'s own row in
+    /// <c>TheBootBuildsTheSameWorldTests</c> is pinned byte-identical to the URL without it. A retired alias
+    /// (<c>?autowalk=</c>, #875) and a key nobody parses at all are in the same position: they cannot have
+    /// asked for a situation, because nothing was listening. <b>So the UiGate's canary, which appends
+    /// <c>&amp;holdbeats=1</c> to the home page's own Launch link in order to quiesce the story cadence,
+    /// still arrives at the front door</b> — which is exactly right, because the gate is a player and a
+    /// player's URL is a sky.</para>
+    ///
+    /// <para><b>What <c>scenario</c> then means on a civilian boot:</b> exactly what it always meant to the
+    /// world — the sky that gets built — and nothing more to the door. The berth list the picker offers is
+    /// <see cref="BerthStarts"/> off that scenario's own ephemeris, so naming a scenario PRESELECTS what
+    /// "New voyage" launches without deciding, for the captain, that a new voyage is what they wanted.</para>
+    ///
+    /// <para><b>It composes with #1221 rather than fighting it.</b> That lane made
+    /// <c>?scenario=&lt;unknown&gt;</c> fall back to Sol (in the FETCH, below) and an unanchorable
+    /// <c>?start=</c> refuse to the picker (in <c>ApplyTheStartPoint</c>, four stages further on). Neither
+    /// is a door decision: the first has already happened to the scenario NAME by the time the sky is
+    /// fetched, and the second raises the door again by itself, after this. A bare
+    /// <c>?scenario=electric</c> is still civilian — it is a sky that does not exist, asked for civilly —
+    /// and it now opens the logbook over Sol instead of booting a stranger into a fresh life in the wrong
+    /// world.</para>
+    ///
+    /// <para>#310's original reason for raising it HERE, at the top of the boot, is untouched: the door goes
+    /// up in its "warming the reactor" state before the fourteen seconds of route planning, so the WASM
+    /// warm-up never reads as a broken, click-eating menu. It flips to the live slots once the front door
+    /// OPENS, which since #161 is stages before the world behind it is finished.</para>
+    /// </summary>
     private void RaiseTheFrontDoorWhileTheReactorWarms(BootQuery q)
     {
-        // #310 honest boot state: if this boot will end at the load view (no direct start/dock cheat),
-        // raise the front door NOW in its "warming the reactor" state, so the WASM warm-up never reads as
-        // a broken, click-eating menu. It flips to the live slots once the front door OPENS — which,
-        // since #161, is stages before the world behind it is finished (see OpenTheFrontDoor).
-        if (q.DockCheat is null && q.StartId is null && q.SlingCheat is null && q.SkimCheat is null)
+        if (!q.AskedForASituation)
         {
             _showStartPicker = true;
             StateHasChanged();
         }
     }
+
+    /// <summary>#323 · The civilian rule, asked of a URL that is not being booted — which is what a guard
+    /// sweeping every <c>/map?…</c> link in <c>src/</c> and <c>docs/</c> needs, and what a caller holding a
+    /// link rather than a live boot needs. It runs the SHIPPING parse on a throwaway page, so there is one
+    /// answer to this question in the whole product and this is not a second copy of it.
+    ///
+    /// <para>Never on the boot's own path: the boot has already parsed its query and reads
+    /// <see cref="BootQuery.AskedForASituation"/> straight off it.</para></summary>
+    internal static bool TheQueryIsCivilian(Uri uri) =>
+        !new Map().ReadEveryQueryKey(uri).AskedForASituation;
 
     /// <summary>
     /// #161 · THE FRONT DOOR OPENS BEFORE THE WORLD BEHIND IT IS BUILT.
@@ -224,10 +296,11 @@ public partial class Map
     /// </summary>
     private async Task OpenTheFrontDoorAsync(BootQuery q, CancellationToken abandoned)
     {
-        // The two starts that reach the picker branch of ApplyTheStartPoint but never SHOW the door
-        // (?sling= / ?skim= suppress it again below) still want their vault peeked — it is where
-        // "the tutorial was already played" comes from — so the condition here is the peek's own, not
-        // the door's. Off a browser there is no localStorage to peek and no module to reach it through.
+        // The condition here is the PEEK's own and not the door's, and #323 did not change that. Every
+        // bench URL that names no berth — ?sling=, ?skim=, ?fuel=, ?kaamos=all — reaches the else branch of
+        // ApplyTheStartPoint without ever showing the door, and still wants its vault peeked, because the
+        // peek is where "the tutorial was already played" comes from. Off a browser there is no
+        // localStorage to peek and no module to reach it through.
         if (q.DockCheat is not null || q.StartId is not null || !OperatingSystem.IsBrowser())
         {
             return;

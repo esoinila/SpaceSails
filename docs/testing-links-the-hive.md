@@ -658,6 +658,56 @@ across the corridor.
 Search rooms until one gives you a **shelf line** instead of *"Stripped to the fittings"*. Nothing enters the
 satchel — the book is read where it stands — and the gist files to the casebook once.
 
+## 5a · ADDED (#701) — the LIBRARY LAYER: two shelves in every room somebody was given
+
+```
+/map?secretlab=1&land=1&floor=1        B1 of the shallow annex — and BOTH rare posts are on this one floor
+```
+
+**Every coordinate below was read out of the real generator**, not assumed: the rooms are the published ones
+on `UndergroundComplex.Build("secret-lab-site", -1, …)` and the shelves are what `Shelves.On` stood in them.
+
+**What to look for.** In every room somebody was given, **two 📚 consoles on the wall** — and nothing at all
+in a storeroom, a gallery or the store that says it is empty. Press **[E]** at one: a caption-only card
+opens, titled with the very line the wall is showing, and the **gist** files to the casebook once per shelf
+per game-thread. Press it again and the card opens again and files nothing. Nothing enters the satchel, no
+credits move, and **the room is never struck off**, so it is all still there when you come back.
+
+**The guard's post — room 2, plated `AUDIT — NO ADMITTANCE`, centred (82.4, −117.7).** The only rooms in
+this building whose sign is about *who comes through the door*, and the only ones that get the patrol manual.
+
+| | at | [E] reads |
+| --- | --- | --- |
+| **work** | (79.2, −113.2) | 📚 *a patrol manual, unopened, and a paperback under it that has been opened a great deal* → **The manual has never been read. The paperback under it has been read to pieces.** |
+| **freetime** | (84.7, −113.2) | 📚 *a book of chess problems, every one solved in pencil, the last one not* → **Every problem solved, in pencil, in order. The last one has a single move written and then nothing.** |
+
+**The reading room — room 6, plated `PRIVILEGED RECORDS · READING ROOM`, centred (−29.6, −182.8).** The one
+room in the game the department that reads everything was actually given, and a park-view suite at that: it
+is out on the **block's frontage**, so walk the ring rather than the ribs to reach it.
+
+| | at | [E] reads |
+| --- | --- | --- |
+| **work** | (−18.4, −186.0) | 📚 *catalogue cards in a language nobody here was born speaking* → **Cards, thousands, in a hand-drawn script. Whoever catalogued this did not learn the alphabet here.** |
+| **freetime** | (−18.4, −188.4) | 📚 *far-future paperbacks with cracked spines, the kind where the ships have names and opinions* → **Ships with names, ships with opinions, ships that outlive everyone aboard. Somebody down here read these for comfort.** |
+
+**The other posts, on the same site, one floor apart:**
+
+```
+/map?secretlab=1&land=1&floor=2        B2 · LABORATORIES — room 0 (DESTRUCTION QUEUE) gets the LAB shelf
+/map?secretlab=1&land=1&floor=4        B4 · PLANT — room 3 (CLERKS) gets the ENGINEER's shelf
+/map?secretlab=deep&land=1&floor=1     B1 of the deep clinic — rooms 0/1/2 all get the CLERK's shelf
+```
+
+That last line is the ladder doing its job rather than a bug: a room plated `MORTUARY` on an
+**ADMINISTRATION** floor is furnished as an office by `ChamberFitting.KitFor` — the department wins over the
+plate there, and has since #818 — so its occupant is a clerk and its shelf is the clerk's. The plate register
+and the department are seeded independently, and that disagreement is the building talking, not the layer
+guessing.
+
+**And the thing to watch on the freetime shelves as you walk a corridor:** no two rooms in a row ever carry
+the same one, and none comes back until all seven have been seen. Two identical freetime shelves side by side
+is a bug, and `TheShelvesSayWhoTheRoomBelongedToTests` should have caught it.
+
 ## 6 · A floor with no lights (#708)
 
 ```

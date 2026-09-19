@@ -61,6 +61,32 @@ and two more the same morning, on the two story passes that had been waiting for
 
 ---
 
+## 0 · THE VANISH IS A BAND NOW, AND THE BAR-ROOM LINE STAYS IN THE BAR (#1199, 2026-09-19)
+
+Two things the inspector played on 2026-09-18, both fixed in the same lane.
+
+**The tail would not vanish.** He reached the far end and held there for as long as the captain was
+anywhere behind him — and once #1237 gave the walk its crossbar, that meant anywhere in a 24 × 8 glass
+gallery. So the wait never started and **the card was unreachable from anywhere a person following
+somebody would stand**.
+
+The en-route hold was never the problem: it has read the legibility band since slice 1. The branch that was
+**line-of-sight only** is the one that decides whether he comes off the floor, and that is what changed.
+
+**And the throat's band is NOT the legibility one** — the stem is 24 du and `FootTail.LegibleDu` is 30, so a
+captain at the MOUTH is *inside* the legibility band. The throat uses `ObservationWalk.TooCloseToGoInDu`
+(= the gallery's own depth = the fire code's small room, 8 du): *two paces is on his heels; the length of a
+corridor is a stranger in a station.*
+
+| What to do | What should happen | Broken looks like |
+|---|---|---|
+| `/map?dock=selene-gate&ashore=1&simhours=7.5` — follow GILT-EYE west, then **hang back**: stay in the tube but keep more than two paces off him. | He walks into the hat and is **gone there and then**. You walk in and the gallery is **empty** — the tables, the machines and the rail, and nobody. The card comes at the rail about three minutes later, exactly as before. | He stands at the opening looking at you for ever; no card however long you wait. |
+| Same link, but **stay right on his heels** into the throat. | He **stops at the opening** and turns to face you — he will not go in with you that close. Give him room and he is gone on the next frame. Stay there and, after the same three minutes, **he turns round and walks back out past you**, back to his own table. **No card, and no note.** | He walks in with you a pace behind him; or he vanishes in your face; or he turns back and a card comes up anyway (tailing too close is supposed to *cost* you the scene, and a card would explain the thing you were just denied). |
+| Stand out on the **concourse** — outside THE EARTHRISE BAR — and wait for the off-deck buzzer. | Nothing. The unexplained-signal beat only speaks in the **bar**. | *"Behind the counter the staff go still as one and trade a single glance… The drinkers never look up."* said to a captain standing in an open concourse with no counter in it. |
+| Walk back into the bar and wait. | The buzzer still sounds there, unchanged, prose and all. | The beat has been scoped away from the room it is about. |
+
+---
+
 ## 1 · The observation walk, at a wait you can sit through (#1199, PR #1201 follow-up)
 
 Owner, on the walk as #1201 shipped it: **"YES, shorten the wait"** — it was

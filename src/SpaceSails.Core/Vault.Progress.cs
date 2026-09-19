@@ -58,7 +58,13 @@ public sealed record ProgressSection
     /// Persisted per-universe (the same idiom as <see cref="SecretLabsFound"/>) because the one-shot law is
     /// about KNOWLEDGE: looking at a book again is free and always will be, but the casebook learns a thing
     /// once. Defaults empty — a pre-#701 file simply lacks the field, and a captain who has read a shelf
-    /// they cannot remember reading files it again, which is the harmless direction to be wrong in.</summary>
+    /// they cannot remember reading files it again, which is the harmless direction to be wrong in.
+    ///
+    /// <para>#701 (the library layer) — <b>and the occupants' shelves ride this same list</b>, because they
+    /// are the same feature under the same law. A <see cref="Shelves.Entry"/>'s id is namespaced
+    /// (<c>work:</c>, <c>free:</c>) so it can never collide with a book's, and a second read-list beside
+    /// this one would be two stores answering one question about one captain's knowledge. An old file that
+    /// has read books and never a shelf loads exactly as it always did.</para></summary>
     public IReadOnlyList<string> OddBooksRead { get; init; } = [];
 
     /// <summary>

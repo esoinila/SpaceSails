@@ -213,6 +213,7 @@ public static partial class HiveInterior
 
         HangTheIncidentBoard(consoles, in floor);
         HangThePosters(consoles, in floor);
+        StandTheShelves(consoles, in floor);
         PlateTheWatchclocks(labels, in floor, in field, bodyId, level);
         CallTheCars(consoles, in field);
         OpenTheStair(consoles, in field, bodyId, level);

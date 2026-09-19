@@ -65,6 +65,19 @@ public partial class Map
     /// not retried sixty times a second and a person who has set off once does not set off again.</summary>
     private bool _walkDealt;
 
+    /// <summary>#1199 · The sim second they stopped at the THROAT because the captain was on their heels, or
+    /// NaN when they are not holding there. It is the tail's own refusal — he will not walk into a blind room
+    /// with somebody two paces behind him — and it is what <see cref="ObservationWalk.TheWaitSeconds"/> is
+    /// counted from before he turns round and leaves.</summary>
+    private double _walkHeldAtTheThroatSince = double.NaN;
+
+    /// <summary>#1199 · Is he on his way back OUT — the leg he walks after being tailed too close to go in?
+    /// The errand stays <c>LettingYouPass</c> on that leg (a man who has given up his view and is leaving IS
+    /// letting you past him, and a new <c>Errand</c> member would join four sweeps to say what one bool says),
+    /// so this is the one fact that tells the two legs apart — and it is what stops the return leg
+    /// re-triggering the vanish on its way back out through the throat.</summary>
+    private bool _walkTurnedBack;
+
     // ── ONE FRAME ────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -131,6 +144,8 @@ public partial class Map
         _walkNoticed = false;
         _walkGoneSince = double.NaN;
         _walkDealt = false;
+        _walkHeldAtTheThroatSince = double.NaN;
+        _walkTurnedBack = false;
         ForgetTheGallerysMachines();
     }
 
@@ -201,24 +216,56 @@ public partial class Map
     /// knowledge, which is #436's law and is why a corner is worth taking.</para>
     ///
     /// <para><b>Noticed and they stop.</b> No card, no line, no facing change anybody announces — they simply
-    /// turn and wait, and they start walking again the moment the captain is no longer behind them. A tail
-    /// that was noticed still ends at the rail; what it does not end in is a vanishing, because the game
-    /// never takes a body off the floor that the captain is looking at.</para>
+    /// turn and wait, and they start walking again the moment the captain is no longer behind them.</para>
+    ///
+    /// <h3>#1199 · THE END OF THE ROUTE IS A BAND NOW, AND THE VANISH HAPPENS AT THE THROAT</h3>
+    ///
+    /// <para><b>What was played</b> (inspector, live on Selene Gate, 2026-09-18): the person of interest
+    /// reached the far end and <i>held there for as long as the captain was anywhere behind him</i> — and
+    /// after #1237 gave the walk its crossbar, for as long as he was anywhere in a 24 × 8 glass gallery. The
+    /// vanish never happened, so the wait never started, so the card was unreachable by standing anywhere a
+    /// person following somebody would stand.</para>
+    ///
+    /// <para><b>The EN-ROUTE hold was never the problem</b> and is untouched: it has read the band since
+    /// slice 1 (<c>_walkNoticed &amp;&amp; clearLine &amp;&amp; rangeDu &lt;= FootTail.LegibleDu</c>). The
+    /// branch that was line-of-sight ONLY, with no band at all, is the one below that decides whether he
+    /// comes off the floor — and a guard written about the en-route rule would have been green on the
+    /// shipped tree, which is this repository's own named hazard.</para>
+    ///
+    /// <para><b>The rule, at the throat</b> (the tube's blind end, which is the crossbar's own east face —
+    /// one edge, shared by construction):</para>
+    /// <list type="bullet">
+    ///   <item><b>Captain outside <see cref="ObservationWalk.TooCloseToGoInDu"/> (or with no line):</b> he is
+    ///   off the floor <i>there and then</i>. From down the tube, or at its mouth, the captain saw a figure
+    ///   turn into the hat; he arrives, and the gallery is empty. The wait and the card run as shipped.</item>
+    ///   <item><b>Inside it:</b> he holds at the throat — a man does not walk into a blind room with somebody
+    ///   two paces behind him — and after <see cref="ObservationWalk.TheWaitSeconds"/> he turns round and
+    ///   walks back out <i>past</i> the captain. The beat is SPENT and no card is raised: tailing too close
+    ///   costs you the scene, which is the whole of what a tail can do wrong.</item>
+    /// </list>
+    ///
+    /// <para>Nothing blinks out in plain sight at close quarters — the horror is still a body you were NOT
+    /// looking closely at.</para>
     /// </summary>
     /// <returns>Whether anything happened that the page should redraw for.</returns>
     private bool StepThePersonOfInterest(
-        Walker who, double dt, IReadOnlyList<SurfaceCollision.Segment> walls, int slot)
+        Walker who, double dt, in HavenInterior.BarFloor bar,
+        IReadOnlyList<SurfaceCollision.Segment> walls, int slot)
     {
         bool clearLine = SurfaceCollision.HasLineOfSight(
             _avatarX, _avatarY, who.Walk.X, who.Walk.Y, walls);
         double dx = who.Walk.X - _avatarX, dy = who.Walk.Y - _avatarY;
         double rangeDu = System.Math.Sqrt((dx * dx) + (dy * dy));
 
+        // #1199 · THE ONE READING the notice question and the en-route hold have always shared, taken once so
+        // they cannot come to two opinions about how close is close.
+        bool tailedTooClose = clearLine && rangeDu <= FootTail.LegibleDu;
+
         // ── THE NOTICE QUESTION, and it is #436's eye with a person in front of it ───────────────────────
         if (!_walkNoticed)
         {
             ReeverObservation.Glance glance = TheTail.Notice(
-                clearLine && rangeDu <= FootTail.LegibleDu,
+                tailedTooClose,
                 alreadyNoticed: false,
                 TheTail.SeedFor(_walkBerth ?? "", who.Who),
                 SurfaceSeconds,
@@ -230,8 +277,42 @@ public partial class Map
             _walkNoticed = TheTail.HasNoticed(in glance);
         }
 
+        // ── HE HAS GIVEN UP AND IS WALKING BACK OUT PAST YOU ─────────────────────────────────────────────
+        //
+        // FIRST, above every other branch. He must not hold again on the way out — a man who has already
+        // decided to leave, stopping dead every time the captain is inside thirty du of him, would never get
+        // out of his own tube — and he must not vanish on the way back through the throat either, which is
+        // the one thing _walkTurnedBack exists to say.
+        if (_walkTurnedBack)
+        {
+            if (who.Walk.Afoot)
+            {
+                who.Walk.Step(dt, walls, _avatarX, _avatarY);
+                return !who.Walk.Afoot;
+            }
+
+            // He is out. The beat is spent with NO card: what standing on his heels bought the captain is the
+            // absence of the scene, and a card would be the game explaining the thing it just withheld.
+            TheWalkIsSpentWithNothingSaid(in bar);
+            _barAfoot.RemoveAt(slot);
+            return true;
+        }
+
+        // ── THE THROAT ───────────────────────────────────────────────────────────────────────────────────
+        //
+        // On its OWN band, and the measurement is written out on ObservationWalk.TooCloseToGoInDu: the stem
+        // is 24 du and FootTail.LegibleDu is 30, so a captain at the MOUTH is inside the legibility band and
+        // a throat gated on legibility would hold from everywhere a follower can stand — the reported bug,
+        // re-shipped. Two paces is on his heels; the length of a corridor is a stranger in a station.
+        if (HavenInterior.InTheGallery(bar.BodyId, who.Walk.X, who.Walk.Y))
+        {
+            return HeHasReachedTheThroat(
+                who, in bar, walls, slot,
+                onHisHeels: clearLine && rangeDu <= ObservationWalk.TooCloseToGoInDu);
+        }
+
         // ── STOPPED, TURNED, WAITING FOR YOU TO GO PAST ──────────────────────────────────────────────────
-        bool holding = _walkNoticed && clearLine && rangeDu <= FootTail.LegibleDu;
+        bool holding = _walkNoticed && tailedTooClose;
         if (holding)
         {
             who.Walk.LookTowards(_avatarX, _avatarY);
@@ -258,12 +339,14 @@ public partial class Map
 
         // ── AND THEN THERE IS NOBODY THERE ───────────────────────────────────────────────────────────────
         //
-        // The route has run out: they are at the rail, at the blind end of a lit tube with one way in. They
-        // come off the floor on the first frame the captain has NO line to them — never on a frame he is
-        // looking, because a body that blinks out in plain sight is a bug and the horror here is that it is
-        // not one. If he watches the whole way, they are simply standing at the rail when he arrives, and
-        // the beat is not spent. That is a legitimate ending and nothing is said about it either.
-        if (clearLine)
+        // The route has run out somewhere that is NOT the hat. On the shipped walk that cannot happen — the
+        // route ends at the rail and the rail is in the gallery, so the throat branch above has already had
+        // this frame — and it is kept for the haven that has a walk and no crossbar at the end of it
+        // (TheGalleryBox answers null there, so InTheGallery is false for every point). The old law stands
+        // unchanged in that case: they come off the floor on the first frame the captain has NO line to them,
+        // never on a frame he is looking, because a body that blinks out in plain sight is a bug and the
+        // horror here is that it is not one.
+        if (tailedTooClose)
         {
             who.Walk.LookTowards(_avatarX, _avatarY);
             return false;
@@ -273,6 +356,102 @@ public partial class Map
         _walkGoneSince = SimTime;
         return true;
     }
+
+    /// <summary>
+    /// #1199 · <b>AT THE THROAT — the one frame this whole beat turns on.</b> The tube's blind end is the
+    /// crossbar's east face, one edge shared by construction (#1237), so "he is in the hat" is asked of
+    /// <c>HavenInterior.InTheGallery</c> and never of a coordinate typed here.
+    ///
+    /// <para>Outside <see cref="ObservationWalk.TooCloseToGoInDu"/> he is gone <i>there and then</i>; inside
+    /// it he holds, and after <see cref="ObservationWalk.TheWaitSeconds"/> he turns round. A captain who
+    /// backs off while he is holding gets the vanish on the very next frame, which is correct and is the
+    /// craft: give him room and he goes in.</para>
+    /// </summary>
+    private bool HeHasReachedTheThroat(
+        Walker who, in HavenInterior.BarFloor bar,
+        IReadOnlyList<SurfaceCollision.Segment> walls, int slot, bool onHisHeels)
+    {
+        if (!onHisHeels)
+        {
+            _barAfoot.RemoveAt(slot);
+            _walkGoneSince = SimTime;
+            _walkHeldAtTheThroatSince = double.NaN;
+            return true;
+        }
+
+        who.Walk.LookTowards(_avatarX, _avatarY);
+
+        if (double.IsNaN(_walkHeldAtTheThroatSince))
+        {
+            _walkHeldAtTheThroatSince = SimTime;
+            _barAfoot[slot] = Rebadge(who, Errand.LettingYouPass);
+            return true;
+        }
+
+        return SimTime - _walkHeldAtTheThroatSince >= ObservationWalk.TheWaitSeconds
+            && HeTurnsAndWalksBackOut(who, in bar, walls, slot);
+    }
+
+    /// <summary>
+    /// #1199 · <b>HE TURNS ROUND AND LEAVES, PAST YOU.</b> The return leg is planned on the one planner
+    /// (<c>OnFoot</c>) from where he is standing back to the standing room beside his own top — the exact
+    /// reverse of the leg <see cref="SendThemOutOntoTheWalk"/> plotted, off the same rota and the same
+    /// <c>BesideThisTop</c>, so there is no second pathfinder and no second idea of where he came from.
+    ///
+    /// <para>The beat is spent on the frame he gets there (or here, if the floor refuses the route): spent,
+    /// and silent. A card would explain the thing the captain has just been denied.</para>
+    /// </summary>
+    private bool HeTurnsAndWalksBackOut(
+        Walker who, in HavenInterior.BarFloor bar,
+        IReadOnlyList<SurfaceCollision.Segment> walls, int slot)
+    {
+        _walkHeldAtTheThroatSince = double.NaN;
+
+        foreach (HavenInterior.SeatedRegular seated in
+                 HavenInterior.ResolveRegulars(bar.BodyId, _dockVisitSimTime, TheBarsChurn))
+        {
+            if (!string.Equals(seated.Id, who.Who, System.StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (BesideThisTop(new DeckReachability.Point(seated.X, seated.Y), walls) is { } home
+                && OnFoot(
+                       seated.ShortName, new NpcWalk.Bound("", home.X, home.Y),
+                       new DeckReachability.Point(who.Walk.X, who.Walk.Y), walls) is { } back)
+            {
+                _walkTurnedBack = true;
+                _barAfoot[slot] = new Walker
+                {
+                    Walk = back, Table = who.Table, For = Errand.LettingYouPass, Who = who.Who,
+                    Cabinet = who.Cabinet, StillWanted = who.StillWanted, OnArrive = who.OnArrive,
+                };
+                return true;
+            }
+
+            break;
+        }
+
+        // The floor will not give him a way back — the same refusal SendThemOutOntoTheWalk treats as a
+        // refusal rather than a reason to place a body at the far end anyway. He is simply not there any
+        // more, and the beat is spent the same silent way.
+        TheWalkIsSpentWithNothingSaid(in bar);
+        _barAfoot.RemoveAt(slot);
+        return true;
+    }
+
+    /// <summary>
+    /// #1199 · <b>SPENT, AND NOTHING SAID.</b> The same one key <see cref="TheWalkIsEmpty"/> writes
+    /// (<see cref="ObservationWalk.Key"/>, through the same field, so a reload can never hand the walk back)
+    /// — and then nothing: no card, no note, no pulse.
+    ///
+    /// <para>That asymmetry is the point. The card is the ABSENCE, and a captain who stayed on the man's
+    /// heels never got an absence: he got a man who turned round and went back to his drink. There is
+    /// nothing to show him, because the scene did not happen.</para>
+    /// </summary>
+    private void TheWalkIsSpentWithNothingSaid(in HavenInterior.BarFloor bar) =>
+        _observationWalkSpentOn = ObservationWalk.Key(
+            bar.BodyId, TheTail.ThePersonOfInterest(bar.BodyId));
 
     /// <summary>#1062 · The same walker with a different errand on it. <see cref="Walker"/> is init-only
     /// everywhere that matters, so the errand changes by replacing the record rather than by a setter

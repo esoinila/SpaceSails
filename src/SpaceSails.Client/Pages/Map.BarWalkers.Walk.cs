@@ -44,7 +44,7 @@ public partial class Map
             // does not end there — it ends when there is nobody standing at the far end of it.
             if (w.For is Errand.WalkingTheRoute or Errand.LettingYouPass)
             {
-                if (StepThePersonOfInterest(w, dt, walls, i))
+                if (StepThePersonOfInterest(w, dt, in bar, walls, i))
                 {
                     anybodyLanded = true;
                 }

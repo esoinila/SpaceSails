@@ -167,38 +167,17 @@ public static class IncidentBoard
     public static double ClearOfFurnitureDu => ChamberFitting.MinFittingDu / 2.0;
 
     /// <summary>Is this a square a board can hang on and a captain can stand at to read it? The three
-    /// questions the guard asks, asked here first — every published opening, the square the A* audit stands
-    /// a body on, and whatever the furnisher already stood against this wall.</summary>
+    /// questions the guard asks — every published opening, the square the A* audit stands a body on, and
+    /// whatever the furnisher already stood against this wall.
+    ///
+    /// <para>#701 · It is <see cref="ChamberFitting.StandsClear"/> now, which is this method's own body
+    /// moved rather than rewritten. The occupants' shelves (<see cref="Shelves"/>) hang under the same law
+    /// and a second copy of these three tests is exactly the two-authors-one-answer shape the furnishing
+    /// family already has a table of. Not a clearance changed, so not a board moved.</para></summary>
     private static bool Clear(
         double x, double y, in UndergroundComplex.Room room,
-        IReadOnlyList<SurfaceLayout.Doorway> openings)
-    {
-        foreach (SurfaceLayout.Doorway hole in openings)
-        {
-            if (ChamberFitting.BoxToPoint(
-                    Math.Min(hole.X1, hole.X2), Math.Min(hole.Y1, hole.Y2),
-                    Math.Max(hole.X1, hole.X2), Math.Max(hole.Y1, hole.Y2), x, y)
-                < ChamberFitting.OpeningClearDu)
-            {
-                return false;
-            }
-        }
-
-        double dx = x - room.X, dy = y - room.Y;
-        if (Math.Sqrt((dx * dx) + (dy * dy)) < ChamberFitting.CentreClearDu)
-        {
-            return false;
-        }
-
-        foreach (RingOffice.Fixture fit in room.Furniture)
-        {
-            if (ChamberFitting.BoxToPoint(fit.X0, fit.Y0, fit.X1, fit.Y1, x, y) < ClearOfFurnitureDu)
-            {
-                return false;
-            }
-        }
-        return true;
-    }
+        IReadOnlyList<SurfaceLayout.Doorway> openings) =>
+        ChamberFitting.StandsClear(x, y, in room, openings, ClearOfFurnitureDu);
 
     /// <summary>Every sentence this file can put on a screen, for the canon sweep.</summary>
     public static IEnumerable<string> AllProse()

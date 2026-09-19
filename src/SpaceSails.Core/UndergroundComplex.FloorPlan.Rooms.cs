@@ -255,7 +255,8 @@ public static partial class UndergroundComplex
     /// one segment is both the drawing and the collision — and it happens BEFORE the bins, which measure
     /// their own clearance against every wall the floor ended up with and would otherwise fit a bin inside a
     /// fume hood.</para></summary>
-    private static (IReadOnlyList<LabPosters.Poster> Posters, IncidentBoard.Board? Board) FurnishTheChambers(
+    private static (IReadOnlyList<LabPosters.Poster> Posters, IncidentBoard.Board? Board,
+        IReadOnlyList<Shelves.Shelf> Library) FurnishTheChambers(
         string bodyId, int level, List<SurfaceLayout.Wall> walls, List<EnSuite> ensuites,
         List<Room> published, double shaftX, double shaftY)
     {
@@ -340,6 +341,20 @@ public static partial class UndergroundComplex
         }
         IncidentBoard.Board? board =
             IncidentBoard.On(bodyId, level, published, everyHole, shaftX, shaftY);
-        return (posters, board);
+
+        // #701 · …AND THE OCCUPANTS' OWN SHELVES, LAST of the three wall-hung passes.
+        //
+        // Last because it is the only one that has to see the others: the board takes the one wall it wants
+        // on a lab floor and a shelf stood in front of it would be the room's own library hiding the gag the
+        // room is about. A shelf hangs under the furnishing law exactly as the board does — ChamberFitting's
+        // measured walls — so it is placed here, after the furniture and after the board, and never down in
+        // the room placer where the recesses have not been cut yet.
+        //
+        // It lays NO solid and no wall, which is why nothing below this line has to be re-read: the bins
+        // measure their clearance against every wall the floor ended up with, and the floor ends up with
+        // exactly the walls it had before this pass ran.
+        IReadOnlyList<Shelves.Shelf> library =
+            Shelves.On(bodyId, level, published, everyHole, board);
+        return (posters, board, library);
     }
 }

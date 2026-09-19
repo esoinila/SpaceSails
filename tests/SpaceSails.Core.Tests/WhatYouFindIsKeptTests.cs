@@ -301,8 +301,8 @@ public sealed class TheGroundHasItsOwnVoiceTests
     [Fact]
     public void RegolithGetsItsOwnPoolAndNotTheDeepSitesOne()
     {
-        var outside = HullShudder.LinesFor(HullShudder.Setting.Regolith);
-        var inside = HullShudder.LinesFor(HullShudder.Setting.DeepSite);
+        var outside = HullShudder.LinesFor(HullShudder.Setting.Regolith, inTheBar: false);
+        var inside = HullShudder.LinesFor(HullShudder.Setting.DeepSite, inTheBar: false);
 
         Assert.NotEmpty(outside);
         Assert.True(outside.All(l => !inside.Contains(l)),
@@ -316,7 +316,7 @@ public sealed class TheGroundHasItsOwnVoiceTests
         string[] forbidden =
             ["hull", "the room", "the bar", "the deck", "the crew", "everyone", "everybody", "every head"];
 
-        foreach (string line in HullShudder.LinesFor(HullShudder.Setting.Regolith))
+        foreach (string line in HullShudder.LinesFor(HullShudder.Setting.Regolith, inTheBar: false))
         {
             foreach (string bad in forbidden)
             {
@@ -331,7 +331,7 @@ public sealed class TheGroundHasItsOwnVoiceTests
         // The unison beat is the whole shape of this mechanic, and on a moon there is nobody to be in unison
         // with. That is not a reason to drop the beat — it is the best thing that could happen to it — but a
         // line that says "together" out there is describing a crowd that is not present.
-        foreach (string line in HullShudder.LinesFor(HullShudder.Setting.Regolith))
+        foreach (string line in HullShudder.LinesFor(HullShudder.Setting.Regolith, inTheBar: false))
         {
             Assert.DoesNotContain("together", line, System.StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("as one", line, System.StringComparison.OrdinalIgnoreCase);

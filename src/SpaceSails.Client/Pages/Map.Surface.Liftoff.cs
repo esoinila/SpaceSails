@@ -14,6 +14,29 @@ public partial class Map
 {
     // ── Liftoff: board the shuttle (player-initiated ONLY — nothing self-resolves). ──
 
+    /// <summary>
+    /// #336 · The boat's own gate on the ride home, asked the way <see cref="BoatReadyToFly"/> is asked and
+    /// refusing the way it refuses: a line in the captain's ear, the block cue, and nothing else moves.
+    ///
+    /// <para><b>A refusal here is never the end of the run.</b> Beyond the legs the geometry may still swing
+    /// back (#955 NAV-2's periodic windows), and above the catch speed the ship may still be braked or the
+    /// captain may simply wait for the pass to slow — so this says WHY and leaves the captain standing on the
+    /// ground with everything else they had. The maroon is announced by the ladder on the comms strip, which
+    /// is a different sentence in a different voice for exactly that reason.</para>
+    /// </summary>
+    private bool TheBoatWillFlyItUp()
+    {
+        ShuttleLink.Refusal refusal = AskTheBoatForTheRideHome();
+        if (refusal == ShuttleLink.Refusal.None)
+        {
+            return true;
+        }
+
+        ShowPulseMessage(ShuttleLink.RefusalLine(refusal));
+        RendererInterop.PlayCue("block");
+        return false;
+    }
+
     private void LiftOffFromSurface()
     {
         if (_surface is not { } ex)
@@ -26,6 +49,17 @@ public partial class Map
         // time 😎". Departing the SYSTEM was already gated; the ride HOME from a hull was not, which is exactly
         // where a captain meets the clock: standing at the lock, in the open, waiting to be let in.
         if (!BoatReadyToFly())
+        {
+            return;
+        }
+
+        // #336 · AND THEN THE ONLY OTHER QUESTION: CAN SHE BE CAUGHT? Owner ruling (2026-07-18): "the shuttle
+        // ship link should not break even if the ship undocks, because the docking is not requisite for the
+        // ship to stay in vicinity." Nothing below asks whether anybody is clamped on, whether the keeper is
+        // still paying its trim bill or whether the orbit has degraded — a ship drifting a tenth of a hop away
+        // is a captain with a ride home, and a ship holding a perfect orbit on the far side of the primary is
+        // a maroon. Range and closing speed, and nothing else.
+        if (!TheBoatWillFlyItUp())
         {
             return;
         }

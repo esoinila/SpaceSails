@@ -41,4 +41,25 @@ public static class ShuttleRange
     /// farther berth is a longer ride. A non-positive gap costs no time.</summary>
     public static double TravelSeconds(double distanceMeters) =>
         Math.Max(0.0, distanceMeters) / CruiseSpeedMps;
+
+    /// <summary>
+    /// #336 · <b>THE CATCH SPEED, AND WHY IT IS NOT A NEW NUMBER.</b>
+    ///
+    /// <para>Owner ruling (2026-07-18): <i>"the shuttle ship link should not break even if the ship undocks,
+    /// because the docking is not requisite for the ship to stay in vicinity. As long as the ship is in
+    /// shuttle range (shown on map) and is not moving too fast away, we should be able to fly back to it
+    /// from a landing site."</i></para>
+    ///
+    /// <para>A boat that cruises at <see cref="CruiseSpeedMps"/> cannot come alongside something receding
+    /// faster than that: she would be chasing a gap she cannot close, and even at zero range she could not
+    /// match hulls to open a lock. So the catch threshold IS the cruise speed — the same derivation the
+    /// reach already is, and for the same reason. There is no second number to drift.</para>
+    /// </summary>
+    public const double CatchSpeedMps = CruiseSpeedMps; // 8000 m/s
+
+    /// <summary>#336 · The whole shuttle link in one sentence: she can catch the mothership when the gap is
+    /// inside one hop AND the hulls are closing on each other slower than the boat can fly. Nothing here
+    /// asks whether anybody is docked, because docking was never what kept the link.</summary>
+    public static bool CanCatch(double distanceMeters, double relativeSpeedMps) =>
+        InRange(distanceMeters) && relativeSpeedMps >= 0 && relativeSpeedMps < CatchSpeedMps;
 }

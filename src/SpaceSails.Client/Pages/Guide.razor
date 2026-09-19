@@ -29,8 +29,14 @@
            has no `mp=` or `callsign=` key among the eighty-odd it does read. This guide's own opening
            promises it "covers everything currently aboard", so the passage is gone rather than softened —
            and nothing has been written in its place, because there is nothing to describe. *@
-        <li>Any voyage loads straight from a link: <code>/map?scenario=sol</code>, <code>sol-eu</code>,
-            or <code>wheel</code> — no home-page click needed.</li>
+        @* #323 · This used to say a voyage "loads STRAIGHT from a link", which is precisely the bug the
+           owner reported on 2026-07-18: a bookmarked /map?scenario=sol dropped a returning captain into
+           a brand-new life without ever offering the saves they had. A link names a SKY; it does not
+           decide that starting over is what you wanted. *@
+        <li>Any sky opens from a link: <code>/map?scenario=sol</code>, <code>sol-eu</code>, or
+            <code>wheel</code> — no home-page click needed. You still arrive at the <strong>logbook</strong>,
+            with Continue at the top and every banked berth listed; the link decides which world
+            <em>New voyage</em> would launch into.</li>
     </ul>
 
     <h2 id="duty-stations">2. The duty stations</h2>

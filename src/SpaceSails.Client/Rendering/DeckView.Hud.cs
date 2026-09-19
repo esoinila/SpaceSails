@@ -265,6 +265,55 @@ public sealed partial class DeckView
             airBottom = ay0 + ah + 20f;
         }
 
+        // ─────────────────────────────────────────────────────────────────────────────────────────────
+        // #336 · THE BOAT'S LEGS. Two circles and a dot, and that is the whole instrument.
+        //
+        // Owner ruling (2026-07-18): the link is range and closing speed, "shown on map". #212/#253's
+        // visible-geometry law says a radius the sim spends may not be a radius the captain cannot see — and
+        // this is the radius that decides whether an excursion has a way home, so it is the last one that
+        // should have stayed invisible.
+        //
+        // The OUTER ring is the boat's reach. The INNER ring is where the mothership actually is, at her
+        // honest fraction of it. The dot at the centre is this ground. When the inner ring reaches the outer
+        // one she is going, and when it is outside it she is gone — a thing a captain reads in the time it
+        // takes to glance, without a number, a word or a second instrument.
+        //
+        // NO BEARING IS DRAWN, and that is deliberate rather than lazy. The surface view's axes are the
+        // ground's; the gap to the mothership is measured in the Sun's frame. Painting her at some angle on
+        // this dial would claim a direction the instrument has no honest way to know — the third named bug
+        // class, drawn instead of written. Range is what we know, so range is all that is shown.
+        // ─────────────────────────────────────────────────────────────────────────────────────────────
+        if (hud.ShuttleLegs is { } legs)
+        {
+            float lr = Math.Max(13f, r * 0.40f);
+            float lcx = Math.Max(8f + lr, cx - r + lr);
+            float lcy = airBottom + 10f + lr;
+
+            // The rung's own ink, on the same three-step severity the comms strip is coloured by, so the
+            // ring and the line the ship is calling down can never read as two different situations. A
+            // CLOSED window (rung 3) wears the grey "not answering" ink #573's dead beacons wear: out of
+            // reach right now and coming back, which is neither calm nor a maroon.
+            RgbaColor ink = legs.Rung switch
+            {
+                0 => new RgbaColor(130, 235, 215, 210),
+                1 => new RgbaColor(225, 200, 95, 235),
+                2 => new RgbaColor(255, 70, 55, 245),
+                _ => new RgbaColor(150, 150, 158, 175),
+            };
+
+            _renderer.DrawCircle(lcx, lcy, lr, null, ink, 1.6f);
+            _renderer.DrawCircle(lcx, lcy, 2.2f, ink, ink);
+
+            // Clamped just past the rim rather than to it: a ship out of reach must be visibly OUTSIDE the
+            // legs, and one that is a hundred hops away looks the same as one that is two, because at that
+            // point the difference has stopped being information.
+            float her = (float)Math.Clamp(legs.RangeFraction, 0.0, 1.22) * lr;
+            _renderer.DrawCircle(lcx, lcy, Math.Max(her, 1.5f), null, ink, 1.3f);
+
+            _renderer.DrawText(lcx, lcy - lr - 5f, "SHUTTLE'S LEGS", ink, "bold 9px monospace", TextAlign.Center);
+            airBottom = lcy + lr + 10f;
+        }
+
         // Lane-1: the dig/sentry captions seated beneath the readout (owner: "advertise the dig and bot
         // options in text under the motion detector"). Column chrome only — and drawn only while each line
         // clears the viewport bottom, so a short screen never buries the keybar under them.

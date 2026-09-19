@@ -135,6 +135,32 @@ public static class HullShudder
         "Somewhere deep in the hull a joint takes up the slack with a boom you feel in your teeth. Heads lift all around, still as held breath — then, wordlessly and together, the bar decides it was nothing, and goes back to its drinks.",
     ];
 
+    /// <summary>
+    /// #1248 · <b>WHICH OF THOSE THREE ARE THE BAR'S, AND WHICH IS THE CONCOURSE'S.</b>
+    ///
+    /// <para>Found by #1245's ambient-pool audit and tabled there: the pool above gates on the whole haven
+    /// interior, but its lines do not all describe the same room. Two of them are made of the BAR's own
+    /// furniture — <i>"every head at the bar comes up as one… the glasses go back down"</i>, <i>"the bar
+    /// decides it was nothing, and goes back to its drinks"</i> — and fired on the concourse, in the
+    /// immigration hall and inside the observation walk. The third is the CONCOURSE's, by name: <i>"A shudder
+    /// walks through the concourse… the noise floods back"</i>, and it is just as wrong said to a captain
+    /// standing at a bar.</para>
+    ///
+    /// <para><b>So the scope is per LINE and the prose does not move.</b> The strings above are untouched and
+    /// stay in their authored order; this is the partition over them, and it is a PARTITION rather than two
+    /// lists — every line belongs to exactly one room, and
+    /// <c>HullShudderTests</c>/<c>AHavenLineKnowsItsRoomTests</c> hold it to covering all of them. A line
+    /// added tomorrow and forgotten here is a line nobody ever hears, which is why that is guarded rather
+    /// than trusted.</para>
+    ///
+    /// <para>Indices rather than a second copy of the words: two arrays of prose that had to agree is this
+    /// repository's oldest bug class, and the words are authored once, above.</para>
+    /// </summary>
+    private static readonly int[] HavenLinesTheBarOwns = [0, 2];
+
+    /// <summary>#1248 · …and the one the concourse owns. See <see cref="HavenLinesTheBarOwns"/>.</summary>
+    private static readonly int[] HavenLinesTheConcourseOwns = [1];
+
     private static readonly string[] ShipLines =
     [
         "The hull flexes with a long steel groan and every head aboard comes up at once. A shared, silent beat — then, together, you all decide it was just the ship talking to herself, and you get back to it.",
@@ -208,14 +234,48 @@ public static class HullShudder
     /// <summary>The house-voice line pool for a <paramref name="setting"/> — exposed so a test can pin that
     /// every line is non-blank and the pool holds no duplicates. The chill pool
     /// (<see cref="ChillLine"/>) is separate; this is the ordinary "it was nothing" voice.</summary>
-    public static System.Collections.Generic.IReadOnlyList<string> LinesFor(Setting setting) => setting switch
+    /// <param name="inTheBar">#1248 · Is the captain standing in the docked bar? It is REQUIRED rather than
+    /// defaulted, for the reason <see cref="ChillLinesFor"/> takes the ground's own fact the same way: a
+    /// caller that can decline to ask is a caller that will, and the whole bug here was a beat raised with no
+    /// room in its hand. Only <see cref="Setting.Haven"/> reads it — the ship, the regolith, a deep site and
+    /// pressurised ground have no bar to be in or out of — and there it picks the room's own lines.</param>
+    public static System.Collections.Generic.IReadOnlyList<string> LinesFor(Setting setting, bool inTheBar) =>
+        setting switch
+        {
+            Setting.Haven => TheHavensLinesFor(inTheBar),
+            Setting.Ship => ShipLines,
+            Setting.Regolith => RegolithLines,
+            Setting.Pressurised => PressurisedLines,
+            _ => DeepSiteLines,
+        };
+
+    /// <summary>#1248 · The haven's lines for the room the captain is actually standing in — projected off
+    /// <see cref="HavenLines"/> through the partition, so there is one copy of the words and one statement of
+    /// which room each belongs to.</summary>
+    private static System.Collections.Generic.IReadOnlyList<string> TheHavensLinesFor(bool inTheBar)
     {
-        Setting.Haven => HavenLines,
-        Setting.Ship => ShipLines,
-        Setting.Regolith => RegolithLines,
-        Setting.Pressurised => PressurisedLines,
-        _ => DeepSiteLines,
-    };
+        int[] mine = inTheBar ? HavenLinesTheBarOwns : HavenLinesTheConcourseOwns;
+        var said = new string[mine.Length];
+        for (int i = 0; i < mine.Length; i++)
+        {
+            said[i] = HavenLines[mine[i]];
+        }
+
+        return said;
+    }
+
+    /// <summary>#1248 · The whole haven pool, in its authored order — for the guards that hold the partition
+    /// to covering it and the prose to not having moved.</summary>
+    public static System.Collections.Generic.IReadOnlyList<string> EveryHavenLine() => HavenLines;
+
+    /// <summary>#1248 · Which of <see cref="EveryHavenLine"/> the bar owns, by index — exposed so the guard
+    /// can check the partition against the FURNITURE the lines name rather than against a second opinion
+    /// about it.</summary>
+    public static System.Collections.Generic.IReadOnlyList<int> TheBarsOwnHavenLines() => HavenLinesTheBarOwns;
+
+    /// <summary>#1248 · …and the concourse's. See <see cref="TheBarsOwnHavenLines"/>.</summary>
+    public static System.Collections.Generic.IReadOnlyList<int> TheConcoursesOwnHavenLines() =>
+        HavenLinesTheConcourseOwns;
 
     /// <summary>#867 · The chill-line pool — exposed for the same non-blank / unique pinning as the ordinary
     /// pools, and it takes the ground's own fact rather than offering a default, so no caller can decline to
@@ -292,9 +352,10 @@ public static class HullShudder
     /// <summary>The ordinary house-voice line for a shudder — deterministically drawn from the
     /// <paramref name="setting"/>'s pool per (seed, index), so the same shudder always speaks the same words
     /// and consecutive shudders rotate the pool rather than repeating.</summary>
-    public static string Line(Setting setting, ulong seed, int shudderIndex)
+    /// <param name="inTheBar">#1248 · See <see cref="LinesFor"/>. Required, never defaulted.</param>
+    public static string Line(Setting setting, bool inTheBar, ulong seed, int shudderIndex)
     {
-        System.Collections.Generic.IReadOnlyList<string> pool = LinesFor(setting);
+        System.Collections.Generic.IReadOnlyList<string> pool = LinesFor(setting, inTheBar);
         return pool[Index(seed, $"shudder-line:{shudderIndex}", pool.Count)];
     }
 
