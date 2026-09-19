@@ -142,6 +142,21 @@ public static class StoryBeats
         /// per universe against its own vault flag, and a card keyed on a person would quietly offer a
         /// second one the day a second person walked a route. There is one of these, ever.</summary>
         TheObservationWalk,
+
+        /// <summary>#1199 (2026-09-18) · <b>A LOOK THROUGH THE WALK'S COIN BINOCULARS.</b> Two coins in a
+        /// slot at the rail, and the optics show one of two things — out over the regolith, or straight down
+        /// through the glass floor. The SUBJECT is which look it was (<see cref="GalleryFixtures.Look"/>, by
+        /// name), because one beat with two paintings is exactly what that channel is for; two beats would be
+        /// two cadences to keep in step for one machine. The cadence is <see cref="Cadence.EveryTime"/>: a
+        /// captain who has paid again has bought the picture again, and a press that took the coins and
+        /// showed nothing is the worst refusal in this codebase — an absence.</summary>
+        TheWalksBinoculars,
+
+        /// <summary>#1199 (2026-09-18) · <b>THE GALLERY'S VENDING MACHINE.</b> A coin, a wrapper in a
+        /// language nobody aboard reads, and the one fact the room otherwise never states: somebody stocks
+        /// it. <see cref="Cadence.EveryTime"/> for the binoculars' own reason — the coin is taken every time,
+        /// so the card is owed every time.</summary>
+        TheGalleryVendor,
     }
 
     /// <summary>How often a beat is allowed to speak.</summary>
@@ -223,6 +238,13 @@ public static class StoryBeats
         // flag already refuses a second spend; this says the same thing one floor up, so the two halves of
         // "once" cannot ever come to two answers.
         Beat.TheObservationWalk => Cadence.OnceEver,
+
+        // #1199 (2026-09-18) · …and the two COIN MACHINES in its gallery are the opposite case, for the
+        // plainest reason in this file: the captain paid. A cadence that swallowed the second press would
+        // take the coins and show nothing, which is not restraint, it is a fixture that steals. EveryTime is
+        // also what makes the binoculars' alternation legible at all — the second look is the one that swings
+        // the optics down, and a cooled card would have hidden the half of this fixture worth finding.
+        Beat.TheWalksBinoculars or Beat.TheGalleryVendor => Cadence.EveryTime,
 
         // COOLED, because the moment is real every time and the CARD is not. A stranger standing you a drink
         // is worth a picture the first time each evening and wallpaper by the third; a captain throwing three
@@ -561,9 +583,21 @@ public static class StoryBeats
         // (ObservationWalk.ArtUrl) rather than a second painting of one view. The card is the absence, so
         // the picture has to be the place the captain is standing in with nobody in it.
         Beat.TheObservationWalk => ObservationWalk.ArtUrl,
+        // #1199 (2026-09-18) · The binoculars' canvas is chosen by the SUBJECT, which is the look the
+        // machine gave this press — the one channel this method already has for a beat with more than one
+        // painting, used for the reason it exists. The machine's own type decides; nothing is decided here.
+        Beat.TheWalksBinoculars => GalleryFixtures.ArtFor(LookIn(subject)),
+        Beat.TheGalleryVendor => GalleryFixtures.CafeteriaArtUrl,
 
         _ => PlateOf(beat, subject)?.ArtFile ?? "",
     };
+
+    /// <summary>#1199 (2026-09-18) · Which way the walk's binoculars were pointed, read back off the beat's
+    /// SUBJECT. The subject travels as the enum member's own name and is parsed here, in one place, so the
+    /// picture and the words cannot come to two answers — and an unparseable one reads as the view OUT,
+    /// which is the look the machine gives first and therefore the safe way to be wrong.</summary>
+    private static GalleryFixtures.Look LookIn(string? subject) =>
+        Enum.TryParse(subject, out GalleryFixtures.Look look) ? look : GalleryFixtures.Look.Out;
 
     /// <summary>The title: it names the place and the verb, never the outcome. "WHAT THE VACUUM LEFT", not
     /// "salvage complete".</summary>
@@ -593,6 +627,11 @@ public static class StoryBeats
         // already wears. It names the ROOM and not the event: a title that announced what had happened would
         // be the show telling the joke ahead of the picture.
         Beat.TheObservationWalk => ObservationWalk.Glyph + " " + ObservationWalk.CardTitle,
+        // #1199 (2026-09-18) · Each machine's card is titled with the PLATE bolted to the machine, which is
+        // the walk's own habit one room over: a title that announced what you were about to see would be the
+        // show telling the joke before the picture. One string, read off the fixture, never retyped.
+        Beat.TheWalksBinoculars => GalleryFixtures.BinocularsTitle,
+        Beat.TheGalleryVendor => GalleryFixtures.VendorTitle,
 
         // #664 · The one adopted beat whose stamp names its subject: "🕷 DEEP HOLD — IT OPENS BOTH WAYS". The
         // two halves are joined in NestPlates so they cannot drift apart in two files, exactly as the after-
@@ -694,6 +733,14 @@ public static class StoryBeats
             // card and the place cannot come to two accounts of one tube. Two sentences: the room, and then
             // the room running out. Nothing is explained and nothing is named — the card IS the absence.
             Beat.TheObservationWalk => ObservationWalk.CardBody,
+
+            // #1199 (2026-09-18) · The two coin machines, authored (Fable, owner's own commission), verbatim
+            // and entire, read off the fixture's own type. The binoculars' body is chosen by the same subject
+            // that chose the painting, one line above — a card whose words and whose picture came to two
+            // different views of which way the optics were pointed is this repository's "the sim doing one
+            // thing while a SENTENCE reports another" class, at a coin slot.
+            Beat.TheWalksBinoculars => GalleryFixtures.BodyFor(LookIn(subject)),
+            Beat.TheGalleryVendor => GalleryFixtures.VendorBody,
 
             // #664 · The adopted eleven read their caption off the same Core plate their title and their
             // painting come from. Not one word of these was retyped here: `KaamosLore.PlateFor` and the nine

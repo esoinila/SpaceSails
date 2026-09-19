@@ -157,11 +157,42 @@ public static partial class HavenInterior
         {
             walls.Add(new(TheWalk.MouthX, TheWalk.NorthJambY, TheWalk.BlindX, TheWalk.NorthJambY, true, true));
             walls.Add(new(TheWalk.MouthX, TheWalk.SouthJambY, TheWalk.BlindX, TheWalk.SouthJambY, true, true));
-            walls.Add(new(TheWalk.BlindX, TheWalk.NorthJambY, TheWalk.BlindX, TheWalk.SouthJambY, true, true));
 
-            // The plate, a third of the way out, so it is read on the way IN and is not sitting on top of
-            // whoever is standing at the rail. It is the room's NAME and says nothing else — Core's string,
-            // never retyped, because the map layer's plate and the card's title come from one place.
+            // ── #1199 (2026-09-18) · AND THE BLIND END IS NOT BLIND ANY MORE: THE GALLERY ────────────────
+            //
+            // Owner, live: "a tube, then an area to view… like the letter T — now we have the foot of the
+            // letter ready." The rail that used to close this end is now the far wall of a room, and what
+            // stood here is a doorless opening across the tube's whole width — no leaf, no jambs, nothing to
+            // walk through, the way a corridor opens into the room it belongs to. That is what keeps the
+            // whole T at ONE doorway (ObservationWalk.Doorways), which is what keeps #822's named exemption
+            // honest and what keeps the two-door tell reading the walk's tube as the SECOND doorway (#1233).
+            //
+            // The back wall is therefore two stubs off the tube's own jambs, and they are the only STONE in
+            // this room: the machines are bolted to them and there is a concourse on the other side. The
+            // other three are glass, exactly as the tube's three were — the same IsWindow the bar's spinward
+            // window is drawn with, the same WindowLine, no new renderer and no new ink.
+            walls.Add(new(TheGallery.EastX, TheGallery.NorthY, TheWalk.BlindX, TheWalk.NorthJambY, false, true));
+            walls.Add(new(TheGallery.EastX, TheGallery.SouthY, TheWalk.BlindX, TheWalk.SouthJambY, false, true));
+            walls.Add(new(TheGallery.EastX, TheGallery.NorthY, TheGallery.WestX, TheGallery.NorthY, true, true));
+            walls.Add(new(TheGallery.EastX, TheGallery.SouthY, TheGallery.WestX, TheGallery.SouthY, true, true));
+            walls.Add(new(TheGallery.WestX, TheGallery.NorthY, TheGallery.WestX, TheGallery.SouthY, true, true));
+
+            // …and the two machines are SOLID, the way the bar's counter is a real wall you belly up to
+            // rather than a picture you walk through. Face and two flanks; the fourth side is the station's
+            // own back wall, which the machine is bolted to. They are drawn as filled blocks below
+            // (DeckPlan.FurnitureSpot, #868's grammar) so the walked room and the drawn room are one room —
+            // this repository's third named bug class, with a drinks cabinet in it.
+            foreach ((double X0, double Y0, double X1, double Y1) box in TheVendingMachineBlocks(spec.BodyId))
+            {
+                walls.Add(new((float)box.X0, (float)box.Y0, (float)box.X0, (float)box.Y1, false, false));
+                walls.Add(new((float)box.X0, (float)box.Y0, (float)box.X1, (float)box.Y0, false, false));
+                walls.Add(new((float)box.X0, (float)box.Y1, (float)box.X1, (float)box.Y1, false, false));
+            }
+
+            // The plate, a third of the way out along the STEM, so it is read on the way IN and is not
+            // sitting on top of whoever is standing at the rail. ONE plate for the whole T: Core's string,
+            // never retyped, because the map layer's plate and the card's title come from one place — and
+            // because the tube and the gallery are one room and a second plate would say they were two.
             labels.Add((
                 TheWalk.MouthX - ((float)ObservationWalk.LengthDu / 3f),
                 (TheWalk.NorthJambY + TheWalk.SouthJambY) / 2f,
@@ -397,6 +428,16 @@ public static partial class HavenInterior
             tables.Add(new(top.X, top.Y));
         }
 
+        // #1199 (2026-09-18) · …AND THE GALLERY'S TWO STEEL TABLES. Drawn tops like every other top on this
+        // deck, and appended to the DRAWN list only — never to BarFloor.Tops, which is what the room's own
+        // walkers cross the floor to. A regular who wandered out to the end of the observation walk for a
+        // sit-down would be the one thing this whole feature cannot survive: the gallery is a room nobody is
+        // in, and that is the entire content of the beat it carries.
+        foreach (DeckReachability.Point top in GalleryTops(spec.BodyId))
+        {
+            tables.Add(new((float)top.X, (float)top.Y));
+        }
+
         var backdrops = new List<DeckPlan.Backdrop>(ship.Backdrops)
         {
             // Concourse art across the round hall — sized ~16:9 to match the image so the domed ceiling
@@ -418,6 +459,28 @@ public static partial class HavenInterior
                 ObservationWalk.ArtUrl,
                 TheWalk.BlindX, TheWalk.NorthJambY,
                 TheWalk.MouthX - TheWalk.BlindX, TheWalk.NorthJambY - TheWalk.SouthJambY,
+                0.55f));
+
+            // #1199 (2026-09-18) · …AND THE GALLERY GETS ITS OWN CANVAS, which is the room itself.
+            //
+            // The tube's plate is a drop seen down a 24 × 3.5 slot, and it is already stretched nearly seven
+            // to one to fill that; the crossbar is a different shape again and would have been the same
+            // picture at a visibly different stretch two du apart. So the gallery takes a plate painted FOR
+            // it, at the same 0.55 the tube's drop is held back to, so the deck's own floor still reads
+            // through it and the captain is plainly walking ON something.
+            //
+            // #1199 (2026-09-18, PLAYED) · AND IT IS THE PORTRAIT ONE. Owner, on the merged room: "the hat
+            // is drawn TALL … and the 16:9 cafeteria plate is stretched ~3:1 into it — the vending machines
+            // read as tall slivers." The tube runs due west, so this rectangle is 8 ACROSS by 24 ALONG —
+            // 0.333 — and a 16:9 canvas laid in it is squeezed to under a fifth of its width. The landscape
+            // plate stays where landscape belongs (the vending card and the seated panel); the FLOOR wears
+            // the 9:16 one, which is the room's own shape and needs no rotation to sit right — the pen has
+            // no angle to give it (DrawImage takes x, y, w, h and an alpha), and a 9:16 canvas is already
+            // long in the axis this room is long in. TheRoomAndItsPlateAreTheSameShapeTests measures both.
+            backdrops.Add(new(
+                GalleryFixtures.CafeteriaFloorArtUrl,
+                TheGallery.WestX, TheGallery.NorthY,
+                TheGallery.EastX - TheGallery.WestX, TheGallery.NorthY - TheGallery.SouthY,
                 0.55f));
         }
 
@@ -477,6 +540,44 @@ public static partial class HavenInterior
             }
         }
 
+        // ── #1199 (2026-09-18) · THE GALLERY'S OWN FIXTURES ─────────────────────────────────────────────
+        //
+        // Owner, live: "a small vending machine cafeteria with a couple of tables there… the station likes to
+        // get the tourist money", and "maybe one of those pay-coin-to-use binoculars … use with E … same for
+        // the vending machine."
+        //
+        // Three presses and two blocks, and every coordinate comes off the room's own published geometry
+        // (HavenInterior.cs) rather than out of this loop — so the guards that hold a fixture to being inside
+        // the gallery, out of the rail band or clear of its neighbours are reading the same numbers the deck
+        // was built from. A top here carries the SAME label the bar's free tops wear, because it is the same
+        // verb and the same sitting; what it is not is the bar (see GalleryTops).
+        var furniture = new List<DeckPlan.FurnitureSpot>(ship.Furniture);
+        if (HasObservationWalk(spec.BodyId))
+        {
+            if (TheBinocularsAt(spec.BodyId) is { } glasses)
+            {
+                consoles.Add(new(DeckPlan.ConsoleKind.CoinBinoculars,
+                    (float)glasses.X, (float)glasses.Y, GalleryFixtures.BinocularsPlate));
+            }
+
+            foreach (DeckReachability.Point vendor in TheVendorsAt(spec.BodyId))
+            {
+                consoles.Add(new(DeckPlan.ConsoleKind.CoinVendor,
+                    (float)vendor.X, (float)vendor.Y, GalleryFixtures.VendorPlate));
+            }
+
+            foreach ((double X0, double Y0, double X1, double Y1) block in
+                     TheVendingMachineBlocks(spec.BodyId))
+            {
+                furniture.Add(new((float)block.X0, (float)block.Y0, (float)block.X1, (float)block.Y1, 0));
+            }
+
+            foreach (DeckReachability.Point top in GalleryTops(spec.BodyId))
+            {
+                consoles.Add(new(DeckPlan.ConsoleKind.BarTop, (float)top.X, (float)top.Y, BarTopLabel));
+            }
+        }
+
         return new DeckPlan(walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(),
             spawnX: 2.5, spawnY: 6, // aboard, in the airlock corridor, facing up the tube
             // #973 L0 · …and the WALKER BAND after the room's own seated figures, when somebody is walking this
@@ -506,7 +607,7 @@ public static partial class HavenInterior
             // without — so the moment she clamped on, the seats [E] still answers at would have stopped
             // being drawn: the walked room and the drawn room disagreeing, which is this repository's third
             // named bug class with a bar stool under it.
-            stools: ship.Stools, furniture: ship.Furniture);
+            stools: ship.Stools, furniture: furniture.ToArray());
     }
 
     // Ship's three droids, the immigration officer, the four seated bar regulars (issue #410, roved by the

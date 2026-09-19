@@ -142,5 +142,9 @@ public sealed class TheDeathCardsShelfDoorTests : IAsyncLifetime
             new() { Timeout = BootTimeoutMs });
         await _page.Locator(DeathCard).WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+
+        // #1234 · …and it has stopped growing. The death card arrives in stages; a box read mid-cascade is
+        // a box nothing was ever laid out at.
+        await _page.SettledAsync(DeathCard);
     }
 }

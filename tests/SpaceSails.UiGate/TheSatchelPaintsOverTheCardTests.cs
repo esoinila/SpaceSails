@@ -90,6 +90,10 @@ public sealed class TheSatchelPaintsOverTheCardTests : IAsyncLifetime
         await _page.Locator(Satchel).WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
 
+        // #1234 · nothing may have moved for three quarters of a second before a box is read — a
+        // geometry assertion made on a layout still being written is a coin toss (see GateReady).
+        await _page.SettledAsync(Satchel + ", " + ArrivalCard);
+
         // 2 · AND IT IS WHAT THE MOUSE WOULD HIT. The issue's own instrument: elementFromPoint at the middle
         //     of the pocket. On the broken build this returns the arrival card's <img>.
         string hitReport = await _page.EvaluateAsync<string>(

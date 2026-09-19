@@ -317,16 +317,23 @@ public sealed class TheTailBehindYouTests
             $"{CoatY(inTheRoom):F2}) and the room's south wall is at y={bar.FloorY:F2} — he is NOT in the " +
             "room with the captain, so whatever this guard sees next is not a man following him out (#1229).");
 
-        // …and now the captain WALKS — at a walking pace, out of the bar, across the concourse and out to the
-        // blind end of #1199's tube, where the only spot in the room with a line to him is its own mouth. He
-        // is never teleported: a captain who blinked across the floor would break the man's line for him, and
-        // this guard would be testing the LOSING rule by accident.
+        // …and now the captain WALKS — at a walking pace, out of the bar, across the concourse and down
+        // #1199's tube to the far end of it, where the only spot in the room with a line to him is its own
+        // mouth. He is never teleported: a captain who blinked across the floor would break the man's line
+        // for him, and this guard would be testing the LOSING rule by accident.
+        //
+        // #1199 (2026-09-18) · THE LANDMARK MOVED WITH THE ROOM, and the claim above did not. The tube's
+        // blind end used to BE the rail; the walk is a T now, and the far end of the leg is the THROAT where
+        // it opens into the gallery. The rail is out in the crossbar, at the one stretch of glass the mouth
+        // cannot see — walk all the way to THERE and the man at the mouth has no line at all, which is the
+        // LOSING rule and a different guard's business (the one below). Standing here is still the captain
+        // doubling back into a one-way room with one doorway between them, which is what this tell is.
         DeckReachability.Point mouth = HavenInterior.TheWalksMouthAt(Berth)!.Value;
-        DeckReachability.Point rail = HavenInterior.TheRailAt(Berth)!.Value;
+        DeckReachability.Point throat = HavenInterior.TheThroatAt(Berth)!.Value;
         WalkCaptainTo(map, HavenInterior.BarThreshold.X, HavenInterior.BarThreshold.Y - 4);
         WalkCaptainTo(map, 2.5, 40);
         WalkCaptainTo(map, mouth.X, mouth.Y);
-        WalkCaptainTo(map, rail.X, rail.Y);
+        WalkCaptainTo(map, throat.X, throat.Y);
 
         for (int i = 0; i < 900 && !(bool)Field(map, "_coatSeen")!; i++)
         {

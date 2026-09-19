@@ -188,28 +188,145 @@ public class TheSkyIsTheSameSkyOneShipAtATimeTests
     public void TakingOneStepIsCheaperThanTakingOneShip()
     {
         // THE ONLY ONE OF THE THREE THAT CAN TELL A REAL HANDOVER FROM A COSMETIC ONE. An iterator that did
-        // all of a ship's work and then yielded three times would satisfy the shape law above and the same-
-        // sky law beside it, and would hand the browser the identical four-second block. So the measurement
-        // is a ratio, in the idiom TheWaveIsLazyUntilItIsWalked already uses: the FIRST STEP against the
-        // FIRST SHIP, out of the same wave. The first ship is mid-flight — a probe search, a real search and
-        // a catch-up — so one step of her is about a third; the 2x margin is the honest half of that.
-        CircularOrbitEphemeris sol = Sol();
-        _ = TrafficSchedule.Generate(sol, BootSeed, 1); // warm the planner's own first-call costs
+        // all of a ship's work and then yielded three times would satisfy the shape law above and the
+        // same-sky law beside it, and would hand the browser the identical four-second block.
+        //
+        // #1236 · IT USED TO ASK A STOPWATCH, AND A STOPWATCH IS NOT A PROPERTY OF THE CODE. It compared
+        // `oneStepMs * 2 < oneShipMs` and went red on CI on a DOC-ONLY PR (#1235: "one STEP of the first
+        // hauler cost 323 ms against 577 ms"), because the first step of the first hauler pays the JIT and
+        // tiering warm-up for the whole route planner. Green here, green on its own lane's CI, red on a
+        // shared runner on a commit that changed a markdown file: a guard whose verdict is about the host
+        // rather than about the handover.
+        //
+        // So the same question is asked by COUNTING THE WORK instead. Every piece of planning in here —
+        // both route searches and every step of the catch-up integration — has to ask the ephemeris where
+        // a body is, so a counting ephemeris measures the work in units the code actually performs, with
+        // no clock in it at all. It is the stronger instrument as well as the stable one: a cosmetic
+        // handover does not merely fail the ratio, it lands on EXACT EQUALITY, because the first step and
+        // the first ship would have done the identical work.
+        var sol = new CountingEphemeris(Sol());
 
-        var clock = System.Diagnostics.Stopwatch.StartNew();
-        NpcShip firstShip = TrafficSchedule.GenerateShipByShip(sol, BootSeed, BootCount).First();
-        long oneShipMs = clock.ElapsedMilliseconds;
-
-        clock.Restart();
+        long beforeStep = sol.Queries;
         TrafficSchedule.TrafficStep firstStep = TrafficSchedule.GenerateStepByStep(sol, BootSeed, BootCount).First();
+        long oneStepQueries = sol.Queries - beforeStep;
+
+        long beforeShip = sol.Queries;
+        NpcShip firstShip = TrafficSchedule.GenerateShipByShip(sol, BootSeed, BootCount).First();
+        long oneShipQueries = sol.Queries - beforeShip;
+
+        // The timings stay — as a DIAGNOSTIC, printed, never asserted. They are the thing #161 actually
+        // cares about and they are worth having in the log; they are not worth failing a build over.
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        _ = TrafficSchedule.GenerateStepByStep(sol, BootSeed, BootCount).First();
         long oneStepMs = clock.ElapsedMilliseconds;
+        clock.Restart();
+        _ = TrafficSchedule.GenerateShipByShip(sol, BootSeed, BootCount).First();
+        long oneShipMs = clock.ElapsedMilliseconds;
+        Console.WriteLine(
+            $"[#161 diagnostic] first step {oneStepQueries} ephemeris queries / {oneStepMs} ms · "
+            + $"first ship {oneShipQueries} queries / {oneShipMs} ms");
 
         Assert.NotNull(firstShip.Id);
         Assert.Null(firstStep.Ship); // the first step of a mid-flight hauler finishes nothing
-        Assert.True(oneStepMs * 2 < oneShipMs,
-            $"one STEP of the first hauler cost {oneStepMs} ms against {oneShipMs} ms for the whole of her — "
-            + "the step handover is not breaking her planning up, so the boot still owes the browser one "
-            + "block per ship.");
+
+        // The premise, out loud: this wave really does open on a mid-flight hauler, so there is something
+        // here to break up. A wave that opened on a scheduled departure would make the law below trivially
+        // true about a ship that is one step by design.
+        Assert.True(oneShipQueries > 0 && oneStepQueries > 0,
+            "neither the first step nor the first ship asked the ephemeris anything — this law is counting "
+            + "a wave that does no planning at all.");
+
+        Assert.True(oneStepQueries * 2 < oneShipQueries,
+            $"one STEP of the first hauler did {oneStepQueries} units of planning work against "
+            + $"{oneShipQueries} for the whole of her — the step handover is not breaking her planning up, "
+            + "so the boot still owes the browser one block per ship. (Work is counted as ephemeris "
+            + "queries, never milliseconds: see #1236.)");
+    }
+
+    [Fact]
+    public void NoSingleStepCarriesMoreThanItsShareOfAHauler()
+    {
+        // #1236 · THE OTHER HALF OF THE SAME QUESTION, AND THE HALF THE OLD RATIO COULD NOT ASK AT ALL: not
+        // "is the FIRST step small" but "is EVERY step small". A handover that broke the probe search out
+        // and left the real search and the whole catch-up in one block would pass the law above — the first
+        // step really would be cheap — and would still hand the browser the block #161 exists to kill.
+        //
+        // Counted, per step, for every hauler in the wave: the most expensive single step of a mid-flight
+        // hauler may not be half of her. The catch-up is sliced at CatchUpStepsPerSlice, so in a real
+        // handover her worst step is one slice out of several and this is not close; collapse the slicing
+        // and her catch-up becomes one step worth most of the ship, which is exactly the red.
+        var sol = new CountingEphemeris(Sol());
+
+        var costs = new Dictionary<int, List<long>>();
+        long last = sol.Queries;
+        foreach (TrafficSchedule.TrafficStep step in TrafficSchedule.GenerateStepByStep(sol, BootSeed, BootCount))
+        {
+            long now = sol.Queries;
+            costs.TryAdd(step.ShipIndex, []);
+            costs[step.ShipIndex].Add(now - last);
+            last = now;
+        }
+
+        Assert.Equal(BootCount, costs.Count);
+
+        // A mid-flight hauler is the one that arrives over several steps (NoShipIsHandedOverInASinglePiece
+        // pins that shape); a scheduled departure is one step and has nothing to divide.
+        var haulers = costs.Where(c => c.Value.Count > 1).ToList();
+        Assert.True(haulers.Count >= BootCount * 6 / 10,
+            $"only {haulers.Count} of {BootCount} ships arrived over more than one step — this law is "
+            + "reading a wave with no mid-flight hauler in it to break up.");
+
+        foreach ((int index, List<long> perStep) in haulers)
+        {
+            long whole = perStep.Sum();
+            long worst = perStep.Max();
+            Assert.True(whole > 0,
+                $"hauler {index + 1} did no planning work at all — nothing here is being measured.");
+            Assert.True(worst * 2 <= whole,
+                $"hauler {index + 1} came over in {perStep.Count} steps, but her worst single step did "
+                + $"{worst} of her {whole} units of planning work — more than half of her in one block, "
+                + "which is the block #161 exists to break up. (Work is counted as ephemeris queries, "
+                + "never milliseconds: see #1236.)");
+        }
+    }
+
+    /// <summary>
+    /// #1236 · WORK, COUNTED — the instrument that replaced the stopwatch in this file.
+    ///
+    /// <para>Every piece of planning the traffic schedule does — a probe route search, a real route search,
+    /// each step of a catch-up integration — has to ask the ephemeris where a body is. Counting those asks
+    /// measures the work in units the code performs, so a law written on it is a statement about the
+    /// handover rather than about how busy the runner was. It delegates everything and changes no number:
+    /// the wave that comes out through this wrapper is the wave that comes out without it, which
+    /// <see cref="TheCountingEphemerisIsTheSameSky"/> holds.</para>
+    /// </summary>
+    private sealed class CountingEphemeris(ICelestialEphemeris inner) : ICelestialEphemeris
+    {
+        public long Queries { get; private set; }
+
+        public IReadOnlyList<CelestialBody> Bodies => inner.Bodies;
+
+        public SpaceSails.Contracts.TrafficDefinition? Traffic => inner.Traffic;
+
+        public Vector2d Position(string bodyId, double simTime)
+        {
+            Queries++;
+            return inner.Position(bodyId, simTime);
+        }
+
+        public double InstantaneousOrbitRadius(string bodyId, double simTime)
+            => inner.InstantaneousOrbitRadius(bodyId, simTime);
+    }
+
+    [Fact]
+    public void TheCountingEphemerisIsTheSameSky()
+    {
+        // The instrument's own premise: a wrapper that changed the wave would make every law written on it
+        // a law about something else. Same ids, same places, to the metre.
+        IReadOnlyList<NpcShip> plain = TrafficSchedule.Generate(Sol(), BootSeed, BootCount);
+        IReadOnlyList<NpcShip> counted = TrafficSchedule.Generate(new CountingEphemeris(Sol()), BootSeed, BootCount);
+
+        AssertTheSameWave(plain, counted);
     }
 
     [Theory]
@@ -305,26 +422,38 @@ public class TheSkyIsTheSameSkyOneShipAtATimeTests
         // fourteen-second block and this lane would have changed nothing at all — while every other test in
         // this file went on passing, because an eager wave IS the same wave.
         //
-        // So the measurement is a ratio, not a clock reading: the whole wave against the ask PLUS the first
-        // ship out of it. Lazily, that is one ship of eight and by far the cheapest way to get one; eagerly
-        // the two are the same number. The margin is enormous (the first ship is under a third of the wave
-        // on every payload this has been run on), which is why a coarse 2× is a law and not a flake.
-        CircularOrbitEphemeris sol = Sol();
-        _ = TrafficSchedule.Generate(sol, BootSeed, 1); // warm the planner's own first-call costs
+        // So the measurement is a ratio: the whole wave against the ask PLUS the first ship out of it.
+        // Lazily, that is one ship of eight and by far the cheapest way to get one; eagerly the two are the
+        // same number.
+        //
+        // #1236 · AND IT IS COUNTED, NOT TIMED. This was a Stopwatch ratio too, the twin of the one that
+        // went red on a doc-only PR next door, and it would have gone the same way on a busy enough runner.
+        // Work is ephemeris queries now — the asks the planner really makes — so the verdict is a property
+        // of the code. It is the sharper instrument as well: an EAGER wave does not merely lose the 2x
+        // margin, it makes the ASK cost the whole wave and the walk cost nothing, which the first assertion
+        // below catches outright.
+        var sol = new CountingEphemeris(Sol());
 
-        var clock = System.Diagnostics.Stopwatch.StartNew();
+        long beforeAsk = sol.Queries;
+        IEnumerable<NpcShip> unwalked = TrafficSchedule.GenerateShipByShip(sol, BootSeed, BootCount);
+        long askQueries = sol.Queries - beforeAsk;
+
+        Assert.Equal(0, askQueries);   // the ask itself plans NOTHING — the whole point of the handover
+
+        long beforeFirst = sol.Queries;
+        NpcShip firstShip = unwalked.First();
+        long oneShipQueries = sol.Queries - beforeFirst;
+
+        long beforeWave = sol.Queries;
         _ = TrafficSchedule.Generate(sol, BootSeed, BootCount);
-        long wholeWaveMs = clock.ElapsedMilliseconds;
-
-        clock.Restart();
-        NpcShip firstShip = TrafficSchedule.GenerateShipByShip(sol, BootSeed, BootCount).First();
-        long askAndOneShipMs = clock.ElapsedMilliseconds;
+        long wholeWaveQueries = sol.Queries - beforeWave;
 
         Assert.NotNull(firstShip.Id);
-        Assert.True(askAndOneShipMs * 2 < wholeWaveMs,
-            $"asking for the wave and taking ONE ship out of it cost {askAndOneShipMs} ms against "
-            + $"{wholeWaveMs} ms for all {BootCount} — the planning is happening at the ASK, so it is still "
-            + "one block and the boot still freezes on it.");
+        Assert.True(oneShipQueries * 2 < wholeWaveQueries,
+            $"asking for the wave and taking ONE ship out of it did {oneShipQueries} units of planning work "
+            + $"against {wholeWaveQueries} for all {BootCount} — the planning is happening at the ASK, so it "
+            + "is still one block and the boot still freezes on it. (Work is counted as ephemeris queries, "
+            + "never milliseconds: see #1236.)");
     }
 
     [Fact]
