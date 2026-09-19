@@ -718,6 +718,19 @@
     font-style: italic;
 }
 
+/* #533 · THE FOURTH LINE — two numbers an instrument read, under a hairline, in the face the ship's own
+   boards are printed in. Quieter than the caption above it, and deliberately NOT italic: the caption is the
+   game telling you what you are looking at; this is a gauge, and a gauge has no voice. */
+.view-object-anomaly {
+    margin-top: 0.15rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(232, 236, 244, 0.14);
+    color: rgba(232, 236, 244, 0.72);
+    font: 0.86rem/1.45 monospace;
+    letter-spacing: 0.02em;
+    text-align: center;
+}
+
 ::deep .view-object-close {
     align-self: center;
     margin-top: 0.2rem;

@@ -581,3 +581,40 @@ trusted: the incommensurability bound (stated as *q²·|r − p/q| ≥ 0.35* for
 because Dirichlet says a list of fractions cannot be the law), both ends of "never broken, never right", the
 morning that lands in all 100 hundredths of a watch over 500 cycles, the beat enumerated over its 128 inputs,
 and the source sweep above.
+
+---
+
+## 7 · Two instruments that disagree — the derived anomaly (#533, 2026-09-19)
+
+> *"The story ones are exceptional in some sense that we are left to wonder. Like what was such a rich ship
+> doing there-kind of things 😎"* — owner, on #533
+
+The open half of #533. An **anomaly** is two numbers the game already computes, read off two instruments,
+that do not sit together — and nobody aboard is left to ask. It is **not a cause**: the report still names
+what happened, and the dropdown does not grow a word. About **one hull in ten** carries one (one in three of
+the hulls whose own numbers support one), and **nothing about a hull that carries one is visible until she
+is read** — same eight fittings, same consoles, same deck.
+
+Of the issue's five derived anomalies, **one is honestly derivable off shipped facts** and ships here; the
+other four are audited, with their canon lines and the exact number each is waiting for, in
+[`features/the-paperwork.md` §7c](features/the-paperwork.md).
+
+| what | link | what to look for |
+| --- | --- | --- |
+| **A rich hull on a road nobody lists** (#533, this PR) | [`?wreck=mutiny&land=1`](https://esoinila.github.io/SpaceSails-play/map?wreck=mutiny&land=1) — the cheat seeds her as `lost-1`, the **Understudy**, cargo assessed at **318,765 cr**, and parks her off **THE TILT**: a berth that carries real tonnage, all of it discreet, **none of it on any board** (#541's own rule, and `ArrivalTubeTests` already pins it at zero). Board her and walk aft to the arms locker — 🔒 **THE ARMS LOCKER**, her cause station, the one you came here to read. | Press `[E]`. The survey card comes up as it always has — her painting, and under it *"two barricades facing each other down one corridor, and the arms locker opened with a cutting torch"* — and then, under a hairline, in the face the ship's own boards are printed in, **a fourth line**: <br><br>**`Assessed at 318,765 cr. Traffic on this road, listed, this year: none.`**<br><br>Two facts, side by side, and **nothing under them.** No heading, no verb, no third sentence. Close the card and open the Captain desk → 📜 **Ledger**: the book has taken one line, filed under the hull as a `📍` PLACE — *"Understudy — assessed at 318,765 cr, no listed traffic on this road this year, and nobody aboard to ask"*. Read her manifest two rooms away and it quotes the **same** 318,765 cr, which is the whole point: you can check it. |
+| **…and the ordinary ship, which is nearly all of them** | [`?wreck=insurancejob&land=1`](https://esoinila.github.io/SpaceSails-play/map?wreck=insurancejob&land=1) — the **Quiet Sister**, assessed at **291,429 cr**, off the same unlisted berth. Rich enough to qualify; not dealt one. | Her cause station reads exactly as it did before this lane: painting, evidence caption, **and nothing after it.** No empty slot, no hairline, no gap where a line would go — a card that grew a space would tell you there was something to find on the hulls where the space is full. Eight of the ten cause hulls read like this. |
+| **…and the same hull on a road that IS listed** | any wreck boarded off a berth with scheduled traffic — e.g. [`?wreck=mutiny&land=1&dock=ringside-exchange`](https://esoinila.github.io/SpaceSails-play/map?wreck=mutiny&land=1&dock=ringside-exchange) (23 on the board) or `&dock=selene-gate` (10). | **No fourth line at all**, on the same rich hull. The anomaly is about *where she is*, so moving her to a road the world lists takes it away — which is also the guard: a hull on a listed road is never called a poor road however rich she is. |
+| **…and the half that must look exactly the same** | every other link in this file, and every `?wreck=` cause above | **Everything.** The deck, the eight fittings, the three stations, the cradle row, the choice card and the ten causes are untouched; the paperwork lane gains no option; the frame-hash ledger did not move a row. |
+
+**What would say this regressed:** a line that *explains* either number rather than stating both (any of
+*because / why / must / so that / explains / means* is a source-swept failure); an anomaly on a hull whose
+manifest quotes a different value; a second surface, a banner, a marker on the deck or a mark on the console
+label; the same hull carrying one on one boarding and not on the next; an "ANOMALY" row in the report's
+cause list; or any file in the tree other than `WreckAnomaly.cs` and `Map.Wreck.cs` naming the feature —
+which is how a later system would come to *resolve* one, and that is the thing #533 forbids outright.
+
+**The law behind it.** `TwoInstrumentsDisagreeTests` (Core, 13 guards) and `TheFourthLineAtTheSurveyTests`
+(Client, 6): determinism over the whole seeded fleet, at most one per hull, every dealt anomaly's inequality
+re-derived from the hull's own numbers on both kinds of road, the measured rate, the causal-word and
+reserved-word sweep, the two-files-only source law, and the link in this row proved to boot a hull that
+really carries one.
