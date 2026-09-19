@@ -171,6 +171,28 @@ public static class IllegalHeat
         /// read off the cheapest rung in the game rather than chosen.</para>
         /// </summary>
         AnUnlistedParcelAboard,
+
+        /// <summary>
+        /// #746 · <b>SOMEBODY ON THEIR ROTA WROTE YOUR NAME DOWN AT A CHECKPOINT AND LET YOU GO.</b>
+        /// Appended, like every member before it, because several switches name these arms by hand.
+        ///
+        /// <para>The YES-BUT band of a guard-stop encounter, and the whole of what it costs. Fail Forward's
+        /// middle band is <i>it lands and costs something real</i> — <b>"a favour owed, your name in a book
+        /// under a name that isn't yours"</b> is <see cref="Encounter"/>'s own wording for it — and this is
+        /// that book. He believed you enough to point, and not enough to forget the afternoon.</para>
+        ///
+        /// <para>It is the CHEAPEST rung, beside the parcel, and for the parcel's own reason: nothing
+        /// happened. Nobody was walked anywhere, nothing was taken, nothing was refused, and the captain got
+        /// exactly what they asked for. The weight is
+        /// <see cref="UndergroundComplex.RefusedCardHeat"/> — <b>quoted rather than typed</b>, like the three
+        /// machine refusals above — so one of these can never move a band on its own and the day the cheapest
+        /// rung is tuned there is still one number to change.</para>
+        ///
+        /// <para><b>And nothing says it.</b> Every other member of this enum is banked beside a sentence the
+        /// captain reads; this one is banked in silence, because a line about it would be the building
+        /// telling somebody it has started remembering them (§13.8).</para>
+        /// </summary>
+        YourNameInTheirBook,
     }
 
     /// <summary>What one crossing costs. Small numbers on purpose: the pressure in this meter comes from
@@ -187,6 +209,7 @@ public static class IllegalHeat
         Crossing.TheKickOut => 4,
         Crossing.SheWentAtTheirBerth => Ceiling,
         Crossing.AnUnlistedParcelAboard => UndergroundComplex.RefusedCardHeat,
+        Crossing.YourNameInTheirBook => UndergroundComplex.RefusedCardHeat,
         _ => 0,
     };
 
