@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using SpaceSails.Core;
+using SpaceSails.Client.Rendering;
 using SpaceSails.Core.Interior;
 using Xunit;
 using static SpaceSails.Client.Tests.CastawayBench;
@@ -205,15 +206,21 @@ public sealed class TheBurnTakesTheParcelTooTests
                 SearchOption.AllDirectories)
             .Select(f => Code(File.ReadAllText(f))));
 
-        // ONE predicate, and it is the only thing in the client that touches the tag.
+        // ONE predicate, and the tag is touched in exactly the three places a tag may be touched: the burn
+        // writes it, this predicate reads it, the telling spends it. All three are in #1210's own file.
         Assert.Equal(1, Count(tail, "private bool ThisPlaceWasWalkedFirst("));
-        Assert.Equal(2, Count(client, "TheTailBehindYou.BurnTag("));   // the writer, and this one reader
+        Assert.Equal(3, Count(client, "TheTailBehindYou.BurnTag("));
+        Assert.Equal(3, Count(tail, "TheTailBehindYou.BurnTag("));
+        Assert.Equal(1, Count(tail, "_roomsTurnedOver.Add(TheTailBehindYou.BurnTag(portId))"));
         Assert.Equal(1, Count(tail, "_roomsTurnedOver.Contains(TheTailBehindYou.BurnTag(portId))"));
+        Assert.Equal(1, Count(tail, "_roomsTurnedOver.Remove(TheTailBehindYou.BurnTag(portId))"));
 
         // …and the three quiet verbs reach it by asking, each exactly once.
         Assert.Equal(1, Count(sources, "|| ThisPlaceWasWalkedFirst(portId)"));
         Assert.Equal(1, Count(parcel, "&& TheDesksPort() is { } port && !ThisPlaceWasWalkedFirst(port)"));
-        Assert.Equal(3, Count(client, "ThisPlaceWasWalkedFirst("));    // one declaration, two askers
+        // …and NOBODY ELSE asks it: one declaration, the telling's own read, and the two quiet rows.
+        Assert.Equal(4, Count(client, "ThisPlaceWasWalkedFirst("));
+        Assert.Equal(1, Count(tail, "!ThisPlaceWasWalkedFirst(portId)"));
 
         // The parcel row never touches the KEY's register — not the strike-off, not the tag.
         Assert.Equal(0, Count(parcel, "ThisPortHasAlreadyDealtAKey"));
@@ -256,6 +263,9 @@ public sealed class TheBurnTakesTheParcelTooTests
         StandCaptainAt(map, HavenInterior.BarThreshold.X, HavenInterior.BarThreshold.Y + 6);
         Tick(map, 1);
 
+        // The berthing's own ⚓ line is on the glass from the clamp above. Clear it, so a guard that asks
+        // whether the BURN said anything is asking about the burn and not about docking.
+        Set(map, "_pulse", default(PulseSlot));
         Set(map, "_credits", 1_000_000);
         return map;
     }
