@@ -141,6 +141,14 @@ public sealed partial class DeckPlan
         // alternate between. Neither is a re-used Kiosk: the souvenir kiosk sells the MOON YOU ARE STANDING
         // ON (SurfaceSouvenir off the excursion's own body) and answers nothing at all at a berth, where
         // there is no excursion to name — which is the #757 absence, not a refusal anybody can read.
-        CoinBinoculars, CoinVendor }
+        CoinBinoculars, CoinVendor,
+        // #701 · A SHELF IN SOMEBODY'S ROOM — the occupant layer. Its own kind and not a re-used
+        // ViewObject, for the reason the cork board is not one: a ViewObject press opens the card it was
+        // built with and stops, and this press has a second half no card can carry — the casebook learns the
+        // gist, once per shelf per game-thread (#603), and the vault has to hear about it. Nor is it a
+        // re-used HiveHaul: a haul console is the ROOM being turned over and the room is struck off when a
+        // find comes out of it, while a shelf is read where it stands as many times as the captain likes and
+        // nothing ever leaves it.
+        HiveShelf }
 
 }
