@@ -221,11 +221,16 @@ public sealed partial class EveryRoundFingerprintsTheSameTests
             return (map, ex);
         }, (map, ex, frame) =>
         {
-            // #746 · THE STOP IS AN ENCOUNTER, so the card that goes up is the SCENE and the papers are read
-            // when SHOW THE PASS is pressed. The press is a no-op on every frame there is no stop waiting,
-            // which is all but one of the eighteen hundred — and without it this case would watch a captain
-            // close a checkpoint without answering it, which is a different case entirely.
+            // #746 · THE STOP IS AN ENCOUNTER, so the card that goes up is the SCENE and the read is one of
+            // its four moves. Both are pressed, in the order a captain would reach for them, and each is a
+            // no-op when it does not apply: SHOW THE PASS is refused to a captain with nothing in his wallet
+            // (which is this bench's captain), and SAY NOTHING is refused to a stop that is already
+            // answered. Every frame but one of the eighteen hundred has no stop waiting at all.
+            //
+            // Without them this case would watch a captain close a checkpoint without answering it, and the
+            // walk this case is named after would never be armed.
             Invoke(map, "TheStopMove", GuardStop.Show);
+            Invoke(map, "TheStopMove", GuardStop.Nothing);
 
             // …and then the card comes down on the frame after it goes up — the captain pressing Esc, which
             // is one of the roads BeginTheWalkBack is armed behind.
@@ -240,7 +245,8 @@ public sealed partial class EveryRoundFingerprintsTheSameTests
             return (map, ex);
         }, (map, ex, frame) =>
         {
-            Invoke(map, "TheStopMove", GuardStop.Show);   // #746 · the read, as the move it became
+            Invoke(map, "TheStopMove", GuardStop.Show);       // #746 · the read, as the move it became
+            Invoke(map, "TheStopMove", GuardStop.Nothing);    // …and the answer an empty wallet has
             Set(map, "_viewObject", null);
         }, 1800),
 

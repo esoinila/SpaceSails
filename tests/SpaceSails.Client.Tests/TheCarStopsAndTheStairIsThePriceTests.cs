@@ -227,6 +227,12 @@ public sealed class TheCarStopsAndTheStairIsThePriceTests
         // one of the four. The paper is still the one #836's fan put in the captain's hand — pressing
         // the move is what a captain does at this moment, and it is what this driver does for them.
         typeof(Pages.Map).GetMethod("TheStopMove", Hidden)!.Invoke(map, [GuardStop.Show]);
+
+        // …and SAY NOTHING for a captain who has nothing to show, which is the ladder's own empty-hand rung
+        // and byte for byte the read this bench used to get for free. Each press is a no-op when it does not
+        // apply: SHOW THE PASS is refused to an empty wallet, and the exit move is refused to a stop that has
+        // already been answered — so one driver serves both halves of every pass/refusal pair in this file.
+        typeof(Pages.Map).GetMethod("TheStopMove", Hidden)!.Invoke(map, [GuardStop.Nothing]);
     }
 
     // ── (a) THE TRIGGER ───────────────────────────────────────────────────────────────────────────────
