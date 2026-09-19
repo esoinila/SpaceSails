@@ -186,6 +186,43 @@ that the layout is moving.
 every time (digits knocked out of the labels — sim time may spend a character; a line may not change).
 Proven red by deleting the one `SettledAsync` call inside it.
 
+## The hidden-tab gate (issue #1244) — `TheBootIsTheSameSpeedWhenNobodyIsLookingTests`
+
+Owner, live build, 2026-09-19, a Chrome window that was not in front: every slice of the staged boot cost
+about a second (`the traffic lanes — freighter 1 of 8 — 1086 ms, 989, 860, 998…`), eighty-two slices in two
+and a half minutes and still going, against ~26 ms each for the same URL in a tab he was looking at. Chrome
+rations a hidden document's timers to roughly one a second, and the boot's one hand-back parks on a browser
+timer by design.
+
+**What actually makes a headless page hidden is nothing, and it is worth writing down.** Probed on this
+branch, with Playwright's defaults and again with the three throttling-suppression arguments handed back
+(`--disable-background-timer-throttling`, `--disable-backgrounding-occluded-windows`,
+`--disable-renderer-backgrounding`):
+
+```
+alone:               visibility=visible hidden=false  5 timers=10ms  5 ticks=0ms
+behind a 2nd page:   visibility=visible hidden=false  5 timers= 6ms  5 ticks=0ms
+after the CDP calls: visibility=visible hidden=false  5 timers= 6ms  5 ticks=0ms
+```
+
+* `page.BringToFrontAsync()` on a second page does **not** hide the first — headless has no tab strip.
+* `Emulation.setFocusEmulationEnabled` is accepted and forces focus **on**, the opposite of the question.
+* `Page.setWebLifecycleState` rejects `"hidden"` outright (*"Unidentified lifecycle state"*) — it takes only
+  `frozen` and `active`, and `frozen` stops the world rather than rationing it.
+* A headless renderer never throttles a timer at all, with or without those flags.
+
+So the gate does to the page **exactly what Chrome does to a background document**, in an init script, and
+says so: `document.visibilityState` reads `hidden`, and `setTimeout`/`setInterval` are rationed to one call
+a second. `MessageChannel` is deliberately left alone, because that is the whole of what the fix reaches
+for. An emulation can lie, so the guard **asserts its own premise from inside the page after the boot** —
+the document really did read hidden, five chained timers really cost ~5 s, and the boot really staged ~88
+slices. The law itself is a comparison rather than a stopwatch reading (the two payloads differ by ~100×):
+the same URL is booted twice in one run and the hidden boot may cost no more than 2× the visible one plus
+6 s, with the payload's own boot budget doubled as an absolute backstop.
+
+Measured here, interpreted payload: **base 102.0 s hidden / 17.5 s visible → 17.9 s hidden / 16.0 s
+visible.** Both numbers are logged on every run, pass or fail.
+
 ## Run it locally
 
 ```bash

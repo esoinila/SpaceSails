@@ -365,6 +365,15 @@ public partial class Map
         scenario = AppendTheBodiesTheCheatsAskFor(scenario, q);
         SayTheBootStageCost("the scenario fetched and parsed");
 
+        // #1244 · …AND THE MODULE IS IN BEFORE THE PLANNERS RUN, ON EVERY URL. #161 already imported it at
+        // the top of the boot, but from inside OpenTheFrontDoorAsync — which returns early for the boots
+        // that name a berth (?dock=, ?start=), so on those the module did not land until the renderer
+        // stage, eleven stages down and well past the ninety hand-backs that now want to ask it whether
+        // anybody is looking. Hoisted here it is one line, idempotent (`??=` over one task), and still the
+        // browser-guarded no-op it always was off one — so the off-browser fingerprint's horizon, and every
+        // hash TheBootBuildsTheSameWorldTests pins to it, is exactly where it was.
+        await LoadTheBrowsersRendererModuleAsync();
+
         BuildTheEphemerisAndAnnounceTheBerths(scenario);
         await OpenTheFrontDoorAsync(q, abandoned);
         SayTheBootStageCost("the ephemeris built and the vault read — THE FRONT DOOR IS LIVE");
