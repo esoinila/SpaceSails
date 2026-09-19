@@ -310,6 +310,15 @@ public sealed class SceneInventoryTests
         [DeckPlan.ConsoleKind.HiveBoard] = "#709 the cork board on that same canteen wall, and therefore on " +
                                           "the same one floor per site that no general sweep reaches — " +
                                           "TheBoardInTheBarTests walks it",
+        [DeckPlan.ConsoleKind.HiveShelf] = "#701 the two shelves on the wall of every room somebody was " +
+                                           "given — what they did and who they were — on the appended " +
+                                           "underground floors, which is the same ground the haul consoles " +
+                                           "and #853's posters stand on and which no general scene sweep " +
+                                           "reaches. Placed by Shelves.On off the OCCUPANCY rule, so a " +
+                                           "storeroom, a gallery and the store that says it is empty carry " +
+                                           "none by design; TheShelvesSayWhoTheRoomBelongedToTests walks " +
+                                           "every room of 375 generated floors and proves every occupied " +
+                                           "one has both and every other has none",
         [DeckPlan.ConsoleKind.ArchiveNode] = "the column, aboard about one eligible hull in three " +
                                              "(ArchiveNode.IsAboard) — a fresh wreck plan carries none",
         [DeckPlan.ConsoleKind.ArchiveSwitch] = "the purge handle on that same housing, and only when it is there",
