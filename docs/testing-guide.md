@@ -974,6 +974,16 @@ The numbers are `OddBooks.Catalog` order and are part of the contract — 1 is t
 fat paperback. `?book=99` and `?book=nonsense` are ignored rather than clamped, so a typo leaves you playing
 the shipped roll instead of quietly testing entry 10.
 
+**And the other half of #701 needs no cheat at all** — the library layer. Every room somebody was *given*
+carries two shelves of its own, a work shelf that says what they did and a freetime shelf that says who they
+were, so walking any floor reaches one. `/map?secretlab=1&land=1&floor=1` puts both of the RARE posts on one
+floor: the guard's (`AUDIT — NO ADMITTANCE`) and the reading room out on the block's frontage. Exact rooms,
+coordinates and card texts are in [`testing-links-the-hive.md`](testing-links-the-hive.md) § 5a. **What you
+should see:** two 📚 consoles on the wall of each occupied room and **none at all** in a storeroom, a gallery
+or the store that says it is empty; a caption-only card on `[E]`, titled with the line the wall is showing;
+one casebook line per shelf, the first time and never again on this thread; and no two rooms in a row
+carrying the same freetime shelf.
+
 ### Dying on purpose — `?death=<cause>` (#621)
 
 The death card is the one screen every player is guaranteed to see, and until now none of it could be
