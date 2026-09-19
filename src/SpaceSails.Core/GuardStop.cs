@@ -363,12 +363,13 @@ public static class GuardStop
     /// something that did not happen.
     /// </summary>
     /// <param name="relevantPaper">+1 · something on you is a name (<see cref="ARelevantPaper"/>).</param>
-    /// <param name="nerve">The gauge, read through <see cref="Encounter.NerveReadsAcrossATable"/> — the same
-    /// rungs the player is looking at, so the −1 and the readout can never disagree.</param>
+    /// <param name="nerveMarked">−1 · your hands are not steady. The ANSWER rather than the gauge, and the
+    /// answer every caller must get from <see cref="Encounter.NerveReadsAcrossATable"/> — the gauge's own
+    /// rungs, so the modifier and the readout the player is looking at can never disagree.</param>
     /// <param name="fumbled">−1 · you already fumbled an ask at this stop this watch.</param>
-    public static Encounter.Situation SituationAt(bool relevantPaper, double nerve, bool fumbled) => new(
+    public static Encounter.Situation SituationAt(bool relevantPaper, bool nerveMarked, bool fumbled) => new(
         PaperShown: relevantPaper,
-        NerveMarked: Encounter.NerveReadsAcrossATable(nerve),
+        NerveMarked: nerveMarked,
         Fumbled: fumbled);
 
     /// <summary>Every authored sentence this file owns, for the canon grep — the discipline

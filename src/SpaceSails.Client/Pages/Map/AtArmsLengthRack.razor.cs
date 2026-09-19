@@ -67,6 +67,11 @@ public partial class AtArmsLengthRack
     [Parameter] public bool TheFindIsWaitingOnAnAnswer { get; set; }
     [Parameter] public bool TheKitsCardIsUp { get; set; }
     [Parameter] public Func<IReadOnlyList<SdrScanner.Hit>> TheKitSweeps { get; set; } = default!;
+    [Parameter] public bool TheStopIsWaitingOnAMove { get; set; }
+    [Parameter] public Action<string> TheStopMove { get; set; } = default!;
+    [Parameter] public Func<Encounter.Move, bool> TheStopMoveOnOffer { get; set; } = default!;
+    [Parameter] public Func<Encounter.Move, string> TheStopMoveRefusal { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<Encounter.Move>> TheStopsMoves { get; set; } = default!;
     [Parameter] public Func<Satchel.Item, bool> ThePaperInYourHandIs { get; set; } = default!;
     [Parameter] public IReadOnlyList<Satchel.Item> TheWalletFan { get; set; } = default!;
     [Parameter] public bool WalletFanIsUp { get; set; }

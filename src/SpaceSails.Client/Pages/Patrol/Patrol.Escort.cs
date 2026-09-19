@@ -32,8 +32,16 @@ public sealed partial class Map
             // composed from a moment ago (PatrolBeat.TheGuardHasYou): the man who said he was not pressing the
             // button for your floor is the man who does not press it. Two answers to one question, worked out in
             // two places, is the sentence-vs-sim bug class this feature has already paid for twice.
-            KickOutDue = PatrolBeat.BookedTooOften(EscortsThisWatch);
-            EscortsThisWatch++;
+            //
+            // #746 · …AND A HELPFUL WALK IS ON NEITHER LADDER. A man showing you to the lift because you
+            // asked him the way has not booked you, so it may not spend a rung of his patience and it may
+            // never end at the sky — a captain who asked for directions and got thrown off the moon for it
+            // would be the sim contradicting the sentence that started the walk.
+            KickOutDue = !EscortIsFree && PatrolBeat.BookedTooOften(EscortsThisWatch);
+            if (!EscortIsFree)
+            {
+                EscortsThisWatch++;
+            }
 
             AutoWalk.Attempt planned = AutoWalk.Plan(
                 true, new DeckReachability.Point(g.X, g.Y), new DeckReachability.Point(sx, sy),
@@ -201,6 +209,7 @@ public sealed partial class Map
             Escort = null;
             EscortSeconds = 0;
             EscortSaidPumps = false;
+            EscortIsFree = false;
             g.Vx = 0;
             g.Vy = 0;
             g.HeIsDoneWalkingYouOut();
