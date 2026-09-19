@@ -271,6 +271,56 @@ export function stopLoop(canvasId) {
     }
 }
 
+// ─── #1244 · A YIELD THE BROWSER CANNOT CLAMP ─────────────────────────────────────────────────────
+//
+// The staged boot (#1114/#1203) hands the frame back between every slice of work, and it does so on a
+// browser TIMER (`Task.Delay(1)` from C#, which the .NET WASM runtime parks on `setTimeout`). In a tab
+// nobody is looking at, Chrome clamps those timers to about one a second — so the ~90-slice boot that
+// takes two seconds in front of a captain took ninety behind one (measured live, #1244: `freighter 1 of
+// 8 — 1086 ms, 989, 860, 998, 991, 1002…`). The slices were never slow; the YIELD between them was.
+//
+// A `MessageChannel` message is a task, not a timer, and no browser throttles it in a hidden document.
+// So the boot asks HERE whether anyone is looking, and when nobody is it yields on a port message
+// instead. It is still a real hand-back — the browser runs its own queued work, input and paint between
+// two tasks exactly as it does between two timers — it simply is not rationed.
+//
+// One channel for the whole page life (a channel per yield would allocate ninety of them), and a queue
+// of waiters rather than a re-assigned `onmessage`, so two overlapping yields could never resolve each
+// other's promise.
+const bootYieldWaiters = [];
+let bootYieldChannel = null;
+
+function theBootsYieldChannel() {
+    if (bootYieldChannel === null && typeof MessageChannel === 'function') {
+        bootYieldChannel = new MessageChannel();
+        bootYieldChannel.port1.onmessage = () => {
+            const waiter = bootYieldWaiters.shift();
+            if (waiter) { waiter(); }
+        };
+        bootYieldChannel.port1.start();
+    }
+    return bootYieldChannel;
+}
+
+/** Is the document hidden — the tab behind another tab, the window minimised or occluded, the machine
+ *  locked? Read ONLY by the boot's yield seam, to choose how to hand the frame back. It decides nothing
+ *  about the world that gets built (#1244's law, guarded by TheHiddenTabNeverReachesTheWorldTests). */
+export function pageIsHidden() {
+    return typeof document !== 'undefined' && document.visibilityState === 'hidden';
+}
+
+/** Hand the frame back on a task the browser does not ration. Resolves on the next message tick — or,
+ *  where `MessageChannel` does not exist, on a `setTimeout(0)`, which is the same idea with the clamp
+ *  back on and still better than nothing. */
+export function yieldOnATick() {
+    return new Promise(resolve => {
+        const channel = theBootsYieldChannel();
+        if (channel === null) { setTimeout(resolve, 0); return; }
+        bootYieldWaiters.push(resolve);
+        channel.port2.postMessage(0);
+    });
+}
+
 function rgba(r, g, b, a) {
     return `rgba(${r}, ${g}, ${b}, ${a / 255})`;
 }

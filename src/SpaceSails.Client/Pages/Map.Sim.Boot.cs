@@ -45,6 +45,7 @@ public partial class Map
     {
         BootClock.Restart();
         _bootClockMark = 0;
+        _theBootYieldsOnATick = false; // #1244 · a fresh boot asks the browser again
     }
 
     /// <summary>#161 · Say what the stage that JUST FINISHED cost, and what the boot has cost so far. Kept
@@ -69,7 +70,68 @@ public partial class Map
     {
         _bootPhase = phase;
         StateHasChanged();
+        await HandTheFrameBackAsync(abandoned);
+    }
+
+    // #1244 · A YIELD THAT IS RATIONED IS A BOOT THAT IS RATIONED.
+    //
+    // Measured on the live build, 2026-09-19, in a Chrome tab whose window was not in front: every slice
+    // of the staged boot took about a second — `the traffic lanes — freighter 1 of 8 — 1086 ms, 989, 860,
+    // 998, 991, 1002…`, eighty-two slices in two and a half minutes and still going — against ~26 ms each
+    // in a tab the captain was looking at. The slices did not get slower. The YIELD between them did:
+    // Chrome clamps a background document's timers to roughly one a second, and the line above parks on a
+    // browser timer by design (that is exactly what #318 chose `Task.Delay(1)` over `Task.Yield` FOR).
+    // Staging the boot into ~90 pieces is what turned a ration on the yield into a ninety-second boot, so
+    // the finer #1114/#1203 made it, the worse this got.
+    //
+    // So this is the ONE seam where the boot hands the frame back, and it now asks how the hand-back went
+    // before choosing the next one. While the page is hidden — or once a hand-back that should cost a
+    // millisecond has cost a quarter of a second — the rest of the boot yields on a MessageChannel tick
+    // (renderer.js `yieldOnATick`), which is a task rather than a timer and which no browser rations.
+    //
+    // THE LATCH IS DELIBERATE, and it is the issue's own wording ("for the remaining slices"). A captain
+    // who comes back mid-boot loses nothing by it: a message tick is a real hand-back, so input and paint
+    // both still get served between two slices — they are simply no longer GUARANTEED one paint per slice,
+    // which matters to a loading door that is, by then, about to come down anyway. Re-probing the timer
+    // instead would cost a clamped second every time it asked.
+    //
+    // BOTH INPUTS ARE STATIC, and that is not tidiness. Every instance field of this page is swept by
+    // EveryFrameLeavesTheSameFingerprintTests and diffed against a virgin component by
+    // TheBootBuildsTheSameWorldTests; a field saying "nobody was looking" would join both ledgers and say
+    // nothing about the game. The same reason BootClock is static, and the same law: whether anyone is
+    // watching decides how the frame is handed back and NOTHING about the world that gets built
+    // (TheHiddenTabNeverReachesTheWorldTests).
+
+    /// <summary>#1244 · A hand-back that costs this long was not served — it was rationed. A frame is 16 ms
+    /// and a clamped background timer is ~1,000; a quarter of a second is clear of the first by fifteen
+    /// frames and of the second by four.</summary>
+    private const long ARationedYieldMs = 250;
+
+    /// <summary>#1244 · Latched once the browser is seen to be rationing this boot's hand-backs. Reset with
+    /// the boot clock, so a second boot in the same page life asks the question again.</summary>
+    private static bool _theBootYieldsOnATick;
+
+    /// <summary>#1244 · Hand the frame back — on a timer while the browser is serving them, on a message
+    /// tick once it is not.</summary>
+    private static async Task HandTheFrameBackAsync(CancellationToken abandoned)
+    {
+        abandoned.ThrowIfCancellationRequested();
+
+        // A tick, when the latch is down AND there is one to be had. Off a browser — and on the handful of
+        // cheat URLs that reach the planners before the module import has landed — there is not, and a
+        // hand-back that returned without handing anything back would be worse than a rationed one.
+        if (_theBootYieldsOnATick && RendererInterop.TheUnrationedYield() is { } tick)
+        {
+            await tick;
+            abandoned.ThrowIfCancellationRequested();
+            return;
+        }
+
+        long before = BootClock.ElapsedMilliseconds;
         await Task.Delay(1, abandoned);
+
+        _theBootYieldsOnATick =
+            BootClock.ElapsedMilliseconds - before > ARationedYieldMs || RendererInterop.PageIsHidden();
     }
 
     // #737 · THE PLAYER MAY LEAVE WHILE THE WORLD IS STILL BEING BUILT. Boot pegs the main thread for tens

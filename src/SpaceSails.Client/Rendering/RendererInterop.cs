@@ -32,6 +32,43 @@ internal static partial class RendererInterop
     public static Task EnsureModuleLoadedAsync() =>
         _moduleLoadTask ??= JSHost.ImportAsync(ModuleName, "../renderer.js");
 
+    /// <summary>#1244 · Has the import above actually finished? Every <c>[JSImport]</c> in this file throws
+    /// if the module is not in yet, so a caller that runs DURING the boot — rather than after the renderer
+    /// stage, which is where everything else here is called from — has to ask first.</summary>
+    private static bool ModuleIsLoaded => _moduleLoadTask is { IsCompletedSuccessfully: true };
+
+    /// <summary>#1244 · Is nobody looking at this page — another tab in front, the window minimised or
+    /// occluded, the machine locked? Answers <c>false</c> off a browser and before the module is in, which
+    /// is the honest answer for both: a test runner has no tab, and a boot that cannot ask yet must not
+    /// guess.
+    ///
+    /// <para><b>This is a YIELD input and nothing else.</b> The one caller is the staged boot's hand-back
+    /// (<c>Map.HandTheFrameBackAsync</c>), which uses it to choose between a timer and a message tick. No
+    /// world-building code may read it — the sky a URL builds is the same sky whether or not anyone is
+    /// watching it being built, and <c>TheHiddenTabNeverReachesTheWorldTests</c> is the guard.</para></summary>
+    internal static bool PageIsHidden() =>
+        OperatingSystem.IsBrowser() && ModuleIsLoaded && TheDocumentIsHidden();
+
+    /// <inheritdoc cref="PageIsHidden"/>
+    [JSImport("pageIsHidden", ModuleName)]
+    private static partial bool TheDocumentIsHidden();
+
+    /// <summary>#1244 · Hand the frame back on a <c>MessageChannel</c> tick — a task the browser does not
+    /// ration, where a background tab's timers are clamped to ~1 Hz.
+    ///
+    /// <para><b>Null when there is no tick to be had</b> — off a browser, or before the module import has
+    /// landed. Null rather than <see cref="Task.CompletedTask"/> on purpose: the caller is a yield, and a
+    /// yield that completes synchronously is not a yield at all but a boot that stops handing the main
+    /// thread back, which is the very "page unresponsive" dialog #161 spent itself on. The caller must be
+    /// able to tell "yielded on a tick" from "there was no tick", so it can fall back to the timer.</para>
+    /// </summary>
+    internal static Task? TheUnrationedYield() =>
+        OperatingSystem.IsBrowser() && ModuleIsLoaded ? YieldOnTheChannel() : null;
+
+    /// <inheritdoc cref="TheUnrationedYield"/>
+    [JSImport("yieldOnATick", ModuleName)]
+    private static partial Task YieldOnTheChannel();
+
     [JSImport("initCanvas", ModuleName)]
     internal static partial void InitCanvas(string canvasId, bool observeResize);
 
