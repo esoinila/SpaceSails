@@ -621,18 +621,29 @@ launch from the home page.
 
 > ### The one civilian front door (#323)
 >
-> **A query is *civilian* — it goes through the logbook — if and only if it carries nothing but
-> `scenario`.** `/map`, `/map?scenario=sol`, `/map?scenario=wheel` all open the same save-rack picker
-> the home page's **Launch** button opens: Continue-newest at the top, every banked berth listed, the
-> named scenario merely deciding which sky **New voyage** launches into. A bookmark is not a decision
-> to start over.
+> **A query is *civilian* — it goes through the logbook — if and only if it asked the boot for nothing
+> but a scenario.** `/map`, `/map?scenario=sol`, `/map?scenario=wheel` all open the same save-rack
+> picker the home page's **Launch** button opens: Continue-newest at the top, every banked berth
+> listed, the named scenario merely deciding which sky **New voyage** launches into. A bookmark is not
+> a decision to start over.
 >
 > **Every other URL on this page keeps its direct boot**, and the smoke sweeps depend on that: the
-> moment a query carries one key that is not `scenario`, it is one of these incantations and the boot
-> goes straight into the situation it names. `/map?scenario=sol&dock=the-tilt` is a bench URL, not a
-> front door — the scenario rides along, it does not civilise the cheat.
+> moment one of the boot's own readers claims a key that is not `scenario`, the URL is one of these
+> incantations and the boot goes straight into the situation it names.
+> `/map?scenario=sol&dock=the-tilt` is a bench URL, not a front door — the scenario rides along, it
+> does not civilise the cheat.
 >
-> The rule lives in exactly one place in the code, `Map.TheQueryIsCivilian`, and
+> **A key the boot does not read asked the boot for nothing**, and stays civilian. There are exactly
+> two, and both are read off the *live address*, every frame, never through the boot's query holder:
+> `?holdbeats=` (#1148, the story-beat latch) and `?perf=1` (#841, the draw-cost probe). Both change no
+> body, no berth and no cheat — `?perf=1`'s row in the boot fingerprint is pinned byte-identical to the
+> URL without it — so neither can turn a bookmark into a bench run. The retired `?autowalk=` alias
+> (#875) and any key nobody parses are in the same position. This is what lets the UiGate's boot canary
+> append `&holdbeats=1` to the home page's own Launch link and still arrive at the front door it exists
+> to measure.
+>
+> The rule lives in exactly one place in the code — the parse itself, `BootQuery.AskedForASituation`,
+> reachable as `Map.TheQueryIsCivilian` — and
 > `TheOneCivilianFrontDoorTests` asks it of every world the game ships and of every `/map?…` link
 > written anywhere in `src/` or `docs/`. **Two things follow for anyone editing this table:** a link in
 > a document that uses a key no reader claims is a red build, and so is a key that is used in a link

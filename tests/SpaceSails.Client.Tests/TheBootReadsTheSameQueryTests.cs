@@ -261,12 +261,11 @@ public sealed class TheBootReadsTheSameQueryTests
         object q = Call(map, "ReadEveryQueryKey", uri)!;
         Call(map, "DefaultABerthForTheCheatsThatNeedOne", q);
 
-        // #323 · The door's raise now reads the URL rather than the parse — it asks the civilian question,
-        // which is about the query STRING and not about which of ninety cheat fields got written — so it is
-        // handed the same Uri the reader chain was. It is still called here for the reason it always was:
-        // this recorder stands exactly where the old one-method boot's recorder stood, and a stage quietly
-        // dropped from this chain is a stage whose effect on the parse nobody would notice.
-        Call(map, "RaiseTheFrontDoorWhileTheReactorWarms", uri);
+        // #323 · The door's raise reads BootQuery.AskedForASituation, which the reader chain above has
+        // already answered. It is still called here for the reason it always was: this recorder stands
+        // exactly where the old one-method boot's recorder stood, and a stage quietly dropped from this
+        // chain is a stage whose effect on the parse nobody would notice.
+        Call(map, "RaiseTheFrontDoorWhileTheReactorWarms", q);
         return q;
     }
 

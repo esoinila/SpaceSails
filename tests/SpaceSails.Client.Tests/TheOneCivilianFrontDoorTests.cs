@@ -23,10 +23,20 @@ namespace SpaceSails.Client.Tests;
 /// emptied by hand to reach the logbook.</para>
 ///
 /// <para><b>The law, and it is one sentence:</b> a query is <b>civilian</b> — it goes through the logbook —
-/// <b>iff it carries nothing but <c>scenario</c></b>. Everything else is a bench incantation out of
-/// <c>docs/testing-guide.md</c> Appendix A and keeps the direct boot the smoke sweeps are written against.
-/// The sentence lives once, in <c>Map.TheQueryIsCivilian</c>, and this file asks it of the shipping page,
-/// of every world the game ships, and of every <c>/map?…</c> link written down anywhere in the product.</para>
+/// <b>iff it asked the boot for nothing but a scenario</b>. Anything the boot's own reader chain claims is a
+/// bench incantation out of <c>docs/testing-guide.md</c> Appendix A and keeps the direct boot the smoke
+/// sweeps are written against. The sentence lives once, in the parse itself
+/// (<c>BootQuery.AskedForASituation</c>, reachable as <c>Map.TheQueryIsCivilian</c>), and this file asks it
+/// of the shipping page, of every world the game ships, and of every <c>/map?…</c> link written down
+/// anywhere in the product.</para>
+///
+/// <para><b>A key the boot does not read asked the boot for nothing</b>, which is why <c>?holdbeats=1</c>
+/// and <c>?perf=1</c> are civilian rows in the table below. Both are read off the LIVE address every frame
+/// and never through <c>BootQuery</c>, both docblocks say in the same words that they change no body, no
+/// berth and no cheat, and <c>?perf=1</c>'s row in <see cref="TheBootBuildsTheSameWorldTests"/> is pinned
+/// byte-identical to the URL without it. That is what lets the UiGate's boot canary keep appending
+/// <c>&amp;holdbeats=1</c> to the home page's Launch link and still arrive at the front door it exists to
+/// measure — the gate is a player, and a player's URL is a sky.</para>
 ///
 /// <para><b>What this file does NOT claim.</b> It does not say a civilian boot can never end anywhere but
 /// the picker — #1221's refusals put the picker back up for a <c>?start=</c> no sky can anchor, which is a
@@ -53,8 +63,8 @@ namespace SpaceSails.Client.Tests;
 /// and all of them redden at once.</para>
 ///
 /// <para>The rule table is red on either kind of broken predicate: one that answers TRUE always reddens
-/// <see cref="TheRuleCanSayBench"/> on all 13 rows, one that answers FALSE always reddens
-/// <see cref="TheRuleCanSayCivilian"/> on all 8.</para>
+/// <see cref="TheRuleCanSayBench"/> on all 15 rows, one that answers FALSE always reddens
+/// <see cref="TheRuleCanSayCivilian"/> on all 12.</para>
 /// </summary>
 [SlowGate]
 public sealed class TheOneCivilianFrontDoorTests
@@ -72,8 +82,12 @@ public sealed class TheOneCivilianFrontDoorTests
     [InlineData("?SCENARIO=sol")]                 // the browser's autocomplete does not respect our casing
     [InlineData("?scenario=sol&")]                // a trailing ampersand is not a second ask
     [InlineData("?scenario=sol&scenario=wheel")]  // two skies is still only a sky
+    [InlineData("?scenario=sol&holdbeats=1")]     // #1148's beat latch is read off the live address, never the boot
+    [InlineData("?holdbeats=1")]
+    [InlineData("?autowalk=1")]                   // #875, retired: parsed by nobody in the chain, changes nothing
+    [InlineData("?utm_source=a-friend")]          // a key the boot has never heard of asked the boot for nothing
     public void TheRuleCanSayCivilian(string query) =>
-        Assert.True(Map.TheQueryIsCivilian(query),
+        Assert.True(Civilian(query),
             $"'{query}' carries nothing but a scenario, so it is a captain arriving at the front door.");
 
     [Theory]
@@ -90,8 +104,10 @@ public sealed class TheOneCivilianFrontDoorTests
     [InlineData("?scenario=sol&dock=the-tilt")]   // a scenario BESIDE a cheat is the cheat's URL
     [InlineData("?scenario=sol&land=1")]
     [InlineData("?scenario=sol&fuel=7&credits=50000")]
+    [InlineData("?scenario=sol&holdbeats=1&land=1")]   // one real ask is enough, whatever rides beside it
+    [InlineData("?perf=1&secretlab=deep&land=1")]
     public void TheRuleCanSayBench(string query) =>
-        Assert.False(Map.TheQueryIsCivilian(query),
+        Assert.False(Civilian(query),
             $"'{query}' asks for a set-up as well as a sky, so it is Appendix A and not a bookmark.");
 
     // ── 2 · A BARE SCENARIO DEEP-LINK OPENS THE LOGBOOK ─────────────────────────────────────────────────
@@ -228,7 +244,7 @@ public sealed class TheOneCivilianFrontDoorTests
         foreach ((string file, string link) in EveryMapLinkTheProductShips())
         {
             string query = link[link.IndexOf('?')..];
-            if (Map.TheQueryIsCivilian(query))
+            if (Civilian(query))
             {
                 civilian++;
                 continue;
@@ -275,7 +291,7 @@ public sealed class TheOneCivilianFrontDoorTests
         string[] launches = [.. Regex.Matches(home, @"href=""(map\?[^""]*)""").Select(m => m.Groups[1].Value)];
 
         Assert.NotEmpty(launches);
-        Assert.All(launches, url => Assert.True(Map.TheQueryIsCivilian(url[url.IndexOf('?')..]),
+        Assert.All(launches, url => Assert.True(Civilian(url[url.IndexOf('?')..]),
             $"the home page's Launch button points at {url}, which is a bench URL, not a front door."));
 
         string nav = File.ReadAllText(Path.Combine(
@@ -285,14 +301,21 @@ public sealed class TheOneCivilianFrontDoorTests
 
     // ── The readings this file makes ────────────────────────────────────────────────────────────────────
 
+    /// <summary>The rule, asked of a bare query the way a link carries one — through the page's own
+    /// <c>TheQueryIsCivilian</c>, which runs the shipping parse. Nothing in this file re-implements it.</summary>
+    private static bool Civilian(string query) =>
+        Map.TheQueryIsCivilian(new Uri("http://localhost/map" + (query.StartsWith('?') ? query : "?" + query)));
+
     /// <summary>Put one URL through the shipping page's own door stage and answer what the door did. No
     /// world is built: the raise is the only thing being asked, which is why the whole catalogue fits.</summary>
     private static bool TheDoorIsRaisedFor(string url)
     {
         var page = new Map();
         TheBootBuildsTheSameWorldTests.NeverRender(page);
-        typeof(Map).GetMethod("RaiseTheFrontDoorWhileTheReactorWarms", Hidden)!
-            .Invoke(page, [new Uri("http://localhost" + url)]);
+        object query = typeof(Map).GetMethod("ReadEveryQueryKey", Hidden)!
+            .Invoke(page, [new Uri("http://localhost" + url)])!;
+        typeof(Map).GetMethod("DefaultABerthForTheCheatsThatNeedOne", Hidden)!.Invoke(page, [query]);
+        typeof(Map).GetMethod("RaiseTheFrontDoorWhileTheReactorWarms", Hidden)!.Invoke(page, [query]);
         return (bool)typeof(Map).GetField("_showStartPicker", Hidden)!.GetValue(page)!;
     }
 
@@ -315,7 +338,7 @@ public sealed class TheOneCivilianFrontDoorTests
         DevStarts.All.Select(e => e.Url)
             .Concat(TheBootBuildsTheSameWorldTests.EveryBootUrl())
             .Distinct(StringComparer.Ordinal)
-            .Where(u => u.Contains('?') && !Map.TheQueryIsCivilian(u[u.IndexOf('?')..]));
+            .Where(u => u.Contains('?') && !Civilian(u[u.IndexOf('?')..]));
 
     /// <summary>The key of every pair in a query, lower-cased, empties dropped.</summary>
     private static IEnumerable<string> TheKeysIn(string query) =>
