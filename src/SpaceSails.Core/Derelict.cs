@@ -654,9 +654,19 @@ public static class Derelict
         "Cold Harvest", "Understudy", "Tenth of June", "Marbury", "Quiet Sister",
     ];
 
+    /// <summary>#533 · THE FLOOR OF WHAT A WRECK'S CARGO IS ASSESSED AT — the bottom of the span
+    /// <see cref="Seeded"/> deals inside. It was a literal in that signature, which is a fine place for a
+    /// default and a poor place for a FACT: anything that wants to say what a RICH hull is has to ask where
+    /// the span begins, and a reader carrying its own copy of the number would drift away from the span the
+    /// first day either was tuned. FLAGGED for tuning.</summary>
+    public const int AssessedFloorCr = 40_000;
+
+    /// <summary>…and the top of it, for <see cref="AssessedFloorCr"/>'s reason. FLAGGED for tuning.</summary>
+    public const int AssessedCeilingCr = 320_000;
+
     /// <summary>Build the wreck a given id names — the same id always yields the same ship, the same cause
     /// and the same cargo, so a rumour that names her can be trusted and a test can pin her.</summary>
-    public static Wreck Seeded(string id, int minValueCr = 40_000, int maxValueCr = 320_000)
+    public static Wreck Seeded(string id, int minValueCr = AssessedFloorCr, int maxValueCr = AssessedCeilingCr)
     {
         string key = id ?? string.Empty;
         ulong h = StableHash.Of(key);

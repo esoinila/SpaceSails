@@ -38,6 +38,14 @@
                 <div class="view-object-title">@look.Title</div>
                 <img class="view-object-img" src="@look.Art" alt="@look.Title" onerror="this.style.display='none'" />
                 <div class="view-object-caption">@look.Caption</div>
+                @* #533 · THE FOURTH LINE. Two numbers this hull's own instruments read, side by side, and
+                   nothing under them: the second sentence is where a conclusion would go, so there is no
+                   second sentence. Empty on nearly every hull, and an empty one draws NOTHING — a card that
+                   grew a slot would tell the captain there was something to find before she was read. *@
+                @if (look.Anomaly.Length > 0)
+                {
+                    <div class="view-object-anomaly">@look.Anomaly</div>
+                }
             </OverlayShell>
         </div>
 @* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
