@@ -271,15 +271,23 @@ public partial class Map
             return null;
         }
 
+        // BOTH readings come off the SAME anchor, by the same central difference the rest of Core measures a
+        // rail with. Taking the gap from ShipAnchorAt and the speed from _ship.Velocity would be two sources
+        // for one fact — this repository's oldest bug class — and they really do part company: a clamped ship
+        // is anchored to her BERTH's rail, and an armed plan anchors her to the ribbon she is promised to fly.
+        const double h = 1.0;
+        Vector2d shipVelocity = (ShipAnchorAt(SimTime + h) - ShipAnchorAt(SimTime - h)) / (2 * h);
         Vector2d groundVelocity = TransferMath.BodyVelocity(_ephemeris, bodyId, SimTime);
-        return (AwaySeparationAt(bodyId, SimTime), (_ship.Velocity - groundVelocity).Length);
+        return (AwaySeparationAt(bodyId, SimTime), (shipVelocity - groundVelocity).Length);
     }
 
     /// <summary>#336 · Which rung of the reachability ladder the captain is on — or null when he is aboard,
     /// or when the window is <see cref="WindowStatus.Closed"/>, which #955 NAV-2 built on purpose and which
     /// <see cref="ShuttleLink.StageFor"/> deliberately refuses to call a maroon.</summary>
     private ShuttleLink.Stage? TheShuttleLinkRung() =>
-        AshoreOnBodyId is { } bodyId ? ShuttleLink.StageFor(WindowOn(bodyId).Status) : null;
+        AshoreOnBodyId is { } bodyId && TheLinkToHer() is { } link
+            ? ShuttleLink.StageFor(link.DistanceMeters, WindowOn(bodyId).Status)
+            : null;
 
     /// <summary>#336 · The boat's own answer to "take me back up", asked of range and closing speed and of
     /// nothing else. <see cref="ShuttleLink.Refusal.None"/> when nobody is ashore — the question belongs to
@@ -306,7 +314,9 @@ public partial class Map
             return null;
         }
 
-        int rung = ShuttleLink.StageFor(WindowOn(bodyId).Status) is { } stage ? (int)stage : 3;
+        int rung = ShuttleLink.StageFor(link.DistanceMeters, WindowOn(bodyId).Status) is { } stage
+            ? (int)stage
+            : 3;
         return (link.DistanceMeters / ShuttleRange.RangeMeters, rung);
     }
 

@@ -67,23 +67,45 @@ public static class ShuttleLink
     }
 
     /// <summary>
-    /// Which rung a window reads as — or <see langword="null"/> for <see cref="WindowStatus.Closed"/>, which
-    /// is not a rung (see the type's own note: a periodic window that swings back is a wait, not a maroon).
+    /// #336 · Where the amber rung begins, as a fraction of the ONE reach
+    /// (<see cref="ShuttleRange.RangeMeters"/>) and never as a radius of its own. The same idiom
+    /// <see cref="OrbitHold.SlippingFraction"/> uses on the hold clock: a warning is a fraction of the real
+    /// thing, so there is one number to tune and one number that can be wrong. OWNER-TUNABLE.
     ///
-    /// <para><b>Amber is a clock and not a distance, on purpose.</b> "Nearing the edge" is a thing that is
-    /// happening, not a place: a ship at nine tenths of a hop and CLOSING is not nearing anything, and a ship
-    /// at a tenth of a hop opening fast is nearing it quickly. <see cref="WindowStatus.Ticking"/> and
-    /// <see cref="WindowStatus.Critical"/> are exactly "the gap is opening and here is how long you have",
-    /// measured off the real geometry — so the rung is the honest reading of the sentence, and the number
-    /// behind it is one the away clock already shows.</para>
+    /// <para><b>Why a band and not a clock.</b> The obvious alternative was to read amber off
+    /// <see cref="WindowStatus.Critical"/> — the away window's existing last-call margin — and it was tried
+    /// and measured and it is wrong here. That margin is sixty seconds, and at any recession a captain would
+    /// notice (a tenth of the boat's cruise, 800 m/s) sixty seconds is 48 km out of a 500,000 km reach: the
+    /// warning would arrive one ten-thousandth of the way from "plenty" to "gone" and would be gone again
+    /// before it was read. The owner's own words are spatial — "nearing the edge of shuttle range" — and a
+    /// band is what makes them true.</para>
     /// </summary>
-    public static Stage? StageFor(WindowStatus status) => status switch
+    public const double AmberFraction = 0.75;
+
+    /// <summary>
+    /// Which rung the link reads as, off the honest gap and the window's own verdict — or
+    /// <see langword="null"/> for <see cref="WindowStatus.Closed"/>, which is not a rung (see the type's own
+    /// note: a periodic window that swings back is a wait, not a maroon).
+    ///
+    /// <para>The distance decides the three rungs and the status decides only whether this is a maroon or a
+    /// wait, which is exactly the division of labour the two laws were built for: <see cref="ShuttleRange"/>
+    /// owns the reach, and #955 NAV-2's bounded forward scan owns the question of whether the geometry brings
+    /// her back.</para>
+    /// </summary>
+    public static Stage? StageFor(double distanceMeters, WindowStatus status)
     {
-        WindowStatus.Holding => Stage.Calm,
-        WindowStatus.Ticking or WindowStatus.Critical => Stage.Amber,
-        WindowStatus.Lost => Stage.Lost,
-        _ => null, // Closed — #955 NAV-2's own reading stands
-    };
+        if (status == WindowStatus.Closed)
+        {
+            return null; // #955 NAV-2's own reading stands
+        }
+
+        if (!ShuttleRange.InRange(distanceMeters))
+        {
+            return Stage.Lost;
+        }
+
+        return distanceMeters >= AmberFraction * ShuttleRange.RangeMeters ? Stage.Amber : Stage.Calm;
+    }
 
     /// <summary>The line for a rung. The three constants and nothing else: no interpolation, no tail, no
     /// number spliced in — a canon line that is composed with is a canon line that has been edited.</summary>

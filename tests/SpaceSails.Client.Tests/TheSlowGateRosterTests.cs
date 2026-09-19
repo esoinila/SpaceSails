@@ -52,6 +52,10 @@ public sealed class TheSlowGateRosterTests
             { nameof(EveryPopUpCanBeDismissedTests), 152 },
             { nameof(TheBootBuildsTheSameWorldTests), 148 },
             { nameof(TheBootStopsWhenYouLeaveTests), 14 },
+            // #336 · The shuttle link. Measured on its own day rather than read off the 09-02 baseline, the
+            // way #1108's row was: 11 tests, 65 s, and effectively all of it is the eleven real boots — each
+            // one lands a captain on Miranda through the shipping descent before it can move the mothership.
+            { nameof(TheShuttleCanCatchHerTests), 65 },
 
             // ── The walkability audits: A* over every square of a floor ──
             { nameof(TheParkTakesAClickTests), 96 },
