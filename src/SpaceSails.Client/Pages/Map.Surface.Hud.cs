@@ -395,6 +395,10 @@ public partial class Map
             OrbitComms: orbit?.Line,          // #327: the ship's calling-home line, never buried
             OrbitSeverity: orbit?.Severity ?? 0,
             CommsState: orbit?.CommsState ?? 0, // COMMS-LOSS: 0 nominal · 1 degraded · 2 blackout — the renderer's static/grey cue
+            // #336 · THE BOAT'S LEGS, measured once and drawn — never worked out again in the renderer. It is
+            // the same gap the refusal at the airlock and the ladder on the strip are read off (TheLinkToHer),
+            // so the ring cannot say the ship is catchable while the boat says she is not.
+            ShuttleLegs: TheShuttleLegsRing(),
             SweptSquares: _hudSwept,
             DarkRegions: BuildDarkRegions(ex),   // #371 Phase 3: born-dark / explored appended chambers
             Echoes: BuildEchoes(ex),             // #371 Phase 3: fading "movement was here" ripples

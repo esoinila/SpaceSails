@@ -249,6 +249,77 @@ public partial class Map
     /// is decided, so the remote and the away-site HUD can never disagree about whose window this is.</summary>
     private string? AshoreOnBodyId => _surface?.Stop.Body.Id;
 
+    // ── #336 · THE LINK: the gap, the closing speed, and the one rung they read as ──────────────────
+
+    /// <summary>
+    /// #336 · <b>THE ONE MEASUREMENT THE WHOLE LINK IS READ OFF.</b> The honest gap between the ground the
+    /// captain is standing on and where the mothership actually is, and the speed one hull is making
+    /// relative to the other. Null when nobody is ashore.
+    ///
+    /// <para>The gap is <see cref="AwaySeparationAt"/> — the same function the shuttle board, the away clock
+    /// and the reopen scan all read, so the ring, the ladder and the boat's own refusal can never disagree
+    /// about how far away she is. The speed is the live hull against the ground's own rail
+    /// (<see cref="TransferMath.BodyVelocity"/>, the shared central difference): a clamped ship carries the
+    /// berth's rail velocity by construction (<c>BerthState.CoMoving</c>), so this reads near zero at a berth
+    /// on the same rail without ever asking whether anybody is docked. <b>Dock state is not in this
+    /// measurement anywhere</b>, which is the owner's ruling made structural rather than remembered.</para>
+    /// </summary>
+    private (double DistanceMeters, double RelativeSpeedMps)? TheLinkToHer()
+    {
+        if (AshoreOnBodyId is not { } bodyId || _ephemeris is null)
+        {
+            return null;
+        }
+
+        // BOTH readings come off the SAME anchor, by the same central difference the rest of Core measures a
+        // rail with. Taking the gap from ShipAnchorAt and the speed from _ship.Velocity would be two sources
+        // for one fact — this repository's oldest bug class — and they really do part company: a clamped ship
+        // is anchored to her BERTH's rail, and an armed plan anchors her to the ribbon she is promised to fly.
+        const double h = 1.0;
+        Vector2d shipVelocity = (ShipAnchorAt(SimTime + h) - ShipAnchorAt(SimTime - h)) / (2 * h);
+        Vector2d groundVelocity = TransferMath.BodyVelocity(_ephemeris, bodyId, SimTime);
+        return (AwaySeparationAt(bodyId, SimTime), (shipVelocity - groundVelocity).Length);
+    }
+
+    /// <summary>#336 · Which rung of the reachability ladder the captain is on — or null when he is aboard,
+    /// or when the window is <see cref="WindowStatus.Closed"/>, which #955 NAV-2 built on purpose and which
+    /// <see cref="ShuttleLink.StageFor"/> deliberately refuses to call a maroon.</summary>
+    private ShuttleLink.Stage? TheShuttleLinkRung() =>
+        AshoreOnBodyId is { } bodyId && TheLinkToHer() is { } link
+            ? ShuttleLink.StageFor(link.DistanceMeters, WindowOn(bodyId).Status)
+            : null;
+
+    /// <summary>#336 · The boat's own answer to "take me back up", asked of range and closing speed and of
+    /// nothing else. <see cref="ShuttleLink.Refusal.None"/> when nobody is ashore — the question belongs to
+    /// a captain on the ground.</summary>
+    private ShuttleLink.Refusal AskTheBoatForTheRideHome() =>
+        TheLinkToHer() is { } link
+            ? ShuttleLink.AskTheBoat(link.DistanceMeters, link.RelativeSpeedMps)
+            : ShuttleLink.Refusal.None;
+
+    /// <summary>
+    /// #336 · What the surface HUD draws the legs ring from: how far out she is as a fraction of one shuttle
+    /// hop, and which rung that reads as. Null aboard.
+    ///
+    /// <para>The fraction is the SAME gap the ladder and the airlock's refusal are read off, so the drawn
+    /// shape and the sentence and the sim cannot part company — this repository's third named bug class, and
+    /// the one a range ring is most exposed to. <see cref="WindowStatus.Closed"/> has no rung
+    /// (<see cref="ShuttleLink.StageFor"/> refuses to call a periodic window a maroon) and is handed down as
+    /// 3, which the renderer paints in the grey a place that is not answering has always worn.</para>
+    /// </summary>
+    private (double RangeFraction, int Rung)? TheShuttleLegsRing()
+    {
+        if (TheLinkToHer() is not { } link || AshoreOnBodyId is not { } bodyId)
+        {
+            return null;
+        }
+
+        int rung = ShuttleLink.StageFor(link.DistanceMeters, WindowOn(bodyId).Status) is { } stage
+            ? (int)stage
+            : 3;
+        return (link.DistanceMeters / ShuttleRange.RangeMeters, rung);
+    }
+
     /// <summary>The captain's-remote line while ashore — RETURN BY and the next window, in one sentence,
     /// built by the Core copy so the away-site HUD quotes the identical numbers. Null aboard, and null on a
     /// ground with nothing to catch and nothing to wait for (a berth holding perfect range).</summary>
