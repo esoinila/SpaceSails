@@ -73,11 +73,31 @@ public sealed partial class Map
     ///
     /// <para>#711 slice 2 · …and nobody has anything for a hull somebody's box was just taken off
     /// (<see cref="TheDeskHasNothingForThisHull"/>). It is the same shape as the three clauses above it, and
-    /// that is the point: an ABSENCE, in the row's own vocabulary, with no sentence attached to it.</para></summary>
+    /// that is the point: an ABSENCE, in the row's own vocabulary, with no sentence attached to it.</para>
+    ///
+    /// <para>#1062 slice 2c · <b>…AND NOBODY HAS ANYTHING AT A PLACE SOMEBODY WALKED FIRST.</b> #1210 burned
+    /// the fence's key and the bar favour for one visit when a grey coat was on the floor behind the captain
+    /// while he did the deal, and left this row out of it for the inspector to rule on. Ruled: the burn
+    /// silences EVERY quiet verb at that port, and this is the quietest of the three — <i>a man who watched
+    /// you at the desk watched the desk</i>. It asks the ONE burn predicate the other two ask
+    /// (<see cref="ThisPlaceWasWalkedFirst"/>), about the ONE port expression this board names
+    /// (<see cref="TheDesksPort"/>), so the three rows can never come to three views of what being watched
+    /// costs.</para>
+    ///
+    /// <para><b>Nothing new is said and nothing new is saved.</b> The row is ABSENT — never greyed, never
+    /// refusing — which is the same vocabulary the three clauses beside it already speak, and the burn's own
+    /// telling on the visit after is still the one line #1210 ships, at the place, in the book. The captain
+    /// is never told that this row was one of the things it cost him.</para>
+    ///
+    /// <para><b>The two registers stay two registers.</b> The burn is a PORT tag (<c>tail-burn:{portId}</c>)
+    /// and the confiscation's quiet is a WATCH tag (<c>parcel:none@{watch}</c>), both in
+    /// <c>_roomsTurnedOver</c>; this clause reads one and the clause above it reads the other. Neither can
+    /// parse or shadow the other's row, and a save carrying both is two independent strings.</para></summary>
     private bool ParcelOnOffer() =>
         DarkWebCanTrade()
         && !UnlistedParcel.Held(_satchel)
         && !TheDeskHasNothingForThisHull()
+        && TheDesksPort() is { } port && !ThisPlaceWasWalkedFirst(port)
         && TheParcelOnThisDesk() is { } parcel
         && Core.Satchel.CanTake(_satchel, parcel);
 

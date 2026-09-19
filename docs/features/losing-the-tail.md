@@ -112,9 +112,26 @@ to a berth to do quietly: **take a favour across a contact's table**, or **buy a
 dark-web desk**. Both already run through one strike-off (`BlackOpsKey.ThePortHasDealtOne`), and the burn
 hangs on that one seam so the two of them cannot come to two views of what being watched costs.
 
-**Do either with a man on the floor behind you and the place is burned.** Deterministic — no roll, the
-condition is simply that somebody was there to see it. **And nothing whatever is said at the moment.** You
-get what you came for and walk out.
+**…and, since #1062 slice 2c, the third quiet verb at a port: the unlisted parcel's row** (#711 slice 2).
+That row landed two days after the burn did, and the crew that wrote it deliberately did not wire the two
+together — *"whether a captain who was followed should also find no parcel is a gameplay-feel call across
+two lanes that neither crew was briefed on."* Ruled: **the burn silences every quiet verb at that port.**
+The parcel is the quietest deal of the three, and a man who watched you at the desk watched the desk.
+
+The coupling is one clause and no new machinery. `ParcelOnOffer` asks the ONE burn predicate the other two
+ask (`ThisPlaceWasWalkedFirst`), about the ONE port expression that board names (`TheDesksPort`), and the
+row is then **absent** — never greyed, never refusing, exactly as it is absent while the captain is already
+carrying one. Note what it does *not* do: it does not come through `ThisPortHasAlreadyDealtAKey`, because
+that method is also the *key's* one-per-watch strike-off, and a parcel row that read it would vanish because
+the captain bought a key. One burn predicate, asked by three verbs; one key register, asked by two.
+
+The parcel's own quiet is untouched and still independent: a confiscation silences the row for two to four
+watches on a WATCH tag (`parcel:none@{watch}`) while the burn is a PORT tag (`tail-burn:{portId}`), both in
+`_roomsTurnedOver`, each spent by its own clock, neither able to read the other's row.
+
+**Do any of the three with a man on the floor behind you and the place is burned.** Deterministic — no roll,
+the condition is simply that somebody was there to see it. **And nothing whatever is said at the moment.**
+You get what you came for and walk out.
 
 You find out the next time you walk in, and the place has nothing for you:
 
@@ -126,9 +143,11 @@ Filed under the same **place** as the losing note, so THREADS stacks the evening
 *he was behind me, and then this place had been gone through*. The book never draws that line; it says what
 happened, and the captain draws it.
 
-The burn costs **one visit's worth of what that port deals**, and it is spent by being told: there is no
-window to miss. Shake him first and it costs nothing at all, which is the counter-play and the reason the
-nine seconds of stone are worth spending.
+The burn costs **one visit's worth of what that port deals** — the favour, the fence's key and the parcel
+row, all three — and it is spent by being told: there is no window to miss. **No new prose was bought for
+the third row.** The captain hears the one sentence above and reads the one note above, and nothing anywhere
+tells him a box was among the things it cost him. Shake him first and it costs nothing at all, which is the
+counter-play and the reason the nine seconds of stone are worth spending.
 
 ## 5. The laws it is built on
 
