@@ -110,6 +110,25 @@ public sealed class TheOneCivilianFrontDoorTests
         Assert.False(Civilian(query),
             $"'{query}' asks for a set-up as well as a sky, so it is Appendix A and not a bookmark.");
 
+    [Fact]
+    public void AKeyTheBootDoesNotReadCannotTurnABookmarkIntoABenchRun()
+    {
+        // #1238's ui-gate found this the hard way: its boot canary presses the home page's own Launch link
+        // with the story-beat latch appended, waited 180 s for a front door that a literal "only ?scenario="
+        // rule had just taken away, and timed out. The gate is a PLAYER — it presses the door and the berth
+        // like one — so the fix was the rule's question, not the gate's URL.
+        //
+        // Asked through the CONSTANTS rather than through typed spellings, so the day one of them is renamed
+        // this fails here instead of in a browser ten minutes into a gate run.
+        Assert.True(Civilian($"?scenario=sol&{StoryBeats.HoldQueryFlag}=1"));
+        Assert.True(Civilian($"?{StoryBeats.HoldQueryFlag}=1"));
+        Assert.True(Civilian($"?{AutoWalk.QueryFlag}=1"));
+
+        // …and the anti-vacuous half, which is what stops this from being a hole in the law: a latch riding
+        // ALONGSIDE a real ask changes nothing about the ask.
+        Assert.False(Civilian($"?scenario=sol&{StoryBeats.HoldQueryFlag}=1&dock=the-tilt"));
+    }
+
     // ── 2 · A BARE SCENARIO DEEP-LINK OPENS THE LOGBOOK ─────────────────────────────────────────────────
 
     [Fact]
