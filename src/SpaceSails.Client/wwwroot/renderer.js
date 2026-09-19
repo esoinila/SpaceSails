@@ -271,6 +271,92 @@ export function stopLoop(canvasId) {
     }
 }
 
+// ─── #1244 · THE RATION ON THE BOOT'S OWN TIMERS, TAKEN OFF FOR THE LENGTH OF THE BOOT ────────────
+//
+// The staged boot (#1114/#1203) hands the frame back between every slice of work, and it does so on a
+// browser TIMER: `Task.Delay(1)` from C#, which #318 chose over `Task.Yield` precisely BECAUSE it parks
+// on one. Chrome rations a hidden document's timers to roughly one a second, so the ~90-slice boot that
+// costs two seconds in front of a captain cost ninety behind one — measured live, #1244:
+// `freighter 1 of 8 — 1086 ms, 989, 860, 998, 991, 1002…`. The slices were never slow. The yield was.
+//
+// WHY A PROMISE-SHAPED YIELD IS NOT THE ANSWER, though it is the obvious one. A `MessageChannel` message
+// is a task rather than a timer and nothing rations it — but awaiting one from C# does not help, because
+// the .NET WASM runtime resumes EVERY continuation through `globalThis.setTimeout` too (grep the shipped
+// `dotnet.runtime.*.js`: `safeSetTimeout(mono_wasm_schedule_timer_tick, …)`, and not one `MessageChannel`
+// in the file). Measured on this branch: a boot yielding on a port message was still 86 s hidden against
+// 14 s visible, one rationed second per slice, because the tick resolved at once and the C# side then sat
+// in the runtime's own clamped queue.
+//
+// So the seam does not change at all. What changes is the ration under it: while the boot runs and nobody
+// is looking, the SHORTEST timers — 4 ms and under, which is the .NET timer queue's "as soon as you can",
+// and nothing a human or an animation ever asks for — are served on a message tick instead. Every other
+// timer on the page is untouched, the swap is put back the moment the boot ends (or is abandoned), and
+// the game's own hidden-tab heartbeat above (`setInterval(…, 1000)`) is well clear of the threshold.
+const SHORTEST_TIMER_MS = 4;
+const tickTimers = new Map(); // our own handles → { fn, cancelled }
+let tickTimerChannel = null;
+let rationedSetTimeout = null;  // the browser's own, while ours stands in for it
+let rationedClearTimeout = null;
+let nextTickTimerId = 1;
+
+/** Is the document hidden — this tab behind another, the window minimised or occluded, the machine
+ *  locked? Read ONLY by the boot's hand-back, to decide whether its timers are being rationed. It
+ *  decides nothing whatever about the world that gets built: #1244's law, held by
+ *  `TheHiddenTabDecidesNothingAboutTheWorldTests`. */
+export function pageIsHidden() {
+    return typeof document !== 'undefined' && document.visibilityState === 'hidden';
+}
+
+/**
+ * Serve the shortest timers on a message tick (`on`), or hand the browser's own back (`off`).
+ * Idempotent in both directions. Returns whether the swap is now standing, so C# can say honestly in a
+ * log line whether it got what it asked for — a browser with no `MessageChannel` gets nothing and says so
+ * rather than pretending.
+ */
+export function serveTheShortestTimersOnATick(on) {
+    if (on && rationedSetTimeout === null && typeof MessageChannel === 'function') {
+        tickTimerChannel = new MessageChannel();
+        tickTimerChannel.port1.onmessage = (e) => {
+            const pending = tickTimers.get(e.data);
+            tickTimers.delete(e.data);
+            if (pending && !pending.cancelled) { pending.fn(); }
+        };
+        tickTimerChannel.port1.start();
+
+        rationedSetTimeout = globalThis.setTimeout;
+        rationedClearTimeout = globalThis.clearTimeout;
+
+        globalThis.setTimeout = function (fn, ms, ...rest) {
+            // Only the runtime's own "immediately" — and only the plain one-argument form, so a caller
+            // passing arguments through to its callback keeps the timer that honours them.
+            if (typeof fn !== 'function' || rest.length > 0 || (Number(ms) || 0) > SHORTEST_TIMER_MS) {
+                return rationedSetTimeout.call(globalThis, fn, ms, ...rest);
+            }
+            const id = nextTickTimerId++;
+            tickTimers.set(id, { fn, cancelled: false });
+            tickTimerChannel.port2.postMessage(id);
+            return id;
+        };
+
+        // The runtime CANCELS its previous timer before scheduling the next one
+        // (`Xo && clearTimeout(Xo)`), so a handle of ours has to be cancellable or a stale tick would
+        // fire work the runtime had already withdrawn.
+        globalThis.clearTimeout = function (id) {
+            const pending = tickTimers.get(id);
+            if (pending) { pending.cancelled = true; tickTimers.delete(id); return; }
+            return rationedClearTimeout.call(globalThis, id);
+        };
+    } else if (!on && rationedSetTimeout !== null) {
+        globalThis.setTimeout = rationedSetTimeout;
+        globalThis.clearTimeout = rationedClearTimeout;
+        rationedSetTimeout = null;
+        rationedClearTimeout = null;
+        tickTimerChannel = null;
+        tickTimers.clear();
+    }
+    return rationedSetTimeout !== null;
+}
+
 function rgba(r, g, b, a) {
     return `rgba(${r}, ${g}, ${b}, ${a / 255})`;
 }
