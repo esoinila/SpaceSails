@@ -179,11 +179,47 @@ public static class GalleryFixtures
     /// <summary>#1199 · The card's title, which is the fixture's plate — the binoculars' own argument.</summary>
     public const string VendorTitle = VendorPlate;
 
-    /// <summary>#1199 · The plate under it: the cafeteria as it stands, two machines and two steel tables,
-    /// the rail and the glass and the Earth beyond. Also the GALLERY's own backdrop
-    /// (<see cref="CafeteriaArtUrl"/>) — one canvas, because what the captain is looking at on the card is
-    /// the room he is standing in.</summary>
+    /// <summary>
+    /// #1199 · <b>THE PLATE ON THE CARD, AND ON THE SEAT.</b> The cafeteria as it stands — two machines, two
+    /// steel tables, the rail and the glass and the Earth beyond — at <b>16:9</b>, which is the shape of the
+    /// two surfaces that carry it: the vending machine's story card, and the sitting panel a captain sees
+    /// once he has taken one of the tables (<c>BarTopUnderfoot.Window</c>, the counter stool's own rule from
+    /// #756/#759).
+    ///
+    /// <para><b>It is no longer the room's own floor</b> — see <see cref="CafeteriaFloorArtUrl"/> for why,
+    /// and for the law that now stops a landscape canvas being laid in a portrait room.</para>
+    /// </summary>
     public const string CafeteriaArtUrl = "art/gallery-cafeteria.jpg";
+
+    /// <summary>
+    /// #1199 (2026-09-18, played) · <b>…AND THE PLATE THE ROOM ITSELF WEARS, WHICH IS A DIFFERENT SHAPE.</b>
+    ///
+    /// <para>Owner, on the merged room: <i>"the hat is drawn TALL … and the 16:9 cafeteria plate is
+    /// stretched ~3:1 into it — the vending machines read as tall slivers."</i> He is right, and the
+    /// arithmetic is unarguable. The tube runs due WEST, so the crossbar runs north–south: on the plan the
+    /// gallery is <b>8 du across by 24 du along</b> — an aspect of <b>0.333</b>. A 16:9 canvas is
+    /// <b>1.778</b>. Fitting one into the other squeezes it to under a fifth of its width, and a vending
+    /// machine one body wide becomes a sliver.</para>
+    ///
+    /// <para>So the floor gets a canvas painted in the floor's own shape: <b>9:16 (0.5625)</b>, the gallery
+    /// seen along its length — curved glass with Earth to one side, the machines and a table to the other,
+    /// the glass floor underfoot. Into a 0.333 rectangle that is still a stretch, but it is <b>1.7×</b>
+    /// instead of <b>5.3×</b>, and it stretches along the axis the room is LONG in, which is the one
+    /// direction a picture of a long room can give without anything in it changing proportion the wrong
+    /// way.</para>
+    ///
+    /// <para><b>It is laid UPRIGHT, because the pen cannot turn a picture — and it does not need to.</b>
+    /// <c>DeckView.DrawGround</c> hands the renderer <c>DrawImage(url, x, y, w, h, alpha)</c> and there is no
+    /// angle anywhere in that call. There was nothing to add: a 9:16 canvas is already long in the axis the
+    /// hat is long in, so upright IS aligned. A rotation parameter grown on the pen for this one room would
+    /// be a new capability in the renderer bought to solve a problem that does not exist.</para>
+    ///
+    /// <para><b>Two canvases and not one, deliberately.</b> They are the same room from two positions, and
+    /// the surfaces that carry them have opposite shapes: a card and a sitting panel are landscape, and this
+    /// floor is portrait. Making one canvas serve both is exactly what put a squashed picture on the deck,
+    /// and the guard below now holds the room and its plate to the same orientation by measurement.</para>
+    /// </summary>
+    public const string CafeteriaFloorArtUrl = "art/gallery-cafeteria-tall.jpg";
 
     /// <summary>
     /// #1199 · <b>WHAT COMES OUT OF THE MACHINE</b>, authored (Fable), verbatim.

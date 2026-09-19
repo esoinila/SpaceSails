@@ -32,7 +32,9 @@ public sealed partial class DeckView
         else
         {
             (float bx, float by) = project(-6.5, -6.5);
-            _renderer.DrawText(bx, by, "— AWAY —", new RgbaColor(255, 170, 80, 200), "bold 11px monospace", TextAlign.Center);
+            const string away = "— AWAY —";
+            _renderer.DrawText(bx, SeatTheCaption(bx, by, away, 11.0, TextAlign.Center), away,
+                new RgbaColor(255, 170, 80, 200), "bold 11px monospace", TextAlign.Center);
             if (Math.Sin(simTime * 0.005) > 0)
             {
                 DrawSeg(project(-9, -9.9), project(-5, -9.9), new RgbaColor(255, 120, 80, 220), 3f);
@@ -210,7 +212,13 @@ public sealed partial class DeckView
             // picture claiming a certainty the sim just said it did not have.
             if (!smeared)
             {
-                _renderer.DrawText(dx, dy - 0.9f * scale, droid.Name,
+                // #1218 · …at THE lift, over this figure's OWN body. It was `dy - 0.9f * scale`, which is one
+                // of the five literals the ruling folded into MarkBand: a body that collides on
+                // DeckPlan.AvatarRadius and a barkeep's half-unit mark are not the same distance from their
+                // own feet, and the clearance over them is one decision spelled once.
+                _renderer.DrawText(
+                    dx, SeatAboveAMark(dx, dy, bodyRadius * scale, droid.Name, 8.0, TextAlign.Center),
+                    droid.Name,
                     reever ? ReeverColor
                         : collector ? CollectorColor
                         : sweeper ? SweeperColor

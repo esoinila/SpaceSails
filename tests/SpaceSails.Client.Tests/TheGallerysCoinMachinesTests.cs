@@ -249,7 +249,7 @@ public sealed class TheGallerysCoinMachinesTests
         Assert.Empty((IReadOnlyList<FieldNote>)Field(map, "_fieldNotes")!);
     }
 
-    /// <summary>#1199 · THE THREE PLATES ARE ON DISK AND IN THE MANIFEST. The art is wired to the code by
+    /// <summary>#1199 · THE FOUR PLATES ARE ON DISK AND IN THE MANIFEST. The art is wired to the code by
     /// name, and a canvas listed nowhere is a canvas nobody will ever re-make when it is lost.</summary>
     [Fact]
     public void TheGallerysPlatesAreShippedAndListed()
@@ -262,6 +262,7 @@ public sealed class TheGallerysCoinMachinesTests
                      GalleryFixtures.BinocularsOutArtUrl,
                      GalleryFixtures.BinocularsDownArtUrl,
                      GalleryFixtures.CafeteriaArtUrl,
+                     GalleryFixtures.CafeteriaFloorArtUrl,
                  })
         {
             Assert.True(

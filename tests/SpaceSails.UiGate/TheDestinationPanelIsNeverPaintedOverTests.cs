@@ -106,6 +106,10 @@ public sealed class TheDestinationPanelIsNeverPaintedOverTests : IAsyncLifetime
             $"the Plotting panel is not showing at {atSize} — nothing here could paint over the "
             + "navigation-target panel, so this guard proves nothing (#1037).");
 
+        // #1234 · nothing may have moved for three quarters of a second before a box is read — a
+        // geometry assertion made on a layout still being written is a coin toss (see GateReady).
+        await _page.SettledAsync(".map-dest-panel, .map-plot");
+
         if (await dest.BoundingBoxAsync() is not { } destBox)
         {
             throw new InvalidOperationException($"the destination panel has no box at {atSize}");
@@ -169,8 +173,10 @@ public sealed class TheDestinationPanelIsNeverPaintedOverTests : IAsyncLifetime
         // DEFERS such a beat rather than dropping it, and leaves plates alone. See
         // StoryBeats.HoldQueryFlag.
         await _page.GotoAsync(_host.BaseUrl + "/map?dock=red-eye&holdbeats=1", new() { Timeout = BootTimeoutMs });
-        await _page.WaitForSelectorAsync(".map-loading",
-            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        // #1234 · BOTH HALVES OF THE DOOR, through GateReady. `GotoAsync` returns while the page is still an
+        // empty shell, so a bare "wait until .map-loading is gone" is satisfied by a door that has not been
+        // hung yet — this waited only for the second half.
+        await _page.BootDoorClosedAsync(BootTimeoutMs);
         await _page.Locator(".desk-tab-bar").WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
 

@@ -79,8 +79,10 @@ public sealed class TheTradeDeskRendersTests : IAsyncLifetime
         // same press) with `<div class="view-object-backdrop"> intercepts pointer events` on its tab. The latch DEFERS such a beat rather than
         // dropping it, and leaves plates alone. See StoryBeats.HoldQueryFlag.
         await _page.GotoAsync($"{_host.BaseUrl}/map?dock={BerthId}&holdbeats=1", new() { Timeout = BootTimeoutMs });
-        await _page.WaitForSelectorAsync(".map-loading",
-            new() { State = WaitForSelectorState.Detached, Timeout = BootTimeoutMs });
+        // #1234 · BOTH HALVES OF THE DOOR, through GateReady. `GotoAsync` returns while the page is still an
+        // empty shell, so a bare "wait until .map-loading is gone" is satisfied by a door that has not been
+        // hung yet — this waited only for the second half.
+        await _page.BootDoorClosedAsync(BootTimeoutMs);
 
         // The desk tab bar is the page saying the world is up and the captain is aboard, not on a surface.
         await _page.Locator(".desk-tab-bar").WaitForAsync(
