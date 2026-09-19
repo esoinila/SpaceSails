@@ -32,6 +32,45 @@ internal static partial class RendererInterop
     public static Task EnsureModuleLoadedAsync() =>
         _moduleLoadTask ??= JSHost.ImportAsync(ModuleName, "../renderer.js");
 
+    /// <summary>#1244 · Has the import above actually finished? Every <c>[JSImport]</c> in this file throws
+    /// if the module is not in yet, so a caller that runs DURING the boot — rather than after the renderer
+    /// stage, which is where everything else here is called from — has to ask first.</summary>
+    private static bool ModuleIsLoaded => _moduleLoadTask is { IsCompletedSuccessfully: true };
+
+    /// <summary>#1244 · Is nobody looking at this page — another tab in front, the window minimised or
+    /// occluded, the machine locked? Answers <c>false</c> off a browser and before the module is in, which
+    /// is the honest answer for both: a test runner has no tab, and a boot that cannot ask yet must not
+    /// guess.
+    ///
+    /// <para><b>This is a YIELD input and nothing else.</b> The one caller is the staged boot's hand-back
+    /// (<c>Map.HandTheFrameBackAsync</c>), which uses it to choose between a timer and a message tick. No
+    /// world-building code may read it — the sky a URL builds is the same sky whether or not anyone is
+    /// watching it being built, and <c>TheHiddenTabNeverReachesTheWorldTests</c> is the guard.</para></summary>
+    internal static bool PageIsHidden() =>
+        OperatingSystem.IsBrowser() && ModuleIsLoaded && TheDocumentIsHidden();
+
+    /// <inheritdoc cref="PageIsHidden"/>
+    [JSImport("pageIsHidden", ModuleName)]
+    private static partial bool TheDocumentIsHidden();
+
+    /// <summary>#1244 · Take the browser's ration off the shortest timers on this page — 4 ms and under,
+    /// which is the .NET WASM timer queue's "as soon as you can" and nothing a human ever asks for — by
+    /// serving them on a <c>MessageChannel</c> tick, which no browser rations. <c>false</c> puts the
+    /// browser's own back. Idempotent in both directions, and a no-op (answering <c>false</c>) off a
+    /// browser or before the module import has landed.
+    ///
+    /// <para>The one caller is the staged boot, which takes the ration off when it finds itself being
+    /// rationed and puts it back the moment the boot ends or is abandoned. Nothing else on the page may:
+    /// this reaches EVERY short timer in the document while it stands, and it is bearable only because the
+    /// boot is short, finite, and already owns the main thread.</para></summary>
+    /// <returns>whether the swap is now standing — so a caller can say honestly what it got.</returns>
+    internal static bool ServeTheShortestTimersOnATick(bool on) =>
+        OperatingSystem.IsBrowser() && ModuleIsLoaded && TheShortestTimersOnATick(on);
+
+    /// <inheritdoc cref="ServeTheShortestTimersOnATick"/>
+    [JSImport("serveTheShortestTimersOnATick", ModuleName)]
+    private static partial bool TheShortestTimersOnATick(bool on);
+
     [JSImport("initCanvas", ModuleName)]
     internal static partial void InitCanvas(string canvasId, bool observeResize);
 
