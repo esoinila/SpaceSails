@@ -91,7 +91,13 @@ public static class ObservationWalk
     public const double LengthDu = 3 * UndergroundComplex.FireCodeSmallRoomDu;
 
     /// <summary>#1199 · How many ways in and out it has. One, and it is the room's defining fact rather than
-    /// an accident of a carve, so it is stated here and asserted against the built deck.</summary>
+    /// an accident of a carve, so it is stated here and asserted against the built deck.
+    ///
+    /// <para>#1199 (2026-09-18) · <b>Still one, now that the walk is a T.</b> The gallery at the far end is
+    /// not a second room with a second door — the tube opens into it across its whole width, with no leaf,
+    /// no jambs and no wall between, exactly as a corridor opens into the hall it belongs to. The whole T is
+    /// one space with one doorway onto the concourse, which is the only reading under which the fire code's
+    /// named exemption stays honest and the only reading under which the beat still works.</para></summary>
     public const int Doorways = 1;
 
     /// <summary>#1199 · Which exemption the fire code lets it off under — its own, by name. Stated here so
@@ -105,6 +111,75 @@ public static class ObservationWalk
     /// the same drop, and two canvases of one view would be the room and the card disagreeing about where
     /// the captain is standing.</summary>
     public const string ArtUrl = "art/observation-walk.jpg";
+
+    // ── #1199 (2026-09-18) · THE GALLERY — THE CROSSBAR OF THE T ───────────────────────────────────────
+    //
+    // Owner, live on the walk: "Let's have a wider place at the far end of the observation place… like
+    // somewhere where 10 people can stand side to side and watch out — that is how these usually are built:
+    // a tube, then an area to view." And, the same afternoon: "maybe even a small vending machine cafeteria
+    // with a couple of tables there… the station likes to get the tourist money… by making the T-character
+    // wider hatted."
+    //
+    // So the room keeps the tube it already had as the STEM and grows a viewing room across the far end of
+    // it: the rail along the outer glass, the glass floor running on underneath, the tube its only way in.
+    // What the shape buys mechanically is the reason it is worth building at all — a straight tube keeps the
+    // person being followed in the captain's line down its whole length, so a captain who walks in AHEAD of
+    // them holds them in sight for ever and the beat stalls at the mouth. A crossbar gives the captain
+    // somewhere to stand out of that line, which is the only way the vanishing can happen at all.
+
+    /// <summary>
+    /// #1199 · <b>HOW MANY PEOPLE STAND AT THE RAIL SIDE BY SIDE.</b> Ten, and it is the owner's own number
+    /// — <i>"somewhere where 10 people can stand side to side and watch out"</i> — kept as a COUNT of bodies
+    /// rather than converted here into a width.
+    ///
+    /// <para>The conversion belongs where a body's width is known, which is the client's deck
+    /// (<c>DeckPlan.AvatarRadius</c>, and Core may not reference it — see <see cref="SurfaceScale"/> for the
+    /// same seam). So Core states the requirement and the client's own law proves the built plan meets it,
+    /// by measurement off the generated walls rather than by arithmetic either side agrees with in
+    /// private.</para>
+    /// </summary>
+    public const int AbreastAtTheRail = 10;
+
+    /// <summary>
+    /// #1199 · <b>HOW WIDE THE CROSSBAR IS</b> — as wide as the stem is long.
+    ///
+    /// <para>The ten abreast are a FLOOR and not the dimension: ten bodies at one body-width each want 14 du
+    /// of glass, and a room built to exactly that is a corridor turned sideways with ten people wedged in
+    /// it. The owner asked for the hat to be wider than the minimum in so many words — <i>"by making the
+    /// T-character wider hatted"</i> — and the honest width for a T is the one the T itself states: the
+    /// crossbar is the length of the stem. That is a proportion anybody can read off the drawn room, it
+    /// leaves the ten abreast half the glass to themselves, and the slack is exactly the floor the vending
+    /// cafeteria stands on.</para>
+    ///
+    /// <para>Written as <see cref="LengthDu"/> and not as 24, so a stem that is ever re-argued takes its
+    /// crossbar with it and the room cannot become two opinions about one shape.</para>
+    /// </summary>
+    public const double GalleryWidthDu = LengthDu;
+
+    /// <summary>
+    /// #1199 · <b>HOW DEEP THE CROSSBAR IS</b> — bedroom-small, and that is the argument.
+    ///
+    /// <para><see cref="UndergroundComplex.FireCodeSmallRoomDu"/> is the game's one statement of <i>a space
+    /// you can cross in two paces</i>. A viewing room is a place you stand in and look OUT of, so its depth
+    /// is the one dimension that must not become a hall: two paces from the glass to the back wall is a
+    /// gallery, and anything more is a lounge that happens to have a window. The fire code's own number is
+    /// therefore the right one to borrow — and borrowing it is not the room claiming the exemption by size,
+    /// because the exemption it is let off under is named (<see cref="Exemption"/>) and the room's WIDTH is
+    /// three times this.</para>
+    /// </summary>
+    public const double GalleryDepthDu = UndergroundComplex.FireCodeSmallRoomDu;
+
+    /// <summary>
+    /// #1199 · <b>THE CAFETERIA BAND — the inner half, and nothing stands outside it but the binoculars.</b>
+    ///
+    /// <para>The owner's cafeteria goes on the INNER (east) side, away from the glass: <i>"a small vending
+    /// machine cafeteria with a couple of tables there"</i>. Half the depth, so the split is a thing the
+    /// player reads rather than a threshold: machines and tables against the back wall, and the whole outer
+    /// half left as standing room at the rail, which is what the room is for. The one fixture allowed past
+    /// this line is the coin binoculars, because a pair of binoculars anywhere but at the glass is a
+    /// telescope pointed at a wall.</para>
+    /// </summary>
+    public const double CafeteriaBandDu = GalleryDepthDu / 2.0;
 
     // ── THE WAIT ──────────────────────────────────────────────────────────────────────────────────────
 

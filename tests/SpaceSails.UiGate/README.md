@@ -145,6 +145,47 @@ Proven red by restoring the clearance the lane deleted (`padding-top: 5.75rem`, 
 the first five of them the Captain's Orders/Status/Tutorials/Ledger/Crew toggle — the very row the owner
 caught.
 
+## When a screen may be measured (issue #1234) — `GateReady`
+
+`TheFollowDestButtonIsRealTests` went red on 2026-09-18 on a commit that touched no markup — *"Follow dest
+sits on a different row from Follow Ship (y 165 vs 125)"* — and green on a re-run of the identical commit.
+Probed on one boot, sampled every 250 ms, logged only when something moved:
+
+```
+[ 13155 ms] Follow Ship visible — THIS IS WHERE THE GATE MEASURED
+[ 13173 ms] ⏭ Long coast ahead (30 d) — @388,125 w243 … Follow Ship@880,125 | Follow dest@978,125
+[ 13968 ms] ⏭ Long coast ahead (29 d 23 @388,125 w274 … Follow Ship@911,125 | Follow dest@20,165
+```
+
+Eight hundred milliseconds after the boot door came down, the long-coast advert re-read its own countdown —
+`30 d` → `29 d 23 h`, **31 px wider** — and `.btn-toolbar`'s `flex-wrap` (#123/#195) broke the row one
+button earlier. The commit had nothing to do with it: the gate read a row that was **still being written**,
+and which of the two rows it got was decided by how many milliseconds the box took to get from the door to
+the bounding box (~20 ms on a quiet dev box; longer on a runner boiling four Chromiums).
+
+**It was not the fonts.** This client has no web font at all — no `@font-face`, no font file in `wwwroot`, a
+system stack in `app.css` — and the probe read `document.fonts.status = loaded` on its first sample.
+`SettledAsync` still awaits `document.fonts.ready` (it costs nothing, and the day somebody adds a face is
+the day that would otherwise become the cause), but the cause is the settle.
+
+So `GateReady` is the one answer to "when may a pixel be read?", and every gate here goes through it:
+
+| call | what it is |
+| --- | --- |
+| `page.BootDoorClosedAsync(t)` | the "Rigging the sails…" door **attached, then detached**. `GotoAsync` returns while the page is still an empty shell, so a bare wait-until-it-is-gone is satisfied by a door that has not been hung yet — **thirteen** call sites across nine gates had only the second half |
+| `page.SettledAsync(scope)` | `document.fonts.ready`, two served animation frames, and then every laid-out box under `scope` identical across consecutive frame-pairs for 750 ms |
+
+`SettledAsync` **throws** if the region never holds still, naming the box that kept moving and both of its
+readings. It is not a retry and it never re-reads until it likes the answer: a gate that cannot get a still
+screen has not measured anything. An element the page deliberately never rests — computed
+`animation-iteration-count: infinite` — is excluded with its descendants, because a spinner is not evidence
+that the layout is moving.
+
+`TheGateMeasuresAStillScreenTests` is the law itself: the #1234 screen booted three times, read 0 ms,
+1200 ms and 3000 ms after the door, and the toolbar must read as the **same controls on the same lines**
+every time (digits knocked out of the labels — sim time may spend a character; a line may not change).
+Proven red by deleting the one `SettledAsync` call inside it.
+
 ## Run it locally
 
 ```bash

@@ -19,35 +19,35 @@
 # `chars` is that transcript's length, which is what says how WIDE a change is at a glance.
 # The re-pin history is in the remarks on EverySeatTheCaptainTakesFingerprintsTheSameTests.
 
-chars | a chair in a ring office | 2569
-chars | a cubicle, with the catch still open | 2532
-chars | a free top in a cabinet | 2560
-chars | a free top in the hall | 2505
-chars | a park bench | 2531
-chars | a park bench with somebody on the far end | 2537
-chars | a stool at a chamber worktop | 2488
-chars | a top somebody is already at | 2523
-chars | a chair in a ring office (with a pour in front of you) | 2557
-chars | a cubicle, with the catch still open (with a pour in front of you) | 2520
-chars | a free top in a cabinet (with a pour in front of you) | 2799
-chars | a free top in the hall (with a pour in front of you) | 2744
-chars | a park bench (with a pour in front of you) | 2519
-chars | a park bench with somebody on the far end (with a pour in front of you) | 2525
-chars | a stool at a chamber worktop (with a pour in front of you) | 2476
-chars | a top somebody is already at (with a pour in front of you) | 2512
-sha256 | a chair in a ring office | c75279333d9082d470915ef678642c21411e8b0a7a174938999ff62d7021f4fa
-sha256 | a cubicle, with the catch still open | 173a3b2bcc1f188ed16e48fee7823c229cc4c021f05cae64f4d6f2868306c292
-sha256 | a free top in a cabinet | b69a442ef2fe80a74e4b4aaf9257ecee4348df7e4e9fc61eb8ac16437043b0e6
-sha256 | a free top in the hall | dd616769228fe0bafb5f5b93bb35692487ac174681d4717753f811a9c72773cf
-sha256 | a park bench | fa57822e7a363dbcbb8504c308941d74aa6f86bbfb09ca90f82ec464cdb8b90b
-sha256 | a park bench with somebody on the far end | 836e60073e4d1a5c05dc29d62f7850f4b6f94af6ad7ed3f7ae209b4404652225
-sha256 | a stool at a chamber worktop | de2b4fd8efd583da544e85071739d59e77018c12b42a334966039cf62b3c337b
-sha256 | a top somebody is already at | 7bfb8d97366f89df7c967b213f2593be914e3a99b8272cd0aea61d434a879f5f
-sha256 | a chair in a ring office (with a pour in front of you) | cad6977b2831110ee3de5e121753d5aef5f686609f4deca5a6023e7a2202ffc1
-sha256 | a cubicle, with the catch still open (with a pour in front of you) | 9d5cc662d21edaaff1ef67bebdb01c98315654ac0ade3f2e5d752c9001db462d
-sha256 | a free top in a cabinet (with a pour in front of you) | a29c82a5ab6345ee821a287f8f222837431806312fbbcd2f3a9fd4a4ab50152f
-sha256 | a free top in the hall (with a pour in front of you) | 417a72f0f24c7057e1ec86610263309811b555dbd45d20c16cfd815d2f35f5bc
-sha256 | a park bench (with a pour in front of you) | aeac9b9588e20a5b5a270efeae5cc045df11aed7dcb50eb632bf6c5191b38a78
-sha256 | a park bench with somebody on the far end (with a pour in front of you) | 05965aa0bcec2384b529168760c08385f9ec232bbaaea96b2bacb81defc148b3
-sha256 | a stool at a chamber worktop (with a pour in front of you) | dee4a7aa8ecf683f6a2074d085e8ac2e651999178fa7ed00f5107bd82eac4ea0
-sha256 | a top somebody is already at (with a pour in front of you) | 9a8fda8845ebe3db233fe1bea2037373ae4c08928208476b57325ffa6e17d2c5
+chars | a chair in a ring office | 2587
+chars | a cubicle, with the catch still open | 2550
+chars | a free top in a cabinet | 2578
+chars | a free top in the hall | 2523
+chars | a park bench | 2549
+chars | a park bench with somebody on the far end | 2555
+chars | a stool at a chamber worktop | 2506
+chars | a top somebody is already at | 2541
+chars | a chair in a ring office (with a pour in front of you) | 2575
+chars | a cubicle, with the catch still open (with a pour in front of you) | 2538
+chars | a free top in a cabinet (with a pour in front of you) | 2817
+chars | a free top in the hall (with a pour in front of you) | 2762
+chars | a park bench (with a pour in front of you) | 2537
+chars | a park bench with somebody on the far end (with a pour in front of you) | 2543
+chars | a stool at a chamber worktop (with a pour in front of you) | 2494
+chars | a top somebody is already at (with a pour in front of you) | 2530
+sha256 | a chair in a ring office | c58cf07025b1063b68ae014c6621af46f52828250bbd9c3b9931ce534a72de74
+sha256 | a cubicle, with the catch still open | b15c3c3980ca5893e2780ab8373f0ec7eb0b0e5c9c44daf0ab9fc4cfdea46e1d
+sha256 | a free top in a cabinet | 8e041561c5e5784a3b7dabce6195dfe1d4974a492153ba0f21735b6315294e7a
+sha256 | a free top in the hall | 1726b706035aeabedbf56dd0be2658f2c805dc3bfa7bf21b02fadaa519ce09de
+sha256 | a park bench | b5987a06ae609d79872c8ea3384de14968d75dd09519eed99535dc3afd59fd37
+sha256 | a park bench with somebody on the far end | fab8ab43c0701732d21b02f46262b46ce2e06c5c0bfa40fc671d7d305b5c966e
+sha256 | a stool at a chamber worktop | 93561137c83471ef8bebf89ce19c62c2eaca2fbec417096165df653075f53ec1
+sha256 | a top somebody is already at | 85e735cfd3923a7c41c4e49bc47eda4c31dc090b8d95ceb7831c8c067839a47a
+sha256 | a chair in a ring office (with a pour in front of you) | afa3341f693f27ff95106682ea2700aba0261facd057b0f8973123ebefda0aad
+sha256 | a cubicle, with the catch still open (with a pour in front of you) | a4c5ea88610e3d7e908760f6c89202def6d28e43c5f5fa070e5ac804367f2ea8
+sha256 | a free top in a cabinet (with a pour in front of you) | b88ab7ca0ed825c8d26d13eb89b316e7a3f58855d23d25a31dc23221dfbf6112
+sha256 | a free top in the hall (with a pour in front of you) | df11c69da65a5acba32f6d1d8d973905c5c6c3f77f0203a3e54003f0bb75608e
+sha256 | a park bench (with a pour in front of you) | 622dd5c7b68052a6dac00541a2232c7f4d0d3074c55fdc439f6107b182163fe1
+sha256 | a park bench with somebody on the far end (with a pour in front of you) | 40104c7bd4bf554db4f567b762d44a68ac493e5fe5c5c39217620162a1babbd7
+sha256 | a stool at a chamber worktop (with a pour in front of you) | cc525b0aab6728e9fd278be291de91fbab7c5e924bb55fbceb241b923e1a3272
+sha256 | a top somebody is already at (with a pour in front of you) | 6b0d28a7369c6c7f0357f21a3cb7da5b4e9d5fc1e8c7190eced584793c7e82bd
