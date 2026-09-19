@@ -359,17 +359,25 @@ public sealed partial class DeckView
     // the float command buffer (flushed under all text), so it always backs the glyphs and never covers
     // them. Text draws on the alphabetic baseline at (cx, cy); the plate is sized to the monospace run
     // (~6px/char at 10px) and seated around that baseline.
+    // #1218 · …AND THE PLATE IS THE BAND. The plate is what actually occupies the glass — it is wider and
+    // taller than the ink it backs — so the plate is what goes in the band book, and the baseline keeps its
+    // own offset INSIDE the plate. A room is named before the fittings in it are plated, so a room's name
+    // holds the row it asked for and a console's offer takes the one above rather than burying it.
     private void DrawRoomLabel(float cx, float cy, string text, bool medBay)
     {
         float w = text.Length * 6.0f + 9f;
         const float h = 13f;
-        float x0 = cx - w / 2f, y0 = cy - 10f;
+        const float baselineInPlate = 10f;
+        float x0 = cx - w / 2f;
+        float y0 = MarkBand.IsAMark(text)
+            ? cy - baselineInPlate
+            : (float)SeatTheBand(x0, x0 + w, cy - baselineInPlate, cy - baselineInPlate + h);
         FillRect(x0, y0, w, h, medBay ? MedBayPlate : RoomLabelPlate);
         if (medBay)
         {
             DrawRectOutline(x0, y0, w, h, MedBayKeyline); // the clean room's tidy edge — the exception's keyline
         }
-        _renderer.DrawText(cx, cy, text, medBay ? MedBayText : RoomLabelText,
+        _renderer.DrawText(cx, y0 + baselineInPlate, text, medBay ? MedBayText : RoomLabelText,
             medBay ? "bold 10px monospace" : "10px monospace", TextAlign.Center);
     }
 
