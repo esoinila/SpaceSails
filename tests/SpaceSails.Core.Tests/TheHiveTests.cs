@@ -372,6 +372,12 @@ public sealed class TheHiveTests
         // the second. Both stop at a height and a stationery order.
         text.AddRange(SitStandDesk.AllProse());
         text.AddRange(IncidentBoard.AllProse());
+        // #701 · …and the newest voice of all, and the most tempting seam this rule has ever had: the
+        // occupants' own shelves. A fixture plate names an object and a poster is a joke; these are thirteen
+        // texts about WHO WORKED HERE, which is precisely where an author reaches for the thing nobody is
+        // allowed to say. Every one of them stops at a hospital stamp, a dose pencilled downward and a
+        // cookbook on a floor with no kitchen.
+        text.AddRange(Shelves.AllProse());
 
         for (int i = 0; i < 40; i++)
         {

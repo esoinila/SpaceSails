@@ -1870,8 +1870,91 @@ this excursion searches, `?book=on` forces the seeded one. It cannot put a book 
 a book is what a would-be-empty room has *instead of* the empty line and a tester playtesting a room the game
 cannot produce has learned nothing. A scene nobody can reach on demand is a scene that ships broken.
 
-*(v1. The occupant layer — a work shelf that says what somebody did and a freetime shelf that says who they
-were, §12.3 piece-material rather than a dossier — is the other half of #701 and is not built.)*
+### 13.19a · THE LIBRARY LAYER — what they did, and who they were (#701, the occupant half)
+
+Owner's morning expansion: *"They have their work books and they have their freetime books there… provide
+soft clues about what kind of people stay in those rooms."* The odd book above is what the department that
+read everything left in a room **nobody works in**. This is what the people it employed kept **on their own
+walls**: every room somebody was given carries two shelves — a **work** shelf that says what they did, and a
+**freetime** shelf that says who they were. §12.3 piece-material, never a dossier: **no shelf anywhere names
+anybody.**
+
+**THE OCCUPANCY RULE, derived and never stored.** The repo had no occupant concept and this does not invent
+one — there is no name, no record, no roster, only a question (`Shelves.Occupied`) answered out of the ground
+the building already publishes. A room is somebody's when it is:
+
+1. **a chamber** — the module the building is made of, the room off a rib with a door and a plate — **or the
+   one park-view suite plated `PRIVILEGED RECORDS · READING ROOM`**, which is the audit's answer to the
+   catalog's *"the department that reads everything, if such a room exists"*. It does; it is a suite and not
+   a chamber, and it is the one room on this ground whose plate IS the engine behind the feature. A hall is a
+   venue, a cabinet is a booking, a cubicle and a cell are plumbing, a meeting room is a room a *department*
+   books, and every other ring suite is rank — none of them is a room one person sat in every day;
+2. **with a plate on it** — a gallery in the band nobody dug carries none and never did (#677), and the very
+   same `OddBooks.ShelvesStandHere` refuses both halves of #701 down there, so the two can never drift;
+3. **that is not the store that says it is empty** (#818's own escape hatch);
+4. **whose TRADE is one somebody stands in**, read off `ChamberFitting.KitFor` — the very ladder the
+   *furniture* is dealt by, so a room's shelves and a room's benches can never disagree about what is done in
+   it. `Store` is stock and `None` is nothing: **a storeroom has no occupant and therefore no shelves**,
+   which is the owner's brief predicting its own rule.
+
+Two rungs sit above that ladder, because the kit has no opinion about either: the **reading room** (a plate)
+and the **guard's post**. The audit's finding on the second is worth writing down — *the Hive has no SECURITY
+department and no guard room.* What it has, in four of its six door registers, is the plate that **admits**:
+`DO NOT ADMIT UNESCORTED`, `AUDIT — NO ADMITTANCE`, `CONTINUITY — AUTHORISED ONLY`, `OUTBOUND — AUTHORISED
+ONLY`. Those are the only rooms in the building whose sign is about a *person standing at the door* rather
+than about the work behind it, and a patrol manual nobody opened belongs in exactly them.
+
+**THE DEAL.** The catalog asks for *never two alike on one floor*; a floor has far more than seven occupied
+rooms on it, so the literal form is arithmetically impossible and the honest form is a deal. The seven
+personas are shuffled and handed out in order, and only when all seven are gone are they shuffled again — so
+**no two rooms in a row ever share one, and none repeats until every one has been seen.** Seeded per (site,
+floor, cycle), so a floor deals the same hand on every visit.
+
+**PLACED ON THE ROOM'S OWN FURNITURE, which is the finding rather than the first guess.** The first cut hung
+shelves on bare wall the way #864's incident board hangs, and **only three occupied rooms in five had bare
+wall left** to stand two things on — a chamber is 15 × 12 du, its two fire-code doorways claim four du either
+side of themselves, and #818's furniture is standing against what is left. The rooms that failed were the
+ordinary ones. Books live on the shelving over the bench, so the candidates are the faces of the room's own
+fittings, at the stool's own setback, and **bare wall is the fallback**. Every candidate is then measured —
+clear of every opening, of the square the A* audit stands a body on, of every other fitting, of the incident
+board, and of the room's other shelf. **Depth zero: no solid, no wall moved, the collision field
+byte-for-byte what it was.** *Both or neither* — a room with a work shelf and no freetime shelf says half a
+thing about somebody, which is worse than nothing.
+
+**READ EXACTLY AS THE ODD BOOK IS READ, on the same path.** A `HiveShelf` console, a caption-only #528
+look-card (title = the shelf line the room is showing, body = the card, no art file), and the **gist** filed
+to the casebook once per shelf per game-thread — through #741's subject law, declared by the author, and the
+subject is the **PLACE**, because a shelf names nobody and minting a person out of one would be the game
+doing the detecting (§12.4). Nothing enters the satchel, no credits move, no lead is granted and **the room
+is never struck off**. The read-list is the odd book's own (`Vault.Progress.OddBooksRead`) with the shelf ids
+namespaced (`work:`, `free:`), so one store carries both halves of this issue and no second reader exists to
+disagree with the first. A room may hold both: the odd book is one in six of the rooms nobody works in, and
+these are the rooms somebody did.
+
+**Nothing on any shelf names the monolith, the Old Ones, the Reevers or the found halls** (§13.8, §10) — the
+same wall the odd book stands behind, and the most tempting seam that rule has had, because this whole
+feature is about a person. Deliberately *not* reserved: **collision**. Persona 7 is the famous wrong book and
+says the planets used to be somewhere else, which is the game's own register looking back at itself, exactly
+as *cyclopean* is in the odd book's entry 6. The edition numbers stay — a twenty-seventh edition is a whole
+future in two digits.
+
+*(Enforced. Core: `TheShelvesSayWhoTheRoomBelongedToTests`, ten laws measured over **375 generated floors**
+of the scenario's own sites plus sixty synthetic ones — **2 959 rooms somebody was given, every one of them
+with both shelves and not one room anywhere else with any**, every post and every persona proved reachable,
+the deal walked room by room, the canon grep, the one-shot, and #741's subject. Watched go **red**: against
+the first cut's bare-wall placer at `1823 of 2959 rooms somebody was given have both shelves; 1136 have
+none`; against occupancy ignored at `2444 room(s) nobody was given hold shelves`; against a per-room roll at
+``B1 of luna: rooms 1 and 2 share `free:chess-problems` ``; against a reading that always files at `5918
+shelves read, 5918 gist(s) filed and only 13 of them different`; and against a transcription that names the
+canon at `Found: "monolith"` — and, in `TheHiveTests`' own sweep, at `Found: "restore"`. Client:
+`TheOccupantsShelvesAreReadWhereTheyStandTests` guards the wiring's SHAPE — the press proved to contain no
+`HiveRoomsEmptied`, `Satchel.Add`, `_credits`, `GrantLabLead` or `OfferKeepOrLeave`, the card proved
+caption-only, the gist proved to file through `FileNoteAbout` with a PLACE subject, the renderer proved to
+place nothing itself, and the client proved to grow no second read-list. Watched go red at
+`Not found: "FileNoteAbout(gist, Shelves.Glyph, Shelve"…` and at `Found: "_shelvesRead"`. And
+`SceneInventoryTests.EveryConsoleKindIsPlacedSomewhereOrIsExplained` caught the new kind on sight —
+`HiveShelf — placed by nothing, reachable by nobody` — because no general scene sweep builds an underground
+floor; the exemption now names the lane that spawns one and the guard that walks it.)*
 
 *(Enforced. Core: `TheEmptyRoomThatHoldsOneBookTests` — the split measured over 2 700 generated rooms
 (`the odd book turns up in 300 of 1773 would-be-empty rooms (16.9 %) — the law is one in 6 (16.7 %)`), the

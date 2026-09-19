@@ -350,6 +350,12 @@ public partial class Map
             case DeckPlan.ConsoleKind.HiveBoard:
                 HiveBoardInteract();   // #709: one notice off the cork board — whose it is, is your problem
                 break;
+            case DeckPlan.ConsoleKind.HiveShelf:
+                // #701 · READ THE SHELF. Owner: "they have their work books and they have their freetime
+                // books there … provide soft clues about what kind of people stay in those rooms." Nothing
+                // is taken, the room is not struck off, and the casebook learns the gist once.
+                HiveShelfInteract();
+                break;
             case DeckPlan.ConsoleKind.MonolithFoot:
                 MonolithFootInteract(); // #586: whatever somebody left at the foot this window
                 break;

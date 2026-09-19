@@ -58,6 +58,57 @@ public static partial class ChamberFitting
     }
 
     /// <summary>
+    /// #864/#701 · IS THIS A SQUARE ON A ROOM'S WALL THAT A FLAT FIXTURE CAN TAKE, and a captain can stand
+    /// at to read it? The three questions a wall-hung thing asks — every published opening, the square the
+    /// A* audit stands a body on, and whatever the furnisher already stood against this wall.
+    ///
+    /// <para>Published here rather than kept private to one placer for <see cref="FreeWallRuns"/>' own
+    /// reason: the incident board (<see cref="IncidentBoard"/>) and the occupants' shelves
+    /// (<see cref="Shelves"/>) both hang under exactly the law the furniture is laid under, and a second
+    /// author for "is there wall left HERE" is the shape of bug this house has paid for repeatedly. It is
+    /// the board's own test, moved and not rewritten: every clearance below is the one it has asked since
+    /// #864, in the order it asked them.</para>
+    /// </summary>
+    /// <param name="x">The square in question, in the surface's own coordinates.</param>
+    /// <param name="y">The same.</param>
+    /// <param name="room">The room as published AND FURNISHED.</param>
+    /// <param name="openings">Every hole a body can pass. A caller that hands over more loses nothing.</param>
+    /// <param name="clearOfFurnitureDu">How much floor to keep between this and the nearest fitting — a
+    /// parameter because it is a fact about the thing being hung and not about the room.</param>
+    public static bool StandsClear(
+        double x, double y, in UndergroundComplex.Room room,
+        IReadOnlyList<SurfaceLayout.Doorway> openings, double clearOfFurnitureDu)
+    {
+        ArgumentNullException.ThrowIfNull(openings);
+
+        foreach (SurfaceLayout.Doorway hole in openings)
+        {
+            if (BoxToPoint(
+                    Math.Min(hole.X1, hole.X2), Math.Min(hole.Y1, hole.Y2),
+                    Math.Max(hole.X1, hole.X2), Math.Max(hole.Y1, hole.Y2), x, y)
+                < OpeningClearDu)
+            {
+                return false;
+            }
+        }
+
+        double dx = x - room.X, dy = y - room.Y;
+        if (Math.Sqrt((dx * dx) + (dy * dy)) < CentreClearDu)
+        {
+            return false;
+        }
+
+        foreach (RingOffice.Fixture fit in room.Furniture)
+        {
+            if (BoxToPoint(fit.X0, fit.Y0, fit.X1, fit.Y1, x, y) < clearOfFurnitureDu)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// <summary>
     /// #818/#864 · EVERY STRETCH OF THIS ROOM'S OWN WALLS LONG ENOUGH TO STAND SOMETHING AGAINST, longest
     /// first.
     ///

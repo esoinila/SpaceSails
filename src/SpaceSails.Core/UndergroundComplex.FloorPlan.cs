@@ -60,7 +60,11 @@ public static partial class UndergroundComplex
         // what it was; this is the building's, and it exists because a floor whose middle is a core of
         // meeting rooms has the same six crossings and no park to publish them. Appended, same reason as
         // every optional above.
-        IReadOnlyList<SurfaceLayout.Doorway>? Crossings = null)
+        IReadOnlyList<SurfaceLayout.Doorway>? Crossings = null,
+        // #701 · THE OCCUPANTS' SHELVES — two on the wall of every room somebody was given, and none
+        // anywhere else. Appended and never inserted, for the reason every optional on this record is
+        // appended: every caller of it builds it positionally.
+        IReadOnlyList<Shelves.Shelf>? Library = null)
     {
         /// <summary>#1063 · The preserved doorway on this floor, where this floor keeps one — which is the
         /// listed bottom of a filled ground and no other floor in the game.</summary>
@@ -90,6 +94,11 @@ public static partial class UndergroundComplex
         /// <summary>#798 · Somewhere to put a paper on this floor, never null — a caller asking "is there a
         /// bin here" must not have to tell an empty list from a missing one.</summary>
         public IReadOnlyList<RipAndBin.Bin> TheBins => Bins ?? [];
+
+        /// <summary>#701 · Every shelf on this floor, never null. Empty on a floor with nobody's rooms on
+        /// it — the galleries of the found band — which is a true statement about those floors rather than
+        /// a missing one.</summary>
+        public IReadOnlyList<Shelves.Shelf> TheShelves => Library ?? [];
 
         /// <summary>#822 · Every room on this floor, never null. <see cref="RoomCentres"/> is the POOL the
         /// amenities and the refuge were drawn out of and it shrinks as they take from it; this is the
@@ -349,8 +358,11 @@ public static partial class UndergroundComplex
         (List<Room> published, List<Amenity> amenities, List<Refuge> refuges) = PublishTheRooms(
             bodyId, level, field, walls, rooms, ensuites, ring, meetings, hallSite, shaftX, shaftY);
 
-        // ── #818/#853/#864 · AND WHAT IS STANDING ON THE FLOOR OF EVERY ONE OF THEM, and on their walls.
-        (IReadOnlyList<LabPosters.Poster> posters, IncidentBoard.Board? board) = FurnishTheChambers(
+        // ── #818/#853/#864/#701 · AND WHAT IS STANDING ON THE FLOOR OF EVERY ONE OF THEM, and on their
+        //    walls — the furniture, the posters outside the doors, the safety board inside one of them, and
+        //    the two shelves on the wall of every room somebody was given.
+        (IReadOnlyList<LabPosters.Poster> posters, IncidentBoard.Board? board,
+            IReadOnlyList<Shelves.Shelf> library) = FurnishTheChambers(
             bodyId, level, walls, ensuites, published, shaftX, shaftY);
 
         var centres = new List<(double X, double Y)>(rooms.Count);
@@ -382,7 +394,7 @@ public static partial class UndergroundComplex
 
         return new FloorPlan(level, NameOf(bodyId, level), HoldsPressure(bodyId, level),
             walls, doorways, locked, labels, centres, ribList, refuges, amenities, ensuites,
-            glass, park, bins, published, posters, board, specimen, meetings, ring, parkGates);
+            glass, park, bins, published, posters, board, specimen, meetings, ring, parkGates, library);
     }
 
     /// <summary>#585/#751 · How far a rib reaches off the spine, and where its mouth is. ONE function,

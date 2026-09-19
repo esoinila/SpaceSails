@@ -49,6 +49,37 @@ public static partial class HiveInterior
     }
 
     /// <summary>
+    /// #701 - STANDS THE OCCUPANTS' SHELVES: two in every room somebody was given, and none anywhere else.
+    /// Core says where each one is and what is on it (<see cref="Shelves.On"/>); this hangs a console on it
+    /// and measures nothing. Lays down: consoles.
+    /// </summary>
+    private static void StandTheShelves(List<DeckPlan.ConsoleSpot> consoles,
+        in UndergroundComplex.FloorPlan floor)
+    {
+        // ── #701 · THE LIBRARY LAYER, ON THE WALL OF EVERY ROOM SOMEBODY WAS GIVEN ─────────────────────
+        //
+        // Owner: "They have their work books and they have their freetime books there... provide soft clues
+        // about what kind of people stay in those rooms."
+        //
+        // A HiveShelf and NOT a ViewObject, though the two look identical on the deck. A ViewObject press
+        // opens the card it was built with and stops; this press has a second half — the casebook learns
+        // the gist once per shelf per game-thread — and a console kind that could not tell them apart would
+        // be a card that never files. The plate is what the room shows and is the same string the card is
+        // titled with, exactly as the odd book's card wears its own shelf line, so nothing here composes
+        // prose: the sentence a captain reads standing in the doorway is the sentence they read on the card.
+        //
+        // No art slot: these are text cards in the caption-only #528 idiom, the lifeboat-muster precedent
+        // the odd book already took. A card that wires a picture and hides it on error is a card claiming a
+        // painting nobody has made.
+        foreach (Shelves.Shelf shelf in floor.TheShelves)
+        {
+            consoles.Add(new(
+                DeckPlan.ConsoleKind.HiveShelf,
+                (float)shelf.X, (float)shelf.Y, shelf.Plate));
+        }
+    }
+
+    /// <summary>
     /// #853 - HANGS THE CONFERENCE POSTERS on the one department they are about, on the monolith's own press:
     /// a ViewObject whose art slot degrades, so they can ship with the copy today and the pictures whenever
     /// they are shot. Lays down: consoles.
