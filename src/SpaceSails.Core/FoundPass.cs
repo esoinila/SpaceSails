@@ -148,9 +148,120 @@ public static class FoundPass
         return null;
     }
 
-    /// <summary>Is THIS room the one? Asked by the search, so the client never re-states the designation.</summary>
+    /// <summary>Is THIS room the one the FALSE ID is lying in? Asked by the search, so the client never
+    /// re-states the designation.</summary>
     public static bool IsHere(string bodyId, int level, int roomIndex) =>
         RoomFor(bodyId) is { } at && at.Level == level && at.RoomIndex == roomIndex;
+
+    // ── #605 · …AND THE OTHER DRAWER: A DEPARTMENT'S OWN PASS, IN A DEPARTMENT'S OWN ROOMS ───────────────
+    //
+    // The department ladder (PatrolBeat.ThePassFitsTheFloor) gave the tier a meaning; this is where a tier a
+    // captain was never issued comes from. It is the SAME object as the false ID and it arrives through the
+    // SAME seam — a real pass, issued by a real site to a real person, lying where they left it — and the
+    // only thing that differs is which two facts are wrong about it. The false ID has the wrong SITE on it.
+    // This one has the right site and a tier the captain was never given, which is exactly what makes it
+    // worth carrying: it opens the one band of floors a hand is walked out of.
+    //
+    // THERE IS NO SECOND DRAWER MECHANISM. Both are designated rooms, both may only stand where the haul
+    // table already says the room is empty, both are taken by the one verb in Map.FoundPass.cs, and #701's
+    // shelf walks past both through one predicate (APassIsLyingAt).
+
+    /// <summary>#605 · One site in this many keeps a department's own pass lying about. FLAGGED for the
+    /// owner's tuning, and it is a gate on top of the building having a floor that department owns and a
+    /// room on it the haul table calls empty — so what a captain actually meets is this number THROUGH the
+    /// building's shape, measured rather than assumed, exactly as <see cref="OneInSites"/> is.</summary>
+    public const int OneInSitesKeepsADepartmentPass = 2;
+
+    /// <summary>#605 · Does this building have one at all? A fact about the ground, seeded off its id and
+    /// nothing else — its own seed, so the two drawers never decide each other.</summary>
+    public static bool ASiteKeepsADepartmentPass(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return DiceRule.Roll(
+            DiceRule.Seed($"dept-pass:kept:{bodyId}"), OneInSitesKeepsADepartmentPass).Face == 1;
+    }
+
+    /// <summary>
+    /// #605 · <b>WHERE THE DEPARTMENT PASS IS LYING, AND WHOSE DEPARTMENT IT IS</b> — or null on the sites
+    /// that keep none, and on the sites whose rooms are all full.
+    ///
+    /// <para><b>On a floor that department OWNS</b>, which is the whole of the placement law: a PLANT pass
+    /// is found in PLANT's own rooms and nowhere else, so the find teaches the ladder before the ladder is
+    /// ever asked. Only floors somebody walks a round on (<see cref="PatrolBeat.IsPatrolled"/>) are
+    /// eligible, because a pass for a floor nobody is ever stopped on is a pass with nothing to do; and only
+    /// floors a department owns (<see cref="PatrolBeat.ADepartmentOwnsTheFloor"/>), because a pass at a tier
+    /// a general hand already covers would be a find that changes nothing.</para>
+    ///
+    /// <para><b>AIR IS DELIBERATELY NOT ASKED, and the audit is why.</b> The shaft bands are four floors
+    /// deep and the plate stock is eight names long, so the floors that breathe land on exactly two of the
+    /// eight plates — ADMINISTRATION and ARCHIVE — on <b>every branch office in the game, for ever</b>. An
+    /// air clause here would therefore not be a rule about lanyards, it would silently delete six of the
+    /// eight department passes from the universe with every test still green. And there was never an
+    /// argument for one: <see cref="UndergroundComplex.NeedsAir"/> gates the two PAPERWORK hauls and says in
+    /// its own words why <see cref="UndergroundComplex.Haul.Key"/> is not among them — <i>a token on a
+    /// lanyard, carried by the person who works the doors, and a suit-work floor has doors too</i>. A pass
+    /// is that same token.</para>
+    ///
+    /// <para><b>And only where the room holds nothing else</b> — <see cref="RoomFor"/>'s own clause, for
+    /// <see cref="RoomFor"/>'s own reason, plus the one thing it did not have to say: it may not stand in
+    /// the FALSE ID's drawer either, which it could otherwise reach on a site whose mess floor its
+    /// department owns.</para>
+    /// </summary>
+    public static (int Level, int RoomIndex, string Department)? DepartmentRoomFor(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        if (!ASiteKeepsADepartmentPass(bodyId))
+        {
+            return null;
+        }
+
+        // The candidate floors, walked from the top down — FloorsOf's own order, which is a fact about the
+        // building rather than a list built by appending somewhere else (this repo's fourth named bug
+        // class). The seed picks among them, so the same building always keeps the same drawer.
+        var floors = new List<int>();
+        foreach (int level in UndergroundComplex.FloorsOf(bodyId))
+        {
+            if (PatrolBeat.IsPatrolled(bodyId, level)
+                && PatrolBeat.ADepartmentOwnsTheFloor(ChamberFitting.DepartmentOn(bodyId, level)))
+            {
+                floors.Add(level);
+            }
+        }
+
+        if (floors.Count == 0)
+        {
+            return null;
+        }
+
+        int at = (int)(DiceRule.Seed($"dept-pass:floor:{bodyId}") % (ulong)floors.Count);
+        int floor = floors[at];
+
+        for (int room = Room; room < Room + RoomsWalked; room++)
+        {
+            if (UndergroundComplex.InRoom(bodyId, floor, room) == UndergroundComplex.Haul.Nothing
+                && !IsHere(bodyId, floor, room))
+            {
+                return (floor, room, UndergroundComplex.DepartmentOf(bodyId, floor));
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>#605 · Is THIS room the department drawer, and whose pass is in it? Null everywhere else,
+    /// which is nearly everywhere.</summary>
+    public static string? DepartmentPassAt(string bodyId, int level, int roomIndex) =>
+        DepartmentRoomFor(bodyId) is { } at && at.Level == level && at.RoomIndex == roomIndex
+            ? at.Department
+            : null;
+
+    /// <summary>#605 · Is a pass of ANY kind lying in this room? The one predicate #701's shelf asks, so a
+    /// book and a pass can never both answer the same press — and so a second drawer added tomorrow is
+    /// covered by the question that already exists rather than by a second clause somebody remembers to add
+    /// beside it.</summary>
+    public static bool APassIsLyingAt(string bodyId, int level, int roomIndex) =>
+        IsHere(bodyId, level, roomIndex) || DepartmentPassAt(bodyId, level, roomIndex) is not null;
 
     // ── WHOSE IT IS ──────────────────────────────────────────────────────────────────────────────────────
 
@@ -246,7 +357,5 @@ public static class FoundPass
     /// the chooser (<see cref="WalletChoice.Claims"/>), which is composed off the same call.</para>
     /// </summary>
     public static string Plate(Satchel.Item pass) =>
-        PatrolBeat.SiteOfBadge(pass.Id) is { Length: > 0 } site
-            ? $"{PatrolBeat.BadgeGlyph} {PatrolBeat.BadgeTitle(site)}"
-            : $"{PatrolBeat.BadgeGlyph} {WalletChoice.UnreadableFaceLine}";
+        $"{PatrolBeat.BadgeGlyph} {PatrolBeat.BadgeFaceOf(pass.Id) ?? WalletChoice.UnreadableFaceLine}";
 }

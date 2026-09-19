@@ -264,9 +264,23 @@ public partial class Map
             if (TheSitePassIsMintedAtTheLanding)
             {
                 string passBody = landedOn.Stop.Body.Id;
-                if (!PatrolBeat.BadgeHeld(passBody, _satchel))
+                if (!WalletChoice.StillHeld(_satchel, PatrolBeat.Badge(passBody)))
                 {
                     _satchel = [.. Core.Satchel.Add(_satchel, PatrolBeat.Badge(passBody))];
+                }
+
+                // #605 · …and the DEPARTMENT pass this building keeps, where it keeps one — the fifth rung
+                // of the read, and the only one that needs two papers for the SAME site in one wallet before
+                // it can be seen at all. THROUGH THE PRODUCER again, for the producer's own reason: a cheat
+                // that picked a department of its own would be a second answer to which pass is lying in
+                // this building, and the dev path would drift off the real one the first afternoon somebody
+                // tuned either. Null on the sites that keep none, and then the cheat deals it not.
+                string? department = FoundPass.DepartmentRoomFor(passBody)?.Department;
+                Satchel.Item? deptPass =
+                    department is { Length: > 0 } ? PatrolBeat.Badge(passBody, department) : null;
+                if (deptPass is { } tiered && !WalletChoice.StillHeld(_satchel, tiered))
+                {
+                    _satchel = [.. Core.Satchel.Add(_satchel, tiered)];
                 }
 
                 // #836 · …and the paper that makes it a CHOICE. A captain who worked the lane arrives on
@@ -294,6 +308,7 @@ public partial class Map
 
                 ShowPulseMessage(
                     $"🧪 DEV ?badge=1: {PatrolBeat.BadgeGlyph} {PatrolBeat.BadgeTitle(passBody)}, " +
+                    (deptPass is { } tier ? $"{FoundPass.Plate(tier)}, " : "") +
                     (falseId is { } shown ? $"{FoundPass.Plate(shown)}, " : "") +
                     $"{CanteenTable.ChitGlyph} the cage chit are in the wallet — 🎒 I to read them, then " +
                     "let a round find you and pick which one of you he meets.");

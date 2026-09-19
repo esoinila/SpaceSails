@@ -229,7 +229,12 @@ public static class OddBooks
     /// haul table rather than inside it (<see cref="FoundPass.RoomFor"/>, which is designated at the same
     /// "this room is empty" test this one makes). Without it, one drawer on the mess floor of the sites
     /// that keep a pass would answer twice, and which of the two the captain got would depend on the order
-    /// two unrelated files happened to be asked in.</para>
+    /// two unrelated files happened to be asked in.
+    ///
+    /// <para>#605 · It asks <see cref="FoundPass.APassIsLyingAt"/> rather than that file's mess-floor
+    /// drawer by name, because the department ladder gave the same seam a second designated room and a
+    /// clause naming one of them would have left the other one answering the same press twice — on a
+    /// department floor this time, where nobody was looking.</para>
     ///
     /// <para>Asked in ONE place, for <see cref="ShelvesStandHere"/>'s own reason: <see cref="Search"/>'s
     /// cheat path bypasses <see cref="HoldsOne"/> entirely, so two copies of this test would be two answers
@@ -240,7 +245,7 @@ public static class OddBooks
         ArgumentNullException.ThrowIfNull(bodyId);
         return ShelvesStandHere(bodyId, level)
             && UndergroundComplex.InRoom(bodyId, level, roomIndex) == UndergroundComplex.Haul.Nothing
-            && !FoundPass.IsHere(bodyId, level, roomIndex);
+            && !FoundPass.APassIsLyingAt(bodyId, level, roomIndex);
     }
 
     /// <summary>#677 · IS THERE A SHELF ON THIS FLOOR AT ALL — the one question both the roll and the cheat

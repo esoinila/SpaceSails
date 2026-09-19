@@ -164,8 +164,14 @@ public partial class Map
         void LogAutopilotEvent(string text);
 
         /// <summary>The field book. #836's paper trail writes a line per read, and the escort, the kick-out
-        /// and the revoked pass each write their own.</summary>
-        void FileNote(string text, string glyph);
+        /// and the revoked pass each write their own.
+        ///
+        /// <para>#605 · <b>…and what the entry is ABOUT, when its author knows</b> (#741's law: a subject
+        /// comes from the author, never from the prose). It is an OPTIONAL third argument rather than a
+        /// twenty-second member, deliberately: this interface may only shrink, and the round did not need a
+        /// new thing from the page — it needed the one it already had to carry the field the book has kept
+        /// beside every entry since #741. Left out, an entry files exactly as it always did.</para></summary>
+        void FileNote(string text, string glyph, string subjects = "");
 
         /// <summary>The nerve, spent through the system that owns it: one pip for being asked and unable to
         /// answer, one TOUCH pip for a hand closing on your arm. Nothing in this family reads or writes
