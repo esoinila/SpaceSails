@@ -221,6 +221,12 @@ public sealed class TheCarStopsAndTheStairIsThePriceTests
         object? up = Get(map, "_viewObject");
         Assert.True(up is not null && (string)Get(up, "Label")! == PatrolBeat.ChallengeLabel,
             "nobody came over and read the wallet in 900 frames, so this case is about nothing.");
+
+        // #746 · …AND THEN SHOW HIM THE PASS. The stop is an ENCOUNTER now: the card that goes up is
+        // the scene, with its opening in the amber row and four moves under it, and the wallet read is
+        // one of the four. The paper is still the one #836's fan put in the captain's hand — pressing
+        // the move is what a captain does at this moment, and it is what this driver does for them.
+        typeof(Pages.Map).GetMethod("TheStopMove", Hidden)!.Invoke(map, [GuardStop.Show]);
     }
 
     // ── (a) THE TRIGGER ───────────────────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -221,8 +221,14 @@ public sealed partial class EveryRoundFingerprintsTheSameTests
             return (map, ex);
         }, (map, ex, frame) =>
         {
-            // The card comes down on the frame after it goes up — the captain pressing Esc, which is one of
-            // the roads BeginTheWalkBack is armed behind.
+            // #746 · THE STOP IS AN ENCOUNTER, so the card that goes up is the SCENE and the papers are read
+            // when SHOW THE PASS is pressed. The press is a no-op on every frame there is no stop waiting,
+            // which is all but one of the eighteen hundred — and without it this case would watch a captain
+            // close a checkpoint without answering it, which is a different case entirely.
+            Invoke(map, "TheStopMove", GuardStop.Show);
+
+            // …and then the card comes down on the frame after it goes up — the captain pressing Esc, which
+            // is one of the roads BeginTheWalkBack is armed behind.
             Set(map, "_viewObject", null);
         }, 1800),
 
@@ -232,7 +238,11 @@ public sealed partial class EveryRoundFingerprintsTheSameTests
             StandInHisWay(map);
             Set(map, "_escortsThisWatch", PatrolBeat.EscortsAWatchAllows);
             return (map, ex);
-        }, (map, ex, frame) => Set(map, "_viewObject", null), 1800),
+        }, (map, ex, frame) =>
+        {
+            Invoke(map, "TheStopMove", GuardStop.Show);   // #746 · the read, as the move it became
+            Set(map, "_viewObject", null);
+        }, 1800),
 
         // ── THE RUN ────────────────────────────────────────────────────────────────────────────────
         new("he calls it in, comes at a run, and he has you", () =>

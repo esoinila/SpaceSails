@@ -98,6 +98,10 @@ public sealed partial class ThePatrolKeepsItsOwnStateTests
         "Pages/Patrol/Patrol.Challenge.cs",
         "Pages/Patrol/Patrol.Escort.cs",
         "Pages/Patrol/Patrol.Run.cs",
+
+        // #746 · the checkpoint as an encounter — the scene the stop's card carries and the one
+        // place a move becomes an answer. It declares no state of its own that is not the round's.
+        "Pages/Patrol/Patrol.Stop.cs",
     ];
 
     /// <summary>Where the state itself is — the one file fact 3 reads, and the only file in the client that

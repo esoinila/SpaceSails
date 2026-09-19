@@ -798,6 +798,12 @@ public sealed class AStandingGuardIsStandingAtSomethingTests
             "Patrol.cs", "Guard.cs", "IPatrolHost.cs",
             "Patrol.Floor.cs", "Patrol.Hide.cs", "Patrol.Round.cs",
             "Patrol.Challenge.cs", "Patrol.Escort.cs", "Patrol.Run.cs",
+
+            // #746 · THE TENTH PART, and it is the checkpoint as an ENCOUNTER: the scene the
+            // stop's card carries, which moves are on offer, the dice a rolled one casts, and the
+            // one place a move becomes an answer. Read LAST because it was added last; the count
+            // below is what stops an eleventh part going unread.
+            "Patrol.Stop.cs",
         ];
         Assert.Equal(state.Length, Directory.GetFiles(own, "*.cs").Length);
 
