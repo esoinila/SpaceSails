@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
@@ -342,21 +343,127 @@ public sealed class TheWalkIsATTests
         }
     }
 
-    /// <summary>#1199 · THE GALLERY'S BACKDROP IS THE CAFETERIA PLATE, and the tube keeps the walk's own
-    /// drop. Two canvases over two rectangles, because the two halves of the T are two shapes and one plate
-    /// stretched across both would be the same picture at two visibly different stretches.</summary>
+    /// <summary>#1199 · THE GALLERY'S FLOOR IS THE CAFETERIA PLATE, and the tube keeps the walk's own drop.
+    /// Two canvases over two rectangles, because the two halves of the T are two shapes and one plate
+    /// stretched across both would be the same picture at two visibly different stretches.
+    ///
+    /// <para>#1199 (2026-09-18, played) · …and it is the PORTRAIT one. The landscape plate is still in the
+    /// game and still the same room — it is the vending card's and the seated panel's, which are landscape
+    /// surfaces. What it is not any more is the floor.</para></summary>
     [Fact]
     public void TheGalleryWearsTheCafeteriaPlateAndTheTubeKeepsTheDrop()
     {
         DeckPlan deck = Deck;
         (double gx0, double gy0, double gx1, double gy1) = HavenInterior.TheGalleryBox(Berth)!.Value;
 
-        DeckPlan.Backdrop cafe = Assert.Single(deck.Backdrops, b => b.Url == GalleryFixtures.CafeteriaArtUrl);
+        DeckPlan.Backdrop cafe =
+            Assert.Single(deck.Backdrops, b => b.Url == GalleryFixtures.CafeteriaFloorArtUrl);
         Assert.Equal(gx0, cafe.X, 3);
         Assert.Equal(gx1 - gx0, cafe.W, 3);
         Assert.Equal(gy1 - gy0, cafe.H, 3);
 
         Assert.Contains(deck.Backdrops, b => b.Url == ObservationWalk.ArtUrl);
+
+        // The landscape plate is NOT laid on this deck at all. It is the card's and the seat's.
+        Assert.DoesNotContain(deck.Backdrops, b => b.Url == GalleryFixtures.CafeteriaArtUrl);
+    }
+
+    /// <summary>
+    /// #1199 (2026-09-18, played) · <b>A ROOM AND THE PICTURE LAID IN IT ARE THE SAME SHAPE.</b>
+    ///
+    /// <para>Owner, on the merged room: <i>"the hat is drawn TALL (N–S, 8 wide × 24 long on screen) and the
+    /// 16:9 cafeteria plate is stretched ~3:1 into it — the vending machines read as tall slivers."</i> This
+    /// is that sentence as a law, and it is measured at BOTH ends: the rectangle off the built deck, and the
+    /// canvas off its own <b>pixels</b>, read out of the JPEG's frame header on disk. Nothing here trusts a
+    /// filename or a constant — the whole bug was a landscape picture in a portrait hole while every name
+    /// involved still said "cafeteria".</para>
+    ///
+    /// <para><b>The claim is ORIENTATION and not aspect</b>, deliberately. A backdrop is stretched to its
+    /// rectangle by <c>DrawImage</c> and always will be; some stretch is the grammar of this pen. What must
+    /// never happen again is a canvas stretched ACROSS its own long axis, which is the difference between a
+    /// picture of a long room and a picture of a squashed one. So: a portrait hole takes a portrait canvas
+    /// and a landscape hole takes a landscape canvas — swept over EVERY backdrop this deck lays rather than
+    /// over the one that was wrong, because the next one will be a different room.</para>
+    ///
+    /// <para><b>Revert that reddens it:</b> put <c>CafeteriaArtUrl</c> (16:9) back on the gallery's floor,
+    /// which is exactly what shipped in #1237 — the assert names the file, its pixels and the du of the hole
+    /// it is in.</para>
+    /// </summary>
+    [Fact]
+    public void EveryPictureLaidOnThisDeckIsTheOrientationOfTheHoleItIsIn()
+    {
+        string art = Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "wwwroot");
+
+        int measured = 0;
+        foreach (DeckPlan.Backdrop bd in Deck.Backdrops)
+        {
+            string file = Path.Combine(art, bd.Url.Replace('/', Path.DirectorySeparatorChar));
+            if (!bd.Url.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || !File.Exists(file))
+            {
+                continue;   // a canvas not painted yet does not render, and cannot be measured either
+            }
+
+            (int px, int py) = JpegPixels(file);
+            measured++;
+
+            bool holeIsTall = bd.H > bd.W;
+            bool plateIsTall = py > px;
+            Assert.True(
+                holeIsTall == plateIsTall,
+                $"{bd.Url} is {px}×{py} ({(plateIsTall ? "portrait" : "landscape")}) and the hole it is laid "
+                + $"in is {bd.W:0.0}×{bd.H:0.0} du ({(holeIsTall ? "portrait" : "landscape")}) — it is being "
+                + "stretched across its own long axis.");
+        }
+
+        // Anti-vacuity: a deck whose canvases were all missing from disk would pass an empty loop.
+        Assert.True(measured >= 4, $"only {measured} plates were actually measured on this deck.");
+    }
+
+    /// <summary>#1199 · A JPEG's own frame header — width and height straight off its <c>SOF</c> marker, with
+    /// no imaging library, because this suite runs on a CI box where <c>System.Drawing</c> is not a thing
+    /// that exists. Twenty lines is a cheap price for a guard that reads the PIXELS rather than the name of
+    /// the file.</summary>
+    private static (int Width, int Height) JpegPixels(string path)
+    {
+        byte[] d = File.ReadAllBytes(path);
+        int i = 2;   // past the start-of-image marker
+        while (i + 9 < d.Length)
+        {
+            if (d[i] != 0xFF)
+            {
+                i++;
+                continue;
+            }
+
+            byte marker = d[i + 1];
+            if (marker is >= 0xC0 and <= 0xCF && marker is not (0xC4 or 0xC8 or 0xCC))
+            {
+                return ((d[i + 7] << 8) | d[i + 8], (d[i + 5] << 8) | d[i + 6]);
+            }
+
+            if (marker is 0xD8 or 0x01 || marker is >= 0xD0 and <= 0xD7)
+            {
+                i += 2;
+                continue;
+            }
+
+            i += 2 + ((d[i + 2] << 8) | d[i + 3]);
+        }
+
+        throw new InvalidOperationException($"{path} has no JPEG frame header.");
+    }
+
+    /// <summary>The repository root, found by walking up from the test binary to the solution file — the
+    /// same sounding the coin machines' own manifest guard makes.</summary>
+    private static string RepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "SpaceSails.slnx")))
+        {
+            dir = dir.Parent;
+        }
+
+        return dir?.FullName ?? throw new InvalidOperationException("no repository root above the test binary.");
     }
 
     // ── AND NOTHING ELSE MOVED ───────────────────────────────────────────────────────────────────────────
@@ -384,7 +491,7 @@ public sealed class TheWalkIsATTests
             Assert.Equal(here ? 2 : 0,
                 deck.Consoles.Count(c => c.Kind == DeckPlan.ConsoleKind.CoinVendor));
             Assert.Equal(here ? 1 : 0,
-                deck.Backdrops.Count(b => b.Url == GalleryFixtures.CafeteriaArtUrl));
+                deck.Backdrops.Count(b => b.Url == GalleryFixtures.CafeteriaFloorArtUrl));
         }
     }
 }

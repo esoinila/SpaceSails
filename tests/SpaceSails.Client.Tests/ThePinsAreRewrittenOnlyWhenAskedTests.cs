@@ -51,6 +51,10 @@ public sealed class ThePinsAreRewrittenOnlyWhenAskedTests(ITestOutputHelper outp
         (EverySeatTheCaptainTakesFingerprintsTheSameTests.Suite,
          EverySeatTheCaptainTakesFingerprintsTheSameTests.Preamble,
          EverySeatTheCaptainTakesFingerprintsTheSameTests.MeasureEveryRow),
+
+        (NoTwoCaptionsShareOneBandTests.Suite,
+         NoTwoCaptionsShareOneBandTests.Preamble,
+         NoTwoCaptionsShareOneBandTests.MeasureEveryRow),
     ];
 
     private void Say(string text)
