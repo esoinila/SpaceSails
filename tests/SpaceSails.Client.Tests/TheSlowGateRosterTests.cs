@@ -60,6 +60,13 @@ public sealed class TheSlowGateRosterTests
             // ?park=1 and ?counter=1 sitting on the logbook by playing them and a guard that booted a SAMPLE
             // would have missed which ones. The rule table and the source sweep beside them cost nothing.
             { nameof(TheOneCivilianFrontDoorTests), 381 },
+            // #336 · The shuttle link. Measured on its own day rather than read off the 09-02 baseline, the
+            // way #1108's row was: 12 tests, and effectively all of it is the twelve real boots — each one
+            // lands a captain on Miranda through the shipping descent before it can move the mothership.
+            //
+            // The number is the RELEASE one (36 s), because Release is what CI pays. The same twelve tests
+            // cost 67 s in a Debug run, which is a different measurement and not a fresher one.
+            { nameof(TheShuttleCanCatchHerTests), 36 },
 
             // ── The walkability audits: A* over every square of a floor ──
             { nameof(TheParkTakesAClickTests), 96 },
