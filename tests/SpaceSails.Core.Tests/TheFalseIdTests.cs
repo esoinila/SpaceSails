@@ -451,12 +451,16 @@ public class TheFalseIdTests
 
     /// <summary>#605 · A patrolled floor of this building the tier the site ISSUES covers — asked of the
     /// building (<see cref="PatrolBeat.GeneralHandsBelongOn"/>) rather than typed in, so a guard about the
-    /// SITE CODE stays about the site code on every generated ground.</summary>
+    /// SITE CODE stays about the site code on every generated ground.    ///
+    /// <para><b>It does not ask whether anybody walks a round there.</b> It did, and the head office (#411)
+    /// caught it: nobody patrols that building at all, so the sweep found no floor and threw on a ground
+    /// the shipped world really has. What these guards need is a floor the LADDER answers for, and the
+    /// ladder is a fact about a plate rather than about a rota.</para></summary>
     private static int AHandsFloorOf(string body)
     {
         foreach (int level in UndergroundComplex.FloorsOf(body))
         {
-            if (PatrolBeat.IsPatrolled(body, level) && PatrolBeat.GeneralHandsBelongOn(body, level))
+            if (PatrolBeat.GeneralHandsBelongOn(body, level))
             {
                 return level;
             }

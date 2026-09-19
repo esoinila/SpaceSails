@@ -46,7 +46,7 @@ public sealed class TheFletchWalletTests
         {
             foreach (int level in UndergroundComplex.FloorsOf(Here))
             {
-                if (PatrolBeat.IsPatrolled(Here, level) && PatrolBeat.GeneralHandsBelongOn(Here, level))
+                if (PatrolBeat.GeneralHandsBelongOn(Here, level))
                 {
                     return level;
                 }

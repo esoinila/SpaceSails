@@ -606,7 +606,7 @@ public class TheRoundsOnTheRestrictedFloorsTests
     {
         foreach (int level in UndergroundComplex.FloorsOf(body))
         {
-            if (PatrolBeat.IsPatrolled(body, level) && PatrolBeat.GeneralHandsBelongOn(body, level))
+            if (PatrolBeat.GeneralHandsBelongOn(body, level))
             {
                 return level;
             }

@@ -515,8 +515,9 @@ public sealed class TheRoundIsWalkableTests
         // which is the DISTANCE read and says yes to any tier of this site — so the day a captain turned up
         // carrying a department pass they had found, the site would quietly have declined to put them on
         // its books and the gig would have paid nothing at all.
+        // (Asserted POSITIVELY and not as an absence: this cut runs to the next section header, which is
+        // the whole of #835's block, and the kick-out down there reads BadgeHeld for its own good reason.)
         Assert.Contains("WalletChoice.StillHeld(_host.Satchel, pass)", issue, StringComparison.Ordinal);
-        Assert.DoesNotContain("PatrolBeat.BadgeHeld(", issue, StringComparison.Ordinal);
         Assert.Contains("Satchel.CanTake(", issue, StringComparison.Ordinal);
         Assert.Contains("Satchel.Add(", issue, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.BadgeIssuedLine", issue, StringComparison.Ordinal);
