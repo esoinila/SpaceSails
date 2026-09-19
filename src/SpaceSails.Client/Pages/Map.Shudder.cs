@@ -260,11 +260,27 @@ public partial class Map
     private double _signalOnsetMs;          // real-time ms the buzzer sounded
     private bool _signalCold;               // the story-deep escalation: the glance lingers, the cold line
 
-    // Advance the unexplained-signal schedule one frame. Only where staff can react — the ship deck or a
-    // haven bar/hall (never a surface site, which has no crew and no bar). A no-op / reset otherwise.
+    /// <summary>
+    /// Advance the unexplained-signal schedule one frame.
+    ///
+    /// <para><b>#1199 · IN THE BAR, AND NOWHERE ELSE.</b> Inspector, live on Selene Gate (2026-09-18): the
+    /// line <i>"Behind the counter the staff go still as one and trade a single glance"</i> fired with the
+    /// captain out on the CONCOURSE. This beat's gate was "a populated interior" — the ship's own deck, a
+    /// haven's concourse, its immigration hall and its observation walk — and every one of its six lines is
+    /// made of bar furniture: a counter, a barkeep, a dock-hand, drinkers, glasses being wiped. A sentence
+    /// about a room the captain is not standing in is #1215's class exactly, at ambient rank.</para>
+    ///
+    /// <para>The gate is now <see cref="TheCaptainIsInTheDockedBar"/> — the SAME predicate #1222 composed for
+    /// the stranger-bond, which was fixed for the same reason on the same floor in the same month.
+    /// Deliberately not a second predicate: same floor, same wall, so a room that moves moves for every beat
+    /// in it at once.</para>
+    ///
+    /// <para><b>The prose is untouched.</b> Nothing here is rewritten to be room-agnostic — the lines are
+    /// good and they are about a bar; what was wrong was where they were said.</para>
+    /// </summary>
     private void StepSignal(double dtRealSeconds, double nowMs)
     {
-        bool staffed = _deckMode && !_shuttleDescending && _surface is null; // a populated interior only
+        bool staffed = _deckMode && !_shuttleDescending && _surface is null && TheCaptainIsInTheDockedBar;
         if (!staffed)
         {
             _signalActive = false;
