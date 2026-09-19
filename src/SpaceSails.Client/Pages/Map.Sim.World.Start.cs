@@ -47,9 +47,10 @@ public partial class Map
             // stack trace. A start an id names and a start a WORLD can honour are two questions, and until now
             // only the first was asked (Map.Sim.World.Query checks the registry, which is scenario-blind).
             //
-            // The door was lowered at the top of the boot precisely because a start WAS asked for
-            // (RaiseTheFrontDoorWhileTheReactorWarms), so raising it again here is the refusal: the captain
-            // gets the berth list this scenario actually has, which is the same answer a mistyped start gets.
+            // The door was never raised at the top of the boot, precisely because a cheat WAS asked for
+            // (#323's civilian rule in RaiseTheFrontDoorWhileTheReactorWarms), so raising it here is the
+            // refusal: the captain gets the berth list this scenario actually has, which is the same answer
+            // a mistyped start gets.
             // Nothing is said — a dev cheat that cannot be honoured is a shortcut that did not work, never a
             // new failure mode, which is the rule `?dest=` is already written to (Map.Sim.World.Start).
             _showStartPicker = true;
@@ -61,13 +62,17 @@ public partial class Map
             // vault and raise the front door; both now happen the moment the ephemeris exists
             // (OpenTheFrontDoorAsync), thirteen seconds earlier, which is the whole of this lane.
             //
-            // Neither line is missed. The door was already raised at the top of the boot for every start
-            // that ends here except ?sling= / ?skim=, and those two shut it again a few lines below — so
-            // the raise was a no-op on every URL even before this. Re-raising it now would be worse than
-            // a no-op: the captain can CHOOSE from this door while the traffic is still being plotted,
-            // and a choice made at second two is waiting on this very boot to return (see
-            // TheRestOfTheBootAsync). Putting the menu back over the voyage they just started is exactly
-            // the bug that would be.
+            // Neither line is missed. A CIVILIAN URL — nothing but a scenario, which is what the home
+            // page's Launch button and a returning captain's bookmark carry — had its door raised at the
+            // top of the boot (#323), so the raise would be a no-op. And a URL that is NOT civilian asked
+            // for a bench situation and must not be handed a menu: this branch is reached by a cheat that
+            // seeds state without naming a start (?fuel=, ?ellipse=, ?kaamos=all, ?converge=1, …), and
+            // those boot straight into the world the cheat built, exactly as they did before #311.
+            //
+            // Re-raising here would be worse than a no-op anyway: the captain can CHOOSE from this door
+            // while the traffic is still being plotted, and a choice made at second two is waiting on this
+            // very boot to return (see TheRestOfTheBootAsync). Putting the menu back over the voyage they
+            // just started is exactly the bug that would be.
         }
     }
 
@@ -262,17 +267,22 @@ public partial class Map
     private void SeedTheApproachesAndThePurse(BootQuery q)
     {
         // ?sling=<bodyId>: boot onto an inbound arc with a close pass by that body (PR-G test hook).
-        // Suppress the start picker — picking a berth would overwrite the seeded approach state.
+        // ?skim=<bodyId>: boot onto a hyperbolic inbound grazing that body's atmosphere (PR-I test hook).
+        //
+        // #323 · BOTH USED TO SHUT THE START PICKER HERE, and neither does any more — because neither can
+        // now find it open. Each of these lines existed to undo the old door rule, which raised the picker
+        // for every URL that named no ?dock=/?start= and therefore raised it over a seeded approach that
+        // picking a berth would have overwritten. The door's rule is the civilian one now (#323): a URL
+        // carrying ?sling= or ?skim= is a bench incantation, so the door was never raised. A line that
+        // lowers a door nobody opened is a guard that cannot fail, and it is gone rather than kept for
+        // comfort — TheOneCivilianFrontDoorTests boots both of these URLs and asserts the direct boot.
         if (q.SlingCheat is not null)
         {
-            _showStartPicker = false;
             SeedSlingCheat(q.SlingCheat);
         }
 
-        // ?skim=<bodyId>: boot onto a hyperbolic inbound grazing that body's atmosphere (PR-I test hook).
         if (q.SkimCheat is not null)
         {
-            _showStartPicker = false;
             SeedSkimCheat(q.SkimCheat);
         }
 

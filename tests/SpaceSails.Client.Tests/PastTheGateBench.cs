@@ -85,6 +85,23 @@ internal static class PastTheGateBench
 
         object query = Method("ReadEveryQueryKey").Invoke(page, [new Uri(navigation.Uri)])!;
         Method("DefaultABerthForTheCheatsThatNeedOne").Invoke(page, [query]);
+
+        // #323 · …AND THE STAGE THAT HANGS THE CHEATS' ROCKS OFF A BERTH, which this replay used to skip and
+        // which is the ONLY place several cheats acquire one. `AppendTheBodiesTheCheatsAskFor` is where
+        // `?secretlab=` (and therefore `?park=`, `?counter=`, `?found=`, `?frontdoor=`, …), `?wreck=`,
+        // `?expedition=` and `?deflection=` overwrite `q.DockCheat` with the berth their own rock co-orbits —
+        // the boot's own comment says "the last one to do so wins". The boot ran it before the gate, on the
+        // query it then spends; this bench re-reads the query afterwards, so its copy came out of the reader
+        // chain with `DockCheat` still null and `ApplyTheStartPoint` fell through the picker branch.
+        //
+        // The cost was a bench that QUIETLY DISAGREED with the game about every rock-appending cheat: it
+        // reported `?park=1` ending at the front door when the shipping boot clamps it onto Selene Gate.
+        // Measured both ways before this line was written, and it is the difference between a guard that
+        // reads the boot and one that reads two thirds of it.
+        object scenario = await (Task<SpaceSails.Contracts.ScenarioDefinition>)
+            Method("FetchTheScenarioAsync").Invoke(page, [query, CancellationToken.None])!;
+        Method("AppendTheBodiesTheCheatsAskFor").Invoke(page, [scenario, query]);
+
         typeof(Map).GetField("_worldReady", Hidden)!.SetValue(page, true);
 
         foreach (string stage in TheStagesBehindTheGate)
