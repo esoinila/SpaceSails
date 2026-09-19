@@ -24,8 +24,16 @@
                         @onclick="StartSkip">
                     @* #989 clock: through the plan's own ladder, not a private whole-days rounding. The
                        advert opens at 24 h, so LongCoastDays said "1 d" for every coast up to a day and a
-                       half — sitting one toolbar row above a plan whose every step now reads "in 33 h". *@
-                    ⏭ Long coast ahead (@LongCoastAheadReadout) — skip it
+                       half — sitting one toolbar row above a plan whose every step now reads "in 33 h".
+
+                       #1247 · …AND THE CLOCK DOES NOT GET TO MOVE THE ROW. The countdown above is the one
+                       thing in this toolbar whose WIDTH changes on its own: crossing the month boundary
+                       turns "(30 d)" into "(29 d 23 h)", 31 px dearer, and .btn-toolbar's flex-wrap then
+                       breaks the row one button earlier — which is how Follow dest ended up alone on line
+                       1 in #1234's sighting, eight hundred milliseconds after the boot door came down.
+                       The words are untouched; they are read inside a slot wide enough for the widest of
+                       them, so the wrap point is a property of the toolbar and not of the hour. *@
+                    ⏭ Long coast ahead (<span class="map-coast-countdown">@LongCoastAheadReadout</span>) — skip it
                 </button>
             }
             @* #246/#249 🚀 the long haul as a toolbar chip — a SECONDARY surface (the map context menu is
