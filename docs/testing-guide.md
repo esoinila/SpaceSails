@@ -1779,6 +1779,38 @@ Sets you down a pace outside a shelter's door with both sentries holding twelve 
 2. **The magazines are on screen** — `🔫 MAGAZINES · K-77 12/99 in the sling · R-3B 12/99 in the sling`, under the motion tracker, above the key hints. Press `[E]` on the locker and watch it go to `99/99` in the same breath as the receipt says how many rounds went in. Before #728 that receipt paid into a number the player could see nowhere.
 3. **Come down with nothing and the press says so** — board with no sentry in the sling and the readout reads `none down here — no sentry came with you`, and the press answers *"finds nothing to fill"* rather than claiming your magazines are full.
 
+#### The boat's legs — the ring that says whether there IS a road home (#336)
+
+```
+/map?dock=the-tilt&site=0&land=1
+```
+
+Owner ruling (2026-07-18): *"the shuttle ship link should not break even if the ship undocks, because the
+docking is not requisite for the ship to stay in vicinity. As long as the ship is in shuttle range (shown on
+map) and is not moving too fast away, we should be able to fly back to it from a landing site."*
+
+**The law:** boarding up is allowed whenever the mothership is inside one shuttle hop **and** the hulls are
+parting company slower than the boat can fly (`ShuttleRange.CanCatch`). Undocked, drifting, orbit-degraded —
+none of that alone breaks the link, and a ship clamped to a berth that has carried her past the boat's legs
+is no better than one that drifted there. Orbit-hold is still **why** she drifts; range is **whether it
+matters**.
+
+**To see the ring on demand,** set down at any ground and look under the air gauge in the left instrument
+column: `SHUTTLE'S LEGS`, an outer ring (one hop) and an inner ring (where she actually is), with this
+ground as the dot at the centre. Calm teal inside three quarters of the reach, amber past it, red when she is
+out of it, grey when the window is shut but the rails bring her back (#955 NAV-2). **No bearing is drawn**
+and that is deliberate: the ground's axes and the Sun's frame are not the same dial, so range is all the
+instrument honestly knows.
+
+The comms strip at the top reads the same situation in the ship's own voice — *The ship drifts — still in
+shuttle range.* / *The ship is nearing the edge of shuttle range.* / *She is beyond the shuttle's legs. That
+is a maroon, captain.* — and an amber or lost range outranks even the docked line, because it is the fact
+that decides whether the excursion has a way home.
+
+**Broken looks like:** a ring saying she is catchable while the airlock refuses; a maroon announced over a
+periodic window that swings back in twenty minutes; `⚓ docked — the station holds the ship` on the strip
+while the boat will not fly; or the airlock refusing with no line at all.
+
 #### The bodyguard, and the road home (#326)
 
 ```

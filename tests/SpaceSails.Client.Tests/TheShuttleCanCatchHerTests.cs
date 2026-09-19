@@ -287,6 +287,24 @@ public sealed class TheShuttleCanCatchHerTests
     }
 
     [Fact]
+    public async Task AndTheRingActuallyREACHESTheInstrumentTheCaptainLooksAt()
+    {
+        // The half a data law cannot reach: TheShuttleLegsRing() answering correctly proves nothing if the
+        // page never hands the answer to the renderer. Asked of the SurfaceHud the page itself builds, so a
+        // lane that quietly drops the field fails here by name rather than only in the frame ledger's hashes.
+        DeskBench bench = await AshoreAsync();
+        PutHer(bench, hops: 0.4, catches: 0.0, undock: true);
+
+        object? hud = bench.Call("BuildSurfaceHud");
+        Assert.NotNull(hud);
+
+        object? legs = hud!.GetType().GetProperty("ShuttleLegs")!.GetValue(hud);
+        Assert.NotNull(legs);
+        Assert.Equal(0.4, ((System.ValueTuple<double, int>)legs!).Item1, 3);
+        Assert.Equal(0, ((System.ValueTuple<double, int>)legs).Item2);
+    }
+
+    [Fact]
     public async Task AndThereIsNoRingToDrawWhenNobodyIsAshore()
     {
         // The anti-vacuous half: a ring that was always non-null would pass every row above and would paint
