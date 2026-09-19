@@ -20,4 +20,4 @@
 caption strings | the regolith · your own ✗ | 71 caption(s), sha256 6678504ea0c6c029157a0766204c4165fe5e52a9362a8d320c6f1a964793d2ac
 caption strings | a derelict · the DEEP HOLD | 40 caption(s), sha256 9e7129de799c1045668711170a1d6cb00de6ec8c439077bce0e83cbac1f32ad0
 caption strings | the ship · her own deck | 50 caption(s), sha256 925c8b6d6e353588f474afdf33e123e609852828270bda495db709c9112a1dcc
-caption strings | luna B1 · the park | 112 caption(s), sha256 dc15b090656e552e5edb45d5b96fa0b7df15fc5134b9ecc636acd213bfefde7e
+caption strings | luna B1 · the park | 110 caption(s), sha256 4823646c298ef856dfab76f5847b80bf4de65e6c7dce1873d65ee49b97b24682
