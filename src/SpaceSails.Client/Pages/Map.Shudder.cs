@@ -123,9 +123,14 @@ public partial class Map
         bool eligible = deepSite && (AtSecretLab() || ArcGoneDeep());
         bool chill = eligible && HullShudder.CarriesChill(seed, index);
 
+        // #1248 · …AND WHICH ROOM OF THE HAVEN HE IS STANDING IN. Two of the three haven lines are made of
+        // the BAR's own furniture and the third names the CONCOURSE, so the pool is picked per room now.
+        // The fact is asked through TheCaptainIsInTheDockedBar — the SAME predicate #1222 composed and #1199
+        // pointed the buzzer at, never a second one — so a room that moves moves for every beat in it at
+        // once. Off a haven the flag is simply false and no pool reads it (see HullShudder.LinesFor).
         string line = chill
             ? HullShudder.ChillLine(groundHoldsPressure, seed, index)
-            : HullShudder.Line(setting, seed, index);
+            : HullShudder.Line(setting, TheCaptainIsInTheDockedBar, seed, index);
         if (chill)
         {
             // A hair of real dread, far smaller than a hand on you. Mostly it IS nothing; this is the rare
