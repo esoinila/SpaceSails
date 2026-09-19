@@ -448,10 +448,33 @@ public static partial class HavenInterior
     /// clear of the side glass, so neither is jammed into a corner the captain cannot walk round.</summary>
     private static float VendorInsetY => VendorWidth * 2f;
 
-    /// <summary>#1199 · <b>THE TWO MACHINES, AS DRAWN BLOCKS</b> — flush to the gallery's back wall, one
-    /// toward each end. Filled rectangles in the pen's own furniture grammar (<c>DeckPlan.FurnitureSpot</c>,
-    /// #868), which is how every other solid fitting in this game is drawn; no new renderer and no new
-    /// token.</summary>
+    /// <summary>
+    /// #1199 · <b>THE THREE MACHINES, AS DRAWN BLOCKS.</b> Two flush to the gallery's back wall, one toward
+    /// each end — and, since 2026-09-19, <b>a third standing on its own in the middle of the floor</b>.
+    /// Filled rectangles in the pen's own furniture grammar (<c>DeckPlan.FurnitureSpot</c>, #868), which is
+    /// how every other solid fitting in this game is drawn; no new renderer and no new token.
+    ///
+    /// <para><b>The third one is the ISLAND, and it is there to be walked behind.</b> Owner, live on the T:
+    /// <i>"another vending machine or something else that only MOMENTARILY blocks the view."</i> It stands on
+    /// the room's own axis, its back edge exactly on the cafeteria line
+    /// (<see cref="ObservationWalk.CafeteriaBandDu"/> — the furthest out of the room a machine is allowed to
+    /// stand), so it is the first thing anybody coming out of the tube meets and it is square in the middle
+    /// of the sightline from the SOUTH stakeout table to the rail. <see cref="TheRailAt"/>'s own route runs
+    /// behind it for about three deck units, which at a walker's pace
+    /// (<c>Interior.NpcWalk.PaceDu</c>) is two of <c>ReeverObservation.LookIntervalSeconds</c>: long enough to
+    /// go behind it and not come out the other side.</para>
+    ///
+    /// <para><b>One island and not two, and the reason is measured.</b> The two tables sit a quarter of the
+    /// hat either side of the axis — twelve deck units apart, on opposite sides of the route — so the angle
+    /// between "a line from the north table" and "a line from the south table" at any point on his walk is
+    /// between seventy and a hundred and twenty degrees. A machine is <see cref="VendorWidth"/> wide and a
+    /// body cannot stand closer to it than <c>2 × DeckPlan.AvatarRadius</c>, so the widest it can ever screen
+    /// is about forty degrees. <b>No single fitting can stand between him and both tables at once</b>, and a
+    /// second island put there to force it would be furniture written to satisfy a guard. The north table
+    /// keeps its clean view of the rail, which is what makes it the good seat — and what a captain in it
+    /// loses him behind is the paper or the eyepiece, which is the beat the owner asked for in the first
+    /// place.</para>
+    /// </summary>
     public static IReadOnlyList<(double X0, double Y0, double X1, double Y1)> TheVendingMachineBlocks(
         string bodyId)
     {
@@ -465,6 +488,7 @@ public static partial class HavenInterior
         [
             (TheGallery.EastX - VendorDepth, NorthVendorY - half, TheGallery.EastX, NorthVendorY + half),
             (TheGallery.EastX - VendorDepth, SouthVendorY - half, TheGallery.EastX, SouthVendorY + half),
+            (IslandWestX, TheWalksAxisY - half, IslandWestX + VendorWidth, TheWalksAxisY + half),
         ];
     }
 
@@ -472,19 +496,29 @@ public static partial class HavenInterior
 
     private static float SouthVendorY => TheGallery.SouthY + VendorInsetY;
 
+    /// <summary>#1199 · The island's back edge — ON the cafeteria line, which is the furthest out of the room
+    /// anything but the binoculars may stand (<see cref="InTheCafeteriaBand"/>). Derived from the band rather
+    /// than chosen, so a room that ever re-argues its cafeteria takes the island with it.</summary>
+    private static float IslandWestX => TheGallery.EastX - (float)ObservationWalk.CafeteriaBandDu;
+
     /// <summary>#1199 · Where a captain stands to use a machine — one body clear of its face, on the room's
-    /// side of it, which is the same standoff the bar's own counter console keeps from the counter. Two of
-    /// them, north first, in the room's own order.</summary>
+    /// side of it, which is the same standoff the bar's own counter console keeps from the counter. Three of
+    /// them, north first, in the room's own order; the island's is off its EAST face, because an island's
+    /// "room side" is the side you arrive from and everybody arrives through the throat.</summary>
     public static IReadOnlyList<DeckReachability.Point> TheVendorsAt(string bodyId) =>
         HasObservationWalk(bodyId)
             ?
             [
                 new DeckReachability.Point(VendorFaceX, NorthVendorY),
                 new DeckReachability.Point(VendorFaceX, SouthVendorY),
+                new DeckReachability.Point(IslandFaceX, TheWalksAxisY),
             ]
             : [];
 
     private static float VendorFaceX => TheGallery.EastX - VendorDepth - (float)(2 * DeckPlan.AvatarRadius);
+
+    /// <summary>#1199 · …and the island's, off its east face — the side the throat is on.</summary>
+    private static float IslandFaceX => IslandWestX + VendorWidth + (float)(2 * DeckPlan.AvatarRadius);
 
     /// <summary>
     /// #1199 · <b>THE TWO STEEL TABLES</b>, by their centres — in the cafeteria band, one in front of each
