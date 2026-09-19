@@ -36,7 +36,21 @@ public sealed class TheFourLinesTheGuardWasGivenTests
 
     /// <summary>The ear line's own index in the catalog. Named rather than typed at each use, so the order of
     /// the list is one fact.</summary>
-    private const int Ear = 0, Challenge = 1, Pass = 2, Refusal = 3;
+    private const int Ear = 0, Challenge = 1, Pass = 2, Refusal = 3, SecondRead = 4;
+
+    /// <summary>#605 · A pass that FITS this floor — the tier the site issues where a general hand belongs,
+    /// and the floor's own department's pass where one does not
+    /// (<see cref="PatrolBeat.ThePassFitsTheFloor"/>).
+    ///
+    /// <para>The sweeps below were written when a pass had one tier and every floor answered it the same
+    /// way, so "the badged captain" meant <c>PatrolBeat.Badge(site)</c> and nothing else. It cannot mean
+    /// that now — B2 is LABORATORIES on every branch office in the game — and these guards are about the
+    /// four AUTHORED SENTENCES rather than about the ladder, so what they need is a captain who belongs on
+    /// the floor they are reading on. Asked of the building, never typed.</para></summary>
+    private static Satchel.Item APassThatFits(string site, int level) =>
+        PatrolBeat.GeneralHandsBelongOn(site, level)
+            ? PatrolBeat.Badge(site)
+            : PatrolBeat.Badge(site, UndergroundComplex.DepartmentOf(site, level));
 
     /// <summary>
     /// EVERY AUTHORED LINE REACHES A PLAYER, ON EVERY PATROLLED FLOOR OF EVERY SITE, THROUGH EVERY PLATE.
@@ -48,7 +62,13 @@ public sealed class TheFourLinesTheGuardWasGivenTests
     [Fact]
     public void TheFourAuthoredLinesAreWhatTheSimActuallyTells()
     {
-        Assert.Equal(4, PatrolBeat.AuthoredLines.Count);
+        // #605 · FIVE now. The fifth is the department ladder's own, and it is held to the same standard
+        // for the same reason — see PatrolBeat.AuthoredLines. The four below are unmoved and in their own
+        // order, which is the order a captain meets them in.
+        Assert.Equal(5, PatrolBeat.AuthoredLines.Count);
+        Assert.Equal(
+            "He reads the pass twice. The second time he is reading your face.",
+            PatrolBeat.AuthoredLines[SecondRead]);
 
         // 1 · THE EAR. It is not a read at all — it is the one line said about somebody the captain cannot
         // see — so it is asked of the constant the client pulses and nothing else touches.
@@ -83,8 +103,9 @@ public sealed class TheFourLinesTheGuardWasGivenTests
                     who++;
 
                     // 2 · THE CHALLENGE — said before anything is read, so it is on the card BOTH arms carry.
-                    PatrolBeat.Read shown = PatrolBeat.TheGuardReads(site, -2, 0L, plate, PatrolBeat.Badge(site), false);
-                    PatrolBeat.Read empty = PatrolBeat.TheGuardReads(site, -2, 0L, plate, null, false);
+                    PatrolBeat.Read shown = PatrolBeat.TheGuardReads(
+                        site, level, 0L, plate, APassThatFits(site, level), false);
+                    PatrolBeat.Read empty = PatrolBeat.TheGuardReads(site, level, 0L, plate, null, false);
                     reads += 2;
 
                     foreach ((string arm, PatrolBeat.Read r) in
@@ -186,7 +207,8 @@ public sealed class TheFourLinesTheGuardWasGivenTests
                 string plate = PatrolBeat.PlateOf(site, level, 0, 0);
 
                 // HE BELONGS: this site's own pass, on a floor this site patrols.
-                PatrolBeat.Read ok = PatrolBeat.TheGuardReads(site, -2, 0L, plate, PatrolBeat.Badge(site), false);
+                PatrolBeat.Read ok = PatrolBeat.TheGuardReads(
+                    site, level, 0L, plate, APassThatFits(site, level), false);
                 if (!ok.Satisfied)
                 {
                     bad.Add($"  {site} B{-level}: a man on the site's own books was refused.");
@@ -202,7 +224,7 @@ public sealed class TheFourLinesTheGuardWasGivenTests
                 }
 
                 // HE DOES NOT: nothing in the wallet a palm is for.
-                PatrolBeat.Read no = PatrolBeat.TheGuardReads(site, -2, 0L, plate, null, false);
+                PatrolBeat.Read no = PatrolBeat.TheGuardReads(site, level, 0L, plate, null, false);
                 if (no.Satisfied)
                 {
                     bad.Add($"  {site} B{-level}: an empty wallet satisfied him.");
@@ -224,9 +246,11 @@ public sealed class TheFourLinesTheGuardWasGivenTests
 
         // …and the two arms are DIFFERENT sentences. A build where both said the same thing would pass every
         // count above.
-        string one = PatrolBeat.TheGuardReads("luna", -2, 0L, "◈ A CONTRACT GUARD, WALKING THE ROUND",
-            PatrolBeat.Badge("luna"), false).Told;
-        string other = PatrolBeat.TheGuardReads("luna", -2, 0L, "◈ A CONTRACT GUARD, WALKING THE ROUND", null, false).Told;
+        int floor = -2;
+        string one = PatrolBeat.TheGuardReads("luna", floor, 0L, "◈ A CONTRACT GUARD, WALKING THE ROUND",
+            APassThatFits("luna", floor), false).Told;
+        string other = PatrolBeat.TheGuardReads(
+            "luna", floor, 0L, "◈ A CONTRACT GUARD, WALKING THE ROUND", null, false).Told;
         Assert.NotEqual(one, other);
     }
 }

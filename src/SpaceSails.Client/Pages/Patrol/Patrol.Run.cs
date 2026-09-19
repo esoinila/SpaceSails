@@ -14,16 +14,23 @@ public sealed partial class Map
         /// #804 · The site puts the captain on its books. Called from the ARRIVAL the day-labour chit opened
         /// (#752) — the moment the gig is not a promise any more — and once per site, because a wallet with two
         /// identical passes in it would be the pocket saying something the sim did not.
+        ///
+        /// <para>#605 · <b>IDENTICAL, and now that word has to be meant.</b> This asked
+        /// <c>PatrolBeat.BadgeHeld</c>, which is the DISTANCE read and says yes to any pass of this site at
+        /// any tier — so the day a captain walked in carrying a PLANT pass they had found, the site would
+        /// have quietly declined to put them on its books and the gig would have paid nothing. What the
+        /// clause is about is this exact laminate, so it asks for this exact laminate
+        /// (<see cref="WalletChoice.StillHeld"/>, the one "is this row in the wallet" in the game).</para>
         /// </summary>
         public void IssueTheSitePass(SurfaceExcursion ex)
         {
             string bodyId = ex.Stop.Body.Id;
-            if (PatrolBeat.BadgeHeld(bodyId, _host.Satchel))
+            Satchel.Item pass = PatrolBeat.Badge(bodyId);
+            if (WalletChoice.StillHeld(_host.Satchel, pass))
             {
                 return;
             }
 
-            Satchel.Item pass = PatrolBeat.Badge(bodyId);
             if (!Satchel.CanTake(_host.Satchel, pass))
             {
                 return;   // the wallet never fills, so this cannot happen — and a silent grant that did not land
@@ -552,10 +559,16 @@ public sealed partial class Map
         private void TheKickOut(SurfaceExcursion ex)
         {
             string bodyId = ex.Stop.Body.Id;
+            // #605 · EVERY pass of this site, and that is a correction rather than a widening. The test was
+            // BadgeHeld — any tier — and the removal named ONE id, so a captain walked out carrying a found
+            // department pass would have been told, in PassRevokedLine's own words, that the paper went into
+            // a man's breast pocket, while the sim left it in his wallet. The sentence-vs-sim bug class, in
+            // the one feature whose whole register is procedure. One question now, asked and answered by
+            // PatrolBeat: what this building issued, it takes back.
             bool hadOne = PatrolBeat.BadgeHeld(bodyId, _host.Satchel);
             if (hadOne)
             {
-                _host.Satchel = [.. Satchel.Remove(_host.Satchel, Satchel.Kind.Badge, PatrolBeat.BadgeId(bodyId))];
+                _host.Satchel = [.. PatrolBeat.TakeTheSitePasses(_host.Satchel, bodyId)];
             }
 
             // The plate is armed BEFORE the ride, because the ride rebuilds the deck the plate is painted on.

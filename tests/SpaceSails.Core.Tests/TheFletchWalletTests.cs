@@ -32,6 +32,30 @@ public sealed class TheFletchWalletTests
 
     private static Satchel.Item TheCageChit => CanteenTable.Chit(underAnotherName: true);
 
+    /// <summary>#605 · A floor of <see cref="Here"/> that the tier the site ISSUES covers, asked of the
+    /// building (<see cref="PatrolBeat.GeneralHandsBelongOn"/>) rather than typed in.
+    ///
+    /// <para>The reads below were written against <c>-2</c>, which was every floor there was to talk about
+    /// while a pass had one tier. B2 is LABORATORIES on every branch office in the game, so the department
+    /// ladder refuses a hand there now — and this file is about WHICH PAPER went into the hand, never about
+    /// what is printed under the site code. It asks where the tier cannot be the argument; the tier is
+    /// <c>TheDepartmentLadderTests</c>' business.</para></summary>
+    private static int AHandsFloor
+    {
+        get
+        {
+            foreach (int level in UndergroundComplex.FloorsOf(Here))
+            {
+                if (PatrolBeat.GeneralHandsBelongOn(Here, level))
+                {
+                    return level;
+                }
+            }
+
+            throw new InvalidOperationException($"{Here} has no floor a general hand belongs on.");
+        }
+    }
+
     // ── THE FAN ───────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>ONE PAPER IS EXACTLY TODAY. The chooser is a thing that happens when there is a decision, and
@@ -132,21 +156,23 @@ public sealed class TheFletchWalletTests
         Satchel.Item[] wallet = [TheRealOne, TheOtherSitesPass, TheCageChit];
         Assert.True(PatrolBeat.BadgeHeld(Here, wallet), "the good paper is in this wallet the whole time.");
 
-        PatrolBeat.Read good = PatrolBeat.TheGuardReads(Here, -2, 0L, Plate, TheRealOne, false);
+        int floor = AHandsFloor;
+
+        PatrolBeat.Read good = PatrolBeat.TheGuardReads(Here, floor, 0L, Plate, TheRealOne, false);
         Assert.True(good.Satisfied);
         Assert.Equal(PatrolBeat.SatisfiedLine, good.Line);
         Assert.Null(good.Consequence);
 
-        PatrolBeat.Read wrongPaper = PatrolBeat.TheGuardReads(Here, -2, 0L, Plate, TheCageChit, false);
+        PatrolBeat.Read wrongPaper = PatrolBeat.TheGuardReads(Here, floor, 0L, Plate, TheCageChit, false);
         Assert.False(wrongPaper.Satisfied, "the chit was chosen and the good pass answered for it.");
         Assert.Equal(PatrolBeat.WrongPaperLine, wrongPaper.Line);
         Assert.Equal(PatrolBeat.EscortLine, wrongPaper.Consequence);
 
-        PatrolBeat.Read wrongSite = PatrolBeat.TheGuardReads(Here, -2, 0L, Plate, TheOtherSitesPass, false);
+        PatrolBeat.Read wrongSite = PatrolBeat.TheGuardReads(Here, floor, 0L, Plate, TheOtherSitesPass, false);
         Assert.False(wrongSite.Satisfied, "the other site's pass was chosen and the good pass answered for it.");
         Assert.Equal(PatrolBeat.WrongSiteLine(Elsewhere), wrongSite.Line);
 
-        PatrolBeat.Read nothing = PatrolBeat.TheGuardReads(Here, -2, 0L, Plate, null, false);
+        PatrolBeat.Read nothing = PatrolBeat.TheGuardReads(Here, floor, 0L, Plate, null, false);
         Assert.False(nothing.Satisfied);
         Assert.Equal(PatrolBeat.NothingLine, nothing.Line);
     }
@@ -157,13 +183,14 @@ public sealed class TheFletchWalletTests
     public void EveryRungIsReachableFromOneWalletByChoosingDifferently()
     {
         Satchel.Item[] wallet = [TheRealOne, TheOtherSitesPass, TheCageChit];
+        int floor = AHandsFloor;
 
         var answers = new HashSet<string>(StringComparer.Ordinal);
         foreach (Satchel.Item paper in WalletChoice.Fan(Here, wallet))
         {
-            answers.Add(PatrolBeat.TheGuardReads(Here, -2, 0L, Plate, paper, false).Line);
+            answers.Add(PatrolBeat.TheGuardReads(Here, floor, 0L, Plate, paper, false).Line);
         }
-        answers.Add(PatrolBeat.TheGuardReads(Here, -2, 0L, Plate, null, false).Line);
+        answers.Add(PatrolBeat.TheGuardReads(Here, floor, 0L, Plate, null, false).Line);
 
         Assert.Equal(
             new HashSet<string>(StringComparer.Ordinal)

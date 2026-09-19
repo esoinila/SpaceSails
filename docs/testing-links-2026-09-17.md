@@ -61,31 +61,53 @@ and two more the same morning, on the two story passes that had been waiting for
 
 ---
 
-## 0 · THE VANISH IS A BAND NOW, AND THE BAR-ROOM LINE STAYS IN THE BAR (#1199, 2026-09-19)
+## 0 · THE NEWSPAPER WITH EYE HOLES — AND THE BAR-ROOM LINE STAYS IN THE BAR (#1199, 2026-09-19)
 
-Two things the inspector played on 2026-09-18, both fixed in the same lane.
+Owner, live on the T: *"wow the tailed one disappeared :-D … I really like the tables there… I think the
+tailed one should go to the observation deck **even if I am there before they arrive**. It is the classic
+sit at a café with a newspaper with eye holes gumshoe cliché :-D"* — and, the same afternoon, *"They should
+act normal **even if I tail from ahead**"* and *"another vending machine or something else that only
+**momentarily** blocks the view."*
 
-**The tail would not vanish.** He reached the far end and held there for as long as the captain was
-anywhere behind him — and once #1237 gave the walk its crossbar, that meant anywhere in a 24 × 8 glass
-gallery. So the wait never started and **the card was unreachable from anywhere a person following
-somebody would stand**.
+**So the hold is gone and the rule is one sentence.** There is no two-pace refusal at the throat any more
+and no leg back out of it (`ObservationWalk.TooCloseToGoInDu` no longer exists). He walks his errand into
+the hat whatever the captain is doing, stands at the rail and looks out — and **he is off the floor on the
+first LOOK nobody is watching him.** The look clock is the game's own
+(`ReeverObservation.LookIntervalSeconds`, 0.75 s). While he is WALKING it takes losing sight of him; once he
+is STANDING at the rail it takes only your eyes. Four ways to answer it, all of them already in the room:
 
-The en-route hold was never the problem: it has read the legibility band since slice 1. The branch that was
-**line-of-sight only** is the one that decides whether he comes off the floor, and that is what changed.
+| the way | what it is |
+|---|---|
+| **the paper** | you are SITTING at one of the hat's two tables. Sitting is the cover; the seat panel's own **Read the news** is the eye holes, and nothing had to be wired to it |
+| **the eyepiece** | any card is up — the 🔭 **COIN BINOCULARS**' own among them, or a 🥤 vending card, or the satchel |
+| **the tube** | you are at the mouth or down the leg, and the throat's corner takes the line |
+| **the island** | *new* — a **third 🥤 VENDING MACHINE**, standing on its own in the middle of the gallery floor, on the room's axis. Of the 8.92 du he walks from the throat to the rail, **4.13 du are out of the SOUTH table’s sight** — one look at a walker’s pace is 1.50 du — so he goes behind a machine and does not come out the other side |
 
-**And the throat's band is NOT the legibility one** — the stem is 24 du and `FootTail.LegibleDu` is 30, so a
-captain at the MOUTH is *inside* the legibility band. The throat uses `ObservationWalk.TooCloseToGoInDu`
-(= the gallery's own depth = the fire code's small room, 8 du): *two paces is on his heels; the length of a
-corridor is a stranger in a station.*
+**And if you never look away:** nothing happens to him. He finishes the view, turns round and walks back out
+past you — **no card, no note, and nothing spent.** The walk is still there on your next visit. (That is the
+one thing #1245 got wrong: it spent the beat as a punishment for standing too close.)
+
+**The card's reach:** the rail, as always — except for a captain who was **sitting at a table** when the man
+went, who gets it where he is sitting. He has already arrived; sending him four paces to be told the room is
+empty would be asking him to check what he is looking at.
+
+### The stakeout route — sit first, then wait
 
 | What to do | What should happen | Broken looks like |
 |---|---|---|
-| `/map?dock=selene-gate&ashore=1&simhours=7.5` — follow GILT-EYE west, then **hang back**: stay in the tube but keep more than two paces off him. | He walks into the hat and is **gone there and then**. You walk in and the gallery is **empty** — the tables, the machines and the rail, and nobody. The card comes at the rail about three minutes later, exactly as before. | He stands at the opening looking at you for ever; no card however long you wait. |
-| Same link, but **stay right on his heels** into the throat. | He **stops at the opening** and turns to face you — he will not go in with you that close. Give him room and he is gone on the next frame. Stay there and, after the same three minutes, **he turns round and walks back out past you**, back to his own table. **No card, and no note.** | He walks in with you a pace behind him; or he vanishes in your face; or he turns back and a card comes up anyway (tailing too close is supposed to *cost* you the scene, and a card would explain the thing you were just denied). |
+| `/map?dock=selene-gate&ashore=1&simhours=7.5` — go straight out west, through the tube and into the gallery, and **take the NORTH table** ([E]). Then just sit there. | GILT-EYE gets up after last call and **comes in anyway** — past you, across the hat, out to the rail, and stands looking out. Within a look or so of him settling you glance up and **he is not there.** Wait three minutes at warp 1 and the card comes up **at your table**; the note files under his name, once. | He stops at the throat and stares at you; or he turns round and goes back to his drink; or the card never comes because you are not standing at the rail. |
+| Same link, but take the **SOUTH table** instead. | Same beat, one step earlier: he comes through the throat and **walks behind the third vending machine** — the one standing on its own in the middle of the floor — and does not come out the other side. Card at your table after the wait. | You watch him all the way to the rail with nothing between you (the island machine has been moved or lost), or he holds at the throat. |
+| Same link. Follow him in on foot and then **stand at the north table's chair and stare at him**, without sitting and without opening anything. | He reaches the rail, stands there for the whole three minutes, then **turns round and walks back out past you.** No card, no note — and the beat is **NOT spent**: cast off, come back, and the walk is there again. | He vanishes in your face; or a card comes up for a scene that did not happen; or the beat is gone for the rest of the voyage. |
+| Same link. Stand at the rail-end table and press **[E] on the 🔭 COIN BINOCULARS** while he is standing at the rail. | The card goes up, and when you close it **he is gone.** Eyes off the world is eyes off him, whatever your feet are doing. | He is still standing there, or the card charged you and nothing changed. |
+| Same link. Follow him down the tube and **stop at the mouth**. | He turns into the hat and is **gone there and then** — the throat's corner takes the line. You walk in and the gallery is empty; the card comes at the **rail** after the wait, exactly as it always did. | He stands at the opening looking at you for ever; or the card comes to you at the throat without walking out. |
 | Stand out on the **concourse** — outside THE EARTHRISE BAR — and wait for the off-deck buzzer. | Nothing. The unexplained-signal beat only speaks in the **bar**. | *"Behind the counter the staff go still as one and trade a single glance… The drinkers never look up."* said to a captain standing in an open concourse with no counter in it. |
 | Walk back into the bar and wait. | The buzzer still sounds there, unchanged, prose and all. | The beat has been scoped away from the room it is about. |
 
----
+**One thing that is measured and worth knowing:** the **north** table keeps a clean view of the rail, and the
+island machine does not change that. The two tables sit **69°** apart as seen from the rail (wider further in), and a machine this size screens at
+most **53.1°** from as close as a body may stand to it — **no single fitting can stand between him and both
+tables at once.** The north table is the good
+seat, and what loses him from it is the paper or the eyepiece rather than the furniture.
 
 ## 1 · The observation walk, at a wait you can sit through (#1199, PR #1201 follow-up)
 

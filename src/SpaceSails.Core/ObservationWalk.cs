@@ -181,31 +181,54 @@ public static class ObservationWalk
     /// </summary>
     public const double CafeteriaBandDu = GalleryDepthDu / 2.0;
 
+    // ── #1199 (2026-09-19) · THE NEWSPAPER WITH EYE HOLES — THE ONE RULE THE VANISH RUNS ON ────────────
+    //
+    // Owner, live on the T: "wow the tailed one disappeared :-D … I really like the tables there… I think
+    // the tailed one should go to the observation deck even if I am there before they arrive. It is the
+    // classic sit at a café with a newspaper with eye holes gumshoe cliché :-D" — and, the same afternoon:
+    // "They should act normal even if I tail from ahead."
+    //
+    // WHAT WENT. The two-pace hold at the throat (#1245's TooCloseToGoInDu, one day old) and the leg he
+    // walked back out on after it. It said: a man will not step into a blind room with somebody on his
+    // heels. That is true of a man being FOLLOWED, and the owner's ruling is that most of the time he is
+    // not — he is a regular walking out for the view past a customer with a paper. A person who stops dead
+    // because a stranger is in the room does not ACT NORMAL, and a beat that can be denied by standing
+    // still is a beat a player stalls by accident. So it is gone, root and branch: no hold at the throat,
+    // no wait counted from it, no turn-back out of it, and nothing in the game reads that number any more.
+    //
+    // WHAT REPLACED IT is one sentence, and the whole beat is downstream of it: HE IS GONE ON THE FIRST
+    // LOOK THE CAPTAIN'S EYES ARE NOT ON HIM. Not a distance, not a die, not a rate — the look clock this
+    // game already runs every watched-from-somewhere beat on (ReeverObservation.LookIntervalSeconds), asked
+    // once per look while he is in the gallery. Three things take a captain's eyes off a man across a room,
+    // and all three were in the room before this lane: the PAPER (sitting at one of the hat's own tables —
+    // the seat panel's own Read the news, which needed no wiring, because sitting IS the cover), the
+    // EYEPIECE (any card standing in front of the world, the coin binoculars' own among them), and the
+    // GEOMETRY (the tube's corner, and now the island machine in the middle of the gallery floor).
+    //
+    // AND IF HIS EYES NEVER LEAVE: nothing happens to him. He finishes looking out, turns round and walks
+    // back out past the captain — no vanish, no card, no note, AND NOTHING SPENT. A captain who never once
+    // looked away has not been shown anything, so there is nothing to take off him and the walk is still
+    // there on a later visit. That is the whole difference from #1245, which spent the beat as a penalty.
+
     /// <summary>
-    /// #1199 · <b>HOW CLOSE IS TOO CLOSE TO GO IN — and why it is NOT the legibility band.</b>
+    /// #1199 · <b>ARE THE CAPTAIN'S EYES ON HIM?</b> — the whole of the vanish, as one question, asked once a
+    /// look and nowhere else.
     ///
-    /// <para>The tail's notice question and its en-route hold have read <c>FootTail.LegibleDu</c> since slice
-    /// 1, and that is right for them: it is the range at which this game has decided a person is a person you
-    /// can see. The decision AT THE THROAT is a different question — <i>will he walk into a blind room with
-    /// you behind him</i> — and the room's own geometry says the legibility band cannot answer it.</para>
+    /// <para>Three clauses, in the order that costs least. <b>Line</b> is the deck's own oracle
+    /// (<c>SurfaceCollision.HasLineOfSight</c>) — the wall, the corner, the machine. <b>Range</b> is
+    /// <see cref="FootTail.LegibleDu"/>, the one number this game has for <i>near enough that a person is a
+    /// person</i>, borrowed and never re-typed. <b>Elsewhere</b> is everything that is true of the captain
+    /// rather than of the room: he is sitting at one of the gallery's tables, or something is standing in
+    /// front of the world he would otherwise be watching.</para>
     ///
-    /// <para><b>Measured, and it is the whole argument.</b> The stem is <see cref="LengthDu"/> = 24 du, and
-    /// <c>FootTail.LegibleDu</c> is 30. <b>A captain standing at the MOUTH of the tube is 24 du from the
-    /// throat, which is inside the 30 du band</b> — so a throat gated on legibility holds for a captain
-    /// standing anywhere a following captain can stand, the vanish never happens, the wait never starts, and
-    /// the card is unreachable. That is the bug this lane was opened for, re-shipped in a new costume.</para>
-    ///
-    /// <para>So the throat borrows the number the room is BUILT from instead: <see cref="GalleryDepthDu"/>,
-    /// which is <see cref="UndergroundComplex.FireCodeSmallRoomDu"/> — the game's one statement of <i>a space
-    /// you can cross in two paces</i>. It says the honest thing: he will not step into the hat while you are
-    /// near enough to be through it behind him before he is out of sight. Two paces is on his heels; the
-    /// length of a corridor is a stranger in a station, which is exactly the distinction the inspector asked
-    /// for.</para>
-    ///
-    /// <para>A derivation of a number the room already has, in the room's own file — never a literal, and
-    /// never a second radius.</para>
+    /// <para>Stated in Core, with no client type in the signature, so the room's law and the page that runs
+    /// it cannot come to two opinions about what being watched is.</para>
     /// </summary>
-    public const double TooCloseToGoInDu = GalleryDepthDu;
+    /// <param name="clearLine">Whether the deck's one sightline oracle joins them.</param>
+    /// <param name="rangeDu">How far apart they are, in deck units.</param>
+    /// <param name="eyesElsewhere">Whether the captain is looking at something that is not the room.</param>
+    public static bool TheCaptainHasEyesOnHim(bool clearLine, double rangeDu, bool eyesElsewhere) =>
+        clearLine && !eyesElsewhere && rangeDu <= FootTail.LegibleDu;
 
     // ── THE WAIT ──────────────────────────────────────────────────────────────────────────────────────
 

@@ -99,7 +99,8 @@ public partial class Map : Map.IPatrolHost
     void IPatrolHost.LogAutopilotEvent(string text) => LogAutopilotEvent(text);
 
     /// <inheritdoc/>
-    void IPatrolHost.FileNote(string text, string glyph) => FileNote(text, glyph);
+    void IPatrolHost.FileNote(string text, string glyph, string subjects) =>
+        FileNoteAbout(text, glyph, subjects);
 
     /// <inheritdoc/>
     void IPatrolHost.ApplyNerveShock(double rawAmount, string label) => ApplyNerveShock(rawAmount, label);

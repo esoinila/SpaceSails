@@ -400,7 +400,7 @@ public sealed partial class Map
             // the one that had to change, because a paper that worked here is exactly the thing the next chooser
             // row has to be able to say. It is the escort note's idiom (a fact, never a mechanic), and it is the
             // ONLY thing the hint on a row is ever derived from.
-            FileTheNameYouGave(bodyId, ex.Floor, handed, how);
+            FileTheNameYouGave(ex, handed, how);
 
             // A PASS THAT WORKS COSTS NOTHING. Encounter.NervePipsFor's own arithmetic — the band that lands is
             // free and the two that hurt cost a pip — and it has to be, or the badge is worth nothing: a captain
@@ -520,9 +520,24 @@ public sealed partial class Map
         /// while the ladder was a pure function of the paper and the site — and is not harmless now that one
         /// rung depends on the floor and the watch. One read, one answer, one line in the book.</param>
         private void FileTheNameYouGave(
-            string bodyId, int level, Satchel.Item? handed, WalletChoice.Outcome how)
+            SurfaceExcursion ex, Satchel.Item? handed, WalletChoice.Outcome how)
         {
+            string bodyId = ex.Stop.Body.Id;
+            int level = ex.Floor;
             string name = _host.NameOnYourOwnPapers;
+
+            // #605/#741 · WHAT THE ENTRY IS ABOUT, and it is declared HERE because here is where it is known:
+            // the read that just happened, and whether cover survived it. A blow is filed under the PLACE —
+            // this building — so the THREADS page stacks every time somebody stopped the captain in it under
+            // one heading, in the order it happened, drawing no conclusion between them (#741's law: the book
+            // keeps no opinion, the red pen is the captain's).
+            //
+            // A read that WORKED joins no thread, deliberately. Cover is a state and silence is the reward:
+            // a heading that filled up with the evenings nothing happened on would be the game telling the
+            // captain their disguise is working, which is the one thing this feature may never say (§13.8).
+            string subjects = WalletChoice.CoverBlew(how)
+                ? PatrolBeat.BlowSubjects(FieldNotes.PlaceLabel(ex.Stop.Body.Name, ex.Site.Name))
+                : "";
 
             if (handed is { } paper)
             {
@@ -532,13 +547,16 @@ public sealed partial class Map
                 ShownBook.AddRange(filed);
 
                 _host.FileNote(
-                    WalletChoice.ShownNote(paper, bodyId, level, how, name), WalletChoice.GlyphOf(paper));
+                    WalletChoice.ShownNote(paper, bodyId, level, how, name),
+                    WalletChoice.GlyphOf(paper),
+                    subjects);
                 return;
             }
 
             // Nothing was handed over, so there is no paper to remember — but there is still an evening, and it
             // still gets a line. Filed against no id, which is why it never colours a chooser row.
-            _host.FileNote(WalletChoice.ShownNote(null, bodyId, level, how, name), PatrolBeat.BadgeGlyph);
+            _host.FileNote(
+                WalletChoice.ShownNote(null, bodyId, level, how, name), PatrolBeat.BadgeGlyph, subjects);
         }
     }
 }

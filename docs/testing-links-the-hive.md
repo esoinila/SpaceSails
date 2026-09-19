@@ -787,14 +787,65 @@ marker the whole way. **Your controls are never taken during it**, so *walking a
 (you do 9 du/s, he does 3.2) and he stops, watches you go, and writes something short on his clipboard. It
 costs the same cooldown as being read, and nothing follows you.
 
-**The four things a wallet can say**, all on the same card, in its amber row:
+**The five things a wallet can say**, all on the same card, in its amber row:
 
 | carrying | what he says | what happens |
 | --- | --- | --- |
-| this site's pass | reads the face, the site code and the tier, hands it back, mentions the wet floor | the round picks up where it left off |
+| this site's pass, on a floor its TIER covers | reads the face, the site code and the tier, hands it back — *"Right. Keep to the lit side."* | the round picks up where it left off |
+| this site's pass, on a floor its tier does NOT cover (#605) | *"He reads the pass twice. The second time he is reading your face."* | walked back to the car |
 | another site's pass | *"That's not us."* — and it NAMES the other site | walked back to the car |
 | only the cage chit | *"That's for the cage. This isn't the cage."* | walked back to the car |
 | nothing | *"He waits the entire time you are looking"* | walked back to the car |
+
+### #605 · THE DEPARTMENT LADDER — which floors your tier covers
+
+**At twenty paces any pass of this site is a pass** (it is what the lift's own gate reads, #715). **At a
+conversation the tier has to fit the floor**, and the rule is one sentence off the floor's own plate rather
+than a list: **a general hand belongs on the two hall floors — the bar and the staff mess, whose sign says
+`NO PASS REQUIRED` — and on every floor no department owns, which is the STORES and UNMARKED.** Everything
+else is somebody's department, and `GENERAL HANDS` is walked out of it.
+
+Measured over 4,246 patrolled floors of 400 generated grounds: **49.6% are a hand's floor.** The plates split
+cleanly — LONG STORAGE, DEEP STORAGE and UNMARKED are always a hand's; LABORATORIES, PLANT and ISOLATION are
+always a department's; ADMINISTRATION and ARCHIVE are a hand's **only** where they happen to carry the bar or
+the mess, which is why the deep site's B1 and B17 are open and its B9 is not.
+
+On the deep site (`?secretlab=deep`), read straight off the generator:
+
+```
+  B1  ADMINISTRATION  HANDS ← the bar. NO PASS REQUIRED
+  B2  LABORATORIES          ← ?patrol=1 / ?badge=1 land here. A hand is WALKED OUT
+  B3  LONG STORAGE    HANDS
+  B4  PLANT                 B5  ARCHIVE           B6  ISOLATION
+  B7  DEEP STORAGE    HANDS B8  UNMARKED    HANDS B9  ADMINISTRATION
+  B10 LABORATORIES          ← room 3 holds this site's LABORATORIES pass
+  B11 LONG STORAGE    HANDS B12 PLANT             B13 ARCHIVE
+  B14 ISOLATION             B15 DEEP STORAGE HANDS B16 UNMARKED  HANDS
+  B17 ADMINISTRATION  HANDS ← the staff mess
+  B18 LABORATORIES          B19 LONG STORAGE HANDS B20 PLANT
+```
+
+```
+/map?badge=1                     THE READ THAT FAILS ON TIER. Boots on B2 (LABORATORIES) with this site's
+                                 GENERAL HANDS pass in the wallet. Let the round find you, hand him that
+                                 pass, and the amber row says "He reads the pass twice. The second time he
+                                 is reading your face." — then the same escort a refusal has always cost.
+                                 ?badge=1 also mints the department pass this building keeps, so the fan
+                                 has two papers for one site in it: pick the LABORATORIES one on B2 and he
+                                 waves you on instead.
+/map?secretlab=deep&floor=10     WHERE A DEPARTMENT PASS LIES. B10 · LABORATORIES, and the drawer is the
+                                 THIRD room along the spine (index 2). Search it: "Somebody's old site
+                                 pass, still warm from a locker." The row in the satchel then reads
+                                 🪪 SITE PASS · LABORATORIES · <SITE> SITE.
+```
+
+**On the shipped moons** (read off the generator, not assumed): **luna** keeps an ARCHIVE pass on **B5**,
+**ganymede** a PLANT pass on **B4**, **titan** an ISOLATION pass on **B6**, **miranda** a LABORATORIES pass on
+**B2**, **the-clinker** a PLANT pass on **B12** — room 0 on all five. Four of the ten shipped grounds keep
+none, which is the find being a find.
+
+**Nothing is said when the pass WORKS.** Cover is a state, and silence is the reward — the only new sentence
+in this feature is the one above, and it is said at the moment the mismatch is caught and nowhere else.
 
 **And "walked back" means WALKED (#833).** Close the card and the escort starts there and then: he plans his
 own route to the lift, you are walked along at his shoulder — controls held for that stretch, and he says so
@@ -838,7 +889,7 @@ The pass is printed at the bottom of the cage.
 | `&nerve=low` | start the captain rattled (#784) — two pips, so the short rest has something to give back |
 | `&hurt=3` | start already marked (#784) — three of the five blows landed, so the healing half is watchable |
 | `?patrol=1\|2` | boot on B2 with a ROUND on it (#804); `2` forces the two-guard watch |
-| `?badge=1` | the same, with this site's own SITE PASS minted — the satisfied arm of the challenge |
+| `?badge=1` | the same, with this site's own SITE PASS minted — and, where the building keeps one, the DEPARTMENT pass lying in it (#605), so the fan has two papers for one site |
 
 ## What has NO link yet, because it is not built
 

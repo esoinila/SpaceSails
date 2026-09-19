@@ -59,6 +59,37 @@ public sealed partial class Map
         FoundPass.MintedElsewhere(hereBodyId, TheGroundsThisWorldHas(), seed);
 
     /// <summary>
+    /// #605 · <b>WHAT IS IN THIS LOCKER, IF ANYTHING.</b> The two designated drawers on this ground, asked
+    /// in ONE place so the take below has one arm and not two.
+    ///
+    /// <para>They are the same find with two different things wrong with the paper. #1143's is somebody
+    /// else's BUILDING (<see cref="FoundPass.RoomFor"/>, the mess floor); #605's is this building and a
+    /// TIER the captain was never issued (<see cref="FoundPass.DepartmentRoomFor"/>, a room of that
+    /// department's own floor). Both are real passes a real person was given and left behind, both go into
+    /// the same wallet through the same seam, and both are judged by the one ladder that was already
+    /// written.</para>
+    ///
+    /// <para><b>Core decides both</b> — which room, which site, which department — and nothing here
+    /// composes an answer of its own. The order is legibility rather than law: Core's own designations
+    /// cannot collide (<see cref="FoundPass.DepartmentRoomFor"/> walks past the mess drawer), which is
+    /// where that has to be enforced.</para>
+    /// </summary>
+    private Satchel.Item? TheLockerHasAPassInIt(SurfaceExcursion ex, int roomIndex)
+    {
+        string bodyId = ex.Stop.Body.Id;
+
+        if (FoundPass.IsHere(bodyId, ex.Floor, roomIndex))
+        {
+            return AFalseIdFoundAt(
+                bodyId, DiceRule.Seed($"false-id:whose:{bodyId}:{ex.Floor}:{roomIndex}"));
+        }
+
+        return FoundPass.DepartmentPassAt(bodyId, ex.Floor, roomIndex) is { } department
+            ? PatrolBeat.Badge(bodyId, department)
+            : null;
+    }
+
+    /// <summary>
     /// #804 · <b>TAKE IT.</b> True when this room was the drawer and the press has been answered — the room
     /// searched, or the pocket's refusal said — so the search verb returns and the haul path is never
     /// reached. False in every other room, which is nearly all of them.
@@ -77,11 +108,7 @@ public sealed partial class Map
     {
         ArgumentNullException.ThrowIfNull(ex);
 
-        if (!FoundPass.IsHere(ex.Stop.Body.Id, ex.Floor, roomIndex)
-            || AFalseIdFoundAt(
-                   ex.Stop.Body.Id,
-                   DiceRule.Seed($"false-id:whose:{ex.Stop.Body.Id}:{ex.Floor}:{roomIndex}"))
-               is not { } pass)
+        if (TheLockerHasAPassInIt(ex, roomIndex) is not { } pass)
         {
             return false;
         }

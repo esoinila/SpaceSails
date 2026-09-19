@@ -153,9 +153,7 @@ public static class WalletChoice
     /// summary and no editorial: the row shows the card, and the captain does the reading.</summary>
     public static string Claims(Satchel.Item paper) =>
         paper.Kind == Satchel.Kind.Badge
-            ? (PatrolBeat.SiteOfBadge(paper.Id) is { Length: > 0 } site
-                ? PatrolBeat.BadgeTitle(site)
-                : UnreadableFaceLine)
+            ? (PatrolBeat.BadgeFaceOf(paper.Id) ?? UnreadableFaceLine)
             : CanteenTable.ChitTitle;
 
     /// <summary>A pass whose face this build cannot read — a save from another build, a paper from a lane
@@ -193,7 +191,19 @@ public static class WalletChoice
         /// <see cref="WrongSite"/>'s cousin: the paper is genuine and the man is unmoved, because the process
         /// is strict and nobody inspects unannounced.</summary>
         NoInspectionDue = 5,
+
+        /// <summary>#605 · <b>THIS BUILDING'S OWN PASS, ON A FLOOR ITS TIER DOES NOT COVER.</b> The
+        /// department ladder's own rung: the site code is right, the laminate is real, the face is yours —
+        /// and what is printed under the site code is not what is painted on the wall behind you
+        /// (<see cref="PatrolBeat.ThePassFitsTheFloor"/>). It is the rung a captain earns by walking a
+        /// GENERAL HANDS pass onto a laboratory floor, and the one a found department pass answers.</summary>
+        WrongDepartment = 6,
     }
+
+    /// <summary>#605 · <b>DID COVER BLOW?</b> The one predicate, off the one ladder, so the card's arm, the
+    /// escort, the pip and the line the book files can never come to different answers about the same read.
+    /// Two rungs are a man walking on; every other rung is a man who is not satisfied.</summary>
+    public static bool CoverBlew(Outcome how) => how is not (Outcome.Worked or Outcome.Inspection);
 
     /// <summary>
     /// WHAT THE MAN MAKES OF THE PAPER IN HIS HAND. The whole judgement, and it looks at exactly one paper —
@@ -243,7 +253,19 @@ public static class WalletChoice
             return Outcome.NothingShown;
         }
 
-        return string.Equals(site, bodyId, StringComparison.Ordinal) ? Outcome.Worked : Outcome.WrongSite;
+        if (!string.Equals(site, bodyId, StringComparison.Ordinal))
+        {
+            return Outcome.WrongSite;
+        }
+
+        // #605 · …AND THEN THE DEPARTMENT LADDER, which is the only thing this rung gained. The site code
+        // is right, so he is holding a pass this building issued — and now the thing a man reading a card
+        // at arm's length can do that nobody across a floor can: he looks at what is printed under it, and
+        // at the plate on the wall behind you. One question, asked of PatrolBeat, so the tier's rule lives
+        // beside the badge rather than inside the wallet.
+        return PatrolBeat.ThePassFitsTheFloor(bodyId, level, PatrolBeat.TierOfBadge(paper.Id))
+            ? Outcome.Worked
+            : Outcome.WrongDepartment;
     }
 
     // ── WHAT THE BOOK REMEMBERS ───────────────────────────────────────────────────────────────────────
@@ -341,11 +363,18 @@ public static class WalletChoice
             // one that was not is a refusal. Two rungs added to the ladder, and the hint counts them on the
             // side they actually landed on rather than falling through to "never shown", which would be the
             // captain's own book quietly forgetting an evening.
-            if (row.How is Outcome.Worked or Outcome.Inspection)
+            //
+            // #605 · And the department rung counts as the refusal it is — through CoverBlew rather than
+            // through a third list of enum members, so a rung added tomorrow lands on the side it actually
+            // landed on instead of falling through to "never shown", which would be the captain's own book
+            // quietly forgetting an evening. The one arm that is neither is NothingShown: an empty hand is
+            // not a thing this PAPER did, and filing it against a row would be the hint blaming a pass for
+            // a pocket.
+            if (!CoverBlew(row.How))
             {
                 worked++;
             }
-            else if (row.How is Outcome.WrongSite or Outcome.WrongPaper or Outcome.NoInspectionDue)
+            else if (row.How != Outcome.NothingShown)
             {
                 refused = row;   // the LATEST one — the floor a captain would actually name.
             }
@@ -388,6 +417,11 @@ public static class WalletChoice
         Outcome.WrongPaper => "wrong paper for this floor",
         Outcome.Worked => "read and handed back",
 
+        // #605 · The department rung's shorthand, in the same clerical register as its two siblings: what
+        // was wrong with the paper HERE, in the fewest words that are still true. It is also the sentence a
+        // captain says afterwards — "it was the tier" — which is the whole of the owner's second property.
+        Outcome.WrongDepartment => "wrong tier for this floor",
+
         // #1149 · The shorthand for the two inspection rungs is the card's own PLATE, composed rather than
         // authored: what a row has to be able to say is WHICH paper it is about, and the plate is the only
         // thing printed on that one. No new sentence is invented for a book that is a list of shorthands.
@@ -427,6 +461,16 @@ public static class WalletChoice
             Outcome.WrongPaper =>
                 $"Showed {face} to a man on the security rota on {where}. Real paper, and for somewhere " +
                 "else entirely. He wrote it down anyway.",
+
+            // #605 · The department rung. It names the FLOOR'S plate and the pass's tier and draws no
+            // conclusion between them — the book keeps no opinion (#741's law) — which is what makes it the
+            // line a captain reads back and says "it was the tier" off. The plate is quoted off the
+            // building's own signage rather than re-spelled here, so a floor that renames itself renames
+            // itself in the book too.
+            Outcome.WrongDepartment =>
+                $"Showed {face} to a man on the security rota on {where}. This site's own pass, and this " +
+                $"floor is {UndergroundComplex.DepartmentOf(bodyId, level)}. He read it twice and wrote it " +
+                "down.",
 
             // #1149 · THE BOOK QUOTES HIM, and that is the whole of what it can honestly keep about an
             // inspection: the two rungs are indistinguishable at the moment they happen — he says the same

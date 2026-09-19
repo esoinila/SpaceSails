@@ -13,34 +13,81 @@ public static partial class PatrolBeat
     //
     // It is SITE-SCOPED, exactly like an authority card, and for the card's reason (#679): a pass that
     // worked everywhere would be a skeleton key, and a pass that is read out loud as somebody else's site
-    // is the best sentence a refusal can say. One tier in this phase — GENERAL HANDS, off the board's own
-    // HIRING notice — because the department ladder is #605's question and not this one's.
+    // is the best sentence a refusal can say.
+    //
+    // #605 · AND IT CARRIES A TIER NOW — the department ladder, which this file has been calling "#605's
+    // question" in its own words since #804 shipped. GENERAL HANDS stays exactly what it was: the tier the
+    // HIRING notice issues, printed for you at the bottom of the cage, and the only one with a plain id
+    // (`badge:luna`) — so every save written before this lane, the `?badge=1` cheat and the inspector's own
+    // card are untouched, byte for byte. A DEPARTMENT pass is the SAME object with the department on its
+    // face (`badge:luna:PLANT`): a real pass a real person was issued, found where they left it, exactly as
+    // #1143's false ID is a real pass found in the wrong building. Nothing new is minted for it.
 
     /// <summary>The id a site's pass rides under in the wallet. Same shape as an authority card's: a fact
     /// the vault can store, with the words rebuilt at read time.</summary>
-    public static string BadgeId(string bodyId)
+    public static string BadgeId(string bodyId) => BadgeId(bodyId, BadgeTier);
+
+    /// <summary>#605 · …and the same for a pass at a DEPARTMENT tier. The tier rides after the site code
+    /// behind a second colon, and <see cref="BadgeTier"/> mints the PLAIN id rather than a second spelling
+    /// of it: one id per pass, so a wallet can never hold the general pass twice under two names and no
+    /// stored row has to be migrated.</summary>
+    public static string BadgeId(string bodyId, string tier)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
-        return $"badge:{bodyId}";
+        ArgumentNullException.ThrowIfNull(tier);
+        return string.Equals(tier, BadgeTier, StringComparison.Ordinal)
+            ? $"badge:{bodyId}"
+            : $"badge:{bodyId}:{tier}";
     }
 
-    /// <summary>Which site a pass is for, or null when nothing can read it.</summary>
-    public static string? SiteOfBadge(string? id) =>
-        id is { Length: > 6 } && id.StartsWith("badge:", StringComparison.Ordinal) ? id[6..] : null;
+    /// <summary>Which site a pass is for, or null when nothing can read it. It stops at the tier's own
+    /// colon: <c>badge:luna:PLANT</c> is a pass for LUNA, because the site code is the site code whatever
+    /// else is printed beside it.</summary>
+    public static string? SiteOfBadge(string? id)
+    {
+        if (id is not { Length: > 6 } || !id.StartsWith("badge:", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        int cut = id.IndexOf(':', 6);
+        return cut < 0 ? id[6..] : (cut > 6 ? id[6..cut] : null);
+    }
+
+    /// <summary>#605 · Which TIER is printed on it — the department, or <see cref="BadgeTier"/>. An id with
+    /// nothing after the site code is a general pass, which is what every id written before this lane is,
+    /// so a save from an older build reads exactly as it always did.</summary>
+    public static string TierOfBadge(string? id)
+    {
+        if (id is not { Length: > 6 } || !id.StartsWith("badge:", StringComparison.Ordinal))
+        {
+            return BadgeTier;
+        }
+
+        int cut = id.IndexOf(':', 6);
+        return cut >= 0 && cut + 1 < id.Length ? id[(cut + 1)..] : BadgeTier;
+    }
 
     /// <summary>The pass as a thing in the wallet.</summary>
     public static Satchel.Item Badge(string bodyId) => new(Satchel.Kind.Badge, BadgeId(bodyId));
+
+    /// <summary>#605 · …and a DEPARTMENT pass as a thing in the wallet. The same kind, through the same
+    /// seams: the fan sorts it, the man puts his hand out for it, the one ladder judges it.</summary>
+    public static Satchel.Item Badge(string bodyId, string tier) =>
+        new(Satchel.Kind.Badge, BadgeId(bodyId, tier));
 
     /// <summary>The glyph the satchel row wears. A card with a face on it, which is the whole difference
     /// between this and every other piece of paper down here.</summary>
     public const string BadgeGlyph = "🪪";
 
-    /// <summary>The one tier this phase issues. It is the board's own <c>HIRING — GENERAL HANDS</c> notice
-    /// arriving as an object, which is the cheapest possible way for a pass to mean something.</summary>
+    /// <summary>The tier the site ITSELF issues. It is the board's own <c>HIRING — GENERAL HANDS</c> notice
+    /// arriving as an object, which is the cheapest possible way for a pass to mean something — and #605
+    /// leaves it exactly where #804 put it: the only tier a captain is ever GIVEN. Every other tier is a
+    /// department's, and a department's pass is found rather than issued.</summary>
     public const string BadgeTier = "GENERAL HANDS";
 
-    /// <summary>What is printed on it. Seeded off nothing — a pass says the site and the tier, and a pass
-    /// that said more would be a department, which is a question nobody has ruled on.
+    /// <summary>What is printed on it — the general pass's face, which is the one every other seam has
+    /// always asked for by site alone.
     ///
     /// <para>#1149 · <b>…unless the issuer is not a site.</b> The INSPECTORATE sits above the listed
     /// complexes (<see cref="Inspectorate"/>), so the face of its card is its own plate and nothing else:
@@ -48,20 +95,70 @@ public static partial class PatrolBeat
     /// different kind of paper in the same wallet. The branch lives HERE, in the one function that says what
     /// is printed on a pass, so the chooser row (<see cref="WalletChoice.Claims"/>), the satchel row
     /// (<c>FoundPass.Plate</c>) and the look card all read one answer rather than three.</para></summary>
-    public static string BadgeTitle(string bodyId)
+    public static string BadgeTitle(string bodyId) => BadgeTitle(bodyId, BadgeTier);
+
+    /// <summary>#605 · The same face at a named tier — <c>SITE PASS · PLANT · LUNA SITE</c>. STILL the one
+    /// function that says what is printed on a pass: the chooser row, the satchel row and the look card all
+    /// read this, so a department pass cannot grow a second description of itself.</summary>
+    public static string BadgeTitle(string bodyId, string tier)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
+        ArgumentNullException.ThrowIfNull(tier);
         return string.Equals(bodyId, Inspectorate.IssuerId, StringComparison.Ordinal)
             ? Inspectorate.Plate
-            : $"SITE PASS · {BadgeTier} · {BodyNames.Designation(bodyId)} SITE";
+            : $"SITE PASS · {tier} · {BodyNames.Designation(bodyId)} SITE";
     }
 
-    /// <summary>Is the captain carrying this site's own pass? The possession IS the state — no flag, no
-    /// parallel ledger, the discipline <see cref="CanteenTable.Cover"/> already keeps.</summary>
+    /// <summary>#605 · The face of a pass read off its OWN id — site and tier together, in one call, so
+    /// nothing downstream has to take a pass apart to find out what is printed on it.</summary>
+    public static string? BadgeFaceOf(string? id) =>
+        SiteOfBadge(id) is { Length: > 0 } site ? BadgeTitle(site, TierOfBadge(id)) : null;
+
+    /// <summary>
+    /// <b>THE DISTANCE READ</b> — is the captain carrying a pass this building issued, at ANY tier? The
+    /// possession IS the state: no flag, no parallel ledger, the discipline <see cref="CanteenTable.Cover"/>
+    /// already keeps.
+    ///
+    /// <para>#605 · <b>Any tier, and that is the bottom rung of the department ladder.</b> A laminate is a
+    /// laminate at twenty paces: the man across the floor, the gate that wants a face (#715) and the site
+    /// that will not put you on its books twice are all reading a card they are not holding, and none of
+    /// them can make out the line under the site code. What the TIER is for is the conversation, where the
+    /// pass is in somebody's hand and the floor has a department painted on it
+    /// (<see cref="ThePassFitsTheFloor"/>).</para>
+    /// </summary>
     public static bool BadgeHeld(string bodyId, IReadOnlyList<Satchel.Item>? carried)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
-        return Satchel.CountOf(carried, Satchel.Kind.Badge, BadgeId(bodyId)) > 0;
+        foreach (Satchel.Item item in carried ?? [])
+        {
+            if (item.Kind == Satchel.Kind.Badge
+                && string.Equals(SiteOfBadge(item.Id), bodyId, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /// <summary>#605 · Every pass of THIS site in the wallet, whatever the tier — what the kick-out takes
+    /// off you. A removal that named one id would have left a department pass in the pocket of a captain the
+    /// prose says has just been taken off this site's books, which is the sim saying one thing while a
+    /// sentence says another.</summary>
+    public static IReadOnlyList<Satchel.Item> TakeTheSitePasses(
+        IReadOnlyList<Satchel.Item>? carried, string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+
+        IReadOnlyList<Satchel.Item> left = carried ?? [];
+        foreach (Satchel.Item item in carried ?? [])
+        {
+            if (item.Kind == Satchel.Kind.Badge
+                && string.Equals(SiteOfBadge(item.Id), bodyId, StringComparison.Ordinal))
+            {
+                left = Satchel.Remove(left, Satchel.Kind.Badge, item.Id, item.Count);
+            }
+        }
+        return left;
     }
 
     /// <summary>#804 · WHERE IT COMES FROM: the shift you actually turned up for. The Hand's chit says
@@ -215,6 +312,14 @@ public static partial class PatrolBeat
             case WalletChoice.Outcome.NoInspectionDue:
                 return new(false, Inspectorate.HonouredLine, ChallengeLabel, card, EscortLine);
 
+            // #605 · THE DEPARTMENT LADDER, and the one rung where the paper is entirely genuine. This
+            // building issued it, the face on it is yours, and the tier under the site code does not cover
+            // the floor you are standing on (ThePassFitsTheFloor). The authored line is the whole of the
+            // read — there is no second sentence for it, because the second read IS the sentence — and what
+            // it costs is what a refusal has always cost: the escort, and nothing invented for this rung.
+            case WalletChoice.Outcome.WrongDepartment:
+                return new(false, ReadsItTwiceLine, ChallengeLabel, card, EscortLine);
+
             // Somebody else's building. Named, because a refusal that reads the site code out loud is worth
             // carrying (#679) — and because a captain who has worked two sites should learn that the second
             // pass is still worth keeping.
@@ -322,6 +427,12 @@ public static partial class PatrolBeat
     ///
     /// <para>The order is the order a captain meets them in, which is also the order the ladder runs in:
     /// heard, stopped, read, walked out.</para>
+    ///
+    /// <para>#605 · <b>AND A FIFTH, which is the department ladder's.</b> It is Fable's rather than the
+    /// owner's and it is held to the same standard for the same reason: it is the one sentence in the
+    /// feature that is said at the moment a real pass stops working, and a paraphrase could ship by being
+    /// tidier than what was written. It goes LAST because it is the rung that was added last, and the
+    /// reading order of the other four is the order a captain meets them in and may not move.</para>
     /// </summary>
     public static IReadOnlyList<string> AuthoredLines =>
     [
@@ -329,6 +440,7 @@ public static partial class PatrolBeat
         "Hold there. Floor's restricted. Show me something.",
         "Right. Keep to the lit side.",
         "No? Then you walk ahead of me to the lift, and we don't make it a thing.",
+        "He reads the pass twice. The second time he is reading your face.",
     ];
 
     /// <summary>#804 · How long a guard leaves it before the round stops at you again. Long enough that an
