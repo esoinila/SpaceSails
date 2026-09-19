@@ -55,9 +55,11 @@ public sealed class TheBurnTakesTheParcelTooTests
     /// keeps its row. So the absence cannot be the key purchase, the satchel, the watch, the clamp or the
     /// desk — it is the man.</para>
     ///
-    /// <para><b>RED</b> by dropping <c>&amp;&amp; TheDesksPort() is { } port &amp;&amp;
+    /// <para><b>PROVEN RED</b> by dropping <c>&amp;&amp; TheDesksPort() is { } port &amp;&amp;
     /// !ThisPlaceWasWalkedFirst(port)</c> from <c>ParcelOnOffer</c>: <i>a captain who was followed to the
-    /// desk is still handed a box</i>.</para>
+    /// desk is still handed a box</i>. And RED the other way — on the control half — by dropping the
+    /// <c>TheCoatIsAfoot</c> clause from <c>TheyBurnThisPlaceIfSomebodyIsWatching</c>: <i>every quiet deal
+    /// at a berth costs the parcel row, whether or not anybody was behind him</i>.</para>
     /// </summary>
     [Fact]
     public void AQuietDealDoneWithSomebodyWatchingTakesTheParcelRowWithIt()
@@ -106,8 +108,10 @@ public sealed class TheBurnTakesTheParcelTooTests
     /// <para>Coming back is done the way the game does it, through the one place that knows the berth has
     /// changed (<c>ForgetTheBarsFeet</c>), never by clearing the visit's own set.</para>
     ///
-    /// <para><b>RED</b> by spending the tag anywhere but in the telling (removing the
-    /// <c>_roomsTurnedOver.Remove</c> from <c>TheBurnIsToldHere</c>): <i>the row never comes back</i>.</para>
+    /// <para><b>PROVEN RED</b> by removing the <c>_roomsTurnedOver.Remove</c> from
+    /// <c>TheBurnIsToldHere</c>: <i>the place says its line and the row still never comes back</i>. Also RED
+    /// by dropping this lane's clause from <c>ParcelOnOffer</c> — the row is then on offer before the
+    /// telling, which this guard asserts it is not.</para>
     /// </summary>
     [Fact]
     public void AndTheRowIsBackOnTheVisitTheBurnIsToldOn()
@@ -138,15 +142,22 @@ public sealed class TheBurnTakesTheParcelTooTests
     /// burn's PORT tag (<c>tail-burn:{portId}</c>) and the confiscation's WATCH tag
     /// (<c>parcel:none@{watch}</c>) are two independent strings in one durable set. Wiring the burn to the
     /// parcel row is exactly the change that could have quietly made that untrue — by folding one register
-    /// into the other, or by letting either reader answer for both.
-    /// </para>
+    /// into the other, or by letting either reader answer for both.</para>
     ///
     /// <para>So: a captain who was followed AND had a box taken off him carries both tags. Telling the burn
     /// spends the burn and NOT the confiscation — the row stays absent, for the reason it was already
     /// absent — and the row comes back only when the confiscation's own watches have run out.</para>
     ///
-    /// <para><b>RED</b> by making <c>TheDeskHasNothingForThisHull</c> read the burn tag as well (one
-    /// register answering for both): <i>the telling gives back a row a man with a form took</i>.</para>
+    /// <para><b>WHAT THIS GUARD DOES NOT CLAIM, stated because the red-proof found it.</b> It stays GREEN
+    /// with this lane's whole clause deleted from <c>ParcelOnOffer</c> — and that is correct rather than
+    /// vacuous: every absence it asserts is one the CONFISCATION alone is entitled to produce, which is the
+    /// independence being proved. The coupling is guard 1's to prove, and guard 1 reddens on that revert.
+    /// Written down here so nobody reads this file and believes two guards cover the clause.</para>
+    ///
+    /// <para><b>PROVEN RED</b> by the telling spending the parcel's watch tags as well as its own
+    /// (<c>TheBurnIsToldHere</c> also clearing <c>TheWatchesWithNothingOnThem</c>): <i>the burn's telling
+    /// hands back a row a man with a form took</i>. Also RED by dropping the <c>_roomsTurnedOver.Remove</c>
+    /// from the telling: <i>the burn is never spent at all</i>.</para>
     /// </summary>
     [Fact]
     public void BothQuietsRideOneSaveAndNeitherSpendsTheOther()
