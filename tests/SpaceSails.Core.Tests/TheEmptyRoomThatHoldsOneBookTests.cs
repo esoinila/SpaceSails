@@ -375,7 +375,11 @@ public sealed class TheEmptyRoomThatHoldsOneBookTests
         {
             bool empty =
                 UndergroundComplex.InRoom(r.Body, r.Level, r.Index) == UndergroundComplex.Haul.Nothing
-                && !FoundPass.IsHere(r.Body, r.Level, r.Index);
+                // #605 · …and neither of the two drawers a pass can be lying in. This mirrored
+                // FoundPass.IsHere, which is the mess floor's one; the department ladder gave the same seam
+                // a second designated room, and a mirror that knew about one of them would have had the
+                // shelf and the pass answering the same press on a department floor.
+                && !FoundPass.APassIsLyingAt(r.Body, r.Level, r.Index);
             empties += empty ? 1 : 0;
 
             OddBooks.Reading? any = OddBooks.Search(r.Body, r.Level, r.Index, null, forced: 0);

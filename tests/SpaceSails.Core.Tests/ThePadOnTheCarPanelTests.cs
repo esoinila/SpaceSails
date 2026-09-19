@@ -682,11 +682,26 @@ public sealed class ThePadOnTheCarPanelTests
         const string body = "pad-ground-1";
         Assert.Equal("GENERAL HANDS", PatrolBeat.BadgeTier);
 
-        PatrolBeat.Read passes = PatrolBeat.TheGuardReads(body, -2, 0L, "◈ A PLATE", PatrolBeat.Badge(body), false);
+        // #605 · …read on a floor the tier the site ISSUES covers. This asked B2, which is LABORATORIES on
+        // every branch office in the game, and the department ladder refuses a hand there — which is that
+        // feature's business and not this one's. The claim here is that the pad summons the challenge this
+        // ground ALREADY had and no new kind of thing, so it is asked where the tier is not the argument.
+        int floor = -2;
+        foreach (int level in UndergroundComplex.FloorsOf(body))
+        {
+            if (PatrolBeat.IsPatrolled(body, level) && PatrolBeat.GeneralHandsBelongOn(body, level))
+            {
+                floor = level;
+                break;
+            }
+        }
+
+        PatrolBeat.Read passes = PatrolBeat.TheGuardReads(
+            body, floor, 0L, "◈ A PLATE", PatrolBeat.Badge(body), false);
         Assert.True(passes.Satisfied, "this site's own pass no longer satisfies the round.");
         Assert.Equal(PatrolBeat.ChallengeLabel, passes.Label);
 
-        PatrolBeat.Read nothing = PatrolBeat.TheGuardReads(body, -2, 0L, "◈ A PLATE", null, false);
+        PatrolBeat.Read nothing = PatrolBeat.TheGuardReads(body, floor, 0L, "◈ A PLATE", null, false);
         Assert.False(nothing.Satisfied);
         Assert.Equal(PatrolBeat.ChallengeLabel, nothing.Label);
         Assert.NotNull(nothing.Consequence);

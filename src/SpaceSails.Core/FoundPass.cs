@@ -188,9 +188,15 @@ public static class FoundPass
     /// <para><b>On a floor that department OWNS</b>, which is the whole of the placement law: a PLANT pass
     /// is found in PLANT's own rooms and nowhere else, so the find teaches the ladder before the ladder is
     /// ever asked. Only floors somebody walks a round on (<see cref="PatrolBeat.IsPatrolled"/>) are
-    /// eligible, because a pass for a floor nobody is ever stopped on is a pass with nothing to do; and only
-    /// floors a department owns (<see cref="PatrolBeat.ADepartmentOwnsTheFloor"/>), because a pass at a tier
-    /// a general hand already covers would be a find that changes nothing.</para>
+    /// eligible, because a pass for a floor nobody is ever stopped on is a pass with nothing to do — and
+    /// only floors <b>a general hand does not already belong on</b>
+    /// (<see cref="PatrolBeat.GeneralHandsBelongOn"/>), which is one clause rather than two and is exactly
+    /// the meaning: a pass that opens nothing the captain's own pass opens is not a find.</para>
+    ///
+    /// <para>That clause is the one the first cut of this file got wrong, and a guard said so. Asking
+    /// <see cref="PatrolBeat.ADepartmentOwnsTheFloor"/> alone let the drawer land on the BAR floor, which is
+    /// ADMINISTRATION and therefore owned — and whose own plate reads <c>NO PASS REQUIRED</c>. The pass was
+    /// real, the find was authored, and it was worth precisely nothing.</para>
     ///
     /// <para><b>AIR IS DELIBERATELY NOT ASKED, and the audit is why.</b> The shaft bands are four floors
     /// deep and the plate stock is eight names long, so the floors that breathe land on exactly two of the
@@ -223,7 +229,7 @@ public static class FoundPass
         foreach (int level in UndergroundComplex.FloorsOf(bodyId))
         {
             if (PatrolBeat.IsPatrolled(bodyId, level)
-                && PatrolBeat.ADepartmentOwnsTheFloor(ChamberFitting.DepartmentOn(bodyId, level)))
+                && !PatrolBeat.GeneralHandsBelongOn(bodyId, level))
             {
                 floors.Add(level);
             }

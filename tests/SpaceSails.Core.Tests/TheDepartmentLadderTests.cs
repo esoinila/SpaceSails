@@ -493,6 +493,10 @@ public class TheDepartmentLadderTests
                 Assert.True(PatrolBeat.IsPatrolled(body, at.Level));
                 Assert.True(PatrolBeat.ADepartmentOwnsTheFloor(
                     ChamberFitting.DepartmentOn(body, at.Level)));
+                Assert.False(PatrolBeat.GeneralHandsBelongOn(body, at.Level),
+                    $"{body}: the drawer is on a floor the captain's own pass already opens. This is the "
+                    + "one the first cut got wrong — the bar floor is ADMINISTRATION and therefore owned, "
+                    + "and its own plate reads NO PASS REQUIRED.");
 
                 // …and a pass found there is worth something: it opens the floor it was found on, which a
                 // GENERAL HANDS pass does not.

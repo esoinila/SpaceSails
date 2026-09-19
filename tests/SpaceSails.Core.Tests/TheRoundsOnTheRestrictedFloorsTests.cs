@@ -594,10 +594,32 @@ public class TheRoundsOnTheRestrictedFloorsTests
 
     private const string Plate = "◈ A CONTRACT GUARD, WALKING THE ROUND";
 
+    /// <summary>#605 · A floor of this building that the tier the site ISSUES covers — asked of the
+    /// building (<see cref="PatrolBeat.GeneralHandsBelongOn"/>) rather than typed in.
+    ///
+    /// <para>The guards below were written against <c>-2</c>, which was every floor there was to talk about
+    /// while a pass had one tier. B2 is LABORATORIES on every branch office in the game, so the department
+    /// ladder refuses a hand there now — and not one of these guards is about the tier. They ask on a floor
+    /// where the tier cannot be the argument; the ladder itself is <c>TheDepartmentLadderTests</c>'
+    /// business.</para></summary>
+    private static int AHandsFloorOf(string body)
+    {
+        foreach (int level in UndergroundComplex.FloorsOf(body))
+        {
+            if (PatrolBeat.IsPatrolled(body, level) && PatrolBeat.GeneralHandsBelongOn(body, level))
+            {
+                return level;
+            }
+        }
+
+        throw new InvalidOperationException($"{body} has no floor a general hand belongs on.");
+    }
+
     [Fact]
     public void ThePassSatisfiesAndNothingElseHappens()
     {
-        PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", -2, 0L, Plate, PatrolBeat.Badge("luna"), false);
+        PatrolBeat.Read read = PatrolBeat.TheGuardReads(
+            "luna", AHandsFloorOf("luna"), 0L, Plate, PatrolBeat.Badge("luna"), false);
         Assert.True(read.Satisfied);
         Assert.Equal(PatrolBeat.SatisfiedLine, read.Line);
         Assert.Null(read.Consequence);
@@ -645,14 +667,16 @@ public class TheRoundsOnTheRestrictedFloorsTests
     public void TheBadgeIsSiteScopedInBothDirections()
     {
         Satchel.Item[] luna = [PatrolBeat.Badge("luna")];
+        int home = AHandsFloorOf("luna");
+        int away = AHandsFloorOf("europa");
         Assert.True(PatrolBeat.BadgeHeld("luna", luna));
         Assert.False(PatrolBeat.BadgeHeld("europa", luna));
 
-        Assert.True(PatrolBeat.TheGuardReads("luna", -2, 0L, Plate, luna[0], false).Satisfied);
-        Assert.False(PatrolBeat.TheGuardReads("europa", -2, 0L, Plate, luna[0], false).Satisfied);
+        Assert.True(PatrolBeat.TheGuardReads("luna", home, 0L, Plate, luna[0], false).Satisfied);
+        Assert.False(PatrolBeat.TheGuardReads("europa", away, 0L, Plate, luna[0], false).Satisfied);
         Assert.Contains(
             BodyNames.Designation("luna"),
-            PatrolBeat.TheGuardReads("europa", -2, 0L, Plate, luna[0], false).Line,
+            PatrolBeat.TheGuardReads("europa", away, 0L, Plate, luna[0], false).Line,
             StringComparison.Ordinal);
 
         // The id round-trips, and nothing else in the wallet is mistaken for one.
@@ -790,7 +814,8 @@ public class TheRoundsOnTheRestrictedFloorsTests
                      CanteenTable.Chit(underAnotherName: true),
                  })
         {
-            PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", -2, 0L, Plate, handed, false);
+            PatrolBeat.Read read = PatrolBeat.TheGuardReads(
+                "luna", AHandsFloorOf("luna"), 0L, Plate, handed, false);
             consequences.Add(read.Consequence ?? "<nothing at all>");
         }
         Assert.Equal(

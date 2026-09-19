@@ -293,13 +293,23 @@ public class TheFalseIdTests
                 Assert.NotEqual(here, mintedFor);
                 judged++;
 
-                Assert.Equal(WalletChoice.Outcome.WrongSite, WalletChoice.WhatHappens(here, -2, 0L, pass));
-                Assert.Equal(WalletChoice.Outcome.Worked, WalletChoice.WhatHappens(mintedFor, -2, 0L, pass));
+                // #605 · …ON A FLOOR THE TIER COVERS. This read B2 of both grounds, which was every floor
+                // there was to talk about while a pass had one tier; B2 is LABORATORIES on every branch
+                // office in the game, so the second claim would now be about the department ladder rather
+                // than about the site code. The site code is what this guard is for, so it asks where the
+                // tier cannot be the argument.
+                int onForeign = AHandsFloorOf(here);
+                int onHome = AHandsFloorOf(mintedFor);
+
+                Assert.Equal(
+                    WalletChoice.Outcome.WrongSite, WalletChoice.WhatHappens(here, onForeign, 0L, pass));
+                Assert.Equal(
+                    WalletChoice.Outcome.Worked, WalletChoice.WhatHappens(mintedFor, onHome, 0L, pass));
 
                 // …and the card the man's read is told on says the same thing, because it is composed off
                 // that one ladder and nothing else.
-                Assert.False(PatrolBeat.TheGuardReads(here, -2, 0L, "A ROUND", pass, false).Satisfied);
-                Assert.True(PatrolBeat.TheGuardReads(mintedFor, -2, 0L, "A ROUND", pass, false).Satisfied);
+                Assert.False(PatrolBeat.TheGuardReads(here, onForeign, 0L, "A ROUND", pass, false).Satisfied);
+                Assert.True(PatrolBeat.TheGuardReads(mintedFor, onHome, 0L, "A ROUND", pass, false).Satisfied);
             }
         }
 
@@ -437,6 +447,22 @@ public class TheFalseIdTests
 
         Assert.DoesNotContain("FABLE: line needed", source, StringComparison.Ordinal);
         Assert.Contains(FoundPass.TakenLine, source, StringComparison.Ordinal);
+    }
+
+    /// <summary>#605 · A patrolled floor of this building the tier the site ISSUES covers — asked of the
+    /// building (<see cref="PatrolBeat.GeneralHandsBelongOn"/>) rather than typed in, so a guard about the
+    /// SITE CODE stays about the site code on every generated ground.</summary>
+    private static int AHandsFloorOf(string body)
+    {
+        foreach (int level in UndergroundComplex.FloorsOf(body))
+        {
+            if (PatrolBeat.IsPatrolled(body, level) && PatrolBeat.GeneralHandsBelongOn(body, level))
+            {
+                return level;
+            }
+        }
+
+        throw new InvalidOperationException($"{body} has no floor a general hand belongs on.");
     }
 
     private static IEnumerable<string> Grounds()
