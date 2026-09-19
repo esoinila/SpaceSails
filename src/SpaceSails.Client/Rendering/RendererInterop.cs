@@ -53,21 +53,23 @@ internal static partial class RendererInterop
     [JSImport("pageIsHidden", ModuleName)]
     private static partial bool TheDocumentIsHidden();
 
-    /// <summary>#1244 · Hand the frame back on a <c>MessageChannel</c> tick — a task the browser does not
-    /// ration, where a background tab's timers are clamped to ~1 Hz.
+    /// <summary>#1244 · Take the browser's ration off the shortest timers on this page — 4 ms and under,
+    /// which is the .NET WASM timer queue's "as soon as you can" and nothing a human ever asks for — by
+    /// serving them on a <c>MessageChannel</c> tick, which no browser rations. <c>false</c> puts the
+    /// browser's own back. Idempotent in both directions, and a no-op (answering <c>false</c>) off a
+    /// browser or before the module import has landed.
     ///
-    /// <para><b>Null when there is no tick to be had</b> — off a browser, or before the module import has
-    /// landed. Null rather than <see cref="Task.CompletedTask"/> on purpose: the caller is a yield, and a
-    /// yield that completes synchronously is not a yield at all but a boot that stops handing the main
-    /// thread back, which is the very "page unresponsive" dialog #161 spent itself on. The caller must be
-    /// able to tell "yielded on a tick" from "there was no tick", so it can fall back to the timer.</para>
-    /// </summary>
-    internal static Task? TheUnrationedYield() =>
-        OperatingSystem.IsBrowser() && ModuleIsLoaded ? YieldOnTheChannel() : null;
+    /// <para>The one caller is the staged boot, which takes the ration off when it finds itself being
+    /// rationed and puts it back the moment the boot ends or is abandoned. Nothing else on the page may:
+    /// this reaches EVERY short timer in the document while it stands, and it is bearable only because the
+    /// boot is short, finite, and already owns the main thread.</para></summary>
+    /// <returns>whether the swap is now standing — so a caller can say honestly what it got.</returns>
+    internal static bool ServeTheShortestTimersOnATick(bool on) =>
+        OperatingSystem.IsBrowser() && ModuleIsLoaded && TheShortestTimersOnATick(on);
 
-    /// <inheritdoc cref="TheUnrationedYield"/>
-    [JSImport("yieldOnATick", ModuleName)]
-    private static partial Task YieldOnTheChannel();
+    /// <inheritdoc cref="ServeTheShortestTimersOnATick"/>
+    [JSImport("serveTheShortestTimersOnATick", ModuleName)]
+    private static partial bool TheShortestTimersOnATick(bool on);
 
     [JSImport("initCanvas", ModuleName)]
     internal static partial void InitCanvas(string canvasId, bool observeResize);

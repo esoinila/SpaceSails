@@ -45,7 +45,6 @@ public partial class Map
     {
         BootClock.Restart();
         _bootClockMark = 0;
-        _theBootYieldsOnATick = false; // #1244 · a fresh boot asks the browser again
     }
 
     /// <summary>#161 · Say what the stage that JUST FINISHED cost, and what the boot has cost so far. Kept
@@ -79,59 +78,87 @@ public partial class Map
     // of the staged boot took about a second — `the traffic lanes — freighter 1 of 8 — 1086 ms, 989, 860,
     // 998, 991, 1002…`, eighty-two slices in two and a half minutes and still going — against ~26 ms each
     // in a tab the captain was looking at. The slices did not get slower. The YIELD between them did:
-    // Chrome clamps a background document's timers to roughly one a second, and the line above parks on a
+    // Chrome rations a hidden document's timers to roughly one a second, and the line above parks on a
     // browser timer by design (that is exactly what #318 chose `Task.Delay(1)` over `Task.Yield` FOR).
     // Staging the boot into ~90 pieces is what turned a ration on the yield into a ninety-second boot, so
-    // the finer #1114/#1203 made it, the worse this got.
+    // the finer #1114/#1203 sliced it, the worse this got.
     //
-    // So this is the ONE seam where the boot hands the frame back, and it now asks how the hand-back went
-    // before choosing the next one. While the page is hidden — or once a hand-back that should cost a
-    // millisecond has cost a quarter of a second — the rest of the boot yields on a MessageChannel tick
-    // (renderer.js `yieldOnATick`), which is a task rather than a timer and which no browser rations.
+    // THE SEAM DOES NOT CHANGE, AND THAT IS THE FINDING. The obvious fix — await a MessageChannel tick,
+    // which is a task rather than a timer and which nothing rations — does not work from here, because the
+    // .NET WASM runtime resumes every continuation through `globalThis.setTimeout` as well (the shipped
+    // `dotnet.runtime.*.js` has `safeSetTimeout(mono_wasm_schedule_timer_tick, …)` and not one
+    // `MessageChannel` in the file). Measured on this branch: a boot yielding on a port message was STILL
+    // 86 s hidden against 14 s visible — the tick resolved at once and the C# side then queued behind the
+    // runtime's own rationed timer. What had to move was the ration, not the yield.
     //
-    // THE LATCH IS DELIBERATE, and it is the issue's own wording ("for the remaining slices"). A captain
-    // who comes back mid-boot loses nothing by it: a message tick is a real hand-back, so input and paint
-    // both still get served between two slices — they are simply no longer GUARANTEED one paint per slice,
-    // which matters to a loading door that is, by then, about to come down anyway. Re-probing the timer
-    // instead would cost a clamped second every time it asked.
+    // So the hand-back below is the line it always was, and around it the boot asks TWICE whether it is
+    // being rationed — before the yield, of the document itself; after it, of what the yield actually
+    // cost — and takes the ration off the shortest timers on the page for the rest of the boot when it is
+    // (renderer.js `serveTheShortestTimersOnATick`, restored in BootWithinTheLifeOfThePageAsync's finally).
     //
     // BOTH INPUTS ARE STATIC, and that is not tidiness. Every instance field of this page is swept by
     // EveryFrameLeavesTheSameFingerprintTests and diffed against a virgin component by
     // TheBootBuildsTheSameWorldTests; a field saying "nobody was looking" would join both ledgers and say
     // nothing about the game. The same reason BootClock is static, and the same law: whether anyone is
     // watching decides how the frame is handed back and NOTHING about the world that gets built
-    // (TheHiddenTabNeverReachesTheWorldTests).
+    // (TheHiddenTabDecidesNothingAboutTheWorldTests).
 
     /// <summary>#1244 · A hand-back that costs this long was not served — it was rationed. A frame is 16 ms
-    /// and a clamped background timer is ~1,000; a quarter of a second is clear of the first by fifteen
+    /// and a rationed background timer is ~1,000; a quarter of a second is clear of the first by fifteen
     /// frames and of the second by four.</summary>
     private const long ARationedYieldMs = 250;
 
-    /// <summary>#1244 · Latched once the browser is seen to be rationing this boot's hand-backs. Reset with
-    /// the boot clock, so a second boot in the same page life asks the question again.</summary>
-    private static bool _theBootYieldsOnATick;
+    /// <summary>#1244 · Whether this boot has taken the ration off the page's shortest timers — so it is
+    /// asked for once, and put back once.</summary>
+    private static bool _theBootTookTheRationOff;
 
-    /// <summary>#1244 · Hand the frame back — on a timer while the browser is serving them, on a message
-    /// tick once it is not.</summary>
+    /// <summary>#1244 · Hand the frame back, and notice when the browser is not serving the hand-back.
+    /// Asked before the yield (is the document hidden?) and after it (did a one-millisecond wait cost a
+    /// quarter of a second?), because the first is free and the second is the honest backstop for every
+    /// way of being throttled the first cannot see.</summary>
     private static async Task HandTheFrameBackAsync(CancellationToken abandoned)
     {
         abandoned.ThrowIfCancellationRequested();
 
-        // A tick, when the latch is down AND there is one to be had. Off a browser — and on the handful of
-        // cheat URLs that reach the planners before the module import has landed — there is not, and a
-        // hand-back that returned without handing anything back would be worse than a rationed one.
-        if (_theBootYieldsOnATick && RendererInterop.TheUnrationedYield() is { } tick)
+        if (!_theBootTookTheRationOff && RendererInterop.PageIsHidden())
         {
-            await tick;
-            abandoned.ThrowIfCancellationRequested();
-            return;
+            TakeTheRationOffTheBootsTimers();
         }
 
         long before = BootClock.ElapsedMilliseconds;
         await Task.Delay(1, abandoned);
 
-        _theBootYieldsOnATick =
-            BootClock.ElapsedMilliseconds - before > ARationedYieldMs || RendererInterop.PageIsHidden();
+        if (!_theBootTookTheRationOff && BootClock.ElapsedMilliseconds - before > ARationedYieldMs)
+        {
+            TakeTheRationOffTheBootsTimers();
+        }
+    }
+
+    /// <summary>#1244 · Once per boot, and it says so in the phase log beside the stage costs it is about
+    /// to change — a number in that log that nobody can explain is how this lane started.</summary>
+    private static void TakeTheRationOffTheBootsTimers()
+    {
+        _theBootTookTheRationOff = true;
+        if (RendererInterop.ServeTheShortestTimersOnATick(true))
+        {
+            Console.WriteLine(
+                "[SpaceSails] boot · nobody is looking at this tab, so the browser is rationing its timers "
+                + "to about one a second — serving the boot's own hand-backs on a message tick instead "
+                + "(#1244).");
+        }
+    }
+
+    /// <summary>#1244 · …and the browser's own timers come back, whether the boot finished or the player
+    /// walked out of it. A swap that outlived the boot would be this lane's own bug: it reaches every short
+    /// timer in the document, and it is only defensible for the seconds the boot owns the main thread
+    /// anyway.</summary>
+    private static void PutTheRationBack()
+    {
+        if (_theBootTookTheRationOff)
+        {
+            RendererInterop.ServeTheShortestTimersOnATick(false);
+            _theBootTookTheRationOff = false;
+        }
     }
 
     // #737 · THE PLAYER MAY LEAVE WHILE THE WORLD IS STILL BEING BUILT. Boot pegs the main thread for tens
@@ -184,6 +211,13 @@ public partial class Map
             // #737: the player navigated away mid-boot. Half a world and no page to put it on — there is
             // nothing to unwind (every field belongs to this instance, which the router has discarded) and
             // nothing to report. Letting this escape is exactly what raised WebAssemblyRenderer[100].
+        }
+        finally
+        {
+            // #1244 · The boot borrowed the page's shortest timers; the boot gives them back — and it does
+            // so on the abandoned path too, which is the one where forgetting would leave a live game
+            // running on a swap that nothing owns.
+            PutTheRationBack();
         }
     }
 
