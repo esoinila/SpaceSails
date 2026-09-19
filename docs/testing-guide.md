@@ -71,16 +71,22 @@ above, and this is the only place it gets asked.
 
 1. Open the home page (`/`).
 2. Click **Launch** on the **Sol** card.
-3. Confirm the map loads with the scenario name "Sol" in the HUD, no `EU ⚡` badge.
-4. Go back, click **Launch** on **Sol (Electric)**.
-5. Confirm the `EU ⚡` badge appears next to the scenario name.
+3. Confirm you arrive at the **logbook** — Continue at the top, the berth list under it — and *not*
+   in a running voyage. The URL reads `/map?scenario=sol`; the scenario decides which sky **New
+   voyage** launches into, nothing more (#323).
+4. Start a voyage and confirm the scenario name "Sol" in the HUD, no `EU ⚡` badge.
+5. Go back, click **Launch** on **Sol (Electric)**, start a voyage, and confirm the `EU ⚡` badge
+   appears next to the scenario name.
 6. Manually edit the URL to `/map?scenario=wheel` and reload.
-7. Confirm "Wheel" loads (Venus/Earth/Mars visibly on a rigid spoke around Saturn once zoomed
-   out).
-8. Try `/map?scenario=not-a-real-scenario` — confirm it silently falls back to Sol, no crash.
+7. Confirm you get the logbook again, and that starting from it puts you in "Wheel" (Venus/Earth/Mars
+   visibly on a rigid spoke around Saturn once zoomed out).
+8. Try `/map?scenario=not-a-real-scenario` — confirm the logbook opens over Sol, silently, no crash.
+9. Now add any cheat from Appendix A — `/map?scenario=sol&ellipse=1` — and confirm it goes **straight
+   in**, no logbook. That is the whole of the civilian rule, both ways round.
 
-**Broken looks like:** blank canvas, a spinner that never clears past "Rigging the sails…", or
-the wrong scenario's bodies rendering.
+**Broken looks like:** blank canvas, a spinner that never clears past "Rigging the sails…", the
+wrong scenario's bodies rendering — or a bare `?scenario=` link booting a fresh voyage over somebody's
+saves, which is #323's own bug.
 
 **What the boot should look like (#161, staged).** The front door — the berth list, the saved
 voyages, **Continue — docked at &lt;haven&gt;** — comes up **live and pressable within about a
@@ -609,8 +615,43 @@ empty, or a completion beat that fires on the banner behind the satchel's backdr
 ## Appendix A — URL dev cheats (start from the testable situation)
 
 Owner's bench rule (2026-07-18): *"being able to start from the testable situation helps us
-smoke-test faster."* Append these to the map URL (`/map?a=1&b=2`) to boot straight into a set-up
-instead of flying there. All are dev/test hooks — none affect a normal launch from the home page.
+smoke-test faster."* Append these to the map URL — `/map?` then `key=value` pairs joined with `&` —
+to boot straight into a set-up instead of flying there. All are dev/test hooks; none affect a normal
+launch from the home page.
+
+> ### The one civilian front door (#323)
+>
+> **A query is *civilian* — it goes through the logbook — if and only if it asked the boot for nothing
+> but a scenario.** `/map`, `/map?scenario=sol`, `/map?scenario=wheel` all open the same save-rack
+> picker the home page's **Launch** button opens: Continue-newest at the top, every banked berth
+> listed, the named scenario merely deciding which sky **New voyage** launches into. A bookmark is not
+> a decision to start over.
+>
+> **Every other URL on this page keeps its direct boot**, and the smoke sweeps depend on that: the
+> moment one of the boot's own readers claims a key that is not `scenario`, the URL is one of these
+> incantations and the boot goes straight into the situation it names.
+> `/map?scenario=sol&dock=the-tilt` is a bench URL, not a front door — the scenario rides along, it
+> does not civilise the cheat.
+>
+> **A key the boot does not read asked the boot for nothing**, and stays civilian. There are exactly
+> two, and both are read off the *live address*, every frame, never through the boot's query holder:
+> `?holdbeats=` (#1148, the story-beat latch) and `?perf=1` (#841, the draw-cost probe). Both change no
+> body, no berth and no cheat — `?perf=1`'s row in the boot fingerprint is pinned byte-identical to the
+> URL without it — so neither can turn a bookmark into a bench run. The retired `?autowalk=` alias
+> (#875) and any key nobody parses are in the same position. This is what lets the UiGate's boot canary
+> append `&holdbeats=1` to the home page's own Launch link and still arrive at the front door it exists
+> to measure.
+>
+> The rule lives in exactly one place in the code — the parse itself, `BootQuery.AskedForASituation`,
+> reachable as `Map.TheQueryIsCivilian` — and
+> `TheOneCivilianFrontDoorTests` asks it of every world the game ships and of every `/map?…` link
+> written anywhere in `src/` or `docs/`. **Two things follow for anyone editing this table:** a link in
+> a document that uses a key no reader claims is a red build, and so is a key that is used in a link
+> but missing from the table below. The table and the readers are one register.
+>
+> **To see the front door on demand:** open `/map?scenario=sol` (or just `/map`) in a fresh tab. To
+> see that a cheat still bypasses it, add any key from this table — `/map?scenario=sol&ellipse=1`
+> boots straight in with the eccentric demo body already hung in the sky.
 
 > **You no longer have to type them.** The most-walked entry points are offered as buttons in the
 > game's own front door, under **⚙ DEV START SITES** (collapsed, below the berth list) — owner,
@@ -635,6 +676,14 @@ instead of flying there. All are dev/test hooks — none affect a normal launch 
 | `?sling=<bodyId>` / `?skim=<bodyId>` | Boot onto an approach arc with a close pass / atmosphere graze. |
 | `?expedition=1\|mining` | Spawn an away-team gig ALREADY ACCEPTED, its rock parked in shuttle range (#370). |
 | `?deflection=1\|c\|s\|m` | Spawn the asteroid-deflection gig accepted, rock inbound, ship docked at Ringside (#394). |
+| `?tip=route` | Seed a representative route tip, with its provenance, into the ledger — the Captain's-ledger **Tips & intel** rendering without walking a bar for one. |
+| `?hoard=mine\|rumor\|both` | Seed the ledger's 🗺 section (#223): `mine` is one of YOUR chests on Phobos, `rumor` a bought rumour map to somebody else's hoard, `both` one of each — the map card and the dig doors without flying a bury run. |
+| `?backroom=open\|quest` | Weld the V-06 **back room** open on the spot, or stage the crack job with its real code so you can key the pad yourself and watch the room grow (PR-F). Pair with `&start=cinder-roost`. |
+| `?rep=1\|0` | Put the Nebula Mutual rep (Harlan Fess) on this ground whatever his rota says — or keep him off it (#973 L2). Forces WHETHER and never WHO or WHAT: unforced he is at most one ground in three and never two visits running, which made the walk-in, the pitch, the flashback and the withdrawal a matter of docking and hoping. |
+| `?kolt=1\|0` | The same lever for Brem Kolt (#1061 beat 2), whose rota has a ceiling as well as a period — one ground in three, and never more than two grounds in a whole universe. |
+| `?walkin=1\|0` | Let a bar **walk-in** happen at this berth whatever the rota and the venue tier say, or keep her away (#973 L5b). Her cadence is *rare, once per subject*, on top of a classy-venue gate and a captain who has to be sitting alone at a top already. |
+| `?finder=1\|0` | Let Ilse Varga cross this floor whatever else is true, or keep her away (#417). It forces WHETHER and never WHAT: whether this world can furnish a case at all is still Core's answer. |
+| `?parcel=1` | Boot with an **unlisted parcel** already in the pocket and ride `?land=`'s own descent onto the ground that parcel is actually for (#711 slice 2) — the job row, the walk, the DIG HERE press and the delivery in one URL. It forges nothing: the parcel is minted the way the desk mints one, and the cheat chooses only which window. |
 | **`?crew=petition`** | **A DEPUTATION — three of them in the corridor outside your door (#663).** Boots holding the voyage the crew send one over: five of them left on the rock (the `?deflection=` gig above is the only thing in the shipped game that kills a crewman), and every wreck since filed honestly, so the share is empty and the bunks are too. It grants those two counters and nothing else — no standing is written and no card is pushed; the ship's own clock reads the crew sheet on the next tick, finds them past `CrewTemp.Standing.Petition`, and the beat arrives through the ordinary door with its cadence spent and its line in the ledger. Read the sheet behind it on the **Captain desk → the crew's report**: PETITION at the top, GETTING HOME on the floor and THE SHARE down with it. `?crew=deputation` is the same door. |
 | **`?crew=meeting`** | **THE MEETING YOU WERE NOT ASKED TO — the cantina at an odd watch, and a chair pulled out that nobody is sitting in (#1066).** The same ruined voyage as `?crew=petition` above, with nobody ashore in five berths on top of it. **The shore-leave rule:** a clamp at a GREAT PORT is a run ashore — that is Ringside Exchange and The Red Eye, the two berths the arrival tube (#541) gives a glazed gangway to — and every other berth is a working stop. Four working stops in a row breaks the captain's word, and every berth past that breaks it again, which is what carries the crew sheet from PETITION down to `CrewTemp.Standing.Ultimatum`. It grants counters and nothing else; the ship's own clock reads the sheet on the next tick and the beat arrives through the ordinary door. Read the sheet on the **Captain desk → the crew's report**: ULTIMATUM at the top, THE CAPTAIN'S WORD on the floor, and the shore-leave footnote under the bars saying how many stops it has been and where the line is. `?crew=ultimatum` is the same door. |
 | **`?secretlab=1`** | **Spawn a landable rock in shuttle range hiding a Vantar SECRET LAB, hidden door pre-revealed (#409).** |
