@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -214,7 +214,15 @@ public sealed class TheBootBuildsTheSameWorldTests
             //     …RoundsCheat=1,  ShotsAnswered=0,  ShownBook=[],  TheNoise=(0, 0), …
             // every one at its default, because a boot has not fired anything. Nothing about what the boot
             // DOES moved: the same query writes the same values it always did.
-            ["/map?badge=1"] = "1b84c08a11ca8820c85a15819b25d6f8",
+            //
+            // #746 · RE-PINNED A FOURTH TIME, AND A THIRD ROW JOINS THEM. The checkpoint is an
+            // ENCOUNTER now, so the round grew the state one needs — StopUnderway, the two sets a man
+            // remembers you by (AskedTheWay, FumbledAtTheStop), EscortIsFree, NameInTheBookDue and the
+            // ?roll= cheat — and this sweep renders the whole object inside the one `_patrol = Patrol(…)`
+            // line. Every one of them is at its DEFAULT in all three dumps, because a boot has not
+            // stopped anybody: nothing about what these queries DO moved. The third row is the new one
+            // and it is new for a different reason, said below on its own line.
+            ["/map?badge=1"] = "713162d5a6f4104f60a2dee375b52d0d",
             ["/map?barcase=1"] = "7105de72a79d125553be13a5632a5359",
             ["/map?bond=1"] = "3661dd38827eb8a1da622dbd8091ed5f",
             ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "f805bbf4b1ecef5cb6796435c55ab315",
@@ -297,7 +305,7 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?parkback=1"] = "b5131e7834c8b44343cb2bb45b90c4c9",
             ["/map?parkwalk=1"] = "ec2b040181cd07fd4ad330635adfe270",
             // #870 lane 6′b · RE-PINNED — see the note above `?badge=1`; same one reason.
-            ["/map?patrol=2"] = "d446c37eec57ed4b593df8b184bbac34",   // #618 · see ?badge=1 above
+            ["/map?patrol=2"] = "5e27b429a6d9caf8b84bef5184fdc2f2",   // #618/#746 · see ?badge=1 above
             ["/map?reveal=derelict-roadster&reveal=nothing-at-all&ellipse=1"] = "bfc970e07d6c6a0c9fd7ff84880e3659",
             ["/map?ringoffice=1"] = "ba0d68c0733652163b1494bf406f7f52",
             ["/map?rip=1"] = "bf7d368802d38cd88bde3698971e9d52",
@@ -312,7 +320,13 @@ public sealed class TheBootBuildsTheSameWorldTests
             // lines above. That it is IDENTICAL is the assertion: a measurement cheat that moved the world
             // would be measuring a world nobody plays.
             ["/map?secretlab=deep&land=1&floor=1&perf=1"] = "c4f74e8002dc01076f211655ee70edee",
-            ["/map?secretlab=deep&land=1&floor=2&book=9&dark=1&roll=lo&approach=0&neighbour=1"] = "d057e0fa27091d759f2b28869d210542",
+            // #746 · THE THIRD ROW, and the only one of the eighty-eight that moved for a reason other
+            // than a default. `?roll=` reaches the ROUND now as well as the table — the stop is an
+            // encounter and a cheat that forced one scene's bands and not the other's would leave a
+            // tester unable to walk the four outcomes of the stop #746 is named after — so this boot
+            // writes `RollCheat=NoAnd` where it used to write `RollCheat=∅`. That is the WHOLE
+            // difference, and it is the thing the query is for.
+            ["/map?secretlab=deep&land=1&floor=2&book=9&dark=1&roll=lo&approach=0&neighbour=1"] = "0f6c3f2ed3a5925e0561f2a06dde8ee6",
             ["/map?secretlab=deep&land=1&floor=21"] = "00f4c8563488c45ab1f9f0cf25bfc437",
             ["/map?skim=saturn"] = "5702e97b412b144d3fd884426e262007",
             ["/map?sling=jupiter"] = "5702e97b412b144d3fd884426e262007",

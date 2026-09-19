@@ -38,6 +38,13 @@ public partial class ViewObjectCard
     [Parameter] public bool TheFindIsWaitingOnAnAnswer { get; set; }
     [Parameter] public bool TheKitsCardIsUp { get; set; }
     [Parameter] public Func<IReadOnlyList<SdrScanner.Hit>> TheKitSweeps { get; set; } = default!;
+    // #746 · The guard stop's four moves. The same five things the table's own panel asks the page for
+    // (Map.Table.cs's forwarders): a gate, the list, is-it-on-offer, why-not, and one press.
+    [Parameter] public bool TheStopIsWaitingOnAMove { get; set; }
+    [Parameter] public Action<string> TheStopMove { get; set; } = default!;
+    [Parameter] public Func<Encounter.Move, bool> TheStopMoveOnOffer { get; set; } = default!;
+    [Parameter] public Func<Encounter.Move, string> TheStopMoveRefusal { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<Encounter.Move>> TheStopsMoves { get; set; } = default!;
     [Parameter] public DeckPlan.ConsoleSpot vo { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

@@ -149,15 +149,23 @@ public sealed class TheParcelIsFoundFirstTests
 
         int found = body.IndexOf("UnlistedParcel.Held(_host.Satchel)", StringComparison.Ordinal);
         int over = body.IndexOf("if (!parcel.Value.TheReadGoesOn)", StringComparison.Ordinal);
-        int ladder = body.IndexOf("WalletChoice.WhatHappens(", StringComparison.Ordinal);
-        int reads = body.IndexOf("PatrolBeat.TheGuardReads(", StringComparison.Ordinal);
+
+        // #746 · THE SAME LAW, AND IT IS STRONGER THAN IT WAS. The stop is an ENCOUNTER now: the arrival
+        // raises the SCENE and the wallet is not read until SHOW THE PASS is pressed. So the thing that has
+        // to come after the parcel gate is the scene being raised at all — and the two ladder calls are no
+        // longer LATER in this method, they are not in it, which is a claim the old ordering could not make.
+        int scene = body.IndexOf("StopUnderway = new Stop", StringComparison.Ordinal);
 
         Assert.True(found > 0, "the round never looks for a parcel at all.");
         Assert.True(over > found, "there is no arm on which the fine ends the read.");
         Assert.True(
-            ladder > over && reads > over,
-            "the round reads the wallet before it looks in the hold — the search did not stop at the floor "
+            scene > over,
+            "the round opens the scene before it looks in the hold — the search did not stop at the floor "
             + "it was built to stop at.");
+        Assert.True(
+            body.IndexOf("WalletChoice.WhatHappens(", StringComparison.Ordinal) < 0
+            && body.IndexOf("PatrolBeat.TheGuardReads(", StringComparison.Ordinal) < 0,
+            "the arrival walks the wallet ladder — on the fine, that is a name the captain never gave.");
 
         // …and the fine is told on the ROUND'S OWN card: the same label, the same painting, one card.
         Assert.Contains("UnlistedParcel.TheFineIsTold(g.Plate)", challenge, StringComparison.Ordinal);
@@ -202,12 +210,16 @@ public sealed class TheParcelIsFoundFirstTests
 
         Assert.Equal(1, Count(Code(challenge), "UnlistedParcel.TheReadGoesOnAfterIt("));
 
-        int reads = challenge.IndexOf("PatrolBeat.TheGuardReads(", StringComparison.Ordinal);
+        // #746 · RE-PATHED. The card the captain was always going to get is the SCENE's card now — the
+        // opening in the amber row and the four moves under it — so the tell rides the front of THAT, which
+        // is the first thing the captain reads at this stop and still the only card raised on this road.
+        int opens = challenge.IndexOf("PatrolBeat.Read opening = new(", StringComparison.Ordinal);
         int continues = challenge.IndexOf("UnlistedParcel.TheReadGoesOnAfterIt(", StringComparison.Ordinal);
         int cardUp = challenge.IndexOf(
-            "read.Label, PatrolBeat.ChallengeArtUrl, read.Card, read.Told", StringComparison.Ordinal);
+            "opening.Label, PatrolBeat.ChallengeArtUrl, opening.Card, opening.Told", StringComparison.Ordinal);
 
-        Assert.True(continues > reads, "there is no read yet for the tell to continue.");
+        Assert.True(opens > 0, "the arrival composes no opening for the tell to ride the front of.");
+        Assert.True(continues > opens, "there is nothing yet for the tell to continue.");
         Assert.True(
             cardUp > continues,
             "the tell is composed after the card it belongs on has gone up — the captain never sees it.");

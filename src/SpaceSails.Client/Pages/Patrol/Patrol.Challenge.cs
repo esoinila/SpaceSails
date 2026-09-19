@@ -320,8 +320,19 @@ public sealed partial class Map
                 : WalletChoice.DefaultFor(bodyId, _host.Satchel, ShownBook);
 
         /// <summary>
-        /// He stops, reads what is in your wallet, and tells you the answer. The judgement is Core's and only
-        /// Core's; this raises the card, spends the nerve and — when it comes to that — walks you back.
+        /// He stops in front of you, and the scene opens.
+        ///
+        /// <para><b>#746 · IT IS AN ENCOUNTER NOW, AND THAT IS THE WHOLE OF WHAT THIS METHOD LOST.</b> It
+        /// used to read the wallet on the very frame he arrived and tell you the answer in one breath, which
+        /// was #684's ruling honoured to the letter and one move short of the machine #748 built for exactly
+        /// this day. What it raises instead is the same card — same label, same painting, same body — with
+        /// the scene's own opening in the amber row and its four moves under it
+        /// (<see cref="Patrol.Stop"/>). <b>The read is still automatic and there is still no TRY verb</b>:
+        /// SHOW THE PASS hands over the paper #836's fan already put in your hand, and the ladder that judges
+        /// it is the shipped one, called once, in <see cref="TheWalletIsRead"/>.</para>
+        ///
+        /// <para>Everything that happens to a captain still happens in <see cref="TheStopIsAnswered"/>, and
+        /// every road there leads through a seam that was already in the game.</para>
         /// </summary>
         private void TheRoundStopsAtYou(
             SurfaceExcursion ex, Guard g, ContactLedger book, double simTime)
@@ -331,11 +342,11 @@ public sealed partial class Map
             g.Vy = 0;
             g.Facing = System.Math.Atan2(_host.AvatarY - g.Y, _host.AvatarX - g.X);
 
-            // #836 · THE PAPER, AND THEN THE READ OF IT. The fan comes down here whether or not the captain ever
+            // #836 · THE PAPER IS IN YOUR HAND BY NOW. The fan comes down here whether or not the captain ever
             // touched it — his hand is out, and the whole ruling is that there is no swapping in front of him.
-            string bodyId = ex.Stop.Body.Id;
+            // WHICH paper it is is asked at the move (ThePaperHandedOver), because a pass can be taken off you
+            // between the hail and the answer and the hand must hold what the satchel holds.
             WalletFanOpen = false;
-            Satchel.Item? handed = ThePaperHandedOver(bodyId);
 
             // ── #711 · THE PARCEL IS WHAT IS FOUND, AND IT IS FOUND FIRST ────────────────────────────────
             //
@@ -356,80 +367,33 @@ public sealed partial class Map
                 }
             }
 
-            // #1149 · …AND WHERE THE CAPTAIN IS STANDING, AND WHICH WATCH IT IS. One paper in the wallet is
-            // judged by the floor and the roster rather than by whose building this is (Inspectorate), and
-            // both facts are read off the excursion the read is happening on — the FROZEN watch (ex.
-            // CanteenWatch), never a live clock, so a roster cannot turn over while a man walks towards you.
-            WalletChoice.Outcome how = WalletChoice.WhatHappens(bodyId, ex.Floor, ex.CanteenWatch, handed);
-
-            PatrolBeat.Read read = PatrolBeat.TheGuardReads(
-                bodyId, ex.Floor, ex.CanteenWatch, g.Plate, handed, ex.InspectionRunning);
+            // #746 · THE SCENE OPENS. The counterpart is the man, the setting is the stop, and the opening is
+            // his one word — built off the plate, so the scene is CONTENT (GuardStop.SceneFor) and this
+            // method has no opinion about what a captain may do at a checkpoint.
+            PatrolBeat.Read opening = new(
+                false, GuardStop.Opening, PatrolBeat.ChallengeLabel, PatrolBeat.ChallengeCard(g.Plate));
 
             // #711 · …AND HE KEPT LOOKING. The one arm where a parcel does not end the afternoon: the tell
             // goes on the front of the card the captain was always going to get, and everything under it —
-            // the ladder, the consequence, the pip, the escort — happens exactly as it happens on any other
-            // afternoon. Nothing about this read is softened by it, which is the point of it.
+            // the moves, the ladder, the consequence, the pip, the escort — happens exactly as it happens on
+            // any other afternoon. Nothing about this stop is softened by it, which is the point of it.
             if (parcel is not null)
             {
-                read = UnlistedParcel.TheReadGoesOnAfterIt(read);
+                opening = UnlistedParcel.TheReadGoesOnAfterIt(opening);
             }
 
-            // #1149 · THE INSPECTION IS ON, from this read until the shuttle lifts. It is set BEFORE the card
-            // goes up, and that ordering is load-bearing in one direction only: the sentence on the card was
-            // composed off the flag's OLD value (the read above), so the authored line is said exactly once
-            // and the gates open from this instant. Nothing else in the game writes this.
-            if (how == WalletChoice.Outcome.Inspection)
-            {
-                ex.InspectionRunning = true;
-            }
-
-            // #684's idiom, one building along: the read is TOLD on a card, with the outcome in the card's own
-            // amber row (#736) rather than pulsed under a backdrop nobody can see through. #804 shipped it
-            // caption-only under the house's degradation law and the painting has now dropped in behind it —
-            // Core's own constant, the same plate whichever way the wallet reads, because the man in it has not
-            // read it yet either.
+            // #684's idiom, unchanged one lane along: the stop is TOLD on a card, with the man's own words in
+            // the card's amber row (#736) rather than pulsed under a backdrop nobody can see through — and
+            // now with the four things you may do about it under them, INSIDE the card's own subtree, which
+            // is #680's law and the reason the table scene's panel looks the way it does.
             _host.ViewObject = new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.ViewObject, (float)_host.AvatarX, (float)_host.AvatarY,
-                read.Label, PatrolBeat.ChallengeArtUrl, read.Card, read.Told);
+                opening.Label, PatrolBeat.ChallengeArtUrl, opening.Card, opening.Told);
             RendererInterop.PlayCue("reveal");
 
-            _host.LogAutopilotEvent($"{read.Label} — {read.Told}");
+            _host.LogAutopilotEvent($"{opening.Label} — {opening.Told}");
 
-            // #836 · THE ROUND LOG REMEMBERS THE NAME. Owner: "every challenge writes down which identity you
-            // showed." This is the captain's own half of that ledger, filed on BOTH arms — and the clean arm is
-            // the one that had to change, because a paper that worked here is exactly the thing the next chooser
-            // row has to be able to say. It is the escort note's idiom (a fact, never a mechanic), and it is the
-            // ONLY thing the hint on a row is ever derived from.
-            FileTheNameYouGave(ex, handed, how);
-
-            // A PASS THAT WORKS COSTS NOTHING. Encounter.NervePipsFor's own arithmetic — the band that lands is
-            // free and the two that hurt cost a pip — and it has to be, or the badge is worth nothing: a captain
-            // who paid the same either way would have earned a longer sentence and no mechanic.
-            if (read.Satisfied)
-            {
-                _host.RequestVaultSave();
-                return;
-            }
-
-            _host.ApplyNerveShock(NervePips.SightingPips * NervePips.PipUnit, "you were asked and could not answer");
-            _host.FileNote(PatrolBeat.EscortNote, "👮");
-
-            // #719 slice 2 · …AND HE SAYS THE FLOOR INTO HIS RADIO. One of the two roads to the maintenance
-            // break, and this is the mild one: a wallet that could not answer. Nothing is said about it — not
-            // here, not on the card in front of him, not in the book — because the panel is what says it, on
-            // a plate, when the captain gets back to the car and finds the floors gone. A sentence here would
-            // be the building explaining its own consequence to the person it is happening to (§13.8), and it
-            // would spend the beat two corridors before the captain can act on it.
-            //
-            // It goes AFTER the pip and the note deliberately: those two are what a refusal has always cost,
-            // and this lane may not quietly reprice them.
-            TheCarIsStoppedForMaintenance(ex);
-
-            // The mildest honest consequence, and the whole of it: back to the car — WALKED (#833). It is only
-            // ARMED here, because the card telling the captain about it is standing in front of him at this exact
-            // moment; the walk starts on the first frame after the card comes down, which is the frame he can
-            // actually watch it happen on.
-            EscortDue = g;
+            StopUnderway = new Stop { Man = g, Scene = GuardStop.SceneFor(g.Plate) };
             _host.RequestVaultSave();
         }
 

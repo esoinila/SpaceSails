@@ -57,6 +57,12 @@ public sealed partial class Map
             EscortDue = null;
             EscortSeconds = 0;
             EscortSaidPumps = false;
+            EscortIsFree = false;
+
+            // #746 · …and so does the stop that was standing in front of the captain. A scene is a man and a
+            // corridor, and both of them are a floor away now; a stop kept across a ride would be four
+            // buttons whose counterpart is not in the building.
+            StopUnderway = null;
 
             // #835 · …and so does the run and the ride it was owed. A captain who got into the car mid-run has
             // ESCAPED — rung five, and the honest one — so the man who was coming is left standing on a floor
@@ -112,6 +118,14 @@ public sealed partial class Map
                 // retroactively make the 22:00 round warier, and heat banked mid-watch lands on the next one.
                 EscortsThisWatch = IllegalHeat.StartingRung(IllegalHeat.HeatAtSite(book, bodyId));
                 WalkedAwayThisWatch = 0;
+
+                // #746 · …and what a MAN remembers of you turns over with him. The ask is once per guard per
+                // watch and the fumble is a −1 at the next stop by the same face; both are keyed on the
+                // plate, which already carries the watch, so this clear is belt and braces rather than the
+                // rule — and it is here because a set that only ever grew would be a captain's whole voyage
+                // in two hash sets.
+                AskedTheWay.Clear();
+                FumbledAtTheStop.Clear();
             }
 
             if (!PatrolBeat.IsPatrolled(bodyId, level))
@@ -193,6 +207,15 @@ public sealed partial class Map
             // CloseViewObject because this is the one place that runs every frame of every floor: whichever road
             // out of the card the captain took — Esc, Enter, E, the backdrop, Close — the walk starts on the
             // first frame after it, and there is no fifth road that could miss it.
+            // #746 · …and the rung a YES-BUT owes, which is the one thing here that does NOT wait for a card
+            // to come down: it is banked in silence, nothing on the screen is about it, and a captain who
+            // stands reading the answer for a minute has not bought themselves a cheaper afternoon.
+            if (NameInTheBookDue)
+            {
+                NameInTheBookDue = false;
+                TheHeatOfBeingWalkedOut(ex, book, simTime, IllegalHeat.Crossing.YourNameInTheirBook);
+            }
+
             if (EscortDue is { } due && _host.ViewObject is null)
             {
                 EscortDue = null;
@@ -202,7 +225,15 @@ public sealed partial class Map
                 // (#835) — and both are the same thirty seconds from the outfit's point of view: somebody on
                 // their rota wrote your face down. Banking it at the two places EscortDue is ARMED would be
                 // one crossing charged twice on the road that goes through both.
-                TheHeatOfBeingWalkedOut(ex, book, simTime, IllegalHeat.Crossing.TheEscort);
+                //
+                // #746 · …unless the walk is the HELPFUL one. A man taking you where you asked to go is not a
+                // man writing your face down, so the free escort skips this line and only this line: the
+                // legs, the route, the pace ahead of him and the small talk about the pumps are all the same
+                // walk, because they are the same walk.
+                if (!EscortIsFree)
+                {
+                    TheHeatOfBeingWalkedOut(ex, book, simTime, IllegalHeat.Crossing.TheEscort);
+                }
                 BeginTheWalkBack(due, walls);
             }
 

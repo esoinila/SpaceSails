@@ -84,6 +84,27 @@
                 {
                     <div class="reveal-outcome">@voOutcome</div>
                 }
+                @* #746 · THE GUARD STOP'S MOVES, on the card the stop has always been told on. Owner,
+                   2026-08-06: "guard stops (show ID, explain yourself) should use the same choose-your-action
+                   mechanic." They are drawn INSIDE the card's own subtree — the one layer the backdrop
+                   cannot blur (#680) — and pressing one REPLACES the row it sat in with the answer, so a
+                   checkpoint is one card and never two (#777). The ✕ beside them is the scene's own SAY
+                   NOTHING, which is what lets the general closing law hold here with no special case.
+                   Refused controls are drawn and say why (#603); Core answers both questions. *@
+                @if (TheStopIsWaitingOnAMove)
+                {
+                    <div class="deck-offer-actions table-actions">
+                        @foreach (SpaceSails.Core.Encounter.Move move in TheStopsMoves())
+                        {
+                            SpaceSails.Core.Encounter.Move m = move;
+                            bool open = TheStopMoveOnOffer(m);
+                            <button type="button" class="btn btn-sm btn-outline-light"
+                                    disabled="@(!open)"
+                                    title="@(open ? m.Label : TheStopMoveRefusal(m))"
+                                    @onclick="() => TheStopMove(m.Id)">@m.Label</button>
+                        }
+                    </div>
+                }
                 @* #615 · KEEP OR LEAVE. Owner: "should we have like keep / leave option when we find stuff?"
                    The kit's own press rows one region up, with two answers instead of one — the find/console
                    card the ground already raises over a pallet and a shelf, not an overlay of its own. Both

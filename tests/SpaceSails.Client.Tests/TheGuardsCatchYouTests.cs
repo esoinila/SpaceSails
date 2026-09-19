@@ -396,6 +396,12 @@ public sealed class TheGuardsCatchYouTests
             "Patrol.cs", "Guard.cs", "IPatrolHost.cs",
             "Patrol.Floor.cs", "Patrol.Hide.cs", "Patrol.Round.cs",
             "Patrol.Challenge.cs", "Patrol.Escort.cs", "Patrol.Run.cs",
+
+            // #746 · THE TENTH PART, and it is the checkpoint as an ENCOUNTER: the scene the
+            // stop's card carries, which moves are on offer, the dice a rolled one casts, and the
+            // one place a move becomes an answer. Read LAST because it was added last; the count
+            // below is what stops an eleventh part going unread.
+            "Patrol.Stop.cs",
         ];
         Assert.Equal(state.Length, Directory.GetFiles(own, "*.cs").Length);
 
@@ -644,7 +650,13 @@ public sealed class TheGuardsCatchYouTests
 
         // …and which floor the walk ends on is decided ONCE, off the same predicate the card was composed
         // from — the sentence-vs-sim law, which this feature has already paid for twice.
-        Assert.Equal(1, Count(Code(patrol), "KickOutDue = PatrolBeat.BookedTooOften(EscortsThisWatch);"));
+        //
+        // #746 · …and the clause gained one guard, not a second answer: a man showing you to the lift
+        // because you asked him the way is on NEITHER ladder, so the walk that is free may never end at the
+        // sky. It is still decided ONCE and still off BookedTooOften.
+        Assert.Equal(
+            1,
+            Count(Code(patrol), "KickOutDue = !EscortIsFree && PatrolBeat.BookedTooOften(EscortsThisWatch);"));
     }
 
     /// <summary>#835 · The plate is a MOMENT, not wallpaper: one deck carries it, and one rebuild takes it

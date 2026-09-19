@@ -265,6 +265,13 @@ public sealed class ThePlayerIsToldTests
         new("a guard hails you and wants to see a face with the paper",
             Surface.RankedPulse, "Patrol/Patrol.Challenge.cs", "TheHail",
             "_host.ShowPulseMessage(PatrolBeat.HailLine, PulseRank.Beat);"),
+        // #746 · The ONE pulse a checkpoint has, and it is correct precisely because the panel has just
+        // gone: closing the card IS the scene's SAY NOTHING move, so there is no dialog subtree left to say
+        // it in. #680 is about which surface the player is looking at, never about pulses being wrong — the
+        // table scene carves the same exception for its own goodbye.
+        new("you say nothing, and the card you closed was the saying of it",
+            Surface.RankedPulse, "Patrol/Patrol.Stop.cs", "TheStopSaysIt",
+            "_host.ShowPulseMessage(read.Told, PulseRank.Beat);"),
         new("he calls it in, and now the floor knows",
             Surface.RankedPulse, "Patrol/Patrol.Run.cs", "TheRadioCall",
             "_host.ShowPulseMessage(PatrolBeat.CallsItInLine, PulseRank.Beat);"),

@@ -158,6 +158,12 @@ public partial class Map
         // was saying, and the next Keep pressed anywhere would empty a room the captain had walked out of.
         _pendingFind = null;
 
+        // #746 · …and a GUARD STOP waiting on a move is answered by the closing, for the find's own reason
+        // one region up: every road out of this card is the scene's exit move (SAY NOTHING), which is why a
+        // checkpoint needs no special case in the general closing law either. A stop that outlived its card
+        // would be four buttons the captain could never reach again, with a man standing in front of them.
+        TheStopIsAnsweredByTheClosing();
+
         ReleaseHeldSayings();
     }
 
