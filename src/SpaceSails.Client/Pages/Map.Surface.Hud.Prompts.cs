@@ -257,6 +257,20 @@ public partial class Map
         // screen. Between two tellings and one telling, the one telling keeps the top of the column.
         lines.Add(SentryBot.MagazinesReadout(TheSlingAsTheInstrumentReadsIt(ex)));
 
+        // #619 · AND WHAT THE GREY RING IS, WHILE THERE IS ONE. The fan paints the refuge that failed —
+        // owner, on the fan: "a refuge whose seal has failed must still paint, and must read as failed" —
+        // in an ink that is deliberately not the calm one: hollow, dimmer, and not breathing. But an ink is
+        // a CLAIM, and a claim a captain has to guess at is the instrument saying nothing with confidence,
+        // at the one range where guessing costs a tank.
+        //
+        // Second, in the instrument block and above the affordances, because it reports rather than teaches
+        // a key. Only while one is actually drawn on this floor, because a legend for a mark that is not on
+        // the glass is a line about somewhere else. Core's word, verbatim, never composed here.
+        if (ex.Floor < 0 && DarkRefugesOn().Count > 0)
+        {
+            lines.Add(UndergroundComplex.RefugeDarkCaption);
+        }
+
         // The dig affordance, honest to the sling (playtest bug #1 / owner ruling #9: the ground must SAY
         // what's possible). Carrying → bury anywhere you stand; empty → the beach-comber probe, a real
         // fishing expedition, never a dead end. An own ✗ in this ground always earns its own lift line.

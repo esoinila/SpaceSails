@@ -143,6 +143,21 @@ public partial class Map
     /// it), and five copies of a magic string is the habit this repo's spec opens with a table of.</para></summary>
     private const string SecretLabFoundCheatBodyId = UndergroundComplex.FoundBandCheatSiteId;
 
+    /// <summary>#619 · The <c>?secretlab=sealed</c> rock, chosen exactly the way its siblings were: a site's
+    /// whole shape is seeded off its BODY ID, so reaching the refuge that failed from a URL is a matter of
+    /// parking a rock with the right name rather than of overriding a Core fact from the client.
+    ///
+    /// <para>The refuge that failed is on <b>one floor of one site in four</b>
+    /// (<c>UndergroundComplex.SitesPerFailedRefuge</c>), and none of the other three cheat rocks happens to
+    /// carry one — so the beat could not be reached from a URL at all, which is exactly the tax these cheats
+    /// exist to remove and exactly the sentence #592 wrote when it added the second rock.</para>
+    ///
+    /// <para>This one is an eight-floor site whose story is on <b>B3 · LONG STORAGE</b>, with the welded room
+    /// and a working refuge on the same floor — which is the whole law a tester has gone down there to look
+    /// at. The suffix is the search that found it and is not decoration: the generator's own dice decide
+    /// which ids carry the story.</para></summary>
+    private const string SecretLabSealedCheatBodyId = "secret-lab-site-sealed";
+
     private static BodyDefinition SecretLabSiteBody(string berthId, string id, string name) => new()
     {
         Id = id,

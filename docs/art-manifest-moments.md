@@ -227,24 +227,24 @@ grand gangways are at **Ringside Exchange** and **The Red Eye**, and **Selene Ga
   she has, and she is holding it like proof rather than like evidence.
 - **Negative list:** as above. **No text, no lettering, no signage.**
 
-## 15. `art/refuge-failed.jpg` — THE REFUGE THAT FAILED ✅ PAINTED
-- **Beat:** `RefugeFailed` · **once per subject (the site)** · **CARD** — the captain is standing still in the
-  room, there is nothing to press and nothing to decide, and the card is the whole of the telling (#761).
-- **Fires:** `Map.Surface.Tank.cs · StepSuitAir`, at the door, the first time the captain stands inside a
-  refuge whose `UndergroundComplex.StateOfTheRefugeOn` is `RefugeState.Failed`. There is at most one of those
-  per site (#1149), and never the first refuge a captain can reach on it.
-- **Composition:** INTERIOR, a small poured concrete pressure refuge a hundred and fifty metres under a moon.
-  A full rack of steel air bottles on the left wall, two rows, gauges intact, untouched — nobody ever drew on
-  it. Facing the viewer, a heavy circular-handled pressure door in a bolted frame, and the door leaf **cut
-  open**: a long clean slit through the plate, edges bright and precise, the cut made from the inside and the
-  panel closed again from the outside so it no longer seals. One service lamp high on the left throwing a hard
-  cone across the floor, everything else in deep shadow. Dust undisturbed except by the cut. A faint handprint
-  on the wall beside the rack. Muted desaturated palette, painterly, heavy shadow, no figures.
+## 15. `art/refuge-failed.jpg` — THE REFUGE THAT FAILED ✅ PAINTED (repainted 2026-09-20, #619)
+- **Beat:** `RefugeFailed` · **once per subject (the site)** · **CARD** — the card is the whole of the telling
+  (#761); there is nothing to decide and no way in.
+- **Fires:** `Map.Surface.Shelter.cs · HiveRefugeDarkInteract` — [E] at the welded door. #619 moved it off the
+  suit stepper, because the room is welded shut and nobody stands in it. There is at most one per site
+  (`SitesPerFailedRefuge`, one site in four), on one floor, and never that floor's only refuge.
+- **Composition:** INSIDE AN AIRLESS FACILITY CORRIDOR. A pressure-refuge door welded shut from the inside, a
+  dead gauge at zero beside it, an inspectorate plate on the wall above the gauge, and — in the recess beside
+  the door — a rack holding **far too many suits** for the floor, with an **emptied reservoir** lying on the
+  deck. One service lamp overhead, poured concrete, pipework, heavy shadow, painterly, muted and grimy. No
+  figures.
 - **Rule it illustrates:** they almost never fail from old age. Something happened, and the room is the only
-  witness — the rack is full because whoever left through that door was not short of air.
-- **Negative list:** house rules (no sea, no sky, no daylight, no horizon). **No text, no lettering, no
-  signage** — the plate over this door is drawn by the deck renderer and must not be doubled in pixels. No
-  creature, no body, no tool left in shot, and nothing that says which way anybody went.
+  witness. The suits are the sentence the card does not write: there are more of them than this floor ever
+  had staff, and the tank on the deck was drained by somebody who then did not leave.
+- **Negative list:** house rules (no sea, no sky, no daylight, no horizon). No creature, no body, and nothing
+  that says which way anybody went. **Legible text is still out** — the one exception is the inspectorate
+  plate the prompt asks for, painted as an illegible stamped tag: the plate the captain READS is
+  `🫁 REFUGE — OUT OF SERVICE — REPORTED`, drawn by the deck renderer, and it must not be doubled in pixels.
 
 ## 16. `art/claim-desk.jpg` — THE CLAIM ✅ PAINTED
 - **Beat:** `TheClaim` · **every time** (rationed by the world, not by the seam — a lodging costs a hull) ·

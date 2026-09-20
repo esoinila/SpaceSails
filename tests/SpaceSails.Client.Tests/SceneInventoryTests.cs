@@ -258,6 +258,12 @@ public sealed class SceneInventoryTests
         [DeckPlan.ConsoleKind.HiveHaul] = "#585 a room worth searching, on an appended underground floor",
         [DeckPlan.ConsoleKind.HiveSign] = "#600 department signage, on an appended underground floor",
         [DeckPlan.ConsoleKind.HiveRefuge] = "#608 the pressure refuge's rack, one per dead appended floor",
+        [DeckPlan.ConsoleKind.HiveRefugeDark] = "#619 the welded door of the refuge that failed — on ONE " +
+                                                "floor of ONE SITE IN FOUR of the appended underground " +
+                                                "floors, which is the rarest placement in this table and " +
+                                                "exactly why ?secretlab=sealed exists. Pinned: " +
+                                                "TheRefugeThatFailedTests proves that rock still carries " +
+                                                "it on B3, so the exemption cannot go stale quietly",
         [DeckPlan.ConsoleKind.HiveAmenity] = "#707 the canteen counter, the basin run and the bank of " +
                                              "machines, on the appended underground floors that HOLD " +
                                              "PRESSURE — the refuge's opposite number, floor for floor",

@@ -75,7 +75,7 @@ public sealed class TheMoodAsksTheGroundTests
         // voice, so a sweep that reached for Setting.Pressurised by hand would be grading its own homework.
         HullShudder.Setting inThePark = HullShudder.SettingOutside(
             groundHoldsPressure: InThePark, onRegolith: true, deepSite: true, haven: false);
-        foreach (string line in HullShudder.LinesFor(inThePark, inTheBar: false))
+        foreach (string line in HullShudder.LinesFor(inThePark, HullShudder.HavenRoom.Concourse))
         {
             yield return new($"hull-shudder · {inThePark}", line);
         }
@@ -161,7 +161,7 @@ public sealed class TheMoodAsksTheGroundTests
     {
         var offenders = new List<string>();
         IEnumerable<MoodLine> ambient =
-            HullShudder.LinesFor(HullShudder.Setting.Pressurised, inTheBar: false)
+            HullShudder.LinesFor(HullShudder.Setting.Pressurised, HullShudder.HavenRoom.Concourse)
                 .Select(l => new MoodLine("hull-shudder · Pressurised", l))
                 .Concat(HullShudder.ChillLinesFor(groundHoldsPressure: InThePark)
                     .Select(l => new MoodLine("hull-shudder · chill", l)));
@@ -233,7 +233,7 @@ public sealed class TheMoodAsksTheGroundTests
 
         HullShudder.Setting setting = HullShudder.SettingOutside(
             groundHoldsPressure: InThePark, onRegolith: true, deepSite: true, haven: false);
-        IReadOnlyList<string> pool = HullShudder.LinesFor(setting, inTheBar: false);
+        IReadOnlyList<string> pool = HullShudder.LinesFor(setting, HullShudder.HavenRoom.Concourse);
         Assert.True(pool.Count >= 3, "one ambient line repeated is not a mood, it is a notification.");
         Assert.Equal(pool.Count, pool.Distinct(StringComparer.Ordinal).Count());
 
@@ -282,12 +282,12 @@ public sealed class TheMoodAsksTheGroundTests
             HullShudder.ChillNerveLabel(groundHoldsPressure: OutOnTheSurface));
 
         // The regolith pool is still allowed — required, in fact — to say the thing the park may not.
-        IReadOnlyList<string> surface = HullShudder.LinesFor(HullShudder.Setting.Regolith, inTheBar: false);
+        IReadOnlyList<string> surface = HullShudder.LinesFor(HullShudder.Setting.Regolith, HullShudder.HavenRoom.Concourse);
         Assert.Contains(surface, l => FurnitureIn(l).Contains("nothing to carry the sound"));
         Assert.Contains(surface, l => FurnitureIn(l).Contains("vacuum"));
 
         // And the two grounds share no words at all — a shared line is a line that cannot be about a room.
-        IReadOnlyList<string> park = HullShudder.LinesFor(HullShudder.Setting.Pressurised, inTheBar: false);
+        IReadOnlyList<string> park = HullShudder.LinesFor(HullShudder.Setting.Pressurised, HullShudder.HavenRoom.Concourse);
         Assert.Empty(park.Intersect(surface, StringComparer.Ordinal));
         Assert.Empty(HullShudder.ChillLinesFor(InThePark)
             .Intersect(HullShudder.ChillLinesFor(OutOnTheSurface), StringComparer.Ordinal));

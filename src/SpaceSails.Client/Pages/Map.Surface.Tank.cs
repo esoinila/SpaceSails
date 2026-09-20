@@ -112,41 +112,35 @@ public partial class Map
             //
             // ── #608 · …AND ON MOST FLOORS IT BUYS LESS THAN THAT ───────────────────────────────────────
             //
-            // The room is a fact and the SEAL is a story (StateOfTheRefugeOn). Three states and the branch
-            // reads all three off the one Core answer, never off a second opinion:
+            // The room is a fact and the SEAL is a story (StateOfTheRefugeOn). Two states, read off the one
+            // Core answer and never off a second opinion:
             //
             //   HOLDING · what this always did: the drain stops and the rack pumps.
             //   EMPTY   · #1149 · the drain stops and the rack pumps from EMPTY. Somebody drew this one
             //             right down before the captain got to it (the #573 footprint), and a cracker that
             //             always produces is the whole of that idiom — so the room costs a captain TIME
             //             instead of buying them range, and standing there is a real, grim, valid decision.
-            //   FAILED  · nothing at all. The line is said, once, at the door, the card goes up, and then
-            //             this falls straight through to the drain below: standing in a room whose seal went
-            //             is standing on a dead floor, and the tank knows it even if the plan does not.
+            //
+            // #619 · AND NO THIRD BRANCH, because a captain cannot be here. The one refuge in the game that
+            // failed is welded shut and is not a HiveRefuge console at all, so RefugeUnderfoot cannot return
+            // it: the room is refused by this loop the way a wall is refused, by never being in the list.
+            // Everything it used to do from here — the line, the card — is at its door and is a verb now.
             int refuge = RefugeUnderfoot(ex);
-            UndergroundComplex.RefugeState? seal = refuge >= 0
-                ? UndergroundComplex.StateOfTheRefugeOn(ex.Stop.Body.Id, ex.Floor)
-                : null;
             if (refuge >= 0)
             {
-                bool holds = seal is { } s && UndergroundComplex.RefugeStillHolds(s);
+                UndergroundComplex.RefugeState seal =
+                    UndergroundComplex.StateOfTheRefugeOn(ex.Stop.Body.Id, ex.Floor)
+                    ?? UndergroundComplex.RefugeState.Holding;
                 if (!ex.RefugeBreathNoted)
                 {
                     ex.RefugeBreathNoted = true;
-                    ShowPulseMessage(
-                        UndergroundComplex.RefugeEntryLine(seal ?? UndergroundComplex.RefugeState.Failed));
+                    ShowPulseMessage(UndergroundComplex.RefugeEntryLine(seal));
 
-                    // #573's idiom, and only where there is a rack to have been drawn on. On a FAILED one
-                    // "somebody was here before you" would be a sentence about a reservoir that does not
-                    // exist — the game telling a story off a number it is not running.
-                    //
-                    // #1149 · EMPTY is now the loudest case of it rather than an exclusion. An empty rack is
-                    // not decay, it is a footprint: the reservoir reads zero, PartialLine's first rung says
-                    // so and says who, and the cracker is already refilling it while the captain reads.
-                    string found = holds
-                        ? SurfaceShelter.PartialLine(
-                            RefugeReservoirNow(ex, refuge) / SurfaceShelter.ReservoirSeconds)
-                        : "";
+                    // #1149 · #573's idiom, and EMPTY is the loudest case of it. An empty rack is not decay,
+                    // it is a footprint: the reservoir reads zero, PartialLine's first rung says so and says
+                    // who, and the cracker is already refilling it while the captain reads.
+                    string found = SurfaceShelter.PartialLine(
+                        RefugeReservoirNow(ex, refuge) / SurfaceShelter.ReservoirSeconds);
                     if (found.Length > 0)
                     {
                         // The same fact told by state rather than by a card, and down here it is a colder
@@ -154,46 +148,26 @@ public partial class Map
                         // drawn on, and the building has been shut for decades.
                         ShowAndFile(found, "🫁");
                     }
-
-                    // #1149 · AND THE ONE ROOM IN THE BUILDING THAT IS A STORY. Owner: "If for dramatic
-                    // suspense we need one that does not work, that is narrated, with a gen-AI image:
-                    // something scary or weird happened to the shelter." The card is the whole of the
-                    // telling (#761) — the pulse above is what a captain SEES standing in the doorway, and
-                    // the card is what the room turns out to be — and it is raised from HERE rather than
-                    // from a verb because arriving IS the event: there is nothing to press and nothing to
-                    // decide. Once per site, because a building has at most one of these.
-                    if (seal == UndergroundComplex.RefugeState.Failed)
-                    {
-                        RaiseStoryBeat(StoryBeats.Beat.RefugeFailed, ex.Stop.Body.Id);
-                    }
                 }
 
-                if (holds)
+                ex.RefugeReservoir[RefugeKey(ex.Floor, refuge)] = DrawFromRack(
+                    ex, RefugeReservoirNow(ex, refuge), dtRealSeconds, out double intoTheTank);
+                if (intoTheTank > 0)
                 {
-                    ex.RefugeReservoir[RefugeKey(ex.Floor, refuge)] = DrawFromRack(
-                        ex, RefugeReservoirNow(ex, refuge), dtRealSeconds, out double intoTheTank);
-                    if (intoTheTank > 0)
+                    if (ex.RefugePumpNoted.Add(refuge))
                     {
-                        if (ex.RefugePumpNoted.Add(refuge))
-                        {
-                            ShowPulseMessage(SurfaceShelter.PumpingLine);
-                        }
+                        ShowPulseMessage(SurfaceShelter.PumpingLine);
                     }
-                    else if (ex.RefugePumpNoted.Contains(refuge) && ex.RefugePumpNoted.Add(-refuge - 1))
-                    {
-                        ShowPulseMessage(SurfaceShelter.PumpDoneLine);
-                    }
+                }
+                else if (ex.RefugePumpNoted.Contains(refuge) && ex.RefugePumpNoted.Add(-refuge - 1))
+                {
+                    ShowPulseMessage(SurfaceShelter.PumpDoneLine);
                 }
 
-                if (holds)
-                {
-                    return;   // the room holds: the tank stops, with or without anything to fill it from
-                }
+                return;   // the room holds: the tank stops, with or without anything to fill it from
             }
-            else
-            {
-                ex.RefugeBreathNoted = false;
-            }
+
+            ex.RefugeBreathNoted = false;
 
             // Anywhere else on a dead floor drains exactly like open regolith: this is the price of going
             // deeper, and it is the only thing stopping the facility from being somewhere to live.

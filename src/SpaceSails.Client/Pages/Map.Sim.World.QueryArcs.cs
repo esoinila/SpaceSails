@@ -273,7 +273,7 @@ public partial class Map
             // Documented in the PR body. (Ordinary bodies hide labs rarely, off the seed — this is the
             // fast path.)
             string candidate = Uri.UnescapeDataString(pair["secretlab=".Length..]).ToLowerInvariant();
-            q.SecretlabCheat = candidate is "1" or "true" or "yes" or "deep";
+            q.SecretlabCheat = candidate is "1" or "true" or "yes" or "deep" or "sealed";
 
 
             // #592 · ?secretlab=deep parks a rock whose site HAS a band nobody listed. The ordinary
@@ -281,6 +281,12 @@ public partial class Map
             // with nothing under it, so #592 could not be reached from a URL at all — which is the exact
             // tax these cheats exist to remove.
             q.SecretlabDeep = candidate is "deep";
+
+            // #619 · ?secretlab=sealed parks a rock whose site carries THE REFUGE THAT FAILED, on B3. The
+            // same sentence as the one above, one feature along: the welded room is on one floor of one
+            // site in four, none of the other three cheat rocks happens to have one, and a beat nobody can
+            // reach on demand is a beat that ships broken.
+            q.SecretlabSealed = candidate is "sealed";
         }
         else if (pair.StartsWith("body=", StringComparison.OrdinalIgnoreCase))
         {

@@ -192,6 +192,56 @@ public sealed class TheNewspaperWithEyeHolesTests
         Assert.False(double.IsNaN(walk.GoneSince));
     }
 
+    /// <summary>
+    /// #1259 · <b>AND THE PRESS THE OWNER ACTUALLY MADE: [E] ON THE BINOCULARS, STANDING AT THEM.</b> The law
+    /// above reaches the state from the good seat and raises the card through the story-card road; this one
+    /// reaches it the way a player does — walk out to the eyepiece, stand at it, press the key — and that one
+    /// difference is the whole bug.
+    ///
+    /// <para><b>What it costs to stand there.</b> The binoculars are bolted to the rail, and the rail is
+    /// where his route ENDS, so a captain at the eyepiece is standing on the man's own destination. He comes
+    /// up the tube, stops one body-width short of it (<c>NpcWalk.Doing.Waiting</c> — stopped, route kept,
+    /// looking at you) and stands there beside the captain at the glass, which is exactly the picture the
+    /// issue's screenshots show.</para>
+    ///
+    /// <para><b>RED on the shipped tree</b> (#1259, played 2026-09-20: <i>"the card goes up, the purse goes
+    /// 1,500 → 1,496, and seventy seconds later he is still at the rail"</i>). The room asked
+    /// <c>Walk.Afoot</c> — <i>has he route left</i> — which is true of a man walking AND of a man stopped dead
+    /// because somebody is in his road, so it went on reading SIGHT of him rather than the captain's eyes and
+    /// the one card in this room that exists to take a captain's eyes off the world bought nothing. The wait
+    /// never started either, so he never gave up and walked back out: he stood there as long as anybody
+    /// watched.</para>
+    /// </summary>
+    [Fact]
+    public void PressingEOnTheEyepieceLosesTheManStandingAtIt()
+    {
+        var walk = new ObservationWalkBench(CanvasId + "-eyepiece");
+        walk.StandTheCaptainAtTheBinoculars();
+
+        // The room's own frames, not the one step under them — this law is about the road a player drives.
+        walk.RunTheRoom(seconds: 60);
+
+        Assert.True(walk.HeIsOnTheFloor, "he went while the captain was staring straight at him.");
+        Assert.True(
+            walk.HeIsStandingStill,
+            "he never came to a stop at the glass, so there is no man standing at the rail to lose.");
+        Assert.False(double.IsNaN(walk.AtTheRailSince), "the wait at the glass never started.");
+
+        // …and the captain puts his eye to the eyepiece, which is the one card this room has of its own.
+        walk.PutHisEyeToTheEyepiece();
+        walk.RunTheRoom(seconds: 2 * ReeverObservation.LookIntervalSeconds);
+
+        Assert.False(walk.HeIsOnTheFloor, "the card was up for two whole looks and he is still at the rail.");
+        Assert.True(walk.TheGalleryIsEmpty, "somebody is still standing in the gallery.");
+        Assert.False(double.IsNaN(walk.GoneSince), "the wait never started, so the card is unreachable.");
+
+        // …and when he lowers the glasses the walk is empty, which is the beat.
+        walk.LetTheWaitPass();
+        walk.AskForTheCard();
+        Assert.True(walk.TheBeatIsSpent, "the walk was empty and the beat was never spent.");
+        Assert.True(walk.ACardWasRaised, "nobody was told the walk was empty.");
+    }
+
     // ── 3 · THE STARE-THROUGH: HE LEAVES, AND NOTHING IS SPENT ──────────────────────────────────────────
 
     /// <summary>

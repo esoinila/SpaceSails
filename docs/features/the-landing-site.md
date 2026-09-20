@@ -1420,13 +1420,13 @@ emergency station most probably still works decades or centuries after everythin
 and reliability were the metrics it was built to ... They almost never fail from old age; something happened,
 and we tell it."* So every airless floor still has its refuge (13.12 is untouched) and
 `UndergroundComplex.StateOfTheRefugeOn` now answers HOLDING unless something *happened* to the room. Measured
-over 816 dead floors of 100 sites:
+over 815 dead floors of 100 sites:
 
 | seal | what happens at the door | share |
 | --- | --- | --- |
-| **HOLDING** | the door cycles, the rack has bottles, the tank fills | 80.9 % |
-| **EMPTY** | the door cycles, the rack was drawn down by a visitor, the cracker gives it back | 16.3 % |
-| **FAILED** | the seal went, and not from age. On the plan, on the tracker, and dead | 2.8 % |
+| **HOLDING** | the door cycles, the rack has bottles, the tank fills | 83.1 % |
+| **EMPTY** | the door cycles, the rack was drawn down by a visitor, the cracker gives it back | 16.9 % |
+| **FAILED** | the seal went, and not from age — and since **#619 it is never this refuge**. See 13.12b | — |
 
 - **`DepartmentsThatKeptTheLine` is retired, and the reason is the ruling.** The old law — a refuge holds if
   and only if its department could still get a maintenance line approved — was *our* mechanic, not the
@@ -1441,12 +1441,10 @@ over 816 dead floors of 100 sites:
   the captain stands there. It costs **time** and never buys **range** — which is the same sentence the old
   EMPTY told, arriving now off a machine that is running rather than off one that is dead. The plate at range
   still reads `REFUGE · DRY`, and pressing [E] reads the gauge (the trickle line) rather than refusing.
-- **FAILED is an event.** At most one per site, on 23 sites in 100, and **never the first refuge a captain can
-  reach on that ground** — "first" read off the order the plan already has (`FloorsOf`), because a captain's
-  first refuge is where they learn what a refuge IS and a first one that will not cycle teaches the opposite
-  of the truth. Arriving raises `StoryBeats.Beat.RefugeFailed`, once per site, with `art/refuge-failed.jpg`
-  and one line: *"The rack is full; nobody ever drew on it. The seal was cut from the inside, cleanly, and
-  closed again from the outside. It did not fail from age."* The card never says what came through.
+- **FAILED is an event, and 13.12b is where it lives now.** At most one per site, on 21 sites in 100, and
+  **never the first refuge a captain can reach on that ground** — "first" read off the order the plan already
+  has (`FloorsOf`), because a captain's first refuge is where they learn what a refuge IS and a first one that
+  will not cycle teaches the opposite of the truth. What #619 changed is *which room it is*: not this one.
 - **The inspection tag, on every refuge** — the covert organisation's paradox on paper. Owner, in the same
   ruling: a secret lab's eternal struggle is *"not to asphyxiate from unmaintained safety equipment, to keep
   secrets, to trust employees to bend the law only as much as the company approves, while avoiding traceable
@@ -1460,21 +1458,60 @@ over 816 dead floors of 100 sites:
   one of the floor's rooms — `CarveRefuges` takes it out of the list — and a negative index is one no floor
   can ever hold.
 - **The lift panel row still says `REFUGE` where the plan carries one, and never which state it is in.** The
-  plan is a drawing made when the building was new; finding out is the walk.
-- **A failed refuge still paints on the tracker, and reads as failed.** Owner: *"a refuge whose seal has failed
-  must still paint, and must read as failed."* Grey, hollow and not breathing; the plate over the door loses
-  the word AIR and takes the dead ink the plate by the lift already uses (§13.13's tone 2).
+  plan is a drawing made when the building was new; finding out is the walk. Since #619 it is also blind to
+  whether this floor carries the welded room — proved shape for shape, the same way it is proved blind to
+  the seal.
 
-*(Enforced: `TheRefugesUndergroundTests` pins the three shares with a ceiling as well as a floor on each,
+*(Enforced: `TheRefugesUndergroundTests` pins the two shares with a ceiling as well as a floor on each,
 proves HOLDING is the default on all six branch plates a refuge can wear and in the head office and the band
-nobody listed, proves at most one FAILED per site and never the first one reached, proves the tag's two
-entries verbatim on the site's own clock and the third entry undated, proves the carved room carries the law's
-own answer, and proves no drawable field of a panel row differs between the three seals. `TheSealOnTheRefuge‐
-Tests` stands the shipping component in the generator's own refuge on one floor per seal and drives
-`StepSuitAir`: the maintained rack fills a tank and is spent doing it, the drawn-down one gives back exactly
-what the cracker makes and no more, a failed one spends tank and raises the card once with its painting, a
-working one raises nothing, and every refuge hands over its tag once with the head the sleeve reads it by.
-Every one of them was watched go **red** on a deliberately broken build.)*
+nobody listed, proves at most one failed refuge per site and never on the first floor a captain reaches,
+proves the tag's two entries verbatim on the site's own clock and the third entry undated, proves the carved
+room carries the law's own answer, and proves no drawable field of a panel row differs between the seals or
+between a floor with the story and one without. `TheSealOnTheRefugeTests` stands the shipping component in
+the generator's own refuge on one floor per seal and drives `StepSuitAir`: the maintained rack fills a tank
+and is spent doing it, the drawn-down one gives back exactly what the cracker makes and no more, a working
+one raises no card, and every refuge hands over its tag once with the head the sleeve reads it by. Every one
+of them was watched go **red** on a deliberately broken build.)*
+
+13.12b **The refuge that failed — one, placed, and never the only one on its floor** (#619). Owner, filing
+it: *"But a SECOND refuge, on one floor, that failed — that is the story. Not a dice roll on every refuge.
+One, placed, deliberate, and never the only one on its floor, so it can never kill anybody who trusted the
+instrument."*
+
+That last clause is the whole design, and it is what #1149 had wrong. #1149 put FAILED on the floor's ONE
+refuge, so a captain who read `REFUGE` on the lift panel, walked a tank down a rib and found a dead door had
+been killed by the plan — by the very instrument 13.12 exists to make trustworthy. So the room that failed is
+an **extra chamber**, carved second out of what the working one left, on **one floor of one site in four**
+(`SitesPerFailedRefuge`, which is the only place the rate is stated). Measured over 100 sites: **21 sites
+carry the story, 18 of those floors actually grew the second room, and all 18 stand beside a working refuge.**
+The three that did not are floors whose room pool had nothing left at the detour distance — the law is
+"never the only refuge on its floor", and the way to keep a law like that is to let the beat go rather than
+the safety regulation.
+
+| what | how it reads |
+| --- | --- |
+| the **door** | welded from the inside. In code a `LockedDoor` across **every** way into that chamber — a leaf that never opens with a real wall behind it — so the renderer, the walkers, the Reevers and the A\* audit all learn it from a list they already read |
+| the **plate** | `🫁 REFUGE — OUT OF SERVICE — REPORTED`, tone 2. The inspectorate's own flat register; *REPORTED* says a notice went somewhere and nothing about what was in it, who read it, or whether anybody came |
+| the **tracker** | the grey ring, hollow, dimmer, **not breathing** — never the calm ink that has meant AIR YOU CAN REACH since #573 — at every range it is drawn, and the working refuge on the same floor keeps its calm ring beside it. The instrument column carries the legend `🫁 refuge · dark` while one is on the glass |
+| the **rack** | there is none. The room carries a `HiveRefugeDark` console and not a `HiveRefuge`, so it never joins the list the drain, the gauge, the rack and the calm ring all walk: the shelter machinery refuses it the way it refuses a wall, rather than by every caller remembering to ask |
+| the **gun** | a weld is not a hasp. It answers `HasNoReader` beside the rib's sealed mouth and the stop order's plate, so no card opens it and no sentry shoots it (#803 is right about a lock and wrong about this) |
+| the **card** | [E] at the door raises `StoryBeats.Beat.RefugeFailed`, once per captain per site, with `art/refuge-failed.jpg` and one authored line: *"The door is welded from the inside, and the weld is careful. The gauge beside it reads what the room has, which is nothing. On the rack outside are more suits than this floor ever had staff, and the reservoir on the deck was emptied by somebody who then did not leave."* |
+| the **book** | the same press files the gist under the **place** (#741): *"the refuge on B7 · LONG STORAGE — welded from the inside, suits for more than the floor, the tank drained by someone who stayed"* |
+
+**Canon holds hardest here (§13.8).** The card makes three flat observations and stops; its only conclusion is
+a thing that did **not** happen. Nothing anywhere — plate, legend, card, book — names a cause, a maker, an
+outcome or the reserved word, and a sweep over all five surfaces says so with a word-boundary match wide
+enough to catch *age* and *decay* as well as *Reever*.
+
+*(Enforced: `TheRefugeThatFailedTests` — never alone on its floor, swept over every generated floor of a
+hundred sites; the floor's own refuge never answers FAILED; the weld is on every way in and the plate hangs
+at one of them and never at the room's centre; it is a detour like every other refuge; the authored lines
+verbatim; and the §13.8 sweep. Every guard counts what it found and demands it in quantity, because "the
+tracker never paints it as a haven" is perfectly true of a world with no failed refuge in it.
+`TheSealOnTheRefugeTests` adds the client half: both plates on one floor at two tones, the welded room as no
+shelter at all while the working one still fills a tank, and the fan read at forty ranges from the door out
+past the clamp. Watched go **red** on four deliberate reverts — no second refuge carved, the #1149 behaviour
+restored, the law answering FAILED again, and the welded room let back into the air machinery.)*
 
 13.13 **The plate by the lift says the depth, the department, and whether you can breathe** (#612) — three
 lines, one eye-line, on the wall you face when the doors open. The atmosphere line is `SuitAir.PlateLine` off

@@ -96,13 +96,38 @@ public partial class Map
     /// asked every frame by the suit; more importantly, a second call would be a second answer. The consoles
     /// on <c>_deckPlan</c> ARE the refuges — <see cref="HiveInterior.FloorDeck"/> put them there off the
     /// floor plan — so the room the captain can see and the room that holds their air are the same object by
-    /// construction rather than by two functions agreeing.</para></summary>
+    /// construction rather than by two functions agreeing.</para>
+    ///
+    /// <para>#619 · <b>And it is the list of rooms that BREATHE, by construction.</b> The one refuge in the
+    /// game that failed is welded shut and carries <c>HiveRefugeDark</c>, a different kind, so it never
+    /// reaches this list — and nothing downstream of it, not the drain, the gauge, the rack or the fan's calm
+    /// ring, has to remember to ask about a state. It is refused the way a wall is refused.</para></summary>
     private List<(double X, double Y)> RefugesOn()
     {
         var found = new List<(double, double)>();
         foreach (DeckPlan.ConsoleSpot spot in _deckPlan.Consoles)
         {
             if (spot.Kind == DeckPlan.ConsoleKind.HiveRefuge)
+            {
+                found.Add((spot.X, spot.Y));
+            }
+        }
+        return found;
+    }
+
+    /// <summary>#619 · The welded doors on this floor — at most one, and only on the one floor of the one
+    /// site in four that carries the story. Read off the deck the renderer actually drew, for
+    /// <see cref="RefugesOn"/>'s own reason: the mark the fan paints and the door the captain walks to are
+    /// the same object by construction rather than by two functions agreeing.
+    ///
+    /// <para>A SEPARATE list, and it is never merged into the other one, because everything that reads the
+    /// other one is deciding whether a captain can breathe.</para></summary>
+    private List<(double X, double Y)> DarkRefugesOn()
+    {
+        var found = new List<(double, double)>();
+        foreach (DeckPlan.ConsoleSpot spot in _deckPlan.Consoles)
+        {
+            if (spot.Kind == DeckPlan.ConsoleKind.HiveRefugeDark)
             {
                 found.Add((spot.X, spot.Y));
             }
@@ -120,16 +145,21 @@ public partial class Map
     /// <summary>#608 · Is the captain standing in air that a refuge is providing? Both halves — inside the
     /// box AND the box still holds — because a failed refuge is a room on a dead floor and nothing else, and
     /// the gauge saying ROOM in one would be the instrument lying at the one door on the floor a captain
-    /// walked a tank to reach.</summary>
+    /// walked a tank to reach.
+    ///
+    /// <para>#619 · The second half is now a belt over braces rather than the load-bearing clause: the one
+    /// welded room is not in <see cref="RefugesOn"/> at all, so <see cref="RefugeUnderfoot"/> cannot find a
+    /// captain in it. The state test stays because <see cref="UndergroundComplex.RefugeState.Empty"/> is
+    /// still a real answer and a future state would arrive through it.</para></summary>
     private bool BreathingRefugeUnderfoot(SurfaceExcursion ex) =>
         ex.Floor < 0
         && RefugeUnderfoot(ex) >= 0
         && RefugeSealHere(ex) is { } seal
         && UndergroundComplex.RefugeStillHolds(seal);
 
-    /// <summary>Which refuge the captain is standing inside, or -1. Never anything but -1 above ground.
-    /// GEOMETRY ONLY — whether that room has anything in it is <see cref="RefugeSealHere"/>'s business, and
-    /// keeping the two apart is what lets a failed refuge still say its line at the door.</summary>
+    /// <summary>Which refuge the captain is standing inside, or -1. Never anything but -1 above ground, and
+    /// never the welded one — that room is not in <see cref="RefugesOn"/>, and its door will not open.
+    /// GEOMETRY ONLY — whether that room has anything in it is <see cref="RefugeSealHere"/>'s business.</summary>
     private int RefugeUnderfoot(SurfaceExcursion ex)
     {
         if (ex.Floor >= 0)

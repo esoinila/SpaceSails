@@ -127,10 +127,24 @@ public partial class Map
         // the BAR's own furniture and the third names the CONCOURSE, so the pool is picked per room now.
         // The fact is asked through TheCaptainIsInTheDockedBar — the SAME predicate #1222 composed and #1199
         // pointed the buzzer at, never a second one — so a room that moves moves for every beat in it at
-        // once. Off a haven the flag is simply false and no pool reads it (see HullShudder.LinesFor).
-        string line = chill
+        // once. Off a haven the room is simply the concourse and no pool reads it (HullShudder.LinesFor).
+        string? line = chill
             ? HullShudder.ChillLine(groundHoldsPressure, seed, index)
-            : HullShudder.Line(setting, TheCaptainIsInTheDockedBar, seed, index);
+            : HullShudder.Line(setting, TheRoomOfTheHavenHeIsIn, seed, index);
+
+        // #1261 · AND OUT ON THE OBSERVATION WALK THERE IS NOBODY TO SAY IT. The pool answers null for the
+        // one interior built to be empty, and this is the whole of what a null means: no line, no shake, no
+        // held breath, no PA counting a rough patch. The schedule is CONSUMED — the ordinal moves and the
+        // next gap is redrawn off the current clock — because a tremor refused is a tremor that happened and
+        // was not a scene, and a beat that kept its slot would fire on the very next frame and again on the
+        // one after that for as long as the captain stood at the rail.
+        if (line is null)
+        {
+            _shudderIndex++;
+            _shudderNextGap = -1;
+            return;
+        }
+
         if (chill)
         {
             // A hair of real dread, far smaller than a hand on you. Mostly it IS nothing; this is the rare
@@ -172,6 +186,29 @@ public partial class Map
         // OPEN a co-present stranger to you instead (a word, a stood cognac, a new contact). A no-op off a bar.
         TryBond(StrangerBond.Scare.Shudder, chill, nowMs);
     }
+
+    /// <summary>
+    /// #1261 · <b>WHICH ROOM OF THE HAVEN THE CAPTAIN IS STANDING IN</b> — the one place the page answers
+    /// <see cref="HullShudder.HavenRoom"/>, off the predicates the rooms already have and never a second
+    /// opinion about a wall.
+    ///
+    /// <para><b>The walk is asked FIRST, and that order is the fix.</b>
+    /// <c>TheCaptainIsInTheDockedBar</c> is a half-plane — north of the bar's own south wall (#973's
+    /// <c>InTheBar</c>) — so it is a question about the concourse's depth and not a box, and the observation
+    /// walk runs out of the same half of the floor. Asking the bar first would hand the walk whichever of the
+    /// two rooms it happened to fall on the near side of, which is exactly how #1248's partition came to say
+    /// the concourse's line to a captain two paces from a rail with nobody at it.</para>
+    ///
+    /// <para><c>InTheObservationWalk</c> is #1199's own predicate and it covers the whole T — the stem and
+    /// the crossbar together — so the gallery at the far end is the same room as the tube, which is the only
+    /// reading under which that room has one doorway.</para>
+    /// </summary>
+    private HullShudder.HavenRoom TheRoomOfTheHavenHeIsIn =>
+        _dockedHavenId is { } berth && HavenInterior.InTheObservationWalk(berth, _avatarX, _avatarY)
+            ? HullShudder.HavenRoom.TheObservationWalk
+            : TheCaptainIsInTheDockedBar
+                ? HullShudder.HavenRoom.Bar
+                : HullShudder.HavenRoom.Concourse;
 
     /// <summary>#867 · DOES THE GROUND UNDER THE CAPTAIN'S BOOTS HOLD ITS OWN AIR — asked ONCE, by every
     /// mood sentence that would otherwise name vacuum furniture.
