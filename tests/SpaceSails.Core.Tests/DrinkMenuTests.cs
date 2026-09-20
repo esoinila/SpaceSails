@@ -98,7 +98,7 @@ public class DrinkMenuTests
     }
 
     [Fact]
-    public void GiltEye_FavoursTheEarthshine_TheDrinkThatRemembersEverything()
+    public void GiltEye_FavoursTheEarthrise_WhoseIceOutlastedItsCrossing()
     {
         Barkeep selene = Barkeeps.For("selene-gate")!;
         Assert.Equal(DrinkMenu.SpecialtyOf(selene).Id, DrinkFavorites.FavoriteFor("GILT-EYE").Id);
@@ -132,7 +132,7 @@ public class DrinkMenuTests
     [Fact]
     public void ChoosesDrink_FallsToSameCategory_WhenTheFavouriteIsntPoured()
     {
-        // Gilt-Eye's favourite is the Earthshine (a Specialty) — NOT poured at the Roadstead. He reaches
+        // Gilt-Eye's favourite is EARTHRISE (a Specialty) — NOT poured at the Roadstead. He reaches
         // for another Specialty there (the local house special), never a random gin.
         Barkeep roadstead = Barkeeps.For("the-space-bar")!;
         IReadOnlyList<Drink> menu = DrinkMenu.For(roadstead);

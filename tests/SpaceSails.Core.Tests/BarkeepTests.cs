@@ -4,8 +4,8 @@ namespace SpaceSails.Core.Tests;
 
 /// <summary>
 /// The barkeep behind every haven bar (#247). Covers the pure purchase math (debit + affordability +
-/// receipt), that each walkable station has a named keep with its own house special (the Tilt cold and
-/// blue, the Ringside with a ring in it), the deterministic rumor rotation, and the ContactLedger
+/// receipt), that each walkable station has a named keep with its own house special (#247: the Tilt's
+/// leans, the Ringside's has a shard of ring ice in it), the deterministic rumor rotation, and the ContactLedger
 /// goodwill seam that "buy a round for the room" leans on (kin #224) — including its vault round-trip.
 /// </summary>
 public class BarkeepTests
@@ -32,20 +32,39 @@ public class BarkeepTests
         }
     }
 
+    /// <summary>#247 · RE-POINTED, not relaxed. This pinned the owner's first sketch of the flavours — "the
+    /// Tilt cold and blue, the Ringside with a ring in it" — and #247 replaced the sketch with canon the
+    /// owner asked for by name: an INGREDIENT LIST per bar, the list doubling as worldbuilding ("every
+    /// cocktail is a geography lesson"). THE LIST is aquavit and park brine in a glass that leans and is not
+    /// blue at all, which is the new brief being met rather than a guard going soft.
+    ///
+    /// <para>So what stays here is the claim this test was always about — seven bars, seven different pours,
+    /// each one LOCAL to its own port — and the byte-for-byte canon lives beside it in
+    /// <c>EveryBarPoursItsOwnTests</c>, where a re-author has somewhere to go red.</para></summary>
     [Fact]
-    public void HouseSpecials_AreDistinctPerBar_WithTheOwnerRequestedFlavors()
+    public void HouseSpecials_AreDistinctPerBar_AndEachOneIsLocalToItsOwnPort()
     {
         var drinks = WalkableStations.Select(id => Barkeeps.For(id)!.DrinkName).ToList();
         Assert.Equal(drinks.Count, drinks.Distinct().Count()); // no two bars pour the same special
 
-        // The Tilt serves something cold and blue.
+        // The Tilt's leans, because everything out at Uranus does.
         string tilt = Barkeeps.For("the-tilt")!.DrinkName + " " + Barkeeps.For("the-tilt")!.DrinkFlavor;
-        Assert.Contains("blue", tilt, System.StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("cold", tilt, System.StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("leans", tilt, System.StringComparison.OrdinalIgnoreCase);
 
         // The Ringside serves something with a ring in it.
         string ringside = Barkeeps.For("ringside-exchange")!.DrinkName + " " + Barkeeps.For("ringside-exchange")!.DrinkFlavor;
         Assert.Contains("ring", ringside, System.StringComparison.OrdinalIgnoreCase);
+
+        // And every pour names a PLACE — the geography lesson the owner asked the ingredients to carry.
+        foreach ((string id, string place) in new[]
+                 {
+                     ("the-space-bar", "Hellas"), ("cinder-roost", "cloud"), ("ringside-exchange", "ring ice"),
+                     ("selene-gate", "Regolith"), ("red-eye", "Spot"), ("the-deep", "ice"),
+                     ("the-tilt", "park brine"),
+                 })
+        {
+            Assert.Contains(place, Barkeeps.For(id)!.DrinkFlavor, System.StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     [Fact]

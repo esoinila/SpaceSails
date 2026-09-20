@@ -22,8 +22,8 @@ public partial class Map
 {
 
     /// <summary>The rolls a room makes about you, and the state you are in when it makes them —
-    /// <c>?approach=</c>, <c>?rep=</c>, <c>?kolt=</c>, <c>?walkin=</c>, <c>?finder=</c>, <c>?hurt=</c>, <c>?shelter=</c>, <c>?mags=</c>, <c>?watch=</c> and
-    /// <c>?roll=</c>.</summary>
+    /// <c>?approach=</c>, <c>?rep=</c>, <c>?kolt=</c>, <c>?walkin=</c>, <c>?finder=</c>, <c>?hurt=</c>, <c>?shelter=</c>, <c>?mags=</c>, <c>?watch=</c>,
+    /// <c>?roll=</c>, <c>?tender=</c> and <c>?special=</c>.</summary>
     private bool ReadTheRoomsOwnDice(string pair, BootQuery q)
     {
         if (pair.StartsWith("approach=", StringComparison.OrdinalIgnoreCase))
@@ -251,6 +251,19 @@ public partial class Map
             // watches play out is the beat a captain would get.
             string candidate = Uri.UnescapeDataString(pair["tender=".Length..]).ToLowerInvariant();
             _tenderFlashCheat = candidate is "flash" or "1" or "true" or "yes";
+        }
+        else if (pair.StartsWith("special=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #247 dev cheat: /map?special=story makes the bar board's rare outcome come up on the plate.
+            //
+            // Same philosophy as ?roll= and ?tender= above — and needed for a reason neither of those has.
+            // This roll is seeded on the CAPTAIN as well as on the bar and the watch, which is the right
+            // design and also means NO single URL can show a tester the rare line: every universe rolls its
+            // own. It forces the ROLL and never the content — the dish is still this bar's dish, the price
+            // is still this watch's price, the purse still moves, one Special a sitting still holds, and
+            // the sentence is the authored one. What a tester watches is the plate a captain would get.
+            string candidate = Uri.UnescapeDataString(pair["special=".Length..]).ToLowerInvariant();
+            _specialStoryCheat = candidate is "story" or "1" or "true" or "yes";
         }
         else
         {

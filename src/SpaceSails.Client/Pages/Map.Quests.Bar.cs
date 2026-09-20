@@ -82,6 +82,7 @@ public partial class Map
         {
             _barVisitStation = _dockedHavenId;
             _roundThisVisit = false;
+            _specialThisVisit = false; // #247: the kitchen serves one Special a sitting — new berth, new plate
             _pendingContactDrink = null;
             _patronDrink = null;
             _patronDrinkBlurb = null;
