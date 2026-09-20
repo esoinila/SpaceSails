@@ -38,7 +38,11 @@ public sealed class TheSealOnTheRefugeTests
         "luna", "phobos", "europa", "ganymede", "callisto", "titan", "miranda", "triton",
     ];
 
-    /// <summary>A real floor of a real site whose refuge is in the state asked for.</summary>
+    /// <summary>A real floor of a real site whose refuge is in the state asked for.
+    ///
+    /// <para>#619 · <see cref="UndergroundComplex.RefugeState.Failed"/> is no longer one of the answers this
+    /// can give, and that is the law: the FLOOR's refuge holds or is dry, and the room that failed is a
+    /// second chamber. Ask <see cref="AFloorWithTheWeldedRefuge"/> for that one.</para></summary>
     private static (string Body, int Level) AFloorWhoseRefugeIs(UndergroundComplex.RefugeState state)
     {
         foreach (string body in Bodies)
@@ -57,6 +61,36 @@ public sealed class TheSealOnTheRefugeTests
             + "that cannot tell pass from fail.");
     }
 
+    /// <summary>#619 · A real floor of a real site that carries the one refuge that failed — welded shut,
+    /// standing beside a working one. It throws rather than skipping when the scenario has none, because a
+    /// bench that quietly tests nothing is the shape this repository has a name for.</summary>
+    private static (string Body, int Level) AFloorWithTheWeldedRefuge()
+    {
+        foreach (string body in Bodies)
+        {
+            foreach (int level in UndergroundComplex.FloorsOf(body))
+            {
+                if (UndergroundComplex.RefugeThatFailedIsOn(body, level))
+                {
+                    return (body, level);
+                }
+            }
+        }
+
+        throw new InvalidOperationException(
+            "no site in the scenario carries the refuge that failed — every assertion about it below is "
+            + "vacuously true, and this bench cannot tell pass from fail.");
+    }
+
+    /// <summary>#619 · The two states the FLOOR's own refuge can be in. Walked instead of
+    /// <c>Enum.GetValues</c> so that adding a fourth state does not silently widen a sweep that is about
+    /// the rooms a captain can walk into.</summary>
+    private static readonly UndergroundComplex.RefugeState[] StatesARoomYouCanEnterHas =
+    [
+        UndergroundComplex.RefugeState.Holding,
+        UndergroundComplex.RefugeState.Empty,
+    ];
+
     // ── (a) THE PLATE OVER THE DOOR ─────────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -65,9 +99,11 @@ public sealed class TheSealOnTheRefugeTests
         // #612's law, pointed at the one door on a dead floor a captain would spend a tank reaching: two
         // instruments may never disagree about whether you can breathe. A room whose seal went, drawn in the
         // relief green under the word AIR, is that disagreement in its most expensive form.
-        foreach (UndergroundComplex.RefugeState state in Enum.GetValues<UndergroundComplex.RefugeState>())
+        foreach (UndergroundComplex.RefugeState state in StatesARoomYouCanEnterHas)
         {
             (string body, int level) = AFloorWhoseRefugeIs(state);
+            Assert.False(UndergroundComplex.RefugeThatFailedIsOn(body, level),
+                $"{body} B{-level}: this bench wants an ORDINARY floor and drew the one with the story.");
             DeckPlan plan = HiveInterior.FloorDeck(body, level, Field, 0, (_, _) => { }, []);
 
             var plates = plan.BigLabels
@@ -76,33 +112,80 @@ public sealed class TheSealOnTheRefugeTests
             Assert.True(plates.Count == 1,
                 $"{body} B{-level} ({state}): {plates.Count} refuge plate(s) drawn, expected one.");
 
-            bool holds = state != UndergroundComplex.RefugeState.Failed;
-
             // #938 · THREE STATES, THREE PLATES — and it used to be two. This assertion was written as
             // `holds ? RefugeGlyph : RefugeFailedGlyph`, so an EMPTY refuge — thirty-nine per cent of them —
             // wore REFUGE · AIR over a rack whose fill line reads empty and whose valve tag is dated years
             // ago. The bench agreed with the bug because it asked the same two-way question the code did.
             // The expected plates are LITERAL here for that reason: an oracle that reads RefugeGlyphFor is
             // an oracle that cannot disagree with it.
-            string expected = state switch
-            {
-                UndergroundComplex.RefugeState.Holding => "🫁 REFUGE · AIR",
-                UndergroundComplex.RefugeState.Empty => "🫁 REFUGE · DRY",
-                _ => "🫁 PRESSURE REFUGE",
-            };
+            string expected = state == UndergroundComplex.RefugeState.Empty
+                ? "🫁 REFUGE · DRY"
+                : "🫁 REFUGE · AIR";
             Assert.Equal(expected, plates[0].Text);
 
             // Tone is what the sign MEANS: 1 = you can breathe here, 2 = you cannot and your tank is
             // running. It is the same ink the plate by the lift is already using about the floor.
-            Assert.Equal(holds ? 1 : 2, plates[0].Tone);
+            Assert.Equal(1, plates[0].Tone);
 
-            // …and the console's caption stops advertising a rack behind a door that will not cycle.
+            // …and the room that opens carries the rack's own caption, because there is a rack behind it.
             DeckPlan.ConsoleSpot rack = plan.Consoles
                 .Single(c => c.Kind == DeckPlan.ConsoleKind.HiveRefuge);
-            Assert.Equal(
-                holds ? UndergroundComplex.RefugeTankLabel : UndergroundComplex.RefugeFailedGlyph,
-                rack.Label);
+            Assert.Equal(UndergroundComplex.RefugeTankLabel, rack.Label);
+
+            // …and there is no welded door anywhere on an ordinary floor.
+            Assert.DoesNotContain(
+                plan.Consoles, c => c.Kind == DeckPlan.ConsoleKind.HiveRefugeDark);
         }
+    }
+
+    /// <summary>#619 · <b>AND THE FLOOR WITH THE STORY ON IT CARRIES BOTH PLATES AT ONCE.</b>
+    ///
+    /// <para>This is the requirement the issue states as a condition of the feature existing at all — the
+    /// room must be <i>"visibly distinguishable from a working refuge BEFORE a captain commits their
+    /// remaining air to reaching it"</i> — read off the deck the renderer really draws. Two plates, two
+    /// tones, two consoles of two kinds, and only one of them is a rack.</para></summary>
+    [Fact]
+    public void TheWeldedDoorIsReadableFromTheCorridorAndIsNotARack()
+    {
+        (string body, int level) = AFloorWithTheWeldedRefuge();
+        DeckPlan plan = HiveInterior.FloorDeck(body, level, Field, 0, (_, _) => { }, []);
+
+        var plates = plan.BigLabels
+            .Where(l => l.Text.Contains("REFUGE", StringComparison.Ordinal))
+            .ToList();
+        Assert.True(plates.Count == 2,
+            $"{body} B{-level}: {plates.Count} refuge plate(s) on the floor that carries the welded one — "
+            + "two were owed, because the law is that it is NEVER the only refuge on its floor.");
+
+        // Literal, for the reason the assertion above is literal: an oracle that reads RefugeGlyphFor
+        // cannot disagree with RefugeGlyphFor.
+        var dark = plates.Single(p => p.Text == "🫁 REFUGE — OUT OF SERVICE — REPORTED");
+        var haven = plates.Single(p => p.Text != "🫁 REFUGE — OUT OF SERVICE — REPORTED");
+        Assert.Contains("REFUGE ·", haven.Text, StringComparison.Ordinal);
+        Assert.Equal(2, dark.Tone);     // your tank is running — the lift plate's own ink
+        Assert.Equal(1, haven.Tone);    // you can breathe here
+
+        // THE PRESSURE LAMP IS DARK, said in the only language a plate has: the word the captain crosses a
+        // dead floor for is not on it.
+        Assert.DoesNotContain("AIR", dark.Text, StringComparison.Ordinal);
+
+        // One rack and one welded door, and they are different console kinds — which is the whole of how the
+        // air machinery is kept from ever seeing the welded room.
+        Assert.Single(plan.Consoles, c => c.Kind == DeckPlan.ConsoleKind.HiveRefuge);
+        DeckPlan.ConsoleSpot welded = plan.Consoles
+            .Single(c => c.Kind == DeckPlan.ConsoleKind.HiveRefugeDark);
+        Assert.Equal(UndergroundComplex.RefugeFailedGlyph, welded.Label);
+
+        // …and the weld took the lock's own 🔒 sign console with it, so there is exactly ONE press at that
+        // door. Two consoles on one spot is the caption pile #1218 wrote a band book to stop.
+        Assert.DoesNotContain(plan.Consoles, c =>
+            c.Kind == DeckPlan.ConsoleKind.HiveSign
+            && Math.Abs(c.X - welded.X) < 0.01 && Math.Abs(c.Y - welded.Y) < 0.01);
+
+        // The door is a WALL now, and that is what "welded" means to everything that has to path past it.
+        Assert.Contains(plan.Walls, w =>
+            Math.Abs(((w.X1 + w.X2) / 2) - welded.X) < 0.01
+            && Math.Abs(((w.Y1 + w.Y2) / 2) - welded.Y) < 0.01);
     }
 
     /// <summary>
@@ -175,7 +258,7 @@ public sealed class TheSealOnTheRefugeTests
         const double Dt = 1.0;
         const double Start = 600.0;
 
-        foreach (UndergroundComplex.RefugeState state in Enum.GetValues<UndergroundComplex.RefugeState>())
+        foreach (UndergroundComplex.RefugeState state in StatesARoomYouCanEnterHas)
         {
             (string body, int level) = AFloorWhoseRefugeIs(state);
             Pages.Map map = StandingInTheRefugeOn(body, level);
@@ -221,22 +304,58 @@ public sealed class TheSealOnTheRefugeTests
                     break;
 
                 default:
-                    Assert.True(air < Start - 10,
-                        $"{body} B{-level}: standing in a refuge whose seal went cost {Start - air:F1} s. "
-                        + "A room that will not cycle is a room on a dead floor, and the tank knows it even "
-                        + "if the plan does not.");
+                    Assert.Fail($"{body} B{-level}: the floor's own refuge came back {state}.");
                     break;
             }
 
             // …and the GAUGE agrees with the drain, which is #612's whole law: the captain is never told
             // ROOM by an instrument while the sim is spending tank, nor TANKS while it is not.
-            var supply = (SuitAir.Supply)Invoke(map, "AirSupplyOf", ex)!;
-            Assert.Equal(
-                state == UndergroundComplex.RefugeState.Failed
-                    ? SuitAir.Supply.Tanks
-                    : SuitAir.Supply.Room,
-                supply);
+            Assert.Equal(SuitAir.Supply.Room, (SuitAir.Supply)Invoke(map, "AirSupplyOf", ex)!);
         }
+    }
+
+    /// <summary>#619 · <b>THE SHELTER MACHINERY REFUSES IT THE WAY IT REFUSES A WALL.</b>
+    ///
+    /// <para>Standing at the welded door on the floor that carries the story: no pressure, no fill, no
+    /// shelter. And the way the refusal is built is the point of the guard — the room is not in
+    /// <c>RefugesOn</c> at all, so there is no branch anywhere that could be edited into letting a captain
+    /// breathe in it. <c>RefugeUnderfoot</c> cannot name it and the gauge says TANKS.</para></summary>
+    [Fact]
+    public void TheWeldedRoomIsNoShelterAtAllAndTheTankKnowsIt()
+    {
+        const double Start = 600.0;
+        (string body, int level) = AFloorWithTheWeldedRefuge();
+        Pages.Map map = StandingAtTheWeldedDoorOn(body, level);
+        object ex = Get(map, "_surface")!;
+
+        // The geometry the air law reads cannot find the captain in a refuge here, even though they are
+        // standing at one — because the welded room never joined the list.
+        Assert.Equal(-1, (int)Invoke(map, "RefugeUnderfoot", ex)!);
+        Assert.False((bool)Invoke(map, "BreathingRefugeUnderfoot", ex)!);
+        Assert.Equal(SuitAir.Supply.Tanks, (SuitAir.Supply)Invoke(map, "AirSupplyOf", ex)!);
+
+        SetOn(ex, "AirSeconds", Start);
+        for (int frame = 0; frame < 30; frame++)
+        {
+            Invoke(map, "StepSuitAir", 1.0);
+        }
+        double air = (double)GetOn(ex, "AirSeconds")!;
+        Assert.True(air < Start - 10,
+            $"{body} B{-level}: thirty seconds at the welded door cost {Start - air:F1} s of tank. A room "
+            + "nobody can open is a corridor, and the price of a dead floor is what depth costs.");
+
+        // …and the floor's OWN refuge, one room over, still fills a tank. This is #619's law made concrete:
+        // the captain who trusted the instrument is not dead, they are one detour away from the air.
+        Pages.Map inTheGoodOne = StandingInTheRefugeOn(body, level);
+        object good = Get(inTheGoodOne, "_surface")!;
+        SetOn(good, "AirSeconds", Start);
+        for (int frame = 0; frame < 30; frame++)
+        {
+            Invoke(inTheGoodOne, "StepSuitAir", 1.0);
+        }
+        Assert.True((double)GetOn(good, "AirSeconds")! > Start,
+            $"{body} B{-level}: the working refuge on the floor that carries the welded one put nothing "
+            + "back. The whole reason the beat is allowed to exist is that this room works.");
     }
 
     [Fact]
@@ -271,7 +390,7 @@ public sealed class TheSealOnTheRefugeTests
         // Owner, on the fan, in one sentence with both halves load-bearing: "A refuge whose seal has failed
         // must still paint, and must read as failed. Walking to one and finding it dead is a real beat;
         // walking to one that was never marked is just a bad map."
-        foreach (UndergroundComplex.RefugeState state in Enum.GetValues<UndergroundComplex.RefugeState>())
+        foreach (UndergroundComplex.RefugeState state in StatesARoomYouCanEnterHas)
         {
             (string body, int level) = AFloorWhoseRefugeIs(state);
             Pages.Map map = StandingInTheRefugeOn(body, level);
@@ -285,15 +404,80 @@ public sealed class TheSealOnTheRefugeTests
             var refuges = beacons.FindAll(b => !b.IsHome && !b.IsLab);
             Assert.True(refuges.Count == 1,
                 $"{body} B{-level} ({state}): the fan paints {refuges.Count} refuge ring(s), expected one — "
-                + "a refuge that stops painting when its seal goes is the bad map the owner filed against.");
+                + "a refuge that stops painting when its rack is drawn down is a bad map.");
 
-            Assert.Equal(state == UndergroundComplex.RefugeState.Failed, refuges[0].IsDead);
+            Assert.False(refuges[0].IsDead,
+                $"{body} B{-level} ({state}): the fan greyed out a refuge whose door cycles.");
 
             // …and the cars are still on it, so this fan is the underground fan and not an empty list that
             // would have agreed with any assertion above.
             Assert.True(beacons.Exists(b => b.IsHome),
                 "no way-home ring on an underground fan — this bench is reading the wrong instrument.");
         }
+    }
+
+    /// <summary>#619 · <b>THE TRACKER MUST NOT PAINT IT AS A HAVEN — at every range it is drawn.</b>
+    ///
+    /// <para>The issue's own condition: <i>"it must be visibly distinguishable from a working refuge BEFORE
+    /// a captain commits their remaining air to reaching it."</i> The fan is where that commitment is made,
+    /// so both halves are asserted here — the welded room IS painted (owner, #604: <i>"walking to one that
+    /// was never marked is just a bad map"</i>) and it is never in the ink that means air.</para>
+    ///
+    /// <para>AT EVERY RANGE, and that clause is the one with a bug behind it. The fan CLAMPS anything past
+    /// its reach to the rim, so a captain across the floor sees the ring at the edge of the glass — the
+    /// range is what the clamp eats, never the ink. The captain is walked from the welded door out to the
+    /// far corner of the field and the flag is read at every step.</para></summary>
+    [Fact]
+    public void TheFanPaintsTheWeldedRoomAndNeverAsAHaven()
+    {
+        (string body, int level) = AFloorWithTheWeldedRefuge();
+        Pages.Map map = StandingAtTheWeldedDoorOn(body, level);
+        object ex = Get(map, "_surface")!;
+
+        (double doorX, double doorY) = ((double)Get(map, "_avatarX")!, (double)Get(map, "_avatarY")!);
+        int ranges = 0;
+
+        // Out along the line from the door toward the far corner of the field, in ten-du steps, so the ring
+        // is read inside the fan's reach, at its edge, and well past the clamp.
+        for (int step = 0; step <= 40; step++)
+        {
+            Set(map, "_avatarX", doorX + (step * 7.0));
+            Set(map, "_avatarY", doorY + (step * 5.0));
+
+            var beacons =
+                (List<(double Bearing, double Range, bool IsHome, bool IsLab, bool IsDead)>)Invoke(
+                    map, "BuildBeacons", ex)!;
+            var refuges = beacons.FindAll(b => !b.IsHome && !b.IsLab);
+
+            // Two rings: the room that works and the room that does not, and the whole point is that a
+            // captain can tell them apart without walking to either.
+            Assert.True(refuges.Count == 2,
+                $"{body} B{-level} at step {step}: {refuges.Count} refuge ring(s), expected two — one for "
+                + "the room that holds and one for the room that will not open.");
+            Assert.Single(refuges.FindAll(b => b.IsDead));
+            Assert.Single(refuges.FindAll(b => !b.IsDead));
+
+            // …and neither of them ever wears the lab's violet or the way-home blue, which are the other
+            // two promises this fan makes.
+            Assert.DoesNotContain(refuges, b => b.IsLab);
+            ranges++;
+        }
+        Assert.True(ranges > 30, "the captain was never walked anywhere — this guard proved nothing.");
+
+        // AND THE LEGEND FOR THE INK, because an ink a captain has to guess at is the instrument saying
+        // nothing with confidence. Core's word, verbatim.
+        Set(map, "_avatarX", doorX);
+        Set(map, "_avatarY", doorY);
+        var captions = (List<string>)Invoke(map, "BuildTrackerCaptions", ex, 0)!;
+        Assert.Contains("🫁 refuge · dark", captions);
+
+        // …and it is NOT on an ordinary floor, because a legend for a mark that is not drawn is a line about
+        // somewhere else.
+        (string plainBody, int plainLevel) = AFloorWhoseRefugeIs(UndergroundComplex.RefugeState.Holding);
+        Pages.Map ordinary = StandingInTheRefugeOn(plainBody, plainLevel);
+        var plainCaptions = (List<string>)Invoke(
+            ordinary, "BuildTrackerCaptions", Get(ordinary, "_surface")!, 0)!;
+        Assert.DoesNotContain("🫁 refuge · dark", plainCaptions);
     }
 
     // ── (d) #1149 · THE ONE THAT FAILED, AND THE PAPER ON EVERY VALVE ───────────────────────────────────
@@ -304,18 +488,21 @@ public sealed class TheSealOnTheRefugeTests
         // Owner, 2026-09-06: "If for dramatic suspense we need one that does not work, that is narrated,
         // with a gen-AI image: something scary or weird happened to the shelter." The card IS the telling
         // (#761), so the assertion is on the card and on all three things it puts on the screen.
-        (string body, int level) = AFloorWhoseRefugeIs(UndergroundComplex.RefugeState.Failed);
-        Pages.Map map = StandingInTheRefugeOn(body, level);
+        // #619 · AT THE DOOR, and by a press. The card was raised from the suit stepper while the captain
+        // stood INSIDE the room; the room is welded shut now and nobody stands in it, so the beat is where
+        // it can actually happen — [E] at the welded leaf.
+        (string body, int level) = AFloorWithTheWeldedRefuge();
+        Pages.Map map = StandingAtTheWeldedDoorOn(body, level);
         object ex = Get(map, "_surface")!;
 
         Assert.Null(FieldOn(map, "_storyCard"));
-        Invoke(map, "StepSuitAir", 1.0);
+        Invoke(map, "HiveRefugeDarkInteract");
 
         object? card = FieldOn(map, "_storyCard");
         Assert.True(card is not null,
-            $"{body} B{-level}: the captain is standing in the refuge that failed and no card went up. The "
-            + "room holds nothing, says nothing and is on the plan — without the card the whole beat is a "
-            + "walk to a locked door.");
+            $"{body} B{-level}: the captain is at the door of the refuge that failed and no card went up. "
+            + "The room holds nothing, says nothing and is on the plan — without the card the whole beat is "
+            + "a walk to a locked door.");
 
         var told = ((StoryBeats.Beat Beat, string? Subject, string? Outcome))card!;
         Assert.Equal(StoryBeats.Beat.RefugeFailed, told.Beat);
@@ -332,8 +519,9 @@ public sealed class TheSealOnTheRefugeTests
         Assert.Equal("art/refuge-failed.jpg", copy.Art);
         Assert.Contains("THE REFUGE THAT FAILED", copy.Title, StringComparison.Ordinal);
         Assert.Equal(
-            "The rack is full; nobody ever drew on it. The seal was cut from the inside, cleanly, and "
-            + "closed again from the outside. It did not fail from age.",
+            "The door is welded from the inside, and the weld is careful. The gauge beside it reads what "
+            + "the room has, which is nothing. On the rack outside are more suits than this floor ever had "
+            + "staff, and the reservoir on the deck was emptied by somebody who then did not leave.",
             copy.Caption);
 
         // …and the painting is on disk under the name the card asks for, because a beat that names a canvas
@@ -341,10 +529,15 @@ public sealed class TheSealOnTheRefugeTests
         Assert.True(System.IO.File.Exists(System.IO.Path.Combine(ArtRoot, "refuge-failed.jpg")),
             "the card names art/refuge-failed.jpg and the folder has not got it.");
 
-        // ONCE. The captain steps out and steps back in — the door line re-arms, the card does not.
-        SetOn(ex, "RefugeBreathNoted", false);
+        // #619 · AND THE BOOK KEEPS IT, under the PLACE (#741) — the card is read once and closed, and #587
+        // was filed about words a player paid for that they cannot read twice.
+        var book = (List<FieldNote>)Get(map, "_fieldNotes")!;
+        Assert.Contains(book, n => n.Text ==
+            UndergroundComplex.FailedRefugeNoteLine(body, level));
+
+        // ONCE. The captain presses again — the card does not come back.
         Set(map, "_storyCard", null);
-        Invoke(map, "StepSuitAir", 1.0);
+        Invoke(map, "HiveRefugeDarkInteract");
         Assert.Null(FieldOn(map, "_storyCard"));
     }
 
@@ -377,9 +570,18 @@ public sealed class TheSealOnTheRefugeTests
         // #1149 · The paper is on EVERY refuge, whatever its seal, because a tag that appeared only on the
         // interesting room would be the game pointing at the interesting room. All three states are walked
         // for that reason, and the assertion is the same in all three.
-        foreach (UndergroundComplex.RefugeState state in Enum.GetValues<UndergroundComplex.RefugeState>())
+        // #619 · Three benches now, because the two questions came apart: the STATE of the floor's refuge
+        // (which the tag does not care about) and whether this FLOOR carries the story (which is where the
+        // undated third entry and the inspector's card are). The floor with the story is walked last.
+        var benches = new List<(string Body, int Level)>();
+        foreach (UndergroundComplex.RefugeState state in StatesARoomYouCanEnterHas)
         {
-            (string body, int level) = AFloorWhoseRefugeIs(state);
+            benches.Add(AFloorWhoseRefugeIs(state));
+        }
+        benches.Add(AFloorWithTheWeldedRefuge());
+
+        foreach ((string body, int level) in benches)
+        {
             Pages.Map map = StandingInTheRefugeOn(body, level);
             object ex = Get(map, "_surface")!;
 
@@ -387,16 +589,20 @@ public sealed class TheSealOnTheRefugeTests
             Invoke(map, "HiveRefugeInteract");
             var after = (IReadOnlyList<Satchel.Item>)Get(map, "_satchel")!;
 
-            // #1149 slice 2 · …and on the ONE refuge in the building whose seal went, the same press also
+            // #1149 slice 2 · …and on the one FLOOR in the building whose story this is, the same press also
             // hands over what was in the rack drawer under the tag: the inspector's card. That is the whole
-            // of the feature's first road, and it is why this count is asked of the STATE rather than typed.
-            int expected = state == UndergroundComplex.RefugeState.Failed ? 2 : 1;
+            // of the feature's first road.
+            //
+            // #619 · It rides this valve rather than the welded room's, because the welded room has no
+            // valve a hand can reach — the door is shut and stays shut. The inspector who replaced the seal
+            // was working this level, and the drawer under the tag on this level is where his card is.
+            bool failed = UndergroundComplex.RefugeThatFailedIsOn(body, level);
+            int expected = failed ? 2 : 1;
             Assert.True(after.Count == before.Count + expected,
-                $"{body} B{-level} ({state}): the press at the rack took {after.Count - before.Count} "
+                $"{body} B{-level}: the press at the rack took {after.Count - before.Count} "
                 + $"thing(s) out of the room, and {expected} was owed. Every refuge in this building "
-                + "carries an inspection tag; the failed one also holds the card.");
+                + "carries an inspection tag; the floor with the story also holds the card.");
 
-            bool failed = state == UndergroundComplex.RefugeState.Failed;
             Assert.Equal(failed, Inspectorate.Held(after));
 
             // …and the captain is TOLD, on the surface they are looking at (#761), in the only register this
@@ -457,7 +663,16 @@ public sealed class TheSealOnTheRefugeTests
     /// <summary>A live component standing INSIDE the refuge on a real floor of a real site. The room is the
     /// generator's own (<c>HiveInterior.FloorDeck</c> put the console there off the floor plan), never a
     /// coordinate this test picked — a guard handed a world it typed itself cannot tell pass from fail.</summary>
-    private static Pages.Map StandingInTheRefugeOn(string body, int level)
+    private static Pages.Map StandingInTheRefugeOn(string body, int level) =>
+        AtTheRefugeOn(body, level, DeckPlan.ConsoleKind.HiveRefuge);
+
+    /// <summary>#619 · A live component standing at the WELDED DOOR of the refuge that failed — outside it,
+    /// because there is no inside to be on. Same construction as the one above, and the console it walks to
+    /// is the generator's own.</summary>
+    private static Pages.Map StandingAtTheWeldedDoorOn(string body, int level) =>
+        AtTheRefugeOn(body, level, DeckPlan.ConsoleKind.HiveRefugeDark);
+
+    private static Pages.Map AtTheRefugeOn(string body, int level, DeckPlan.ConsoleKind kind)
     {
         var map = new Pages.Map();
 
@@ -488,14 +703,28 @@ public sealed class TheSealOnTheRefugeTests
         Invoke(map, "RebuildSurfaceDeck");
 
         var plan = (DeckPlan)Get(map, "_deckPlan")!;
-        DeckPlan.ConsoleSpot rack = plan.Consoles
-            .Single(c => c.Kind == DeckPlan.ConsoleKind.HiveRefuge);
+        DeckPlan.ConsoleSpot rack = plan.Consoles.Single(c => c.Kind == kind);
         Set(map, "_avatarX", (double)rack.X);
         Set(map, "_avatarY", (double)rack.Y);
 
-        Assert.True((int)Invoke(map, "RefugeUnderfoot", ex)! >= 0,
-            $"{body} B{-level}: the captain was put on the refuge's own console and the containment law says "
-            + "they are not in it — this bench is standing somewhere else.");
+        if (kind == DeckPlan.ConsoleKind.HiveRefuge)
+        {
+            Assert.True((int)Invoke(map, "RefugeUnderfoot", ex)! >= 0,
+                $"{body} B{-level}: the captain was put on the refuge's own console and the containment law "
+                + "says they are not in it — this bench is standing somewhere else.");
+        }
+        else
+        {
+            // …and at the welded door the OPPOSITE has to be true, or the bench is standing in a room the
+            // whole feature says cannot be entered.
+            Assert.Equal(-1, (int)Invoke(map, "RefugeUnderfoot", ex)!);
+
+            // …and the press the captain's hand reaches there is THIS one, which is what the weld taking
+            // the lock's 🔒 console with it is for: two consoles at one midpoint and the verb is a coin toss.
+            Assert.Equal(
+                DeckPlan.ConsoleKind.HiveRefugeDark,
+                plan.NearestConsoleSpot((double)rack.X, (double)rack.Y)!.Value.Kind);
+        }
         return map;
     }
 
