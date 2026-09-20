@@ -125,3 +125,41 @@
     line-height: 1.4;
     font-style: italic;
 }
+
+/* ── #247 · THE BOARD ────────────────────────────────────────────────────────────────────────────────
+   The food board, in the drinks menu's own signage register and deliberately a shade apart from it: the
+   same near-opaque ground, the same left rule, the same price-list size — and a GREEN rule rather than the
+   card's amber, because it is a different kitchen answering and a captain should be able to tell the board
+   from the card under the glass without having to read either.
+
+   #780's law holds here word for word: the panel paints its OWN ground rather than borrowing whatever is
+   behind it, and the size is named at the price-list size rather than shrunk with `small`. */
+.bar-board {
+    margin: 0.35rem 0 0.5rem;
+    padding: 0.55rem 0.7rem;
+    text-align: left;
+    font-size: 0.95rem;
+    background: rgba(16, 24, 20, 0.96);
+    border-left: 2px solid rgba(159, 230, 176, 0.55);
+    border-radius: 0.3rem;
+}
+
+.bar-board-head {
+    color: #9fe6b0;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.45rem;
+}
+
+/* No picture on this row, so no flex row either: the board is words, and the button stands above the line
+   it names. `min-width: 0` is kept for the same reason the menu's text column keeps it — a long chalked
+   line must be allowed to wrap rather than push the row off the side of a phone. */
+.bar-board-item {
+    min-width: 0;
+}
+
+.bar-board-line {
+    color: #cfe6d6;
+    line-height: 1.4;
+    font-style: italic;
+}

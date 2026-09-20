@@ -89,6 +89,10 @@ public partial class AshoreCardRack
     [Parameter] public Func<string> NebulaBarSeamTitle { get; set; } = default!;
     [Parameter] public EventCallback NextOracleLine { get; set; } = default!;
     [Parameter] public Action<ShuttleStop> OpenBoardingPanel { get; set; } = default!;
+
+    /// <summary>#247 · Order the Special off the bar's board — carried through to the counter card.</summary>
+    [Parameter] public EventCallback OrderTheSpecial { get; set; } = default!;
+
     [Parameter] public Func<IReadOnlyList<(string Giver, string Display)>> PresentBarContacts { get; set; } = default!;
     [Parameter] public Func<string, double?> RouteReturnBySimTime { get; set; } = default!;
     [Parameter] public Func<RouteWindowRow, string> RouteWindowRowText { get; set; } = default!;
@@ -104,9 +108,17 @@ public partial class AshoreCardRack
     [Parameter] public EventCallback TakeAStool { get; set; } = default!;
     [Parameter] public Action<ShuttleStop> TakeShuttleTo { get; set; } = default!;
     [Parameter] public bool TheBackCounterIsOpen { get; set; }
+
+    /// <summary>#247 · This bar's chalked board line, or null where the counter has no kitchen.</summary>
+    [Parameter] public string? TheBoardLine { get; set; }
+
     [Parameter] public bool TheCounterRentsRooms { get; set; }
     [Parameter] public Func<string?> TheKeepsTell { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<string>> TheOverheardBlock { get; set; } = default!;
+
+    /// <summary>#247 · The Special, priced for this watch — carried through to the counter card.</summary>
+    [Parameter] public Core.Drink? TheSpecialOnTheBoard { get; set; }
+
     [Parameter] public EventCallback ToggleBarMenu { get; set; } = default!;
     [Parameter] public Func<string?> WhoIsInTonight { get; set; } = default!;
     [Parameter] public Func<string, AwayWindow> WindowOn { get; set; } = default!;

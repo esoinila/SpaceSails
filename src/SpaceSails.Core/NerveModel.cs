@@ -251,6 +251,18 @@ public static class NerveModel
         /// only limiter is honest tiredness — the WELL-RESTED satiety window <see cref="CabinComforts"/>
         /// owns, not drunkenness.</summary>
         Sleep,
+
+        /// <summary>#247 · A MEAL ASHORE — the Special off a bar's board (owner: <i>"Eating = the meal-sized
+        /// shore-leave beat beside the drink (bigger #226 relief, small cr)"</i>). Not a drink: it reaches
+        /// the nerve through THIS same relief seam — reused, not parallelled — and it rides no rum spree,
+        /// counts no tot and never makes the deck tilty, which is #756's law that a tray and the wobble part
+        /// company. Flat and level-independent like the pill and the bunk, because a hot plate steadies a
+        /// shaking hand whatever the gauge reads. Its limiter is a sitting rather than drunkenness: the
+        /// kitchen chalks one Special and serves it once a visit.
+        ///
+        /// <para>Appended LAST on purpose. The five above it were here first, they are read by name, and a
+        /// re-order is the cheapest way in the world to give a pill a bunk's numbers.</para></summary>
+        Meal,
     }
 
     /// <summary>Full restore of a lone galley tot at steady hands, before the level-curve and diminishing
@@ -277,6 +289,18 @@ public static class NerveModel
     /// it does NOT full-heal a shot captain (0 → 40), and its WELL-RESTED satiety (CabinComforts) stops it
     /// being the grind. FLAGGED for the owner's tuning.</summary>
     public const double SleepRestore = 40.0;
+
+    /// <summary>#247 · A MEAL'S RESTORE — the ONE number the bigger step is stated at, and the only number
+    /// this lane adds to the gauge. Owner's brief is the whole specification: a plate ashore is a
+    /// <i>bigger</i> #226 relief than a glass, so it must beat a lone galley tot's 10 at every level rather
+    /// than only at steady hands — which is why it is FLAT, like the pill and the bunk, instead of riding
+    /// the solo weak-medicine curve down to a single point at the floor.
+    ///
+    /// <para>Where it sits in the order, deliberately: tot 10 &lt; <b>meal 14</b> &lt; the bar's best pour 18
+    /// (at steady hands only) &lt; pill 20 &lt; the shared glass 24 &lt; a night's sleep 40. So supper is the
+    /// best thing coin alone can do for you at a counter, and still nowhere near company, medicine or rest.
+    /// FLAGGED for the owner's tuning.</para></summary>
+    public const double MealRestore = 14.0;
 
     /// <summary>The single point a lone drink can still manage at the shot floor — you cannot drink your
     /// way back from the edge alone; you need a face across the table (owner: "moves the needle by one").</summary>
@@ -321,6 +345,7 @@ public static class NerveModel
         DrinkKind.SharedWithContact => SharedDrinkRestore,
         DrinkKind.CalmingPill => CalmingPillRestore, // flat, level-independent — medicine, not a mood
         DrinkKind.Sleep => SleepRestore,             // flat, level-independent — a whole night's rest
+        DrinkKind.Meal => MealRestore,               // flat, level-independent — supper is not a pour
         DrinkKind.BarSpecial => SoloCurve(BarSpecialBaseRestore, nerve),
         DrinkKind.GalleyTot => SoloCurve(GalleyTotBaseRestore, nerve),
         _ => 0.0,
@@ -358,6 +383,15 @@ public static class NerveModel
             return restored < 2.0
                 ? "you were already steady — the bunk barely changes a thing"
                 : "a full bunk — you wake with the shakes gone and your hands your own again";
+        }
+        if (kind == DrinkKind.Meal)
+        {
+            // #247 · Supper's own voice. It has no drunk state and no rum spree, so it never reaches the
+            // line below it — a plate cannot stop helping because you had one before, and it is not the
+            // game's place to tell a captain the food has stopped working.
+            return restored < 2.0
+                ? "you were steady before it came — you eat it anyway, and it is still worth eating"
+                : "a hot plate, and the hands come back to you between mouthfuls";
         }
         if (DrunkAt(totNumber))
         {

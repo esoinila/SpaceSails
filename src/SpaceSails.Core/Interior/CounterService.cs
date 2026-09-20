@@ -9,7 +9,7 @@ namespace SpaceSails.Core.Interior;
 /// <para><b>So nothing here is a dialog, a purchase, or a receipt.</b> All of that already exists and is
 /// tested: <see cref="Barkeep"/> holds the purchase math, <see cref="DrinkMenu"/> holds the card, and the
 /// client's counter card renders both. This file is the <i>content</i> half of that one seam — the venue
-/// the machine is pointed at. The Tilt pours the Sideways Blue at 7 cr with a keep's chatter; this counter
+/// the machine is pointed at. The Tilt pours THE LIST at 7 cr with a keep's chatter; this counter
 /// pours company coffee with nobody behind it, and the machinery never learns the difference.</para>
 ///
 /// <para><b>Nobody is behind it</b> (#618, skeleton staff): the counter does its own serving, which on this

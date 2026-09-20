@@ -183,8 +183,59 @@ that the layout is moving.
 
 `TheGateMeasuresAStillScreenTests` is the law itself: the #1234 screen booted three times, read 0 ms,
 1200 ms and 3000 ms after the door, and the toolbar must read as the **same controls on the same lines**
-every time (digits knocked out of the labels — sim time may spend a character; a line may not change).
-Proven red by deleting the one `SettledAsync` call inside it.
+every time. Proven red by deleting the one `SettledAsync` call inside it.
+
+### What a row is compared as (issue #1265) — `ToolbarRows`
+
+The first cut of that guard compared a listing that glued each line number to the control's **digit-
+normalised label**, and on 2026-09-20 it went red on PR #1263 — a doc-only change — with two readings whose
+every control sat on the **same line**. The whole of the difference was the long-coast advert's text,
+`(# d)` against `(# d # h)`. #1252 had already made that text harmless to the layout (a fixed-width slot
+with tabular figures), so the screen really had not moved: it was now the **guard** that depended on when
+the gate looked.
+
+`ToolbarRows.Declarations` is the decision spelled once, for the three guards that read a toolbar's rows.
+The comparable is the **key** — each control's line index, in toolbar order, and no text in it at all. The
+label rides along in a second string that exists only to be **printed in a failure**. It is never compared,
+not even normalised, because normalising is a guess about which parts of a sentence may change and this
+one was wrong twice in two days: it knocked out digits but not digit **groups**, and the group count is
+what moved the row.
+
+It still catches everything geometric — a control changing line, a control arriving or leaving (the key's
+length changes), the row re-wrapping. It deliberately does not catch a control being **renamed**, which is
+`NavHudMarkup.baseline.txt`'s question and not a row's.
+
+### A readiness wait may not be a sentence (issue #1267)
+
+#1266's sweep found two gates keying their readiness on the Plotting panel's **wording** —
+`!/Scrub: 0d 00h 00m/` in `.map-plot`'s text — before measuring geometry. The regex reads
+`NodeFrame.ScrubLabel` and a clock's formatting as if either were a promise. Measured on one boot per
+build, with nothing changed anywhere but that one Core constant:
+
+| the wait | `ScrubLabel = "Scrub"` | `ScrubLabel = "Clock"` |
+| --- | --- | --- |
+| the wording wait | 57 ms → panel 608×120, last compose button at x 244 | **14 ms → panel 608×119, button at x 240** |
+| `SettledAsync` | 939 ms → panel 608×120, x 244 | 809 ms → panel 608×120, x 244 |
+
+Rename the word and the regex stops matching from the first paint: the wait is satisfied on its first
+poll and hands the gate the **pre-scrub** layout, so the next press aims at coordinates the panel has
+already left. Both now call `page.SettledAsync(".map-plot, .map-plot-compose button")` — the boxes the
+next step actually stands on — and the wording cannot reach them.
+
+Two more of the same shape went with it:
+
+* `TheSatchelPaintsOverTheCardTests` compared a card's **title string** across a keypress, which states
+  the claim only while a title is a constant (the long-coast advert is the standing reminder that they
+  are not). Nothing in the markup names a card — `ViewObjectCard` renders `vo.Label` and no id — so the
+  identity is now **the node**: a handle on the backdrop, asked afterwards whether it is still the
+  element the document is showing. Proven: replace the card with a deep clone of itself and the title
+  comparison says *same card*, the node identity says *not the same card*.
+* …and that fixture's boot waited for `.desk-tab-bar` to be visible on a `?rip=1` boot. The bar is
+  **not on that screen** — `ShipTabsStrip.razor` hides it on a surface excursion (#330) — and the wait
+  passed only because Playwright polls from the instant it is called and catches the bar in the moment
+  of the boot before the excursion takes it away. Measured: the boot door came down at 17.6 s with
+  🛗 THE SHAFT already up, and `.desk-tab-bar` was absent from the document at every sample out to 83 s.
+  It is `BootDoorClosedAsync` now, which is the honest form of the sentence it replaced.
 
 ## The hidden-tab gate (issue #1244) — `TheBootIsTheSameSpeedWhenNobodyIsLookingTests`
 

@@ -236,13 +236,30 @@ public sealed class PlotPanelFitsTheWindowTests : IAsyncLifetime
             """,
             fraction);
 
-        // …and the panel has actually re-rendered at the new hour before the next press aims at it. The
-        // scrub reads "0d 00h 00m" until it moves, so its own words are the signal (never a sleep).
-        await _page.WaitForFunctionAsync(
-            "() => { const p = document.querySelector('.map-plot'); "
-            + "return p !== null && !/Scrub: 0d 00h 00m/.test(p.textContent); }",
-            null,
-            new() { Timeout = ActionTimeoutMs });
+        // #1267 · …AND THE PANEL HAS FINISHED RE-LAYING ITSELF AT THE NEW HOUR BEFORE THE NEXT PRESS AIMS
+        // AT IT — asked of the BOXES, never of the words.
+        //
+        // This waited on `!/Scrub: 0d 00h 00m/` in the panel's own text, which treats a LABEL
+        // (`NodeFrame.ScrubLabel`) and a clock's formatting as if either were a promise. MEASURED on this
+        // branch, one boot per build, with nothing changed anywhere but that one Core constant:
+        //
+        //     ScrubLabel = "Scrub"   wording wait   57 ms → panel 608x120, last compose button at x 244
+        //     ScrubLabel = "Clock"   wording wait   14 ms → panel 608x119, last compose button at x 240
+        //     either build           SettledAsync  939 / 809 ms → panel 608x120,                    x 244
+        //
+        // Rename the word and the regex stops matching from the first paint onwards: the wait is satisfied
+        // on its first poll and hands on the PRE-SCRUB layout, so the compose button below is pressed at
+        // coordinates the panel has already left and every box read afterwards is a box that was still
+        // being written. Nothing in the gate says so — it goes green, or it reds about timing. That is
+        // #1234's flake with a wording change for a cause, and the fifth named bug class's shape: a world
+        // that cannot tell pass from fail.
+        //
+        // GateReady.SettledAsync asks exactly what the next step stands on — the panel's own box and the
+        // compose row that is about to be pressed, identical across consecutive frame-pairs for 750 ms.
+        // The re-render this wait exists for MOVES both of them (the height by a pixel, the last button by
+        // four), so the settle cannot return in front of it; and the 750 ms of stillness it requires is six
+        // times the ~130 ms that re-render cost here in any case. Still a signal, still never a sleep.
+        await _page.SettledAsync(".map-plot, .map-plot-compose button");
     }
 
     /// <summary>Press one of the compose buttons at the head of the Plotting panel, by its own words.

@@ -137,6 +137,23 @@ public sealed class TheSatchelPaintsOverTheCardTests : IAsyncLifetime
     public async Task The_card_underneath_is_neither_spent_nor_lost()
     {
         await BootIntoTheArrivalCard();
+
+        // #1267 · WHICH CARD, ASKED AS THE CARD AND NOT AS ITS TITLE. This held the card's title string
+        // across the keypress and compared it back — which states the claim only while a title is a
+        // constant. The day one carries a live number (a countdown, a count, a price, the way the long-coast
+        // advert does) the comparison reds on a card that never moved; the day two cards share a wording it
+        // goes green on the wrong one. Either way the sentence, not the surface, is what decided.
+        //
+        // Nothing in the markup names a card — `ViewObjectCard` renders `vo.Label` and no id, and no
+        // attribute anywhere distinguishes one from another — so the identity taken here is THE NODE: a
+        // handle on the backdrop standing over the scene right now, asked afterwards whether it is still
+        // the element the document is showing. That is exactly the claim this test makes, and no wording
+        // can make it or break it.
+        IElementHandle cardBefore = await _page.QuerySelectorAsync(ArrivalCard)
+            ?? throw new InvalidOperationException(
+                "no arrival card is up after the ?rip=1 boot — there is nothing for the satchel to be "
+                + "raised over, so this guard would prove nothing. Find a boot that raises one (#1027).");
+        // Kept only to NAME the card in a failure. Never compared.
         string titleBefore = await _page.Locator(ArrivalCard + " .view-object-title").InnerTextAsync();
 
         await PressTheSatchelKey();
@@ -144,7 +161,7 @@ public sealed class TheSatchelPaintsOverTheCardTests : IAsyncLifetime
             new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
 
         Assert.True(
-            await _page.Locator(ArrivalCard).CountAsync() > 0,
+            await StillTheSameCard(cardBefore),
             $"the card '{titleBefore}' was taken off the screen by the satchel opening. The arrival beats "
             + "are told ONCE and latch at the moment they are raised, so a pocket that dismissed them would "
             + "spend a beat the captain never read — the pocket goes OVER them instead (#1027).");
@@ -167,8 +184,24 @@ public sealed class TheSatchelPaintsOverTheCardTests : IAsyncLifetime
             + "(#1027).");
 
         Assert.True(cardsLeft > 0, $"Escape closed the card '{titleBefore}' instead of the satchel (#1027).");
-        Assert.Equal(titleBefore, await _page.Locator(ArrivalCard + " .view-object-title").InnerTextAsync());
+
+        // …and it is THE SAME CARD, not a replacement wearing the same words. #1267: node identity, so a
+        // title that carries a live number cannot red this and two cards that share a title cannot green it.
+        Assert.True(
+            await StillTheSameCard(cardBefore),
+            $"the card on the screen after Escape is not the one that was under the pocket ('{titleBefore}') "
+            + "— it was closed and something else was raised in its place. The arrival beats are told ONCE "
+            + "and latch when they are raised, so the pocket's cancel key must peel the POCKET and leave "
+            + "the card it was opened over exactly as it found it (#1027).");
     }
+
+    /// <summary>#1267 · Is the card this handle was taken on still the card the document is showing? Node
+    /// identity and nothing else: still attached, and still the element <see cref="ArrivalCard"/> resolves
+    /// to. A card's title is prose and prose is not an identity (the house rule this gate was caught by).
+    /// </summary>
+    private static Task<bool> StillTheSameCard(IElementHandle card) =>
+        card.EvaluateAsync<bool>(
+            "(el, sel) => el.isConnected && el === document.querySelector(sel)", ArrivalCard);
 
     private readonly record struct Layers(int Card, int Satchel);
 
@@ -211,12 +244,27 @@ public sealed class TheSatchelPaintsOverTheCardTests : IAsyncLifetime
     private async Task BootIntoTheArrivalCard()
     {
         await _page.GotoAsync(_host.BaseUrl + "/map?scenario=sol&rip=1", new() { Timeout = BootTimeoutMs });
+        // #1267 · BOTH HALVES OF THE BOOT DOOR, through GateReady — and it replaces a wait that could only
+        // ever have been won by luck.
+        //
+        // This read "the boot is over when the deck is drawn" and waited for `.desk-tab-bar` to be VISIBLE.
+        // The bar is not drawn on this screen: `ShipTabsStrip.razor` says so in the markup's own note (#330,
+        // the owner's question — "Should the tile buttons even be there when we are not on the ship?"), and
+        // `?rip=1` ends underground, on a surface excursion. MEASURED here, one boot: the boot door came
+        // down at 17.6 s with 🛗 THE SHAFT already standing over the scene, and `.desk-tab-bar` was absent
+        // from the document at every sample from there to 83 s. The wait passed anyway, because Playwright
+        // polls from the instant it is called and the bar IS on the screen for the moment of the boot before
+        // the excursion takes it away. A precondition whose answer depends on how fast the poller got there
+        // is the same coin toss #1234 is about, and it would have kept the fixture standing on a screen it
+        // does not mean the day a boot got slower.
+        //
+        // The door is the honest form of the sentence it replaces — the game's own "Rigging the sails…"
+        // attached and then detached — and the card below is the state this method is actually after.
+        await _page.BootDoorClosedAsync(BootTimeoutMs);
 
-        // The boot is over when the deck is drawn, and the descent's own card is up shortly after — waited
-        // for FIRST, because the ground family below is raised on the same boot and peeling it before the
-        // card exists would leave this method dismissing an empty screen.
-        await _page.Locator(".desk-tab-bar").WaitForAsync(
-            new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
+        // The descent's own card is up shortly after the door — waited for FIRST, because the ground family
+        // below is raised on the same boot and peeling it before the card exists would leave this method
+        // dismissing an empty screen.
         await _page.Locator(ArrivalCard).WaitForAsync(
             new() { State = WaitForSelectorState.Visible, Timeout = BootTimeoutMs });
 

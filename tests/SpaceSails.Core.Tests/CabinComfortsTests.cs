@@ -135,7 +135,7 @@ public class CabinComfortsTests
     public void Toilet_Docked_SometimesSwearsYouOffTheLocalSpecial()
     {
         // Docked at a bar, at least one line names the local house special and bar (substituted, no braces).
-        const string special = "the Rusted Bolt";
+        const string special = "DUST DEVIL"; // #247: the Roadstead's own
         const string bar = "THE ROADSTEAD BAR";
         bool sawRiff = false;
 

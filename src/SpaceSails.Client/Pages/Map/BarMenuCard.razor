@@ -181,6 +181,37 @@
                     }
                 </div>
             }
+            @* ── #247 · THE BOARD ──────────────────────────────────────────────────────────────────────
+               Owner, in the same breath as the drinks: "FOOD too — 'the Special is really a wild one
+               usually.' Each bar gets a menu board … and THE SPECIAL is the wildcard."
+
+               It is a PLATE OF WORDS in the menu's own signage register, and deliberately the one surface
+               on this card carrying no picture: the house pours took the photographs, and a board with a
+               dish on it too would make this card two galleries stacked on each other. A board is a thing
+               you read.
+
+               It stands BESIDE the drinks menu rather than inside it — a different kitchen answering — and
+               it is drawn whether or not the menu is open, in the card's BODY, above the pinned foot, which
+               is #780's law: prose goes in the body, where the foot's 12rem scrim falls on nothing.
+
+               The row prices itself off Core for THIS watch (TheMenuBoard.PriceOn), so the label, the
+               enabled-ness and the debit are one number — and it is never disabled into silence: a short
+               purse and a plate already eaten are both answered out loud in the notice slot above (#603).
+
+               Nothing draws where there is no kitchen behind the counter. The Hive's card under the glass
+               IS its food, and a board beside it would be one room claiming two kitchens. *@
+            @if (TheBoardLine is { } boardLine && TheSpecialOnTheBoard is { } special)
+            {
+                int specialCost = special.PriceAt(keep.DrinkPrice);
+                <div class="bar-board">
+                    <div class="bar-board-head">@SpaceSails.Core.Interior.TheMenuBoard.BoardHead</div>
+                    <div class="bar-board-item">
+                        <button type="button" class="btn btn-sm btn-outline-warning bar-menu-buy"
+                                title="@($"Order the Special — {specialCost} cr")" @onclick="OrderTheSpecial">🍽 @SpaceSails.Core.Interior.TheMenuBoard.SpecialLabel · @specialCost cr</button>
+                        <div class="bar-board-line">@boardLine</div>
+                    </div>
+                </div>
+            }
             <div class="deck-offer-actions">
                 @if (!keep.SelfService)
                 {
