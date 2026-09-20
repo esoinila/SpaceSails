@@ -25,7 +25,9 @@ namespace SpaceSails.Core.Tests;
 /// fifth named bug class — a green test that asserts nothing because the world cannot tell pass from fail.
 /// So every sweep counts what it found and demands it in quantity.</para>
 /// </summary>
-[SlowGate] // #251 · a full build sweep, like TheRefugesUndergroundTests beside it.
+// #251 · NOT [SlowGate]: measured 3.5 s over 7 tests (2026-09-20), under the documented 10 s cut. Four of
+// them are full build sweeps of a hundred sites, which is what the gate's roster is for — this one simply
+// does not reach it, and a row padded with a harmless name is what THE_GATE_CanTellPassFromFail refuses.
 public sealed class TheRefugeThatFailedTests
 {
     private static SurfaceLayout.Field Field => SurfaceLayout.DefaultField;
