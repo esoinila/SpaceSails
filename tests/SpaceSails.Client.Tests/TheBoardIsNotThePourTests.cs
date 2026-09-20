@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -234,6 +235,80 @@ public sealed class TheBoardIsNotThePourTests
         // And the guide writes it down, which is where a tester finds it.
         string guide = File.ReadAllText(Path.Combine(RepoRoot(), "docs", "testing-guide.md"));
         Assert.Contains("?special=story", guide, StringComparison.Ordinal);
+    }
+
+    // ── THE ROW THAT SHOWS THE ROTATION MUST ACTUALLY SHOW IT ───────────────────────────────────────────
+
+    /// <summary>
+    /// #1272 · <b>A TESTING LINK THAT DEMONSTRATES A ROTATION HAS TO PICK A BAR WHERE IT TURNS.</b>
+    ///
+    /// <para><b>The sighting.</b> §8's price-rotation row was written against the Ringside Exchange, because
+    /// that is the bar the two rows above it use, and it sent a tester to <c>&amp;simhours=5</c>, <c>9</c>
+    /// and <c>13</c>. Driven on 2026-09-20 the button read <b>3 cr at all three</b>. Nothing is wrong with
+    /// the roll — <c>PriceOn</c> draws from four values over a three-shift window and the Ringside genuinely
+    /// chalks 3 cr for four shifts running — but a tester who follows the row exactly watches the number sit
+    /// still and files "the price rotation is dead". The feature was fine; the link was the bug.</para>
+    ///
+    /// <para><b>What is pinned.</b> Not the sentence, and not a number typed twice. The row is READ — which
+    /// bar it sends a tester to, which watches it sends them to, and which three prices it promises — and
+    /// every one of those is re-derived from <see cref="TheMenuBoard.PriceOn"/> and
+    /// <see cref="PatronRota.WatchIndex"/> here. A row that names a bar and three watches whose prices do
+    /// not all differ cannot pass, whichever bar or watches somebody picks next, and neither can a row whose
+    /// promised numbers are not the ones the rule chalks.</para>
+    ///
+    /// <para>RED PROOF: put the row back to <c>dock=ringside-exchange</c> with <c>simhours=5/9/13</c> and
+    /// this fails, naming the three identical prices.</para>
+    /// </summary>
+    [Fact]
+    public void TheRotationRowSendsATesterToABarWhosePriceActuallyMoves()
+    {
+        string path = Path.Combine(RepoRoot(), "docs", "testing-links-2026-09-17.md");
+        string[] rows = [.. File.ReadAllLines(path)
+            .Where(l => l.Contains("the price is what rotates", StringComparison.Ordinal))];
+        string row = Assert.Single(rows);
+
+        // WHICH BAR. Every `dock=` in the row has to name the same one, or the row is sending a tester to
+        // two counters and the numbers below belong to neither.
+        string[] docks = [.. Regex.Matches(row, @"dock=([a-z0-9-]+)").Select(m => m.Groups[1].Value).Distinct()];
+        string bar = Assert.Single(docks);
+        Assert.True(Bars.Contains(bar),
+                    $"§8's price-rotation row sends a tester to `dock={bar}`, which is not one of the seven "
+                    + "haven bars — there is no board behind that counter to chalk a price on (#1272).");
+
+        // WHICH WATCHES. Three distinct `simhours=`, and `simhours` is the sim clock in HOURS, so the watch
+        // is PatronRota's own arithmetic and never 4 typed in here.
+        long[] watches = [.. Regex.Matches(row, @"simhours=(\d+)")
+            .Select(m => PatronRota.WatchIndex(int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture) * 3600.0))
+            .Distinct()];
+        Assert.True(watches.Length == 3,
+                    $"§8's price-rotation row names {watches.Length} distinct watch(es) — the row is about "
+                    + "three shifts, and a tester cannot see a number rotate across fewer (#1272).");
+
+        int[] chalked = [.. watches.Select(w => TheMenuBoard.PriceOn(bar, w))];
+
+        // THE LAW. Three shifts, three different numbers — otherwise the link demonstrates the opposite of
+        // what it claims, which is exactly what shipped.
+        Assert.True(chalked.Distinct().Count() == 3,
+                    $"§8's price-rotation row sends a tester to `{bar}` at watches "
+                    + $"{string.Join(", ", watches)} — and the board chalks {string.Join(" → ", chalked)} cr "
+                    + "there, so the number they are told to watch does not move across all three. The roll "
+                    + "is not broken; the row picked the wrong bar. Pick one whose three linked watches "
+                    + "differ, and write those numbers into the row (#1272).");
+
+        // …AND THE ROW SAYS WHICH NUMBERS, so "it did not move" is a finding and not a shrug.
+        Match promised = Regex.Match(row, @"(\d+) cr → (\d+) cr → (\d+) cr");
+        Assert.True(promised.Success,
+                    "§8's price-rotation row does not spell the three prices a tester should see (`n cr → n "
+                    + "cr → n cr`). Without them the row cannot be followed: any number at all looks right "
+                    + $"(#1272). The rule chalks {string.Join(" → ", chalked)} cr at `{bar}`.");
+
+        int[] said = [.. promised.Groups.Values.Skip(1)
+            .Select(g => int.Parse(g.Value, CultureInfo.InvariantCulture))];
+        Assert.True(said.SequenceEqual(chalked),
+                    $"§8's price-rotation row promises {string.Join(" → ", said)} cr at `{bar}`, and "
+                    + $"TheMenuBoard.PriceOn chalks {string.Join(" → ", chalked)} cr on the watches the row "
+                    + "links to. A testing link that quotes a number the game does not show is worse than "
+                    + "one that quotes none (#1272).");
     }
 
     // ── THE BOARD IS ON THE SCREEN ──────────────────────────────────────────────────────────────────────
