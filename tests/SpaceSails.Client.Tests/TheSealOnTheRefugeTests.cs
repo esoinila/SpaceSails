@@ -183,9 +183,23 @@ public sealed class TheSealOnTheRefugeTests
             && Math.Abs(c.X - welded.X) < 0.01 && Math.Abs(c.Y - welded.Y) < 0.01);
 
         // The door is a WALL now, and that is what "welded" means to everything that has to path past it.
+        // The press stands WeldedRefugeStandOffDu out in the corridor rather than on the doorway's own line
+        // — the A* audit found the first version of this console inside solid rock — so the wall is looked
+        // for at exactly that distance and nowhere else.
+        double stand = UndergroundComplex.WeldedRefugeStandOffDu;
         Assert.Contains(plan.Walls, w =>
-            Math.Abs(((w.X1 + w.X2) / 2) - welded.X) < 0.01
-            && Math.Abs(((w.Y1 + w.Y2) / 2) - welded.Y) < 0.01);
+        {
+            double dx = ((w.X1 + w.X2) / 2) - welded.X, dy = ((w.Y1 + w.Y2) / 2) - welded.Y;
+            return Math.Abs(Math.Sqrt((dx * dx) + (dy * dy)) - stand) < 0.01;
+        });
+
+        // …and a leaf drawn shut on the same line, so the deck says DOOR and the collision field says WALL
+        // about one segment rather than about two.
+        Assert.Contains(plan.Doors, d =>
+        {
+            double dx = ((d.X1 + d.X2) / 2) - welded.X, dy = ((d.Y1 + d.Y2) / 2) - welded.Y;
+            return d.Locked && Math.Abs(Math.Sqrt((dx * dx) + (dy * dy)) - stand) < 0.01;
+        });
     }
 
     /// <summary>

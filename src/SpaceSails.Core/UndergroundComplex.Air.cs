@@ -386,13 +386,44 @@ public static partial class UndergroundComplex
         return refuges;
     }
 
-    /// <summary>#619 · The midpoint of a chamber's first way out — where a plate hangs and where [E] is
-    /// pressed. Falls back to the room's own centre for a chamber with no recorded doorway, which the
-    /// generator does not produce and which is not worth a second kind of answer.</summary>
-    private static (double X, double Y) WayIn(in Room room) =>
-        room.Ways.Count > 0
-            ? ((room.Ways[0].X1 + room.Ways[0].X2) / 2, (room.Ways[0].Y1 + room.Ways[0].Y2) / 2)
-            : (room.X, room.Y);
+    /// <summary>#619 · How far OUT of the room the welded refuge's press stands, in deck units.
+    ///
+    /// <para><b>It has to be out at all, and that is a bug this lane paid for.</b> The press first sat on
+    /// the doorway's own midpoint — which is exactly where the weld goes — so on the two scenario floors
+    /// that carry one, the A* audit found a console inside solid wall and a card that could never be read.
+    /// The doorway is a WALL now; the captain stands in the corridor in front of it.</para>
+    ///
+    /// <para>Two du clears the avatar (<c>DeckPlan.AvatarRadius</c> = 0.7) with room to spare, stays well
+    /// inside the interact reach (3.0), and stays inside the corridor's own half-width
+    /// (<see cref="CorridorHalf"/> = 3.5) — so the spot is in the rib a captain is already walking down and
+    /// never through it into whatever stands on the far side.</para></summary>
+    public const double WeldedRefugeStandOffDu = 2.0;
+
+    /// <summary>#619 · Where a captain stands to read a chamber's first way out: the doorway's midpoint,
+    /// stepped <see cref="WeldedRefugeStandOffDu"/> back out of the room along the line from its centre.
+    ///
+    /// <para>On the welded refuge that is the only place the press CAN be, because the doorway itself is a
+    /// wall. On a refuge whose door cycles nothing reads it — and it is computed all the same rather than
+    /// left at zero, because a field that is a lie on most rows is a field the next hand reads off the wrong
+    /// row.</para>
+    ///
+    /// <para>Falls back to the room's own centre for a chamber with no recorded doorway, which the generator
+    /// does not produce and which is not worth a second kind of answer.</para></summary>
+    private static (double X, double Y) WayIn(in Room room)
+    {
+        if (room.Ways.Count == 0)
+        {
+            return (room.X, room.Y);
+        }
+
+        double mx = (room.Ways[0].X1 + room.Ways[0].X2) / 2;
+        double my = (room.Ways[0].Y1 + room.Ways[0].Y2) / 2;
+        double dx = mx - room.X, dy = my - room.Y;
+        double len = Math.Sqrt((dx * dx) + (dy * dy));
+        return len < 1e-9
+            ? (mx, my)
+            : (mx + (dx / len * WeldedRefugeStandOffDu), my + (dy / len * WeldedRefugeStandOffDu));
+    }
 
     /// <summary>What the console inside is called.</summary>
     public const string RefugeTankLabel = "🫁 REFUGE RACK";

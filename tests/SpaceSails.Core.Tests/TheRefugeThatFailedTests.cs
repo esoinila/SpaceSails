@@ -183,10 +183,12 @@ public sealed class TheRefugeThatFailedTests
                     }
                     welded++;
 
-                    // The door the plate hangs on and the press is made at is a REAL way out of that room,
-                    // not the room's centre: a console inside a welded chamber is an affordance nobody can
-                    // reach.
-                    bool doorIsAWay = false;
+                    // WHERE THE PRESS STANDS, and both halves of it are a bug this lane paid for. It must
+                    // be at one of the room's welded ways — not the room's centre, which is on the far side
+                    // of a wall — and it must be OUTSIDE that way rather than on it, because the way itself
+                    // is now a leaf with a wall behind it and a console on that line is a console in solid
+                    // rock. The client's A* audit found exactly that on two scenario floors.
+                    double nearestWay = double.MaxValue;
                     int weldsHere = 0;
                     foreach (UndergroundComplex.LockedDoor l in floor.Locked)
                     {
@@ -194,10 +196,8 @@ public sealed class TheRefugeThatFailedTests
                         {
                             weldsHere++;
                             double mx = (l.X1 + l.X2) / 2, my = (l.Y1 + l.Y2) / 2;
-                            if (Math.Abs(mx - r.DoorX) < 0.001 && Math.Abs(my - r.DoorY) < 0.001)
-                            {
-                                doorIsAWay = true;
-                            }
+                            double dx = mx - r.DoorX, dy = my - r.DoorY;
+                            nearestWay = Math.Min(nearestWay, Math.Sqrt((dx * dx) + (dy * dy)));
                         }
                     }
                     ways += weldsHere;
@@ -206,15 +206,21 @@ public sealed class TheRefugeThatFailedTests
                     {
                         bad.Add($"  {body} B{-level}: the refuge that failed has no weld on it at all.");
                     }
-                    if (!doorIsAWay)
+                    else if (Math.Abs(nearestWay - UndergroundComplex.WeldedRefugeStandOffDu) > 0.01)
                     {
-                        bad.Add($"  {body} B{-level}: the plate hangs at ({r.DoorX:F1}, {r.DoorY:F1}), "
-                            + "which is not one of the welded ways into that room.");
+                        bad.Add($"  {body} B{-level}: the press stands {nearestWay:F2} du from the nearest "
+                            + $"weld and the stand-off is {UndergroundComplex.WeldedRefugeStandOffDu:F2}. "
+                            + "On the line is inside the wall; further off is a prompt at nothing.");
                     }
-                    if (Math.Abs(r.DoorX - r.X) < 0.001 && Math.Abs(r.DoorY - r.Y) < 0.001)
+
+                    // …and OUT of the room, not into it: the press is further from the room's centre than
+                    // the doorway is. A sign error here would put the captain inside the sealed chamber.
+                    double toDoor = Math.Sqrt(
+                        ((r.DoorX - r.X) * (r.DoorX - r.X)) + ((r.DoorY - r.Y) * (r.DoorY - r.Y)));
+                    if (toDoor <= UndergroundComplex.RefugeHalfWidth)
                     {
-                        bad.Add($"  {body} B{-level}: the press is at the room's CENTRE, on the far side of "
-                            + "the weld — an affordance a captain can see and can never reach.");
+                        bad.Add($"  {body} B{-level}: the press is {toDoor:F1} du from the room's centre, "
+                            + "which is still inside the room — on the far side of the weld.");
                     }
                 }
             }
