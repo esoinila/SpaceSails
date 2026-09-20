@@ -437,13 +437,6 @@ public sealed class NoTwoCaptionsShareOneBandTests
 
         Assert.Equal(HavenLevels.Cabins, row.Count);
 
-        // …and it is the whole row, numbered in the order it is read. A law that found four of five plates
-        // and called them tidy would be a law about whichever plates happened to survive.
-        for (int n = 0; n < row.Count; n++)
-        {
-            Assert.Equal(HavenLevels.CabinDoorPlate(n + 1), row[n].Text);
-        }
-
         double baseline = row[0].Y;
         foreach (Caption plate in row)
         {
@@ -462,6 +455,14 @@ public sealed class NoTwoCaptionsShareOneBandTests
                 + $"{row[i - 1].Where}{Environment.NewLine}      {row[i].Where}{Environment.NewLine}"
                 + "A plate in a row of doors carries what is DIFFERENT between them (#1279); what they have "
                 + "in common belongs to the floor.");
+        }
+
+        // …and it is the whole row, numbered in the order it is read. A law that found four of five plates
+        // and called them tidy would be a law about whichever plates happened to survive. Asked LAST, so the
+        // measurement above is what a revert of the plate reports rather than a string comparison.
+        for (int n = 0; n < row.Count; n++)
+        {
+            Assert.Equal(HavenLevels.CabinDoorPlate(n + 1), row[n].Text);
         }
     }
 

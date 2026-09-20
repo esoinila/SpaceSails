@@ -593,7 +593,8 @@ never asks `ShaftsOn(field)`; there is no field.
 **What shipped, at Selene Gate only.**
 
 - **`HavenLevels`** (Core) — two floors, their plates (`CONCOURSE` / `SERVICE LEVEL`), the door plate
-  `SERVICE LEVEL — NO PUBLIC ACCESS`, `CABIN n · CREW`, and the stop list a cage's panel offers. Both rows
+  `SERVICE LEVEL — NO PUBLIC ACCESS`, `CABIN n` (the plate PAINTED on a leaf in the row — #1279; the
+  register keeps `CABIN n · CREW`), and the stop list a cage's panel offers. Both rows
   from either floor: #600's scar is a car that only went down, and the honest way not to repeat it is a
   panel that cannot.
 - **`StationSpec.Lower`** — a nullable `LowerSpec` (name, plate, one canvas). The other six havens carry
@@ -662,8 +663,28 @@ three of them are on the floor above:
   every one of them the shipped ones.
 - **Guessing wrong costs nothing.** No card, nothing spent, no line anywhere that says you missed it — and
   the walk is there the next time you tie up.
-- **Guards:** `HisCabinIsBelowTests` (9). RED watched on the shipped one-leg route (three cases) and on
-  drawing him on whichever floor the captain is standing on.
+- **Guards:** `HisCabinIsBelowTests` (10). RED watched on the shipped one-leg route (three cases), on
+  drawing him on whichever floor the captain is standing on, and (#1281) on a leg that ends only when the
+  route object gives up.
+
+### Played, 2026-09-21 — four ways the floor below read wrong (#1279 #1280 #1281 #1283)
+
+- **The door number is the plate** (#1279). Five plates at one door's frontage, each wider than it, so
+  #1218's band book stacked them across two rows and three of five numbers read as a smear. What is PAINTED
+  on a leaf in a row is `CABIN n`; the register keeps `CABIN n · CREW`. Guarded by a fifth boot on the
+  caption sweep and by `TheRowOfCabinPlatesIsOneRowAndTheNumbersDoNotTouch` — one row, no two plates
+  touching.
+- **The car panel is not a moon's** (#1280). `LiftPanel.razor` painted `SURFACE` / `−150 m` and a `🫁 air`
+  tag at a berth in orbit. One panel, one mode (`LiftPanel.TheCarIsInAStation`): a station's row is the
+  floor's plate and `◄ you are here`, and the Hive's row is untouched.
+  `TheHavensCarIsNotAMoonTests` (4).
+- **A leg is over where it ends** (#1281). `NpcWalk`'s courtesy stops a walker one body-width off a square
+  the captain is standing on and KEEPS its route — and a car's landing is the one square in the building
+  that never clears, because it is where a ride sets the captain down. So the man on his way to the car he
+  rides up on stood at the captain's elbow indefinitely and the whole night stopped with him.
+- **The en-route band is two paces** (#1283). The hold read `FootTail.LegibleDu` (30 du) in a 34 du hall,
+  so any captain following in line anywhere on the concourse froze him. It is
+  `ObservationWalk.OnHisHeelsDu` — the small-room constant — now.
 
 **What is deliberately still not here.** The corridor is otherwise empty: the other four cabins are shut and
 nobody's, and the dark-web desk's rows are still rows. The people come one at a time.
