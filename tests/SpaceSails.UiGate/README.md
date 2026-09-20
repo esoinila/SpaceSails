@@ -183,8 +183,27 @@ that the layout is moving.
 
 `TheGateMeasuresAStillScreenTests` is the law itself: the #1234 screen booted three times, read 0 ms,
 1200 ms and 3000 ms after the door, and the toolbar must read as the **same controls on the same lines**
-every time (digits knocked out of the labels — sim time may spend a character; a line may not change).
-Proven red by deleting the one `SettledAsync` call inside it.
+every time. Proven red by deleting the one `SettledAsync` call inside it.
+
+### What a row is compared as (issue #1265) — `ToolbarRows`
+
+The first cut of that guard compared a listing that glued each line number to the control's **digit-
+normalised label**, and on 2026-09-20 it went red on PR #1263 — a doc-only change — with two readings whose
+every control sat on the **same line**. The whole of the difference was the long-coast advert's text,
+`(# d)` against `(# d # h)`. #1252 had already made that text harmless to the layout (a fixed-width slot
+with tabular figures), so the screen really had not moved: it was now the **guard** that depended on when
+the gate looked.
+
+`ToolbarRows.Declarations` is the decision spelled once, for the three guards that read a toolbar's rows.
+The comparable is the **key** — each control's line index, in toolbar order, and no text in it at all. The
+label rides along in a second string that exists only to be **printed in a failure**. It is never compared,
+not even normalised, because normalising is a guess about which parts of a sentence may change and this
+one was wrong twice in two days: it knocked out digits but not digit **groups**, and the group count is
+what moved the row.
+
+It still catches everything geometric — a control changing line, a control arriving or leaving (the key's
+length changes), the row re-wrapping. It deliberately does not catch a control being **renamed**, which is
+`NavHudMarkup.baseline.txt`'s question and not a row's.
 
 ## The hidden-tab gate (issue #1244) — `TheBootIsTheSameSpeedWhenNobodyIsLookingTests`
 

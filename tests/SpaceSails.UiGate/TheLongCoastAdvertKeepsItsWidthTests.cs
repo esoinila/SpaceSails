@@ -156,13 +156,12 @@ public sealed class TheLongCoastAdvertKeepsItsWidthTests(Xunit.Abstractions.ITes
     /// write and every read happen inside this one evaluate, so no Blazor re-render can land between them
     /// and hand a measurement back for text that is no longer there. The slot's own text is put back at the
     /// end, which matters because this page goes on living until the context closes.</summary>
-    private const string ShapeSweepScript = """
-        ({ toolbar, shapes }) => {
+    private const string ShapeSweepScript =
+        "({ toolbar, shapes }) => {\n" + ToolbarRows.Declarations + "\n" + """
             const bar = document.querySelector(toolbar);
             if (!bar) { return 'premise: there is no Nav toolbar on this screen.'; }
 
-            const controls = () => [...bar.querySelectorAll('button, a.btn')]
-                .filter(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+            const controls = () => controlsOf(bar);
 
             const advert = controls().find(b => (b.innerText || '').includes('Long coast ahead'));
             if (!advert) {
@@ -174,24 +173,11 @@ public sealed class TheLongCoastAdvertKeepsItsWidthTests(Xunit.Abstractions.ITes
                      + 'this guard was written against is gone.';
             }
 
-            // WHICH LINE EACH CONTROL IS ON, by its place in the toolbar — and NOT by its label. #1239
-            // compares labels with the digits knocked out, and that is exactly why it cannot tell this bug
-            // from a legitimate reading: the advert's own label changes SHAPE ("(# h)" against
-            // "(# d # h)") precisely when the bug fires. The law here is that no control changes LINE, so
-            // the key is the line numbers in toolbar order, and the labels ride along only to be read in a
-            // failure.
-            const rows = () => {
-                const seen = controls().map((el, i) => ({
-                    i,
-                    y: Math.round(el.getBoundingClientRect().y),
-                    label: (el.innerText || '').replace(/\s+/g, ' ').trim(),
-                }));
-                const tops = [...new Set(seen.map(s => s.y))].sort((a, b) => a - b);
-                return {
-                    key: seen.map(s => tops.indexOf(s.y)).join(','),
-                    shown: seen.map(s => 'line ' + tops.indexOf(s.y) + ': ' + s.label).join('\n'),
-                };
-            };
+            // WHICH LINE EACH CONTROL IS ON, by its place in the toolbar — and NOT by its label, which is
+            // exactly why #1239's label comparison could not tell this bug from a legitimate reading: the
+            // advert's own label changes SHAPE ("(# h)" against "(# d # h)") precisely when the bug fires.
+            // #1265 moved that decision into ToolbarRows, where all three guards now read it.
+            const rows = () => rowsOf(bar);
 
             const firstRows = rows();
             if (!firstRows.key.split(',').includes('1')) {
@@ -249,29 +235,17 @@ public sealed class TheLongCoastAdvertKeepsItsWidthTests(Xunit.Abstractions.ITes
     /// <summary>Samples the advert as its own clock runs, and keeps one reading per distinct countdown
     /// text. The sampler runs in the page on a timer, so what it records is what the captain would have
     /// been looking at.</summary>
-    private const string LiveCrossingScript = """
-        async ({ toolbar, sampleForMs, everyMs }) => {
+    private const string LiveCrossingScript =
+        "async ({ toolbar, sampleForMs, everyMs }) => {\n" + ToolbarRows.Declarations + "\n" + """
             const limit = Number(sampleForMs) > 0 ? Number(sampleForMs) : 5000;
             const step = Number(everyMs) > 0 ? Number(everyMs) : 100;
             const bar = document.querySelector(toolbar);
             if (!bar) { return 'premise: there is no Nav toolbar on this screen.'; }
 
-            const controls = () => [...bar.querySelectorAll('button, a.btn')]
-                .filter(el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+            const controls = () => controlsOf(bar);
 
             // Keyed on the line numbers in toolbar order rather than on the labels — see the sweep above.
-            const rows = () => {
-                const seen = controls().map((el, i) => ({
-                    i,
-                    y: Math.round(el.getBoundingClientRect().y),
-                    label: (el.innerText || '').replace(/\s+/g, ' ').trim(),
-                }));
-                const tops = [...new Set(seen.map(s => s.y))].sort((a, b) => a - b);
-                return {
-                    key: seen.map(s => tops.indexOf(s.y)).join(','),
-                    shown: seen.map(s => 'line ' + tops.indexOf(s.y) + ': ' + s.label).join('\n'),
-                };
-            };
+            const rows = () => rowsOf(bar);
 
             const byText = new Map();
             const started = performance.now();
