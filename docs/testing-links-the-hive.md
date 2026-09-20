@@ -948,7 +948,7 @@ none, which is the find being a find.
 > `🪪 SITE PASS · LABORATORIES · SECRET LAB SITE`, the cage chit and another site's
 > `🪪 SITE PASS · GENERAL HANDS · LUNA SITE` — and picking the LABORATORIES one at the hail turns B2's
 > read from *“He reads the pass twice…”* into *“Right. Keep to the lit side.”* ❌ **The second link does not
-> boot the floor it describes**: `/map?secretlab=deep&floor=10` comes up **aboard the ship at Selene Gate**,
+> boot the floor it describes**: the row's old form (`?secretlab=deep&floor=10`, no lander — fixed in #1264) came up **aboard the ship at Selene Gate**,
 > on the `7 Deck` view. `&land=1` lands correctly (−258 m, plate `B10 · LABORATORIES`), but the third room
 > along the spine could not be identified from the walked view, so the drawer itself is **unplayed** —
 > [#1262](https://github.com/esoinila/SpaceSails/issues/1262).
