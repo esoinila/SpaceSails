@@ -137,11 +137,23 @@ public static class TheMenuBoard
         DiceRule.Roll(DiceRule.Seed(
             $"board-special:{bodyId ?? string.Empty}:{(captain ?? string.Empty).ToUpperInvariant()}", watch));
 
-    /// <summary>True when the roll came up the STORY rather than the usual. One rule, read by the line
-    /// below and by the guard, so "which outcome was it" has exactly one answer.</summary>
-    public static bool IsAStory(DiceRoll roll) => roll.Total >= StoryOnOrAbove;
+    /// <summary>True when the roll came up the STORY rather than the usual. One rule, read by the line below
+    /// and by every guard, so "which outcome was it" has exactly one answer.</summary>
+    /// <param name="forceStory">#247 QA · the <c>?special=story</c> lever, in the shape #1022 already gave
+    /// this exact problem (<c>?tender=flash</c>) and #746 gave it before that. <b>It forces the ROLL and
+    /// never the content:</b> the dish is still this bar's dish, the price is still this watch's price, the
+    /// purse still moves, one Special a sitting still holds, and the sentence the captain reads is still the
+    /// authored one — so what a tester watches is the plate a captain would get, never a rigged one.
+    ///
+    /// <para>It exists because the outcome is seeded on the CAPTAIN as well as the bar and the watch, which
+    /// is the right design and also means no single URL can show a tester the rare line: every universe rolls
+    /// its own. Without a lever a one-in-ten beat is reachable by luck alone, and an authored line nobody can
+    /// reach is a beat said into the dark.</para></param>
+    public static bool IsAStory(DiceRoll roll, bool forceStory = false) =>
+        forceStory || roll.Total >= StoryOnOrAbove;
 
     /// <summary>The outcome line for a cast roll: usually <see cref="DeliciousLine"/>, occasionally
     /// <see cref="StoryLine"/>.</summary>
-    public static string OutcomeOf(DiceRoll roll) => IsAStory(roll) ? StoryLine : DeliciousLine;
+    public static string OutcomeOf(DiceRoll roll, bool forceStory = false) =>
+        IsAStory(roll, forceStory) ? StoryLine : DeliciousLine;
 }

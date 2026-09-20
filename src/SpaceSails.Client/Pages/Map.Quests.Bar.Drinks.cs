@@ -237,6 +237,16 @@ public partial class Map
     // limiter is a sitting, never drunkenness, because a plate is not a pour (#756).
     private bool _specialThisVisit;
 
+    /// <summary>#247 QA · <c>?special=story</c> — force the board's rare outcome. Set in the boot-query parse
+    /// (Map.Sim.World.QueryArcs.cs) and read once, below.
+    ///
+    /// <para>It forces the ROLL and never the content, which is <c>?roll=</c>'s own philosophy (#746) and
+    /// <c>?tender=flash</c>'s (#1022). The reason it has to exist is particular to this roll: the outcome is
+    /// seeded on the CAPTAIN as well as on the bar and the watch, so no URL can be written that shows a
+    /// tester the rare line — every universe rolls its own — and a one-in-ten sentence with no lever at all
+    /// is an authored beat nobody can reach.</para></summary>
+    private bool _specialStoryCheat;
+
     // Order the Special: ONE debit through the same Drink.PriceAt seam every row on this card is bought
     // through, then the dice moment, then the relief. The plate does NOT route through PourRum — food does
     // not tilt the deck (#756's law) — so it reaches the nerve the way the med bay's pill does: the same
@@ -273,8 +283,10 @@ public partial class Map
         _specialThisVisit = true;
 
         // The tiny dice moment (#247), cast on the ONE rule every consequence in this game rolls on:
-        // deterministic per (bodyId, watch, captain), so a tester who steps the watch walks both outcomes
-        // and a captain who eats the same plate twice gets the same plate twice.
+        // deterministic per (bodyId, watch, captain), so a captain who eats the same plate twice gets the
+        // same plate twice, and two captains at one counter on one shift can get different suppers. The
+        // die is CAST either way — ?special=story only decides which side of the threshold to read it on,
+        // which is why the face below is the real face and not a number typed in for a tester.
         Core.DiceRoll roll = TheMenuBoard.RollTheSpecial(keep.BodyId, TheBoardsWatch, ActiveCaptainName);
 
         double beforeNerve = _nerve;
@@ -284,8 +296,8 @@ public partial class Map
 
         // The #119 receipt idiom, exactly as a pour gets one: what it was, what it cost, what happened.
         string receipt =
-            $"🍽 {TheMenuBoard.SpecialLabel} — {cost} cr. {board.PlateLine} {TheMenuBoard.OutcomeOf(roll)} "
-            + $"(d20 {roll.Face}) — {steadying}";
+            $"🍽 {TheMenuBoard.SpecialLabel} — {cost} cr. {board.PlateLine} "
+            + $"{TheMenuBoard.OutcomeOf(roll, _specialStoryCheat)} (d20 {roll.Face}) — {steadying}";
         _barNotice = receipt;
         ShowPulseMessage($"{receipt} (−{cost:N0} cr)");
         RequestVaultSave(); // #225: the purse moved (and the relief moved the nerve)

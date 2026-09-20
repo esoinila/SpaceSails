@@ -639,3 +639,52 @@ which is how a later system would come to *resolve* one, and that is the thing #
 re-derived from the hull's own numbers on both kinds of road, the measured rate, the causal-word and
 reserved-word sweep, the two-files-only source law, and the link in this row proved to boot a hull that
 really carries one.
+
+---
+
+## 8 · Every bar pours its own, and chalks a board beside it (#247, 2026-09-20)
+
+The owner's two-breath scope for #247, shipped together. **The glasses:** *"many different themed drinks to
+the place and ingredients available… The ingredient list doubles as worldbuilding — every cocktail is a
+geography lesson."* So the seven haven pours were re-authored to say WHERE THEY CAME FROM, and each carries
+a photograph on the one row of the card that has ever wanted one. **The food:** *"FOOD too — 'the Special is
+really a wild one usually.'"* So each bar now chalks a **BOARD** beside the card, with one dish on it and a
+d20 for what lands.
+
+**One honest thing about the rotation.** Each bar has exactly ONE Special, because that is the content the
+owner wrote — inventing a second dish to make a carousel turn would be the game making things up about its
+own kitchen. What rotates per watch is the **price** (3–6 cr, re-chalked every shift) and the **outcome
+pair**. The rows below say so rather than promising a menu that changes.
+
+**The house drinks, verbatim.** DUST DEVIL (`the-space-bar`) · SULPHUR SOUR (`cinder-roost`) · RINGSIDE
+(`ringside-exchange`) · THE LIST (`the-tilt`) · EARTHRISE (`selene-gate`) · THE BLINK (`red-eye`) · TRENCH
+(`the-deep`).
+
+| what | link | what to look for | played |
+| --- | --- | --- | --- |
+| **The house pour, and its plate** (#247, this PR) | [`?ashore=1&dock=the-space-bar`](https://esoinila.github.io/SpaceSails-play/map?ashore=1&dock=the-space-bar) — ashore in **THE ROADSTEAD BAR**. Press `[E]` at the counter, then **📜 See the menu**. | The card's foot button now reads **🍹 DUST DEVIL · 6 cr**, and the last row of the menu is that same drink with a **photograph beside it** — a heavy tumbler, a coarse salt rim, chilli powder drifted rust-red across the steel. The line under it is the ingredient list: *"Mescal off a Hellas still, a red chilli tincture, salt from the flats. It is served in a heavy glass because the light ones leave."* It is the **only** row on a haven card with a picture; Space Gin, Space Beer and Rocket Fuel are text, exactly as they always were. Buying it costs **the same 6 cr as a Space Gin** — one price seam, quoted once in the header. | — not driven |
+| **…and it is a different drink at every port** | swap `&dock=` for `cinder-roost`, `ringside-exchange`, `the-tilt`, `selene-gate`, `red-eye`, `the-deep`. | Seven pours, seven photographs, seven places. The **Ringside's ice is cut as an actual ring**, with a worn coin standing on edge beside it (*"a coin on the counter you did not order. Everybody leaves the coin."*); the **Cinder Lounge's tell is a dropper bottle whose label has worn blank** (*"a yellow bitters the keep will not name"*); **THE LIST leans**, glass and liquid disagreeing, with the park-brine jar open beside it; **EARTHRISE** floats one grey pitted lump that reads as rock, with Earth in the porthole; **THE BLINK** has pepper on the surface and the Spot turning behind the window; **TRENCH** has no ice in the glass at all — the frost ferns are growing up the wall instead. | — not driven |
+| **The board, and the Special on it** | [`?ashore=1&dock=ringside-exchange`](https://esoinila.github.io/SpaceSails-play/map?ashore=1&dock=ringside-exchange) — press `[E]` at the counter. | Above the row of buttons, a **green-ruled board** (the drinks card's rule is amber — a different kitchen answering): **🍽 THE BOARD**, one button reading **🍽 TODAY'S SPECIAL · n cr**, and under it *"Hydroponic eel, Ringside style — caught it ourselves, don't ask where."* It is drawn **whether or not the drinks menu is open** — a board is a thing you read. At `&dock=the-space-bar` the whole chalked line is **`SPECIAL.`** and the keep will not elaborate; order it and the card's body says exactly *"It is the Special."* | — not driven |
+| **Eating it is a meal-sized beat** | same link. Press **🍽 TODAY'S SPECIAL**. | The purse drops **once** by the chalked price, and the receipt reads the dish, then the outcome — usually *"It is better than it had any right to be."* — then the **d20 face**, then a steadying note in supper's own voice (*"a hot plate, and the hands come back to you between mouthfuls"*). The nerve gauge eases by **more than a tot would at any level** and less than a pill. The deck does **not** go tilty: food is not a pour (#756), so no tot is counted and the rum law is never touched. Press it again the same visit: *"One Special a sitting, spacer"*, and **nothing is taken**. | — not driven |
+| **…and the price is what rotates** | add `&simhours=5`, then `9`, then `13` — a watch is **4 sim-hours**, so each of those is a fresh shift. | The **dish does not change** — there is one Special per bar and the game does not pretend otherwise — but the **number on the button does**, inside 3–6 cr, and it is the same number every time you boot that same watch. | — not driven |
+| **The rare plate** | [`?ashore=1&dock=ringside-exchange&special=story`](https://esoinila.github.io/SpaceSails-play/map?ashore=1&dock=ringside-exchange&special=story) | *"Something in it moved, and then it was delicious."* — the one-in-ten outcome, on demand. **Why a cheat rather than a link with the right watch in it:** the roll is seeded on the **captain** as well as the bar and the watch, so no URL can show a tester the rare line — every universe rolls its own. `?special=story` forces the **ROLL and never the content** (`?roll=`'s philosophy, #746, and `?tender=flash`'s, #1022): same dish, same watch price, one debit, one-Special-a-sitting still holds, and **the d20 face on the receipt is the real face the dice cast**. | — not driven |
+| **…and the half that must look exactly the same** | every other bar link in this file | **Everything else at the counter.** The rumour rotation, the round for the room, the stools, the contact-drink offer, the back counter, the KAAMOS and NEBULA seams and the overheard strip are untouched. The Hive's self-serving counter grows **no board** — its card under the glass IS its food — and its rows keep their own photographs. Contacts' favourite drinks are keyed by **drink id**, so re-authoring every house pour's name and line moved nobody off the bar they drink at: One-Eye Silas still takes the Roadstead's own, Gilt-Eye still takes Selene's. | — not driven |
+
+> **⚠ Not played.** Every row in §8 was written from the code and from the shipped pixels — the seven plates
+> were opened and read one by one — but **no link in this section was booted in a browser**, so every row
+> carries `— not driven` and the mark column stays empty. A guard is not a play (this file's own rule), and
+> neither is looking at a JPEG.
+
+**The law behind it.** `EveryBarPoursItsOwnTests` (Core): the fourteen canon lines pinned byte for byte and
+**transcribed from the issue** rather than read back out of the code, one house drink and one Special per
+bar, the house pour priced through the staples' own seam, the price rotation proved to actually move, both
+outcomes swept reachable at every bar, a meal beating a tot at every level of the gauge, and the
+reserved-word sweep extended over all fourteen lines (the park's greens stay a **count**).
+`TheBoardIsNotThePourTests` (Client): the seven plates are in the folder **and** in a manifest, supper spends
+the purse once and never goes near `PourRum`, and the board is typed above the pinned foot where #780's
+scrim falls on nothing.
+
+**What would say this regressed:** the deck going tilty off a plate of noodles; the purse moving twice; a
+receipt that names rum; a bar whose menu shows two house drinks or none; the board hiding behind **📜 See the
+menu**; a picture beside a row that is not the house pour; or the Special's rare line arriving without
+`&special=story` at anything like a rate a captain would notice.

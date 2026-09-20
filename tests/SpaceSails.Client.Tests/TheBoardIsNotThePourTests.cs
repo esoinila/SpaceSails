@@ -96,7 +96,7 @@ public sealed class TheBoardIsNotThePourTests
     {
         string art = ArtDirectory();
         List<string> missing = [.. Bars
-            .Select(id => Barkeeps.For(id)!.DrinkArtUrl!)
+            .Select(id => Barkeeps.For(id)!.DrinkArtUrl ?? $"<{id} names no plate at all>")
             .Where(url => !File.Exists(Path.Combine(art, Path.GetFileName(url))))];
 
         Assert.True(missing.Count == 0,
@@ -111,7 +111,7 @@ public sealed class TheBoardIsNotThePourTests
     {
         string manifests = AllManifests();
         List<string> unspecified = [.. Bars
-            .Select(id => Path.GetFileName(Barkeeps.For(id)!.DrinkArtUrl!))
+            .Select(id => Path.GetFileName(Barkeeps.For(id)!.DrinkArtUrl ?? $"<{id} names no plate at all>"))
             .Where(file => !manifests.Contains(file, StringComparison.Ordinal))];
 
         Assert.True(unspecified.Count == 0,
@@ -131,11 +131,11 @@ public sealed class TheBoardIsNotThePourTests
         string order = Method("Map.Quests.Bar.Drinks.cs", "private void OrderTheSpecial()");
 
         // ONE debit, and it is the one the card's own row priced.
-        Assert.Equal(1, Regex.Matches(order, @"_credits\s*-=").Count);
+        Assert.Single(Regex.Matches(order, @"_credits\s*-="));
         Assert.Contains("plate.PriceAt(keep.DrinkPrice)", order, StringComparison.Ordinal);
 
         // ONE relief, at the meal step, dosed the pill's way — never off the rum spree.
-        Assert.Equal(1, Regex.Matches(order, @"ApplyNerveRelief\(").Count);
+        Assert.Single(Regex.Matches(order, @"ApplyNerveRelief\("));
         Assert.Contains("NerveModel.DrinkKind.Meal", order, StringComparison.Ordinal);
         Assert.Contains("totNumber: 1", order, StringComparison.Ordinal);
         Assert.DoesNotContain("_rumTots", order, StringComparison.Ordinal);
@@ -172,6 +172,40 @@ public sealed class TheBoardIsNotThePourTests
         string board = TheBoardBlock();
         Assert.Contains("OrderTheSpecial", board, StringComparison.Ordinal);
         Assert.DoesNotContain("disabled=", board, StringComparison.Ordinal);
+    }
+
+    /// <summary>THE RARE PLATE IS REACHABLE ON DEMAND, AND THE CHEAT STILL SHOWS THE REAL DIE.
+    ///
+    /// <para>#693's rule: a scene nobody can reach on demand is a scene that ships broken. This one needs a
+    /// lever more than <c>?tender=flash</c> did, because the outcome is seeded on the CAPTAIN as well as the
+    /// bar and the watch — so no URL can be written that shows a tester the rare line, and a one-in-ten
+    /// sentence with no lever at all is an authored beat said into the dark.</para>
+    ///
+    /// <para>And it must force the ROLL and never the content: the die is still CAST
+    /// (<c>RollTheSpecial</c> is called unconditionally) and the face printed on the receipt is that real
+    /// face, not a number typed in for a tester.</para></summary>
+    [Fact]
+    public void TheStoryOutcomeHasALever_AndTheLeverDoesNotForgeTheDie()
+    {
+        // The boot reads it…
+        string boot = Pages("Map.Sim.World.QueryArcs.cs");
+        Assert.Contains("StartsWith(\"special=\"", boot, StringComparison.Ordinal);
+        Assert.Contains("_specialStoryCheat", boot, StringComparison.Ordinal);
+
+        // …and exactly one place spends it: the OUTCOME's reading of the roll, never the roll itself.
+        string order = Method("Map.Quests.Bar.Drinks.cs", "private void OrderTheSpecial()");
+        Assert.Contains("TheMenuBoard.OutcomeOf(roll, _specialStoryCheat)", order, StringComparison.Ordinal);
+        Assert.DoesNotContain("_specialStoryCheat ?", order, StringComparison.Ordinal);
+        Assert.Contains("(d20 {roll.Face})", order, StringComparison.Ordinal);
+
+        // Core's own half: the lever moves the READING and leaves the face alone.
+        DiceRoll plain = TheMenuBoard.RollTheSpecial("ringside-exchange", 3, "ADA LOVELACE");
+        Assert.Equal(TheMenuBoard.StoryLine, TheMenuBoard.OutcomeOf(plain, forceStory: true));
+        Assert.Equal(plain.Face, TheMenuBoard.RollTheSpecial("ringside-exchange", 3, "ADA LOVELACE").Face);
+
+        // And the guide writes it down, which is where a tester finds it.
+        string guide = File.ReadAllText(Path.Combine(RepoRoot(), "docs", "testing-guide.md"));
+        Assert.Contains("?special=story", guide, StringComparison.Ordinal);
     }
 
     // ── THE BOARD IS ON THE SCREEN ──────────────────────────────────────────────────────────────────────
