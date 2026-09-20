@@ -446,7 +446,9 @@ public partial class Map
             changed = !who.Walk.Afoot;
         }
 
-        if (!who.Walk.Afoot && double.IsNaN(_walkAtTheRailSince))
+        bool heIsStandingStill = HeIsStandingStill(who);
+
+        if (heIsStandingStill && double.IsNaN(_walkAtTheRailSince))
         {
             // He has arrived at the rail, and the wait he is allowed to stand there starts NOW — on the very
             // frame his legs stop, not the one after it. A clock started a frame late is a clock, and this
@@ -454,15 +456,23 @@ public partial class Map
             _walkAtTheRailSince = SimTime;
             changed = true;
         }
+        else if (!heIsStandingStill && !double.IsNaN(_walkAtTheRailSince))
+        {
+            // …and a man who is walking again is not standing at a rail. The only way back out of standing
+            // still is the captain stepping out of his road, and when that happens the wait he is allowed at
+            // the glass has not begun — it begins when he next stops.
+            _walkAtTheRailSince = double.NaN;
+            changed = true;
+        }
 
         // ── THE LOOK ─────────────────────────────────────────────────────────────────────────────────────
         //
         // WHILE HE IS WALKING it takes losing SIGHT of him — a man crossing a room in front of you is a
-        // moving thing, and you track a moving thing whatever else you are doing. ONCE HE IS AT THE RAIL it
+        // moving thing, and you track a moving thing whatever else you are doing. ONCE HE IS STANDING it
         // takes only your eyes: a man standing still at a glass wall is scenery, and scenery is what a
         // captain looks away from. That is the whole difference between the two readings, and it is why the
         // paper works at the rail and not in the doorway.
-        bool stillWatched = who.Walk.Afoot ? lineOnHim : eyesOnHim;
+        bool stillWatched = heIsStandingStill ? eyesOnHim : lineOnHim;
 
         long look = ReeverObservation.LookIndexAt(TheTail.SeedFor(_walkBerth ?? "", who.Who), SimTime);
         if (look != _walkGalleryLookIndex)
@@ -482,13 +492,36 @@ public partial class Map
             _walkGalleryLookIndex = look;
         }
 
-        if (!who.Walk.Afoot && SimTime - _walkAtTheRailSince >= ObservationWalk.TheWaitSeconds)
+        if (heIsStandingStill && SimTime - _walkAtTheRailSince >= ObservationWalk.TheWaitSeconds)
         {
             return HeTurnsAndWalksBackOut(who, in bar, walls, slot) || changed;
         }
 
         return changed;
     }
+
+    /// <summary>
+    /// #1259 · <b>IS HE STANDING STILL?</b> — the question the gallery's two readings actually turn on, and
+    /// for one issue it was asked as <c>Walk.Afoot</c>, which is a different question.
+    ///
+    /// <para><c>Afoot</c> is <i>has he route left</i>. It is true of a man walking and also true of a man who
+    /// has <b>stopped dead because the captain is in his road</b> (<see cref="NpcWalk.Doing.Waiting"/> —
+    /// stopped, looking at you, route kept). The two are the same fact to a pathfinder and opposite facts to
+    /// a tail: one is a moving thing you track whatever else you are doing, and the other is a man standing
+    /// two feet from you at a glass wall, which is the definition of the scenery the eyes rule is about.</para>
+    ///
+    /// <para><b>What it cost (#1259, played 2026-09-20).</b> The coin binoculars are bolted to the rail, and
+    /// the rail is where his route ENDS — so a captain with his eye to the eyepiece is standing on the man's
+    /// own destination. He stopped one body-width short, <c>Afoot</c> stayed true for ever, the room went on
+    /// reading SIGHT of him rather than the captain's eyes, and the one card in this room that exists to take
+    /// a captain's eyes off the world bought four credits' worth of nothing. The wait never started either,
+    /// so he never gave up and walked out: he stood there as long as anybody watched.</para>
+    ///
+    /// <para>So the room asks whether he MOVED, which is <see cref="NpcWalk.Doing.Walking"/> and nothing
+    /// else — arrived, snagged and waiting are all a man standing still, and the deck already tells them
+    /// apart by name.</para>
+    /// </summary>
+    private static bool HeIsStandingStill(Walker who) => who.Walk.State != NpcWalk.Doing.Walking;
 
     /// <summary>#1199 · He is off the floor, and the second he went is the second the captain last had eyes
     /// on him — which is therefore the second <see cref="ObservationWalk.TheWaitSeconds"/> is counted from.

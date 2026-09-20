@@ -179,6 +179,77 @@ internal sealed class ObservationWalkBench
         Assert.True((bool)Read(_map, "AScrimIsUp")!, "the card did not put a scrim in front of the world.");
     }
 
+    /// <summary>#1259 · <b>STAND THE CAPTAIN AT THE COIN BINOCULARS</b> — the fixture's own square, read off
+    /// the deck plan the renderer draws and the <c>[E]</c> key dispatches through, never a coordinate typed
+    /// here. It is out at the glass past the cafeteria line, which is the whole of why this posture differs
+    /// from every other one in these laws: the eyepiece stands where his route ENDS.</summary>
+    internal void StandTheCaptainAtTheBinoculars()
+    {
+        DeckPlan.ConsoleSpot glasses = TheBinoculars;
+        StandTheCaptainAt(glasses.X, glasses.Y);
+    }
+
+    /// <summary>#1259 · The binoculars as the deck plan has them — asked for rather than assumed, so a room
+    /// that ever loses the fixture fails loudly instead of proving nothing about a press that cannot be
+    /// made.</summary>
+    internal DeckPlan.ConsoleSpot TheBinoculars
+    {
+        get
+        {
+            var deck = (DeckPlan)Read(_map, "_deckPlan")!;
+            foreach (DeckPlan.ConsoleSpot spot in deck.Consoles)
+            {
+                if (spot.Kind == DeckPlan.ConsoleKind.CoinBinoculars)
+                {
+                    return spot;
+                }
+            }
+
+            throw new InvalidOperationException("the gallery has no coin binoculars to press [E] on.");
+        }
+    }
+
+    /// <summary>#1259 · <b>PRESS [E] ON THE EYEPIECE</b>, through the deck's own interact road — the same
+    /// <c>InteractAtConsole</c> the key handler calls, dispatching on the same nearest-console reading. The
+    /// purse is filled first because the slot refuses an empty one, and the coins leaving it are what says
+    /// the press actually landed rather than fell on a fixture the captain was not standing at.</summary>
+    internal void PutHisEyeToTheEyepiece()
+    {
+        Set(_map, "_credits", 1500);
+        Invoke(_map, "InteractAtConsole");
+        Assert.True(
+            (int)Read(_map, "_credits")! < 1500, "the slot never took the coins: [E] found no eyepiece.");
+        Assert.True((bool)Read(_map, "AScrimIsUp")!, "the eyepiece put no card in front of the world.");
+    }
+
+    /// <summary>#1259 · One frame of the ROOM, through the metabolism the walked view actually calls
+    /// (<c>AdvanceBarWalkers</c>) rather than through the one step under it. The clock is advanced first,
+    /// exactly as the frame does it, so the look cadence ticks the way it ticks in play.</summary>
+    internal void OneFrameOfTheRoom(double dt = 1.0 / 30.0)
+    {
+        Set(_map, "SimTime", (double)Read(_map, "SimTime")! + dt);
+        Invoke(_map, "AdvanceBarWalkers", dt);
+    }
+
+    /// <summary>#1259 · …that many seconds of them, stopping the moment he is off the floor.</summary>
+    internal void RunTheRoom(double seconds)
+    {
+        const double dt = 1.0 / 30.0;
+        for (double t = 0; t < seconds && HeIsOnTheFloor; t += dt)
+        {
+            OneFrameOfTheRoom(dt);
+        }
+    }
+
+    /// <summary>#1259 · Is he standing still — stopped, whatever his route still has left in it? The page's
+    /// own question, asked of the walker the room is drawing, so a law about a man who has STOPPED cannot
+    /// quietly become a law about a man whose route has run out.</summary>
+    internal bool HeIsStandingStill =>
+        Him is { } w
+        && (bool)typeof(SpaceSails.Client.Pages.Map)
+            .GetMethod("HeIsStandingStill", CastawayBench.Hidden)!
+            .Invoke(null, [w])!;
+
     /// <summary>Force the notice latch — the roll is #436's and no law here is about the roll.</summary>
     internal void Notice() => Set(_map, "_walkNoticed", true);
 
