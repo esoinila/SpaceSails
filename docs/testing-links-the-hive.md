@@ -704,6 +704,16 @@ plate there, and has since #818 — so its occupant is a clerk and its shelf is 
 and the department are seeded independently, and that disagreement is the building talking, not the layer
 guessing.
 
+> 🎮 **Played 2026-09-20** (`bdf341ff`, headless), and **half of it is seen**. `?secretlab=1&land=1&floor=1`
+> lands on B1 · ADMINISTRATION of THE RECORDS ANNEX; walk the ring **west** from the lift and the plate
+> **`PRIVILEGED RECORDS · READING ROOM`** comes up with **two 📚 consoles on the wall of that one room**,
+> carrying this file's own words — *“catalogue cards in a language nobody here was born speaking”* and
+> *“far-future paperbacks with cracked spines, the kind where the ships have names and opinions”* — and
+> nothing at all in the storerooms and galleries either side. `s2-g_w4.png`. **Not reached this pass:**
+> pressing `[E]` on them (so the caption card and the gist filing are still unwitnessed), and the guard's
+> post in room 2. Whoever plays it next: the shelves sit at the bottom edge of the frame from the corridor,
+> and a click there is swallowed — step south into the room first, then click.
+
 **And the thing to watch on the freetime shelves as you walk a corridor:** no two rooms in a row ever carry
 the same one, and none comes back until all seven have been seen. Two identical freetime shelves side by side
 is a bug, and `TheShelvesSayWhoTheRoomBelongedToTests` should have caught it.
@@ -804,12 +814,12 @@ scene's own opening in the amber row — he says **"Pass."** — with **four mov
 answer replaces the row they sat in: one card, never two, and the **✕ is the fourth move**, so closing it is
 a decision rather than a dodge.
 
-| move | needs | what it is |
-| --- | --- | --- |
-| **SHOW THE PASS** | anything a palm is for in the wallet | the whole shipped read, one beat later. The paper is the one the fan put in your hand at the hail (#836), the ladder is the one in the table above, and the sentences are the ones in the table above — plus, where cover holds, *"He steps aside. Nothing is said."* |
-| **"I'M NEW. WHICH WAY IS THE MESS?"** | free, **once per guard per watch** | ROLLED. **YES** *"He points. It is not the way you came."* and he walks you to the lift **for nothing** — the same walk as an escort, with no heat, no pip and no line in any book. **YES-BUT** the same, and your name goes in a book: one rung of #715's heat, and **nothing says so**. **NO-AND** the escort, as a refusal |
-| **TALK ABOUT THE WORK** | a **name on you**: a file on somebody, or a pass for a department that is **not this floor's** | ROLLED. **YES** *"He has heard the name. He decides it is not his problem."* — passed this once, cover untouched. **YES-BUT** the same, and a rung of heat. **NO-AND** the escort |
-| **SAY NOTHING** | free, always there | the ladder's own empty-hand rung, word for word: *"He waits the entire time you are looking"*, and then the walk back |
+| move | needs | what it is | played |
+| --- | --- | --- |---|
+| **SHOW THE PASS** | anything a palm is for in the wallet | the whole shipped read, one beat later. The paper is the one the fan put in your hand at the hail (#836), the ladder is the one in the table above, and the sentences are the ones in the table above — plus, where cover holds, *"He steps aside. Nothing is said."* | ✅ `09-20` — **both halves, verbatim.** With the **LABORATORIES** paper picked at the fan, B2 answers *“He reads it the way a man reads a pass at the end of a shift — the face, the site code, the tier … ‘Right. Keep to the lit side.’ The round picks up where it left off.”* **and** *“He steps aside. Nothing is said.”* With the **GENERAL HANDS** paper still in hand: *“He reads the pass twice. The second time he is reading your face.”* + the escort. `g7-d_ans.png`, `g3-a_fan.png` |
+| **"I'M NEW. WHICH WAY IS THE MESS?"** | free, **once per guard per watch** | ROLLED. **YES** *"He points. It is not the way you came."* and he walks you to the lift **for nothing** — the same walk as an escort, with no heat, no pip and no line in any book. **YES-BUT** the same, and your name goes in a book: one rung of #715's heat, and **nothing says so**. **NO-AND** the escort, as a refusal | ⚠ `09-20` — `roll=hi` *“He points. It is not the way you came.”* with **nothing on the glass**; `roll=lo` the escort, in the shipped words, off a move that never touched the wallet — never a dead wall. **`roll=mid` reads like YES but adds `🌡 They remember you here.` that `roll=hi` does not have** — [#1260](https://github.com/esoinila/SpaceSails/issues/1260). The greying-on-the-second-stop rule was not driven |
+| **TALK ABOUT THE WORK** | a **name on you**: a file on somebody, or a pass for a department that is **not this floor's** | ROLLED. **YES** *"He has heard the name. He decides it is not his problem."* — passed this once, cover untouched. **YES-BUT** the same, and a rung of heat. **NO-AND** the escort | ✅ `09-20` — **correctly greyed** on B2 while the only department paper in the wallet is this floor's own, which is the paper you SHOW. `g2-b_card.png`. The ROLLED outcomes were not driven (no off-floor department paper on `?badge=1`) |
+| **SAY NOTHING** | free, always there | the ladder's own empty-hand rung, word for word: *"He waits the entire time you are looking"*, and then the walk back | ✅ `09-20` — *“🔒 Nothing comes out of your wallet that this floor has ever heard of. He waits the entire time you are looking — longer than he needs to, and exactly as long as the form says.”* then the walk back. `g10-a_ans.png` |
 
 **Modifiers** are the encounter's own named stack, and only three of the five can be true in a corridor:
 `+1` a relevant paper on you · `−1` your nerve is marked · `−1` you already fumbled an ask in front of **this
@@ -828,6 +838,20 @@ man**. The dice are printed into the event log (🎲) exactly as the table's are
 /map?badge=1&roll=mid            …the MIDDLE band. It reads exactly like YES, and that is the point:
                                  the cost is a rung of heat at this outfit and nothing anywhere says so.
 ```
+
+> 🎮 **Played 2026-09-20** on a Release publish of `our-own-ship-has-compartments` @ `bdf341ff`, headless.
+> Stand at the car on B2 and do nothing: the hail comes (*“You there — hold on.” He turns, tucks the
+> clipboard under his arm, and starts walking over. He is in no hurry at all.*), and with it **the fan**,
+> which is the thing the table above calls “the paper the fan put in your hand” — a card headed
+> **WHICH ONE OF YOU IS HE MEETING?** (*“He is crossing the floor. Whatever is in your hand when he gets
+> here is the thing he reads, and there is no swapping it in front of him.”*) listing all four papers with
+> the one **in your hand** marked, and a `Keep the one you have` under them. Then the card itself: title,
+> painting, the body verbatim, the amber **`Pass.`**, four buttons and a `Close`. **One card, never two** —
+> every move replaces the row it sat in. After `Close` a refusal ends *“The doors open on an empty car. He
+> waits until you are in it, and then goes back to the round without another word.”* — never the cut line —
+> and the free walk **never ends on the regolith**. Two things this pass could not see: the escort's own
+> **length** (from the lift car it is zero paces), and whether `Close` on its own decides as `SAY NOTHING`.
+> One defect: [#1260](https://github.com/esoinila/SpaceSails/issues/1260).
 
 **What to watch for and report.** The ask is greyed on the second stop by the **same** man this watch (hover
 it — it says why). TALK ABOUT THE WORK is greyed while the only pass you carry is the floor's own — that is
@@ -880,6 +904,16 @@ On the deep site (`?secretlab=deep`), read straight off the generator:
 **ganymede** a PLANT pass on **B4**, **titan** an ISOLATION pass on **B6**, **miranda** a LABORATORIES pass on
 **B2**, **the-clinker** a PLANT pass on **B12** — room 0 on all five. Four of the ten shipped grounds keep
 none, which is the find being a find.
+
+> 🎮 **Played 2026-09-20** (`bdf341ff`, headless). ✅ **The fan really does hold two papers for one
+> site**: `?badge=1`'s wallet reads `🪪 SITE PASS · GENERAL HANDS · SECRET LAB SITE`,
+> `🪪 SITE PASS · LABORATORIES · SECRET LAB SITE`, the cage chit and another site's
+> `🪪 SITE PASS · GENERAL HANDS · LUNA SITE` — and picking the LABORATORIES one at the hail turns B2's
+> read from *“He reads the pass twice…”* into *“Right. Keep to the lit side.”* ❌ **The second link does not
+> boot the floor it describes**: `/map?secretlab=deep&floor=10` comes up **aboard the ship at Selene Gate**,
+> on the `7 Deck` view. `&land=1` lands correctly (−258 m, plate `B10 · LABORATORIES`), but the third room
+> along the spine could not be identified from the walked view, so the drawer itself is **unplayed** —
+> [#1262](https://github.com/esoinila/SpaceSails/issues/1262).
 
 **Nothing is said when the pass WORKS.** Cover is a state, and silence is the reward — the only new sentence
 in this feature is the one above, and it is said at the moment the mismatch is caught and nowhere else.
