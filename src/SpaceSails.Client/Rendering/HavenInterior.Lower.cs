@@ -42,10 +42,17 @@ public static partial class HavenInterior
     // have carried. The sealed-edge counter is still stepped over a cage, so every other edge on this
     // station keeps the tag and the hatch id it has always had.
     //
-    // 0 (north-east), 6 (south-west) and 9 (south-east): no two of them adjacent, none of them the three
-    // that are taken, and they are spread far enough round the ring that a captain standing at one cannot
-    // watch the other two. That is the whole mechanic the owner asked for — a man goes down at one edge and
+    // 0 (north-east), 6 (south-west) and 10 (east-south-east): no two of them adjacent, none of them the
+    // three that are taken, and far enough apart round the ring that a captain standing at one is not
+    // watching the other two. That is the mechanic the owner asked for — a man goes down at one edge and
     // comes up at whichever he chooses, and a captain who guessed wrong is standing at an empty car.
+    //
+    // WHY NOT 9, which is the other south-eastern face and was the first choice. The immigration counter
+    // runs across the hall's southern quarter (deskY, x 4…9) and edge 9's doorstep lands 0.65 du off the end
+    // of it — INSIDE a body's own radius of the counter, so the doors would have opened onto stone. That was
+    // not reasoned out; it was measured, by the way-home guard below, which refused to walk a captain off a
+    // car it could not stand him on. It is exactly the class of bug #602 shipped on the regolith (a captain
+    // let out of a lift inside a wall), caught this time before anybody had to play it.
 
     /// <summary>#1253 · The north-east cage. Its ordinal is also the cage's own identity everywhere in the
     /// game — the panel, the ride, the landing and the beat all say "cage k" and mean this edge.</summary>
@@ -54,12 +61,13 @@ public static partial class HavenInterior
     /// <summary>#1253 · The south-west cage.</summary>
     private const int CageEdgeSouthWest = 6;
 
-    /// <summary>#1253 · The south-east cage.</summary>
-    private const int CageEdgeSouthEast = 9;
+    /// <summary>#1253 · The eastern cage, low on the ring — see the note above for why it is not its
+    /// neighbour.</summary>
+    private const int CageEdgeEast = 10;
 
     /// <summary>#1253 · The three, in the ring's own order. A <c>const</c>-only array expression built on
     /// demand rather than a static field, for the reason at the head of this file.</summary>
-    private static int[] CageEdges => [CageEdgeNorthEast, CageEdgeSouthWest, CageEdgeSouthEast];
+    private static int[] CageEdges => [CageEdgeNorthEast, CageEdgeSouthWest, CageEdgeEast];
 
     /// <summary>#1253 · Is this edge of the ring a car? Asked by the concourse's own build loop, so the ring
     /// has one opinion about which of its twelve faces carry lifts.</summary>
