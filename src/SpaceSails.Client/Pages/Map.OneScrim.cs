@@ -79,7 +79,8 @@ public partial class Map
         yield return ("_showShipScuttlePanel", _showShipScuttlePanel);
         yield return ("_wreckLook is { } look", _wreckLook is not null);
         yield return ("_kioskCard is { } buy", _kioskCard is not null);
-        yield return ("_showLiftPanel && _surface is { } liftEx", _showLiftPanel && _surface is not null);
+        yield return (
+            "_showLiftPanel && ThereIsACarToBeStandingIn", _showLiftPanel && ThereIsACarToBeStandingIn);
         yield return ("_lockedDoor is { } door", _lockedDoor is not null);
         // The seated CONVERSATION card — the else of this @if. The docked branch is the strip and writes no
         // scrim, so the card is up exactly when somebody came to you at a top you are sitting at.

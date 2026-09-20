@@ -203,8 +203,18 @@ public partial class Map
     /// the crossbar together — so the gallery at the far end is the same room as the tube, which is the only
     /// reading under which that room has one doorway.</para>
     /// </summary>
+    ///
+    /// <para>#1253 · <b>…and the FLOOR is asked before any of them</b>, because a station has floors now and
+    /// every predicate under this one is a half-plane or a box in a coordinate space the lower level shares.
+    /// A captain standing in a service corridor is neither in a bar nor on a concourse — there is nobody down
+    /// there to look up — so the level gets its own share of the pool, and the share is empty for the walk's
+    /// own reason (#1261): every line in that pool is a roomful of people deciding together that it was
+    /// nothing, and that beat needs the people.</para>
     private HullShudder.HavenRoom TheRoomOfTheHavenHeIsIn =>
-        _dockedHavenId is { } berth && HavenInterior.InTheObservationWalk(berth, _avatarX, _avatarY)
+        _havenFloor != HavenLevels.Concourse
+            ? HullShudder.HavenRoom.LowerConcourse
+        : _dockedHavenId is { } berth
+          && HavenInterior.InTheObservationWalk(berth, _avatarX, _avatarY, _havenFloor)
             ? HullShudder.HavenRoom.TheObservationWalk
             : TheCaptainIsInTheDockedBar
                 ? HullShudder.HavenRoom.Bar

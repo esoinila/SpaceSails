@@ -96,7 +96,25 @@ public static partial class HavenInterior
                 sealedIdx++;
                 float px = HallCenterX + ((a.X + b.X) / 2 - HallCenterX) * 0.9f;
                 float py = HallCenterY + ((a.Y + b.Y) / 2 - HallCenterY) * 0.9f;
-                if (openHatchIds.Contains(id))
+                if (ACageStandsOnEdge(spec, k))
+                {
+                    // ── #1253 · A CAR TOOK THIS PANEL ───────────────────────────────────────────────────
+                    //
+                    // The wall and the cold locked leaf are the ones this edge has always had — a car is a
+                    // door in a wall and not a gap in it — and the ONLY thing that changes is what is
+                    // written on the console standing in front of it. The sealed-edge counter is stepped
+                    // above, exactly as the observation walk steps it, so every other edge on this station
+                    // keeps the department name and the hatch id it already had.
+                    //
+                    // What the station gives up for three lifts is three department plates. That is the
+                    // same bargain the walk made for a window, and a port that has been running since
+                    // before anybody alive made it a long time ago without mentioning it.
+                    walls.Add(new(a.X, a.Y, b.X, b.Y, false, true));
+                    doors.Add(new(Lerp(a.X, b.X, 0.25f), Lerp(a.Y, b.Y, 0.25f),
+                                  Lerp(a.X, b.X, 0.75f), Lerp(a.Y, b.Y, 0.75f), Locked: true));
+                    hatches.Add(new(DeckPlan.ConsoleKind.HavenLift, px, py, CagePlateAbove(spec, k)));
+                }
+                else if (openHatchIds.Contains(id))
                 {
                     // Cracked: carve a walkable doorway (two stubs + an unlocked auto-door), and draw
                     // the panel open (📂). The wing's own walls, added below, close the room beyond.

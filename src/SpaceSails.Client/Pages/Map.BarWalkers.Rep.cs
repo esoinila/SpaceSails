@@ -68,7 +68,7 @@ public partial class Map
 
         IReadOnlyList<HavenInterior.SeatedRegular> rota =
             HavenInterior.ResolveRegulars(bar.BodyId, _dockVisitSimTime, TheBarsChurn);
-        TheRoundHeIsWorking(bar.BodyId, BarIsNotAFloor, BarWatch, () => TheBarsSeated(rota));
+        TheRoundHeIsWorking(bar.BodyId, TheFloorTheRoomIsOn, BarWatch, () => TheBarsSeated(rota));
 
         // He crosses to the table only when there IS somebody sitting alone at one, he has not been sent away
         // this visit — and they have had time to watch him work the room first (#1061).
@@ -123,7 +123,7 @@ public partial class Map
         in HavenInterior.BarFloor bar, IReadOnlyList<SurfaceCollision.Segment> walls,
         DeckReachability.Point to, Errand errand, int table, double berth)
     {
-        if (WhereHeSetsOffFrom(bar.Doors, walls, bar.BodyId, BarIsNotAFloor, BarWatch, to) is not { } from)
+        if (WhereHeSetsOffFrom(bar.Doors, walls, bar.BodyId, TheFloorTheRoomIsOn, BarWatch, to) is not { } from)
         {
             return false;
         }
@@ -156,7 +156,7 @@ public partial class Map
         // #1061 · His OWN key — the contact id, the same one <see cref="WhereHeSetsOffFrom"/> deals his way in
         // with, in both rooms. So the leaf he goes out of is the leaf he came in through, and nobody in this
         // bar ever leaves by a door they were never behind.
-        int which = Egress.DoorFor(bar.BodyId, BarIsNotAFloor, BarWatch, NebulaRep.ContactId, bar.Doors);
+        int which = Egress.DoorFor(bar.BodyId, TheFloorTheRoomIsOn, BarWatch, NebulaRep.ContactId, bar.Doors);
         if (which < 0 || which >= bar.Doors.Count)
         {
             return false;

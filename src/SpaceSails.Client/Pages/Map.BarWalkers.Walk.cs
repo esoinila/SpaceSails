@@ -259,7 +259,7 @@ public partial class Map
         in HavenInterior.BarFloor bar, IReadOnlyList<SurfaceCollision.Segment> walls, Walker who)
     {
         string plate = who.Walk.Plate;
-        int which = Egress.DoorFor(bar.BodyId, BarIsNotAFloor, BarWatch, plate, bar.Doors);
+        int which = Egress.DoorFor(bar.BodyId, TheFloorTheRoomIsOn, BarWatch, plate, bar.Doors);
         if (which < 0 || which >= bar.Doors.Count)
         {
             return false;
@@ -304,7 +304,7 @@ public partial class Map
         DeckReachability.Point to, string plate, Errand errand, double berth,
         Func<bool>? stillWanted, Action? onArrive)
     {
-        int which = Egress.DoorFor(bar.BodyId, BarIsNotAFloor, BarWatch, plate, bar.Doors);
+        int which = Egress.DoorFor(bar.BodyId, TheFloorTheRoomIsOn, BarWatch, plate, bar.Doors);
         if (which < 0 || which >= bar.Doors.Count)
         {
             return false;

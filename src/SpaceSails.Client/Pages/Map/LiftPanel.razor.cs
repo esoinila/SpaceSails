@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Components;
-using SurfaceExcursion = SpaceSails.Client.Pages.Map.SurfaceExcursion;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -43,7 +42,14 @@ public partial class LiftPanel
     /// is not the place that knows what a silence means.</summary>
     [Parameter] public bool TheCarIsStopped { get; set; }
     [Parameter] public Action<UndergroundComplex.LiftStop> PressLiftButton { get; set; } = default!;
-    [Parameter] public SurfaceExcursion liftEx { get; set; } = default!;
+
+    /// <summary>#1253 · What floor the car says it is on, under the title. It replaces the
+    /// <c>SurfaceExcursion</c> this surface used to be handed — a whole excursion object, carried in for one
+    /// integer, which is also exactly why this panel could not be drawn at a berth: <b>a haven has no
+    /// excursion.</b> The page answers the one question the markup was really asking, and answers it for a
+    /// moon and for a station out of the same method, so the sentence over the buttons and the buttons
+    /// cannot come to two names for one floor.</summary>
+    [Parameter] public Func<string> LiftPanelDepth { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

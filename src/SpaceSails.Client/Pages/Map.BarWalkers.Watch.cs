@@ -88,7 +88,7 @@ public partial class Map
             }
         }
 
-        return Egress.Departures(bar.BodyId, BarIsNotAFloor, BarWatch, seated, bar.Doors);
+        return Egress.Departures(bar.BodyId, TheFloorTheRoomIsOn, BarWatch, seated, bar.Doors);
     }
 
     /// <summary>
@@ -130,7 +130,7 @@ public partial class Map
 
         return expected.Count == 0
             ? []
-            : Egress.Arrivals(bar.BodyId, BarIsNotAFloor, BarWatch, expected, bar.Doors);
+            : Egress.Arrivals(bar.BodyId, TheFloorTheRoomIsOn, BarWatch, expected, bar.Doors);
     }
 
     /// <summary>

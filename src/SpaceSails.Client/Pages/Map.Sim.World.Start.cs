@@ -92,6 +92,18 @@ public partial class Map
                 ? $"🍸 Test: you are ashore in {_havenName} — the ship → tube → hall walk is already behind you. [E] works the tables, the counter and the corners."
                 : "🍸 Test: ?ashore=1 needs a berth with a walkable interior — this one has no bar to stand in. Try &dock=the-space-bar.");
 
+            // #1253 · …and ?havenfloor=-1 rides one leg further DOWN, before anybody sits anywhere: the ride
+            // rebuilds the deck and moves the captain, so a sitting taken first would be a sitting at a top
+            // on a floor he is no longer standing on. It goes through RideTheHavenLiftTo and never through a
+            // coordinate of its own — the cheat rides the car exactly as the captain would, which is what
+            // stops it drifting from the landing the doors actually open at.
+            if (q.HavenFloorCheat is { } floor)
+            {
+                ShowPulseMessage(RideTheHavenLiftTo(floor, 0)
+                    ? $"🛗 Test: you are on the {HavenLevels.NameOf(floor)} at {_havenName}, standing where the first cage's doors open. Three cars up, five cabins that do not open."
+                    : "🛗 Test: ?havenfloor= needs a berth with a floor under its concourse. Try &dock=selene-gate.");
+            }
+
             // #1016 · …and ?barcase=1 walks one leg further: onto a free top, sat down, with papers in the
             // sleeve. Immediately after the threshold, because it needs the deck the line above welded and
             // the coordinates it just wrote.

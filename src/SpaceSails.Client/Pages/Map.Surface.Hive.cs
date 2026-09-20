@@ -116,8 +116,17 @@ public partial class Map
     /// building's lifts rather than about the one panel a captain happened to press; a live panel at the
     /// other end of the corridor would teach a captain that a maintenance break is something you walk around,
     /// which is the opposite of what it is. What you walk to is the stair.</para></summary>
+    ///
+    /// <para>#1253 · <b>AND A BERTH'S THREE CARS ANSWER HERE TOO.</b> This is the one list
+    /// <c>LiftPanel.razor</c> draws, and a second lift surface would be a second set of buttons to keep in
+    /// step with the first. The haven's stops are Core's (<see cref="HavenLevels.Panel"/>) and nothing about
+    /// a moon is asked of them — no band, no card, no keypad, no dead air, and never <c>ShaftsOn(field)</c>,
+    /// because there is no field. Asked FIRST, because a berth has no excursion for the arms below it to
+    /// read.</para>
     private IReadOnlyList<UndergroundComplex.LiftStop> LiftStops() =>
-        TheCarIsStopped
+        TheStationHasFloors
+            ? HavenLiftStops()
+            : TheCarIsStopped
             ? []
             : _surface is { } ex
             ? UndergroundComplex.LiftPanel(
@@ -142,15 +151,50 @@ public partial class Map
 
     /// <summary>#801 · What the open panel says under its title. The cage's line is the one it has always
     /// had; the goods car's names where the cage is, which is the anti-choke feature said in a sentence.</summary>
+    ///
+    /// <para>#1253 · …and a STATION's car says nothing at all under its title, which is a ruling and not an
+    /// omission. Both of the Hive's lines exist to tell a captain what a car will NOT do — a band it cannot
+    /// leave, a surface it cannot climb to — and a haven's three cars each serve both of the building's two
+    /// floors. There is nothing to warn anybody about, so nothing is written, and the row under the title is
+    /// the sentence the panel has always had: <i>You are at CONCOURSE.</i></para>
     private string LiftPanelLine() =>
-        _liftCar == UndergroundComplex.ShaftKind.Cage
+        TheStationHasFloors ? ""
+        : _liftCar == UndergroundComplex.ShaftKind.Cage
             ? "This car serves its own band and no further."
             : UndergroundComplex.ServiceCarPanelLine;
+
+    /// <summary>#1253 · <b>WHAT FLOOR THE CAR SAYS IT IS ON</b>, under the panel's title — the one line in
+    /// this surface that used to read the excursion directly (<c>liftEx.Floor</c>) and therefore could not be
+    /// drawn at a berth at all.
+    ///
+    /// <para>Underground it is the depth paint this game has always used (<c>B4</c>, <c>SURFACE</c>); at a
+    /// berth it is the level's own plate, which is the same string the button beside it carries. The car
+    /// announces its floor the way the Hive's does, and it announces it out of ONE method, so the panel and
+    /// the stop list cannot come to two names for one floor.</para></summary>
+    private string LiftPanelDepth() =>
+        TheStationHasFloors
+            ? HavenLevels.NameOf(_havenFloor)
+            : _surface is { } depthEx ? UndergroundComplex.DepthPaint(depthEx.Floor) : "";
 
     /// <summary>#600 · A button was pressed. A refusing button says why and the car does not move — a button
     /// that is present and explains itself is the entire reason it is not simply absent.</summary>
     private void PressLiftButton(UndergroundComplex.LiftStop stop)
     {
+        // #1253 · A STATION'S CAR ANSWERS FIRST, and it answers with the whole of what it does: there is no
+        // gate on it, no paper to read and nothing to refuse — the two floors of a building the captain is
+        // already standing in. #600's scar is a car that only went down, and the honest way not to repeat it
+        // is a panel that cannot.
+        if (TheStationHasFloors)
+        {
+            if (HavenLevels.RideFrom(_havenFloor, in stop) is { } floor)
+            {
+                _showLiftPanel = false;
+                _ = RideTheHavenLiftTo(floor, _havenLiftCage);
+            }
+
+            return;
+        }
+
         if (_surface is not { } ex || stop.IsCurrent)
         {
             return;

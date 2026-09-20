@@ -64,13 +64,13 @@
         <KioskCard CloseKioskCard="@CloseKioskCard" Dismiss="@Dismiss" buy="@buy" />
     }
 
-    @if (_showLiftPanel && _surface is { } liftEx)
+    @if (_showLiftPanel && ThereIsACarToBeStandingIn)
     {
         <LiftPanel _liftOutcome="@_liftOutcome" CloseLiftPanel="@CloseLiftPanel" Dismiss="@Dismiss"
                    LiftPadClear="@LiftPadClear" LiftPadDisplay="@LiftPadDisplay" LiftPadIsDark="@LiftPadIsDark"
                    LiftPadPush="@LiftPadPush" LiftPadSaid="@LiftPadSaid" LiftPadSubmit="@LiftPadSubmit"
-                   LiftPanelLine="@LiftPanelLine" LiftStops="@LiftStops" PressLiftButton="@PressLiftButton"
-                   TheCarIsStopped="@TheCarIsStopped" liftEx="@liftEx" />
+                   LiftPanelDepth="@LiftPanelDepth" LiftPanelLine="@LiftPanelLine" LiftStops="@LiftStops"
+                   PressLiftButton="@PressLiftButton" TheCarIsStopped="@TheCarIsStopped" />
     }
 
     @if (_lockedDoor is { } door)

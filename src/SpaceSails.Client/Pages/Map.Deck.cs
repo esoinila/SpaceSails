@@ -48,6 +48,25 @@ public partial class Map
     private bool _ashore;                          // true once you're past the tube, in the station room
     private string _havenName = "";               // the docked haven welded on, or ""
 
+    /// <summary>
+    /// #1253 · <b>WHICH FLOOR OF THE STATION THE CAPTAIN IS ON.</b> <see cref="HavenLevels.Concourse"/>
+    /// everywhere and always, except at the one berth with a level under it while the captain has ridden a
+    /// car down.
+    ///
+    /// <para>It exists because <i>ashore</i> is a PLACE on a continuous deck in this game and not a mode:
+    /// the tests two methods down are <c>_avatarY &gt; 22</c> and <c>_avatarY &gt; 14</c>, welded ship to
+    /// gangway to concourse in one coordinate space. The lower level is laid in that SAME space (it is the
+    /// ring's own footprint, one floor down), so a captain standing on it reads as ashore by y and would
+    /// read as aboard by y if he walked south — and casting off from down there would leave him in a berth
+    /// that is no longer welded on. The audit on #1253 predicted exactly that and named it first: <i>"nothing
+    /// is z-aware, so RefreshAshore / PullAvatarAboard stay permanently true."</i> They ask this now.</para>
+    ///
+    /// <para>It rides no save. A floor is where you are standing this minute, and casting off ends it —
+    /// <see cref="SetDeckForDock"/> puts it back on the concourse for the same reason it forgets the bar's
+    /// feet.</para>
+    /// </summary>
+    private int _havenFloor = HavenLevels.Concourse;
+
     // The sim-time this docking began (issue #410): the seated regulars' rota (PatronRota) is resolved at
     // THIS clock and baked for the whole visit, so a wing-unlock re-weld mid-dock doesn't jump anyone to a
     // new chair. Re-dock later (a new watch) and the room re-rolls — different faces, different seats.
@@ -64,7 +83,7 @@ public partial class Map
             // the cellar door has no console at his chair any more, and whoever has come out of it and sat
             // down has one at his.
             && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce,
-                                        FillBarWalkerDroids, TheBarsChurn, TubeTierAt(id)) is { } complex)
+                                        FillBarWalkerDroids, TheBarsChurn, TubeTierAt(id), _havenFloor) is { } complex)
         {
             _deckPlan = complex;
         }
@@ -95,15 +114,20 @@ public partial class Map
     private void SetDeckForDock(string? havenId)
     {
         _dockVisitSimTime = SimTime; // freeze the watch this docking sees the bar on (issue #410 rota)
+        // #1253 · A NEW BERTH IS THE GROUND FLOOR, and this line is before the forgetting rather than after
+        // it because the feet are keyed on (berth, LEVEL) now. A docking that arrived still holding the last
+        // station's basement would weld a concourse and then ask which floor of it the captain is standing
+        // on and be told: the one below.
+        _havenFloor = HavenLevels.Concourse;
         // #973 L0 · …and the bar's own feet go with the berth. Cast off and the people who were crossing that
         // room are people who are not here: the same law a turned shift keeps underground.
-        ForgetTheBarsFeet(havenId);
+        ForgetTheBarsFeet(havenId, _havenFloor);
         if (havenId is { } id
             // #731 · …and the room as this evening has left it: whoever has stood up and walked out through
             // the cellar door has no console at his chair any more, and whoever has come out of it and sat
             // down has one at his.
             && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce,
-                                        FillBarWalkerDroids, TheBarsChurn, TubeTierAt(id)) is { } complex)
+                                        FillBarWalkerDroids, TheBarsChurn, TubeTierAt(id), _havenFloor) is { } complex)
         {
             _deckPlan = complex;
             _havenName = _ephemeris?.Bodies.FirstOrDefault(b => b.Id == id)?.Name ?? "the haven";
@@ -121,18 +145,29 @@ public partial class Map
 
     // Casting off: if you'd wandered up the tube or into the station, step you back aboard so you
     // never undock standing in a berth that's no longer welded on.
+    //
+    // #1253 · …AND A FLOOR IS NOT A COORDINATE. The test below is a y threshold on a continuous deck, and
+    // the service level is laid in that same coordinate space one floor down — so a captain standing in the
+    // southern half of the lower concourse reads as ABOARD by y, and casting off would leave him exactly
+    // where he was standing, in a station that is no longer welded on, with no ship under him. He is put back
+    // aboard unconditionally from any floor but the concourse, because "below decks" is never aboard.
     private void PullAvatarAboard()
     {
-        if (_avatarY > ShipDeckTopY)
+        if (_havenFloor != HavenLevels.Concourse || _avatarY > ShipDeckTopY)
         {
             (_avatarX, _avatarY, _avatarHeading) = (2.5, 8, -Math.PI / 2); // back in the airlock corridor, facing in
         }
+        _havenFloor = HavenLevels.Concourse;
         _ashore = false;
     }
 
     // "Ashore" is a place on the continuous deck now, not a mode: true once you're past the tube in
     // the station room. Kept fresh as you walk so quest/status flavor can read it.
-    private void RefreshAshore() => _ashore = _deckPlan.FollowCam && _avatarY > StationFloorY;
+    //
+    // #1253 · …and EVERY square of a lower level is ashore, whatever its y reads. That floor has no gangway
+    // and no tube on it: there is nowhere down there that is not the station.
+    private void RefreshAshore() =>
+        _ashore = _deckPlan.FollowCam && (_havenFloor != HavenLevels.Concourse || _avatarY > StationFloorY);
 
     // #428 · ?ashore=1 — THE WALK, ALREADY WALKED. Stand the captain at the bar-room threshold of the
     // haven they just clamped onto, facing into the room, with the Deck up.

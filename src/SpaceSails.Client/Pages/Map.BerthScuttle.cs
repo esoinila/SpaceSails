@@ -170,7 +170,7 @@ public partial class Map
                 continue;   // already gone, or never in the room this watch
             }
 
-            int door = Egress.DoorFor(bar.BodyId, BarIsNotAFloor, BarWatch, who.Id, bar.Doors);
+            int door = Egress.DoorFor(bar.BodyId, TheFloorTheRoomIsOn, BarWatch, who.Id, bar.Doors);
             if (door < 0)
             {
                 continue;   // a room with no leaf in it has nowhere to send anybody

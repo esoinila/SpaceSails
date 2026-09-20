@@ -66,12 +66,19 @@ public partial class SalvageCardRack
     [Parameter] public Action<string> LiftPadPush { get; set; } = default!;
     [Parameter] public string? LiftPadSaid { get; set; }
     [Parameter] public Action<UndergroundComplex.LiftStop> LiftPadSubmit { get; set; } = default!;
+    /// <summary>#1253 · What floor the open car says it is on. See <c>LiftPanel.razor.cs</c>: it replaces
+    /// the whole <c>SurfaceExcursion</c> this block used to bind, which is what kept the panel off a berth.</summary>
+    [Parameter] public Func<string> LiftPanelDepth { get; set; } = default!;
     [Parameter] public Func<string> LiftPanelLine { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<UndergroundComplex.LiftStop>> LiftStops { get; set; } = default!;
     [Parameter] public EventCallback OpenSatchelAtTheDoor { get; set; } = default!;
     [Parameter] public Action<UndergroundComplex.LiftStop> PressLiftButton { get; set; } = default!;
     [Parameter] public Action<Derelict.SalvageChoice> ResolveWreck { get; set; } = default!;
     [Parameter] public bool TheCarIsStopped { get; set; }
+    /// <summary>#1253 · Is there a car to be standing in at all — a moon's building under the captain, or a
+    /// station with floors. It replaces `_surface is { } liftEx`, which was the same question asked in the
+    /// one way that could only ever answer for a moon.</summary>
+    [Parameter] public bool ThereIsACarToBeStandingIn { get; set; }
     [Parameter] public string TheClauseNonAnswer { get; set; } = default!;
     [Parameter] public EventCallback TurnBothKeys { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<Derelict.WreckCause>> WreckCandidateCauses { get; set; } = default!;
