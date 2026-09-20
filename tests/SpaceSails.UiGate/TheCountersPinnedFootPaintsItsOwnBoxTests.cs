@@ -41,8 +41,10 @@ namespace SpaceSails.UiGate;
 /// be measuring the sky rather than the foot.</para>
 ///
 /// <para><b>RED PROOF.</b> Delete the <c>background-color: var(--card-foot-fill, …)</c> rule from
-/// <c>Map.razor.css</c> — the shipped CSS this issue was filed against — and both viewports fail, naming
-/// the rows that were standing in the band and how many bytes the two frames differ by.</para>
+/// <c>Map.razor.css</c> — the shipped CSS this issue was filed against — and every world fails, naming the
+/// rows that were standing in the band and how many bytes the two frames differ by. Measured: world one
+/// reds on <c>.bar-menu-item</c> <i>"🥃 RINGSIDE · 8 cr"</i> 60 px inside the band, world two on
+/// <c>.contact-offer-row</c> <i>"🥃 Offer Ilse Marrow a drink · 6 cr"</i> 12 px inside it.</para>
 /// </summary>
 public sealed class TheCountersPinnedFootPaintsItsOwnBoxTests : IAsyncLifetime
 {
@@ -67,6 +69,11 @@ public sealed class TheCountersPinnedFootPaintsItsOwnBoxTests : IAsyncLifetime
     // …and TallCardTests' phone, where #780 wraps the foot onto three lines and the band is ~180 px tall.
     private const int PhoneWidth = 390;
     private const int PhoneHeight = 700;
+
+    // HudCollisionTests' own short window — #1013's, where a room full of faces pushes the card past its
+    // cap at a desktop width and the Roadstead's four-line foot owns 148 px of a 244 px scrollport.
+    private const int ShortWidth = 1280;
+    private const int ShortHeight = 420;
 
     private const string Card = ".deck-offer-card";
     private const string Band = ".deck-offer-card > .deck-offer-actions";
@@ -96,8 +103,25 @@ public sealed class TheCountersPinnedFootPaintsItsOwnBoxTests : IAsyncLifetime
     }
 
     /// <summary>
-    /// THE LAW, AT BOTH OF THE ISSUE'S VIEWPORTS. Built once — the boot and the walk are the expensive part
-    /// — and checked at each by resizing in place, the same window a captain would resize.
+    /// THE LAW, AT BOTH OF THE ISSUE'S VIEWPORTS AND IN BOTH OF THE ROOMS THAT MAKE THE CARD TALL. Built
+    /// once per world — the boot and the walk are the expensive part — and checked at each viewport by
+    /// resizing in place, the same window a captain would resize.
+    ///
+    /// <para><b>World one, the menu.</b> #1271's own repro: the Ringside with <b>See the menu</b> pressed,
+    /// where seven priced rows and the board push the card past its cap, at the card's DEFAULT scroll.</para>
+    ///
+    /// <para><b>World two, the room.</b> The Roadstead with its old shipmates in it (#973 L5a's cheat) and
+    /// the menu SHUT — the card is tall because of WHO IS STANDING AT THE COUNTER, and the contact rows are
+    /// typed ABOVE the menu, so what stands in the band here is a face's own <i>Offer &lt;name&gt; a drink</i>
+    /// rather than a drink. This is the shape #1013 was filed about and the shape <c>HudCollisionTests</c>
+    /// measures the flow of; here the same rectangle is asked the one question a box cannot answer, which is
+    /// what it is FILLED with.</para>
+    ///
+    /// <para><b>And world two is driven at 390×700 and at 1280×420, not at 1440×1100.</b> Measured: with the
+    /// menu shut, a full room is <b>752 px of content against a 924 px cap</b> on the tall window — the card
+    /// does not overflow at all, nothing is under the foot, and a guard asserted there would be proving
+    /// nothing while going green. 1280×420 is <c>HudCollisionTests</c>' own window, the one #1013 was
+    /// measured in; its foot wraps onto four lines and takes 148 px of a 244 px scrollport.</para>
     /// </summary>
     [Fact]
     public async Task The_counters_pinned_foot_paints_over_the_menu_that_scrolls_under_it()
@@ -105,10 +129,64 @@ public sealed class TheCountersPinnedFootPaintsItsOwnBoxTests : IAsyncLifetime
         await BootIntoTheCounterCardWithTheMenuOpen();
 
         await Resize(WideWidth, WideHeight);
-        await AssertTheFootFillsItsOwnBox($"{WideWidth}×{WideHeight}");
+        await AssertTheFootFillsItsOwnBox($"the Ringside's menu at {WideWidth}x{WideHeight}");
 
         await Resize(PhoneWidth, PhoneHeight);
-        await AssertTheFootFillsItsOwnBox($"{PhoneWidth}×{PhoneHeight}");
+        await AssertTheFootFillsItsOwnBox($"the Ringside's menu at {PhoneWidth}x{PhoneHeight}");
+
+        await BootIntoACounterWithAContactAtIt();
+
+        await Resize(PhoneWidth, PhoneHeight);
+        await ScrollUntilTheBandStandsOverSomething();
+        await AssertTheFootFillsItsOwnBox($"a contact at the counter at {PhoneWidth}x{PhoneHeight}");
+
+        await Resize(ShortWidth, ShortHeight);
+        await ScrollUntilTheBandStandsOverSomething();
+        await AssertTheFootFillsItsOwnBox($"a contact at the counter at {ShortWidth}x{ShortHeight}");
+    }
+
+    /// <summary>
+    /// WORLD TWO'S ONE CONCESSION, AND IT IS THE CAPTAIN'S OWN THUMB. #1271 is a claim about the card's
+    /// DEFAULT scroll and world one is held to exactly that. In a room full of faces the contact rows are
+    /// typed near the TOP of the card, so which of them stands in the band depends on how many the room
+    /// seeded — measured at 1280×420, a full Roadstead is 752 px of content in a 242 px scrollport and at
+    /// scrollTop 0 the band lands on the card's intro sentence rather than on a face.
+    ///
+    /// <para>So the card is scrolled, half a band-height at a time, until the band really is standing over a
+    /// row: the position a captain reaches by reading down the card. The law is not about one offset — a
+    /// foot that fills its own box fills it at every offset there is, and a foot that does not is
+    /// see-through at all of them. Bounded, and it never re-reads until it likes the answer: if no offset
+    /// puts a row under the foot, the caller's own premise assertion says the guard measured nothing.</para>
+    /// </summary>
+    private async Task ScrollUntilTheBandStandsOverSomething()
+    {
+        await _page.SettledAsync($"{Card}, {Band}");
+        for (int step = 0; step < 12; step++)
+        {
+            if ((await Read("the scroll search")).Rows.Length > 0)
+            {
+                return;
+            }
+
+            bool moved = await _page.EvaluateAsync<bool>(
+                """
+                () => {
+                    const card = [...document.querySelectorAll('.deck-offer-card')]
+                        .find(c => c.getClientRects().length > 0);
+                    const band = card.querySelector(':scope > .deck-offer-actions');
+                    const was = card.scrollTop;
+                    card.scrollTop = Math.min(was + Math.max(40, band.getBoundingClientRect().height / 2),
+                                              card.scrollHeight - card.clientHeight);
+                    return Math.round(card.scrollTop) !== Math.round(was);
+                }
+                """);
+            if (!moved)
+            {
+                return;
+            }
+
+            await _page.SettledAsync($"{Card}, {Band}");
+        }
     }
 
     // ── THE LAW ─────────────────────────────────────────────────────────────────────────────────────────
@@ -166,7 +244,7 @@ public sealed class TheCountersPinnedFootPaintsItsOwnBoxTests : IAsyncLifetime
                         + "same rectangle photographed over the card's prose and over the card's bare fill "
                         + $"is not the same picture ({asPlayed.Length} vs {overNothing.Length} bytes of "
                         + "PNG).\n\n"
-                        + "What was standing in the band at the card's default scroll:\n  "
+                        + "What was standing in the band:\n  "
                         + string.Join("\n  ", before.Rows)
                         + "\n\nThe band is `position: sticky` with a 12rem box-shadow scrim (#735/#780), and "
                         + "a box-shadow never fills the border box it is cast from — the row's own rectangle "
@@ -218,7 +296,8 @@ public sealed class TheCountersPinnedFootPaintsItsOwnBoxTests : IAsyncLifetime
                 const b = band.getBoundingClientRect();
                 const rows = [];
                 const prose = '.bar-menu-head, .bar-menu-item, .bar-board-head, .bar-board-item, '
-                            + '.bar-overheard-line, .deck-offer-flavor, .bar-menu-flavor, .bar-board-line';
+                            + '.bar-overheard-line, .deck-offer-flavor, .bar-menu-flavor, '
+                            + '.bar-board-line, .contact-offer-row';
                 for (const el of card.querySelectorAll(prose)) {
                     const r = el.getBoundingClientRect();
                     const over = Math.min(r.bottom, b.bottom) - Math.max(r.top, b.top);
@@ -314,7 +393,8 @@ public sealed class TheCountersPinnedFootPaintsItsOwnBoxTests : IAsyncLifetime
                     ? fromEnv
                     : Path.Combine(AppContext.BaseDirectory, "ui-gate-artifacts"));
             Directory.CreateDirectory(dir);
-            string stem = "foot-1271-" + atSize.Replace('×', 'x');
+            string stem = "foot-1271-" + string.Concat(
+                atSize.Select(c => char.IsLetterOrDigit(c) ? c : '-'));
             string a = Path.Combine(dir, stem + "-as-played.png");
             string b = Path.Combine(dir, stem + "-over-the-bare-card.png");
             File.WriteAllBytes(a, asPlayed);
@@ -346,10 +426,67 @@ public sealed class TheCountersPinnedFootPaintsItsOwnBoxTests : IAsyncLifetime
     /// </summary>
     private async Task BootIntoTheCounterCardWithTheMenuOpen()
     {
+        ILocator card = await WalkToACounter("ringside-exchange");
+
+        // …and open the drinks menu, which is the one press between the counter card and #1271's screen.
+        ILocator seeTheMenu = card.Locator("button", new() { HasTextString = "See the menu" });
+        Assert.True(await seeTheMenu.CountAsync() > 0,
+                    "the counter card came up without a `See the menu` button — the walk landed somewhere "
+                    + "that is not the Ringside's counter, so this guard would be measuring the wrong card.");
+        await seeTheMenu.First.ClickAsync();
+
+        await _page.Locator(".bar-menu").WaitForAsync(
+            new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
+
+        // The card opens at the top and STAYS there — #1271 is a claim about the DEFAULT scroll, and a
+        // fixture that scrolled it would be photographing a screen the captain never sees.
+        Assert.Equal(0, await card.EvaluateAsync<int>("el => Math.round(el.scrollTop)"));
+    }
+
+    /// <summary>
+    /// #1013's own room, and the second half of #1271: the Roadstead with its old shipmates in it, the
+    /// drinks menu SHUT. What makes the card taller than its cap here is WHO IS AT THE COUNTER, so what
+    /// stands in the pinned band is a contact's offer row — the same rectangle <c>HudCollisionTests</c> has
+    /// been measuring the flow of since #1013, asked what it is filled with instead.
+    ///
+    /// <para>Each present face opens with an "is looking at you" gate (#973 L5a); they are answered here so
+    /// the real <c>Offer &lt;name&gt; a drink</c> rows draw, exactly as that gate does it.</para>
+    /// </summary>
+    private async Task BootIntoACounterWithAContactAtIt()
+    {
+        await Resize(WalkWidth, WalkHeight);
+        ILocator card = await WalkToACounter(null, "&oldcrew=1");
+
+        for (int i = 0; i < 8; i++)
+        {
+            ILocator faceBtn = card.Locator("button", new() { HasTextString = "is looking at you" });
+            if (await faceBtn.CountAsync() == 0)
+            {
+                break;
+            }
+            await faceBtn.First.ClickAsync();
+            await _page.Locator("button.old-crew-answer").First.ClickAsync();
+            await _page.Locator("button", new() { HasTextString = "Leave it there" }).ClickAsync();
+        }
+
+        Assert.True(await card.Locator(".contact-offer-row").CountAsync() > 0,
+                    "nobody the captain knows is drinking at this counter, so no contact row was drawn — "
+                    + "this half of the guard would be measuring the same screen as the first (#1013/#1271).");
+    }
+
+    /// <summary>
+    /// Ashore at a berth, walk to the counter, <c>[E]</c>. The walk is a pixel click because the room is a
+    /// canvas, and it is retried for the reason <c>HudCollisionTests</c> gives: a single click-to-walk pass
+    /// can land a few pixels short of the console's own reach radius, and a gate that flakes on the WALK
+    /// rather than on the law it exists to check is a gate nobody would trust.
+    /// </summary>
+    private async Task<ILocator> WalkToACounter(string? dock, string extra = "")
+    {
         // `&holdbeats=1` — this fixture presses its way through a card, and a story beat whose cadence
         // lands mid-drive paints its own backdrop over the button about to be pressed (#1148).
         await _page.GotoAsync(
-            _host.BaseUrl + "/map?scenario=sol&ashore=1&dock=ringside-exchange&holdbeats=1",
+            _host.BaseUrl + "/map?scenario=sol&ashore=1&holdbeats=1"
+            + (dock is null ? "" : $"&dock={dock}") + extra,
             new() { Timeout = BootTimeoutMs });
 
         await _page.BootDoorClosedAsync(BootTimeoutMs);
@@ -380,19 +517,6 @@ public sealed class TheCountersPinnedFootPaintsItsOwnBoxTests : IAsyncLifetime
         }
 
         await card.WaitForAsync(new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
-
-        // …and open the drinks menu, which is the one press between the counter card and #1271's screen.
-        ILocator seeTheMenu = card.Locator("button", new() { HasTextString = "See the menu" });
-        Assert.True(await seeTheMenu.CountAsync() > 0,
-                    "the counter card came up without a `See the menu` button — the walk landed somewhere "
-                    + "that is not the Ringside's counter, so this guard would be measuring the wrong card.");
-        await seeTheMenu.First.ClickAsync();
-
-        await _page.Locator(".bar-menu").WaitForAsync(
-            new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
-
-        // The card opens at the top and STAYS there — #1271 is a claim about the DEFAULT scroll, and a
-        // fixture that scrolled it would be photographing a screen the captain never sees.
-        Assert.Equal(0, await card.EvaluateAsync<int>("el => Math.round(el.scrollTop)"));
+        return card;
     }
 }
