@@ -43,6 +43,13 @@ public sealed partial class TheRefugesUndergroundTests
         // owner's "if for dramatic suspense we need one that does not work" forbids. Both ends are nailed
         // down on all three, so the only build that goes green is one that deals all three states at these
         // rates.
+        //
+        // #619 · AND THE THIRD COUNT COMES OFF A DIFFERENT QUESTION NOW. The failed refuge is a SECOND room
+        // on its floor and the floor's own refuge is never it, so StateOfTheRefugeOn cannot answer FAILED
+        // and a switch over it would have counted zero for ever and gone on passing as long as nobody nailed
+        // the floor down — the "green number never asked of the world" shape. It is asked of the site's own
+        // story instead (RefugeThatFailedIsOn), which is the answer the carve, the weld, the plate and the
+        // card all read.
         int holding = 0, empty = 0, failed = 0;
         foreach (string body in ManySites())
         {
@@ -52,17 +59,26 @@ public sealed partial class TheRefugesUndergroundTests
                 {
                     case UndergroundComplex.RefugeState.Holding: holding++; break;
                     case UndergroundComplex.RefugeState.Empty: empty++; break;
-                    case UndergroundComplex.RefugeState.Failed: failed++; break;
+                    case UndergroundComplex.RefugeState.Failed:
+                        Assert.Fail($"{body} B{-level}: the FLOOR's own refuge came back FAILED. #619's law "
+                            + "is that the room that failed is an extra chamber and never the one the plan "
+                            + "promises — a captain who read REFUGE on the panel and walked a tank to this "
+                            + "door was killed by the instrument.");
+                        break;
                     default: break;   // a floor that holds pressure has no refuge to have a state
+                }
+                if (UndergroundComplex.RefugeThatFailedIsOn(body, level))
+                {
+                    failed++;
                 }
             }
         }
 
-        int dead = holding + empty + failed;
+        int dead = holding + empty;
         Assert.True(dead > 500, $"only {dead} dead floor(s) swept — this net proves nothing.");
 
-        // Measured at this commit over 100 sites: 816 dead floors — 660 holding (80.9%), 133
-        // drawn down (16.3%), 23 failed (2.8%), the last of those on 23 of the 100 sites.
+        // Measured at this commit over 100 sites: 816 dead floors — see the pins below, re-measured for
+        // #619 and printed by this test's own failure text.
         double works = 100.0 * holding / dead;
         Assert.True(works is > 72 and < 90,
             $"{holding} of {dead} refuges ({works:F1}%) still have air in the rack. Pinned at 80.9 %: "
@@ -77,7 +93,7 @@ public sealed partial class TheRefugesUndergroundTests
 
         double gone = 100.0 * failed / dead;
         Assert.True(gone is > 1 and < 7,
-            $"{failed} of {dead} seals have gone ({gone:F1}%) — pinned at 2.8 %. It is an EVENT and the "
+            $"{failed} floor(s) of {dead} carry the room that failed ({gone:F1}%). It is an EVENT and the "
             + "card with the painting is the whole of it; at this rate a captain who works a dozen sites "
             + "meets it a few times, which is a story rather than weather.");
     }
@@ -208,8 +224,9 @@ public sealed partial class TheRefugesUndergroundTests
 
             foreach (int level in UndergroundComplex.FloorsOf(body))
             {
-                if (UndergroundComplex.StateOfTheRefugeOn(body, level)
-                    != UndergroundComplex.RefugeState.Failed)
+                // #619 · Asked of the site's story, not of the floor's refuge — the two parted company when
+                // the failed room became an extra chamber, and the floor's own refuge can never be it.
+                if (!UndergroundComplex.RefugeThatFailedIsOn(body, level))
                 {
                     continue;
                 }
@@ -297,7 +314,12 @@ public sealed partial class TheRefugesUndergroundTests
                         < tag.IndexOf(second, StringComparison.Ordinal),
                     $"{body} B{-level}: the tag reads back to front.");
 
-                if (state == UndergroundComplex.RefugeState.Failed)
+                // #619 · The undated third entry is the FLOOR's, and the floor's story is asked of the site
+                // — StateOfTheRefugeOn stopped being able to say FAILED when the failed room became a second
+                // chamber, and a test that went on asking it would have found none and passed for ever.
+                bool theOneThatFailed = UndergroundComplex.RefugeThatFailedIsOn(body, level);
+                Assert.NotEqual(UndergroundComplex.RefugeState.Failed, state);
+                if (theOneThatFailed)
                 {
                     failed++;
 
@@ -315,7 +337,7 @@ public sealed partial class TheRefugesUndergroundTests
                     for (int y = year - 1; y <= year + 3; y++)
                     {
                         Assert.Equal(
-                            state == UndergroundComplex.RefugeState.Failed && (y == year || y == year + 1),
+                            y == year || y == year + 1,
                             tag.Contains(
                                 y.ToString(System.Globalization.CultureInfo.InvariantCulture),
                                 StringComparison.Ordinal));

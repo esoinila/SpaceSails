@@ -163,10 +163,23 @@ public partial class Map
             // enforced here — the ring is drawn, and it is drawn in an ink that is not the promise the calm
             // ring makes, because a tracker that painted a room with no air in it in the same colour as one
             // with air in it would be the map lying (#573) in the one place it costs a tank.
-            bool failed = RefugeSealHere(ex) == UndergroundComplex.RefugeState.Failed;
+            // #619 · AND IT IS ASKED PER ROOM, NOT PER FLOOR. This read `RefugeSealHere(ex)` — the FLOOR's
+            // one answer — and painted every ring on the floor with it, which was right while a floor had
+            // one refuge and nothing else. The moment the failed one became a SECOND room standing beside a
+            // working one, a per-floor flag would have greyed out the good refuge too: the map lying (#573)
+            // in the one direction that costs a tank, an instrument telling a captain there is no air on a
+            // floor that has some.
+            //
+            // Two lists, two answers, and neither can be got wrong by a later hand: a room is in one or the
+            // other by its console KIND, never by a state test somebody has to remember to write. The dead
+            // ring is painted at the welded DOOR, which is as close to that room as anybody will get.
             foreach ((double rx, double ry) in RefugesOn())
             {
-                Add(rx, ry, home: false, dead: failed);
+                Add(rx, ry, home: false);
+            }
+            foreach ((double wx, double wy) in DarkRefugesOn())
+            {
+                Add(wx, wy, home: false, dead: true);
             }
             AddNewGround();   // #584
             return list;
@@ -579,19 +592,14 @@ public partial class Map
             return;
         }
 
-        // #608 · …AND ON A DEAD ONE THERE IS NOTHING TO READ, which the verb has to say out loud rather than
-        // answer with a gauge quoting zero. The state line IS the answer: a door that will not cycle is
-        // worth more to a captain deciding whether to walk back than a needle resting on the pin.
+        // #619 · THERE IS NO DEAD BRANCH HERE ANY MORE. This used to answer a FAILED seal with a line at the
+        // rack, which was the shape of the thing while a floor's one refuge could be the room that failed.
+        // It cannot now: the welded room is a different console kind at a different spot, with its own press
+        // (HiveRefugeDarkInteract), and every room that carries THIS kind is a room whose door cycles.
         //
-        // #1149 · EMPTY comes off this branch and goes back to the gauge below, because an empty rack is no
-        // longer a rack with nothing behind it — it is a working cracker somebody drew right down, and
+        // #1149 · EMPTY was already off that branch and answers on the gauge below, because an empty rack is
+        // not a rack with nothing behind it — it is a working cracker somebody drew right down, and
         // RackGaugeLine's own trickle line is exactly and already the sentence for that.
-        if (RefugeSealHere(ex) is { } seal && seal == UndergroundComplex.RefugeState.Failed)
-        {
-            ShowPulseMessage(UndergroundComplex.RefugeEntryLine(seal));
-            return;
-        }
-
         int which = RefugeUnderfoot(ex);
         if (which < 0)
         {
@@ -599,5 +607,39 @@ public partial class Map
             return;
         }
         ShowPulseMessage(RackGaugeLine(ex, RefugeReservoirNow(ex, which)));
+    }
+
+    // ── #619 · THE REFUGE THAT FAILED [E]. A welded door, and a card. ────────────────────────────────────
+    //
+    // Owner, filing it: "a SECOND refuge, on one floor, that failed — that is the story. Not a dice roll on
+    // every refuge. One, placed, deliberate, and never the only one on its floor, so it can never kill
+    // anybody who trusted the instrument." And the 2026-09-06 ruling that says how it is told: "If for
+    // dramatic suspense we need one that does not work, that is narrated, with a gen-AI image."
+    //
+    // So the press does one thing and then stops doing it. There is no gauge to read, no rack to stand at
+    // and nothing to decide — the room is shut and it stays shut — and the whole of the telling is the card
+    // (#761) plus the line the field book keeps, filed under the PLACE (#741) so it is still readable a week
+    // later, which is the entire complaint #587 was filed about.
+    //
+    // ONCE PER CAPTAIN PER SITE is the beat's own cadence (StoryBeats.Cadence.OncePerSubject, raised with
+    // the body id), not a flag kept here: a building has at most one of these, and a second press at the
+    // same door is a captain reading the plate again.
+    private void HiveRefugeDarkInteract()
+    {
+        if (_surface is not { } ex)
+        {
+            return;
+        }
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not
+            { Kind: DeckPlan.ConsoleKind.HiveRefugeDark })
+        {
+            return;
+        }
+
+        FileNoteAbout(
+            UndergroundComplex.FailedRefugeNoteLine(ex.Stop.Body.Id, ex.Floor),
+            "🫁",   // the refuge family's own mark, as every other refuge line in the book is filed
+            UndergroundComplex.FailedRefugeSubjects(ex.Stop.Body.Id, ex.Floor));
+        RaiseStoryBeat(StoryBeats.Beat.RefugeFailed, ex.Stop.Body.Id);
     }
 }

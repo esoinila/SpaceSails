@@ -61,6 +61,7 @@ public partial class Map
         public bool WreckCheat; // #488 /map?wreck=1: spawn a derelict in shuttle range — board her, read her, then file or strip
         public Derelict.WreckCause? WreckCauseCheat; // #488 /map?wreck=<cause>: board a wreck that died THAT way
         public bool SecretlabDeep; // #592 /map?secretlab=deep: the rock whose site hides a band
+        public bool SecretlabSealed; // #619 /map?secretlab=sealed: the rock whose site carries the refuge that failed (B3)
         public bool SecretlabCheat; // #409 /map?secretlab=1: spawn a landable rock in shuttle range that hides a Vantar lab, door pre-revealed
         public string? KaamosCheat; // #411 /map?kaamos=N|all: assemble N KAAMOS fragments (or all) so the readout + reach notice are testable; ?kaamos=pod|holder instead SEATS the rare find so it can be EARNED
         public bool BondCheat; // #429 /map?bond=1: dock at a bar with strangers + force the next ambient scare to bond (the cognac beat)

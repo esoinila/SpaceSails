@@ -371,8 +371,11 @@ public sealed class ThePlayerIsToldTests
         // the one room in the building a captain may have crossed a dead floor on a half tank to reach, and
         // the CARD is the whole telling — the pulse at the door says what the room is doing and the card
         // says what the room turns out to be.
-        new("the refuge on the plan is dead, and you are standing in it",
-            Surface.RaisedCard, "Map.Surface.Tank.cs", "StepSuitAir",
+        // #619 · …and it MOVED, because the room did. The refuge that failed is welded shut from the inside
+        // and is never the floor's own one, so nobody stands in it and the suit stepper cannot be where the
+        // telling happens. It is [E] at the door, which is as close as a captain will ever get.
+        new("the refuge on this floor is welded shut, and you are at its door",
+            Surface.RaisedCard, "Map.Surface.Shelter.cs", "HiveRefugeDarkInteract",
             "RaiseStoryBeat(StoryBeats.Beat.RefugeFailed, ex.Stop.Body.Id);"),
 
         // #1199 · THE WALK ITSELF is a card (the absence, at the blind end) and takes the row above's shape.

@@ -173,7 +173,11 @@ public sealed class PointTheGunTests
                 foreach (UndergroundComplex.LockedDoor l in
                     UndergroundComplex.Build(body, level, Field).Locked)
                 {
+                    // #619 · The weld on the refuge that failed is the third thing in this building with
+                    // nothing on it to break, and it is named POSITIVELY here with the other two rather
+                    // than being waved through by the absence of a rule.
                     bool known = UndergroundComplex.IsSealedWay(l.Sign)
+                        || UndergroundComplex.IsTheWeldedRefugePlate(l.Sign)
                         || UndergroundComplex.IsFreightShutter(l.Sign)
                         || UndergroundComplex.IsDoorSign(l.Sign);
                     if (!known)

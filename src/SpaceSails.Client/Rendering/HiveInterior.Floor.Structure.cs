@@ -222,6 +222,24 @@ public static partial class HiveInterior
         // time, by a captain who decided a particular door was worth telling the whole floor about.
         foreach (UndergroundComplex.LockedDoor l in floor.Locked)
         {
+            // ── #619 · …AND ONE DOOR IN THE BUILDING THAT A SENTRY MAY NOT OPEN ─────────────────────────
+            //
+            // The weld on the refuge that failed. #803's hasp rule is exactly right about a LOCK — a lock is
+            // a decision somebody made and six rounds can undo it — and exactly wrong about a WELD, which is
+            // not a fastening at all: there is nothing to shoot off. Shooting it open would also hand the
+            // captain the one room the whole beat is about, which is the card explained by a way in.
+            //
+            // It keeps its leaf and its wall and loses only the 🔒 sign console, because MarkTheRefuges puts
+            // the refuge's own press at that same midpoint. Two consoles on one spot is the caption pile
+            // #1218 wrote a band book to stop.
+            bool weld = UndergroundComplex.IsTheWeldedRefugePlate(l.Sign);
+            if (weld)
+            {
+                doors.Add(new((float)l.X1, (float)l.Y1, (float)l.X2, (float)l.Y2, Locked: true));
+                walls.Add(new((float)l.X1, (float)l.Y1, (float)l.X2, (float)l.Y2, false, false));
+                continue;
+            }
+
             if (locksShotOpen is not null && locksShotOpen.Contains(LockKey(level, l)))
             {
                 // No wall behind it now, and the leaf is drawn as the ordinary way-through it has become.
@@ -287,16 +305,36 @@ public static partial class HiveInterior
         // was flown in, versus what was cut out of the moon).
         foreach (UndergroundComplex.Refuge refuge in floor.Refuges)
         {
-            // #608 · The console stays on all three states and the CAPTION is what changes. It has to stay:
-            // the [E] on a dead refuge is the only thing that can say why it is dead, and #212's law is that
-            // a refusal said out loud beats an affordance that quietly is not there. What it may not do is
-            // go on advertising a RACK in a room whose inner door will not cycle — a prompt that names a
-            // machine you cannot reach is the affordance-you-see differing from the affordance-you-get.
+            // ── #619 · THE ONE THAT FAILED IS READ AT ITS DOOR, AND IT IS NOT A RACK ────────────────────
+            //
+            // Its console stands at the WAY IN (Refuge.DoorX/DoorY) and not at the room's centre, because
+            // the centre is on the far side of a weld: Core laid a LockedDoor across every way out of that
+            // chamber, so the room has a leaf that will not open and a real wall behind it, and a console
+            // inside it would be an affordance a captain can see and can never press (#212, inverted).
+            //
+            // It is a DIFFERENT KIND, and that is the safety property. `RefugesOn` — the list the suit, the
+            // gauge, the rack and the fan's calm ring all walk — reads HiveRefuge and nothing else, so this
+            // room is refused by the air machinery the way a wall is refused: by not being in the list at
+            // all, rather than by every caller remembering to ask about its state.
+            //
+            // Core's lock pass has already skipped hanging its own 🔒 sign console here (HangTheLockedDoors),
+            // so there is exactly one press at that door and it is this one.
+            if (refuge.State == UndergroundComplex.RefugeState.Failed)
+            {
+                consoles.Add(new(DeckPlan.ConsoleKind.HiveRefugeDark,
+                    (float)refuge.DoorX, (float)refuge.DoorY,
+                    UndergroundComplex.RefugeFailedGlyph));
+                labels.Add(((float)refuge.X, (float)(refuge.Y - UndergroundComplex.RefugeHalfHeight - 2.0),
+                    refuge.Sign));
+                continue;
+            }
+
+            // #608 · The console and the CAPTION for a room that opens. A rack is a console like any other
+            // so the [E] verb is the surface's verb, and the room's own doorway is already drawn Imported
+            // violet with every other door down here (#592's language: what was flown in, versus what was
+            // cut out of the moon).
             consoles.Add(new(DeckPlan.ConsoleKind.HiveRefuge,
-                (float)refuge.X, (float)refuge.Y,
-                UndergroundComplex.RefugeStillHolds(refuge.State)
-                    ? UndergroundComplex.RefugeTankLabel
-                    : UndergroundComplex.RefugeFailedGlyph));
+                (float)refuge.X, (float)refuge.Y, UndergroundComplex.RefugeTankLabel));
             labels.Add(((float)refuge.X, (float)(refuge.Y - UndergroundComplex.RefugeHalfHeight - 2.0),
                 refuge.Sign));
         }

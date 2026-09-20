@@ -720,14 +720,18 @@ public static class StoryBeats
                 "The light of it comes down the spine ahead of the heat, and every hatch anybody left open is a " +
                 "road it already knows.",
 
-            // #1149 · Authored canon (2026-09-06), verbatim and entire. Three flat observations in the order
-            // a captain standing in the doorway would make them, and the last one is the only verdict the
-            // card is allowed: what did NOT happen. It never says what came through, it never names the
-            // inspector, and it never says which way anybody went afterwards — the Scully law, at the one
-            // door in the building where the temptation to explain is worst.
+            // #619 · Authored canon (2026-09-20), verbatim and entire, replacing the #1149 line written
+            // against a card that was raised from inside the room. Three flat observations in the order a
+            // captain standing at the door makes them — the weld, the gauge, the rack and the reservoir —
+            // and the last clause is the only thing the card is allowed to conclude, which is a thing that
+            // did NOT happen. It never says what came through, it never names the inspector, it never says
+            // how many there were, and it never says which way anybody went. The Scully law (§13.8) at the
+            // one door in the building where the temptation to explain is worst.
             Beat.RefugeFailed =>
-                "The rack is full; nobody ever drew on it. The seal was cut from the inside, cleanly, and " +
-                "closed again from the outside. It did not fail from age.",
+                "The door is welded from the inside, and the weld is careful. The gauge beside it reads " +
+                "what the room has, which is nothing. On the rack outside are more suits than this floor " +
+                "ever had staff, and the reservoir on the deck was emptied by somebody who then did not " +
+                "leave.",
 
             // #1199 · Authored canon (2026-09-13), verbatim and entire, read off the room's own type so the
             // card and the place cannot come to two accounts of one tube. Two sentences: the room, and then

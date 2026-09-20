@@ -41,6 +41,13 @@ public sealed partial class DeckPlan
         // a regolith drum that a whole site has several of, and this is a poured room a safety inspectorate
         // made somebody build, one per dead floor, with nothing in it but air. One kind per verb.
         HiveRefuge,
+        // #619 · THE ONE REFUGE IN THE GAME THAT FAILED, read at its welded door. Its own kind rather than a
+        // HiveRefuge carrying a state, and the reason is the whole feature: HiveRefuge is the list the AIR
+        // MACHINERY walks (Map.Surface.Tank.Rack's RefugesOn reads this and nothing else), so a dead room
+        // that shared the kind would be a room the suit had to be TOLD to refuse — and a thing that has to
+        // be told can be told wrong by the next hand through. It cannot be, if it was never in the list.
+        // The press is neither a rack nor a sign: it is the card, once per site, and nothing else.
+        HiveRefugeDark,
         // #707 · The canteen counter, the basin run, the bank of machines. ONE kind for all three, because
         // they are one verb — stand in a room somebody ate or washed in, and read what is left of it — and
         // Core already carries which of the three it is, in the plate and the fixture name. Three kinds

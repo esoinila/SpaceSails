@@ -734,18 +734,55 @@ door, no shelf, no lamp — and the floors still hold air with no visible means.
 ```
 /map?secretlab=deep&land=1&floor=2&air=90     a dead floor with ninety seconds in the tank
 /map?secretlab=deep&land=1&floor=7            B7 — deep, dead, and one refuge somewhere on it
+/map?secretlab=sealed&land=1&floor=3          B3 · LONG STORAGE — TWO refuges, and one of them is welded shut
 ```
 
 Every airless floor carries at least one pressure refuge. The tracker paints them and never the surface
 shelters. The plate over the lift car says the depth, the department, **and whether you can breathe** — check
 it agrees with the HUD, because §13.13's whole law is that those two may never disagree.
 
-**And what the decades did to it (§13.12a).** The room is on every dead floor; the seal is not. A floor whose
-department is `ADMINISTRATION` or `LABORATORIES` still has air in the rack (the tank climbs, and the rack goes
-down as it does); everywhere else the room either holds with nothing to give (the drain stops, the gauge sits
-still) or has failed outright (the plate loses the word AIR, the tracker ring goes grey and hollow, and your
-tank goes on running while you stand in it). The lift panel prints `REFUGE` against every dead floor and never
-says which of the three you are about to walk to.
+**And what the decades did to it (§13.12a).** The room is on every dead floor and the seal almost always
+holds: the rack has bottles and the tank climbs, or the rack was drawn right down by somebody who got there
+first — and then the drain still stops, the plate reads `REFUGE · DRY`, and the cracker gives it back while
+you stand there. The lift panel prints `REFUGE` against every dead floor and never says which of the two you
+are about to walk to.
+
+### The refuge that failed (§13.12b, #619) — `?secretlab=sealed&floor=3`
+
+The third link is the only one of the four cheat rocks that reaches it: the welded room is on **one floor of
+one site in four**, and `secret-lab-site-sealed`'s floor is **B3 · LONG STORAGE**. Ride down and stand at the
+car before you move.
+
+**What the tracker shows from the lift.** Two rings that are not the way home, and they do not look alike:
+
+| ring | what it means |
+| --- | --- |
+| the **calm** one — breathing, with a filled centre | the floor's working refuge: air you can reach |
+| the **grey** one — hollow, dimmer, **not breathing** | the room that failed. On the fan because it is on the plan, and never in the ink that means air |
+
+Under the tracker readout, in the instrument column, the legend: **`🫁 refuge · dark`**. Walk anywhere on the
+floor and both rings stay as they are; walk far enough and they clamp to the rim, which eats the RANGE and
+never the ink. Neither ring ever goes violet or way-home blue.
+
+**What is on the deck.** Two `🫁 REFUGE` plates on one floor, at two tones — `🫁 REFUGE · AIR` (or `· DRY`) in
+the breathe-here ink, and `🫁 REFUGE — OUT OF SERVICE — REPORTED` in the same dead ink the lift plate uses to
+say your tank is running. The welded door has a leaf drawn shut with a real wall behind it: **you cannot get
+in, and a sentry cannot shoot it open** — a weld is not a hasp.
+
+**What E reads,** at the welded door, once per captain per site:
+
+> **🫁 THE REFUGE THAT FAILED**
+> *The door is welded from the inside, and the weld is careful. The gauge beside it reads what the room has,
+> which is nothing. On the rack outside are more suits than this floor ever had staff, and the reservoir on
+> the deck was emptied by somebody who then did not leave.*
+
+…with `art/refuge-failed.jpg` above it, and one line into the field book under **B3 · LONG STORAGE**: *"the
+refuge on B3 · LONG STORAGE — welded from the inside, suits for more than the floor, the tank drained by
+someone who stayed"*. Press E again and nothing happens; the card is once.
+
+**Then walk one room over.** The floor's own refuge is where the calm ring is, its door cycles, and it fills
+your tank. That is the law worth checking by hand: **the welded one is never the only refuge on its floor**,
+so the instrument never sent you to your death.
 
 ---
 

@@ -121,6 +121,7 @@ public static partial class UndergroundComplex
     /// theirs would quietly stop asking about a canteen or a refuge at all (#822).</para></summary>
     private static (List<Room> Published, List<Amenity> Amenities, List<Refuge> Refuges) PublishTheRooms(
         string bodyId, int level, in SurfaceLayout.Field field, List<SurfaceLayout.Wall> walls,
+        List<LockedDoor> locked,
         List<Room> rooms, List<EnSuite> ensuites, List<RingRoom> ring, List<MeetingRoom> meetings,
         HallSite? hallSite, double shaftX, double shaftY)
     {
@@ -163,7 +164,11 @@ public static partial class UndergroundComplex
         var published = new List<Room>(rooms);
 
         List<Amenity> amenities = CarveAmenities(bodyId, level, rooms, walls, shaftX, shaftY, hallSite);
-        List<Refuge> refuges = CarveRefuges(bodyId, level, rooms, field);
+        // #619 · …and the lock list goes with it, because the one refuge in the game that failed is welded
+        // shut and a weld in this building is a LockedDoor: a leaf that never opens with a real wall behind
+        // it. Handing the list over here rather than letting the renderer draw its own wall is the whole
+        // difference between the sim and the drawing agreeing and this repository's third named bug class.
+        List<Refuge> refuges = CarveRefuges(bodyId, level, rooms, locked, field);
 
         // #801 · …and the park's back of house LAST of all, appended after both of those have chosen. They
         // are rooms — they hold what any room down here holds and the A* audit walks to every one of them —
