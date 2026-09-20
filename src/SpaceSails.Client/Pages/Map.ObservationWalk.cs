@@ -217,6 +217,14 @@ public partial class Map
 
         _walkDealt = true;
 
+        // #1253 slice 2 · THIS METHOD IS THE LAST LEG, and it says so itself. Whoever called it — the
+        // night's own state machine coming up out of a car, or a haven with no floor under it walking the
+        // shipped one-leg route — the man it puts on the floor is walking to the rail, and everything
+        // downstream that asks which leg he is on (the gallery's vanish, the hold's tube clause) has to be
+        // reading the same answer as the walker actually on the deck. Set HERE rather than at the call
+        // sites, because a leg a caller has to remember to declare is a leg somebody will forget to.
+        _nightLeg = HisNight.ToTheWalk;
+
         if (HavenInterior.TheRailAt(bar.BodyId) is not { } rail)
         {
             return;

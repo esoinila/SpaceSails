@@ -190,7 +190,7 @@ public sealed class TheRideDownIsAWayBackTests
         Set(map, "SimTime", PatronRota.WatchSeconds * (Egress.LastCallFraction + 0.05));
         object bar = HavenInterior.BarBand(Berth)!;
         string person = TheTail.ThePersonOfInterest(Berth);
-        Invoke(map, "SendThemOutOntoTheWalk", bar, person);
+        Invoke(map, "SendThemOutOntoTheWalk", bar, person, null);
 
         Assert.NotEmpty(Afoot(map));
         var left = (IReadOnlySet<string>)Read(map, "_barLeft")!;
