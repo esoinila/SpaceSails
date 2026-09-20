@@ -364,6 +364,18 @@ public static class DevStarts
         new("🪞", "You look different",
             "Ashore at the bar with the four who served with you working this berth and one captain already in the ground — the face scene, the photograph, and the three modifiers an old shipmate puts on a glass (#973 L5a).",
             "/map?oldcrew=1"),
+        // #1253 · DOWN BELOW. Owner, 2026-09-20: "could we add a basement level to the observation deck
+        // station, so the tailing task could start from the basement cabin and end at the observation deck?
+        // … The main hall could have multiple elevators… good for tailing." A floor nobody can reach on
+        // demand is a floor that ships broken, and this one sits behind a walk an MCP-driven tab cannot make
+        // and then a press at the far side of a hall.
+        new("🛗🌑", "Selene Gate — the service level",
+            "Ashore at the oldest port in the system and then one floor DOWN, standing where the first "
+            + "cage's doors open. A service corridor round the whole ring under the concourse, a row of five "
+            + "crew cabins whose leaves do not open for you (press one: it is time, not a key), and three "
+            + "cars back up — each landing at its own edge of the hall, so which one you ride decides where "
+            + "you come out. Nothing down here explains anything (#1253).",
+            "/map?dock=selene-gate&ashore=1&havenfloor=-1"),
         // #1016 · THE OWNER'S OWN BUG, IN ONE BUTTON. He sat at a top in The Stormwatch Bar, pressed "Work
         // the case", and nothing happened at all — the seat verbs were every one of them gated on a
         // SurfaceExcursion and a berth has none. Owner: "Maybe it might be good idea to refactor the working

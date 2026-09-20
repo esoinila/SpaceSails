@@ -65,8 +65,14 @@ public partial class Map
     private readonly List<Walker> _barAfoot = [];
 
     /// <summary>Which berth these feet belong to. A different berth — or none — is a room that has never seen
-    /// any of them, exactly as a turned shift is underground.</summary>
-    private string? _barFeetBerth;
+    /// any of them, exactly as a turned shift is underground.
+    ///
+    /// <para>#1253 · <b>AND WHICH FLOOR OF IT.</b> A station has floors now, and the #1253 audit named the
+    /// cost of pretending otherwise before a line of it was written: <i>"one bar and one rota for two rooms —
+    /// people stand up downstairs and are drawn sitting upstairs, the repo's oldest bug class."</i> The key
+    /// is the PAIR, so riding a car is the same forgetting a casting-off is, for the same reason: what
+    /// happened on the other floor happened to people who are not in this corridor.</para></summary>
+    private (string? Berth, int Level) _barFeetBerth = (null, HavenLevels.Concourse);
 
     /// <summary>#973 L0 · How far off a top's centre a body stands to be AT it. One avatar ACROSS, the same
     /// step the ashore boot uses to stand the captain wholly inside a room rather than straddling its edge —
@@ -80,14 +86,23 @@ public partial class Map
     /// null at a berth with no interior to walk. It does NOT ask whether the captain has reached the bar yet:
     /// somebody crossing a floor keeps crossing it whether or not there is anybody in the room, which is the
     /// difference between a simulation and a cutscene.</para></summary>
+    ///
+    /// <para>#1253 · …and the FLOOR of it the captain is on. On the concourse this is the bar, to the byte.
+    /// Below it the room is the lower concourse — the same record, because everything that walks a haven
+    /// floor wants the same four facts about it, and a second record would be a second set of walkers.</para>
     private HavenInterior.BarFloor? TheDockedBar() =>
         _surface is null && _deckMode && _dockedHavenId is { } berth
-            ? HavenInterior.BarBand(berth)
+            ? HavenInterior.BarBand(berth, _havenFloor)
             : null;
 
     /// <summary>#973 L0 · Is the captain actually in the bar? North of the room's own south wall, which is the
     /// wall the room is built off — never a threshold typed in here.</summary>
     private bool InTheBar(in HavenInterior.BarFloor bar) => _avatarY > bar.FloorY;
+
+    /// <summary>#1253 · Is the captain on the floor the BAR is on? The one line that keeps every beat this
+    /// room deals — the rota's hours, the salesman, the walk-in, the finder, the tail — on the concourse,
+    /// and it is one question rather than a level test repeated in six files.</summary>
+    private bool OnTheConcourse => _havenFloor == HavenLevels.Concourse;
 
     /// <summary>#1215 · …and the same question asked by somebody who is not already holding the floor.
     ///
@@ -101,7 +116,12 @@ public partial class Map
     /// <para>This is those two calls composed and nothing else. It is deliberately NOT a second predicate:
     /// same floor (<see cref="TheDockedBar"/>), same wall (<see cref="InTheBar"/>), so a room that moves moves
     /// for every beat in it at once.</para></summary>
-    private bool TheCaptainIsInTheDockedBar => TheDockedBar() is { } bar && InTheBar(in bar);
+    /// <para>#1253 · …and on the CONCOURSE, because the room below is not a bar. The floor answers with the
+    /// same record down there (one list of feet, one set of leaves) and there is no counter on it — so a
+    /// beat that asks "is the captain in the bar" and got a yes in a service corridor would be the sentence
+    /// and the sim describing two different rooms, which is what this predicate exists to stop.</para>
+    private bool TheCaptainIsInTheDockedBar =>
+        OnTheConcourse && TheDockedBar() is { } bar && InTheBar(in bar);
 
     /// <summary>#973 L0 · The bar's walker band, written into the slots the docked deck reserved for it. The
     /// same filler the Hive floor uses, handed the other room's feet.</summary>
@@ -113,10 +133,19 @@ public partial class Map
     /// another is two rooms.</summary>
     private long BarWatch => PatronRota.WatchIndex(_dockVisitSimTime);
 
-    /// <summary>#973 L0 · A docked berth is not a floor of a building, and <see cref="Egress.DoorFor"/> only
-    /// wants a number to fold into its seed. Zero, stated once, so the door a man comes out of is the same
-    /// door every time this visit.</summary>
-    private const int BarIsNotAFloor = 0;
+    /// <summary>
+    /// #973 L0 · <see cref="Egress.DoorFor"/> wants a floor number to fold into its seed, so that the door a
+    /// man comes out of is the same door every time this visit.
+    ///
+    /// <para>#1253 · <b>IT WAS A TYPED ZERO, AND IT IS THE REAL FLOOR NOW.</b> "A docked berth is not a floor
+    /// of a building" was true of every berth in the game until one grew a basement. With a constant zero,
+    /// the concourse's two bar leaves and the lower level's five cabin leaves would be seeded from the same
+    /// number — so the same walker would be dealt the same ORDINAL on both floors, which is two different
+    /// doors in two different rooms wearing one roll. Reading the level makes the deal per floor, which is
+    /// what the audit meant by "<c>BarIsNotAFloor = 0</c> becomes the real level so <c>Egress.DoorFor</c>
+    /// seeds per level".</para>
+    /// </summary>
+    private int TheFloorTheRoomIsOn => _havenFloor;
 
     // ── #731 · THE ROOM'S OWN HOURS ──────────────────────────────────────────────────────────────────────
     //
@@ -191,7 +220,7 @@ public partial class Map
     {
         if (TheDockedBar() is not { } bar)
         {
-            ForgetTheBarsFeet(null);
+            ForgetTheBarsFeet(null, HavenLevels.Concourse);
 
             // …and his VISIT is only this file's to forget when there is no excursion either. On a moon
             // <c>AdvanceTheRep</c> owns that fold, and two owners of one field is a visit counter that ticks
@@ -205,7 +234,7 @@ public partial class Map
             return;
         }
 
-        ForgetTheBarsFeet(bar.BodyId);
+        ForgetTheBarsFeet(bar.BodyId, _havenFloor);
 
         // #1062 · HOW FAST THE CAPTAIN IS ACTUALLY GOING, measured by the one rule that measures it (#436's
         // own, in Map.Surface.Observation) rather than by a second opinion kept in this room. The notice
@@ -216,6 +245,24 @@ public partial class Map
         // #1199 · …and the one sighting the world still owes this captain, asked at EVERY counter in the
         // system and not only at the station with the walk in it: that IS the shape of the beat's tail —
         // somewhere else, later, unhurried.
+        // ── #1253 · WHICH FLOOR THIS FRAME IS ────────────────────────────────────────────────────────────
+        //
+        // EVERYBODY ON THIS FLOOR KEEPS WALKING, whichever floor it is: the clock is the clock, and a body
+        // mid-stride in a service corridor is not waiting on a floor number. What is DEALT, though, is the
+        // concourse's — the rota's hours, the salesman's rounds, the walk-in, the finder's case, the tail and
+        // the coat are all beats about a room with a counter in it and people at tables, and there is
+        // neither down below. They are not ASKED rather than asked and refused, which is what keeps a
+        // parcel's handover and a fence's row out of a corridor until a later slice puts a body in one on
+        // purpose.
+        //
+        // One guard, in the one place a frame of this room begins, rather than a level test at six call
+        // sites that would eventually disagree.
+        if (!OnTheConcourse)
+        {
+            StepTheBarsFeet(dtRealSeconds, bar);
+            return;
+        }
+
         TheyAreAtTheCounter(bar.BodyId);
 
         DealTheBarsHours(bar);
@@ -230,16 +277,33 @@ public partial class Map
 
     /// <summary>#973 L0 · CASTING OFF IS THE ROOM FORGETTING. Same law a turned shift is underground: what
     /// happened at the last berth happened to people who are not here, and a body left on a list across a
-    /// re-dock would be drawn walking through a station it was never in.</summary>
-    private void ForgetTheBarsFeet(string? berth)
+    /// re-dock would be drawn walking through a station it was never in.
+    ///
+    /// <para>#1253 · <b>…AND SO IS RIDING A CAR, but only the FEET.</b> The key is (berth, LEVEL): a floor is
+    /// a room, so a feet list carried down a shaft would be drawn walking through a basement having set off
+    /// across a bar — the audit's own named prediction (<i>"two rooms, one people-list: bodies are in two
+    /// places at once"</i>).</para>
+    ///
+    /// <para><b>The EVENING is not forgotten by a lift</b>, and that is the line this method draws. Who has
+    /// finished and gone and who has come out of the back is what this visit has done to the STATION, not to
+    /// one of its floors; a captain who rides down for two minutes and comes back up must not find the chairs
+    /// re-seated and the schedule re-dealt. So the churn, the dealt list and the two schedules are cleared on
+    /// a change of BERTH and never on a change of floor.</para></summary>
+    private void ForgetTheBarsFeet(string? berth, int level)
     {
-        if (_barFeetBerth == berth)
+        if (_barFeetBerth == (berth, level))
         {
             return;
         }
 
-        _barFeetBerth = berth;
+        bool onlyTheFloorChanged = berth is not null && _barFeetBerth.Berth == berth;
+        _barFeetBerth = (berth, level);
         _barAfoot.Clear();
+
+        if (onlyTheFloorChanged)
+        {
+            return;
+        }
 
         // #1062 · …and the tail, for the identical reason and through the one place that knows the berth has
         // changed. A notice latch carried across a casting-off would be somebody at a different station

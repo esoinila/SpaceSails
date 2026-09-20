@@ -433,6 +433,29 @@ public partial class Map
             string candidate = Uri.UnescapeDataString(pair["ashore=".Length..]).ToLowerInvariant();
             q.AshoreCheat = candidate is "1" or "true" or "yes";
         }
+        else if (pair.StartsWith("havenfloor=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #1253 dev cheat: /map?dock=selene-gate&ashore=1&havenfloor=-1 boots ashore and then one floor
+            // DOWN — standing at the first cage's landing on the lower concourse, with the service corridor,
+            // the row of shut cabin doors and the two other cars all in front of you.
+            //
+            // A scene nobody can reach on demand is a scene that ships broken, and this one sits behind a
+            // walk that cannot be made in an MCP-driven tab at all (the game is `document.hidden` there, rAF
+            // is throttled and WASD never lands) and then a press on a console at the far side of a hall. It
+            // IMPLIES ?ashore=1, for the reason ?barcase= does: being ashore is not what is being tested,
+            // the floor under it is.
+            //
+            // It grants nothing and forces nothing. It rides a car, exactly as the captain would — and a
+            // level this station does not have is simply not read, so a typo is a concourse and never a
+            // building at level −4.
+            string floor = Uri.UnescapeDataString(pair["havenfloor=".Length..]);
+            if (int.TryParse(floor, NumberStyles.Integer, CultureInfo.InvariantCulture, out int level)
+                && HavenLevels.IsALevel(level))
+            {
+                q.HavenFloorCheat = level;
+                q.AshoreCheat = true;
+            }
+        }
         else if (pair.StartsWith("barcase=", StringComparison.OrdinalIgnoreCase))
         {
             // #1016 dev cheat: /map?barcase=1 is ?ashore=1 with the last leg walked — sat down at a free top

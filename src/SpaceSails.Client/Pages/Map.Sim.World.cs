@@ -67,6 +67,7 @@ public partial class Map
         public bool BondCheat; // #429 /map?bond=1: dock at a bar with strangers + force the next ambient scare to bond (the cognac beat)
         public bool OracleCheat; // #428 /map?oracle=1: seat the station oracle at whatever bar you dock at (she's a coin-flip fixture otherwise)
         public bool AshoreCheat; // #428 /map?ashore=1: boot docked AND already standing in the bar — the ship→tube→hall walk already walked
+        public int? HavenFloorCheat; // #1253 /map?havenfloor=-1: …and one floor DOWN, at a cage's landing on the lower concourse (implies ?ashore=1)
         public int? NerveCheat; // #428 /map?nerve=N: seed the nerve gauge at N of NervePips.MaxPips whole pips at boot
         public string? NebulaCheat; // #422 /map?nebula=N|all: assemble N NEBULA fragments (or all) so the readout + truth notice are testable; ?nebula=adjuster instead SEATS the rare bar contact so the tell can be EARNED
         public bool ConvergeCheat; // #422 /map?converge=1: seed enough of BOTH arcs to fire THE CONVERGENCE for a one-URL smoke test
@@ -166,6 +167,17 @@ public partial class Map
         // default a berth with a walkable interior — but guarded the way #621's death default is: `?dock=`
         // is read before `?start=` below, so defaulting one unconditionally would quietly outrank a
         // `?start=` the caller did pass. Anything the caller asked for still wins.
+        // #1253 · …and a FLOOR cheat needs a station that has one, which is a narrower ask than a bar: six of
+        // the seven havens have exactly one level, so the ashore default above would boot this cheat into a
+        // building with nothing under it. Selene Gate is the one with a basement (HavenInterior's own spec
+        // decides that, not this line — a berth defaulted here that had no lower level would simply stand the
+        // captain on the concourse). Read BEFORE the ashore default so it wins the berth, and still behind
+        // anything the caller asked for.
+        if (q.HavenFloorCheat is not null && q.DockCheat is null && q.StartId is null)
+        {
+            q.DockCheat = HavenInterior.TheHavenWithFloors;
+        }
+
         if (q.AshoreCheat && q.DockCheat is null && q.StartId is null)
         {
             q.DockCheat = "the-space-bar";

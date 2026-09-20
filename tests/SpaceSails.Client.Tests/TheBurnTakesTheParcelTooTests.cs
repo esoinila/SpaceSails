@@ -121,8 +121,8 @@ public sealed class TheBurnTakesTheParcelTooTests
         Assert.False((bool)Invoke(map, "ParcelOnOffer")!);
 
         // Cast off and come back. The room forgets; the register does not.
-        Invoke(map, "ForgetTheBarsFeet", (string?)null);
-        Invoke(map, "ForgetTheBarsFeet", Berth);
+        Invoke(map, "ForgetTheBarsFeet", (string?)null, HavenLevels.Concourse);
+        Invoke(map, "ForgetTheBarsFeet", Berth, HavenLevels.Concourse);
         Tick(map, 1);
 
         Assert.Equal(TheTailBehindYou.TheBurnLine, PulseSaying(map));
@@ -177,8 +177,8 @@ public sealed class TheBurnTakesTheParcelTooTests
         Assert.False((bool)Invoke(map, "ParcelOnOffer")!);
 
         // The burn is told and spent. The confiscation is not — it answers to a clock of its own.
-        Invoke(map, "ForgetTheBarsFeet", (string?)null);
-        Invoke(map, "ForgetTheBarsFeet", Berth);
+        Invoke(map, "ForgetTheBarsFeet", (string?)null, HavenLevels.Concourse);
+        Invoke(map, "ForgetTheBarsFeet", Berth, HavenLevels.Concourse);
         Tick(map, 1);
         Assert.Equal(TheTailBehindYou.TheBurnLine, PulseSaying(map));
         Assert.False((bool)Invoke(map, "ThisPlaceWasWalkedFirst", Berth)!);

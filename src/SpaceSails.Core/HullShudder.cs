@@ -183,6 +183,20 @@ public static class HullShudder
     private static readonly int[] HavenLinesTheObservationWalkOwns = [];
 
     /// <summary>
+    /// #1253 · <b>…AND THE LOWER CONCOURSE OWNS NONE OF THEM EITHER, for the walk's reason exactly.</b>
+    ///
+    /// <para>A station's service level is a corridor under the hall with a row of shut cabin doors along it.
+    /// There is no bar down there to put its glasses back down and no crowd to stop mid-word — and the
+    /// concourse's own line names both (<i>"every conversation stops mid-word… eyes meeting eyes across the
+    /// room… the noise floods back"</i>), which said down there would be a roomful of people in the one place
+    /// on this station whose whole content is that there is nobody in it.</para>
+    ///
+    /// <para>A MEMBER of the partition and not a special case in the selector, so the covering guard walks it
+    /// beside the other three and a line added tomorrow still has to be given a room.</para>
+    /// </summary>
+    private static readonly int[] HavenLinesTheLowerConcourseOwns = [];
+
+    /// <summary>
     /// #1261 · <b>WHICH ROOM OF A HAVEN THE CAPTAIN IS STANDING IN</b> — the partition's selector, as the
     /// three rooms the place actually has rather than as <i>the bar / not the bar</i>.
     ///
@@ -204,6 +218,11 @@ public static class HullShudder
         /// how <c>HavenInterior.InTheObservationWalk</c> reads it. It has no share of the pool; see
         /// <see cref="HavenLinesTheObservationWalkOwns"/>.</summary>
         TheObservationWalk,
+
+        /// <summary>#1253 · The service level under the concourse — the corridor, the cabin doors, the
+        /// worklight. It has no share of the pool; see
+        /// <see cref="HavenLinesTheLowerConcourseOwns"/>.</summary>
+        LowerConcourse,
     }
 
     private static readonly string[] ShipLines =
@@ -317,6 +336,7 @@ public static class HullShudder
     {
         HavenRoom.Bar => HavenLinesTheBarOwns,
         HavenRoom.TheObservationWalk => HavenLinesTheObservationWalkOwns,
+        HavenRoom.LowerConcourse => HavenLinesTheLowerConcourseOwns,
         _ => HavenLinesTheConcourseOwns,
     };
 

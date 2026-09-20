@@ -577,6 +577,67 @@ are more place tied events."* So:
 - **Dev cheat:** `/map?barcase=1` — ashore, sat at a free top through the same `[E]` a player presses, three
   finds in the sleeve, no excursion anywhere. Guards: `TheCaseIsNotTiedToAPlaceTests`.
 
+## Down Below — a haven with a floor under it (#1253, 2026-09-20)
+
+Owner, having played the tail onto the observation walk: *"could we add a basement level to the observation
+deck station, so the tailing task could start from the basement cabin and end at the observation deck?
+Otherwise the followed distance is easily very short. The main hall could have multiple elevators… good for
+tailing."*
+
+**The audit came first** (#1253's body): the stone is portable and the Hive's floor machinery is not. Every
+shaft call underground takes `in SurfaceLayout.Field` — the regolith envelope — and the whole floor-change
+path is gated on an excursion object a berth does not have. So what a haven borrows from the Hive is the
+part of that file which is TRAVEL rather than MOON: `UndergroundComplex.LiftStop` and `LiftPanel.razor`. It
+never asks `ShaftsOn(field)`; there is no field.
+
+**What shipped, at Selene Gate only.**
+
+- **`HavenLevels`** (Core) — two floors, their plates (`CONCOURSE` / `SERVICE LEVEL`), the door plate
+  `SERVICE LEVEL — NO PUBLIC ACCESS`, `CABIN n · CREW`, and the stop list a cage's panel offers. Both rows
+  from either floor: #600's scar is a car that only went down, and the honest way not to repeat it is a
+  panel that cannot.
+- **`StationSpec.Lower`** — a nullable `LowerSpec` (name, plate, one canvas). The other six havens carry
+  none and are byte-identical; a station with no basement answers its concourse for any level at all.
+- **`HavenInterior.DockedDeck(…, level)`** and the deck memo's key. Level 0 is the deck this game has always
+  built, and a guard holds *asking for the concourse* and *asking for nothing* to being one plan at every
+  haven.
+- **`HavenInterior.Lower.cs`** — the level itself, and it declares **no static field** (#1163: a
+  `static readonly` in a partial that sorts early is initialised against `HallTopY == 0` and builds a station
+  stacked on the origin, with a clean build and no warning). Everything is a `const` or a computed property,
+  measured off `HallTopY` / `HallVertex` and never typed.
+- **Three cages**, on hall edges 0, 6 and 10 — the tube holds 8, the bar door 2, the observation walk 5. An
+  edge keeps its wall and its cold locked leaf and gives up only the department plate it carried, exactly as
+  the walk's edge does, and the sealed-edge counter is stepped over a car so every other edge keeps its id.
+  **Each car lands at its own edge**, which is the whole mechanic: which one he took is the thing the
+  captain has to read. (Edge 9 was the first choice and the way-home guard refused it — its doorstep landed
+  0.65 du inside the immigration counter, which is #602's *"I emerged into the wall"* caught before anybody
+  had to play it.)
+- **`_havenFloor`** on the page. `RefreshAshore`, `PullAvatarAboard` and `SetDeckForDock` read it instead of
+  the bare `_avatarY` thresholds — the audit's own second prediction, since the lower level is laid in the
+  SAME coordinate space and a captain in its southern half reads as *aboard* by y.
+- **Walkers keyed on (berth, level).** The feet go with the floor; the EVENING does not — who finished and
+  went is what this visit did to the station, and a captain who rides down for two minutes must not come
+  back to re-seated chairs. `Egress.DoorFor` is seeded with the real level now, so the bar's two leaves and
+  the five cabin leaves are dealt separately.
+- **The room's beats stay on the concourse.** One guard in `AdvanceBarWalkers`: everybody on this floor keeps
+  walking, and nothing is DEALT below. The dark-web desk's parcel and fence rows do not appear down there in
+  this slice, and the tail's post and notice logic never targets it.
+- **Ambient:** the lower concourse takes its own share of the shudder pool and the share is **empty** —
+  #1261's precedent, for #1261's reason. Every line in that pool is a roomful of people deciding together
+  that it was nothing, and there is nobody in a service corridor to do the deciding.
+- **The field book** files a note down there under the level's own plate rather than under the bar's name.
+- **Guards:** `TheLevelUnderTheConcourseTests` (the level term is transparent; three cars on three free edges
+  and on the same squares on both floors; every corridor tile reachable; the fire code met with **no new
+  exemption**; and **the berth column in the way-home law** — a car is reachable from every square, the panel
+  offers the concourse, and the gangway is reachable from where its doors open) and
+  `TheRideDownIsAWayBackTests` (the ride, the panel press, the cast-off, the feet, the book, the pool, the
+  dev start).
+- **Dev start:** `/map?dock=selene-gate&ashore=1&havenfloor=-1`.
+
+**What is deliberately not here yet.** Nobody lives down there. The cabins are shut, the corridor is empty,
+and the dark-web desk's rows are still rows. The people come one at a time, in later slices, starting with
+the one whose cabin it is.
+
 ## Later (beyond the follow-up)
 
 A real bounty/contract accept-flow if the "front for existing systems" wiring proves too thin; heat
