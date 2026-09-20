@@ -37,16 +37,37 @@ public static partial class UndergroundComplex
     //             own painting (StoryBeats.Beat.RefugeFailed), which is the whole of the telling.
     //
     // What is NOT touched: every airless floor still carries a refuge (13.12), the plates still read
-    // REFUGE · AIR / REFUGE · DRY / PRESSURE REFUGE at range, the panel row still says a refuge is THERE and
-    // never what state it is in, and the failed one still paints on the fan and reads as dead.
+    // REFUGE · AIR / REFUGE · DRY at range, the panel row still says a refuge is THERE and never what state
+    // it is in, and the failed one still paints on the fan and reads as dead.
+    //
+    // ── #619 · …AND IT IS A SECOND ROOM, NOT THE FLOOR'S OWN ────────────────────────────────────────────
+    //
+    // #1149 put the FAILED state on the floor's one refuge, which made the one thing the owner's issue
+    // forbids in the sentence he wrote it in: "never the only one on its floor, so it can never kill
+    // anybody who trusted the instrument." A captain who reads REFUGE on the lift panel, walks a tank down
+    // a rib and finds the door dead has been killed by the plan — and the plan is the instrument this whole
+    // feature exists to make trustworthy.
+    //
+    // So the failed refuge is an EXTRA chamber on that floor (CarveRefuges takes it second, out of what the
+    // working one left), and StateOfTheRefugeOn — which is the FLOOR's answer, asked by the panel, the
+    // card, the suit and the lift — can no longer come back FAILED at all. What is on that floor is one
+    // refuge that works and one room that is welded shut, and the difference is readable from the corridor
+    // and from the fan before a single second of air is spent on the walk.
 
-    /// <summary>#1149 · How many sites carry a failed refuge — <b>one in this many</b>, seeded per body.
+    /// <summary>#1149/#619 · <b>THE RATE, STATED HERE AND NOWHERE ELSE.</b> How many sites carry a failed
+    /// refuge — <b>one in this many</b>, seeded per body. <b>One site in four.</b>
     ///
     /// <para>The owner's word is <i>rare</i>, and rare has to be measured against the thing it is rare
     /// among: a captain works a site, not a floor. One site in four means most buildings a captain walks are
     /// buildings where the safety equipment simply works, which is the ruling, and it still leaves the beat
-    /// reachable often enough to be part of the game rather than a rumour. Over the hundred-site sweep it is
-    /// three per cent of refuges — see <c>TheRefugesUndergroundTests</c>, which pins the measurement.</para></summary>
+    /// reachable often enough to be part of the game rather than a rumour. What share of the refuges in the
+    /// game that comes to is a MEASUREMENT and is pinned in <c>TheRefugesUndergroundTests</c> rather than
+    /// restated here, so there is one number and one place it can go stale.</para>
+    ///
+    /// <para><b>#619 · and one floor of that site, and never that floor's ONLY refuge.</b> The failed room
+    /// is an extra chamber beside the floor's own working one (<see cref="CarveRefuges"/>), which is what
+    /// makes a rate safe to have at all: whatever a captain reads off the instrument, the air the plan
+    /// promised them is still on that floor.</para></summary>
     public const int SitesPerFailedRefuge = 4;
 
     /// <summary>#1149 · How many refuges carry a visitor's footprint — <b>one in this many</b>, seeded per
@@ -238,19 +259,50 @@ public static partial class UndergroundComplex
         string tag = PaperGlyph
             + InspectionTagStamp(year, month) + InspectionTagEntry + " "
             + InspectionTagStamp(year + 1, month) + InspectionTagEntry;
-        return StateOfTheRefugeOn(bodyId, level) == RefugeState.Failed
+        // #619 · Asked of the FLOOR's story rather than of the floor's refuge, which is the same set of
+        // floors it has always been: StateOfTheRefugeOn stopped being able to answer FAILED when the failed
+        // room became a second chamber, and the tag is the inspectorate's paper about this LEVEL — one
+        // visit, one clerk, one form — so the undated line belongs on it exactly where it always was.
+        return RefugeThatFailedIsOn(bodyId, level)
             ? tag + " " + InspectionTagSealReplaced
             : tag;
     }
 
     // ── #1149 · THE CARD, AND THE ONE ROOM THAT RAISES IT ────────────────────────────────────────────────
 
-    /// <summary>#1149 · Is the refuge on this floor the one the site's story happened in? The one question
-    /// the client asks before raising <see cref="StoryBeats.Beat.RefugeFailed"/>, so the card, the plate,
-    /// the fan and the suit are all reading one answer.</summary>
+    /// <summary>#1149 · Does this floor carry the room the site's story happened in? The one question the
+    /// carve and the client ask before raising <see cref="StoryBeats.Beat.RefugeFailed"/>, so the card, the
+    /// plate, the fan and the weld are all reading one answer.
+    ///
+    /// <para>#619 · It says the FLOOR has one, never that the floor's refuge IS one — those became two
+    /// different rooms, and the working one is why the beat is allowed to exist.</para></summary>
     public static bool RefugeThatFailedIsOn(string bodyId, int level)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         return FailedRefugeFloorOf(bodyId) == level;
+    }
+
+    /// <summary>#619 · <b>WHAT THE FIELD BOOK KEEPS OF IT.</b> Authored canon (2026-09-20), verbatim, with
+    /// the floor's own name dropped into it — three observations and no verdict, the same three the card
+    /// makes and in the same order, written the way a captain writes a thing down rather than the way a card
+    /// says it.
+    ///
+    /// <para>The card is read once and closed; this is the line that is still in the book a week later, and
+    /// #587's whole complaint was about words a player paid for that they cannot read twice.</para></summary>
+    public static string FailedRefugeNoteLine(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return $"the refuge on {NameOf(bodyId, level)} — welded from the inside, suits for more than the "
+            + "floor, the tank drained by someone who stayed";
+    }
+
+    /// <summary>#619 · …and what the entry is ABOUT, which is the PLACE (#741). Not a person: nobody in this
+    /// room has a name, and the book may not invent one for the sake of a thread. The floor is a place the
+    /// captain has been and can be again, and it is what the other entries on that level are already filed
+    /// under — so the threads page gathers them rather than growing a heading of its own.</summary>
+    public static string FailedRefugeSubjects(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return CaseSubjects.Line(CaseSubjects.Place(NameOf(bodyId, level)));
     }
 }
