@@ -105,19 +105,16 @@ public partial class Map
     /// the beat is already spent (afterwards the walk is a walk and the person keeps walking routes, never
     /// tailed to a vanishing again); the rota does not have them in this room this watch; they are already
     /// afoot. Each is a plain no, and none of them is said out loud.</para>
+    ///
+    /// <para>#1277 · The first three are <see cref="TheManTheWalkHasClaimed"/> now, asked here in the same
+    /// order for the same cost. They have a NAME because the room's own hours read them too: the tail begins
+    /// where the claim begins, and the hours' departure roster defers to whoever it names.</para>
     /// </summary>
     private void AdvanceTheWalk(in HavenInterior.BarFloor bar)
     {
-        if (!HavenInterior.HasObservationWalk(bar.BodyId)
-            || ObservationWalk.IsSpent(_observationWalkSpentOn))
+        if (TheManTheWalkHasClaimed(bar.BodyId) is not { } person)
         {
             return;
-        }
-
-        string person = TheTail.ThePersonOfInterest(bar.BodyId);
-        if (PatronRota.Resolve(person, bar.BodyId, _dockVisitSimTime) != PatronState.AtBar)
-        {
-            return;   // not in the room this watch. Nobody to follow, and nothing to say about it.
         }
 
         if (!_walkDealt)
@@ -161,6 +158,50 @@ public partial class Map
         StepHisNight(in bar, person);
 
         TheWalkIsEmpty(in bar, person);
+    }
+
+    /// <summary>
+    /// #1277 · <b>THE MAN THE WALK HAS CLAIMED THIS WATCH, AND THE ONE PLACE THAT SAYS SO.</b> Null at every
+    /// berth in the game but one, and on most evenings at that one too.
+    ///
+    /// <para><b>The ruling (#1277): the TAIL WINS.</b> #731's hours and #1199's tail both want the same man
+    /// out of the same chair, and until this method existed the hours simply got there first — a scheduled
+    /// departure walked GILT-EYE out through a cellar leaf an hour before last call, <c>_barLeft</c> had him,
+    /// the tail found no chair to start a route from, and the whole night silently did not happen. A tester
+    /// at the documented link saw an ordinary bar.</para>
+    ///
+    /// <para>So the claim is stated ONCE, here, and both systems read it: the tail begins with it (below,
+    /// in <see cref="AdvanceTheWalk"/>) and the room's own departure roster defers to it
+    /// (<c>TheWatchDecidesWhoGoes</c>). <b>He is not dropped from the evening's departures — his departure is
+    /// the tail's first leg</b>, which leaves the chair on the frame his legs start by the bar's own
+    /// one-body-one-place law. The room still empties a man; it is simply the walk that walks him.</para>
+    ///
+    /// <h3>Why the ROSTER and not a race</h3>
+    ///
+    /// <para>The other road was for the tail to claim him before the hours run — and it cannot, because the
+    /// tail's own law is that nobody gets out of a chair before last call
+    /// (<see cref="Egress.LastCallFraction"/>) while the hours deal INSIDE that fraction. Reordering the two
+    /// calls in a frame would change nothing: at the second the hours take him the tail is still refusing to
+    /// act, and correctly. The roster is the only seam where both systems keep their own law — the hours
+    /// still deal a whole watch's worth of churn out of the room's own list, at their own moments, through
+    /// their own leaves, and the walk still waits for last call.</para>
+    ///
+    /// <para>Asked of the same three facts the beat has always turned on, in the same order: this station has
+    /// no walk, the beat is already spent, or the rota does not have him in this room this watch. Each is a
+    /// plain no, and none of them is said out loud.</para>
+    /// </summary>
+    private string? TheManTheWalkHasClaimed(string berth)
+    {
+        if (!HavenInterior.HasObservationWalk(berth) || ObservationWalk.IsSpent(_observationWalkSpentOn))
+        {
+            return null;
+        }
+
+        string person = TheTail.ThePersonOfInterest(berth);
+
+        // Not in the room this watch. Nobody to follow, nobody to hold a chair for, and nothing to say
+        // about it — and the hours are free to schedule whoever the rota DID seat.
+        return PatronRota.Resolve(person, berth, _dockVisitSimTime) == PatronState.AtBar ? person : null;
     }
 
     /// <summary>#1062 · CASTING OFF IS THE ROOM FORGETTING, here as everywhere else on this deck. Called from

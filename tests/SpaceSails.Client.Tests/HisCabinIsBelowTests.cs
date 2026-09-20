@@ -245,20 +245,18 @@ public sealed class HisCabinIsBelowTests
         Set(map, "_dockVisitSimTime", TheWatch);
         Set(map, "SimTime", PatronRota.WatchSeconds * (Egress.LastCallFraction + 0.05));
 
-        // ── AN EVENING THE ROOM HAS NOBODY SCHEDULED OUT OF ─────────────────────────────────────────────
+        // ── #1277 · AN ORDINARY EVENING, WITH THE ROOM'S OWN HOURS RUNNING ──────────────────────────────
         //
-        // #731's hours and #1199's tail both want the same man out of the same chair, and on a watch whose
-        // schedule happens to name him the hours get there first: the room walks him out through a cellar
-        // leaf, `_barLeft` has him, and the tail finds no chair to start a route from. That is the SHIPPED
-        // interaction (the walk simply does not happen that evening, silently) and it is not this lane's to
-        // change — but a law about his route cannot be stated on a night the route was never walked.
+        // This bench used to hand the two schedules an empty answer, because #731's hours and #1199's tail
+        // both wanted the same man out of the same chair and on a watch whose schedule named him the hours
+        // got there first — `_barLeft` had him, the tail found no chair, and the route these laws are about
+        // was never walked. The bench NAMED that silence and left it; #1277 ruled on it (the tail wins) and
+        // fixed it in `TheWatchDecidesWhoGoes`, which now defers to the man the walk has claimed.
         //
-        // So the schedules are given the answer they are allowed to give: nobody is going and nobody is
-        // coming. Empty is an ANSWER this room gave (null is a question it has not been asked — the room's
-        // own distinction, in Map.BarWalkers), and a shift with no scheduled churn on it is an ordinary
-        // evening rather than a contrivance.
-        Set(map, "_barGoing", (IReadOnlyList<Egress.Move>)[]);
-        Set(map, "_barComing", (IReadOnlyList<Egress.Move>)[]);
+        // So the contrivance is gone and these nine laws are stated on the room as it runs: whoever the shift
+        // has going is going, whoever it has coming is coming, and the one chair the walk needs is the one
+        // chair the hours will not touch. `TheTailWinsTheChairTests` is where that clause is stated; here it
+        // is simply spent.
         return map;
     }
 
