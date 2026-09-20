@@ -373,6 +373,20 @@ public sealed class HudCollisionTests : IAsyncLifetime
             + "be spent on the other's pixels (#994 item 2).");
     }
 
+    /// <summary>#1013 · How many faces are being offered a drink at this counter, counted by the VERB the
+    /// room uses and not by the class the row wears — the class is the very thing the regression changes.
+    /// </summary>
+    private const string TheOfferRowCount =
+        """
+        () => {
+            const card = [...document.querySelectorAll('.deck-offer-card')]
+                .find(c => c.getClientRects().length > 0);
+            if (!card) { return 0; }
+            return [...card.querySelectorAll('button')]
+                .filter(b => /Offer .+ a drink/.test(b.innerText || '')).length;
+        }
+        """;
+
     /// <summary>
     /// #1013 · A ROOM FULL OF CONTACTS DOES NOT COVER THE COUNTER'S OWN FOOT.
     ///
@@ -494,13 +508,19 @@ public sealed class HudCollisionTests : IAsyncLifetime
         // until it has stopped.
         await _page.SettledAsync(".deck-offer-card .contact-offer-row, .deck-offer-card .deck-offer-actions");
 
-        // The premise, out loud: a contact row AND the card's own foot are both on the screen. Without
-        // both there is nothing here to race, and this gate would prove nothing while going green.
-        int contactRows = await card.Locator(".contact-offer-row").CountAsync();
-        int feet = await card.Locator(".deck-offer-actions").CountAsync();
-        Assert.True(contactRows >= 1 && feet >= 1,
-                    $"the counter card drew {contactRows} contact row(s) and {feet} foot row(s) — this gate "
-                    + "needs both to prove anything about the one racing the other (#1013).");
+        // The premise, out loud: somebody the captain knows is being offered a drink, and the card has its
+        // own foot. Without both there is nothing here to race and this gate would prove nothing.
+        //
+        // AND THE CONTACT ROW IS FOUND BY WHAT IT SAYS, NOT BY THE CLASS IT WEARS. The regression this gate
+        // exists to catch is precisely that wrapper changing class — count `.contact-offer-row` here and
+        // restoring the bug makes the premise fail FIRST, so the gate reds with "this gate proved nothing"
+        // instead of naming the fault. The verb is the room's, and it survives the rename.
+        int offers = await _page.EvaluateAsync<int>(TheOfferRowCount);
+        int feet = await card.Locator(".deck-offer-actions, .contact-offer-row").CountAsync();
+        Assert.True(offers >= 1 && feet >= 1,
+                    $"the counter card drew {offers} 'Offer … a drink' button(s) and {feet} action row(s) — "
+                    + "this gate needs a contact at the counter AND the card's own foot to prove anything "
+                    + "about the one racing the other (#1013).");
 
         // ── LAW ONE · EXACTLY ONE ROW IN THIS CARD IS PINNED, AND IT IS THE CARD'S OWN FOOT ─────────────
         //
@@ -552,10 +572,13 @@ public sealed class HudCollisionTests : IAsyncLifetime
             () => {
                 const card = [...document.querySelectorAll('.deck-offer-card')]
                     .find(c => c.getClientRects().length > 0);
-                const foot = card.querySelector(':scope > .deck-offer-actions');
+                const foot = [...card.querySelectorAll(':scope > .deck-offer-actions')].pop();
                 const f = foot.getBoundingClientRect();
                 const buried = [];
-                for (const row of card.querySelectorAll('.contact-offer-row')) {
+                // The contact rows, found by the verb rather than by the class — see the premise above.
+                const contacts = [...card.querySelectorAll('.contact-offer-row, .deck-offer-actions')]
+                    .filter(el => el !== foot && /Offer .+ a drink/.test(el.innerText || ''));
+                for (const row of contacts) {
                     const r = row.getBoundingClientRect();
                     if (r.height <= 0) { continue; }
                     const over = Math.min(r.bottom, f.bottom) - Math.max(r.top, f.top);
