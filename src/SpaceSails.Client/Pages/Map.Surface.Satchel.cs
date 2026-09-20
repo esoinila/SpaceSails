@@ -520,12 +520,15 @@ public partial class Map
         }
         if (_dockedHavenId is { } berth && _ashore)
         {
-            // #1253 · …AND WHICH FLOOR OF IT, but only when it is not the one the berth's name already
-            // implies. A note filed in the bar goes on reading exactly as it did — the suffix is empty at
-            // the concourse — and a note filed on a service level says so, because a captain going back
-            // through his own book for where he was standing is asking about a PLACE, and two floors of one
-            // station are two places. The suffix is Core's, so the drawer a note is filed in and the drawer
-            // the ledger's PerPlace reading groups it under are one string.
+            // #1253 — AND WHICH FLOOR OF IT, but only when it is not the one the berth's name already
+            // implies. A note filed in the bar goes on reading exactly as it did (the suffix is empty at the
+            // concourse), and a note filed on a service level says so, because a captain going back through
+            // his own book for where he was standing is asking about a PLACE, and two floors of one station
+            // are two places. The suffix is Core's, so the drawer a note is filed in and the drawer the
+            // ledger's PerPlace reading groups it under are one string.
+            //
+            // (The separator itself is never spelled here — that is #690's law, and this method's own
+            // guard reads the body for it.)
             string floor = HavenLevels.BookSuffix(_havenFloor);
             return Core.FieldNotes.PlaceLabel(
                 DockedStationName(),
