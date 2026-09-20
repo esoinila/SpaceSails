@@ -105,6 +105,10 @@ public partial class Map
     /// the beat is already spent (afterwards the walk is a walk and the person keeps walking routes, never
     /// tailed to a vanishing again); the rota does not have them in this room this watch; they are already
     /// afoot. Each is a plain no, and none of them is said out loud.</para>
+    ///
+    /// <para>#1277 · The first three are <see cref="TheManTheWalkHasClaimed"/> now, asked here in the same
+    /// order for the same cost. They have a NAME because the room's own hours read them too: the tail begins
+    /// where the claim begins, and the hours' departure roster defers to whoever it names.</para>
     /// </summary>
     private void AdvanceTheWalk(in HavenInterior.BarFloor bar)
     {
