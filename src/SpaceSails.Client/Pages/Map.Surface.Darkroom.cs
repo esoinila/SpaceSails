@@ -64,9 +64,16 @@ public partial class Map
 
     /// <summary>#1016 · Which floor the boots are on, for the one comparison a running hold makes. Under a
     /// moon it is the excursion's; a berth deck and the captain's own boat are not floors of a building, and
-    /// they answer zero exactly as the docked bar's own walkers do (<c>BarIsNotAFloor</c>). Stated once, so
-    /// the hold's anchor and the check against it cannot be measured off two different ideas of a floor.</summary>
-    private int TheFloorUnderfoot => _surface?.Floor ?? 0;
+    /// they answer zero exactly as the docked bar's own walkers do. Stated once, so the hold's anchor and
+    /// the check against it cannot be measured off two different ideas of a floor.
+    ///
+    /// <para>#1253 · …and a BERTH answers its own floor now, which it could not before one station grew a
+    /// level under its concourse. The hold's whole claim is <i>you have not moved off the ground you started
+    /// this on</i>, and a captain who rode a car with a document half-processed has moved off it as
+    /// completely as one who rode a lift under a moon. It reads <c>_havenFloor</c> — the same field the
+    /// docked bar's own walkers are keyed on — and it is still zero everywhere it has always been zero, so
+    /// no hold anywhere else in the game learns a thing.</para></summary>
+    private int TheFloorUnderfoot => _surface?.Floor ?? _havenFloor;
 
     /// <summary>#696 · Take the document out and start the clock. The item is NOT removed and nothing is
     /// filed: everything happens at the far end, so an interruption has nothing to undo.</summary>

@@ -531,8 +531,8 @@ public sealed class TheTailBehindYouTests
         Assert.Null(PulseSaying(map));
 
         // Cast off, and come back. The room forgets; the register does not.
-        Invoke(map, "ForgetTheBarsFeet", (string?)null);
-        Invoke(map, "ForgetTheBarsFeet", Berth);
+        Invoke(map, "ForgetTheBarsFeet", (string?)null, HavenLevels.Concourse);
+        Invoke(map, "ForgetTheBarsFeet", Berth, HavenLevels.Concourse);
         RunFrames(map, 1);
 
         Assert.Equal(TheTailBehindYou.TheBurnLine, PulseSaying(map));
@@ -548,8 +548,8 @@ public sealed class TheTailBehindYouTests
         // SPENT. The tag is gone, the port deals again, and the next evening says nothing.
         Assert.False((bool)Invoke(map, "ThisPlaceWasWalkedFirst", Berth)!);
         Set(map, "_pulse", default(PulseSlot));
-        Invoke(map, "ForgetTheBarsFeet", (string?)null);
-        Invoke(map, "ForgetTheBarsFeet", Berth);
+        Invoke(map, "ForgetTheBarsFeet", (string?)null, HavenLevels.Concourse);
+        Invoke(map, "ForgetTheBarsFeet", Berth, HavenLevels.Concourse);
         RunFrames(map, 100);
         Assert.Null(PulseSaying(map));
         Assert.Single((IReadOnlyList<FieldNote>)Field(map, "_fieldNotes")!);
@@ -587,8 +587,8 @@ public sealed class TheTailBehindYouTests
         Invoke(map, "ThisPortHasNowDealtAKey", Berth);
         Assert.False((bool)Invoke(map, "ThisPlaceWasWalkedFirst", Berth)!);
 
-        Invoke(map, "ForgetTheBarsFeet", (string?)null);
-        Invoke(map, "ForgetTheBarsFeet", Berth);
+        Invoke(map, "ForgetTheBarsFeet", (string?)null, HavenLevels.Concourse);
+        Invoke(map, "ForgetTheBarsFeet", Berth, HavenLevels.Concourse);
         StandCaptainAt(map, HavenInterior.BarThreshold.X, HavenInterior.BarThreshold.Y + 6);
         Set(map, "_pulse", default(PulseSlot));
         RunFrames(map, 100);

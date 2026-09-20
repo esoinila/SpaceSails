@@ -252,6 +252,12 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?designate=1"] = "5ae78e2b2346fad4aa4a54db689c0dc7",
             ["/map?dock=red-eye&body=ganymede&site=1&land=1"] = "e8a72d6459813c06107313f36e9cf541",
             ["/map?dock=ringside-exchange&body=titan&site=1&land=1"] = "376352f802c08a59cbd92f939ebc6169",
+            // #1253 · DOWN BELOW's own door. It builds the FRONT DOOR'S world to the byte, and that is
+            // right rather than suspicious: this sweep stops at the browser gate, and `?ashore=1` and
+            // `?havenfloor=` both do their work after it — the walk and the ride happen to a world that is
+            // already built. What the two of them ANSWER is pinned next door, in
+            // TheBootReadsTheSameQueryTests, where this URL is its own distinct reading.
+            ["/map?dock=selene-gate&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=selene-gate&body=luna&site=1&land=1"] = "97b2b0eae504685fd6a9d15cabfaa5b7",
             // #997 wave 10 · see /map?start=wreck&target=collector further down — the new dev start moved
             // free-flying after a browser walk, and the reason is written there.
