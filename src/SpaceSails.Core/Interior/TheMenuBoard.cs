@@ -40,14 +40,15 @@ public static class TheMenuBoard
     public const string SpecialLabel = "TODAY'S SPECIAL";
 
     /// <summary>The cheapest the kitchen has ever chalked a Special at, in credits. A plate is SMALL coin
-    /// beside a pour on purpose (the owner's "small cr"): it is under every haven's glass and a long way
+    /// beside a pour on purpose (the owner's "small cr"): well under every haven's glass and a long way
     /// under a round. FLAGGED for the owner's tuning.</summary>
-    public const int PriceFloor = 4;
+    public const int PriceFloor = 3;
 
-    /// <summary>The dearest the board goes. Kept below the dearest house pour (8 cr) so that the meal never
-    /// reads as the luxury on this card — it is the thing you eat before the drink, not instead of it.
-    /// FLAGGED for the owner's tuning.</summary>
-    public const int PriceCeiling = 8;
+    /// <summary>The dearest the board goes — and it is the price of the CHEAPEST house glass in the system
+    /// (the Roadstead's 6 cr), never a credit over it. That is the law rather than the number: supper may
+    /// never read as the luxury on a card whose other side is drink. It is the thing you eat before the
+    /// pour, not instead of it. FLAGGED for the owner's tuning.</summary>
+    public const int PriceCeiling = 6;
 
     /// <summary>The usual outcome, and the one the kitchen would like on the record.</summary>
     public const string DeliciousLine = "It is better than it had any right to be.";
