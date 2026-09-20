@@ -99,6 +99,34 @@ public partial class Map
         TheStationHasFloors ? HavenLevels.Panel(_havenFloor) : [];
 
     /// <summary>
+    /// #1253 · <b>A BUTTON ON A STATION'S PANEL WAS PRESSED</b>, and it is the whole of what such a button
+    /// does: the panel shuts and the car goes. There is no gate on it, no paper to read and nothing to
+    /// refuse — two floors of a building the captain is already standing in, and #600's scar is a car that
+    /// only went one way.
+    ///
+    /// <para><b>Here rather than as an arm inside <c>PressLiftButton</c></b>, and that is a real constraint
+    /// rather than tidiness. Two source guards slice that method from its opening to the first
+    /// <c>_showLiftPanel = false</c> and hold everything above it to being the REFUSAL path — the read comes
+    /// out of the matrix (#684), and nothing pulses while the panel is still up (#686). A press that closes
+    /// the panel, written at the top of that method, moves the slice's end marker to the top with it and
+    /// leaves both laws reading an empty string: a source guard that has stopped covering the code it is a
+    /// law about, which is this repository's fifth named bug class in its purest form.</para>
+    ///
+    /// <para>Which row is being asked for is Core's (<see cref="HavenLevels.RideFrom"/>), so the disabled
+    /// row on the panel and the refusal to ride are one rule rather than two that agree today.</para>
+    /// </summary>
+    private void PressTheHavenLiftButton(in UndergroundComplex.LiftStop stop)
+    {
+        if (HavenLevels.RideFrom(_havenFloor, in stop) is not { } floor)
+        {
+            return;   // the row the car is already on. The panel stays open; nothing moves.
+        }
+
+        _showLiftPanel = false;
+        _ = RideTheHavenLiftTo(floor, _havenLiftCage);
+    }
+
+    /// <summary>
     /// #1253 · <b>THE BERTH TWIN OF <c>RideTheLiftTo</c>.</b> Set the floor, rebuild the deck under the
     /// captain's feet, and stand him at THIS car's landing on the floor he asked for.
     ///

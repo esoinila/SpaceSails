@@ -180,18 +180,13 @@ public partial class Map
     /// that is present and explains itself is the entire reason it is not simply absent.</summary>
     private void PressLiftButton(UndergroundComplex.LiftStop stop)
     {
-        // #1253 · A STATION'S CAR ANSWERS FIRST, and it answers with the whole of what it does: there is no
-        // gate on it, no paper to read and nothing to refuse — the two floors of a building the captain is
-        // already standing in. #600's scar is a car that only went down, and the honest way not to repeat it
-        // is a panel that cannot.
+        // #1253 · A STATION'S CAR ANSWERS FIRST, and it answers somewhere ELSE — Map.HavenLift's own
+        // PressTheHavenLiftButton, never an arm written here. The reason is at that method's head and it is
+        // a real constraint rather than tidiness: two source guards read this method as far as the line that
+        // shuts the panel, and a press that shuts it early moves their end marker to the top of the method.
         if (TheStationHasFloors)
         {
-            if (HavenLevels.RideFrom(_havenFloor, in stop) is { } floor)
-            {
-                _showLiftPanel = false;
-                _ = RideTheHavenLiftTo(floor, _havenLiftCage);
-            }
-
+            PressTheHavenLiftButton(in stop);
             return;
         }
 
