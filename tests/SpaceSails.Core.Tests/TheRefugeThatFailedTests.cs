@@ -261,6 +261,31 @@ public sealed class TheRefugeThatFailedTests
         Assert.Equal(0, close);
     }
 
+    /// <summary>#619 · <b>THE CHEAT ROCK STILL REACHES THE BEAT.</b>
+    ///
+    /// <para><c>?secretlab=sealed</c> parks a rock whose body id is <c>secret-lab-site-sealed</c>, and a
+    /// site's whole shape is seeded off that id — so the URL reaches the refuge that failed by NAME rather
+    /// than by overriding anything from the client. The risk that buys is the one the deep rock's own
+    /// docblock names: a change to the seeding could quietly move the story off that site, and the cheat
+    /// would go on booting a perfectly ordinary building while the testing-links row promised a welded
+    /// door.</para>
+    ///
+    /// <para>The FLOOR is pinned too, because the row in <c>docs/testing-links-the-hive.md</c> says
+    /// <c>&amp;floor=3</c> — and a document full of confident URLs that land on the wrong floor is worse
+    /// than no document (§13.19's own lesson).</para></summary>
+    [Fact]
+    public void TheSealedCheatRockStillCarriesTheStoryOnB3()
+    {
+        const string Rock = "secret-lab-site-sealed";
+        Assert.Equal(-3, UndergroundComplex.FailedRefugeFloorOf(Rock));
+        Assert.Contains(-3, UndergroundComplex.FloorsOf(Rock));
+
+        UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(Rock, -3, Field);
+        Assert.Single(floor.Refuges, r => r.State == UndergroundComplex.RefugeState.Failed);
+        Assert.Contains(floor.Refuges, r => r.State != UndergroundComplex.RefugeState.Failed);
+        Assert.Contains(floor.Locked, l => UndergroundComplex.IsTheWeldedRefugePlate(l.Sign));
+    }
+
     // ── THE WORDS ───────────────────────────────────────────────────────────────────────────────────────
 
     [Fact]

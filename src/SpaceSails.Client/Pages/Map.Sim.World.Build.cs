@@ -140,11 +140,17 @@ public partial class Map
                 // #677 · Three rocks now, one cheat shape. `?found=1` is the deepest of them and it implies
                 // `?secretlab=1`, because there is no other way down: the halls hang off a band nobody
                 // listed, which hangs off a facility, which is reached through a shed.
+                // #619 · FOUR rocks now, one cheat shape. The fourth carries the refuge that failed, and it
+                // is chosen the same way the other three were: a site's whole shape is seeded off its body
+                // id, so a beat that is on one floor of one site in four becomes reachable from a URL
+                // without one Core fact being overridden from the client.
                 (string rockId, string rockName) = _foundCheat
                     ? (SecretLabFoundCheatBodyId, "The Hermit's Deep Rock")
                     : q.SecretlabDeep
                         ? (SecretLabDeepCheatBodyId, "The Deep Hermit's Rock")
-                        : (SecretLabCheatBodyId, "The Hermit's Rock");
+                        : q.SecretlabSealed
+                            ? (SecretLabSealedCheatBodyId, "The Sealed Hermit's Rock")
+                            : (SecretLabCheatBodyId, "The Hermit's Rock");
                 scenario = scenario with
                 {
                     Bodies = [.. scenario.Bodies, SecretLabSiteBody(berthId, rockId, rockName)],
