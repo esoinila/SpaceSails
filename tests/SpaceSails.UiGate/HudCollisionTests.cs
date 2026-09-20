@@ -373,6 +373,20 @@ public sealed class HudCollisionTests : IAsyncLifetime
             + "be spent on the other's pixels (#994 item 2).");
     }
 
+    /// <summary>#1013 · How many faces are being offered a drink at this counter, counted by the VERB the
+    /// room uses and not by the class the row wears — the class is the very thing the regression changes.
+    /// </summary>
+    private const string TheOfferRowCount =
+        """
+        () => {
+            const card = [...document.querySelectorAll('.deck-offer-card')]
+                .find(c => c.getClientRects().length > 0);
+            if (!card) { return 0; }
+            return [...card.querySelectorAll('button')]
+                .filter(b => /Offer .+ a drink/.test(b.innerText || '')).length;
+        }
+        """;
+
     /// <summary>
     /// #1013 · A ROOM FULL OF CONTACTS DOES NOT COVER THE COUNTER'S OWN FOOT.
     ///
@@ -390,9 +404,34 @@ public sealed class HudCollisionTests : IAsyncLifetime
     /// same flex/wrap/gap/centre rule, none of the sticky/scrim rule — so only the card's one true foot is
     /// still pinned.</para>
     ///
+    /// <para><b>#1271 · AND THE LAW IS NOT AN OVERLAP, WHICH THIS GATE LEARNED THE HARD WAY.</b> It was
+    /// written as "no two of the card's rows may share a rectangle", and that was true of the bug — the
+    /// pinned rows raced for one identical box — but it is not true of the CARD. A card that outgrows the
+    /// screen scrolls inside itself (#735) with its foot pinned to the bottom of the scrollport (#780), so
+    /// body rows sliding under that foot is the design working, not failing. The overlap test passed for a
+    /// year only because the foot happened to be short enough to clear them.</para>
+    ///
+    /// <para>Measured on 2026-09-20, at this gate's own 1280×420: the Roadstead's foot now wraps onto FOUR
+    /// lines — <i>DUST DEVIL · See the menu · Round for the room · Hear a rumor · SDR SCANNER · HULL CUTTER ·
+    /// Ask about KAAMOS · Done</i> — <b>148 px</b> of a 244 px scrollport, and a contact row at y 352 landed
+    /// inside it on roughly one boot in four (how many old shipmates <c>PresentBarContacts</c> seeds is the
+    /// room's own answer). The card was photographed in that exact state and it is CORRECT: the foot paints
+    /// its own box (#1271), the row under it is not visible at all rather than struck through, and scrolling
+    /// brings it out above the foot. A guard that reds on that is a guard measuring geometry and reporting
+    /// paint — the mistake <see cref="TheDestinationPanelIsNeverPaintedOverTests"/> already wrote down in
+    /// this project, in the other direction.</para>
+    ///
+    /// <para><b>So the two laws are stated as what #1013 actually is.</b> <b>ONE:</b> exactly one row in the
+    /// card is PINNED, and it is the card's own foot — read off the live computed <c>position</c>, which is
+    /// the bug itself rather than a shadow it happened to cast. <b>TWO:</b> the foot's height is real FLOW
+    /// space, proved by scrolling the card to its end and requiring every contact row to stand clear of the
+    /// foot's top edge. A foot that were absolutely positioned, or one so tall the body could never clear
+    /// it, would leave a row permanently unreachable — which is the harm the overlap test was reaching for,
+    /// and the only part of it a scrolling card cannot innocently trip.</para>
+    ///
     /// <para>RED PROOF: put <c>.contact-offer-row</c> back to <c>.deck-offer-actions</c> in
-    /// <c>ContactDrinkOffer</c> (Map.razor) and this fails, naming the exact pixel gap that collapsed to
-    /// zero.</para>
+    /// <c>ContactDrinkOffer</c> (Map.razor) and law ONE fails, naming every row that is pinned and what its
+    /// computed position is.</para>
     /// </summary>
     [Fact]
     public async Task A_room_full_of_bar_contacts_never_covers_the_counters_own_foot()
@@ -469,41 +508,99 @@ public sealed class HudCollisionTests : IAsyncLifetime
         // until it has stopped.
         await _page.SettledAsync(".deck-offer-card .contact-offer-row, .deck-offer-card .deck-offer-actions");
 
-        // Every row in the card's body — each present contact's offer row, plus the one true foot — read
-        // off the DOM in source order, which is paint/scroll order here.
-        var rows = new List<(string Name, float X, float Y, float W, float H)>();
-        ILocator rowLocator = card.Locator(".contact-offer-row, .deck-offer-actions");
-        int rowCount = await rowLocator.CountAsync();
-        Assert.True(rowCount >= 2,
-                    $"only {rowCount} action row(s) drew on the counter card — this gate needs a contact row "
-                    + "AND the card's own foot to prove they do not collide");
-        for (int i = 0; i < rowCount; i++)
-        {
-            ILocator row = rowLocator.Nth(i);
-            string text = (await row.InnerTextAsync()).Replace('\n', ' ').Trim();
-            if (await row.BoundingBoxAsync() is { } box && box.Width > 0 && box.Height > 0)
-            {
-                rows.Add((text.Length > 40 ? text[..40] : text, box.X, box.Y, box.Width, box.Height));
-            }
-        }
+        // The premise, out loud: somebody the captain knows is being offered a drink, and the card has its
+        // own foot. Without both there is nothing here to race and this gate would prove nothing.
+        //
+        // AND THE CONTACT ROW IS FOUND BY WHAT IT SAYS, NOT BY THE CLASS IT WEARS. The regression this gate
+        // exists to catch is precisely that wrapper changing class — count `.contact-offer-row` here and
+        // restoring the bug makes the premise fail FIRST, so the gate reds with "this gate proved nothing"
+        // instead of naming the fault. The verb is the room's, and it survives the rename.
+        int offers = await _page.EvaluateAsync<int>(TheOfferRowCount);
+        int feet = await card.Locator(".deck-offer-actions, .contact-offer-row").CountAsync();
+        Assert.True(offers >= 1 && feet >= 1,
+                    $"the counter card drew {offers} 'Offer … a drink' button(s) and {feet} action row(s) — "
+                    + "this gate needs a contact at the counter AND the card's own foot to prove anything "
+                    + "about the one racing the other (#1013).");
 
-        var collisions = new List<string>();
-        for (int i = 0; i < rows.Count; i++)
-        {
-            for (int j = i + 1; j < rows.Count; j++)
-            {
-                if (Overlaps(rows[i], (rows[j].X, rows[j].Y, rows[j].W, rows[j].H)))
-                {
-                    collisions.Add($"'{rows[i].Name}' at ({rows[i].X:0},{rows[i].Y:0}) {rows[i].W:0}×{rows[i].H:0} "
-                                   + $"overlaps '{rows[j].Name}' at ({rows[j].X:0},{rows[j].Y:0}) "
-                                   + $"{rows[j].W:0}×{rows[j].H:0}");
+        // ── LAW ONE · EXACTLY ONE ROW IN THIS CARD IS PINNED, AND IT IS THE CARD'S OWN FOOT ─────────────
+        //
+        // The bug itself, asked as itself. #1013 was a contact's wrapper WEARING `.deck-offer-actions`, so
+        // every contact in the room was `position: sticky; bottom: 0` with a 12rem scrim, all of them
+        // claiming one rectangle. Read off the live computed style rather than off a box: a shadow the bug
+        // happened to cast is not the bug, and #1271 is what happens when a guard confuses the two.
+        string pinnedReport = await _page.EvaluateAsync<string>(
+            """
+            () => {
+                const card = [...document.querySelectorAll('.deck-offer-card')]
+                    .find(c => c.getClientRects().length > 0);
+                if (!card) { return 'no counter card is on the screen at all'; }
+                const pinned = [];
+                for (const row of card.querySelectorAll('.contact-offer-row, .deck-offer-actions')) {
+                    const pos = getComputedStyle(row).position;
+                    if (pos === 'sticky' || pos === 'fixed' || pos === 'absolute') {
+                        const words = (row.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+                        pinned.push(`.${row.className.split(' ')[0]} is ${pos}: "${words}"`);
+                    }
                 }
+                return pinned.length === 1 && pinned[0].startsWith('.deck-offer-actions')
+                    ? ''
+                    : pinned.join('\n  ') || '(nothing in the card is pinned at all)';
             }
-        }
+            """);
 
-        Assert.True(collisions.Count == 0,
-                    "the counter card's own rows are covering each other (#1013):\n  "
-                    + string.Join("\n  ", collisions));
+        Assert.True(
+            pinnedReport.Length == 0,
+            "the counter card must have exactly ONE pinned row and it must be the card's own foot — these "
+            + "are what is pinned instead (#1013):\n  " + pinnedReport
+            + "\n\nA contact's offer row wearing `.deck-offer-actions` puts every face in the room on the "
+            + "same `position: sticky; bottom: 0` rectangle with the same 12rem scrim, and which one the "
+            + "captain reads is decided by which rendered last. `.contact-offer-row` is the body's own "
+            + "wrapper: the same flex/wrap/gap/centre, none of the pin.");
+
+        // ── LAW TWO · THE FOOT'S HEIGHT IS REAL FLOW SPACE, SO EVERY ROW CAN BE REACHED ─────────────────
+        //
+        // A sticky foot lets the body scroll under it, which is #735/#780 working; what must never happen
+        // is a row that can never be got out from under it. Scrolled to the card's own end the foot sits in
+        // its flow position with nothing beneath it, so every contact row has to stand clear of its top
+        // edge. An absolutely-positioned foot reserves no space and would leave the last row buried at
+        // every scroll position there is.
+        await card.EvaluateAsync("el => { el.scrollTop = el.scrollHeight; }");
+        await _page.SettledAsync(".deck-offer-card .contact-offer-row, .deck-offer-card .deck-offer-actions");
+
+        string buriedReport = await _page.EvaluateAsync<string>(
+            """
+            () => {
+                const card = [...document.querySelectorAll('.deck-offer-card')]
+                    .find(c => c.getClientRects().length > 0);
+                const foot = [...card.querySelectorAll(':scope > .deck-offer-actions')].pop();
+                const f = foot.getBoundingClientRect();
+                const buried = [];
+                // The contact rows, found by the verb rather than by the class — see the premise above.
+                const contacts = [...card.querySelectorAll('.contact-offer-row, .deck-offer-actions')]
+                    .filter(el => el !== foot && /Offer .+ a drink/.test(el.innerText || ''));
+                for (const row of contacts) {
+                    const r = row.getBoundingClientRect();
+                    if (r.height <= 0) { continue; }
+                    const over = Math.min(r.bottom, f.bottom) - Math.max(r.top, f.top);
+                    if (over > 0.5) {
+                        const words = (row.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 40);
+                        buried.push(`"${words}" runs y ${Math.round(r.top)}…${Math.round(r.bottom)}, `
+                                    + `${Math.round(over)} px of it still inside the foot at `
+                                    + `y ${Math.round(f.top)}…${Math.round(f.bottom)}`);
+                    }
+                }
+                return buried.join('\n  ');
+            }
+            """);
+
+        Assert.True(
+            buriedReport.Length == 0,
+            "with the counter card scrolled to its own end, a contact's offer row is STILL underneath the "
+            + "card's pinned foot — so there is no scroll position at which the captain can read it "
+            + "(#1013):\n  " + buriedReport
+            + "\n\nThe foot is `position: sticky`, which occupies its normal-flow space at the end of the "
+            + "content; anything that took that space away (an absolute foot, a negative margin, a fixed "
+            + "offset) buries whatever the body ends with.");
     }
 
     /// <summary>

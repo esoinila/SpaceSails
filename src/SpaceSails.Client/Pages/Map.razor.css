@@ -1065,6 +1065,43 @@
     box-shadow: 0 12rem 0 12rem var(--card-foot-scrim, rgba(6, 8, 13, 0.94));
 }
 
+/* #1271 · …AND THE ROW THE SCRIM HANGS FROM PAINTED NOTHING.
+
+   A box-shadow never fills the border box it is cast from, and the offset EQUALS the spread above — so the
+   scrim begins exactly where the pinned row ends, and every pixel of the row itself was
+   `background-color: rgba(0, 0, 0, 0)`. Measured at the haven counter: a 502 × 70 band at 1440 × 1100 with
+   the card's own prose scrolling live underneath it, and ~180 px of it at 390 × 700.
+
+   That is invisible for as long as a foot is ONE LINE OF BUTTONS, because a button fills its own box and
+   there is nothing between them worth seeing through. The haven counter is the card that broke the
+   assumption: with the menu open it carries five controls, #780 wraps them onto two and three lines, and
+   the gaps between and around them are where #247's house-pour row — and, in a fuller room, THE BOARD —
+   were read straight THROUGH the foot (owner's boot, 2026-09-20). The card scrolls and the foot does not,
+   so WHICH line of prose lands in those gaps moves with every contact standing in the room. Nothing was
+   clickable through it; every word of it was simply unreadable, in both directions.
+
+   THE FILL IS THE CARD'S OWN DARKNESS, AND THE ALPHA IS THE ONE THING IT DOES NOT TAKE FROM THE SCRIM.
+   The scrim hangs over the card's own END, where the card's fill is already beneath it — the two compose,
+   and 0.92 over 0.92 is 0.9936. The band has the card's PROSE beneath it instead, so a single 0.92 layer
+   would leave eight per cent of a sentence standing in among the buttons. Opaque is the honest form of
+   "the same colour the well below it already is": it parts from that well by 0.64% of whatever is behind
+   the card, which is under one level of eight-bit colour.
+
+   ONLY THE ROWS. The list above also pins half a dozen LONE BUTTONS, and a button already fills its own
+   box — handing them a background here would repaint `.view-object-close`'s amber and every Bootstrap
+   dress in the family. A row is the thing with gaps in it. Pinned by
+   `TheCountersPinnedFootPaintsItsOwnBoxTests` (UiGate), which photographs the band's rectangle twice — once
+   over the card's prose and once with that prose hidden — and requires the two frames to be identical. */
+::deep .busted-card .busted-close-row,
+.busted-card > .busted-options,
+::deep .deck-offer-card > .deck-offer-actions,
+.deck-offer-card > .deck-bank-actions,
+.treasure-map-card > .busted-options,
+.rescue-card > .rescue-options,
+::deep .deck-shuttle-card > .deck-shuttle-actions {
+    background-color: var(--card-foot-fill, rgb(6, 8, 13));
+}
+
 /* The operating log (.vent-read-card) takes the cap and the scroll above but NOT the pinned foot: it is
    the one card in the family with no panel of its own — `.vent-board` has carried no CSS for a long time —
    so it is transparent over the blurred backdrop, and a scrim there would be a rectangle floating on the
@@ -1103,14 +1140,21 @@
    On the flat-filled cards the scrim is invisible. On the gradient ones it reads as a shallow FOOT WELL
    below the action row — the one honest option, since no single colour can match a gradient at the height
    a sticky element happens to be sitting at, and a well that says "the card ends here" is the right thing
-   to say about a card whose whole problem was that nobody could tell where it ended. */
+   to say about a card whose whole problem was that nobody could tell where it ended.
+
+   #1271 names the SAME colour twice: `--card-foot-scrim` is what hangs below the pinned row, alpha and all,
+   and `--card-foot-fill` is what the row itself is painted with — the identical dark with the alpha taken
+   off, because the row has the card's own prose sliding under it and the scrim has only the card's end. A
+   card that grows a scrim of its own names both, or the row falls back to the family dark above. */
 ::deep .busted-card,
 ::deep .rescue-card {
     --card-foot-scrim: rgba(10, 7, 9, 0.99);
+    --card-foot-fill: rgb(10, 7, 9);
 }
 
 ::deep .deck-offer-card {
     --card-foot-scrim: rgba(6, 9, 15, 0.92);
+    --card-foot-fill: rgb(6, 9, 15);
 }
 
 .old-crew-history {
