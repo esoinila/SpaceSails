@@ -241,11 +241,14 @@ public sealed class TheDestinationPanelIsNeverPaintedOverTests : IAsyncLifetime
             }
             """,
             fraction);
-        await _page.WaitForFunctionAsync(
-            "() => { const p = document.querySelector('.map-plot'); "
-            + "return p !== null && !/Scrub: 0d 00h 00m/.test(p.textContent); }",
-            null,
-            new() { Timeout = ActionTimeoutMs });
+
+        // #1267 · The settle, on the boxes the next press aims at — the same change and the same reason as
+        // <see cref="PlotPanelFitsTheWindowTests.ScrubTo"/>, where the measurement is written out. In one
+        // line: this waited on the word "Scrub" appearing beside a clock that was no longer "0d 00h 00m",
+        // so renaming `NodeFrame.ScrubLabel` (measured: to "Clock") dropped the wait from 57 ms to 14 ms
+        // and handed on the panel at 608x119 with its last compose button four pixels off where it ends
+        // up — a readiness signal any wording change can switch off without a word of warning.
+        await _page.SettledAsync(".map-plot, .map-plot-compose button");
     }
 
     private async Task ComposeAsync(string label) =>
