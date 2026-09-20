@@ -11,8 +11,9 @@ namespace SpaceSails.Client.Tests;
 
 /// <summary>
 /// #1218 · <b>NO TWO CAPTIONS SHARE ONE BAND.</b> A rect-intersection sweep over every line of text
-/// <see cref="DeckView.Draw"/> lays, at four fixed boots — the regolith with your own ✗ on it, a derelict's
-/// DEEP HOLD, the ship's own deck, and B1's park.
+/// <see cref="DeckView.Draw"/> lays, at five fixed boots — the regolith with your own ✗ on it, a derelict's
+/// DEEP HOLD, the ship's own deck, B1's park, and (#1279) Selene Gate's lower concourse, which is the one
+/// world with a ROW of captions at a fixed spacing in it.
 ///
 /// <para><b>Why a sweep and not four assertions.</b> The owner filed this from play, three times in two days,
 /// on three different floors: <i>"yours · something walks near it"</i> printed through <i>"🗺 DIG AT THE X"</i>
@@ -51,7 +52,7 @@ public sealed class NoTwoCaptionsShareOneBandTests
 
     /// <summary>What the ledger's own header says about where these numbers came from.</summary>
     internal const string Preamble =
-        "EVERY CAPTION DeckView.Draw LAYS AT FOUR FIXED BOOTS — the SET of strings, sorted, hashed.\n"
+        "EVERY CAPTION DeckView.Draw LAYS AT FIVE FIXED BOOTS — the SET of strings, sorted, hashed.\n"
         + "#1218's lane moves where a caption sits; it may never move what one says. A row is\n"
         + "`<count> caption(s), sha256 <digest of the sorted strings>`, so a caption that changed its\n"
         + "WORDS is red here even though the sweep beside it is still green.";
@@ -286,7 +287,36 @@ public sealed class NoTwoCaptionsShareOneBandTests
             SimTime: 880.0,
             Surface: null,
             AtLeast: 8);
+
+        // ── #1279 · SELENE GATE'S LOWER CONCOURSE, AT THE CAR ─────────────────────────────────────────
+        //
+        // The fifth boot, and it is here because the owner played the fourth pile-up onto this sweep's
+        // list: a row of FIVE numbered leaves at one door's frontage, each plate wider than the frontage,
+        // three of the five numbers unreadable. This world is the one that carries a ROW of captions at a
+        // fixed spacing, which is the case none of the other four has — and it is the boot the dev link
+        // `?dock=selene-gate&ashore=1&havenfloor=-1` opens on.
+        yield return new Boot(
+            "selene gate · the lower concourse",
+            TheLowerConcourse,
+            new DeckView.State(TheLanding.X, TheLanding.Y, 0.0, 0, 0,
+                ShuttleAway: false, ElectricUniverse: false, Docked: true),
+            SimTime: 1000.0,
+            Surface: null,
+            AtLeast: 8);
     }
+
+    /// <summary>#1279 · The service level under Selene Gate's concourse, as the page builds it.</summary>
+    private static DeckPlan TheLowerConcourse =>
+        HavenInterior.DockedDeck(TheHaven, level: HavenLevels.ServiceLevel)
+        ?? throw new InvalidOperationException($"{TheHaven} has no service level — this boot proves nothing.");
+
+    /// <summary>#1279 · …and where the first car's doors put a captain on it, asked of the room rather than
+    /// typed, so this boot stands where the ride stands him.</summary>
+    private static DeckReachability.Point TheLanding =>
+        HavenInterior.TheCageLandingAt(TheHaven, 0)
+        ?? throw new InvalidOperationException($"{TheHaven}'s first cage has no landing.");
+
+    private static string TheHaven => ObservationWalk.HavenId;
 
     private static IReadOnlyList<Caption> CaptionsOf(Boot boot)
     {
@@ -370,8 +400,69 @@ public sealed class NoTwoCaptionsShareOneBandTests
             + "#1218's ruling: a mark's second line FOLDS INTO ITS PLATE — one plate per anchor, the plate "
             + "grows a second row. Never a second caption at a second hand-typed lift.");
 
-        Assert.Equal(4, worlds);
+        Assert.Equal(5, worlds);
         Assert.True(captions > 40, $"only {captions} caption(s) were laid in all — this sweep proves little.");
+    }
+
+    /// <summary>
+    /// #1279 · <b>A ROW OF DOORS IS READ LEFT TO RIGHT.</b> The five crew cabins' plates are drawn on ONE
+    /// row, in the doors' own order, and no two of them are over the same piece of glass.
+    ///
+    /// <para><b>Why the sweep above could not say this.</b> The band book does exactly what it was written to
+    /// do: a plate that would print through its neighbour takes the row above instead. So five plates at one
+    /// door's frontage come out staggered across two rows, nothing intersects, and
+    /// <see cref="NoCaptionIsDrawnOverAnother"/> is GREEN over the picture the owner filed —
+    /// <i>"three of five door numbers cannot be read"</i>. Interleaving is not overlapping, and it is just as
+    /// unreadable: the rows are ten pixels apart and each plate's words run out over the neighbour it is
+    /// stacked above.</para>
+    ///
+    /// <para>So the law is the one a row of numbered doors actually has to keep: <b>they are all on the same
+    /// row and they do not touch</b> — which is only true of a plate that fits the door it names. It is the
+    /// measurement behind <see cref="HavenLevels.CabinDoorPlate"/>, taken off the frame rather than argued.
+    /// </para>
+    ///
+    /// <para><b>RED on the shipped tree</b> (the painted plate put back to <c>CABIN n · CREW</c>): the five
+    /// plates come back on two rows and four neighbouring pairs overlap.</para>
+    /// </summary>
+    [Fact]
+    public void TheRowOfCabinPlatesIsOneRowAndTheNumbersDoNotTouch()
+    {
+        IReadOnlyList<Caption> said = CaptionsOf(
+            Boots().Single(b => b.Name == "selene gate · the lower concourse"));
+
+        var row = said
+            .Where(c => c.Text.StartsWith("CABIN ", StringComparison.Ordinal))
+            .OrderBy(c => c.Left)
+            .ToList();
+
+        Assert.Equal(HavenLevels.Cabins, row.Count);
+
+        // …and it is the whole row, numbered in the order it is read. A law that found four of five plates
+        // and called them tidy would be a law about whichever plates happened to survive.
+        for (int n = 0; n < row.Count; n++)
+        {
+            Assert.Equal(HavenLevels.CabinDoorPlate(n + 1), row[n].Text);
+        }
+
+        double baseline = row[0].Y;
+        foreach (Caption plate in row)
+        {
+            Assert.True(
+                Math.Abs(plate.Y - baseline) < 0.5,
+                $"{plate.Where} is not on the row the rest of the door numbers are on ({baseline:0.#}) — "
+                + "five plates stacked across two rows is the pile-up the band book was forced into by a "
+                + "plate wider than its own door, and a captain reads it as one smeared line.");
+        }
+
+        for (int i = 1; i < row.Count; i++)
+        {
+            Assert.True(
+                row[i - 1].Right < row[i].Left,
+                $"two door numbers are over one piece of glass:{Environment.NewLine}      "
+                + $"{row[i - 1].Where}{Environment.NewLine}      {row[i].Where}{Environment.NewLine}"
+                + "A plate in a row of doors carries what is DIFFERENT between them (#1279); what they have "
+                + "in common belongs to the floor.");
+        }
     }
 
     // ── AND THE WORDS THEMSELVES DID NOT MOVE ─────────────────────────────────────────────────────────
@@ -429,6 +520,6 @@ public sealed class NoTwoCaptionsShareOneBandTests
             + $"intended and owner-sanctioned, re-pin BY MEASUREMENT:{Environment.NewLine}  "
             + PinLedger.Invocation);
 
-        Assert.Equal(4, pinned.Count);
+        Assert.Equal(5, pinned.Count);
     }
 }
