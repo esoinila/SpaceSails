@@ -71,8 +71,13 @@ public readonly record struct Drink(
 /// <para>Two shared staples pour at every bar — <see cref="SpaceGin"/> and <see cref="SpaceBeer"/> —
 /// plus a harder shared <see cref="RocketFuel"/> for the ones who mean it, and then each bar's OWN
 /// <see cref="SpecialtyOf">house special</see>, kept exactly as the <see cref="Barkeep"/> already
-/// pours it (the Rusted Bolt, the Earthshine, the Eyewall…). Pure Core data so the menu, the
+/// pours it (#247: DUST DEVIL, EARTHRISE, THE BLINK…). Pure Core data so the menu, the
 /// favourites, and the choice-as-tell are one tested truth the client renders.</para>
+///
+/// <para>#247 · <b>…and the house pour carries its own plate.</b> On a haven card the specialty is the one
+/// row with a picture beside it, and the picture is asked of the <see cref="Barkeep"/> too
+/// (<see cref="Interior.Barkeep.DrinkArtUrl"/>) rather than of a second table keyed by the same body id —
+/// so the name, the line and the photograph are one fact about the bar, or they are none.</para>
 /// </summary>
 public static class DrinkMenu
 {
@@ -97,11 +102,18 @@ public static class DrinkMenu
 
     /// <summary>This bar's house special as a menu <see cref="Drink"/>, lifted verbatim from the
     /// <see cref="Barkeep"/> so the name and flavour the keep already pours are the same one the menu
-    /// shows. Categorised <see cref="DrinkCategory.Specialty"/> — the local channel.</summary>
+    /// shows. Categorised <see cref="DrinkCategory.Specialty"/> — the local channel.
+    ///
+    /// <para>#247 · …and the plate too, off the same record. The price is left at 0 ON PURPOSE: that is the
+    /// staples' own seam (<see cref="Drink.PriceAt"/> falls back to <see cref="Barkeep.DrinkPrice"/>), so
+    /// the house drink is bought at the house rate through the same button, the same debit and the same
+    /// receipt as a Space Gin. It is not a small multiple of anything and it is not priced here — there is
+    /// exactly one number and the card's own header already quotes it.</para></summary>
     public static Drink SpecialtyOf(Barkeep keep)
     {
         ArgumentNullException.ThrowIfNull(keep);
-        return new Drink($"special:{keep.BodyId}", keep.DrinkName, DrinkCategory.Specialty, keep.DrinkFlavor);
+        return new Drink($"special:{keep.BodyId}", keep.DrinkName, DrinkCategory.Specialty, keep.DrinkFlavor,
+                         ArtUrl: keep.DrinkArtUrl);
     }
 
     /// <summary>The full menu at one bar: the shared staples, then this bar's local specialty last (the
@@ -165,7 +177,9 @@ public static class DrinkMenu
 /// we offer"). It is derived deterministically from the contact id, so it never changes across
 /// sessions — but the known cast get AUTHORED anchors where flavour demands one, which is also how
 /// "the barkeep's special is somebody's favourite by construction" holds: One-Eye Silas drinks the
-/// Rusted Bolt, Gilt-Eye drinks the Earthshine that remembers everything. Pure and testable.
+/// Roadstead's own, Gilt-Eye drinks the Earthrise with the ice that outlasted its crossing. Pure and
+/// testable — the anchors name DRINK IDS, so #247 could re-author every house pour's name and line
+/// without moving one favourite off the bar it belongs to.
 /// </summary>
 public static class DrinkFavorites
 {
@@ -174,10 +188,11 @@ public static class DrinkFavorites
     // that bar's house special somebody's favourite by construction (the owner's ask).
     private static readonly (string Keyword, string DrinkId)[] Anchors =
     [
-        // One-Eye Silas — the gruff bounty fence at the Roadstead bar drinks the local iron whiskey.
+        // One-Eye Silas — the gruff bounty fence at the Roadstead bar drinks the local one, DUST DEVIL:
+        // mescal, chilli and flat-salt, served heavy "because the light ones leave". So does he.
         ("SILAS", "special:the-space-bar"),
-        // Gilt-Eye — the appraising intel dealer favours the Earthshine, "the oldest recipe… it
-        // remembers everything." A drink for someone who trades in what people forget they said.
+        // Gilt-Eye — the appraising intel dealer favours EARTHRISE, whose one lump of polar ice "took
+        // longer to get here than you did". A drink for somebody who prices provenance for a living.
         ("GILT", "special:selene-gate"),
         // Madam Coil — warm-underworld, runs quiet parcels; the gin, where business gets honest.
         ("COIL", "space-gin"),

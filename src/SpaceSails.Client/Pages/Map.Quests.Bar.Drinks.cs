@@ -24,6 +24,13 @@ namespace SpaceSails.Client.Pages;
 /// <para>Every drink rides through <c>PourRum</c>, so a third round ashore makes the deck just as tilty
 /// as one aboard, and every spend gets a #119-style receipt naming the drink and the coin.</para>
 ///
+/// <para>#247 · <b>…AND WHAT IS EATEN</b>, which is the one thing in this file that is not poured. The
+/// Special off the bar's board (<c>OrderTheSpecial</c>) is bought over the same counter with the same coin
+/// through the same <c>Drink.PriceAt</c> seam, and that is exactly where it parts company with the glasses:
+/// a plate does not route through <c>PourRum</c>, counts no tot and never tilts the deck (#756's law). It
+/// reaches the nerve the way the med bay's pill does — the same <c>NerveModel</c> relief seam,
+/// un-diminished, at the one bigger step #247 states — and the kitchen serves one a sitting.</para>
+///
 /// <para>Split out of <c>Map.Quests.Bar.cs</c> under #251 with no member renamed, re-scoped or
 /// re-ordered.</para>
 /// </summary>
@@ -204,6 +211,85 @@ public partial class Map
         TipTier.Vague => $"🍻 {display} raises the glass: {colour.LineFor(giver, SimTime)}",
         _ => null,
     };
+
+    // ── #247 · THE BOARD, AND WHAT COMES OFF IT ───────────────────────────────────────────────────────
+    //
+    // Owner: "Eating = the meal-sized shore-leave beat beside the drink (bigger #226 relief, small cr), and
+    // ordering the Special is a tiny dice moment — usually delicious, occasionally a story."
+    //
+    // WHICH WATCH THE BOARD IS CHALKED FOR. One reader, here, so the price the row PRINTS and the price the
+    // purse is DEBITED cannot come off two different shifts — a card is open across sim-seconds, and the
+    // watch ticks over while it is. Both halves ask this.
+    private long TheBoardsWatch => PatronRota.WatchIndex(SimTime);
+
+    // What is on the board at the counter we are standing at, priced for this watch — or null where the
+    // counter has no kitchen behind it (the Hive's, whose card under the glass IS its food).
+    private Core.Drink? TheSpecialOnTheBoard =>
+        _barMenu is { } keep ? TheMenuBoard.SpecialOn(keep.BodyId, TheBoardsWatch) : null;
+
+    // The board's own chalked line, for the plate above the row.
+    private string? TheBoardLine =>
+        _barMenu is { } keep ? TheMenuBoard.For(keep.BodyId)?.BoardLine : null;
+
+    // ONE SPECIAL A SITTING. The kitchen chalks one dish and serves it once a visit — the same visit-scoped
+    // idiom the round for the room already uses (_roundThisVisit), cleared by EnsureBarVisit when the berth
+    // changes. It is what keeps a flat, level-independent relief from becoming a button you hold down: the
+    // limiter is a sitting, never drunkenness, because a plate is not a pour (#756).
+    private bool _specialThisVisit;
+
+    // Order the Special: ONE debit through the same Drink.PriceAt seam every row on this card is bought
+    // through, then the dice moment, then the relief. The plate does NOT route through PourRum — food does
+    // not tilt the deck (#756's law) — so it reaches the nerve the way the med bay's pill does: the same
+    // NerveModel relief seam, un-diminished, at the one bigger step #247 states (NerveModel.MealRestore).
+    private void OrderTheSpecial()
+    {
+        if (_barMenu is not { } keep || TheSpecialOnTheBoard is not { } plate
+            || TheMenuBoard.For(keep.BodyId) is not { } board)
+        {
+            return;
+        }
+
+        if (_specialThisVisit)
+        {
+            // Refused OUT LOUD in the keep's own words, never by a control that will not press (#212/#603).
+            _barNotice = keep.SelfService
+                ? "The reader declines: one Special a sitting, and the board has already served yours."
+                : "“One Special a sitting, spacer. Come back next time you're through.”";
+            ShowPulseMessage(_barNotice);
+            return;
+        }
+
+        int cost = plate.PriceAt(keep.DrinkPrice);
+        if (_credits < cost)
+        {
+            _barNotice = keep.SelfService
+                ? $"The reader declines: the Special is {cost} cr and the purse is short."
+                : $"“Special's {cost} cr — come back when the purse can cover it, spacer.”";
+            ShowPulseMessage(_barNotice);
+            return;
+        }
+
+        _credits -= cost;
+        _specialThisVisit = true;
+
+        // The tiny dice moment (#247), cast on the ONE rule every consequence in this game rolls on:
+        // deterministic per (bodyId, watch, captain), so a tester who steps the watch walks both outcomes
+        // and a captain who eats the same plate twice gets the same plate twice.
+        Core.DiceRoll roll = TheMenuBoard.RollTheSpecial(keep.BodyId, TheBoardsWatch, ActiveCaptainName);
+
+        double beforeNerve = _nerve;
+        ApplyNerveRelief(NerveModel.RestoreAmount(NerveModel.DrinkKind.Meal, _nerve, totNumber: 1));
+        double restored = _nerve - beforeNerve;
+        string steadying = NerveModel.SteadyingNote(NerveModel.DrinkKind.Meal, totNumber: 1, restored);
+
+        // The #119 receipt idiom, exactly as a pour gets one: what it was, what it cost, what happened.
+        string receipt =
+            $"🍽 {TheMenuBoard.SpecialLabel} — {cost} cr. {board.PlateLine} {TheMenuBoard.OutcomeOf(roll)} "
+            + $"(d20 {roll.Face}) — {steadying}";
+        _barNotice = receipt;
+        ShowPulseMessage($"{receipt} (−{cost:N0} cr)");
+        RequestVaultSave(); // #225: the purse moved (and the relief moved the nerve)
+    }
 
     // Ask the barkeep what they've heard — a cheap tip line for flavor (deterministic per sim-hour).
     private void AskBarkeepForRumor()

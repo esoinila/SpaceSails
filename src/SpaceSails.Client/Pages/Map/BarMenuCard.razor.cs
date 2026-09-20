@@ -48,6 +48,10 @@ public partial class BarMenuCard
     [Parameter] public Func<bool> NebulaBarSeamAvailable { get; set; } = default!;
     [Parameter] public Func<string> NebulaBarSeamLabel { get; set; } = default!;
     [Parameter] public Func<string> NebulaBarSeamTitle { get; set; } = default!;
+    /// <summary>#247 · Order the Special off the board: one debit through the card's own price seam, one
+    /// d20, one meal-sized ease of the nerve — all of it on the page, none of it here.</summary>
+    [Parameter] public EventCallback OrderTheSpecial { get; set; }
+
     [Parameter] public Func<IReadOnlyList<(string Giver, string Display)>> PresentBarContacts { get; set; } = default!;
     [Parameter] public string? SeatedStoolPlate { get; set; }
     [Parameter] public Func<string, Task> StoolMoveClicked { get; set; } = default!;
@@ -56,9 +60,20 @@ public partial class BarMenuCard
     [Parameter] public Func<IReadOnlyList<Encounter.Move>> StoolMovesOnTheTable { get; set; } = default!;
     [Parameter] public EventCallback TakeAStool { get; set; }
     [Parameter] public bool TheBackCounterIsOpen { get; set; }
+
+    /// <summary>#247 · The line chalked on this bar's board, or null where the counter has no kitchen behind
+    /// it. Null is the whole gate: no line, no board, and nothing left where one should have been.</summary>
+    [Parameter] public string? TheBoardLine { get; set; }
+
     [Parameter] public bool TheCounterRentsRooms { get; set; }
     [Parameter] public Func<string?> TheKeepsTell { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<string>> TheOverheardBlock { get; set; } = default!;
+
+    /// <summary>#247 · The Special as an orderable item, priced for THE WATCH THE PAGE IS ON. It arrives as a
+    /// <see cref="Core.Drink"/> so the row prices itself through the same <c>Drink.PriceAt</c> every other row
+    /// on this card is priced through, rather than through a second till written beside it.</summary>
+    [Parameter] public Core.Drink? TheSpecialOnTheBoard { get; set; }
+
     [Parameter] public EventCallback ToggleBarMenu { get; set; }
     [Parameter] public Func<string?> WhoIsInTonight { get; set; } = default!;
     [Parameter] public Core.Interior.Barkeep keep { get; set; } = default!;
