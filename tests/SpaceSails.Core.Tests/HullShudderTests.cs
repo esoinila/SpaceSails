@@ -70,13 +70,13 @@ public class HullShudderTests
     // #1248 · Both rooms of a haven, because the pool is picked per room now — a sweep that asked only the
     // bar's would be green about half a feature.
     [Theory]
-    [InlineData(HullShudder.Setting.Haven, true)]
-    [InlineData(HullShudder.Setting.Haven, false)]
-    [InlineData(HullShudder.Setting.Ship, false)]
-    [InlineData(HullShudder.Setting.DeepSite, false)]
-    public void LinePool_IsNonBlank_AndUnique(HullShudder.Setting setting, bool inTheBar)
+    [InlineData(HullShudder.Setting.Haven, HullShudder.HavenRoom.Bar)]
+    [InlineData(HullShudder.Setting.Haven, HullShudder.HavenRoom.Concourse)]
+    [InlineData(HullShudder.Setting.Ship, HullShudder.HavenRoom.Concourse)]
+    [InlineData(HullShudder.Setting.DeepSite, HullShudder.HavenRoom.Concourse)]
+    public void LinePool_IsNonBlank_AndUnique(HullShudder.Setting setting, HullShudder.HavenRoom room)
     {
-        IReadOnlyList<string> pool = HullShudder.LinesFor(setting, inTheBar);
+        IReadOnlyList<string> pool = HullShudder.LinesFor(setting, room);
         Assert.NotEmpty(pool);
         Assert.All(pool, line => Assert.False(string.IsNullOrWhiteSpace(line)));
         Assert.Equal(pool.Count, pool.Distinct().Count()); // no duplicates
@@ -96,8 +96,8 @@ public class HullShudderTests
     {
         // The owner's shape: heads coming up "as one" / "in unison" — the shared, held beat.
         var all = HullShudder.EveryHavenLine()   // #1248: the WHOLE haven pool, both rooms' worth
-            .Concat(HullShudder.LinesFor(HullShudder.Setting.Ship, inTheBar: false))
-            .Concat(HullShudder.LinesFor(HullShudder.Setting.DeepSite, inTheBar: false))
+            .Concat(HullShudder.LinesFor(HullShudder.Setting.Ship, HullShudder.HavenRoom.Concourse))
+            .Concat(HullShudder.LinesFor(HullShudder.Setting.DeepSite, HullShudder.HavenRoom.Concourse))
             .Concat(HullShudder.ChillLinesFor(groundHoldsPressure: false));
         foreach (string line in all)
         {
@@ -115,7 +115,7 @@ public class HullShudderTests
         // Haven blames the clamps / the station settling; a deep site can't name what settles this far
         // down — the pools must not overlap, so the flavor actually changes with the context.
         var haven = HullShudder.EveryHavenLine();
-        var deep = HullShudder.LinesFor(HullShudder.Setting.DeepSite, inTheBar: false);
+        var deep = HullShudder.LinesFor(HullShudder.Setting.DeepSite, HullShudder.HavenRoom.Concourse);
         Assert.Empty(haven.Intersect(deep));
         Assert.Contains(haven, l => l.Contains("clamps", System.StringComparison.OrdinalIgnoreCase)
                                  || l.Contains("station", System.StringComparison.OrdinalIgnoreCase)
@@ -129,14 +129,21 @@ public class HullShudderTests
     {
         foreach (HullShudder.Setting setting in System.Enum.GetValues<HullShudder.Setting>())
         {
-            foreach (bool inTheBar in new[] { false, true })
+            foreach (HullShudder.HavenRoom room in System.Enum.GetValues<HullShudder.HavenRoom>())
             {
-                IReadOnlyList<string> pool = HullShudder.LinesFor(setting, inTheBar);
+                IReadOnlyList<string> pool = HullShudder.LinesFor(setting, room);
                 for (int i = 0; i < 40; i++)
                 {
-                    string line = HullShudder.Line(setting, inTheBar, Seed, i);
-                    Assert.Equal(line, HullShudder.Line(setting, inTheBar, Seed, i));
-                    Assert.Contains(line, pool);
+                    string? line = HullShudder.Line(setting, room, Seed, i);
+
+                    // #1261 · A room with no share of the pool says nothing, and says the same nothing every
+                    // time it is asked — the determinism law is the same law either way.
+                    Assert.Equal(pool.Count == 0, line is null);
+                    Assert.Equal(line, HullShudder.Line(setting, room, Seed, i));
+                    if (line is not null)
+                    {
+                        Assert.Contains(line, pool);
+                    }
                 }
             }
         }
@@ -148,7 +155,7 @@ public class HullShudderTests
         var seen = new HashSet<string>();
         for (int i = 0; i < 40; i++)
         {
-            seen.Add(HullShudder.Line(HullShudder.Setting.DeepSite, inTheBar: false, Seed, i));
+            seen.Add(HullShudder.Line(HullShudder.Setting.DeepSite, HullShudder.HavenRoom.Concourse, Seed, i)!);
         }
         // A run of shudders should exercise more than one line of the pool — not a stuck single value.
         Assert.True(seen.Count >= 2, "the line pool must rotate across a run of shudders");

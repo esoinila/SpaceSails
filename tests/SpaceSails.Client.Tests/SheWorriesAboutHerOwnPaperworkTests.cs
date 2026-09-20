@@ -102,7 +102,7 @@ public sealed class SheWorriesAboutHerOwnPaperworkTests
     /// weather.</summary>
     private static HashSet<string> ThePoolForHerDeck { get; } =
         [.. Enumerable.Range(0, 500)
-            .Select(i => HullShudder.Line(HullShudder.Setting.Ship, inTheBar: false, Seed, i))];
+            .Select(i => HullShudder.Line(HullShudder.Setting.Ship, HullShudder.HavenRoom.Concourse, Seed, i)!)];
 
     private static bool IsChainOfCustody(string? pulse) =>
         pulse is not null && HerLines.Any(l => pulse.Contains(l, StringComparison.Ordinal));

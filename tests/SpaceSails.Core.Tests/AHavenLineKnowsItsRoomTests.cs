@@ -87,13 +87,53 @@ public sealed class AHavenLineKnowsItsRoomTests
     public void ThePartitionCOVERSThePoolAndOverlapsNowhere()
     {
         // A line added tomorrow and forgotten is a line nobody ever hears. Guarded rather than trusted.
+        // #1261 · Three shares now, and the walk's is in the sweep precisely because it is EMPTY: a share
+        // left out of this law is a room the partition stopped having an opinion about.
         int[] bar = [.. HullShudder.TheBarsOwnHavenLines()];
         int[] concourse = [.. HullShudder.TheConcoursesOwnHavenLines()];
+        int[] walk = [.. HullShudder.TheWalksOwnHavenLines()];
 
         Assert.Empty(bar.Intersect(concourse));
+        Assert.Empty(bar.Intersect(walk));
+        Assert.Empty(concourse.Intersect(walk));
         Assert.Equal(
             Enumerable.Range(0, HullShudder.EveryHavenLine().Count).ToArray(),
-            bar.Concat(concourse).OrderBy(i => i).ToArray());
+            bar.Concat(concourse).Concat(walk).OrderBy(i => i).ToArray());
+    }
+
+    /// <summary>
+    /// #1261 · <b>AND OUT ON THE OBSERVATION WALK, NOTHING IS SAID AT ALL.</b> #1248 cut the pool into the
+    /// bar and <i>everything else</i>; a two-pace gallery at the end of a dead-end tube is not everything
+    /// else, so the concourse's line was said out there — <i>"A shudder walks through the concourse and every
+    /// conversation stops mid-word… eyes meeting eyes across the room — then, as one, everybody agrees…"</i>
+    /// — in the room the game's own card calls <i>"There is nobody here, and there is nowhere here to
+    /// be."</i>
+    ///
+    /// <para><b>RED on the shipped tree</b> (#1261, played 2026-09-20, twice and independently): the walk
+    /// answered the concourse's pool, because it was the concourse's pool or the bar's and nothing else.</para>
+    ///
+    /// <para>The second half is the anti-vacuous one and it is the whole reason this is not just a deletion:
+    /// the CONCOURSE still has its line, and it is still that line.</para>
+    /// </summary>
+    [Fact]
+    public void TheObservationWalkIsToldNothingAndTheConcourseKeepsItsLine()
+    {
+        IReadOnlyList<string> onTheWalk =
+            HullShudder.LinesFor(HullShudder.Setting.Haven, HullShudder.HavenRoom.TheObservationWalk);
+        Assert.Empty(onTheWalk);
+        Assert.Null(
+            HullShudder.Line(
+                HullShudder.Setting.Haven, HullShudder.HavenRoom.TheObservationWalk, seed: 7, shudderIndex: 0));
+
+        // …and the room this line IS about still gets it, at the same seed and the same ordinal.
+        IReadOnlyList<string> onTheConcourse =
+            HullShudder.LinesFor(HullShudder.Setting.Haven, HullShudder.HavenRoom.Concourse);
+        Assert.NotEmpty(onTheConcourse);
+        string? said = HullShudder.Line(
+            HullShudder.Setting.Haven, HullShudder.HavenRoom.Concourse, seed: 7, shudderIndex: 0);
+        Assert.NotNull(said);
+        Assert.Contains(said, onTheConcourse);
+        Assert.Contains("concourse", said, StringComparison.OrdinalIgnoreCase);
     }
 
     // ── AND WHAT THE SELECTOR ACTUALLY HANDS BACK ───────────────────────────────────────────────────────
@@ -101,7 +141,7 @@ public sealed class AHavenLineKnowsItsRoomTests
     [Fact]
     public void TheConcourseIsNeverToldAboutTheGlasses()
     {
-        IReadOnlyList<string> outside = HullShudder.LinesFor(HullShudder.Setting.Haven, inTheBar: false);
+        IReadOnlyList<string> outside = HullShudder.LinesFor(HullShudder.Setting.Haven, HullShudder.HavenRoom.Concourse);
 
         Assert.NotEmpty(outside);
         Assert.All(outside, line => Assert.False(Names(line, TheBarsFurniture),
@@ -113,7 +153,7 @@ public sealed class AHavenLineKnowsItsRoomTests
     {
         // The other half, and it is not decoration: a line about the concourse said at a bar top is the same
         // bug pointing the other way, and a one-sided fix would have shipped it.
-        IReadOnlyList<string> inside = HullShudder.LinesFor(HullShudder.Setting.Haven, inTheBar: true);
+        IReadOnlyList<string> inside = HullShudder.LinesFor(HullShudder.Setting.Haven, HullShudder.HavenRoom.Bar);
 
         Assert.NotEmpty(inside);
         Assert.All(inside, line => Assert.False(Names(line, TheConcoursesFurniture),
@@ -126,8 +166,8 @@ public sealed class AHavenLineKnowsItsRoomTests
         // The anti-vacuous half. A selector that answered an EMPTY pool for one room would pass both "never
         // told about" laws above and would have deleted the beat from that room entirely — and one that
         // answered the same pool for both would pass neither, which is the point of having both.
-        IReadOnlyList<string> inside = HullShudder.LinesFor(HullShudder.Setting.Haven, inTheBar: true);
-        IReadOnlyList<string> outside = HullShudder.LinesFor(HullShudder.Setting.Haven, inTheBar: false);
+        IReadOnlyList<string> inside = HullShudder.LinesFor(HullShudder.Setting.Haven, HullShudder.HavenRoom.Bar);
+        IReadOnlyList<string> outside = HullShudder.LinesFor(HullShudder.Setting.Haven, HullShudder.HavenRoom.Concourse);
 
         Assert.NotEmpty(inside);
         Assert.NotEmpty(outside);
@@ -145,6 +185,7 @@ public sealed class AHavenLineKnowsItsRoomTests
         [
             .. HullShudder.TheBarsOwnHavenLines()
                 .Concat(HullShudder.TheConcoursesOwnHavenLines())
+                .Concat(HullShudder.TheWalksOwnHavenLines())
                 .OrderBy(i => i)
                 .Select(i => haven[i]),
         ];
@@ -159,8 +200,9 @@ public sealed class AHavenLineKnowsItsRoomTests
     [Fact]
     public void NoOTHERSettingReadsTheRoomAtAll()
     {
-        // The ship, the regolith, a deep site and pressurised ground have no bar to be in or out of, and a
-        // selector that had started varying them would be a second, undocumented scope.
+        // The ship, the regolith, a deep site and pressurised ground have no rooms to be in or out of, and a
+        // selector that had started varying them would be a second, undocumented scope. #1261 · asked of
+        // EVERY room now, so the walk's empty share cannot leak out of the haven and silence a deck.
         foreach (HullShudder.Setting setting in Enum.GetValues<HullShudder.Setting>())
         {
             if (setting == HullShudder.Setting.Haven)
@@ -168,9 +210,12 @@ public sealed class AHavenLineKnowsItsRoomTests
                 continue;
             }
 
-            Assert.Equal(
-                HullShudder.LinesFor(setting, inTheBar: false),
-                HullShudder.LinesFor(setting, inTheBar: true));
+            foreach (HullShudder.HavenRoom room in Enum.GetValues<HullShudder.HavenRoom>())
+            {
+                Assert.Equal(
+                    HullShudder.LinesFor(setting, HullShudder.HavenRoom.Concourse),
+                    HullShudder.LinesFor(setting, room));
+            }
         }
     }
 }

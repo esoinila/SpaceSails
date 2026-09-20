@@ -870,7 +870,8 @@ On the deep site (`?secretlab=deep`), read straight off the generator:
                                  ?badge=1 also mints the department pass this building keeps, so the fan
                                  has two papers for one site in it: pick the LABORATORIES one on B2 and he
                                  waves you on instead.
-/map?secretlab=deep&floor=10     WHERE A DEPARTMENT PASS LIES. B10 · LABORATORIES, and the drawer is the
+/map?secretlab=deep&land=1&floor=10
+                                 WHERE A DEPARTMENT PASS LIES. B10 · LABORATORIES, and the drawer is the
                                  THIRD room along the spine (index 2). Search it: "Somebody's old site
                                  pass, still warm from a locker." The row in the satchel then reads
                                  🪪 SITE PASS · LABORATORIES · <SITE> SITE.

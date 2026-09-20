@@ -455,9 +455,29 @@ public static class IllegalHeat
     /// </summary>
     public const string TheyRememberYouHere = "🌡 They remember you here.";
 
-    /// <summary>#715 · Is there anything to say at this site? True only where the outfit that runs it has a
-    /// memory of the captain; false at every other outfit's site, however hot the captain is elsewhere.</summary>
-    public static bool TheyRememberYouAt(ContactLedger book, string bodyId) => HeatAtSite(book, bodyId) > 0;
+    /// <summary>
+    /// #715 · Is there anything to say at this site? True only where the outfit that runs it has a memory of
+    /// the captain; false at every other outfit's site, however hot the captain is elsewhere.
+    ///
+    /// <para><b>#1260 · A BAND, not a point, and that is the whole of the fix.</b> It asked
+    /// <c>HeatAtSite &gt; 0</c> for one issue, and the cheapest crossings in this file are worth exactly one
+    /// point — <see cref="UndergroundComplex.RefusedCardHeat"/>, which three of them quote and whose own
+    /// docs say twice that <i>one of them can never move a band on its own</i>. So a single line written in
+    /// somebody's book lit the one sentence this meter has, and #746's YES-BUT — <b>the band whose entire
+    /// point is that it reads exactly like YES and nothing anywhere says so</b> — announced itself in the
+    /// bottom-left corner on the frame the answer landed (#1260, played 2026-09-20: <c>?badge=1&amp;roll=mid</c>
+    /// put <see cref="TheyRememberYouHere"/> on the glass where <c>roll=hi</c> put nothing).</para>
+    ///
+    /// <para>A band is what this file already means by <i>these people have changed their mind about you</i>:
+    /// it is what <see cref="StartingRung"/> divides by to decide how far up their round's patience a captain
+    /// begins, and the Core sweep that walks a hundred and twenty doors already asserts the line and that
+    /// rung side by side. So the two are ONE reading now — a name written down and let go is a filing, and a
+    /// band is a memory. The meter still shows the crossing later, as it shows any other: the point is on the
+    /// book from the moment it is banked, it cools like every other point, and the next one over the line
+    /// lights the corner.</para>
+    /// </summary>
+    public static bool TheyRememberYouAt(ContactLedger book, string bodyId) =>
+        StartingRung(HeatAtSite(book, bodyId)) > 0;
 
     /// <summary>#715 · What the panel says when the card is good and it wants the face as well. The machine
     /// has not learned anything; it has been TOLD something, and the difference between those is the whole

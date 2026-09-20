@@ -153,8 +153,8 @@ public sealed class TheMoodAsksTheGroundTests
         string park = OneShudder(ThePark, calm).Pulse.TrimStart('〰', ' ');
         string surface = OneShudder(0, calm).Pulse.TrimStart('〰', ' ');
 
-        Assert.Contains(park, HullShudder.LinesFor(HullShudder.Setting.Pressurised, inTheBar: false));
-        Assert.Contains(surface, HullShudder.LinesFor(HullShudder.Setting.Regolith, inTheBar: false));
+        Assert.Contains(park, HullShudder.LinesFor(HullShudder.Setting.Pressurised, HullShudder.HavenRoom.Concourse));
+        Assert.Contains(surface, HullShudder.LinesFor(HullShudder.Setting.Regolith, HullShudder.HavenRoom.Concourse));
         Assert.NotEqual(park, surface);
     }
 
