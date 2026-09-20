@@ -55,3 +55,44 @@ lift and never that the lift is a way HOME, and it survived three PRs. So the be
 legs of every square down there: a car is reachable, the panel on this floor offers the **CONCOURSE**, and
 the **gangway** is reachable from where those doors let you out. A service level carries no tube and no
 airlock; a captain who could not get back to his own would be marooned in a station rather than in a lab.
+
+---
+
+## 1 · HIS CABIN IS BELOW — THE TWO-LEG ROUTE (#1253 slice 2)
+
+Owner, the same morning: *"…so the tailing task could **start from the basement cabin** and end at the
+observation deck? **Otherwise the followed distance is easily very short.**"*
+
+The tail's route was one leg — up from a chair, across the concourse, out over the drop — and a captain who
+happened to be looking got the whole of it. **It is five legs now**, and three of them are on a floor the
+captain has to decide to follow him onto, on a car he has to guess:
+
+> the bar → **a car** → **his own cabin** (he goes in; the leaf shuts) → **a wait** → **a car, which may not
+> be the one he came down on** → the hall → the tube → the gallery → the vanish.
+
+**Nothing about the ending changed.** From the frame he steps out of the car on the concourse, every rule
+#1254 ships is the one that runs: the notice band, the rail, the three-minute wait, the newspaper, the
+turning back, the card at the blind end and the note under his name.
+
+**Which cabin and which two cars are SEEDED**, not rolled: the same universe answers the same every visit,
+which is the only reason there is anything to learn. The car he comes back up on is a *different bit of the
+same seed* — so a captain who has learnt where he goes down has learnt exactly half of it.
+
+### Following him down, and following him back up
+
+| What to do | What should happen | Broken looks like | played |
+|---|---|---|---|
+| `/map?dock=selene-gate&ashore=1&simhours=7.5` — sit in the bar past last call and watch **GILT-EYE**. | He gets up and crosses the concourse — **not west to the tube**, but to one of the three cars. He presses it and is gone. | He walks straight out to the observation walk (that is the old one-leg route); or he gets up before last call. | — guarded by `HisCabinIsBelowTests.HeLeavesHisChairForACarAndTheNextLegIsAFloorDown` |
+| Same link. Note WHICH car he took, walk to it and ride down. | You come out on the service level and **he is in the corridor**, walking — not at the doors you just came out of, but as far along as the time you spent pressing buttons. Follow him and he walks up to one of the five cabin doors and **goes in**. The corridor is empty. | Nobody there; or a man standing exactly where the car put you, as though he had waited. | — guarded by `RidingHisCarPutsTheCaptainOnTheFloorHeIsWalking` |
+| Press `[E]` on the door he went through. | Refused. Nothing says it is his and nothing ever will — the plate is `CABIN n · CREW`, and **there is no key anywhere in the game** (#563: the door is time, and he is behind it). | A card; a name; a lock that opens. | — guarded by `TheCabinLeafIsLockedAndCarriesNoName` |
+| Wait in the corridor. | About **three minutes** at warp 1, and then the leaf opens and he walks out — to a car. **It may not be the one he came down on.** | An hour of waiting (that is the escort's ceiling, not this wait); or he never comes out. | — guarded by `TheCabinWaitIsDerivedFromTheEscortsPatienceAndLandsOnTheWalksOwnWait` |
+| Guess right, ride up after him, hang back at the notice band and let him walk out over the drop. | Exactly the beat that shipped: he goes out to the rail, and on a look nobody is watching him **he is not there**. Walk out after the wait and the card comes up at the rail; the note files under his name. | The vanish happening anywhere but in the gallery; or the card never coming because the route forgot to put him on the concourse at all. | — guarded by `TailingBothLegsArrivesAtTheVanishExactlyAsBefore` |
+| **Guess wrong.** Ride a car he did not take, or wait at the wrong one for him to come up. | **Nothing.** You are in a corridor with nobody in it, or standing at a car whose doors do not open. The evening goes on without you, **no card is raised and nothing is spent** — and the walk is still there the next time you tie up. Nothing anywhere tells you that you guessed wrong. | A card for a scene you did not watch; the beat spent; or a message explaining what you missed. | — guarded by `TheWrongCarLosesHimAndCostsNothing` |
+| Stand on the CONCOURSE while he is downstairs. | There is nobody up here. He is a floor down, on his own errand, and a station has one deck at a time. | A second copy of him walking the hall while he is also in the corridor. | — guarded by `HeIsOnlyEverDrawnOnTheFloorHisLegIsOn` |
+
+**The one thing worth knowing about the clock.** While you are on his floor he is a **body**, walked over the
+same stone as everybody else. While you are on the other floor he is a **schedule**, and his leg takes
+exactly as long as a man walking it would take (`NpcWalk.PaceDu`, the same pace). A leg that ran faster
+off-screen would be a man who beats a captain who followed him properly; one that ran slower would hold him
+for a captain who guessed wrong. Either is the world arranging itself around who happens to be looking, which
+is the one thing a tail cannot survive.

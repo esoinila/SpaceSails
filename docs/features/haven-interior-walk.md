@@ -634,9 +634,39 @@ never asks `ShaftsOn(field)`; there is no field.
   dev start).
 - **Dev start:** `/map?dock=selene-gate&ashore=1&havenfloor=-1`.
 
-**What is deliberately not here yet.** Nobody lives down there. The cabins are shut, the corridor is empty,
-and the dark-web desk's rows are still rows. The people come one at a time, in later slices, starting with
-the one whose cabin it is.
+### …and one of them is his (#1253 slice 2)
+
+Owner, the same morning: *"…so the tailing task could **start from the basement cabin** and end at the
+observation deck? **Otherwise the followed distance is easily very short.**"*
+
+The tail's route (#1199/#1254) was one leg and the owner is right that it is short. **It is five now**, and
+three of them are on the floor above:
+
+> the bar → **a car** → **his own cabin** → **a wait behind a leaf** → **a car, which may not be the one he
+> came down on** → the hall → the tube → the gallery → the vanish.
+
+- **`TheTailsNight`** (Core) seeds which cabin is his, which car he takes down and which he comes back up on
+  — three different bits of `TheTail.SeedFor`'s own seed, so one universe always answers the same and a
+  captain can LEARN it, which is the only reason three cars are a decision. The up car is allowed to be the
+  down car (about one time in three); forcing them to differ would be the world arranging to make him lose
+  the man once.
+- **The wait behind the leaf** is `Escort.PatienceFraction`-derived — the escort's fiction read from the
+  other side of the door — at a twentieth of it, which lands on `ObservationWalk.TheWaitSeconds` to the
+  second. Two clocks in one beat, each derived from the fiction it belongs to, agreeing.
+- **He is a body on the captain's floor and a schedule on the other one**, and the schedule runs at
+  `NpcWalk.PaceDu` — the same pace. A leg that ran faster off-screen would be a man who beats a captain who
+  followed him; one that ran slower would hold him for a captain who guessed wrong. A captain who steps onto
+  his floor mid-leg meets him **where the clock says he is**, along his own line.
+- **The last leg is #1254's** and is not touched by a byte. From the frame he steps out of the car, the
+  notice band, the rail, the wait, the newspaper, the turning back, the vanish, the card and the note are
+  every one of them the shipped ones.
+- **Guessing wrong costs nothing.** No card, nothing spent, no line anywhere that says you missed it — and
+  the walk is there the next time you tie up.
+- **Guards:** `HisCabinIsBelowTests` (9). RED watched on the shipped one-leg route (three cases) and on
+  drawing him on whichever floor the captain is standing on.
+
+**What is deliberately still not here.** The corridor is otherwise empty: the other four cabins are shut and
+nobody's, and the dark-web desk's rows are still rows. The people come one at a time.
 
 ## Later (beyond the follow-up)
 

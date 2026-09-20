@@ -133,14 +133,32 @@ public partial class Map
             // room's own statement of the point after which nothing is scheduled to happen any more. No new
             // constant, and it is the better beat: they go out to look at the view when the evening is over
             // and the room is done with them, which is when a person actually would.
-            if (IntoTheBarsWatch <= PatronRota.WatchSeconds * Egress.LastCallFraction)
+            //
+            // #1253 slice 2 · …and he gets up IN THE BAR, which is a floor now. A man does not finish his
+            // drink in a service corridor, so a captain standing in one while the watch turns over does not
+            // start the evening early by being there.
+            if (!OnTheConcourse
+                || IntoTheBarsWatch <= PatronRota.WatchSeconds * Egress.LastCallFraction)
             {
                 return;
             }
 
-            SendThemOutOntoTheWalk(in bar, person);
+            // #1253 slice 2 · THE ROUTE IS FIVE LEGS AT A STATION WITH A FLOOR UNDER IT, and one at a
+            // station without one. Both roads go through BeginHisNight, which is where that fork is written
+            // down — a one-floor haven's night is the shipped walk, to the byte — and it is that method
+            // which marks the night dealt, on the frame it actually opens a leg. A full band is NOT NOW
+            // rather than NO, exactly as the shipped deal reads one.
+            BeginHisNight(in bar, person);
             return;
         }
+
+        // ── #1253 slice 2 · HIS NIGHT, ONE FRAME ────────────────────────────────────────────────────────
+        //
+        // bar → a car → his cabin → a wait behind a leaf → a car → the hall → the tube → the gallery. While
+        // the captain is on his floor he is a body on it; while the captain is elsewhere he is a clock
+        // running at the same pace. The LAST leg is #1254's, and from the frame it begins this method's own
+        // tail — the card at the blind end — runs exactly as it shipped.
+        StepHisNight(in bar, person);
 
         TheWalkIsEmpty(in bar, person);
     }
@@ -165,6 +183,7 @@ public partial class Map
         _walkGalleryLookIndex = long.MinValue;
         _walkVanishedBehindThePaper = false;
         _walkTurnedBack = false;
+        ForgetHisNight();   // #1253 slice 2 · …and the four legs before the shipped one.
         ForgetTheGallerysMachines();
     }
 
@@ -180,7 +199,13 @@ public partial class Map
     /// walk is dealt ONCE per visit whether or not it could be plotted — a route the floor refuses is a
     /// refusal, not a reason to ask again next frame, which is the lesson #731's schedule paid for.</para>
     /// </summary>
-    private void SendThemOutOntoTheWalk(in HavenInterior.BarFloor bar, string person)
+    /// <param name="from">#1253 slice 2 · Where the leg starts, when it is not the chair. Null is the shipped
+    /// route — up from the top the rota seated him at — and a point is the doors of the car he has just come
+    /// back up on. It is a PARAMETER and not a second planner: the walk, the plate and the errand are the
+    /// same ones either way, and the only thing a night with a basement in it changes about this leg is where
+    /// the man is standing when it begins.</param>
+    private void SendThemOutOntoTheWalk(
+        in HavenInterior.BarFloor bar, string person, DeckReachability.Point? from = null)
     {
         if (_barAfoot.Count >= WalkerBand)
         {
@@ -192,12 +217,45 @@ public partial class Map
 
         _walkDealt = true;
 
+        // #1253 slice 2 · THIS METHOD IS THE LAST LEG, and it says so itself. Whoever called it — the
+        // night's own state machine coming up out of a car, or a haven with no floor under it walking the
+        // shipped one-leg route — the man it puts on the floor is walking to the rail, and everything
+        // downstream that asks which leg he is on (the gallery's vanish, the hold's tube clause) has to be
+        // reading the same answer as the walker actually on the deck. Set HERE rather than at the call
+        // sites, because a leg a caller has to remember to declare is a leg somebody will forget to.
+        _nightLeg = HisNight.ToTheWalk;
+
         if (HavenInterior.TheRailAt(bar.BodyId) is not { } rail)
         {
             return;
         }
 
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
+
+        // ── #1253 slice 2 · HE MAY BE COMING OUT OF A CAR RATHER THAN OUT OF A CHAIR ────────────────────
+        //
+        // On a night with a basement in it this leg begins at the doors he came back up on, and the loop
+        // below cannot find him: the room was told he had gone (`_barLeft`) an hour ago when his legs
+        // started, so the rota answers GONE and there is no seat to stand beside. His plate comes off the
+        // room's own short name for him instead, which is the same string that seat would have carried —
+        // one spelling, so a man followed out of a lift is the man who was sitting at that top.
+        if (from is { } doors)
+        {
+            if (OnFoot(
+                    HisShortName(bar.BodyId, person), new NpcWalk.Bound("", rail.X, rail.Y), doors, walls)
+                is not { } fromTheCar)
+            {
+                return;   // the concourse refuses him from those doors. Nothing is placed at the far end.
+            }
+
+            _barAfoot.Add(new Walker
+            {
+                Walk = fromTheCar, Table = -1, For = Errand.WalkingTheRoute, Who = person,
+            });
+            StateHasChanged();
+            return;
+        }
+
         IReadOnlyList<HavenInterior.SeatedRegular> rota =
             HavenInterior.ResolveRegulars(bar.BodyId, _dockVisitSimTime, TheBarsChurn);
 
@@ -208,8 +266,8 @@ public partial class Map
                 continue;
             }
 
-            if (BesideThisTop(new DeckReachability.Point(seated.X, seated.Y), walls) is not { } from
-                || OnFoot(seated.ShortName, new NpcWalk.Bound("", rail.X, rail.Y), from, walls) is not { } walk)
+            if (BesideThisTop(new DeckReachability.Point(seated.X, seated.Y), walls) is not { } beside
+                || OnFoot(seated.ShortName, new NpcWalk.Bound("", rail.X, rail.Y), beside, walls) is not { } walk)
             {
                 return;   // no standing room beside their chair, or no route. Nothing happens.
             }
@@ -322,7 +380,14 @@ public partial class Map
         }
 
         // ── THE GALLERY — the one room the vanish can happen in ──────────────────────────────────────────
-        if (HavenInterior.InTheGallery(bar.BodyId, who.Walk.X, who.Walk.Y))
+        //
+        // #1253 slice 2 · …and the one LEG it can happen on. The crossbar is on the concourse and the lower
+        // level is laid in the same coordinate space, so a man walking a service corridor stands on the
+        // gallery's own coordinates twice a night — and a vanish there would be him going out like a light
+        // in a corridor with five shut doors on it. The level clause below and this leg clause are two
+        // spellings of one fact and both are cheap; a room is a floor as well as a rectangle.
+        if (_nightLeg == HisNight.ToTheWalk
+            && HavenInterior.InTheGallery(bar.BodyId, who.Walk.X, who.Walk.Y, _havenFloor))
         {
             return HeIsInTheGallery(
                 who, dt, in bar, walls, slot,
@@ -336,8 +401,12 @@ public partial class Map
         // other person goes round you and you both get on. In a tube with one end there is nothing to stand
         // aside FOR — the captain cannot pass, so a man who stops there stops for ever, which is the stall
         // the owner watched twice. Inside the walk he walks; the room has one way out and he is using it.
+        // #1253 slice 2 · The tube's clause asks the FLOOR as well. Down below there is no tube — the
+        // corridor is a floor somebody is crossing, with three ways off it — so standing aside is exactly
+        // the thing a man does there, and a level-blind rectangle would have suppressed it on the two
+        // squares of that corridor the T happens to lie over one storey up.
         bool holding = _walkNoticed && eyesOnHim && TheCaptainIsBehindHim(who)
-            && !HavenInterior.InTheObservationWalk(bar.BodyId, who.Walk.X, who.Walk.Y);
+            && !HavenInterior.InTheObservationWalk(bar.BodyId, who.Walk.X, who.Walk.Y, _havenFloor);
         if (holding)
         {
             who.Walk.LookTowards(_avatarX, _avatarY);
@@ -371,6 +440,18 @@ public partial class Map
         // applies: he comes off the floor on the first frame the captain's eyes are not on him and never on
         // a frame he is being watched, because a body that blinks out in plain sight is a bug and the horror
         // here is that it is not one.
+        // #1253 slice 2 · …AND ONLY ON THE LAST LEG. A route that runs out on one of the others has run out
+        // at a car's doors or at his own cabin leaf, and what that MEANS is the night's to decide — he rides,
+        // or he goes in and the leaf shuts. He comes off the floor either way (there is no body in a car and
+        // none behind a closed door), but nothing is spent, no clock starts and no card is ever owed: this
+        // is a man walking through a building, and the only thing that is ever "not there" is the one at the
+        // end of an empty room.
+        if (_nightLeg != HisNight.ToTheWalk)
+        {
+            _barAfoot.RemoveAt(slot);
+            return true;
+        }
+
         if (eyesOnHim)
         {
             who.Walk.LookTowards(_avatarX, _avatarY);
@@ -401,7 +482,7 @@ public partial class Map
     /// would drift the first time a card was added.</para>
     /// </summary>
     private bool TheCaptainsEyesAreElsewhere(string bodyId) =>
-        (SeatedTable is not null && HavenInterior.InTheGallery(bodyId, _avatarX, _avatarY))
+        (SeatedTable is not null && HavenInterior.InTheGallery(bodyId, _avatarX, _avatarY, _havenFloor))
         || AScrimIsUp;
 
     /// <summary>#1199 (2026-09-19) · Is the captain BEHIND him — on the far side of him from where he is
@@ -484,7 +565,7 @@ public partial class Map
                 // and neither does the book.
                 _walkVanishedBehindThePaper =
                     SeatedTable is not null
-                    && HavenInterior.InTheGallery(bar.BodyId, _avatarX, _avatarY);
+                    && HavenInterior.InTheGallery(bar.BodyId, _avatarX, _avatarY, _havenFloor);
                 HeIsNotOnTheFloorAnyMore(slot);
                 return true;
             }
@@ -623,7 +704,7 @@ public partial class Map
     {
         if (double.IsNaN(_walkGoneSince)
             || SimTime - _walkGoneSince < ObservationWalk.TheWaitSeconds
-            || !HavenInterior.InTheObservationWalk(bar.BodyId, _avatarX, _avatarY)
+            || !HavenInterior.InTheObservationWalk(bar.BodyId, _avatarX, _avatarY, _havenFloor)
             || HavenInterior.TheRailAt(bar.BodyId) is not { } rail
             || !ObservationWalk.WouldSpend(bar.BodyId, _observationWalkSpentOn))
         {
@@ -633,7 +714,7 @@ public partial class Map
         double dx = rail.X - _avatarX, dy = rail.Y - _avatarY;
         bool atTheRail = (dx * dx) + (dy * dy) <= DeckPlan.InteractRadius * DeckPlan.InteractRadius;
         bool inTheGalleryHavingSatThroughIt =
-            _walkVanishedBehindThePaper && HavenInterior.InTheGallery(bar.BodyId, _avatarX, _avatarY);
+            _walkVanishedBehindThePaper && HavenInterior.InTheGallery(bar.BodyId, _avatarX, _avatarY, _havenFloor);
         if (!atTheRail && !inTheGalleryHavingSatThroughIt)
         {
             return;   // in the walk, but not out at the end of it yet — and he was not sitting in the hat.

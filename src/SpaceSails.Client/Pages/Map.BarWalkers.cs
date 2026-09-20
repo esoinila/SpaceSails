@@ -259,7 +259,13 @@ public partial class Map
         // sites that would eventually disagree.
         if (!OnTheConcourse)
         {
+            // #1253 slice 2 · …WITH ONE EXCEPTION, and it is the beat this floor was built for. The tail's
+            // route goes DOWN now — bar, a car, his own cabin, a wait behind a leaf, a car, and out over
+            // the drop — so the man the captain came down here to follow is stepped on this floor exactly
+            // as he is on the other one. Everything else on the list below is a beat about a room with a
+            // counter in it, and stays where the counter is.
             StepTheBarsFeet(dtRealSeconds, bar);
+            AdvanceTheWalk(bar);
             return;
         }
 

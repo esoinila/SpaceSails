@@ -388,10 +388,26 @@ public sealed class TheObservationWalkTests
             PastLastCall(map);
             StandCaptainAt(map, 2.5, 6);   // aboard, in the airlock corridor: no line to anything ashore
 
-            for (int i = 0; i < 40; i++)
+            // ── #1253 slice 2 · THE ROUTE IS FIVE LEGS NOW, AND THESE LAWS ARE ABOUT THE LAST ONE ───────
+            //
+            // He goes down to his own cabin first, and a bench that returned on the first `WalkingTheRoute`
+            // walker would hand these cases a man walking to a LIFT and then assert he reached a rail. So it
+            // drives the night to the leg it is a law about — and fast-forwards the one part of it that is a
+            // clock rather than a walk (the wait behind the leaf), exactly as the game's own `?simhours=`
+            // does, because three minutes of sim at a thirtieth of a second a frame is five thousand frames
+            // of nothing happening.
+            for (int i = 0; i < 4_000; i++)
             {
                 RunFrames(map, 1);
-                if (ThePersonAfoot(map, person) is { } who
+
+                if (Field(map, "_nightLeg")!.ToString() == "Inside")
+                {
+                    Set(map, "SimTime",
+                        (double)Field(map, "SimTime")! + TheTailsNight.CabinWaitSeconds + 1);
+                }
+
+                if (Field(map, "_nightLeg")!.ToString() == "ToTheWalk"
+                    && ThePersonAfoot(map, person) is { } who
                     && Get(who, "For")!.ToString() == "WalkingTheRoute")
                 {
                     return map;
