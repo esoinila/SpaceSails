@@ -217,15 +217,22 @@ public partial class Map
     // Owner: "Eating = the meal-sized shore-leave beat beside the drink (bigger #226 relief, small cr), and
     // ordering the Special is a tiny dice moment — usually delicious, occasionally a story."
     //
-    // WHICH WATCH THE BOARD IS CHALKED FOR. One reader, here, so the price the row PRINTS and the price the
-    // purse is DEBITED cannot come off two different shifts — a card is open across sim-seconds, and the
-    // watch ticks over while it is. Both halves ask this.
-    private long TheBoardsWatch => PatronRota.WatchIndex(SimTime);
+    // WHICH WATCH THE BOARD IS CHALKED FOR: the FROZEN docking watch this room was welded at (BarWatch, off
+    // _dockVisitSimTime), never the live clock.
+    //
+    // This is #709's law and it is load-bearing twice over. The chairs, the rota, the rumour and the door a
+    // man comes out of are all read off that one instant, so a board on the live clock would be the only
+    // thing in the room keeping a different time. And it is the difference between a bug and no bug: a card
+    // stays open across sim-seconds — at warp, across watches — so a price PRINTED on the button off
+    // SimTime and a price DEBITED off SimTime one press later are two different numbers, which is this
+    // repo's most common bug by measure. Frozen, both halves ask the same shift and get the same answer.
+    //
+    // The outcome rides the same number for the same reason: one plate, one watch, one supper.
 
-    // What is on the board at the counter we are standing at, priced for this watch — or null where the
-    // counter has no kitchen behind it (the Hive's, whose card under the glass IS its food).
+    // What is on the board at the counter we are standing at, priced for this visit's watch — or null where
+    // the counter has no kitchen behind it (the Hive's, whose card under the glass IS its food).
     private Core.Drink? TheSpecialOnTheBoard =>
-        _barMenu is { } keep ? TheMenuBoard.SpecialOn(keep.BodyId, TheBoardsWatch) : null;
+        _barMenu is { } keep ? TheMenuBoard.SpecialOn(keep.BodyId, BarWatch) : null;
 
     // The board's own chalked line, for the plate above the row.
     private string? TheBoardLine =>
@@ -287,7 +294,7 @@ public partial class Map
         // same plate twice, and two captains at one counter on one shift can get different suppers. The
         // die is CAST either way — ?special=story only decides which side of the threshold to read it on,
         // which is why the face below is the real face and not a number typed in for a tester.
-        Core.DiceRoll roll = TheMenuBoard.RollTheSpecial(keep.BodyId, TheBoardsWatch, ActiveCaptainName);
+        Core.DiceRoll roll = TheMenuBoard.RollTheSpecial(keep.BodyId, BarWatch, ActiveCaptainName);
 
         double beforeNerve = _nerve;
         ApplyNerveRelief(NerveModel.RestoreAmount(NerveModel.DrinkKind.Meal, _nerve, totNumber: 1));

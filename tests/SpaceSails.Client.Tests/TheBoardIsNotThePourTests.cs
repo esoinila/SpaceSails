@@ -145,7 +145,7 @@ public sealed class TheBoardIsNotThePourTests
         Assert.DoesNotContain("_wobbleUntilMs", order, StringComparison.Ordinal);
 
         // The dice moment is Core's one rule, keyed on the three things it says it is keyed on.
-        Assert.Contains("TheMenuBoard.RollTheSpecial(keep.BodyId, TheBoardsWatch, ActiveCaptainName)",
+        Assert.Contains("TheMenuBoard.RollTheSpecial(keep.BodyId, BarWatch, ActiveCaptainName)",
                         order, StringComparison.Ordinal);
 
         // #736 · Every answer lands in the slot the open card draws, refusals included — and the spend is
@@ -172,6 +172,34 @@ public sealed class TheBoardIsNotThePourTests
         string board = TheBoardBlock();
         Assert.Contains("OrderTheSpecial", board, StringComparison.Ordinal);
         Assert.DoesNotContain("disabled=", board, StringComparison.Ordinal);
+    }
+
+    /// <summary>THE BOARD KEEPS THE ROOM'S OWN TIME — the FROZEN docking watch, never the live clock.
+    ///
+    /// <para>#709's law, and load-bearing twice here. The chairs, the rota, the rumour and the door a man
+    /// comes out of are all read off <c>_dockVisitSimTime</c>, so a board on <c>SimTime</c> would be the one
+    /// thing in the room keeping a different time. And it is the difference between a bug and no bug: a card
+    /// stays open across sim-seconds — at warp, across whole watches — so a price PRINTED off the live clock
+    /// and a price DEBITED off it one press later are two different numbers, on the same button.</para>
+    ///
+    /// <para>Red proof: swap <c>BarWatch</c> for <c>PatronRota.WatchIndex(SimTime)</c> in either reader and
+    /// this names it.</para></summary>
+    [Fact]
+    public void TheBoardIsChalkedForTheWatchTheRoomWasWeldedAt()
+    {
+        string src = Pages("Map.Quests.Bar.Drinks.cs");
+        int at = src.IndexOf("private Core.Drink? TheSpecialOnTheBoard", StringComparison.Ordinal);
+        Assert.True(at >= 0, "the board no longer resolves its Special where this guard can read it");
+
+        // Both halves — the row's price and the plate's roll — ask BarWatch, and neither asks the clock.
+        string board = src[at..];
+        Assert.Contains("TheMenuBoard.SpecialOn(keep.BodyId, BarWatch)", board, StringComparison.Ordinal);
+        Assert.Contains("TheMenuBoard.RollTheSpecial(keep.BodyId, BarWatch,", board, StringComparison.Ordinal);
+        Assert.DoesNotContain("WatchIndex(SimTime)", board, StringComparison.Ordinal);
+
+        // …and BarWatch is the frozen one the whole bar already shares, not a second copy grown here.
+        Assert.Contains("private long BarWatch => PatronRota.WatchIndex(_dockVisitSimTime);",
+                        Pages("Map.BarWalkers.cs"), StringComparison.Ordinal);
     }
 
     /// <summary>THE RARE PLATE IS REACHABLE ON DEMAND, AND THE CHEAT STILL SHOWS THE REAL DIE.
