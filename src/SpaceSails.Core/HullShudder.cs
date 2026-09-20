@@ -161,6 +161,51 @@ public static class HullShudder
     /// <summary>#1248 · …and the one the concourse owns. See <see cref="HavenLinesTheBarOwns"/>.</summary>
     private static readonly int[] HavenLinesTheConcourseOwns = [1];
 
+    /// <summary>
+    /// #1261 · <b>…AND THE OBSERVATION WALK OWNS NONE OF THEM, which is a share and not an oversight.</b>
+    ///
+    /// <para>#1248 partitioned the pool into the bar and <i>everything else</i>, and a two-pace gallery at
+    /// the end of a dead-end tube is not everything else. So the concourse's line was said out there
+    /// (#1261, played 2026-09-20): <i>"A shudder walks through the concourse and every conversation stops
+    /// mid-word… eyes meeting eyes across the room — then, as one, everybody agrees…"</i> — in the room the
+    /// game's own card describes thirty seconds later as <i>"There is nobody here, and there is nowhere here
+    /// to be."</i> A room, a crowd and a unison, said in the one interior whose entire content is that it is
+    /// empty.</para>
+    ///
+    /// <para><b>An empty share rather than a fourth line.</b> Every line in this pool is the same beat — a
+    /// roomful of people deciding together that it was nothing — and that beat needs the people. There is
+    /// nobody out on the walk to look up, so there is no scene to write, and <see cref="Line"/> answers null
+    /// out there rather than composing one.</para>
+    ///
+    /// <para>It is a MEMBER of the partition and not a special case in the selector, so the covering guard
+    /// walks it beside the other two and a line added tomorrow still has to be given a room.</para>
+    /// </summary>
+    private static readonly int[] HavenLinesTheObservationWalkOwns = [];
+
+    /// <summary>
+    /// #1261 · <b>WHICH ROOM OF A HAVEN THE CAPTAIN IS STANDING IN</b> — the partition's selector, as the
+    /// three rooms the place actually has rather than as <i>the bar / not the bar</i>.
+    ///
+    /// <para>REQUIRED wherever a line is asked for, for the reason the flag it replaces was required: a
+    /// caller that can decline to say which room it is standing in is a caller that will, and both #1248 and
+    /// #1261 are one beat raised with no room in its hand.</para>
+    /// </summary>
+    public enum HavenRoom
+    {
+        /// <summary>The docked bar's own floor — the top, the counter, the glasses.</summary>
+        Bar,
+
+        /// <summary>The concourse and the halls off it: the public floor of the station, with people on it.
+        /// It is also what every NON-haven setting is handed, because those settings read no room at all.
+        /// </summary>
+        Concourse,
+
+        /// <summary>#1199's observation walk — the tube and the gallery at the end of it together, which is
+        /// how <c>HavenInterior.InTheObservationWalk</c> reads it. It has no share of the pool; see
+        /// <see cref="HavenLinesTheObservationWalkOwns"/>.</summary>
+        TheObservationWalk,
+    }
+
     private static readonly string[] ShipLines =
     [
         "The hull flexes with a long steel groan and every head aboard comes up at once. A shared, silent beat — then, together, you all decide it was just the ship talking to herself, and you get back to it.",
@@ -234,27 +279,29 @@ public static class HullShudder
     /// <summary>The house-voice line pool for a <paramref name="setting"/> — exposed so a test can pin that
     /// every line is non-blank and the pool holds no duplicates. The chill pool
     /// (<see cref="ChillLine"/>) is separate; this is the ordinary "it was nothing" voice.</summary>
-    /// <param name="inTheBar">#1248 · Is the captain standing in the docked bar? It is REQUIRED rather than
-    /// defaulted, for the reason <see cref="ChillLinesFor"/> takes the ground's own fact the same way: a
-    /// caller that can decline to ask is a caller that will, and the whole bug here was a beat raised with no
-    /// room in its hand. Only <see cref="Setting.Haven"/> reads it — the ship, the regolith, a deep site and
-    /// pressurised ground have no bar to be in or out of — and there it picks the room's own lines.</param>
-    public static System.Collections.Generic.IReadOnlyList<string> LinesFor(Setting setting, bool inTheBar) =>
+    /// <param name="room">#1248/#1261 · Which room of the haven the captain is standing in. It is REQUIRED
+    /// rather than defaulted, for the reason <see cref="ChillLinesFor"/> takes the ground's own fact the same
+    /// way: a caller that can decline to ask is a caller that will, and the whole bug here was a beat raised
+    /// with no room in its hand. Only <see cref="Setting.Haven"/> reads it — the ship, the regolith, a deep
+    /// site and pressurised ground have no rooms to be in or out of — and there it picks the room's own
+    /// lines, which for <see cref="HavenRoom.TheObservationWalk"/> is NONE of them.</param>
+    public static System.Collections.Generic.IReadOnlyList<string> LinesFor(Setting setting, HavenRoom room) =>
         setting switch
         {
-            Setting.Haven => TheHavensLinesFor(inTheBar),
+            Setting.Haven => TheHavensLinesFor(room),
             Setting.Ship => ShipLines,
             Setting.Regolith => RegolithLines,
             Setting.Pressurised => PressurisedLines,
             _ => DeepSiteLines,
         };
 
-    /// <summary>#1248 · The haven's lines for the room the captain is actually standing in — projected off
-    /// <see cref="HavenLines"/> through the partition, so there is one copy of the words and one statement of
-    /// which room each belongs to.</summary>
-    private static System.Collections.Generic.IReadOnlyList<string> TheHavensLinesFor(bool inTheBar)
+    /// <summary>#1248/#1261 · The haven's lines for the room the captain is actually standing in — projected
+    /// off <see cref="HavenLines"/> through the partition, so there is one copy of the words and one
+    /// statement of which room each belongs to. The walk's share is empty, and an empty pool is a room with
+    /// nothing to say rather than a room that was forgotten.</summary>
+    private static System.Collections.Generic.IReadOnlyList<string> TheHavensLinesFor(HavenRoom room)
     {
-        int[] mine = inTheBar ? HavenLinesTheBarOwns : HavenLinesTheConcourseOwns;
+        int[] mine = TheHavenIndicesFor(room);
         var said = new string[mine.Length];
         for (int i = 0; i < mine.Length; i++)
         {
@@ -263,6 +310,15 @@ public static class HullShudder
 
         return said;
     }
+
+    /// <summary>#1261 · The partition itself, by room — the one switch over it, so the pool, the guards and
+    /// the covering law all read the same three shares.</summary>
+    private static int[] TheHavenIndicesFor(HavenRoom room) => room switch
+    {
+        HavenRoom.Bar => HavenLinesTheBarOwns,
+        HavenRoom.TheObservationWalk => HavenLinesTheObservationWalkOwns,
+        _ => HavenLinesTheConcourseOwns,
+    };
 
     /// <summary>#1248 · The whole haven pool, in its authored order — for the guards that hold the partition
     /// to covering it and the prose to not having moved.</summary>
@@ -276,6 +332,11 @@ public static class HullShudder
     /// <summary>#1248 · …and the concourse's. See <see cref="TheBarsOwnHavenLines"/>.</summary>
     public static System.Collections.Generic.IReadOnlyList<int> TheConcoursesOwnHavenLines() =>
         HavenLinesTheConcourseOwns;
+
+    /// <summary>#1261 · …and the observation walk's, which is empty on purpose. See
+    /// <see cref="HavenLinesTheObservationWalkOwns"/>.</summary>
+    public static System.Collections.Generic.IReadOnlyList<int> TheWalksOwnHavenLines() =>
+        HavenLinesTheObservationWalkOwns;
 
     /// <summary>#867 · The chill-line pool — exposed for the same non-blank / unique pinning as the ordinary
     /// pools, and it takes the ground's own fact rather than offering a default, so no caller can decline to
@@ -352,11 +413,16 @@ public static class HullShudder
     /// <summary>The ordinary house-voice line for a shudder — deterministically drawn from the
     /// <paramref name="setting"/>'s pool per (seed, index), so the same shudder always speaks the same words
     /// and consecutive shudders rotate the pool rather than repeating.</summary>
-    /// <param name="inTheBar">#1248 · See <see cref="LinesFor"/>. Required, never defaulted.</param>
-    public static string Line(Setting setting, bool inTheBar, ulong seed, int shudderIndex)
+    /// <param name="room">#1248/#1261 · See <see cref="LinesFor"/>. Required, never defaulted.</param>
+    /// <returns>The line, or <b>null</b> where the room this shudder happened in has no share of the pool —
+    /// today that is <see cref="HavenRoom.TheObservationWalk"/> and nowhere else. Null is the room having
+    /// nothing to say rather than an error: the unison-decide beat is a roomful of people looking up, and the
+    /// walk is the one interior in the game built to have nobody in it (#1261). A caller that gets null says
+    /// nothing at all.</returns>
+    public static string? Line(Setting setting, HavenRoom room, ulong seed, int shudderIndex)
     {
-        System.Collections.Generic.IReadOnlyList<string> pool = LinesFor(setting, inTheBar);
-        return pool[Index(seed, $"shudder-line:{shudderIndex}", pool.Count)];
+        System.Collections.Generic.IReadOnlyList<string> pool = LinesFor(setting, room);
+        return pool.Count == 0 ? null : pool[Index(seed, $"shudder-line:{shudderIndex}", pool.Count)];
     }
 
     /// <summary>The CHILL line for an escalated deep-site shudder — the one that doesn't land as "just a

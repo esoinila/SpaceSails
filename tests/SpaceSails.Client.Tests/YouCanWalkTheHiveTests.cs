@@ -190,6 +190,38 @@ public sealed class YouCanWalkTheHiveTests
                     return $"the refuge at ({r.X:F0}, {r.Y:F0}) cannot be walked to from the car.";
                 }
             }
+
+            // ── #619 · AND THE WELDED DOOR, WHICH IS A DIFFERENT CLAIM ──────────────────────────────────
+            //
+            // The room that failed is deliberately NOT in the list above: its console is a HiveRefugeDark
+            // and the air machinery never sees it, which is how the shelter machinery refuses it the way it
+            // refuses a wall. But its DOOR is a place a captain walks to and presses [E] at, and a card
+            // nobody can reach is a card that ships broken — so it gets the same two-ended audit the
+            // refuges get, one step outside the weld.
+            //
+            // STANDABLE is the load-bearing half here and the one that could genuinely fail: Core lays a
+            // LockedDoor across every way into that chamber, and a console at the MIDPOINT of a segment
+            // that is now a wall would be a prompt inside solid rock. #600's lesson, at a door this lane
+            // invented.
+            foreach (DeckPlan.ConsoleSpot c in deck.Consoles)
+            {
+                if (c.Kind != DeckPlan.ConsoleKind.HiveRefugeDark)
+                {
+                    continue;
+                }
+                var door = new DeckReachability.Point(c.X, c.Y);
+                if (!DeckReachability.Standable(door.X, door.Y, DeckPlan.AvatarRadius, deck.CollisionField))
+                {
+                    return $"the welded refuge's press at ({door.X:F0}, {door.Y:F0}) is inside the weld — "
+                        + "nobody can stand at it, and the card behind it can never be read.";
+                }
+                if (!DeckReachability.CanReach(
+                        spawn, door, deck.CollisionField, DeckPlan.AvatarRadius, bounds))
+                {
+                    return $"the welded refuge's door at ({door.X:F0}, {door.Y:F0}) cannot be walked to "
+                        + "from the car.";
+                }
+            }
             return null;
         }, "spec — every airless floor has air you can actually reach");
     }

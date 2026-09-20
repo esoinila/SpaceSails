@@ -341,11 +341,19 @@ public static partial class UndergroundComplex
     /// that a captain is already standing in front of, pressing buttons.</para>
     ///
     /// <para>So the honest line is <b>a sealed working has no pad; only the gated floors get one</b>, and it
-    /// stays a fact about what the thing IS, which is what lets it be a predicate.</para></summary>
+    /// stays a fact about what the thing IS, which is what lets it be a predicate.</para>
+    ///
+    /// <para>#619 · <b>AND A THIRD, WHICH IS THE PUREST CASE OF THE SAME THING.</b> The weld on the refuge
+    /// that failed (<see cref="RefugeFailedGlyph"/>) is not a plate over a lock — it IS the weld, run from
+    /// the inside, and the plate is what somebody screwed on afterwards. There is nothing to read a card
+    /// against, nothing to type into and no hasp for a sentry to take off (#803): a round through it would
+    /// take the paint off and tell the floor where the captain is standing, which is exactly the sentence
+    /// <c>ShootTheLock.RefusalLine</c> already says for the other two. It answers here so the gun, the
+    /// wallet and the client are all asking one question rather than three.</para></summary>
     public static bool HasNoReader(string sign)
     {
         ArgumentNullException.ThrowIfNull(sign);
-        return IsSealedWay(sign) || StopOrder.IsPlate(sign);
+        return IsSealedWay(sign) || StopOrder.IsPlate(sign) || IsTheWeldedRefugePlate(sign);
     }
 
     /// <summary>#803 · Is this sign the goods hoist's own plate? Asked of the sign for the same reason

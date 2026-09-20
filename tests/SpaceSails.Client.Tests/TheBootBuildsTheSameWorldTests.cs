@@ -328,6 +328,9 @@ public sealed class TheBootBuildsTheSameWorldTests
             // difference, and it is the thing the query is for.
             ["/map?secretlab=deep&land=1&floor=2&book=9&dark=1&roll=lo&approach=0&neighbour=1"] = "0f6c3f2ed3a5925e0561f2a06dde8ee6",
             ["/map?secretlab=deep&land=1&floor=21"] = "00f4c8563488c45ab1f9f0cf25bfc437",
+            // #619 · the fourth cheat rock. Measured, never transcribed from a guess: the dump run put one
+            // new row in this dictionary and moved none of the other 88.
+            ["/map?secretlab=sealed&land=1&floor=3"] = "50c5bcad12d1aa7838e2d605829929ac",
             ["/map?skim=saturn"] = "5702e97b412b144d3fd884426e262007",
             ["/map?sling=jupiter"] = "5702e97b412b144d3fd884426e262007",
             ["/map?spread=1"] = "9b477937245f2b3fecec6ec3aad1bba9",

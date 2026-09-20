@@ -500,6 +500,24 @@ public sealed class AJambIsNotASealedDoorTests
         Assert.True(through.Count == 0, string.Join(Environment.NewLine, through));
     }
 
+    /// <summary>#619 · Is this cut the weld on the refuge that failed? Matched on the lock's own geometry
+    /// and on Core's plate predicate — never on a coordinate this file typed — so a future weld anywhere
+    /// else in the building is excused for the same stated reason and nothing else ever is.</summary>
+    private static bool IsWeldedShut(
+        in UndergroundComplex.FloorPlan floor, SurfaceLayout.Doorway cut)
+    {
+        foreach (UndergroundComplex.LockedDoor l in floor.Locked)
+        {
+            if (UndergroundComplex.IsTheWeldedRefugePlate(l.Sign)
+                && Math.Abs(l.X1 - cut.X1) < 0.001 && Math.Abs(l.Y1 - cut.Y1) < 0.001
+                && Math.Abs(l.X2 - cut.X2) < 0.001 && Math.Abs(l.Y2 - cut.Y2) < 0.001)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void Sweep(string body, int level, List<string> bad)
     {
         UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(body, level, Field);
@@ -508,6 +526,22 @@ public sealed class AJambIsNotASealedDoorTests
 
         foreach (SurfaceLayout.Doorway cut in floor.Doorways)
         {
+            // ── #619 · …EXCEPT THE ONE DOORWAY IN THE BUILDING THAT IS NOT A DOORWAY ────────────────────
+            //
+            // The refuge that failed is welded shut from the inside: Core lays a LockedDoor across every
+            // way into that chamber, and a LockedDoor is a leaf with a REAL WALL behind it. The cut is
+            // still in floor.Doorways — it WAS cut, decades ago, by people who later welded it — so this
+            // sweep walks at it and correctly reports that four hundred presses do not get through.
+            //
+            // That is the feature, not the bug this file is about. #724's law is that a captain must never
+            // be stopped by a JAMB: a hole in a wall the collision primitive refuses to let them slide
+            // into. A welded leaf is not a jamb, it is the wall. So the welds are skipped BY NAME, off
+            // Core's own predicate, rather than by a distance fudge that would also excuse a real jamb.
+            if (IsWeldedShut(floor, cut))
+            {
+                continue;
+            }
+
             // A cut is a segment in the wall it was taken out of, so the axis it is DRAWN along is the axis
             // you stand off, and the other one is the axis you walk through it on.
             bool cutRunsAlongX = Math.Abs(cut.X1 - cut.X2) > Math.Abs(cut.Y1 - cut.Y2);

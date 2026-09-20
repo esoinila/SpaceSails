@@ -356,7 +356,7 @@ public static partial class UndergroundComplex
 
         // ── #822 · WHAT THE FLOOR PUBLISHES AS A ROOM, and in which order the takers get their pick.
         (List<Room> published, List<Amenity> amenities, List<Refuge> refuges) = PublishTheRooms(
-            bodyId, level, field, walls, rooms, ensuites, ring, meetings, hallSite, shaftX, shaftY);
+            bodyId, level, field, walls, locked, rooms, ensuites, ring, meetings, hallSite, shaftX, shaftY);
 
         // ── #818/#853/#864/#701 · AND WHAT IS STANDING ON THE FLOOR OF EVERY ONE OF THEM, and on their
         //    walls — the furniture, the posters outside the doors, the safety board inside one of them, and

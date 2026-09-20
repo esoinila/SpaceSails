@@ -99,6 +99,13 @@ public static class DevStarts
         new("🕳", "The halls nobody dug",
             "Set down at a lift head with the whole wallet, over a laboratory, over a clinic nobody listed, over four floors of rock, over something that was already there (#677).",
             "/map?found=1&land=1"),
+        // #619 · The same rule again, and the sharpest case of it yet: the refuge that failed is on ONE
+        // floor of ONE SITE IN FOUR, and none of the other cheat rocks happens to carry one — so without a
+        // button and a URL the beat could not be reached at all. The rock's NAME is the site's whole seed,
+        // so what a tester walks is what a captain would walk.
+        new("🫁", "The refuge that failed",
+            "B3 of a site that has one: two pressure refuges on a single floor and two rings on the tracker that do not look alike — one door cycles, and the other is welded shut from the inside (#619).",
+            "/map?secretlab=sealed&land=1&floor=3"),
         // #709 / #694 · The same rule one floor up, and one floor down. The canteen is the only room in the
         // building with people in it, and B21 is the only place the facility plate ever changes its mind —
         // neither should cost a twenty-floor lift ride to find.

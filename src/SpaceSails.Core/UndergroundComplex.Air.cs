@@ -149,20 +149,21 @@ public static partial class UndergroundComplex
     ///
     /// <para><b>#1149 · It holds, unless something happened to it.</b> No department is consulted and no coin
     /// is tossed over decay — the owner's ruling is that a refuge is built to a robustness spec and outlasts
-    /// the building around it. Two things can still be true of one: the site's one FAILED refuge happened
-    /// here (<see cref="FailedRefugeFloorOf"/>), or somebody drew the rack down before you got to it
-    /// (<see cref="SomebodyDrewTheRackDown"/>). Neither is age, and the order is the order of severity: a
-    /// room that will not cycle does not care what is in its bottles.</para></summary>
+    /// the building around it. One thing can still be true of it: somebody drew the rack down before you got
+    /// to it (<see cref="SomebodyDrewTheRackDown"/>), which is a footprint and not age.</para>
+    ///
+    /// <para><b>#619 · AND IT IS NEVER <see cref="RefugeState.Failed"/>.</b> That is the law, written here
+    /// because here is where every other surface in the game asks. The room that failed is a SECOND chamber
+    /// on its floor (<see cref="CarveRefuges"/>), welded shut, and it is not what this sentence is about —
+    /// so the panel row, the dead-air card, the suit and the lift can all go on believing that a floor
+    /// carrying a refuge carries air behind a door that cycles, because it does. Ask
+    /// <see cref="RefugeThatFailedIsOn"/> for the other room.</para></summary>
     public static RefugeState? StateOfTheRefugeOn(string bodyId, int level)
     {
         ArgumentNullException.ThrowIfNull(bodyId);
         if (!RefugeOnThePlan(bodyId, level))
         {
             return null;
-        }
-        if (FailedRefugeFloorOf(bodyId) == level)
-        {
-            return RefugeState.Failed;
         }
         return SomebodyDrewTheRackDown(bodyId, level) ? RefugeState.Empty : RefugeState.Holding;
     }
@@ -172,26 +173,33 @@ public static partial class UndergroundComplex
     /// death.</summary>
     public static bool RefugeStillHolds(RefugeState state) => state != RefugeState.Failed;
 
-    /// <summary>What is said once, at the door, by state. Three sentences for three worlds, and none of them
-    /// says what to do about it.</summary>
-    public static string RefugeEntryLine(RefugeState state) => state switch
-    {
-        RefugeState.Holding =>
-            "🫁 The door cycles and the gauge climbs. A rack of bottles on the wall, and the meter on the " +
-            "fill line still turns.",
-        RefugeState.Empty =>
-            "🫁 The door cycles and the room holds. The fill line reads empty, and the tag on the valve is " +
-            "dated years ago.",
-        _ =>
-            "🫁 The door will not cycle. The seal went a long time ago, and somebody wrote the date on the " +
-            "frame.",
-    };
+    /// <summary>What is said once, at the door, by state. Two sentences for two worlds, and neither of them
+    /// says what to do about it.
+    ///
+    /// <para>#619 · <b>There is no third sentence any more, and there cannot be one.</b> This carried a line
+    /// for <see cref="RefugeState.Failed"/> — <i>"the seal went a long time ago"</i> — and it was said while
+    /// the captain stood INSIDE the room. Under #619's law the one refuge in the game that failed is welded
+    /// shut and nobody stands in it, so the sentence described a place no captain can be; and it named AGE,
+    /// which is the single cause the owner's 2026-09-06 ruling took off the table. The card at that door is
+    /// the whole of the telling (#761). This is asked only of a room a captain is standing in.</para></summary>
+    public static string RefugeEntryLine(RefugeState state) =>
+        state == RefugeState.Empty
+            ? "🫁 The door cycles and the room holds. The fill line reads empty, and the tag on the valve is "
+                + "dated years ago."
+            : "🫁 The door cycles and the gauge climbs. A rack of bottles on the wall, and the meter on the "
+                + "fill line still turns.";
 
     /// <summary>One pressure refuge: a room somebody kept the seals on, with an air cracker in it.</summary>
     /// <param name="State">#608 · What the decades did to it — <see cref="StateOfTheRefugeOn"/>, carried on
     /// the room so the renderer that draws the plate has the answer the suit is using.</param>
+    /// <param name="DoorX">#619 · The midpoint of the way into it. Carried rather than worked out again,
+    /// because the one welded room in the game is read at its DOOR and never in it — the plate hangs there,
+    /// the mark on the fan points there and [E] is pressed there — and a renderer re-deriving which of this
+    /// room's four walls had the hole in it would be a second author of geometry it does not own (§13.15).
+    /// On a refuge you can walk into it is the same door, and nothing reads it.</param>
     public readonly record struct Refuge(
-        double X, double Y, string Sign, RefugeState State = RefugeState.Holding)
+        double X, double Y, string Sign, RefugeState State = RefugeState.Holding,
+        double DoorX = 0, double DoorY = 0)
     {
         /// <summary>Is the captain in its air? <see cref="RefugeHolds"/>, so there is only ever one answer.
         /// Geometry only — whether that air EXISTS is <see cref="State"/>'s business.</summary>
@@ -218,9 +226,23 @@ public static partial class UndergroundComplex
     /// cannot walk to is a refuge that does not exist.</para>
     ///
     /// <para>It stops being a haul room when it becomes one: a pressure vessel somebody maintained is not a
-    /// drawer to turn over, and the air is what it pays.</para></summary>
+    /// drawer to turn over, and the air is what it pays.</para>
+    ///
+    /// <para>#619 · <b>AND ON ONE FLOOR OF ONE SITE IN FOUR, A SECOND ONE THAT FAILED — never instead of the
+    /// first.</b> The owner's issue is exact about it: <i>"a SECOND refuge, on one floor, that failed … never
+    /// the only one on its floor, so it can never kill anybody who trusted the instrument."</i> So the working
+    /// refuge is carved FIRST, out of the same pool, by the same roll it has always used — nothing about a
+    /// floor that has no story on it changes by a byte — and the failed one is taken afterwards, out of what
+    /// is left. A captain who walks to the mark the fan paints as air finds air; the other room is a room
+    /// they can choose to walk to, and it is welded shut.</para>
+    ///
+    /// <para>It is welded by the building's own lock seam (<see cref="LockedDoor"/>): every way out of that
+    /// chamber becomes a leaf that never opens with a real wall behind it. That is the difference between a
+    /// refuge that is out of service and a refuge that is merely empty, and it is the reason the air
+    /// machinery does not have to be told anything — the room never joins the list of places that breathe,
+    /// and the floor plan agrees with it.</para></summary>
     private static List<Refuge> CarveRefuges(
-        string bodyId, int level, List<Room> rooms,
+        string bodyId, int level, List<Room> rooms, List<LockedDoor> locked,
         in SurfaceLayout.Field field)
     {
         var refuges = new List<Refuge>();
@@ -299,13 +321,108 @@ public static partial class UndergroundComplex
         int pick = pool[DiceRule.Roll(DiceRule.Seed($"hive:refuge:{bodyId}:{level}"), pool.Count).Face - 1];
         Room chosen = rooms[pick];
         rooms.RemoveAt(pick);
+        (double doorX, double doorY) = WayIn(chosen);
         refuges.Add(new Refuge(
             chosen.X, chosen.Y, RefugeSign(bodyId, level, 0),
             // The seal is decided by the FLOOR, not by the carve, and asked here rather than worked out
             // again: the panel, the card, the tracker and the suit all read StateOfTheRefugeOn, and a room
             // that carried a second opinion about its own door is this repo's oldest and dearest bug.
-            StateOfTheRefugeOn(bodyId, level) ?? RefugeState.Holding));
+            //
+            // #619 · …and what that answer can no longer be is FAILED. The floor's own refuge holds or it is
+            // dry; the room that failed is the extra one below, and it is the whole reason this method can
+            // still promise that the mark a captain walks a tank toward is air.
+            StateOfTheRefugeOn(bodyId, level) ?? RefugeState.Holding,
+            doorX, doorY));
+
+        // ── #619 · AND THE ONE THAT FAILED, WHICH IS AN EXTRA ROOM AND NEVER THE FLOOR'S OWN ────────────
+        //
+        // Second, out of what the first one left, and only where the site's story happened
+        // (FailedRefugeFloorOf — one site in four, one floor of it). Taken from the same pool by the same
+        // preference, so it is a detour like every other refuge in the building rather than a prop set down
+        // beside the lift for the captain to trip over.
+        //
+        // The pool can be empty here and that is allowed: a floor the generator built with exactly one
+        // takeable chamber keeps it as the working refuge and simply has no story on it. The law is
+        // "never the only refuge on its floor", and the way to keep a law like that is to let the beat go
+        // rather than to let the safety regulation go.
+        if (!RefugeThatFailedIsOn(bodyId, level))
+        {
+            return refuges;
+        }
+
+        var left = new List<int>();
+        foreach (int i in faraway.Count > 0 ? faraway : anywhere)
+        {
+            // The indices were taken before the first refuge came out of the list, so they are re-walked
+            // against the list as it stands now rather than arithmetically shifted — an index adjusted by
+            // hand is the shape of the bug KeyRoomFor and CarveRefuges were both written to avoid.
+            int after = i < pick ? i : i - 1;
+            if (i != pick && after >= 0 && after < rooms.Count)
+            {
+                left.Add(after);
+            }
+        }
+        if (left.Count == 0)
+        {
+            return refuges;
+        }
+
+        int second = left[
+            DiceRule.Roll(DiceRule.Seed($"hive:refuge-failed:{bodyId}:{level}"), left.Count).Face - 1];
+        Room welded = rooms[second];
+        rooms.RemoveAt(second);
+        (double wx, double wy) = WayIn(welded);
+        refuges.Add(new Refuge(
+            welded.X, welded.Y, RefugeSign(bodyId, level, 1), RefugeState.Failed, wx, wy));
+
+        // THE WELD ITSELF, in the building's own grammar. A LockedDoor is a leaf that never opens with a
+        // real wall behind it, and that is exactly what a door welded from the inside is — so the air
+        // machinery, the walkers, the Reevers, the A* audit and the renderer all learn about it from the one
+        // list they already read, and none of them has to be told that this room is special.
+        foreach (SurfaceLayout.Doorway way in welded.Ways)
+        {
+            locked.Add(new(way.X1, way.Y1, way.X2, way.Y2, RefugeFailedGlyph));
+        }
         return refuges;
+    }
+
+    /// <summary>#619 · How far OUT of the room the welded refuge's press stands, in deck units.
+    ///
+    /// <para><b>It has to be out at all, and that is a bug this lane paid for.</b> The press first sat on
+    /// the doorway's own midpoint — which is exactly where the weld goes — so on the two scenario floors
+    /// that carry one, the A* audit found a console inside solid wall and a card that could never be read.
+    /// The doorway is a WALL now; the captain stands in the corridor in front of it.</para>
+    ///
+    /// <para>Two du clears the avatar (<c>DeckPlan.AvatarRadius</c> = 0.7) with room to spare, stays well
+    /// inside the interact reach (3.0), and stays inside the corridor's own half-width
+    /// (<see cref="CorridorHalf"/> = 3.5) — so the spot is in the rib a captain is already walking down and
+    /// never through it into whatever stands on the far side.</para></summary>
+    public const double WeldedRefugeStandOffDu = 2.0;
+
+    /// <summary>#619 · Where a captain stands to read a chamber's first way out: the doorway's midpoint,
+    /// stepped <see cref="WeldedRefugeStandOffDu"/> back out of the room along the line from its centre.
+    ///
+    /// <para>On the welded refuge that is the only place the press CAN be, because the doorway itself is a
+    /// wall. On a refuge whose door cycles nothing reads it — and it is computed all the same rather than
+    /// left at zero, because a field that is a lie on most rows is a field the next hand reads off the wrong
+    /// row.</para>
+    ///
+    /// <para>Falls back to the room's own centre for a chamber with no recorded doorway, which the generator
+    /// does not produce and which is not worth a second kind of answer.</para></summary>
+    private static (double X, double Y) WayIn(in Room room)
+    {
+        if (room.Ways.Count == 0)
+        {
+            return (room.X, room.Y);
+        }
+
+        double mx = (room.Ways[0].X1 + room.Ways[0].X2) / 2;
+        double my = (room.Ways[0].Y1 + room.Ways[0].Y2) / 2;
+        double dx = mx - room.X, dy = my - room.Y;
+        double len = Math.Sqrt((dx * dx) + (dy * dy));
+        return len < 1e-9
+            ? (mx, my)
+            : (mx + (dx / len * WeldedRefugeStandOffDu), my + (dy / len * WeldedRefugeStandOffDu));
     }
 
     /// <summary>What the console inside is called.</summary>
@@ -320,13 +437,38 @@ public static partial class UndergroundComplex
     /// worse than saying nothing. <c>REFUGE ·</c> makes the scope of the claim part of the claim.</para></summary>
     public const string RefugeGlyph = "🫁 REFUGE · AIR";
 
-    /// <summary>The same plate on a room whose seal went. It is the stencil and nothing else: a plate does
-    /// not change when a compressor dies, and the whole tell is the WORD THAT IS MISSING — a captain who has
-    /// read <c>REFUGE · AIR</c> on two floors reads this one and knows before the walk.
+    /// <summary>#619 · The plate on the one room in the game that is out of service. Authored canon
+    /// (2026-09-20), verbatim: <c>REFUGE — OUT OF SERVICE — REPORTED</c>, behind the family's own glyph that
+    /// every other string in this file already wears.
     ///
-    /// <para>Owner (#604): <i>"A refuge whose seal has failed must still paint, and must read as failed."</i>
-    /// So the map does not quietly drop it, and it does not go on promising air either.</para></summary>
-    public const string RefugeFailedGlyph = "🫁 PRESSURE REFUGE";
+    /// <para>It is the INSPECTORATE'S VOICE and it is entirely functional — the register of a form, not of a
+    /// story. Three flat words a clerk would use, and the third of them is the only one doing any work:
+    /// <i>REPORTED</i> says a notice went somewhere, and says nothing whatever about what was reported, who
+    /// read it, or whether anybody came. Canon §13.8 at the one door in the building where the temptation to
+    /// explain is worst.</para>
+    ///
+    /// <para>It replaces the old failed plate, which was the stencil with the word AIR quietly absent
+    /// (<c>PRESSURE REFUGE</c>). That was a good tell for a seal that had perished and a bad one for a room
+    /// somebody shut on purpose: it read as neglect, and #619's whole point is that this did not fail from
+    /// age. It is also the sign on the WELD — <see cref="CarveRefuges"/> hands it to every
+    /// <see cref="LockedDoor"/> it lays across that chamber's ways — so the plate over the door and the plate
+    /// on the door are one string and cannot come to two accounts of one room.</para></summary>
+    public const string RefugeFailedGlyph = "🫁 REFUGE — OUT OF SERVICE — REPORTED";
+
+    /// <summary>#619 · Is this lock the weld on the refuge that failed? Asked by the renderer, which lets
+    /// that door keep its wall and its leaf and takes its CONSOLE for itself, and by the hasp rule, which
+    /// refuses to let a sentry shoot it. One predicate, so neither of them re-types the plate.</summary>
+    public static bool IsTheWeldedRefugePlate(string sign) =>
+        string.Equals(sign, RefugeFailedGlyph, StringComparison.Ordinal);
+
+    /// <summary>#619 · What the instrument column says about the grey ring while one is on the fan.
+    /// Authored canon (2026-09-20), verbatim — <c>refuge · dark</c> — behind the refuge family's glyph.
+    ///
+    /// <para>Lower case and two words, because it is a LEGEND and not an affordance: every other line in that
+    /// column teaches a key, and this one teaches an ink. <i>dark</i> is the word the instrument would use
+    /// about a lamp that is not lit, which is what the captain is looking at, and it promises nothing at
+    /// all.</para></summary>
+    public const string RefugeDarkCaption = "🫁 refuge · dark";
 
     /// <summary>#938 · THE PLATE ON A ROOM THAT HOLDS AND HAS NOTHING IN IT. Authored for the one
     /// line-needed marker #608 shipped with (2026-09-03), in the stencil grammar the other two speak.
