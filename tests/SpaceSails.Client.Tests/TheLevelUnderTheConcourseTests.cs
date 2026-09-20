@@ -105,8 +105,10 @@ public sealed class TheLevelUnderTheConcourseTests
     /// The memo is asked TWICE per haven on purpose, in both orders, because a cache that keyed the floor
     /// badly would hand the second ask the first ask's answer.</para>
     ///
-    /// <para><b>Proven RED</b> by dropping <c>level</c> out of the lower deck's cache key (both floors share
-    /// <c>bodyId</c>): <c>selene-gate: the concourse and level 0 are two different plans.</c></para>
+    /// <para><b>Proven RED</b> by giving the lower deck the CONCOURSE's own memo key (<c>bodyId@watch</c>):
+    /// <c>selene-gate: the concourse and the service level are the same plan — the memo cannot tell two
+    /// floors apart, and it is serving whichever was built first.</c> The first cut of this case did NOT go
+    /// red on that break, and the comment inside it says why.</para>
     /// </summary>
     [Fact]
     public void AskingForTheConcourseAndAskingForNothingAreOnePlanAtEveryHaven()
@@ -123,6 +125,32 @@ public sealed class TheLevelUnderTheConcourseTests
             Assert.Equal(
                 Fingerprint(HavenInterior.DockedDeck(id, level: HavenLevels.Concourse)!),
                 Fingerprint(HavenInterior.DockedDeck(id)!));
+
+            if (!HavenInterior.HasLowerLevel(id))
+            {
+                continue;
+            }
+
+            // ── AND THE MEMO TELLS THE TWO FLOORS APART ──────────────────────────────────────────────
+            //
+            // The audit's FIRST prediction, and the first cut of this case did not catch it: <i>"the deck
+            // cache key has no floor term, so the memo serves whichever floor was built first."</i> A pair
+            // of "is the concourse the concourse" assertions cannot see that at all — both asks are for
+            // the same floor, so a key that collided would hand them the same wrong plan twice and agree
+            // with itself. Watched happen: with the lower deck keyed on the CONCOURSE's own key, the two
+            // clauses above stayed green.
+            //
+            // So the claim is that the two floors are DIFFERENT PLANS, asked in both orders. With a
+            // colliding key one of them is handed the other's build and the fingerprints match.
+            string above = Fingerprint(HavenInterior.DockedDeck(id)!);
+            string under = Fingerprint(HavenInterior.DockedDeck(id, level: HavenLevels.ServiceLevel)!);
+            Assert.True(
+                !string.Equals(above, under, StringComparison.Ordinal),
+                $"{id}: the concourse and the service level are the same plan — the memo cannot tell two "
+                + "floors apart, and it is serving whichever was built first.");
+            Assert.Equal(above, Fingerprint(HavenInterior.DockedDeck(id)!));
+            Assert.Equal(
+                under, Fingerprint(HavenInterior.DockedDeck(id, level: HavenLevels.ServiceLevel)!));
         }
     }
 
@@ -181,8 +209,11 @@ public sealed class TheLevelUnderTheConcourseTests
     /// a berth: going down is legible and coming back up is never a search.</item>
     /// </list>
     ///
-    /// <para><b>Proven RED</b> by moving one cage onto the walk's edge: <c>a cage stands on edge 5, which is
-    /// the observation walk's.</c></para>
+    /// <para><b>Proven RED</b> by moving one cage onto the walk's own edge (5). The ring's build gives the
+    /// walk that edge first, so the car is never hung at all and the case fails on the count before it ever
+    /// reaches the clearance clause: <c>Assert.Equal() Failure — Expected: 3, Actual: 2</c>. That is the
+    /// honest shape of the break: an edge the station has already spent does not grow a second fixture, it
+    /// silently loses one.</para>
     /// </summary>
     [Fact]
     public void TheThreeCarsStandOnThreeFreeEdgesAndOnTheSameSquareOnBothFloors()
@@ -277,8 +308,9 @@ public sealed class TheLevelUnderTheConcourseTests
     /// where the doors open. A square you can see and cannot walk to is the #600 lift bug with worklight on
     /// it.
     ///
-    /// <para><b>Proven RED</b> by widening the cabin row until its corners push through the ring — the whole
-    /// north-west pocket drops out of the set at once.</para>
+    /// <para><b>Proven RED</b> by widening the cabin row until its corners push through the ring
+    /// (<c>HallApothem * 0.85</c>): the block seals the corridor and the walk from the car reaches nothing —
+    /// <c>2021 of 2021 standable tile(s) down below cannot be walked to from the car.</c></para>
     /// </summary>
     [Fact]
     public void EveryStandableTileOfTheLowerConcourseIsReachable()

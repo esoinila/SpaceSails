@@ -64,8 +64,8 @@ public sealed class TheRideDownIsAWayBackTests
     /// way out of the car — the net #602 put under every placement in this game after a captain came up
     /// inside a wall.</para>
     ///
-    /// <para><b>Proven RED</b> by standing the captain at cage 0's landing whatever cage he rode: the second
-    /// half of this case lands him fourteen du from where the doors he pressed actually are.</para>
+    /// <para><b>Proven RED</b> by standing the captain at cage 0's landing whatever cage he rode:
+    /// <c>rode car 1 on the concourse and came out 24.0 du from its doors.</c></para>
     /// </summary>
     [Fact]
     public void TheDoorsOpenAtTheCarYouRodeOnEitherFloor()
