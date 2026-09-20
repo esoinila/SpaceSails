@@ -328,6 +328,61 @@ public sealed class TheGuardStopIsAnEncounterTests
         Assert.NotEqual(Site, charge.OperatorId);
     }
 
+    /// <summary>
+    /// #1260 · <b>AND THE MIDDLE BAND PUTS NOTHING ON THE GLASS THAT THE HIGH BAND DOES NOT.</b> The law
+    /// above is arithmetic about a number; this is the ruling — <i>YES-BUT reads exactly like YES, and the
+    /// cost is a rung of heat at this outfit and NOTHING ANYWHERE SAYS SO</i> — asked of every reading the
+    /// screen takes off that number, at the same frame, with the two books side by side.
+    ///
+    /// <para><b>RED on the shipped tree</b> (#1260, played 2026-09-20): the meter's one sentence was drawn
+    /// wherever the book held a single POINT, and the cheapest rung is one point — so
+    /// <c>?badge=1&amp;roll=mid</c> wore <c>🌡 They remember you here.</c> in the corner on the frame the
+    /// answer landed, and <c>?badge=1&amp;roll=hi</c> did not. That is a player telling the two bands apart
+    /// by looking at the screen.</para>
+    ///
+    /// <para>The anti-vacuous half is the last clause: a crossing that IS a memory still lights the line, so
+    /// this is the middle band quietened and not the sentence deleted.</para>
+    /// </summary>
+    [Fact]
+    public void TheMiddleBandReadsOffTheGlassExactlyLikeTheHighBand()
+    {
+        var yes = new ContactLedger();       // the high band: he points, and nothing is banked at all
+        var yesBut = new ContactLedger();    // the middle band: he points, and your name goes in a book
+        IllegalHeat.Bank(
+            yesBut, IllegalHeat.Charge(Site, IllegalHeat.Crossing.YourNameInTheirBook), simTime: 0);
+
+        // The rung really was banked — without this the whole law is about a crossing that never happened.
+        Assert.True(
+            IllegalHeat.HeatAtSite(yesBut, Site) > IllegalHeat.HeatAtSite(yes, Site),
+            "the middle band cost nothing, so there is no silence to keep.");
+
+        // …and every reading the player can take off that book is the same on both sides.
+        Assert.Equal(
+            IllegalHeat.TheyRememberYouAt(yes, Site), IllegalHeat.TheyRememberYouAt(yesBut, Site));
+        Assert.False(
+            IllegalHeat.TheyRememberYouAt(yesBut, Site),
+            "the middle band announced itself: the corner says they remember you where the high band's "
+            + "corner says nothing, which is the one thing the ruling forbids.");
+        Assert.Equal(
+            IllegalHeat.StartingRung(IllegalHeat.HeatAtSite(yes, Site)),
+            IllegalHeat.StartingRung(IllegalHeat.HeatAtSite(yesBut, Site)));
+        Assert.Equal(
+            IllegalHeat.TheGateWantsAFace(IllegalHeat.HeatAtSite(yes, Site)),
+            IllegalHeat.TheGateWantsAFace(IllegalHeat.HeatAtSite(yesBut, Site)));
+        Assert.Equal(
+            IllegalHeat.TheNetStopsAnswering(IllegalHeat.HeatAtSite(yes, Site)),
+            IllegalHeat.TheNetStopsAnswering(IllegalHeat.HeatAtSite(yesBut, Site)));
+
+        // …and the line has not simply been taken away: a crossing that IS a memory still wears it.
+        var walkedToTheSky = new ContactLedger();
+        IllegalHeat.Bank(
+            walkedToTheSky, IllegalHeat.Charge(Site, IllegalHeat.Crossing.TheKickOut), simTime: 0);
+        Assert.True(
+            IllegalHeat.TheyRememberYouAt(walkedToTheSky, Site),
+            "nothing lights the meter's one sentence any more: that is the sentence deleted rather than the "
+            + "middle band quietened.");
+    }
+
     // ── THE DOORS ───────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>

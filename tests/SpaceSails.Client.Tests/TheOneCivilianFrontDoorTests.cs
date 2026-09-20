@@ -286,6 +286,54 @@ public sealed class TheOneCivilianFrontDoorTests
             + string.Join("\n", undocumented.Distinct(StringComparer.Ordinal)));
     }
 
+    /// <summary>
+    /// #1262 · <b>AND A LINK THAT NAMES A FLOOR HAS TO ASK TO BE PUT ON ONE.</b>
+    ///
+    /// <para>The sweep above holds every shipped link to using keys the boot can READ. That is a different
+    /// law from the link doing what its own row says it does, and #1262 is the gap between the two:
+    /// <c>/map?secretlab=deep&amp;floor=10</c> is made of two perfectly readable cheats and comes up
+    /// <b>aboard the ship at Selene Gate</b>, on the 7 Deck view, with no lift and no B10 to search.
+    /// <c>?floor=</c> only chooses which floor an EXCURSION starts on (<c>Map.Sim.World.QueryGround</c>:
+    /// <i>"/map?secretlab=1&amp;land=1&amp;floor=3 rides you straight down to B3"</i>), and a captain who was
+    /// never put down has no excursion for it to choose in. The row that printed it claimed <i>"B10 ·
+    /// LABORATORIES, and the drawer is the THIRD room along the spine"</i> — a claim about a floor nobody was
+    /// standing on.</para>
+    ///
+    /// <para><b>RED on the shipped tree</b> (#1262, played 2026-09-20), naming exactly one link: the
+    /// <c>#605 · THE DEPARTMENT LADDER</c> row of <c>docs/testing-links-the-hive.md</c>. Every other
+    /// floor-naming link in the product already carries <c>&amp;land=1</c>, which is what makes the missing
+    /// one a typo rather than a second convention.</para>
+    /// </summary>
+    [Fact]
+    public void AndALinkThatAsksForAFloorAlsoAsksToLand()
+    {
+        var stranded = new List<string>();
+        int landing = 0;
+
+        foreach ((string file, string link) in EveryMapLinkTheProductShips())
+        {
+            var keys = new HashSet<string>(TheKeysIn(link[link.IndexOf('?')..]), StringComparer.Ordinal);
+            if (!keys.Contains("floor"))
+            {
+                continue;
+            }
+
+            if (keys.Contains("land"))
+            {
+                landing++;
+                continue;
+            }
+
+            stranded.Add($"{file}: {link}\n  ?floor= picks a floor of an excursion nobody was put on.");
+        }
+
+        // Anti-vacuous: a sweep that found no floor links at all would be green about nothing.
+        Assert.True(landing >= 10, $"only {landing} landing floor links found — the sweep is not reading the docs.");
+        Assert.True(stranded.Count == 0,
+            $"{stranded.Count} shipped links name a floor and never land on it. Add &land=1:\n\n"
+            + string.Join("\n", stranded.Distinct(StringComparer.Ordinal)));
+    }
+
     [Fact]
     public void TheHomePagesLaunchButtonAndTheNavMenuAreBothCivilian()
     {
