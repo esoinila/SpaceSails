@@ -784,9 +784,10 @@ public sealed class HisCabinIsBelowTests
 
         Pages.Map.Walker dealt = Assert.Single(Afoot(map), w => w.Who == Person);
         double berth = NpcWalk.PersonalSpaceInRadii * DeckPlan.AvatarRadius;
+        double capX = (double)Read(map, "_avatarX")!, capY = (double)Read(map, "_avatarY")!;
         double gap = Math.Sqrt(
-            ((dealt.Walk.X - landing.X) * (dealt.Walk.X - landing.X))
-            + ((dealt.Walk.Y - landing.Y) * (dealt.Walk.Y - landing.Y)));
+            ((dealt.Walk.X - capX) * (dealt.Walk.X - capX))
+            + ((dealt.Walk.Y - capY) * (dealt.Walk.Y - capY)));
         Assert.True(
             gap >= berth,
             $"he was dealt {gap:0.00} du from the captain, inside the {berth:0.00} du berth every sub-step "
@@ -837,9 +838,12 @@ public sealed class HisCabinIsBelowTests
     [Fact]
     public void TheCabinWaitIsOneClockWhoeverIsWatchingTheLeaf()
     {
-        double fromTheCorridor = TheWaitBehindTheLeaf("waiting-in-the-corridor", followHimDown: true);
-        double fromTheConcourse = TheWaitBehindTheLeaf("waiting-upstairs", followHimDown: false);
+        (double fromTheCorridor, bool aBodyInTheCorridor) =
+            TheWaitBehindTheLeaf("waiting-in-the-corridor", followHimDown: true);
+        (double fromTheConcourse, _) = TheWaitBehindTheLeaf("waiting-upstairs", followHimDown: false);
 
+        // The captain who stayed upstairs FIRST — the anti-vacuity half. A build whose wait was wrong on
+        // both floors would agree with itself, and this pair would be green about nothing.
         Assert.True(
             Math.Abs(fromTheConcourse - TheTailsNight.CabinWaitSeconds) <= 1.0,
             $"the wait is {TheTailsNight.CabinWaitSeconds:0} s and the captain who stayed upstairs measured "
@@ -850,12 +854,20 @@ public sealed class HisCabinIsBelowTests
             + $"{fromTheConcourse:0.0} s for one who stayed upstairs. The wait is "
             + $"{TheTailsNight.CabinWaitSeconds:0} s and it is ONE clock — a man behind a door does not wait "
             + "longer or shorter for who happens to be on his floor.");
+
+        // …and there is no body in front of the leaf while it is shut. There is nobody behind a closed door,
+        // and a man re-dealt onto the corridor in front of a captain who is standing there watching it is
+        // the walk he has already been watched walking, played a second time.
+        Assert.False(
+            aBodyInTheCorridor,
+            "there was a body on the floor while he was behind his own shut leaf.");
     }
 
     /// <summary>#1287 · How long the leaf stays shut, in sim seconds, with the captain either following him
     /// down onto the service level or staying on the concourse. Everything else about the two runs is the
     /// same evening at the same link.</summary>
-    private static double TheWaitBehindTheLeaf(string canvasId, bool followHimDown)
+    private static (double Seconds, bool ABodyInTheCorridor) TheWaitBehindTheLeaf(
+        string canvasId, bool followHimDown)
     {
         Pages.Map map = AtTheDocumentedLink(canvasId);
         int down = TheTailsNight.TheCarHeTakesDown(Berth, Person, Cars);
@@ -882,8 +894,7 @@ public sealed class HisCabinIsBelowTests
 
         double shut = (double)Read(map, "SimTime")!;
 
-        // Nothing is in the corridor while the leaf is shut. There is no body behind a closed door, and a
-        // man dealt back onto the floor in front of a captain who is standing there watching it is the bug.
+        // …and whether anything was ever in the corridor while the leaf was shut, which the caller asserts.
         bool somebodyInTheCorridorDuringTheWait = false;
         RunUntil(
             map,
@@ -894,11 +905,8 @@ public sealed class HisCabinIsBelowTests
             },
             TheTailsNight.CabinWaitSeconds * 2);
 
-        Assert.False(
-            somebodyInTheCorridorDuringTheWait,
-            "there was a body on the floor while he was behind his own shut leaf.");
         Assert.Equal("ToTheCarUp", Leg(map));
-        return (double)Read(map, "SimTime")! - shut;
+        return ((double)Read(map, "SimTime")! - shut, somebodyInTheCorridorDuringTheWait);
     }
 
     /// <summary>
