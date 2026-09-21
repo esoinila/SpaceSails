@@ -78,6 +78,11 @@ public sealed class TheSlowGateRosterTests
             { nameof(TheFarGatesLeadSomewhereTests), 20 },
             { nameof(YouCanWalkTheHiveTests), 19 },
             { nameof(ClickToWalkIsStillWalkingTests), 19 },
+            // #1290 · The click road off a wall, measured 2026-09-21 in a Release run rather than read off
+            // the 09-02 baseline: 3 tests, 114 s, effectively all of it the sweep — every face of every wall
+            // of five real floors pressed into on the shipping stepper, and two A* plans (the control and
+            // the law) spent on each of the 2,980 of them.
+            { nameof(AClickFromTheWallFindsTheSameRoadTests), 114 },
             { nameof(TheCirculationIsWalkableTests), 14 },
             { nameof(TheDeclinedDoorIsStillAWayHomeTests), 30 },
             { nameof(NothingLocksTheUiWhileAnNpcWalksTests), 12 },
