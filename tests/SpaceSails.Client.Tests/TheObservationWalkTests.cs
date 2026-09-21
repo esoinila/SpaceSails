@@ -186,12 +186,21 @@ public sealed class TheObservationWalkTests
     /// notices.
     ///
     /// <para>Two claims, and the second is the one that matters: they are clocked, and the body then STOPS —
-    /// its position does not change again while the captain stands there. And nothing is said: no card, no
-    /// pulse, nothing filed.</para>
+    /// its position does not change while the courtesy is running. And nothing is said: no card, no pulse,
+    /// nothing filed.</para>
     ///
-    /// <para><b>Revert that reddened it:</b> the <c>holding</c> branch of
+    /// <para>#1285 · <b>…AND THEN IT ENDS, WHICH IS THE OTHER HALF OF THE SAME LAW.</b> This case used to
+    /// stand the captain three du back and watch the body not move for SIXTY SECONDS, and called that the
+    /// beat. It is not: a courtesy with no clock on it is a deadlock wearing manners, and at the documented
+    /// link — where <c>?ashore=1</c> stands the captain inside the band and in his line — it froze the whole
+    /// two-leg night for any captain who watched rather than walked. So he holds the doorway for
+    /// <see cref="ObservationWalk.StandAsideSeconds"/>, which is how long somebody two paces behind needs to
+    /// come past, and then he gets on with his evening with the captain still standing there.</para>
+    ///
+    /// <para><b>Revert that reddened the first half:</b> the <c>holding</c> branch of
     /// <c>StepThePersonOfInterest</c> deleted so a noticed person walks on anyway — <i>"they were clocked and
-    /// kept walking"</i>.</para>
+    /// kept walking"</i>. <b>And the second half</b> goes red on a courtesy with no clock: the body is on the
+    /// same square it stopped on when the frames run out.</para>
     /// </summary>
     [Fact]
     public void TheyStopAndWaitWhenTheyNoticeYou()
@@ -234,7 +243,8 @@ public sealed class TheObservationWalkTests
             + "them on the concourse for it to be about anything.");
         StandCaptainAt(map, x + 3.0, y);
 
-        RunFrames(map, 60);
+        // ── HE STANDS ASIDE ───────────────────────────────────────────────────────────────────────────
+        RunFrames(map, FramesFor(ObservationWalk.StandAsideSeconds / 2));
 
         object after = ThePersonAfoot(map, person)
             ?? throw new InvalidOperationException("they vanished in plain sight — the one thing they must not do.");
@@ -242,6 +252,26 @@ public sealed class TheObservationWalkTests
         Assert.Equal(x, (double)Get(afterWalk, "X")!, 9);
         Assert.Equal(y, (double)Get(afterWalk, "Y")!, 9);
         Assert.Equal("LettingYouPass", Get(after, "For")!.ToString());
+
+        // ── #1285 · …AND THEN HE LEADS ON, WITH THE CAPTAIN STILL STANDING THERE ───────────────────────
+        // The captain is not moved a deck unit: he is exactly where he was when the courtesy began, which
+        // is the whole posture. A man who has held a doorway for the length of the courtesy and seen nobody
+        // come through it goes on with his evening.
+        RunFrames(map, FramesFor(ObservationWalk.StandAsideSeconds + 2.0));
+
+        object onward = ThePersonAfoot(map, person)
+            ?? throw new InvalidOperationException("they vanished in plain sight — the one thing they must not do.");
+        object onwardWalk = Get(onward, "Walk")!;
+        double moved = Math.Sqrt(
+            (((double)Get(onwardWalk, "X")! - x) * ((double)Get(onwardWalk, "X")! - x))
+            + (((double)Get(onwardWalk, "Y")! - y) * ((double)Get(onwardWalk, "Y")! - y)));
+        Assert.True(
+            moved > DeckPlan.AvatarRadius,
+            $"he stood aside for a captain who never came past and was still within {moved:0.00} du of the "
+            + "square he stopped on when the courtesy had run out twice over. That is the freeze the "
+            + "documented link booted straight into (#1285): the whole two-leg night behind one body that "
+            + "is being polite for ever.");
+        Assert.Equal("WalkingTheRoute", Get(onward, "For")!.ToString());
 
         // NOTHING IS SAID. The inference is the whole telling.
         Assert.Null(Field(map, "_storyCard"));
@@ -432,6 +462,10 @@ public sealed class TheObservationWalkTests
     /// <summary>One frame the way the game runs it — and BOTH clocks, because the look cadence is measured in
     /// real seconds off the frame stamp while the room's own hours are measured in sim seconds. A harness
     /// that advanced only one of them would freeze the notice question at a single look.</summary>
+    /// <summary>#1285 · That many SECONDS of this bench's frames, which are counted rather than clocked.
+    /// One place, so a law stated in seconds and a bench driven in frames cannot come to two lengths.</summary>
+    private static int FramesFor(double seconds) => (int)Math.Ceiling(seconds / 0.1);
+
     private static void RunFrames(Pages.Map map, int frames, double dt = 0.1)
     {
         for (int i = 0; i < frames; i++)
