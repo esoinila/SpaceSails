@@ -34,6 +34,7 @@ namespace SpaceSails.Client.Tests;
 /// being asked in an empty room.</para>
 /// </summary>
 [System.Runtime.Versioning.SupportedOSPlatform("browser")]
+[SlowGate] // #251 · 114 s over 3 test(s), measured 2026-09-21; see TheSlowGateRosterTests.
 public sealed class AClickFromTheWallFindsTheSameRoadTests
 {
     // Map.Deck's own numbers: the captain's speed and the frame a browser most often hands out. A held key
