@@ -49,10 +49,11 @@ namespace SpaceSails.Core.Interior;
 /// this class's own, and it is a REFUSAL TO STEP rather than a push: the route stays live, the walk resumes
 /// the moment the doorway clears, and no frame ever ends with the two of them inside one another.
 ///
-/// <para>#1286 · <b>And it is a rule about COMING CLOSER.</b> A walker the captain has arrived on top of —
-/// which is what a car's landing does, every time — is not being polite by standing there for ever; a step
-/// that opens the gap is the only move he has. So the berth refuses a step that ends no further off than it
-/// began and allows one that walks out from under him.</para>
+/// <para>#1286 · <b>And it is a rule about GOING IN, not a rule about being in.</b> A walker the captain has
+/// arrived on top of — which is what a car's landing does, every time — is not being polite by standing
+/// there for ever; his own route's first node is the square he is on, so yielding to it costs him every
+/// step he has. So the berth is not asked of a body already inside it: he walks out from under the captain
+/// and the ordinary rule resumes the frame he is clear.</para>
 ///
 /// <para><b>Unless the captain is the errand.</b> Somebody who has crossed a room to sit down at your table
 /// is not obstructed by you being at it, and the first build of this deadlocked every arrival on its last
@@ -347,21 +348,24 @@ public sealed class NpcWalk
             // his cabin is inside the berth, the step is refused, the route is kept, and NOTHING EVER GROWS
             // THE GAP. Twelve screenshots over four minutes, byte-identical.
             //
-            // Stepping AWAY from somebody you are already touching is not crowding them; it is the only way
-            // out. So the berth refuses a step that would end no further off than this one began, and allows
-            // one that opens the gap — which leaves the doorway beat exactly as it was (a walker three du
-            // out, stepping in to one and a third, is coming closer and still stops and looks at you) and
-            // ends the one deadlock it could not tell apart from courtesy.
+            // Somebody you are already standing in cannot be given more room by standing still — and a
+            // route's own first node is the square the walker was put down on, which is the square the
+            // captain is now on, so a body that goes on yielding to it never takes a step in any direction.
+            // Measured: 0.19 to 0.29 du, Waiting, sixteen hundred frames, over three hundred walkers in the
+            // Core sweep. He is not standing aside here; he is GETTING OUT OF THE WAY, which is what a
+            // person does when somebody walks into them.
+            //
+            // So the berth is not asked of a body that is already inside it, and the ordinary rule resumes
+            // the frame he is out. The doorway beat is untouched, and that is structural rather than lucky:
+            // a walker stopped one body-width off a captain standing on his door never comes inside the
+            // berth at all, so this arm is never reached on it.
             double cx = nx - captainX, cy = ny - captainY;
-            double wouldBeSq = (cx * cx) + (cy * cy);
-            if (wouldBeSq < keepOut * keepOut)
+            double hx = X - captainX, hy = Y - captainY;
+            bool alreadyInside = (hx * hx) + (hy * hy) < keepOut * keepOut;
+            if (!alreadyInside && (cx * cx) + (cy * cy) < keepOut * keepOut)
             {
-                double hx = X - captainX, hy = Y - captainY;
-                if (wouldBeSq <= (hx * hx) + (hy * hy))
-                {
-                    yielded = true;
-                    break;
-                }
+                yielded = true;
+                break;
             }
 
             double mx = nx - X, my = ny - Y;

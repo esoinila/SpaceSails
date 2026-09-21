@@ -511,6 +511,96 @@ public sealed class TheExitIsTheFullStopTests
         Assert.Equal(blocked, resumed);
     }
 
+    /// <summary>
+    /// #1286 · <b>THE BERTH IS A RULE ABOUT COMING CLOSER, SO A CAPTAIN WHO ARRIVES ON TOP OF SOMEBODY IS
+    /// STEPPED OUT FROM UNDER.</b>
+    ///
+    /// <para>The case next door is the captain standing on a walker's DESTINATION, and the answer there is
+    /// right: he stops, looks at you, and keeps his route. This is the mirror, and until #1286 it had the
+    /// same answer, which is wrong — <b>the walker is already inside the berth, and he did not walk in
+    /// there</b>. A car's landing is where a ride sets the captain down, where <c>[E]</c> finds the panel,
+    /// and where every body that uses that car begins and ends a leg, so the captain arrives on somebody's
+    /// square as a matter of course; the owner's QA filed four minutes of byte-identical screenshots of the
+    /// result.</para>
+    ///
+    /// <para>So the sweep parks the captain on the walker's OWN square — the one place a pre-step berth test
+    /// can never be satisfied by standing still — and asks for one thing: that the body is outside the berth
+    /// within a few frames, having WALKED out of it. Law (1) next door still holds and is not restated here:
+    /// a step from outside the berth to inside it is a step that comes closer, and is refused exactly as it
+    /// always was.</para>
+    ///
+    /// <para><b>The RED case.</b> Put law three back to the bare distance test —
+    /// <c>if (wouldBeSq &lt; keepOut * keepOut) yield</c> — and every case in the sweep is a body that has
+    /// not moved a deck unit when the frames run out.</para>
+    /// </summary>
+    [Fact]
+    public void THE_SHARED_SquareIsSomethingAWalkerStepsOutOfAndNeverFreezesOn()
+    {
+        var wrong = new List<string>();
+        int stoodOn = 0, freed = 0;
+
+        foreach (Hall hall in EveryHall())
+        {
+            foreach (Egress.Move move in
+                Egress.Departures(hall.Body, hall.Level, hall.Watch, hall.Tops, hall.Floor.Locked))
+            {
+                if (TheWalk(hall, move, out _) is not { } walk)
+                {
+                    continue;
+                }
+
+                // The captain lands exactly where this body is standing. Nothing about the walk's plan
+                // changes: it is the same route to the same door, begun on the same square.
+                double capX = walk.X, capY = walk.Y;
+                double keepOut = Radius * NpcWalk.PersonalSpaceInRadii;
+
+                // A walk whose whole remaining route is inside the berth is somebody who has effectively
+                // arrived, and is not what this law is about. Skipped, never passed.
+                double gx = walk.For.X - capX, gy = walk.For.Y - capY;
+                if ((gx * gx) + (gy * gy) < keepOut * keepOut)
+                {
+                    continue;
+                }
+
+                stoodOn++;
+                int spent = 0;
+                double gap = 0;
+                while (walk.Afoot && spent < FrameCeiling)
+                {
+                    walk.Step(Frame, hall.Walls, capX, capY);
+                    spent++;
+                    double dx = walk.X - capX, dy = walk.Y - capY;
+                    gap = Math.Sqrt((dx * dx) + (dy * dy));
+                    if (gap >= keepOut)
+                    {
+                        break;
+                    }
+                }
+
+                if (gap >= keepOut)
+                {
+                    freed++;
+                    continue;
+                }
+
+                wrong.Add(Say(hall, move,
+                    string.Create(CultureInfo.InvariantCulture,
+                        $"the captain arrived on his square and {spent} frames later he is still {gap:F2} du ")
+                    + string.Create(CultureInfo.InvariantCulture,
+                        $"away — inside the {keepOut:F2} du berth, {walk.State}, with his route still live ")
+                    + "and nothing in the world that will ever grow the gap."));
+            }
+        }
+
+        Assert.True(wrong.Count == 0,
+            $"{wrong.Count} walker(s) froze under a captain who arrived on top of them:"
+            + Environment.NewLine + string.Join(Environment.NewLine, wrong.Take(20)));
+        Assert.True(stoodOn >= 20,
+            $"only {stoodOn} walker(s) were ever actually stood on — this guard would be a green number "
+            + "never asked of the world.");
+        Assert.Equal(stoodOn, freed);
+    }
+
     // ── (d) THE SHIFT DECIDES, AND NOTHING ELSE DOES ─────────────────────────────────────────────────
 
     /// <summary>

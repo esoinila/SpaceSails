@@ -745,8 +745,16 @@ public sealed class HisCabinIsBelowTests
     /// him. Every sub-step was inside the berth and pointed at him; <c>NpcWalk.Step</c> refused it and kept
     /// the route, and nothing was ever going to grow the gap.</para>
     ///
-    /// <para><b>Proven RED</b> by putting the placement back on the clock's bare point: <c>he is still at the
-    /// landing … 0.4 du from the captain, Waiting</c>, with the leg unchanged when the frames run out.</para>
+    /// <para><b>The frame this law is about is the frame the doors open</b>, and it is dealt through
+    /// <c>AdvanceBarWalkers</c> rather than through <c>OnTick</c> for one measured reason: the world's clock
+    /// moves in WHOLE SECONDS (<c>Simulator</c>'s own step), and that corridor leg is 4.3 s long, so a frame
+    /// of <c>OnTick</c> carries him a fifth of the way down it before anybody is dealt. The state this case
+    /// is stated at — <b>the clock has him exactly at the landing the ride has just put the captain on</b> —
+    /// is the true state of the world on the second the doors open, and a driver that could never see it
+    /// would be a guard green on the broken build.</para>
+    ///
+    /// <para><b>Proven RED</b> by putting the placement back on the clock's bare point: <c>he was dealt 0.36
+    /// du from the captain</c>, which is inside the berth every sub-step of his own route has to leave.</para>
     /// </summary>
     [Fact]
     public void FollowingHimOntoHisOwnCarDoesNotLandTheCaptainOnHisSquare()
@@ -759,18 +767,35 @@ public sealed class HisCabinIsBelowTests
             $"he never reached his car on the concourse — leg {Leg(map)} (#1285).");
         Assert.True(Ride(map, HavenLevels.ServiceLevel, down), "his own car refused to go down.");
 
-        // ── THE ANTI-VACUITY CLAUSE ───────────────────────────────────────────────────────────────────
-        // The case is only about a shared square if the ride really set the captain down on the one the
-        // leg starts from. Both facts asked of the room, never typed.
+        // ── THE ANTI-VACUITY CLAUSES ──────────────────────────────────────────────────────────────────
+        // The case is only about a shared square if the ride really set the captain down on the one the leg
+        // starts from, and only about the frame the doors open if the leg really has only just opened. All
+        // three facts asked of the room, never typed.
         DeckReachability.Point landing = HavenInterior.TheCageLandingAt(Berth, down)!.Value;
         var from = (ValueTuple<double, double>)Read(map, "_nightLegFrom")!;
         Assert.Equal(landing.X, (double)Read(map, "_avatarX")!, 1);
         Assert.Equal(landing.Y, (double)Read(map, "_avatarY")!, 1);
         Assert.Equal(landing.X, from.Item1, 1);
         Assert.Equal(landing.Y, from.Item2, 1);
+        Assert.Equal((double)Read(map, "SimTime")!, (double)Read(map, "_nightLegSince")!, 6);
 
-        // Stand still. He walks his own corridor, and the leaf shuts behind him inside the time the leg
-        // takes a man to walk — the night's own arithmetic, with a body's worth of slack on the end of it.
+        // The frame the doors open. The clock has him ON the landing, which is where the captain is standing.
+        Invoke(map, "AdvanceBarWalkers", 1.0 / 30.0);
+
+        Pages.Map.Walker dealt = Assert.Single(Afoot(map), w => w.Who == Person);
+        double berth = NpcWalk.PersonalSpaceInRadii * DeckPlan.AvatarRadius;
+        double gap = Math.Sqrt(
+            ((dealt.Walk.X - landing.X) * (dealt.Walk.X - landing.X))
+            + ((dealt.Walk.Y - landing.Y) * (dealt.Walk.Y - landing.Y)));
+        Assert.True(
+            gap >= berth,
+            $"he was dealt {gap:0.00} du from the captain, inside the {berth:0.00} du berth every sub-step "
+            + "of his own route has to leave — so NpcWalk refuses the step, keeps the route, and nothing "
+            + "ever grows the gap. That is the row's own broken: a man standing exactly where the car put "
+            + "you, as though he had waited.");
+
+        // …and he walks it. The leaf shuts behind him inside the time the leg takes a man to walk — the
+        // night's own arithmetic, with a body's worth of slack on the end of it.
         int cabin = TheTailsNight.HisCabin(Berth, Person, HavenLevels.Cabins);
         DeckReachability.Point doorstep = HavenInterior.TheCabinDoorstepAt(Berth, cabin)!.Value;
         double hisCorridor = WalkSeconds(landing, doorstep) + TheTailsNight.LegSeconds(ObservationWalk.OnHisHeelsDu);
