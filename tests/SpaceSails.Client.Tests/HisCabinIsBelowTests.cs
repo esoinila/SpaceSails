@@ -245,20 +245,18 @@ public sealed class HisCabinIsBelowTests
         Set(map, "_dockVisitSimTime", TheWatch);
         Set(map, "SimTime", PatronRota.WatchSeconds * (Egress.LastCallFraction + 0.05));
 
-        // ── AN EVENING THE ROOM HAS NOBODY SCHEDULED OUT OF ─────────────────────────────────────────────
+        // ── #1277 · AN ORDINARY EVENING, WITH THE ROOM'S OWN HOURS RUNNING ──────────────────────────────
         //
-        // #731's hours and #1199's tail both want the same man out of the same chair, and on a watch whose
-        // schedule happens to name him the hours get there first: the room walks him out through a cellar
-        // leaf, `_barLeft` has him, and the tail finds no chair to start a route from. That is the SHIPPED
-        // interaction (the walk simply does not happen that evening, silently) and it is not this lane's to
-        // change — but a law about his route cannot be stated on a night the route was never walked.
+        // This bench used to hand the two schedules an empty answer, because #731's hours and #1199's tail
+        // both wanted the same man out of the same chair and on a watch whose schedule named him the hours
+        // got there first — `_barLeft` had him, the tail found no chair, and the route these laws are about
+        // was never walked. The bench NAMED that silence and left it; #1277 ruled on it (the tail wins) and
+        // fixed it in `TheWatchDecidesWhoGoes`, which now defers to the man the walk has claimed.
         //
-        // So the schedules are given the answer they are allowed to give: nobody is going and nobody is
-        // coming. Empty is an ANSWER this room gave (null is a question it has not been asked — the room's
-        // own distinction, in Map.BarWalkers), and a shift with no scheduled churn on it is an ordinary
-        // evening rather than a contrivance.
-        Set(map, "_barGoing", (IReadOnlyList<Egress.Move>)[]);
-        Set(map, "_barComing", (IReadOnlyList<Egress.Move>)[]);
+        // So the contrivance is gone and these nine laws are stated on the room as it runs: whoever the shift
+        // has going is going, whoever it has coming is coming, and the one chair the walk needs is the one
+        // chair the hours will not touch. `TheTailWinsTheChairTests` is where that clause is stated; here it
+        // is simply spent.
         return map;
     }
 
@@ -508,6 +506,75 @@ public sealed class HisCabinIsBelowTests
         // …and ride back up, and he is not up here either.
         Assert.True(Ride(map, HavenLevels.Concourse, down));
         Frames(map, 1.0);
+        Assert.DoesNotContain(Afoot(map), w => w.Who == Person);
+    }
+
+    /// <summary>
+    /// #1281 · <b>A CAPTAIN STANDING AT THE DOORS HE IS WALKING TO DOES NOT STOP HIS NIGHT.</b>
+    ///
+    /// <para><b>What was played</b> (owner's QA, 2026-09-21, on the service level): ride up, wait, ride down,
+    /// and about eighteen seconds later a body appears at the captain's own elbow at the car's landing —
+    /// <i>"still standing in exactly the same spot after four more minutes"</i>. It is HIM, on the leg that
+    /// ends at the car he rides back up on, and the night behind him had stopped dead with him: no ride, no
+    /// concourse leg, no walk, no card. A captain who followed him properly was the one thing that could
+    /// prevent the beat he followed him for.</para>
+    ///
+    /// <para><b>Why.</b> <see cref="NpcWalk"/>'s courtesy stops a walker before any step that would bring it
+    /// inside one body-width of the captain, says <c>Doing.Waiting</c> and keeps its route — <i>"so the walk
+    /// finishes itself the moment the doorway clears"</i>. A car's landing is the one square in this building
+    /// that never clears: it is where a ride sets the captain down and where <c>[E]</c> finds the panel, so
+    /// he is standing on it exactly when somebody else's leg ends there. So a leg of the night is over where
+    /// it ENDS, at the courtesy's own width, and not where the route object gives up.</para>
+    ///
+    /// <para>The captain is stood at the car <b>he comes up on</b> and kept there for the whole errand — the
+    /// posture that puts a body on the far end of a leg — and his notice is latched on, so this case also
+    /// says that a man walking TOWARDS a captain is not a man letting him past.</para>
+    ///
+    /// <para><b>Proven RED</b> by taking the leg's own far end back out (a leg ending only when the route
+    /// object stops being afoot): <c>Expected: ToTheWalk — Actual: ToTheCarUp</c>, with a body still standing
+    /// one body-width off the captain when the frames run out.</para>
+    /// </summary>
+    [Fact]
+    public void ACaptainStandingAtTheDoorsHeIsWalkingToDoesNotStopHisNight()
+    {
+        Pages.Map map = PastLastCall("standing-on-his-doorstep");
+        int down = TheTailsNight.TheCarHeTakesDown(Berth, Person, Cars);
+        int up = TheTailsNight.TheCarHeTakesUp(Berth, Person, Cars);
+
+        Frames(map, 600, () => Leg(map) == "ToHisCabin");
+        Assert.Equal("ToHisCabin", Leg(map));
+        Assert.True(Ride(map, HavenLevels.ServiceLevel, down), "his own car refused to go down.");
+
+        // He has clocked the captain — the latch every en-route rule is gated on. Set rather than rolled:
+        // no law here is about #436's eye.
+        Set(map, "_walkNoticed", true);
+
+        // …and the captain waits at the car he will come up on, which is the far end of his last corridor
+        // leg. That is the whole of the posture: a captain who guessed right, standing where the doors are.
+        DeckReachability.Point landing = HavenInterior.TheCageLandingAt(Berth, up)!.Value;
+        void AtTheCar(Pages.Map m)
+        {
+            Set(m, "_avatarX", landing.X);
+            Set(m, "_avatarY", landing.Y);
+        }
+
+        AtTheCar(map);
+
+        Frames(map, 600, () => Leg(map) == "Inside", AtTheCar);
+        Assert.Equal("Inside", Leg(map));
+        Frames(map, TheTailsNight.CabinWaitSeconds + 60, () => Leg(map) == "ToTheCarUp", AtTheCar);
+        Assert.Equal("ToTheCarUp", Leg(map));
+
+        // The anti-vacuity clause: the leg this law is about has to actually END where the captain is
+        // standing, or the case is a man walking somewhere else while somebody loiters.
+        Frames(map, 1.0, posture: AtTheCar);
+        Pages.Map.Walker onTheLeg = Assert.Single(Afoot(map), w => w.Who == Person);
+        Assert.Equal(landing.X, onTheLeg.Walk.For.X, 1);
+        Assert.Equal(landing.Y, onTheLeg.Walk.For.Y, 1);
+
+        // …and he gets there, comes off the floor, rides, and the night is on its last leg.
+        Frames(map, 600, () => Leg(map) == "ToTheWalk", AtTheCar);
+        Assert.Equal("ToTheWalk", Leg(map));
         Assert.DoesNotContain(Afoot(map), w => w.Who == Person);
     }
 

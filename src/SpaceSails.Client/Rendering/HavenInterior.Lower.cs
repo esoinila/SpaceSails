@@ -332,13 +332,21 @@ public static partial class HavenInterior
         // …and the leaves themselves, with the numbered plate the captain reads before pressing [E] and being
         // refused. The knockable panel is the ring's own Hatch console — the same kind, the same verb, and
         // therefore not one line of new dispatch anywhere.
+        //
+        // #1279 · THE PAINTED PLATE IS THE NUMBER AND NOT THE LEAF'S WHOLE NAME. Five of these stand at one
+        // door's frontage — about three deck units, fifty-five pixels at the deck's own scale — and the full
+        // plate is seventy-eight pixels wide, so the caption band had to stack them into two interleaved rows
+        // and the owner read three of the five numbers as a smear. The register keeps the whole name
+        // (`leaf.Sign`, which is what Egress seeds a door roll on and what CabinPlatesAt publishes); what is
+        // PAINTED is what differs between the doors. The argument is at HavenLevels.CabinDoorPlate.
         int cabinNo = 0;
         foreach (UndergroundComplex.LockedDoor leaf in CabinLeaves())
         {
             doors.Add(new((float)leaf.X1, (float)leaf.Y1, (float)leaf.X2, (float)leaf.Y2, Locked: true));
             consoles.Add(new(
                 DeckPlan.ConsoleKind.Hatch,
-                CabinDoorX(cabinNo), CabinRowSouthY - CabinPlateStandoff, leaf.Sign));
+                CabinDoorX(cabinNo), CabinRowSouthY - CabinPlateStandoff,
+                HavenLevels.CabinDoorPlate(cabinNo + 1)));
             cabinNo++;
         }
 

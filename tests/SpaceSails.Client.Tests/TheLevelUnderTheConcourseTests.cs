@@ -696,10 +696,17 @@ public sealed class TheLevelUnderTheConcourseTests
             .ToList();
         Assert.Equal(HavenLevels.Cabins, plates.Count);
 
+        // #1279 · THE PAINTED PLATE IS THE NUMBER, and the leaf's own plate in the register is the whole
+        // name. Five of these stand at one door's frontage, and the full plate is wider than the frontage —
+        // so the band book had to stack them and the owner read three of the five numbers as a smear. Both
+        // are asserted, and so is the law that keeps them ONE name rather than two: the painted plate is the
+        // register's own opening, so nothing can ever come to two spellings for one door.
         for (int i = 0; i < HavenLevels.Cabins; i++)
         {
-            string wanted = HavenLevels.CabinPlate(i + 1);
-            Assert.Contains(plates, p => string.Equals(p.Label, wanted, StringComparison.Ordinal));
+            string painted = HavenLevels.CabinDoorPlate(i + 1);
+            Assert.Contains(plates, p => string.Equals(p.Label, painted, StringComparison.Ordinal));
+            Assert.Equal(painted, HavenInterior.CabinPlatesAt(Berth)[i][..painted.Length]);
+            Assert.EndsWith(HavenLevels.CabinTenancy, HavenLevels.CabinPlate(i + 1), StringComparison.Ordinal);
         }
 
         Assert.Equal(HavenLevels.Cabins, Below.Doors.Count(d => d.Locked));

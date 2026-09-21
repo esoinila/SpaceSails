@@ -105,19 +105,16 @@ public partial class Map
     /// the beat is already spent (afterwards the walk is a walk and the person keeps walking routes, never
     /// tailed to a vanishing again); the rota does not have them in this room this watch; they are already
     /// afoot. Each is a plain no, and none of them is said out loud.</para>
+    ///
+    /// <para>#1277 · The first three are <see cref="TheManTheWalkHasClaimed"/> now, asked here in the same
+    /// order for the same cost. They have a NAME because the room's own hours read them too: the tail begins
+    /// where the claim begins, and the hours' departure roster defers to whoever it names.</para>
     /// </summary>
     private void AdvanceTheWalk(in HavenInterior.BarFloor bar)
     {
-        if (!HavenInterior.HasObservationWalk(bar.BodyId)
-            || ObservationWalk.IsSpent(_observationWalkSpentOn))
+        if (TheManTheWalkHasClaimed(bar.BodyId) is not { } person)
         {
             return;
-        }
-
-        string person = TheTail.ThePersonOfInterest(bar.BodyId);
-        if (PatronRota.Resolve(person, bar.BodyId, _dockVisitSimTime) != PatronState.AtBar)
-        {
-            return;   // not in the room this watch. Nobody to follow, and nothing to say about it.
         }
 
         if (!_walkDealt)
@@ -161,6 +158,50 @@ public partial class Map
         StepHisNight(in bar, person);
 
         TheWalkIsEmpty(in bar, person);
+    }
+
+    /// <summary>
+    /// #1277 · <b>THE MAN THE WALK HAS CLAIMED THIS WATCH, AND THE ONE PLACE THAT SAYS SO.</b> Null at every
+    /// berth in the game but one, and on most evenings at that one too.
+    ///
+    /// <para><b>The ruling (#1277): the TAIL WINS.</b> #731's hours and #1199's tail both want the same man
+    /// out of the same chair, and until this method existed the hours simply got there first — a scheduled
+    /// departure walked GILT-EYE out through a cellar leaf an hour before last call, <c>_barLeft</c> had him,
+    /// the tail found no chair to start a route from, and the whole night silently did not happen. A tester
+    /// at the documented link saw an ordinary bar.</para>
+    ///
+    /// <para>So the claim is stated ONCE, here, and both systems read it: the tail begins with it (below,
+    /// in <see cref="AdvanceTheWalk"/>) and the room's own departure roster defers to it
+    /// (<c>TheWatchDecidesWhoGoes</c>). <b>He is not dropped from the evening's departures — his departure is
+    /// the tail's first leg</b>, which leaves the chair on the frame his legs start by the bar's own
+    /// one-body-one-place law. The room still empties a man; it is simply the walk that walks him.</para>
+    ///
+    /// <h3>Why the ROSTER and not a race</h3>
+    ///
+    /// <para>The other road was for the tail to claim him before the hours run — and it cannot, because the
+    /// tail's own law is that nobody gets out of a chair before last call
+    /// (<see cref="Egress.LastCallFraction"/>) while the hours deal INSIDE that fraction. Reordering the two
+    /// calls in a frame would change nothing: at the second the hours take him the tail is still refusing to
+    /// act, and correctly. The roster is the only seam where both systems keep their own law — the hours
+    /// still deal a whole watch's worth of churn out of the room's own list, at their own moments, through
+    /// their own leaves, and the walk still waits for last call.</para>
+    ///
+    /// <para>Asked of the same three facts the beat has always turned on, in the same order: this station has
+    /// no walk, the beat is already spent, or the rota does not have him in this room this watch. Each is a
+    /// plain no, and none of them is said out loud.</para>
+    /// </summary>
+    private string? TheManTheWalkHasClaimed(string berth)
+    {
+        if (!HavenInterior.HasObservationWalk(berth) || ObservationWalk.IsSpent(_observationWalkSpentOn))
+        {
+            return null;
+        }
+
+        string person = TheTail.ThePersonOfInterest(berth);
+
+        // Not in the room this watch. Nobody to follow, nobody to hold a chair for, and nothing to say
+        // about it — and the hours are free to schedule whoever the rota DID seat.
+        return PatronRota.Resolve(person, berth, _dockVisitSimTime) == PatronState.AtBar ? person : null;
     }
 
     /// <summary>#1062 · CASTING OFF IS THE ROOM FORGETTING, here as everywhere else on this deck. Called from
@@ -303,10 +344,12 @@ public partial class Map
     /// <para><b>So there are exactly three things he can be doing</b>, and no fourth:</para>
     /// <list type="number">
     ///   <item><b>Walking his errand</b> — across the concourse and down the tube. He stops for one thing
-    ///   only: a captain who is BEHIND him, whose eyes are on him, inside the legibility band, and who has
-    ///   already been noticed. That is letting somebody past you on a floor, which is a thing people do;
-    ///   stopping dead for somebody standing between you and where you are going is not, and it is what let
-    ///   a captain who walked in first stall the whole beat.</item>
+    ///   only: a captain who is BEHIND him, whose eyes are on him, <b>within two paces</b>
+    ///   (<see cref="ObservationWalk.OnHisHeelsDu"/>, #1283), and who has already been noticed. That is
+    ///   letting somebody past you on a floor, which is a thing people do; stopping dead for somebody
+    ///   standing between you and where you are going is not, and it is what let a captain who walked in
+    ///   first stall the whole beat. Neither is stopping for a stranger ten paces back across a lit hall,
+    ///   which is what the legibility band made him do for nine and a half minutes at a car's landing.</item>
     ///   <item><b>In the gallery</b> — walking to the rail, then standing at it looking out. Once a look
     ///   (<see cref="ReeverObservation.LookIntervalSeconds"/>, the one clock) the room asks whether he is
     ///   still watched, and the first time the answer is no <b>he is off the floor</b>. While he is WALKING
@@ -405,7 +448,15 @@ public partial class Map
         // corridor is a floor somebody is crossing, with three ways off it — so standing aside is exactly
         // the thing a man does there, and a level-blind rectangle would have suppressed it on the two
         // squares of that corridor the T happens to lie over one storey up.
-        bool holding = _walkNoticed && eyesOnHim && TheCaptainIsBehindHim(who)
+        // #1283 · …AND WITHIN TWO PACES, WHICH IS WHAT "TOO CLOSE" MEANS ON A FLOOR SOMEBODY IS CROSSING.
+        // The hold read the LEGIBILITY band until today, and Selene Gate's hall is 34 du across against a
+        // 30 du band: a captain following anywhere in his line held him for as long as he cared to stand
+        // there — nine and a half minutes of it, watched (#1282/#1283). Being near enough to be NOTICED and
+        // being near enough to be LET PAST were one number by accident; they are two now, and the second is
+        // the small-room constant the throat already used. The rest of the clause is unchanged: he has to
+        // have clocked the captain, the captain has to be behind him, and it is never done in the tube.
+        bool holding = _walkNoticed && eyesOnHim && rangeDu <= ObservationWalk.OnHisHeelsDu
+            && TheCaptainIsBehindHim(who)
             && !HavenInterior.InTheObservationWalk(bar.BodyId, who.Walk.X, who.Walk.Y, _havenFloor);
         if (holding)
         {
@@ -428,7 +479,35 @@ public partial class Map
         if (who.Walk.Afoot)
         {
             who.Walk.Step(dt, walls, _avatarX, _avatarY);
-            return !who.Walk.Afoot;
+
+            // ── #1281 · A LEG IS OVER WHERE IT ENDS, NOT WHERE THE ROUTE OBJECT GIVES UP ─────────────────
+            //
+            // Owner's QA, on the service level: a body appears at the captain's own elbow at a car's landing
+            // eighteen seconds after the doors open, and is still standing in exactly that spot four minutes
+            // later. It is not the coat and it is not a floor key — it is HIM, on the leg that ends at the
+            // car he rides back up on, standing one body-width off his own destination for ever.
+            //
+            // WHY. NpcWalk's courtesy stops a walker before a step that would bring it inside one body-width
+            // of the captain, sets Doing.Waiting, and KEEPS THE ROUTE — "so the walk finishes itself the
+            // moment the doorway clears". That is right in a bar, where the captain is passing through. A
+            // CAR'S LANDING is the one square in this building the captain does not pass through: it is
+            // where a ride sets him down and where [E] finds the panel, so he is standing on it precisely
+            // when somebody else's leg ends there. The courtesy never clears, the leg never finishes, and
+            // the whole night behind it stops — he never rides, never comes up, and the beat the floor was
+            // built for cannot happen at all.
+            //
+            // So the NIGHT'S legs end at their far end. The reach is the courtesy's OWN width, read off the
+            // two constants that make it, so the distance a walker stops at and the distance this file calls
+            // arrived cannot come to two numbers. #1254's leg is untouched: its far end is the rail, inside
+            // the gallery, and the gallery branch above has already had that frame.
+            bool theLegIsOver = _nightLeg != HisNight.ToTheWalk && HeIsAtTheEndOfThisLeg(who);
+            if (!theLegIsOver)
+            {
+                return !who.Walk.Afoot;
+            }
+
+            _barAfoot.RemoveAt(slot);
+            return true;
         }
 
         // ── AND THEN THERE IS NOBODY THERE ───────────────────────────────────────────────────────────────
@@ -484,6 +563,26 @@ public partial class Map
     private bool TheCaptainsEyesAreElsewhere(string bodyId) =>
         (SeatedTable is not null && HavenInterior.InTheGallery(bodyId, _avatarX, _avatarY, _havenFloor))
         || AScrimIsUp;
+
+    /// <summary>
+    /// #1281 · <b>HAS HE REACHED THE FAR END OF THE LEG HE IS ON?</b> Asked of the walk's own bound, so the
+    /// place this file calls <i>arrived</i> is the place the route was plotted to and never a second copy of
+    /// it.
+    ///
+    /// <para><b>The reach is the courtesy's own width plus a body</b>, derived from the two published
+    /// constants rather than chosen. <see cref="NpcWalk.PersonalSpaceInRadii"/> is how near the captain a
+    /// walker will come, so a captain standing ON the far end leaves the walker exactly that far off it — and
+    /// a hair further, because the courtesy is tested BEFORE a sub-step rather than after one, so he comes to
+    /// rest a stride outside the line rather than on it. One body radius is the slack that covers the stride.
+    /// A reach at the courtesy's own width would be a leg that can never end by about three hundredths of a
+    /// deck unit, which is the measurement this lane was opened by.</para>
+    /// </summary>
+    private static bool HeIsAtTheEndOfThisLeg(Walker who)
+    {
+        double dx = who.Walk.For.X - who.Walk.X, dy = who.Walk.For.Y - who.Walk.Y;
+        double reach = (NpcWalk.PersonalSpaceInRadii + 1) * DeckPlan.AvatarRadius;
+        return (dx * dx) + (dy * dy) <= reach * reach;
+    }
 
     /// <summary>#1199 (2026-09-19) · Is the captain BEHIND him — on the far side of him from where he is
     /// going? The half-plane his own route puts him in: his BOUND and never his facing, which swings round

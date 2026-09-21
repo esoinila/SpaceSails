@@ -230,6 +230,31 @@ public static class ObservationWalk
     public static bool TheCaptainHasEyesOnHim(bool clearLine, double rangeDu, bool eyesElsewhere) =>
         clearLine && !eyesElsewhere && rangeDu <= FootTail.LegibleDu;
 
+    /// <summary>
+    /// #1283 · <b>TWO PACES — THE EN-ROUTE BAND, AND IT IS NOT THE ONE A FACE IS LEGIBLE AT.</b>
+    ///
+    /// <para><b>What was played</b> (#1282, 2026-09-21): after last call GILT-EYE left the bar for a car and
+    /// then <b>stopped at the landing and stayed stopped for nine and a half minutes</b> while a scripted
+    /// captain walked west across the concourse behind him. The QA crew read it, correctly, as the shipped
+    /// #1062 notice latch — <i>the person simply stops going</i> — and did not file it as a defect. It is
+    /// one, and it is a measurement: <see cref="FootTail.LegibleDu"/> is 30 du and Selene Gate's hall is
+    /// about 34 du across, so <b>a captain anywhere in his line on that concourse holds him</b>, and the
+    /// two-leg night #1276 built can never be seen past its first leg by anybody who follows at all.</para>
+    ///
+    /// <para><b>The ruling (Fable, 2026-09-21): the en-route band is the same two paces the throat used</b> —
+    /// <see cref="GalleryDepthDu"/>, which is
+    /// <see cref="UndergroundComplex.FireCodeSmallRoomDu"/>, the game's one statement of <i>a space you can
+    /// cross in two paces</i>. It says the honest thing: two paces behind is ON HIS HEELS, which is somebody
+    /// you stand aside for; ten paces behind in a lit hall is a STRANGER, and the owner's own ruling is that
+    /// he acts normal around strangers (<i>"They should act normal even if I tail from ahead"</i>).</para>
+    ///
+    /// <para><b>A derivation and never a second radius.</b> The legibility band goes on being what it is —
+    /// the range at which a person is a person, which is what the NOTICE question and the VANISH are both
+    /// asked at. What changed is that <i>near enough to be noticed</i> stopped being read as <i>near enough
+    /// to be let past</i>. They were one number by accident of being written on the same afternoon.</para>
+    /// </summary>
+    public const double OnHisHeelsDu = GalleryDepthDu;
+
     // ── THE WAIT ──────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
