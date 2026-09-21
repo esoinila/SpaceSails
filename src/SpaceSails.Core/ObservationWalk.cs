@@ -255,6 +255,29 @@ public static class ObservationWalk
     /// </summary>
     public const double OnHisHeelsDu = GalleryDepthDu;
 
+    /// <summary>
+    /// #1285 · <b>HOW LONG HE STANDS ASIDE — because standing aside is a BEAT, and a beat ends.</b>
+    ///
+    /// <para><b>What was played</b> (QA, 2026-09-21, at the documented link): boot <c>?ashore=1</c> past last
+    /// call and touch nothing, and <b>the whole evening never happens</b>. He gets up on the frame the walk
+    /// is dealt, takes four steps, and stops — because <c>?ashore=1</c> stands the captain at the bar's own
+    /// threshold, which is inside <see cref="OnHisHeelsDu"/> of the chair he rises from and squarely in his
+    /// line to the cars. So he stood aside, correctly, on his first stride; and then he stood aside for five
+    /// minutes, because the courtesy had no clock on it and the captain was never going to pass. One step of
+    /// the captain — any step, in any direction — and the entire two-leg night ran to the second.</para>
+    ///
+    /// <para><b>The number is the band's own width at the pace a body crosses it</b>
+    /// (<see cref="Interior.NpcWalk.PaceDu"/>), which is exactly how long the courtesy is FOR: the time
+    /// somebody two paces behind you needs to come past. A captain who has not used it is not coming past,
+    /// and a man who has held a doorway that long goes on with his evening — which is what a person does, and
+    /// is the one reading under which he is still acting normal.</para>
+    ///
+    /// <para><b>Once per approach, not once per frame.</b> Having led on he does not offer again until the
+    /// captain has been outside the band since — otherwise he would inch a stride and re-freeze, which is the
+    /// same stall spelled sixty times a second.</para>
+    /// </summary>
+    public static double StandAsideSeconds => OnHisHeelsDu / Interior.NpcWalk.PaceDu;
+
     // ── THE WAIT ──────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>

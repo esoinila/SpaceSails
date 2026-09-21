@@ -686,6 +686,42 @@ three of them are on the floor above:
   so any captain following in line anywhere on the concourse froze him. It is
   `ObservationWalk.OnHisHeelsDu` — the small-room constant — now.
 
+### Played, 2026-09-21 — the three stalls the night still had in it (#1285 #1286 #1287)
+
+All three are the same shape from three sides: something in the clockwork waited on the captain instead of
+on the clock.
+
+- **Standing aside is a beat, and a beat ends** (#1285). `?ashore=1` stands the captain on the bar's own
+  threshold, which is inside the two-pace band and squarely in his line to the cars — so he stood aside on
+  his first stride and, for a captain who WATCHED rather than walked, never led on. The documented link
+  booted and untouched was a frozen room for five minutes, and one step of the captain, any step, ran the
+  whole two-leg night to the second. The courtesy has a clock on it now
+  (`ObservationWalk.StandAsideSeconds` — the band's own width at a body's pace, which is how long somebody
+  two paces behind needs to come past), and the offer is made once per approach rather than once a frame.
+- **Nobody is dealt onto the captain's feet** (#1286). A car's landing is the one square in the building
+  that is guaranteed to be shared, and on the frame a captain rides down after him the clock has him
+  standing on it. So the body was placed on the captain — separation a third of a du — and the route
+  planned from there had its first lattice node back on him, so every sub-step was refused and the route
+  kept for ever. He is placed at the first point of his own line that is clear of the captain's elbow now.
+  The RIDE cannot be the seam: `ForgetTheBarsFeet` empties the feet list on the way through the shaft, so
+  at the moment of the ride there is no body to step clear of.
+- **…and the berth is a rule about GOING IN** (#1286, in Core). A walker the captain has arrived on top of
+  is not being polite by standing there: his route's own first node is the square he is on, so yielding to
+  it costs him every step he has. `NpcWalk` does not ask the berth of a body already inside it. The
+  doorway beat is untouched, structurally — a walker stopped a body-width off a captain's door never comes
+  inside the berth at all.
+- **The cabin wait is ONE clock** (#1287). `Inside` is a leg on the service level, so a captain standing in
+  the corridor made it *his floor* and took the branch that deals a BODY — which had no arm for a man who
+  is not one. Every frame re-dealt him at the car's landing to walk to his own door a second time, and the
+  leg's clock was only ever read on the other branch: **the wait was ticked by the one observer who could
+  not see it.** Measured on the shipped build, the leaf opened after 2.0 s in the corridor and after 180.0 s
+  from the concourse. It is 180 s from both now, and there is no body in front of a shut leaf.
+- **Guards:** `HisCabinIsBelowTests` (13) and
+  `THE_SHARED_SquareIsSomethingAWalkerStepsOutOfAndNeverFreezesOn` in `TheExitIsTheFullStopTests`. The
+  three new page cases drive the shipping frame (`OnTick`) rather than `AdvanceBarWalkers`, which is why
+  the ten that were already there could not see any of this: without the frame clock the notice roll is
+  never asked and the courtesy can never fire.
+
 **What is deliberately still not here.** The corridor is otherwise empty: the other four cabins are shut and
 nobody's, and the dark-web desk's rows are still rows. The people come one at a time.
 

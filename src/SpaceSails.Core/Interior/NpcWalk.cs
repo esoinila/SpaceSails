@@ -49,6 +49,12 @@ namespace SpaceSails.Core.Interior;
 /// this class's own, and it is a REFUSAL TO STEP rather than a push: the route stays live, the walk resumes
 /// the moment the doorway clears, and no frame ever ends with the two of them inside one another.
 ///
+/// <para>#1286 · <b>And it is a rule about GOING IN, not a rule about being in.</b> A walker the captain has
+/// arrived on top of — which is what a car's landing does, every time — is not being polite by standing
+/// there for ever; his own route's first node is the square he is on, so yielding to it costs him every
+/// step he has. So the berth is not asked of a body already inside it: he walks out from under the captain
+/// and the ordinary rule resumes the frame he is clear.</para>
+///
 /// <para><b>Unless the captain is the errand.</b> Somebody who has crossed a room to sit down at your table
 /// is not obstructed by you being at it, and the first build of this deadlocked every arrival on its last
 /// stride for exactly that reason. So the berth is the caller's to set — see
@@ -332,8 +338,31 @@ public sealed class NpcWalk
 
             // ── LAW THREE ── the captain is not stone, so the stone did not stop us. We stop ourselves,
             // and we stop BEFORE the move rather than after it.
+            //
+            // #1286 · …AND IT IS A RULE ABOUT COMING CLOSER, NOT A RULE ABOUT MOVING. A walker who is
+            // ALREADY inside the berth did not walk in there: the captain arrived on his square. That
+            // happens at exactly one kind of place — a car's landing, which is where a ride sets the captain
+            // down, where [E] finds the panel, and where every body that uses that car begins and ends a
+            // leg — and it happened to the owner's QA: follow the man onto his own car, land on the square
+            // the ride had just put HIM on, and his separation is a third of a du, so every sub-step toward
+            // his cabin is inside the berth, the step is refused, the route is kept, and NOTHING EVER GROWS
+            // THE GAP. Twelve screenshots over four minutes, byte-identical.
+            //
+            // Somebody you are already standing in cannot be given more room by standing still — and a
+            // route's own first node is the square the walker was put down on, which is the square the
+            // captain is now on, so a body that goes on yielding to it never takes a step in any direction.
+            // Measured: 0.19 to 0.29 du, Waiting, sixteen hundred frames, over three hundred walkers in the
+            // Core sweep. He is not standing aside here; he is GETTING OUT OF THE WAY, which is what a
+            // person does when somebody walks into them.
+            //
+            // So the berth is not asked of a body that is already inside it, and the ordinary rule resumes
+            // the frame he is out. The doorway beat is untouched, and that is structural rather than lucky:
+            // a walker stopped one body-width off a captain standing on his door never comes inside the
+            // berth at all, so this arm is never reached on it.
             double cx = nx - captainX, cy = ny - captainY;
-            if ((cx * cx) + (cy * cy) < keepOut * keepOut)
+            double hx = X - captainX, hy = Y - captainY;
+            bool alreadyInside = (hx * hx) + (hy * hy) < keepOut * keepOut;
+            if (!alreadyInside && (cx * cx) + (cy * cy) < keepOut * keepOut)
             {
                 yielded = true;
                 break;

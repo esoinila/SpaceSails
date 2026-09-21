@@ -493,13 +493,20 @@ public sealed class HisCabinIsBelowTests
         Assert.Equal("ToHisCabin", Leg(map));
         Assert.Equal(HavenLevels.Concourse, Floor(map));
 
-        Frames(map, 5.0);
+        // A MOMENT of it, and not a lifetime. This wait was five seconds and the corridor leg is only
+        // about four (the landing to his own door is 8.6 du at NpcWalk.PaceDu), so the case used to ride
+        // down onto the leg AFTER this one — and found a body anyway, because #1287's wait re-dealt him
+        // onto the corridor to walk it a second time. It was green on the bug. Now the wait is a shut
+        // leaf with nobody in front of it, so the case has to ask its question while its own leg is
+        // running, and it says so out loud on the next line.
+        Frames(map, 1.0);
         Assert.DoesNotContain(Afoot(map), w => w.Who == Person);
 
         // Follow him down and there he is; the SAME leg, the same second, a different floor under the
         // captain's feet.
         int down = TheTailsNight.TheCarHeTakesDown(Berth, Person, Cars);
         Assert.True(Ride(map, HavenLevels.ServiceLevel, down));
+        Assert.Equal("ToHisCabin", Leg(map));
         Frames(map, 1.0);
         Assert.Contains(Afoot(map), w => w.Who == Person);
 
@@ -576,6 +583,330 @@ public sealed class HisCabinIsBelowTests
         Frames(map, 600, () => Leg(map) == "ToTheWalk", AtTheCar);
         Assert.Equal("ToTheWalk", Leg(map));
         Assert.DoesNotContain(Afoot(map), w => w.Who == Person);
+    }
+
+    // ── (e) THE NIGHT RUNS FOR WHOEVER WATCHES — #1285, #1286, #1287 ────────────────────────────────────
+    //
+    // Three stalls the QA crew played on 2026-09-21, and every one of them is invisible to the nine cases
+    // above because of HOW they drive the room: `Frames` calls `AdvanceBarWalkers` straight, so the frame
+    // clock (`SurfaceSeconds`, off `_lastTimestampMs`) never moves, the notice roll is never asked, and the
+    // stand-aside courtesy those cases are written around can never fire. These five drive the page through
+    // its own `OnTick` — the shipping frame — and stand the captain exactly where the documented link stands
+    // him, which is the whole of what was wrong.
+
+    /// <summary>
+    /// #1285 · <b>THE LINK THE TESTING DOC HANDS A PLAYER</b>, built the way the boot builds it: the clock is
+    /// jumped BEFORE the clamp (<c>JumpTheClockBeforeSheArrives</c>, #1213), so the berth, the frozen watch,
+    /// the rota and the schedule are one evening — and the captain is stood at the bar threshold by the same
+    /// <c>StandAtTheBarThreshold</c> the cheat calls, which is the square this lane is about.
+    /// </summary>
+    private static Pages.Map AtTheDocumentedLink(string canvasId)
+    {
+        Pages.Map map = Boot(canvasId);
+        Set(map, "SimTime", TheDocumentedHour * 3600.0);
+        var sky = (ICelestialEphemeris)Read(map, "_ephemeris")!;
+        CelestialBody berth = sky.Bodies.First(b => b.Id == Berth);
+        Invoke(map, "ClampOntoHaven", berth, sky.Position(Berth, (double)Read(map, "SimTime")!), null);
+        Assert.True((bool)Invoke(map, "StandAtTheBarThreshold")!, "the ashore boot refused this berth.");
+
+        // The link is only worth booting if it really is past last call — the whole night hangs on that one
+        // comparison, and a link that had drifted inside the fraction would prove nothing about anything.
+        Assert.True(
+            (double)Read(map, "IntoTheBarsWatch")! > PatronRota.WatchSeconds * Egress.LastCallFraction,
+            $"?simhours={TheDocumentedHour} is no longer past last call, so there is no night to watch.");
+        return map;
+    }
+
+    /// <summary>The hour the testing doc's §1 link boots at. Named once, because all three of these laws are
+    /// stated at the link a tester is actually handed.</summary>
+    private const double TheDocumentedHour = 7.5;
+
+    /// <summary>Real frames, through the page's own <c>OnTick</c>, until the room answers or the clock runs
+    /// out. The frame clock matters: it is what the notice roll and the courtesy are asked on.</summary>
+    private static bool RunUntil(Pages.Map map, Func<bool> until, double seconds)
+    {
+        for (double t = 0; t < seconds; t += FrameSeconds)
+        {
+            Frame(map);
+            if (until())
+            {
+                return true;
+            }
+        }
+
+        return until();
+    }
+
+    private static Pages.Map.Walker? HimOnTheFloor(Pages.Map map) =>
+        Afoot(map).FirstOrDefault(w => w.Who == Person);
+
+    /// <summary>How long a man takes to walk between two points of this building, by the night's own
+    /// arithmetic — never a number typed into a guard.</summary>
+    private static double WalkSeconds(DeckReachability.Point a, DeckReachability.Point b) =>
+        TheTailsNight.LegSeconds(Math.Sqrt(
+            ((a.X - b.X) * (a.X - b.X)) + ((a.Y - b.Y) * (a.Y - b.Y))));
+
+    /// <summary>
+    /// #1285 · <b>THE NIGHT RUNS FOR A CAPTAIN WHO ONLY WATCHES.</b>
+    ///
+    /// <para><b>What was played</b> (QA, 2026-09-21): boot the documented link and touch nothing.
+    /// <i>"He never gets up."</i> Seven frames over five minutes with the whole room frozen behind him — and
+    /// one step of the captain, any step, and the entire two-leg night ran to the second.</para>
+    ///
+    /// <para><b>Why.</b> He DOES get up; he takes four strides and stops. <c>?ashore=1</c> stands the captain
+    /// on the bar's own threshold, which is inside <see cref="ObservationWalk.OnHisHeelsDu"/> of the chair he
+    /// rises from and squarely in his line to the cars — so the stand-aside courtesy (#1201/#1283) fires on
+    /// his first stride, and it had no clock on it. A captain who WATCHES rather than walks never clears it,
+    /// and the whole evening is behind that one body.</para>
+    ///
+    /// <para>The courtesy is a beat now and a beat ends
+    /// (<see cref="ObservationWalk.StandAsideSeconds"/>). This case asserts BOTH halves: he really does stand
+    /// aside (or the law would be about something else entirely), and then he gets on with his night without
+    /// the captain moving a deck unit.</para>
+    ///
+    /// <para><b>Proven RED</b> on the shipped courtesy: <c>he never got off the concourse … still standing
+    /// 4.2 du from a captain who has not moved</c>.</para>
+    /// </summary>
+    [Fact]
+    public void TheNightRunsForACaptainWhoOnlyWatches()
+    {
+        Pages.Map map = AtTheDocumentedLink("he-only-watches");
+        double x0 = (double)Read(map, "_avatarX")!, y0 = (double)Read(map, "_avatarY")!;
+
+        // The room's own hours and the tail both run on the frame clock, so this is the shipping frame and
+        // not `AdvanceBarWalkers` — see the note above this section.
+        bool heStoodAside = false;
+        double nearest = double.MaxValue;
+        double lastSeenX = double.NaN, lastSeenY = double.NaN;
+        bool offTheConcourse = RunUntil(
+            map,
+            () =>
+            {
+                if (HimOnTheFloor(map) is { } w)
+                {
+                    heStoodAside |= w.For.ToString() == "LettingYouPass";
+                    lastSeenX = w.Walk.X;
+                    lastSeenY = w.Walk.Y;
+                    nearest = Math.Min(
+                        nearest,
+                        Math.Sqrt(((w.Walk.X - x0) * (w.Walk.X - x0)) + ((w.Walk.Y - y0) * (w.Walk.Y - y0))));
+                }
+
+                return Leg(map) is "ToHisCabin" or "Inside" or "ToTheCarUp" or "ToTheWalk";
+            },
+            TheWholeNightIsWatchedFor);
+
+        // ── THE ANTI-VACUITY CLAUSES ──────────────────────────────────────────────────────────────────
+        // Without these two, a link that had drifted the captain out of his line would be green about a
+        // courtesy that never fired — the fifth bug class, in the one place this lane could be caught by it.
+        Assert.True(
+            heStoodAside,
+            "he never stood aside at all, so this case is not about the courtesy it is a law about.");
+        Assert.True(
+            nearest <= ObservationWalk.OnHisHeelsDu,
+            $"he never came within the {ObservationWalk.OnHisHeelsDu:0.#} du band of the captain's own "
+            + $"spawn (nearest {nearest:0.0} du), so nothing here could have held him.");
+
+        // …and the captain has not moved a deck unit, which is the whole posture.
+        Assert.Equal(x0, (double)Read(map, "_avatarX")!, 9);
+        Assert.Equal(y0, (double)Read(map, "_avatarY")!, 9);
+
+        Assert.True(
+            offTheConcourse,
+            $"he never got off the concourse in {TheWholeNightIsWatchedFor:0} s — leg {Leg(map)}, "
+            + $"standing at {lastSeenX:0.0},{lastSeenY:0.0}, "
+            + $"{nearest:0.0} du from a captain who has not moved. That is the documented link booted and "
+            + "watched, which is what the row tells a tester to do.");
+
+        // …and the ROOM ran too, which is the other half of what was frozen: the hours emptied a chair of
+        // their own beside the one the walk claimed.
+        Assert.True(
+            ((IReadOnlySet<string>)Read(map, "_barLeft")!).Count > 1,
+            "the room's own hours never dealt anybody but the man the walk claimed.");
+    }
+
+    /// <summary>How long the room is watched for before a case gives up on it, in sim seconds — the minute
+    /// the QA crew watched the documented link for before filing #1285, and comfortably more than the
+    /// concourse's own longest leg takes a body to walk.</summary>
+    private const double TheWholeNightIsWatchedFor = 60.0;
+
+    /// <summary>
+    /// #1286 · <b>FOLLOWING HIM ONTO HIS OWN CAR DOES NOT LAND THE CAPTAIN ON HIS SQUARE.</b>
+    ///
+    /// <para><b>What was played</b> (QA, 2026-09-21): note which car he took, walk to it, ride down — the
+    /// row's own instruction — and stand still, which is what a man tailing somebody does.
+    /// <i>"A man standing exactly where the car put you, as though he had waited."</i> Twelve screenshots
+    /// over 245 seconds, one md5.</para>
+    ///
+    /// <para><b>Why.</b> A car's landing is the one square in this building that is guaranteed to be shared:
+    /// the ride sets the captain down on it, <c>[E]</c> finds the panel on it, and it is where the clock has
+    /// this man standing on the frame the captain arrives. So the body was dealt onto the captain's own feet
+    /// — separation a third of a du — and the route planned from there put its first lattice node back on
+    /// him. Every sub-step was inside the berth and pointed at him; <c>NpcWalk.Step</c> refused it and kept
+    /// the route, and nothing was ever going to grow the gap.</para>
+    ///
+    /// <para><b>The frame this law is about is the frame the doors open</b>, and it is dealt through
+    /// <c>AdvanceBarWalkers</c> rather than through <c>OnTick</c> for one measured reason: the world's clock
+    /// moves in WHOLE SECONDS (<c>Simulator</c>'s own step), and that corridor leg is 4.3 s long, so a frame
+    /// of <c>OnTick</c> carries him a fifth of the way down it before anybody is dealt. The state this case
+    /// is stated at — <b>the clock has him exactly at the landing the ride has just put the captain on</b> —
+    /// is the true state of the world on the second the doors open, and a driver that could never see it
+    /// would be a guard green on the broken build.</para>
+    ///
+    /// <para><b>Proven RED</b> by putting the placement back on the clock's bare point: <c>he was dealt 0.36
+    /// du from the captain</c>, which is inside the berth every sub-step of his own route has to leave.</para>
+    /// </summary>
+    [Fact]
+    public void FollowingHimOntoHisOwnCarDoesNotLandTheCaptainOnHisSquare()
+    {
+        Pages.Map map = AtTheDocumentedLink("onto-his-own-car");
+        int down = TheTailsNight.TheCarHeTakesDown(Berth, Person, Cars);
+
+        Assert.True(
+            RunUntil(map, () => Leg(map) == "ToHisCabin", TheWholeNightIsWatchedFor),
+            $"he never reached his car on the concourse — leg {Leg(map)} (#1285).");
+        Assert.True(Ride(map, HavenLevels.ServiceLevel, down), "his own car refused to go down.");
+
+        // ── THE ANTI-VACUITY CLAUSES ──────────────────────────────────────────────────────────────────
+        // The case is only about a shared square if the ride really set the captain down on the one the leg
+        // starts from, and only about the frame the doors open if the leg really has only just opened. All
+        // three facts asked of the room, never typed.
+        DeckReachability.Point landing = HavenInterior.TheCageLandingAt(Berth, down)!.Value;
+        var from = (ValueTuple<double, double>)Read(map, "_nightLegFrom")!;
+        Assert.Equal(landing.X, (double)Read(map, "_avatarX")!, 1);
+        Assert.Equal(landing.Y, (double)Read(map, "_avatarY")!, 1);
+        Assert.Equal(landing.X, from.Item1, 1);
+        Assert.Equal(landing.Y, from.Item2, 1);
+        Assert.Equal((double)Read(map, "SimTime")!, (double)Read(map, "_nightLegSince")!, 6);
+
+        // The frame the doors open. The clock has him ON the landing, which is where the captain is standing.
+        Invoke(map, "AdvanceBarWalkers", 1.0 / 30.0);
+
+        Pages.Map.Walker dealt = Assert.Single(Afoot(map), w => w.Who == Person);
+        double berth = NpcWalk.PersonalSpaceInRadii * DeckPlan.AvatarRadius;
+        double capX = (double)Read(map, "_avatarX")!, capY = (double)Read(map, "_avatarY")!;
+        double gap = Math.Sqrt(
+            ((dealt.Walk.X - capX) * (dealt.Walk.X - capX))
+            + ((dealt.Walk.Y - capY) * (dealt.Walk.Y - capY)));
+        Assert.True(
+            gap >= berth,
+            $"he was dealt {gap:0.00} du from the captain, inside the {berth:0.00} du berth every sub-step "
+            + "of his own route has to leave — so NpcWalk refuses the step, keeps the route, and nothing "
+            + "ever grows the gap. That is the row's own broken: a man standing exactly where the car put "
+            + "you, as though he had waited.");
+
+        // …and he walks it. The leaf shuts behind him inside the time the leg takes a man to walk — the
+        // night's own arithmetic, with a body's worth of slack on the end of it.
+        int cabin = TheTailsNight.HisCabin(Berth, Person, HavenLevels.Cabins);
+        DeckReachability.Point doorstep = HavenInterior.TheCabinDoorstepAt(Berth, cabin)!.Value;
+        double hisCorridor = WalkSeconds(landing, doorstep) + TheTailsNight.LegSeconds(ObservationWalk.OnHisHeelsDu);
+
+        bool heGotThere = RunUntil(map, () => Leg(map) is "Inside" or "ToTheCarUp", hisCorridor);
+        Pages.Map.Walker? stuck = HimOnTheFloor(map);
+        Assert.True(
+            heGotThere,
+            $"he never reached his own door in the {hisCorridor:0} s that corridor takes to walk: leg "
+            + $"{Leg(map)}, "
+            + (stuck is null
+                ? "and there is nobody in the corridor at all"
+                : $"he is at {stuck.Walk.X:0.0},{stuck.Walk.Y:0.0} ({stuck.Walk.State}), "
+                  + $"{Math.Sqrt((((double)Read(map, "_avatarX")! - stuck.Walk.X) * ((double)Read(map, "_avatarX")! - stuck.Walk.X)) + (((double)Read(map, "_avatarY")! - stuck.Walk.Y) * ((double)Read(map, "_avatarY")! - stuck.Walk.Y))):0.0} du "
+                  + "from a captain who has not moved since the doors opened")
+            + " — which is the row's own broken, and the rest of the night is behind it.");
+    }
+
+    /// <summary>
+    /// #1287 · <b>THE CABIN WAIT IS ONE CLOCK, WHOEVER IS WATCHING THE LEAF.</b>
+    ///
+    /// <para><b>What was played</b> (QA, 2026-09-21): <i>"Wait in the corridor. About three minutes at warp 1,
+    /// and then the leaf opens and he walks out."</i> He never comes out — watched to +570 s on his own car
+    /// and to +302 s on the WRONG one, where the captain is never within twenty du of him, so it is not a
+    /// courtesy freeze. Stay on the CONCOURSE instead and the same night runs to the second.</para>
+    ///
+    /// <para><b>Why.</b> <c>Inside</c> is a leg on the service level, so a captain in the corridor made
+    /// <c>hisFloor</c> true and took the branch that deals a BODY — which has no arm for a man who is not
+    /// one. Every frame re-dealt him onto the corridor at the car's landing to walk to his own door a second
+    /// time, and the leg's own clock was compared only in the branch that floor never reaches. <b>The wait
+    /// was ticked by exactly the one observer who could not see it.</b></para>
+    ///
+    /// <para>So the law is the pair, measured: the wait is the same length of sim time from the corridor and
+    /// from the concourse, and it is <see cref="TheTailsNight.CabinWaitSeconds"/> both times.</para>
+    ///
+    /// <para><b>Proven RED</b> on the shipped branch: the corridor's wait comes out at about a tenth of the
+    /// concourse's, with a body walking the cabin corridor a second time inside it.</para>
+    /// </summary>
+    [Fact]
+    public void TheCabinWaitIsOneClockWhoeverIsWatchingTheLeaf()
+    {
+        (double fromTheCorridor, bool aBodyInTheCorridor) =
+            TheWaitBehindTheLeaf("waiting-in-the-corridor", followHimDown: true);
+        (double fromTheConcourse, _) = TheWaitBehindTheLeaf("waiting-upstairs", followHimDown: false);
+
+        // The captain who stayed upstairs FIRST — the anti-vacuity half. A build whose wait was wrong on
+        // both floors would agree with itself, and this pair would be green about nothing.
+        Assert.True(
+            Math.Abs(fromTheConcourse - TheTailsNight.CabinWaitSeconds) <= 1.0,
+            $"the wait is {TheTailsNight.CabinWaitSeconds:0} s and the captain who stayed upstairs measured "
+            + $"{fromTheConcourse:0.0} s of it, so this pair is not about the floor at all.");
+        Assert.True(
+            Math.Abs(fromTheCorridor - TheTailsNight.CabinWaitSeconds) <= 1.0,
+            $"the leaf opened after {fromTheCorridor:0.0} s for a captain standing in the corridor and after "
+            + $"{fromTheConcourse:0.0} s for one who stayed upstairs. The wait is "
+            + $"{TheTailsNight.CabinWaitSeconds:0} s and it is ONE clock — a man behind a door does not wait "
+            + "longer or shorter for who happens to be on his floor.");
+
+        // …and there is no body in front of the leaf while it is shut. There is nobody behind a closed door,
+        // and a man re-dealt onto the corridor in front of a captain who is standing there watching it is
+        // the walk he has already been watched walking, played a second time.
+        Assert.False(
+            aBodyInTheCorridor,
+            "there was a body on the floor while he was behind his own shut leaf.");
+    }
+
+    /// <summary>#1287 · How long the leaf stays shut, in sim seconds, with the captain either following him
+    /// down onto the service level or staying on the concourse. Everything else about the two runs is the
+    /// same evening at the same link.</summary>
+    private static (double Seconds, bool ABodyInTheCorridor) TheWaitBehindTheLeaf(
+        string canvasId, bool followHimDown)
+    {
+        Pages.Map map = AtTheDocumentedLink(canvasId);
+        int down = TheTailsNight.TheCarHeTakesDown(Berth, Person, Cars);
+
+        Assert.True(
+            RunUntil(map, () => Leg(map) == "ToHisCabin", TheWholeNightIsWatchedFor),
+            $"he never reached his car on the concourse — leg {Leg(map)} (#1285).");
+
+        if (followHimDown)
+        {
+            Assert.True(Ride(map, HavenLevels.ServiceLevel, down), "his own car refused to go down.");
+        }
+
+        DeckReachability.Point landing = HavenInterior.TheCageLandingAt(Berth, down)!.Value;
+        int cabin = TheTailsNight.HisCabin(Berth, Person, HavenLevels.Cabins);
+        DeckReachability.Point doorstep = HavenInterior.TheCabinDoorstepAt(Berth, cabin)!.Value;
+        double hisCorridor = WalkSeconds(landing, doorstep) + TheTailsNight.LegSeconds(ObservationWalk.OnHisHeelsDu);
+
+        Assert.True(
+            RunUntil(map, () => Leg(map) == "Inside", hisCorridor),
+            $"the leaf never shut behind him — leg {Leg(map)} (#1286).");
+        Assert.Equal(
+            followHimDown ? HavenLevels.ServiceLevel : HavenLevels.Concourse, Floor(map));
+
+        double shut = (double)Read(map, "SimTime")!;
+
+        // …and whether anything was ever in the corridor while the leaf was shut, which the caller asserts.
+        bool somebodyInTheCorridorDuringTheWait = false;
+        RunUntil(
+            map,
+            () =>
+            {
+                somebodyInTheCorridorDuringTheWait |= Leg(map) == "Inside" && HimOnTheFloor(map) is not null;
+                return Leg(map) != "Inside";
+            },
+            TheTailsNight.CabinWaitSeconds * 2);
+
+        Assert.Equal("ToTheCarUp", Leg(map));
+        return ((double)Read(map, "SimTime")! - shut, somebodyInTheCorridorDuringTheWait);
     }
 
     /// <summary>
