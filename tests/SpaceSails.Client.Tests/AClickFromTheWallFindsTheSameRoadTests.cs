@@ -108,6 +108,15 @@ public sealed class AClickFromTheWallFindsTheSameRoadTests
         {
             double y = southY + ((northY - southY) * i / 40.0);
 
+            // …and at a different FRAME each time. That is the owner's own tell — <i>"the two frames are
+            // indistinguishable by eye and differ by a few pixels of parallax… it is the captain's exact
+            // distance from the wall that decides it"</i> — and it is the honest world: a browser hands out
+            // whatever frame it feels like, the last sub-step before the stone is that frame's own budget
+            // long, and so the spot a held key parks him on is anywhere in a sub-step's width of the wall.
+            // Pin the frame at a tidy 60 and this whole room lands on ONE x and the guard becomes a coin
+            // toss that came up heads.
+            double dt = 1.0 / (24 + ((i % 17) * 6));
+
             // Into the gallery at this station, then WEST on a held key until the rail wall has him. The key
             // is pressed and the frames are spent through the page's own handlers, so what parks him is the
             // shipping walk and not a coordinate this file chose.
@@ -116,9 +125,9 @@ public sealed class AClickFromTheWallFindsTheSameRoadTests
             Set(map, "_avatarX", rail.X);
             Set(map, "_avatarY", y);
             Invoke(map, "HandleDeckKey", "a", false);
-            for (int frame = 0; frame < 120; frame++)
+            for (int frame = 0; frame < 400; frame++)
             {
-                Invoke(map, "MoveAvatar", OneFrameS);
+                Invoke(map, "MoveAvatar", dt);
             }
 
             double px = (double)Read(map, "_avatarX")!, py = (double)Read(map, "_avatarY")!;
