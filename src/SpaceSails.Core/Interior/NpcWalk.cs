@@ -49,6 +49,11 @@ namespace SpaceSails.Core.Interior;
 /// this class's own, and it is a REFUSAL TO STEP rather than a push: the route stays live, the walk resumes
 /// the moment the doorway clears, and no frame ever ends with the two of them inside one another.
 ///
+/// <para>#1286 · <b>And it is a rule about COMING CLOSER.</b> A walker the captain has arrived on top of —
+/// which is what a car's landing does, every time — is not being polite by standing there for ever; a step
+/// that opens the gap is the only move he has. So the berth refuses a step that ends no further off than it
+/// began and allows one that walks out from under him.</para>
+///
 /// <para><b>Unless the captain is the errand.</b> Somebody who has crossed a room to sit down at your table
 /// is not obstructed by you being at it, and the first build of this deadlocked every arrival on its last
 /// stride for exactly that reason. So the berth is the caller's to set — see
@@ -332,11 +337,31 @@ public sealed class NpcWalk
 
             // ── LAW THREE ── the captain is not stone, so the stone did not stop us. We stop ourselves,
             // and we stop BEFORE the move rather than after it.
+            //
+            // #1286 · …AND IT IS A RULE ABOUT COMING CLOSER, NOT A RULE ABOUT MOVING. A walker who is
+            // ALREADY inside the berth did not walk in there: the captain arrived on his square. That
+            // happens at exactly one kind of place — a car's landing, which is where a ride sets the captain
+            // down, where [E] finds the panel, and where every body that uses that car begins and ends a
+            // leg — and it happened to the owner's QA: follow the man onto his own car, land on the square
+            // the ride had just put HIM on, and his separation is a third of a du, so every sub-step toward
+            // his cabin is inside the berth, the step is refused, the route is kept, and NOTHING EVER GROWS
+            // THE GAP. Twelve screenshots over four minutes, byte-identical.
+            //
+            // Stepping AWAY from somebody you are already touching is not crowding them; it is the only way
+            // out. So the berth refuses a step that would end no further off than this one began, and allows
+            // one that opens the gap — which leaves the doorway beat exactly as it was (a walker three du
+            // out, stepping in to one and a third, is coming closer and still stops and looks at you) and
+            // ends the one deadlock it could not tell apart from courtesy.
             double cx = nx - captainX, cy = ny - captainY;
-            if ((cx * cx) + (cy * cy) < keepOut * keepOut)
+            double wouldBeSq = (cx * cx) + (cy * cy);
+            if (wouldBeSq < keepOut * keepOut)
             {
-                yielded = true;
-                break;
+                double hx = X - captainX, hy = Y - captainY;
+                if (wouldBeSq <= (hx * hx) + (hy * hy))
+                {
+                    yielded = true;
+                    break;
+                }
             }
 
             double mx = nx - X, my = ny - Y;

@@ -95,6 +95,13 @@ public partial class Map
     /// re-triggering the vanish on its way back out through the throat.</summary>
     private bool _walkTurnedBack;
 
+    /// <summary>#1285 · The sim second he STOOD ASIDE for this approach, or NaN while the captain is not in
+    /// his way at all. The courtesy's own clock (<see cref="ObservationWalk.StandAsideSeconds"/>): while it is
+    /// running he is holding the doorway, and once it has run out he leads on — and it is not re-armed until
+    /// the captain has been outside the band since, which is what makes the offer one per approach rather
+    /// than one per frame.</summary>
+    private double _walkStoodAsideSince = double.NaN;
+
     // ── ONE FRAME ────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -224,6 +231,7 @@ public partial class Map
         _walkGalleryLookIndex = long.MinValue;
         _walkVanishedBehindThePaper = false;
         _walkTurnedBack = false;
+        _walkStoodAsideSince = double.NaN;   // #1285 · the courtesy's own clock goes with the berth.
         ForgetHisNight();   // #1253 slice 2 · …and the four legs before the shipped one.
         ForgetTheGallerysMachines();
     }
@@ -345,7 +353,9 @@ public partial class Map
     /// <list type="number">
     ///   <item><b>Walking his errand</b> — across the concourse and down the tube. He stops for one thing
     ///   only: a captain who is BEHIND him, whose eyes are on him, <b>within two paces</b>
-    ///   (<see cref="ObservationWalk.OnHisHeelsDu"/>, #1283), and who has already been noticed. That is
+    ///   (<see cref="ObservationWalk.OnHisHeelsDu"/>, #1283), and who has already been noticed — and he does
+    ///   it for <see cref="ObservationWalk.StandAsideSeconds"/> and then leads on (#1285), because letting
+    ///   somebody past is a BEAT and a beat ends. That is
     ///   letting somebody past you on a floor, which is a thing people do; stopping dead for somebody
     ///   standing between you and where you are going is not, and it is what let a captain who walked in
     ///   first stall the whole beat. Neither is stopping for a stranger ten paces back across a lit hall,
@@ -455,9 +465,37 @@ public partial class Map
         // being near enough to be LET PAST were one number by accident; they are two now, and the second is
         // the small-room constant the throat already used. The rest of the clause is unchanged: he has to
         // have clocked the captain, the captain has to be behind him, and it is never done in the tube.
-        bool holding = _walkNoticed && eyesOnHim && rangeDu <= ObservationWalk.OnHisHeelsDu
+        bool inHisWay = _walkNoticed && eyesOnHim && rangeDu <= ObservationWalk.OnHisHeelsDu
             && TheCaptainIsBehindHim(who)
             && !HavenInterior.InTheObservationWalk(bar.BodyId, who.Walk.X, who.Walk.Y, _havenFloor);
+
+        // ── #1285 · …AND STANDING ASIDE IS A BEAT, WHICH MEANS IT ENDS ───────────────────────────────────
+        //
+        // What was played: the documented link, booted and untouched, and he never gets out of the chair —
+        // for five minutes, with the whole room frozen behind him. He DOES get up (the room's hours ran, the
+        // salesman finished his round, `_barLeft` has him); he takes four strides and stops dead a body's
+        // length from the captain, badged LettingYouPass, for ever. `?ashore=1` stands the captain on the
+        // bar's own threshold, which is inside the two-pace band and squarely in his line to the cars — so
+        // the courtesy fires on his first stride and a captain who only WATCHES never clears it. One step of
+        // the captain, any step, and the whole two-leg night ran to the second.
+        //
+        // A courtesy with no end is not a courtesy, it is a deadlock wearing manners. He holds the doorway
+        // for as long as the courtesy is FOR (ObservationWalk.StandAsideSeconds — the band's own width at a
+        // body's pace, the time somebody two paces back needs to come past) and then goes on with his
+        // evening. The offer is made ONCE PER APPROACH and not once per frame: having led on, he does not
+        // stand aside again until the captain has been outside the band since, or he would inch one stride
+        // and re-freeze, which is the same stall spelled sixty times a second.
+        if (!inHisWay)
+        {
+            _walkStoodAsideSince = double.NaN;
+        }
+        else if (double.IsNaN(_walkStoodAsideSince))
+        {
+            _walkStoodAsideSince = SimTime;
+        }
+
+        bool holding = inHisWay
+            && SimTime - _walkStoodAsideSince < ObservationWalk.StandAsideSeconds;
         if (holding)
         {
             who.Walk.LookTowards(_avatarX, _avatarY);

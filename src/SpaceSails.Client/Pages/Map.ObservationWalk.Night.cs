@@ -135,6 +135,38 @@ public partial class Map
             return;
         }
 
+        // ── #1287 · A MAN BEHIND A LEAF IS A CLOCK ON EVERY FLOOR, AND ON THE ONE HE IS BEHIND IT MOST ───
+        //
+        // What was played (QA, 2026-09-21, the row that says "Wait in the corridor"): the captain follows him
+        // down, watches the leaf shut, stands there for nine and a half minutes, and NOTHING EVER COMES OUT.
+        // Ride the wrong car and the corridor is empty for five minutes instead — on that car the captain
+        // never comes within twenty du of him, so it is not a courtesy freeze.
+        //
+        // WHY. `Inside` is a leg on the SERVICE LEVEL, so a captain in the corridor made `hisFloor` true and
+        // took the body branch below — which has no arm for a man who is not a body. `_nightAfoot` is false
+        // (he went through the leaf), so every frame called `PutHimOnThisFloor`, which read the leg's two
+        // ends — still the CABIN leg's, because the wait re-used them — and dealt him back onto the corridor
+        // at the car's landing to walk to his own door a second time. Three minutes of standing behind a leaf
+        // became twelve seconds of walking a corridor the captain had already watched him walk, and the leaf
+        // never opened for anybody. The `_nightLegSeconds` clock was compared only in the branch below, which
+        // that floor never reaches: the wait was ticked by exactly the one observer who could not see it.
+        //
+        // So the wait is ONE CLOCK and it runs off sim-time whoever is standing where. He is not a body on
+        // any floor while the leaf is shut — there is no body behind a closed door — and when the clock runs
+        // out he steps out onto the up-leg, which is placed by the ordinary road on the next frame and is
+        // therefore the leaf opening in front of a captain who waited for it.
+        if (_nightLeg == HisNight.Inside)
+        {
+            _nightAfoot = false;
+            if (SimTime - _nightLegSince < _nightLegSeconds)
+            {
+                return;
+            }
+
+            BeginTheNextLeg(in bar, person);
+            return;
+        }
+
         // ── HE IS A BODY, AND THE BODY IS THE CLOCK ──────────────────────────────────────────────────────
         if (hisFloor)
         {
@@ -324,6 +356,12 @@ public partial class Map
                 _nightLegSince = SimTime;
                 _nightLegSeconds = TheTailsNight.CabinWaitSeconds;
                 _nightAfoot = false;
+
+                // #1287 · …and the leg he is ON is the doorstep, at both ends. The wait used to inherit the
+                // CABIN leg's two points — the car's landing and this leaf — so anything that asked where he
+                // was got a LINE through a corridor he had already walked, and dealt a body onto it. A man
+                // behind a door is at the door; a leg with one point has nowhere for a walker to be put.
+                _nightLegFrom = _nightLegTo;
                 StateHasChanged();
                 return;
             }
@@ -419,6 +457,24 @@ public partial class Map
     /// at its end, which would hand him one who had already finished. The point is nudged clear of stone
     /// (<see cref="SpawnNudge"/>) for the reason every placement in this game is: a body dropped inside a
     /// wall is #602 with somebody else's shoulder in it.</para>
+    ///
+    /// <para>#1286 · <b>…AND CLEAR OF THE CAPTAIN, WHICH IS THE SAME SENTENCE.</b> The one square this floor
+    /// is guaranteed to share is a car's LANDING — it is where the ride sets the captain down, where
+    /// <c>[E]</c> finds the panel, and where the clock has this man standing on the frame a captain who
+    /// followed him onto his own car arrives. So the placement dropped a body on the captain's own feet, and
+    /// the route planned from there had its first lattice node back on the captain's square: every sub-step
+    /// was inside <see cref="NpcWalk.PersonalSpaceInRadii"/> and pointed at him, so the walk was refused and
+    /// kept for ever. Twelve screenshots over four minutes, byte-identical — <i>"a man standing exactly where
+    /// the car put you, as though he had waited."</i></para>
+    ///
+    /// <para><b>It is the placement that moves, not the captain, and that is measured rather than preferred.</b>
+    /// A ride cannot step the captain clear of a body, because at the moment of the ride there IS no body:
+    /// <c>ForgetTheBarsFeet</c> empties the feet list on the way through the shaft and this man is dealt onto
+    /// the new floor on the NEXT frame. What is left is a captain shifted a body-width unasked on every ride
+    /// in the game, which is a bigger lie than the one it would fix. So he is put down at the first point of
+    /// <b>his own line</b> that is a place a body can be — forward along the leg, never back, because the
+    /// clock never runs backwards — and if no point of what is left of the leg is clear of the captain's
+    /// elbow then the leg is shorter than a body-width and he is simply at the end of it.</para>
     /// </summary>
     private void PutHimOnThisFloor(in HavenInterior.BarFloor bar, string person)
     {
@@ -434,6 +490,7 @@ public partial class Map
 
         double x = _nightLegFrom.X + ((_nightLegTo.X - _nightLegFrom.X) * gone);
         double y = _nightLegFrom.Y + ((_nightLegTo.Y - _nightLegFrom.Y) * gone);
+        (x, y) = AlongThisLegClearOfTheCaptain(x, y);
         SpawnNudge.Result spot = SpawnNudge.Clear(x, y, DeckPlan.AvatarRadius, walls);
         if (!spot.Failed)
         {
@@ -454,6 +511,48 @@ public partial class Map
         });
         _nightAfoot = true;
         StateHasChanged();
+    }
+
+    /// <summary>
+    /// #1286 · <b>THE FIRST POINT OF WHAT IS LEFT OF HIS LEG THAT IS NOT INSIDE THE CAPTAIN.</b> Forward
+    /// along the line and never back — the clock does not run backwards, so a man the clock has got this far
+    /// is never put down behind where it says he is.
+    ///
+    /// <para>The reach is the courtesy's OWN width plus a body — the same expression
+    /// <see cref="HeIsAtTheEndOfThisLeg"/> reads, so the distance a walker is placed at and the distance the
+    /// night calls arrived cannot come to two numbers. One body more than the berth because the ROUTE is
+    /// planned from here: <c>AutoWalk</c> snaps its first node onto the lattice, which can put that node a
+    /// stride back down the line, and a first node inside the berth is the freeze again with an extra step
+    /// in front of it.</para>
+    ///
+    /// <para>When no point of the rest of the leg is clear, the leg itself is shorter than that — he is at
+    /// the end of it, which is the answer <see cref="HeIsAtTheEndOfThisLeg"/> would give on the next frame
+    /// anyway.</para>
+    /// </summary>
+    private (double X, double Y) AlongThisLegClearOfTheCaptain(double x, double y)
+    {
+        double reach = (NpcWalk.PersonalSpaceInRadii + 1) * DeckPlan.AvatarRadius;
+        double dx = _nightLegTo.X - x, dy = _nightLegTo.Y - y;
+        double left = System.Math.Sqrt((dx * dx) + (dy * dy));
+        if (left <= 0)
+        {
+            return (x, y);
+        }
+
+        // Sampled at a fraction of a body's width, so the first clear point is the first one there is
+        // rather than the first one a coarse stride happens to land on.
+        double stride = DeckPlan.AvatarRadius / 2;
+        for (double along = 0; along <= left; along += stride)
+        {
+            double px = x + (dx / left * along), py = y + (dy / left * along);
+            double cx = px - _avatarX, cy = py - _avatarY;
+            if ((cx * cx) + (cy * cy) >= reach * reach)
+            {
+                return (px, py);
+            }
+        }
+
+        return (_nightLegTo.X, _nightLegTo.Y);
     }
 
     /// <summary>#1253 · The plate the deck draws over his head — the room's own short name for him, so a man
