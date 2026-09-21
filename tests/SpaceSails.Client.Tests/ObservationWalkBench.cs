@@ -48,7 +48,9 @@ internal sealed class ObservationWalkBench
         Set(_map, "SimTime", PatronRota.WatchSeconds * (Egress.LastCallFraction + 0.05));
 
         Person = TheTail.ThePersonOfInterest(Port);
-        Invoke(_map, "SendThemOutOntoTheWalk", Bar, Person);
+        // #1253 slice 2 · …and where the leg STARTS, which is a parameter now: null is the shipped route,
+        // up from the top the rota seated him at, which is the one these laws are stated about.
+        Invoke(_map, "SendThemOutOntoTheWalk", Bar, Person, null);
         Assert.True(HeIsOnTheFloor, "the room refused to put him on the floor, so there is no tail to read.");
     }
 

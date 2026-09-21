@@ -74,6 +74,17 @@ public sealed class SceneInventoryTests
             DeckPlan.ConsoleKind.Hatch,
         ],
 
+        // #1253 · A FLOOR UNDER A BERTH: a way back up, and doors that do not open. Two parts and no more,
+        // because that is the whole of what is down there — and both of them are absences waiting to happen.
+        // A level with no car on it is a captain marooned in a station, which is #600's own shape; a level
+        // whose cabin plates never got planted is five leaves the [E] key answers NOTHING at, which is the
+        // #757 absence rather than a refusal anybody can read.
+        "haven-lower" =>
+        [
+            DeckPlan.ConsoleKind.HavenLift,
+            DeckPlan.ConsoleKind.Hatch,
+        ],
+
         // Walked ground: the way back up the tube, and the kiosk that sells you the shirt.
         _ =>
         [
@@ -117,6 +128,15 @@ public sealed class SceneInventoryTests
         if (Scenes.FamilyOf(sceneName) == "wreck")
         {
             return;   // aboard somebody else's hull, hers is over the lock and out of reach by design
+        }
+
+        // #1253 · …and a station's SERVICE LEVEL, for the same kind of reason said about a floor: her deck is
+        // welded to the concourse, and there is no gangway from a basement. What replaces her boards down
+        // there is the car — and that there IS one, from every square, is the berth column of the way-home
+        // law (TheLevelUnderTheConcourseTests), which is a stronger claim than this one.
+        if (Scenes.FamilyOf(sceneName) == "haven-lower")
+        {
+            return;
         }
 
         DeckPlan plan = Scenes.Build(sceneName);

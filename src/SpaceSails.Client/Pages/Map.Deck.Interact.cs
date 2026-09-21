@@ -255,6 +255,12 @@ public partial class Map
                 // to — the method asks the pressed spot, so this arm does not have to know.
                 HiveLiftInteract();
                 break;
+            case DeckPlan.ConsoleKind.HavenLift:
+                // #1253 · …and the three cars in a station's concourse. Its OWN arm and not the Hive's:
+                // that one reads `_surface`, which is null at a berth. Which of the three answered is the
+                // pressed spot's answer there exactly as it is above.
+                HavenLiftInteract();
+                break;
             case DeckPlan.ConsoleKind.HiveStair:
                 // #719: the second way out. No panel and no floor to choose — the press IS the climb, it
                 // goes one way, and the tank pays for it.

@@ -171,3 +171,30 @@ a word of text, which is the whole point of the ingredient list being the worldb
   pours on one counter is a system of bars. The tell is always a physical object in the glass or beside it —
   never a mood and never a symbol — because the ingredient list is the worldbuilding and the picture's job
   is to show that the list is true.
+
+---
+
+## 4 · DOWN BELOW — THE SERVICE LEVEL (#1253, 2026-09-20)
+
+One canvas, for the floor under one station's concourse. Owner, 2026-09-20: *"could we add a basement level
+to the observation deck station, so the tailing task could start from the basement cabin and end at the
+observation deck? … The main hall could have multiple elevators… good for tailing."*
+
+| file | where it is laid | state |
+| --- | --- | --- |
+| `art/selene-service-level.jpg` | the LOWER CONCOURSE at **Selene Gate**, across the ring under the hall — the concourse's own backdrop grammar (one canvas over the twelve-gon's box, at 0.95) | ✅ painted 2026-09-20 |
+
+> **Prompt / composition (16:9).** A curved service corridor under worklight, running away from the viewer
+> round the inside of a station ring: **numbered green cabin doors** in a row along the wall, **cable trays
+> overhead**, and a **yellow lift cage at the far end**. Maintenance grey and worklight amber; no signage the
+> eye can read, no people, and nothing that explains what the level is for.
+>
+> **Why it is one picture and not two.** The hall gets a canvas and the bar gets a canvas because they are
+> two rooms with two moods. The service level is one corridor the whole way round; a second plate for the
+> other half of the same corridor would be the same photograph at a different stretch.
+>
+> **The no-readable-writing rule holds.** The plates the player reads are DRAWN by the deck, not painted into
+> the canvas: `CABIN n` on each leaf (#1279 — the row is read left to right, so a plate carries the number
+> and the floor says the rest) and `SERVICE LEVEL — NO PUBLIC ACCESS` on the concourse side of
+> each car. The picture carries the light and the cable trays; the building does the talking, in the
+> inspectorate register it does all its talking in.

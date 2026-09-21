@@ -32,6 +32,18 @@ public static class Scenes
         foreach (string id in HavenInterior.InteriorBodyIds)
         {
             yield return $"haven:{id}";
+
+            // #1253 · …AND EVERY FLOOR OF IT. One station has a level under its concourse, and a floor
+            // nobody audits is a floor that ships with its parts in the wrong places — which is the owner's
+            // whole method. The levels are asked of the room rather than listed, so the day a second station
+            // grows a basement it is swept without anybody being told.
+            foreach (int level in HavenInterior.LevelsOf(id))
+            {
+                if (level != HavenLevels.Concourse)
+                {
+                    yield return $"haven:{id}:{level}";
+                }
+            }
         }
 
         // #320 · EVERY SITE, not just site 0. Owner: "We should test those sites with direct opens to them via
@@ -87,8 +99,13 @@ public static class Scenes
 
         if (name.StartsWith("haven:", StringComparison.Ordinal))
         {
-            string id = name["haven:".Length..];
-            DeckPlan? deck = HavenInterior.DockedDeck(id);
+            // #1253 · "haven:<id>" is the concourse, as it always was; "haven:<id>:<level>" is a floor of it.
+            string[] berth = name["haven:".Length..].Split(':');
+            DeckPlan? deck = HavenInterior.DockedDeck(
+                berth[0],
+                level: berth.Length > 1
+                    ? int.Parse(berth[1], System.Globalization.CultureInfo.InvariantCulture)
+                    : HavenLevels.Concourse);
             Assert.NotNull(deck);
             return deck;
         }
@@ -106,7 +123,11 @@ public static class Scenes
     /// of a derelict.</summary>
     public static string FamilyOf(string name) =>
         name.StartsWith("wreck:", StringComparison.Ordinal) ? "wreck"
-        : name.StartsWith("haven:", StringComparison.Ordinal) ? "haven"
+        // #1253 · A floor UNDER a concourse is its own family. It is a haven and it is not a bar: no
+        // counter, no regulars, no tube and no gangway — so the parts its family needs are its own, and
+        // asking it for a barkeep would be asking a service corridor to be a room it is not.
+        : name.StartsWith("haven:", StringComparison.Ordinal)
+            ? name.Count(c => c == ':') > 1 ? "haven-lower" : "haven"
         : name.StartsWith("surface:", StringComparison.Ordinal) ? "surface"
         : "ship";
 }

@@ -442,9 +442,14 @@ public sealed class TheWallsAreHungAndReadTests
         // ROUTING: the page hands the deck ITS OWN TierFor read — the same call Map.Docking makes for the
         // plate — at BOTH welds (the first dock, and every re-weld after a wing opens), so a captain who
         // cracks a hatch mid-visit does not lose the officer.
+        //
+        // #1253 · …AND ITS OWN FLOOR, at both welds, for exactly the same reason one argument along. A haven
+        // has levels now, and a re-weld that handed the deck a different floor from the one the page thinks
+        // the captain is standing on would rebuild a concourse under a man in a basement. The literal grew
+        // one argument and the law grew one fact; the count is still two, and it is still the two welds.
         string deckPage = Pages("Map.Deck.cs");
         Assert.Contains("ArrivalTube.TierFor(sky, havenId)", deckPage, StringComparison.Ordinal);
-        Assert.Equal(2, deckPage.Split("TheBarsChurn, TubeTierAt(id))").Length - 1);
+        Assert.Equal(2, deckPage.Split("TheBarsChurn, TubeTierAt(id), _havenFloor)").Length - 1);
     }
 
     /// <summary>

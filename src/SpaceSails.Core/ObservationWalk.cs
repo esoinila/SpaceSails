@@ -230,6 +230,54 @@ public static class ObservationWalk
     public static bool TheCaptainHasEyesOnHim(bool clearLine, double rangeDu, bool eyesElsewhere) =>
         clearLine && !eyesElsewhere && rangeDu <= FootTail.LegibleDu;
 
+    /// <summary>
+    /// #1283 · <b>TWO PACES — THE EN-ROUTE BAND, AND IT IS NOT THE ONE A FACE IS LEGIBLE AT.</b>
+    ///
+    /// <para><b>What was played</b> (#1282, 2026-09-21): after last call GILT-EYE left the bar for a car and
+    /// then <b>stopped at the landing and stayed stopped for nine and a half minutes</b> while a scripted
+    /// captain walked west across the concourse behind him. The QA crew read it, correctly, as the shipped
+    /// #1062 notice latch — <i>the person simply stops going</i> — and did not file it as a defect. It is
+    /// one, and it is a measurement: <see cref="FootTail.LegibleDu"/> is 30 du and Selene Gate's hall is
+    /// about 34 du across, so <b>a captain anywhere in his line on that concourse holds him</b>, and the
+    /// two-leg night #1276 built can never be seen past its first leg by anybody who follows at all.</para>
+    ///
+    /// <para><b>The ruling (Fable, 2026-09-21): the en-route band is the same two paces the throat used</b> —
+    /// <see cref="GalleryDepthDu"/>, which is
+    /// <see cref="UndergroundComplex.FireCodeSmallRoomDu"/>, the game's one statement of <i>a space you can
+    /// cross in two paces</i>. It says the honest thing: two paces behind is ON HIS HEELS, which is somebody
+    /// you stand aside for; ten paces behind in a lit hall is a STRANGER, and the owner's own ruling is that
+    /// he acts normal around strangers (<i>"They should act normal even if I tail from ahead"</i>).</para>
+    ///
+    /// <para><b>A derivation and never a second radius.</b> The legibility band goes on being what it is —
+    /// the range at which a person is a person, which is what the NOTICE question and the VANISH are both
+    /// asked at. What changed is that <i>near enough to be noticed</i> stopped being read as <i>near enough
+    /// to be let past</i>. They were one number by accident of being written on the same afternoon.</para>
+    /// </summary>
+    public const double OnHisHeelsDu = GalleryDepthDu;
+
+    /// <summary>
+    /// #1285 · <b>HOW LONG HE STANDS ASIDE — because standing aside is a BEAT, and a beat ends.</b>
+    ///
+    /// <para><b>What was played</b> (QA, 2026-09-21, at the documented link): boot <c>?ashore=1</c> past last
+    /// call and touch nothing, and <b>the whole evening never happens</b>. He gets up on the frame the walk
+    /// is dealt, takes four steps, and stops — because <c>?ashore=1</c> stands the captain at the bar's own
+    /// threshold, which is inside <see cref="OnHisHeelsDu"/> of the chair he rises from and squarely in his
+    /// line to the cars. So he stood aside, correctly, on his first stride; and then he stood aside for five
+    /// minutes, because the courtesy had no clock on it and the captain was never going to pass. One step of
+    /// the captain — any step, in any direction — and the entire two-leg night ran to the second.</para>
+    ///
+    /// <para><b>The number is the band's own width at the pace a body crosses it</b>
+    /// (<see cref="Interior.NpcWalk.PaceDu"/>), which is exactly how long the courtesy is FOR: the time
+    /// somebody two paces behind you needs to come past. A captain who has not used it is not coming past,
+    /// and a man who has held a doorway that long goes on with his evening — which is what a person does, and
+    /// is the one reading under which he is still acting normal.</para>
+    ///
+    /// <para><b>Once per approach, not once per frame.</b> Having led on he does not offer again until the
+    /// captain has been outside the band since — otherwise he would inch a stride and re-freeze, which is the
+    /// same stall spelled sixty times a second.</para>
+    /// </summary>
+    public static double StandAsideSeconds => OnHisHeelsDu / Interior.NpcWalk.PaceDu;
+
     // ── THE WAIT ──────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>

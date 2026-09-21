@@ -577,6 +577,154 @@ are more place tied events."* So:
 - **Dev cheat:** `/map?barcase=1` — ashore, sat at a free top through the same `[E]` a player presses, three
   finds in the sleeve, no excursion anywhere. Guards: `TheCaseIsNotTiedToAPlaceTests`.
 
+## Down Below — a haven with a floor under it (#1253, 2026-09-20)
+
+Owner, having played the tail onto the observation walk: *"could we add a basement level to the observation
+deck station, so the tailing task could start from the basement cabin and end at the observation deck?
+Otherwise the followed distance is easily very short. The main hall could have multiple elevators… good for
+tailing."*
+
+**The audit came first** (#1253's body): the stone is portable and the Hive's floor machinery is not. Every
+shaft call underground takes `in SurfaceLayout.Field` — the regolith envelope — and the whole floor-change
+path is gated on an excursion object a berth does not have. So what a haven borrows from the Hive is the
+part of that file which is TRAVEL rather than MOON: `UndergroundComplex.LiftStop` and `LiftPanel.razor`. It
+never asks `ShaftsOn(field)`; there is no field.
+
+**What shipped, at Selene Gate only.**
+
+- **`HavenLevels`** (Core) — two floors, their plates (`CONCOURSE` / `SERVICE LEVEL`), the door plate
+  `SERVICE LEVEL — NO PUBLIC ACCESS`, `CABIN n` (the plate PAINTED on a leaf in the row — #1279; the
+  register keeps `CABIN n · CREW`), and the stop list a cage's panel offers. Both rows
+  from either floor: #600's scar is a car that only went down, and the honest way not to repeat it is a
+  panel that cannot.
+- **`StationSpec.Lower`** — a nullable `LowerSpec` (name, plate, one canvas). The other six havens carry
+  none and are byte-identical; a station with no basement answers its concourse for any level at all.
+- **`HavenInterior.DockedDeck(…, level)`** and the deck memo's key. Level 0 is the deck this game has always
+  built, and a guard holds *asking for the concourse* and *asking for nothing* to being one plan at every
+  haven.
+- **`HavenInterior.Lower.cs`** — the level itself, and it declares **no static field** (#1163: a
+  `static readonly` in a partial that sorts early is initialised against `HallTopY == 0` and builds a station
+  stacked on the origin, with a clean build and no warning). Everything is a `const` or a computed property,
+  measured off `HallTopY` / `HallVertex` and never typed.
+- **Three cages**, on hall edges 0, 6 and 10 — the tube holds 8, the bar door 2, the observation walk 5. An
+  edge keeps its wall and its cold locked leaf and gives up only the department plate it carried, exactly as
+  the walk's edge does, and the sealed-edge counter is stepped over a car so every other edge keeps its id.
+  **Each car lands at its own edge**, which is the whole mechanic: which one he took is the thing the
+  captain has to read. (Edge 9 was the first choice and the way-home guard refused it — its doorstep landed
+  0.65 du inside the immigration counter, which is #602's *"I emerged into the wall"* caught before anybody
+  had to play it.)
+- **`_havenFloor`** on the page. `RefreshAshore`, `PullAvatarAboard` and `SetDeckForDock` read it instead of
+  the bare `_avatarY` thresholds — the audit's own second prediction, since the lower level is laid in the
+  SAME coordinate space and a captain in its southern half reads as *aboard* by y.
+- **Walkers keyed on (berth, level).** The feet go with the floor; the EVENING does not — who finished and
+  went is what this visit did to the station, and a captain who rides down for two minutes must not come
+  back to re-seated chairs. `Egress.DoorFor` is seeded with the real level now, so the bar's two leaves and
+  the five cabin leaves are dealt separately.
+- **The room's beats stay on the concourse.** One guard in `AdvanceBarWalkers`: everybody on this floor keeps
+  walking, and nothing is DEALT below. The dark-web desk's parcel and fence rows do not appear down there in
+  this slice, and the tail's post and notice logic never targets it.
+- **Ambient:** the lower concourse takes its own share of the shudder pool and the share is **empty** —
+  #1261's precedent, for #1261's reason. Every line in that pool is a roomful of people deciding together
+  that it was nothing, and there is nobody in a service corridor to do the deciding.
+- **The field book** files a note down there under the level's own plate rather than under the bar's name.
+- **Guards:** `TheLevelUnderTheConcourseTests` (the level term is transparent; three cars on three free edges
+  and on the same squares on both floors; every corridor tile reachable; the fire code met with **no new
+  exemption**; and **the berth column in the way-home law** — a car is reachable from every square, the panel
+  offers the concourse, and the gangway is reachable from where its doors open) and
+  `TheRideDownIsAWayBackTests` (the ride, the panel press, the cast-off, the feet, the book, the pool, the
+  dev start).
+- **Dev start:** `/map?dock=selene-gate&ashore=1&havenfloor=-1`.
+
+### …and one of them is his (#1253 slice 2)
+
+Owner, the same morning: *"…so the tailing task could **start from the basement cabin** and end at the
+observation deck? **Otherwise the followed distance is easily very short.**"*
+
+The tail's route (#1199/#1254) was one leg and the owner is right that it is short. **It is five now**, and
+three of them are on the floor above:
+
+> the bar → **a car** → **his own cabin** → **a wait behind a leaf** → **a car, which may not be the one he
+> came down on** → the hall → the tube → the gallery → the vanish.
+
+- **`TheTailsNight`** (Core) seeds which cabin is his, which car he takes down and which he comes back up on
+  — three different bits of `TheTail.SeedFor`'s own seed, so one universe always answers the same and a
+  captain can LEARN it, which is the only reason three cars are a decision. The up car is allowed to be the
+  down car (about one time in three); forcing them to differ would be the world arranging to make him lose
+  the man once.
+- **The wait behind the leaf** is `Escort.PatienceFraction`-derived — the escort's fiction read from the
+  other side of the door — at a twentieth of it, which lands on `ObservationWalk.TheWaitSeconds` to the
+  second. Two clocks in one beat, each derived from the fiction it belongs to, agreeing.
+- **He is a body on the captain's floor and a schedule on the other one**, and the schedule runs at
+  `NpcWalk.PaceDu` — the same pace. A leg that ran faster off-screen would be a man who beats a captain who
+  followed him; one that ran slower would hold him for a captain who guessed wrong. A captain who steps onto
+  his floor mid-leg meets him **where the clock says he is**, along his own line.
+- **The last leg is #1254's** and is not touched by a byte. From the frame he steps out of the car, the
+  notice band, the rail, the wait, the newspaper, the turning back, the vanish, the card and the note are
+  every one of them the shipped ones.
+- **Guessing wrong costs nothing.** No card, nothing spent, no line anywhere that says you missed it — and
+  the walk is there the next time you tie up.
+- **Guards:** `HisCabinIsBelowTests` (10). RED watched on the shipped one-leg route (three cases), on
+  drawing him on whichever floor the captain is standing on, and (#1281) on a leg that ends only when the
+  route object gives up.
+
+### Played, 2026-09-21 — four ways the floor below read wrong (#1279 #1280 #1281 #1283)
+
+- **The door number is the plate** (#1279). Five plates at one door's frontage, each wider than it, so
+  #1218's band book stacked them across two rows and three of five numbers read as a smear. What is PAINTED
+  on a leaf in a row is `CABIN n`; the register keeps `CABIN n · CREW`. Guarded by a fifth boot on the
+  caption sweep and by `TheRowOfCabinPlatesIsOneRowAndTheNumbersDoNotTouch` — one row, no two plates
+  touching.
+- **The car panel is not a moon's** (#1280). `LiftPanel.razor` painted `SURFACE` / `−150 m` and a `🫁 air`
+  tag at a berth in orbit. One panel, one mode (`LiftPanel.TheCarIsInAStation`): a station's row is the
+  floor's plate and `◄ you are here`, and the Hive's row is untouched.
+  `TheHavensCarIsNotAMoonTests` (4).
+- **A leg is over where it ends** (#1281). `NpcWalk`'s courtesy stops a walker one body-width off a square
+  the captain is standing on and KEEPS its route — and a car's landing is the one square in the building
+  that never clears, because it is where a ride sets the captain down. So the man on his way to the car he
+  rides up on stood at the captain's elbow indefinitely and the whole night stopped with him.
+- **The en-route band is two paces** (#1283). The hold read `FootTail.LegibleDu` (30 du) in a 34 du hall,
+  so any captain following in line anywhere on the concourse froze him. It is
+  `ObservationWalk.OnHisHeelsDu` — the small-room constant — now.
+
+### Played, 2026-09-21 — the three stalls the night still had in it (#1285 #1286 #1287)
+
+All three are the same shape from three sides: something in the clockwork waited on the captain instead of
+on the clock.
+
+- **Standing aside is a beat, and a beat ends** (#1285). `?ashore=1` stands the captain on the bar's own
+  threshold, which is inside the two-pace band and squarely in his line to the cars — so he stood aside on
+  his first stride and, for a captain who WATCHED rather than walked, never led on. The documented link
+  booted and untouched was a frozen room for five minutes, and one step of the captain, any step, ran the
+  whole two-leg night to the second. The courtesy has a clock on it now
+  (`ObservationWalk.StandAsideSeconds` — the band's own width at a body's pace, which is how long somebody
+  two paces behind needs to come past), and the offer is made once per approach rather than once a frame.
+- **Nobody is dealt onto the captain's feet** (#1286). A car's landing is the one square in the building
+  that is guaranteed to be shared, and on the frame a captain rides down after him the clock has him
+  standing on it. So the body was placed on the captain — separation a third of a du — and the route
+  planned from there had its first lattice node back on him, so every sub-step was refused and the route
+  kept for ever. He is placed at the first point of his own line that is clear of the captain's elbow now.
+  The RIDE cannot be the seam: `ForgetTheBarsFeet` empties the feet list on the way through the shaft, so
+  at the moment of the ride there is no body to step clear of.
+- **…and the berth is a rule about GOING IN** (#1286, in Core). A walker the captain has arrived on top of
+  is not being polite by standing there: his route's own first node is the square he is on, so yielding to
+  it costs him every step he has. `NpcWalk` does not ask the berth of a body already inside it. The
+  doorway beat is untouched, structurally — a walker stopped a body-width off a captain's door never comes
+  inside the berth at all.
+- **The cabin wait is ONE clock** (#1287). `Inside` is a leg on the service level, so a captain standing in
+  the corridor made it *his floor* and took the branch that deals a BODY — which had no arm for a man who
+  is not one. Every frame re-dealt him at the car's landing to walk to his own door a second time, and the
+  leg's clock was only ever read on the other branch: **the wait was ticked by the one observer who could
+  not see it.** Measured on the shipped build, the leaf opened after 2.0 s in the corridor and after 180.0 s
+  from the concourse. It is 180 s from both now, and there is no body in front of a shut leaf.
+- **Guards:** `HisCabinIsBelowTests` (13) and
+  `THE_SHARED_SquareIsSomethingAWalkerStepsOutOfAndNeverFreezesOn` in `TheExitIsTheFullStopTests`. The
+  three new page cases drive the shipping frame (`OnTick`) rather than `AdvanceBarWalkers`, which is why
+  the ten that were already there could not see any of this: without the frame clock the notice roll is
+  never asked and the courtesy can never fire.
+
+**What is deliberately still not here.** The corridor is otherwise empty: the other four cabins are shut and
+nobody's, and the dark-web desk's rows are still rows. The people come one at a time.
+
 ## Later (beyond the follow-up)
 
 A real bounty/contract accept-flow if the "front for existing systems" wiring proves too thin; heat

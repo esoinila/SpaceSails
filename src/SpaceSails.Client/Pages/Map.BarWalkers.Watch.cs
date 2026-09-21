@@ -72,23 +72,39 @@ public partial class Map
         }
     }
 
-    /// <summary>#731 · THE SHIFT'S OWN LIST OF WHO FINISHES — the regulars this watch actually seated, run
-    /// through Core's one deal. Asked of the rota's UNTOUCHED answer (no churn), because the schedule is a
-    /// fact about the watch and must not change as the evening it describes plays out.</summary>
+    /// <summary>
+    /// #731 · THE SHIFT'S OWN LIST OF WHO FINISHES — the regulars this watch actually seated, run through
+    /// Core's one deal. Asked of the rota's UNTOUCHED answer (no churn), because the schedule is a fact about
+    /// the watch and must not change as the evening it describes plays out.
+    ///
+    /// <para>#1277 · <b>…LESS THE MAN THE WALK HAS CLAIMED</b> (<see cref="TheManTheWalkHasClaimed"/>, the
+    /// one place that says so). The ruling is that the tail wins: on a watch where the walk is dealt, his
+    /// departure is the tail's first leg and the hours do not get to take him first. He is not dropped from
+    /// the evening — he leaves this room after last call, out of the same chair, through a route that ends
+    /// over the drop instead of behind a cellar leaf.</para>
+    ///
+    /// <para>Stated on the ROSTER and not on the deal, so #731's own laws are untouched: every occupant this
+    /// list still names gets their own seeded roll on their own chair ordinal
+    /// (<c>hive:egress:goes:…:{Index}</c>), at their own moment, through their own leaf. Excluding one man
+    /// perturbs nobody else's evening — which is the property a seed keyed on the chair rather than on a list
+    /// position is FOR, and the reason this clause can be one line.</para>
+    /// </summary>
     private IReadOnlyList<Egress.Move> TheWatchDecidesWhoGoes(in HavenInterior.BarFloor bar)
     {
+        string? hisNightIsHisOwn = TheManTheWalkHasClaimed(bar.BodyId);
+
         var seated = new List<Egress.Occupant>();
         IReadOnlyList<HavenInterior.SeatedRegular> rota =
             HavenInterior.ResolveRegulars(bar.BodyId, _dockVisitSimTime);
         for (int i = 0; i < rota.Count; i++)
         {
-            if (rota[i].Present)
+            if (rota[i].Present && !string.Equals(rota[i].Id, hisNightIsHisOwn, StringComparison.Ordinal))
             {
                 seated.Add(new Egress.Occupant(i, rota[i].Id));
             }
         }
 
-        return Egress.Departures(bar.BodyId, BarIsNotAFloor, BarWatch, seated, bar.Doors);
+        return Egress.Departures(bar.BodyId, TheFloorTheRoomIsOn, BarWatch, seated, bar.Doors);
     }
 
     /// <summary>
@@ -130,7 +146,7 @@ public partial class Map
 
         return expected.Count == 0
             ? []
-            : Egress.Arrivals(bar.BodyId, BarIsNotAFloor, BarWatch, expected, bar.Doors);
+            : Egress.Arrivals(bar.BodyId, TheFloorTheRoomIsOn, BarWatch, expected, bar.Doors);
     }
 
     /// <summary>

@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Components;
-using SurfaceExcursion = SpaceSails.Client.Pages.Map.SurfaceExcursion;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -43,7 +42,31 @@ public partial class LiftPanel
     /// is not the place that knows what a silence means.</summary>
     [Parameter] public bool TheCarIsStopped { get; set; }
     [Parameter] public Action<UndergroundComplex.LiftStop> PressLiftButton { get; set; } = default!;
-    [Parameter] public SurfaceExcursion liftEx { get; set; } = default!;
+
+    /// <summary>#1253 · What floor the car says it is on, under the title. It replaces the
+    /// <c>SurfaceExcursion</c> this surface used to be handed — a whole excursion object, carried in for one
+    /// integer, which is also exactly why this panel could not be drawn at a berth: <b>a haven has no
+    /// excursion.</b> The page answers the one question the markup was really asking, and answers it for a
+    /// moon and for a station out of the same method, so the sentence over the buttons and the buttons
+    /// cannot come to two names for one floor.</summary>
+    [Parameter] public Func<string> LiftPanelDepth { get; set; } = default!;
+
+    /// <summary>
+    /// #1280 · <b>IS THIS CAR IN A STATION RATHER THAN UNDER A MOON?</b> The one question that decides this
+    /// panel's ROW SHAPE, asked once and answered by the page (<c>TheStationHasFloors</c>).
+    ///
+    /// <para>It is a MODE on the one surface and never a second panel. #1253 put a berth's three cars through
+    /// this file precisely so the buttons a captain presses are one set of buttons; what it did not do is ask
+    /// what a ROW is made of, so every haven row came out wearing the Hive's furniture — the regolith depth
+    /// on the left and the dead-air column on the right. A moon's row has to carry both (how deep, and
+    /// whether the trip is free); a station's row has neither fact in it, because a haven is two floors of
+    /// one pressurised building and the button says the whole of what there is to say.</para>
+    ///
+    /// <para>What survives in a station is the plate and <i>◄ you are here</i>: what the floor is called, and
+    /// which one you are standing on. That is the panel §0 of the testing links describes, and it is the
+    /// panel with nothing on it that a station cannot mean.</para>
+    /// </summary>
+    [Parameter] public bool TheCarIsInAStation { get; set; }
 
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

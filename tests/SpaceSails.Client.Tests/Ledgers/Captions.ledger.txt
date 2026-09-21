@@ -12,7 +12,7 @@
 # and for a sweep row the NAME of the field that appeared or disappeared. The report is what
 # a reviewer reads; this file is what CI compares against.
 #
-# EVERY CAPTION DeckView.Draw LAYS AT FOUR FIXED BOOTS — the SET of strings, sorted, hashed.
+# EVERY CAPTION DeckView.Draw LAYS AT FIVE FIXED BOOTS — the SET of strings, sorted, hashed.
 # #1218's lane moves where a caption sits; it may never move what one says. A row is
 # `<count> caption(s), sha256 <digest of the sorted strings>`, so a caption that changed its
 # WORDS is red here even though the sweep beside it is still green.
@@ -21,3 +21,4 @@ caption strings | the regolith · your own ✗ | 71 caption(s), sha256 6678504ea
 caption strings | a derelict · the DEEP HOLD | 40 caption(s), sha256 9e7129de799c1045668711170a1d6cb00de6ec8c439077bce0e83cbac1f32ad0
 caption strings | the ship · her own deck | 50 caption(s), sha256 925c8b6d6e353588f474afdf33e123e609852828270bda495db709c9112a1dcc
 caption strings | luna B1 · the park | 112 caption(s), sha256 dc15b090656e552e5edb45d5b96fa0b7df15fc5134b9ecc636acd213bfefde7e
+caption strings | selene gate · the lower concourse | 11 caption(s), sha256 312a274045d12cba526dcc22552eeee700f9ff464a05eaf4980c3ff71c979054

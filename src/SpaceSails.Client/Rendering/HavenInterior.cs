@@ -44,9 +44,27 @@ namespace SpaceSails.Client.Rendering;
 public static partial class HavenInterior
 {
     /// <summary>One walkable station: which body, what it's called, and its themed dressing.</summary>
+    /// <param name="Lower">#1253 · The level under the concourse, or null at a station that has only the one
+    /// floor — which is every haven in the game but Selene Gate. NULLABLE and last, so <see cref="Specs"/>
+    /// is untouched for the six that do not have one and a station grows a basement by gaining a field
+    /// rather than by anything else in this file learning about floors.</param>
     private sealed record StationSpec(
         string BodyId, string Name, string Authority, string Quip, string BarName,
-        string HallArt, string BarArt, string TshirtArt, string MagnetArt, string Gag);
+        string HallArt, string BarArt, string TshirtArt, string MagnetArt, string Gag,
+        LowerSpec? Lower = null);
+
+    /// <summary>
+    /// #1253 · <b>WHAT A STATION'S LOWER LEVEL IS DRESSED IN.</b> The twin of the four art/name fields above,
+    /// for the floor that has one — and deliberately the same SHAPE, because a level is a room with a name, a
+    /// plate and a picture, exactly as the hall and the bar are.
+    /// </summary>
+    /// <param name="Name">What the floor calls itself on the one label it carries.</param>
+    /// <param name="Plate">What is painted on every door down there — the inspectorate line, and the only
+    /// sentence the building says about the place.</param>
+    /// <param name="Art">The backdrop laid across the service corridor, in the concourse's own grammar (a
+    /// canvas over a rectangle, at an alpha). ONE picture for the level: the hall gets one and the bar gets
+    /// one, and a floor whose whole content is a corridor does not need two.</param>
+    private sealed record LowerSpec(string Name, string Plate, string Art);
 
     // The grey-market docks with walkable interiors, each themed to its world (vision par. 8). Gag =
     // the T-shirt one-liner (owner's "every place has a gift shop" joke).
@@ -74,10 +92,21 @@ public static partial class HavenInterior
         // window backdrop. Scene art (hall + bar) and now the dedicated souvenir tee/magnet are all
         // Grok-generated — the outer havens no longer reuse their backdrops as gift-shop postcards
         // (owner 2026-07-19, browsing The Red Eye: "The eye bar has two T-shirts and no magnets :-D").
+        //
+        // #1253 · …and the oldest port in the system is the one with a FLOOR UNDER IT. Owner, 2026-09-20:
+        // "could we add a basement level to the observation deck station, so the tailing task could start
+        // from the basement cabin and end at the observation deck?" Selene Gate is the station with the most
+        // built on it — the walk, the T, the tables, the tail — so it is the one that gets the basement, and
+        // the other six are untouched by construction: they carry no LowerSpec, so nothing below asks them
+        // anything. What is down there is a service corridor, a row of crew cabins whose doors do not open
+        // for a captain, and three cages up to the hall.
         new("selene-gate", "SELENE GATE", "LUNA", "oldest gate in the system — customs has seen it all", "THE EARTHRISE BAR",
             "art/selene-gate-hall.jpg", "art/selene-gate-bar.jpg",
             "art/souvenir-selene-tshirt.jpg", "art/souvenir-selene-magnet.jpg",
-            "“I visited Luna, the oldest port in the system, and all I got was this regolith-grey T-shirt.”"),
+            "“I visited Luna, the oldest port in the system, and all I got was this regolith-grey T-shirt.”",
+            new LowerSpec(
+                HavenLevels.LowerConcoursePlate, HavenLevels.NoPublicAccessPlate,
+                "art/selene-service-level.jpg")),
         // The Red Eye — the storm-watcher port in orbit off Jupiter (#352 follow-through, night shift
         // 2026-07-18→19). Selene Gate closed the Luna gap; these two outer havens (#289) were the last
         // berths that docked to "nothing to walk to". Pilgrims come to stare at the Great Red Spot, so the
@@ -133,6 +162,28 @@ public static partial class HavenInterior
     /// <summary>Does this haven have a walkable interior (so docking should weld on a tube)?</summary>
     public static bool HasInterior(string bodyId) => System.Array.Exists(Specs, s => s.BodyId == bodyId);
 
+    /// <summary>#1253 · …and does it have a FLOOR UNDER THAT ONE? One station does. Asked here by the deck
+    /// build, the cages, the page's own ride and every guard, so "this berth has a basement" is one answer
+    /// rather than a body id compared in six files.</summary>
+    public static bool HasLowerLevel(string bodyId) =>
+        System.Array.Find(Specs, s => s.BodyId == bodyId) is { Lower: not null };
+
+    /// <summary>#1253 · The first berth in the catalogue that HAS a floor under it, or null while no station
+    /// does. Published for the boot cheat, which needs somewhere to default to: a floor cheat pointed at one
+    /// of the six one-storey havens is a URL that lands on a concourse and proves nothing. Asked of the
+    /// catalogue rather than spelled as an id, so the day a second station grows a basement nothing has to be
+    /// told about it.</summary>
+    public static string? TheHavenWithFloors =>
+        System.Array.Find(Specs, s => s.Lower is not null)?.BodyId;
+
+    /// <summary>#1253 · Which levels this berth actually has, top down — one floor at six of the seven havens
+    /// and two at Selene Gate. Published so a sweep walks the floors a station HAS rather than the floors
+    /// somebody remembered to list; a test can only hold what it can enumerate.</summary>
+    public static IReadOnlyList<int> LevelsOf(string bodyId) =>
+        !HasInterior(bodyId) ? []
+        : HasLowerLevel(bodyId) ? HavenLevels.Levels
+        : [HavenLevels.Concourse];
+
     /// <summary>Every haven that HAS a deck, so the deck audit can walk all of them rather than the ones
     /// somebody remembered to list. A test can only hold what it can enumerate.</summary>
     public static IReadOnlyList<string> InteriorBodyIds
@@ -181,14 +232,39 @@ public static partial class HavenInterior
     /// ephemeris — passing the page's own answer in is what makes the desk and the arrival plate one reading of
     /// one berth rather than two. Null is "nobody asked": the desk is left off, which is what every caller that
     /// only wants the geometry has always got. Part of the cache key, for the reason the watch is.</param>
+    /// <param name="level">#1253 · WHICH FLOOR OF THE STATION. <see cref="HavenLevels.Concourse"/> — the
+    /// default — is the deck this game has always built, to the byte: every caller that has ever asked for a
+    /// docked deck reaches exactly the plan it did before, and the six havens with no lower level answer the
+    /// concourse whatever is asked of them. <see cref="HavenLevels.ServiceLevel"/> builds the floor under it
+    /// at the one station that has one (HavenInterior.Lower.cs).
+    ///
+    /// <para>It is part of the cache key for the reason the watch and the churn are: two floors are two
+    /// rooms, and a memo that served whichever was built first is the audit's own named prediction about
+    /// what "just drop in a second plan" costs.</para></param>
     public static DeckPlan? DockedDeck(string bodyId, IReadOnlySet<string>? unlockedHatchIds = null, double simTime = 0,
         bool forceOracle = false, System.Action<DeckPlan.Droid[], int>? fillWalkers = null,
-        RoomChurn? churn = null, ArrivalTube.Tier? tier = null)
+        RoomChurn? churn = null, ArrivalTube.Tier? tier = null, int level = HavenLevels.Concourse)
     {
         if (System.Array.Find(Specs, s => s.BodyId == bodyId) is not { } spec)
         {
             return null;
         }
+
+        // #1253 · THE FLOOR UNDER IT, at the one station that has one. Asked FIRST and answered on its own
+        // road, because nothing below the concourse shares a line with it: no tube, no bar, no ring of other
+        // captains' berths, no rota and no wing. A station with no basement answers the concourse for any
+        // level at all, which is what keeps every older caller and every other haven exactly as they were.
+        if (level != HavenLevels.Concourse && spec.Lower is { } lower)
+        {
+            if (fillWalkers is not null)
+            {
+                return BuildLowerComplex(spec, lower, fillWalkers);
+            }
+
+            return Cache.GetOrBuild(
+                $"{bodyId}@lower", () => BuildLowerComplex(spec, lower, null));
+        }
+
         IReadOnlyList<DeckWing> active = unlockedHatchIds is null
             ? []
             : DeckExpansions.ActiveWings(WingCatalog(bodyId), bodyId, unlockedHatchIds).ToList();
@@ -399,8 +475,15 @@ public static partial class HavenInterior
     /// is what keeps <c>OBSERVATION WALK</c> on the WHOLE T: a captain at the rail, a captain at a table in
     /// the cafeteria and a captain halfway down the tube are all in the same named room, because there is
     /// only one room.</para></summary>
-    public static bool InTheObservationWalk(string bodyId, double x, double y) =>
-        Inside(TheWalksBox(bodyId), x, y) || Inside(TheGalleryBox(bodyId), x, y);
+    /// <param name="level">#1253 · Which floor the point is on. The T hangs off the CONCOURSE and off nothing
+    /// else — a station with a basement does not have a second observation walk under the first one — so this
+    /// is false at every other level however the coordinates read. It is a parameter and not an assumption
+    /// because the lower concourse is laid in the SAME coordinate space as the hall (the audit's own
+    /// prediction: "the T's rectangle tests leak into the lower floor"), and a point out west at level −1 is
+    /// in a service corridor rather than over a drop.</param>
+    public static bool InTheObservationWalk(string bodyId, double x, double y, int level = HavenLevels.Concourse) =>
+        level == HavenLevels.Concourse
+        && (Inside(TheWalksBox(bodyId), x, y) || Inside(TheGalleryBox(bodyId), x, y));
 
     /// <summary>#1199 · Is this point in that box? One inclusive test, so the stem and the crossbar cannot
     /// come to two opinions about an edge they share.</summary>
@@ -410,8 +493,10 @@ public static partial class HavenInterior
     /// <summary>#1199 · Is this point in the GALLERY specifically? Asked by the beat (GILT-EYE's route ends
     /// in here and he vanishes in here) and by the guards that hold the cafeteria's fixtures to being inside
     /// the room they furnish.</summary>
-    public static bool InTheGallery(string bodyId, double x, double y) =>
-        Inside(TheGalleryBox(bodyId), x, y);
+    /// <param name="level">#1253 · Which floor. The crossbar is the concourse's, for
+    /// <see cref="InTheObservationWalk"/>'s reason exactly.</param>
+    public static bool InTheGallery(string bodyId, double x, double y, int level = HavenLevels.Concourse) =>
+        level == HavenLevels.Concourse && Inside(TheGalleryBox(bodyId), x, y);
 
     /// <summary>#1199 · Is this point in the CAFETERIA BAND — the inner half, against the back wall, where
     /// the machines and the tables stand? Core owns the depth of the band
@@ -726,11 +811,22 @@ public static partial class HavenInterior
 
     /// <summary>#973 L0 · The walkable band of a docked station's bar, or null at a berth with no interior to
     /// walk. Pure: it reads the same constants the room is carved from and builds nothing.</summary>
-    public static BarFloor? BarBand(string bodyId)
+    /// <param name="level">#1253 · Which floor the captain is standing on. At
+    /// <see cref="HavenLevels.Concourse"/> this is the bar, to the byte, exactly as it has always been. Below
+    /// it, the room is the LOWER CONCOURSE — the same record, because everything that walks a haven floor
+    /// wants the same four facts about it (which berth, where the room starts, which leaves somebody may come
+    /// out of, where a body with nothing to do stands) and a second record would be a second set of walkers.
+    /// A floor with no bar on it has no TOPS, which is what keeps the bar's own beats upstairs.</param>
+    public static BarFloor? BarBand(string bodyId, int level = HavenLevels.Concourse)
     {
         if (System.Array.Find(Specs, s => s.BodyId == bodyId) is not { } spec)
         {
             return null;
+        }
+
+        if (level != HavenLevels.Concourse)
+        {
+            return spec.Lower is null ? null : TheLowerConcourseBand(spec);
         }
 
         BarDesk desk = BarDesks.For(spec.BodyId) ?? DefaultBarDesk(spec.BodyId);

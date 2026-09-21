@@ -156,6 +156,14 @@ public sealed partial class DeckPlan
         // re-used HiveHaul: a haul console is the ROOM being turned over and the room is struck off when a
         // find comes out of it, while a shelf is read where it stands as many times as the captain likes and
         // nothing ever leaves it.
-        HiveShelf }
+        HiveShelf,
+        // #1253 · A CAR IN A STATION'S CONCOURSE — Down Below's three cages. Its own kind and not a re-used
+        // HiveLift, for the reason every split in this list is: HiveLift is a machine on a MOON. Its press
+        // reads the excursion (`_surface`), its panel is built out of bands, authority cards, dead air and a
+        // keypad, and its ride rebuilds a floor of a clandestine site — and a berth has no excursion at all,
+        // so one kind serving both would put a press in a room it cannot ask a single one of those questions
+        // about. What the two DO share is the surface the captain looks at (LiftPanel.razor) and the row it
+        // draws (UndergroundComplex.LiftStop), because a list of floors is a list of floors.
+        HavenLift }
 
 }
