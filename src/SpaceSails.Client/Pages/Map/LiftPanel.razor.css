@@ -83,6 +83,20 @@
     cursor: pointer;
 }
 
+/* #1280 · A STATION'S ROW HAS NO DEPTH COLUMN, so it has no column for one. The plate takes the floor and
+   the "you are here" mark keeps its own end — two columns rather than three, because a 5.5rem gutter held
+   open for a number that is never coming is a station wearing a moon's grid. */
+.lift-stop.station {
+    grid-template-columns: 1fr auto;
+}
+
+.lift-stop.station .lift-stop-name {
+    font-size: 1rem;
+    letter-spacing: 0.1em;
+}
+
+.lift-stop.station.here .lift-stop-name { color: #f0d070; }
+
 .lift-stop:hover:not(:disabled) {
     background: #18222f;
     border-color: rgba(140, 190, 235, 0.5);

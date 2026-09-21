@@ -51,6 +51,23 @@ public partial class LiftPanel
     /// cannot come to two names for one floor.</summary>
     [Parameter] public Func<string> LiftPanelDepth { get; set; } = default!;
 
+    /// <summary>
+    /// #1280 · <b>IS THIS CAR IN A STATION RATHER THAN UNDER A MOON?</b> The one question that decides this
+    /// panel's ROW SHAPE, asked once and answered by the page (<c>TheStationHasFloors</c>).
+    ///
+    /// <para>It is a MODE on the one surface and never a second panel. #1253 put a berth's three cars through
+    /// this file precisely so the buttons a captain presses are one set of buttons; what it did not do is ask
+    /// what a ROW is made of, so every haven row came out wearing the Hive's furniture — the regolith depth
+    /// on the left and the dead-air column on the right. A moon's row has to carry both (how deep, and
+    /// whether the trip is free); a station's row has neither fact in it, because a haven is two floors of
+    /// one pressurised building and the button says the whole of what there is to say.</para>
+    ///
+    /// <para>What survives in a station is the plate and <i>◄ you are here</i>: what the floor is called, and
+    /// which one you are standing on. That is the panel §0 of the testing links describes, and it is the
+    /// panel with nothing on it that a station cannot mean.</para>
+    /// </summary>
+    [Parameter] public bool TheCarIsInAStation { get; set; }
+
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
 }

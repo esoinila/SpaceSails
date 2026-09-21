@@ -43,10 +43,80 @@ public sealed class TheNoticeIsABandTests
         walk.OneFrame();
         Assert.False(walk.HeIsHolding, "in plain view at twice the legibility band he must walk his errand.");
 
-        walk.StandTheCaptain(behindHimDu: FootTail.LegibleDu / 2);
+        // #1283 · …and the band is TWO PACES now, not half the range a face is legible at. See
+        // TheBandIsTwoPacesAndNotTheRangeAFaceIsLegibleAt below for the measurement and the ruling.
+        walk.StandTheCaptain(behindHimDu: ObservationWalk.OnHisHeelsDu / 2);
         walk.Notice();
         walk.OneFrame();
         Assert.True(walk.HeIsHolding, "on his heels in plain view he must stop.");
+    }
+
+    /// <summary>
+    /// #1283 · <b>TWO PACES BEHIND IS ON HIS HEELS; TEN PACES BEHIND IN A LIT HALL IS A STRANGER.</b>
+    ///
+    /// <para><b>What was played</b> (#1282, 2026-09-21): after last call GILT-EYE left the bar for a car and
+    /// then <b>stopped at the landing and stayed stopped for nine and a half minutes</b> while a scripted
+    /// captain crossed the concourse behind him. It is the shipped #1062 notice latch doing exactly what it
+    /// says, and it is a defect by measurement: the hold read <see cref="FootTail.LegibleDu"/>, which is 30
+    /// du, and Selene Gate's hall is about 34 du across — so <b>any captain following in his line anywhere on
+    /// that concourse holds him</b>, and the two-leg night #1276 built can never be seen past its first leg by
+    /// anybody who follows at all.</para>
+    ///
+    /// <para><b>The ruling:</b> the en-route band is <see cref="ObservationWalk.OnHisHeelsDu"/> — the
+    /// small-room constant the throat used, stated once in the room's own file. He acts normal beyond it,
+    /// which is the owner's standing ruling (<i>"They should act normal even if I tail from ahead"</i>), and
+    /// #1201's <i>he waits for you to go past</i> is kept at two paces only.</para>
+    ///
+    /// <para><b>RED on the shipped 30 du:</b> the twelve-du half fails —
+    /// <c>he stopped for a captain ten paces back across a lit hall</c> — and he never reaches the tube.</para>
+    /// </summary>
+    [Fact]
+    public void TheBandIsTwoPacesAndNotTheRangeAFaceIsLegibleAt()
+    {
+        // The two distances the ruling names, in deck units. TEN PACES is the one that was broken and it is
+        // inside the legibility band on purpose: a case outside it would have been green on the shipped rule
+        // and would have pinned nothing (§"a green test that asserts nothing").
+        const double TenPacesDu = 12.0;
+        const double TwoPacesDu = 4.0;
+
+        Assert.True(
+            TenPacesDu <= FootTail.LegibleDu,
+            $"{TenPacesDu:0.#} du is outside the {FootTail.LegibleDu:0.#} du band the hold used to read, so "
+            + "this case could never have been red on the shipped rule.");
+        Assert.True(
+            TwoPacesDu <= ObservationWalk.OnHisHeelsDu && ObservationWalk.OnHisHeelsDu < TenPacesDu,
+            $"the en-route band ({ObservationWalk.OnHisHeelsDu:0.#} du) no longer sits between the two "
+            + "distances this law is stated at.");
+
+        // ── AT FOUR DU HE HOLDS ───────────────────────────────────────────────────────────────────────
+        var close = new ObservationWalkBench(CanvasId);
+        close.Notice();
+        Assert.True(
+            close.StandTheCaptainAlongHisLine(-TwoPacesDu),
+            "the bench put the captain behind him somewhere with no line — this law would be about a wall.");
+        close.OneFrame();
+        Assert.True(close.HeIsHolding, "two paces behind him, on his heels, he must stand aside.");
+
+        // ── AT TWELVE DU HE WALKS THE WHOLE LEG ───────────────────────────────────────────────────────
+        var back = new ObservationWalkBench(CanvasId);
+        back.Notice();
+        Assert.True(
+            back.StandTheCaptainAlongHisLine(-TenPacesDu),
+            "the bench put the captain behind him somewhere with no line — this law would be vacuous.");
+        back.OneFrame();
+        Assert.False(
+            back.HeIsHolding,
+            $"he stopped dead for a captain {TenPacesDu:0.#} du back across a lit hall — which is the "
+            + "nine-and-a-half-minute freeze the QA crew watched at the L-06 landing, and it is not a man "
+            + "acting normal.");
+
+        // …not merely unheld for one frame: he gets the whole way off the concourse with the captain held
+        // at that distance every frame of it. That is the half the beat is unblocked by.
+        back.RunTheWalkWithTheCaptainOnHisHeels(600.0, TenPacesDu, () => back.HeIsInTheTube);
+        Assert.True(
+            back.HeIsInTheTube,
+            "with a captain following ten paces back he never got off the concourse, so the two-leg night "
+            + "cannot be seen past its first leg by anybody who follows at all (#1283).");
     }
 
     /// <summary>

@@ -510,6 +510,75 @@ public sealed class HisCabinIsBelowTests
     }
 
     /// <summary>
+    /// #1281 · <b>A CAPTAIN STANDING AT THE DOORS HE IS WALKING TO DOES NOT STOP HIS NIGHT.</b>
+    ///
+    /// <para><b>What was played</b> (owner's QA, 2026-09-21, on the service level): ride up, wait, ride down,
+    /// and about eighteen seconds later a body appears at the captain's own elbow at the car's landing —
+    /// <i>"still standing in exactly the same spot after four more minutes"</i>. It is HIM, on the leg that
+    /// ends at the car he rides back up on, and the night behind him had stopped dead with him: no ride, no
+    /// concourse leg, no walk, no card. A captain who followed him properly was the one thing that could
+    /// prevent the beat he followed him for.</para>
+    ///
+    /// <para><b>Why.</b> <see cref="NpcWalk"/>'s courtesy stops a walker before any step that would bring it
+    /// inside one body-width of the captain, says <c>Doing.Waiting</c> and keeps its route — <i>"so the walk
+    /// finishes itself the moment the doorway clears"</i>. A car's landing is the one square in this building
+    /// that never clears: it is where a ride sets the captain down and where <c>[E]</c> finds the panel, so
+    /// he is standing on it exactly when somebody else's leg ends there. So a leg of the night is over where
+    /// it ENDS, at the courtesy's own width, and not where the route object gives up.</para>
+    ///
+    /// <para>The captain is stood at the car <b>he comes up on</b> and kept there for the whole errand — the
+    /// posture that puts a body on the far end of a leg — and his notice is latched on, so this case also
+    /// says that a man walking TOWARDS a captain is not a man letting him past.</para>
+    ///
+    /// <para><b>Proven RED</b> by taking the leg's own far end back out (a leg ending only when the route
+    /// object stops being afoot): <c>Expected: ToTheWalk — Actual: ToTheCarUp</c>, with a body still standing
+    /// one body-width off the captain when the frames run out.</para>
+    /// </summary>
+    [Fact]
+    public void ACaptainStandingAtTheDoorsHeIsWalkingToDoesNotStopHisNight()
+    {
+        Pages.Map map = PastLastCall("standing-on-his-doorstep");
+        int down = TheTailsNight.TheCarHeTakesDown(Berth, Person, Cars);
+        int up = TheTailsNight.TheCarHeTakesUp(Berth, Person, Cars);
+
+        Frames(map, 600, () => Leg(map) == "ToHisCabin");
+        Assert.Equal("ToHisCabin", Leg(map));
+        Assert.True(Ride(map, HavenLevels.ServiceLevel, down), "his own car refused to go down.");
+
+        // He has clocked the captain — the latch every en-route rule is gated on. Set rather than rolled:
+        // no law here is about #436's eye.
+        Set(map, "_walkNoticed", true);
+
+        // …and the captain waits at the car he will come up on, which is the far end of his last corridor
+        // leg. That is the whole of the posture: a captain who guessed right, standing where the doors are.
+        DeckReachability.Point landing = HavenInterior.TheCageLandingAt(Berth, up)!.Value;
+        void AtTheCar(Pages.Map m)
+        {
+            Set(m, "_avatarX", landing.X);
+            Set(m, "_avatarY", landing.Y);
+        }
+
+        AtTheCar(map);
+
+        Frames(map, 600, () => Leg(map) == "Inside", AtTheCar);
+        Assert.Equal("Inside", Leg(map));
+        Frames(map, TheTailsNight.CabinWaitSeconds + 60, () => Leg(map) == "ToTheCarUp", AtTheCar);
+        Assert.Equal("ToTheCarUp", Leg(map));
+
+        // The anti-vacuity clause: the leg this law is about has to actually END where the captain is
+        // standing, or the case is a man walking somewhere else while somebody loiters.
+        Frames(map, 1.0, posture: AtTheCar);
+        Pages.Map.Walker onTheLeg = Assert.Single(Afoot(map), w => w.Who == Person);
+        Assert.Equal(landing.X, onTheLeg.Walk.For.X, 1);
+        Assert.Equal(landing.Y, onTheLeg.Walk.For.Y, 1);
+
+        // …and he gets there, comes off the floor, rides, and the night is on its last leg.
+        Frames(map, 600, () => Leg(map) == "ToTheWalk", AtTheCar);
+        Assert.Equal("ToTheWalk", Leg(map));
+        Assert.DoesNotContain(Afoot(map), w => w.Who == Person);
+    }
+
+    /// <summary>
     /// <b>THE WRONG CAR LOSES HIM, AND NOTHING TELLS YOU SO.</b> The losing rule, and it is the reason there
     /// are three cars at all: a captain who rides a car the man did not take arrives in a corridor with
     /// nobody in it, the beat goes on without him, and <b>no card is raised and nothing is spent</b>.

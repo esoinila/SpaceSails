@@ -87,8 +87,39 @@ public static class HavenLevels
 
     /// <summary>#1253 · The plate over one of them — numbered, and NOBODY'S. Owner's standing rule about this
     /// station's people is that nothing confirms anything about anyone, and a name on a door would be the
-    /// building doing the confirming. <paramref name="n"/> is one-based, the way a door number is.</summary>
-    public static string CabinPlate(int n) => $"CABIN {n} · CREW";
+    /// building doing the confirming. <paramref name="n"/> is one-based, the way a door number is.
+    ///
+    /// <para>#1280 · This is the leaf's FULL plate — what the door is called in the building's register, what
+    /// <see cref="Interior.Egress"/> seeds a body's door roll on, and what a captain who walks up to it is
+    /// refused at. What is PAINTED over it, where five of them stand in a row at one door's spacing, is
+    /// <see cref="CabinDoorPlate"/>, and the two can never disagree: one is the other's opening.</para></summary>
+    public static string CabinPlate(int n) => $"{CabinDoorPlate(n)} · {CabinTenancy}";
+
+    /// <summary>
+    /// #1279 · <b>WHAT IS PAINTED OVER ONE LEAF IN A ROW OF FIVE — the NUMBER, and nothing else.</b>
+    ///
+    /// <para>Owner's QA, played on the lower concourse: <i>"three of five door numbers cannot be read"</i>. The
+    /// deck plan's caption band (#1218) does its job and stacks the five plates into rows rather than letting
+    /// them print through each other — but a plate that is WIDER THAN THE DOOR IT NAMES has to take a row from
+    /// its neighbour, and five plates interleaved across two rows ten pixels apart is a jumble a captain reads
+    /// as one smeared line. Measured: the row is fourteen deck units across, so a cabin's frontage is about
+    /// three, which is fifty-five screen pixels at the deck's own scale — and
+    /// <c>CABIN n · CREW</c> is seventy-eight. <c>CABIN n</c> is thirty-nine, and thirty-nine fits.</para>
+    ///
+    /// <para><b>The number is what the beat is made of.</b> #1276's tail is a captain learning WHICH leaf a
+    /// man walks into by watching him do it, and #563's ruling rests on his being able to read it. The
+    /// tenancy is not: it is said once by the floor, on the plate over every car's door
+    /// (<see cref="NoPublicAccessPlate"/>), and a word repeated five times at one door's spacing is what took
+    /// the number away.</para>
+    ///
+    /// <para>A row of doors carries what is DIFFERENT between them. What they have in common belongs to the
+    /// floor.</para>
+    /// </summary>
+    public static string CabinDoorPlate(int n) => $"CABIN {n}";
+
+    /// <summary>#1279 · …and whose the row is, said once here rather than typed into two plates. It is the
+    /// half of <see cref="CabinPlate"/> that <see cref="CabinDoorPlate"/> drops.</summary>
+    public const string CabinTenancy = "CREW";
 
     /// <summary>#1253 · How many cages the concourse has. THREE, and it is the whole of the owner's ask:
     /// <i>"The main hall could have multiple elevators… good for tailing."</i> One car is a choke point and

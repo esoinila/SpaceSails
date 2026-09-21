@@ -68,6 +68,10 @@ public partial class SalvageCardRack
     [Parameter] public Action<UndergroundComplex.LiftStop> LiftPadSubmit { get; set; } = default!;
     /// <summary>#1253 · What floor the open car says it is on. See <c>LiftPanel.razor.cs</c>: it replaces
     /// the whole <c>SurfaceExcursion</c> this block used to bind, which is what kept the panel off a berth.</summary>
+    /// <summary>#1280 · Whether the open car is a station's rather than a moon's — forwarded straight
+    /// through to <c>LiftPanel</c>, whose own parameter carries the argument.</summary>
+    [Parameter] public bool TheCarIsInAStation { get; set; }
+
     [Parameter] public Func<string> LiftPanelDepth { get; set; } = default!;
     [Parameter] public Func<string> LiftPanelLine { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<UndergroundComplex.LiftStop>> LiftStops { get; set; } = default!;

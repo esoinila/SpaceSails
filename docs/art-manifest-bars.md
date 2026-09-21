@@ -194,6 +194,7 @@ observation deck? … The main hall could have multiple elevators… good for ta
 > other half of the same corridor would be the same photograph at a different stretch.
 >
 > **The no-readable-writing rule holds.** The plates the player reads are DRAWN by the deck, not painted into
-> the canvas: `CABIN n · CREW` on each leaf and `SERVICE LEVEL — NO PUBLIC ACCESS` on the concourse side of
+> the canvas: `CABIN n` on each leaf (#1279 — the row is read left to right, so a plate carries the number
+> and the floor says the rest) and `SERVICE LEVEL — NO PUBLIC ACCESS` on the concourse side of
 > each car. The picture carries the light and the cable trays; the building does the talking, in the
 > inspectorate register it does all its talking in.

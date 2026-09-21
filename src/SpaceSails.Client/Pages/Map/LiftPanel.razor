@@ -79,14 +79,26 @@
                     @foreach (SpaceSails.Core.UndergroundComplex.LiftStop stop in LiftStops())
                     {
                         string cls = "lift-stop"
+                            + (TheCarIsInAStation ? " station" : "")
                             + (stop.IsCurrent ? " here" : "")
                             + (stop.Refusal is not null ? " sealed" : "")
                             + (stop.OpenedBy is not null ? " carded" : "")
                             + (stop.Pressurised ? "" : " dead");
                         <button type="button" class="@cls" disabled="@stop.IsCurrent"
-                                title="@(stop.Refusal ?? (stop.Pressurised ? "holds pressure" : "dead air — the tank runs"))"
+                                title="@(TheCarIsInAStation ? null : stop.Refusal ?? (stop.Pressurised ? "holds pressure" : "dead air — the tank runs"))"
                                 @onclick="() => PressLiftButton(stop)">
-                            <span class="lift-stop-depth">@SpaceSails.Core.UndergroundComplex.DepthPaint(stop.Level)</span>
+                            @* #1280 · THE DEPTH COLUMN IS A MOON'S, AND A HAVEN HAS NO MOON ON IT. Owner's QA,
+                               at a berth in orbit off Luna: the car's panel painted SURFACE against CONCOURSE
+                               and −150 m against SERVICE LEVEL — UndergroundComplex.MetresDown, a depth in
+                               REGOLITH, quoted for a corridor inside a pressure hull. That is this repository's
+                               own named class (a MOON constant governing a SHIP), and the station said it on
+                               the one row a captain presses to go home. A haven's row is the PLATE and nothing
+                               else: two floors of one building, and there is nothing about either of them that
+                               a depth could tell you. *@
+                            @if (!TheCarIsInAStation)
+                            {
+                                <span class="lift-stop-depth">@SpaceSails.Core.UndergroundComplex.DepthPaint(stop.Level)</span>
+                            }
                             <span class="lift-stop-name">@stop.Name</span>
                             <span class="lift-stop-air">
                                 @if (stop.IsCurrent)
@@ -105,7 +117,17 @@
                                 }
                                 else if (stop.Pressurised)
                                 {
-                                    <text>🫁 air</text>
+                                    @* #1280 · …AND NEITHER IS THE AIR COLUMN. Underground the answer differs
+                                       per floor and #802's scar is a row that TYPED `true` over airless
+                                       ground, so every row down there is asked. A haven's whole interior is
+                                       the pressurised envelope a captain walks in shirtsleeves — HavenLevels
+                                       says so once, in prose, with the reason beside it — and a tag drawn on
+                                       the row that is NOT the one you are standing on reads as though the
+                                       floor under your feet were the one without the air. *@
+                                    @if (!TheCarIsInAStation)
+                                    {
+                                        <text>🫁 air</text>
+                                    }
                                 }
                                 else if (stop.HasRefuge)
                                 {
