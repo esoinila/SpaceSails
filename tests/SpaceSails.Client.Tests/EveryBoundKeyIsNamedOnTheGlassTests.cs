@@ -114,6 +114,7 @@ public class EveryBoundKeyIsNamedOnTheGlassTests
         "src/SpaceSails.Core/LockedDoor.cs",
         "src/SpaceSails.Core/LeftBehind.cs",
         "src/SpaceSails.Core/RipAndBin.cs",
+        "src/SpaceSails.Core/RipAndBin.Words.cs",   // #251 · the bin's own [E] prompt moved here with its words
         "src/SpaceSails.Core/SentryDoctrine.cs",
         // The once-per-captain first-ground card.
         "src/SpaceSails.Core/GroundLesson.cs",

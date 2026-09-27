@@ -182,7 +182,7 @@ public sealed class TheNotebookIsInTheSatchelTests
         // Cut at the method's OWN closing brace. `Method` runs to the next member declaration, which here
         // carries the field book's section header — and that header has a "·" in its rule, so a guard that
         // forbids the separator would be reading somebody else's prose and failing on it.
-        string place = Method("Map.Surface.Satchel.cs", "private string TheBooksNameForHere()");
+        string place = Method("Map.Surface.Satchel.Leave.cs", "private string TheBooksNameForHere()");
         int endOfBody = place.IndexOf("\n    }", StringComparison.Ordinal);
         Assert.True(endOfBody > 0, "TheBooksNameForHere no longer closes where this guard can see it.");
         place = place[..endOfBody];
@@ -201,7 +201,7 @@ public sealed class TheNotebookIsInTheSatchelTests
         // …and so does the pen. This is the half #1016 was filed on: the writer bailed off an excursion, so
         // a dig at a bar top filled its bar, said its line, and filed nothing at all.
         Assert.Contains("TheBooksNameForHere()",
-            Method("Map.Surface.Satchel.cs", "private void FileNoteAbout("), StringComparison.Ordinal);
+            Method("Map.Surface.Satchel.Filing.cs", "private void FileNoteAbout("), StringComparison.Ordinal);
 
         string satchel = SatchelBlock();
         Assert.True(satchel.Contains("PlaceUnderfoot()", StringComparison.Ordinal)

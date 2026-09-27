@@ -146,7 +146,8 @@ public sealed class TheHeatIsBankedOnceTests
         // `Outcome.Open`, and pressing the card's second verb after the first changes nothing. That latch is
         // asserted here rather than left to the reader, because a bribe that could be taken twice would be a
         // band of heat per press.
-        string finder = Read("src", "SpaceSails.Client", "Pages", "Map.Finder.cs");
+        // #251 · the settling and its one banking call moved together into the confrontation partial.
+        string finder = Read("src", "SpaceSails.Client", "Pages", "Map.Finder.Confrontation.cs");
         Assert.Equal(1, Count(finder, "BankTheCrossing(new UndergroundComplex.HeatCharge("));
         Assert.Contains("_finderProgress.Settled != FinderCase.Outcome.Open", finder, StringComparison.Ordinal);
         int settledGate = finder.IndexOf("_finderProgress.Settled != FinderCase.Outcome.Open", StringComparison.Ordinal);
@@ -215,9 +216,9 @@ public sealed class TheHeatIsBankedOnceTests
             // #525 · THE ELEVENTH, and the only one that is not about the captain being looked at, walked
             // out, refused, heard or set up: he ended his own ship on their collar. One band would be an
             // insult to the event, so it is the meter's own Ceiling — quoted, never typed.
-            ["Map.BerthScuttle.cs×1", "Map.Blackmail.cs×1", "Map.Combat.Remote.cs×1", "Map.Finder.cs×1",
+            ["Map.BerthScuttle.cs×1", "Map.Blackmail.cs×1", "Map.Combat.Remote.cs×1", "Map.Finder.Confrontation.cs×1",
              "Map.IllegalHeat.cs×1", "Map.OldCrew.cs×1",
-             "Map.Scan.cs×1", "Map.Surface.Hive.cs×1", "Map.WalkIn.cs×1", "Patrol.Floor.cs×1",
+             "Map.Scan.cs×1", "Map.Surface.Hive.cs×1", "Map.WalkIn.Job.cs×1", "Patrol.Floor.cs×1",
              "Patrol.Run.cs×1"],
             bankers);
     }

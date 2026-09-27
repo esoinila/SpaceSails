@@ -110,7 +110,7 @@ public sealed class TheOutcomeIsOnThePopUpTests
     [Fact]
     public void EveryPopUpTheSeamRoutesToRendersItsOwnOutcome()
     {
-        string seam = Method("Map.Surface.Satchel.cs", "private void SayItWhereTheyAreLooking(");
+        string seam = Method("Map.Surface.Satchel.Leave.cs", "private void SayItWhereTheyAreLooking(");
         var slots = new List<string>();
         foreach (Match m in Regex.Matches(seam, @"(_[A-Za-z]\w*) = line;"))
         {

@@ -133,7 +133,7 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
 
         // The pair is the point: said where it can be read AND kept. Either half alone is a bug this house
         // has already shipped once.
-        string helper = Method("Map.Surface.Satchel.cs", "private void SayWhereTheyAreLookingAndFile(");
+        string helper = Method("Map.Surface.Satchel.Filing.cs", "private void SayWhereTheyAreLookingAndFile(");
         Assert.Contains("SayItWhereTheyAreLooking(text)", helper, StringComparison.Ordinal);
         Assert.Contains("FileNote(text, glyph)", helper, StringComparison.Ordinal);
     }
@@ -167,7 +167,7 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
     [Fact]
     public void TheSeamAnswersOnTheObjectCardBeforeTheStoryCardBecauseItIsInFront()
     {
-        string seam = Method("Map.Surface.Satchel.cs", "private void SayItWhereTheyAreLooking(");
+        string seam = Method("Map.Surface.Satchel.Leave.cs", "private void SayItWhereTheyAreLooking(");
 
         int viewObject = seam.IndexOf("if (_viewObject is", StringComparison.Ordinal);
         int revealCard = seam.IndexOf("if (_storyCard is", StringComparison.Ordinal);
