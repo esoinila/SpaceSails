@@ -118,6 +118,27 @@ public partial class DarkWeb
     /// only carries the press.</summary>
     [Parameter] public EventCallback OnTakeParcel { get; set; }
 
+    /// <summary>#319 slice 2 · A cache of the captain's the desk would sell the location of: the row's
+    /// sub-line, the quote card and what the captain is paid. Composed by the page off Core; null when there
+    /// is nothing to sell, and then the row does not exist.</summary>
+    public readonly record struct GeocacheOffer(string SubLine, string QuoteLine, int Net, string NetText);
+
+    /// <summary>#319 slice 2 · The offer, or null.</summary>
+    [Parameter] public GeocacheOffer? Geocache { get; set; }
+
+    /// <summary>#319 slice 2 · Confirm the sale of the offered location.</summary>
+    [Parameter] public EventCallback OnSellLocation { get; set; }
+
+    /// <summary>#319 slice 2 · The quote card is open under the row. The desk's own state, like the scroll
+    /// of its tables: it is a card being read, not a fact about the world.</summary>
+    private bool _geocacheQuoteOpen;
+
+    private async Task SellTheLocation()
+    {
+        _geocacheQuoteOpen = false;
+        await OnSellLocation.InvokeAsync();
+    }
+
     private IEnumerable<TrackedShipInfo> SellableTracks =>
         TrackedShips.Where(t => IntelMarket.CanSellTrack(t.Quality));
 

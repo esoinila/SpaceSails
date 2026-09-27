@@ -209,6 +209,19 @@ public static class DevStarts
             + "line lands once at the notice, no cross is drawn, and the goods are still under the slat for "
             + "this one watch (#794).",
             "/map?park=1&chalk=wiped"),
+        // #319 slice 2 · THE GEOCACHE SALE. The chip in the ground and its contract on the books, clamped at a
+        // berth whose dark-web desk is open — the row, the quote and the sale in one URL; and the same with
+        // the buyer already been, so the next desk opened pays.
+        new("🗺", "Sell the location of a buried chip",
+            "Clamped at Selene Gate with the data chip already in a chest of yours on a named ground and its "
+            + "contract on the books. Open Comms → 🕸 Dark web market: the row SELL THE LOCATION, the chip and "
+            + "the ground under it. Press 🗺 for the quote and the terms, then the credits to send the "
+            + "coordinates (#319).",
+            "/map?dock=selene-gate&geocache=1"),
+        new("🗺💳", "…and the buyer has been",
+            "The same chest, its location sold far enough back that the buyer's seeded lift has come. Open the "
+            + "dark-web desk: the escrow lands on the payment pulse, once (#319).",
+            "/map?dock=selene-gate&geocache=lifted"),
         // #775 · THE WAY IN, AND THE WAY THE FOOD COMES IN. Owner, walking the new B1: "the bar/canteen
         // needs DOORS ON THE MAIN CORRIDOR — today you have to really look for the way in; a venue's
         // entrance should find YOU." The row that proves that has to start OUTSIDE the room, which is the

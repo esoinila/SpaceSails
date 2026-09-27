@@ -359,6 +359,9 @@ public sealed class ThereSheIsTests
         new("HandTheChipBack", Trigger.APress),
         new("SellTheChipToTheFence", Trigger.APress),
         new("TheChipGoesInTheChest", Trigger.APress),
+        // #319 slice 2 · the geocache dev start closes the car's job the way ending three does, at boot, from
+        // the URL the tester typed — the press is the address bar, and nothing is owed.
+        new("BuryAGeocacheForCheat", Trigger.APress),
         new("YouFindWhatSheAskedFor", Trigger.APress),
         new("YouComeBackAndTellHer", Trigger.APress),
         new("SubmitPin", Trigger.APress),
