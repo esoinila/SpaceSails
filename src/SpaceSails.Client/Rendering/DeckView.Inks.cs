@@ -109,6 +109,8 @@ public sealed partial class DeckView
     // is lying in — the same glyph, dead — inside the divot ring a probed square already wears.
     private static readonly RgbaColor PitInk = new(122, 114, 98, 195);
     private static readonly RgbaColor PitRing = new(96, 90, 78, 140);
+    // #794: chalk on poured shotcrete — dusty white, a little translucent, never the gold of a ✗.
+    private static readonly RgbaColor ChalkInk = new(226, 224, 214, 205);
     private static readonly RgbaColor BotColor = new(120, 210, 160);     // #314: a live sentry, gun-green
     private static readonly RgbaColor BotDim = new(90, 100, 110);        // #314: a dry sentry, gone quiet
     private static readonly RgbaColor SegLit = new(255, 90, 70);         // #314: the 99-counter, seven-segment red

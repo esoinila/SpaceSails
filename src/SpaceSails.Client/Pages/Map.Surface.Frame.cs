@@ -347,9 +347,11 @@ public partial class Map
             CheckStaffMessUnderfoot();    // #725: …and the one room down here that is a find rather than a route
             CheckCantinaHallUnderfoot();  // #751: the hall, and the doors along the back of it
             CheckTheParkUnderfoot();      // #759: …and the park behind its glass, which records attendance
+            CheckTheChalkMark();          // #794: …and the wall beside its notice, which sometimes says more
             CheckTheParksOwnDay();        // #759: …and its morning, which arrives at nobody else's hour
             CheckHusksUnderfoot();        // #316: …and what the last visit left lying in the regolith
         }
+        KeepTheSlatHonest();            // #794: a bench's card carries FEEL UNDER THE SLAT only while it should
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
         StepLabDoorChannel(dtRealSeconds);       // #563: a shoulder on a KEYED lab door — 25 s, and heard
