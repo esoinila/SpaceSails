@@ -1,0 +1,3 @@
+/* #251 · TradeDesk carries no rules of its own: its markup moved out of DeskPanels.razor by pure motion,
+   and the rules it wears stay in Map.razor.css and DeskPanels.razor.css, under the page's scope
+   (b-4dqsdx4p75, pinned for Pages/Map/DeskPanels/ in SpaceSails.Client.csproj). */

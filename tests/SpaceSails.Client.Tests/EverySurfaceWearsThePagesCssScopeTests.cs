@@ -75,6 +75,9 @@ public sealed class EverySurfaceWearsThePagesCssScopeTests
         // nodes and the bin sleeve all unstyled, with no build error to say so.
         ("Pages/Map/SatchelPanel/", Path.Combine(ClientDir, "Pages", "Map", "SatchelPanel"),
             "Pages/Map.razor.css", "Pages/Map/SatchelPanel/*.razor.css"),
+        // #251 · and DeskPanels' two desks, the trading floor and the comms room, cut out the same way.
+        ("Pages/Map/DeskPanels/", Path.Combine(ClientDir, "Pages", "Map", "DeskPanels"),
+            "Pages/Map.razor.css", "Pages/Map/DeskPanels/*.razor.css"),
         ("Pages/Stations/TrackingPost/", Path.Combine(ClientDir, "Pages", "Stations", "TrackingPost"),
             "Pages/Stations/TrackingPost.razor.css", "Pages/Stations/TrackingPost/*.razor.css"),
     ];

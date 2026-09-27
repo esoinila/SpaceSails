@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -93,7 +93,8 @@ public sealed class TheChandleryIsOpenAtTheBerthTests
     [Fact]
     public void BothRowsSitInsideTheDockedGate()
     {
-        string panel = File.ReadAllText(Path.Combine(
+        // #251 · composed: DeskPanels' two desks live under Pages/Map/DeskPanels/ now (re-pathed, never re-asserted).
+        string panel = SurfaceComposition.RazorText(Path.Combine(
             TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map", "DeskPanels.razor"));
 
         int gate = panel.IndexOf("@if (ChandleryOpen())", StringComparison.Ordinal);

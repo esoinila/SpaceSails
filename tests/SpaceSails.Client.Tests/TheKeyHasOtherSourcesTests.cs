@@ -98,7 +98,8 @@ public sealed class TheKeyHasOtherSourcesTests
         Assert.DoesNotContain("ToString(", row, StringComparison.Ordinal);
 
         // …and Map really hands the desk those three, or the row is drawn against nothing.
-        string panels = File.ReadAllText(Path.Combine(
+        // #251 · composed: DeskPanels' two desks live under Pages/Map/DeskPanels/ now (re-pathed, never re-asserted).
+        string panels = SurfaceComposition.RazorText(Path.Combine(
             TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map", "DeskPanels.razor"));
         Assert.Contains("KeyPrice=\"TheFencesKeyPrice()\"", panels, StringComparison.Ordinal);
         Assert.Contains("OnBuyKey=\"BuyTheKeyFromTheFence\"", panels, StringComparison.Ordinal);

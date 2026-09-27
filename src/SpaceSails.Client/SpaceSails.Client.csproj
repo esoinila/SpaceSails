@@ -91,6 +91,9 @@
          and the bin sleeve all unstyled, with no build error and no test. Same identifier again, because it
          is the same page's markup two files out. -->
     <None Update="Pages\Map\SatchelPanel\*.razor.css" CssScope="b-4dqsdx4p75" />
+    <!-- #251 · …and DeskPanels' two desks, cut out of it the same way (Pages/Map/DeskPanels/): a glob does
+         not cross a directory separator, and without this line both would lose Map.razor.css's rules. -->
+    <None Update="Pages\Map\DeskPanels\*.razor.css" CssScope="b-4dqsdx4p75" />
   </ItemGroup>
 
   <!-- #251 · THE SAME LAW FOR THE TRACKING POST, WHERE IT BITES HARDER.
