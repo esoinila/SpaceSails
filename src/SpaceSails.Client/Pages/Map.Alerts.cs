@@ -247,6 +247,7 @@ public partial class Map
             if (opening)
             {
                 ThePaymentIsThere();
+                TheGeocacheEscrowSettles();   // #319 slice 2 · the escrow lands at the same door
             }
         }
     }

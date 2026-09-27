@@ -269,6 +269,7 @@ public partial class Map
         // ClampOntoHaven already retires the destination on arrival; this is the same statement said at
         // the other end, and it heals a session that clamped on before that fix existed.
         ArrivedAt(_dockedHavenId);
+        TheDeskIsOpenAgainBehindYou();   // #319 slice 2 · "one visit" ends at the clamp
         _dockedHavenId = null;
         _berthSlot = null;      // #525 · a ship that is not tied up is not in a slot
         ShowPulseMessage($"Clamps released — pushing off from {name}. 🚀");

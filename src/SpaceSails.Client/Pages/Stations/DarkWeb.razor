@@ -227,6 +227,39 @@
                 </table>
             }
 
+            @* #319 slice 2 · The location sale. One row, only while a cache of the captain's own holds a thing
+               the fence prices — absent otherwise, never greyed. Choosing it opens the quote and the terms;
+               confirming sends the coordinates. Every word is Core's (GeocacheSale), composed by the page. *@
+            @if (Geocache is { } sale)
+            {
+                <table class="table table-sm table-dark mb-2">
+                    <tbody>
+                        <tr>
+                            <td>
+                                @GeocacheSale.RowLabel
+                                <div class="text-secondary">@sale.SubLine</div>
+                                @if (_geocacheQuoteOpen)
+                                {
+                                    <div class="text-info">@sale.QuoteLine</div>
+                                }
+                            </td>
+                            <td class="text-end align-middle text-nowrap">
+                                @if (_geocacheQuoteOpen)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-1"
+                                            @onclick="SellTheLocation">@sale.NetText</button>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1"
+                                            @onclick="() => _geocacheQuoteOpen = true">@GeocacheSale.Glyph</button>
+                                }
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            }
+
             <div class="text-secondary mb-1">Your sellable tracks (quality ≥ 50%):</div>
             @if (!SellableTracks.Any())
             {

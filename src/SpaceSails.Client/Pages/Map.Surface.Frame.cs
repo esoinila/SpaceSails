@@ -352,6 +352,8 @@ public partial class Map
             CheckHusksUnderfoot();        // #316: …and what the last visit left lying in the regolith
         }
         KeepTheSlatHonest();            // #794: a bench's card carries FEEL UNDER THE SLAT only while it should
+        TheBuyerKeepsHisSchedule();     // #319: a sold cache leaves the ground at its seeded watch
+        TheLiftedHoleIsReadHere();      // #319: …and the hole it leaves is read once, underfoot
         StepDoorChannel(dtRealSeconds); // #371 Phase 3: the forced-door progress bar
         StepSecretLabDoorChannel(dtRealSeconds); // #409: the hidden lab door's force channel
         StepLabDoorChannel(dtRealSeconds);       // #563: a shoulder on a KEYED lab door — 25 s, and heard
