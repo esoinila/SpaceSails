@@ -71,6 +71,16 @@ public static partial class UndergroundComplex
             double FaceX, double BackX, double Cx, double Cy, List<SurfaceLayout.Doorway> Ways)
             [2, centres.Count];
 
+        LayTheColumn(walls, doorways, locked, rooms, ensuites, claimed, bodyId, level, rib, x, hallSide, roomW, roomH, found, centres, column);
+
+        return CarveTheRecesses(walls, claimed, mouth, down, roomH, centres, column, beforeThisRib);
+    }
+
+    /// <summary>#251 · The first phase of <see cref="AddRoomsAlong"/>, extracted with every statement verbatim
+    /// and in order: every chamber this rib builds, slot by slot and side by side, written into the column the
+    /// recess pass reads.</summary>
+    private static void LayTheColumn(List<SurfaceLayout.Wall> walls, List<SurfaceLayout.Doorway> doorways, List<LockedDoor> locked, List<Room> rooms, List<EnSuite> ensuites, List<(double X0, double Y0, double X1, double Y1)> claimed, string bodyId, int level, int rib, double x, int hallSide, double roomW, double roomH, bool found, List<double> centres, (bool Built, bool Shut, double X1, double Y1, double X2, double Y2, double FaceX, double BackX, double Cx, double Cy, List<SurfaceLayout.Doorway> Ways)[,] column)
+    {
         for (int i = 0; i < centres.Count; i++)
         {
             double cy = centres[i];
@@ -205,7 +215,12 @@ public static partial class UndergroundComplex
                 column[side < 0 ? 0 : 1, i] = (true, shut, x1, y1, x2, y2, faceX, backX, cx, cy, ways);
             }
         }
+    }
 
+    /// <summary>#251 · The second phase of <see cref="AddRoomsAlong"/>, extracted with every statement verbatim
+    /// and in order: the recesses, and the end walls decided with them, one pass per face of the rib.</summary>
+    private static (List<(double Lo, double Hi)> Minus, List<(double Lo, double Hi)> Plus) CarveTheRecesses(List<SurfaceLayout.Wall> walls, List<(double X0, double Y0, double X1, double Y1)> claimed, double mouth, bool down, double roomH, List<double> centres, (bool Built, bool Shut, double X1, double Y1, double X2, double Y2, double FaceX, double BackX, double Cx, double Cy, List<SurfaceLayout.Doorway> Ways)[,] column, int beforeThisRib)
+    {
         // ── #822 · THE RECESSES, AND THE END WALLS THAT ARE DECIDED WITH THEM ────────────────────────────
         //
         // One pass per face of the rib, walking the column outward from the spine exactly as the slots were

@@ -202,7 +202,7 @@ public sealed class TheCrewSheetCountsTheDeadTests
     [Fact]
     public void TheGigTellsTheCrewSheetAtTheSameSeamItDocksThePay()
     {
-        string src = ClientSource("Map.Deflection.cs");
+        string src = ClientSource("Map.Deflection.Site.cs");   // #251 · where ResolveDeflectionBeat moved
 
         Assert.Contains("ex.DeflectionCrewLost++", src, StringComparison.Ordinal);
         Assert.Contains("NoteCrewDidNotComeHome()", src, StringComparison.Ordinal);

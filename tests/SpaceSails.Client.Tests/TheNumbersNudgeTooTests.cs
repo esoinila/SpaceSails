@@ -270,7 +270,9 @@ public sealed class TheNumbersNudgeTooTests
     [Fact]
     public void TheEpochFloorIsWrittenOnce_AndEveryNodeTimingPathReadsIt()
     {
-        string nodes = CodeOnly(Source("Pages", "Map.Plot.Nodes.cs"));
+        // #251 · the node planner is a partial family now; a copy of the floor written into any partial is
+        // still a copy, so the count is taken over all of it.
+        string nodes = CodeOnly(MapMarkup.PagesFamily("Map.Plot.Nodes*.cs"));
 
         Assert.Contains("private double NodeEpochFloor() => Math.Floor(_ship.SimTime) + 60;", nodes);
 
@@ -279,14 +281,14 @@ public sealed class TheNumbersNudgeTooTests
         Assert.True(copies == 1,
             $"the one-minute-out floor is written out {copies} times in Map.Plot.Nodes.cs — copies are how "
             + "the next caller ends up with a different rule about when a burn may be scheduled.");
-        foreach (string caller in new[]
+        foreach ((string file, string caller) in new[]
                  {
-                     "private void AddBurnAtScrub()",
-                     "private void RetimeToScrub(PlanNode node)",
-                     "private void NudgeNodeEpoch(PlanNode node, int sign, bool coarse)",
+                     ("Map.Plot.Nodes.Mode.cs", "private void AddBurnAtScrub()"),   // #251 · moved with plot mode
+                     ("Map.Plot.Nodes.cs", "private void RetimeToScrub(PlanNode node)"),
+                     ("Map.Plot.Nodes.cs", "private void NudgeNodeEpoch(PlanNode node, int sign, bool coarse)"),
                  })
         {
-            Assert.Contains("NodeEpochFloor()", CodeOnly(MethodBody("Map.Plot.Nodes.cs", caller)));
+            Assert.Contains("NodeEpochFloor()", CodeOnly(MethodBody(file, caller)));
         }
     }
 
