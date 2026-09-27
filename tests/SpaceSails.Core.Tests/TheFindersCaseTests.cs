@@ -654,6 +654,8 @@ public sealed class TheFindersCaseTests
     private static readonly string[] CaseFiles =
     [
         "FinderCase.cs", "FinderCase.Keeping.cs", "FinderCase.TheWitness.cs",
+        // #251 · …and the two the opening file was cut into, the case and the building of one.
+        "FinderCase.Build.cs", "FinderCase.Case.cs",
     ];
 
     private static string CoreRoot()
