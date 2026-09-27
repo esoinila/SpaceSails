@@ -439,6 +439,15 @@ public sealed class ThePlayerIsToldTests
         new("the park's morning comes up at an hour nobody else in the building is keeping",
             Surface.RankedPulse, "Map.ParkDay.cs", "CheckTheParksOwnDay",
             "SayItWhereTheyAreLooking(ParkDay.LingerLine, PulseRank.Beat);"),
+
+        // #794 · THE CHALK ON THE WALL BY THE NOTICE — and, once, the wall wiped clean of it. Plot-significant
+        // because it is the whole signal of the dead drop: a mark that is up for one watch in three, read by
+        // the one captain it means anything to. It lands on the same tick as the park's own attendance line
+        // (Status), and at Status it would be displaced by it. Ranked and not carded — the Kosh law: nothing
+        // stops the world for a chalk cross. The book takes it under the mark's own glyph.
+        new("somebody has chalked the wall beside the park's notice, or wiped it after you read it",
+            Surface.RankedPulse, "Map.ChalkMark.cs", "CheckTheChalkMark",
+            "ShowAndFile(beat.Line, ChalkMark.Glyph, PulseRank.Beat);"),
     ];
 
     /// <summary>

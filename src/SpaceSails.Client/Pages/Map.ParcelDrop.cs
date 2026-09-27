@@ -143,8 +143,11 @@ public sealed partial class Map
         _credits += paid.Amount;
         SomebodyDugIt(lifted, paid.DueAtSimTime);
 
+        // #794 · …and the other half of the trade is owed, if the ground that was dug keeps a park. The
+        // sentence rides this pulse or there is none (Map.ChalkMark).
         ShowPulseMessage(
-            $"💳 {ParcelDrop.PaymentLine} +{paid.Amount.ToString("N0", CultureInfo.InvariantCulture)} cr");
+            $"💳 {ParcelDrop.PaymentLine} +{paid.Amount.ToString("N0", CultureInfo.InvariantCulture)} cr"
+            + TheReturnIsOwed(paid));
         RequestVaultSave();
         StateHasChanged();
     }

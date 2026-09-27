@@ -694,8 +694,11 @@ public partial class Map
     /// <inheritdoc cref="Seating.CloseTable"/>
     private void CloseTable() => _seating.CloseTable();
 
+    // #794 · …except FEEL UNDER THE SLAT, which moves things the seat does not own and is answered by the
+    // page first (Map.ChalkMark's TheSlatIsFelt).
     /// <inheritdoc cref="Seating.TableMoveClicked"/>
-    private Task TableMoveClicked(string moveId) => _seating.TableMoveClicked(moveId);
+    private Task TableMoveClicked(string moveId) =>
+        TheSlatIsFelt(moveId) ? Task.CompletedTask : _seating.TableMoveClicked(moveId);
 
     /// <inheritdoc cref="Seating.TableMoveOnOffer"/>
     private bool TableMoveOnOffer(Encounter.Move move) => _seating.TableMoveOnOffer(move);

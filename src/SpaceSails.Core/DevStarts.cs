@@ -193,6 +193,22 @@ public static class DevStarts
             + "in the field book. Walk out of the gate and back in first and NOTHING lands: you came in "
             + "again, and the beat is the change (#759).",
             "/map?park=1&parkphase=morning"),
+        // #794 · THE CHALK MARK. A paid delivery's return, left under one bench on a schedule — and the
+        // schedule is the whole difficulty of reaching it by play: a window is one watch in three, so a
+        // tester needs the clock put ON one. Two rows, because the mark and the wipe are two scenes.
+        new("🌳✚", "A chalk cross by the park's notice",
+            "B1 of a deep site, inside the park at the notice, with a paid delivery's return on record and "
+            + "the clock at its window: the mark's line lands on the first tick, a small chalk cross is "
+            + "drawn on the wall beside the gate, and the DEV pulse names the bench. Walk the walk out "
+            + "from the gate — either way, the ordinal is counted outward — sit on that bench alone and the "
+            + "card carries FEEL UNDER THE SLAT. Take it: a parcel in the satchel, one line in the book. "
+            + "On any other bench, or sharing one, the move is not there at all (#794).",
+            "/map?park=1&chalk=1"),
+        new("🌳🧽", "…and one watch later, the wall wiped",
+            "The same return, one watch on: the mark was seen and the grounds crew has wiped it. The wipe's "
+            + "line lands once at the notice, no cross is drawn, and the goods are still under the slat for "
+            + "this one watch (#794).",
+            "/map?park=1&chalk=wiped"),
         // #775 · THE WAY IN, AND THE WAY THE FOOD COMES IN. Owner, walking the new B1: "the bar/canteen
         // needs DOORS ON THE MAIN CORRIDOR — today you have to really look for the way in; a venue's
         // entrance should find YOU." The row that proves that has to start OUTSIDE the room, which is the
