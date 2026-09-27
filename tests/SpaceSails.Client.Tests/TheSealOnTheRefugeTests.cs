@@ -235,8 +235,11 @@ public sealed class TheSealOnTheRefugeTests
         }
 
         // …and the marker that asked for it is off the source, so the backlog stops re-finding it.
-        string air = System.IO.File.ReadAllText(System.IO.Path.Combine(
-            CoreRoot, "UndergroundComplex.Air.cs"));
+        // #251 · the air family is three files now; a DoesNotContain over one of them would go quiet on
+        // the other two, so the whole family is read — the opening file first, then its partials.
+        string air = string.Concat(new[] { System.IO.Path.Combine(CoreRoot, "UndergroundComplex.Air.cs") }
+            .Concat(System.IO.Directory.GetFiles(CoreRoot, "UndergroundComplex.Air.*.cs").Order(StringComparer.Ordinal))
+            .Select(System.IO.File.ReadAllText));
         Assert.Contains("RefugeDryGlyph", air, StringComparison.Ordinal);
         Assert.DoesNotContain("FABLE: line needed", air, StringComparison.Ordinal);
     }
