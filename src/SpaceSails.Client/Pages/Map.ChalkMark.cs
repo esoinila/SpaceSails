@@ -189,12 +189,17 @@ public sealed partial class Map
     /// that half is stated rather than earned. Everything after it is the shipped path: the notice, the
     /// chalk on the plan, the move on the card, the satchel, the tag, the book.</para>
     /// </summary>
-    private void PlantTheChalkIfAsked(SurfaceExcursion ex, in UndergroundComplex.Park green)
+    /// <para>#1296 · It RETURNS its tester's line instead of showing it, and the caller shows it LAST. Shown
+    /// here, it was written over on the same tick by <c>?park=1</c>'s own dev pulse at the same rank, and the
+    /// one sentence that tells a tester which bench holds the drop never reached the screen. The more specific
+    /// cheat wins the pulse, which is what <c>?park=1&amp;spread=1</c> already does. Null when nothing was
+    /// asked for.</para>
+    private string? PlantTheChalkIfAsked(SurfaceExcursion ex, in UndergroundComplex.Park green)
     {
         ChalkMark.Cheat cheat = Navigation is { } address ? ChalkMark.CheatIn(address.Uri) : ChalkMark.Cheat.None;
         if (cheat == ChalkMark.Cheat.None)
         {
-            return;
+            return null;
         }
 
         long now = PatronRota.WatchIndex(SimTime);
@@ -203,8 +208,7 @@ public sealed partial class Map
         long paid = ChalkMark.PaidWatchFor(cheat, parcel, body, now);
         if (ChalkMark.For(parcel, body, paid, in green) is not { } mark)
         {
-            ShowPulseMessage("🧪 DEV ?chalk= — this park has no bench a drop could be left under.");
-            return;
+            return "🧪 DEV ?chalk= — this park has no bench a drop could be left under.";
         }
 
         _roomsTurnedOver.Add(mark.Owed);
@@ -213,7 +217,10 @@ public sealed partial class Map
             _roomsTurnedOver.Add(mark.SeenOn(seen));
         }
 
-        ShowPulseMessage(
-            $"🧪 DEV ?chalk={(cheat == ChalkMark.Cheat.Wiped ? "wiped" : "1")}: {mark.ThePaymentLine()}");
+        // The canon sentence counts outward from the gate and does not say which way, so every ordinal
+        // names one bench on each side. The TESTER is told the side on the plan; the captain is not.
+        string side = ParkBenches.On(in green)[mark.Bench].X < green.X ? "LEFT" : "RIGHT";
+        return $"🧪 DEV ?chalk={(cheat == ChalkMark.Cheat.Wiped ? "wiped" : "1")}: {mark.ThePaymentLine()} "
+            + $"(the one to the {side} of the gate on the plan)";
     }
 }

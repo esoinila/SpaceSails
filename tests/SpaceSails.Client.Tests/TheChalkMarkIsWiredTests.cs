@@ -124,6 +124,43 @@ public sealed class TheChalkMarkIsWiredTests
         Assert.Contains("Chalk: TheChalkOnTheWall()", hud, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// #1296 · THE DEV START'S BENCH-NAMING LINE IS THE LAST PULSE THE PARK ROW WRITES. It used to be shown
+    /// inside the plant and then written over, on the same tick and at the same rank, by <c>?park=1</c>'s own
+    /// line — so a tester was never told which bench. Every pulse the park row writes after the plant must be
+    /// the chalk line (or fall back to the park's own only when there is none), on the stand path AND on the
+    /// <c>&amp;spread=1</c> path, whose bench row writes a pulse of its own.
+    /// </summary>
+    [Fact]
+    public void TheChalkDevLineIsTheLastPulseThePARKRowWrites()
+    {
+        string stand = Code(Read("Pages", "Map.Surface.Cheats.Stand.cs"));
+        int at = stand.IndexOf("private void StandInTheParkIfAsked(", StringComparison.Ordinal);
+        Assert.True(at >= 0, "the park's dev row moved — this guard is watching a method that is gone.");
+        int end = stand.IndexOf("\n    }", at, StringComparison.Ordinal);
+        string row = stand[at..end];
+
+        int plant = row.IndexOf("PlantTheChalkIfAsked(ex, in green)", StringComparison.Ordinal);
+        Assert.True(plant > 0, "the park row no longer plants the chalk.");
+        Assert.Contains("string? chalk = PlantTheChalkIfAsked(", row, StringComparison.Ordinal);
+
+        foreach (Match m in Regex.Matches(row[plant..], @"ShowPulseMessage\(([^;]*)\);"))
+        {
+            Assert.True(m.Groups[1].Value.Contains("chalk", StringComparison.Ordinal),
+                $"the park row writes a pulse after the plant that is not the chalk line, so it writes over "
+                + $"it on the same tick: ShowPulseMessage({m.Groups[1].Value.Trim()})");
+        }
+
+        int sits = row.IndexOf("if (SitOnAFreeBenchIfAsked(in green))", StringComparison.Ordinal);
+        int back = row.IndexOf("return;", sits, StringComparison.Ordinal);
+        Assert.True(sits > plant && back > sits, "the bench branch moved.");
+        Assert.Contains("ShowPulseMessage(chalk)", row[sits..back], StringComparison.Ordinal);
+
+        // …and the plant itself no longer says anything; it hands its line back.
+        string plantBody = Body(Chalk(), "private string? PlantTheChalkIfAsked(");
+        Assert.DoesNotContain("ShowPulseMessage(", plantBody, StringComparison.Ordinal);
+    }
+
     /// <summary>The mark's notes are filed under Core's glyph, never a literal typed on the page.</summary>
     [Fact]
     public void TheNotesWearCoresGlyph()
