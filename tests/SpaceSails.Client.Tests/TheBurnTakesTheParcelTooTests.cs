@@ -208,7 +208,7 @@ public sealed class TheBurnTakesTheParcelTooTests
     [Fact]
     public void ThereIsOneBurnPredicateAndTheParcelRowDoesNotRideTheKeysRegister()
     {
-        string tail = Code(Source("src", "SpaceSails.Client", "Pages", "Map.TailBehindYou.cs"));
+        string tail = Code(Source("src", "SpaceSails.Client", "Pages", "Map.TailBehindYou.Burn.cs"));
         string sources = Code(Source("src", "SpaceSails.Client", "Pages", "Map.BlackOpsKey.Sources.cs"));
         string parcel = Code(Source("src", "SpaceSails.Client", "Pages", "Map.UnlistedParcel.cs"));
         string client = string.Join("\n", Directory
