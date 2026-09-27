@@ -113,7 +113,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // map takes the same standing-still seconds." A game that charged for filing and gave the clue read
         // away free would teach the captain to read everything on the spot and file nothing, which deletes
         // the decision the cost model was built to create.
-        string tryIt = Method("Map.Surface.Darkroom.cs", "private void TryItem(Core.Satchel.Item item)");
+        string tryIt = Method("Map.Surface.Darkroom.Try.cs", "private void TryItem(Core.Satchel.Item item)");
 
         Assert.Contains("BeginProcessing(", tryIt, StringComparison.Ordinal);
         Assert.Contains("Core.Processing.Work.Read", tryIt, StringComparison.Ordinal);
@@ -121,7 +121,7 @@ public sealed class ProcessingTheLootTakesTimeTests
 
         // The clock is in front of THIS press and not inside the shared ending — a hold bolted into
         // TheOfferIsAnswered would put twenty seconds in front of a wallet fan at a door as well (#697).
-        string ending = CodeOnly(Method("Map.Surface.Darkroom.cs", "private void TheOfferIsAnswered("));
+        string ending = CodeOnly(Method("Map.Surface.Darkroom.Try.cs", "private void TheOfferIsAnswered("));
         Assert.DoesNotContain("BeginProcessing(", ending, StringComparison.Ordinal);
     }
 

@@ -86,7 +86,7 @@ public sealed class TheSatchelFeelPassTests
         // Core's (SatchelTry.CanOffer, pinned in WhatYouLeaveIsStillThereTests); what this guard forbids is
         // the client routing around it, which is exactly what it did — TargetFor handed back the open-at
         // target for every row in the pocket without asking anybody.
-        string targetFor = Method("Map.Surface.Darkroom.cs",
+        string targetFor = Method("Map.Surface.Darkroom.Targets.cs",
             "private (SatchelTry.Target Target, string? Context, string Label)? TargetFor(");
 
         int opened = targetFor.IndexOf("_satchelTarget is { } at", StringComparison.Ordinal);
