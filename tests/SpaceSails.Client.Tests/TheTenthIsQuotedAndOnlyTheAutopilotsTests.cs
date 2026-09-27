@@ -139,7 +139,7 @@ public sealed class TheTenthIsQuotedAndOnlyTheAutopilotsTests
     private static readonly string[] HandSpentFiles =
     [
         "Map.Sim.Keys.cs",          // the captain's reflex + / − pulse
-        "Map.Plot.Nodes.cs",        // plotted burns, fired at their epoch
+        "Map.Plot.Nodes*.cs",       // plotted burns, fired at their epoch (#251 · three partials, swept as one)
         "Map.Plot.Skim.cs",         // the aerobrake plan's pulses
         "Map.Plot.Sling.cs",        // the slingshot plan's pulses
         "Map.Docking*.cs",          // the terminal match (#251 · six partials, swept as one)
