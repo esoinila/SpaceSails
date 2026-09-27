@@ -217,7 +217,7 @@ public sealed class TheHeatIsBankedOnceTests
             // insult to the event, so it is the meter's own Ceiling — quoted, never typed.
             ["Map.BerthScuttle.cs×1", "Map.Blackmail.cs×1", "Map.Combat.Remote.cs×1", "Map.Finder.cs×1",
              "Map.IllegalHeat.cs×1", "Map.OldCrew.cs×1",
-             "Map.Scan.cs×1", "Map.Surface.Hive.cs×1", "Map.WalkIn.cs×1", "Patrol.Floor.cs×1",
+             "Map.Scan.cs×1", "Map.Surface.Hive.cs×1", "Map.WalkIn.Job.cs×1", "Patrol.Floor.cs×1",
              "Patrol.Run.cs×1"],
             bankers);
     }

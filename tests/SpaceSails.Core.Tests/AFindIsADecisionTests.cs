@@ -144,7 +144,7 @@ public sealed class AFindIsADecisionTests
     [Fact]
     public void ThePickupOwnsNoTableOfItsOwnAndAsksTheOfferInstead()
     {
-        string source = CoreSource("UndergroundComplex.AuthorityCard.cs");
+        string source = CoreSource("UndergroundComplex.AuthorityCard.Pocket.cs");
         string pickup = MethodBody(source, "public static Pickup WhatGoesInThePocket(");
 
         Assert.Contains("WhatTheRoomHandsOver(", pickup, StringComparison.Ordinal);

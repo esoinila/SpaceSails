@@ -368,7 +368,7 @@ public sealed class LoadItFromTheRowTests
     public void THE_REACH_RuleIsAskedInOnePlace()
     {
         string surface = File.ReadAllText(Path.Combine(
-            TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.Darkroom.cs"));
+            TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.Darkroom.Try.cs"));
         string handLoad = File.ReadAllText(Path.Combine(
             TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.HandLoad.cs"));
 

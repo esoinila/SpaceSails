@@ -88,7 +88,7 @@ public sealed class ProcessingTheLootTakesTimeTests
     {
         // Owner's ruling, first half: filing a document's gist on leave is seconds of standing still. Before
         // #696 this method did the whole job inline — ground, pocket, book, sentence — in one frame.
-        string leave = Method("Map.Surface.Satchel.cs", "private void LeaveItem(Core.Satchel.Item item)");
+        string leave = Method("Map.Surface.Satchel.Leave.cs", "private void LeaveItem(Core.Satchel.Item item)");
 
         Assert.Contains("BeginProcessing(", leave, StringComparison.Ordinal);
         Assert.Contains("Core.Processing.Work.File", leave, StringComparison.Ordinal);
@@ -113,7 +113,7 @@ public sealed class ProcessingTheLootTakesTimeTests
         // map takes the same standing-still seconds." A game that charged for filing and gave the clue read
         // away free would teach the captain to read everything on the spot and file nothing, which deletes
         // the decision the cost model was built to create.
-        string tryIt = Method("Map.Surface.Darkroom.cs", "private void TryItem(Core.Satchel.Item item)");
+        string tryIt = Method("Map.Surface.Darkroom.Try.cs", "private void TryItem(Core.Satchel.Item item)");
 
         Assert.Contains("BeginProcessing(", tryIt, StringComparison.Ordinal);
         Assert.Contains("Core.Processing.Work.Read", tryIt, StringComparison.Ordinal);
@@ -121,7 +121,7 @@ public sealed class ProcessingTheLootTakesTimeTests
 
         // The clock is in front of THIS press and not inside the shared ending — a hold bolted into
         // TheOfferIsAnswered would put twenty seconds in front of a wallet fan at a door as well (#697).
-        string ending = CodeOnly(Method("Map.Surface.Darkroom.cs", "private void TheOfferIsAnswered("));
+        string ending = CodeOnly(Method("Map.Surface.Darkroom.Try.cs", "private void TheOfferIsAnswered("));
         Assert.DoesNotContain("BeginProcessing(", ending, StringComparison.Ordinal);
     }
 
@@ -332,10 +332,10 @@ public sealed class ProcessingTheLootTakesTimeTests
 
         // And the outcome of a finished leave is said wherever the captain is actually looking, which after
         // #696 is a fork rather than a fact: the dialog if they reopened it, the HUD if they did not.
-        string setDown = Method("Map.Surface.Satchel.cs", "private void SetItDown(");
+        string setDown = Method("Map.Surface.Satchel.Leave.cs", "private void SetItDown(");
         Assert.Contains("SayItWhereTheyAreLooking(", setDown, StringComparison.Ordinal);
 
-        string say = Method("Map.Surface.Satchel.cs", "private void SayItWhereTheyAreLooking(");
+        string say = Method("Map.Surface.Satchel.Leave.cs", "private void SayItWhereTheyAreLooking(");
         Assert.Contains("_showSatchel", say, StringComparison.Ordinal);
         Assert.Contains("_satchelOutcome", say, StringComparison.Ordinal);
         Assert.Contains("ShowPulseMessage(", say, StringComparison.Ordinal);

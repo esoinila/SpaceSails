@@ -187,7 +187,7 @@ public sealed class ThePlayerIsToldTests
         // bar. IllegalHeat's own sentence, at the floor, because the completion line lands in the same
         // breath at Status.
         new("she set you up, and the port has been waiting for this ship",
-            Surface.RankedPulse, "Map.WalkIn.cs", "YouComeBackAndTellHer",
+            Surface.RankedPulse, "Map.WalkIn.Job.cs", "YouComeBackAndTellHer",
             "SayItWhereTheyAreLooking(IllegalHeat.TheyRememberYouHere, Telling.Floor);"),
 
         // (5) is the signer, and it is told nowhere — see KnownSilences.

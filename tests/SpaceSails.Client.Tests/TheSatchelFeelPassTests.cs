@@ -86,7 +86,7 @@ public sealed class TheSatchelFeelPassTests
         // Core's (SatchelTry.CanOffer, pinned in WhatYouLeaveIsStillThereTests); what this guard forbids is
         // the client routing around it, which is exactly what it did — TargetFor handed back the open-at
         // target for every row in the pocket without asking anybody.
-        string targetFor = Method("Map.Surface.Darkroom.cs",
+        string targetFor = Method("Map.Surface.Darkroom.Targets.cs",
             "private (SatchelTry.Target Target, string? Context, string Label)? TargetFor(");
 
         int opened = targetFor.IndexOf("_satchelTarget is { } at", StringComparison.Ordinal);
@@ -135,7 +135,7 @@ public sealed class TheSatchelFeelPassTests
         // SetItDown is the drop the clock ends in — which is also what makes the far end of a hold the
         // effect the game already had rather than a second copy of it. These guards read the drop wherever
         // the drop lives; what they must never do is quietly stop asking.
-        string leave = Method("Map.Surface.Satchel.cs", "private void SetItDown(");
+        string leave = Method("Map.Surface.Satchel.Leave.cs", "private void SetItDown(");
 
         // #680/#686's law applies to this line too, and it is the easiest one in the game to get wrong: a
         // confirmation routed to the pulse HUD while the satchel is open renders under the backdrop's blur —
@@ -149,7 +149,7 @@ public sealed class TheSatchelFeelPassTests
             "the drop pulses its line directly, which is the exact shape #680 was filed on the moment the " +
             "satchel happens to be open over it.");
 
-        string says = Method("Map.Surface.Satchel.cs", "private void SayItWhereTheyAreLooking(");
+        string says = Method("Map.Surface.Satchel.Leave.cs", "private void SayItWhereTheyAreLooking(");
         Assert.True(says.Contains("_satchelOutcome", StringComparison.Ordinal)
             && says.Contains("_showSatchel", StringComparison.Ordinal),
             "the say-it router does not consult the satchel — the line it places cannot be in the right " +
@@ -184,7 +184,7 @@ public sealed class TheSatchelFeelPassTests
     {
         // The other half of "leaving never destroys": there has to be a way back. E is the verb that finds
         // things, so E finds what is at your feet before it finds what is in the walls.
-        string surface = Pages("Map.Surface.Satchel.cs");
+        string surface = Pages("Map.Surface.Satchel.Leave.cs");
         Assert.True(surface.Contains("private bool TryPickUpWhatYouLeft(", StringComparison.Ordinal),
             "nothing in the client ever picks a left thing back up — the drop verb is a delete key (#688/#615).");
 
