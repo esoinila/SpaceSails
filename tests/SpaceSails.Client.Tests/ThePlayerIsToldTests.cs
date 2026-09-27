@@ -201,19 +201,19 @@ public sealed class ThePlayerIsToldTests
         // chain of custody predates the story. Said where the eye is, because a dossier is a panel and a
         // line pulsed under a panel is a line said to nobody (#736).
         new("a hull's own record clears her, and that trail is closed",
-            Surface.OnModalOutcome, "Map.Finder.cs", "TheCaseReadsThisHull",
+            Surface.OnModalOutcome, "Map.Finder.Trail.cs", "TheCaseReadsThisHull",
             "SayItWhereTheyAreLooking(FinderCase.HerringCleared, Telling.Floor);"),
 
         // THE REVEAL. The card IS the telling: what the captain now knows and what he can now do are both
         // entirely on it, and the two verbs are the whole of the scene.
         new("the fourth name is in the next berth, and he knows you are here",
-            Surface.RaisedCard, "Map.Finder.cs", "TheFourthNameGoesUp",
+            Surface.RaisedCard, "Map.Finder.Confrontation.cs", "TheFourthNameGoesUp",
             "_finderReveal = c;"),
 
         // THE SETTLING. What the captain is OWED and what an outfit will now remember, both on the card that
         // asked for the choice rather than pulsed under its own backdrop.
         new("you settle a finder's case, and one of the two ways burns the port",
-            Surface.OnModalOutcome, "Map.Finder.cs", "SettleTheCase",
+            Surface.OnModalOutcome, "Map.Finder.Confrontation.cs", "SettleTheCase",
             "_finderOutcome = FinderCase.OutcomeLine(outcome);"),
 
         // ── DOORS THAT WILL NOW OPEN ───────────────────────────────────────────────────────────────────

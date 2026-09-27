@@ -448,7 +448,9 @@ public sealed class TheFinderWalksTheWholeCaseTests
         // purpose (a comment that could not say what its code is wired to would be a worse comment), so a
         // guard that could not tell a sentence about a roll from a roll would have to be written not to
         // look at them at all.
-        string finder = CodeOnly(Page("Map.Finder.cs"));
+        // #251 · …and the finder is a partial family now (Map.Finder.cs and every Map.Finder.*.cs), so the
+        // DoesNotContain sweeps below read ALL of it: a roll grown in a partial is still a roll.
+        string finder = CodeOnly(string.Concat(new[] { "Map.Finder.cs" }.Concat(FinderPartials()).Select(Page)));
 
         // ONE roll, in the bar, and the finder asked about its verdict on both arms.
         Assert.Equal(1, Occurrences(bar, "ContactDrink.OfferDrink("));
@@ -766,6 +768,24 @@ public sealed class TheFinderWalksTheWholeCaseTests
         (string?)Get(Field(map, "_pulse")!, "Message");
 
     // ── Reading the shipped source ───────────────────────────────────────────────────────────────────────
+
+    /// <summary>#251 · The file names of every <c>Map.Finder.*.cs</c> partial, ordinal.</summary>
+    private static IEnumerable<string> FinderPartials()
+    {
+        DirectoryInfo? at = new(AppContext.BaseDirectory);
+        while (at is not null && !Directory.Exists(Path.Combine(at.FullName, "src", "SpaceSails.Client")))
+        {
+            at = at.Parent;
+        }
+
+        return Directory
+            .GetFiles(Path.Combine(
+                at?.FullName ?? throw new DirectoryNotFoundException("no repo root above the test binary"),
+                "src", "SpaceSails.Client", "Pages"), "Map.Finder.*.cs")
+            .Select(Path.GetFileName)
+            .Select(f => f!)
+            .Order(StringComparer.Ordinal);
+    }
 
     private static string Page(string relative)
     {
