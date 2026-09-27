@@ -497,7 +497,7 @@ public sealed class TheFinderWalksTheWholeCaseTests
     [Fact]
     public void TheThreeLeadsAreWiredToTheSeamsTheGameAlreadyHad()
     {
-        Assert.Contains("ThePapersSubjectsAt(body)", Page("Map.Surface.Shelter.cs"), StringComparison.Ordinal);
+        Assert.Contains("ThePapersSubjectsAt(body)", Page("Map.Surface.Shelter.Ruins.cs"), StringComparison.Ordinal);
         Assert.Contains("TheWitnessMayHaveSeenIt(giver)", Page("Map.Quests.Offers.cs"), StringComparison.Ordinal);
         Assert.Contains("TheCaseReadsThisHull(", Page("Map.Combat.Boarding.cs"), StringComparison.Ordinal);
         Assert.Contains("TheCaseReadsThisHull(", Page("Map.Alerts.cs"), StringComparison.Ordinal);

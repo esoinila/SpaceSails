@@ -375,7 +375,7 @@ public sealed class ThePlayerIsToldTests
         // and is never the floor's own one, so nobody stands in it and the suit stepper cannot be where the
         // telling happens. It is [E] at the door, which is as close as a captain will ever get.
         new("the refuge on this floor is welded shut, and you are at its door",
-            Surface.RaisedCard, "Map.Surface.Shelter.cs", "HiveRefugeDarkInteract",
+            Surface.RaisedCard, "Map.Surface.Shelter.Refuge.cs", "HiveRefugeDarkInteract",
             "RaiseStoryBeat(StoryBeats.Beat.RefugeFailed, ex.Stop.Body.Id);"),
 
         // #1199 · THE WALK ITSELF is a card (the absence, at the blind end) and takes the row above's shape.
