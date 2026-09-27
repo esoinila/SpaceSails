@@ -524,6 +524,11 @@ public sealed class TheTailBehindYouTests
         [
             CoreFile,
             Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.TailBehindYou.cs"),
+            // #251 · the frame was split into four partials; a DoesNotContain sweep over one of them would go
+            // quiet rather than red, so every one is named here by path.
+            Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.TailBehindYou.Stand.cs"),
+            Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.TailBehindYou.Step.cs"),
+            Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.TailBehindYou.Burn.cs"),
         ];
 
         foreach (string f in files)

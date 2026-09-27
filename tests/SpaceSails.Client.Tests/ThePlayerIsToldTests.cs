@@ -401,7 +401,7 @@ public sealed class ThePlayerIsToldTests
         // must not wipe it before it is read — #689's own failure, and the reason PulseRank.Beat exists. And
         // there is nothing standing in front of him: he is on a deck, on his own feet, with no dialog open.
         new("you have worked out that the man who came in after you is here for you",
-            Surface.RankedPulse, "Map.TailBehindYou.cs", "YouHaveNoticedHim",
+            Surface.RankedPulse, "Map.TailBehindYou.Step.cs", "YouHaveNoticedHim",
             "ShowPulseMessage(line, PulseRank.Beat);"),
 
         // …and the other end of the same exchange. It is said ONLY to a captain who had already noticed him
@@ -410,7 +410,7 @@ public sealed class ThePlayerIsToldTests
         // knew there was anything to lose. The book takes the same beat in the same breath, filed under the
         // PLACE, so the line is readable again after the HUD has moved on.
         new("the corridor behind you is empty, and the man who was in it has gone",
-            Surface.RankedPulse, "Map.TailBehindYou.cs", "HeGoesAndAsksTheWrongFloor",
+            Surface.RankedPulse, "Map.TailBehindYou.Step.cs", "HeGoesAndAsksTheWrongFloor",
             "ShowPulseMessage(TheTailBehindYou.LostLine, PulseRank.Beat);"),
 
         // #1062 slice 2 · THE BURN, and the row's whole content is WHERE it is not said. Nothing is raised on
@@ -422,7 +422,7 @@ public sealed class ThePlayerIsToldTests
         // Ranked, not carded: a card would stop the world to announce a consequence, and what has happened is
         // that a room is tidy.
         new("the place you did your quiet business in has been walked through ahead of you",
-            Surface.RankedPulse, "Map.TailBehindYou.cs", "TheBurnIsToldHere",
+            Surface.RankedPulse, "Map.TailBehindYou.Burn.cs", "TheBurnIsToldHere",
             "ShowPulseMessage(TheTailBehindYou.TheBurnLine, PulseRank.Beat);"),
 
         // #759 · THE PARK'S MORNING ARRIVES AT THE WRONG TIME. Plot-significant because it is the only
