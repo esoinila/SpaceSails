@@ -192,21 +192,29 @@ public partial class Map
         // that notices the park's morning reads both clocks on the first tick it finds you on the gravel,
         // and a clock jumped after that would have you coming in at one time and lingering from another.
         SetTheParksClockIfAsked(ex);
-        PlantTheChalkIfAsked(ex, in green);
+        string? chalk = PlantTheChalkIfAsked(ex, in green);   // #1296 · said LAST, below
 
         // #793 · …and ?park=1&spread=1 goes one leg further — onto a BENCH, with three finds in the sleeve
         // and the whole plank to yourself. Through the same handler [E] reaches, at one of the room's own
         // benches: a dev row that assembled its own sitting would demonstrate a bench that does not ship.
         if (SitOnAFreeBenchIfAsked(in green))
         {
+            if (chalk is not null)
+            {
+                ShowPulseMessage(chalk);
+            }
             return;
         }
 
-        ShowPulseMessage(
-            "🧪 DEV ?park=1: THE PARK. Green underfoot, the window wall back to the bar, beds and benches "
-            + "down the curve — press E at one to SIT DOWN (#793).");
+        ShowPulseMessage(chalk ?? TheParkDevLine);
         StandCaptainAt(green.X, green.Y, "you step through the gate onto the gravel");
     }
+
+    /// <summary>#759 QA · What <c>?park=1</c> says on arrival — unless a more specific row asked for the
+    /// pulse (<c>?chalk=</c>, #1296).</summary>
+    private const string TheParkDevLine =
+        "🧪 DEV ?park=1: THE PARK. Green underfoot, the window wall back to the bar, beds and benches "
+        + "down the curve — press E at one to SIT DOWN (#793).";
 
     /// <summary>#775 QA · <c>?frontdoor=1</c> — booted on the MAIN CORRIDOR, at the hall's own entrance.
     /// Set in Map.Sim's cheat parse.</summary>
