@@ -306,7 +306,7 @@ public sealed class TheyKnewTheFaceBeforeTests
     [Fact]
     public void ThePhotographIsAHeldMemoryWithFourThreadsAndItRaisesTheBeat()
     {
-        string body = Method(Pages("Map.OldCrew.cs"),
+        string body = Method(Pages("Map.OldCrew.Photograph.cs"),
             "private void HandOverThePhotograph(string shipmateId, string display)");
 
         Assert.Contains("HeldMemory.PhotographId", body, StringComparison.Ordinal);
@@ -329,7 +329,7 @@ public sealed class TheyKnewTheFaceBeforeTests
     [Fact]
     public void ThePhotographIsHandedOverOnceAndOnlyByItsHolder()
     {
-        string body = Method(Pages("Map.OldCrew.cs"),
+        string body = Method(Pages("Map.OldCrew.Photograph.cs"),
             "private void HandOverThePhotograph(string shipmateId, string display)");
 
         Assert.Contains("OldCrewScene.PhotographHeldBy(TheOldCrew)", body, StringComparison.Ordinal);
@@ -353,7 +353,12 @@ public sealed class TheyKnewTheFaceBeforeTests
         Assert.Contains("BankTheCrossing(OldCrew.SignerReport(here))", body, StringComparison.Ordinal);
 
         // …and nothing in this lane banks heat any other way.
-        string source = Pages("Map.OldCrew.cs");
+        // #251 · the old crew is a partial family now, and a second way to bank heat grown in any partial is
+        // still a second way: the opening file and every Map.OldCrew.*.cs beside it are read.
+        string source = Pages("Map.OldCrew.cs") + string.Concat(Directory
+            .GetFiles(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "Map.OldCrew.*.cs")
+            .Order(StringComparer.Ordinal)
+            .Select(f => Pages(Path.GetFileName(f))));
         Assert.DoesNotContain("IllegalHeat.Bank(", source, StringComparison.Ordinal);
         Assert.DoesNotContain("ApplyHeat(", source, StringComparison.Ordinal);
     }
