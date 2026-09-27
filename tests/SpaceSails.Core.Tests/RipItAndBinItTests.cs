@@ -568,7 +568,9 @@ public sealed class RipItAndBinItTests
         // Read off the CODE, with the commentary stripped — the file's own docs name the notebook in the
         // sentence that promises never to touch it, and a guard that could not tell those apart would be
         // unwritable. (It shipped red on its own documentation the first time it ran.)
-        string source = CodeOnly(CoreSource("RipAndBin.cs"));
+        // #251 · RipAndBin is a partial family now, and a hand grown in any partial is still a hand: the
+        // opening file and every RipAndBin.*.cs beside it are read.
+        string source = CodeOnly(CoreSource("RipAndBin.cs") + string.Concat(CorePartialsOf("RipAndBin").Select(CoreSource)));
 
         foreach (string reach in new[] { "FieldNote", "FieldNotes", "CaseThreads", "Thread(", "Erase(" })
         {
@@ -682,5 +684,23 @@ public sealed class RipItAndBinItTests
         Assert.NotNull(dir);
         return System.IO.File.ReadAllText(
             System.IO.Path.Combine(dir!.FullName, "src", "SpaceSails.Core", file));
+    }
+
+    /// <summary>#251 · The file names of every <c>Name.*.cs</c> partial beside <c>Name.cs</c> in Core, ordinal —
+    /// for the shape guards whose claim is about a whole split type.</summary>
+    private static IEnumerable<string> CorePartialsOf(string name)
+    {
+        var dir = new System.IO.DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null
+            && !System.IO.Directory.Exists(System.IO.Path.Combine(dir.FullName, "src", "SpaceSails.Core")))
+        {
+            dir = dir.Parent;
+        }
+        Assert.NotNull(dir);
+        return System.IO.Directory
+            .GetFiles(System.IO.Path.Combine(dir!.FullName, "src", "SpaceSails.Core"), name + ".*.cs")
+            .Select(System.IO.Path.GetFileName)
+            .Select(f => f!)
+            .Order(StringComparer.Ordinal);
     }
 }
