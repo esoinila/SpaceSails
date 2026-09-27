@@ -1,0 +1,37 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Core
+@*
+    #251 · THE LEDGER'S TWO PROMPTS, ON ONE FILE.
+
+    The bank/export/edit prompt and the import confirm: two gates about the save ledger, moved with their invocations.
+
+    Moved out of Map.razor by PURE MOTION (the owner's ruling of 2026-09-03: "Map.razor → components"):
+    the block between the two fences below is the block that was in the page, character for character,
+    gates included — a gate is what says WHEN a thing is on the glass, and it travels with the thing.
+    Every page member the block reads is a [Parameter] with the SAME NAME; a member it WRITES crosses as
+    a value-and-setter pair (NoSurfaceSwallowsAWriteTests). TheComposedMapIsTheMapTests holds the page
+    this composes to, byte for byte.
+
+    IHandleEvent repeats the page's own override (Map.Sim.cs): no automatic re-render per event, as on
+    every surface under Pages/Map/. The .razor.css beside this file carries no rules; it exists to give
+    the component Map.razor.css's scope (pinned in SpaceSails.Client.csproj).
+*@
+@* ── MARKUP BEGINS · verbatim from Map.razor ───────────────────────────────────────────────── *@
+    @if (_bankPrompt is { } bankKind)
+    {
+        <BankPromptCard _bankNoteValue="@_bankNote" _bankNoteSet="@(v => _bankNote = v)" _bankPrompt="@_bankPrompt" _bankSlotId="@_bankSlotId"
+                        _bankTitleValue="@_bankTitle" _bankTitleSet="@(v => _bankTitle = v)" BankPromptHeading="@BankPromptHeading"
+                        CancelBankPrompt="@CancelBankPrompt" CommitBankPrompt="@CommitBankPrompt" Dismiss="@Dismiss"
+                        bankKind="@bankKind" />
+    }
+
+    @if (_importConfirming)
+    {
+        <ImportConfirmCard _importConfirming="@_importConfirming" _importPreview="@_importPreview"
+                           ApplyPendingImport="@ApplyPendingImport" Board="@Board" CancelImport="@CancelImport"
+                           ConfirmImportBankingFirst="@ConfirmImportBankingFirst"
+                           ConfirmImportReplace="@ConfirmImportReplace" Dismiss="@Dismiss" />
+    }
+@* ── MARKUP ENDS ──────────────────────────────────────────────────────────────── *@
