@@ -269,7 +269,7 @@ public partial class Map
 
     /// <summary>Everything off the main corridor and behind the glass — <c>?park=</c>,
     /// <c>?parkphase=</c>, <c>?frontdoor=</c>, <c>?parkwalk=</c>, <c>?ringoffice=</c>, <c>?goodscar=</c>,
-    /// <c>?parkback=</c>, <c>?freight=</c> and <c>?designate=</c>.</summary>
+    /// <c>?parkback=</c>, <c>?freight=</c>, <c>?designate=</c> and <c>?chalk=</c>.</summary>
     private bool ReadTheCorridorAndThePark(string pair, BootQuery q)
     {
         if (pair.StartsWith("parkphase=", StringComparison.OrdinalIgnoreCase))
@@ -426,6 +426,13 @@ public partial class Map
                 _landCheat = true;
                 _startingFloorCheat = -1;
             }
+        }
+        else if (pair.StartsWith("chalk=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #794 dev cheat: /map?park=1&chalk=1|wiped plants a paid delivery's return at the park's notice.
+            // CLAIMED here and read nowhere here: it writes no world, so it has no business in BootQuery, and
+            // a page field for it would move #905's frame ledger. Map.ChalkMark reads it off the address bar
+            // (ChalkMark.CheatIn) at the moment ?park=1 stands the captain in the park.
         }
         else
         {

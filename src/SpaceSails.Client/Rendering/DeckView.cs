@@ -233,7 +233,11 @@ public sealed partial class DeckView
         // one number that decides whether this excursion has a way home. Rung is
         // ShuttleLink.Stage as an int, or 3 for a window that is closed and coming back (#955 NAV-2), which
         // is neither a rung nor a maroon. Null aboard, and on any ground with no mothership to catch.
-        (double RangeFraction, int Rung)? ShuttleLegs = null);
+        (double RangeFraction, int Rung)? ShuttleLegs = null,
+        // #794 · THE CHALK ON THE WALL beside the park's notice, where Core says it is
+        // (ChalkMark.WhereOnTheWall), and only while the mark is up. Null on every other frame of the game,
+        // which is every frame with no paid delivery on record — so the pen draws nothing new.
+        (double X, double Y)? Chalk = null);
 
     // #708 · The pen, and the mask that can be slipped over it. `_renderer` is what every draw in this file
     // writes to; for the world phase of a DARK floor it is the LampMask, and for everything else — the
