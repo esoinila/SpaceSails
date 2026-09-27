@@ -161,7 +161,7 @@ public sealed class TheThreadsPageIsInTheSatchelTests
     [Fact]
     public void TheFilingFunnelCarriesTheAuthorsSubjects()
     {
-        string satchel = Pages("Map.Surface.Satchel.cs");
+        string satchel = Pages("Map.Surface.Satchel.Filing.cs");
 
         // The two-argument form four dozen sites call is still exactly that — a defaulted third parameter
         // would have changed the signature under every one of them and under the guards that reach for it
@@ -169,7 +169,7 @@ public sealed class TheThreadsPageIsInTheSatchelTests
         Assert.Contains("private void FileNote(string text, string glyph) => FileNoteAbout(text, glyph, \"\");",
             satchel, StringComparison.Ordinal);
 
-        string file = Method("Map.Surface.Satchel.cs", "private void FileNoteAbout(");
+        string file = Method("Map.Surface.Satchel.Filing.cs", "private void FileNoteAbout(");
         Assert.Contains("glyph, subjects)", file, StringComparison.Ordinal);
         Assert.Contains("TheThreadBadgeGoesOnTheCard(", file, StringComparison.Ordinal);
 

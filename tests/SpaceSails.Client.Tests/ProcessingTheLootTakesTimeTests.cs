@@ -88,7 +88,7 @@ public sealed class ProcessingTheLootTakesTimeTests
     {
         // Owner's ruling, first half: filing a document's gist on leave is seconds of standing still. Before
         // #696 this method did the whole job inline — ground, pocket, book, sentence — in one frame.
-        string leave = Method("Map.Surface.Satchel.cs", "private void LeaveItem(Core.Satchel.Item item)");
+        string leave = Method("Map.Surface.Satchel.Leave.cs", "private void LeaveItem(Core.Satchel.Item item)");
 
         Assert.Contains("BeginProcessing(", leave, StringComparison.Ordinal);
         Assert.Contains("Core.Processing.Work.File", leave, StringComparison.Ordinal);
@@ -332,10 +332,10 @@ public sealed class ProcessingTheLootTakesTimeTests
 
         // And the outcome of a finished leave is said wherever the captain is actually looking, which after
         // #696 is a fork rather than a fact: the dialog if they reopened it, the HUD if they did not.
-        string setDown = Method("Map.Surface.Satchel.cs", "private void SetItDown(");
+        string setDown = Method("Map.Surface.Satchel.Leave.cs", "private void SetItDown(");
         Assert.Contains("SayItWhereTheyAreLooking(", setDown, StringComparison.Ordinal);
 
-        string say = Method("Map.Surface.Satchel.cs", "private void SayItWhereTheyAreLooking(");
+        string say = Method("Map.Surface.Satchel.Leave.cs", "private void SayItWhereTheyAreLooking(");
         Assert.Contains("_showSatchel", say, StringComparison.Ordinal);
         Assert.Contains("_satchelOutcome", say, StringComparison.Ordinal);
         Assert.Contains("ShowPulseMessage(", say, StringComparison.Ordinal);
