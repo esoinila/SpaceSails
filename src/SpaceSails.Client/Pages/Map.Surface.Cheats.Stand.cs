@@ -192,6 +192,7 @@ public partial class Map
         // that notices the park's morning reads both clocks on the first tick it finds you on the gravel,
         // and a clock jumped after that would have you coming in at one time and lingering from another.
         SetTheParksClockIfAsked(ex);
+        PlantTheChalkIfAsked(ex, in green);
 
         // #793 · …and ?park=1&spread=1 goes one leg further — onto a BENCH, with three finds in the sleeve
         // and the whole plank to yourself. Through the same handler [E] reaches, at one of the room's own

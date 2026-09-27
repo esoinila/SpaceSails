@@ -414,6 +414,8 @@ public partial class Map
             // today this smudges an empty floor — which is the correct order of work: make the instrument
             // honest first, and whatever eventually comes down here inherits a tracker that already behaves
             // like it is underground instead of one that has to be taught after the fact.
-            Smudges: _hudSmudges);
+            Smudges: _hudSmudges,
+            // #794 · …and the chalk beside the park's notice, while it is up. Null everywhere else.
+            Chalk: TheChalkOnTheWall());
     }
 }

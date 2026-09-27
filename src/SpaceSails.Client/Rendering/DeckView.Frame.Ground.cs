@@ -503,6 +503,18 @@ public sealed partial class DeckView
                     _renderer.DrawText(sx, sy + 3, "×", new RgbaColor(90, 60, 60, 220), "bold 11px monospace", TextAlign.Center);
                 }
             }
+            // #794 · A CHALK CROSS ON THE SHOTCRETE, beside the park's notice, while the mark is up. Two strokes
+            // in chalk-white, a hand wide and no wider — a mark on a wall rather than a glyph on the map, and
+            // nothing points at it: the notice is right there and the captain has to look.
+            if (hud.Chalk is { } chalk)
+            {
+                (float cx, float cy) = project(chalk.X, chalk.Y);
+                float arm = 0.45f * scale;
+                ReadOnlySpan<float> rising = [cx - arm, cy + arm, cx + arm, cy - arm];
+                ReadOnlySpan<float> falling = [cx - arm, cy - arm, cx + arm, cy + arm];
+                _renderer.DrawPolyline(rising, ChalkInk, 1.4f);
+                _renderer.DrawPolyline(falling, ChalkInk, 1.4f);
+            }
             // #371 Phase 3: movement echoes — where a contact was last seen before it slipped behind cover.
             // A dim tracker-green ripple that fades over its life; "here was movement before" (owner's ask),
             // making the motion tracker's through-wall blips all the more exciting to chase.

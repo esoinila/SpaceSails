@@ -167,6 +167,11 @@ public sealed class TheBootReadsTheSameQueryTests
             ["/map?oldcrew=1"] = "126c272fad8c10fc076755e7ea176949",
             ["/map?nonsense=1&start=there-is-no-such-start&dock=NOT+A+HAVEN&site=-3&floor=0"] = "3aeb324d9e6c54486b300ab75da2cd6a",
             ["/map?park=1"] = "a0f9333661030ac36262796ec609223c",
+            // #794 · the chalk mark's two dev rows. ?chalk= writes no world and nothing the parse answers (it is
+            // read off the address bar at the park), so both are ?park=1's own line — dumped, diffed, and these
+            // two lines are the only thing the dump added; no other line moved.
+            ["/map?park=1&chalk=1"] = "a0f9333661030ac36262796ec609223c",
+            ["/map?park=1&chalk=wiped"] = "a0f9333661030ac36262796ec609223c",
             // #759 · …and both of them read EXACTLY what ?park=1 reads, which is the honest answer and worth
             // the row rather than an exemption: `?parkphase=` writes two fields on the PAGE (which phase was
             // asked for, and whether the morning door was), and not one of the thirty BootQuery fields this
