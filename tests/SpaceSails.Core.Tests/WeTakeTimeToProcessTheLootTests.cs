@@ -33,6 +33,18 @@ public sealed class WeTakeTimeToProcessTheLootTests
     private static string CoreSource(string file) =>
         File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Core", file));
 
+    /// <summary>#251 · <c>Name.cs</c> and every <c>Name.*.cs</c> partial beside it, concatenated — so a sweep
+    /// over a split class cannot go quiet on the half that moved. Asserts the opening file exists.</summary>
+    private static string CoreFamily(string name)
+    {
+        string core = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Core");
+        Assert.True(File.Exists(Path.Combine(core, name + ".cs")), $"{name}.cs is not where this guard reads it.");
+        return string.Concat(
+            new[] { Path.Combine(core, name + ".cs") }
+                .Concat(Directory.GetFiles(core, name + ".*.cs").Order(StringComparer.Ordinal))
+                .Select(File.ReadAllText));
+    }
+
     /// <summary>Everything but the prose. A law about what a file may MENTION has to be a law about its
     /// code, or the comment explaining why the two systems never meet would itself break the rule.</summary>
     private static string CodeOnly(string source)
@@ -307,7 +319,8 @@ public sealed class WeTakeTimeToProcessTheLootTests
                 "the air sim is no longer the one place that knows what a second costs (#696).");
         }
 
-        string suit = CodeOnly(CoreSource("SuitAir.cs"));
+        // #251 · SuitAir is a partial family now; the coupling law is about all of it, so all of it is read.
+        string suit = CodeOnly(CoreFamily("SuitAir"));
         Assert.False(suit.Contains("Processing", StringComparison.Ordinal),
             "SuitAir.cs mentions Processing — the point-of-no-return arithmetic now knows about the " +
             "captain's paperwork, which is exactly the coupling #696 was ruled to avoid.");
