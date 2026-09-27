@@ -232,7 +232,8 @@ public sealed class TwoInstrumentsDisagreeTests(ITestOutputHelper output)
             Assert.DoesNotContain("anomaly", cause.ToString(), StringComparison.OrdinalIgnoreCase);
         }
 
-        Assert.DoesNotContain("WreckAnomaly", CoreSource("Derelict.cs"), StringComparison.Ordinal);
+        // #251 · Derelict is a partial family now; the claim is about all of it, so all of it is read.
+        Assert.DoesNotContain("WreckAnomaly", CoreFamily("Derelict"), StringComparison.Ordinal);
     }
 
     // ── IT CONCLUDES NOTHING ────────────────────────────────────────────────────────────────────────────
@@ -434,4 +435,16 @@ public sealed class TwoInstrumentsDisagreeTests(ITestOutputHelper output)
 
     private static string CoreSource(string file) =>
         File.ReadAllText(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Core", file));
+
+    /// <summary>#251 · <c>Name.cs</c> and every <c>Name.*.cs</c> partial beside it, concatenated — so a
+    /// sweep over a split class cannot go quiet on the half that moved. Asserts the opening file exists.</summary>
+    private static string CoreFamily(string name)
+    {
+        string core = Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Core");
+        Assert.True(File.Exists(Path.Combine(core, name + ".cs")), $"{name}.cs is not where this guard reads it.");
+        return string.Concat(
+            new[] { Path.Combine(core, name + ".cs") }
+                .Concat(Directory.GetFiles(core, name + ".*.cs").Order(StringComparer.Ordinal))
+                .Select(File.ReadAllText));
+    }
 }
