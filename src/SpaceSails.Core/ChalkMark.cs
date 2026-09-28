@@ -219,7 +219,7 @@ public readonly record struct ChalkMark(
     public string WipeToldOn(long window) => $"{WipeToldTag}:{ParcelId}@{W(window)}";
 
     /// <summary>The same tag under slice 1's name.</summary>
-    private static string AsTheParkSaidIt(string tag)
+    private static string AsSliceOneSaidIt(string tag)
     {
         int colon = tag.IndexOf(':', StringComparison.Ordinal);
         if (colon < 0)
@@ -235,7 +235,7 @@ public readonly record struct ChalkMark(
     public bool WasCollected(IEnumerable<string>? register)
     {
         string prefix = $"{CollectedTag}:{ParcelId}@";
-        string old = AsTheParkSaidIt(prefix);
+        string old = AsSliceOneSaidIt(prefix);
         foreach (string tag in register ?? [])
         {
             if (tag.StartsWith(prefix, StringComparison.Ordinal) || tag.StartsWith(old, StringComparison.Ordinal))
@@ -259,7 +259,7 @@ public readonly record struct ChalkMark(
         }
 
         string prefix = $"{OwedTag}:{havenId}|";
-        string old = AsTheParkSaidIt(prefix);
+        string old = AsSliceOneSaidIt(prefix);
         List<string>? owed = null;
         foreach (string tag in register)
         {
@@ -326,7 +326,7 @@ public readonly record struct ChalkMark(
     }
 
     private static bool Contains(IReadOnlyCollection<string> set, string tag) =>
-        Has(set, tag) || Has(set, AsTheParkSaidIt(tag));
+        Has(set, tag) || Has(set, AsSliceOneSaidIt(tag));
 
     private static bool Has(IReadOnlyCollection<string> set, string tag)
     {
