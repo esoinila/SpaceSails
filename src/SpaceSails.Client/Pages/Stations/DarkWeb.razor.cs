@@ -31,6 +31,15 @@ public partial class DarkWeb
     [Parameter] public bool FullScreen { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
+    /// <summary>#1304 · <b>THE LINE THE PAGE IS SAYING, WHERE THE CAPTAIN IS LOOKING.</b> The page's pulse
+    /// slot, passed through as it stands — the very sentence the Nav readout draws under <i>Nearest:</i>, for
+    /// exactly as long as it draws it. The sales and payments this desk settles (#319's <i>"Coordinates
+    /// sent"</i> and its escrow, #711's parcel payment and #794's chalk riding on it) are all told on that
+    /// pulse, and the pulse was only ever drawn on the Nav desk and the deck toast: the captain at this desk
+    /// saw a purse change and nothing else. This desk writes no words of its own here and keeps no copy; when
+    /// the slot empties, or the desk closes, the line is gone.</summary>
+    [Parameter] public string? PulseLine { get; set; }
+
     [Parameter] public int Credits { get; set; }
     [Parameter] public EventCallback<int> CreditsChanged { get; set; }
 
