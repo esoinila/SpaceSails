@@ -454,7 +454,7 @@ public sealed partial class Map
             });
             AdvanceMission(home, QuestState.TurnedIn);
             ThePressRunsHerStory();
-            ShowPulseMessage($"🧪 DEV ?press=filed — {CarryThePress.Byline}'s story is on the wire (Galley 6, Comms ticker).");
+            ShowPulseMessage($"🧪 DEV ?press=filed — {CarryThePress.Byline}'s story is on the wire (Galley 6, Comms ticker)");
             return;
         }
 

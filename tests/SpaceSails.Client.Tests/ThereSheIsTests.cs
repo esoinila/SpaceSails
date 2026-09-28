@@ -362,6 +362,11 @@ public sealed class ThereSheIsTests
         // #319 slice 2 · the geocache dev start closes the car's job the way ending three does, at boot, from
         // the URL the tester typed — the press is the address bar, and nothing is owed.
         new("BuryAGeocacheForCheat", Trigger.APress),
+        // #1202 · a stringer's passage: the liftoff press ends her trip (her line rides the one writer), the clamp
+        // pays her fare, and the dev start's address bar is the press that files a trip already made.
+        new("SheSleepsTheBurnBack", Trigger.APress),
+        new("HerFareAtTheBerth", Trigger.APress),
+        new("TakeThePressForCheat", Trigger.APress),
         new("YouFindWhatSheAskedFor", Trigger.APress),
         new("YouComeBackAndTellHer", Trigger.APress),
         new("SubmitPin", Trigger.APress),

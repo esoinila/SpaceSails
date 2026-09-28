@@ -60,7 +60,10 @@ public class TheWireNeverNamesTheCaptainTests
     {
         foreach (NewsWire.NewsEventKind kind in Enum.GetValues<NewsWire.NewsEventKind>())
         {
-            if (kind == NewsWire.NewsEventKind.ArcBeatBreaks)
+            // #1202 · her story and the floor's reaction are pass-throughs too; their authored sentences are
+            // judged below, against every body the wire could print them about.
+            if (kind is NewsWire.NewsEventKind.ArcBeatBreaks
+                or NewsWire.NewsEventKind.PressStoryFiled or NewsWire.NewsEventKind.PressFloorReaction)
             {
                 continue;
             }
@@ -103,6 +106,71 @@ public class TheWireNeverNamesTheCaptainTests
 
             Assert.False(Personal.IsMatch(rendered), $"an arc beat named the reader: \"{rendered}\"");
         }
+    }
+
+    // ── #1202 · THE STRINGER'S STORY ─────────────────────────────────────────────────────────────────
+
+    /// <summary>Every line CARRY THE PRESS can put on the wire, about every moon the shipped scenario could send
+    /// her to, exactly as the push site pushes it — so the law lands on the sentences the wire actually prints.</summary>
+    private static IEnumerable<(NewsWire.NewsEventKind Kind, string Headline)> EveryPressLine()
+    {
+        foreach (CelestialBody body in SolEphemeris().Bodies)
+        {
+            if (body.Kind != BodyKind.Moon)
+            {
+                continue;
+            }
+
+            foreach (bool tin in new[] { true, false })
+            {
+                yield return (NewsWire.NewsEventKind.PressStoryFiled, NewsWire.Headline(new NewsWire.NewsEvent(
+                    NewsWire.NewsEventKind.PressStoryFiled, 9 * Day, CarryThePress.Story(body.Name, tin), body.Name)));
+            }
+
+            yield return (NewsWire.NewsEventKind.PressFloorReaction, NewsWire.Headline(new NewsWire.NewsEvent(
+                NewsWire.NewsEventKind.PressFloorReaction, 10 * Day, CarryThePress.Floor(body.Name), body.Name)));
+        }
+    }
+
+    /// <summary>
+    /// #1202 · <b>HER STORY NEVER NAMES THE CAPTAIN.</b> Her source was the captain, and the wire says so only as
+    /// a hired boat's master: no pronoun makes the reader the doer (law A), nothing titles or addresses him or
+    /// his boat (law B), and both stories carry the one phrase that stands where his name would be.
+    ///
+    /// <para><b>Proven RED</b> by sabotaging one story: "says a hired boat's master" rewritten "says your ship's
+    /// master" in <c>StoryWithTheTin</c> fails law B on every moon.</para>
+    /// </summary>
+    [Fact]
+    public void Law1202_HerStoryNamesAHiredBoatsMasterAndNeverTheCaptain()
+    {
+        var offences = new List<string>();
+        int stories = 0;
+        foreach ((NewsWire.NewsEventKind kind, string headline) in EveryPressLine())
+        {
+            if (Personal.Match(DeedClause(headline)) is { Success: true } m)
+            {
+                offences.Add($"{kind}: \"{m.Value}\" in the deed clause — \"{headline}\"");
+            }
+
+            if (NamesTheCaptain.IsMatch(headline))
+            {
+                offences.Add($"{kind}: \"{headline}\"");
+            }
+
+            if (kind == NewsWire.NewsEventKind.PressStoryFiled)
+            {
+                stories++;
+                if (!headline.Contains("hired boat's master", StringComparison.Ordinal))
+                {
+                    offences.Add($"{kind}: the source is not a hired boat's master — \"{headline}\"");
+                }
+            }
+        }
+
+        Assert.True(stories >= 20, $"the sweep reached only {stories} stories — it is not reading the moons.");
+        Assert.True(
+            offences.Count == 0,
+            "The wire never names the captain (#1052, #1202). " + string.Join(" | ", offences.Distinct()));
     }
 
     // ── B ────────────────────────────────────────────────────────────────────────────────────────
