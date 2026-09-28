@@ -27,7 +27,7 @@ public partial class Map
         // #1202 · …and a stringer's passage carries its own terms line (CarryThePress.TermsLine), in her voice.
         // The block's fixed vocabulary has no verb for "carry a person there and back", and a borrowed one
         // would be the card saying DELIVER about a woman.
-        IsLedgerlessOffer(q) || q.Kind == QuestKind.CarryThePress ? [] : JobTerms.PlainBlock(JobFactsFor(q));
+        q.Kind == QuestKind.CarryThePress ? [] : IsLedgerlessOffer(q) ? [] : JobTerms.PlainBlock(JobFactsFor(q));
 
     /// <summary>
     /// AN OFFER THAT IS A DOOR, NOT A JOB — and the reason the block has an off switch.
