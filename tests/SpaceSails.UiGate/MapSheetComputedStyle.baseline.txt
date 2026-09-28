@@ -1,42 +1,3 @@
-docked · Nav	.map-page	background-color	rgb(6, 9, 15)
-docked · Nav	.map-page	background-image	none
-docked · Nav	.map-page	bottom	0px
-docked · Nav	.map-page	left	0px
-docked · Nav	.map-page	position	fixed
-docked · Nav	.map-page	right	0px
-docked · Nav	.map-page	top	0px
-docked · Nav	.map-page	z-index	1000
-docked · Nav	.map-canvas	bottom	0px
-docked · Nav	.map-canvas	display	block
-docked · Nav	.map-canvas	height	900px
-docked · Nav	.map-canvas	left	0px
-docked · Nav	.map-canvas	position	absolute
-docked · Nav	.map-canvas	right	0px
-docked · Nav	.map-canvas	top	0px
-docked · Nav	.map-canvas	width	1280px
-docked · Nav	.map-topstack	align-items	center
-docked · Nav	.map-topstack	column-gap	6.4px
-docked · Nav	.map-topstack	display	flex
-docked · Nav	.map-topstack	flex-direction	column
-docked · Nav	.map-topstack	min-height	88px
-docked · Nav	.map-topstack	position	relative
-docked · Nav	.map-topstack	row-gap	6.4px
-docked · Nav	.map-topstack	z-index	24
-docked · Nav	.map-flowcolumn	display	flex
-docked · Nav	.map-flowcolumn	flex-direction	column
-docked · Nav	.map-flowcolumn	height	900px
-docked · Nav	.map-flowcolumn > .map-topstack	flex-basis	auto
-docked · Nav	.map-flowcolumn > .map-topstack	flex-grow	0
-docked · Nav	.map-flowcolumn > .map-topstack	flex-shrink	0
-docked · Nav	.parrot-perch	align-items	center
-docked · Nav	.parrot-perch	bottom	376px
-docked · Nav	.parrot-perch	column-gap	6.4px
-docked · Nav	.parrot-perch	display	flex
-docked · Nav	.parrot-perch	position	absolute
-docked · Nav	.parrot-perch	right	176px
-docked · Nav	.parrot-perch	row-gap	6.4px
-docked · Nav	.parrot-perch	z-index	26
-docked · Nav	.parrot-bird	font-size	24px
 docked · Nav	.captain-mono	align-items	center
 docked · Nav	.captain-mono	bottom	0px
 docked · Nav	.captain-mono	color	rgba(255, 255, 255, 0.92)
@@ -55,55 +16,45 @@ docked · Nav	.captain-portrait	position	absolute
 docked · Nav	.captain-portrait	right	0px
 docked · Nav	.captain-portrait	top	0px
 docked · Nav	.captain-portrait	width	32.3906px
-docked · Captain	.map-page	background-color	rgb(6, 9, 15)
-docked · Captain	.map-page	background-image	none
-docked · Captain	.map-page	bottom	0px
-docked · Captain	.map-page	left	0px
-docked · Captain	.map-page	position	fixed
-docked · Captain	.map-page	right	0px
-docked · Captain	.map-page	top	0px
-docked · Captain	.map-page	z-index	1000
-docked · Captain	.map-canvas	bottom	0px
-docked · Captain	.map-canvas	display	block
-docked · Captain	.map-canvas	height	900px
-docked · Captain	.map-canvas	left	0px
-docked · Captain	.map-canvas	position	absolute
-docked · Captain	.map-canvas	right	0px
-docked · Captain	.map-canvas	top	0px
-docked · Captain	.map-canvas	width	1280px
-docked · Captain	.map-topstack	align-items	center
-docked · Captain	.map-topstack	column-gap	6.4px
-docked · Captain	.map-topstack	display	flex
-docked · Captain	.map-topstack	flex-direction	column
-docked · Captain	.map-topstack	min-height	88px
-docked · Captain	.map-topstack	position	relative
-docked · Captain	.map-topstack	row-gap	6.4px
-docked · Captain	.map-topstack	z-index	24
-docked · Captain	.map-flowcolumn	display	flex
-docked · Captain	.map-flowcolumn	flex-direction	column
-docked · Captain	.map-flowcolumn	height	900px
-docked · Captain	.map-flowcolumn > .map-topstack	flex-basis	auto
-docked · Captain	.map-flowcolumn > .map-topstack	flex-grow	0
-docked · Captain	.map-flowcolumn > .map-topstack	flex-shrink	0
-docked · Captain	.pilot-banner	align-items	flex-start
-docked · Captain	.pilot-banner	column-gap	1.92px
-docked · Captain	.pilot-banner	display	flex
-docked · Captain	.pilot-banner	flex-direction	column
-docked · Captain	.pilot-banner	font-family	"Helvetica Neue", Helvetica, Arial, sans-serif
-docked · Captain	.pilot-banner	max-width	calc(100% - 24px)
-docked · Captain	.pilot-banner	row-gap	1.92px
-docked · Captain	.pilot-banner-manual	background-color	rgba(20, 28, 36, 0.85)
-docked · Captain	.pilot-banner-manual	background-image	none
-docked · Captain	.pilot-banner-manual	color	rgb(207, 224, 238)
-docked · Captain	.parrot-perch	align-items	center
-docked · Captain	.parrot-perch	bottom	376px
-docked · Captain	.parrot-perch	column-gap	6.4px
-docked · Captain	.parrot-perch	display	flex
-docked · Captain	.parrot-perch	position	absolute
-docked · Captain	.parrot-perch	right	176px
-docked · Captain	.parrot-perch	row-gap	6.4px
-docked · Captain	.parrot-perch	z-index	26
-docked · Captain	.parrot-bird	font-size	24px
+docked · Nav	.map-canvas	bottom	0px
+docked · Nav	.map-canvas	display	block
+docked · Nav	.map-canvas	height	900px
+docked · Nav	.map-canvas	left	0px
+docked · Nav	.map-canvas	position	absolute
+docked · Nav	.map-canvas	right	0px
+docked · Nav	.map-canvas	top	0px
+docked · Nav	.map-canvas	width	1280px
+docked · Nav	.map-flowcolumn	display	flex
+docked · Nav	.map-flowcolumn	flex-direction	column
+docked · Nav	.map-flowcolumn	height	900px
+docked · Nav	.map-flowcolumn > .map-topstack	flex-basis	auto
+docked · Nav	.map-flowcolumn > .map-topstack	flex-grow	0
+docked · Nav	.map-flowcolumn > .map-topstack	flex-shrink	0
+docked · Nav	.map-page	background-color	rgb(6, 9, 15)
+docked · Nav	.map-page	background-image	none
+docked · Nav	.map-page	bottom	0px
+docked · Nav	.map-page	left	0px
+docked · Nav	.map-page	position	fixed
+docked · Nav	.map-page	right	0px
+docked · Nav	.map-page	top	0px
+docked · Nav	.map-page	z-index	1000
+docked · Nav	.map-topstack	align-items	center
+docked · Nav	.map-topstack	column-gap	6.4px
+docked · Nav	.map-topstack	display	flex
+docked · Nav	.map-topstack	flex-direction	column
+docked · Nav	.map-topstack	min-height	88px
+docked · Nav	.map-topstack	position	relative
+docked · Nav	.map-topstack	row-gap	6.4px
+docked · Nav	.map-topstack	z-index	24
+docked · Nav	.parrot-bird	font-size	24px
+docked · Nav	.parrot-perch	align-items	center
+docked · Nav	.parrot-perch	bottom	376px
+docked · Nav	.parrot-perch	column-gap	6.4px
+docked · Nav	.parrot-perch	display	flex
+docked · Nav	.parrot-perch	position	absolute
+docked · Nav	.parrot-perch	right	176px
+docked · Nav	.parrot-perch	row-gap	6.4px
+docked · Nav	.parrot-perch	z-index	26
 docked · Captain	.captain-mono	align-items	center
 docked · Captain	.captain-mono	bottom	0px
 docked · Captain	.captain-mono	color	rgba(255, 255, 255, 0.92)
@@ -122,55 +73,55 @@ docked · Captain	.captain-portrait	position	absolute
 docked · Captain	.captain-portrait	right	0px
 docked · Captain	.captain-portrait	top	0px
 docked · Captain	.captain-portrait	width	32.3906px
-docked · Sensors	.map-page	background-color	rgb(6, 9, 15)
-docked · Sensors	.map-page	background-image	none
-docked · Sensors	.map-page	bottom	0px
-docked · Sensors	.map-page	left	0px
-docked · Sensors	.map-page	position	fixed
-docked · Sensors	.map-page	right	0px
-docked · Sensors	.map-page	top	0px
-docked · Sensors	.map-page	z-index	1000
-docked · Sensors	.map-canvas	bottom	0px
-docked · Sensors	.map-canvas	display	block
-docked · Sensors	.map-canvas	height	900px
-docked · Sensors	.map-canvas	left	0px
-docked · Sensors	.map-canvas	position	absolute
-docked · Sensors	.map-canvas	right	0px
-docked · Sensors	.map-canvas	top	0px
-docked · Sensors	.map-canvas	width	1280px
-docked · Sensors	.map-topstack	align-items	center
-docked · Sensors	.map-topstack	column-gap	6.4px
-docked · Sensors	.map-topstack	display	flex
-docked · Sensors	.map-topstack	flex-direction	column
-docked · Sensors	.map-topstack	min-height	88px
-docked · Sensors	.map-topstack	position	relative
-docked · Sensors	.map-topstack	row-gap	6.4px
-docked · Sensors	.map-topstack	z-index	24
-docked · Sensors	.map-flowcolumn	display	flex
-docked · Sensors	.map-flowcolumn	flex-direction	column
-docked · Sensors	.map-flowcolumn	height	900px
-docked · Sensors	.map-flowcolumn > .map-topstack	flex-basis	auto
-docked · Sensors	.map-flowcolumn > .map-topstack	flex-grow	0
-docked · Sensors	.map-flowcolumn > .map-topstack	flex-shrink	0
-docked · Sensors	.pilot-banner	align-items	flex-start
-docked · Sensors	.pilot-banner	column-gap	1.92px
-docked · Sensors	.pilot-banner	display	flex
-docked · Sensors	.pilot-banner	flex-direction	column
-docked · Sensors	.pilot-banner	font-family	"Helvetica Neue", Helvetica, Arial, sans-serif
-docked · Sensors	.pilot-banner	max-width	calc(100% - 24px)
-docked · Sensors	.pilot-banner	row-gap	1.92px
-docked · Sensors	.pilot-banner-manual	background-color	rgba(20, 28, 36, 0.85)
-docked · Sensors	.pilot-banner-manual	background-image	none
-docked · Sensors	.pilot-banner-manual	color	rgb(207, 224, 238)
-docked · Sensors	.parrot-perch	align-items	center
-docked · Sensors	.parrot-perch	bottom	376px
-docked · Sensors	.parrot-perch	column-gap	6.4px
-docked · Sensors	.parrot-perch	display	flex
-docked · Sensors	.parrot-perch	position	absolute
-docked · Sensors	.parrot-perch	right	176px
-docked · Sensors	.parrot-perch	row-gap	6.4px
-docked · Sensors	.parrot-perch	z-index	26
-docked · Sensors	.parrot-bird	font-size	24px
+docked · Captain	.map-canvas	bottom	0px
+docked · Captain	.map-canvas	display	block
+docked · Captain	.map-canvas	height	900px
+docked · Captain	.map-canvas	left	0px
+docked · Captain	.map-canvas	position	absolute
+docked · Captain	.map-canvas	right	0px
+docked · Captain	.map-canvas	top	0px
+docked · Captain	.map-canvas	width	1280px
+docked · Captain	.map-flowcolumn	display	flex
+docked · Captain	.map-flowcolumn	flex-direction	column
+docked · Captain	.map-flowcolumn	height	900px
+docked · Captain	.map-flowcolumn > .map-topstack	flex-basis	auto
+docked · Captain	.map-flowcolumn > .map-topstack	flex-grow	0
+docked · Captain	.map-flowcolumn > .map-topstack	flex-shrink	0
+docked · Captain	.map-page	background-color	rgb(6, 9, 15)
+docked · Captain	.map-page	background-image	none
+docked · Captain	.map-page	bottom	0px
+docked · Captain	.map-page	left	0px
+docked · Captain	.map-page	position	fixed
+docked · Captain	.map-page	right	0px
+docked · Captain	.map-page	top	0px
+docked · Captain	.map-page	z-index	1000
+docked · Captain	.map-topstack	align-items	center
+docked · Captain	.map-topstack	column-gap	6.4px
+docked · Captain	.map-topstack	display	flex
+docked · Captain	.map-topstack	flex-direction	column
+docked · Captain	.map-topstack	min-height	88px
+docked · Captain	.map-topstack	position	relative
+docked · Captain	.map-topstack	row-gap	6.4px
+docked · Captain	.map-topstack	z-index	24
+docked · Captain	.parrot-bird	font-size	24px
+docked · Captain	.parrot-perch	align-items	center
+docked · Captain	.parrot-perch	bottom	376px
+docked · Captain	.parrot-perch	column-gap	6.4px
+docked · Captain	.parrot-perch	display	flex
+docked · Captain	.parrot-perch	position	absolute
+docked · Captain	.parrot-perch	right	176px
+docked · Captain	.parrot-perch	row-gap	6.4px
+docked · Captain	.parrot-perch	z-index	26
+docked · Captain	.pilot-banner	align-items	flex-start
+docked · Captain	.pilot-banner	column-gap	1.92px
+docked · Captain	.pilot-banner	display	flex
+docked · Captain	.pilot-banner	flex-direction	column
+docked · Captain	.pilot-banner	font-family	"Helvetica Neue", Helvetica, Arial, sans-serif
+docked · Captain	.pilot-banner	max-width	calc(100% - 24px)
+docked · Captain	.pilot-banner	row-gap	1.92px
+docked · Captain	.pilot-banner-manual	background-color	rgba(20, 28, 36, 0.85)
+docked · Captain	.pilot-banner-manual	background-image	none
+docked · Captain	.pilot-banner-manual	color	rgb(207, 224, 238)
 docked · Sensors	.captain-mono	align-items	center
 docked · Sensors	.captain-mono	bottom	0px
 docked · Sensors	.captain-mono	color	rgba(255, 255, 255, 0.92)
@@ -189,55 +140,55 @@ docked · Sensors	.captain-portrait	position	absolute
 docked · Sensors	.captain-portrait	right	0px
 docked · Sensors	.captain-portrait	top	0px
 docked · Sensors	.captain-portrait	width	32.3906px
-docked · War room	.map-page	background-color	rgb(6, 9, 15)
-docked · War room	.map-page	background-image	none
-docked · War room	.map-page	bottom	0px
-docked · War room	.map-page	left	0px
-docked · War room	.map-page	position	fixed
-docked · War room	.map-page	right	0px
-docked · War room	.map-page	top	0px
-docked · War room	.map-page	z-index	1000
-docked · War room	.map-canvas	bottom	0px
-docked · War room	.map-canvas	display	block
-docked · War room	.map-canvas	height	900px
-docked · War room	.map-canvas	left	0px
-docked · War room	.map-canvas	position	absolute
-docked · War room	.map-canvas	right	0px
-docked · War room	.map-canvas	top	0px
-docked · War room	.map-canvas	width	1280px
-docked · War room	.map-topstack	align-items	center
-docked · War room	.map-topstack	column-gap	6.4px
-docked · War room	.map-topstack	display	flex
-docked · War room	.map-topstack	flex-direction	column
-docked · War room	.map-topstack	min-height	88px
-docked · War room	.map-topstack	position	relative
-docked · War room	.map-topstack	row-gap	6.4px
-docked · War room	.map-topstack	z-index	24
-docked · War room	.map-flowcolumn	display	flex
-docked · War room	.map-flowcolumn	flex-direction	column
-docked · War room	.map-flowcolumn	height	900px
-docked · War room	.map-flowcolumn > .map-topstack	flex-basis	auto
-docked · War room	.map-flowcolumn > .map-topstack	flex-grow	0
-docked · War room	.map-flowcolumn > .map-topstack	flex-shrink	0
-docked · War room	.pilot-banner	align-items	flex-start
-docked · War room	.pilot-banner	column-gap	1.92px
-docked · War room	.pilot-banner	display	flex
-docked · War room	.pilot-banner	flex-direction	column
-docked · War room	.pilot-banner	font-family	"Helvetica Neue", Helvetica, Arial, sans-serif
-docked · War room	.pilot-banner	max-width	calc(100% - 24px)
-docked · War room	.pilot-banner	row-gap	1.92px
-docked · War room	.pilot-banner-manual	background-color	rgba(20, 28, 36, 0.85)
-docked · War room	.pilot-banner-manual	background-image	none
-docked · War room	.pilot-banner-manual	color	rgb(207, 224, 238)
-docked · War room	.parrot-perch	align-items	center
-docked · War room	.parrot-perch	bottom	376px
-docked · War room	.parrot-perch	column-gap	6.4px
-docked · War room	.parrot-perch	display	flex
-docked · War room	.parrot-perch	position	absolute
-docked · War room	.parrot-perch	right	176px
-docked · War room	.parrot-perch	row-gap	6.4px
-docked · War room	.parrot-perch	z-index	26
-docked · War room	.parrot-bird	font-size	24px
+docked · Sensors	.map-canvas	bottom	0px
+docked · Sensors	.map-canvas	display	block
+docked · Sensors	.map-canvas	height	900px
+docked · Sensors	.map-canvas	left	0px
+docked · Sensors	.map-canvas	position	absolute
+docked · Sensors	.map-canvas	right	0px
+docked · Sensors	.map-canvas	top	0px
+docked · Sensors	.map-canvas	width	1280px
+docked · Sensors	.map-flowcolumn	display	flex
+docked · Sensors	.map-flowcolumn	flex-direction	column
+docked · Sensors	.map-flowcolumn	height	900px
+docked · Sensors	.map-flowcolumn > .map-topstack	flex-basis	auto
+docked · Sensors	.map-flowcolumn > .map-topstack	flex-grow	0
+docked · Sensors	.map-flowcolumn > .map-topstack	flex-shrink	0
+docked · Sensors	.map-page	background-color	rgb(6, 9, 15)
+docked · Sensors	.map-page	background-image	none
+docked · Sensors	.map-page	bottom	0px
+docked · Sensors	.map-page	left	0px
+docked · Sensors	.map-page	position	fixed
+docked · Sensors	.map-page	right	0px
+docked · Sensors	.map-page	top	0px
+docked · Sensors	.map-page	z-index	1000
+docked · Sensors	.map-topstack	align-items	center
+docked · Sensors	.map-topstack	column-gap	6.4px
+docked · Sensors	.map-topstack	display	flex
+docked · Sensors	.map-topstack	flex-direction	column
+docked · Sensors	.map-topstack	min-height	88px
+docked · Sensors	.map-topstack	position	relative
+docked · Sensors	.map-topstack	row-gap	6.4px
+docked · Sensors	.map-topstack	z-index	24
+docked · Sensors	.parrot-bird	font-size	24px
+docked · Sensors	.parrot-perch	align-items	center
+docked · Sensors	.parrot-perch	bottom	376px
+docked · Sensors	.parrot-perch	column-gap	6.4px
+docked · Sensors	.parrot-perch	display	flex
+docked · Sensors	.parrot-perch	position	absolute
+docked · Sensors	.parrot-perch	right	176px
+docked · Sensors	.parrot-perch	row-gap	6.4px
+docked · Sensors	.parrot-perch	z-index	26
+docked · Sensors	.pilot-banner	align-items	flex-start
+docked · Sensors	.pilot-banner	column-gap	1.92px
+docked · Sensors	.pilot-banner	display	flex
+docked · Sensors	.pilot-banner	flex-direction	column
+docked · Sensors	.pilot-banner	font-family	"Helvetica Neue", Helvetica, Arial, sans-serif
+docked · Sensors	.pilot-banner	max-width	calc(100% - 24px)
+docked · Sensors	.pilot-banner	row-gap	1.92px
+docked · Sensors	.pilot-banner-manual	background-color	rgba(20, 28, 36, 0.85)
+docked · Sensors	.pilot-banner-manual	background-image	none
+docked · Sensors	.pilot-banner-manual	color	rgb(207, 224, 238)
 docked · War room	.captain-mono	align-items	center
 docked · War room	.captain-mono	bottom	0px
 docked · War room	.captain-mono	color	rgba(255, 255, 255, 0.92)
@@ -256,55 +207,55 @@ docked · War room	.captain-portrait	position	absolute
 docked · War room	.captain-portrait	right	0px
 docked · War room	.captain-portrait	top	0px
 docked · War room	.captain-portrait	width	32.3906px
-docked · Trade	.map-page	background-color	rgb(6, 9, 15)
-docked · Trade	.map-page	background-image	none
-docked · Trade	.map-page	bottom	0px
-docked · Trade	.map-page	left	0px
-docked · Trade	.map-page	position	fixed
-docked · Trade	.map-page	right	0px
-docked · Trade	.map-page	top	0px
-docked · Trade	.map-page	z-index	1000
-docked · Trade	.map-canvas	bottom	0px
-docked · Trade	.map-canvas	display	block
-docked · Trade	.map-canvas	height	900px
-docked · Trade	.map-canvas	left	0px
-docked · Trade	.map-canvas	position	absolute
-docked · Trade	.map-canvas	right	0px
-docked · Trade	.map-canvas	top	0px
-docked · Trade	.map-canvas	width	1280px
-docked · Trade	.map-topstack	align-items	center
-docked · Trade	.map-topstack	column-gap	6.4px
-docked · Trade	.map-topstack	display	flex
-docked · Trade	.map-topstack	flex-direction	column
-docked · Trade	.map-topstack	min-height	88px
-docked · Trade	.map-topstack	position	relative
-docked · Trade	.map-topstack	row-gap	6.4px
-docked · Trade	.map-topstack	z-index	24
-docked · Trade	.map-flowcolumn	display	flex
-docked · Trade	.map-flowcolumn	flex-direction	column
-docked · Trade	.map-flowcolumn	height	900px
-docked · Trade	.map-flowcolumn > .map-topstack	flex-basis	auto
-docked · Trade	.map-flowcolumn > .map-topstack	flex-grow	0
-docked · Trade	.map-flowcolumn > .map-topstack	flex-shrink	0
-docked · Trade	.pilot-banner	align-items	flex-start
-docked · Trade	.pilot-banner	column-gap	1.92px
-docked · Trade	.pilot-banner	display	flex
-docked · Trade	.pilot-banner	flex-direction	column
-docked · Trade	.pilot-banner	font-family	"Helvetica Neue", Helvetica, Arial, sans-serif
-docked · Trade	.pilot-banner	max-width	calc(100% - 24px)
-docked · Trade	.pilot-banner	row-gap	1.92px
-docked · Trade	.pilot-banner-manual	background-color	rgba(20, 28, 36, 0.85)
-docked · Trade	.pilot-banner-manual	background-image	none
-docked · Trade	.pilot-banner-manual	color	rgb(207, 224, 238)
-docked · Trade	.parrot-perch	align-items	center
-docked · Trade	.parrot-perch	bottom	376px
-docked · Trade	.parrot-perch	column-gap	6.4px
-docked · Trade	.parrot-perch	display	flex
-docked · Trade	.parrot-perch	position	absolute
-docked · Trade	.parrot-perch	right	176px
-docked · Trade	.parrot-perch	row-gap	6.4px
-docked · Trade	.parrot-perch	z-index	26
-docked · Trade	.parrot-bird	font-size	24px
+docked · War room	.map-canvas	bottom	0px
+docked · War room	.map-canvas	display	block
+docked · War room	.map-canvas	height	900px
+docked · War room	.map-canvas	left	0px
+docked · War room	.map-canvas	position	absolute
+docked · War room	.map-canvas	right	0px
+docked · War room	.map-canvas	top	0px
+docked · War room	.map-canvas	width	1280px
+docked · War room	.map-flowcolumn	display	flex
+docked · War room	.map-flowcolumn	flex-direction	column
+docked · War room	.map-flowcolumn	height	900px
+docked · War room	.map-flowcolumn > .map-topstack	flex-basis	auto
+docked · War room	.map-flowcolumn > .map-topstack	flex-grow	0
+docked · War room	.map-flowcolumn > .map-topstack	flex-shrink	0
+docked · War room	.map-page	background-color	rgb(6, 9, 15)
+docked · War room	.map-page	background-image	none
+docked · War room	.map-page	bottom	0px
+docked · War room	.map-page	left	0px
+docked · War room	.map-page	position	fixed
+docked · War room	.map-page	right	0px
+docked · War room	.map-page	top	0px
+docked · War room	.map-page	z-index	1000
+docked · War room	.map-topstack	align-items	center
+docked · War room	.map-topstack	column-gap	6.4px
+docked · War room	.map-topstack	display	flex
+docked · War room	.map-topstack	flex-direction	column
+docked · War room	.map-topstack	min-height	88px
+docked · War room	.map-topstack	position	relative
+docked · War room	.map-topstack	row-gap	6.4px
+docked · War room	.map-topstack	z-index	24
+docked · War room	.parrot-bird	font-size	24px
+docked · War room	.parrot-perch	align-items	center
+docked · War room	.parrot-perch	bottom	376px
+docked · War room	.parrot-perch	column-gap	6.4px
+docked · War room	.parrot-perch	display	flex
+docked · War room	.parrot-perch	position	absolute
+docked · War room	.parrot-perch	right	176px
+docked · War room	.parrot-perch	row-gap	6.4px
+docked · War room	.parrot-perch	z-index	26
+docked · War room	.pilot-banner	align-items	flex-start
+docked · War room	.pilot-banner	column-gap	1.92px
+docked · War room	.pilot-banner	display	flex
+docked · War room	.pilot-banner	flex-direction	column
+docked · War room	.pilot-banner	font-family	"Helvetica Neue", Helvetica, Arial, sans-serif
+docked · War room	.pilot-banner	max-width	calc(100% - 24px)
+docked · War room	.pilot-banner	row-gap	1.92px
+docked · War room	.pilot-banner-manual	background-color	rgba(20, 28, 36, 0.85)
+docked · War room	.pilot-banner-manual	background-image	none
+docked · War room	.pilot-banner-manual	color	rgb(207, 224, 238)
 docked · Trade	.captain-mono	align-items	center
 docked · Trade	.captain-mono	bottom	0px
 docked · Trade	.captain-mono	color	rgba(255, 255, 255, 0.92)
@@ -323,55 +274,55 @@ docked · Trade	.captain-portrait	position	absolute
 docked · Trade	.captain-portrait	right	0px
 docked · Trade	.captain-portrait	top	0px
 docked · Trade	.captain-portrait	width	32.3906px
-docked · Comms	.map-page	background-color	rgb(6, 9, 15)
-docked · Comms	.map-page	background-image	none
-docked · Comms	.map-page	bottom	0px
-docked · Comms	.map-page	left	0px
-docked · Comms	.map-page	position	fixed
-docked · Comms	.map-page	right	0px
-docked · Comms	.map-page	top	0px
-docked · Comms	.map-page	z-index	1000
-docked · Comms	.map-canvas	bottom	0px
-docked · Comms	.map-canvas	display	block
-docked · Comms	.map-canvas	height	900px
-docked · Comms	.map-canvas	left	0px
-docked · Comms	.map-canvas	position	absolute
-docked · Comms	.map-canvas	right	0px
-docked · Comms	.map-canvas	top	0px
-docked · Comms	.map-canvas	width	1280px
-docked · Comms	.map-topstack	align-items	center
-docked · Comms	.map-topstack	column-gap	6.4px
-docked · Comms	.map-topstack	display	flex
-docked · Comms	.map-topstack	flex-direction	column
-docked · Comms	.map-topstack	min-height	88px
-docked · Comms	.map-topstack	position	relative
-docked · Comms	.map-topstack	row-gap	6.4px
-docked · Comms	.map-topstack	z-index	24
-docked · Comms	.map-flowcolumn	display	flex
-docked · Comms	.map-flowcolumn	flex-direction	column
-docked · Comms	.map-flowcolumn	height	900px
-docked · Comms	.map-flowcolumn > .map-topstack	flex-basis	auto
-docked · Comms	.map-flowcolumn > .map-topstack	flex-grow	0
-docked · Comms	.map-flowcolumn > .map-topstack	flex-shrink	0
-docked · Comms	.pilot-banner	align-items	flex-start
-docked · Comms	.pilot-banner	column-gap	1.92px
-docked · Comms	.pilot-banner	display	flex
-docked · Comms	.pilot-banner	flex-direction	column
-docked · Comms	.pilot-banner	font-family	"Helvetica Neue", Helvetica, Arial, sans-serif
-docked · Comms	.pilot-banner	max-width	calc(100% - 24px)
-docked · Comms	.pilot-banner	row-gap	1.92px
-docked · Comms	.pilot-banner-manual	background-color	rgba(20, 28, 36, 0.85)
-docked · Comms	.pilot-banner-manual	background-image	none
-docked · Comms	.pilot-banner-manual	color	rgb(207, 224, 238)
-docked · Comms	.parrot-perch	align-items	center
-docked · Comms	.parrot-perch	bottom	376px
-docked · Comms	.parrot-perch	column-gap	6.4px
-docked · Comms	.parrot-perch	display	flex
-docked · Comms	.parrot-perch	position	absolute
-docked · Comms	.parrot-perch	right	176px
-docked · Comms	.parrot-perch	row-gap	6.4px
-docked · Comms	.parrot-perch	z-index	26
-docked · Comms	.parrot-bird	font-size	24px
+docked · Trade	.map-canvas	bottom	0px
+docked · Trade	.map-canvas	display	block
+docked · Trade	.map-canvas	height	900px
+docked · Trade	.map-canvas	left	0px
+docked · Trade	.map-canvas	position	absolute
+docked · Trade	.map-canvas	right	0px
+docked · Trade	.map-canvas	top	0px
+docked · Trade	.map-canvas	width	1280px
+docked · Trade	.map-flowcolumn	display	flex
+docked · Trade	.map-flowcolumn	flex-direction	column
+docked · Trade	.map-flowcolumn	height	900px
+docked · Trade	.map-flowcolumn > .map-topstack	flex-basis	auto
+docked · Trade	.map-flowcolumn > .map-topstack	flex-grow	0
+docked · Trade	.map-flowcolumn > .map-topstack	flex-shrink	0
+docked · Trade	.map-page	background-color	rgb(6, 9, 15)
+docked · Trade	.map-page	background-image	none
+docked · Trade	.map-page	bottom	0px
+docked · Trade	.map-page	left	0px
+docked · Trade	.map-page	position	fixed
+docked · Trade	.map-page	right	0px
+docked · Trade	.map-page	top	0px
+docked · Trade	.map-page	z-index	1000
+docked · Trade	.map-topstack	align-items	center
+docked · Trade	.map-topstack	column-gap	6.4px
+docked · Trade	.map-topstack	display	flex
+docked · Trade	.map-topstack	flex-direction	column
+docked · Trade	.map-topstack	min-height	88px
+docked · Trade	.map-topstack	position	relative
+docked · Trade	.map-topstack	row-gap	6.4px
+docked · Trade	.map-topstack	z-index	24
+docked · Trade	.parrot-bird	font-size	24px
+docked · Trade	.parrot-perch	align-items	center
+docked · Trade	.parrot-perch	bottom	376px
+docked · Trade	.parrot-perch	column-gap	6.4px
+docked · Trade	.parrot-perch	display	flex
+docked · Trade	.parrot-perch	position	absolute
+docked · Trade	.parrot-perch	right	176px
+docked · Trade	.parrot-perch	row-gap	6.4px
+docked · Trade	.parrot-perch	z-index	26
+docked · Trade	.pilot-banner	align-items	flex-start
+docked · Trade	.pilot-banner	column-gap	1.92px
+docked · Trade	.pilot-banner	display	flex
+docked · Trade	.pilot-banner	flex-direction	column
+docked · Trade	.pilot-banner	font-family	"Helvetica Neue", Helvetica, Arial, sans-serif
+docked · Trade	.pilot-banner	max-width	calc(100% - 24px)
+docked · Trade	.pilot-banner	row-gap	1.92px
+docked · Trade	.pilot-banner-manual	background-color	rgba(20, 28, 36, 0.85)
+docked · Trade	.pilot-banner-manual	background-image	none
+docked · Trade	.pilot-banner-manual	color	rgb(207, 224, 238)
 docked · Comms	.captain-mono	align-items	center
 docked · Comms	.captain-mono	bottom	0px
 docked · Comms	.captain-mono	color	rgba(255, 255, 255, 0.92)
@@ -390,45 +341,55 @@ docked · Comms	.captain-portrait	position	absolute
 docked · Comms	.captain-portrait	right	0px
 docked · Comms	.captain-portrait	top	0px
 docked · Comms	.captain-portrait	width	32.3906px
-ashore · the bar	.map-page	background-color	rgb(6, 9, 15)
-ashore · the bar	.map-page	background-image	none
-ashore · the bar	.map-page	bottom	0px
-ashore · the bar	.map-page	left	0px
-ashore · the bar	.map-page	position	fixed
-ashore · the bar	.map-page	right	0px
-ashore · the bar	.map-page	top	0px
-ashore · the bar	.map-page	z-index	1000
-ashore · the bar	.map-canvas	bottom	0px
-ashore · the bar	.map-canvas	display	block
-ashore · the bar	.map-canvas	height	900px
-ashore · the bar	.map-canvas	left	0px
-ashore · the bar	.map-canvas	position	absolute
-ashore · the bar	.map-canvas	right	0px
-ashore · the bar	.map-canvas	top	0px
-ashore · the bar	.map-canvas	width	1280px
-ashore · the bar	.map-topstack	align-items	center
-ashore · the bar	.map-topstack	column-gap	6.4px
-ashore · the bar	.map-topstack	display	flex
-ashore · the bar	.map-topstack	flex-direction	column
-ashore · the bar	.map-topstack	min-height	88px
-ashore · the bar	.map-topstack	position	relative
-ashore · the bar	.map-topstack	row-gap	6.4px
-ashore · the bar	.map-topstack	z-index	24
-ashore · the bar	.map-flowcolumn	display	flex
-ashore · the bar	.map-flowcolumn	flex-direction	column
-ashore · the bar	.map-flowcolumn	height	900px
-ashore · the bar	.map-flowcolumn > .map-topstack	flex-basis	auto
-ashore · the bar	.map-flowcolumn > .map-topstack	flex-grow	0
-ashore · the bar	.map-flowcolumn > .map-topstack	flex-shrink	0
-ashore · the bar	.parrot-perch	align-items	center
-ashore · the bar	.parrot-perch	bottom	376px
-ashore · the bar	.parrot-perch	column-gap	6.4px
-ashore · the bar	.parrot-perch	display	flex
-ashore · the bar	.parrot-perch	position	absolute
-ashore · the bar	.parrot-perch	right	176px
-ashore · the bar	.parrot-perch	row-gap	6.4px
-ashore · the bar	.parrot-perch	z-index	26
-ashore · the bar	.parrot-bird	font-size	24px
+docked · Comms	.map-canvas	bottom	0px
+docked · Comms	.map-canvas	display	block
+docked · Comms	.map-canvas	height	900px
+docked · Comms	.map-canvas	left	0px
+docked · Comms	.map-canvas	position	absolute
+docked · Comms	.map-canvas	right	0px
+docked · Comms	.map-canvas	top	0px
+docked · Comms	.map-canvas	width	1280px
+docked · Comms	.map-flowcolumn	display	flex
+docked · Comms	.map-flowcolumn	flex-direction	column
+docked · Comms	.map-flowcolumn	height	900px
+docked · Comms	.map-flowcolumn > .map-topstack	flex-basis	auto
+docked · Comms	.map-flowcolumn > .map-topstack	flex-grow	0
+docked · Comms	.map-flowcolumn > .map-topstack	flex-shrink	0
+docked · Comms	.map-page	background-color	rgb(6, 9, 15)
+docked · Comms	.map-page	background-image	none
+docked · Comms	.map-page	bottom	0px
+docked · Comms	.map-page	left	0px
+docked · Comms	.map-page	position	fixed
+docked · Comms	.map-page	right	0px
+docked · Comms	.map-page	top	0px
+docked · Comms	.map-page	z-index	1000
+docked · Comms	.map-topstack	align-items	center
+docked · Comms	.map-topstack	column-gap	6.4px
+docked · Comms	.map-topstack	display	flex
+docked · Comms	.map-topstack	flex-direction	column
+docked · Comms	.map-topstack	min-height	88px
+docked · Comms	.map-topstack	position	relative
+docked · Comms	.map-topstack	row-gap	6.4px
+docked · Comms	.map-topstack	z-index	24
+docked · Comms	.parrot-bird	font-size	24px
+docked · Comms	.parrot-perch	align-items	center
+docked · Comms	.parrot-perch	bottom	376px
+docked · Comms	.parrot-perch	column-gap	6.4px
+docked · Comms	.parrot-perch	display	flex
+docked · Comms	.parrot-perch	position	absolute
+docked · Comms	.parrot-perch	right	176px
+docked · Comms	.parrot-perch	row-gap	6.4px
+docked · Comms	.parrot-perch	z-index	26
+docked · Comms	.pilot-banner	align-items	flex-start
+docked · Comms	.pilot-banner	column-gap	1.92px
+docked · Comms	.pilot-banner	display	flex
+docked · Comms	.pilot-banner	flex-direction	column
+docked · Comms	.pilot-banner	font-family	"Helvetica Neue", Helvetica, Arial, sans-serif
+docked · Comms	.pilot-banner	max-width	calc(100% - 24px)
+docked · Comms	.pilot-banner	row-gap	1.92px
+docked · Comms	.pilot-banner-manual	background-color	rgba(20, 28, 36, 0.85)
+docked · Comms	.pilot-banner-manual	background-image	none
+docked · Comms	.pilot-banner-manual	color	rgb(207, 224, 238)
 ashore · the bar	.captain-mono	align-items	center
 ashore · the bar	.captain-mono	bottom	0px
 ashore · the bar	.captain-mono	color	rgba(255, 255, 255, 0.92)
@@ -447,45 +408,45 @@ ashore · the bar	.captain-portrait	position	absolute
 ashore · the bar	.captain-portrait	right	0px
 ashore · the bar	.captain-portrait	top	0px
 ashore · the bar	.captain-portrait	width	32.3906px
-ashore · Down Below	.map-page	background-color	rgb(6, 9, 15)
-ashore · Down Below	.map-page	background-image	none
-ashore · Down Below	.map-page	bottom	0px
-ashore · Down Below	.map-page	left	0px
-ashore · Down Below	.map-page	position	fixed
-ashore · Down Below	.map-page	right	0px
-ashore · Down Below	.map-page	top	0px
-ashore · Down Below	.map-page	z-index	1000
-ashore · Down Below	.map-canvas	bottom	0px
-ashore · Down Below	.map-canvas	display	block
-ashore · Down Below	.map-canvas	height	900px
-ashore · Down Below	.map-canvas	left	0px
-ashore · Down Below	.map-canvas	position	absolute
-ashore · Down Below	.map-canvas	right	0px
-ashore · Down Below	.map-canvas	top	0px
-ashore · Down Below	.map-canvas	width	1280px
-ashore · Down Below	.map-topstack	align-items	center
-ashore · Down Below	.map-topstack	column-gap	6.4px
-ashore · Down Below	.map-topstack	display	flex
-ashore · Down Below	.map-topstack	flex-direction	column
-ashore · Down Below	.map-topstack	min-height	88px
-ashore · Down Below	.map-topstack	position	relative
-ashore · Down Below	.map-topstack	row-gap	6.4px
-ashore · Down Below	.map-topstack	z-index	24
-ashore · Down Below	.map-flowcolumn	display	flex
-ashore · Down Below	.map-flowcolumn	flex-direction	column
-ashore · Down Below	.map-flowcolumn	height	900px
-ashore · Down Below	.map-flowcolumn > .map-topstack	flex-basis	auto
-ashore · Down Below	.map-flowcolumn > .map-topstack	flex-grow	0
-ashore · Down Below	.map-flowcolumn > .map-topstack	flex-shrink	0
-ashore · Down Below	.parrot-perch	align-items	center
-ashore · Down Below	.parrot-perch	bottom	376px
-ashore · Down Below	.parrot-perch	column-gap	6.4px
-ashore · Down Below	.parrot-perch	display	flex
-ashore · Down Below	.parrot-perch	position	absolute
-ashore · Down Below	.parrot-perch	right	176px
-ashore · Down Below	.parrot-perch	row-gap	6.4px
-ashore · Down Below	.parrot-perch	z-index	26
-ashore · Down Below	.parrot-bird	font-size	24px
+ashore · the bar	.map-canvas	bottom	0px
+ashore · the bar	.map-canvas	display	block
+ashore · the bar	.map-canvas	height	900px
+ashore · the bar	.map-canvas	left	0px
+ashore · the bar	.map-canvas	position	absolute
+ashore · the bar	.map-canvas	right	0px
+ashore · the bar	.map-canvas	top	0px
+ashore · the bar	.map-canvas	width	1280px
+ashore · the bar	.map-flowcolumn	display	flex
+ashore · the bar	.map-flowcolumn	flex-direction	column
+ashore · the bar	.map-flowcolumn	height	900px
+ashore · the bar	.map-flowcolumn > .map-topstack	flex-basis	auto
+ashore · the bar	.map-flowcolumn > .map-topstack	flex-grow	0
+ashore · the bar	.map-flowcolumn > .map-topstack	flex-shrink	0
+ashore · the bar	.map-page	background-color	rgb(6, 9, 15)
+ashore · the bar	.map-page	background-image	none
+ashore · the bar	.map-page	bottom	0px
+ashore · the bar	.map-page	left	0px
+ashore · the bar	.map-page	position	fixed
+ashore · the bar	.map-page	right	0px
+ashore · the bar	.map-page	top	0px
+ashore · the bar	.map-page	z-index	1000
+ashore · the bar	.map-topstack	align-items	center
+ashore · the bar	.map-topstack	column-gap	6.4px
+ashore · the bar	.map-topstack	display	flex
+ashore · the bar	.map-topstack	flex-direction	column
+ashore · the bar	.map-topstack	min-height	88px
+ashore · the bar	.map-topstack	position	relative
+ashore · the bar	.map-topstack	row-gap	6.4px
+ashore · the bar	.map-topstack	z-index	24
+ashore · the bar	.parrot-bird	font-size	24px
+ashore · the bar	.parrot-perch	align-items	center
+ashore · the bar	.parrot-perch	bottom	376px
+ashore · the bar	.parrot-perch	column-gap	6.4px
+ashore · the bar	.parrot-perch	display	flex
+ashore · the bar	.parrot-perch	position	absolute
+ashore · the bar	.parrot-perch	right	176px
+ashore · the bar	.parrot-perch	row-gap	6.4px
+ashore · the bar	.parrot-perch	z-index	26
 ashore · Down Below	.captain-mono	align-items	center
 ashore · Down Below	.captain-mono	bottom	0px
 ashore · Down Below	.captain-mono	color	rgba(255, 255, 255, 0.92)
@@ -504,22 +465,54 @@ ashore · Down Below	.captain-portrait	position	absolute
 ashore · Down Below	.captain-portrait	right	0px
 ashore · Down Below	.captain-portrait	top	0px
 ashore · Down Below	.captain-portrait	width	32.3906px
-the Hive park	.map-page	background-color	rgb(6, 9, 15)
-the Hive park	.map-page	background-image	none
-the Hive park	.map-page	bottom	0px
-the Hive park	.map-page	left	0px
-the Hive park	.map-page	position	fixed
-the Hive park	.map-page	right	0px
-the Hive park	.map-page	top	0px
-the Hive park	.map-page	z-index	1000
-the Hive park	.map-canvas	bottom	0px
-the Hive park	.map-canvas	display	block
-the Hive park	.map-canvas	height	900px
-the Hive park	.map-canvas	left	0px
-the Hive park	.map-canvas	position	absolute
-the Hive park	.map-canvas	right	0px
-the Hive park	.map-canvas	top	0px
-the Hive park	.map-canvas	width	1280px
+ashore · Down Below	.map-canvas	bottom	0px
+ashore · Down Below	.map-canvas	display	block
+ashore · Down Below	.map-canvas	height	900px
+ashore · Down Below	.map-canvas	left	0px
+ashore · Down Below	.map-canvas	position	absolute
+ashore · Down Below	.map-canvas	right	0px
+ashore · Down Below	.map-canvas	top	0px
+ashore · Down Below	.map-canvas	width	1280px
+ashore · Down Below	.map-flowcolumn	display	flex
+ashore · Down Below	.map-flowcolumn	flex-direction	column
+ashore · Down Below	.map-flowcolumn	height	900px
+ashore · Down Below	.map-flowcolumn > .map-topstack	flex-basis	auto
+ashore · Down Below	.map-flowcolumn > .map-topstack	flex-grow	0
+ashore · Down Below	.map-flowcolumn > .map-topstack	flex-shrink	0
+ashore · Down Below	.map-page	background-color	rgb(6, 9, 15)
+ashore · Down Below	.map-page	background-image	none
+ashore · Down Below	.map-page	bottom	0px
+ashore · Down Below	.map-page	left	0px
+ashore · Down Below	.map-page	position	fixed
+ashore · Down Below	.map-page	right	0px
+ashore · Down Below	.map-page	top	0px
+ashore · Down Below	.map-page	z-index	1000
+ashore · Down Below	.map-topstack	align-items	center
+ashore · Down Below	.map-topstack	column-gap	6.4px
+ashore · Down Below	.map-topstack	display	flex
+ashore · Down Below	.map-topstack	flex-direction	column
+ashore · Down Below	.map-topstack	min-height	88px
+ashore · Down Below	.map-topstack	position	relative
+ashore · Down Below	.map-topstack	row-gap	6.4px
+ashore · Down Below	.map-topstack	z-index	24
+ashore · Down Below	.parrot-bird	font-size	24px
+ashore · Down Below	.parrot-perch	align-items	center
+ashore · Down Below	.parrot-perch	bottom	376px
+ashore · Down Below	.parrot-perch	column-gap	6.4px
+ashore · Down Below	.parrot-perch	display	flex
+ashore · Down Below	.parrot-perch	position	absolute
+ashore · Down Below	.parrot-perch	right	176px
+ashore · Down Below	.parrot-perch	row-gap	6.4px
+ashore · Down Below	.parrot-perch	z-index	26
+the Hive park	.convergence-card	background-color	rgba(0, 0, 0, 0)
+the Hive park	.convergence-card	background-image	linear-gradient(rgb(11, 24, 38) 0%, rgb(10, 18, 32) 55%, rgb(12, 15, 22) 100%)
+the Hive park	.convergence-card	color	rgb(219, 230, 242)
+the Hive park	.convergence-card	max-height	min(828px, 100%)
+the Hive park	.convergence-card	max-width	672px
+the Hive park	.convergence-card	overflow-y	auto
+the Hive park	.convergence-card > .convergence-close	bottom	0px
+the Hive park	.convergence-card > .convergence-close	position	sticky
+the Hive park	.convergence-card > .convergence-close	z-index	3
 the Hive park	.deck-pulse-toast	background-color	rgba(6, 9, 15, 0.82)
 the Hive park	.deck-pulse-toast	background-image	none
 the Hive park	.deck-pulse-toast	color	rgb(255, 212, 121)
@@ -529,6 +522,33 @@ the Hive park	.deck-pulse-toast	max-width	640px
 the Hive park	.deck-pulse-toast	position	absolute
 the Hive park	.deck-pulse-toast	top	96px
 the Hive park	.deck-pulse-toast	z-index	1255
+the Hive park	.ground-lesson-card	display	flex
+the Hive park	.ground-lesson-card	flex-direction	column
+the Hive park	.ground-lesson-card	max-width	672px
+the Hive park	.ground-lesson-foot	color	rgba(219, 230, 242, 0.78)
+the Hive park	.ground-lesson-foot	font-size	14.4px
+the Hive park	.map-canvas	bottom	0px
+the Hive park	.map-canvas	display	block
+the Hive park	.map-canvas	height	900px
+the Hive park	.map-canvas	left	0px
+the Hive park	.map-canvas	position	absolute
+the Hive park	.map-canvas	right	0px
+the Hive park	.map-canvas	top	0px
+the Hive park	.map-canvas	width	1280px
+the Hive park	.map-flowcolumn	display	flex
+the Hive park	.map-flowcolumn	flex-direction	column
+the Hive park	.map-flowcolumn	height	900px
+the Hive park	.map-flowcolumn > .map-topstack	flex-basis	auto
+the Hive park	.map-flowcolumn > .map-topstack	flex-grow	0
+the Hive park	.map-flowcolumn > .map-topstack	flex-shrink	0
+the Hive park	.map-page	background-color	rgb(6, 9, 15)
+the Hive park	.map-page	background-image	none
+the Hive park	.map-page	bottom	0px
+the Hive park	.map-page	left	0px
+the Hive park	.map-page	position	fixed
+the Hive park	.map-page	right	0px
+the Hive park	.map-page	top	0px
+the Hive park	.map-page	z-index	1000
 the Hive park	.map-topstack	align-items	center
 the Hive park	.map-topstack	column-gap	6.4px
 the Hive park	.map-topstack	display	flex
@@ -537,12 +557,7 @@ the Hive park	.map-topstack	min-height	88px
 the Hive park	.map-topstack	position	relative
 the Hive park	.map-topstack	row-gap	6.4px
 the Hive park	.map-topstack	z-index	24
-the Hive park	.map-flowcolumn	display	flex
-the Hive park	.map-flowcolumn	flex-direction	column
-the Hive park	.map-flowcolumn	height	900px
-the Hive park	.map-flowcolumn > .map-topstack	flex-basis	auto
-the Hive park	.map-flowcolumn > .map-topstack	flex-grow	0
-the Hive park	.map-flowcolumn > .map-topstack	flex-shrink	0
+the Hive park	.parrot-bird	font-size	24px
 the Hive park	.parrot-perch	align-items	center
 the Hive park	.parrot-perch	bottom	376px
 the Hive park	.parrot-perch	column-gap	6.4px
@@ -551,7 +566,18 @@ the Hive park	.parrot-perch	position	absolute
 the Hive park	.parrot-perch	right	176px
 the Hive park	.parrot-perch	row-gap	6.4px
 the Hive park	.parrot-perch	z-index	26
-the Hive park	.parrot-bird	font-size	24px
+the Hive park	.view-object	background-color	rgb(12, 16, 23)
+the Hive park	.view-object	background-image	none
+the Hive park	.view-object	column-gap	9.6px
+the Hive park	.view-object	display	flex
+the Hive park	.view-object	flex-direction	column
+the Hive park	.view-object	max-height	min(828px, 100%)
+the Hive park	.view-object	overflow-y	auto
+the Hive park	.view-object	row-gap	9.6px
+the Hive park	.view-object	width	640px
+the Hive park	.view-object > .view-object-close	bottom	0px
+the Hive park	.view-object > .view-object-close	position	sticky
+the Hive park	.view-object > .view-object-close	z-index	3
 the Hive park	.view-object-backdrop	align-items	center
 the Hive park	.view-object-backdrop	background-color	rgba(4, 6, 11, 0.85)
 the Hive park	.view-object-backdrop	background-image	none
@@ -563,19 +589,6 @@ the Hive park	.view-object-backdrop	position	absolute
 the Hive park	.view-object-backdrop	right	0px
 the Hive park	.view-object-backdrop	top	0px
 the Hive park	.view-object-backdrop	z-index	1320
-the Hive park	.view-object	background-color	rgb(12, 16, 23)
-the Hive park	.view-object	background-image	none
-the Hive park	.view-object	column-gap	9.6px
-the Hive park	.view-object	display	flex
-the Hive park	.view-object	flex-direction	column
-the Hive park	.view-object	max-height	min(828px, 100%)
-the Hive park	.view-object	overflow-y	auto
-the Hive park	.view-object	row-gap	9.6px
-the Hive park	.view-object	width	640px
-the Hive park	.view-object-img	background-color	rgb(5, 7, 12)
-the Hive park	.view-object-img	background-image	none
-the Hive park	.view-object-img	max-height	630px
-the Hive park	.view-object-img	width	606px
 the Hive park	.view-object-caption	color	rgba(232, 236, 244, 0.9)
 the Hive park	.view-object-caption	font-size	15.2px
 the Hive park	.view-object-caption	font-style	italic
@@ -586,39 +599,19 @@ the Hive park	.view-object-close	font-family	monospace
 the Hive park	.view-object-close	font-size	14.4px
 the Hive park	.view-object-close	font-style	normal
 the Hive park	.view-object-close	font-weight	600
-the Hive park	.convergence-card	background-color	rgba(0, 0, 0, 0)
-the Hive park	.convergence-card	background-image	linear-gradient(rgb(11, 24, 38) 0%, rgb(10, 18, 32) 55%, rgb(12, 15, 22) 100%)
-the Hive park	.convergence-card	color	rgb(219, 230, 242)
-the Hive park	.convergence-card	max-height	min(828px, 100%)
-the Hive park	.convergence-card	max-width	672px
-the Hive park	.convergence-card	overflow-y	auto
-the Hive park	.ground-lesson-card	display	flex
-the Hive park	.ground-lesson-card	flex-direction	column
-the Hive park	.ground-lesson-card	max-width	672px
-the Hive park	.ground-lesson-foot	color	rgba(219, 230, 242, 0.78)
-the Hive park	.ground-lesson-foot	font-size	14.4px
-the Hive park	.view-object > .view-object-close	bottom	0px
-the Hive park	.view-object > .view-object-close	position	sticky
-the Hive park	.view-object > .view-object-close	z-index	3
-the Hive park	.convergence-card > .convergence-close	bottom	0px
-the Hive park	.convergence-card > .convergence-close	position	sticky
-the Hive park	.convergence-card > .convergence-close	z-index	3
-a Hive floor	.map-page	background-color	rgb(6, 9, 15)
-a Hive floor	.map-page	background-image	none
-a Hive floor	.map-page	bottom	0px
-a Hive floor	.map-page	left	0px
-a Hive floor	.map-page	position	fixed
-a Hive floor	.map-page	right	0px
-a Hive floor	.map-page	top	0px
-a Hive floor	.map-page	z-index	1000
-a Hive floor	.map-canvas	bottom	0px
-a Hive floor	.map-canvas	display	block
-a Hive floor	.map-canvas	height	900px
-a Hive floor	.map-canvas	left	0px
-a Hive floor	.map-canvas	position	absolute
-a Hive floor	.map-canvas	right	0px
-a Hive floor	.map-canvas	top	0px
-a Hive floor	.map-canvas	width	1280px
+the Hive park	.view-object-img	background-color	rgb(5, 7, 12)
+the Hive park	.view-object-img	background-image	none
+the Hive park	.view-object-img	max-height	630px
+the Hive park	.view-object-img	width	606px
+a Hive floor	.convergence-card	background-color	rgba(0, 0, 0, 0)
+a Hive floor	.convergence-card	background-image	linear-gradient(rgb(11, 24, 38) 0%, rgb(10, 18, 32) 55%, rgb(12, 15, 22) 100%)
+a Hive floor	.convergence-card	color	rgb(219, 230, 242)
+a Hive floor	.convergence-card	max-height	min(828px, 100%)
+a Hive floor	.convergence-card	max-width	672px
+a Hive floor	.convergence-card	overflow-y	auto
+a Hive floor	.convergence-card > .convergence-close	bottom	0px
+a Hive floor	.convergence-card > .convergence-close	position	sticky
+a Hive floor	.convergence-card > .convergence-close	z-index	3
 a Hive floor	.deck-pulse-toast	background-color	rgba(6, 9, 15, 0.82)
 a Hive floor	.deck-pulse-toast	background-image	none
 a Hive floor	.deck-pulse-toast	color	rgb(255, 212, 121)
@@ -628,6 +621,33 @@ a Hive floor	.deck-pulse-toast	max-width	640px
 a Hive floor	.deck-pulse-toast	position	absolute
 a Hive floor	.deck-pulse-toast	top	96px
 a Hive floor	.deck-pulse-toast	z-index	1255
+a Hive floor	.ground-lesson-card	display	flex
+a Hive floor	.ground-lesson-card	flex-direction	column
+a Hive floor	.ground-lesson-card	max-width	672px
+a Hive floor	.ground-lesson-foot	color	rgba(219, 230, 242, 0.78)
+a Hive floor	.ground-lesson-foot	font-size	14.4px
+a Hive floor	.map-canvas	bottom	0px
+a Hive floor	.map-canvas	display	block
+a Hive floor	.map-canvas	height	900px
+a Hive floor	.map-canvas	left	0px
+a Hive floor	.map-canvas	position	absolute
+a Hive floor	.map-canvas	right	0px
+a Hive floor	.map-canvas	top	0px
+a Hive floor	.map-canvas	width	1280px
+a Hive floor	.map-flowcolumn	display	flex
+a Hive floor	.map-flowcolumn	flex-direction	column
+a Hive floor	.map-flowcolumn	height	900px
+a Hive floor	.map-flowcolumn > .map-topstack	flex-basis	auto
+a Hive floor	.map-flowcolumn > .map-topstack	flex-grow	0
+a Hive floor	.map-flowcolumn > .map-topstack	flex-shrink	0
+a Hive floor	.map-page	background-color	rgb(6, 9, 15)
+a Hive floor	.map-page	background-image	none
+a Hive floor	.map-page	bottom	0px
+a Hive floor	.map-page	left	0px
+a Hive floor	.map-page	position	fixed
+a Hive floor	.map-page	right	0px
+a Hive floor	.map-page	top	0px
+a Hive floor	.map-page	z-index	1000
 a Hive floor	.map-topstack	align-items	center
 a Hive floor	.map-topstack	column-gap	6.4px
 a Hive floor	.map-topstack	display	flex
@@ -636,12 +656,7 @@ a Hive floor	.map-topstack	min-height	88px
 a Hive floor	.map-topstack	position	relative
 a Hive floor	.map-topstack	row-gap	6.4px
 a Hive floor	.map-topstack	z-index	24
-a Hive floor	.map-flowcolumn	display	flex
-a Hive floor	.map-flowcolumn	flex-direction	column
-a Hive floor	.map-flowcolumn	height	900px
-a Hive floor	.map-flowcolumn > .map-topstack	flex-basis	auto
-a Hive floor	.map-flowcolumn > .map-topstack	flex-grow	0
-a Hive floor	.map-flowcolumn > .map-topstack	flex-shrink	0
+a Hive floor	.parrot-bird	font-size	24px
 a Hive floor	.parrot-perch	align-items	center
 a Hive floor	.parrot-perch	bottom	376px
 a Hive floor	.parrot-perch	column-gap	6.4px
@@ -650,7 +665,18 @@ a Hive floor	.parrot-perch	position	absolute
 a Hive floor	.parrot-perch	right	176px
 a Hive floor	.parrot-perch	row-gap	6.4px
 a Hive floor	.parrot-perch	z-index	26
-a Hive floor	.parrot-bird	font-size	24px
+a Hive floor	.view-object	background-color	rgb(12, 16, 23)
+a Hive floor	.view-object	background-image	none
+a Hive floor	.view-object	column-gap	9.6px
+a Hive floor	.view-object	display	flex
+a Hive floor	.view-object	flex-direction	column
+a Hive floor	.view-object	max-height	min(828px, 100%)
+a Hive floor	.view-object	overflow-y	auto
+a Hive floor	.view-object	row-gap	9.6px
+a Hive floor	.view-object	width	640px
+a Hive floor	.view-object > .view-object-close	bottom	0px
+a Hive floor	.view-object > .view-object-close	position	sticky
+a Hive floor	.view-object > .view-object-close	z-index	3
 a Hive floor	.view-object-backdrop	align-items	center
 a Hive floor	.view-object-backdrop	background-color	rgba(4, 6, 11, 0.85)
 a Hive floor	.view-object-backdrop	background-image	none
@@ -662,19 +688,6 @@ a Hive floor	.view-object-backdrop	position	absolute
 a Hive floor	.view-object-backdrop	right	0px
 a Hive floor	.view-object-backdrop	top	0px
 a Hive floor	.view-object-backdrop	z-index	1320
-a Hive floor	.view-object	background-color	rgb(12, 16, 23)
-a Hive floor	.view-object	background-image	none
-a Hive floor	.view-object	column-gap	9.6px
-a Hive floor	.view-object	display	flex
-a Hive floor	.view-object	flex-direction	column
-a Hive floor	.view-object	max-height	min(828px, 100%)
-a Hive floor	.view-object	overflow-y	auto
-a Hive floor	.view-object	row-gap	9.6px
-a Hive floor	.view-object	width	640px
-a Hive floor	.view-object-img	background-color	rgb(5, 7, 12)
-a Hive floor	.view-object-img	background-image	none
-a Hive floor	.view-object-img	max-height	630px
-a Hive floor	.view-object-img	width	606px
 a Hive floor	.view-object-caption	color	rgba(232, 236, 244, 0.9)
 a Hive floor	.view-object-caption	font-size	15.2px
 a Hive floor	.view-object-caption	font-style	italic
@@ -685,39 +698,19 @@ a Hive floor	.view-object-close	font-family	monospace
 a Hive floor	.view-object-close	font-size	14.4px
 a Hive floor	.view-object-close	font-style	normal
 a Hive floor	.view-object-close	font-weight	600
-a Hive floor	.convergence-card	background-color	rgba(0, 0, 0, 0)
-a Hive floor	.convergence-card	background-image	linear-gradient(rgb(11, 24, 38) 0%, rgb(10, 18, 32) 55%, rgb(12, 15, 22) 100%)
-a Hive floor	.convergence-card	color	rgb(219, 230, 242)
-a Hive floor	.convergence-card	max-height	min(828px, 100%)
-a Hive floor	.convergence-card	max-width	672px
-a Hive floor	.convergence-card	overflow-y	auto
-a Hive floor	.ground-lesson-card	display	flex
-a Hive floor	.ground-lesson-card	flex-direction	column
-a Hive floor	.ground-lesson-card	max-width	672px
-a Hive floor	.ground-lesson-foot	color	rgba(219, 230, 242, 0.78)
-a Hive floor	.ground-lesson-foot	font-size	14.4px
-a Hive floor	.view-object > .view-object-close	bottom	0px
-a Hive floor	.view-object > .view-object-close	position	sticky
-a Hive floor	.view-object > .view-object-close	z-index	3
-a Hive floor	.convergence-card > .convergence-close	bottom	0px
-a Hive floor	.convergence-card > .convergence-close	position	sticky
-a Hive floor	.convergence-card > .convergence-close	z-index	3
-a ground	.map-page	background-color	rgb(6, 9, 15)
-a ground	.map-page	background-image	none
-a ground	.map-page	bottom	0px
-a ground	.map-page	left	0px
-a ground	.map-page	position	fixed
-a ground	.map-page	right	0px
-a ground	.map-page	top	0px
-a ground	.map-page	z-index	1000
-a ground	.map-canvas	bottom	0px
-a ground	.map-canvas	display	block
-a ground	.map-canvas	height	900px
-a ground	.map-canvas	left	0px
-a ground	.map-canvas	position	absolute
-a ground	.map-canvas	right	0px
-a ground	.map-canvas	top	0px
-a ground	.map-canvas	width	1280px
+a Hive floor	.view-object-img	background-color	rgb(5, 7, 12)
+a Hive floor	.view-object-img	background-image	none
+a Hive floor	.view-object-img	max-height	630px
+a Hive floor	.view-object-img	width	606px
+a ground	.convergence-card	background-color	rgba(0, 0, 0, 0)
+a ground	.convergence-card	background-image	linear-gradient(rgb(11, 24, 38) 0%, rgb(10, 18, 32) 55%, rgb(12, 15, 22) 100%)
+a ground	.convergence-card	color	rgb(219, 230, 242)
+a ground	.convergence-card	max-height	min(828px, 100%)
+a ground	.convergence-card	max-width	672px
+a ground	.convergence-card	overflow-y	auto
+a ground	.convergence-card > .convergence-close	bottom	0px
+a ground	.convergence-card > .convergence-close	position	sticky
+a ground	.convergence-card > .convergence-close	z-index	3
 a ground	.deck-pulse-toast	background-color	rgba(6, 9, 15, 0.82)
 a ground	.deck-pulse-toast	background-image	none
 a ground	.deck-pulse-toast	color	rgb(255, 212, 121)
@@ -727,6 +720,33 @@ a ground	.deck-pulse-toast	max-width	640px
 a ground	.deck-pulse-toast	position	absolute
 a ground	.deck-pulse-toast	top	96px
 a ground	.deck-pulse-toast	z-index	1255
+a ground	.ground-lesson-card	display	flex
+a ground	.ground-lesson-card	flex-direction	column
+a ground	.ground-lesson-card	max-width	672px
+a ground	.ground-lesson-foot	color	rgba(219, 230, 242, 0.78)
+a ground	.ground-lesson-foot	font-size	14.4px
+a ground	.map-canvas	bottom	0px
+a ground	.map-canvas	display	block
+a ground	.map-canvas	height	900px
+a ground	.map-canvas	left	0px
+a ground	.map-canvas	position	absolute
+a ground	.map-canvas	right	0px
+a ground	.map-canvas	top	0px
+a ground	.map-canvas	width	1280px
+a ground	.map-flowcolumn	display	flex
+a ground	.map-flowcolumn	flex-direction	column
+a ground	.map-flowcolumn	height	900px
+a ground	.map-flowcolumn > .map-topstack	flex-basis	auto
+a ground	.map-flowcolumn > .map-topstack	flex-grow	0
+a ground	.map-flowcolumn > .map-topstack	flex-shrink	0
+a ground	.map-page	background-color	rgb(6, 9, 15)
+a ground	.map-page	background-image	none
+a ground	.map-page	bottom	0px
+a ground	.map-page	left	0px
+a ground	.map-page	position	fixed
+a ground	.map-page	right	0px
+a ground	.map-page	top	0px
+a ground	.map-page	z-index	1000
 a ground	.map-topstack	align-items	center
 a ground	.map-topstack	column-gap	6.4px
 a ground	.map-topstack	display	flex
@@ -735,12 +755,7 @@ a ground	.map-topstack	min-height	88px
 a ground	.map-topstack	position	relative
 a ground	.map-topstack	row-gap	6.4px
 a ground	.map-topstack	z-index	24
-a ground	.map-flowcolumn	display	flex
-a ground	.map-flowcolumn	flex-direction	column
-a ground	.map-flowcolumn	height	900px
-a ground	.map-flowcolumn > .map-topstack	flex-basis	auto
-a ground	.map-flowcolumn > .map-topstack	flex-grow	0
-a ground	.map-flowcolumn > .map-topstack	flex-shrink	0
+a ground	.parrot-bird	font-size	24px
 a ground	.parrot-perch	align-items	center
 a ground	.parrot-perch	bottom	376px
 a ground	.parrot-perch	column-gap	6.4px
@@ -749,18 +764,3 @@ a ground	.parrot-perch	position	absolute
 a ground	.parrot-perch	right	176px
 a ground	.parrot-perch	row-gap	6.4px
 a ground	.parrot-perch	z-index	26
-a ground	.parrot-bird	font-size	24px
-a ground	.convergence-card	background-color	rgba(0, 0, 0, 0)
-a ground	.convergence-card	background-image	linear-gradient(rgb(11, 24, 38) 0%, rgb(10, 18, 32) 55%, rgb(12, 15, 22) 100%)
-a ground	.convergence-card	color	rgb(219, 230, 242)
-a ground	.convergence-card	max-height	min(828px, 100%)
-a ground	.convergence-card	max-width	672px
-a ground	.convergence-card	overflow-y	auto
-a ground	.ground-lesson-card	display	flex
-a ground	.ground-lesson-card	flex-direction	column
-a ground	.ground-lesson-card	max-width	672px
-a ground	.ground-lesson-foot	color	rgba(219, 230, 242, 0.78)
-a ground	.ground-lesson-foot	font-size	14.4px
-a ground	.convergence-card > .convergence-close	bottom	0px
-a ground	.convergence-card > .convergence-close	position	sticky
-a ground	.convergence-card > .convergence-close	z-index	3
