@@ -313,7 +313,8 @@ public sealed class TheCaseIsNotTiedToAPlaceTests
     [Fact]
     public void THE_REGISTER_IsWrittenAndReadByThePage()
     {
-        string vault = Pages("Map.Vault.cs");
+        // #251 · RE-PATHED: ApplyVault was cut into Map.Vault.Apply.cs by a pure move; read both halves, head first.
+        string vault = Pages("Map.Vault.cs") + Pages("Map.Vault.Apply.cs");
 
         Assert.Contains("WorkedUp = _workedUp.Count > 0", vault, StringComparison.Ordinal);
         Assert.Contains("vault.WorkedUp?.Sheets ?? []", vault, StringComparison.Ordinal);

@@ -234,7 +234,9 @@ public sealed class TheStopIsAnEncounterTests
     [Fact]
     public void TheRollCheatReachesTheCheckpointWithoutWideningTheHost()
     {
-        string cheats = Code(Read("src", "SpaceSails.Client", "Pages", "Map.Sim.World.QueryArcs.cs"));
+        // #251 · RE-PATHED: Map.Sim.World.QueryArcs.cs was cut in two by a pure move; read both halves, head first.
+        string cheats = Code(Read("src", "SpaceSails.Client", "Pages", "Map.Sim.World.QueryArcs.cs")
+            + Read("src", "SpaceSails.Client", "Pages", "Map.Sim.World.QueryArcs.Long.cs"));
         Assert.Contains("_patrol.RollCheat = _rollCheat;", cheats, StringComparison.Ordinal);
 
         string host = Code(Read("src", "SpaceSails.Client", "Pages", "Patrol", "IPatrolHost.cs"));

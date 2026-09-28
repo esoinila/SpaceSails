@@ -284,7 +284,8 @@ public sealed class TheMilkRunWalksTheWholeLoopTests
     [Fact]
     public void THE_PAGE_WritesTheLessonsPlaceAndReadsItBack()
     {
-        string vault = PagesFile("Map.Vault.cs");
+        // #251 · RE-PATHED: ApplyVault was cut into Map.Vault.Apply.cs by a pure move; read both halves, head first.
+        string vault = PagesFile("Map.Vault.cs") + PagesFile("Map.Vault.Apply.cs");
 
         Assert.Contains("MilkRunLessonStep = _milkRunStep > 0 ? _milkRunStep : null,", vault, StringComparison.Ordinal);
         Assert.Contains("TheMilkRunResumes(vault.Progress?.MilkRunLessonStep);", vault, StringComparison.Ordinal);

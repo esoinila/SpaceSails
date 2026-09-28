@@ -167,7 +167,8 @@ public sealed class TheRedPenIsAnInstrumentTests
     [Fact]
     public void TheLines_RideInTheVault()
     {
-        string vault = Pages("Map.Vault.cs");
+        // #251 · RE-PATHED: ApplyVault was cut into Map.Vault.Apply.cs by a pure move; read both halves, head first.
+        string vault = Pages("Map.Vault.cs") + Pages("Map.Vault.Apply.cs");
         Assert.True(vault.Contains("new CaseThreadsSection", StringComparison.Ordinal),
             "the save no longer writes the red lines (#741).");
         Assert.True(vault.Contains("vault.CaseThreads?.Threads", StringComparison.Ordinal),

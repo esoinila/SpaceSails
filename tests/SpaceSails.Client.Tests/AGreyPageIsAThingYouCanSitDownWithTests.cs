@@ -224,7 +224,8 @@ public sealed class AGreyPageIsAThingYouCanSitDownWithTests
     [Fact]
     public void TheFilingRidesTheVaultAndANewVoyageStartsWithNothingMarked()
     {
-        string vault = Pages("Map.Vault.cs");
+        // #251 · RE-PATHED: ApplyVault was cut into Map.Vault.Apply.cs by a pure move; read both halves, head first.
+        string vault = Pages("Map.Vault.cs") + Pages("Map.Vault.Apply.cs");
 
         Assert.Contains("Filing = BuildFilingSection(),", vault, StringComparison.Ordinal);
         Assert.Contains("RestoreFilingSection(vault.Filing);", vault, StringComparison.Ordinal);

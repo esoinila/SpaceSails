@@ -508,9 +508,9 @@ public sealed class TheFinderWalksTheWholeCaseTests
         Assert.Contains("AdvanceTheFinder(bar)", Page("Map.BarWalkers.cs"), StringComparison.Ordinal);
         Assert.Contains("TheRevealAtTheBerth()", Page("Map.Sim.Tick.Views.cs"), StringComparison.Ordinal);
 
-        // …and the vault carries both halves.
-        Assert.Contains("Finder = BuildFinderSection()", Page("Map.Vault.cs"), StringComparison.Ordinal);
-        Assert.Contains("RestoreFinderSection(vault.Finder)", Page("Map.Vault.cs"), StringComparison.Ordinal);
+        // …and the vault carries both halves. (#251 · RE-PATHED: ApplyVault now lives in Map.Vault.Apply.cs; both files are read.)
+        Assert.Contains("Finder = BuildFinderSection()", (Page("Map.Vault.cs") + Page("Map.Vault.Apply.cs")), StringComparison.Ordinal);
+        Assert.Contains("RestoreFinderSection(vault.Finder)", (Page("Map.Vault.cs") + Page("Map.Vault.Apply.cs")), StringComparison.Ordinal);
     }
 
     // ══ THE BENCH IS A WORLD AND NOT A WISH ══════════════════════════════════════════════════════════════
