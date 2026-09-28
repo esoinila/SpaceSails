@@ -42,6 +42,8 @@ public partial class DeskPanels
     [Parameter] public int _cargoUnits { get; set; }
     [Parameter] public int _cargoValue { get; set; }
     [Parameter] public string? _commsActionMessage { get; set; }
+    /// <summary>#1304 · The page's pulse slot, for the one desk that settles money on it (the dark web).</summary>
+    [Parameter] public PulseSlot _pulse { get; set; } = PulseSlot.Empty;
     [Parameter] public string? _commsHailAnswer { get; set; }
     /// <summary>the page's `string? _commsSelectedId` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
@@ -186,6 +188,13 @@ public partial class DeskPanels
 
     /// <summary>#711 slice 1 · Take it. Map puts it in the pocket; nothing else moves.</summary>
     [Parameter] public Action TakeTheUnlistedParcel { get; set; } = default!;
+
+    /// <summary>#319 slice 2 · The location the desk would sell — Map's own <c>GeocacheOnOffer</c>, null
+    /// when there is nothing to sell.</summary>
+    [Parameter] public Func<SpaceSails.Client.Pages.Stations.DarkWeb.GeocacheOffer?> GeocacheOnOffer { get; set; } = default!;
+
+    /// <summary>#319 slice 2 · Send the coordinates. Map writes the sale; nothing else moves.</summary>
+    [Parameter] public Action SellTheLocation { get; set; } = default!;
 
     /// <summary>#711 slice 2 · The ground the box already in the pocket is going to, as the desk prints it —
     /// Map's own <c>TheParcelsDestinationRow</c>, empty while no parcel is carried.</summary>

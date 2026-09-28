@@ -306,6 +306,14 @@ public partial class Map
                 q.SecretlabCheat = true;
             }
         }
+        else if (pair.StartsWith("geocache=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #319 slice 2 dev cheat: /map?dock=<berth>&geocache=1|lifted buries the chip on a named ground and
+            // (for lifted) sells its location far enough back that the buyer has been. CLAIMED here and read
+            // nowhere here: it writes no world, so it has no business in BootQuery, and a page field for it
+            // would move #905's frame ledger. Map.GeocacheSale reads it off the address bar
+            // (GeocacheSale.CheatIn) once the berth is clamped.
+        }
         else
         {
             return false;

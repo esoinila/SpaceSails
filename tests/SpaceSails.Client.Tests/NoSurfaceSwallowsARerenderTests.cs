@@ -128,6 +128,8 @@ public sealed class NoSurfaceSwallowsARerenderTests
         // #251 · and the same again for the satchel: SatchelPanel.razor's six pages are
         // Pages/Map/SatchelPanel/ now, under SatchelPanel's dispatch, which is Map's.
         Path.Combine(Client, "Pages", "Map", "SatchelPanel"),
+        // #251 · and DeskPanels' two desks, under DeskPanels' dispatch, which is Map's.
+        Path.Combine(Client, "Pages", "Map", "DeskPanels"),
         Path.Combine(Client, "Pages", "Stations", "TrackingPost"),
     ];
 

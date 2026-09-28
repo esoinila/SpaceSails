@@ -31,6 +31,15 @@ public partial class DarkWeb
     [Parameter] public bool FullScreen { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
+    /// <summary>#1304 · <b>THE LINE THE PAGE IS SAYING, WHERE THE CAPTAIN IS LOOKING.</b> The page's pulse
+    /// slot, passed through as it stands — the very sentence the Nav readout draws under <i>Nearest:</i>, for
+    /// exactly as long as it draws it. The sales and payments this desk settles (#319's <i>"Coordinates
+    /// sent"</i> and its escrow, #711's parcel payment and #794's chalk riding on it) are all told on that
+    /// pulse, and the pulse was only ever drawn on the Nav desk and the deck toast: the captain at this desk
+    /// saw a purse change and nothing else. This desk writes no words of its own here and keeps no copy; when
+    /// the slot empties, or the desk closes, the line is gone.</summary>
+    [Parameter] public string? PulseLine { get; set; }
+
     [Parameter] public int Credits { get; set; }
     [Parameter] public EventCallback<int> CreditsChanged { get; set; }
 
@@ -117,6 +126,27 @@ public partial class DarkWeb
     /// <summary>#711 slice 1 · Raised when the captain takes the parcel. Map puts it in the pocket; the desk
     /// only carries the press.</summary>
     [Parameter] public EventCallback OnTakeParcel { get; set; }
+
+    /// <summary>#319 slice 2 · A cache of the captain's the desk would sell the location of: the row's
+    /// sub-line, the quote card and what the captain is paid. Composed by the page off Core; null when there
+    /// is nothing to sell, and then the row does not exist.</summary>
+    public readonly record struct GeocacheOffer(string SubLine, string QuoteLine, int Net, string NetText);
+
+    /// <summary>#319 slice 2 · The offer, or null.</summary>
+    [Parameter] public GeocacheOffer? Geocache { get; set; }
+
+    /// <summary>#319 slice 2 · Confirm the sale of the offered location.</summary>
+    [Parameter] public EventCallback OnSellLocation { get; set; }
+
+    /// <summary>#319 slice 2 · The quote card is open under the row. The desk's own state, like the scroll
+    /// of its tables: it is a card being read, not a fact about the world.</summary>
+    private bool _geocacheQuoteOpen;
+
+    private async Task SellTheLocation()
+    {
+        _geocacheQuoteOpen = false;
+        await OnSellLocation.InvokeAsync();
+    }
 
     private IEnumerable<TrackedShipInfo> SellableTracks =>
         TrackedShips.Where(t => IntelMarket.CanSellTrack(t.Quality));

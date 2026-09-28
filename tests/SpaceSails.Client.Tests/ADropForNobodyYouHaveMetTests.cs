@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,8 +25,13 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class ADropForNobodyYouHaveMetTests
 {
-    private static string Read(params string[] parts) =>
-        File.ReadAllText(Path.Combine([TestTree.RepoRoot(), .. parts]));
+    // #251 · DeskPanels is read COMPOSED, its two desks spliced back in from
+    // Pages/Map/DeskPanels/; every other file reads exactly as before.
+    private static string Read(params string[] parts)
+    {
+        string p = Path.Combine([TestTree.RepoRoot(), .. parts]);
+        return p.EndsWith("DeskPanels.razor", StringComparison.Ordinal) ? SurfaceComposition.RazorText(p) : File.ReadAllText(p);
+    }
 
     /// <summary>The CODE, with the design record taken out of it — these files are half comment by weight
     /// and every name a guard counts is discussed in prose beside the line that uses it.</summary>

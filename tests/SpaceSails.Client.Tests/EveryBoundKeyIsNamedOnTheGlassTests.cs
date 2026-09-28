@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -199,7 +199,10 @@ public class EveryBoundKeyIsNamedOnTheGlassTests
         {
             string path = Path.Combine(TestTree.RepoRoot(), rel.Replace('/', Path.DirectorySeparatorChar));
             Assert.True(File.Exists(path), $"hint source is gone: {rel}. Fix the list; do not drop the file.");
-            sb.AppendLine(WithoutComments(File.ReadAllText(path)));
+            // #251 · DeskPanels is read COMPOSED, its two desks spliced back in from Pages/Map/DeskPanels/.
+            sb.AppendLine(WithoutComments(path.EndsWith("DeskPanels.razor", StringComparison.Ordinal)
+                ? SurfaceComposition.RazorText(path)
+                : File.ReadAllText(path)));
         }
 
         string corpus = sb.ToString();
@@ -347,6 +350,10 @@ public class EveryBoundKeyIsNamedOnTheGlassTests
     {
         string path = Path.Combine(TestTree.RepoRoot(), rel.Replace('/', Path.DirectorySeparatorChar));
         Assert.True(File.Exists(path), $"{rel} is gone — fix the path, do not drop the guard.");
-        return File.ReadAllText(path);
+        // #251 · DeskPanels is read COMPOSED — its two desks spliced back in from Pages/Map/DeskPanels/ — so the
+        // desk still names every key it named when it was one file.
+        return path.EndsWith("DeskPanels.razor", StringComparison.Ordinal)
+            ? SurfaceComposition.RazorText(path)
+            : File.ReadAllText(path);
     }
 }

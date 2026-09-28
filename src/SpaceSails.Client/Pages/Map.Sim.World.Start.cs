@@ -152,6 +152,10 @@ public partial class Map
         // descent at it. Nothing happens here without ?parcel=1.
         TakeAParcelForCheat();
 
+        // #319 slice 2 — ?geocache=1|lifted puts the chip in the ground and its contract on the books, the
+        // desk in reach. Read off the address; nothing happens here without it.
+        BuryAGeocacheForCheat();
+
         if (_landCheat)
         {
             // #464: ride the shuttle down now that the berth is clamped and the ephemeris is live, so the

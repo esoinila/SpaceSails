@@ -259,6 +259,11 @@ public sealed class TheBootBuildsTheSameWorldTests
             // TheBootReadsTheSameQueryTests, where this URL is its own distinct reading.
             ["/map?dock=selene-gate&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=selene-gate&body=luna&site=1&land=1"] = "97b2b0eae504685fd6a9d15cabfaa5b7",
+            // #319 slice 2 · the geocache sale's two dev rows. ?geocache= writes no world and nothing the parse
+            // answers (it is read off the address bar once the berth is clamped) — dumped and diffed: these two
+            // lines are the only thing the dump added, and no other line moved.
+            ["/map?dock=selene-gate&geocache=1"] = "5702e97b412b144d3fd884426e262007",
+            ["/map?dock=selene-gate&geocache=lifted"] = "5702e97b412b144d3fd884426e262007",
             // #997 wave 10 · see /map?start=wreck&target=collector further down — the new dev start moved
             // free-flying after a browser walk, and the reason is written there.
             ["/map?dock=the-deep&body=triton&site=2&land=1"] = "5a567133534c2e96fdf0a40131a72a9d",

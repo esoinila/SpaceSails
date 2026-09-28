@@ -135,7 +135,7 @@ public class TheGroundKeepsSomebodyElsesFootprintsTests
 
         // …and the renderer actually paints them, in the ground vocabulary that is already there.
         string frame = File.ReadAllText(Path.Combine(
-            TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering", "DeckView.Frame.Ground.cs"));
+            TestTree.RepoRoot(), "src", "SpaceSails.Client", "Rendering", "DeckView.Frame.Ground.Marks.cs"));   // #251 · MarkTheGround moved here
         Assert.Contains("hud.Pits is { } pits", frame, StringComparison.Ordinal);
         Assert.Contains("\"✗\", PitInk", frame, StringComparison.Ordinal);
     }
