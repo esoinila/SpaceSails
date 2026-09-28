@@ -248,6 +248,7 @@ public partial class Map
             {
                 ThePaymentIsThere();
                 TheGeocacheEscrowSettles();   // #319 slice 2 · the escrow lands at the same door
+                TheSpikeIsSettled();          // #1202 slice 2 · …and the client's purse, or its note, after the window
             }
         }
     }

@@ -360,12 +360,34 @@ public sealed partial class Map
             }
 
             string body = BodyName(bodyId);
-            OnTheWire(NewsWire.NewsEventKind.PressStoryFiled, CarryThePress.StoryAt(p)!.Value,
-                CarryThePress.Story(body, p.Tin), body);
             CarryThePress.Passage next = p;
-            if (!p.Printed)
+
+            // #1202 slice 2 · …unless somebody got between her and the wire (Map.SpikeIt). The window decides
+            // once: SPIKED prints nothing and files the hole under #1063's absence mark; ALTERED prints the
+            // client's sentence under her byline; LATE — and every story nobody spiked — runs as she wrote it.
+            SpikeIt.Outcome outcome = TheWindowDecides(ref next);
+            if (outcome == SpikeIt.Outcome.Spiked)
             {
-                FileNote(CarryThePress.StoryRanLine, CarryThePress.Glyph);
+                if (!next.Printed)
+                {
+                    FileNote(SpikeIt.Spiked(body), MissingMiddle.Glyph);
+                    next = next with { Printed = true };
+                }
+
+                if (next != p)
+                {
+                    RewritePassage(q, next);
+                }
+
+                continue;
+            }
+
+            OnTheWire(NewsWire.NewsEventKind.PressStoryFiled, CarryThePress.StoryAt(p)!.Value,
+                outcome == SpikeIt.Outcome.Altered ? SpikeIt.Altered(body) : CarryThePress.Story(body, p.Tin), body);
+            if (!next.Printed)
+            {
+                FileNote(outcome == SpikeIt.Outcome.Altered ? SpikeIt.AlteredEntry : CarryThePress.StoryRanLine,
+                    CarryThePress.Glyph);
                 next = next with { Printed = true };
             }
 

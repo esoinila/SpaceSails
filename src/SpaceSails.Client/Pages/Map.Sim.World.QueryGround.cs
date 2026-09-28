@@ -312,6 +312,11 @@ public partial class Map
             // cheat's way: it writes no world at parse time, and a page field for it would move #905's frame
             // ledger. Map.CarryThePress reads it off the address bar (CarryThePress.CheatIn) once clamped.
         }
+        else if (pair.StartsWith("spike=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #1202 slice 2 dev cheat: /map?dock=selene-gate&ashore=1&spike=1|spiked. CLAIMED here and read nowhere
+            // here, the press cheat's way: Map.SpikeIt reads it off the address bar (SpikeIt.CheatIn) once ashore.
+        }
         else if (pair.StartsWith("geocache=", StringComparison.OrdinalIgnoreCase))
         {
             // #319 slice 2 dev cheat: /map?dock=<berth>&geocache=1|lifted buries the chip on a named ground and

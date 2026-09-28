@@ -112,6 +112,10 @@ public partial class Map
             // #794 · …and ?chalk=1|wiped walks one leg further the other way: out along the observation walk
             // into its gallery, with a paid delivery's return on record under one of its two tables.
             PlantTheChalkIfAsked();
+
+            // #1202 slice 2 · …and ?spike=1|spiked walks the same leg: into the gallery, where she writes at the
+            // far table while a spike is in hand against her story, or where the recorder is left after it.
+            SpikeItIfAsked();
         }
 
         // #428 · ?nerve=N — seed the gauge BEFORE the landing cheat rides the shuttle down and before any

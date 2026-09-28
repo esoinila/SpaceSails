@@ -293,14 +293,27 @@ public static class CarryThePress
     /// <param name="TurnedIn">The sim-time she paid, or null.</param>
     /// <param name="Printed">The story's book entry has been filed.</param>
     /// <param name="Floored">The floor's reaction has been pushed once.</param>
+    /// <param name="Spike">#1202 slice 2 · SPIKE IT was taken at a dark-web desk against this story.</param>
+    /// <param name="Pages">…where her pages are (<see cref="SpikeIt.Pages"/>).</param>
+    /// <param name="Seen">…her line at the gallery table has been said.</param>
+    /// <param name="Outcome">…what the window made of the story, once it came.</param>
+    /// <param name="Paid">…the desk's pulse after the window has been given.</param>
+    /// <param name="Gone">…the gallery's line after a spiked window has been said.</param>
     public readonly record struct Passage(
         int Site, bool Landed = false, bool Walked = false, bool Tin = false,
-        double? TurnedIn = null, bool Printed = false, bool Floored = false)
+        double? TurnedIn = null, bool Printed = false, bool Floored = false,
+        bool Spike = false, SpikeIt.Pages Pages = SpikeIt.Pages.OnHerTable, bool Seen = false,
+        SpikeIt.Outcome Outcome = SpikeIt.Outcome.None, bool Paid = false, bool Gone = false)
     {
-        /// <summary>Written as one line.</summary>
+        /// <summary>Written as one line. The spike's keys are written only once it is taken, so a slice-1
+        /// contract's line is the line slice 1 wrote, to the byte.</summary>
         public string Write() =>
             string.Create(CultureInfo.InvariantCulture,
-                $"site={Site};landed={B(Landed)};walked={B(Walked)};tin={B(Tin)};in={(TurnedIn is { } t ? t.ToString("R", CultureInfo.InvariantCulture) : "")};printed={B(Printed)};floor={B(Floored)}");
+                $"site={Site};landed={B(Landed)};walked={B(Walked)};tin={B(Tin)};in={(TurnedIn is { } t ? t.ToString("R", CultureInfo.InvariantCulture) : "")};printed={B(Printed)};floor={B(Floored)}")
+            + (Spike
+                ? string.Create(CultureInfo.InvariantCulture,
+                    $";spike=1;pages={(int)Pages};seen={B(Seen)};out={(int)Outcome};paid={B(Paid)};gone={B(Gone)}")
+                : "");
 
         private static string B(bool b) => b ? "1" : "0";
 
@@ -326,6 +339,14 @@ public static class CarryThePress
                     "in" when double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out double t) => p with { TurnedIn = t },
                     "printed" => p with { Printed = value == "1" },
                     "floor" => p with { Floored = value == "1" },
+                    "spike" => p with { Spike = value == "1" },
+                    "pages" when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int g)
+                                 && Enum.IsDefined(typeof(SpikeIt.Pages), g) => p with { Pages = (SpikeIt.Pages)g },
+                    "seen" => p with { Seen = value == "1" },
+                    "out" when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int o)
+                               && Enum.IsDefined(typeof(SpikeIt.Outcome), o) => p with { Outcome = (SpikeIt.Outcome)o },
+                    "paid" => p with { Paid = value == "1" },
+                    "gone" => p with { Gone = value == "1" },
                     _ => p,
                 };
             }

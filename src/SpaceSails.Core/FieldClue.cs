@@ -116,6 +116,7 @@ public static class FieldClue
         ArgumentNullException.ThrowIfNull(paperId);
         return HardcaseRep.IsTheSchedule(paperId)
             || CarryThePress.IsTheNote(paperId)
+            || SpikeIt.IsAuthored(paperId)
             || UndergroundComplex.AuthoredPaperOf(paperId) is not null
             || UndergroundComplex.LiftCode.PaperIn(paperId) is not null;
     }
@@ -158,6 +159,13 @@ public static class FieldClue
         if (CarryThePress.IsTheNote(paperId))
         {
             return CarryThePress.TinText;
+        }
+
+        // #1202 slice 2 · …and the two sheets of SPIKE IT: the client's page and her pages. Each is the line it
+        // arrived with, rebuilt from the id.
+        if (SpikeIt.IsAuthored(paperId))
+        {
+            return SpikeIt.Document(paperId);
         }
 
         // #1074/#1063 · …AND THE FIVE THE ARC WROTE, for exactly the same reason and through exactly the
@@ -266,6 +274,12 @@ public static class FieldClue
         if (CarryThePress.IsTheNote(paperId))
         {
             return CarryThePress.TinTitle;
+        }
+
+        // #1202 slice 2 · …and SPIKE IT's two sheets are called what their own lines open with.
+        if (SpikeIt.IsAuthored(paperId))
+        {
+            return SpikeIt.Title(paperId);
         }
 
         // #1074/#1063 · …and the five the arc wrote are called what they are called. Same door as Document

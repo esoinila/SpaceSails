@@ -138,6 +138,16 @@ public partial class DarkWeb
     /// <summary>#319 slice 2 · Confirm the sale of the offered location.</summary>
     [Parameter] public EventCallback OnSellLocation { get; set; }
 
+    /// <summary>#1202 slice 2 · SPIKE IT: the row's sub-line, composed by the page off Core. Null when no story of
+    /// hers is pending, and then the row does not exist.</summary>
+    public readonly record struct SpikeOffer(string SubLine);
+
+    /// <summary>#1202 slice 2 · The offer, or null.</summary>
+    [Parameter] public SpikeOffer? Spike { get; set; }
+
+    /// <summary>#1202 slice 2 · Take it.</summary>
+    [Parameter] public EventCallback OnTakeSpike { get; set; }
+
     /// <summary>#319 slice 2 · The quote card is open under the row. The desk's own state, like the scroll
     /// of its tables: it is a card being read, not a fact about the world.</summary>
     private bool _geocacheQuoteOpen;
