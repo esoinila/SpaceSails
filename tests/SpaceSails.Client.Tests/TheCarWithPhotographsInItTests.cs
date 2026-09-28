@@ -311,8 +311,11 @@ public sealed class TheCarWithPhotographsInItTests
     [Fact]
     public void TheChestThatGoesInTheGround_IsWhereTheChipJoinsIt()
     {
+        // #251 · RE-PATHED: Map.Surface.Dig.cs was cut in two by a pure move; read both halves, head first.
         string dig = File.ReadAllText(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.Dig.cs"));
+            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.Dig.cs"))
+            + File.ReadAllText(
+            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Surface.Dig.Chest.cs"));
 
         int at = dig.IndexOf("private void BuryChestHere(", StringComparison.Ordinal);
         Assert.True(at >= 0, "the bury has been renamed — this guard has drifted.");

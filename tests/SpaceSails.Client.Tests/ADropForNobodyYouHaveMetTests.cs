@@ -225,7 +225,9 @@ public sealed class ADropForNobodyYouHaveMetTests
     [Fact]
     public void TheDeliveryIsTheSameShovelAndTheSameHole()
     {
-        string dig = Code(Read("src", "SpaceSails.Client", "Pages", "Map.Surface.Dig.cs"));
+        // #251 · RE-PATHED: Map.Surface.Dig.cs was cut in two by a pure move; read both halves, head first.
+        string dig = Code(Read("src", "SpaceSails.Client", "Pages", "Map.Surface.Dig.cs")
+            + Read("src", "SpaceSails.Client", "Pages", "Map.Surface.Dig.Chest.cs"));
         string drop = Code(Read("src", "SpaceSails.Client", "Pages", "Map.ParcelDrop.cs"));
 
         // The dig calls it, once, ON the pulse it was always going to say.

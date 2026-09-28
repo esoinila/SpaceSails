@@ -177,7 +177,7 @@ public sealed class TheBookLaysThingsTogetherTests
     {
         Assert.Contains(
             "ClearTheSpread();",
-            Method(Pages("Map.Seated.cs"), "private void StandUpFromTable()"),
+            Method(Pages("Map.Seated.Forwarders.cs"), "private void StandUpFromTable()"),
             StringComparison.Ordinal);
 
         Assert.Contains(
