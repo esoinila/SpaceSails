@@ -264,6 +264,10 @@ public sealed class TheBootBuildsTheSameWorldTests
             // these two came, and no other line moved.
             ["/map?dock=selene-gate&ashore=1&chalk=1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=selene-gate&ashore=1&chalk=wiped"] = "5702e97b412b144d3fd884426e262007",
+            // #1202 slice 2 · the spike's two dev rows. ?spike= writes no world and nothing the parse answers (it is
+            // read off the address bar once ashore) — the chalk rows' own reason, and their pin. No other line moved.
+            ["/map?dock=selene-gate&ashore=1&spike=1"] = "5702e97b412b144d3fd884426e262007",
+            ["/map?dock=selene-gate&ashore=1&spike=spiked"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=selene-gate&body=luna&site=1&land=1"] = "97b2b0eae504685fd6a9d15cabfaa5b7",
             // #319 slice 2 · the geocache sale's two dev rows. ?geocache= writes no world and nothing the parse
             // answers (it is read off the address bar once the berth is clamped) — dumped and diffed: these two
