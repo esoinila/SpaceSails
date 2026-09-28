@@ -85,6 +85,9 @@ public sealed class NoSurfaceSwallowsAWriteTests
         // this class's summary quotes — so a list that stopped at NavHud would be a list that no longer
         // covers the two writes it was written about.
         Path.Combine(SurfacesDir, "SatchelPanel"),
+        // #251 · and DeskPanels' two desks: the trading floor writes `_credits` and captures `_localSpace`,
+        // the comms room writes `_commsSelectedId` and `_credits` — every one crosses as a pair.
+        Path.Combine(SurfacesDir, "DeskPanels"),
         Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Stations", "TrackingPost"),
     ];
 

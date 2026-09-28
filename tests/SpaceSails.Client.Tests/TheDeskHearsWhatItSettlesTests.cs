@@ -23,7 +23,7 @@ namespace SpaceSails.Client.Tests;
 /// line the desk drew and not a line nobody wrote.</para>
 ///
 /// <para><b>RED</b> for all three by dropping <c>PulseLine="@_pulse.Message"</c> from the desk in
-/// <c>DeskPanels.razor</c>: <i>the pulse holds the line and the desk does not carry it</i>.</para>
+/// <c>DeskPanels/CommsDesk.razor</c>: <i>the pulse holds the line and the desk does not carry it</i>.</para>
 /// </summary>
 [Collection(SpaceSails.Core.Tests.StopRegisterCollection.Name)]
 public sealed class TheDeskHearsWhatItSettlesTests

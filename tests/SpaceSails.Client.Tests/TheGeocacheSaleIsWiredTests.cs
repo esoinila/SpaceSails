@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using SpaceSails.Core;
@@ -14,8 +14,12 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed class TheGeocacheSaleIsWiredTests
 {
-    private static string Read(params string[] parts) =>
-        File.ReadAllText(Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]));
+    // #251 · DeskPanels is read COMPOSED, its two desks spliced back in from Pages/Map/DeskPanels/.
+    private static string Read(params string[] parts)
+    {
+        string p = Path.Combine([TestTree.RepoRoot(), "src", "SpaceSails.Client", .. parts]);
+        return p.EndsWith("DeskPanels.razor", StringComparison.Ordinal) ? SurfaceComposition.RazorText(p) : File.ReadAllText(p);
+    }
 
     private static string Code(string source)
     {
