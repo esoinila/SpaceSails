@@ -71,9 +71,21 @@
        Catching a class name that no source spells out is exactly what the new law's stem rule is for.)
 
    ORDER IS THE WHOLE PROOF. The bundle concatenates *.razor.css by project-relative path compared without
-   regard to case, so this file's rules still come before every surface's, and every rule kept its place
-   relative to the others in its own file. TheBundleIsTheSameCascadeTests holds the split to the one thing
-   that matters: no pair of rules that could ever fight over an element changed which of them wins. */
+   regard to case, so this file's rules still come before every surface's. TheBundleIsTheSameCascadeTests
+   holds the split to the one thing that matters: no pair of rules that could ever fight over an element
+   changed which of them wins.
+
+   #251 · THE FLOW-COLUMN REGROUP (the owner's 2026-09-03 ruling, "CSS → flow column"). The 93 blocks below
+   are no longer in the order they happened to be written in. Each whole block — its leading comment with it,
+   not a selector or a declaration touched — now stands where the page first draws what it styles: ordered by
+   the first place any of its classes appears in the composed page (MapMarkup.baseline.txt), so the sheet reads
+   top to bottom the way the page paints — the boot door, the canvas, the column's cards, the top stack, the
+   rescue, the tutorial. A @keyframes stands with its first user. Where two blocks can fight (the #735 family
+   and the card skins it caps, the offer blurb and the oracle's backstory, the two pilot-banner states), the
+   pair keeps its original order whatever the flow would say, and the cascade guard above names every such
+   pair. The five blocks whose classes the page's own markup never spells (built in C#) come last, in their
+   old order. TheSheetComputesTheSameStyleTests (UiGate) proves the browser resolves exactly what it resolved
+   before, in eleven live states. */
 
 /* Canvas/HUD layer only — everything else in the app stays plain Razor + Bootstrap. */
 
@@ -130,437 +142,11 @@
        .map-topstack now (Map.razor), so that height is the browser's arithmetic and nobody's estimate. */
 }
 
-.map-canvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    display: block;
-    touch-action: none;
-    cursor: grab;
-}
-
-.map-canvas:active {
-    cursor: grabbing;
-}
-
-/* #841 / Lab 46 · THE DRAW-COST LINE. Present only under ?perf=1, but a dev instrument is still text a
-   human has to read off a phone-sized screen at a glance, so it keeps #782's law rather than pleading dev:
-   its OWN near-opaque ground (never the hall painting behind the canvas), a real font size above the 14 px
-   floor, and a halo on top of that because the numbers are what is being read. It wraps rather than
-   shrinking — the pressure valve is never size — and it never eats a pointer, because the whole point is to
-   walk around underneath it while it counts. */
-.perf-hud {
-    position: absolute;
-    top: 0.35rem;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: min(62rem, 96vw);
-    padding: 0.35rem 0.7rem;
-    border: 1px solid rgba(120, 220, 255, 0.45);
-    border-radius: 0.35rem;
-    background: rgba(4, 8, 12, 0.94);
-    color: #cfefff;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 0.9rem;
-    line-height: 1.3;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
-    overflow-wrap: anywhere;
-    pointer-events: none;
-    z-index: 6;
-}
-
-/* Console quip toast while walking the deck (the Nav HUD that hosts pulse messages is hidden
-   then). Centred near the top, clear of the desk tab bar. */
-.deck-pulse-toast {
-    position: absolute;
-    top: 6rem;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: min(40rem, 90vw);
-    padding: 0.5rem 1rem;
-    text-align: center;
-    color: #ffd479;
-    font-weight: 600;
-    background: rgba(6, 9, 15, 0.82);
-    border: 1px solid rgba(255, 200, 120, 0.28);
-    border-radius: 0.5rem;
-    pointer-events: none;
-    /* #302/#299 z-law (mirror of OverlayBands.DeckPulseToast): sit ABOVE the deck offer/bar card (+50) so a
-       status/intel line is never occluded by the dialog (#212, owner 2026-07-18 "the rumor is slightly
-       blocked by the offer-a-round dialog"). Still below the dice tray (+60), the arrival-brake card (+90),
-       every gate, and — by construction — the reserved distress lifeline. */
-    z-index: calc(var(--z-desks-popups) + 55);
-}
-
-/* A bar stranger's contract offer, over the deck canvas (go-ashore quests). Same overlay family as
-   the pulse toast, but interactive (Take / Pass), so it captures pointer events. */
-::deep .deck-offer-card {
-    position: absolute;
-    top: 9rem;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: min(34rem, 90vw);
-    padding: 1rem 1.25rem;
-    text-align: center;
-    color: #e8ecf4;
-    background: rgba(6, 9, 15, 0.92);
-    border: 1px solid rgba(255, 200, 120, 0.4);
-    border-radius: 0.6rem;
-    box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
-    pointer-events: auto;
-    z-index: calc(var(--z-desks-popups) + 50);
-}
-
-.oracle-backstory {
-    font-size: 0.85em;
-    opacity: 0.72;
-    margin-bottom: 0.5rem;
-}
-
-.deck-offer-giver {
-    color: #ffd479;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    margin-bottom: 0.4rem;
-}
-
-.deck-offer-blurb {
-    font-style: italic;
-    line-height: 1.4;
-    margin-bottom: 0.6rem;
-}
-
-.deck-offer-reward {
-    color: #9fe6b0;
-    font-weight: 600;
-    margin-bottom: 0.8rem;
-}
-
-/* #780 · …AND IT WRAPS. Found by playing it, which is the only way this was ever going to be found: with a
-   stool taken and the neighbour talking, this row carries the menu toggle, two or three rungs of her ladder,
-   "get down off the stool" and "Done" — and a no-wrap flex row simply OVERLAPPED them, so four buttons drew
-   on top of each other and none of them could be read. The table card learned the same lesson at #746
-   (.table-actions) and named it there; a law that has to be remembered per card is a law that gets
-   forgotten on the next card, so it moves up to the family. Nothing that fits on one line moves. */
-::deep .deck-offer-actions,
-::deep .contact-offer-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    justify-content: center;
-}
-
-/* #1013 · THE SAME ROW, MINUS THE FOOT. `.contact-offer-row` is ContactDrinkOffer's own wrapper — one per
-   present bar contact, so a full room draws several of them as ordinary BODY prose above the card's real
-   foot. It shares every rule above with `.deck-offer-actions` except the one two rules down: the sticky
-   pin and its 12rem scrim are for the ONE row that is actually the card's way out, and pinning every
-   contact's row to the same bottom:0 rectangle is what let "Round for the room" read as struck through by
-   whichever face's row rendered last (see the markup comment at ContactDrinkOffer). Margin instead of the
-   footer's sticky gap, so consecutive contacts still read as separate rows once there is more than one. */
-::deep .contact-offer-row {
-    margin-bottom: 0.5rem;
-}
-
-.deck-bank-notice {
-    color: #9fe6b0;
-    line-height: 1.35;
-    margin-bottom: 0.5rem;
-}
-
-/* Owner 2026-07-18 — the bar's offer-moment confirm ("Stand <name> a glass?"), the post-round toast
-   state, and the durable "overheard here" strip. All live INSIDE the bar card so a tip a player paid a
-   round to hear is readable and never occluded by the dialog (#212 — the words may not hide). */
-.bar-offer-moment {
-    align-self: center;
-    color: #ffd479;
-    font-style: italic;
-    margin-right: 0.25rem;
-}
-
-.bar-toasted {
-    align-self: center;
-    color: #9fe6b0;
-    margin-right: 0.25rem;
-}
-
-/* #5 SundayMorningWind — the favourite we've learned, shown beside a known contact. */
-.bar-favorite {
-    align-self: center;
-    color: #ff9ab0;
-    margin-left: 0.35rem;
-    white-space: nowrap;
-}
-
-/* #195: the top-of-flight-view status column — desk tabs, pilot banner, ship-alert strip. These were
-   three independently top-anchored ABSOLUTE layers whose fixed `top`s assumed a one-row banner, so a
-   2–3 row banner (#159/#184) floated OVER the Nav toolbar and hid the 'checklist'/'?' buttons (#123's
-   living example). This column is IN FLOW now, and the Nav HUD (.map-hud) below it is in flow too, so
-   the column claims real height and a taller banner PUSHES the toolbar down instead of covering it. */
-.map-topstack {
-    /* In FLOW (position:relative, not absolute) so it claims real height at the top of the map — the
-       .map-hud block below then flows under it and a taller banner pushes the toolbar down (#195). */
-    position: relative;
-    z-index: calc(var(--z-map-chrome) + 14);
-    pointer-events: none;   /* the gaps pass clicks to the canvas; each child re-enables its own */
-    display: flex;
-    flex-direction: column;
-    align-items: center;    /* tabs · banner · alert strip stay top-centred */
-    gap: var(--topstack-gap);
-    padding: 0.5rem 0.75rem 0;
-
-    /* #236 · THE BAND HAS A FLOOR, AND THE FLOOR IS THE OTHER STRIP'S OWN GEOMETRY.
-       Everything that must clear the masthead flows underneath this box now, so this box IS the reserved
-       band — its laid-out height, whatever the banner grew to this frame. Right for the banner, wrong by
-       itself for one neighbour: the floating map controls (🗺 Layers, the #406 find box) are absolutely
-       positioned in the top-LEFT of the same band and are NOT in this column, so where the masthead is
-       short — the deck, which has no banner at all — a desk flowing under a 3rem stack would begin at a y
-       the strip already owns. #986 F1's bug, back the moment the band stopped being generous by accident.
-       So the band claims the strip standing in it, in the strip's own terms: every var() below is the one
-       the control itself reads. */
-    min-height: calc(var(--map-control-top) + var(--map-control-height) + var(--topstack-gap));
-}
-
-/* The shuttle-bay airlock pop-up (#163): same card family as the bar offer, but a scrollable list of
-   berths in shuttle range.
-
-   #997 wave 7 · `::deep` because ONE of the two cards on this root is the shell's now (the hatch) and one
-   is not (the load-out, #313). Written plainly this compiles to `.deck-shuttle-card[b-map]` and stops
-   matching the shelled one; written `::deep` it is `[b-map] .deck-shuttle-card` — a descendant of the
-   page's own deck markup — and reaches both, whichever component drew them. #1007's idiom, second outing. */
-::deep .deck-shuttle-card {
-    position: absolute;
-    top: 8rem;
-    left: 50%;
-    transform: translateX(-50%);
-    max-width: min(34rem, 90vw);
-    min-width: min(24rem, 90vw);
-    padding: 0.9rem 1.1rem;
-    color: #e8ecf4;
-    background: rgba(6, 9, 15, 0.94);
-    border: 1px solid rgba(255, 200, 120, 0.45);
-    border-radius: 0.6rem;
-    box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
-    pointer-events: auto;
-    z-index: calc(var(--z-desks-popups) + 50);
-}
-
-/* #992 · THE PAIR THAT IS THE WINDOW TALL. The two in-flow children of the map page (#195: the top stack
-   and, on Nav, the HUD) share one column that is exactly the viewport high, so the HUD's height is the
-   ARITHMETIC of what the top stack really took rather than a number somebody wrote down. That is the whole
-   fix for the owner's clipped Plotting panel: #950 capped the panel at `100vh - 14rem`, a constant guess at
-   the chrome above it, and the real chrome on Nav is roughly twice that — so the cap sat below the fold and
-   the panel simply grew past the bottom of the window.
-
-   100dvh first (a phone's URL bar makes 100vh taller than the glass); 100vh is the fallback for anything
-   that does not know dvh. Unpositioned on purpose: .map-topstack and .map-hud keep their own z-index boxes
-   in .map-page's stacking context, so nothing changes layer. */
-.map-flowcolumn {
-    height: 100vh;
-    height: 100dvh;
-    display: flex;
-    flex-direction: column;
-    /* This box covers the whole window; the canvas underneath has to stay grabbable through it. Each
-       child re-enables its own controls, exactly as it did as a direct child of .map-page. */
-    pointer-events: none;
-}
-
-/* The top stack takes what its banner needs — one row or four — and never gives any of it back. */
-.map-flowcolumn > .map-topstack {
-    flex: 0 0 auto;
-}
-
-/* #997 wave 11 · ::deep because OverlayShell draws this root now. Without it the rule compiles to
-   `.map-tutorial[b-map]`, matches nothing, and the checklist loses its anchor outright — every
-   declaration in this block is here, so it falls out of the bottom-left corner into the document flow
-   at the top of the Nav column and takes whatever width the column gives it. Present, correct and dead
-   (#996), and nothing in the client would say so. */
-::deep .map-tutorial {
-    position: absolute;
-    bottom: 0.75rem;
-    left: 0.75rem;
-    width: 22rem;
-    max-width: calc(100% - 1.5rem);
-    pointer-events: auto;
-}
-
-/* #266: the rescue offer modal — the piracy-pop-up family (reuses the .busted card grammar). A real
-   gate: the terms are read before the hold is surrendered. */
-.rescue-backdrop {
-    position: absolute;
-    inset: 0;
-    z-index: var(--z-modal); /* above the desks/deck overlays, in the modal band with view-object/busted */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(2, 3, 6, 0.82);
-    pointer-events: auto;
-}
-
-::deep .rescue-card {
-    max-width: min(34rem, 92vw);
-    max-height: 90vh;
-    overflow-y: auto;
-    padding: 1.25rem 1.5rem;
-    text-align: center;
-    color: #eef1f6;
-    background: linear-gradient(180deg, rgba(30, 18, 20, 0.98), rgba(10, 7, 9, 0.99));
-    border: 1px solid rgba(255, 120, 120, 0.55);
-    border-radius: 0.8rem;
-    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.8), 0 0 1.6rem rgba(255, 90, 90, 0.28);
-}
-
-.rescue-hail {
-    color: #ff9a9a;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    font-size: 1.1rem;
-    margin-bottom: 0.4rem;
-}
-
-.rescue-quote {
-    font-style: italic;
-    color: #d7e0f2;
-    margin-bottom: 0.75rem;
-}
-
-.rescue-terms {
-    text-align: left;
-    margin-bottom: 0.9rem;
-}
-
-.rescue-fee {
-    color: #ffce7a;
-    font-weight: 600;
-    margin-bottom: 0.3rem;
-}
-
 .map-loading {
     position: absolute;
     inset: 0;
     z-index: calc(var(--z-map-chrome) + 40);
     background: #060912;
-}
-
-.map-plan-step-active {
-    animation: pilot-banner-pulse 1.8s ease-in-out infinite;
-}
-
-/* #127 · pilot-in-command banner — the single most important line on the flight HUD: who is
-   actually flying the ship. Top-center, just under the desk tabs, on every desk. Big and readable
-   from across the room; the two states are colour-coded so a glance is enough. */
-.pilot-banner {
-    /* #195: a centered flow child of .map-topstack now (was absolute top:3.0rem, left:50%). Because it
-       claims real height here, growing to 2–3 rows pushes the toolbar down instead of covering it. */
-    pointer-events: auto;
-    /* #159/#184: the who indicator on top, the NOW/NEXT plan rows stacked beneath it. */
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.12rem;
-    padding: 0.35rem 1.1rem;
-    border-radius: 0.6rem;
-    border: 2px solid transparent;
-    font-family: inherit;
-    line-height: 1.1;
-    white-space: normal;
-    max-width: calc(100% - 1.5rem);
-    cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
-    transition: filter 0.12s ease;
-}
-
-.ship-alert {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-    padding: 0.25rem 0.8rem;
-    border-radius: 0.45rem;
-    font-weight: 700;
-    font-size: 0.92rem;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
-}
-
-.ship-alert-red {
-    background: rgba(120, 12, 12, 0.93);
-    border: 2px solid #ff5a5a;
-    color: #ffdada;
-    animation: pilot-banner-pulse 1.4s ease-in-out infinite;
-}
-
-/* Manual: calm, neutral — nothing alarming, you have the stick. */
-.pilot-banner-manual {
-    background: rgba(20, 28, 36, 0.85);
-    border-color: rgba(150, 170, 190, 0.55);
-    color: #cfe0ee;
-}
-
-/* Autopilot: a distinct, strong colour so it can never be mistaken for manual — the ship is
-   flying itself (the Saturn incident). Amber, the "machine in command" convention. */
-.pilot-banner-auto {
-    background: rgba(120, 72, 0, 0.9);
-    border-color: #ffb028;
-    color: #ffe4ad;
-    animation: pilot-banner-pulse 1.8s ease-in-out infinite;
-}
-
-@keyframes pilot-banner-pulse {
-    0%, 100% { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55); }
-    50% { box-shadow: 0 0 16px 2px rgba(255, 176, 40, 0.6); }
-}
-
-/* ---- M28: the ship's parrot — a perch above the scope, visible on every desk. ---- */
-
-/* #997 · `right` reads --desk-chip-strip-clearance too — the perch's own comment already called it
-   "above the scope", so it moves with whatever the scope does. */
-.parrot-perch {
-    position: absolute;
-    right: var(--desk-chip-strip-clearance);
-    bottom: 23.5rem;
-    z-index: calc(var(--z-map-chrome) + 16);
-    pointer-events: none;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-.parrot-bird {
-    font-size: 1.5rem;
-    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.8));
-}
-
-.parrot-bubble {
-    background: rgba(245, 245, 240, 0.95);
-    color: #1c2230;
-    border-radius: 0.6rem;
-    padding: 0.25rem 0.6rem;
-    font-size: 0.8rem;
-    font-weight: 600;
-    max-width: 16rem;
-}
-
-/* #997 wave 6 · ::deep, and the reason it reaches BOTH the shelled and the un-shelled surfaces on this one
-   class. Two of the four .start-picker surfaces are drawn by OverlayShell now (the bank sheet and the import
-   consent) and two are still the page's own (the front door and the logbook — named stragglers, with the
-   reason, in Map.razor). Written plainly this rule compiles to `.start-picker[b-map]` and stops matching the
-   shell's two. Written with ::deep it compiles to `[b-map] .start-picker`, a DESCENDANT selector, and
-   .start-picker-backdrop above every one of the four is the page's own element carrying b-map — so all four
-   are reached through it. One rule, one skin, four surfaces, whichever component draws them. */
-::deep .start-picker {
-    width: min(34rem, 94vw);
-    max-height: 88vh;
-    overflow-y: auto;
-    padding: 1.5rem;
-    background: rgba(10, 14, 22, 0.97);
-    border: 1px solid rgba(120, 200, 255, 0.35);
-    border-radius: 0.75rem;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-}
-
-.save-warming-spin {
-    font-size: 1.4rem;
-    display: inline-block;
-    animation: save-warming-turn 2.2s linear infinite;
 }
 
 @keyframes save-warming-turn {
@@ -614,17 +200,50 @@
     100% { transform: translate(2.6rem, 1.4rem) rotate(6deg); opacity: 0; }
 }
 
-.save-surface-foot {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-    align-items: center;
-    margin-top: 1rem;
+.map-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    touch-action: none;
+    cursor: grab;
 }
 
-.save-surface-foot-center {
-    justify-content: center;
-    margin-top: 1.3rem;
+.map-canvas:active {
+    cursor: grabbing;
+}
+
+/* #841 / Lab 46 · THE DRAW-COST LINE. Present only under ?perf=1, but a dev instrument is still text a
+   human has to read off a phone-sized screen at a glance, so it keeps #782's law rather than pleading dev:
+   its OWN near-opaque ground (never the hall painting behind the canvas), a real font size above the 14 px
+   floor, and a halo on top of that because the numbers are what is being read. It wraps rather than
+   shrinking — the pressure valve is never size — and it never eats a pointer, because the whole point is to
+   walk around underneath it while it counts. */
+.perf-hud {
+    position: absolute;
+    top: 0.35rem;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: min(62rem, 96vw);
+    padding: 0.35rem 0.7rem;
+    border: 1px solid rgba(120, 220, 255, 0.45);
+    border-radius: 0.35rem;
+    background: rgba(4, 8, 12, 0.94);
+    color: #cfefff;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.9rem;
+    line-height: 1.3;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95);
+    overflow-wrap: anywhere;
+    pointer-events: none;
+    z-index: 6;
+}
+
+.save-warming-spin {
+    font-size: 1.4rem;
+    display: inline-block;
+    animation: save-warming-turn 2.2s linear infinite;
 }
 
 /* the seeded-colour monogram disc — the fallback that shows through when the portrait is missing
@@ -649,389 +268,58 @@
     object-fit: cover;
 }
 
-/* #715 — THEY REMEMBER YOU HERE. The whole presentation of the illegal-heat meter: one quiet line in the
-   bottom-left corner the captain chip vacates on a surface excursion, drawn only at a site whose OPERATOR has
-   a memory of this captain. No bar, no percentage, no company name — §13.8's inference horror is a condition
-   of the meter existing at all (#715's own canon section), and the sentence has to read as a thing somebody
-   noticed rather than as an instrument. Sits in the same z-band as the chip, so any card that opens over the
-   corner wins. */
-.heat-remembered {
-    position: absolute;
-    bottom: 0.75rem;
-    left: 0.75rem;
-    max-width: 18rem;
-    padding: 0.2rem 0.55rem;
-    border-radius: 0.4rem;
-    font-size: 0.78rem;
-    letter-spacing: 0.02em;
-    color: rgba(255, 205, 150, 0.85);
-    background: rgba(20, 12, 6, 0.55);
-    border: 1px solid rgba(255, 170, 90, 0.22);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-    z-index: calc(var(--z-map-chrome) + 5);
-    pointer-events: none;
-}
-
-/* View-object popup: inspect a Gen-AI image (a souvenir, a lore prop) up close. */
-.view-object-backdrop {
-    position: absolute;
-    inset: 0;
-    z-index: calc(var(--z-desks-popups) + 120); /* above the deck overlays and even the start picker */
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* #997 wave 6 · ::deep, and the reason it reaches BOTH the shelled and the un-shelled surfaces on this one
+   class. Two of the four .start-picker surfaces are drawn by OverlayShell now (the bank sheet and the import
+   consent) and two are still the page's own (the front door and the logbook — named stragglers, with the
+   reason, in Map.razor). Written plainly this rule compiles to `.start-picker[b-map]` and stops matching the
+   shell's two. Written with ::deep it compiles to `[b-map] .start-picker`, a DESCENDANT selector, and
+   .start-picker-backdrop above every one of the four is the page's own element carrying b-map — so all four
+   are reached through it. One rule, one skin, four surfaces, whichever component draws them. */
+::deep .start-picker {
+    width: min(34rem, 94vw);
+    max-height: 88vh;
+    overflow-y: auto;
     padding: 1.5rem;
-    background: rgba(4, 6, 11, 0.85);
-    backdrop-filter: blur(2px);
-    cursor: zoom-out;
+    background: rgba(10, 14, 22, 0.97);
+    border: 1px solid rgba(120, 200, 255, 0.35);
+    border-radius: 0.75rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
 }
 
-::deep .view-object {
-    width: min(40rem, 94vw);
-    /* The cap used to live here alone, and a cap with no scroll is a card that CLIPS: see the card-family
-       block at the foot of this file (#735), which now owns the height, the scroll and the pinned foot for
-       every modal card at once. */
+.save-surface-foot {
     display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    padding: 1rem;
-    background: #0c1017;
-    border: 1px solid rgba(255, 180, 90, 0.35);
-    border-radius: 0.6rem;
-    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
-    cursor: default;
-}
-
-.view-object-img {
-    width: 100%;
-    max-height: 70vh;
-    object-fit: contain;
-    border-radius: 0.4rem;
-    background: #05070c;
-}
-
-.view-object-caption {
-    color: rgba(232, 236, 244, 0.9);
-    font-size: 0.95rem;
-    line-height: 1.35;
-    text-align: center;
-    font-style: italic;
-}
-
-/* #533 · THE FOURTH LINE — two numbers an instrument read, under a hairline, in the face the ship's own
-   boards are printed in. Quieter than the caption above it, and deliberately NOT italic: the caption is the
-   game telling you what you are looking at; this is a gauge, and a gauge has no voice. */
-.view-object-anomaly {
-    margin-top: 0.15rem;
-    padding-top: 0.55rem;
-    border-top: 1px solid rgba(232, 236, 244, 0.14);
-    color: rgba(232, 236, 244, 0.72);
-    font: 0.86rem/1.45 monospace;
-    letter-spacing: 0.02em;
-    text-align: center;
-}
-
-::deep .view-object-close {
-    align-self: center;
-    margin-top: 0.2rem;
-    padding: 0.35rem 1.4rem;
-    background: rgba(255, 180, 90, 0.14);
-    border: 1px solid rgba(255, 180, 90, 0.45);
-    border-radius: 0.35rem;
-    color: #ffd9a0;
-    font: 600 0.9rem/1 monospace;
-    cursor: pointer;
-}
-
-::deep .view-object-close:hover {
-    background: rgba(255, 180, 90, 0.26);
-}
-
-::deep .mission-celebration {
-    max-width: min(30rem, 90vw);
-    padding: 1.25rem 1.5rem;
-    text-align: center;
-    color: #e8ecf4;
-    background: linear-gradient(180deg, rgba(20, 26, 40, 0.98), rgba(8, 11, 18, 0.98));
-    border: 1px solid rgba(255, 200, 120, 0.55);
-    border-radius: 0.8rem;
-    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.7), 0 0 1.5rem rgba(255, 200, 120, 0.25);
-}
-
-/* The full-screen treasure-map artifact — celebration family, but built around a big image slot. */
-::deep .treasure-map-card {
-    max-width: min(34rem, 92vw);
-    padding: 0;
-    overflow: hidden;
-    text-align: center;
-    color: #f3ead2;
-    background: linear-gradient(180deg, #2a2114, #17110a);
-    border: 1px solid rgba(255, 210, 130, 0.6);
-    border-radius: 0.8rem;
-    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.75), 0 0 1.6rem rgba(255, 200, 120, 0.25);
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    margin-top: 1rem;
 }
 
 ::deep .treasure-map-card .btn {
     margin-bottom: 1rem;
 }
 
-/* #370 · THE RESEARCH BRIEF card — the charter service's sugar-coated pitch. Treasure-map card family
-   (big image slot over sales copy), in reassuring corporate green. */
-::deep .expedition-brief-card {
-    max-width: min(34rem, 92vw);
-    padding: 0;
-    overflow: hidden;
-    text-align: center;
-    color: #e7f3e9;
-    background: linear-gradient(180deg, #12241a, #0a140e);
-    border: 1px solid rgba(120, 220, 150, 0.55);
-    border-radius: 0.8rem;
-    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.75), 0 0 1.6rem rgba(90, 210, 130, 0.22);
+.save-surface-foot-center {
+    justify-content: center;
+    margin-top: 1.3rem;
 }
 
-::deep .expedition-reveal-card {
-    max-width: min(34rem, 92vw);
-    padding: 0;
-    overflow: hidden;
-    text-align: center;
-    color: #f4dede;
-    background: linear-gradient(180deg, #240f0f, #120707);
-    border: 1px solid rgba(230, 90, 90, 0.6);
-    border-radius: 0.8rem;
-    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.85), 0 0 1.8rem rgba(220, 60, 60, 0.3);
-}
-
-::deep .busted-card {
-    max-width: min(34rem, 92vw);
-    padding: 1.25rem 1.5rem;
-    text-align: center;
-    color: #eef1f6;
-    background: linear-gradient(180deg, rgba(30, 18, 20, 0.98), rgba(10, 7, 9, 0.99));
-    border: 1px solid rgba(255, 90, 90, 0.55);
-    border-radius: 0.8rem;
-    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.8), 0 0 1.6rem rgba(255, 70, 70, 0.28);
-}
-
-::deep .convergence-card {
-    max-width: min(38rem, 93vw);
-    padding: 1.4rem 1.6rem 1.2rem;
-    text-align: center;
-    color: #dbe6f2;
-    background: linear-gradient(180deg, #0b1826 0%, #0a1220 55%, #0c0f16 100%);
-    border: 1px solid rgba(140, 190, 230, 0.55);
-    border-radius: 0.85rem;
-    box-shadow: 0 1rem 3.5rem rgba(0, 0, 0, 0.9), 0 0 2.4rem rgba(120, 180, 230, 0.28);
-}
-
-/* #440 · THE FIRST GROUND — the one lesson a captain gets before their boots touch regolith. Borrows the
-   convergence card's frame (one staged card idiom for the game's staged moments) but drops its cold blue
-   for regolith amber, and goes LEFT-aligned inside: this card is read for instruction, not for awe, and
-   centred instruction is hard to scan. */
-::deep .ground-lesson-card {
-    max-width: min(42rem, 94vw);
-    border-color: rgba(240, 190, 110, 0.5);
-    box-shadow: 0 1rem 3.5rem rgba(0, 0, 0, 0.9), 0 0 2.4rem rgba(240, 190, 110, 0.2);
-}
-
-/* #782 · The footnote under the lesson shipped at 0.78rem (12.5 px) in half-alpha ink — 4.43:1 against the
-   card's own ground, under WCAG AA, and small with it. It is the line that tells a captain the keys stay
-   spelled out somewhere, so it is close to the last line in the game that should be a whisper. */
-.ground-lesson-foot {
-    margin-top: 0.8rem;
-    color: rgba(219, 230, 242, 0.78);
-    font-size: 0.9rem;
-}
-
-/* #563 — the map-just-grew card. Same frame as the first-ground lesson (they are siblings: the two things
-   a captain is told once and never again), but keyed cold-green rather than amber, because this one is not
-   a warning — it is the game handing you a bigger world than you thought you had. */
-::deep .ground-grows-card {
-    max-width: min(40rem, 94vw);
-    border-color: rgba(120, 210, 180, 0.5);
-    box-shadow: 0 1rem 3.5rem rgba(0, 0, 0, 0.9), 0 0 2.4rem rgba(120, 210, 180, 0.18);
-}
-
-/* THE CORRIDOR'S CLOCK. A real element, so none of the ::deep rules that size the compartments' injected
-   labels reach it — and with no size of its own it fell back to the browser's 16px inside a viewBox
-   measured in DECK UNITS, i.e. about ten times the length of the ship. It sat across the whole hull. Every
-   text node on this map needs its size stated here; there is no inherited default worth having. */
-.vent-spine-tag {
-    fill: #8fa1b8;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 1.35px;
-    letter-spacing: 0.12px;
-    pointer-events: none;
-}
-
-.vent-spine-tag.pumping-tag { fill: #7fd4e8; }
-.vent-spine-tag.banked-tag { fill: #78dcaa; }
-.vent-spine-tag.here-tag { fill: #78dcaa; }
-
-/* ── Making sure ────────────────────────────────────────────────────────────────────────────────────
-   The scuttling panel and the card you read afterwards from your own cockpit. */
-::deep .scuttle-panel, ::deep .scuttle-epitaph { max-width: 34rem; }
-
-::deep .vent-read-card {
-    max-width: 42rem;
-    text-align: center;
-}
-
-.satchel-empty { padding: 0.8rem 0; }
-
-/* #680/#686/#736 · The last act's answer, said inside the pop-up that was acted on — the one layer the
-   backdrop cannot blur. Amber like the dialogs' own frames, not alarm-red: an answer down here is
-   information, not an emergency.
-
-   ONE RULE FOR EVERY ORGAN THE DISEASE HIT, which is the whole point of #736 having been filed as a sweep
-   rather than a third bug: the satchel's TRY (#680), the car panel's refused floor (#686), the raised card's
-   arithmetic (#736's Gilt-Eye repro — .reveal-outcome), and the boards a captain argues with, which stay
-   open by design and so can never pulse (.panel-outcome: the hatch keypad, the alarm panel, the door board,
-   the captain's remote). A new pop-up that grows an answer takes one of these two class names and inherits
-   the law with the look. */
-.lift-outcome,
-.satchel-outcome,
-.reveal-outcome,
-.panel-outcome {
-    font-size: 0.85rem;
-    line-height: 1.5;
-    color: #d8b56a;
-    background: rgba(200, 170, 120, 0.08);
-    border-left: 3px solid rgba(200, 170, 120, 0.55);
-    border-radius: 0.25rem;
-    padding: 0.5rem 0.7rem;
-    white-space: pre-wrap;
-}
-
-/* The two that sit inside a card whose other rows are centred (the title, the caption, the keypad): an
-   outcome is a sentence to READ, not a legend, so it takes the card's full width and reads from the left.
-   Both hosts are column flexboxes, so stretch is already the default — this only says so out loud. */
-.reveal-outcome,
-.panel-outcome {
-    align-self: stretch;
-    text-align: left;
-}
-
-.satchel-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.8rem;
-    padding: 0.5rem 0.7rem;
-    font: inherit;
-    font-size: 0.86rem;
-    text-align: left;
-    color: #e6dcc8;
-    background: #171a20;
-    border: 1px solid rgba(200, 170, 120, 0.22);
-    border-radius: 0.35rem;
-    cursor: pointer;
-}
-
-.satchel-item:hover:not(:disabled) {
-    background: #20242c;
-    border-color: rgba(200, 170, 120, 0.5);
-}
-
-/* ── #746 · THE TABLE SCENE ───────────────────────────────────────────────────────────────────────────
-   The barkeep card's family (deck-offer-card), with a cooler edge: a company canteen is not a bar, and the
-   warm amber of a berth's counter would say the wrong thing about a room where everybody is on somebody
-   else's clock. Wider than an offer card because a table has a row of MOVES rather than one pitch. */
-::deep .table-card {
-    border-color: rgba(160, 200, 220, 0.45);
-    box-shadow: 0 0.5rem 2rem rgba(40, 90, 120, 0.2), 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
-    max-width: min(40rem, 94vw);
-    text-align: left;
-
-    /* It wears the offer card's SKIN but not its anchoring. The offer card pins itself 9rem down the deck;
-       this one sits inside the modal backdrop's own flex centring, and it can GROW — the satchel fans open
-       inside it. A panel with a hard `top` runs off the bottom of a laptop screen the moment it does, which
-       is how a control becomes unreachable without a single test noticing. */
-    position: static;
-    transform: none;
-    max-height: 100%;
-    overflow-y: auto;
-    cursor: auto;
-}
-
-/* #680 · THE ANSWER, INSIDE THE DIALOG. Styled like the satchel's own outcome row for the reason #680's
-   guard states out loud: an unstyled answer in a styled dialog is a bug report waiting to be filed. */
-.table-outcome {
-    font-size: 0.9rem;
-    line-height: 1.5;
-    color: #d8b56a;
-    background: rgba(200, 170, 120, 0.08);
-    border-left: 3px solid rgba(200, 170, 120, 0.55);
-    border-radius: 0.25rem;
-    padding: 0.55rem 0.75rem;
-    margin-bottom: 0.6rem;
-    white-space: pre-wrap;
-}
-
-.table-showables {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    margin-top: 0.7rem;
-}
-
-.table-showable {
-    width: 100%;
-    text-align: left;
-}
-
-/* ── #735 · A CARD TALLER THAN THE SCREEN IS A LOCKED DOOR ────────────────────────────────────────────
-   Found by the 2026-08-06 smoke run, on the restore card that carries THE CLINIC'S LEDGER: on a 1049 px
-   window its one button — "Board the rustbucket" — rendered BELOW THE FOLD. The modal did not scroll, the
-   backdrop did not dismiss, and the only way on was to grow the browser. A story card had become a
-   softlock, and the owner's second screen is a PHONE in portrait, where every viewport is shorter than the
-   desktop window this failed on.
-
-   It is #680's law one level up: IN THE DOM IS NOT ON THE SCREEN. The button existed the whole time.
-
-   So the height, the scroll and the foot belong to the card FAMILY rather than to whichever card happened
-   to grow last — a card that gets a new section (and they all keep getting new sections) must not be able
-   to lock the game by doing it. Two rules, and no card has to remember either:
-
-     1. the card is capped at the screen and scrolls INSIDE itself, so long prose is reachable; and
-     2. the action row is STUCK to the bottom of that scrollport, so the way on is on screen from the
-        first paint — a scrollbar with a visible button beats a hidden button with neither.
-
-   Named rather than globbed, in the house idiom of the HUD-collision gate: a NEW modal card has to be
-   added here deliberately, which is the moment somebody asks whether its way out is reachable. The guard
-   that fails when this stops being true is TallCardTests in tests/SpaceSails.UiGate.
-
-   #997 wave 5 MEASURED the celebration fanfare in a browser and found it was not on this list, alone of the
-   six cards in its own backdrop family — a full-screen card with a growing body (the fanfare, the title, the
-   giver, the thanks, the payment line, the parrot, the history — seven sections and every release adds to
-   them) and neither the cap nor the pinned foot its five siblings have. It is the exact card this block was
-   written about, and it had simply never been named here. Wave 6 names it. This is #735's own design applied
-   to the card it was always meant to cover, not a new rule. */
-::deep .busted-card,
-::deep .view-object,
-::deep .convergence-card,
-::deep .deck-offer-card,
-::deep .mission-celebration,
-::deep .treasure-map-card,
-::deep .expedition-brief-card,
-::deep .expedition-reveal-card,
-::deep .rescue-card,
-::deep .vent-read-card,
-::deep .deck-shuttle-card {
-    /* min(92vh, 100%): the screen, less a margin — and never taller than the backdrop that centres it,
-       which on a short phone viewport is the smaller of the two. */
-    max-height: min(92vh, 100%);
-    overflow-y: auto;
-    /* A card that has reached its own end must not then scroll the deck behind it. */
-    overscroll-behavior: contain;
-}
-
-/* The bar-card family hangs from a fixed anchor 9rem down the deck instead of being centred in a backdrop,
-   so its ceiling is the screen LESS that anchor: a 92vh cap on a card that starts 9rem down still runs 9rem
-   off the bottom, which is the same bug wearing the fix's clothes. The table (#746) is the exception that
-   proves the rule — it drops the anchor (position: static) to sit inside a modal backdrop's own centring,
-   so it takes the family cap instead. */
+/* A bar stranger's contract offer, over the deck canvas (go-ashore quests). Same overlay family as
+   the pulse toast, but interactive (Take / Pass), so it captures pointer events. */
 ::deep .deck-offer-card {
-    max-height: calc(100vh - 11rem);
+    position: absolute;
+    top: 9rem;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: min(34rem, 90vw);
+    padding: 1rem 1.25rem;
+    text-align: center;
+    color: #e8ecf4;
+    background: rgba(6, 9, 15, 0.92);
+    border: 1px solid rgba(255, 200, 120, 0.4);
+    border-radius: 0.6rem;
+    box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
+    pointer-events: auto;
+    z-index: calc(var(--z-desks-popups) + 50);
 }
 
 /* THE ACTION ROW, PINNED. Sticky rather than a flex footer because these cards have no footer element to
@@ -1102,6 +390,587 @@
     background-color: var(--card-foot-fill, rgb(6, 8, 13));
 }
 
+.deck-offer-giver {
+    color: #ffd479;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.4rem;
+}
+
+/* #780 · …AND IT WRAPS. Found by playing it, which is the only way this was ever going to be found: with a
+   stool taken and the neighbour talking, this row carries the menu toggle, two or three rungs of her ladder,
+   "get down off the stool" and "Done" — and a no-wrap flex row simply OVERLAPPED them, so four buttons drew
+   on top of each other and none of them could be read. The table card learned the same lesson at #746
+   (.table-actions) and named it there; a law that has to be remembered per card is a law that gets
+   forgotten on the next card, so it moves up to the family. Nothing that fits on one line moves. */
+::deep .deck-offer-actions,
+::deep .contact-offer-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+}
+
+/* View-object popup: inspect a Gen-AI image (a souvenir, a lore prop) up close. */
+.view-object-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: calc(var(--z-desks-popups) + 120); /* above the deck overlays and even the start picker */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(4, 6, 11, 0.85);
+    backdrop-filter: blur(2px);
+    cursor: zoom-out;
+}
+
+/* ── Making sure ────────────────────────────────────────────────────────────────────────────────────
+   The scuttling panel and the card you read afterwards from your own cockpit. */
+::deep .scuttle-panel, ::deep .scuttle-epitaph { max-width: 34rem; }
+
+::deep .view-object-close {
+    align-self: center;
+    margin-top: 0.2rem;
+    padding: 0.35rem 1.4rem;
+    background: rgba(255, 180, 90, 0.14);
+    border: 1px solid rgba(255, 180, 90, 0.45);
+    border-radius: 0.35rem;
+    color: #ffd9a0;
+    font: 600 0.9rem/1 monospace;
+    cursor: pointer;
+}
+
+::deep .view-object-close:hover {
+    background: rgba(255, 180, 90, 0.26);
+}
+
+::deep .vent-read-card {
+    max-width: 42rem;
+    text-align: center;
+}
+
+::deep .view-object {
+    width: min(40rem, 94vw);
+    /* The cap used to live here alone, and a cap with no scroll is a card that CLIPS: see the card-family
+       block at the foot of this file (#735), which now owns the height, the scroll and the pinned foot for
+       every modal card at once. */
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 1rem;
+    background: #0c1017;
+    border: 1px solid rgba(255, 180, 90, 0.35);
+    border-radius: 0.6rem;
+    box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, 0.6);
+    cursor: default;
+}
+
+.view-object-img {
+    width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: 0.4rem;
+    background: #05070c;
+}
+
+.view-object-caption {
+    color: rgba(232, 236, 244, 0.9);
+    font-size: 0.95rem;
+    line-height: 1.35;
+    text-align: center;
+    font-style: italic;
+}
+
+/* #680/#686/#736 · The last act's answer, said inside the pop-up that was acted on — the one layer the
+   backdrop cannot blur. Amber like the dialogs' own frames, not alarm-red: an answer down here is
+   information, not an emergency.
+
+   ONE RULE FOR EVERY ORGAN THE DISEASE HIT, which is the whole point of #736 having been filed as a sweep
+   rather than a third bug: the satchel's TRY (#680), the car panel's refused floor (#686), the raised card's
+   arithmetic (#736's Gilt-Eye repro — .reveal-outcome), and the boards a captain argues with, which stay
+   open by design and so can never pulse (.panel-outcome: the hatch keypad, the alarm panel, the door board,
+   the captain's remote). A new pop-up that grows an answer takes one of these two class names and inherits
+   the law with the look. */
+.lift-outcome,
+.satchel-outcome,
+.reveal-outcome,
+.panel-outcome {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #d8b56a;
+    background: rgba(200, 170, 120, 0.08);
+    border-left: 3px solid rgba(200, 170, 120, 0.55);
+    border-radius: 0.25rem;
+    padding: 0.5rem 0.7rem;
+    white-space: pre-wrap;
+}
+
+/* The two that sit inside a card whose other rows are centred (the title, the caption, the keypad): an
+   outcome is a sentence to READ, not a legend, so it takes the card's full width and reads from the left.
+   Both hosts are column flexboxes, so stretch is already the default — this only says so out loud. */
+.reveal-outcome,
+.panel-outcome {
+    align-self: stretch;
+    text-align: left;
+}
+
+/* #533 · THE FOURTH LINE — two numbers an instrument read, under a hairline, in the face the ship's own
+   boards are printed in. Quieter than the caption above it, and deliberately NOT italic: the caption is the
+   game telling you what you are looking at; this is a gauge, and a gauge has no voice. */
+.view-object-anomaly {
+    margin-top: 0.15rem;
+    padding-top: 0.55rem;
+    border-top: 1px solid rgba(232, 236, 244, 0.14);
+    color: rgba(232, 236, 244, 0.72);
+    font: 0.86rem/1.45 monospace;
+    letter-spacing: 0.02em;
+    text-align: center;
+}
+
+/* The full-screen treasure-map artifact — celebration family, but built around a big image slot. */
+::deep .treasure-map-card {
+    max-width: min(34rem, 92vw);
+    padding: 0;
+    overflow: hidden;
+    text-align: center;
+    color: #f3ead2;
+    background: linear-gradient(180deg, #2a2114, #17110a);
+    border: 1px solid rgba(255, 210, 130, 0.6);
+    border-radius: 0.8rem;
+    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.75), 0 0 1.6rem rgba(255, 200, 120, 0.25);
+}
+
+.table-showables {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-top: 0.7rem;
+}
+
+.satchel-empty { padding: 0.8rem 0; }
+
+.satchel-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.5rem 0.7rem;
+    font: inherit;
+    font-size: 0.86rem;
+    text-align: left;
+    color: #e6dcc8;
+    background: #171a20;
+    border: 1px solid rgba(200, 170, 120, 0.22);
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.satchel-item:hover:not(:disabled) {
+    background: #20242c;
+    border-color: rgba(200, 170, 120, 0.5);
+}
+
+.table-showable {
+    width: 100%;
+    text-align: left;
+}
+
+/* ── #746 · THE TABLE SCENE ───────────────────────────────────────────────────────────────────────────
+   The barkeep card's family (deck-offer-card), with a cooler edge: a company canteen is not a bar, and the
+   warm amber of a berth's counter would say the wrong thing about a room where everybody is on somebody
+   else's clock. Wider than an offer card because a table has a row of MOVES rather than one pitch. */
+::deep .table-card {
+    border-color: rgba(160, 200, 220, 0.45);
+    box-shadow: 0 0.5rem 2rem rgba(40, 90, 120, 0.2), 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
+    max-width: min(40rem, 94vw);
+    text-align: left;
+
+    /* It wears the offer card's SKIN but not its anchoring. The offer card pins itself 9rem down the deck;
+       this one sits inside the modal backdrop's own flex centring, and it can GROW — the satchel fans open
+       inside it. A panel with a hard `top` runs off the bottom of a laptop screen the moment it does, which
+       is how a control becomes unreachable without a single test noticing. */
+    position: static;
+    transform: none;
+    max-height: 100%;
+    overflow-y: auto;
+    cursor: auto;
+}
+
+/* #680 · THE ANSWER, INSIDE THE DIALOG. Styled like the satchel's own outcome row for the reason #680's
+   guard states out loud: an unstyled answer in a styled dialog is a bug report waiting to be filed. */
+.table-outcome {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #d8b56a;
+    background: rgba(200, 170, 120, 0.08);
+    border-left: 3px solid rgba(200, 170, 120, 0.55);
+    border-radius: 0.25rem;
+    padding: 0.55rem 0.75rem;
+    margin-bottom: 0.6rem;
+    white-space: pre-wrap;
+}
+
+.deck-offer-reward {
+    color: #9fe6b0;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+}
+
+/* Console quip toast while walking the deck (the Nav HUD that hosts pulse messages is hidden
+   then). Centred near the top, clear of the desk tab bar. */
+.deck-pulse-toast {
+    position: absolute;
+    top: 6rem;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: min(40rem, 90vw);
+    padding: 0.5rem 1rem;
+    text-align: center;
+    color: #ffd479;
+    font-weight: 600;
+    background: rgba(6, 9, 15, 0.82);
+    border: 1px solid rgba(255, 200, 120, 0.28);
+    border-radius: 0.5rem;
+    pointer-events: none;
+    /* #302/#299 z-law (mirror of OverlayBands.DeckPulseToast): sit ABOVE the deck offer/bar card (+50) so a
+       status/intel line is never occluded by the dialog (#212, owner 2026-07-18 "the rumor is slightly
+       blocked by the offer-a-round dialog"). Still below the dice tray (+60), the arrival-brake card (+90),
+       every gate, and — by construction — the reserved distress lifeline. */
+    z-index: calc(var(--z-desks-popups) + 55);
+}
+
+.deck-bank-notice {
+    color: #9fe6b0;
+    line-height: 1.35;
+    margin-bottom: 0.5rem;
+}
+
+.oracle-backstory {
+    font-size: 0.85em;
+    opacity: 0.72;
+    margin-bottom: 0.5rem;
+}
+
+.deck-offer-blurb {
+    font-style: italic;
+    line-height: 1.4;
+    margin-bottom: 0.6rem;
+}
+
+/* The shuttle-bay airlock pop-up (#163): same card family as the bar offer, but a scrollable list of
+   berths in shuttle range.
+
+   #997 wave 7 · `::deep` because ONE of the two cards on this root is the shell's now (the hatch) and one
+   is not (the load-out, #313). Written plainly this compiles to `.deck-shuttle-card[b-map]` and stops
+   matching the shelled one; written `::deep` it is `[b-map] .deck-shuttle-card` — a descendant of the
+   page's own deck markup — and reaches both, whichever component drew them. #1007's idiom, second outing. */
+::deep .deck-shuttle-card {
+    position: absolute;
+    top: 8rem;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: min(34rem, 90vw);
+    min-width: min(24rem, 90vw);
+    padding: 0.9rem 1.1rem;
+    color: #e8ecf4;
+    background: rgba(6, 9, 15, 0.94);
+    border: 1px solid rgba(255, 200, 120, 0.45);
+    border-radius: 0.6rem;
+    box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.55);
+    pointer-events: auto;
+    z-index: calc(var(--z-desks-popups) + 50);
+}
+
+/* #370 · THE RESEARCH BRIEF card — the charter service's sugar-coated pitch. Treasure-map card family
+   (big image slot over sales copy), in reassuring corporate green. */
+::deep .expedition-brief-card {
+    max-width: min(34rem, 92vw);
+    padding: 0;
+    overflow: hidden;
+    text-align: center;
+    color: #e7f3e9;
+    background: linear-gradient(180deg, #12241a, #0a140e);
+    border: 1px solid rgba(120, 220, 150, 0.55);
+    border-radius: 0.8rem;
+    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.75), 0 0 1.6rem rgba(90, 210, 130, 0.22);
+}
+
+::deep .expedition-reveal-card {
+    max-width: min(34rem, 92vw);
+    padding: 0;
+    overflow: hidden;
+    text-align: center;
+    color: #f4dede;
+    background: linear-gradient(180deg, #240f0f, #120707);
+    border: 1px solid rgba(230, 90, 90, 0.6);
+    border-radius: 0.8rem;
+    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.85), 0 0 1.8rem rgba(220, 60, 60, 0.3);
+}
+
+/* #715 — THEY REMEMBER YOU HERE. The whole presentation of the illegal-heat meter: one quiet line in the
+   bottom-left corner the captain chip vacates on a surface excursion, drawn only at a site whose OPERATOR has
+   a memory of this captain. No bar, no percentage, no company name — §13.8's inference horror is a condition
+   of the meter existing at all (#715's own canon section), and the sentence has to read as a thing somebody
+   noticed rather than as an instrument. Sits in the same z-band as the chip, so any card that opens over the
+   corner wins. */
+.heat-remembered {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    max-width: 18rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.4rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    color: rgba(255, 205, 150, 0.85);
+    background: rgba(20, 12, 6, 0.55);
+    border: 1px solid rgba(255, 170, 90, 0.22);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+    z-index: calc(var(--z-map-chrome) + 5);
+    pointer-events: none;
+}
+
+.ship-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.25rem 0.8rem;
+    border-radius: 0.45rem;
+    font-weight: 700;
+    font-size: 0.92rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+}
+
+/* #992 · THE PAIR THAT IS THE WINDOW TALL. The two in-flow children of the map page (#195: the top stack
+   and, on Nav, the HUD) share one column that is exactly the viewport high, so the HUD's height is the
+   ARITHMETIC of what the top stack really took rather than a number somebody wrote down. That is the whole
+   fix for the owner's clipped Plotting panel: #950 capped the panel at `100vh - 14rem`, a constant guess at
+   the chrome above it, and the real chrome on Nav is roughly twice that — so the cap sat below the fold and
+   the panel simply grew past the bottom of the window.
+
+   100dvh first (a phone's URL bar makes 100vh taller than the glass); 100vh is the fallback for anything
+   that does not know dvh. Unpositioned on purpose: .map-topstack and .map-hud keep their own z-index boxes
+   in .map-page's stacking context, so nothing changes layer. */
+.map-flowcolumn {
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    /* This box covers the whole window; the canvas underneath has to stay grabbable through it. Each
+       child re-enables its own controls, exactly as it did as a direct child of .map-page. */
+    pointer-events: none;
+}
+
+/* The top stack takes what its banner needs — one row or four — and never gives any of it back. */
+.map-flowcolumn > .map-topstack {
+    flex: 0 0 auto;
+}
+
+/* #195: the top-of-flight-view status column — desk tabs, pilot banner, ship-alert strip. These were
+   three independently top-anchored ABSOLUTE layers whose fixed `top`s assumed a one-row banner, so a
+   2–3 row banner (#159/#184) floated OVER the Nav toolbar and hid the 'checklist'/'?' buttons (#123's
+   living example). This column is IN FLOW now, and the Nav HUD (.map-hud) below it is in flow too, so
+   the column claims real height and a taller banner PUSHES the toolbar down instead of covering it. */
+.map-topstack {
+    /* In FLOW (position:relative, not absolute) so it claims real height at the top of the map — the
+       .map-hud block below then flows under it and a taller banner pushes the toolbar down (#195). */
+    position: relative;
+    z-index: calc(var(--z-map-chrome) + 14);
+    pointer-events: none;   /* the gaps pass clicks to the canvas; each child re-enables its own */
+    display: flex;
+    flex-direction: column;
+    align-items: center;    /* tabs · banner · alert strip stay top-centred */
+    gap: var(--topstack-gap);
+    padding: 0.5rem 0.75rem 0;
+
+    /* #236 · THE BAND HAS A FLOOR, AND THE FLOOR IS THE OTHER STRIP'S OWN GEOMETRY.
+       Everything that must clear the masthead flows underneath this box now, so this box IS the reserved
+       band — its laid-out height, whatever the banner grew to this frame. Right for the banner, wrong by
+       itself for one neighbour: the floating map controls (🗺 Layers, the #406 find box) are absolutely
+       positioned in the top-LEFT of the same band and are NOT in this column, so where the masthead is
+       short — the deck, which has no banner at all — a desk flowing under a 3rem stack would begin at a y
+       the strip already owns. #986 F1's bug, back the moment the band stopped being generous by accident.
+       So the band claims the strip standing in it, in the strip's own terms: every var() below is the one
+       the control itself reads. */
+    min-height: calc(var(--map-control-top) + var(--map-control-height) + var(--topstack-gap));
+}
+
+/* #127 · pilot-in-command banner — the single most important line on the flight HUD: who is
+   actually flying the ship. Top-center, just under the desk tabs, on every desk. Big and readable
+   from across the room; the two states are colour-coded so a glance is enough. */
+.pilot-banner {
+    /* #195: a centered flow child of .map-topstack now (was absolute top:3.0rem, left:50%). Because it
+       claims real height here, growing to 2–3 rows pushes the toolbar down instead of covering it. */
+    pointer-events: auto;
+    /* #159/#184: the who indicator on top, the NOW/NEXT plan rows stacked beneath it. */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.12rem;
+    padding: 0.35rem 1.1rem;
+    border-radius: 0.6rem;
+    border: 2px solid transparent;
+    font-family: inherit;
+    line-height: 1.1;
+    white-space: normal;
+    max-width: calc(100% - 1.5rem);
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+    transition: filter 0.12s ease;
+}
+
+@keyframes pilot-banner-pulse {
+    0%, 100% { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55); }
+    50% { box-shadow: 0 0 16px 2px rgba(255, 176, 40, 0.6); }
+}
+
+/* Manual: calm, neutral — nothing alarming, you have the stick. */
+.pilot-banner-manual {
+    background: rgba(20, 28, 36, 0.85);
+    border-color: rgba(150, 170, 190, 0.55);
+    color: #cfe0ee;
+}
+
+/* Autopilot: a distinct, strong colour so it can never be mistaken for manual — the ship is
+   flying itself (the Saturn incident). Amber, the "machine in command" convention. */
+.pilot-banner-auto {
+    background: rgba(120, 72, 0, 0.9);
+    border-color: #ffb028;
+    color: #ffe4ad;
+    animation: pilot-banner-pulse 1.8s ease-in-out infinite;
+}
+
+.ship-alert-red {
+    background: rgba(120, 12, 12, 0.93);
+    border: 2px solid #ff5a5a;
+    color: #ffdada;
+    animation: pilot-banner-pulse 1.4s ease-in-out infinite;
+}
+
+/* #266: the rescue offer modal — the piracy-pop-up family (reuses the .busted card grammar). A real
+   gate: the terms are read before the hold is surrendered. */
+.rescue-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: var(--z-modal); /* above the desks/deck overlays, in the modal band with view-object/busted */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(2, 3, 6, 0.82);
+    pointer-events: auto;
+}
+
+::deep .rescue-card {
+    max-width: min(34rem, 92vw);
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 1.25rem 1.5rem;
+    text-align: center;
+    color: #eef1f6;
+    background: linear-gradient(180deg, rgba(30, 18, 20, 0.98), rgba(10, 7, 9, 0.99));
+    border: 1px solid rgba(255, 120, 120, 0.55);
+    border-radius: 0.8rem;
+    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.8), 0 0 1.6rem rgba(255, 90, 90, 0.28);
+}
+
+.rescue-hail {
+    color: #ff9a9a;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    font-size: 1.1rem;
+    margin-bottom: 0.4rem;
+}
+
+.rescue-quote {
+    font-style: italic;
+    color: #d7e0f2;
+    margin-bottom: 0.75rem;
+}
+
+.rescue-terms {
+    text-align: left;
+    margin-bottom: 0.9rem;
+}
+
+.rescue-fee {
+    color: #ffce7a;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+
+/* #997 wave 11 · ::deep because OverlayShell draws this root now. Without it the rule compiles to
+   `.map-tutorial[b-map]`, matches nothing, and the checklist loses its anchor outright — every
+   declaration in this block is here, so it falls out of the bottom-left corner into the document flow
+   at the top of the Nav column and takes whatever width the column gives it. Present, correct and dead
+   (#996), and nothing in the client would say so. */
+::deep .map-tutorial {
+    position: absolute;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    width: 22rem;
+    max-width: calc(100% - 1.5rem);
+    pointer-events: auto;
+}
+
+::deep .mission-celebration {
+    max-width: min(30rem, 90vw);
+    padding: 1.25rem 1.5rem;
+    text-align: center;
+    color: #e8ecf4;
+    background: linear-gradient(180deg, rgba(20, 26, 40, 0.98), rgba(8, 11, 18, 0.98));
+    border: 1px solid rgba(255, 200, 120, 0.55);
+    border-radius: 0.8rem;
+    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.7), 0 0 1.5rem rgba(255, 200, 120, 0.25);
+}
+
+::deep .busted-card {
+    max-width: min(34rem, 92vw);
+    padding: 1.25rem 1.5rem;
+    text-align: center;
+    color: #eef1f6;
+    background: linear-gradient(180deg, rgba(30, 18, 20, 0.98), rgba(10, 7, 9, 0.99));
+    border: 1px solid rgba(255, 90, 90, 0.55);
+    border-radius: 0.8rem;
+    box-shadow: 0 0.8rem 3rem rgba(0, 0, 0, 0.8), 0 0 1.6rem rgba(255, 70, 70, 0.28);
+}
+
+::deep .convergence-card {
+    max-width: min(38rem, 93vw);
+    padding: 1.4rem 1.6rem 1.2rem;
+    text-align: center;
+    color: #dbe6f2;
+    background: linear-gradient(180deg, #0b1826 0%, #0a1220 55%, #0c0f16 100%);
+    border: 1px solid rgba(140, 190, 230, 0.55);
+    border-radius: 0.85rem;
+    box-shadow: 0 1rem 3.5rem rgba(0, 0, 0, 0.9), 0 0 2.4rem rgba(120, 180, 230, 0.28);
+}
+
+::deep .ground-lesson-card > .convergence-close,
+::deep .ground-grows-card > .convergence-close {
+    order: 1;
+    align-self: center;
+}
+
+/* …and the crooked stamp was being CENTRED BY TEXT-ALIGN rather than by being a block — like the button
+   above it — so it has to say so itself now: a flex column stretches an inline-block to the full width of
+   the card, and a stamp as wide as the card is not a stamp. That is the whole ripple of the rule above, in
+   the two places it reaches. Found by rendering the card, not by reasoning about it. */
+.ground-lesson-card > .convergence-stamp,
+.ground-grows-card > .convergence-stamp {
+    align-self: center;
+}
+
+/* #440 · THE FIRST GROUND — the one lesson a captain gets before their boots touch regolith. Borrows the
+   convergence card's frame (one staged card idiom for the game's staged moments) but drops its cold blue
+   for regolith amber, and goes LEFT-aligned inside: this card is read for instruction, not for awe, and
+   centred instruction is hard to scan. */
+::deep .ground-lesson-card {
+    max-width: min(42rem, 94vw);
+    border-color: rgba(240, 190, 110, 0.5);
+    box-shadow: 0 1rem 3.5rem rgba(0, 0, 0, 0.9), 0 0 2.4rem rgba(240, 190, 110, 0.2);
+}
+
 /* The operating log (.vent-read-card) takes the cap and the scroll above but NOT the pinned foot: it is
    the one card in the family with no panel of its own — `.vent-board` has carried no CSS for a long time —
    so it is transparent over the blurred backdrop, and a scrim there would be a rectangle floating on the
@@ -1118,19 +987,82 @@
     flex-direction: column;
 }
 
-::deep .ground-lesson-card > .convergence-close,
-::deep .ground-grows-card > .convergence-close {
-    order: 1;
-    align-self: center;
+/* #782 · The footnote under the lesson shipped at 0.78rem (12.5 px) in half-alpha ink — 4.43:1 against the
+   card's own ground, under WCAG AA, and small with it. It is the line that tells a captain the keys stay
+   spelled out somewhere, so it is close to the last line in the game that should be a whisper. */
+.ground-lesson-foot {
+    margin-top: 0.8rem;
+    color: rgba(219, 230, 242, 0.78);
+    font-size: 0.9rem;
 }
 
-/* …and the crooked stamp was being CENTRED BY TEXT-ALIGN rather than by being a block — like the button
-   above it — so it has to say so itself now: a flex column stretches an inline-block to the full width of
-   the card, and a stamp as wide as the card is not a stamp. That is the whole ripple of the rule above, in
-   the two places it reaches. Found by rendering the card, not by reasoning about it. */
-.ground-lesson-card > .convergence-stamp,
-.ground-grows-card > .convergence-stamp {
-    align-self: center;
+/* #563 — the map-just-grew card. Same frame as the first-ground lesson (they are siblings: the two things
+   a captain is told once and never again), but keyed cold-green rather than amber, because this one is not
+   a warning — it is the game handing you a bigger world than you thought you had. */
+::deep .ground-grows-card {
+    max-width: min(40rem, 94vw);
+    border-color: rgba(120, 210, 180, 0.5);
+    box-shadow: 0 1rem 3.5rem rgba(0, 0, 0, 0.9), 0 0 2.4rem rgba(120, 210, 180, 0.18);
+}
+
+/* ── #735 · A CARD TALLER THAN THE SCREEN IS A LOCKED DOOR ────────────────────────────────────────────
+   Found by the 2026-08-06 smoke run, on the restore card that carries THE CLINIC'S LEDGER: on a 1049 px
+   window its one button — "Board the rustbucket" — rendered BELOW THE FOLD. The modal did not scroll, the
+   backdrop did not dismiss, and the only way on was to grow the browser. A story card had become a
+   softlock, and the owner's second screen is a PHONE in portrait, where every viewport is shorter than the
+   desktop window this failed on.
+
+   It is #680's law one level up: IN THE DOM IS NOT ON THE SCREEN. The button existed the whole time.
+
+   So the height, the scroll and the foot belong to the card FAMILY rather than to whichever card happened
+   to grow last — a card that gets a new section (and they all keep getting new sections) must not be able
+   to lock the game by doing it. Two rules, and no card has to remember either:
+
+     1. the card is capped at the screen and scrolls INSIDE itself, so long prose is reachable; and
+     2. the action row is STUCK to the bottom of that scrollport, so the way on is on screen from the
+        first paint — a scrollbar with a visible button beats a hidden button with neither.
+
+   Named rather than globbed, in the house idiom of the HUD-collision gate: a NEW modal card has to be
+   added here deliberately, which is the moment somebody asks whether its way out is reachable. The guard
+   that fails when this stops being true is TallCardTests in tests/SpaceSails.UiGate.
+
+   #997 wave 5 MEASURED the celebration fanfare in a browser and found it was not on this list, alone of the
+   six cards in its own backdrop family — a full-screen card with a growing body (the fanfare, the title, the
+   giver, the thanks, the payment line, the parrot, the history — seven sections and every release adds to
+   them) and neither the cap nor the pinned foot its five siblings have. It is the exact card this block was
+   written about, and it had simply never been named here. Wave 6 names it. This is #735's own design applied
+   to the card it was always meant to cover, not a new rule. */
+::deep .busted-card,
+::deep .view-object,
+::deep .convergence-card,
+::deep .deck-offer-card,
+::deep .mission-celebration,
+::deep .treasure-map-card,
+::deep .expedition-brief-card,
+::deep .expedition-reveal-card,
+::deep .rescue-card,
+::deep .vent-read-card,
+::deep .deck-shuttle-card {
+    /* min(92vh, 100%): the screen, less a margin — and never taller than the backdrop that centres it,
+       which on a short phone viewport is the smaller of the two. */
+    max-height: min(92vh, 100%);
+    overflow-y: auto;
+    /* A card that has reached its own end must not then scroll the deck behind it. */
+    overscroll-behavior: contain;
+}
+
+/* The bar-card family hangs from a fixed anchor 9rem down the deck instead of being centred in a backdrop,
+   so its ceiling is the screen LESS that anchor: a 92vh cap on a card that starts 9rem down still runs 9rem
+   off the bottom, which is the same bug wearing the fix's clothes. The table (#746) is the exception that
+   proves the rule — it drops the anchor (position: static) to sit inside a modal backdrop's own centring,
+   so it takes the family cap instead. */
+::deep .deck-offer-card {
+    max-height: calc(100vh - 11rem);
+}
+
+::deep .deck-offer-card {
+    --card-foot-scrim: rgba(6, 9, 15, 0.92);
+    --card-foot-fill: rgb(6, 9, 15);
 }
 
 /* Each card's own darkness — read off its own background (the bottom stop of its gradient, or its flat
@@ -1152,11 +1084,91 @@
     --card-foot-fill: rgb(10, 7, 9);
 }
 
-::deep .deck-offer-card {
-    --card-foot-scrim: rgba(6, 9, 15, 0.92);
-    --card-foot-fill: rgb(6, 9, 15);
-}
-
 .old-crew-history {
     opacity: 0.85;
 }
+
+/* ---- M28: the ship's parrot — a perch above the scope, visible on every desk. ---- */
+
+/* #997 · `right` reads --desk-chip-strip-clearance too — the perch's own comment already called it
+   "above the scope", so it moves with whatever the scope does. */
+.parrot-perch {
+    position: absolute;
+    right: var(--desk-chip-strip-clearance);
+    bottom: 23.5rem;
+    z-index: calc(var(--z-map-chrome) + 16);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.parrot-bubble {
+    background: rgba(245, 245, 240, 0.95);
+    color: #1c2230;
+    border-radius: 0.6rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    max-width: 16rem;
+}
+
+.parrot-bird {
+    font-size: 1.5rem;
+    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.8));
+}
+
+/* #1013 · THE SAME ROW, MINUS THE FOOT. `.contact-offer-row` is ContactDrinkOffer's own wrapper — one per
+   present bar contact, so a full room draws several of them as ordinary BODY prose above the card's real
+   foot. It shares every rule above with `.deck-offer-actions` except the one two rules down: the sticky
+   pin and its 12rem scrim are for the ONE row that is actually the card's way out, and pinning every
+   contact's row to the same bottom:0 rectangle is what let "Round for the room" read as struck through by
+   whichever face's row rendered last (see the markup comment at ContactDrinkOffer). Margin instead of the
+   footer's sticky gap, so consecutive contacts still read as separate rows once there is more than one. */
+::deep .contact-offer-row {
+    margin-bottom: 0.5rem;
+}
+
+/* Owner 2026-07-18 — the bar's offer-moment confirm ("Stand <name> a glass?"), the post-round toast
+   state, and the durable "overheard here" strip. All live INSIDE the bar card so a tip a player paid a
+   round to hear is readable and never occluded by the dialog (#212 — the words may not hide). */
+.bar-offer-moment {
+    align-self: center;
+    color: #ffd479;
+    font-style: italic;
+    margin-right: 0.25rem;
+}
+
+.bar-toasted {
+    align-self: center;
+    color: #9fe6b0;
+    margin-right: 0.25rem;
+}
+
+/* #5 SundayMorningWind — the favourite we've learned, shown beside a known contact. */
+.bar-favorite {
+    align-self: center;
+    color: #ff9ab0;
+    margin-left: 0.35rem;
+    white-space: nowrap;
+}
+
+.map-plan-step-active {
+    animation: pilot-banner-pulse 1.8s ease-in-out infinite;
+}
+
+/* THE CORRIDOR'S CLOCK. A real element, so none of the ::deep rules that size the compartments' injected
+   labels reach it — and with no size of its own it fell back to the browser's 16px inside a viewBox
+   measured in DECK UNITS, i.e. about ten times the length of the ship. It sat across the whole hull. Every
+   text node on this map needs its size stated here; there is no inherited default worth having. */
+.vent-spine-tag {
+    fill: #8fa1b8;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 1.35px;
+    letter-spacing: 0.12px;
+    pointer-events: none;
+}
+
+.vent-spine-tag.pumping-tag { fill: #7fd4e8; }
+.vent-spine-tag.banked-tag { fill: #78dcaa; }
+.vent-spine-tag.here-tag { fill: #78dcaa; }
