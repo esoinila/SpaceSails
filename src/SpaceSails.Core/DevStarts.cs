@@ -193,22 +193,23 @@ public static class DevStarts
             + "in the field book. Walk out of the gate and back in first and NOTHING lands: you came in "
             + "again, and the beat is the change (#759).",
             "/map?park=1&parkphase=morning"),
-        // #794 · THE CHALK MARK. A paid delivery's return, left under one bench on a schedule — and the
-        // schedule is the whole difficulty of reaching it by play: a window is one watch in three, so a
-        // tester needs the clock put ON one. Two rows, because the mark and the wipe are two scenes.
-        new("🌳✚", "A chalk cross by the park's notice",
-            "B1 of a deep site, inside the park at the notice, with a paid delivery's return on record and "
-            + "the clock at its window: the mark's line lands on the first tick, a small chalk cross is "
-            + "drawn on the wall beside the gate, and the DEV pulse names the bench. Walk the walk out "
-            + "from the gate — either way, the ordinal is counted outward — sit on that bench alone and the "
-            + "card carries FEEL UNDER THE SLAT. Take it: a parcel in the satchel, one line in the book. "
-            + "On any other bench, or sharing one, the move is not there at all (#794).",
-            "/map?park=1&chalk=1"),
-        new("🌳🧽", "…and one watch later, the wall wiped",
-            "The same return, one watch on: the mark was seen and the grounds crew has wiped it. The wipe's "
-            + "line lands once at the notice, no cross is drawn, and the goods are still under the slat for "
-            + "this one watch (#794).",
-            "/map?park=1&chalk=wiped"),
+        // #794 · THE CHALK MARK, at the gallery (slice 2, owner's ruling 2026-09-28). A paid delivery's return,
+        // left under one of the observation walk's two tables on a schedule — and the schedule is the whole
+        // difficulty of reaching it by play: a window is one watch in three, so a tester needs the clock put ON
+        // one. Two rows, because the mark and the wipe are two scenes.
+        new("🔭✚", "A chalk cross in the observation walk's gallery",
+            "Ashore at Selene Gate and standing in the gallery at the end of the observation walk, with a paid "
+            + "delivery's return on record and the clock at its window: the mark's line lands on the first "
+            + "tick, a small chalk cross is drawn on the back-wall stone beside a vending machine, and the DEV "
+            + "pulse names the table. Sit at that table alone and the card carries FEEL UNDER THE LIP. Take "
+            + "it: a parcel in the satchel, one line in the book. At the other table the move is not there "
+            + "at all (#794).",
+            "/map?dock=selene-gate&ashore=1&chalk=1"),
+        new("🔭🧽", "…and one watch later, the stone wiped",
+            "The same return, one watch on: the mark was seen and the crew has wiped it. The wipe's line lands "
+            + "once in the gallery, no cross is drawn, and the goods are still under the table for this one "
+            + "watch (#794).",
+            "/map?dock=selene-gate&ashore=1&chalk=wiped"),
         // #319 slice 2 · THE GEOCACHE SALE. The chip in the ground and its contract on the books, clamped at a
         // berth whose dark-web desk is open — the row, the quote and the sale in one URL; and the same with
         // the buyer already been, so the next desk opened pays.

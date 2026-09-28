@@ -61,7 +61,13 @@ public sealed partial class DeckView
         // the tests) draws exactly what it drew. The page hands the whole line down — see
         // Map.Deck.Prompts.BuildDeckKeyHints — for the same reason SurfaceHud.KeyHints does: the bar is
         // composed where the facts are, never worked out again in the renderer (#591).
-        string? KeyHints = null);
+        string? KeyHints = null,
+        // #794 slice 2 · THE CHALK ON THE STONE beside the gallery's machines, where Core says it is
+        // (ChalkMark.WhereOnTheStone), and only while the mark is up. It rode the surface HUD while the drop
+        // was in a park; the gallery is at a berth, where there is no surface HUD, so it rides the deck.
+        // Null on every other frame of the game, which is every frame with no paid delivery on record — so
+        // the pen draws nothing new.
+        (double X, double Y)? Chalk = null);
 
     /// <summary>#440 · The deck's own keybar, docked at a haven — the one place the tube up into a bar is
     /// worth naming. A <c>const</c> rather than a literal in the draw so that the page composing the
@@ -233,11 +239,7 @@ public sealed partial class DeckView
         // one number that decides whether this excursion has a way home. Rung is
         // ShuttleLink.Stage as an int, or 3 for a window that is closed and coming back (#955 NAV-2), which
         // is neither a rung nor a maroon. Null aboard, and on any ground with no mothership to catch.
-        (double RangeFraction, int Rung)? ShuttleLegs = null,
-        // #794 · THE CHALK ON THE WALL beside the park's notice, where Core says it is
-        // (ChalkMark.WhereOnTheWall), and only while the mark is up. Null on every other frame of the game,
-        // which is every frame with no paid delivery on record — so the pen draws nothing new.
-        (double X, double Y)? Chalk = null);
+        (double RangeFraction, int Rung)? ShuttleLegs = null);
 
     // #708 · The pen, and the mask that can be slipped over it. `_renderer` is what every draw in this file
     // writes to; for the world phase of a DARK floor it is the LampMask, and for everything else — the

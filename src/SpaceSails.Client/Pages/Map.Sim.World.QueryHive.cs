@@ -429,10 +429,12 @@ public partial class Map
         }
         else if (pair.StartsWith("chalk=", StringComparison.OrdinalIgnoreCase))
         {
-            // #794 dev cheat: /map?park=1&chalk=1|wiped plants a paid delivery's return at the park's notice.
-            // CLAIMED here and read nowhere here: it writes no world, so it has no business in BootQuery, and
-            // a page field for it would move #905's frame ledger. Map.ChalkMark reads it off the address bar
-            // (ChalkMark.CheatIn) at the moment ?park=1 stands the captain in the park.
+            // #794 dev cheat: /map?dock=selene-gate&ashore=1&chalk=1|wiped plants a paid delivery's return
+            // under a table in the observation walk's gallery (slice 2 — it lived at the park's notice until
+            // the owner moved the drop, 2026-09-28). CLAIMED here and read nowhere here: it writes no world,
+            // so it has no business in BootQuery, and a page field for it would move #905's frame ledger.
+            // Map.ChalkMark reads it off the address bar (ChalkMark.CheatIn) right after ?ashore=1 walks the
+            // captain in.
         }
         else
         {

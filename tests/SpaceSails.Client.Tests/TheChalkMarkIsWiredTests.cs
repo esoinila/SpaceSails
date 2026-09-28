@@ -8,13 +8,14 @@ using Xunit;
 namespace SpaceSails.Client.Tests;
 
 /// <summary>
-/// #794 slice 1 · THE CHALK MARK, THE PAGE'S HALF — the wiring Core cannot see.
+/// #794 · THE CHALK MARK, THE PAGE'S HALF — the wiring Core cannot see.
 ///
-/// <para>The judgement (which bench, which watches, what the wall says, when the move is on offer) is driven
-/// in <c>TheChalkMarkTests</c> in the Core suite. What is pinned here is where the page hands those answers to
-/// the player, in the shape #711's own client bench keeps (<c>ADropForNobodyYouHaveMetTests</c>): the source,
-/// with the comments taken out. Every guard was watched go red against the revert its summary names (the
-/// evidence is in the PR body for #794).</para>
+/// <para>The judgement (which table, which watches, what the stone says, when the move is on offer) is driven
+/// in <c>TheChalkMarkTests</c> in the Core suite, and the live room in <see cref="TheDropIsUnderAGalleryTableTests"/>.
+/// What is pinned here is where the page hands those answers to the player, in the shape #711's own client
+/// bench keeps (<c>ADropForNobodyYouHaveMetTests</c>): the source, with the comments taken out. Slice 2
+/// (owner's ruling 2026-09-28) re-pointed all six from the park to the gallery; every guard was watched go
+/// red against the revert its summary names (the evidence is in the PR body for #794 slice 2).</para>
 /// </summary>
 public sealed class TheChalkMarkIsWiredTests
 {
@@ -33,14 +34,14 @@ public sealed class TheChalkMarkIsWiredTests
     private static string Body(string code, string signature)
     {
         int at = code.IndexOf(signature, StringComparison.Ordinal);
-        Assert.True(at >= 0, $"no {signature} in Map.ChalkMark.cs");
+        Assert.True(at >= 0, $"no {signature} in the file");
         int next = code.IndexOf("\n    private ", at + signature.Length, StringComparison.Ordinal);
         return next < 0 ? code[at..] : code[at..next];
     }
 
     /// <summary>
     /// THE COLLECTION TAG IS WRITTEN ONCE PER COLLECTION — in one place, after the check that there is
-    /// something under the slat, and nowhere else in the client. Core's <c>WasCollected</c> is what ends the
+    /// something under the lip, and nowhere else in the client. Core's <c>WasCollected</c> is what ends the
     /// return once the tag is in; this is the half that says the page writes it exactly there.
     /// </summary>
     [Fact]
@@ -54,111 +55,128 @@ public sealed class TheChalkMarkIsWiredTests
                 .Select(p => Code(File.ReadAllText(p))));
         Assert.Single(Regex.Matches(all, @"\.CollectedOn\("));
 
-        string felt = Body(Chalk(), "private bool TheSlatIsFelt(");
-        int guard = felt.IndexOf("TheDropUnderThisSlat(ex, t) is not { } mark", StringComparison.Ordinal);
+        string felt = Body(Chalk(), "private bool TheLipIsFelt(");
+        int guard = felt.IndexOf("TheDropUnderThisLip(t) is not { } mark", StringComparison.Ordinal);
         int write = felt.IndexOf(".CollectedOn(", StringComparison.Ordinal);
         int give = felt.IndexOf("Satchel.Add(", StringComparison.Ordinal);
-        Assert.True(guard > 0, "the move collects without asking whether anything is under the slat.");
+        Assert.True(guard > 0, "the move collects without asking whether anything is under the lip.");
         Assert.True(write > guard && give > guard,
             "the tag or the packet is written before the check that there is anything there.");
-        Assert.Contains("ChalkMark.TheBench(t.SharedSeat, goodsUnderThisSlat: false)", felt,
-            StringComparison.Ordinal);
+        Assert.Contains("ChalkMark.TheTable(t.Scene, goodsUnderThisLip: false)", felt, StringComparison.Ordinal);
     }
 
     /// <summary>
-    /// THE PRESS REACHES THE PAGE FIRST, AND THE CARD IS KEPT HONEST EVERY FRAME. The move is answered by the
-    /// page (it moves the satchel and the register, which the seat does not own) and the bench's card is set
-    /// from Core's <c>ChalkMark.TheBench</c> each frame — so the move is absent the moment it should be.
+    /// THE PRESS REACHES THE PAGE FIRST, AND THE CARD IS KEPT HONEST EVERY FRAME OF THE ROOM. The move is
+    /// answered by the page (it moves the satchel and the register, which the seat does not own), and both
+    /// polls run on the docked room's CONCOURSE path — after the level guard's early return, so nothing about
+    /// the gallery is asked on the floor below — and no longer on the surface frame, where the park had them.
     /// </summary>
     [Fact]
-    public void ThePressAndTheCardAreWired()
+    public void ThePressAndTheCardAreWiredToTheRoom()
     {
         string table = Code(Read("Pages", "Map.Table.cs"));
-        Assert.Contains("TheSlatIsFelt(moveId) ? Task.CompletedTask : _seating.TableMoveClicked(moveId)", table,
+        Assert.Contains("TheLipIsFelt(moveId) ? Task.CompletedTask : _seating.TableMoveClicked(moveId)", table,
             StringComparison.Ordinal);
 
-        string frame = Code(Read("Pages", "Map.Surface.Frame.cs"));
-        Assert.Contains("KeepTheSlatHonest();", frame, StringComparison.Ordinal);
-        int gate = frame.IndexOf("if (!TheSitBeatIsSettling)", StringComparison.Ordinal);
-        int park = frame.IndexOf("CheckTheParkUnderfoot();", StringComparison.Ordinal);
-        int chalk = frame.IndexOf("CheckTheChalkMark();", StringComparison.Ordinal);
-        Assert.True(gate > 0 && park > gate && chalk > park,
-            "the notice's poll is not beside the park's own, inside the sit-beat gate.");
+        string walkers = Body(Code(Read("Pages", "Map.BarWalkers.cs")), "private void AdvanceBarWalkers(");
+        int below = walkers.IndexOf("if (!OnTheConcourse)", StringComparison.Ordinal);
+        int back = walkers.IndexOf("return;", below, StringComparison.Ordinal);
+        int poll = walkers.IndexOf("CheckTheChalkMark();", StringComparison.Ordinal);
+        int honest = walkers.IndexOf("KeepTheLipHonest();", StringComparison.Ordinal);
+        Assert.True(below > 0 && back > below, "the room's level guard moved.");
+        Assert.True(poll > back && honest > back,
+            "the gallery's polls are not on the concourse path of the room's frame.");
 
-        string honest = Body(Chalk(), "private void KeepTheSlatHonest(");
-        Assert.Contains("ChalkMark.Offers(t.Scene) != goods", honest, StringComparison.Ordinal);
-        Assert.Contains("ChalkMark.TheBench(t.SharedSeat, goods)", honest, StringComparison.Ordinal);
+        string frame = Code(Read("Pages", "Map.Surface.Frame.cs"));
+        Assert.DoesNotContain("CheckTheChalkMark", frame, StringComparison.Ordinal);
+        Assert.DoesNotContain("KeepThe", frame, StringComparison.Ordinal);
+
+        string keep = Body(Chalk(), "private void KeepTheLipHonest(");
+        Assert.Contains("ChalkMark.Offers(t.Scene) != goods", keep, StringComparison.Ordinal);
+        Assert.Contains("ChalkMark.TheTable(t.Scene, goods)", keep, StringComparison.Ordinal);
+        Assert.Contains("AtTheGallerysTable(t)", keep, StringComparison.Ordinal);
+        Assert.Contains("SittingAlone.TheTable().Id", keep, StringComparison.Ordinal);
     }
 
     /// <summary>
     /// THE PAYMENT EARNS THE RETURN, AND THE SENTENCE RIDES THE PAYMENT'S OWN PULSE — only through
-    /// <c>TheReturnIsOwed</c>, which asks Core whether the dug ground keeps a park and says nothing when it
-    /// does not.
+    /// <c>TheReturnIsOwed</c>, which keys the owed tag on the gallery's HAVEN (not on the ground that was
+    /// dug) and says nothing when there is no table to leave it under.
     /// </summary>
     [Fact]
-    public void ThePaymentEarnsTheReturn()
+    public void ThePaymentEarnsTheReturnAtTheGallery()
     {
         string drop = Code(Read("Pages", "Map.ParcelDrop.cs"));
         string paid = drop[drop.IndexOf("private void ThePaymentIsThere(", StringComparison.Ordinal)..];
         Assert.Contains("+ TheReturnIsOwed(paid)", paid, StringComparison.Ordinal);
 
         string owed = Body(Chalk(), "private string TheReturnIsOwed(");
-        Assert.Contains("ChalkMark.TheParkUnder(paid.Where.BodyId", owed, StringComparison.Ordinal);
+        Assert.Contains("ChalkMark.For(paid.ParcelId, ChalkMark.Haven,", owed, StringComparison.Ordinal);
+        Assert.Contains("TheGallerysTables(ChalkMark.Haven)", owed, StringComparison.Ordinal);
+        Assert.DoesNotContain("paid.Where", owed, StringComparison.Ordinal);
         Assert.Contains("return \"\";", owed, StringComparison.Ordinal);
         Assert.Contains("_roomsTurnedOver.Add(mark.Owed)", owed, StringComparison.Ordinal);
     }
 
     /// <summary>
-    /// THE CHALK IS DRAWN ONLY WHILE THE MARK IS UP, and nowhere does the page type a coordinate for it —
-    /// the spot is Core's (<c>ChalkMark.WhereOnTheWall</c>).
+    /// THE CHALK IS DRAWN ONLY WHILE THE MARK IS UP, it rides the DECK's own state (a berth has no surface
+    /// HUD), and nowhere does the page type a coordinate for it — the spot is Core's
+    /// (<c>ChalkMark.WhereOnTheStone</c>), off the room's own machines and throat.
     /// </summary>
     [Fact]
     public void TheChalkIsDrawnOnlyWhileTheMarkIsUp()
     {
-        string wall = Body(Chalk(), "private (double X, double Y)? TheChalkOnTheWall(");
-        int up = wall.IndexOf("mark.MarkIsUpAt(SimTime)", StringComparison.Ordinal);
-        int where = wall.IndexOf("ChalkMark.WhereOnTheWall(in green)", StringComparison.Ordinal);
+        string stone = Body(Chalk(), "private (double X, double Y)? TheChalkOnTheStone(");
+        int up = stone.IndexOf("mark.MarkIsUpAt(SimTime)", StringComparison.Ordinal);
+        int where = stone.IndexOf("ChalkMark.WhereOnTheStone(machines[mark.Table], throat.Y)", StringComparison.Ordinal);
         Assert.True(up > 0 && where > up, "the chalk is placed without asking whether the mark is up.");
+        Assert.Contains("!OnTheConcourse", stone, StringComparison.Ordinal);
 
-        string hud = Code(Read("Pages", "Map.Surface.Hud.cs"));
-        Assert.Contains("Chalk: TheChalkOnTheWall()", hud, StringComparison.Ordinal);
+        Assert.Contains("Chalk: TheChalkOnTheStone()", Code(Read("Pages", "Map.Sim.Tick.Views.cs")), StringComparison.Ordinal);
+        Assert.DoesNotContain("Chalk:", Code(Read("Pages", "Map.Surface.Hud.cs")), StringComparison.Ordinal);
+        Assert.Contains("MarkTheGround(surface, state.Chalk, scale, project)",
+            Code(Read("Rendering", "DeckView.Frame.cs")), StringComparison.Ordinal);
     }
 
     /// <summary>
-    /// #1296 · THE DEV START'S BENCH-NAMING LINE IS THE LAST PULSE THE PARK ROW WRITES. It used to be shown
-    /// inside the plant and then written over, on the same tick and at the same rank, by <c>?park=1</c>'s own
-    /// line — so a tester was never told which bench. Every pulse the park row writes after the plant must be
-    /// the chalk line (or fall back to the park's own only when there is none), on the stand path AND on the
-    /// <c>&amp;spread=1</c> path, whose bench row writes a pulse of its own.
+    /// THE DEV START PLANTS AT THE GALLERY AND ITS LINE IS THE LAST PULSE IT WRITES — #1296's lesson carried
+    /// over: it is called after <c>?ashore=1</c> has said its own line and sat anybody down, and its own
+    /// tester line comes after the captain is stood in the gallery. The park's dev row carries no chalk
+    /// plumbing any more.
     /// </summary>
     [Fact]
-    public void TheChalkDevLineIsTheLastPulseThePARKRowWrites()
+    public void TheChalkDevRowIsTheGallerysAndItsLineIsLast()
     {
-        string stand = Code(Read("Pages", "Map.Surface.Cheats.Stand.cs"));
-        int at = stand.IndexOf("private void StandInTheParkIfAsked(", StringComparison.Ordinal);
-        Assert.True(at >= 0, "the park's dev row moved — this guard is watching a method that is gone.");
-        int end = stand.IndexOf("\n    }", at, StringComparison.Ordinal);
-        string row = stand[at..end];
+        string start = Code(Read("Pages", "Map.Sim.World.Start.cs"));
+        int ashore = start.IndexOf("if (q.AshoreCheat)", StringComparison.Ordinal);
+        int sit = start.IndexOf("SitAtABarTopIfAsked();", ashore, StringComparison.Ordinal);
+        int plant = start.IndexOf("PlantTheChalkIfAsked();", ashore, StringComparison.Ordinal);
+        Assert.True(ashore > 0 && sit > ashore && plant > sit, "the chalk is not planted after the ashore row.");
 
-        int plant = row.IndexOf("PlantTheChalkIfAsked(ex, in green)", StringComparison.Ordinal);
-        Assert.True(plant > 0, "the park row no longer plants the chalk.");
-        Assert.Contains("string? chalk = PlantTheChalkIfAsked(", row, StringComparison.Ordinal);
+        string body = Body(Chalk(), "private void PlantTheChalkIfAsked(");
+        int stand = body.IndexOf("StandCaptainAt(", StringComparison.Ordinal);
+        int last = body.LastIndexOf("ShowPulseMessage(", StringComparison.Ordinal);
+        Assert.True(stand > 0 && last > stand, "the tester's line is not the last thing the row says.");
+        Assert.Contains("mark.ThePaymentLine()", body[last..], StringComparison.Ordinal);
 
-        foreach (Match m in Regex.Matches(row[plant..], @"ShowPulseMessage\(([^;]*)\);"))
+        string stand2 = Code(Read("Pages", "Map.Surface.Cheats.Stand.cs"));
+        Assert.DoesNotContain("Chalk", stand2, StringComparison.Ordinal);
+        Assert.DoesNotContain("chalk", stand2, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// THE PARK LOST THE DROP: the page's chalk file asks nothing of a park, a bench or an excursion floor —
+    /// the table it answers about is the gallery's, by the seat's own key.
+    /// </summary>
+    [Fact]
+    public void ThePageAsksNothingOfThePark()
+    {
+        string chalk = Chalk();
+        foreach (string park in new[] { "ParkBenches", "Floor: < 0", "Bench", "TheGreenOnThisFloor", "_surface" })
         {
-            Assert.True(m.Groups[1].Value.Contains("chalk", StringComparison.Ordinal),
-                $"the park row writes a pulse after the plant that is not the chalk line, so it writes over "
-                + $"it on the same tick: ShowPulseMessage({m.Groups[1].Value.Trim()})");
+            Assert.DoesNotContain(park, chalk, StringComparison.Ordinal);
         }
-
-        int sits = row.IndexOf("if (SitOnAFreeBenchIfAsked(in green))", StringComparison.Ordinal);
-        int back = row.IndexOf("return;", sits, StringComparison.Ordinal);
-        Assert.True(sits > plant && back > sits, "the bench branch moved.");
-        Assert.Contains("ShowPulseMessage(chalk)", row[sits..back], StringComparison.Ordinal);
-
-        // …and the plant itself no longer says anything; it hands its line back.
-        string plantBody = Body(Chalk(), "private string? PlantTheChalkIfAsked(");
-        Assert.DoesNotContain("ShowPulseMessage(", plantBody, StringComparison.Ordinal);
+        Assert.Contains("t.Key.StartsWith($\"gallery:{berth}:\"", chalk, StringComparison.Ordinal);
     }
 
     /// <summary>The mark's notes are filed under Core's glyph, never a literal typed on the page.</summary>

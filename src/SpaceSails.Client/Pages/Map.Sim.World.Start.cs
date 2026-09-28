@@ -108,6 +108,10 @@ public partial class Map
             // sleeve. Immediately after the threshold, because it needs the deck the line above welded and
             // the coordinates it just wrote.
             SitAtABarTopIfAsked();
+
+            // #794 · …and ?chalk=1|wiped walks one leg further the other way: out along the observation walk
+            // into its gallery, with a paid delivery's return on record under one of its two tables.
+            PlantTheChalkIfAsked();
         }
 
         // #428 · ?nerve=N — seed the gauge BEFORE the landing cheat rides the shuttle down and before any
