@@ -32,8 +32,10 @@ public sealed class TheStopIsAnEncounterTests
         return Regex.Replace(noBlock, "//[^\n]*", " ");
     }
 
+    // #251 · RE-PATHED: Patrol.Challenge.cs was cut in two by a pure move; this reads both halves, head first.
     private static string Challenge() =>
-        Code(Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Challenge.cs"));
+        Code(Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Challenge.cs")
+            + Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Challenge.Wallet.cs"));
 
     private static string Stop() =>
         Code(Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Stop.cs"));

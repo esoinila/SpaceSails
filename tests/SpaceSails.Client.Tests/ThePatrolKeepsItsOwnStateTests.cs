@@ -91,13 +91,16 @@ public sealed partial class ThePatrolKeepsItsOwnStateTests
         "Pages/Map.PatrolHost.cs",
         "Pages/Patrol/Patrol.cs",
         "Pages/Patrol/Guard.cs",
+        "Pages/Patrol/Guard.Transitions.cs", // #251 · the guard's transitions, cut from Guard.cs by a pure move
         "Pages/Patrol/IPatrolHost.cs",
         "Pages/Patrol/Patrol.Floor.cs",
         "Pages/Patrol/Patrol.Hide.cs",
         "Pages/Patrol/Patrol.Round.cs",
         "Pages/Patrol/Patrol.Challenge.cs",
+        "Pages/Patrol/Patrol.Challenge.Wallet.cs", // #251 · cut from Patrol.Challenge.cs by a pure move
         "Pages/Patrol/Patrol.Escort.cs",
         "Pages/Patrol/Patrol.Run.cs",
+        "Pages/Patrol/Patrol.Run.Heard.cs", // #251 · cut from Patrol.Run.cs by a pure move
 
         // #746 · the checkpoint as an encounter — the scene the stop's card carries and the one
         // place a move becomes an answer. It declares no state of its own that is not the round's.

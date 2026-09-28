@@ -112,7 +112,10 @@ public sealed class TheHeatIsBankedOnceTests
         // Patrol.Run.cs rather than beside the other two because it is decided by a different question on a
         // different frame — whether anybody HEARD it — and it is banked ABOVE the gates that decide whether
         // anybody is free to walk over, because a man who is at that second escorting somebody heard it too.
-        string run = Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Run.cs");
+        // #251 · RE-PATHED: Patrol.Run.cs was cut in two by a pure move and the shot now sits in its tail,
+        // Patrol.Run.Heard.cs; the guard reads both halves, head first, so no count can hide in the other.
+        string run = Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Run.cs")
+            + Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Run.Heard.cs");
         Assert.Equal(1, Count(run, "IllegalHeat.Crossing.ShotOnTheirFloor"));
         Assert.Equal(1, Count(run, "IllegalHeat.Bank("));
 
@@ -219,7 +222,7 @@ public sealed class TheHeatIsBankedOnceTests
             ["Map.BerthScuttle.cs×1", "Map.Blackmail.cs×1", "Map.Combat.Remote.cs×1", "Map.Finder.Confrontation.cs×1",
              "Map.IllegalHeat.cs×1", "Map.OldCrew.cs×1",
              "Map.Scan.cs×1", "Map.Surface.Hive.cs×1", "Map.WalkIn.Job.cs×1", "Patrol.Floor.cs×1",
-             "Patrol.Run.cs×1"],
+             "Patrol.Run.Heard.cs×1"],
             bankers);
     }
 
