@@ -142,17 +142,28 @@ public sealed class TheSheetComputesTheSameStyleTests : IAsyncLifetime
             string json = await page.EvaluateAsync<string>(ReadScript,
                 asked.Select(a => new { sel = a.Selector, props = a.Props }).ToArray());
             using JsonDocument doc = JsonDocument.Parse(json);
+            var stateLines = new List<(string Sel, string Prop, string Line)>();
             foreach (JsonElement row in doc.RootElement.EnumerateArray())
             {
                 string sel = row.GetProperty("sel").GetString()!;
                 string prop = row.GetProperty("prop").GetString()!;
                 string values = string.Join(" ‖ ", row.GetProperty("values").EnumerateArray().Select(v => v.GetString()));
-                lines.Add($"{name}\t{sel}\t{prop}\t{values}");
+                stateLines.Add((sel, prop, $"{name}\t{sel}\t{prop}\t{values}"));
                 if (seen.Add(sel))
                 {
                     matchedAnywhere++;
                 }
             }
+
+            // #251 · SORTED, NOT IN THE SHEET'S ORDER. The reading is about what the browser resolved, and the
+            // whole point of the pin is to hold that still while the sheet's rules are REGROUPED — so the order
+            // the file happens to write its selectors in must not be part of what is pinned. (The first cut
+            // wrote rows in sheet order and went red on the regroup at line 17 with nothing resolved
+            // differently: `.map-topstack` and `.captain-mono` had simply swapped places.)
+            lines.AddRange(stateLines
+                .OrderBy(l => l.Sel, StringComparer.Ordinal)
+                .ThenBy(l => l.Prop, StringComparer.Ordinal)
+                .Select(l => l.Line));
         }
 
         if (page is not null)
