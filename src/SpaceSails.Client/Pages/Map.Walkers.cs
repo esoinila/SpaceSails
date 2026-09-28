@@ -254,6 +254,17 @@ public partial class Map
         /// the captain had already noticed him — a man nobody spotted simply stops being in the
         /// room.</para></summary>
         AskingTheWrongFloor,
+
+        /// <summary>
+        /// #1202 · <b>THE STRINGER ON HER GROUND, BEHIND THE CAPTAIN.</b> Rauha Lind, carried to a moon, walking
+        /// it at his back inside the coat's band (<see cref="SpaceSails.Core.TheTailBehindYou.HoldsHisBand"/>)
+        /// and re-planning from her own feet when he walks out of it.
+        ///
+        /// <para>Its own errand and not <see cref="BehindYou"/>, although it keeps that errand's band: a coat is
+        /// drawn smeared with NO plate (the captain never resolves him — that is the feature), and she wears
+        /// hers. Borrowing the coat's errand would have drawn her as the one figure in the game the captain is
+        /// meant not to be able to name.</para></summary>
+        RidingAlong,
     }
 
     /// <summary>#731 · Every walker's slot is off-map when nobody is in it — the same idiom an unseen guard

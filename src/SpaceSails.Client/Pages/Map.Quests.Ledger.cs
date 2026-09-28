@@ -39,6 +39,13 @@ public partial class Map
                 continue;
             }
 
+            // #1202 · Her fare is paid by her, at the clamp, in her own line (HerFareAtTheBerth) — never by the
+            // fanfare, which would have a dig on a moon somewhere pay a stringer's passage.
+            if (q.Kind == QuestKind.CarryThePress)
+            {
+                continue;
+            }
+
             // PR-WIRE: a favor delivery pays no coin — working it off REPAYS the wired debt. Book the
             // principal back onto the ledger (balance climbs toward zero), clear the obligation, and
             // give it a quiet receipt rather than the coin fanfare (no money changed hands).

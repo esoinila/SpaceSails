@@ -137,6 +137,13 @@ public static class CarriedObject
         //
         // Caption-only (#528's deliberate no-picture idiom), like every other paper: a document is not a
         // portrait, and no plate in this repository is a photograph of a rate schedule.
+        // #1202 · …and the tin a source left for a stringer is the second sheet somebody wrote: titled with its
+        // own opening words, and its body is the one sentence on it.
+        if (CarryThePress.IsTheNote(paperId))
+        {
+            return new Reveal("", CarryThePress.TinTitle, CarryThePress.TinText);
+        }
+
         return HardcaseRep.IsTheSchedule(paperId)
             ? new Reveal("", HardcaseRep.ScheduleLabel, HardcaseRep.ScheduleBody)
             : new Reveal(

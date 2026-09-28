@@ -311,6 +311,13 @@ public partial class Map
         {
             foreach (NewsWire.NewsEvent evt in _newsEvents)
             {
+                // #1202 · …and a port's own gossip about a stringer's story prints on a port's rag only.
+                // Every kind that existed before it prints exactly where it always did.
+                if (!NewsWire.PrintsIn(evt.Kind, scope))
+                {
+                    continue;
+                }
+
                 // #1052 (L2) · …AND WHAT THE LINE IS ABOUT TRAVELS WITH IT. The subjects are the event
                 // author's own answer (NewsWire.SubjectsFor) rather than anything read back off the
                 // headline, and they are carried on every consumer's feed — the ticker and the galley card

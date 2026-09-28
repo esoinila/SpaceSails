@@ -389,6 +389,7 @@ public partial class Map
         // BEFORE the walkers, so a captain who steps into a lift finds him already off the excursion's band
         // rather than standing in a corridor of B1.
         AdvanceTheHardcase(dtRealSeconds);
+        AdvanceTheStringer(dtRealSeconds); // #1202: a stringer carried to her ground walks it behind the captain
         StepCollectors(dtRealSeconds); // #583: the repo boat, and the people who got out of it
         // #804 · …and the ROUNDS, which are the other thing about the clause above: the pack is cleared on
         // descent and what walks the restricted floors instead is somebody on a payroll. Stepped AFTER the

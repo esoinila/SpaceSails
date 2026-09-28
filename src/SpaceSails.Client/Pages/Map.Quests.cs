@@ -185,7 +185,9 @@ public partial class Map
     // down (holed or boarded); turning in at any haven pays the reward. State is a plain list of
     // records — player-driven, never read by the physics sim. ---
     // #973 L5b · WalkIn is the woman's favour: a FIND with two berths in it and no coin at either end.
-    public enum QuestKind { Hunt, CargoRun, Intel, Fetch, Crack, Favor, FetchCache, WalkIn }
+    // #1202 · CarryThePress is a stringer's passage to a moon and back, and the story the wire prints after.
+    // APPENDED, never inserted: a save stores the kind by name today, but an ordinal is how an enum is read.
+    public enum QuestKind { Hunt, CargoRun, Intel, Fetch, Crack, Favor, FetchCache, WalkIn, CarryThePress }
     // Fetch adds a PickedUp step between Active and Complete: fly to the SourceBodyId derelict to grab
     // the goods, then hand them over in person at the DestBodyId station's bar (no electronic trace).
     // Crack is the same face-to-face shape but the pickup is a locked hatch *here*: walk to the named

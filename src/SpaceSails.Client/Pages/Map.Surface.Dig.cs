@@ -522,6 +522,12 @@ public partial class Map
         Probe probe = BeachComber.Roll(ex.Stop.Body.Id, squareX, squareY);
         ex.Swept[(squareX, squareY)] = probe.Outcome;
 
+        // #1202 · …and on a stringer's ground, where the ground is soft, this may be the hole her source left.
+        if (TheTinComesUp(ex, squareX, squareY))
+        {
+            return;
+        }
+
         // #411: a rare seeded square on an outer icy moon hides a cold KAAMOS supply pod — a cargo run that
         // never arrived, distinct from ordinary treasure. Sweeping it the first time assembles cold-pod (and
         // may open the reach). Once held, the square is ordinary regolith and the normal probe result stands.

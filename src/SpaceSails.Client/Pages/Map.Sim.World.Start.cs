@@ -160,6 +160,10 @@ public partial class Map
         // desk in reach. Read off the address; nothing happens here without it.
         BuryAGeocacheForCheat();
 
+        // #1202 — ?press=1|filed takes a stringer aboard at this berth, or has her story already on the wire.
+        // Read off the address; nothing happens here without it.
+        TakeThePressForCheat();
+
         if (_landCheat)
         {
             // #464: ride the shuttle down now that the berth is clamped and the ephemeris is live, so the
