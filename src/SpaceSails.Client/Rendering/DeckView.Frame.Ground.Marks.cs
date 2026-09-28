@@ -91,8 +91,11 @@ public sealed partial class DeckView
     /// <summary>#870 lane 7b · #313's surface ground marks — the swept grid first, then own caches, a
     /// panic-dropped chest, #314's husks and #371's movement echoes. All of it under the movers, so a
     /// figure can stand on any of it.</summary>
+    /// <param name="chalk">#794 slice 2 · The chalk cross on the gallery's stone, or null — carried on the
+    /// deck's own <see cref="State"/> because the gallery is at a berth, where there is no surface HUD.</param>
     private void MarkTheGround(
-        SurfaceHud? surface, float scale, Func<double, double, (float X, float Y)> project)
+        SurfaceHud? surface, (double X, double Y)? chalk, float scale,
+        Func<double, double, (float X, float Y)> project)
     {
         // #313 surface ground overlays: own caches' ✗ marks and a panic-dropped chest (drawn under the
         // avatar/droids so a mover can stand on them).
@@ -173,18 +176,6 @@ public sealed partial class DeckView
                     _renderer.DrawText(sx, sy + 3, "×", new RgbaColor(90, 60, 60, 220), "bold 11px monospace", TextAlign.Center);
                 }
             }
-            // #794 · A CHALK CROSS ON THE SHOTCRETE, beside the park's notice, while the mark is up. Two strokes
-            // in chalk-white, a hand wide and no wider — a mark on a wall rather than a glyph on the map, and
-            // nothing points at it: the notice is right there and the captain has to look.
-            if (hud.Chalk is { } chalk)
-            {
-                (float cx, float cy) = project(chalk.X, chalk.Y);
-                float arm = 0.45f * scale;
-                ReadOnlySpan<float> rising = [cx - arm, cy + arm, cx + arm, cy - arm];
-                ReadOnlySpan<float> falling = [cx - arm, cy - arm, cx + arm, cy + arm];
-                _renderer.DrawPolyline(rising, ChalkInk, 1.4f);
-                _renderer.DrawPolyline(falling, ChalkInk, 1.4f);
-            }
             // #371 Phase 3: movement echoes — where a contact was last seen before it slipped behind cover.
             // A dim tracker-green ripple that fades over its life; "here was movement before" (owner's ask),
             // making the motion tracker's through-wall blips all the more exciting to chase.
@@ -199,6 +190,20 @@ public sealed partial class DeckView
                     _renderer.DrawText(sx, sy + 3, "·", ring, "10px monospace", TextAlign.Center);
                 }
             }
+        }
+
+        // #794 · A CHALK CROSS ON THE STONE, beside the gallery's machines, while the mark is up. Two strokes
+        // in chalk-white, a hand wide and no wider — a mark on a wall rather than a glyph on the map, and
+        // nothing points at it: the stone is right there and the captain has to look. (It was drawn beside
+        // the park's notice until slice 2 moved the drop; same ink, same strokes.)
+        if (chalk is { } cross)
+        {
+            (float cx, float cy) = project(cross.X, cross.Y);
+            float arm = 0.45f * scale;
+            ReadOnlySpan<float> rising = [cx - arm, cy + arm, cx + arm, cy - arm];
+            ReadOnlySpan<float> falling = [cx - arm, cy - arm, cx + arm, cy + arm];
+            _renderer.DrawPolyline(rising, ChalkInk, 1.4f);
+            _renderer.DrawPolyline(falling, ChalkInk, 1.4f);
         }
     }
 }

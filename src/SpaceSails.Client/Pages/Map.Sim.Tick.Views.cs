@@ -356,7 +356,9 @@ public partial class Map
             // #440 · …and the keybar, off the regolith, now that it has something to say there — the bank's
             // B at a contact's table and the mute. Null off a walked deck and on an excursion, where the
             // surface hud's own bar has owned the strip since #324.
-            KeyHints: BuildDeckKeyHints()),
+            KeyHints: BuildDeckKeyHints(),
+            // #794 · …and the chalk on the gallery's stone, while the mark is up. Null on every other frame.
+            Chalk: TheChalkOnTheStone()),
             _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
     }
     // Plasma stream ribbons (M7): one translucent wide segment per stream, between the two

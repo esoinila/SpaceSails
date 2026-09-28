@@ -279,6 +279,8 @@ public partial class Map
         AdvanceTheWalk(bar);     // #1199 · …and whoever the evening has crossing the floor with YOU behind them
         AdvanceTheCoat(bar);     // #1062 slice 2 · …and whoever an outfit has crossing it behind YOU
         TheBurnIsToldHere(bar.BodyId);   // #1062 slice 2 · …and whether somebody walked this place first
+        CheckTheChalkMark();   // #794 · …and the stone beside the gallery's machines, which sometimes says more
+        KeepTheLipHonest();    // #794 · …and a gallery table's card carries FEEL UNDER THE LIP only while it should
     }
 
     /// <summary>#973 L0 · CASTING OFF IS THE ROOM FORGETTING. Same law a turned shift is underground: what

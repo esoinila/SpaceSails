@@ -6,7 +6,8 @@ using SpaceSails.Core.Interior;
 namespace SpaceSails.Core;
 
 /// <summary>
-/// #794 slice 1 · <b>THE CHALK MARK — the faceless trade's return leg.</b>
+/// #794 · <b>THE CHALK MARK — the faceless trade's return leg.</b> Slice 1 built it in a Hive's park; slice 2
+/// moved it to the gallery at the end of Selene Gate's observation walk, by the owner's ruling of 2026-09-28.
 ///
 /// <para>Owner, on #794: <i>"I saw an X marked with chalk and I knew there was a dead drop waiting with my
 /// name on it…"</i> and, on the trade that makes it an economy: <i>"they would probably like to use a dead
@@ -14,18 +15,30 @@ namespace SpaceSails.Core;
 /// dark-web desk, buried at the ground <see cref="ParcelDrop.Destination"/> names, paid a few watches later
 /// (<see cref="ParcelDrop.ThePaymentThatIsThere"/>). Nothing ever came back. This is what comes back.</para>
 ///
+/// <h3>Why the gallery and not the park (#794, 2026-09-28)</h3>
+///
+/// <para>Slice 1 left the return under a bench in the park of the complex under the ground that was dug. It
+/// was complete and, in shipped play, silent: a park is a Hive block, a Hive is <see cref="SecretLab.Present"/>,
+/// no sol moon keeps one, and <see cref="ParcelDrop.For(string, IReadOnlyList{string})"/> only ever names the
+/// scenario's moons — so the delivery rail could never name a ground a drop stood on. The owner ruled the
+/// drop moves to where the captain already goes. The gallery at the end of the observation walk
+/// (<see cref="ObservationWalk.HavenId"/>) is a room nobody is in, with two steel tables and stone beside the
+/// vending machines — exactly where a dead drop wants to be. The mechanic MOVED: the park's bench card is
+/// back to its own two moves, and nothing is duplicated.</para>
+///
 /// <h3>The mechanic, as pure arithmetic</h3>
 ///
 /// <list type="number">
-/// <item><b>A paid delivery earns ONE return</b>, left at the ground that was dug — if the complex under that
-/// ground keeps a park (<see cref="TheGroundKeepsAPark"/>). No park, no drop, no sentence.</item>
-/// <item><b>Where:</b> under one bench, seeded off (parcel id, body), never the bench the park's lone figure
-/// sits on — a drop under a plank somebody is always sitting on is a drop nobody can reach alone.</item>
+/// <item><b>A paid delivery earns ONE return</b>, at any haven's dark-web desk, left under one of the two
+/// gallery tables at Selene Gate. The haven always exists, so there is no gate on it beyond the room being
+/// there: a berth with no gallery has no tables, and no tables is no drop and no sentence.</item>
+/// <item><b>Where:</b> under one table, seeded off (parcel id, haven), named first or second by the room's
+/// own table order.</item>
 /// <item><b>When:</b> every <see cref="WatchesBetweenWindows"/>th watch from the watch the payment landed,
 /// with a seeded offset. During the window watch the drop is LOADED and the mark is UP; at the next turnover
-/// the grounds crew wipes the wall, the goods lie <see cref="WatchesOfGrace"/> more watch exposed, and then
-/// the counterparty takes them back until the next window. No dice after the seed: the mark's clock and the
-/// goods' clock differ by exactly one watch, always.</item>
+/// the crew that keeps the gallery clean wipes the stone, the goods lie <see cref="WatchesOfGrace"/> more
+/// watch exposed, and then the counterparty takes them back until the next window. No dice after the seed:
+/// the mark's clock and the goods' clock differ by exactly one watch, always.</item>
 /// </list>
 ///
 /// <h3>Where it is kept</h3>
@@ -36,20 +49,19 @@ namespace SpaceSails.Core;
 /// the owner named, written and unread). With no paid delivery on record not one tag exists, and nothing
 /// anywhere in the game is different.</para>
 ///
-/// <para>The lines are Fable-authored canon (#794, 2026-09-27) and verbatim. The law is Kosh's: nothing
-/// announces that a bench has something under it. The move is ABSENT when there is nothing to feel for,
-/// never greyed.</para>
+/// <para>The lines are Fable-authored canon (#794, 2026-09-28 evening) and verbatim. The law is Kosh's:
+/// nothing announces that a table has something under it. The move is ABSENT when there is nothing to feel
+/// for, never greyed.</para>
 /// </summary>
 /// <param name="ParcelId">The delivered parcel whose payment earned this return.</param>
-/// <param name="BodyId">The ground that was dug — the body whose complex keeps the park.</param>
+/// <param name="HavenId">The haven the gallery is in (<see cref="ObservationWalk.HavenId"/>).</param>
 /// <param name="PaidWatch">The watch the payment landed on (<see cref="PatronRota.WatchIndex"/>).</param>
-/// <param name="Bench">The bench's index in <c>Park.Benches</c> — the room's own ordinal.</param>
-/// <param name="Ordinal">The same bench, counted from the gate along the walk (1-based), which is how the
-/// instruction names it.</param>
+/// <param name="Table">The table's index in the gallery's own list — which is also how the instruction names
+/// it: 0 is the first table, 1 the second.</param>
 /// <param name="Offset">Watches from the payment to the first window, 0 to
 /// <see cref="WatchesBetweenWindows"/> − 1.</param>
 public readonly record struct ChalkMark(
-    string ParcelId, string BodyId, long PaidWatch, int Bench, int Ordinal, int Offset)
+    string ParcelId, string HavenId, long PaidWatch, int Table, int Offset)
 {
     // ── THE CLOCK ───────────────────────────────────────────────────────────────────────────────────────
 
@@ -82,12 +94,12 @@ public readonly record struct ChalkMark(
     /// <summary>Is the drop LOADED — the window watch, when the counterparty has been and gone?</summary>
     public bool IsLoadedAt(double simTime) => IsWindow(PatronRota.WatchIndex(simTime));
 
-    /// <summary>Is the chalk on the wall? Exactly while the drop is loaded: it goes up with the goods and the
-    /// grounds crew takes it off at the next turnover.</summary>
+    /// <summary>Is the chalk on the stone? Exactly while the drop is loaded: it goes up with the goods and the
+    /// crew takes it off at the next turnover.</summary>
     public bool MarkIsUpAt(double simTime) => IsLoadedAt(simTime);
 
-    /// <summary>Are the goods under the slat? The window, and <see cref="WatchesOfGrace"/> watch after it,
-    /// with the wall already clean.</summary>
+    /// <summary>Are the goods under the table? The window, and <see cref="WatchesOfGrace"/> watch after it,
+    /// with the stone already clean.</summary>
     public bool GoodsAreThereAt(double simTime)
     {
         long w = PatronRota.WatchIndex(simTime);
@@ -103,143 +115,99 @@ public readonly record struct ChalkMark(
 
     // ── WHERE ───────────────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>The seed tag the bench and the window are drawn on — its own stream.</summary>
-    public const string SeedTag = "park-drop:seed";
+    /// <summary>The haven every return is left at: the one with the observation walk and its gallery.</summary>
+    public const string Haven = ObservationWalk.HavenId;
+
+    /// <summary>The seed tag the table and the window are drawn on — its own stream.</summary>
+    public const string SeedTag = "gallery-drop:seed";
+
+    /// <summary>The table, counted the way the instruction says it: first or second.</summary>
+    public int Ordinal => Table + 1;
 
     /// <summary>
-    /// <b>THE RETURN, SEEDED OFF (PARCEL, BODY) AND THE PARK THAT IS REALLY THERE.</b> Null when the park
-    /// has no bench to leave it under, or none the instruction can name in words.
+    /// <b>THE RETURN, SEEDED OFF (PARCEL, HAVEN) AND THE TABLES THAT ARE REALLY THERE.</b> Null when the room
+    /// has no table to leave it under — a berth with no gallery — or none the instruction can name in words.
     /// </summary>
-    public static ChalkMark? For(string parcelId, string bodyId, long paidWatch, in UndergroundComplex.Park park)
+    /// <param name="tables">How many tables the gallery at <paramref name="havenId"/> stands — the room's own
+    /// published list, counted by the caller that can see the room.</param>
+    public static ChalkMark? For(string parcelId, string havenId, long paidWatch, int tables)
     {
         ArgumentNullException.ThrowIfNull(parcelId);
-        ArgumentNullException.ThrowIfNull(bodyId);
+        ArgumentNullException.ThrowIfNull(havenId);
 
-        var free = new List<ParkBenches.Bench>();
-        foreach (ParkBenches.Bench b in ParkBenches.On(in park))
-        {
-            if (!b.Taken && OrdinalFromTheGate(in park, b.Index) is { } n && n <= OrdinalWords.Count)
-            {
-                free.Add(b);
-            }
-        }
-        if (free.Count == 0)
+        int nameable = Math.Min(tables, OrdinalWords.Count);
+        if (nameable <= 0)
         {
             return null;
         }
 
-        ParkBenches.Bench bench =
-            free[DiceRule.Roll(DiceRule.Seed($"{SeedTag}:bench:{parcelId}:{bodyId}"), free.Count).Face - 1];
-        int offset =
-            DiceRule.Roll(DiceRule.Seed($"{SeedTag}:window:{parcelId}:{bodyId}"), WatchesBetweenWindows).Face - 1;
-
-        return new ChalkMark(
-            parcelId, bodyId, paidWatch, bench.Index, OrdinalFromTheGate(in park, bench.Index)!.Value, offset);
+        int table = DiceRule.Roll(DiceRule.Seed($"{SeedTag}:table:{parcelId}:{havenId}"), nameable).Face - 1;
+        return new ChalkMark(parcelId, havenId, paidWatch, table, OffsetFor(parcelId, havenId));
     }
 
-    /// <summary>
-    /// <b>THE BENCH, COUNTED FROM THE GATE ALONG THE WALK.</b> The gate is the one with the notice on it
-    /// (<c>Park.X</c> is where that plate reads from). The walk leaves the gate spur in two directions, so a
-    /// bench is counted along ITS OWN side: the nearer benches on the same side of the gate, plus one. The
-    /// shipped park is symmetric about its gate, so every ordinal names two benches, one each way — and the
-    /// third one either way is the lone figure's, which never holds a drop. The captain walks the other.
-    /// </summary>
-    public static int? OrdinalFromTheGate(in UndergroundComplex.Park park, int benchIndex)
-    {
-        IReadOnlyList<(double X, double Y)> planks = park.Benches ?? [];
-        if (benchIndex < 0 || benchIndex >= planks.Count)
-        {
-            return null;
-        }
+    /// <summary>The seeded offset of the first window — one stream, read by the return and the dev start.</summary>
+    private static int OffsetFor(string parcelId, string havenId) =>
+        DiceRule.Roll(DiceRule.Seed($"{SeedTag}:window:{parcelId}:{havenId}"), WatchesBetweenWindows).Face - 1;
 
-        double gate = park.X;
-        double mine = planks[benchIndex].X - gate;
-        int nearer = 0;
-        foreach ((double bx, double _) in planks)
-        {
-            double d = bx - gate;
-            if (Math.Sign(d) == Math.Sign(mine) && Math.Abs(d) < Math.Abs(mine))
-            {
-                nearer++;
-            }
-        }
-        return nearer + 1;
-    }
+    /// <summary>The ordinals the instruction can say — the gallery stands two tables.</summary>
+    public static readonly IReadOnlyList<string> OrdinalWords = ["first", "second"];
 
-    /// <summary>The ordinals the instruction can say, 1 to 6 — a park lays one bench per bend, six in all.</summary>
-    public static readonly IReadOnlyList<string> OrdinalWords =
-        ["first", "second", "third", "fourth", "fifth", "sixth"];
+    /// <summary>How far along the stone from the machine's edge the cross is chalked.</summary>
+    public const double BesideTheMachineDu = 1.5;
 
-    /// <summary>
-    /// <b>DOES THE COMPLEX UNDER THIS GROUND KEEP A PARK?</b> A building must actually be down there — the
-    /// same seeded fact the landing resolves (<see cref="SecretLab.Present"/>) — and its top pressurised floor
-    /// must be the floor with the green (<see cref="UndergroundComplex.HasParkBlock"/>). The head office has
-    /// none. An instruction naming a park on a moon with no building under it would be a lie the captain
-    /// could fly to.
-    /// </summary>
-    public static bool TheGroundKeepsAPark(string? bodyId, bool forcePresent = false) =>
-        bodyId is not null
-        && (forcePresent || SecretLab.Present(bodyId))
-        && UndergroundComplex.TopPressurisedFloor(bodyId) is { } level
-        && UndergroundComplex.HasParkBlock(bodyId, level);
-
-    /// <summary>The park under this ground, or null — built on the real field by the real generator.</summary>
-    public static UndergroundComplex.Park? TheParkUnder(
-        string? bodyId, in SurfaceLayout.Field field, bool forcePresent = false) =>
-        TheGroundKeepsAPark(bodyId, forcePresent)
-        && UndergroundComplex.TopPressurisedFloor(bodyId!) is { } level
-            ? UndergroundComplex.Build(bodyId!, level, field).Park
-            : null;
-
-    /// <summary>How close to the notice a captain must be to read the wall beside it.</summary>
-    public const double NoticeReachDu = 8.0;
-
-    /// <summary>Is the captain standing at the gate notice?</summary>
-    public static bool AtTheNotice(in UndergroundComplex.Park park, double x, double y) =>
-        ((x - park.X) * (x - park.X)) + ((y - park.Y) * (y - park.Y)) <= NoticeReachDu * NoticeReachDu;
-
-    /// <summary>How far past the gate's edge the cross is chalked.</summary>
-    public const double BesideTheGateDu = 1.5;
-
-    /// <summary>How far in from the wall's line the cross is drawn, so it sits on the park's face of it.</summary>
+    /// <summary>How far in from the wall's line the cross is drawn, so it sits on the room's face of it.</summary>
     public const double OnTheFaceDu = 0.6;
 
     /// <summary>
-    /// <b>WHERE ON THE WALL.</b> Beside the gate with the notice, on the park's face of the near wall — the
-    /// shotcrete the grounds crew keeps clean. Derived from the gate the carve cut, never typed.
+    /// <b>WHERE ON THE STONE.</b> The back wall of the gallery is the only stone in the room — the machines
+    /// are bolted to it — and the cross goes on it beside the machine that stands behind the named table, on
+    /// the side toward the throat, where anybody coming in out of the tube has the wall in front of them.
+    /// Derived from the machine's own drawn box and the throat the walls were built round, never typed.
     /// </summary>
-    public static (double X, double Y) WhereOnTheWall(in UndergroundComplex.Park park)
+    /// <param name="machine">The machine bolted to the back wall behind the named table, as its drawn box.
+    /// Its face stands off the wall into the room, so the wall is the box edge FARTHER from the room.</param>
+    /// <param name="throatY">Where the tube opens into the gallery, across the wall's run.</param>
+    /// <param name="roomIsWest">Whether the room lies toward smaller x of the wall.</param>
+    public static (double X, double Y) WhereOnTheStone(
+        (double X0, double Y0, double X1, double Y1) machine, double throatY, bool roomIsWest = true)
     {
-        SurfaceLayout.Doorway gate = park.Gate;
-        double edge = Math.Max(gate.X1, gate.X2);
-        double wallY = (gate.Y1 + gate.Y2) / 2.0;
-        double inward = park.Y < wallY ? -OnTheFaceDu : OnTheFaceDu;
-        return (edge + BesideTheGateDu, wallY + inward);
+        double wallX = roomIsWest ? machine.X1 : machine.X0;
+        double x = wallX + (roomIsWest ? -OnTheFaceDu : OnTheFaceDu);
+        double mid = (machine.Y0 + machine.Y1) / 2.0;
+        double y = throatY > mid ? machine.Y1 + BesideTheMachineDu : machine.Y0 - BesideTheMachineDu;
+        return (x, y);
     }
 
     // ── WHAT IS KEPT, AS TAGS IN THE REGISTER ───────────────────────────────────────────────────────────
 
-    /// <summary>A return is owed: <c>park-owed:{body}|{parcelId}@{paidWatch}</c>.</summary>
-    public const string OwedTag = "park-owed";
+    /// <summary>A return is owed: <c>gallery-owed:{haven}|{parcelId}@{paidWatch}</c>.</summary>
+    public const string OwedTag = "gallery-owed";
 
-    /// <summary>The collection, the pattern the owner named: <c>park-drop:{parcelId}@{watch}</c> — the exact
-    /// shape of <see cref="ParcelDrop.NothingForThisHullOn"/>'s tags. Written, and read by nobody yet.</summary>
-    public const string CollectedTag = "park-drop";
+    /// <summary>The collection, the pattern the owner named: <c>gallery-drop:{parcelId}@{watch}</c> — the
+    /// exact shape of <see cref="ParcelDrop.NothingForThisHullOn"/>'s tags. Written, and read by nobody
+    /// yet.</summary>
+    public const string CollectedTag = "gallery-drop";
 
     /// <summary>The captain read the mark in this window.</summary>
-    public const string SeenTag = "park-chalk-seen";
+    public const string SeenTag = "gallery-chalk-seen";
 
     /// <summary>The wipe of a seen mark has been told.</summary>
-    public const string WipeToldTag = "park-chalk-wiped";
+    public const string WipeToldTag = "gallery-chalk-wiped";
+
+    /// <summary>Slice 1's names for the same four tags, in the same order, from when the drop was in a park.
+    /// No shipped save carries them (the park drop was never reachable in sol play), and the parsers read
+    /// them anyway.</summary>
+    public static readonly IReadOnlyList<string> ParkTags =
+        ["park-owed", "park-drop", "park-chalk-seen", "park-chalk-wiped"];
 
     private static string W(long watch) => watch.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>The tag that records this return as owed.</summary>
-    public string Owed => $"{OwedTag}:{BodyId}|{ParcelId}@{W(PaidWatch)}";
+    public string Owed => OwedFor(HavenId, ParcelId, PaidWatch);
 
     /// <summary>The owed tag for a payment, before the mark is built.</summary>
-    public static string OwedFor(string bodyId, string parcelId, long paidWatch) =>
-        $"{OwedTag}:{bodyId}|{parcelId}@{W(paidWatch)}";
+    public static string OwedFor(string havenId, string parcelId, long paidWatch) =>
+        $"{OwedTag}:{havenId}|{parcelId}@{W(paidWatch)}";
 
     /// <summary>The collection tag, for the watch it happened on.</summary>
     public string CollectedOn(long watch) => $"{CollectedTag}:{ParcelId}@{W(watch)}";
@@ -250,13 +218,27 @@ public readonly record struct ChalkMark(
     /// <summary>The wipe of this window's mark was told.</summary>
     public string WipeToldOn(long window) => $"{WipeToldTag}:{ParcelId}@{W(window)}";
 
+    /// <summary>The same tag under slice 1's name.</summary>
+    private static string AsTheParkSaidIt(string tag)
+    {
+        int colon = tag.IndexOf(':', StringComparison.Ordinal);
+        if (colon < 0)
+        {
+            return tag;
+        }
+        string[] now = [OwedTag, CollectedTag, SeenTag, WipeToldTag];
+        int i = Array.IndexOf(now, tag[..colon]);
+        return i < 0 ? tag : ParkTags[i] + tag[colon..];
+    }
+
     /// <summary>Has this return been collected, on any watch?</summary>
     public bool WasCollected(IEnumerable<string>? register)
     {
         string prefix = $"{CollectedTag}:{ParcelId}@";
+        string old = AsTheParkSaidIt(prefix);
         foreach (string tag in register ?? [])
         {
-            if (tag.StartsWith(prefix, StringComparison.Ordinal))
+            if (tag.StartsWith(prefix, StringComparison.Ordinal) || tag.StartsWith(old, StringComparison.Ordinal))
             {
                 return true;
             }
@@ -265,24 +247,29 @@ public readonly record struct ChalkMark(
     }
 
     /// <summary>
-    /// <b>EVERY RETURN OWED ON THIS BODY AND NOT YET COLLECTED</b>, in the register's ordinal order (the set
+    /// <b>EVERY RETURN OWED AT THIS HAVEN AND NOT YET COLLECTED</b>, in the register's ordinal order (the set
     /// has none of its own). Empty — without building anything — when no delivery was ever paid.
     /// </summary>
-    public static IReadOnlyList<ChalkMark> OwedOn(
-        IEnumerable<string>? register, string? bodyId, in UndergroundComplex.Park park)
+    /// <param name="tables">How many tables the gallery stands (see <see cref="For"/>).</param>
+    public static IReadOnlyList<ChalkMark> OwedOn(IEnumerable<string>? register, string? havenId, int tables)
     {
-        if (register is null || bodyId is null)
+        if (register is null || havenId is null)
         {
             return [];
         }
 
-        string prefix = $"{OwedTag}:{bodyId}|";
+        string prefix = $"{OwedTag}:{havenId}|";
+        string old = AsTheParkSaidIt(prefix);
         List<string>? owed = null;
         foreach (string tag in register)
         {
             if (tag.StartsWith(prefix, StringComparison.Ordinal))
             {
-                (owed ??= []).Add(tag);
+                (owed ??= []).Add(tag[prefix.Length..]);
+            }
+            else if (tag.StartsWith(old, StringComparison.Ordinal))
+            {
+                (owed ??= []).Add(tag[old.Length..]);
             }
         }
         if (owed is null)
@@ -292,16 +279,16 @@ public readonly record struct ChalkMark(
         owed.Sort(StringComparer.Ordinal);
 
         var marks = new List<ChalkMark>(owed.Count);
-        foreach (string tag in owed)
+        foreach (string rest in owed)
         {
-            string rest = tag[prefix.Length..];
             int at = rest.LastIndexOf('@');
             if (at <= 0
                 || !long.TryParse(rest[(at + 1)..], NumberStyles.Integer, CultureInfo.InvariantCulture, out long paid))
             {
                 continue;
             }
-            if (For(rest[..at], bodyId, paid, in park) is { } mark && !mark.WasCollected(register))
+            if (For(rest[..at], havenId, paid, tables) is { } mark && !mark.WasCollected(register)
+                && !marks.Exists(m => m.ParcelId == mark.ParcelId))
             {
                 marks.Add(mark);
             }
@@ -309,35 +296,39 @@ public readonly record struct ChalkMark(
         return marks;
     }
 
-    // ── WHAT THE WALL SAYS ──────────────────────────────────────────────────────────────────────────────
+    // ── WHAT THE STONE SAYS ─────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>What walking to the notice tells, and the tag that keeps it told.</summary>
-    public readonly record struct GateBeat(string Line, string Tag);
+    /// <summary>What walking into the gallery tells, and the tag that keeps it told.</summary>
+    public readonly record struct StoneBeat(string Line, string Tag);
 
     /// <summary>
-    /// <b>THE CAPTAIN IS AT THE NOTICE: WHAT DOES THE WALL SAY?</b> The mark, once per window it is up. A wipe,
-    /// once, and only of a mark the captain SAW go up — a wipe nobody saw is never told. Nothing, otherwise.
+    /// <b>THE CAPTAIN IS IN THE GALLERY: WHAT DOES THE STONE SAY?</b> The mark, once per window it is up. A
+    /// wipe, once, and only of a mark the captain SAW go up — a wipe nobody saw is never told. Nothing,
+    /// otherwise.
     /// </summary>
-    public GateBeat? AtTheGate(double simTime, IReadOnlyCollection<string>? register)
+    public StoneBeat? InTheGallery(double simTime, IReadOnlyCollection<string>? register)
     {
         IReadOnlyCollection<string> seen = register ?? [];
         long w = PatronRota.WatchIndex(simTime);
         if (IsWindow(w))
         {
             string tag = SeenOn(w);
-            return Contains(seen, tag) ? null : new GateBeat(MarkIsUpLine, tag);
+            return Contains(seen, tag) ? null : new StoneBeat(MarkIsUpLine, tag);
         }
 
         if (LastWindowBefore(w) is { } last && Contains(seen, SeenOn(last)))
         {
             string tag = WipeToldOn(last);
-            return Contains(seen, tag) ? null : new GateBeat(WipedLine, tag);
+            return Contains(seen, tag) ? null : new StoneBeat(WipedLine, tag);
         }
 
         return null;
     }
 
-    private static bool Contains(IReadOnlyCollection<string> set, string tag)
+    private static bool Contains(IReadOnlyCollection<string> set, string tag) =>
+        Has(set, tag) || Has(set, AsTheParkSaidIt(tag));
+
+    private static bool Has(IReadOnlyCollection<string> set, string tag)
     {
         if (set is ICollection<string> c)
         {
@@ -353,37 +344,37 @@ public readonly record struct ChalkMark(
         return false;
     }
 
-    // ── THE BENCH ───────────────────────────────────────────────────────────────────────────────────────
+    // ── THE TABLE ───────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>The move's id on the seat's card.</summary>
-    public const string FeelUnderTheSlat = "park:feel-under-the-slat";
+    public const string FeelUnderTheLip = "gallery:feel-under-the-lip";
 
     /// <summary>The move's label. Canon.</summary>
-    public const string FeelUnderTheSlatLabel = "FEEL UNDER THE SLAT";
+    public const string FeelUnderTheLipLabel = "FEEL UNDER THE LIP";
 
     /// <summary>
-    /// <b>THE BENCH'S CARD, WITH THE MOVE OR WITHOUT IT.</b> <see cref="ParkBenches.TheBench"/> exactly, plus
-    /// one move — only when the captain has the whole plank AND the goods are under THIS one. Anything else
-    /// and the card is the plain bench's, move for move: absent, never greyed.
+    /// <b>THE TABLE'S CARD, WITH THE MOVE OR WITHOUT IT.</b> The card the captain sat down to
+    /// (<see cref="SittingAlone.TheTable"/>, whichever register it is in), plus one move before its last —
+    /// only when the goods are under THIS table and the captain has it to himself. Otherwise the card is the
+    /// plain table's, move for move: absent, never greyed. Idempotent both ways, so a frame may ask it
+    /// again.
     /// </summary>
-    public static Encounter.Scene TheBench(bool shared, bool goodsUnderThisSlat)
+    public static Encounter.Scene TheTable(Encounter.Scene table, bool goodsUnderThisLip)
     {
-        Encounter.Scene bench = ParkBenches.TheBench(shared);
-        if (shared || !goodsUnderThisSlat)
+        IReadOnlyList<Encounter.Move> had = table.Moves ?? [];
+        var moves = new List<Encounter.Move>(had.Count + 1);
+        foreach (Encounter.Move m in had)
         {
-            return bench;
-        }
-
-        var moves = new List<Encounter.Move>(bench.Moves.Count + 1);
-        for (int i = 0; i < bench.Moves.Count; i++)
-        {
-            if (i == bench.Moves.Count - 1)
+            if (!string.Equals(m.Id, FeelUnderTheLip, StringComparison.Ordinal))
             {
-                moves.Add(new(FeelUnderTheSlat, FeelUnderTheSlatLabel, Says: FeltLine));
+                moves.Add(m);
             }
-            moves.Add(bench.Moves[i]);
         }
-        return bench with { Moves = moves };
+        if (goodsUnderThisLip && moves.Count > 0)
+        {
+            moves.Insert(moves.Count - 1, new(FeelUnderTheLip, FeelUnderTheLipLabel, Says: FeltLine));
+        }
+        return table with { Moves = moves };
     }
 
     /// <summary>Does this card carry the move?</summary>
@@ -391,7 +382,7 @@ public readonly record struct ChalkMark(
     {
         foreach (Encounter.Move m in scene.Moves ?? [])
         {
-            if (string.Equals(m.Id, FeelUnderTheSlat, StringComparison.Ordinal))
+            if (string.Equals(m.Id, FeelUnderTheLip, StringComparison.Ordinal))
             {
                 return true;
             }
@@ -399,29 +390,31 @@ public readonly record struct ChalkMark(
         return false;
     }
 
-    /// <summary>Is the move on offer to a captain on this bench, at this moment?</summary>
-    public bool IsOnOffer(int benchIndex, bool shared, double simTime) =>
-        !shared && benchIndex == Bench && GoodsAreThereAt(simTime);
+    /// <summary>Is the move on offer to a captain at this table, at this moment?</summary>
+    public bool IsOnOffer(int table, bool alone, double simTime) =>
+        alone && table == Table && GoodsAreThereAt(simTime);
 
     /// <summary>How many other grounds the return is tried against before it settles for any.</summary>
     public const int ReturnAddressTries = 16;
 
     /// <summary>
-    /// <b>WHAT IS UNDER THE SLAT:</b> the counterparty's parcel, already addressed — an
+    /// <b>WHAT IS UNDER THE LIP:</b> the counterparty's parcel, already addressed — an
     /// <see cref="UnlistedParcel"/> whose id is the return's own, so <see cref="ParcelDrop.For(string, IReadOnlyList{string})"/>
     /// names its ground the way it names every parcel's, and it rides the whole rail: bury it, get paid, earn
-    /// the next return. Addressed ELSEWHERE than the ground that was dug — the first of a short seeded run of
+    /// the next return. Addressed ELSEWHERE than the ground that was dug for the delivery that earned it (the
+    /// rail's own answer for that parcel, asked again rather than stored) — the first of a short seeded run of
     /// ids whose ground is another body (distance between moons changes with the clock, so "farther" is read
-    /// as "not here").
+    /// as "not there"). Named for slice 1's slat and kept, by the brief.
     /// </summary>
     public Satchel.Item TheParcelUnderTheSlat(IReadOnlyList<string>? landableBodyIds)
     {
+        string? dug = ParcelDrop.For(ParcelId, landableBodyIds)?.BodyId;
         string first = ReturnId(0);
         for (int k = 0; k < ReturnAddressTries; k++)
         {
             string id = ReturnId(k);
             if (ParcelDrop.For(id, landableBodyIds) is { } where
-                && !string.Equals(where.BodyId, BodyId, StringComparison.Ordinal))
+                && !string.Equals(where.BodyId, dug, StringComparison.Ordinal))
             {
                 return new Satchel.Item(Satchel.Kind.Parcel, id);
             }
@@ -438,9 +431,10 @@ public readonly record struct ChalkMark(
     {
         /// <summary>No chalk asked for.</summary>
         None,
-        /// <summary><c>?park=1&amp;chalk=1</c> — a paid delivery on record, the clock at a window.</summary>
+        /// <summary><c>?dock=selene-gate&amp;ashore=1&amp;chalk=1</c> — a paid delivery on record, the clock at a
+        /// window.</summary>
         Up,
-        /// <summary><c>?park=1&amp;chalk=wiped</c> — one watch later, the mark seen and wiped.</summary>
+        /// <summary><c>…&amp;chalk=wiped</c> — one watch later, the mark seen and wiped.</summary>
         Wiped,
     }
 
@@ -475,47 +469,44 @@ public readonly record struct ChalkMark(
     }
 
     /// <summary>The paid watch that puts <paramref name="now"/> on a window (or one watch past one, for
-    /// <see cref="Cheat.Wiped"/>) for this parcel on this ground — the dev start's arithmetic, done by the
+    /// <see cref="Cheat.Wiped"/>) for this parcel at this haven — the dev start's arithmetic, done by the
     /// clock's own owner.</summary>
-    public static long PaidWatchFor(Cheat cheat, string parcelId, string bodyId, long now)
+    public static long PaidWatchFor(Cheat cheat, string parcelId, string havenId, long now)
     {
-        int offset =
-            DiceRule.Roll(DiceRule.Seed($"{SeedTag}:window:{parcelId}:{bodyId}"), WatchesBetweenWindows).Face - 1;
         long window = cheat == Cheat.Wiped ? now - 1 : now;
-        return window - offset;
+        return window - OffsetFor(parcelId, havenId);
     }
 
-    // ── THE LINES (verbatim, #794 · Fable, 2026-09-27) ──────────────────────────────────────────────────
+    // ── THE LINES (verbatim, #794 · Fable, 2026-09-28 evening) ──────────────────────────────────────────
 
     /// <summary>The glyph the mark's notes are filed under — one no other kind in the game files under.</summary>
     public const string Glyph = "🖍";
 
-    /// <summary>Appended to the payment pulse, only when the dug ground keeps a park. <c>{0}</c> is the
-    /// bench's ordinal, in words.</summary>
+    /// <summary>Appended to the payment pulse at any desk. <c>{0}</c> is the table's ordinal, in words.</summary>
     public const string PaymentLine =
-        "There is something for you where you dug. The park, the {0} bench from the gate. "
-        + "Watch the wall by the notice.";
+        "There is something for you at Selene Gate. The gallery at the end of the walk, the {0} table. "
+        + "Watch the stone by the machines.";
 
-    /// <summary>The payment line with the bench in it.</summary>
+    /// <summary>The payment line with the table in it.</summary>
     public string ThePaymentLine() =>
         string.Format(CultureInfo.InvariantCulture, PaymentLine, OrdinalWords[Ordinal - 1]);
 
-    /// <summary>At the gate, the mark up.</summary>
+    /// <summary>Entering the gallery, the mark up. Once per window.</summary>
     public const string MarkIsUpLine =
-        "Somebody has chalked the wall beside the notice. A cross, waist-high, the width of a hand. "
-        + "The crew that keeps this shotcrete clean will file it as damage by the next watch.";
+        "Somebody has chalked the stone beside the machines. A cross, waist-high, the width of a hand. "
+        + "The crew that keeps this gallery clean will file it as damage by the next watch.";
 
-    /// <summary>At the gate, after a wipe the captain saw go up. Once.</summary>
+    /// <summary>In the gallery, after a wipe the captain saw go up. Once.</summary>
     public const string WipedLine =
-        "The wall is clean. Somebody wiped it, or somebody read it. The shotcrete does not say.";
+        "The stone is clean. Somebody wiped it, or somebody read it. The stone does not say.";
 
-    /// <summary>Under the slat.</summary>
+    /// <summary>Under the lip.</summary>
     public const string FeltLine =
-        "Tape, cold. A packet the size of a hand, wrapped so it does not rattle. Nobody on the walk looks up.";
+        "Tape, cold. A packet the size of a hand, wrapped so it does not rattle. Nobody on the walk looks round.";
 
     /// <summary>What the field book keeps of the collection.</summary>
     public const string CollectedEntry =
-        "Collected under the ground's bench. Whoever left it keeps the park's hours better than the park does.";
+        "Collected under the gallery's table. Whoever left it keeps the walk's hours better than the walk does.";
 
     /// <summary>Every sentence this slice can put on a screen.</summary>
     public static IEnumerable<string> AllProse()
@@ -523,7 +514,7 @@ public readonly record struct ChalkMark(
         yield return PaymentLine;
         yield return MarkIsUpLine;
         yield return WipedLine;
-        yield return FeelUnderTheSlatLabel;
+        yield return FeelUnderTheLipLabel;
         yield return FeltLine;
         yield return CollectedEntry;
     }
