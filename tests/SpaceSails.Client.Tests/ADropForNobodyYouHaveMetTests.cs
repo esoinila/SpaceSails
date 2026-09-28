@@ -432,7 +432,9 @@ public sealed class ADropForNobodyYouHaveMetTests
     {
         string drop = Code(Read("src", "SpaceSails.Client", "Pages", "Map.ParcelDrop.cs"));
         string start = Code(Read("src", "SpaceSails.Client", "Pages", "Map.Sim.World.Start.cs"));
-        string query = Code(Read("src", "SpaceSails.Client", "Pages", "Map.Sim.World.QueryArcs.cs"));
+        // #251 · RE-PATHED: Map.Sim.World.QueryArcs.cs was cut in two by a pure move; read both halves, head first.
+        string query = Code(Read("src", "SpaceSails.Client", "Pages", "Map.Sim.World.QueryArcs.cs")
+            + Read("src", "SpaceSails.Client", "Pages", "Map.Sim.World.QueryArcs.Long.cs"));
         string links = Read("docs", "testing-links-2026-09-17.md");
 
         Assert.Contains("parcel=", query, StringComparison.Ordinal);

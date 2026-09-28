@@ -123,7 +123,8 @@ public sealed class TheOccupantsShelvesAreReadWhereTheyStandTests
             Assert.DoesNotContain(invented, surface, StringComparison.Ordinal);
         }
 
-        string vault = Pages("Map.Vault.cs");
+        // #251 · RE-PATHED: ApplyVault was cut into Map.Vault.Apply.cs by a pure move; read both halves, head first.
+        string vault = Pages("Map.Vault.cs") + Pages("Map.Vault.Apply.cs");
         Assert.Contains("OddBooksRead = [.. _oddBooksRead]", vault, StringComparison.Ordinal);
         Assert.Contains("vault.Progress?.OddBooksRead is { } books", vault, StringComparison.Ordinal);
         Assert.DoesNotContain("ShelvesRead", vault, StringComparison.Ordinal);
