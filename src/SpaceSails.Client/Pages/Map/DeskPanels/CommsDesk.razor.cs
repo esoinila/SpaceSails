@@ -96,6 +96,8 @@ public partial class CommsDesk
     [Parameter] public EventCallback TogglePin { get; set; }
     [Parameter] public int Warp { get; set; }
     [Parameter] public string? _commsActionMessage { get; set; }
+    /// <summary>#1304 · The page's pulse slot, for the one desk that settles money on it (the dark web).</summary>
+    [Parameter] public PulseSlot _pulse { get; set; } = PulseSlot.Empty;
     [Parameter] public string? _commsHailAnswer { get; set; }
     [Parameter] public IntelLedger _intelLedger { get; set; } = default!;
     [Parameter] public bool _pinned { get; set; }

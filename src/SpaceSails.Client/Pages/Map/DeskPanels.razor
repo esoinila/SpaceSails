@@ -104,7 +104,7 @@
                 }
                 else if (_activeDesk == ShipDesk.Comms)
                 {
-                    <CommsDesk _commsSelectedIdValue="@_commsSelectedId" _commsSelectedIdSet="@(v => _commsSelectedId = v)"
+                    <CommsDesk _commsSelectedIdValue="@_commsSelectedId" _commsSelectedIdSet="@(v => _commsSelectedId = v)" _pulse="@_pulse"
                                _creditsValue="@_credits" _creditsSet="@(v => _credits = v)"
                                OnNewsFeed="@OnNewsFeed"
                                OnOpenBank="@OnOpenBank"

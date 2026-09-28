@@ -13,6 +13,11 @@
 <div class="dark-web-card @(FullScreen ? "dark-web-desk text-light" : "card bg-dark bg-opacity-75 text-light") @(Visible ? "" : "d-none")">
     <div class="card-header py-1 d-flex justify-content-between align-items-center gap-1">
         <span class="fw-bold small">Dark web market 🕸</span>
+        @* #1304 · what the page is saying, drawn in the desk the captain is standing at — see PulseLine. *@
+        @if (PulseLine is { Length: > 0 } told)
+        {
+            <span class="dark-web-pulse small text-warning text-end" role="status">@told</span>
+        }
         @if (!FullScreen)
         {
             <button type="button" class="btn-close btn-close-white" aria-label="Close" title="Close the dark web market and step back to the desk" @onclick="() => OnClose.InvokeAsync()"></button>

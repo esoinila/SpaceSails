@@ -42,6 +42,8 @@ public partial class DeskPanels
     [Parameter] public int _cargoUnits { get; set; }
     [Parameter] public int _cargoValue { get; set; }
     [Parameter] public string? _commsActionMessage { get; set; }
+    /// <summary>#1304 · The page's pulse slot, for the one desk that settles money on it (the dark web).</summary>
+    [Parameter] public PulseSlot _pulse { get; set; } = PulseSlot.Empty;
     [Parameter] public string? _commsHailAnswer { get; set; }
     /// <summary>the page's `string? _commsSelectedId` — and this markup WRITES it, so it crosses as a pair: the
     /// value in, the page's own setter out. The private property below keeps the member's own name, so
