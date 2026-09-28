@@ -279,7 +279,7 @@ public sealed class ThePlayerIsToldTests
             Surface.RankedPulse, "Patrol/Patrol.Run.cs", "HeLosesYou",
             "_host.ShowPulseMessage(PatrolBeat.LostYouLine, PulseRank.Beat);"),
         new("your pass is revoked and you are walked out",
-            Surface.RankedPulse, "Patrol/Patrol.Run.cs", "TheKickOut",
+            Surface.RankedPulse, "Patrol/Patrol.Run.Heard.cs", "TheKickOut",
             "_host.ShowPulseMessage(closing, PulseRank.Beat);"),
         new("the escort ends and he lets go of you",
             Surface.RankedPulse, "Patrol/Patrol.Escort.cs", "WalkTheEscort",

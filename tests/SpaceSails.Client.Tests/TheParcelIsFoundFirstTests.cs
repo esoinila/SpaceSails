@@ -38,8 +38,10 @@ public sealed class TheParcelIsFoundFirstTests
         return n;
     }
 
+    // #251 · RE-PATHED: Patrol.Challenge.cs was cut in two by a pure move; this reads both halves, head first.
     private static string Challenge() =>
-        Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Challenge.cs");
+        Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Challenge.cs")
+        + Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Challenge.Wallet.cs");
 
     /// <summary>The CODE, with the design record taken out of it. These files are half comment by weight and
     /// every name this guard counts is discussed in prose beside the line that uses it — so a count over the

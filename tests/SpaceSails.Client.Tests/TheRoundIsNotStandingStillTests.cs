@@ -329,9 +329,13 @@ public sealed class TheRoundIsNotStandingStillTests
         string own = Path.Combine(dir, "Patrol");
         string[] state =
         [
-            "Patrol.cs", "Guard.cs", "IPatrolHost.cs",
+            // #251 · RE-PATHED, never re-asserted: Guard.cs, Patrol.Challenge.cs and Patrol.Run.cs were each
+            // cut in two by a pure move, and each tail sits straight after its head, so the concatenation
+            // reads the same text in the same order. The count below now stops a fourteenth part going unread.
+            "Patrol.cs", "Guard.cs", "Guard.Transitions.cs", "IPatrolHost.cs",
             "Patrol.Floor.cs", "Patrol.Hide.cs", "Patrol.Round.cs",
-            "Patrol.Challenge.cs", "Patrol.Escort.cs", "Patrol.Run.cs",
+            "Patrol.Challenge.cs", "Patrol.Challenge.Wallet.cs", "Patrol.Escort.cs",
+            "Patrol.Run.cs", "Patrol.Run.Heard.cs",
 
             // #746 · THE TENTH PART, and it is the checkpoint as an ENCOUNTER: the scene the
             // stop's card carries, which moves are on offer, the dice a rolled one casts, and the

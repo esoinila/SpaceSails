@@ -337,7 +337,9 @@ public sealed class ADropForNobodyYouHaveMetTests
     [Fact]
     public void AConfiscationIsAnAbsenceAndNotARefusal()
     {
-        string challenge = Code(Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Challenge.cs"));
+        // #251 · RE-PATHED: Patrol.Challenge.cs was cut in two by a pure move; the guard reads both halves, head first.
+        string challenge = Code(Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Challenge.cs")
+            + Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Challenge.Wallet.cs"));
         string offer = Code(Read("src", "SpaceSails.Client", "Pages", "Map.UnlistedParcel.cs"));
         string drop = Code(Read("src", "SpaceSails.Client", "Pages", "Map.ParcelDrop.cs"));
 
