@@ -173,6 +173,49 @@ public class TheWireNeverNamesTheCaptainTests
             "The wire never names the captain (#1052, #1202). " + string.Join(" | ", offences.Distinct()));
     }
 
+    /// <summary>
+    /// #1202 slice 2 · <b>THE CLIENT'S SENTENCE NEVER NAMES THE CAPTAIN EITHER.</b> When the client's page went
+    /// into her stack, the wire prints the ALTERED sentence under her byline (<see cref="SpikeIt.AlteredStory"/>),
+    /// as the same pass-through kind her own story is. It is swept exactly as pushed, for every Sol moon, against
+    /// law A and law B — it has no source to call a hired boat's master, and it must not find another way to point
+    /// at the man who put it there.
+    ///
+    /// <para><b>Proven RED</b> by sabotaging the sentence: "Sources close to the site" rewritten "Your ship's
+    /// sources" in <c>AlteredStory</c> fails law B on every moon.</para>
+    /// </summary>
+    [Fact]
+    public void Law1202_TheAlteredSentenceNeverNamesTheCaptain()
+    {
+        var offences = new List<string>();
+        int swept = 0;
+        foreach (CelestialBody body in SolEphemeris().Bodies)
+        {
+            if (body.Kind != BodyKind.Moon)
+            {
+                continue;
+            }
+
+            string headline = NewsWire.Headline(new NewsWire.NewsEvent(
+                NewsWire.NewsEventKind.PressStoryFiled, 9 * Day, SpikeIt.Altered(body.Name), body.Name));
+            swept++;
+            Assert.Equal(SpikeIt.Altered(body.Name), headline);
+            if (Personal.Match(DeedClause(headline)) is { Success: true } m)
+            {
+                offences.Add($"\"{m.Value}\" in the deed clause — \"{headline}\"");
+            }
+
+            if (NamesTheCaptain.IsMatch(headline))
+            {
+                offences.Add($"\"{headline}\"");
+            }
+        }
+
+        Assert.True(swept >= 10, $"the sweep reached only {swept} moons.");
+        Assert.True(
+            offences.Count == 0,
+            "The wire never names the captain (#1052, #1202 slice 2). " + string.Join(" | ", offences.Distinct()));
+    }
+
     // ── B ────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>Being addressed or titled as THE captain, or having a boat attributed to you. The
