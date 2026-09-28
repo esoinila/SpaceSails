@@ -173,6 +173,12 @@ public partial class Map
                     $"{HeldMemory.Label(q.Theory ?? WalkIn.Theory)} · find {q.TargetCallsign} at "
                     + $"{BodyName(q.SourceBodyId ?? "")}, then come back and tell {q.Giver} yourself."
                     + (WalkInCardWarning(q) is { Length: > 0 } grey ? $" — {grey}" : ""),
+                // #1202 · her passage names HER and HER GROUND (body · site, the book's own spelling, written into
+                // TargetCallsign when the card was booked) — the plain block is off for this kind, so without this
+                // line the row was a title, a step and a purse, and the guide's "giver Rauha Lind" was a promise.
+                QuestKind.CarryThePress =>
+                    $"Carry {GiverDisplay(q.Giver)} to {q.TargetCallsign} and back — land her on her ground, "
+                    + "then clamp at a haven for her fare.",
                 _ => "",
             };
             // #175: the live next action for an in-hand cargo run, read off ship state (too far / in the
