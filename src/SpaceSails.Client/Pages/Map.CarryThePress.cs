@@ -200,7 +200,9 @@ public sealed partial class Map
             RewritePassage(q, p with { Walked = true });
         }
 
-        if (range > TheTailBehindYou.LosesYouBeyondDu)
+        // Out of the band either way — he has walked off, or walked up to where she stands — and she takes a
+        // new place in it from her own feet, the middle of the band first, so a few paces either way keep her.
+        if (!TheTailBehindYou.HoldsHisBand(range))
         {
             ex.Walkers.Remove(her);
             _ = PlanTheStringer(ex, new DeckReachability.Point(her.Walk.X, her.Walk.Y), walls);
@@ -212,14 +214,15 @@ public sealed partial class Map
 
     /// <summary>
     /// Plan her next leg: from her own feet to a standing place behind the captain, inside the band — the
-    /// coat's ranges and sides (<see cref="TheTailBehindYou.TheRangesHeTries"/>,
-    /// <see cref="TheTailBehindYou.TheSidesHeSounds"/>), nearest first because she is company and not a tail.
+    /// coat's ranges and sides, in the coat's order (<see cref="TheTailBehindYou.TheRangesHeTries"/>,
+    /// <see cref="TheTailBehindYou.TheSidesHeSounds"/>): the middle of the band first, so a captain who takes a
+    /// few paces either way does not send her walking again.
     /// </summary>
     private bool PlanTheStringer(
         SurfaceExcursion ex, DeckReachability.Point from, IReadOnlyList<SurfaceCollision.Segment> walls)
     {
         double heading = _avatarHeading;
-        foreach (double range in TheTailBehindYou.TheRangesHeTries.Reverse())
+        foreach (double range in TheTailBehindYou.TheRangesHeTries)
         {
             foreach (double side in TheTailBehindYou.TheSidesHeSounds)
             {

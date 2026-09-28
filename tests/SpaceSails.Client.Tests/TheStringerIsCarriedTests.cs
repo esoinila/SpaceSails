@@ -124,6 +124,10 @@ public sealed class TheStringerIsCarriedTests
         Assert.Equal(Map.QuestState.TurnedIn, Hers(b).State);
 
         b.Call("ThePressRunsHerStory");
+        // …and something else goes in the book between two sim advances, because the book already folds an
+        // entry identical to the one before it: a second "Her story ran" must be refused by the contract's own
+        // memory, not by that fold.
+        b.Call("FileNote", "a line between two advances", "✎");
         b.Call("ThePressRunsHerStory");
         Assert.Single(Wire(b), e => e.Kind == NewsWire.NewsEventKind.PressStoryFiled);
         Assert.Equal(with, Wire(b).Single(e => e.Kind == NewsWire.NewsEventKind.PressStoryFiled).Subject);
@@ -270,5 +274,50 @@ public sealed class TheStringerIsCarriedTests
         b.Call("SheSleepsTheBurnBack", ex);
         Assert.Equal(Map.QuestState.Complete, Hers(b).State);
         Assert.Contains(CarryThePress.LiftoffLine, b.Pulse, StringComparison.Ordinal);
+    }
+    /// <summary>
+    /// THE WALK, PLAYED. <c>?press=1</c> with the shuttle ridden straight down onto HER ground: she comes down
+    /// behind the captain, her word about the tin is in the pulse and the book, and as he walks eighty deck units out
+    /// onto the regolith and stops she follows on her own feet and ends inside the band behind him — and says
+    /// her line about the tank, once.
+    ///
+    /// <para><b>RED</b> by deleting the re-plan on leaving the band in <c>AdvanceTheStringer</c>: she stood at the
+    /// tube while he walked away. (Written before the fix it guards: the first cut re-planned only when he was
+    /// too FAR, planned to the near edge of the band, and this play caught her standing 6.8 du off him.)</para>
+    /// </summary>
+    [Fact]
+    public async Task SheComesDownBehindHimAndKeepsTheBandAsHeWalks()
+    {
+        int site = CarryThePress.Passage.Read(Hers(await DeskBench.BootAsync(Aboard)).Pin).Site;
+        DeskBench b = await DeskBench.BootAsync($"{Aboard}&body=luna&site={site}&land=1");
+        Assert.True(b.OnSurface, "premise: the shuttle set the captain down on her ground");
+        await b.RenderAsync();
+
+        b.CallOnTheDispatcher("AdvanceTheStringer", 0.1);
+        Map.Quest q = Hers(b);
+        string landing = CarryThePress.Landing(CarryThePress.TheTin(q.Id, "luna", site).BearingLine);
+        Assert.Equal(1, BookEntries(b, landing));
+        Assert.Single(Afoot(b), w => w.For == Map.Errand.RidingAlong);
+
+        // Eighty deck units out, a few a second, and then he stands still.
+        double x0 = (double)b.Peek("_avatarX")!, y0 = (double)b.Peek("_avatarY")!;
+        for (int step = 1; step <= 100; step++)
+        {
+            b.Poke("_avatarY", y0 - (step * 0.8));
+            b.CallOnTheDispatcher("AdvanceTheStringer", 0.1);
+        }
+
+        for (int still = 0; still < 600; still++)
+        {
+            b.CallOnTheDispatcher("AdvanceTheStringer", 0.1);
+        }
+
+        Map.Walker her = Assert.Single(Afoot(b), w => w.For == Map.Errand.RidingAlong);
+        double dx = her.Walk.X - x0, dy = her.Walk.Y - (y0 - 80);
+        double range = Math.Sqrt((dx * dx) + (dy * dy));
+        Assert.True(TheTailBehindYou.HoldsHisBand(range),
+            $"she is {range:F1} du from the captain, outside the band [{TheTailBehindYou.StandsOffDu}, {TheTailBehindYou.LosesYouBeyondDu}]");
+        Assert.True(her.Walk.Y < y0 - 5, $"she never left the pad: y {her.Walk.Y:F1}, the captain came down at {y0:F1}");
+        Assert.True(CarryThePress.Passage.Read(Hers(b).Pin).Walked, "she never said her line about the tank");
     }
 }
