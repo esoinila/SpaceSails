@@ -1,0 +1,47 @@
+﻿@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@using SpaceSails.Client.Rendering
+@using SpaceSails.Core
+@*
+    #251 · THE TWO WAITING DOORS, ON THEIR OWN FILE.
+
+    The live boot door and the shuttle's descent: one `if / else if` chain, moved whole — a chain is one sentence.
+
+    Moved out of Map.razor by PURE MOTION (the owner's ruling of 2026-09-03: "Map.razor → components"):
+    the block between the two fences below is the block that was in the page, character for character,
+    gates included — a gate is what says WHEN a thing is on the glass, and it travels with the thing.
+    Every page member the block reads is a [Parameter] with the SAME NAME; a member it WRITES crosses as
+    a value-and-setter pair (NoSurfaceSwallowsAWriteTests). TheComposedMapIsTheMapTests holds the page
+    this composes to, byte for byte.
+
+    IHandleEvent repeats the page's own override (Map.Sim.cs): no automatic re-render per event, as on
+    every surface under Pages/Map/. The .razor.css beside this file carries no rules; it exists to give
+    the component Map.razor.css's scope (pinned in SpaceSails.Client.csproj).
+*@
+@* ── MARKUP BEGINS · verbatim from Map.razor ───────────────────────────────────────────────── *@
+    @if (!_worldReady)
+    {
+        @* #318 follow-up: an honest, LIVE boot door. The ⚙ gear spins via a pure CSS transform
+           (compositor thread), so it keeps turning even while the main thread is blocked in a
+           synchronous generation phase — proof the app is alive, not frozen. The sub-line shows the
+           current coarse phase (set by BootPhaseAsync, which yields so each phase actually paints). *@
+        <div class="map-loading d-flex flex-column justify-content-center align-items-center">
+            <span class="wait-gear" aria-hidden="true">⚙</span>
+            <div class="text-light mt-3">Rigging the sails…</div>
+            <div class="text-secondary small mt-1" role="status">@(_bootPhase ?? "planning NPC routes, spinning up the ephemeris")</div>
+        </div>
+    }
+    else if (_shuttleDescending)
+    {
+        @* #318/#329 follow-up: the Board→surface descent runs several first-time synchronous blocks
+           (clock jump, tube/surface/maze weld, first cold render). A 🛸 flies across on a pure CSS
+           transform (compositor thread), so it keeps moving while they run; the sub-line narrates the
+           current coarse phase, set by DescentPhaseAsync which yields between phases so no single block
+           trips Chrome's page-unresponsive dialog. *@
+        <div class="map-loading shuttle-descent d-flex flex-column justify-content-center align-items-center">
+            <div class="wait-shuttle-lane"><span class="wait-shuttle" aria-hidden="true">🛸</span></div>
+            <div class="text-light mt-3">Shuttle descending…</div>
+            <div class="text-secondary small mt-1" role="status">@(_descentPhase ?? "mating the airlock…")</div>
+        </div>
+    }
+@* ── MARKUP ENDS ──────────────────────────────────────────────────────────────── *@
