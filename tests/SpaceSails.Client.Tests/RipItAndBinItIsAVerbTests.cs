@@ -77,7 +77,10 @@ public sealed class RipItAndBinItIsAVerbTests
     }
 
     private static string Seated() =>
-        Source("Pages", "Map.Seated.cs") + Source("Pages", "Seating", "Seating.Seated.cs");
+        // #251 · RE-PATHED: Map.Seated.cs's forwarders were cut into Map.Seated.Forwarders.cs by a pure move;
+        // read head first, so the concatenation is the same text in the same order.
+        Source("Pages", "Map.Seated.cs") + Source("Pages", "Map.Seated.Forwarders.cs")
+        + Source("Pages", "Seating", "Seating.Seated.cs");
 
     /// <summary>#870 · The sim page is twenty partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>

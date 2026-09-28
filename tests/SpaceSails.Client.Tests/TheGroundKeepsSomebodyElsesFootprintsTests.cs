@@ -177,7 +177,8 @@ public class TheGroundKeepsSomebodyElsesFootprintsTests
     [Fact]
     public void EveryReporterOfTheOddsAsksWhatHappenedOnThisGround()
     {
-        string dig = Pages("Map.Surface.Dig.cs");
+        // #251 · RE-PATHED: Map.Surface.Dig.cs was cut in two by a pure move; read both halves, head first.
+        string dig = Pages("Map.Surface.Dig.cs") + Pages("Map.Surface.Dig.Chest.cs");
         Assert.Contains("cache.SafetyWith(TheFightThisGroundCarries(cache))", dig, StringComparison.Ordinal);
         Assert.Contains("TheFightThisGroundCarries(ex)", dig, StringComparison.Ordinal);
 
