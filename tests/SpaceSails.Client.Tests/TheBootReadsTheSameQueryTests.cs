@@ -148,6 +148,10 @@ public sealed class TheBootReadsTheSameQueryTests
             // lines are the only thing the dump added, and no other line moved.
             ["/map?dock=selene-gate&geocache=1"] = "f6f40476b56761055989d9d129842c10",
             ["/map?dock=selene-gate&geocache=lifted"] = "f6f40476b56761055989d9d129842c10",
+            // #1202 · the stringer's two dev rows. ?press= writes no world and nothing the parse answers (it is
+            // read off the address bar once the berth is clamped) — the geocache rows' own reason, and their pin.
+            ["/map?dock=selene-gate&press=1"] = "f6f40476b56761055989d9d129842c10",
+            ["/map?dock=selene-gate&press=filed"] = "f6f40476b56761055989d9d129842c10",
             ["/map?dock=the-deep&body=triton&site=2&land=1"] = "400a44f8018d3c0043e46d57e0c8a818",
             ["/map?dock=the-space-bar"] = "020d40649293bfccdfac18b493fbe6ce",
             ["/map?dock=the-space-bar&body=phobos&site=0&land=1"] = "020d40649293bfccdfac18b493fbe6ce",
