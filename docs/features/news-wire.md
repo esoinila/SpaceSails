@@ -19,6 +19,8 @@ room and [station-desks.md](station-desks.md) for the Galley desk generally.
   - **Intel purchased** — buying a route tip on the dark web.
   - **Orbit entered at a haven** — binding into orbit around any body flagged as a pirate haven.
 
+  - **A stringer's story** (#1202) — three sim-days after a journalist the captain carried (CARRY THE PRESS) pays her fare, the wire prints HER story, in her voice and under her byline, about the moon she went to: one of two stories, chosen by whether the captain dug up the tin her source left. It names a hired boat's master and never the captain. The next sim-day a **port's rag** (never the ship's wire) prints the Ringside floor's opinion of it. Pushed events are not saved, so both are put back on the wire from the contract's own record whenever they are due and absent — dated when they ran, printed once.
+
 Both kinds render as the same `NewsWire.NewsItem` (a sim-time + a headline string), so the two
 feeds can be merged and sorted newest-first without the UI caring which kind produced which line.
 

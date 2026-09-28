@@ -58,6 +58,15 @@ public partial class Map
 
         _quests.Add(offer);
 
+        // #1202 · Her passage speaks in her own voice at the press that took it, once, and nothing else — the
+        // house receipt below would call it a delivery, which it is not.
+        if (offer.Kind == QuestKind.CarryThePress)
+        {
+            SheStowsOneBag();
+            RequestVaultSave();
+            return;
+        }
+
         // Tuesday plan PR-A: a fetch job no longer leaves the wreck labelled on the map. The Fixer
         // hands you a transponder fix instead — an intel card at the Comms desk with a 🔭 hook that
         // aims the scope. The wreck stays hidden until an actual scan resolves it.
@@ -349,6 +358,9 @@ public partial class Map
                 YouComeBackAndTellHer(q);
             }
         }
+
+        // #1202 · …and the stringer whose trip is done pays at whatever haven the ship clamps at next.
+        HerFareAtTheBerth();
     }
 
     // #223: digging up a cache advances any fetch-a-cache job that pointed at it — the chest is now in

@@ -78,6 +78,8 @@
             <div class="deck-offer-reward">
                 @(offer.Reward <= 0
                     ? "On the house — the tip's the payoff 🕸"
+                    : offer.Kind == QuestKind.CarryThePress
+                        ? SpaceSails.Core.CarryThePress.Terms(offer.Reward)
                     : _offerPlain.Count > 0
                         ? _offerPlain[3]
                         : $"Fee: {offer.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr")

@@ -24,7 +24,10 @@ public partial class Map
     /// table offers that are not contracts at all (see <see cref="IsLedgerlessOffer"/>); both surfaces
     /// render nothing rather than a promise.</summary>
     private IReadOnlyList<string> JobPlainBlock(Quest q) =>
-        IsLedgerlessOffer(q) ? [] : JobTerms.PlainBlock(JobFactsFor(q));
+        // #1202 · …and a stringer's passage carries its own terms line (CarryThePress.TermsLine), in her voice.
+        // The block's fixed vocabulary has no verb for "carry a person there and back", and a borrowed one
+        // would be the card saying DELIVER about a woman.
+        q.Kind == QuestKind.CarryThePress ? [] : IsLedgerlessOffer(q) ? [] : JobTerms.PlainBlock(JobFactsFor(q));
 
     /// <summary>
     /// AN OFFER THAT IS A DOOR, NOT A JOB — and the reason the block has an off switch.

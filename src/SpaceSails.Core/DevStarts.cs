@@ -223,6 +223,19 @@ public static class DevStarts
             "The same chest, its location sold far enough back that the buyer's seeded lift has come. Open the "
             + "dark-web desk: the escrow lands on the payment pulse, once (#319).",
             "/map?dock=selene-gate&geocache=lifted"),
+        // #1202 slice 1 · CARRY THE PRESS. A stringer aboard with her ground named, and the same trip made and paid
+        // far enough back that her story is on the wire.
+        new("📰", "Carry the press — she is aboard",
+            "Clamped at Selene Gate with Rauha Lind's passage on the books: the contract row names her ground (one "
+            + "the shuttle reaches from here). Board it: she comes down behind you, says where the source left her "
+            + "word, walks your air with you, and the tin is under a probe near the pad. Lift off, clamp at a haven, "
+            + "and she pays (#1202).",
+            "/map?dock=selene-gate&press=1"),
+        new("📰🗞", "…and her story ran",
+            "The same trip made, the tin dug, and her fare paid four sim-days ago: her story is on the Galley wire "
+            + "(6) and the Comms ticker, the floor's opinion is on a port's rag, and the book has filed that it ran "
+            + "(#1202).",
+            "/map?dock=selene-gate&press=filed"),
         // #775 · THE WAY IN, AND THE WAY THE FOOD COMES IN. Owner, walking the new B1: "the bar/canteen
         // needs DOORS ON THE MAIN CORRIDOR — today you have to really look for the way in; a venue's
         // entrance should find YOU." The row that proves that has to start OUTSIDE the room, which is the

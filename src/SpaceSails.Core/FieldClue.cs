@@ -115,6 +115,7 @@ public static class FieldClue
     {
         ArgumentNullException.ThrowIfNull(paperId);
         return HardcaseRep.IsTheSchedule(paperId)
+            || CarryThePress.IsTheNote(paperId)
             || UndergroundComplex.AuthoredPaperOf(paperId) is not null
             || UndergroundComplex.LiftCode.PaperIn(paperId) is not null;
     }
@@ -149,6 +150,14 @@ public static class FieldClue
         if (HardcaseRep.IsTheSchedule(paperId))
         {
             return HardcaseRep.ScheduleBody;
+        }
+
+        // #1202 · …and the tin a source left for a stringer, through the same door and for the same reason:
+        // it was written, and the sleeve, the glance and the dig at a table all read it here. Body ALONE —
+        // it pins no place, it says one thing.
+        if (CarryThePress.IsTheNote(paperId))
+        {
+            return CarryThePress.TinText;
         }
 
         // #1074/#1063 · …AND THE FIVE THE ARC WROTE, for exactly the same reason and through exactly the
@@ -251,6 +260,12 @@ public static class FieldClue
         if (HardcaseRep.IsTheSchedule(paperId))
         {
             return HardcaseRep.ScheduleLabel;
+        }
+
+        // #1202 · …and the tin is called what its own text opens with.
+        if (CarryThePress.IsTheNote(paperId))
+        {
+            return CarryThePress.TinTitle;
         }
 
         // #1074/#1063 · …and the five the arc wrote are called what they are called. Same door as Document

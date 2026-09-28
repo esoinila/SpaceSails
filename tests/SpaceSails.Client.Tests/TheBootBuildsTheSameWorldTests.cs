@@ -270,6 +270,10 @@ public sealed class TheBootBuildsTheSameWorldTests
             // lines are the only thing the dump added, and no other line moved.
             ["/map?dock=selene-gate&geocache=1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=selene-gate&geocache=lifted"] = "5702e97b412b144d3fd884426e262007",
+            // #1202 · the stringer's two dev rows. ?press= writes no world and nothing the parse answers (it is
+            // read off the address bar once the berth is clamped) — the geocache rows' own reason, and their pin.
+            ["/map?dock=selene-gate&press=1"] = "5702e97b412b144d3fd884426e262007",
+            ["/map?dock=selene-gate&press=filed"] = "5702e97b412b144d3fd884426e262007",
             // #997 wave 10 · see /map?start=wreck&target=collector further down — the new dev start moved
             // free-flying after a browser walk, and the reason is written there.
             ["/map?dock=the-deep&body=triton&site=2&land=1"] = "5a567133534c2e96fdf0a40131a72a9d",

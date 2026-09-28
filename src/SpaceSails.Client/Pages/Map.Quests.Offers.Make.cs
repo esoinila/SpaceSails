@@ -35,7 +35,8 @@ public partial class Map
         _ when giver.Contains("COIL", StringComparison.OrdinalIgnoreCase) => MakeCargoRunOffer(giver),
         _ when giver.Contains("GILT", StringComparison.OrdinalIgnoreCase) => MakeIntelOffer(giver),
         _ when giver.Contains("FIXER", StringComparison.OrdinalIgnoreCase) => MakeFetchOffer(giver) ?? MakeFetchCacheOffer(giver) ?? MakeCrackOffer(giver),
-        _ => MakeHuntOffer(giver),
+        // #1202 · …and on one watch in three at a berth, the stranger at the table is a stringer booking passage.
+        _ => MakePressOffer() ?? MakeHuntOffer(giver),
     };
 
     // Pick a live target for a hunt contract — prefer off-books ships (the kind you couldn't just read
