@@ -95,7 +95,8 @@ public readonly partial record struct ChalkMark(
     public bool IsLoadedAt(double simTime) => IsWindow(PatronRota.WatchIndex(simTime));
 
     /// <summary>Is the chalk on the stone? Exactly while the drop is loaded: it goes up with the goods and the
-    /// crew takes it off at the next turnover.</summary>
+    /// crew takes it off at the next turnover. A collection does not take it down — nobody wiped the stone when
+    /// the captain reached under the table (<see cref="OnTheStone"/>).</summary>
     public bool MarkIsUpAt(double simTime) => IsLoadedAt(simTime);
 
     /// <summary>Are the goods under the table? The window, and <see cref="WatchesOfGrace"/> watch after it,
@@ -251,7 +252,59 @@ public readonly partial record struct ChalkMark(
     /// has none of its own). Empty — without building anything — when no delivery was ever paid.
     /// </summary>
     /// <param name="tables">How many tables the gallery stands (see <see cref="For"/>).</param>
-    public static IReadOnlyList<ChalkMark> OwedOn(IEnumerable<string>? register, string? havenId, int tables)
+    public static IReadOnlyList<ChalkMark> OwedOn(IEnumerable<string>? register, string? havenId, int tables) =>
+        Booked(register, havenId, tables, (mark, r) => !mark.WasCollected(r));
+
+    /// <summary>
+    /// <b>EVERY MARK THE STONE STILL CARRIES AT THIS HAVEN</b> — the owed returns, and a collected one until
+    /// the turnover after it (Fable's ruling on #794 QA, 2026-09-29). The mark is the counterparty's signal,
+    /// and the crew that keeps the gallery clean wipes it at the next turnover; nobody wiped the stone when the
+    /// captain reached under the table. So the collection takes the move and the goods (<see cref="OwedOn"/>)
+    /// and leaves the stone alone: a mark collected in its window stays up to the end of that window, and its
+    /// wipe is told like any other seen wipe; the next window after the collection is the counterparty's, and
+    /// the return is over, so nothing goes up again.
+    /// </summary>
+    public static IReadOnlyList<ChalkMark> OnTheStone(
+        IEnumerable<string>? register, string? havenId, int tables, double simTime) =>
+        Booked(register, havenId, tables, (mark, r) => mark.StoneOutlivesTheCollection(r, simTime));
+
+    /// <summary>The window whose stone this watch belongs to: this one if it is a window, else the last.</summary>
+    private long? StoneWindowOf(long watch) => IsWindow(watch) ? watch : LastWindowBefore(watch);
+
+    /// <summary>The watch this return was collected on, or null — the earliest, if a save somehow holds two.</summary>
+    public long? CollectedWatch(IEnumerable<string>? register)
+    {
+        string prefix = $"{CollectedTag}:{ParcelId}@";
+        string old = AsSliceOneSaidIt(prefix);
+        long? first = null;
+        foreach (string tag in register ?? [])
+        {
+            string? rest = tag.StartsWith(prefix, StringComparison.Ordinal) ? tag[prefix.Length..]
+                : tag.StartsWith(old, StringComparison.Ordinal) ? tag[old.Length..]
+                : null;
+            if (rest is not null
+                && long.TryParse(rest, NumberStyles.Integer, CultureInfo.InvariantCulture, out long w)
+                && (first is null || w < first))
+            {
+                first = w;
+            }
+        }
+        return first;
+    }
+
+    /// <summary>Does the stone still speak for this return at this moment — never collected, or collected no
+    /// earlier than the window this watch's stone belongs to?</summary>
+    private bool StoneOutlivesTheCollection(IEnumerable<string>? register, double simTime)
+    {
+        if (CollectedWatch(register) is not { } collected)
+        {
+            return true;
+        }
+        return StoneWindowOf(PatronRota.WatchIndex(simTime)) is { } window && window <= collected;
+    }
+
+    private static IReadOnlyList<ChalkMark> Booked(
+        IEnumerable<string>? register, string? havenId, int tables, Func<ChalkMark, IEnumerable<string>, bool> keep)
     {
         if (register is null || havenId is null)
         {
@@ -287,7 +340,7 @@ public readonly partial record struct ChalkMark(
             {
                 continue;
             }
-            if (For(rest[..at], havenId, paid, tables) is { } mark && !mark.WasCollected(register)
+            if (For(rest[..at], havenId, paid, tables) is { } mark && keep(mark, register)
                 && !marks.Exists(m => m.ParcelId == mark.ParcelId))
             {
                 marks.Add(mark);

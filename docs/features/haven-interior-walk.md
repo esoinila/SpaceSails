@@ -743,7 +743,10 @@ are there, the table's card carries one more move — **FEEL UNDER THE LIP** —
 parcel in the satchel already addressed to another ground, so the trade is a chain and the captain is the
 only face on it. At the other table, sharing a table, or with nothing there, the move is simply absent,
 never greyed (Kosh). The collection writes `gallery-drop:{parcel}@{watch}` into the register of turned-over
-ground — the pattern the owner named, written and read by nobody yet.
+ground — the pattern the owner named, written and read by nobody yet. The collection takes the goods and
+the move and **leaves the cross up for the rest of the window** (Fable, 2026-09-29): the mark is the
+counterparty's signal, and nobody wiped the stone when the captain reached under the table — the crew does
+that at the next turnover, as ever.
 
 **Why it moved.** Slice 1 (#1294/#1296) put the drop under a park bench on a Hive floor, beside the
 ATTENDANCE IS RECORDED notice. It was complete and, in shipped play, silent: a park is a Hive block, no sol
