@@ -367,6 +367,8 @@ public sealed class ThereSheIsTests
         new("SheSleepsTheBurnBack", Trigger.APress),
         new("HerFareAtTheBerth", Trigger.APress),
         new("TakeThePressForCheat", Trigger.APress),
+        // #1202 slice 2 · …and the spike's dev start, whose address bar files a trip already paid for.
+        new("SpikeItIfAsked", Trigger.APress),
         new("YouFindWhatSheAskedFor", Trigger.APress),
         new("YouComeBackAndTellHer", Trigger.APress),
         new("SubmitPin", Trigger.APress),

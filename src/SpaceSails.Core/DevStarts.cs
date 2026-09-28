@@ -244,8 +244,8 @@ public static class DevStarts
             + "behind it: sit at her table while she is away and the card carries TAKE THE PAGES; then LEAVE YOUR PAGE "
             + "(#1202).",
             "/map?dock=selene-gate&ashore=1&spike=1"),
-        new("📰⬚", "…and the story did not run",
-            "The same contract four sim-days on, her pages in your satchel: the book has the hole under ⬚, the gallery "
+        new("📰🕳", "…and the story did not run",
+            "The same contract four sim-days on, her pages in your satchel: the book has the hole under the absence mark, the gallery "
             + "says the recorder is left on the table, and the dark-web desk's next pulse pays the purse on 💳 (#1202).",
             "/map?dock=selene-gate&ashore=1&spike=spiked"),
         // #775 · THE WAY IN, AND THE WAY THE FOOD COMES IN. Owner, walking the new B1: "the bar/canteen
