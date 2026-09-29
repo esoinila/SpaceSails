@@ -84,7 +84,7 @@ public sealed class TheOfficePaysWithPaperTests
     /// one (half) the receipt goes into the satchel with the 💳, and the book files its document once under 📋 about
     /// the Authority and the story's body; the pulse is still the bare 💳 with no words. A second desk open pays
     /// nothing and lands nothing. <b>RED</b> by dropping the <c>TheOfficePaysWithPaper</c> call from
-    /// <c>TheSpikeIsSettled</c> (no paper), and by calling it before the <c>Paid</c> check (a paper on every open).
+    /// <c>TheSpikeIsSettled</c> (no paper, no entry).
     /// </summary>
     [Theory]
     [InlineData(SpikeIt.Pages.Taken)]
@@ -120,7 +120,8 @@ public sealed class TheOfficePaysWithPaperTests
     /// <summary>
     /// NO PAYOUT, NO PAPER: a LATE window (her pages untouched) pays nothing and itemises nothing; a spike whose
     /// window has not come lands nothing; and a contract nobody spiked, long past its window and its floor, leaves
-    /// the satchel and the book exactly as they were. <b>RED</b> by <c>ReceiptLands</c> answering true for LATE.
+    /// the satchel and the book exactly as they were. <b>RED</b> by dropping the <c>ReceiptLands</c> clause from
+    /// <c>TheOfficePaysWithPaper</c> (a LATE window itemised).
     /// </summary>
     [Fact]
     public void NoPayoutNoPaper()
@@ -155,7 +156,8 @@ public sealed class TheOfficePaysWithPaperTests
     /// the line on the wire once the floor's own clock comes round, dated then; printed under a port's rag and never
     /// on the system wire; a second (and third) advance does not print it again; and the contract remembers it on
     /// its <c>Floored</c> key. <b>RED</b> by dropping the <c>FloorIsDue</c> clause from <c>TheRagNoticesTheHole</c>
-    /// (printed the day of the window).
+    /// (printed the day of the window), and by pushing it with the body as its Detail (a ✂ CLIP filed it under
+    /// Luna).
     /// </summary>
     [Fact]
     public void TheCycleAfterASpikedWindowThePortRagNotices()
@@ -191,9 +193,9 @@ public sealed class TheOfficePaysWithPaperTests
 
     /// <summary>
     /// ONLY A SPIKED HOLE: after an ALTERED window her byline ran, so the floor has its ordinary opinion and the
-    /// rag never prints the byline line; after a LATE window likewise. <b>RED</b> by calling
-    /// <c>TheRagNoticesTheHole</c> without its <c>Spiked</c> clause (it printed after ALTERED too — the ALTERED
-    /// branch reaches it through the same window decision once widened).
+    /// rag never prints the byline line; after a LATE window likewise. <b>RED</b> by dropping the outcome clause
+    /// from <c>TheRagNoticesTheHole</c> and asking it on the path of a story that ran (printed after ALTERED and
+    /// LATE).
     /// </summary>
     [Theory]
     [InlineData(SpikeIt.Pages.Swapped)]
