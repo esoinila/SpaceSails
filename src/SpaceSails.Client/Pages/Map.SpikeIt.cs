@@ -150,6 +150,8 @@ public sealed partial class Map
             return;
         }
 
+        q = TheStackIsSquaredIfSeen(q, bar.BodyId);   // #1202 slice 3 · …and after a seen take, her squared stack
+
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
         IReadOnlyList<DeckReachability.Point> tops = HavenInterior.GalleryTops(bar.BodyId);
         IReadOnlyList<DeckReachability.Point> machines = HavenInterior.TheVendorsAt(bar.BodyId);
@@ -332,9 +334,15 @@ public sealed partial class Map
         if (moveId == SpikeIt.TakeThePages)
         {
             _satchel = [.. Core.Satchel.Add(_satchel, SpikeIt.ThePages())];
-            RewritePassage(q, p with { Pages = SpikeIt.Pages.Taken });
+            bool seen = TheCoatSeesTheTake();   // #1202 slice 3 · asked at the moment of the press, and never again
+            RewritePassage(q, p with { Pages = SpikeIt.Pages.Taken, Watched = p.Watched || seen });
             FileNote(SpikeIt.TookThePages(SpikeIt.WatchesUntil(CarryThePress.StoryAt(p)!.Value, SimTime)),
                 CarryThePress.Glyph);
+            if (seen)
+            {
+                FileNote(SpikeIt.SeenTakeEntry, CarryThePress.Glyph);   // the take line stays; this is its neighbour
+            }
+
             t.Outcome = SpikeIt.TakeThePagesLine;
         }
         else
@@ -367,7 +375,7 @@ public sealed partial class Map
 
         if (next.Outcome == SpikeIt.Outcome.None)
         {
-            next = next with { Outcome = SpikeIt.AtTheWindow(next.Pages) };
+            next = next with { Outcome = SpikeIt.TheWindowFor(next.Pages, next.Watched) };   // #1202 slice 3 · seen ⇒ LATE
         }
 
         return next.Outcome;
@@ -393,7 +401,7 @@ public sealed partial class Map
             int pays = SpikeIt.Pays(p.Outcome, SpikeIt.Purse(q.Reward));
             _credits += pays;
             ShowPulseMessage(p.Outcome == SpikeIt.Outcome.Late
-                ? $"💳 {SpikeIt.LateLine}"
+                ? $"💳 {SpikeIt.LateReceipt(p.Watched)}"
                 : $"💳 +{pays.ToString("N0", CultureInfo.InvariantCulture)} cr");
             RewritePassage(q, p with { Paid = true });
             StateHasChanged();
@@ -444,8 +452,12 @@ public sealed partial class Map
             ThePressRunsHerStory();
         }
 
+        // #1202 slice 3 · …with a man behind the captain (&tailed=1) the leg into the gallery is the tester's to
+        // walk: the coat comes in AFTER him through the bar's own door, so the captain is left where ?ashore=1
+        // stood him and the grey coat follows him out along the tube.
         IReadOnlyList<DeckReachability.Point> vendors = HavenInterior.TheVendorsAt(here);
-        if (OnTheConcourse && vendors.Count > 0)
+        bool tailed = _tailedCheat == true;
+        if (OnTheConcourse && vendors.Count > 0 && !tailed)
         {
             DeckReachability.Point island = vendors[^1];
             StandCaptainAt(island.X, island.Y, "you come out of the tube into the gallery");
@@ -454,6 +466,9 @@ public sealed partial class Map
         ShowPulseMessage(cheat == SpikeIt.Cheat.Spiked
             ? $"🧪 DEV ?spike=spiked — the {body} story did not run; the recorder is on the far table; open Comms → dark web for the 💳"
             : $"🧪 DEV ?spike=1 — the {body} story is {SpikeIt.WatchesUntil(CarryThePress.StoryAt(PassageOf(home))!.Value, SimTime)} watches off; "
-              + $"{CarryThePress.Plate} writes at gallery table {SpikeIt.HerTable} (the far one); sit there and wait for her to feed the machine");
+              + $"{CarryThePress.Plate} writes at gallery table {SpikeIt.HerTable} (the far one); "
+              + (tailed
+                  ? "a grey coat comes into the bar after you; walk him out along the tube to the gallery, then sit at her table while she feeds the machine"
+                  : "sit there and wait for her to feed the machine"));
     }
 }

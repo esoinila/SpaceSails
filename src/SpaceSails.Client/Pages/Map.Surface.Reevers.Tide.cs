@@ -75,6 +75,8 @@ public partial class Map
         {
             ex.TideSeconds = ex.TideNextGap;
         }
+
+        SayTheFirstStirWhenTheSlotIsFree(ex);
     }
 
     // One tide Reever claws out of the deep edge at its seeded spawn point and begins to shamble up the
@@ -105,14 +107,39 @@ public partial class Map
             MakeNoise(digging.AnchorX, digging.AnchorY, ReeverHearing.Noise.Digging);
         }
 
-        if (!ex.TideAnnounced)
-        {
-            ex.TideAnnounced = true;
-            // #380 item 3: the one-time tide notice is the natural slot to say what a Reever IS — the first
-            // time the deep stirs, name the Old Ones and the escape (fleeing works; they want YOU, not loot).
-            ShowPulseMessage("〜 The tracker stirs — something's moving in the deep, far below. The regolith never stays empty for long. Don't linger. Reevers — the Old Ones. They don't want your loot; they want YOU. Grab what you came for and run.");
-        }
     }
+
+    /// <summary>
+    /// #380 item 3 · THE FIRST STIR, SAID WHEN THE SLOT IS FREE. The one-time tide notice is the natural slot to
+    /// say what a Reever IS — the first time the deep stirs, name the Old Ones and the escape (fleeing works;
+    /// they want YOU, not loot).
+    ///
+    /// <para>#1202 · Fable's ruling, 2026-09-29: this first stir is AMBIENCE, not a warning — the tide Reever
+    /// rises unaware, deep, and the tracker is the warning. So it pays the courtesy a stringer's word pays: if
+    /// the pulse slot is busy it asks again next frame, it never outranks anything and it is never dropped. It
+    /// used to be written the moment the first tide Reever rose, and on a stringer's ground it cut her word
+    /// about the tin off 1.5 s into a 7.6 s read. Real danger lines (a Reever at range, the tide turning) keep
+    /// their rank and still interrupt; they are not this line.</para>
+    /// </summary>
+    private void SayTheFirstStirWhenTheSlotIsFree(SurfaceExcursion ex)
+    {
+        if (!TheFirstStirIsWaiting(ex) || _pulse.Message is not null)
+        {
+            return;
+        }
+
+        ex.TideAnnounced = true;
+        ShowPulseMessage(FirstStirLine);
+    }
+
+    /// <summary>#1202 · The first tide Reever has risen and the stir has not been said yet: it is waiting for the
+    /// slot. A stringer's line about the tank waits behind it, so on her ground the order is the suit, her word,
+    /// the stir, her tank.</summary>
+    private bool TheFirstStirIsWaiting(SurfaceExcursion ex) => !ex.TideAnnounced && _reevers.Exists(r => r.Tide);
+
+    /// <summary>The first stir's words (#380 item 3), unchanged.</summary>
+    private const string FirstStirLine =
+        "〜 The tracker stirs — something's moving in the deep, far below. The regolith never stays empty for long. Don't linger. Reevers — the Old Ones. They don't want your loot; they want YOU. Grab what you came for and run.";
     // Seed the 2D6 from place + integer-second instant — deterministic, replayable in a test.
     private ulong ReeverSeed(string bodyId) => DiceRule.Seed($"reever:{bodyId}", (long)SimTime);
 

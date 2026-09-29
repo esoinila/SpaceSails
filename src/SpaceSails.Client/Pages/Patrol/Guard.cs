@@ -3,8 +3,8 @@ using SpaceSails.Core;
 namespace SpaceSails.Client.Pages;
 
 // Subject: part of the patrol (#870 lane 6′d) — ONE GUARD, WALKING. The mutable class the round is made of:
-// the seven things he can be doing, named; the state that says which; and (6′d) the transitions that move him
-// between them. The header note lives in Map.Patrol.cs.
+// the seven things he can be doing, named, and the state that says which. The (6′d) transitions that move
+// him between them live next door in Guard.Transitions.cs (#251). The header note lives in Map.Patrol.cs.
 public sealed partial class Map
 {
     /// <summary>One guard, walking. Mutable and client-side for the reason the Reevers and the sweep team
