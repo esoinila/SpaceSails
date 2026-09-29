@@ -66,6 +66,17 @@ public sealed partial class Map
 
         CarryThePress.Passage p = PassageOf(q);
 
+        // #1202 (owner ruling 2026-09-29 evening) · The tin's search area stays tight, and the first time he
+        // stands inside it the ground tells him so — once per contract, never before her word about the tin,
+        // and with the same courtesy as her other lines: a free slot, behind the tracker's first stir. Pulse only.
+        if (p.Landed && !p.Near && !p.Tin && _pulse.Message is null && !TheFirstStirIsWaiting(ex)
+            && TheTinsSquare(q, ex) is { } tin && CarryThePress.StandsWhereTheTinIs(tin, _avatarX, _avatarY))
+        {
+            SayItWhereTheyAreLooking(CarryThePress.GroundLine);
+            q = RewritePassage(q, p with { Near = true });
+            p = PassageOf(q);
+        }
+
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
         if (her is null)
         {
