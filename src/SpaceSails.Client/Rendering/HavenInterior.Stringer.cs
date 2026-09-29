@@ -43,6 +43,11 @@ public static partial class HavenInterior
             true, x, y, facing, seed, PatronState.AtBar);
     }
 
+    /// <summary>#1202 slice 4 · Where her chair is on this watch, whether or not she is in it — null on a watch that
+    /// is not hers or a room with no free chair. The empty seat a regular is asked about while she is away.</summary>
+    public static (double X, double Y)? TheStringersChairAt(string bodyId, double simTime) =>
+        TheStringersChair(bodyId, simTime) is { } chair ? (PatronSeats[chair].Item1, PatronSeats[chair].Item2) : null;
+
     /// <summary>Her chair on this watch, whether or not she is in it: the first numbered chair the rota's own
     /// untouched seating leaves free. Null on a watch that is not hers or a room with no free chair.</summary>
     private static int? TheStringersChair(string bodyId, double simTime)
