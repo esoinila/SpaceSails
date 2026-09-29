@@ -196,7 +196,10 @@ public sealed partial class Map
         double range = Math.Sqrt((dx * dx) + (dy * dy));
 
         // …and the first time he stops out on the ground with her behind him, she says it. Once.
-        if (p.Landed && !p.Walked && TheTailBehindYou.HoldsHisBand(range)
+        // #1202 · Her line about the tank pays the same courtesy as her word about the tin: it waits for a free
+        // slot, and behind the tracker's first stir if that is waiting too, so nothing of hers cuts anything short.
+        if (p.Landed && !p.Walked && _pulse.Message is null && !TheFirstStirIsWaiting(ex)
+            && TheTailBehindYou.HoldsHisBand(range)
             && MoonSurface.IsDiggableGround(_avatarX, _avatarY, ex.Floor))
         {
             SayItWhereTheyAreLooking(CarryThePress.WalkLine);

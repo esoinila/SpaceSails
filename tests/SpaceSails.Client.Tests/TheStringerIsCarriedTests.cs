@@ -402,6 +402,7 @@ public sealed class TheStringerIsCarriedTests
             b.CallOnTheDispatcher("AdvanceTheStringer", 0.1);
         }
 
+        b.Poke("_pulse", PulseSlot.Empty);   // her word has had its dwell (no frames age the slot here)
         for (int still = 0; still < 600; still++)
         {
             b.CallOnTheDispatcher("AdvanceTheStringer", 0.1);
@@ -442,10 +443,11 @@ public sealed class TheStringerIsCarriedTests
     /// through its own button; then twelve seconds of LIVE frames through <c>OnTick</c>, reading the pulse slot
     /// the deck's <c>.deck-pulse-toast</c> draws after every one. The slot must read the suit's VACUUM crossing
     /// first, for its whole dwell, and then her line — the very next thing in the slot, filed in the book on the
-    /// frame it appears, and up for at least the slot's own hold (<see cref="PulseSlot.MinDwellMs"/>). Measured on
-    /// this ground: VACUUM 100 → 4200 ms, her word 4200 → 5700 ms, then the tracker's first stir (a world line at
-    /// the same rank) takes the slot — so she has the hold, not her whole length-scaled dwell; that is an open
-    /// question for the tracker, not something her line may outrank.
+    /// frame it appears, and up for her whole length-scaled dwell (<see cref="PulseSlot.DwellFor"/>); and then the
+    /// tracker's first stir, which is ambience (Fable, 2026-09-29) and waits for the slot as she does.
+    ///
+    /// <para><b>RED</b> on #1324's code (the stir written the moment the first tide Reever rose): measured there,
+    /// VACUUM 100 → 4200 ms, her word 4200 → 5700 ms, and the stir cut her off 1.5 s into a 7.6 s read.</para>
     ///
     /// <para><b>The one poke.</b> In a browser the descent pays one warm-up surface step under the door with the
     /// captain in her tube (<c>WarmFirstSurfaceFrameAsync</c>), which is what records <c>_airSupplyNoted</c> as
@@ -480,7 +482,7 @@ public sealed class TheStringerIsCarriedTests
 
         // Every change of the slot, with the frame clock it happened on.
         var said = new List<(string? Line, double AtMs)>();
-        for (int frame = 0; frame < 120; frame++)
+        for (int frame = 0; frame < 200; frame++)
         {
             Frame(b);
             PulseSlot slot = (PulseSlot)b.Peek("_pulse")!;
@@ -505,7 +507,13 @@ public sealed class TheStringerIsCarriedTests
         Assert.True(said[v + 1].AtMs - said[v].AtMs >= PulseSlot.DwellFor(vacuum),
             $"the suit's line did not have its dwell ({PulseSlot.DwellFor(vacuum)} ms):{Environment.NewLine}{story}");
         double herSpan = (h + 1 < said.Count ? said[h + 1].AtMs : (double)b.Peek("_lastTimestampMs")!) - said[h].AtMs;
-        Assert.True(herSpan >= PulseSlot.MinDwellMs, $"her word was up only {herSpan} ms:{Environment.NewLine}{story}");
+        Assert.True(herSpan >= PulseSlot.DwellFor(landing),
+            $"her word was up only {herSpan} ms of its {PulseSlot.DwellFor(landing)} ms dwell:{Environment.NewLine}{story}");
+
+        // …and the tracker's first stir is ambience: it waited for her, and it is the next thing said.
+        (string? Line, double AtMs) next = said.Skip(h + 1).FirstOrDefault(s => s.Line is not null);
+        Assert.True(next.Line is not null && next.Line.StartsWith("〜 The tracker stirs", StringComparison.Ordinal),
+            $"the tracker's first stir did not follow her word:{Environment.NewLine}{story}");
         Assert.Equal(1, BookEntries(b, landing));
     }
 }
