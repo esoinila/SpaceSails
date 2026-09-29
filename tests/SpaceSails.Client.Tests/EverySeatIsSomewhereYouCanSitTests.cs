@@ -80,7 +80,7 @@ public sealed class EverySeatIsSomewhereYouCanSitTests
     /// are <c>DoesNotContain</c> over the whole subject, and pointing one at a single file would be a silent
     /// weakening.</summary>
     private static string Table() =>
-        Source("Pages", "Map.Table.cs") + TheTablesOwnPartials();
+        Source("Pages", "Map.Table.cs") + Source("Pages", "Map.Table.Talk.cs") + TheTablesOwnPartials();
 
     /// <summary>#251 · The table scene is FIVE partials now (opening, the moves, #757's wait, #758's
     /// cabinet, #680's one ending) — read as a GLOB and not as a written list, because several claims over
