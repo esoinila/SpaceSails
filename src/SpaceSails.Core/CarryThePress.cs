@@ -75,6 +75,11 @@ public static class CarryThePress
     /// <summary>On the walk — told once, the first time the captain stops with her behind him.</summary>
     public const string WalkLine = "'Same tank as yours,' she says, 'and half your patience.'";
 
+    /// <summary>#1202 (owner ruling 2026-09-29 evening; Fable's line) · Told once, the first time the captain
+    /// stands inside the tin's search area (<see cref="StandsWhereTheTinIs"/>), so a tight search is deliberate
+    /// and never blind. Pulse only — filed nowhere.</summary>
+    public const string GroundLine = "The ground here gives the way she said it would.";
+
     /// <summary>The tin, as the sleeve reads it.</summary>
     public const string TinText =
         "A tin, wax-sealed, in a hand that did not want to be recognised: 'Not the count. The difference.'";
@@ -124,6 +129,7 @@ public static class CarryThePress
         yield return TakenLine;
         yield return LandingLine;
         yield return WalkLine;
+        yield return GroundLine;
         yield return TinText;
         yield return DigLine;
         yield return LiftoffLine;
@@ -259,6 +265,14 @@ public static class CarryThePress
     public static bool FindsTheTin((int X, int Y) tin, int probeX, int probeY) =>
         Math.Max(Math.Abs(tin.X - probeX), Math.Abs(tin.Y - probeY)) <= TinReachSquares;
 
+    /// <summary>Is a body standing at this point inside the tin's search area — on a square whose probe would
+    /// find it? The area <see cref="GroundLine"/> is told in.</summary>
+    public static bool StandsWhereTheTinIs((int X, int Y) tin, double x, double y)
+    {
+        (int sx, int sy) = BeachComber.SquareOf(x, y);
+        return FindsTheTin(tin, sx, sy);
+    }
+
     // ── THE CLOCKS ──────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>"Watch the wire. Three days." The story prints this long after the turn-in.</summary>
@@ -303,12 +317,14 @@ public static class CarryThePress
     /// <param name="Watched">#1202 slice 3 · …the pages were taken with the grey coat looking on: the window runs
     /// LATE whatever else was done.</param>
     /// <param name="Stack">…where the squared-stack line stands after a seen take (<see cref="SpikeIt.Stack"/>).</param>
+    /// <param name="Near">#1202 (2026-09-29 evening) · <see cref="GroundLine"/> has been told: the captain has stood
+    /// inside the tin's search area. Written only once true, so every older line is the line it was, to the byte.</param>
     public readonly record struct Passage(
         int Site, bool Landed = false, bool Walked = false, bool Tin = false,
         double? TurnedIn = null, bool Printed = false, bool Floored = false,
         bool Spike = false, SpikeIt.Pages Pages = SpikeIt.Pages.OnHerTable, SpikeIt.HerLine Seen = SpikeIt.HerLine.NotYet,
         SpikeIt.Outcome Outcome = SpikeIt.Outcome.None, bool Paid = false, bool Gone = false,
-        bool Watched = false, SpikeIt.Stack Stack = SpikeIt.Stack.NotYet)
+        bool Watched = false, SpikeIt.Stack Stack = SpikeIt.Stack.NotYet, bool Near = false)
     {
         /// <summary>Written as one line. The spike's keys are written only once it is taken, so a slice-1
         /// contract's line is the line slice 1 wrote, to the byte; and the seen take's keys (#1202 slice 3) only
@@ -322,7 +338,8 @@ public static class CarryThePress
                   + (Watched
                       ? string.Create(CultureInfo.InvariantCulture, $";watched=1;stack={(int)Stack}")
                       : "")
-                : "");
+                : "")
+            + (Near ? ";near=1" : "");
 
         private static string B(bool b) => b ? "1" : "0";
 
@@ -358,6 +375,7 @@ public static class CarryThePress
                     "paid" => p with { Paid = value == "1" },
                     "gone" => p with { Gone = value == "1" },
                     "watched" => p with { Watched = value == "1" },
+                    "near" => p with { Near = value == "1" },
                     "stack" when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int k)
                                  && Enum.IsDefined(typeof(SpikeIt.Stack), k) => p with { Stack = (SpikeIt.Stack)k },
                     _ => p,

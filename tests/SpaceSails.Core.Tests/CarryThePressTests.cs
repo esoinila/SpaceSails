@@ -27,7 +27,7 @@ public sealed class CarryThePressTests
     // ── THE WORDS ───────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// THIRTEEN LINES, VERBATIM, AND NO FOURTEENTH. Every line of the brief, letter for letter; all of them in
+    /// THIRTEEN LINES OF THE BRIEF AND THE GROUND'S ONE (2026-09-29 evening), VERBATIM, AND NO FIFTEENTH. Every line of the brief, letter for letter; all of them in
     /// <see cref="CarryThePress.AllProse"/>; and the slice's own files read for any sentence typed into a
     /// method that is not one of them.
     ///
@@ -42,6 +42,7 @@ public sealed class CarryThePressTests
         Assert.Equal("She stows one bag and the recorder. 'Do not tell me anything you would mind reading.'", CarryThePress.TakenLine);
         Assert.Equal("Somebody left her a word here, she says, reading it off the recorder: where the ground is soft, {spot}. She does not say who.", CarryThePress.LandingLine);
         Assert.Equal("'Same tank as yours,' she says, 'and half your patience.'", CarryThePress.WalkLine);
+        Assert.Equal("The ground here gives the way she said it would.", CarryThePress.GroundLine);   // owner ruling 2026-09-29 evening
         Assert.Equal("A tin, wax-sealed, in a hand that did not want to be recognised: 'Not the count. The difference.'", CarryThePress.TinText);
         Assert.Equal("She reads it twice and does not put it in the recorder.", CarryThePress.DigLine);
         Assert.Equal("She sleeps the whole burn back. The recorder does not.", CarryThePress.LiftoffLine);
@@ -55,7 +56,7 @@ public sealed class CarryThePressTests
         Assert.Equal("press-note", CarryThePress.NoteId);
 
         var prose = CarryThePress.AllProse().ToList();
-        Assert.Equal(13, prose.Count);
+        Assert.Equal(14, prose.Count);   // 13 of the brief + the ground's line (2026-09-29 evening)
         Assert.Equal(prose.Count, prose.Distinct(StringComparer.Ordinal).Count());
 
         var authored = new HashSet<string>(prose, StringComparer.Ordinal);
@@ -272,6 +273,33 @@ public sealed class CarryThePressTests
         Assert.Equal(new CarryThePress.Passage(0), CarryThePress.Passage.Read(null));
         Assert.Equal(new CarryThePress.Passage(0), CarryThePress.Passage.Read("V-06"));
         Assert.Null(CarryThePress.Passage.Read(new CarryThePress.Passage(3).Write()).TurnedIn);
+
+        // #1202 (2026-09-29 evening) · the ground's line told: round-trips, and is written only once true, so
+        // every older contract's line is the line it was, to the byte.
+        Assert.Equal(p with { Near = true }, CarryThePress.Passage.Read((p with { Near = true }).Write()));
+        Assert.DoesNotContain("near", p.Write(), StringComparison.Ordinal);
+        Assert.Equal("site=2;landed=1;walked=0;tin=1;in=123456.789012345;printed=1;floor=0", p.Write());
+    }
+
+    /// <summary>#1202 (2026-09-29 evening) · The ground's line is told in exactly the squares a probe would find
+    /// the tin from — two squares round it — and nowhere else.</summary>
+    [Fact]
+    public void TheGroundIsToldExactlyWhereAProbeWouldFindTheTin()
+    {
+        (int X, int Y) tin = (10, -20);
+        for (int sx = 4; sx <= 16; sx++)
+        {
+            for (int sy = -26; sy <= -14; sy++)
+            {
+                (double x, double y) = BeachComber.SquareCenter(sx, sy);
+                Assert.Equal(CarryThePress.FindsTheTin(tin, sx, sy), CarryThePress.StandsWhereTheTinIs(tin, x, y));
+            }
+        }
+
+        (double cx, double cy) = BeachComber.SquareCenter(12, -18);
+        Assert.True(CarryThePress.StandsWhereTheTinIs(tin, cx, cy));
+        (cx, cy) = BeachComber.SquareCenter(13, -20);
+        Assert.False(CarryThePress.StandsWhereTheTinIs(tin, cx, cy));
     }
 
     /// <summary>The dev latch reads only its own key.</summary>
