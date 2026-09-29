@@ -45,7 +45,7 @@ public static partial class HavenInterior
 {
     /// <summary>One walkable station: which body, what it's called, and its themed dressing.</summary>
     /// <param name="Lower">#1253 · The level under the concourse, or null at a station that has only the one
-    /// floor — which is every haven in the game but Selene Gate. NULLABLE and last, so <see cref="Specs"/>
+    /// floor — which was every haven in the game but Selene Gate until #1332 A gave every hub one. NULLABLE and last, so <see cref="Specs"/>
     /// is untouched for the six that do not have one and a station grows a basement by gaining a field
     /// rather than by anything else in this file learning about floors.</param>
     private sealed record StationSpec(
@@ -64,8 +64,25 @@ public static partial class HavenInterior
     /// <param name="Art">The backdrop laid across the service corridor, in the concourse's own grammar (a
     /// canvas over a rectangle, at an alpha). ONE picture for the level: the hall gets one and the bar gets
     /// one, and a floor whose whole content is a corridor does not need two.</param>
-    private sealed record LowerSpec(string Name, string Plate, string Art);
+    /// <param name="Edges">#1332 A · Which three edges of the ring carry the cars, or null for Selene Gate's
+    /// proven three (<see cref="CageEdges"/>). Only a station that has already spent one of those edges on
+    /// something else names its own — Cinder Roost, whose V-06 is the Bonded Stores hatch the Magpie's back
+    /// room grows behind.</param>
+    private sealed record LowerSpec(string Name, string Plate, string Art, int[]? Edges = null);
 
+    /// <summary>#1332 A · The one backdrop every lower level is laid under: Selene Gate's service-level art,
+    /// reused — no new art this slice. A <c>const</c>, so it is folded rather than initialised and no file order
+    /// can reach it early.</summary>
+    private const string TheServiceLevelArt = "art/selene-service-level.jpg";
+
+    // ── #1332 A · EVERY HUB IS A LOBBY ────────────────────────────────────────────────────────────────────
+    //
+    // Owner, 2026-09-29: "The big round immigration points already look like elevator lobbies, so we might as
+    // well have those hubs have elevators that take to apartment-hotel-like, usually locked, spaces down
+    // below." Every station below carries a LowerSpec now, in Selene Gate's proven shape — the same cabin
+    // block, the same corridor, the same three cars — and differs only in the one plate its floor carries
+    // (Fable canon, in HavenLevels) and, at Cinder Roost, in one car's edge.
+    //
     // The grey-market docks with walkable interiors, each themed to its world (vision par. 8). Gag =
     // the T-shirt one-liner (owner's "every place has a gift shop" joke).
     private static readonly StationSpec[] Specs =
@@ -73,19 +90,23 @@ public static partial class HavenInterior
         new("the-space-bar", "THE RUSTY ROADSTEAD", "MARS", "most guests stay two weeks", "THE ROADSTEAD BAR",
             "art/the-rusty-roadstead-lobby.jpg", "art/the-roadstead-bar.jpg",
             "art/souvenir-roadstead-tshirt.jpg", "art/souvenir-roadstead-magnet.jpg",
-            "“I visited Mars and all I got was this rusty T-shirt.”"),
+            "“I visited Mars and all I got was this rusty T-shirt.”",
+            new LowerSpec(HavenLevels.SpaceBarPlate, HavenLevels.SpaceBarPlate, TheServiceLevelArt)),
         new("cinder-roost", "CINDER ROOST", "VENUS", "mind the sulphur, spacer", "THE CINDER LOUNGE",
             "art/cinder-roost-hall.jpg", "art/cinder-roost-bar.jpg",
             "art/souvenir-cinder-tshirt.jpg", "art/souvenir-cinder-magnet.jpg",
-            "“I visited Venus and all I got was this lousy T-shirt.”"),
+            "“I visited Venus and all I got was this lousy T-shirt.”",
+            new LowerSpec(HavenLevels.CinderRoostPlate, HavenLevels.CinderRoostPlate, TheServiceLevelArt, Edges: [CageEdgeNorthEast, CageEdgeWest, CageEdgeEast])),
         new("ringside-exchange", "RINGSIDE EXCHANGE", "SATURN", "trade fast — the rings don't wait", "THE RINGSIDE BAR",
             "art/ringside-hall.jpg", "art/ringside-bar.jpg",
             "art/souvenir-ringside-tshirt.jpg", "art/souvenir-ringside-magnet.jpg",
-            "“I went all the way to Saturn and all I got was this T-shirt.”"),
+            "“I went all the way to Saturn and all I got was this T-shirt.”",
+            new LowerSpec(HavenLevels.RingsidePlate, HavenLevels.RingsidePlate, TheServiceLevelArt)),
         new("the-tilt", "THE TILT", "URANUS", "everything's sideways out here", "THE TILT BAR",
             "art/the-tilt-hall.jpg", "art/the-tilt-bar.jpg",
             "art/souvenir-tilt-tshirt.jpg", "art/souvenir-tilt-magnet.jpg",
-            "“I went to Uranus for the proctologist — they were fully booked.”"),
+            "“I went to Uranus for the proctologist — they were fully booked.”",
+            new LowerSpec(HavenLevels.TiltPlate, HavenLevels.TiltPlate, TheServiceLevelArt)),
         // Selene Gate — the oldest port in the system, in orbit off Luna (#352, owner playtest 2026-07-18:
         // docked but "there is nothing here to walk to"). The immigration authority is LUNA (→ hatch ids
         // L-05 …), the deadpan quip customs' been-there tone, the bar the EARTHRISE off its home-in-the-
@@ -100,13 +121,17 @@ public static partial class HavenInterior
         // the other six are untouched by construction: they carry no LowerSpec, so nothing below asks them
         // anything. What is down there is a service corridor, a row of crew cabins whose doors do not open
         // for a captain, and three cages up to the hall.
+        //
+        // #1332 A · …and since 2026-09-29 the other six have the same floor in the same shape (see the note
+        // above the catalogue): Selene Gate keeps its LOWER CONCOURSE and its SERVICE LEVEL — NO PUBLIC
+        // ACCESS, and its concourse frame did not move.
         new("selene-gate", "SELENE GATE", "LUNA", "oldest gate in the system — customs has seen it all", "THE EARTHRISE BAR",
             "art/selene-gate-hall.jpg", "art/selene-gate-bar.jpg",
             "art/souvenir-selene-tshirt.jpg", "art/souvenir-selene-magnet.jpg",
             "“I visited Luna, the oldest port in the system, and all I got was this regolith-grey T-shirt.”",
             new LowerSpec(
                 HavenLevels.LowerConcoursePlate, HavenLevels.NoPublicAccessPlate,
-                "art/selene-service-level.jpg")),
+                TheServiceLevelArt)),
         // The Red Eye — the storm-watcher port in orbit off Jupiter (#352 follow-through, night shift
         // 2026-07-18→19). Selene Gate closed the Luna gap; these two outer havens (#289) were the last
         // berths that docked to "nothing to walk to". Pilgrims come to stare at the Great Red Spot, so the
@@ -118,7 +143,8 @@ public static partial class HavenInterior
         new("red-eye", "THE RED EYE", "JUPITER", "the Spot doesn't blink — try to match it", "THE STORMWATCH BAR",
             "art/red-eye-hall.jpg", "art/red-eye-bar.jpg",
             "art/souvenir-redeye-tshirt.jpg", "art/souvenir-redeye-magnet.jpg",
-            "“I made the pilgrimage to the Great Red Spot and all I got was this T-shirt.”"),
+            "“I made the pilgrimage to the Great Red Spot and all I got was this T-shirt.”",
+            new LowerSpec(HavenLevels.RedEyePlate, HavenLevels.RedEyePlate, TheServiceLevelArt)),
         // The Deep — the farthest port in the system, in orbit off Neptune (#352 follow-through, night
         // shift 2026-07-18→19). Cold, half-empty, frost on the pipes, icicles down the dome: the end of
         // every road. Immigration authority NEPTUNE (→ hatch ids N-05 …), the quip the last stamp before
@@ -128,7 +154,8 @@ public static partial class HavenInterior
         new("the-deep", "THE DEEP", "NEPTUNE", "last port before the dark — dress warm", "THE DEEP END",
             "art/the-deep-hall.jpg", "art/the-deep-bar.jpg",
             "art/souvenir-deep-tshirt.jpg", "art/souvenir-deep-magnet.jpg",
-            "“I reached the end of the system at Neptune and all I got was this frost-bitten T-shirt.”"),
+            "“I reached the end of the system at Neptune and all I got was this frost-bitten T-shirt.”",
+            new LowerSpec(HavenLevels.DeepPlate, HavenLevels.DeepPlate, TheServiceLevelArt)),
     ];
 
     // Keyed by "bodyId|<sorted opened-hatch ids>", so the locked concourse and the wing-grown variant

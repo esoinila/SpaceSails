@@ -173,7 +173,7 @@ public partial class Map
     /// the stop list cannot come to two names for one floor.</para></summary>
     private string LiftPanelDepth() =>
         TheStationHasFloors
-            ? HavenLevels.NameOf(_havenFloor)
+            ? HavenLevels.NameOf(_havenFloor, TheLowerStop)
             : _surface is { } depthEx ? UndergroundComplex.DepthPaint(depthEx.Floor) : "";
 
     /// <summary>#600 · A button was pressed. A refusing button says why and the car does not move — a button

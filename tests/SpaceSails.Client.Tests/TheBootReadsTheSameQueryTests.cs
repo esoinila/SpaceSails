@@ -137,6 +137,14 @@ public sealed class TheBootReadsTheSameQueryTests
             ["/map?dock=red-eye&body=ganymede&site=1&land=1"] = "276ae3b2cdfef0dab9e5fa525c7c89e2",
             ["/map?dock=ringside-exchange&body=titan&site=1&land=1"] = "a2be7f813a92d5f21b59c4848434e17b",
             ["/map?dock=selene-gate&ashore=1&havenfloor=-1"] = "2c777c5c08ff990649c0d46697086b80",
+            // #1332 A · the six floors the other hubs grew — each its own reading (the berth differs). Dumped with
+            // SPACESAILS_QUERY_FINGERPRINT_DUMP; 6 new, 0 moved, 0 gone.
+            ["/map?dock=the-space-bar&ashore=1&havenfloor=-1"] = "941d991a88557d41b84e2ead63ae6d0f",
+            ["/map?dock=cinder-roost&ashore=1&havenfloor=-1"] = "813bf9f67f4db2c9ef279305419df8ce",
+            ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1"] = "ccd412ef741ac629b8beeac040966eb5",
+            ["/map?dock=the-tilt&ashore=1&havenfloor=-1"] = "7b6bda7ebe1282a593a5ebff00c7ec4d",
+            ["/map?dock=red-eye&ashore=1&havenfloor=-1"] = "bc606249df9b9b19274a51284f81103f",
+            ["/map?dock=the-deep&ashore=1&havenfloor=-1"] = "46ab349dc180839ba4e2b83423ea1e1e",
             // #794 slice 2 · the chalk mark's two dev rows, moved from ?park=1 to the gallery with the drop.
             // ?chalk= is claimed and answers nothing, so the up row and the wiped row read one and the same
             // line — the park's two rows went, these two came, and no other line moved.

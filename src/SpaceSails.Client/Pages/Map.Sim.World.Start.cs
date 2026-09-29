@@ -100,7 +100,7 @@ public partial class Map
             if (q.HavenFloorCheat is { } floor)
             {
                 ShowPulseMessage(RideTheHavenLiftTo(floor, 0)
-                    ? $"🛗 Test: you are on the {HavenLevels.NameOf(floor)} at {_havenName}, standing where the first cage's doors open. Three cars up, five cabins that do not open."
+                    ? $"🛗 Test: you are on the {HavenLevels.NameOf(floor, TheLowerStop)} at {_havenName}, standing where the first cage's doors open. Three cars up, five cabins that do not open."
                     : "🛗 Test: ?havenfloor= needs a berth with a floor under its concourse. Try &dock=selene-gate.");
             }
 
