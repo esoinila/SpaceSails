@@ -28,7 +28,7 @@ public sealed class CarryThePressTests
 
     /// <summary>
     /// THIRTEEN LINES, VERBATIM, AND NO FOURTEENTH. Every line of the brief, letter for letter; all of them in
-    /// <see cref="CarryThePress.AllProse"/>; and the slice's own two files read for any sentence typed into a
+    /// <see cref="CarryThePress.AllProse"/>; and the slice's own files read for any sentence typed into a
     /// method that is not one of them.
     ///
     /// <para><b>RED</b> by adding a full stop to the DEV line in <c>TakeThePressForCheat</c> (it became a
@@ -64,6 +64,7 @@ public sealed class CarryThePressTests
         {
             SourceOf("src", "SpaceSails.Core", "CarryThePress.cs"),
             SourceOf("src", "SpaceSails.Client", "Pages", "Map.CarryThePress.cs"),
+            SourceOf("src", "SpaceSails.Client", "Pages", "Map.CarryThePress.Walk.cs"),  // #251 · her walk, split out
         })
         {
             foreach (Match m in Regex.Matches(WithoutComments(file), "\"(?:[^\"\\\\\\n]|\\\\.)*\""))
