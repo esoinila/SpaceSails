@@ -271,6 +271,8 @@ public sealed class TheBootBuildsTheSameWorldTests
             // row is `_tailedCheat = true` (the parse sets it before the gate); no other line moved.
             ["/map?dock=selene-gate&ashore=1&spike=1&tailed=1"] = "596d61e170ce75de0eda0754c03b951f",
             ["/map?dock=selene-gate&ashore=1&spike=spiked"] = "5702e97b412b144d3fd884426e262007",
+            // #1202 slice 4 · ?spike=paid — the same latch, read once ashore: measured, the spike rows' own line. No other line moved.
+            ["/map?dock=selene-gate&ashore=1&spike=paid"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=selene-gate&body=luna&site=1&land=1"] = "97b2b0eae504685fd6a9d15cabfaa5b7",
             // #319 slice 2 · the geocache sale's two dev rows. ?geocache= writes no world and nothing the parse
             // answers (it is read off the address bar once the berth is clamped) — dumped and diffed: these two

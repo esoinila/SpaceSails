@@ -24,7 +24,7 @@ namespace SpaceSails.Core;
 /// makes. The contract's own state rides slice 1's <see cref="CarryThePress.Passage"/> — the same one line in the
 /// quest record's free slot — so there is no page field and no vault section for any of it.</para>
 /// </summary>
-public static class SpikeIt
+public static partial class SpikeIt
 {
     // ── THE LINES (verbatim, #1202 slice 2 · Fable, 2026-09-28 night) ───────────────────────────────────
 
@@ -118,6 +118,10 @@ public static class SpikeIt
         yield return SeenTakeEntry;
         yield return SquaredLine;
         yield return SeenLateLine;
+        foreach (string line in PreservationProse())   // #1202 slice 4 · CHARGED TO PRESERVATION
+        {
+            yield return line;
+        }
     }
 
     // ── THE LINES, FILLED ───────────────────────────────────────────────────────────────────────────────
@@ -233,14 +237,17 @@ public static class SpikeIt
     public static string PagesTitle =>
         TakeThePagesLine[..TakeThePagesLine.IndexOf(", the top", StringComparison.Ordinal)];
 
-    /// <summary>Is this one of the two papers this slice authored?</summary>
-    public static bool IsAuthored(string? paperId) => IsTheSwap(paperId) || IsThePages(paperId);
+    /// <summary>Is this one of the papers this family authored — the two of SPIKE IT, and (#1202 slice 4) the
+    /// receipt?</summary>
+    public static bool IsAuthored(string? paperId) => IsTheSwap(paperId) || IsThePages(paperId) || IsTheReceipt(paperId);
 
-    /// <summary>The page's body, for either paper.</summary>
-    public static string Document(string paperId) => IsThePages(paperId) ? TakeThePagesLine : SwapText(paperId);
+    /// <summary>The page's body, for any of the three papers.</summary>
+    public static string Document(string paperId) =>
+        IsThePages(paperId) ? TakeThePagesLine : IsTheReceipt(paperId) ? ReceiptDocument : SwapText(paperId);
 
-    /// <summary>The page's title, for either paper.</summary>
-    public static string Title(string paperId) => IsThePages(paperId) ? PagesTitle : SwapTitle;
+    /// <summary>The page's title, for any of the three papers.</summary>
+    public static string Title(string paperId) =>
+        IsThePages(paperId) ? PagesTitle : IsTheReceipt(paperId) ? ReceiptTitle : SwapTitle;
 
     // ── THE TWO MOVES ───────────────────────────────────────────────────────────────────────────────────
 
@@ -441,6 +448,10 @@ public static class SpikeIt
 
         /// <summary><c>&amp;spike=spiked</c> — the window passed with her pages in the captain's satchel.</summary>
         Spiked,
+
+        /// <summary>#1202 slice 4 · <c>&amp;spike=paid</c> — a SPIKED window just passed and the desk has paid: the
+        /// receipt in the satchel, the rag's line due the next cycle.</summary>
+        Paid,
     }
 
     /// <summary>Read <c>spike=</c> off an address, the <see cref="CarryThePress.CheatIn"/> way.</summary>
@@ -460,6 +471,7 @@ public static class SpikeIt
                 {
                     "1" or "true" or "yes" => Cheat.Pending,
                     "spiked" => Cheat.Spiked,
+                    "paid" => Cheat.Paid,
                     _ => Cheat.None,
                 };
             }

@@ -20,15 +20,16 @@ public sealed class SpikeItTests
     // ── THE WORDS ───────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// SEVENTEEN LINES, VERBATIM, AND NO EIGHTEENTH. Every line of slice 2's brief and the three of slice 3's
-    /// (#1202 · THE TAIL AT HER TABLE), letter for letter; all of them in <see cref="SpikeIt.AllProse"/>; and the
-    /// slices' own three files read for any sentence typed into a method that is not one of them.
+    /// TWENTY LINES, VERBATIM, AND NO TWENTY-FIRST. Every line of slice 2's brief, the three of slice 3's
+    /// (#1202 · THE TAIL AT HER TABLE) and the three of slice 4's (CHARGED TO PRESERVATION), letter for letter; all
+    /// of them in <see cref="SpikeIt.AllProse"/>; and the slices' own files read for any sentence typed into a
+    /// method that is not one of them.
     ///
     /// <para><b>RED</b> by a full stop added to the DEV line in <c>SpikeItIfAsked</c> (a sentence nobody
     /// authored), and by "third from the top" rewritten "second from the top" in <c>LeaveYourPageLine</c>.</para>
     /// </summary>
     [Fact]
-    public void TheLinesAreVerbatimAndThereIsNoEighteenth()
+    public void TheLinesAreVerbatimAndThereIsNoTwentyFirst()
     {
         Assert.Equal("SPIKE IT", SpikeIt.RowLabel);
         Assert.Equal("Somebody would rather the {Body} story did not run. {cr} if it does not; half if it runs different. Her pages are wherever she writes. Nobody said how.", SpikeIt.RowLine);
@@ -49,9 +50,13 @@ public sealed class SpikeItTests
         Assert.Equal("No credits. One line where the money would be: 'Noted that you were seen.'", SpikeIt.SeenLateLine);
         Assert.Equal("press-swap", SpikeIt.SwapId);
         Assert.Equal("press-pages", SpikeIt.PagesId);
+        Assert.Equal("A line item, one entry", SpikeIt.ReceiptTitle);
+        Assert.Equal("Editorial services, one item. Charged to Preservation.", SpikeIt.ReceiptDocument);
+        Assert.Equal("A stringer's byline is missing from the cycle. The floor has not noticed; the floor never reads bylines.", SpikeIt.BylineMissingLine);
+        Assert.Equal("spike-receipt", SpikeIt.ReceiptId);
 
         var prose = SpikeIt.AllProse().ToList();
-        Assert.Equal(17, prose.Count);
+        Assert.Equal(20, prose.Count);
         Assert.Equal(prose.Count, prose.Distinct(StringComparer.Ordinal).Count());
 
         var sentences = new List<string>();
@@ -60,6 +65,8 @@ public sealed class SpikeItTests
             SourceOf("src", "SpaceSails.Core", "SpikeIt.cs"),
             SourceOf("src", "SpaceSails.Client", "Pages", "Map.SpikeIt.cs"),
             SourceOf("src", "SpaceSails.Client", "Pages", "Map.SpikeIt.Seen.cs"),
+            SourceOf("src", "SpaceSails.Core", "SpikeIt.Preservation.cs"),
+            SourceOf("src", "SpaceSails.Client", "Pages", "Map.SpikeIt.Preservation.cs"),
         })
         {
             foreach (Match m in Regex.Matches(WithoutComments(file), "\"(?:[^\"\\\\\\n]|\\\\.)*\""))
@@ -302,6 +309,7 @@ public sealed class SpikeItTests
     {
         Assert.Equal(SpikeIt.Cheat.Pending, SpikeIt.CheatIn("https://x/map?dock=selene-gate&ashore=1&spike=1"));
         Assert.Equal(SpikeIt.Cheat.Spiked, SpikeIt.CheatIn("https://x/map?dock=selene-gate&spike=spiked"));
+        Assert.Equal(SpikeIt.Cheat.Paid, SpikeIt.CheatIn("https://x/map?dock=selene-gate&spike=paid"));
         Assert.Equal(SpikeIt.Cheat.None, SpikeIt.CheatIn("https://x/map?dock=selene-gate&press=1"));
         Assert.Equal(SpikeIt.Cheat.None, SpikeIt.CheatIn("https://x/map?spike=nope"));
         Assert.Equal(SpikeIt.Cheat.None, SpikeIt.CheatIn(null));
