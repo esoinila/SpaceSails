@@ -20,15 +20,15 @@ public sealed class SpikeItTests
     // ── THE WORDS ───────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// FOURTEEN LINES, VERBATIM, AND NO FIFTEENTH. Every line of the brief, letter for letter; all of them in
-    /// <see cref="SpikeIt.AllProse"/>; and the slice's own two files read for any sentence typed into a method
-    /// that is not one of them.
+    /// SEVENTEEN LINES, VERBATIM, AND NO EIGHTEENTH. Every line of slice 2's brief and the three of slice 3's
+    /// (#1202 · THE TAIL AT HER TABLE), letter for letter; all of them in <see cref="SpikeIt.AllProse"/>; and the
+    /// slices' own three files read for any sentence typed into a method that is not one of them.
     ///
     /// <para><b>RED</b> by a full stop added to the DEV line in <c>SpikeItIfAsked</c> (a sentence nobody
     /// authored), and by "third from the top" rewritten "second from the top" in <c>LeaveYourPageLine</c>.</para>
     /// </summary>
     [Fact]
-    public void TheLinesAreVerbatimAndThereIsNoFifteenth()
+    public void TheLinesAreVerbatimAndThereIsNoEighteenth()
     {
         Assert.Equal("SPIKE IT", SpikeIt.RowLabel);
         Assert.Equal("Somebody would rather the {Body} story did not run. {cr} if it does not; half if it runs different. Her pages are wherever she writes. Nobody said how.", SpikeIt.RowLine);
@@ -44,11 +44,14 @@ public sealed class SpikeItTests
         Assert.Equal("Her story ran. It is your sentence and her name.", SpikeIt.AlteredEntry);
         Assert.Equal("No credits. One line where the money would be: 'Noted that you tried.'", SpikeIt.LateLine);
         Assert.Equal("She is not at the table. The recorder is. Somebody will come back for it, or nobody will.", SpikeIt.GoneLine);
+        Assert.Equal("The coat at the mouth of the tube did not look up. He did not need to.", SpikeIt.SeenTakeEntry);
+        Assert.Equal("Her stack is squared, one corner folded where somebody else's thumb was.", SpikeIt.SquaredLine);
+        Assert.Equal("No credits. One line where the money would be: 'Noted that you were seen.'", SpikeIt.SeenLateLine);
         Assert.Equal("press-swap", SpikeIt.SwapId);
         Assert.Equal("press-pages", SpikeIt.PagesId);
 
         var prose = SpikeIt.AllProse().ToList();
-        Assert.Equal(14, prose.Count);
+        Assert.Equal(17, prose.Count);
         Assert.Equal(prose.Count, prose.Distinct(StringComparer.Ordinal).Count());
 
         var sentences = new List<string>();
@@ -56,6 +59,7 @@ public sealed class SpikeItTests
         {
             SourceOf("src", "SpaceSails.Core", "SpikeIt.cs"),
             SourceOf("src", "SpaceSails.Client", "Pages", "Map.SpikeIt.cs"),
+            SourceOf("src", "SpaceSails.Client", "Pages", "Map.SpikeIt.Seen.cs"),
         })
         {
             foreach (Match m in Regex.Matches(WithoutComments(file), "\"(?:[^\"\\\\\\n]|\\\\.)*\""))

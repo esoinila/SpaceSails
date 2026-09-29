@@ -253,6 +253,14 @@ public static class DevStarts
             "The same contract four sim-days on, her pages in your satchel: the book has the hole under the absence mark, the gallery "
             + "says the recorder is left on the table, and the dark-web desk's next pulse pays the purse on 💳 (#1202).",
             "/map?dock=selene-gate&ashore=1&spike=spiked"),
+        // #1202 slice 3 · THE TAIL AT HER TABLE. The same pending spike with a grey coat behind the captain: he is left
+        // at the bar so the man comes in after him, and a take the man still holds his band on is SEEN.
+        new("🕵📰", "…and a grey coat behind you",
+            "The same spike in hand, but ashore at the bar with a man following you. Walk out along the observation "
+            + "walk with him behind you and take her pages while he is still on you: the book files the coat's line "
+            + "beside the take, and her story runs on time whatever you leave on her stack. Lose him first and the take "
+            + "is clean (#1202).",
+            "/map?dock=selene-gate&ashore=1&spike=1&tailed=1"),
         // #775 · THE WAY IN, AND THE WAY THE FOOD COMES IN. Owner, walking the new B1: "the bar/canteen
         // needs DOORS ON THE MAIN CORRIDOR — today you have to really look for the way in; a venue's
         // entrance should find YOU." The row that proves that has to start OUTSIDE the room, which is the
