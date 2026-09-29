@@ -183,7 +183,7 @@ public sealed class TheStoryCanBeSpikedTests
         Assert.Equal(CarryThePress.Plate, her.Walk.Plate);
         Assert.Equal(SpikeIt.HerTable, her.Table);
         Assert.Equal(NpcWalk.Doing.Arrived, her.Walk.State);
-        Assert.True(PassageOf(map).Seen);
+        Assert.Equal(SpikeIt.HerLine.Told, PassageOf(map).Seen);
         Assert.Contains(SpikeIt.AtHerTableLine, Pulse(map), StringComparison.Ordinal);
 
         DeckReachability.Point top = HavenInterior.GalleryTops(Port)[SpikeIt.HerTable];
@@ -461,7 +461,7 @@ public sealed class TheStoryCanBeSpikedTests
     {
         DeskBench b = await DeskBench.BootAsync("/map?dock=selene-gate&ashore=1&spike=1");
         var q = Assert.Single((List<Pages.Map.Quest>)b.Peek("_quests")!, x => x.Kind == Pages.Map.QuestKind.CarryThePress);
-        b.Call("RewritePassage", q, CarryThePress.Passage.Read(q.Pin) with { Pages = SpikeIt.Pages.Taken, Seen = true });
+        b.Call("RewritePassage", q, CarryThePress.Passage.Read(q.Pin) with { Pages = SpikeIt.Pages.Taken, Seen = SpikeIt.HerLine.Told });
         CarryThePress.Passage before = CarryThePress.Passage.Read(
             Assert.Single((List<Pages.Map.Quest>)b.Peek("_quests")!, x => x.Kind == Pages.Map.QuestKind.CarryThePress).Pin);
 
