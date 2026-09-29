@@ -27,19 +27,15 @@ namespace SpaceSails.Client.Pages;
 public sealed partial class Map
 {
     /// <summary>
-    /// #1202 slice 3 · <b>DOES THE COAT HAVE HIM, THIS INSTANT?</b> A man behind the captain on this floor — on
-    /// him (<see cref="Errand.BehindYou"/>), not lost (<c>_coatLost</c>, the tail's own latch, written the moment
-    /// his blind clock runs out) — holding his band on the captain (<see cref="SpikeIt.TheTakeIsSeen"/>). The
-    /// tail's own contact, read and never re-derived: no second line-of-sight model, and nothing here moves him.
-    /// With no man on the floor it is false and asks nothing.
+    /// #1202 slice 3 · <b>DOES THE COAT HAVE HIM, THIS INSTANT?</b> A man behind the captain on this floor, still on
+    /// him — the errand <see cref="Errand.BehindYou"/>, which the tail itself re-badges to
+    /// <see cref="Errand.AskingTheWrongFloor"/> on the very frame his blind clock runs out and he is lost — holding
+    /// his band on the captain (<see cref="SpikeIt.TheTakeIsSeen"/>). The tail's own contact, read and never
+    /// re-derived: no second line-of-sight model, and nothing here moves him. With no man on the floor it is false
+    /// and asks nothing.
     /// </summary>
     private bool TheCoatSeesTheTake()
     {
-        if (_coatLost)
-        {
-            return false;
-        }
-
         foreach (Walker w in _barAfoot)
         {
             if (w.For == Errand.BehindYou)

@@ -306,8 +306,8 @@ public sealed class TheTakeCanBeSeenTests
     /// window is SPIKED and the desk pays the full purse.
     ///
     /// <para><b>RED</b> by <c>TheCoatSeesTheTake</c> answering true with no man on the floor (the no-tail case filed
-    /// the coat's line), and by dropping its <c>_coatLost</c> clause (a man walking off to ask the wrong floor saw
-    /// the take).</para>
+    /// the coat's line), and by counting <c>Errand.AskingTheWrongFloor</c> as on him (a man walking off to ask the
+    /// wrong floor saw the take).</para>
     /// </summary>
     [Theory]
     [InlineData(false)]
