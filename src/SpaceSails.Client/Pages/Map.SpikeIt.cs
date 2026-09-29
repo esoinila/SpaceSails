@@ -132,7 +132,8 @@ public sealed partial class Map
     /// #1202 slice 2 · One frame of her at the gallery, called from the docked room's concourse frame. She is on
     /// the floor only at Selene Gate, only while a spike is in hand and its window has not come: at her table
     /// writing, and on her own clock up to the machine behind it and back. The pages stay on the table; nothing
-    /// announces the gap. Her line is said once, the first time the captain is in the gallery while she writes.
+    /// announces the gap. Her line is said once, on a visit that finds her writing the moment the captain enters the
+    /// gallery — never on one that finds her away, and never after her pages are taken.
     /// </summary>
     private void AdvanceTheStringerAtHerPages(in HavenInterior.BarFloor bar)
     {
@@ -174,12 +175,24 @@ public sealed partial class Map
             return;
         }
 
+        // Her line is decided on entering the gallery: told if she is in her chair that moment, and that visit
+        // says nothing if she is away at the machine (#1202 QA) — never after her pages are taken. In her chair is
+        // where her body is, not whether its walk has settled: the frame she is put at her table her one-step walk
+        // to it has not yet run, and she is not away.
         CarryThePress.Passage p = PassageOf(q);
-        if (!p.Seen && !SheIsAway(her)
-            && HavenInterior.InTheGallery(bar.BodyId, _avatarX, _avatarY, _havenFloor))
+        double fromChairX = her.Walk.X - chair.X, fromChairY = her.Walk.Y - chair.Y;
+        bool inHerChair = her.Table == SpikeIt.HerTable
+            && (fromChairX * fromChairX) + (fromChairY * fromChairY) <= DeckPlan.AvatarRadius * DeckPlan.AvatarRadius;
+        (SpikeIt.HerLine line, bool tell) = SpikeIt.HerLineOnEntering(p.Seen,
+            HavenInterior.InTheGallery(bar.BodyId, _avatarX, _avatarY, _havenFloor), inHerChair, p.Pages);
+        if (tell)
         {
             SayItWhereTheyAreLooking(SpikeIt.AtHerTableLine);
-            RewritePassage(q, p with { Seen = true });
+        }
+
+        if (line != p.Seen)
+        {
+            RewritePassage(q, p with { Seen = line });
         }
 
         if (her.Walk.State != NpcWalk.Doing.Arrived)

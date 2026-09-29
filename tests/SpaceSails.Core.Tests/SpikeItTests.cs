@@ -263,7 +263,7 @@ public sealed class SpikeItTests
 
         var spiked = plain with
         {
-            Spike = true, Pages = SpikeIt.Pages.Swapped, Seen = true, Outcome = SpikeIt.Outcome.Altered,
+            Spike = true, Pages = SpikeIt.Pages.Swapped, Seen = SpikeIt.HerLine.Told, Outcome = SpikeIt.Outcome.Altered,
             Paid = true, Gone = true,
         };
         Assert.Equal(spiked, CarryThePress.Passage.Read(spiked.Write()));
@@ -315,4 +315,37 @@ public sealed class SpikeItTests
 
     private static string SourceOf(params string[] parts) =>
         File.ReadAllText(Path.Combine([TestTree.RepoRoot(), .. parts]));
+
+    /// <summary>
+    /// #1202 slice 2 QA · HER LINE IS DECIDED ON ENTERING: an entry with her at her table and her pages on it tells
+    /// it; an entry with her away spends the visit, and nothing tells it until the captain has been out; once told,
+    /// never again; and with her pages taken (or swapped) no entry ever tells it. Slice 2's <c>seen=0</c>/<c>seen=1</c>
+    /// read back as they were written.
+    ///
+    /// <para><b>RED</b> by letting <see cref="SpikeIt.HerLine.NotThisVisit"/> tell when she is back at her table
+    /// (the QA report: told the frame she sat down), and by dropping the pages clause (told after a take).</para>
+    /// </summary>
+    [Fact]
+    public void HerLineIsDecidedOnEntering()
+    {
+        const SpikeIt.Pages On = SpikeIt.Pages.OnHerTable;
+        Assert.Equal((SpikeIt.HerLine.NotYet, false), SpikeIt.HerLineOnEntering(SpikeIt.HerLine.NotYet, false, true, On));
+        Assert.Equal((SpikeIt.HerLine.Told, true), SpikeIt.HerLineOnEntering(SpikeIt.HerLine.NotYet, true, true, On));
+        Assert.Equal((SpikeIt.HerLine.NotThisVisit, false), SpikeIt.HerLineOnEntering(SpikeIt.HerLine.NotYet, true, false, On));
+        Assert.Equal((SpikeIt.HerLine.NotThisVisit, false), SpikeIt.HerLineOnEntering(SpikeIt.HerLine.NotThisVisit, true, true, On));
+        Assert.Equal((SpikeIt.HerLine.NotYet, false), SpikeIt.HerLineOnEntering(SpikeIt.HerLine.NotThisVisit, false, true, On));
+        Assert.Equal((SpikeIt.HerLine.Told, false), SpikeIt.HerLineOnEntering(SpikeIt.HerLine.Told, true, true, On));
+        Assert.Equal((SpikeIt.HerLine.Told, false), SpikeIt.HerLineOnEntering(SpikeIt.HerLine.Told, false, true, On));
+        foreach (SpikeIt.Pages gone in new[] { SpikeIt.Pages.Taken, SpikeIt.Pages.Swapped })
+        {
+            Assert.False(SpikeIt.HerLineOnEntering(SpikeIt.HerLine.NotYet, true, true, gone).Tell);
+            Assert.False(SpikeIt.HerLineOnEntering(SpikeIt.HerLine.NotThisVisit, true, true, gone).Tell);
+        }
+
+        Assert.Equal(SpikeIt.HerLine.NotYet, CarryThePress.Passage.Read("spike=1;seen=0").Seen);
+        Assert.Equal(SpikeIt.HerLine.Told, CarryThePress.Passage.Read("spike=1;seen=1").Seen);
+        var away = new CarryThePress.Passage(0, Spike: true, Seen: SpikeIt.HerLine.NotThisVisit);
+        Assert.Contains(";seen=2;", away.Write(), StringComparison.Ordinal);
+        Assert.Equal(away, CarryThePress.Passage.Read(away.Write()));
+    }
 }

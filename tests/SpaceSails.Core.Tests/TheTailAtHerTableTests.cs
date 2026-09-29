@@ -104,7 +104,7 @@ public sealed class TheTailAtHerTableTests
     public void SeenRidesTheSpikesLineAndAnUnseenLineIsSliceTwos()
     {
         var unseen = new CarryThePress.Passage(
-            1, Landed: true, Walked: true, Tin: true, TurnedIn: 0.0, Spike: true, Pages: SpikeIt.Pages.Taken, Seen: true);
+            1, Landed: true, Walked: true, Tin: true, TurnedIn: 0.0, Spike: true, Pages: SpikeIt.Pages.Taken, Seen: SpikeIt.HerLine.Told);
         Assert.Equal(
             "site=1;landed=1;walked=1;tin=1;in=0;printed=0;floor=0;spike=1;pages=1;seen=1;out=0;paid=0;gone=0",
             unseen.Write());
