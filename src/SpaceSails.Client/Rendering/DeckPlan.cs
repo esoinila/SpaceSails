@@ -15,29 +15,31 @@ namespace SpaceSails.Client.Rendering;
 // construction, and the deck is drawn into every FrameHash in the suite: had one row of one ledger moved,
 // the plan would have changed.
 //
-// THE FAMILY (1,373 body lines → six files, largest 658):
-//   · DeckPlan.cs             — what a deck is MADE of and how a body moves through it: the wall, door,
-//                               console, backdrop, structure and furniture vocabulary, the reach and
-//                               clearance constants, the plan's own arrays and constructor, and the four
+// THE FAMILY (1,373 body lines → seven files; #251's 09-29 batch took the vocabulary out as the seventh):
+//   · DeckPlan.cs             — how a body moves through a deck: the reach and clearance constants, the
+//                               plan's own arrays and constructor, the figure record, and the four
 //                               questions asked of the stone — Move, Collides, NearestConsoleSpot, CastRay.
+//   · DeckPlan.Vocabulary.cs  — what a deck is MADE of: the wall, door, console spot, backdrop, grow-light,
+//                               structure and furniture records. Records only — no constant, array or
+//                               field of the plan went with them (DoorOpenRadius stays here).
 //   · DeckPlan.ConsoleKind.cs — one kind per verb: every press the game can offer at a fixture.
 //   · DeckPlan.Seating.cs     — the tops, chairs, stools and bench ends, every field handed down.
 //   · DeckPlan.Regions.cs     — #371's append, and the one removal that answers it: a plan that GROWS.
 //   · DeckPlan.Ship.cs        — her own deck, the one plan in the game that is written out by hand.
 //   · DeckPlan.Barriers.cs    — #1099/#442's question: is this doorway walled up, asked of the one list.
 //
-// WHAT STAYED HERE, and why it is not "the leftovers". Three source guards read THIS PATH and assert a
-// literal in it, and the seams were chosen around them so that no test file had to be edited:
+// WHAT STAYED HERE, and why it is not "the leftovers". Two source guards read THIS PATH and assert a
+// literal in it:
 //
 //   · AJambIsNotASealedDoorTests            — sweeps all of `src/` for `Gait.Person` and requires one of
 //                                             the nine claims to be `DeckPlan.cs:`. That is `Move`, the
 //                                             one place in the game the captain's body is stepped.
-//   · TheDossierCardCarriesItsOwnSayingsTests — `string? Outcome`, on the `ConsoleSpot` record.
 //   · TheParkBenchIsAGumshoeMoveTests       — the `Droid` record's whole parameter list, `Held` included.
 //
-// Those three pin the captain's step, the console record and the figure record to this path, and they are
-// the same subject anyway: this file is the language a deck is written in, and the five beside it are
-// things written in it.
+// A third, TheDossierCardCarriesItsOwnSayingsTests (`string? Outcome`, on the `ConsoleSpot` record), was
+// re-pathed to read this file and DeckPlan.Vocabulary.cs together when the console record moved with the
+// rest of the vocabulary. Those two pins hold the captain's step and the figure record to this path: this
+// file is how a deck is walked, and the files beside it are what it is built from and written in.
 
 /// <summary>
 /// A walkable interior — the single source of truth for every interior view (the top-down deck
