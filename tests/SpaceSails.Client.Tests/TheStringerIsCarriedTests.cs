@@ -255,11 +255,24 @@ public sealed class TheStringerIsCarriedTests
             CarryThePress.CardTitle, "", 500, DestBodyId: "luna", SourceBodyId: "selene-gate",
             Pin: new CarryThePress.Passage(site).Write());
         Quests(b).Add(hers);
+        string landing = CarryThePress.Landing(CarryThePress.TheTin("press-902", "luna", site).BearingLine);
+
+        // On the pad — the tube's own spawn — she has said nothing yet: her word waits for the captain's first
+        // step onto the regolith (on a ground with no first-ground card; the card's close is the other moment).
+        double x0 = (double)b.Peek("_avatarX")!, y0 = (double)b.Peek("_avatarY")!;
+        b.Poke("_avatarX", Rendering.MoonSurface.SpawnX);
+        b.Poke("_avatarY", Rendering.MoonSurface.SpawnY);
+        b.CallOnTheDispatcher("AdvanceTheStringer", 0.05);
+        Assert.Equal(0, BookEntries(b, landing));
+        Assert.False(CarryThePress.Passage.Read(Hers(b).Pin).Landed);
+
+        b.Poke("_avatarX", x0);
+        b.Poke("_avatarY", y0);
+        Afoot(b).RemoveAll(w => w.For == Map.Errand.RidingAlong);
         b.CallOnTheDispatcher("AdvanceTheStringer", 0.05);
         b.CallOnTheDispatcher("AdvanceTheStringer", 0.05);
         Map.Walker her = Assert.Single(Afoot(b), w => w.For == Map.Errand.RidingAlong);
         Assert.Equal(CarryThePress.Plate, her.Walk.Plate);
-        string landing = CarryThePress.Landing(CarryThePress.TheTin("press-902", "luna", site).BearingLine);
         Assert.Equal(1, BookEntries(b, landing));
         Assert.True(CarryThePress.Passage.Read(Hers(b).Pin).Landed);
 
@@ -323,7 +336,7 @@ public sealed class TheStringerIsCarriedTests
         b.CallOnTheDispatcher("AdvanceTheStringer", 0.1);
         Map.Quest q = Hers(b);
         string landing = CarryThePress.Landing(CarryThePress.TheTin(q.Id, "luna", site).BearingLine);
-        Assert.Equal(1, BookEntries(b, landing));
+        Assert.Equal(1, BookEntries(b, landing));   // the land cheat sets him down below the pad, on the regolith
         Assert.Single(Afoot(b), w => w.For == Map.Errand.RidingAlong);
 
         // Eighty deck units out, a few a second, and then he stands still.
@@ -346,5 +359,55 @@ public sealed class TheStringerIsCarriedTests
             $"she is {range:F1} du from the captain, outside the band [{TheTailBehindYou.StandsOffDu}, {TheTailBehindYou.LosesYouBeyondDu}]");
         Assert.True(her.Walk.Y < y0 - 5, $"she never left the pad: y {her.Walk.Y:F1}, the captain came down at {y0:F1}");
         Assert.True(CarryThePress.Passage.Read(Hers(b).Pin).Walked, "she never said her line about the tank");
+    }
+
+    // ── HER WORD, WHERE THE CAPTAIN CAN READ IT ─────────────────────────────────────────────────────────
+
+    private static DeskBench.Painted.Node TheToast(DeskBench.Painted painted) =>
+        Assert.Single(painted.Root.Descendants(), n => n.HasClass("deck-pulse-toast"));
+
+    /// <summary>
+    /// HER WORD IS TOLD WHEN THE FIRST-GROUND CARD CLOSES, AFTER THE SHUTTLE'S LINE, IN THE SLOT THE DECK DRAWS.
+    /// The real landing (<c>?press=1&amp;body=luna&amp;site=N&amp;land=1</c>) on a fresh captain: the shuttle's
+    /// "🛸 Shuttle mated to Luna" is on the deck's toast under the first-ground card, and her word is not yet in
+    /// the book. The captain closes the card through its own button, and the toast the deck paints is her line —
+    /// filed in the book at that same moment, once.
+    ///
+    /// <para><b>RED</b> on the old order (her line pulsed and filed on the landing's warm-up frame, from
+    /// <c>AdvanceTheStringer</c> on whatever frame first ran on her ground, and <c>CloseGroundLesson</c> silent):
+    /// the toast after the card closed still read "🛸 Shuttle mated to Luna. Empty sling —…" — the seventh bug
+    /// class, a told line written to a slot the next line overwrites. Watched red, 2026-09-29. (The pad-gate half
+    /// of <see cref="SheIsDrawnOnlyOnHerGroundWhileHerContractIsActive"/> went red on the same revert: her word
+    /// filed with the captain still standing in the tube.)</para>
+    /// </summary>
+    [Fact]
+    public async Task HerWordIsToldAfterTheShuttlesLineWhenTheFirstGroundCardCloses()
+    {
+        int site = CarryThePress.Passage.Read(Hers(await DeskBench.BootAsync(Aboard)).Pin).Site;
+        DeskBench b = await DeskBench.BootAsync($"{Aboard}&body=luna&site={site}&land=1");
+        Assert.True(b.OnSurface, "premise: the shuttle set the captain down on her ground");
+        Assert.True((bool)b.Peek("_groundLessonOpen")!, "premise: a fresh captain's first ground raises the card");
+        Map.Quest q = Hers(b);
+        string landing = CarryThePress.Landing(CarryThePress.TheTin(q.Id, "luna", site).BearingLine);
+
+        DeskBench.Painted painted = await b.RenderAsync();
+        Assert.StartsWith("🛸 Shuttle mated to Luna.", TheToast(painted).Spoken, StringComparison.Ordinal);
+        Assert.Equal(0, BookEntries(b, landing));
+        Assert.False(CarryThePress.Passage.Read(Hers(b).Pin).Landed);
+
+        DeskBench.Painted.Node close = Assert.Single(painted.Root.Descendants(), n =>
+            n.Element == "button" && n.Name == GroundLesson.Dismiss && n.Handlers.ContainsKey("onclick"));
+        await b.PressAsync(close.Handlers["onclick"]);
+        painted = await b.RenderAsync();
+
+        Assert.False((bool)b.Peek("_groundLessonOpen")!);
+        Assert.Equal(landing, TheToast(painted).Spoken);
+        Assert.Equal(1, BookEntries(b, landing));
+        Assert.True(CarryThePress.Passage.Read(Hers(b).Pin).Landed);
+
+        // …and once: the first step off the pad afterwards does not say it again.
+        b.Poke("_avatarY", (double)Rendering.MoonSurface.LandingBandY - 5);
+        b.CallOnTheDispatcher("AdvanceTheStringer", 0.1);
+        Assert.Equal(1, BookEntries(b, landing));
     }
 }
