@@ -278,6 +278,8 @@ public sealed class TheBootBuildsTheSameWorldTests
             // read off the address bar once the berth is clamped) — the geocache rows' own reason, and their pin.
             ["/map?dock=selene-gate&press=1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=selene-gate&press=filed"] = "5702e97b412b144d3fd884426e262007",
+            // #1202 slice 2 QA · ?press=pending — the same latch, read after the clamp: the berth's own line, measured. No other line moved.
+            ["/map?dock=selene-gate&press=pending"] = "5702e97b412b144d3fd884426e262007",
             // #997 wave 10 · see /map?start=wreck&target=collector further down — the new dev start moved
             // free-flying after a browser walk, and the reason is written there.
             ["/map?dock=the-deep&body=triton&site=2&land=1"] = "5a567133534c2e96fdf0a40131a72a9d",

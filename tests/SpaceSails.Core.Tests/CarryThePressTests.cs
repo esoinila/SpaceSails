@@ -279,6 +279,7 @@ public sealed class CarryThePressTests
     {
         Assert.Equal(CarryThePress.Cheat.Aboard, CarryThePress.CheatIn("http://x/map?dock=selene-gate&press=1"));
         Assert.Equal(CarryThePress.Cheat.Filed, CarryThePress.CheatIn("http://x/map?dock=selene-gate&press=filed"));
+        Assert.Equal(CarryThePress.Cheat.Pending, CarryThePress.CheatIn("http://x/map?dock=selene-gate&press=pending"));
         Assert.Equal(CarryThePress.Cheat.None, CarryThePress.CheatIn("http://x/map?dock=selene-gate"));
         Assert.Equal(CarryThePress.Cheat.None, CarryThePress.CheatIn("http://x/map?pressure=1"));
         Assert.Equal(CarryThePress.Cheat.None, CarryThePress.CheatIn(null));
