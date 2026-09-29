@@ -75,7 +75,8 @@ public static partial class DevStarts
         new("📰📋", "…and the office has paid",
             "A SPIKED window this instant and the dark-web desk has already paid: the purse on 💳, a line item in your "
             + "satchel and in the book under the Authority and the story's body. Sit at a bar table a day on and the "
-            + "port rag has noticed the hole (#1202).",
+            + "port rag has noticed the hole; her own bar seat stays empty for three to six watches, and she comes back "
+            + "with one line (#1202).",
             "/map?dock=selene-gate&ashore=1&spike=paid"),
         // #1202 slice 3 · THE TAIL AT HER TABLE. The same pending spike with a grey coat behind the captain: he is left
         // at the bar so the man comes in after him, and a take the man still holds his band on is SEEN.

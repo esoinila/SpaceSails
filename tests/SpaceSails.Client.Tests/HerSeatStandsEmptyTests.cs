@@ -272,4 +272,24 @@ public sealed class HerSeatStandsEmptyTests
         Assert.Equal(Map.QuestKind.CarryThePress, ((Map.Quest?)b.Peek("_pendingOffer"))?.Kind);
         Assert.False(PassageOf(b).Home);
     }
+
+    // ── THE DEV START, ON HER WATCH ─────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// <c>?dock=selene-gate&amp;simhours=1&amp;ashore=1&amp;spike=paid</c> — the guide's own address for seeing the
+    /// empty seat: the watch is hers, her chair exists, and it is empty (no console of hers on the page's deck),
+    /// with the receipt in the satchel and the watch she is back written on the contract. <b>RED</b> by dropping the
+    /// <c>RebuildDockedDeck</c> call from <c>SpikeItIfAsked</c> (her console still at the bar from the clamp).
+    /// </summary>
+    [Fact]
+    public async Task ThePaidStartOnHerWatchShowsHerChairEmpty()
+    {
+        DeskBench b = await DeskBench.BootAsync($"/map?dock={Berth}&simhours=1&ashore=1&spike=paid");
+        double t = (double)b.Peek("_dockVisitSimTime")!;
+        Assert.True(CarryThePress.AtTheTable(Berth, PatronRota.WatchIndex(t)), "premise: simhours=1 is her watch");
+        Assert.NotNull(HavenInterior.TheStringersChairAt(Berth, t));
+        Assert.False(HerChairIsTaken((DeckPlan)b.Peek("_deckPlan")!));
+        Assert.True(PassageOf(b).Back > PatronRota.WatchIndex(t));
+        Assert.Single((IEnumerable<Satchel.Item>)b.Peek("_satchel")!, i => SpikeIt.IsTheReceipt(i.Id));
+    }
 }
