@@ -263,7 +263,7 @@ public sealed class TheSeatKeepsItsOwnStateTests
             {
                 missing.Add(
                     $"  {read} no longer answers on Map — 6b promised every existing caller keeps its " +
-                    "spelling, so this one's forwarder is missing (see Map.Seated.cs's 6b block)");
+                    "spelling, so this one's forwarder is missing (see Map.Seated.Forwarders.cs's 6b block)");
             }
         }
 
