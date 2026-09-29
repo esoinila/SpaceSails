@@ -145,6 +145,9 @@ public sealed class TheBootReadsTheSameQueryTests
             // #1202 slice 2 · the spike's two dev rows. ?spike= writes no world and nothing the parse answers (it is
             // read off the address bar once ashore) — the chalk rows' own reason, and their pin. No other line moved.
             ["/map?dock=selene-gate&ashore=1&spike=1"] = "f6293c59cfa673641b19ec44fe0bce89",
+            // #1202 slice 3 · the spike composed with ?tailed=1. Measured: ?tailed= answers no query key this sweep
+            // reads, so the row reads the spike=1 row's own line. No other line moved.
+            ["/map?dock=selene-gate&ashore=1&spike=1&tailed=1"] = "f6293c59cfa673641b19ec44fe0bce89",
             ["/map?dock=selene-gate&ashore=1&spike=spiked"] = "f6293c59cfa673641b19ec44fe0bce89",
             ["/map?dock=selene-gate&body=luna&site=1&land=1"] = "f6f40476b56761055989d9d129842c10",
             // #319 slice 2 · the geocache sale's two dev rows. ?geocache= writes no world and nothing the parse
