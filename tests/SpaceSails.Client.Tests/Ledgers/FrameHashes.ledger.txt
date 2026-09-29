@@ -62,7 +62,7 @@ sha256 | haven · selene-gate | 7a26d21fecb911943538b51137b74e21fd54451bf02a50e8
 sha256 | haven · red-eye | 80f61d4c9967efa25cd428fd474c71b8f0cab2a6c2288f43febe9f50b96c63eb
 sha256 | haven · the-deep | 31ddaf1f0c2a9dc198efeee8315b2b0cc03fc4ba676e20e6928d76fd1ccba7ff
 sha256 | wreck · HullBreach | e9e14ef6b083cbb5e1daa16fc0e318cc5c4d0d5990aa9a0f8ea071c4608e2665
-sha256 | luna B1 | 0ac9fffabeb336e59a622f596a3ddb38cfcbe791ac1d86d677ac89fbdc93c7a4
+sha256 | luna B1 | 3d6e57aa1871813d1ffcdb76fbadea2b02ff85c20c1c591de91e2776304e8c6e
 sha256 | luna B2 | 4afe0621ea42907498c310247452fc98d8f915f18c61152142c21556b14f0068
 sha256 | luna B3 | 457d4700e4d68bca46266f0c13834be0005777f56b0d90af633f210223476608
 sha256 | luna B4 | a0dab7e23987c79388cb141829b9bd2d6b27f7e554667bf2d10732fa8790afab
@@ -76,10 +76,10 @@ sha256 | luna B11 | 2e5379891627fc35ea203479e77b9804ece50fdd28e20c85d2239986f625
 sha256 | luna B12 | 3954c7e647b2cd3a02f3c759a9e9f26856d334fca6cee317ea171dfc064ce04d
 sha256 | luna B13 | c9ee95f549a879dcb8084acb5ac5f31913a39e9a5da40ee64f127f0cfb962cc1
 sha256 | luna B1 · the lamps are all there is | b5d4a27b5482f54a4c31bdeb0993b613395be552dfbcf7ddb380f3d94656988f
-sha256 | luna B1 · sat down at a desk | c8642c465b02617d8f4c45848aa31c149bb1c087fac7fab5846d525c8f2f709b
-sha256 | luna B1 · the round is out, and the buzzer went | 44c8396376f77bbd20f2856a04488968ff40cb5e76df4f55823b69e82a3ec740
-sha256 | phobos B1 | 15021626c24054a66fcc8534b9a7d19a64ab3a51caf8a4298abcfa188c932478
-sha256 | titan B1 | 42abcb3a8c215b291a196cb64f4c5320b0000a18e023630ecb6906e78c09bf0b
+sha256 | luna B1 · sat down at a desk | cd9abe2f688418c9791ef2a95d432bf3d0600a9dc31d5bc35dc8157d8239fa35
+sha256 | luna B1 · the round is out, and the buzzer went | 0fec1c5a34762d0941b220d0a001c7da6dea60a45ac090b9112c8519691d6cc2
+sha256 | phobos B1 | 373cba7a7953e3f19de8f00151ca0eaefe159f28f9ce1aee5f63cd21dd24f3e4
+sha256 | titan B1 | 073574beb8ae2f7f65dbc05e355f94af399b7ebb2ec85bbb6c9566e4c91fdf98
 sha256 | surface · luna site 0 | 8fd405f5c680886e145e068b010916a88d6592724e5d2daabcc39bcf8c5daa9f
 sha256 | surface · luna site 0, the whole excursion | 4f7b0ee61d165ccf01834a751730f3a276640d5f1f6cc07549a7a6b4b8e8ca4f
 sha256 | surface · luna site 0, dark, and the fan hears something | 2cdd518b8a6aadd7f05c569519b955e61f3f9d771692eb85e33c068faf1f57c1

@@ -2084,8 +2084,8 @@ The short version, because these are the easiest to miss:
 /map?ringoffice=1                      …and the OTHER side of the glass (#813): inside a room that faces the green
 /map?goodscar=1                        …the SECOND CAR (#801), at the blind end of the corridor. Now walk to the first one
 /map?secretlab=deep&land=1&floor=17    B17 — the staff mess, pass-only, hall-sized, and empty on purpose
-/map?secretlab=deep&land=1&floor=21    B21 — the unlisted lobby: the car's plate reads B21 · NO PLATE; walk left and the sign
-                                       beside the shaft names a DIFFERENT building (▣ THE TRANSIT STATION on this rock)
+/map?secretlab=deep&land=1&floor=21    B21 — the unlisted lobby: the car's plate reads B21 · NO PLATE, and on screen at boot the sign
+                                       just right of the car names a DIFFERENT building (▣ THE TRANSIT STATION on this rock)
 /map?secretlab=deep&land=1&floor=4&dark=1   a floor with no lights (#708)
 /map?secretlab=deep&land=1&floor=2&book=9   force a specific odd book (#701)
 /map?found=1&land=1&floor=17           past the seam — the halls nobody dug (#677)
