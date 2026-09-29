@@ -362,9 +362,5 @@ public partial class Map
     private void CloseGroundLesson()
     {
         _groundLessonOpen = false;
-
-        // #1202 · …and a stringer carried to this ground says her word about the tin now, after the shuttle's
-        // line and with the captain standing on the ground looking at it.
-        SheReadsHerWordAsTheCardCloses();
     }
 }
