@@ -273,6 +273,15 @@ public sealed class TheStringerIsCarriedTests
         b.CallOnTheDispatcher("AdvanceTheStringer", 0.05);
         Map.Walker her = Assert.Single(Afoot(b), w => w.For == Map.Errand.RidingAlong);
         Assert.Equal(CarryThePress.Plate, her.Walk.Plate);
+
+        // Off the pad, but the slot still holds the landing's own line (no frame has aged it here): she waits.
+        // The frame the slot comes free, she says it — once.
+        Assert.NotNull(((PulseSlot)b.Peek("_pulse")!).Message);
+        Assert.Equal(0, BookEntries(b, landing));
+        b.Poke("_pulse", PulseSlot.Empty);
+        b.CallOnTheDispatcher("AdvanceTheStringer", 0.05);
+        b.CallOnTheDispatcher("AdvanceTheStringer", 0.05);
+        Assert.Equal(landing, ((PulseSlot)b.Peek("_pulse")!).Message);
         Assert.Equal(1, BookEntries(b, landing));
         Assert.True(CarryThePress.Passage.Read(Hers(b).Pin).Landed);
 
@@ -333,6 +342,7 @@ public sealed class TheStringerIsCarriedTests
         Assert.True(b.OnSurface, "premise: the shuttle set the captain down on her ground");
         await b.RenderAsync();
 
+        b.Poke("_pulse", PulseSlot.Empty);   // the landing's lines have had their dwell (no frames age them here)
         b.CallOnTheDispatcher("AdvanceTheStringer", 0.1);
         Map.Quest q = Hers(b);
         string landing = CarryThePress.Landing(CarryThePress.TheTin(q.Id, "luna", site).BearingLine);
@@ -366,48 +376,91 @@ public sealed class TheStringerIsCarriedTests
     private static DeskBench.Painted.Node TheToast(DeskBench.Painted painted) =>
         Assert.Single(painted.Root.Descendants(), n => n.HasClass("deck-pulse-toast"));
 
+    /// <summary>One live frame through the page's own <c>OnTick</c>, 100 ms after the last, on the renderer's
+    /// dispatcher. The canvas flush is the one line that crosses into JavaScript
+    /// (<c>CastawayBench.Frame</c>'s seam); everything the pulse is made of has run by then.</summary>
+    private static void Frame(DeskBench b)
+    {
+        double at = Convert.ToDouble(b.Peek("_lastTimestampMs") ?? 0.0) + 100;
+        try
+        {
+            b.CallOnTheDispatcher("OnTick", at);
+        }
+        catch (System.Reflection.TargetInvocationException e) when (e.InnerException is PlatformNotSupportedException)
+        {
+        }
+    }
+
     /// <summary>
-    /// HER WORD IS TOLD WHEN THE FIRST-GROUND CARD CLOSES, AFTER THE SHUTTLE'S LINE, IN THE SLOT THE DECK DRAWS.
-    /// The real landing (<c>?press=1&amp;body=luna&amp;site=N&amp;land=1</c>) on a fresh captain: the shuttle's
-    /// "🛸 Shuttle mated to Luna" is on the deck's toast under the first-ground card, and her word is not yet in
-    /// the book. The captain closes the card through its own button, and the toast the deck paints is her line —
-    /// filed in the book at that same moment, once.
+    /// HER WORD REACHES THE SCREEN, AFTER THE SUIT'S, AND EACH IS HELD FOR ITS DWELL. The real landing
+    /// (<c>?press=1&amp;body=luna&amp;site=N&amp;land=1</c>) on a fresh captain; the first-ground card closed
+    /// through its own button; then twelve seconds of LIVE frames through <c>OnTick</c>, reading the pulse slot
+    /// the deck's <c>.deck-pulse-toast</c> draws after every one. The slot must read the suit's VACUUM crossing
+    /// first, for its whole dwell, and then her line — the very next thing in the slot, filed in the book on the
+    /// frame it appears, and up for at least the slot's own hold (<see cref="PulseSlot.MinDwellMs"/>). Measured on
+    /// this ground: VACUUM 100 → 4200 ms, her word 4200 → 5700 ms, then the tracker's first stir (a world line at
+    /// the same rank) takes the slot — so she has the hold, not her whole length-scaled dwell; that is an open
+    /// question for the tracker, not something her line may outrank.
     ///
-    /// <para><b>RED</b> on the old order (her line pulsed and filed on the landing's warm-up frame, from
-    /// <c>AdvanceTheStringer</c> on whatever frame first ran on her ground, and <c>CloseGroundLesson</c> silent):
-    /// the toast after the card closed still read "🛸 Shuttle mated to Luna. Empty sling —…" — the seventh bug
-    /// class, a told line written to a slot the next line overwrites. Watched red, 2026-09-29. (The pad-gate half
-    /// of <see cref="SheIsDrawnOnlyOnHerGroundWhileHerContractIsActive"/> went red on the same revert: her word
-    /// filed with the captain still standing in the tube.)</para>
+    /// <para><b>The one poke.</b> In a browser the descent pays one warm-up surface step under the door with the
+    /// captain in her tube (<c>WarmFirstSurfaceFrameAsync</c>), which is what records <c>_airSupplyNoted</c> as
+    /// her air; the bench has no canvas, so that step is skipped and the crossing would never be said. The
+    /// field is set to what that step records, and nothing else is.</para>
+    ///
+    /// <para><b>RED</b> on #1321's code (her line said when the card closed, <c>AdvanceTheStringer</c> not waiting
+    /// for the slot): the first live frame's VACUUM wrote over it and her line was never in the slot on any frame
+    /// — the seventh bug class a second time, found by QA polling the toast in a real Chromium.</para>
     /// </summary>
     [Fact]
-    public async Task HerWordIsToldAfterTheShuttlesLineWhenTheFirstGroundCardCloses()
+    public async Task HerWordIsSaidAfterTheSuitsCrossingHasHadItsDwell()
     {
         int site = CarryThePress.Passage.Read(Hers(await DeskBench.BootAsync(Aboard)).Pin).Site;
         DeskBench b = await DeskBench.BootAsync($"{Aboard}&body=luna&site={site}&land=1");
         Assert.True(b.OnSurface, "premise: the shuttle set the captain down on her ground");
         Assert.True((bool)b.Peek("_groundLessonOpen")!, "premise: a fresh captain's first ground raises the card");
-        Map.Quest q = Hers(b);
-        string landing = CarryThePress.Landing(CarryThePress.TheTin(q.Id, "luna", site).BearingLine);
+        string landing = CarryThePress.Landing(CarryThePress.TheTin(Hers(b).Id, "luna", site).BearingLine);
+        string vacuum = SuitAir.SupplyChangedLine(SuitAir.Supply.Tanks);
 
         DeskBench.Painted painted = await b.RenderAsync();
         Assert.StartsWith("🛸 Shuttle mated to Luna.", TheToast(painted).Spoken, StringComparison.Ordinal);
         Assert.Equal(0, BookEntries(b, landing));
-        Assert.False(CarryThePress.Passage.Read(Hers(b).Pin).Landed);
+        b.Poke("_renderer", new Rendering.CanvasRenderer("press-pulse"));
+        b.Poke("_deckView", new Rendering.DeckView(new CastawayBench.APenThatDrawsNothing()));
+        b.Poke("_airSupplyNoted", (SuitAir.Supply?)SuitAir.Supply.Ship);
 
         DeskBench.Painted.Node close = Assert.Single(painted.Root.Descendants(), n =>
             n.Element == "button" && n.Name == GroundLesson.Dismiss && n.Handlers.ContainsKey("onclick"));
         await b.PressAsync(close.Handlers["onclick"]);
-        painted = await b.RenderAsync();
+        Assert.Equal(0, BookEntries(b, landing));   // not at the close: the suit has not spoken yet
 
-        Assert.False((bool)b.Peek("_groundLessonOpen")!);
-        Assert.Equal(landing, TheToast(painted).Spoken);
-        Assert.Equal(1, BookEntries(b, landing));
-        Assert.True(CarryThePress.Passage.Read(Hers(b).Pin).Landed);
+        // Every change of the slot, with the frame clock it happened on.
+        var said = new List<(string? Line, double AtMs)>();
+        for (int frame = 0; frame < 120; frame++)
+        {
+            Frame(b);
+            PulseSlot slot = (PulseSlot)b.Peek("_pulse")!;
+            if (said.Count == 0 || said[^1].Line != slot.Message)
+            {
+                said.Add((slot.Message, (double)b.Peek("_lastTimestampMs")!));
+                if (slot.Message == landing)
+                {
+                    Assert.Equal(1, BookEntries(b, landing));   // filed on the frame it is said, not before
+                }
+            }
+        }
 
-        // …and once: the first step off the pad afterwards does not say it again.
-        b.Poke("_avatarY", (double)Rendering.MoonSurface.LandingBandY - 5);
-        b.CallOnTheDispatcher("AdvanceTheStringer", 0.1);
+        string story = string.Join(Environment.NewLine, said.Select(s => $"  {s.AtMs,8:F0} ms  {s.Line ?? "(empty)"}"));
+        int v = said.FindIndex(s => s.Line == vacuum);
+        int h = said.FindIndex(s => s.Line == landing);
+        Assert.True(v >= 0, $"the suit's crossing was never in the slot:{Environment.NewLine}{story}");
+        Assert.True(h >= 0, $"her word was never in the slot:{Environment.NewLine}{story}");
+        Assert.True(h > v, $"her word came before the suit's:{Environment.NewLine}{story}");
+        Assert.True(said.Skip(v + 1).Take(h - v - 1).All(s => s.Line is null),
+            $"something else was said between the suit's line and hers:{Environment.NewLine}{story}");
+        Assert.True(said[v + 1].AtMs - said[v].AtMs >= PulseSlot.DwellFor(vacuum),
+            $"the suit's line did not have its dwell ({PulseSlot.DwellFor(vacuum)} ms):{Environment.NewLine}{story}");
+        double herSpan = (h + 1 < said.Count ? said[h + 1].AtMs : (double)b.Peek("_lastTimestampMs")!) - said[h].AtMs;
+        Assert.True(herSpan >= PulseSlot.MinDwellMs, $"her word was up only {herSpan} ms:{Environment.NewLine}{story}");
         Assert.Equal(1, BookEntries(b, landing));
     }
 }
