@@ -306,8 +306,9 @@ public sealed class TheTakeCanBeSeenTests
     /// window is SPIKED and the desk pays the full purse.
     ///
     /// <para><b>RED</b> by <c>TheCoatSeesTheTake</c> answering true with no man on the floor (the no-tail case filed
-    /// the coat's line), and by counting <c>Errand.AskingTheWrongFloor</c> as on him (a man walking off to ask the
-    /// wrong floor saw the take).</para>
+    /// the coat's line). The lost clause itself is pinned by <c>AManWhoHasLostYouSeesNothingWhereverHeStands</c>:
+    /// counting the wrong-floor man as on him stays green HERE, honestly, because by the time she leaves her table
+    /// the man who lost him has walked out of his band.</para>
     /// </summary>
     [Theory]
     [InlineData(false)]
@@ -352,6 +353,31 @@ public sealed class TheTakeCanBeSeenTests
         b.CallOnTheDispatcher("TheSpikeIsSettled");
         Assert.Equal(SpikeIt.Purse(Hers(b).Reward), (int)b.Peek("_credits")! - before);
         Assert.DoesNotContain(SpikeIt.SeenLateLine, b.Pulse, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// A MAN WHO HAS LOST YOU SEES NOTHING, WHEREVER HE IS STANDING: the same walk as the seen take, the same man
+    /// at the same spot in his band — but re-badged the way the tail re-badges him on the frame his clock runs out
+    /// (<c>AskingTheWrongFloor</c>). The take is unseen. (The live lost case above is a man already out of band by
+    /// the time she leaves her table; this pins the clause itself.)
+    ///
+    /// <para><b>RED</b> by counting <c>Errand.AskingTheWrongFloor</c> as on him in <c>TheCoatSeesTheTake</c>.</para>
+    /// </summary>
+    [Fact]
+    public async Task AManWhoHasLostYouSeesNothingWhereverHeStands()
+    {
+        DeskBench b = await Booted(Composed);
+        IntoTheTubeWithHimAtItsMouth(b);
+        ToTheThroatUntilSheIsAway(b);
+        SitAtHerTable(b);
+        Pages.Map.Walker coat = TheCoat(b)!;
+        Assert.True(TheTailBehindYou.HoldsHisBand(Dist(coat.Walk.X - Ax(b), coat.Walk.Y - Ay(b))), "premise: in his band.");
+        Afoot(b)[Afoot(b).IndexOf(coat)] = new Pages.Map.Walker { Walk = coat.Walk, Table = coat.Table, For = Pages.Map.Errand.AskingTheWrongFloor };
+
+        await Press(b, SpikeIt.TakeThePages);
+        Assert.Equal(1, Filed(b, SpikeIt.TookThePages(12)));
+        Assert.Equal(0, Filed(b, SpikeIt.SeenTakeEntry));
+        Assert.False(PassageOf(b).Watched);
     }
 
     /// <summary>
