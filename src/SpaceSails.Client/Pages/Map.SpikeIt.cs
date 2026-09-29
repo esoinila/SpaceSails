@@ -150,6 +150,8 @@ public sealed partial class Map
             return;
         }
 
+        q = TheStackIsSquaredIfSeen(q, bar.BodyId);   // #1202 slice 3 · …and after a seen take, her squared stack
+
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
         IReadOnlyList<DeckReachability.Point> tops = HavenInterior.GalleryTops(bar.BodyId);
         IReadOnlyList<DeckReachability.Point> machines = HavenInterior.TheVendorsAt(bar.BodyId);
@@ -332,9 +334,15 @@ public sealed partial class Map
         if (moveId == SpikeIt.TakeThePages)
         {
             _satchel = [.. Core.Satchel.Add(_satchel, SpikeIt.ThePages())];
-            RewritePassage(q, p with { Pages = SpikeIt.Pages.Taken });
+            bool seen = TheCoatSeesTheTake();   // #1202 slice 3 · asked at the moment of the press, and never again
+            RewritePassage(q, p with { Pages = SpikeIt.Pages.Taken, Watched = p.Watched || seen });
             FileNote(SpikeIt.TookThePages(SpikeIt.WatchesUntil(CarryThePress.StoryAt(p)!.Value, SimTime)),
                 CarryThePress.Glyph);
+            if (seen)
+            {
+                FileNote(SpikeIt.SeenTakeEntry, CarryThePress.Glyph);   // the take line stays; this is its neighbour
+            }
+
             t.Outcome = SpikeIt.TakeThePagesLine;
         }
         else
@@ -367,7 +375,7 @@ public sealed partial class Map
 
         if (next.Outcome == SpikeIt.Outcome.None)
         {
-            next = next with { Outcome = SpikeIt.AtTheWindow(next.Pages) };
+            next = next with { Outcome = SpikeIt.TheWindowFor(next.Pages, next.Watched) };   // #1202 slice 3 · seen ⇒ LATE
         }
 
         return next.Outcome;
@@ -393,7 +401,7 @@ public sealed partial class Map
             int pays = SpikeIt.Pays(p.Outcome, SpikeIt.Purse(q.Reward));
             _credits += pays;
             ShowPulseMessage(p.Outcome == SpikeIt.Outcome.Late
-                ? $"💳 {SpikeIt.LateLine}"
+                ? $"💳 {SpikeIt.LateReceipt(p.Watched)}"
                 : $"💳 +{pays.ToString("N0", CultureInfo.InvariantCulture)} cr");
             RewritePassage(q, p with { Paid = true });
             StateHasChanged();

@@ -84,6 +84,19 @@ public static class SpikeIt
     public const string GoneLine =
         "She is not at the table. The recorder is. Somebody will come back for it, or nobody will.";
 
+    // ── THE LINES (verbatim, #1202 slice 3 · THE TAIL AT HER TABLE · Fable, 2026-09-29 morning) ───────────
+
+    /// <summary>#1202 slice 3 · The take, SEEN: the field book (📰), filed with the take beside the ordinary take
+    /// line, which stays. The only tell before the window.</summary>
+    public const string SeenTakeEntry = "The coat at the mouth of the tube did not look up. He did not need to.";
+
+    /// <summary>#1202 slice 3 · Entering the gallery any time after a seen take, before the window (once).</summary>
+    public const string SquaredLine = "Her stack is squared, one corner folded where somebody else's thumb was.";
+
+    /// <summary>#1202 slice 3 · At the window after a seen take the story runs LATE whatever else was done; the
+    /// next desk pulse, no credits, says this in place of <see cref="LateLine"/>.</summary>
+    public const string SeenLateLine = "No credits. One line where the money would be: 'Noted that you were seen.'";
+
     /// <summary>Every sentence this slice can put on a screen, for the canon sweeps.</summary>
     public static IEnumerable<string> AllProse()
     {
@@ -101,6 +114,9 @@ public static class SpikeIt
         yield return AlteredEntry;
         yield return LateLine;
         yield return GoneLine;
+        yield return SeenTakeEntry;
+        yield return SquaredLine;
+        yield return SeenLateLine;
     }
 
     // ── THE LINES, FILLED ───────────────────────────────────────────────────────────────────────────────
@@ -325,6 +341,50 @@ public static class SpikeIt
         SpikeIt.Pages.Swapped => Outcome.Altered,
         SpikeIt.Pages.Taken => Outcome.Spiked,
         _ => Outcome.Late,
+    };
+
+    /// <summary>
+    /// #1202 slice 3 · <b>A SEEN TAKE CANNOT SPIKE.</b> When the grey coat had the captain in his sight at the
+    /// moment the pages were taken, her pages are back on her table by the next watch and the story runs on time:
+    /// LATE, whatever else was done — the client's page, if left, is simply not in the stack that files. An unseen
+    /// take is exactly <see cref="AtTheWindow(Pages)"/>. SEEN is a flag on the spike, never a fourth outcome.
+    /// </summary>
+    public static Outcome TheWindowFor(Pages pages, bool seenTaking) =>
+        seenTaking ? Outcome.Late : AtTheWindow(pages);
+
+    /// <summary>#1202 slice 3 · Was the take seen? Only when a man is behind the captain on this floor (on him,
+    /// not already walking off having lost him) and he has the captain in his sight — the tail's own contact, the
+    /// one look his blind clock runs on (<see cref="FootTail.InPlainSight"/>), asked at the moment of the press.
+    /// No second line-of-sight model.</summary>
+    public static bool TheTakeIsSeen(bool aManIsOnYou, bool youAreInHisSight) => aManIsOnYou && youAreInHisSight;
+
+    /// <summary>#1202 slice 3 · The desk's line after the window, for a LATE story: the seen receipt when the take
+    /// was seen, the ordinary one otherwise.</summary>
+    public static string LateReceipt(bool seenTaking) => seenTaking ? SeenLateLine : LateLine;
+
+    /// <summary>#1202 slice 3 · After a seen take, where the squared-stack line stands. It is told on ENTERING the
+    /// gallery, so the captain must first have been out of it since the take (he takes the pages sitting in
+    /// it).</summary>
+    public enum Stack
+    {
+        /// <summary>The take was seen; the captain has not left the gallery since.</summary>
+        NotYet = 0,
+
+        /// <summary>…he has been out of the gallery since; the next time he is in it, the line is told.</summary>
+        YouWentOut = 1,
+
+        /// <summary>…told, once.</summary>
+        Told = 2,
+    }
+
+    /// <summary>#1202 slice 3 · One step of the squared-stack line: where it stands after a frame with the captain
+    /// in the gallery or out of it, and whether this frame is the one it is told on. Before the window only; the
+    /// caller asks nothing after.</summary>
+    public static (Stack Next, bool Tell) TheStackOnEntering(Stack now, bool inTheGallery) => now switch
+    {
+        Stack.NotYet when !inTheGallery => (Stack.YouWentOut, false),
+        Stack.YouWentOut when inTheGallery => (Stack.Told, true),
+        _ => (now, false),
     };
 
     /// <summary>Did a story print? The floor's reaction on the rags is only ever about a story that ran.</summary>
