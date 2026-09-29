@@ -258,12 +258,28 @@ public sealed class TheBootBuildsTheSameWorldTests
             // already built. What the two of them ANSWER is pinned next door, in
             // TheBootReadsTheSameQueryTests, where this URL is its own distinct reading.
             ["/map?dock=selene-gate&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
+            // #794 slice 2 · the chalk mark's two dev rows, moved from ?park=1 to the gallery with the drop.
+            // ?chalk= writes no world and nothing the parse answers (it is read off the address bar after
+            // ?ashore=1 walks the captain in), so both are the berth's own line — the park's two rows went,
+            // these two came, and no other line moved.
+            ["/map?dock=selene-gate&ashore=1&chalk=1"] = "5702e97b412b144d3fd884426e262007",
+            ["/map?dock=selene-gate&ashore=1&chalk=wiped"] = "5702e97b412b144d3fd884426e262007",
+            // #1202 slice 2 · the spike's two dev rows. ?spike= writes no world and nothing the parse answers (it is
+            // read off the address bar once ashore) — the chalk rows' own reason, and their pin. No other line moved.
+            ["/map?dock=selene-gate&ashore=1&spike=1"] = "5702e97b412b144d3fd884426e262007",
+            ["/map?dock=selene-gate&ashore=1&spike=spiked"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=selene-gate&body=luna&site=1&land=1"] = "97b2b0eae504685fd6a9d15cabfaa5b7",
             // #319 slice 2 · the geocache sale's two dev rows. ?geocache= writes no world and nothing the parse
             // answers (it is read off the address bar once the berth is clamped) — dumped and diffed: these two
             // lines are the only thing the dump added, and no other line moved.
             ["/map?dock=selene-gate&geocache=1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=selene-gate&geocache=lifted"] = "5702e97b412b144d3fd884426e262007",
+            // #1202 · the stringer's two dev rows. ?press= writes no world and nothing the parse answers (it is
+            // read off the address bar once the berth is clamped) — the geocache rows' own reason, and their pin.
+            ["/map?dock=selene-gate&press=1"] = "5702e97b412b144d3fd884426e262007",
+            ["/map?dock=selene-gate&press=filed"] = "5702e97b412b144d3fd884426e262007",
+            // #1202 slice 2 QA · ?press=pending — the same latch, read after the clamp: the berth's own line, measured. No other line moved.
+            ["/map?dock=selene-gate&press=pending"] = "5702e97b412b144d3fd884426e262007",
             // #997 wave 10 · see /map?start=wreck&target=collector further down — the new dev start moved
             // free-flying after a browser walk, and the reason is written there.
             ["/map?dock=the-deep&body=triton&site=2&land=1"] = "5a567133534c2e96fdf0a40131a72a9d",
@@ -301,11 +317,6 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?oldcrew=1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?nonsense=1&start=there-is-no-such-start&dock=NOT+A+HAVEN&site=-3&floor=0"] = "5702e97b412b144d3fd884426e262007",
             ["/map?park=1"] = "dfe030b6018fc631c6b5728247dce740",
-            // #794 · the chalk mark's two dev rows. ?chalk= writes no world and nothing the parse answers (it is
-            // read off the address bar at the park), so both are ?park=1's own line — dumped, diffed, and these
-            // two lines are the only thing the dump added; no other line moved.
-            ["/map?park=1&chalk=1"] = "dfe030b6018fc631c6b5728247dce740",
-            ["/map?park=1&chalk=wiped"] = "dfe030b6018fc631c6b5728247dce740",
             // #759 · TWO NEW ROWS, AND NOTHING ELSE MOVED. `?parkphase=` jumps the sim clock so the park at
             // THIS site is at a chosen point of its own grow-cycle — and because it is a clock jump, these
             // are the only two URLs in the catalogue whose booted world differs from `?park=1`'s at all.

@@ -6,10 +6,20 @@ using SpaceSails.Core.Interior;
 namespace SpaceSails.Client.Pages;
 
 /// <summary>
-/// #794 slice 1 · <b>THE CHALK MARK — the page's half.</b> Core decides everything (<see cref="ChalkMark"/>:
-/// which bench, which watches, what the wall says); this file is the five moments Core cannot reach: the
-/// payment that earns the return, the notice the captain walks up to, the chalk on the plan, the move on the
-/// bench's card, and the dev start.
+/// #794 · <b>THE CHALK MARK — the page's half.</b> Core decides everything (<see cref="ChalkMark"/>: which
+/// table, which watches, what the stone says); this file is the five moments Core cannot reach: the payment
+/// that earns the return, the gallery the captain walks into, the chalk on the plan, the move on the table's
+/// card, and the dev start.
+///
+/// <h3>Slice 2 · the drop is at the gallery now</h3>
+///
+/// <para>Owner's ruling on #794, 2026-09-28: the drop moves to where the captain already goes. Slice 1 kept
+/// it under a park bench on a Hive floor, which no sol ground's delivery could ever name; it is under one of
+/// the two steel tables at the end of Selene Gate's observation walk now (<see cref="HavenInterior.GalleryTops"/>),
+/// with the cross on the back-wall stone beside the machines. The park lost the drop — its bench card is its
+/// own two moves again — and nothing is duplicated. Every poll here runs from the docked room's own frame
+/// (<c>AdvanceBarWalkers</c>, the concourse path), because the gallery is on the concourse and a berth has no
+/// surface frame.</para>
 ///
 /// <h3>No field on this page, on purpose</h3>
 ///
@@ -24,16 +34,20 @@ public sealed partial class Map
 {
     // ── THE PAYMENT EARNS THE RETURN ────────────────────────────────────────────────────────────────────
 
+    /// <summary>How many tables the gallery at this berth stands — the room's own published list, counted.
+    /// Zero at every berth without the walk, which is every berth but one.</summary>
+    private static int TheGallerysTables(string? berth) =>
+        berth is null ? 0 : HavenInterior.GalleryTops(berth).Count;
+
     /// <summary>
-    /// #794 · Called at the desk the moment a delivery is PAID. When the ground that was dug keeps a park,
-    /// the return is owed (one tag) and the payment pulse gets the design's sentence appended; anywhere
-    /// else, nothing at all — no drop, no sentence.
+    /// #794 · Called at the desk the moment a delivery is PAID, at any haven. The return is owed at the
+    /// gallery (one tag, keyed on the haven the gallery is in) and the payment pulse gets the design's
+    /// sentence appended; a world with no gallery standing gets nothing at all — no drop, no sentence.
     /// </summary>
     private string TheReturnIsOwed(ParcelDrop.Payment paid)
     {
-        if (ChalkMark.TheParkUnder(paid.Where.BodyId, MoonSurface.ExpeditionField()) is not { } park
-            || ChalkMark.For(paid.ParcelId, paid.Where.BodyId, PatronRota.WatchIndex(SimTime), in park)
-                is not { } mark)
+        if (ChalkMark.For(paid.ParcelId, ChalkMark.Haven, PatronRota.WatchIndex(SimTime),
+                TheGallerysTables(ChalkMark.Haven)) is not { } mark)
         {
             return "";
         }
@@ -42,29 +56,39 @@ public sealed partial class Map
         return " " + mark.ThePaymentLine();
     }
 
-    /// <summary>The returns owed on the floor the captain is standing on, with its park.</summary>
-    private IReadOnlyList<ChalkMark> TheReturnsOwedHere(SurfaceExcursion ex, in UndergroundComplex.Park green) =>
-        ChalkMark.OwedOn(_roomsTurnedOver, ex.Stop.Body.Id, in green);
+    /// <summary>The returns owed at the berth the captain is clamped to, or none — asked of the register
+    /// alone, so a berth with nothing owed builds nothing.</summary>
+    private IReadOnlyList<ChalkMark> TheReturnsOwedHere() =>
+        _dockedHavenId is { } berth
+            ? ChalkMark.OwedOn(_roomsTurnedOver, berth, TheGallerysTables(berth))
+            : [];
 
-    // ── THE NOTICE ──────────────────────────────────────────────────────────────────────────────────────
+    /// <summary>#794 · …and the marks the STONE still carries here: the owed ones, and one collected in this
+    /// window until the turnover wipes it (Fable, 2026-09-29 — the collection takes the goods, not the chalk).</summary>
+    private IReadOnlyList<ChalkMark> TheMarksOnTheStoneHere() =>
+        _dockedHavenId is { } berth
+            ? ChalkMark.OnTheStone(_roomsTurnedOver, berth, TheGallerysTables(berth), SimTime)
+            : [];
+
+    // ── THE GALLERY ─────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// #794 · <b>THE WALL BY THE NOTICE.</b> Polled beside the park's attendance line. Standing at the notice
-    /// while the mark is up files the mark's line once per window; after a wipe the captain SAW go up, the
-    /// wipe's line once. The told-ness is a tag in the register, so a reload does not tell it twice.
+    /// #794 · <b>THE STONE BY THE MACHINES.</b> Polled from the docked room's frame, on the concourse.
+    /// Standing in the gallery while the mark is up files the mark's line once per window; after a wipe the
+    /// captain SAW go up, the wipe's line once. The told-ness is a tag in the register, so a reload does not
+    /// tell it twice.
     /// </summary>
     private void CheckTheChalkMark()
     {
-        if (_surface is not { Floor: < 0 } ex || _viewObject is not null
-            || TheGreenOnThisFloor(ex) is not { } green
-            || !ChalkMark.AtTheNotice(in green, _avatarX, _avatarY))
+        if (_dockedHavenId is not { } berth || !OnTheConcourse || _viewObject is not null
+            || !HavenInterior.InTheGallery(berth, _avatarX, _avatarY, _havenFloor))
         {
             return;
         }
 
-        foreach (ChalkMark mark in TheReturnsOwedHere(ex, in green))
+        foreach (ChalkMark mark in TheMarksOnTheStoneHere())
         {
-            if (mark.AtTheGate(SimTime, _roomsTurnedOver) is { } beat)
+            if (mark.InTheGallery(SimTime, _roomsTurnedOver) is { } beat)
             {
                 _roomsTurnedOver.Add(beat.Tag);
                 ShowAndFile(beat.Line, ChalkMark.Glyph, PulseRank.Beat);
@@ -74,37 +98,49 @@ public sealed partial class Map
         }
     }
 
-    /// <summary>#794 · Where the chalk is on the plan this frame, or null — drawn only while the mark is up.</summary>
-    private (double X, double Y)? TheChalkOnTheWall()
+    /// <summary>#794 · Where the chalk is on the plan this frame, or null — drawn only while the mark is up,
+    /// only on the concourse (the floor below is laid in the same coordinates), and only on the stone the
+    /// room built.</summary>
+    private (double X, double Y)? TheChalkOnTheStone()
     {
-        if (_surface is not { Floor: < 0 } ex || TheGreenOnThisFloor(ex) is not { } green)
+        if (_dockedHavenId is not { } berth || !OnTheConcourse)
         {
             return null;
         }
 
-        foreach (ChalkMark mark in TheReturnsOwedHere(ex, in green))
+        foreach (ChalkMark mark in TheMarksOnTheStoneHere())
         {
-            if (mark.MarkIsUpAt(SimTime))
+            if (mark.MarkIsUpAt(SimTime)
+                && HavenInterior.TheThroatAt(berth) is { } throat
+                && HavenInterior.TheVendingMachineBlocks(berth) is { } machines
+                && mark.Table < machines.Count)
             {
-                return ChalkMark.WhereOnTheWall(in green);
+                return ChalkMark.WhereOnTheStone(machines[mark.Table], throat.Y);
             }
         }
         return null;
     }
 
-    // ── THE BENCH ───────────────────────────────────────────────────────────────────────────────────────
+    // ── THE TABLE ───────────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>The return under the bench the captain is sitting on, if the move is on offer right now.</summary>
-    private ChalkMark? TheDropUnderThisSlat(SurfaceExcursion ex, TableTalk t)
+    /// <summary>Is this sitting at one of the gallery's tables at this berth? The seat's own identity
+    /// (<c>TheGallerysOwnSeatUnderfoot</c> keys it <c>gallery:{berth}:…</c>), never a position.</summary>
+    private bool AtTheGallerysTable(TableTalk t) =>
+        _dockedHavenId is { } berth
+        && t.Key.StartsWith($"gallery:{berth}:", System.StringComparison.Ordinal);
+
+    /// <summary>The return under the table the captain is sitting at, if the move is on offer right now.</summary>
+    private ChalkMark? TheDropUnderThisLip(TableTalk t)
     {
-        if (t.SharedSeat || TheGreenOnThisFloor(ex) is not { } green)
+        if (!AtTheGallerysTable(t))
         {
             return null;
         }
 
-        foreach (ChalkMark mark in TheReturnsOwedHere(ex, in green))
+        bool alone = t.Solo && !t.SharedSeat;
+        foreach (ChalkMark mark in TheReturnsOwedHere())
         {
-            if (mark.IsOnOffer(t.BenchIndex, t.SharedSeat, SimTime)
+            if (mark.IsOnOffer(t.Index, alone, SimTime)
                 && Satchel.CanTake(_satchel, mark.TheParcelUnderTheSlat(TheLandableGround())))
             {
                 return mark;
@@ -114,53 +150,53 @@ public sealed partial class Map
     }
 
     /// <summary>
-    /// #794 · <b>THE CARD SAYS WHAT IS UNDER THE PLANK, AND NOTHING ELSE DOES.</b> Each frame while the
-    /// captain is on a bench: the card carries FEEL UNDER THE SLAT exactly while there is something to feel
-    /// for — alone, on the named bench, in the window or the watch after it — and is the plain bench's card
-    /// otherwise. With nothing owed it never touches the card at all.
+    /// #794 · <b>THE CARD SAYS WHAT IS UNDER THE TABLE, AND NOTHING ELSE DOES.</b> Each frame while the
+    /// captain is at a gallery table on his own: the card carries FEEL UNDER THE LIP exactly while there is
+    /// something to feel for — alone, at the named table, in the window or the watch after it — and is the
+    /// plain table's card otherwise. With nothing owed it never touches the card at all.
     ///
     /// <para>A pocket too full to take the packet is a state the design wrote no line for, so it is left
     /// silent: the move is simply absent.</para>
     /// </summary>
-    private void KeepTheSlatHonest()
+    private void KeepTheLipHonest()
     {
-        if (_seating.Table is not { Bench: true } t || _surface is not { Floor: < 0 } ex
-            || t.Scene.Id != ParkBenches.TheBench(t.SharedSeat).Id)
+        if (_seating.Table is not { } t || !AtTheGallerysTable(t)
+            || t.Scene.Id != SittingAlone.TheTable().Id)
         {
             return;
         }
 
-        bool goods = TheDropUnderThisSlat(ex, t) is not null;
+        bool goods = TheDropUnderThisLip(t) is not null;
         if (ChalkMark.Offers(t.Scene) != goods)
         {
-            t.Scene = ChalkMark.TheBench(t.SharedSeat, goods);
+            t.Scene = ChalkMark.TheTable(t.Scene, goods);
             StateHasChanged();
         }
     }
 
     /// <summary>
-    /// #794 · <b>FEEL UNDER THE SLAT.</b> Taken ahead of the seat's own dispatch because it moves things the
+    /// #794 · <b>FEEL UNDER THE LIP.</b> Taken ahead of the seat's own dispatch because it moves things the
     /// seat does not own: the packet into the satchel, the collection into the register (once — it is what
     /// ends the return), the entry into the field book. The line is said on the card, where the captain is
     /// looking (#680). True when the press was this move, whatever came of it.
     /// </summary>
-    private bool TheSlatIsFelt(string moveId)
+    private bool TheLipIsFelt(string moveId)
     {
-        if (moveId != ChalkMark.FeelUnderTheSlat)
+        if (moveId != ChalkMark.FeelUnderTheLip)
         {
             return false;
         }
 
-        if (_seating.Table is not { Bench: true } t || _surface is not { Floor: < 0 } ex)
+        if (_seating.Table is not { } t || !AtTheGallerysTable(t))
         {
             return true;
         }
 
-        if (TheDropUnderThisSlat(ex, t) is not { } mark)
+        if (TheDropUnderThisLip(t) is not { } mark)
         {
             // The watch turned while the hand was on its way: the move goes, and nothing is said. A drop that
             // is not there is not a sentence.
-            t.Scene = ChalkMark.TheBench(t.SharedSeat, goodsUnderThisSlat: false);
+            t.Scene = ChalkMark.TheTable(t.Scene, goodsUnderThisLip: false);
             StateHasChanged();
             return true;
         }
@@ -169,7 +205,7 @@ public sealed partial class Map
         _roomsTurnedOver.Add(mark.CollectedOn(PatronRota.WatchIndex(SimTime)));
         FileNote(ChalkMark.CollectedEntry, ChalkMark.Glyph);
 
-        t.Scene = ChalkMark.TheBench(t.SharedSeat, goodsUnderThisSlat: false);
+        t.Scene = ChalkMark.TheTable(t.Scene, goodsUnderThisLip: false);
         t.Outcome = ChalkMark.FeltLine;
         RequestVaultSave();
         StateHasChanged();
@@ -179,36 +215,38 @@ public sealed partial class Map
     // ── THE DEV START ───────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// #794 QA · <c>?park=1&amp;chalk=1</c> — a paid delivery on record, the clock at a window, the mark up;
-    /// <c>?park=1&amp;chalk=wiped</c> — one watch later, the mark seen and wiped, the goods still under the
-    /// slat. Called where <c>?park=1</c> stands the captain in the park.
+    /// #794 QA · <c>?dock=selene-gate&amp;ashore=1&amp;chalk=1</c> — a paid delivery on record, the clock at a
+    /// window, the mark up, the captain standing in the gallery; <c>…&amp;chalk=wiped</c> — one watch later,
+    /// the mark seen and wiped, the goods still under the table. Called right after <c>?ashore=1</c> has
+    /// walked the captain into the hall.
     ///
     /// <para>What it PLANTS is the record a real payment writes (the owed tag, and for the wiped row the
-    /// seen tag), for a parcel minted the way the desk mints them. The ground in the record is the ground
-    /// the dev route landed on — <c>?park=1</c>'s cheat rock, which no desk's parcel can be addressed to — so
-    /// that half is stated rather than earned. Everything after it is the shipped path: the notice, the
-    /// chalk on the plan, the move on the card, the satchel, the tag, the book.</para>
+    /// seen tag), for a parcel minted the way the desk mints them. Everything after it is the shipped path:
+    /// the gallery's poll, the chalk on the plan, the move on the card, the satchel, the tag, the book. It
+    /// stands the captain at the island machine's own published spot (<see cref="HavenInterior.TheVendorsAt"/>)
+    /// — inside the gallery, never a coordinate typed here — and says its line LAST, so the ashore row's own
+    /// pulse cannot write over the one sentence that tells a tester which table (#1296's lesson).</para>
     /// </summary>
-    /// <para>#1296 · It RETURNS its tester's line instead of showing it, and the caller shows it LAST. Shown
-    /// here, it was written over on the same tick by <c>?park=1</c>'s own dev pulse at the same rank, and the
-    /// one sentence that tells a tester which bench holds the drop never reached the screen. The more specific
-    /// cheat wins the pulse, which is what <c>?park=1&amp;spread=1</c> already does. Null when nothing was
-    /// asked for.</para>
-    private string? PlantTheChalkIfAsked(SurfaceExcursion ex, in UndergroundComplex.Park green)
+    private void PlantTheChalkIfAsked()
     {
         ChalkMark.Cheat cheat = Navigation is { } address ? ChalkMark.CheatIn(address.Uri) : ChalkMark.Cheat.None;
         if (cheat == ChalkMark.Cheat.None)
         {
-            return null;
+            return;
         }
 
+        string? berth = _dockedHavenId;
+        IReadOnlyList<DeckReachability.Point> vendors = berth is null ? [] : HavenInterior.TheVendorsAt(berth);
         long now = PatronRota.WatchIndex(SimTime);
-        string body = ex.Stop.Body.Id;
         string parcel = UnlistedParcel.FromTheDesk("chalk-dev", now).Id;
-        long paid = ChalkMark.PaidWatchFor(cheat, parcel, body, now);
-        if (ChalkMark.For(parcel, body, paid, in green) is not { } mark)
+        if (berth is null || vendors.Count == 0
+            || ChalkMark.For(parcel, berth, ChalkMark.PaidWatchFor(cheat, parcel, berth, now),
+                TheGallerysTables(berth)) is not { } mark)
         {
-            return "🧪 DEV ?chalk= — this park has no bench a drop could be left under.";
+            ShowPulseMessage(
+                "🧪 DEV ?chalk= — this berth has no gallery with a table a drop could be left under. "
+                + "Try &dock=selene-gate&ashore=1.");
+            return;
         }
 
         _roomsTurnedOver.Add(mark.Owed);
@@ -217,10 +255,18 @@ public sealed partial class Map
             _roomsTurnedOver.Add(mark.SeenOn(seen));
         }
 
-        // The canon sentence counts outward from the gate and does not say which way, so every ordinal
-        // names one bench on each side. The TESTER is told the side on the plan; the captain is not.
-        string side = ParkBenches.On(in green)[mark.Bench].X < green.X ? "LEFT" : "RIGHT";
-        return $"🧪 DEV ?chalk={(cheat == ChalkMark.Cheat.Wiped ? "wiped" : "1")}: {mark.ThePaymentLine()} "
-            + $"(the one to the {side} of the gate on the plan)";
+        if (OnTheConcourse)
+        {
+            DeckReachability.Point island = vendors[^1];
+            StandCaptainAt(island.X, island.Y, "you come out of the tube into the gallery");
+        }
+
+        // The canon sentence says "first" or "second" and nothing about which end of the room. The TESTER is
+        // told which machine the table stands in front of — the one the cross is chalked beside, which the
+        // wiped row cannot show (the stone is clean) and the up row at the same watch names the same table.
+        ShowPulseMessage(
+            $"🧪 DEV ?chalk={(cheat == ChalkMark.Cheat.Wiped ? "wiped" : "1")}: {mark.ThePaymentLine()} "
+            + $"(table {mark.Table} of HavenInterior.GalleryTops — the one in front of the machine the cross "
+            + (cheat == ChalkMark.Cheat.Wiped ? "was beside)" : "is beside)"));
     }
 }

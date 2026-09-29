@@ -84,6 +84,10 @@ public partial class Map
         // a countdown that a warp jump can leap over is not a countdown (Map.Void).
         RunTheVoidWatch();
 
+        // #1202: and a stringer's story, three sim-days after she paid — put back on the wire whenever it is due
+        // and not there, because pushed events are not saved.
+        ThePressRunsHerStory();
+
         bool wasHidden = !double.IsNaN(_hiddenAtHavenSinceSimTime);
         bool hidden = IsHiddenAtHaven();
 

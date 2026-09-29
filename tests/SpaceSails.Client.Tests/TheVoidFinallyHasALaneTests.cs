@@ -92,7 +92,8 @@ public sealed class TheVoidFinallyHasALaneTests
     [Fact]
     public void TheCountdownRidesTheVaultAndOnlyWhenItIsRunning()
     {
-        string vault = Pages("Map.Vault.cs");
+        // #251 · RE-PATHED: ApplyVault was cut into Map.Vault.Apply.cs by a pure move; read both halves, head first.
+        string vault = Pages("Map.Vault.cs") + Pages("Map.Vault.Apply.cs");
         Assert.Contains("private Vault BuildVault(", vault, StringComparison.Ordinal);   // the right file
 
         Assert.Contains("Void = _voidDeclaredDay == VoidRule.ClockNotRunning", vault, StringComparison.Ordinal);

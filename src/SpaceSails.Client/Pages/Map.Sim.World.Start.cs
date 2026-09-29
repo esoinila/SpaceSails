@@ -108,6 +108,14 @@ public partial class Map
             // sleeve. Immediately after the threshold, because it needs the deck the line above welded and
             // the coordinates it just wrote.
             SitAtABarTopIfAsked();
+
+            // #794 · …and ?chalk=1|wiped walks one leg further the other way: out along the observation walk
+            // into its gallery, with a paid delivery's return on record under one of its two tables.
+            PlantTheChalkIfAsked();
+
+            // #1202 slice 2 · …and ?spike=1|spiked walks the same leg: into the gallery, where she writes at the
+            // far table while a spike is in hand against her story, or where the recorder is left after it.
+            SpikeItIfAsked();
         }
 
         // #428 · ?nerve=N — seed the gauge BEFORE the landing cheat rides the shuttle down and before any
@@ -156,6 +164,10 @@ public partial class Map
         // desk in reach. Read off the address; nothing happens here without it.
         BuryAGeocacheForCheat();
 
+        // #1202 — ?press=1|filed|pending takes a stringer aboard at this berth, or has her story already on the wire.
+        // Read off the address; nothing happens here without it.
+        TakeThePressForCheat();
+
         if (_landCheat)
         {
             // #464: ride the shuttle down now that the berth is clamped and the ephemeris is live, so the
@@ -164,7 +176,7 @@ public partial class Map
             // #621: …and ?death= waits for the boots to be on the ground, because the PLACE is read off the
             // live excursion. Killing the captain before the shuttle has landed would classify the death on
             // her deck and hand back the wrong card — which is the whole bug the cheat exists to hunt.
-            _ = AutoLandThenStageDeathAsync(q.DeathCheat);
+            _ = AutoLandThenStageDeathAsync(q.DeathCheat, q.NerveCheat);
         }
         else if (q.DeathCheat is { } onHerDeck)
         {

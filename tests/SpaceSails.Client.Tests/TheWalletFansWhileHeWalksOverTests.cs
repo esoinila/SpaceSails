@@ -77,7 +77,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
         Assert.Contains("FanTheWallet();", hail, StringComparison.Ordinal);
 
         // …and the read does not open one. The card is the answer, not a second question.
-        string read = Method(Round("Patrol.Challenge.cs"), "private void TheRoundStopsAtYou(");
+        string read = Method(Round("Patrol.Challenge.Wallet.cs"), "private void TheRoundStopsAtYou(");
         Assert.DoesNotContain("FanTheWallet(", read, StringComparison.Ordinal);
         Assert.Contains("WalletFanOpen = false;", read, StringComparison.Ordinal);
     }
@@ -92,7 +92,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     [Fact]
     public void OnePaperIsExactlyTodayAndCoreIsWhatSaysSo()
     {
-        string fan = Method(Round("Patrol.Challenge.cs"), "private void FanTheWallet()");
+        string fan = Method(Round("Patrol.Challenge.Wallet.cs"), "private void FanTheWallet()");
         Assert.Contains("WalletChoice.Fans(", fan, StringComparison.Ordinal);
         Assert.Contains("WalletChoice.DefaultFor(", fan, StringComparison.Ordinal);
 
@@ -128,7 +128,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
             read, StringComparison.Ordinal);
         Assert.DoesNotContain("TheGuardReads(bodyId, g.Plate, _host.Satchel", read, StringComparison.Ordinal);
 
-        string handed = Method(Round("Patrol.Challenge.cs"), "private Satchel.Item? ThePaperHandedOver(");
+        string handed = Method(Round("Patrol.Challenge.Wallet.cs"), "private Satchel.Item? ThePaperHandedOver(");
         Assert.Contains("PaperInHand", handed, StringComparison.Ordinal);
         Assert.Contains("WalletChoice.StillHeld(", handed, StringComparison.Ordinal);
     }
@@ -158,7 +158,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
             "the name is filed after the read has been paid for, so a pass that worked is never written down.");
 
         // …and the line and the row are composed off the SAME outcome the card was.
-        string file = Method(Round("Patrol.Challenge.cs"), "private void FileTheNameYouGave(");
+        string file = Method(Round("Patrol.Challenge.Wallet.cs"), "private void FileTheNameYouGave(");
         // …and the filing itself did not move: it is still the challenge's, and still the only thing that
         // writes the captain's paper trail.
         // #1149 · …and the outcome is asked ONCE, at the read, and HANDED to the filing. Asking it a second
@@ -192,7 +192,7 @@ public sealed class TheWalletFansWhileHeWalksOverTests
     [Fact]
     public void TheBlowIsFiledUnderThePlaceAndACleanReadJoinsNoThread()
     {
-        string file = Method(Round("Patrol.Challenge.cs"), "private void FileTheNameYouGave(");
+        string file = Method(Round("Patrol.Challenge.Wallet.cs"), "private void FileTheNameYouGave(");
 
         Assert.Contains("WalletChoice.CoverBlew(how)", file, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.BlowSubjects(", file, StringComparison.Ordinal);

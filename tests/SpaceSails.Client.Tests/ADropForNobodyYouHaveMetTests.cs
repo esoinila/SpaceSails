@@ -225,7 +225,9 @@ public sealed class ADropForNobodyYouHaveMetTests
     [Fact]
     public void TheDeliveryIsTheSameShovelAndTheSameHole()
     {
-        string dig = Code(Read("src", "SpaceSails.Client", "Pages", "Map.Surface.Dig.cs"));
+        // #251 · RE-PATHED: Map.Surface.Dig.cs was cut in two by a pure move; read both halves, head first.
+        string dig = Code(Read("src", "SpaceSails.Client", "Pages", "Map.Surface.Dig.cs")
+            + Read("src", "SpaceSails.Client", "Pages", "Map.Surface.Dig.Chest.cs"));
         string drop = Code(Read("src", "SpaceSails.Client", "Pages", "Map.ParcelDrop.cs"));
 
         // The dig calls it, once, ON the pulse it was always going to say.
@@ -337,7 +339,9 @@ public sealed class ADropForNobodyYouHaveMetTests
     [Fact]
     public void AConfiscationIsAnAbsenceAndNotARefusal()
     {
-        string challenge = Code(Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Challenge.cs"));
+        // #251 · RE-PATHED: Patrol.Challenge.cs was cut in two by a pure move; the guard reads both halves, head first.
+        string challenge = Code(Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Challenge.cs")
+            + Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Challenge.Wallet.cs"));
         string offer = Code(Read("src", "SpaceSails.Client", "Pages", "Map.UnlistedParcel.cs"));
         string drop = Code(Read("src", "SpaceSails.Client", "Pages", "Map.ParcelDrop.cs"));
 
@@ -428,7 +432,9 @@ public sealed class ADropForNobodyYouHaveMetTests
     {
         string drop = Code(Read("src", "SpaceSails.Client", "Pages", "Map.ParcelDrop.cs"));
         string start = Code(Read("src", "SpaceSails.Client", "Pages", "Map.Sim.World.Start.cs"));
-        string query = Code(Read("src", "SpaceSails.Client", "Pages", "Map.Sim.World.QueryArcs.cs"));
+        // #251 · RE-PATHED: Map.Sim.World.QueryArcs.cs was cut in two by a pure move; read both halves, head first.
+        string query = Code(Read("src", "SpaceSails.Client", "Pages", "Map.Sim.World.QueryArcs.cs")
+            + Read("src", "SpaceSails.Client", "Pages", "Map.Sim.World.QueryArcs.Long.cs"));
         string links = Read("docs", "testing-links-2026-09-17.md");
 
         Assert.Contains("parcel=", query, StringComparison.Ordinal);

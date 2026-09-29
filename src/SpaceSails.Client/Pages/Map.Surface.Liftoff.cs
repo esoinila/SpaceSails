@@ -170,5 +170,8 @@ public partial class Map
             string tail = escapedWithWatchdogs ? " You outran the Old Ones." : "";
             ShowPulseMessage($"🛸 Back aboard from {ex.Stop.Body.Name}.{tail}{botTail}{dropTail}");
         }
+
+        // #1202 · …and if this was a stringer's ground, she is aboard, and she sleeps the burn back.
+        SheSleepsTheBurnBack(ex);
     }
 }

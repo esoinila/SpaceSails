@@ -62,6 +62,18 @@ public sealed class TheSheetComputesTheSameStyleTests : IAsyncLifetime
         ["grid-template-columns"] = ["grid-template-columns"], ["grid-template-rows"] = ["grid-template-rows"],
     };
 
+    /// <summary>
+    /// #1320 · <b>ELEMENTS WHOSE PRESENCE IS A CLOCK, NOT A RULE — MASKED.</b> <c>.deck-pulse-toast</c> is drawn
+    /// only while a pulse line is inside its dwell (<c>PulseSlot</c>: 1.5–8 s from whenever the line was
+    /// written), so whether it is on the page when the reading is taken is decided by how long the boot and
+    /// the settle took on that runner — not by the sheet. It went red once on #1320 in "ashore · the bar" (a toast
+    /// caught mid-flight, green on a re-run), and the three landing states only ever had it because their
+    /// arrival line was still inside its dwell. So its rows are not read in any state, the same way
+    /// <c>SettledAsync</c> leaves a spinner out of "is the screen still" (README, <i>GateReady</i>): the pin is
+    /// about what the sheet computes, and a toast's comings and goings are not that.
+    /// </summary>
+    internal static readonly string[] Transients = [".deck-pulse-toast"];
+
     /// <summary>The states, in order. Each is a boot URL and, optionally, a desk tab pressed after it.</summary>
     private static readonly (string Name, string Url, string? Desk)[] States =
     [
@@ -100,7 +112,8 @@ public sealed class TheSheetComputesTheSameStyleTests : IAsyncLifetime
     [Fact]
     public async Task Every_rule_the_page_sheet_writes_computes_what_it_computed()
     {
-        IReadOnlyList<(string Selector, string[] Props)> asked = WhatTheSheetAsks();
+        IReadOnlyList<(string Selector, string[] Props)> asked =
+            [.. WhatTheSheetAsks().Where(a => !Transients.Contains(a.Selector, StringComparer.Ordinal))];
         Assert.True(asked.Count > 50, $"only {asked.Count} selectors were read off Map.razor.css — the parser is blind.");
 
         var lines = new List<string>();

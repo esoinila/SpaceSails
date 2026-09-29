@@ -50,7 +50,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     /// are <c>DoesNotContain</c> over the whole subject, and pointing one at a single file would be a silent
     /// weakening.</summary>
     private static string Table() =>
-        Source("Pages", "Map.Table.cs") + TheTablesOwnPartials();
+        Source("Pages", "Map.Table.cs") + Source("Pages", "Map.Table.Talk.cs") + TheTablesOwnPartials();
 
     /// <summary>#251 · The table scene is FIVE partials now (opening, the moves, #757's wait, #758's
     /// cabinet, #680's one ending) — read as a GLOB and not as a written list, because several claims over
@@ -78,7 +78,10 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     }
 
     private static string Seated() =>
-        Source("Pages", "Map.Seated.cs") + Source("Pages", "Seating", "Seating.Seated.cs");
+        // #251 · RE-PATHED: Map.Seated.cs's forwarders were cut into Map.Seated.Forwarders.cs by a pure move;
+        // read head first, so the concatenation is the same text in the same order.
+        Source("Pages", "Map.Seated.cs") + Source("Pages", "Map.Seated.Forwarders.cs")
+        + Source("Pages", "Seating", "Seating.Seated.cs");
 
     private static string Bench() =>
         Source("Pages", "Map.Bench.cs") + Source("Pages", "Seating", "Seating.Bench.cs");
@@ -114,9 +117,13 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         string own = Path.Combine(dir, "Patrol");
         string[] state =
         [
-            "Patrol.cs", "Guard.cs", "IPatrolHost.cs",
+            // #251 · RE-PATHED, never re-asserted: Guard.cs, Patrol.Challenge.cs and Patrol.Run.cs were each
+            // cut in two by a pure move, and each tail sits straight after its head, so the concatenation
+            // reads the same text in the same order. The count below now stops a fourteenth part going unread.
+            "Patrol.cs", "Guard.cs", "Guard.Transitions.cs", "IPatrolHost.cs",
             "Patrol.Floor.cs", "Patrol.Hide.cs", "Patrol.Round.cs",
-            "Patrol.Challenge.cs", "Patrol.Escort.cs", "Patrol.Run.cs",
+            "Patrol.Challenge.cs", "Patrol.Challenge.Wallet.cs", "Patrol.Escort.cs",
+            "Patrol.Run.cs", "Patrol.Run.Heard.cs",
 
             // #746 · THE TENTH PART, and it is the checkpoint as an ENCOUNTER: the scene the
             // stop's card carries, which moves are on offer, the dice a rolled one casts, and the

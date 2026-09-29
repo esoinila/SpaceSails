@@ -109,7 +109,7 @@ public sealed partial class DeckView
         _perf?.Mark("DrawTheDoors");
         NameTheRooms(plan, project, darkState);
         _perf?.Mark("NameTheRooms");
-        MarkTheGround(surface, scale, project);
+        MarkTheGround(surface, state.Chalk, scale, project);
         _perf?.Mark("MarkTheGround");
 
         if (isShip)

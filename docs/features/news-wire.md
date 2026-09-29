@@ -19,6 +19,9 @@ room and [station-desks.md](station-desks.md) for the Galley desk generally.
   - **Intel purchased** — buying a route tip on the dark web.
   - **Orbit entered at a haven** — binding into orbit around any body flagged as a pirate haven.
 
+  - **A stringer's story** (#1202) — three sim-days after a journalist the captain carried (CARRY THE PRESS) pays her fare, the wire prints HER story, in her voice and under her byline, about the moon she went to: one of two stories, chosen by whether the captain dug up the tin her source left. It names a hired boat's master and never the captain. The next sim-day a **port's rag** (never the ship's wire) prints the Ringside floor's opinion of it. Pushed events are not saved, so both are put back on the wire from the contract's own record whenever they are due and absent — dated when they ran, printed once.
+  - **…or a spiked one** (#1202 slice 2) — while her story is pending, a dark-web desk offers **SPIKE IT**. At the story's own time the window makes exactly one of three: **SPIKED** (the captain took her pages off her gallery table) prints nothing at all — no story, no floor reaction — and the book files the hole under ⬚; **ALTERED** (the client's page went into her stack) prints the client's sentence under her byline, the same pass-through kind, in the wire law's sweep; **LATE** (her pages were on her table) runs her own story as above. The decision is kept on the contract's record, so a reload never prints a different version. Nothing anywhere says which version was true.
+
 Both kinds render as the same `NewsWire.NewsItem` (a sim-time + a headline string), so the two
 feeds can be merged and sorted newest-first without the UI caring which kind produced which line.
 

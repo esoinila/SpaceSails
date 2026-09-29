@@ -73,7 +73,8 @@ public class TheGroundRemembersWhatYouDidToItTests
     [Fact]
     public void TheGroundLedger_IsBothSavedAndLoaded()
     {
-        string vault = Pages("Map.Vault.cs");
+        // #251 · RE-PATHED: ApplyVault was cut into Map.Vault.Apply.cs by a pure move; read both halves, head first.
+        string vault = Pages("Map.Vault.cs") + Pages("Map.Vault.Apply.cs");
         Assert.Contains("new GroundSection", vault, StringComparison.Ordinal);
         Assert.Contains("GroundMemory.Restore(vault.Ground?.Changed)", vault, StringComparison.Ordinal);
     }

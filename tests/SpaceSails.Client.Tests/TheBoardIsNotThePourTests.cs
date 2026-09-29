@@ -217,7 +217,8 @@ public sealed class TheBoardIsNotThePourTests
     public void TheStoryOutcomeHasALever_AndTheLeverDoesNotForgeTheDie()
     {
         // The boot reads it…
-        string boot = Pages("Map.Sim.World.QueryArcs.cs");
+        // #251 · RE-PATHED: Map.Sim.World.QueryArcs.cs was cut in two by a pure move; read both halves, head first.
+        string boot = Pages("Map.Sim.World.QueryArcs.cs") + Pages("Map.Sim.World.QueryArcs.Long.cs");
         Assert.Contains("StartsWith(\"special=\"", boot, StringComparison.Ordinal);
         Assert.Contains("_specialStoryCheat", boot, StringComparison.Ordinal);
 

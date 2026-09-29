@@ -725,6 +725,42 @@ on the clock.
 **What is deliberately still not here.** The corridor is otherwise empty: the other four cabins are shut and
 nobody's, and the dark-web desk's rows are still rows. The people come one at a time.
 
+## The chalk mark: a dead drop under a gallery table (#794 slice 2, 2026-09-28)
+
+The faceless trade's return leg. A parcel taken at any haven's dark-web desk, buried where the desk said and
+**paid** (#711), now earns one thing back: the counterparty leaves something too physical to transmit under
+one of the **two steel tables in the gallery at the end of Selene Gate's observation walk**, and chalks a
+cross on the gallery's back-wall stone beside the vending machines to say it is there. The payment pulse
+tells the captain where, in Fable's words: *"There is something for you at Selene Gate. The gallery at the
+end of the walk, the first table. Watch the stone by the machines."*
+
+**The clock** is `ChalkMark` in Core and is pure arithmetic: every third watch from the watch the payment
+landed (seeded offset), the drop is loaded and the cross is up; at the next turnover the crew that keeps
+the gallery clean wipes the stone, and the goods lie exposed for one more watch before they go back. Walking
+into the gallery while the cross is up files the mark's line once per window under 🖍; a wipe the captain
+saw go up is told once; a wipe nobody saw is never told. Sat at the named table **alone**, while the goods
+are there, the table's card carries one more move — **FEEL UNDER THE LIP** — and taking it puts an unlisted
+parcel in the satchel already addressed to another ground, so the trade is a chain and the captain is the
+only face on it. At the other table, sharing a table, or with nothing there, the move is simply absent,
+never greyed (Kosh). The collection writes `gallery-drop:{parcel}@{watch}` into the register of turned-over
+ground — the pattern the owner named, written and read by nobody yet. The collection takes the goods and
+the move and **leaves the cross up for the rest of the window** (Fable, 2026-09-29): the mark is the
+counterparty's signal, and nobody wiped the stone when the captain reached under the table — the crew does
+that at the next turnover, as ever.
+
+**Why it moved.** Slice 1 (#1294/#1296) put the drop under a park bench on a Hive floor, beside the
+ATTENDANCE IS RECORDED notice. It was complete and, in shipped play, silent: a park is a Hive block, no sol
+moon keeps a Hive, and the delivery rail only ever names sol's moons — so the two rails never met. The owner
+ruled (#794, 2026-09-28) that the drop goes where the captain already goes. The gallery was built as *a
+room nobody is in* (#1199), with its own two tables and the only stone in the room beside the machines,
+which is exactly where a dead drop wants to be. The mechanic **moved**: the park's bench card is back to
+SIT A WHILE and Stand up, its sentence stays, and nothing is duplicated. The chalk is a drawn mark, not a
+plate — the gallery carries no new label, the seat ledger does not move (no new `TableTalk` field), and with
+no paid delivery owed every docked frame draws exactly what it drew before.
+
+Dev starts: `/map?dock=selene-gate&ashore=1&chalk=1` (the cross up, the captain in the gallery) and
+`…&chalk=wiped` (one watch later) — both in [the testing guide](../testing-guide.md), Appendix A.
+
 ## Later (beyond the follow-up)
 
 A real bounty/contract accept-flow if the "front for existing systems" wiring proves too thin; heat

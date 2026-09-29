@@ -11,17 +11,23 @@ using Xunit;
 namespace SpaceSails.Core.Tests;
 
 /// <summary>
-/// #794 slice 1 · THE CHALK MARK — the faceless trade's return leg, as pure arithmetic.
+/// #794 · THE CHALK MARK — the faceless trade's return leg, as pure arithmetic.
 ///
-/// <para>Fable's design on #794 (2026-09-27): a paid delivery earns one return, left under one bench of the
-/// park under the ground that was dug, on a schedule — every third watch, the mark up for the window, the
-/// goods exposed one watch after the wipe. Every guard here walks the REAL park the generator carves on the
-/// real field, and each was watched go RED against a revert of the behaviour it names (quoted in the PR
-/// body for #794).</para>
+/// <para>Fable's design on #794 (2026-09-27), moved by the owner's ruling of 2026-09-28 from a park bench to
+/// the gallery at the end of Selene Gate's observation walk: a paid delivery earns one return, left under
+/// one of the gallery's two tables, on a schedule — every third watch, the mark up for the window, the goods
+/// exposed one watch after the wipe. The room's geometry is the client's (<c>HavenInterior.GalleryTops</c>);
+/// what is driven here is everything Core decides once it is told how many tables stand there, and
+/// <c>TheChalkMarkIsWiredTests</c> in the client suite holds the real room to the same count. Each guard was
+/// watched go RED against a revert of the behaviour it names (quoted in the PR body for #794 slice 2).</para>
 /// </summary>
 public sealed class TheChalkMarkTests
 {
-    private static SurfaceLayout.Field Field => SurfaceLayout.DefaultField;
+    /// <summary>The gallery's two steel tables — the count <c>HavenInterior.GalleryTops</c> publishes, held to
+    /// this number by the client suite.</summary>
+    private const int Tables = 2;
+
+    private const string Haven = ChalkMark.Haven;
 
     /// <summary>Every moon sol.json ships, read off the file rather than typed — the same pool the desk's
     /// parcels are addressed from (<see cref="ShuttleExcursion.IsLandableSurface"/> is "a moon").</summary>
@@ -40,23 +46,12 @@ public sealed class TheChalkMarkTests
         return moons;
     }
 
-    /// <summary>Every park ground in sol.json — each moon whose complex, were it there, keeps the green —
-    /// with its park, built by the real generator.</summary>
-    private static IEnumerable<(string Body, UndergroundComplex.Park Park)> EveryParkGround()
-    {
-        foreach (string body in SolMoons())
-        {
-            if (ChalkMark.TheParkUnder(body, Field, forcePresent: true) is { } park)
-            {
-                yield return (body, park);
-            }
-        }
-    }
-
     private static IEnumerable<string> Parcels(int n) =>
         Enumerable.Range(0, n).Select(i => UnlistedParcel.FromTheDesk("selene-gate", 1000 + i).Id);
 
     private static double At(long watch) => (watch * PatronRota.WatchSeconds) + 60.0;
+
+    private static ChalkMark Mark(string parcel, long paid) => ChalkMark.For(parcel, Haven, paid, Tables)!.Value;
 
     // ── THE CLOCK ───────────────────────────────────────────────────────────────────────────────────────
 
@@ -67,13 +62,12 @@ public sealed class TheChalkMarkTests
     [Fact]
     public void TheMarkIsNeverUpOutsideAWindow()
     {
-        (string body, UndergroundComplex.Park park) = EveryParkGround().First();
         var wrong = new List<string>();
         int ups = 0;
         foreach (string parcel in Parcels(60))
         {
             const long paid = 500;
-            ChalkMark mark = ChalkMark.For(parcel, body, paid, in park)!.Value;
+            ChalkMark mark = Mark(parcel, paid);
             var up = new List<long>();
             for (long w = paid - 6; w < paid + 30; w++)
             {
@@ -114,11 +108,10 @@ public sealed class TheChalkMarkTests
     [Fact]
     public void TheGoodsOutliveTheMarkByExactlyOneWatch()
     {
-        (string body, UndergroundComplex.Park park) = EveryParkGround().First();
         var wrong = new List<string>();
         foreach (string parcel in Parcels(40))
         {
-            ChalkMark mark = ChalkMark.For(parcel, body, 900, in park)!.Value;
+            ChalkMark mark = Mark(parcel, 900);
             for (long win = mark.Window; win < mark.Window + 12; win += ChalkMark.WatchesBetweenWindows)
             {
                 int markWatches = 0, goodsWatches = 0;
@@ -151,92 +144,78 @@ public sealed class TheChalkMarkTests
     // ── WHERE ───────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// THE BENCH ORDINAL IS ONE OF THE PARK'S BENCHES ON EVERY PARK GROUND IN SOL.JSON — a free one (never
-    /// the lone figure's), counted from the notice's gate, and the instruction names it in words.
+    /// THE TABLE IS ONE OF THE GALLERY'S TWO, and the instruction names it in words — first or second, by
+    /// the room's own order. Both tables are used across parcels, so the seed is spreading the drop.
     /// </summary>
     [Fact]
-    public void TheBenchIsOneOfTheParksBenchesOnEveryParkGround()
+    public void TheTableIsOneOfTheGallerysTwo()
     {
-        var grounds = EveryParkGround().ToList();
-        Assert.True(grounds.Count >= 5, $"only {grounds.Count} park grounds in sol.json — this proves little.");
-
         var wrong = new List<string>();
-        var benchesUsed = new HashSet<(string, int)>();
-        foreach ((string body, UndergroundComplex.Park park) in grounds)
+        var used = new HashSet<int>();
+        foreach (string parcel in Parcels(40))
         {
-            IReadOnlyList<ParkBenches.Bench> benches = ParkBenches.On(in park);
-            foreach (string parcel in Parcels(40))
+            if (ChalkMark.For(parcel, Haven, 77, Tables) is not { } mark)
             {
-                if (ChalkMark.For(parcel, body, 77, in park) is not { } mark)
-                {
-                    wrong.Add($"{body} {parcel}: no bench at all");
-                    continue;
-                }
-                benchesUsed.Add((body, mark.Bench));
-                if (mark.Bench < 0 || mark.Bench >= benches.Count)
-                {
-                    wrong.Add($"{body} {parcel}: bench {mark.Bench} of {benches.Count}");
-                    continue;
-                }
-                if (benches[mark.Bench].Taken)
-                {
-                    wrong.Add($"{body} {parcel}: under the lone figure's bench, which nobody sits on alone");
-                }
-                if (mark.Ordinal < 1 || mark.Ordinal > ChalkMark.OrdinalWords.Count
-                    || mark.Ordinal != ChalkMark.OrdinalFromTheGate(in park, mark.Bench))
-                {
-                    wrong.Add($"{body} {parcel}: ordinal {mark.Ordinal} does not name bench {mark.Bench}");
-                }
-                if (!mark.ThePaymentLine().Contains($"the {ChalkMark.OrdinalWords[mark.Ordinal - 1]} bench from the gate",
-                        StringComparison.Ordinal))
-                {
-                    wrong.Add($"{body} {parcel}: the line does not name the bench");
-                }
+                wrong.Add($"{parcel}: no table at all");
+                continue;
+            }
+            used.Add(mark.Table);
+            if (mark.Table < 0 || mark.Table >= Tables)
+            {
+                wrong.Add($"{parcel}: table {mark.Table} of {Tables}");
+                continue;
+            }
+            if (mark.Ordinal != mark.Table + 1
+                || !mark.ThePaymentLine().Contains(
+                    $"the {ChalkMark.OrdinalWords[mark.Table]} table.", StringComparison.Ordinal))
+            {
+                wrong.Add($"{parcel}: the line does not name table {mark.Table}");
+            }
+            if (mark.HavenId != ObservationWalk.HavenId)
+            {
+                wrong.Add($"{parcel}: left at {mark.HavenId}, not the haven with the gallery");
             }
         }
 
         Assert.True(wrong.Count == 0, string.Join("\n", wrong.Take(20)));
-        Assert.True(benchesUsed.Count > grounds.Count,
-            "every parcel landed under the same bench — the seed is not spreading the drop.");
+        Assert.Equal(Tables, used.Count);
+        Assert.Equal(Tables, ChalkMark.OrdinalWords.Count);
+    }
+
+    /// <summary>No gallery, no table, no drop — and never a table the instruction cannot name.</summary>
+    [Fact]
+    public void NoTableNoDrop()
+    {
+        Assert.Null(ChalkMark.For("p", Haven, 3, 0));
+        Assert.Equal(0, ChalkMark.For("p", Haven, 3, 1)!.Value.Table);
+        foreach (string parcel in Parcels(20))
+        {
+            Assert.InRange(ChalkMark.For(parcel, Haven, 3, 7)!.Value.Table, 0, ChalkMark.OrdinalWords.Count - 1);
+        }
+
+        var register = new HashSet<string>(StringComparer.Ordinal) { ChalkMark.OwedFor(Haven, "p", 3) };
+        Assert.Empty(ChalkMark.OwedOn(register, Haven, 0));
     }
 
     /// <summary>
-    /// COUNTED FROM THE GATE, ALONG ITS OWN SIDE OF THE WALK: walking away from the notice either way, the
-    /// benches go first, second, third — measured on the real park, where the gate stands in the middle.
+    /// THE CROSS IS ON THE STONE BESIDE THE MACHINE, toward the throat — not on the machine, on the room's
+    /// face of the wall, whichever end of the room the machine stands at.
     /// </summary>
     [Fact]
-    public void TheBenchesAreCountedOutwardFromTheGate()
+    public void TheCrossIsOnTheStoneBesideTheMachineTowardTheThroat()
     {
-        foreach ((string body, UndergroundComplex.Park park) in EveryParkGround())
-        {
-            var sides = ParkBenches.On(in park)
-                .GroupBy(b => Math.Sign(b.X - park.X))
-                .ToList();
-            foreach (var side in sides)
-            {
-                var outward = side.OrderBy(b => Math.Abs(b.X - park.X)).ToList();
-                for (int i = 0; i < outward.Count; i++)
-                {
-                    Assert.True(ChalkMark.OrdinalFromTheGate(in park, outward[i].Index) == i + 1,
-                        $"{body}: bench {outward[i].Index} is #{i + 1} walking out from the gate, " +
-                        $"and the ordinal says {ChalkMark.OrdinalFromTheGate(in park, outward[i].Index)}");
-                }
-            }
-        }
-    }
+        // A machine flush to a wall at x = 10, the room to the west; one at each end of a run whose throat
+        // is at y = 0.
+        (double, double, double, double) north = (8.0, 6.0, 10.0, 8.0);
+        (double, double, double, double) south = (8.0, -8.0, 10.0, -6.0);
 
-    /// <summary>No building under the ground, no park, no drop — and the head office never has one.</summary>
-    [Fact]
-    public void NoParkNoDrop()
-    {
-        Assert.False(ChalkMark.TheGroundKeepsAPark(KaamosLore.IceMoonBodyId, forcePresent: true));
-        Assert.Null(ChalkMark.TheParkUnder(KaamosLore.IceMoonBodyId, Field, forcePresent: true));
-        Assert.False(ChalkMark.TheGroundKeepsAPark(null));
-        foreach (string moon in SolMoons())
-        {
-            Assert.Equal(SecretLab.Present(moon) && ChalkMark.TheGroundKeepsAPark(moon, forcePresent: true),
-                ChalkMark.TheGroundKeepsAPark(moon));
-        }
+        (double nx, double ny) = ChalkMark.WhereOnTheStone(north, 0.0);
+        (double sx, double sy) = ChalkMark.WhereOnTheStone(south, 0.0);
+
+        Assert.Equal(10.0 - ChalkMark.OnTheFaceDu, nx, 9);
+        Assert.Equal(6.0 - ChalkMark.BesideTheMachineDu, ny, 9);
+        Assert.Equal(10.0 - ChalkMark.OnTheFaceDu, sx, 9);
+        Assert.Equal(-6.0 + ChalkMark.BesideTheMachineDu, sy, 9);
     }
 
     // ── THE REGISTER ────────────────────────────────────────────────────────────────────────────────────
@@ -244,125 +223,229 @@ public sealed class TheChalkMarkTests
     /// <summary>
     /// NO PAID DELIVERY, NOTHING OWED: a register with every other kind of tag in it — the desk's own quiet
     /// watches among them — yields no return. And one that IS owed yields exactly that one until it is
-    /// collected, after which it is gone for good.
+    /// collected, after which it is gone for good. Owed at the gallery's haven and nowhere else.
     /// </summary>
     [Fact]
     public void OnlyAPaidDeliveryIsOwedAndACollectionEndsIt()
     {
-        (string body, UndergroundComplex.Park park) = EveryParkGround().First();
         string parcel = UnlistedParcel.FromTheDesk("selene-gate", 4242).Id;
         var register = new HashSet<string>(StringComparer.Ordinal)
         {
             ParcelDrop.NothingForThisHullOn(12), "room:3:7@12", "fence:selene-gate@5",
         };
-        Assert.Empty(ChalkMark.OwedOn(register, body, in park));
+        Assert.Empty(ChalkMark.OwedOn(register, Haven, Tables));
 
-        register.Add(ChalkMark.OwedFor(body, parcel, 30));
-        IReadOnlyList<ChalkMark> owed = ChalkMark.OwedOn(register, body, in park);
+        register.Add(ChalkMark.OwedFor(Haven, parcel, 30));
+        Assert.StartsWith("gallery-owed:selene-gate|", ChalkMark.OwedFor(Haven, parcel, 30), StringComparison.Ordinal);
+        IReadOnlyList<ChalkMark> owed = ChalkMark.OwedOn(register, Haven, Tables);
         Assert.Single(owed);
         Assert.Equal(parcel, owed[0].ParcelId);
         Assert.Equal(30, owed[0].PaidWatch);
-        Assert.Empty(ChalkMark.OwedOn(register, body + "-elsewhere", in park));
+        Assert.Empty(ChalkMark.OwedOn(register, "the-space-bar", Tables));
 
         string collected = owed[0].CollectedOn(34);
-        Assert.Equal($"{ChalkMark.CollectedTag}:{parcel}@34", collected);
+        Assert.Equal($"gallery-drop:{parcel}@34", collected);
         register.Add(collected);
-        Assert.Empty(ChalkMark.OwedOn(register, body, in park));
+        Assert.Empty(ChalkMark.OwedOn(register, Haven, Tables));
     }
 
     /// <summary>
-    /// THE WALL SAYS THE MARK ONCE PER WINDOW, THE WIPE ONCE — and only of a mark the captain SAW. A wipe
+    /// THE MARK OUTLIVES THE COLLECTION UNTIL THE TURNOVER (Fable's ruling, 2026-09-29). The chalk is the
+    /// counterparty's signal and the gallery crew wipes it at the next turnover; nobody wiped the stone when
+    /// the captain reached under the table. So a return collected in its window is no longer OWED (the move and
+    /// the goods are gone) but is still ON THE STONE for the rest of that window, its wipe is still told, and
+    /// the next window — the counterparty's, with the return over — raises nothing.
+    ///
+    /// <para><b>RED</b> by making <c>OnTheStone</c> drop collected returns the way <c>OwedOn</c> does: the
+    /// stone was empty the moment the packet was collected.</para>
+    /// </summary>
+    [Fact]
+    public void TheMarkOutlivesTheCollectionUntilTheTurnover()
+    {
+        string parcel = UnlistedParcel.FromTheDesk("selene-gate", 9090).Id;
+        var register = new HashSet<string>(StringComparer.Ordinal) { ChalkMark.OwedFor(Haven, parcel, 200) };
+        ChalkMark mark = Assert.Single(ChalkMark.OwedOn(register, Haven, Tables));
+        long win = mark.Window;
+        Assert.True(mark.MarkIsUpAt(At(win)));
+
+        ChalkMark.StoneBeat up = mark.InTheGallery(At(win), register)!.Value;
+        register.Add(up.Tag);
+        register.Add(mark.CollectedOn(win));
+
+        // The goods and the move went with the collection…
+        Assert.Empty(ChalkMark.OwedOn(register, Haven, Tables));
+        // …the chalk did not: still up, later in the same window.
+        Assert.Equal(mark, Assert.Single(ChalkMark.OnTheStone(register, Haven, Tables, At(win) + 3600.0)));
+        Assert.True(mark.MarkIsUpAt(At(win) + 3600.0));
+
+        // The turnover wipes it, and the wipe of a seen mark is told like any other.
+        Assert.Single(ChalkMark.OnTheStone(register, Haven, Tables, At(win + 1)));
+        Assert.False(mark.MarkIsUpAt(At(win + 1)));
+        Assert.Equal(ChalkMark.WipedLine, mark.InTheGallery(At(win + 1), register)!.Value.Line);
+
+        // The next window is the counterparty's: the return is over, nothing goes up again.
+        Assert.Empty(ChalkMark.OnTheStone(register, Haven, Tables, At(win + ChalkMark.WatchesBetweenWindows)));
+
+        // Uncollected, the stone and the books agree.
+        var fresh = new HashSet<string>(StringComparer.Ordinal) { ChalkMark.OwedFor(Haven, parcel, 200) };
+        Assert.Single(ChalkMark.OnTheStone(fresh, Haven, Tables, At(win + ChalkMark.WatchesBetweenWindows)));
+    }
+
+    /// <summary>
+    /// THE PARSERS STILL READ SLICE 1'S NAMES. No shipped save carries a park tag, but one that did would
+    /// still be owed, still be told once and still end at its collection.
+    /// </summary>
+    [Fact]
+    public void TheParksTagNamesAreStillRead()
+    {
+        Assert.Equal(["park-owed", "park-drop", "park-chalk-seen", "park-chalk-wiped"], ChalkMark.ParkTags);
+
+        const string parcel = "old";
+        var register = new HashSet<string>(StringComparer.Ordinal) { $"park-owed:{Haven}|{parcel}@30" };
+        ChalkMark mark = Assert.Single(ChalkMark.OwedOn(register, Haven, Tables));
+        Assert.Equal(parcel, mark.ParcelId);
+
+        register.Add($"park-chalk-seen:{parcel}@{mark.Window}");
+        Assert.Null(mark.InTheGallery(At(mark.Window), register));
+
+        register.Add($"park-drop:{parcel}@{mark.Window}");
+        Assert.Empty(ChalkMark.OwedOn(register, Haven, Tables));
+    }
+
+    /// <summary>
+    /// THE STONE SAYS THE MARK ONCE PER WINDOW, THE WIPE ONCE — and only of a mark the captain SAW. A wipe
     /// nobody saw is never told (the #649 discipline: you never find out which).
     /// </summary>
     [Fact]
-    public void TheWallTellsTheMarkOnceAndOnlyASeenWipe()
+    public void TheStoneTellsTheMarkOnceAndOnlyASeenWipe()
     {
-        (string body, UndergroundComplex.Park park) = EveryParkGround().First();
-        ChalkMark mark = ChalkMark.For(UnlistedParcel.FromTheDesk("selene-gate", 7).Id, body, 100, in park)!.Value;
+        ChalkMark mark = Mark(UnlistedParcel.FromTheDesk("selene-gate", 7).Id, 100);
         long win = mark.Window;
         var register = new HashSet<string>(StringComparer.Ordinal);
 
         // A wipe nobody saw: the watch after the first window, with nothing seen.
-        Assert.Null(mark.AtTheGate(At(win + 1), register));
+        Assert.Null(mark.InTheGallery(At(win + 1), register));
 
         // Up, told once.
-        ChalkMark.GateBeat? up = mark.AtTheGate(At(win + ChalkMark.WatchesBetweenWindows), register);
+        ChalkMark.StoneBeat? up = mark.InTheGallery(At(win + ChalkMark.WatchesBetweenWindows), register);
         Assert.NotNull(up);
         Assert.Equal(ChalkMark.MarkIsUpLine, up!.Value.Line);
         register.Add(up.Value.Tag);
-        Assert.Null(mark.AtTheGate(At(win + ChalkMark.WatchesBetweenWindows), register));
+        Assert.Null(mark.InTheGallery(At(win + ChalkMark.WatchesBetweenWindows), register));
 
         // Wiped after being seen: told once, then silence.
         long after = win + ChalkMark.WatchesBetweenWindows + 1;
-        ChalkMark.GateBeat? wiped = mark.AtTheGate(At(after), register);
+        ChalkMark.StoneBeat? wiped = mark.InTheGallery(At(after), register);
         Assert.NotNull(wiped);
         Assert.Equal(ChalkMark.WipedLine, wiped!.Value.Line);
         register.Add(wiped.Value.Tag);
-        Assert.Null(mark.AtTheGate(At(after), register));
-        Assert.Null(mark.AtTheGate(At(after + 1), register));
+        Assert.Null(mark.InTheGallery(At(after), register));
+        Assert.Null(mark.InTheGallery(At(after + 1), register));
     }
 
-    // ── THE BENCH ───────────────────────────────────────────────────────────────────────────────────────
+    // ── THE TABLE ───────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// THE MOVE IS ABSENT ON THE WRONG BENCH AND ON A SHARED ONE — absent, not greyed: the card is the plain
-    /// bench's, move for move, whenever the captain may not feel for anything.
+    /// THE MOVE IS ABSENT AT THE OTHER TABLE AND AT A SHARED ONE — absent, not greyed: the card is the plain
+    /// table's, move for move, whenever the captain may not feel for anything. In every register the table
+    /// card comes in, and idempotent both ways.
     /// </summary>
     [Fact]
-    public void TheMoveIsAbsentOnTheWrongBenchAndOnASharedOne()
+    public void TheMoveIsAbsentAtTheOtherTableAndAtASharedOne()
     {
-        (string body, UndergroundComplex.Park park) = EveryParkGround().First();
-        ChalkMark mark = ChalkMark.For(UnlistedParcel.FromTheDesk("selene-gate", 9).Id, body, 200, in park)!.Value;
+        ChalkMark mark = Mark(UnlistedParcel.FromTheDesk("selene-gate", 9).Id, 200);
         double loaded = At(mark.Window);
 
-        foreach (ParkBenches.Bench b in ParkBenches.On(in park))
+        foreach (Encounter.Scene plain in new[]
+                 {
+                     SittingAlone.TheTable(), SittingAlone.TheTable(relaxed: true),
+                     SittingAlone.TheTable(relaxed: true, drinkInHand: true),
+                 })
         {
-            foreach (bool shared in new[] { false, true })
+            for (int table = 0; table < Tables; table++)
             {
-                bool offer = mark.IsOnOffer(b.Index, shared, loaded);
-                Encounter.Scene card = ChalkMark.TheBench(shared, offer);
-                bool should = b.Index == mark.Bench && !shared;
-                Assert.True(offer == should,
-                    $"bench {b.Index} shared={shared}: on offer {offer}, should be {should}");
-                Assert.Equal(should, ChalkMark.Offers(card));
-                if (!should)
+                foreach (bool alone in new[] { true, false })
                 {
-                    Assert.Equal(
-                        ParkBenches.TheBench(shared).Moves.Select(m => m.Id),
-                        card.Moves.Select(m => m.Id));
+                    bool offer = mark.IsOnOffer(table, alone, loaded);
+                    Encounter.Scene card = ChalkMark.TheTable(plain, offer);
+                    bool should = table == mark.Table && alone;
+                    Assert.True(offer == should, $"table {table} alone={alone}: on offer {offer}, should be {should}");
+                    Assert.Equal(should, ChalkMark.Offers(card));
+                    if (!should)
+                    {
+                        Assert.Equal(plain.Moves.Select(m => m.Id), card.Moves.Select(m => m.Id));
+                    }
                 }
             }
+
+            Encounter.Scene with = ChalkMark.TheTable(plain, goodsUnderThisLip: true);
+            Assert.Equal(plain.Moves.Count + 1, with.Moves.Count);
+            Encounter.Move feel = with.Moves.Single(m => m.Id == ChalkMark.FeelUnderTheLip);
+            Assert.Equal(ChalkMark.FeelUnderTheLipLabel, feel.Label);
+            Assert.Equal(ChalkMark.FeltLine, feel.Says);
+            Assert.Equal(SittingAlone.Stand, with.Moves[^1].Id);
+            Assert.Single(ChalkMark.TheTable(with, goodsUnderThisLip: true).Moves, m => m.Id == ChalkMark.FeelUnderTheLip);
+            Assert.Equal(plain.Moves.Select(m => m.Id),
+                ChalkMark.TheTable(with, goodsUnderThisLip: false).Moves.Select(m => m.Id));
         }
 
-        // …and on the right bench, alone, with nothing under it: absent as well.
-        long empty = mark.Window + 2;
-        Assert.False(mark.IsOnOffer(mark.Bench, shared: false, At(empty)));
-        Assert.False(ChalkMark.Offers(ChalkMark.TheBench(shared: true, goodsUnderThisSlat: true)));
-
-        Encounter.Scene with = ChalkMark.TheBench(shared: false, goodsUnderThisSlat: true);
-        Encounter.Move feel = with.Moves.Single(m => m.Id == ChalkMark.FeelUnderTheSlat);
-        Assert.Equal(ChalkMark.FeelUnderTheSlatLabel, feel.Label);
-        Assert.Equal(ChalkMark.FeltLine, feel.Says);
-        Assert.Equal(SittingAlone.Stand, with.Moves[^1].Id);
+        // …and at the right table, alone, with nothing under it: absent as well.
+        Assert.False(mark.IsOnOffer(mark.Table, alone: true, At(mark.Window + 2)));
     }
 
-    /// <summary>What is under the slat is a parcel on the existing rail, addressed to another ground.</summary>
+    /// <summary>
+    /// THE PARK LOST THE DROP: its bench card is its own two moves again (SIT A WHILE, Stand up), and nothing
+    /// in the chalk mark can be asked about a park any more — no overload takes one, and no member builds a
+    /// bench's card. The mechanic MOVED; it is not in two places.
+    /// </summary>
     [Fact]
-    public void WhatIsUnderTheSlatRidesTheRail()
+    public void TheParksBenchCardHasExactlyTwoMovesAgain()
+    {
+        foreach (bool shared in new[] { false, true })
+        {
+            Assert.Equal([SittingAlone.Wait, SittingAlone.Stand], ParkBenches.TheBench(shared).Moves.Select(m => m.Id));
+        }
+
+        var parkish = new List<string>();
+        foreach (MethodInfo m in typeof(ChalkMark).GetMethods(
+                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance
+                     | BindingFlags.DeclaredOnly))
+        {
+            foreach (ParameterInfo p in m.GetParameters())
+            {
+                Type t = p.ParameterType.IsByRef ? p.ParameterType.GetElementType()! : p.ParameterType;
+                if (t == typeof(UndergroundComplex.Park) || t == typeof(ParkBenches.Bench))
+                {
+                    parkish.Add($"{m.Name}({p.Name})");
+                }
+            }
+            if (!m.IsSpecialName
+                && (m.Name.Contains("Bench", StringComparison.Ordinal) || m.Name.Contains("Park", StringComparison.Ordinal)))
+            {
+                parkish.Add(m.Name);
+            }
+        }
+        Assert.True(parkish.Count == 0, "the chalk mark still answers about a park: " + string.Join(", ", parkish));
+    }
+
+    /// <summary>What is under the lip is a parcel on the existing rail, addressed to another ground than the
+    /// one the delivery that earned it was buried at.</summary>
+    [Fact]
+    public void WhatIsUnderTheLipRidesTheRail()
     {
         IReadOnlyList<string> pool = SolMoons();
-        foreach ((string body, UndergroundComplex.Park park) in EveryParkGround())
+        Assert.True(pool.Count >= 5, $"only {pool.Count} moons in sol.json — this proves little.");
+        foreach (string parcel in Parcels(30))
         {
-            foreach (string parcel in Parcels(10))
-            {
-                ChalkMark mark = ChalkMark.For(parcel, body, 3, in park)!.Value;
-                Satchel.Item back = mark.TheParcelUnderTheSlat(pool);
-                Assert.True(UnlistedParcel.IsAParcel(back));
-                Assert.NotEqual(parcel, back.Id);
-                ParcelDrop.Destination? where = ParcelDrop.For(back, pool);
-                Assert.NotNull(where);
-                Assert.NotEqual(body, where!.Value.BodyId);
-            }
+            ChalkMark mark = Mark(parcel, 3);
+            Satchel.Item back = mark.TheParcelUnderTheSlat(pool);
+            Assert.True(UnlistedParcel.IsAParcel(back));
+            Assert.NotEqual(parcel, back.Id);
+            ParcelDrop.Destination? where = ParcelDrop.For(back, pool);
+            ParcelDrop.Destination? dug = ParcelDrop.For(parcel, pool);
+            Assert.NotNull(where);
+            Assert.NotNull(dug);
+            Assert.NotEqual(dug!.Value.BodyId, where!.Value.BodyId);
         }
     }
 
@@ -415,36 +498,59 @@ public sealed class TheChalkMarkTests
 
     // ── THE LINES ───────────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>The payment line, with the design's own example bench, is the design's sentence verbatim.</summary>
+    /// <summary>The payment line, for both tables, is the design's sentence verbatim.</summary>
     [Fact]
     public void ThePaymentLineIsTheCanonSentence()
     {
-        ChalkMark third = new("p", "b", 0, 0, 3, 0);
         Assert.Equal(
-            "There is something for you where you dug. The park, the third bench from the gate. "
-            + "Watch the wall by the notice.",
-            third.ThePaymentLine());
+            "There is something for you at Selene Gate. The gallery at the end of the walk, the first table. "
+            + "Watch the stone by the machines.",
+            new ChalkMark("p", Haven, 0, 0, 0).ThePaymentLine());
+        Assert.Equal(
+            "There is something for you at Selene Gate. The gallery at the end of the walk, the second table. "
+            + "Watch the stone by the machines.",
+            new ChalkMark("p", Haven, 0, 1, 0).ThePaymentLine());
+    }
+
+    /// <summary>Every other line the slice can put on a screen is the brief's, verbatim.</summary>
+    [Fact]
+    public void EveryLineIsTheBriefsVerbatim()
+    {
+        Assert.Equal(
+            "Somebody has chalked the stone beside the machines. A cross, waist-high, the width of a hand. "
+            + "The crew that keeps this gallery clean will file it as damage by the next watch.",
+            ChalkMark.MarkIsUpLine);
+        Assert.Equal("The stone is clean. Somebody wiped it, or somebody read it. The stone does not say.",
+            ChalkMark.WipedLine);
+        Assert.Equal("FEEL UNDER THE LIP", ChalkMark.FeelUnderTheLipLabel);
+        Assert.Equal(
+            "Tape, cold. A packet the size of a hand, wrapped so it does not rattle. Nobody on the walk looks round.",
+            ChalkMark.FeltLine);
+        Assert.Equal(
+            "Collected under the gallery's table. Whoever left it keeps the walk's hours better than the walk does.",
+            ChalkMark.CollectedEntry);
+        Assert.Equal("🖍", ChalkMark.Glyph);
+        Assert.Equal(6, ChalkMark.AllProse().Count());
     }
 
     /// <summary>The dev start's two clocks land where they say: a window, and the watch after one.</summary>
     [Fact]
     public void TheDevStartLandsOnTheWindowItAskedFor()
     {
-        (string body, UndergroundComplex.Park park) = EveryParkGround().First();
         foreach (string parcel in Parcels(20))
         {
             const long now = 321;
-            ChalkMark up = ChalkMark.For(parcel, body, ChalkMark.PaidWatchFor(ChalkMark.Cheat.Up, parcel, body, now), in park)!.Value;
+            ChalkMark up = Mark(parcel, ChalkMark.PaidWatchFor(ChalkMark.Cheat.Up, parcel, Haven, now));
             Assert.True(up.MarkIsUpAt(At(now)));
-            ChalkMark wiped = ChalkMark.For(parcel, body, ChalkMark.PaidWatchFor(ChalkMark.Cheat.Wiped, parcel, body, now), in park)!.Value;
+            ChalkMark wiped = Mark(parcel, ChalkMark.PaidWatchFor(ChalkMark.Cheat.Wiped, parcel, Haven, now));
             Assert.False(wiped.MarkIsUpAt(At(now)));
             Assert.True(wiped.GoodsAreThereAt(At(now)));
             Assert.Equal(now - 1, wiped.LastWindowBefore(now));
         }
 
-        Assert.Equal(ChalkMark.Cheat.Up, ChalkMark.CheatIn("https://x/map?park=1&chalk=1"));
-        Assert.Equal(ChalkMark.Cheat.Wiped, ChalkMark.CheatIn("https://x/map?park=1&chalk=wiped"));
-        Assert.Equal(ChalkMark.Cheat.None, ChalkMark.CheatIn("https://x/map?park=1"));
+        Assert.Equal(ChalkMark.Cheat.Up, ChalkMark.CheatIn("https://x/map?dock=selene-gate&ashore=1&chalk=1"));
+        Assert.Equal(ChalkMark.Cheat.Wiped, ChalkMark.CheatIn("https://x/map?dock=selene-gate&ashore=1&chalk=wiped"));
+        Assert.Equal(ChalkMark.Cheat.None, ChalkMark.CheatIn("https://x/map?dock=selene-gate&ashore=1"));
         Assert.Equal(ChalkMark.Cheat.None, ChalkMark.CheatIn(null));
     }
 }

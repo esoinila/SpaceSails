@@ -444,8 +444,11 @@ public sealed class TheEighthSeatIsInTheDockedBarTests
         Assert.Equal(WalkIn.SetupCardLine(true, true), Invoke(reloaded, "WalkInCardWarning", job));
 
         // …and the two lines that hang the section off the save and the load, read where they are written.
+        // #251 · RE-PATHED: ApplyVault was cut into Map.Vault.Apply.cs by a pure move; read both halves, head first.
         string vaultSource = File.ReadAllText(
-            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Vault.cs"));
+            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Vault.cs"))
+            + File.ReadAllText(
+            Path.Combine(RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Vault.Apply.cs"));
         Assert.Contains("WalkIn = BuildWalkInSection(),", vaultSource, StringComparison.Ordinal);
         Assert.Contains("RestoreWalkInSection(vault.WalkIn);", vaultSource, StringComparison.Ordinal);
     }

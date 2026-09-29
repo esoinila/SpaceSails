@@ -41,7 +41,7 @@ public sealed class SittingIsNotACutsceneTests
     /// are <c>DoesNotContain</c> over the whole subject, and pointing one at a single file would be a silent
     /// weakening.</summary>
     private static string Table() =>
-        Source("Pages", "Map.Table.cs") + TheTablesOwnPartials();
+        Source("Pages", "Map.Table.cs") + Source("Pages", "Map.Table.Talk.cs") + TheTablesOwnPartials();
 
     /// <summary>#251 · The table scene is FIVE partials now (opening, the moves, #757's wait, #758's
     /// cabinet, #680's one ending) — read as a GLOB and not as a written list, because several claims over
@@ -69,7 +69,10 @@ public sealed class SittingIsNotACutsceneTests
     }
 
     private static string Seated() =>
-        Source("Pages", "Map.Seated.cs") + Source("Pages", "Seating", "Seating.Seated.cs");
+        // #251 · RE-PATHED: Map.Seated.cs's forwarders were cut into Map.Seated.Forwarders.cs by a pure move;
+        // read head first, so the concatenation is the same text in the same order.
+        Source("Pages", "Map.Seated.cs") + Source("Pages", "Map.Seated.Forwarders.cs")
+        + Source("Pages", "Seating", "Seating.Seated.cs");
 
     /// <summary>#870 · The sim page is twenty partials by subject now, so "the sim" a guard reads over is all
     /// of them — exactly the text it read out of one file before the split.</summary>

@@ -80,6 +80,12 @@ public partial class CommsDesk
     [Parameter] public Action SellTheChipToTheFence { get; set; } = default!;
     /// <summary>#319 slice 2 · Send the coordinates. Map writes the sale; nothing else moves.</summary>
     [Parameter] public Action SellTheLocation { get; set; } = default!;
+    /// <summary>#1202 slice 2 · SPIKE IT, as the desk would draw it — Map's own <c>SpikeOnOffer</c>, null when no
+    /// story of hers is pending.</summary>
+    [Parameter] public Func<SpaceSails.Client.Pages.Stations.DarkWeb.SpikeOffer?> SpikeOnOffer { get; set; } = default!;
+
+    /// <summary>#1202 slice 2 · Take it. Map puts the client's page in the pocket; nothing else moves.</summary>
+    [Parameter] public Action TakeTheSpike { get; set; } = default!;
     [Parameter] public double SimTime { get; set; }
     [Parameter] public Action<ShipDesk> SwitchDesk { get; set; } = default!;
     /// <summary>#711 slice 1 · Take it. Map puts it in the pocket; nothing else moves.</summary>

@@ -279,7 +279,7 @@ public sealed class ThePlayerIsToldTests
             Surface.RankedPulse, "Patrol/Patrol.Run.cs", "HeLosesYou",
             "_host.ShowPulseMessage(PatrolBeat.LostYouLine, PulseRank.Beat);"),
         new("your pass is revoked and you are walked out",
-            Surface.RankedPulse, "Patrol/Patrol.Run.cs", "TheKickOut",
+            Surface.RankedPulse, "Patrol/Patrol.Run.Heard.cs", "TheKickOut",
             "_host.ShowPulseMessage(closing, PulseRank.Beat);"),
         new("the escort ends and he lets go of you",
             Surface.RankedPulse, "Patrol/Patrol.Escort.cs", "WalkTheEscort",
@@ -440,12 +440,12 @@ public sealed class ThePlayerIsToldTests
             Surface.RankedPulse, "Map.ParkDay.cs", "CheckTheParksOwnDay",
             "SayItWhereTheyAreLooking(ParkDay.LingerLine, PulseRank.Beat);"),
 
-        // #794 · THE CHALK ON THE WALL BY THE NOTICE — and, once, the wall wiped clean of it. Plot-significant
-        // because it is the whole signal of the dead drop: a mark that is up for one watch in three, read by
-        // the one captain it means anything to. It lands on the same tick as the park's own attendance line
-        // (Status), and at Status it would be displaced by it. Ranked and not carded — the Kosh law: nothing
+        // #794 · THE CHALK ON THE STONE BY THE GALLERY'S MACHINES — and, once, the stone wiped clean of it.
+        // Plot-significant because it is the whole signal of the dead drop: a mark that is up for one watch in
+        // three, read by the one captain it means anything to. (Slice 2 moved it from the park's notice to the
+        // observation walk's gallery, owner's ruling 2026-09-28.) Ranked and not carded — the Kosh law: nothing
         // stops the world for a chalk cross. The book takes it under the mark's own glyph.
-        new("somebody has chalked the wall beside the park's notice, or wiped it after you read it",
+        new("somebody has chalked the stone beside the gallery's machines, or wiped it after you read it",
             Surface.RankedPulse, "Map.ChalkMark.cs", "CheckTheChalkMark",
             "ShowAndFile(beat.Line, ChalkMark.Glyph, PulseRank.Beat);"),
     ];

@@ -140,7 +140,10 @@ public sealed partial class ThePatrolKeepsItsOwnStateTests
         var trespass = new List<string>();
         foreach (string path in Directory.EnumerateFiles(family, "*.cs").OrderBy(p => p, StringComparer.Ordinal))
         {
-            if (Path.GetFileName(path).Equals("Guard.cs", StringComparison.Ordinal))
+            // #251 · RE-PATHED: the Guard is two files now (Guard.cs and Guard.Transitions.cs, a pure move), and
+            // the class that owns the state is exempt as a class, exactly as the one file was.
+            if (Path.GetFileName(path).Equals("Guard.cs", StringComparison.Ordinal)
+                || Path.GetFileName(path).Equals("Guard.Transitions.cs", StringComparison.Ordinal))
             {
                 continue;
             }

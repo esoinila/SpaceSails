@@ -39,6 +39,13 @@ public partial class Map
                 continue;
             }
 
+            // #1202 · Her fare is paid by her, at the clamp, in her own line (HerFareAtTheBerth) — never by the
+            // fanfare, which would have a dig on a moon somewhere pay a stringer's passage.
+            if (q.Kind == QuestKind.CarryThePress)
+            {
+                continue;
+            }
+
             // PR-WIRE: a favor delivery pays no coin — working it off REPAYS the wired debt. Book the
             // principal back onto the ledger (balance climbs toward zero), clear the obligation, and
             // give it a quiet receipt rather than the coin fanfare (no money changed hands).
@@ -166,6 +173,12 @@ public partial class Map
                     $"{HeldMemory.Label(q.Theory ?? WalkIn.Theory)} · find {q.TargetCallsign} at "
                     + $"{BodyName(q.SourceBodyId ?? "")}, then come back and tell {q.Giver} yourself."
                     + (WalkInCardWarning(q) is { Length: > 0 } grey ? $" — {grey}" : ""),
+                // #1202 · her passage names HER and HER GROUND (body · site, the book's own spelling, written into
+                // TargetCallsign when the card was booked) — the plain block is off for this kind, so without this
+                // line the row was a title, a step and a purse, and the guide's "giver Rauha Lind" was a promise.
+                QuestKind.CarryThePress =>
+                    $"Carry {GiverDisplay(q.Giver)} to {q.TargetCallsign} and back — land her on her ground, "
+                    + "then clamp at a haven for her fare.",
                 _ => "",
             };
             // #175: the live next action for an in-hand cargo run, read off ship state (too far / in the

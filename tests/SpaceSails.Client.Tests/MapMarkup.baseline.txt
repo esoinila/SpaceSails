@@ -3856,6 +3856,8 @@
             <div class="deck-offer-reward">
                 @(offer.Reward <= 0
                     ? "On the house — the tip's the payoff 🕸"
+                    : offer.Kind == QuestKind.CarryThePress
+                        ? SpaceSails.Core.CarryThePress.Terms(offer.Reward)
                     : _offerPlain.Count > 0
                         ? _offerPlain[3]
                         : $"Fee: {offer.Reward.ToString("N0", CultureInfo.InvariantCulture)} cr")
@@ -7417,7 +7419,7 @@
                             </div>
                             @if (_commsSelectedId == "darkweb")
                             {
-                                <SpaceSails.Client.Pages.Stations.DarkWeb Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" Ledger="_intelLedger" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" WireContacts="DarkWebWireContacts()" OnOpenWireBank="id => OpenBank(id, viaWire: true)" OnIntelPurchased="(string cs) => PushNewsEvent(NewsWire.NewsEventKind.IntelPurchased, cs)" ChipPrice="ChipFencePrice()" OnSellChip="SellTheChipToTheFence" InspectorCardPrice="InspectorCardPrice()" OnBuyInspectorCard="BuyTheInspectorCard" KeyPrice="TheFencesKeyPrice()" KeyPriceText="@TheFencesKeyPriceText()" OnBuyKey="BuyTheKeyFromTheFence" ParcelOnOffer="ParcelOnOffer()" OnTakeParcel="TakeTheUnlistedParcel" Geocache="GeocacheOnOffer()" OnSellLocation="SellTheLocation" ParcelDestinationRow="@TheParcelsDestinationRow()" PulseLine="@_pulse.Message" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
+                                <SpaceSails.Client.Pages.Stations.DarkWeb Visible="true" FullScreen="true" SimTime="SimTime" ShipPosition="_ship.Position" @bind-Credits="_credits" Ledger="_intelLedger" CanTrade="DarkWebCanTrade()" DisabledReason="@DarkWebDisabledReason()" TradeLocationDistanceFromEarthMeters="DarkWebDistanceFromEarth()" MarketShips="DarkWebMarketShips()" TrackedShips="DarkWebTrackedShips()" WireContacts="DarkWebWireContacts()" OnOpenWireBank="id => OpenBank(id, viaWire: true)" OnIntelPurchased="(string cs) => PushNewsEvent(NewsWire.NewsEventKind.IntelPurchased, cs)" ChipPrice="ChipFencePrice()" OnSellChip="SellTheChipToTheFence" InspectorCardPrice="InspectorCardPrice()" OnBuyInspectorCard="BuyTheInspectorCard" KeyPrice="TheFencesKeyPrice()" KeyPriceText="@TheFencesKeyPriceText()" OnBuyKey="BuyTheKeyFromTheFence" ParcelOnOffer="ParcelOnOffer()" OnTakeParcel="TakeTheUnlistedParcel" Geocache="GeocacheOnOffer()" OnSellLocation="SellTheLocation" Spike="SpikeOnOffer()" OnTakeSpike="TakeTheSpike" ParcelDestinationRow="@TheParcelsDestinationRow()" PulseLine="@_pulse.Message" OnClose="() => SwitchDesk(ShipDesk.Nav)" />
                             }
                             else
                             {

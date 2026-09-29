@@ -32,8 +32,10 @@ public sealed class TheStopIsAnEncounterTests
         return Regex.Replace(noBlock, "//[^\n]*", " ");
     }
 
+    // #251 · RE-PATHED: Patrol.Challenge.cs was cut in two by a pure move; this reads both halves, head first.
     private static string Challenge() =>
-        Code(Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Challenge.cs"));
+        Code(Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Challenge.cs")
+            + Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Challenge.Wallet.cs"));
 
     private static string Stop() =>
         Code(Read("src", "SpaceSails.Client", "Pages", "Patrol", "Patrol.Stop.cs"));
@@ -232,7 +234,9 @@ public sealed class TheStopIsAnEncounterTests
     [Fact]
     public void TheRollCheatReachesTheCheckpointWithoutWideningTheHost()
     {
-        string cheats = Code(Read("src", "SpaceSails.Client", "Pages", "Map.Sim.World.QueryArcs.cs"));
+        // #251 · RE-PATHED: Map.Sim.World.QueryArcs.cs was cut in two by a pure move; read both halves, head first.
+        string cheats = Code(Read("src", "SpaceSails.Client", "Pages", "Map.Sim.World.QueryArcs.cs")
+            + Read("src", "SpaceSails.Client", "Pages", "Map.Sim.World.QueryArcs.Long.cs"));
         Assert.Contains("_patrol.RollCheat = _rollCheat;", cheats, StringComparison.Ordinal);
 
         string host = Code(Read("src", "SpaceSails.Client", "Pages", "Patrol", "IPatrolHost.cs"));

@@ -104,6 +104,15 @@ public static class NewsWire
         // needed` on it — true, but "somebody is fitting out and the hunt is on" is a different fact from
         // "a hull is gone and the paperwork has a name on it".
         HullLostAtABerth,
+
+        // #1202 — a stringer the captain carried files her story, three sim-days after she paid. Subject IS
+        // the headline (the ArcBeatBreaks contract): the story arrives already written in her voice, and the
+        // wire only prints it. Detail = the body she went to, for the ✂ CLIP's subjects.
+        PressStoryFiled,
+
+        // #1202 — …and the floor's opinion of it, the next sim-day. Subject IS the headline again; it prints
+        // on a PORT'S RAG only (NewsScope.PortRag), never on the system wire the ship's own desks read.
+        PressFloorReaction,
     }
 
     /// <summary>One player-triggered event, dated and named. <paramref name="Subject"/> is the
@@ -426,6 +435,13 @@ public static class NewsWire
 
     // ---- Event headlines: pirate-flavored narration of a small set of gameplay hooks ----
 
+    /// <summary>#1202 · Does this pushed event print under this masthead? Every kind prints wherever the system
+    /// wire does, except the floor's reaction to a stringer's story, which is a port's own gossip and prints
+    /// on a <see cref="NewsScope.PortRag"/> only.</summary>
+    public static bool PrintsIn(NewsEventKind kind, NewsScope scope) =>
+        scope != NewsScope.CompanyIntranet
+        && (kind != NewsEventKind.PressFloorReaction || scope == NewsScope.PortRag);
+
     /// <summary>Narrates a pushed <see cref="NewsEvent"/> — pure formatting, no randomness, so
     /// the same event always reads the same.</summary>
     public static string Headline(NewsEvent evt) => evt.Kind switch
@@ -455,6 +471,9 @@ public static class NewsWire
         // #411/#663 — the subject IS the headline. An arc beat arrives already written in the voice of
         // whoever filed it, because the alternative is the wire explaining a plot to the player.
         NewsEventKind.ArcBeatBreaks => evt.Subject,
+        // #1202 — her story and the floor's reaction are pass-throughs for the same reason: they are filed
+        // in somebody's voice (CarryThePress, verbatim canon), and the wire does not rewrite a byline.
+        NewsEventKind.PressStoryFiled or NewsEventKind.PressFloorReaction => evt.Subject,
         // #525 — the wire's own clerical headline for a hull lost inside a harbour, authored verbatim in
         // the canon pass of 2026-09-06. The two braces are the RECORD'S: {N} is Subject, the berth number
         // off the plate, and {PORT} is Detail. No cause is named beyond the declaration itself and nobody
@@ -492,6 +511,12 @@ public static class NewsWire
             CaseSubjects.Line(CaseSubjects.Place(evt.Subject)),
         NewsEventKind.ArcBeatBreaks when !string.IsNullOrWhiteSpace(evt.Detail) =>
             CaseSubjects.Line(CaseSubjects.Office(evt.Detail!)),
+        // #1202 — her story is about two things the sentence prints: the stringer whose byline is at its foot
+        // (a PERSON, and the printed name is in the line), and the body it is about (a PLACE).
+        NewsEventKind.PressStoryFiled when !string.IsNullOrWhiteSpace(evt.Detail) =>
+            CaseSubjects.Line(CaseSubjects.Person(CarryThePress.Byline), CaseSubjects.Place(evt.Detail!)),
+        NewsEventKind.PressFloorReaction when !string.IsNullOrWhiteSpace(evt.Detail) =>
+            CaseSubjects.Line(CaseSubjects.Place(evt.Detail!)),
         _ => "",
     };
 }
