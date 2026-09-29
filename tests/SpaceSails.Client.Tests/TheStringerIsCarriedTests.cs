@@ -69,6 +69,33 @@ public sealed class TheStringerIsCarriedTests
     }
 
     /// <summary>
+    /// <c>?press=1</c> · THE LEDGER ROW NAMES HER AND HER GROUND, read off the painted page (0 Captain → 📜
+    /// Ledger), not off the projection: the row a captain reads says who he is carrying and where to. The guide
+    /// row for this start promises "a CARRY THE PRESS row, giver Rauha Lind".
+    ///
+    /// <para><b>RED</b> by deleting the <c>QuestKind.CarryThePress</c> arm of the ledger's detail switch: the row
+    /// read the title, "▶ On the hook" and the purse, and neither her name nor the ground.</para>
+    /// </summary>
+    [Fact]
+    public async Task TheLedgerRowNamesHerAndHerGround()
+    {
+        DeskBench b = await DeskBench.BootAsync(Aboard);
+        Map.Quest q = Hers(b);
+        await b.SwitchAsync(Pages.ShipDesk.Captain);
+        DeskBench.Painted painted = await b.RenderAsync();
+        DeskBench.Painted.Node ledgerTab = painted.Root.Descendants()
+            .Single(n => n.Element == "button" && n.Name == "📜 Ledger");
+        await b.PressAsync(ledgerTab.Handlers["onclick"]);
+        painted = await b.RenderAsync();
+
+        DeskBench.Painted.Node row = painted.Root.Descendants().Single(n =>
+            n.HasClass("captain-card") && n.Spoken.StartsWith(CarryThePress.CardTitle, StringComparison.Ordinal));
+        Assert.Contains("Rauha Lind", row.Spoken, StringComparison.Ordinal);
+        Assert.Contains(q.TargetCallsign, row.Spoken, StringComparison.Ordinal);
+        Assert.StartsWith("Luna · ", q.TargetCallsign, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// <c>?press=filed</c> · her story is on the system wire exactly once — the one WITH the tin, because the
     /// tin was dug — the floor's opinion is on the port's rag and not on the wire, and the book has filed that
     /// it ran, once. Nothing else moved: no heat.

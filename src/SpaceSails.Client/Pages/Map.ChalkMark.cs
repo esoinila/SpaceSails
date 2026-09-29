@@ -63,6 +63,13 @@ public sealed partial class Map
             ? ChalkMark.OwedOn(_roomsTurnedOver, berth, TheGallerysTables(berth))
             : [];
 
+    /// <summary>#794 · …and the marks the STONE still carries here: the owed ones, and one collected in this
+    /// window until the turnover wipes it (Fable, 2026-09-29 — the collection takes the goods, not the chalk).</summary>
+    private IReadOnlyList<ChalkMark> TheMarksOnTheStoneHere() =>
+        _dockedHavenId is { } berth
+            ? ChalkMark.OnTheStone(_roomsTurnedOver, berth, TheGallerysTables(berth), SimTime)
+            : [];
+
     // ── THE GALLERY ─────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -79,7 +86,7 @@ public sealed partial class Map
             return;
         }
 
-        foreach (ChalkMark mark in TheReturnsOwedHere())
+        foreach (ChalkMark mark in TheMarksOnTheStoneHere())
         {
             if (mark.InTheGallery(SimTime, _roomsTurnedOver) is { } beat)
             {
@@ -101,7 +108,7 @@ public sealed partial class Map
             return null;
         }
 
-        foreach (ChalkMark mark in TheReturnsOwedHere())
+        foreach (ChalkMark mark in TheMarksOnTheStoneHere())
         {
             if (mark.MarkIsUpAt(SimTime)
                 && HavenInterior.TheThroatAt(berth) is { } throat

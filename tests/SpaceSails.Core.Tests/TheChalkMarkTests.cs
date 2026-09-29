@@ -250,6 +250,48 @@ public sealed class TheChalkMarkTests
     }
 
     /// <summary>
+    /// THE MARK OUTLIVES THE COLLECTION UNTIL THE TURNOVER (Fable's ruling, 2026-09-29). The chalk is the
+    /// counterparty's signal and the gallery crew wipes it at the next turnover; nobody wiped the stone when
+    /// the captain reached under the table. So a return collected in its window is no longer OWED (the move and
+    /// the goods are gone) but is still ON THE STONE for the rest of that window, its wipe is still told, and
+    /// the next window — the counterparty's, with the return over — raises nothing.
+    ///
+    /// <para><b>RED</b> by making <c>OnTheStone</c> drop collected returns the way <c>OwedOn</c> does: the
+    /// stone was empty the moment the packet was collected.</para>
+    /// </summary>
+    [Fact]
+    public void TheMarkOutlivesTheCollectionUntilTheTurnover()
+    {
+        string parcel = UnlistedParcel.FromTheDesk("selene-gate", 9090).Id;
+        var register = new HashSet<string>(StringComparer.Ordinal) { ChalkMark.OwedFor(Haven, parcel, 200) };
+        ChalkMark mark = Assert.Single(ChalkMark.OwedOn(register, Haven, Tables));
+        long win = mark.Window;
+        Assert.True(mark.MarkIsUpAt(At(win)));
+
+        ChalkMark.StoneBeat up = mark.InTheGallery(At(win), register)!.Value;
+        register.Add(up.Tag);
+        register.Add(mark.CollectedOn(win));
+
+        // The goods and the move went with the collection…
+        Assert.Empty(ChalkMark.OwedOn(register, Haven, Tables));
+        // …the chalk did not: still up, later in the same window.
+        Assert.Equal(mark, Assert.Single(ChalkMark.OnTheStone(register, Haven, Tables, At(win) + 3600.0)));
+        Assert.True(mark.MarkIsUpAt(At(win) + 3600.0));
+
+        // The turnover wipes it, and the wipe of a seen mark is told like any other.
+        Assert.Single(ChalkMark.OnTheStone(register, Haven, Tables, At(win + 1)));
+        Assert.False(mark.MarkIsUpAt(At(win + 1)));
+        Assert.Equal(ChalkMark.WipedLine, mark.InTheGallery(At(win + 1), register)!.Value.Line);
+
+        // The next window is the counterparty's: the return is over, nothing goes up again.
+        Assert.Empty(ChalkMark.OnTheStone(register, Haven, Tables, At(win + ChalkMark.WatchesBetweenWindows)));
+
+        // Uncollected, the stone and the books agree.
+        var fresh = new HashSet<string>(StringComparer.Ordinal) { ChalkMark.OwedFor(Haven, parcel, 200) };
+        Assert.Single(ChalkMark.OnTheStone(fresh, Haven, Tables, At(win + ChalkMark.WatchesBetweenWindows)));
+    }
+
+    /// <summary>
     /// THE PARSERS STILL READ SLICE 1'S NAMES. No shipped save carries a park tag, but one that did would
     /// still be owed, still be told once and still end at its collection.
     /// </summary>

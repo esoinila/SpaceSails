@@ -141,6 +141,9 @@ public sealed class TheDropIsUnderAGalleryTableTests
         Assert.Equal(1, Filed(map, ChalkMark.CollectedEntry));
         Assert.Equal(ChalkMark.FeltLine, t.Outcome);
         Assert.False(ChalkMark.Offers(t.Scene), "the move is still on the card after the goods were taken.");
+        // Fable, 2026-09-29: the collection takes the goods and the move, never the chalk — the cross is still
+        // on the stone until the turnover wipes it.
+        Assert.NotNull(Invoke(map, "TheChalkOnTheStone"));
     }
 
     /// <summary>
