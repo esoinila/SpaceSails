@@ -253,7 +253,9 @@ public sealed class TheManTakesAPostTests
             }
         }
 
-        Assert.True(sat > 20,
+        // #1202 (2026-09-29) · 20 → 15: Rauha Lind now has a chair of her own on her watch, and watch 0 is hers
+        // at several havens, so the tops she sits at are no longer the captain's to take (18 sits measured).
+        Assert.True(sat > 15,
             $"only {sat} sit(s) in the whole sweep — a sweep that seats nobody proves nothing.");
         Assert.True(silent.Count == 0,
             $"{silent.Count} of {sat} sits paid for the reading and got nothing:\n  " +
