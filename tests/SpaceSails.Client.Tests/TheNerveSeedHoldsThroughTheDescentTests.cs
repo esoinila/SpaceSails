@@ -14,7 +14,8 @@ namespace SpaceSails.Client.Tests;
 /// <c>?nerve=3</c> onto Phobos did the same. The seed is laid before the shuttle goes and the captain is
 /// safe for every frame of the ride, so the ease handed the gauge back before the row's beat could start.
 /// This bench runs no frames, so the ride's eases are put on the page by hand, exactly as the frames left
-/// them — and the landing's own continuation, <c>AutoLandThenStageDeathAsync</c>, has to take them off.</para>
+/// them — and the landing's own continuation, <c>AutoLandThenStageDeathAsync</c>, handed the seed the boot
+/// parsed, has to take them off.</para>
 /// </summary>
 public sealed class TheNerveSeedHoldsThroughTheDescentTests
 {
@@ -35,7 +36,7 @@ public sealed class TheNerveSeedHoldsThroughTheDescentTests
 
         // The landing's continuation, run again on a landed page: the descent itself early-outs (the boots
         // are down), and what follows it is what this issue is about.
-        await (Task)bench.CallOnTheDispatcher("AutoLandThenStageDeathAsync", [null])!;
+        await (Task)bench.CallOnTheDispatcher("AutoLandThenStageDeathAsync", [null, seed])!;
 
         Assert.Equal(seed, NervePips.PipsOf((double)bench.Peek("_nerve")!));
         Assert.DoesNotContain(
@@ -49,7 +50,7 @@ public sealed class TheNerveSeedHoldsThroughTheDescentTests
         using DeskBench bench = await DeskBench.BootAsync("/map?dock=the-tilt&site=0&land=1");
         bench.Poke("_nerve", NervePips.FromPips(4));
 
-        await (Task)bench.CallOnTheDispatcher("AutoLandThenStageDeathAsync", [null])!;
+        await (Task)bench.CallOnTheDispatcher("AutoLandThenStageDeathAsync", [null, null])!;
 
         Assert.Equal(4, NervePips.PipsOf((double)bench.Peek("_nerve")!));
     }

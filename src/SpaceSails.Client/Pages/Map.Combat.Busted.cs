@@ -246,9 +246,6 @@ public partial class Map
         StateHasChanged();
     }
 
-    /// <summary>#428 · The <c>?nerve=N</c> seed, kept so the landing can hand it back. Null on every boot without it.</summary>
-    private int? _nerveSeedPips;
-
     /// <summary>
     /// #1318 · <c>?nerve=N&amp;land=1</c> SETS THE BOOTS DOWN ON N PIPS, not on whatever the descent eased back.
     ///
@@ -259,9 +256,9 @@ public partial class Map
     /// moves the needle and nothing else, so on the ground it reads what the URL asked, and the ledger
     /// carries no ease the cheat's own ride paid for.</para>
     /// </summary>
-    private void HoldTheNerveSeedThroughTheDescent()
+    private void HoldTheNerveSeedThroughTheDescent(int? nerveSeed)
     {
-        if (_nerveSeedPips is not { } seed || _surface is null)
+        if (nerveSeed is not { } seed || _surface is null)
         {
             return;
         }
@@ -278,10 +275,10 @@ public partial class Map
     /// down and the excursion's floor and body id — the two facts the place classifier reads — would not
     /// exist yet. Awaited here instead, in the one place that knows the landing is over.</para>
     /// </summary>
-    private async Task AutoLandThenStageDeathAsync(DeathCause? cause)
+    private async Task AutoLandThenStageDeathAsync(DeathCause? cause, int? nerveSeed)
     {
         await AutoLandForCheatAsync();
-        HoldTheNerveSeedThroughTheDescent();
+        HoldTheNerveSeedThroughTheDescent(nerveSeed);
         if (cause is { } asked)
         {
             StageDeathCheat(asked);
