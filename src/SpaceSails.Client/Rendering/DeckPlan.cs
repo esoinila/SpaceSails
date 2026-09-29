@@ -36,7 +36,7 @@ namespace SpaceSails.Client.Rendering;
 //                                             one place in the game the captain's body is stepped.
 //   · TheParkBenchIsAGumshoeMoveTests       — the `Droid` record's whole parameter list, `Held` included.
 //
-// A third, TheDossierCardCarriesItsOwnSayingsTests (`string? Outcome`, on the `ConsoleSpot` record), was
+// A third, TheDossierCardCarriesItsOwnSayingsTests (the Outcome parameter on the `ConsoleSpot` record), was
 // re-pathed to read this file and DeckPlan.Vocabulary.cs together when the console record moved with the
 // rest of the vocabulary. Those two pins hold the captain's step and the figure record to this path: this
 // file is how a deck is walked, and the files beside it are what it is built from and written in.
