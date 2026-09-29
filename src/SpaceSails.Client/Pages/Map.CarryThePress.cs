@@ -155,9 +155,12 @@ public sealed partial class Map
             return;
         }
 
-        // Her word about the tin waits until he is standing on the ground and looking: on the pad (and on the
-        // descent's warm-up frame, which is on the pad) she has said nothing yet — see SheReadsHerWordOffTheRecorder.
-        if (!PassageOf(q).Landed && MoonSurface.IsDiggableGround(_avatarX, _avatarY, ex.Floor))
+        // Her word about the tin waits until he is standing on the ground and looking — on the pad (and on the
+        // descent's warm-up frame, which is on the pad) she has said nothing yet — AND until the slot is free:
+        // whatever was said before her (the suit's VACUUM crossing, the shuttle's line) has had its whole dwell.
+        // See SheReadsHerWordOffTheRecorder.
+        if (!PassageOf(q).Landed && _pulse.Message is null
+            && MoonSurface.IsDiggableGround(_avatarX, _avatarY, ex.Floor))
         {
             q = SheReadsHerWordOffTheRecorder(ex, q);
         }
@@ -193,7 +196,7 @@ public sealed partial class Map
         double range = Math.Sqrt((dx * dx) + (dy * dy));
 
         // …and the first time he stops out on the ground with her behind him, she says it. Once.
-        if (!p.Walked && TheTailBehindYou.HoldsHisBand(range)
+        if (p.Landed && !p.Walked && TheTailBehindYou.HoldsHisBand(range)
             && MoonSurface.IsDiggableGround(_avatarX, _avatarY, ex.Floor))
         {
             SayItWhereTheyAreLooking(CarryThePress.WalkLine);
@@ -213,14 +216,20 @@ public sealed partial class Map
     }
 
     /// <summary>
-    /// #1202 · HER WORD ABOUT THE TIN, TOLD WHEN HE IS STANDING ON THE GROUND AND LOOKING (Fable's ruling,
-    /// 2026-09-29). It used to be said on the landing's warm-up frame, and the very next line — the shuttle's
-    /// own "🛸 Shuttle mated to …" — wrote over it in the one pulse slot, so in play it was only ever read in
-    /// the field book (the seventh bug class: a told line written to a slot the next line overwrites). Now it
-    /// is said, and filed, at one of two moments, whichever comes first and only once (the contract's
-    /// <c>Landed</c> bit): the first-ground card closing (<see cref="CloseGroundLesson"/>), or — on a ground
-    /// with no such card — the captain's first step off the pad onto the regolith. Both are after the
-    /// shuttle's line, so hers is the one left in the slot.
+    /// #1202 · HER WORD ABOUT THE TIN, TOLD WHEN HE IS STANDING ON THE GROUND AND LOOKING, AND AFTER WHATEVER
+    /// WAS SAID BEFORE HER HAS HAD ITS DWELL (Fable's rulings, 2026-09-29). Said and filed in one call, once
+    /// (the contract's <c>Landed</c> bit), from <see cref="AdvanceTheStringer"/> on the first live frame that
+    /// finds the captain on the regolith (off the pad) with the pulse slot EMPTY.
+    ///
+    /// <para><b>Why the empty slot.</b> #1321 said it when the first-ground card closed, and the very next live
+    /// frame the suit's crossing — <i>"🫁 VACUUM. The suit seals and the tank cuts in…"</i>
+    /// (<see cref="AnnounceAirSupply"/>) — wrote over it at the same rank, so it was still never on screen. The
+    /// suit's line is a fact and is said first; hers waits for the slot to come free (the line before it has
+    /// expired, <see cref="PulseSlot.Expire"/>), and is then said for her own full dwell. She never outranks
+    /// the suit and her line is never dropped: a frame that finds the slot busy simply asks again next frame.
+    /// No field: the waiting is the contract's own <c>Landed</c> bit being still false.</para>
+    ///
+    /// <para>Her line about the tank (<c>Walked</c>) waits for this one, so the two are said in order.</para>
     /// </summary>
     private Quest SheReadsHerWordOffTheRecorder(SurfaceExcursion ex, Quest q)
     {
@@ -234,15 +243,6 @@ public sealed partial class Map
         FileNote(line, CarryThePress.Glyph);
         ShowPulseMessage(line);
         return RewritePassage(q, p with { Landed = true });
-    }
-
-    /// <summary>#1202 · The first-ground card has closed: if this is her ground, she says her word now.</summary>
-    private void SheReadsHerWordAsTheCardCloses()
-    {
-        if (_surface is { } ex && TheStringerOnThisGround(ex) is { } q)
-        {
-            _ = SheReadsHerWordOffTheRecorder(ex, q);
-        }
     }
 
     /// <summary>
