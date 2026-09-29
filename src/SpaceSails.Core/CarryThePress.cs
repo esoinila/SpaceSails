@@ -295,7 +295,8 @@ public static class CarryThePress
     /// <param name="Floored">The floor's reaction has been pushed once.</param>
     /// <param name="Spike">#1202 slice 2 · SPIKE IT was taken at a dark-web desk against this story.</param>
     /// <param name="Pages">…where her pages are (<see cref="SpikeIt.Pages"/>).</param>
-    /// <param name="Seen">…her line at the gallery table has been said.</param>
+    /// <param name="Seen">…where her line at the gallery table stands (<see cref="SpikeIt.HerLine"/>): written as
+    /// slice 2's <c>seen=0</c>/<c>seen=1</c>, and <c>seen=2</c> only for the one visit that found her away.</param>
     /// <param name="Outcome">…what the window made of the story, once it came.</param>
     /// <param name="Paid">…the desk's pulse after the window has been given.</param>
     /// <param name="Gone">…the gallery's line after a spiked window has been said.</param>
@@ -305,7 +306,7 @@ public static class CarryThePress
     public readonly record struct Passage(
         int Site, bool Landed = false, bool Walked = false, bool Tin = false,
         double? TurnedIn = null, bool Printed = false, bool Floored = false,
-        bool Spike = false, SpikeIt.Pages Pages = SpikeIt.Pages.OnHerTable, bool Seen = false,
+        bool Spike = false, SpikeIt.Pages Pages = SpikeIt.Pages.OnHerTable, SpikeIt.HerLine Seen = SpikeIt.HerLine.NotYet,
         SpikeIt.Outcome Outcome = SpikeIt.Outcome.None, bool Paid = false, bool Gone = false,
         bool Watched = false, SpikeIt.Stack Stack = SpikeIt.Stack.NotYet)
     {
@@ -317,7 +318,7 @@ public static class CarryThePress
                 $"site={Site};landed={B(Landed)};walked={B(Walked)};tin={B(Tin)};in={(TurnedIn is { } t ? t.ToString("R", CultureInfo.InvariantCulture) : "")};printed={B(Printed)};floor={B(Floored)}")
             + (Spike
                 ? string.Create(CultureInfo.InvariantCulture,
-                    $";spike=1;pages={(int)Pages};seen={B(Seen)};out={(int)Outcome};paid={B(Paid)};gone={B(Gone)}")
+                    $";spike=1;pages={(int)Pages};seen={(int)Seen};out={(int)Outcome};paid={B(Paid)};gone={B(Gone)}")
                   + (Watched
                       ? string.Create(CultureInfo.InvariantCulture, $";watched=1;stack={(int)Stack}")
                       : "")
@@ -350,7 +351,8 @@ public static class CarryThePress
                     "spike" => p with { Spike = value == "1" },
                     "pages" when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int g)
                                  && Enum.IsDefined(typeof(SpikeIt.Pages), g) => p with { Pages = (SpikeIt.Pages)g },
-                    "seen" => p with { Seen = value == "1" },
+                    "seen" when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n)
+                                && Enum.IsDefined(typeof(SpikeIt.HerLine), n) => p with { Seen = (SpikeIt.HerLine)n },
                     "out" when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int o)
                                && Enum.IsDefined(typeof(SpikeIt.Outcome), o) => p with { Outcome = (SpikeIt.Outcome)o },
                     "paid" => p with { Paid = value == "1" },

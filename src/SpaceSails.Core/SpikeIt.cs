@@ -41,8 +41,9 @@ public static class SpikeIt
         "A page arrives with the terms: a paragraph in nobody's hand, about {Body}, saying nothing at all in "
         + "perfect grammar.";
 
-    /// <summary>Her at the gallery — told once, the first time the captain is in the gallery while the contract
-    /// is active.</summary>
+    /// <summary>Her at the gallery — told once per contract, and only on a visit that finds her AT her table the
+    /// moment the captain enters the gallery (<see cref="HerLineOnEntering"/>); never after her pages are
+    /// taken.</summary>
     public const string AtHerTableLine =
         "She is at the far table with the recorder and a stack of pages, writing the way people write when the "
         + "window is closing.";
@@ -392,6 +393,37 @@ public static class SpikeIt
         Stack.YouWentOut when inTheGallery => (Stack.Told, true),
         _ => (now, false),
     };
+
+    /// <summary>#1202 slice 2 QA · Where her gallery line stands. It is decided on ENTERING the gallery: a visit
+    /// that finds her at her table tells it; a visit that finds her away at the machine says nothing for the whole
+    /// visit, however soon she sits back down.</summary>
+    public enum HerLine
+    {
+        /// <summary>Not told; the next time the captain is in the gallery decides.</summary>
+        NotYet = 0,
+
+        /// <summary>…told, once.</summary>
+        Told = 1,
+
+        /// <summary>…this visit found her away (or her pages gone): nothing until the captain has been out of the
+        /// gallery.</summary>
+        NotThisVisit = 2,
+    }
+
+    /// <summary>
+    /// #1202 slice 2 QA · One step of her gallery line: where it stands after a frame with the captain in the
+    /// gallery or out of it, and whether this frame is the one it is told on. It is told only when the captain
+    /// comes in with her at her table and her pages still on it; coming in while she is away spends that visit;
+    /// and once her pages have been taken it is never told at all.
+    /// </summary>
+    public static (HerLine Next, bool Tell) HerLineOnEntering(HerLine now, bool inTheGallery, bool atHerTable, Pages pages) =>
+        now switch
+        {
+            HerLine.NotYet when inTheGallery && atHerTable && pages == Pages.OnHerTable => (HerLine.Told, true),
+            HerLine.NotYet when inTheGallery => (HerLine.NotThisVisit, false),
+            HerLine.NotThisVisit when !inTheGallery => (HerLine.NotYet, false),
+            _ => (now, false),
+        };
 
     /// <summary>Did a story print? The floor's reaction on the rags is only ever about a story that ran.</summary>
     public static bool Ran(Outcome outcome) => outcome is Outcome.Altered or Outcome.Late;
