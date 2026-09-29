@@ -247,6 +247,27 @@ public partial class Map
     }
 
     /// <summary>
+    /// #1318 · <c>?nerve=N&amp;land=1</c> SETS THE BOOTS DOWN ON N PIPS, not on whatever the descent eased back.
+    ///
+    /// <para>The seed is laid before the shuttle goes (the descent's first frames read it), and the captain is
+    /// aboard — safe — for every frame of the ride, so the airlock ease handed a pip back each
+    /// <see cref="NervePips.AirlockBeatSeconds"/>: <c>?nerve=1</c> touched down on nine, and the ledger read
+    /// <i>the airlock closes behind you +1</i> eight times over. Booted headless on 2026-09-29. The cheat
+    /// moves the needle and nothing else, so on the ground it reads what the URL asked, and the ledger
+    /// carries no ease the cheat's own ride paid for.</para>
+    /// </summary>
+    private void HoldTheNerveSeedThroughTheDescent(int? nerveSeed)
+    {
+        if (nerveSeed is not { } seed || _surface is null)
+        {
+            return;
+        }
+
+        _nerve = NervePips.FromPips(seed);
+        _nerveLedger = [.. _nerveLedger.Where(e => e.Cause != NervePips.Cause.Airlock)];
+    }
+
+    /// <summary>
     /// #621 dev cheat · <c>/map?death=&lt;cause&gt;</c> — land first (if the URL asked to), THEN die.
     ///
     /// <para><see cref="AutoLandForCheatAsync"/> is fire-and-forget with several early returns, so the death
@@ -254,9 +275,10 @@ public partial class Map
     /// down and the excursion's floor and body id — the two facts the place classifier reads — would not
     /// exist yet. Awaited here instead, in the one place that knows the landing is over.</para>
     /// </summary>
-    private async Task AutoLandThenStageDeathAsync(DeathCause? cause)
+    private async Task AutoLandThenStageDeathAsync(DeathCause? cause, int? nerveSeed)
     {
         await AutoLandForCheatAsync();
+        HoldTheNerveSeedThroughTheDescent(nerveSeed);
         if (cause is { } asked)
         {
             StageDeathCheat(asked);

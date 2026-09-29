@@ -176,7 +176,7 @@ public partial class Map
             // #621: …and ?death= waits for the boots to be on the ground, because the PLACE is read off the
             // live excursion. Killing the captain before the shuttle has landed would classify the death on
             // her deck and hand back the wrong card — which is the whole bug the cheat exists to hunt.
-            _ = AutoLandThenStageDeathAsync(q.DeathCheat);
+            _ = AutoLandThenStageDeathAsync(q.DeathCheat, q.NerveCheat);
         }
         else if (q.DeathCheat is { } onHerDeck)
         {

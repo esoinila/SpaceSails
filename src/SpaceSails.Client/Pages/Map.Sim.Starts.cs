@@ -50,6 +50,11 @@ public partial class Map
             $"Co-moving beside the lost roadster, {Derelict.RoadsterBearingPhrase} — for testing the fetch pickup.", Test: true),
         new("enceladus", "❄️", "Enceladus — alongside (test)",
             "Co-moving beside Enceladus, a short fall from its capture band — for testing the deep-well auto-orbit (#136).", Test: true),
+        // #1318 · The one moon no berth can put on the shuttle board: The Red Eye rides 850,000 km out and
+        // Callisto 1.88 million, so the gap never closes inside one hop at any epoch. The surface tour's
+        // two Callisto rows had no URL that could open them until this free park existed.
+        new("callisto", "🌑", "Callisto — alongside (test)",
+            "Co-moving beside Callisto, one shuttle hop from its surface — for opening the Callisto grounds (#1318).", Test: true),
     ];
 
     private bool _showStartPicker;
@@ -181,6 +186,7 @@ public partial class Map
             "jupiter" => ("europa", 2e7),                  // clear of Europa's surface, amid the Galilean system
             "saturn" => ("ringside-exchange", 2e7),        // by the ring station, Enceladus/Titan a burn away
             "enceladus" => ("enceladus", 5e6),             // (test) alongside Enceladus, ~5 Hill radii out (#136)
+            "callisto" => ("callisto", 1.5e8),             // (test) alongside Callisto, ~3 Hill radii out, inside one hop (#1318)
             "wreck" => (Derelict.RoadsterBodyId, 2_000),   // (test) alongside the wreck, inside fetch-pickup range
             _ => null,
         };

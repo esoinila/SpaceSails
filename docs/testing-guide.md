@@ -691,7 +691,7 @@ launch from the home page.
 | `?dock=selene-gate&press=filed` | **…AND HER STORY RAN (#1202).** The same trip made, the tin dug, her fare paid four sim-days ago. What a tester should see: on the **Galley** (6) and the **Comms ticker**, *"Luna is not losing people, says a hired boat's master who asked not to be named — it is losing the difference between the people it counts and the people it has. Officials call the figure a clerical matter. — R. Lind, for the wire"*, once; in the field book under 📰, once, *"Her story ran. It is mostly true and it is not what happened."*; the tin in the sleeve. The floor's reaction — *"The floor at the Ringside Exchange is 'unmoved' by the Luna story. …"* — prints on a **port's rag only** (sit at a bar table and read the paper), never on the ship's wire. The story never names the captain. *(Also a button — 📰🗞 "…and her story ran".)* |
 | **`?dock=selene-gate&ashore=1&spike=1`** | **SPIKE IT — SHE WRITES AT THE FAR TABLE (#1202 slice 2).** Ashore at Selene Gate, stood in the observation walk's gallery at the island machine, with Rauha Lind's fare paid one sim-day ago (her story is 12 watches off), a spike taken against it at a dark-web desk, and the client's page in the sleeve (*"A page arrives with the terms"*). What a tester should see: the DEV pulse naming the body and the watches to the window; a figure plated **Lind** at the **far (second) table**, and on the first frames, once, *"She is at the far table with the recorder and a stack of pages, writing the way people write when the window is closing."* Every 45–90 real seconds (seeded, her own clock) she gets up, walks to the machine behind her table, stands 6–12 s and comes back; nothing announces the gap. Sit at HER table (`[E]`) while she is at the machine: the card carries **TAKE THE PAGES** between SIT A WHILE and Stand up. Press it: *"Six pages, close-written, the top one still damp. The recorder is in her pocket; the pages are not."* on the card, *Six pages, close-written* in the sleeve, and in the book under 📰 *"Took a stringer's pages off her table while she fed the machine. The window is 12 watches off."* The card then carries **LEAVE YOUR PAGE**: *"Your page goes on the stack, third from the top, where a tired eye reads without looking."* and both papers leave the sleeve. Warp past the window: with the client's page in her stack the wire prints *"Luna reports an orderly quarter. Sources close to the site describe the workforce as 'accounted for'. — R. Lind, for the wire"* and the book says *"Her story ran. It is your sentence and her name."*; the dark-web desk's next open pays half the purse on 💳. Keep her pages instead (or bin them) and nothing prints (see the next row); touch nothing and her own story runs and the desk says *"💳 No credits. One line where the money would be: 'Noted that you tried.'"* **Check the absences**: no move while she sits at her table, none at the other table, none when somebody shares yours — absent, never greyed; no heat; nothing says which version was true. At a dark-web desk while a story of hers is pending and no spike is in hand, the row **SPIKE IT** · *"Somebody would rather the Luna story did not run. N cr if it does not; half if it runs different. Her pages are wherever she writes. Nobody said how."* is there (`?dock=selene-gate&press=1`, carry her, pay, and open Comms → dark web within three days); it is gone once taken. *(Also a button — 📰✂ "Spike it — she writes at the far table".)* |
 | **`?dock=selene-gate&ashore=1&spike=spiked`** | **…AND THE STORY DID NOT RUN (#1202 slice 2).** The same contract four sim-days on, her pages in the sleeve: the window passed SPIKED. What a tester should see: nothing on the Galley wire or the Comms ticker about Luna (her story did not print, the floor has no opinion); in the field book, once, under **⬚** — *"The Luna story did not run. The wire is one line shorter and only you know the shape of the hole."*; in the gallery, once, *"She is not at the table. The recorder is. Somebody will come back for it, or nobody will."* and **no Lind** at either table, now or later. Open Comms → 🕸 Dark web market: the pulse is **💳 +N cr** and nothing else — no words — and the desk never pays it twice. *(Also a button — 📰🕳 "…and the story did not run".)* |
-| `?parcel=1` | Boot with an **unlisted parcel** already in the pocket and ride `?land=`'s own descent onto the ground that parcel is actually for (#711 slice 2) — the job row, the walk, the DIG HERE press and the delivery in one URL. It forges nothing: the parcel is minted the way the desk mints one, and the cheat chooses only which window. |
+| `?parcel=1` | Boot with an **unlisted parcel** already in the pocket and ride `?land=`'s own descent onto the ground that parcel is actually for (#711 slice 2) — the job row, the walk, the DIG HERE press and the delivery in one URL. It forges nothing: the parcel is minted the way the desk mints one, and the cheat chooses only which window. **It needs a berth** — the desk that mints the parcel is the one you are clamped at, so on its own (`/map?parcel=1`) it boots at the free-flying default spawn off Earth — Nav up, *YOU HAVE THE SHIP · NOW: coasting* — and nothing lands. Try `/map?dock=the-tilt&parcel=1`: you are set down on Miranda · The Wild Plain with the box in the shovel's hand, and the strip reads `⛏ SOMETHING TO PUT IN THE GROUND — press E to BURY IT HERE`. |
 | **`?crew=petition`** | **A DEPUTATION — three of them in the corridor outside your door (#663).** Boots holding the voyage the crew send one over: five of them left on the rock (the `?deflection=` gig above is the only thing in the shipped game that kills a crewman), and every wreck since filed honestly, so the share is empty and the bunks are too. It grants those two counters and nothing else — no standing is written and no card is pushed; the ship's own clock reads the crew sheet on the next tick, finds them past `CrewTemp.Standing.Petition`, and the beat arrives through the ordinary door with its cadence spent and its line in the ledger. Read the sheet behind it on the **Captain desk → the crew's report**: PETITION at the top, GETTING HOME on the floor and THE SHARE down with it. `?crew=deputation` is the same door. |
 | **`?crew=meeting`** | **THE MEETING YOU WERE NOT ASKED TO — the cantina at an odd watch, and a chair pulled out that nobody is sitting in (#1066).** The same ruined voyage as `?crew=petition` above, with nobody ashore in five berths on top of it. **The shore-leave rule:** a clamp at a GREAT PORT is a run ashore — that is Ringside Exchange and The Red Eye, the two berths the arrival tube (#541) gives a glazed gangway to — and every other berth is a working stop. Four working stops in a row breaks the captain's word, and every berth past that breaks it again, which is what carries the crew sheet from PETITION down to `CrewTemp.Standing.Ultimatum`. It grants counters and nothing else; the ship's own clock reads the sheet on the next tick and the beat arrives through the ordinary door. Read the sheet on the **Captain desk → the crew's report**: ULTIMATUM at the top, THE CAPTAIN'S WORD on the floor, and the shore-leave footnote under the bars saying how many stops it has been and where the line is. `?crew=ultimatum` is the same door. |
 | **`?secretlab=1`** | **Spawn a landable rock in shuttle range hiding a Vantar SECRET LAB, hidden door pre-revealed (#409).** |
@@ -771,7 +771,8 @@ Two gates and a band of solid rock stand between a landing and a gallery. This i
 /map?found=1&land=1&floor=12        its deepest floor — the thing on the pallet is in room one
 /map?found=1&land=1&floor=17        the FIRST gallery: dark, sealed, and nothing says why
 /map?found=1&land=1&floor=20        the deepest gallery — the chambers are visibly bigger here
-/map?found=1&land=1&floor=14        a floor inside the band of NOTHING: you land in the galleries
+/map?found=1&land=1&floor=14        a floor inside the band of NOTHING (B13–B16): no rock — you are set down on the
+                                    nearest floor anybody dug, B12 · NO PLATE, the clinic's last floor (B15/B16 land on B17)
 ```
 
 **What you should see.** The lift panel from B12 shows no button below it until you look in your wallet — the
@@ -1770,19 +1771,26 @@ just rebuilt had no way to be opened and looked at. `?body=<id>` fixes that: it 
 provided that body is genuinely on the shuttle board from your berth (the cheat may never reach somewhere the
 player could not). Pick the wrong berth and the game tells you what *is* in reach.
 
-The berth must be in the same system as the moon:
+The ship must be within one shuttle hop (500,000 km) of the moon. A berth in the same system is not always
+enough (#1318): The Red Eye rides 850,000 km out from Jupiter and Callisto 1.88 million, and Ringside
+Exchange rides 1.35 million km out from Saturn and Enceladus 238,000, so those two gaps never close at any
+epoch; Europa comes inside the hop only while its orbit and The Red Eye's line up. For those three the row
+carries what gets the ship there:
 
-| Berth (`?dock=`) | System | Landable moons |
+| Start | System | Landable moons from it |
 | --- | --- | --- |
-| `cinder-roost` | Venus | the-clinker |
-| `selene-gate` (or `satellite-factory`) | Earth | luna |
-| `the-space-bar` | Mars | phobos |
-| `red-eye` | Jupiter | europa, ganymede, callisto |
-| `ringside-exchange` | Saturn | titan, enceladus |
-| `the-tilt` | Uranus | miranda |
-| `the-deep` | Neptune | triton |
+| `?dock=cinder-roost` | Venus | the-clinker |
+| `?dock=selene-gate` (or `satellite-factory`) | Earth | luna |
+| `?dock=the-space-bar` | Mars | phobos |
+| `?dock=red-eye` | Jupiter | ganymede |
+| `?dock=red-eye&simhours=78` | Jupiter | europa (the clock wound to where the two orbits line up) |
+| `?start=callisto` | Jupiter | callisto — a free park beside the moon, one hop out (#1318) |
+| `?dock=ringside-exchange` | Saturn | titan |
+| `?start=enceladus` | Saturn | enceladus — the bench start's free park beside the moon (#136) |
+| `?dock=the-tilt` | Uranus | miranda |
+| `?dock=the-deep` | Neptune | triton |
 
-**All 27 sites.** Each drops you on the open regolith with two sentries in the sling:
+**All 27 sites.** Each drops you on the open regolith with two sentries in the sling, under the plates `— <MOON> SURFACE —` and `SET DOWN AT: <site>`. From a free park (`?start=callisto`, `?start=enceladus`) the strip over the pad reads *The ship drifts — still in shuttle range.* instead of the berth's *docked*:
 
 ```
 Miranda — the canon ground (3)
@@ -1803,18 +1811,18 @@ Phobos (4)
   /map?dock=the-space-bar&body=phobos&site=3&land=1    The Crater Shelf
 
 Jupiter's moons (6)
-  /map?dock=red-eye&body=europa&site=0&land=1          The Wild Plain
-  /map?dock=red-eye&body=europa&site=1&land=1          The Ice Fissure
+  /map?dock=red-eye&simhours=78&body=europa&site=0&land=1   The Wild Plain
+  /map?dock=red-eye&simhours=78&body=europa&site=1&land=1   The Ice Fissure
   /map?dock=red-eye&body=ganymede&site=0&land=1        The Wild Plain
   /map?dock=red-eye&body=ganymede&site=1&land=1        The Ridge Camp
-  /map?dock=red-eye&body=callisto&site=0&land=1        The Wild Plain
-  /map?dock=red-eye&body=callisto&site=1&land=1        The Ice Fissure
+  /map?start=callisto&body=callisto&site=0&land=1      The Wild Plain
+  /map?start=callisto&body=callisto&site=1&land=1      The Ice Fissure
 
 Saturn's moons (4)
   /map?dock=ringside-exchange&body=titan&site=0&land=1      The Wild Plain
   /map?dock=ringside-exchange&body=titan&site=1&land=1      The Quiet Basin
-  /map?dock=ringside-exchange&body=enceladus&site=0&land=1  The Wild Plain
-  /map?dock=ringside-exchange&body=enceladus&site=1&land=1  The Derelict Pad
+  /map?start=enceladus&body=enceladus&site=0&land=1         The Wild Plain
+  /map?start=enceladus&body=enceladus&site=1&land=1         The Derelict Pad
 
 Triton (4)
   /map?dock=the-deep&body=triton&site=0&land=1         The Wild Plain
@@ -2069,7 +2077,8 @@ The short version, because these are the easiest to miss:
 /map?ringoffice=1                      …and the OTHER side of the glass (#813): inside a room that faces the green
 /map?goodscar=1                        …the SECOND CAR (#801), at the blind end of the corridor. Now walk to the first one
 /map?secretlab=deep&land=1&floor=17    B17 — the staff mess, pass-only, hall-sized, and empty on purpose
-/map?secretlab=deep&land=1&floor=21    B21 — the unlisted lobby, where the plate names a DIFFERENT building
+/map?secretlab=deep&land=1&floor=21    B21 — the unlisted lobby: the car's plate reads B21 · NO PLATE; walk left and the sign
+                                       beside the shaft names a DIFFERENT building (▣ THE TRANSIT STATION on this rock)
 /map?secretlab=deep&land=1&floor=4&dark=1   a floor with no lights (#708)
 /map?secretlab=deep&land=1&floor=2&book=9   force a specific odd book (#701)
 /map?found=1&land=1&floor=17           past the seam — the halls nobody dug (#677)
