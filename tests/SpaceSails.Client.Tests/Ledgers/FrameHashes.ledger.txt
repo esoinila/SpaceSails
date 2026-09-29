@@ -21,13 +21,13 @@
 calls | ship · under way | 364
 calls | ship · docked, the shuttle away and the machine stalling | 338
 calls | ship · hatches dogged, seated at the table | 338
-calls | haven · the-space-bar | 297
-calls | haven · cinder-roost | 297
+calls | haven · the-space-bar | 301
+calls | haven · cinder-roost | 299
 calls | haven · ringside-exchange | 297
 calls | haven · the-tilt | 297
 calls | haven · selene-gate | 324
-calls | haven · red-eye | 297
-calls | haven · the-deep | 297
+calls | haven · red-eye | 301
+calls | haven · the-deep | 301
 calls | haven below · the-space-bar | 68
 calls | haven below · cinder-roost | 68
 calls | haven below · ringside-exchange | 68
@@ -61,13 +61,13 @@ calls | surface · titan site 0, a derelict's instruments (none) | 323
 sha256 | ship · under way | 56b0e232f8e30b5b05e9040364ee817865809e0513feb8554015af6dd99c38ae
 sha256 | ship · docked, the shuttle away and the machine stalling | 0f066ffd22bd7bd1558637e022188c5f1c308acde8780b62ee01acc909e01443
 sha256 | ship · hatches dogged, seated at the table | cec37445125d17460f56d31b582a9cb8049cc3d02e18b1ab0adb542c08b7a5a1
-sha256 | haven · the-space-bar | 69c124c6d8fa02a2643dc5a2816ad218ba9ff90d9a5a04f6d6895a5f675691bf
-sha256 | haven · cinder-roost | 084398586b88c0f40e85d189e0a514c1e135c716ec0575765b8e11376726d1bf
+sha256 | haven · the-space-bar | 51cd1c28b8421dd365699fa3873b7fdc85243114cc69b1c83157cc8e8a689cf7
+sha256 | haven · cinder-roost | 350f70a6a3a1be3f6964095d9d49d9e932052c6b66599630fb59161e39340485
 sha256 | haven · ringside-exchange | 43d6b78525512f462ad2d9f0f3e43797259b0b8f85b00225ff7463bbd4715ad3
 sha256 | haven · the-tilt | b094d8c6ac7f9fb6042850ab908fbacb1f7867c01518f069de040001928ee4f0
 sha256 | haven · selene-gate | 7a26d21fecb911943538b51137b74e21fd54451bf02a50e8daeacd8155f36231
-sha256 | haven · red-eye | 80f61d4c9967efa25cd428fd474c71b8f0cab2a6c2288f43febe9f50b96c63eb
-sha256 | haven · the-deep | 31ddaf1f0c2a9dc198efeee8315b2b0cc03fc4ba676e20e6928d76fd1ccba7ff
+sha256 | haven · red-eye | 022fb09de2a60202961e4e9659d8b5db924d66cd57cdf461b04b0e6daa56d427
+sha256 | haven · the-deep | da855c7f0e4f9906b5f04be6fb1a21590d6e8843e2368dace3eb90b570ed9579
 sha256 | haven below · the-space-bar | 12472581c908cfe02de42611b54d16b4eef5287657c411b66425ffd8d80459f8
 sha256 | haven below · cinder-roost | df8a70f83cfc34d7da9a6b29417eec9fc1dffb36bf6b8c560d92e33b45e72bf6
 sha256 | haven below · ringside-exchange | 180d45fd13d582c1c4df8699d2ac846e3118152a5b5e815d927a6ae8be2c8571
