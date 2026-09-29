@@ -184,8 +184,11 @@ public sealed class TheLevelUnderTheConcourseTests
     /// <see cref="Lobbies"/> theory below: the list those laws run over is asserted to be the whole
     /// catalogue, so a station that quietly lost its floor would not quietly drop out of the sweep.</para>
     ///
-    /// <para><b>Proven RED</b> by taking The Deep's <c>LowerSpec</c> off: <c>the-deep: a hub with no floor
-    /// under it.</c></para>
+    /// <para><b>Proven RED</b> by taking The Deep's <c>LowerSpec</c> off: the sweep's own list falls to six and
+    /// the count clause fires first (<c>Expected: 7, Actual: 6</c>) — which is the anti-vacuous half doing its
+    /// job, since every <see cref="Lobbies"/> theory would otherwise have quietly stopped asking about The
+    /// Deep. The per-haven clause behind it names the station (<c>the-deep: a hub with no floor under
+    /// it.</c>).</para>
     /// </summary>
     [Fact]
     public void EveryHubIsALobbyAndEveryLobbyHasOneFloorUnderIt()
