@@ -74,7 +74,7 @@ public sealed class TheChalkMarkIsWiredTests
     [Fact]
     public void ThePressAndTheCardAreWiredToTheRoom()
     {
-        string table = Code(Read("Pages", "Map.Table.cs"));
+        string table = Code(Read("Pages", "Map.Table.cs") + Read("Pages", "Map.Table.Talk.cs"));
         Assert.Contains("TheLipIsFelt(moveId) ? Task.CompletedTask : _seating.TableMoveClicked(moveId)", table,
             StringComparison.Ordinal);
 
