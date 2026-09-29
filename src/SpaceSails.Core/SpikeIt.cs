@@ -352,11 +352,17 @@ public static class SpikeIt
     public static Outcome TheWindowFor(Pages pages, bool seenTaking) =>
         seenTaking ? Outcome.Late : AtTheWindow(pages);
 
-    /// <summary>#1202 slice 3 · Was the take seen? Only when a man is behind the captain on this floor (on him,
-    /// not already walking off having lost him) and he has the captain in his sight — the tail's own contact, the
-    /// one look his blind clock runs on (<see cref="FootTail.InPlainSight"/>), asked at the moment of the press.
-    /// No second line-of-sight model.</summary>
-    public static bool TheTakeIsSeen(bool aManIsOnYou, bool youAreInHisSight) => aManIsOnYou && youAreInHisSight;
+    /// <summary>
+    /// #1202 slice 3 · <b>WAS THE TAKE SEEN?</b> Only when a man is behind the captain on this floor — present,
+    /// and not already lost (his blind clock has not run out and he is not walking off to ask the wrong floor) —
+    /// and he holds his band on the captain at the moment of the press
+    /// (<see cref="TheTailBehindYou.HoldsHisBand"/>, the tail's own range). The tail's own notion of contact and
+    /// nothing else: there is no line of sight here, which is the canon's own point — <i>he did not need to
+    /// look up</i>. At Selene Gate that is a man at the mouth of the tube while the captain sits at the far table,
+    /// in the seconds before the stone between them loses him.
+    /// </summary>
+    public static bool TheTakeIsSeen(bool aManIsOnYou, double rangeDu) =>
+        aManIsOnYou && TheTailBehindYou.HoldsHisBand(rangeDu);
 
     /// <summary>#1202 slice 3 · The desk's line after the window, for a LATE story: the seen receipt when the take
     /// was seen, the ordinary one otherwise.</summary>

@@ -452,8 +452,12 @@ public sealed partial class Map
             ThePressRunsHerStory();
         }
 
+        // #1202 slice 3 · …with a man behind the captain (&tailed=1) the leg into the gallery is the tester's to
+        // walk: the coat comes in AFTER him through the bar's own door, so the captain is left where ?ashore=1
+        // stood him and the grey coat follows him out along the tube.
         IReadOnlyList<DeckReachability.Point> vendors = HavenInterior.TheVendorsAt(here);
-        if (OnTheConcourse && vendors.Count > 0)
+        bool tailed = _tailedCheat == true;
+        if (OnTheConcourse && vendors.Count > 0 && !tailed)
         {
             DeckReachability.Point island = vendors[^1];
             StandCaptainAt(island.X, island.Y, "you come out of the tube into the gallery");
@@ -462,6 +466,9 @@ public sealed partial class Map
         ShowPulseMessage(cheat == SpikeIt.Cheat.Spiked
             ? $"🧪 DEV ?spike=spiked — the {body} story did not run; the recorder is on the far table; open Comms → dark web for the 💳"
             : $"🧪 DEV ?spike=1 — the {body} story is {SpikeIt.WatchesUntil(CarryThePress.StoryAt(PassageOf(home))!.Value, SimTime)} watches off; "
-              + $"{CarryThePress.Plate} writes at gallery table {SpikeIt.HerTable} (the far one); sit there and wait for her to feed the machine");
+              + $"{CarryThePress.Plate} writes at gallery table {SpikeIt.HerTable} (the far one); "
+              + (tailed
+                  ? "a grey coat comes into the bar after you; walk him out along the tube to the gallery, then sit at her table while she feeds the machine"
+                  : "sit there and wait for her to feed the machine"));
     }
 }

@@ -7,7 +7,7 @@ namespace SpaceSails.Client.Pages;
 /// #1202 slice 3 · <b>THE TAIL AT HER TABLE — the page's half.</b> SPIKE IT (<c>Map.SpikeIt.cs</c>) lets the
 /// captain take Rauha Lind's pages off the far gallery table while she feeds the machine; the grey coat
 /// (<c>Map.TailBehindYou*.cs</c>, #1062) follows the captain through Selene Gate. Here the two cross: if the coat
-/// has the captain in his sight at the moment TAKE THE PAGES is pressed, the take was SEEN. A seen take cannot
+/// is still on the captain and holds his band at the moment TAKE THE PAGES is pressed, the take was SEEN. A seen take cannot
 /// spike — her pages are back on her table by the next watch, the story runs on time, and the client's receipt
 /// says why. Losing the tail first is how a captain keeps the take clean.
 ///
@@ -28,11 +28,10 @@ public sealed partial class Map
 {
     /// <summary>
     /// #1202 slice 3 · <b>DOES THE COAT HAVE HIM, THIS INSTANT?</b> A man behind the captain on this floor — on
-    /// him (<see cref="Errand.BehindYou"/>), not already walking off having lost him — with the captain in his
-    /// sight by the tail's own contact: <see cref="FootTail.InPlainSight"/> on the mover
-    /// <see cref="TheTailBehindYou.AsAMover"/> mints, over the deck's own stone, which is the very look his blind
-    /// clock runs on (its range is the far edge of his band, <see cref="TheTailBehindYou.LosesYouBeyondDu"/>).
-    /// No second line-of-sight model. With no man on the floor it is false and asks nothing.
+    /// him (<see cref="Errand.BehindYou"/>), not lost (<c>_coatLost</c>, the tail's own latch, written the moment
+    /// his blind clock runs out) — holding his band on the captain (<see cref="SpikeIt.TheTakeIsSeen"/>). The
+    /// tail's own contact, read and never re-derived: no second line-of-sight model, and nothing here moves him.
+    /// With no man on the floor it is false and asks nothing.
     /// </summary>
     private bool TheCoatSeesTheTake()
     {
@@ -45,10 +44,8 @@ public sealed partial class Map
         {
             if (w.For == Errand.BehindYou)
             {
-                FootTail.Mover him = TheTailBehindYou.AsAMover(w.Walk.X, w.Walk.Y);
-                return SpikeIt.TheTakeIsSeen(
-                    aManIsOnYou: true,
-                    youAreInHisSight: FootTail.InPlainSight(_avatarX, _avatarY, in him, _deckPlan.CollisionField));
+                double dx = w.Walk.X - _avatarX, dy = w.Walk.Y - _avatarY;
+                return SpikeIt.TheTakeIsSeen(aManIsOnYou: true, rangeDu: System.Math.Sqrt((dx * dx) + (dy * dy)));
             }
         }
 
