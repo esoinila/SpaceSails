@@ -319,16 +319,22 @@ public static class CarryThePress
     /// <param name="Stack">…where the squared-stack line stands after a seen take (<see cref="SpikeIt.Stack"/>).</param>
     /// <param name="Near">#1202 (2026-09-29 evening) · <see cref="GroundLine"/> has been told: the captain has stood
     /// inside the tin's search area. Written only once true, so every older line is the line it was, to the byte.</param>
+    /// <param name="Back">#1202 slice 4 · …after a SPIKED window, the first watch she is back at her bar seat
+    /// (<see cref="SpikeIt.BackOnWatch"/>); null before the window decides, and for any other outcome.</param>
+    /// <param name="Asked">…a regular has been asked about her empty seat this absence.</param>
+    /// <param name="Home">…her return line has been told.</param>
     public readonly record struct Passage(
         int Site, bool Landed = false, bool Walked = false, bool Tin = false,
         double? TurnedIn = null, bool Printed = false, bool Floored = false,
         bool Spike = false, SpikeIt.Pages Pages = SpikeIt.Pages.OnHerTable, SpikeIt.HerLine Seen = SpikeIt.HerLine.NotYet,
         SpikeIt.Outcome Outcome = SpikeIt.Outcome.None, bool Paid = false, bool Gone = false,
-        bool Watched = false, SpikeIt.Stack Stack = SpikeIt.Stack.NotYet, bool Near = false)
+        bool Watched = false, SpikeIt.Stack Stack = SpikeIt.Stack.NotYet, bool Near = false,
+        long? Back = null, bool Asked = false, bool Home = false)
     {
         /// <summary>Written as one line. The spike's keys are written only once it is taken, so a slice-1
         /// contract's line is the line slice 1 wrote, to the byte; and the seen take's keys (#1202 slice 3) only
-        /// once a take was seen, so an unseen spike's line is the line slice 2 wrote, to the byte.</summary>
+        /// once a take was seen, so an unseen spike's line is the line slice 2 wrote, to the byte; and her absence's keys
+        /// (#1202 slice 4) only once a SPIKED window has set the watch she is back.</summary>
         public string Write() =>
             string.Create(CultureInfo.InvariantCulture,
                 $"site={Site};landed={B(Landed)};walked={B(Walked)};tin={B(Tin)};in={(TurnedIn is { } t ? t.ToString("R", CultureInfo.InvariantCulture) : "")};printed={B(Printed)};floor={B(Floored)}")
@@ -337,6 +343,9 @@ public static class CarryThePress
                     $";spike=1;pages={(int)Pages};seen={(int)Seen};out={(int)Outcome};paid={B(Paid)};gone={B(Gone)}")
                   + (Watched
                       ? string.Create(CultureInfo.InvariantCulture, $";watched=1;stack={(int)Stack}")
+                      : "")
+                  + (Back is { } back
+                      ? string.Create(CultureInfo.InvariantCulture, $";back={back};asked={B(Asked)};home={B(Home)}")
                       : "")
                 : "")
             + (Near ? ";near=1" : "");
@@ -375,6 +384,9 @@ public static class CarryThePress
                     "paid" => p with { Paid = value == "1" },
                     "gone" => p with { Gone = value == "1" },
                     "watched" => p with { Watched = value == "1" },
+                    "back" when long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long w) => p with { Back = w },
+                    "asked" => p with { Asked = value == "1" },
+                    "home" => p with { Home = value == "1" },
                     "near" => p with { Near = value == "1" },
                     "stack" when int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int k)
                                  && Enum.IsDefined(typeof(SpikeIt.Stack), k) => p with { Stack = (SpikeIt.Stack)k },

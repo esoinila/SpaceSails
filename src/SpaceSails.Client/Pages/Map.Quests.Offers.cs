@@ -48,6 +48,13 @@ public partial class Map
             return;
         }
 
+        // #1202 slice 4 · …while she is away after a SPIKED window, the regular beside her empty chair answers the
+        // one question it raises, once; and her first sitting after the absence is her one line, before any card.
+        if (TheEmptySeatIsAskedAbout(giver) || HerReturnIsTold(giver))
+        {
+            return;
+        }
+
         // #1202 · Rauha Lind at her own chair: her card, before any give-work path a regular's table runs (a
         // favour called in, a KAAMOS docket) — she books passage and nothing else.
         if (string.Equals(giver, CarryThePress.Giver, StringComparison.Ordinal) && MakePressOffer() is { } passage)

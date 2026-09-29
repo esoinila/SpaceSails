@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using SpaceSails.Core;
+using SpaceSails.Core.Interior;
 using Xunit;
 
 namespace SpaceSails.Core.Tests;
@@ -190,5 +191,137 @@ public sealed class ChargedToPreservationTests
 
         Assert.DoesNotMatch(Personal, SpikeIt.BylineMissingLine);
         Assert.DoesNotMatch(NamesTheCaptain, SpikeIt.BylineMissingLine);
+    }
+
+    // ── HER ABSENCE AND HER RETURN (part 2) ─────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// SHE IS AWAY FOR A SEEDED THREE TO SIX WATCHES: the span is seeded off her contract (the same answer twice,
+    /// not the same for every contract), inside its bounds, and counted from the window's own watch.
+    /// <b>RED</b> by <c>AwayFor</c> rolling one face short (the six never comes).
+    /// </summary>
+    [Fact]
+    public void TheAbsenceIsSeededThreeToSixWatchesFromTheWindow()
+    {
+        var spans = new HashSet<int>();
+        for (int i = 0; i < 60; i++)
+        {
+            string id = $"press-{i}";
+            int n = SpikeIt.AwayFor(id);
+            Assert.Equal(n, SpikeIt.AwayFor(id));
+            Assert.InRange(n, SpikeIt.AwayAtLeastWatches, SpikeIt.AwayAtMostWatches);
+            spans.Add(n);
+            double storyAt = (40 * PatronRota.WatchSeconds) + 17;
+            Assert.Equal(40 + n, SpikeIt.BackOnWatch(id, storyAt));
+        }
+
+        Assert.Equal(3, SpikeIt.AwayAtLeastWatches);
+        Assert.Equal(6, SpikeIt.AwayAtMostWatches);
+        Assert.Equal(4, spans.Count);
+    }
+
+    /// <summary>
+    /// AWAY ONLY AFTER A SPIKED WINDOW, AND ONLY UNTIL THE WATCH SHE IS BACK: every watch before <c>back</c> is away,
+    /// <c>back</c> and after are not; ALTERED, LATE and an undecided window never keep her away; nor does a spiked
+    /// window with no watch written. <b>RED</b> by <c>watch &lt;= b</c> (one watch too many).
+    /// </summary>
+    [Fact]
+    public void SheIsAwayExactlyUntilTheWatchSheIsBack()
+    {
+        for (long w = 90; w < 110; w++)
+        {
+            Assert.Equal(w < 100, SpikeIt.IsAway(SpikeIt.Outcome.Spiked, 100, w));
+            foreach (SpikeIt.Outcome other in new[] { SpikeIt.Outcome.Altered, SpikeIt.Outcome.Late, SpikeIt.Outcome.None })
+            {
+                Assert.False(SpikeIt.IsAway(other, 100, w));
+            }
+        }
+
+        Assert.False(SpikeIt.IsAway(SpikeIt.Outcome.Spiked, null, 5));
+    }
+
+    /// <summary>
+    /// HER RETURN IS DUE ONCE, AFTER THE ABSENCE, AND ONLY AFTER A SPIKED ONE: not while she is away, from the watch
+    /// she is back, never once told, never for another outcome. <b>RED</b> by dropping the <c>!told</c> clause.
+    /// </summary>
+    [Fact]
+    public void HerReturnIsDueOnceAndOnlyAfterTheAbsence()
+    {
+        Assert.False(SpikeIt.HerReturnIsDue(SpikeIt.Outcome.Spiked, 100, told: false, 99));
+        Assert.True(SpikeIt.HerReturnIsDue(SpikeIt.Outcome.Spiked, 100, told: false, 100));
+        Assert.True(SpikeIt.HerReturnIsDue(SpikeIt.Outcome.Spiked, 100, told: false, 140));
+        Assert.False(SpikeIt.HerReturnIsDue(SpikeIt.Outcome.Spiked, 100, told: true, 140));
+        Assert.False(SpikeIt.HerReturnIsDue(SpikeIt.Outcome.Spiked, null, told: false, 140));
+        Assert.False(SpikeIt.HerReturnIsDue(SpikeIt.Outcome.Altered, 100, told: false, 140));
+        Assert.False(SpikeIt.HerReturnIsDue(SpikeIt.Outcome.Late, 100, told: false, 140));
+    }
+
+    /// <summary>
+    /// THE ONE ASKED IS HER NEIGHBOUR: the regular sitting nearest her empty chair, one person, ties to the name
+    /// first in ordinal order whatever order the room lists them in, nobody when nobody is sitting.
+    /// <b>RED</b> by answering the first listed instead of the nearest.
+    /// </summary>
+    [Fact]
+    public void TheOneAskedIsTheRegularNearestHerChair()
+    {
+        var room = new List<(string, double, double)> { ("FAR", 10, 10), ("NEAR", 1, 0), ("MID", 3, 3) };
+        Assert.Equal("NEAR", SpikeIt.WhoIsAsked(room, 0, 0));
+        room.Reverse();
+        Assert.Equal("NEAR", SpikeIt.WhoIsAsked(room, 0, 0));
+        Assert.Equal("ALPHA", SpikeIt.WhoIsAsked([("BETA", 1, 0), ("ALPHA", -1, 0)], 0, 0));
+        Assert.Equal("ALPHA", SpikeIt.WhoIsAsked([("ALPHA", -1, 0), ("BETA", 1, 0)], 0, 0));
+        Assert.Null(SpikeIt.WhoIsAsked([], 0, 0));
+    }
+
+    /// <summary>
+    /// THE REGULAR'S ANSWER IS BEAT 4's SENTENCE, NOT A COPY OF IT: the very constant <see cref="CareerCost"/>
+    /// ships, not counted in this family's prose, and neither of this family's slice-4 files types it again. Her
+    /// return line is about the pages: no second person, no captain, no office. <b>RED</b> by a second copy of
+    /// the sentence typed into <c>SpikeIt.Preservation.cs</c>.
+    /// </summary>
+    [Fact]
+    public void TheRegularsAnswerIsBeatFoursOwnAndHerLineIsAboutThePages()
+    {
+        Assert.Same(CareerCost.ColleagueLine, SpikeIt.TheRegularsAnswer);
+        Assert.Equal("Transferred, I think. Administration would know where.", SpikeIt.TheRegularsAnswer);
+        Assert.DoesNotContain(SpikeIt.TheRegularsAnswer, SpikeIt.AllProse());
+        foreach (string file in new[]
+        {
+            System.IO.Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Core", "SpikeIt.Preservation.cs"),
+            System.IO.Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.SpikeIt.Preservation.cs"),
+        })
+        {
+            Assert.DoesNotContain("Administration would know", System.IO.File.ReadAllText(file), StringComparison.Ordinal);
+        }
+
+        Assert.Contains(SpikeIt.ReturnLine, SpikeIt.AllProse());
+        Assert.DoesNotMatch(SecondPerson, SpikeIt.ReturnLine);
+        Assert.DoesNotContain("captain", SpikeIt.ReturnLine, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("Preservation", SpikeIt.ReturnLine, StringComparison.Ordinal);
+        Assert.DoesNotContain("Authority", SpikeIt.ReturnLine, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Second person only: her line is in the first person (it is hers) and never addresses him.</summary>
+    private static readonly Regex SecondPerson =
+        new(@"\b(you|your|yours|yourself)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    /// <summary>
+    /// THE ABSENCE RIDES THE SAME LINE: <c>back</c>, <c>asked</c> and <c>home</c> round-trip, are written only once a
+    /// watch is set, and every line without one is the line part 1 wrote, to the byte. <b>RED</b> by writing the
+    /// three keys whenever the spike is.
+    /// </summary>
+    [Fact]
+    public void TheAbsenceRidesTheSameLineAndOnlyOnceSet()
+    {
+        var spiked = new CarryThePress.Passage(1, TurnedIn: 5, Spike: true, Pages: SpikeIt.Pages.Taken,
+            Outcome: SpikeIt.Outcome.Spiked, Paid: true);
+        Assert.DoesNotContain("back=", spiked.Write(), StringComparison.Ordinal);
+        Assert.Equal(spiked.Write(), (spiked with { Asked = true, Home = true }).Write());
+
+        var away = spiked with { Back = 1234, Asked = true };
+        Assert.EndsWith(";back=1234;asked=1;home=0", away.Write(), StringComparison.Ordinal);
+        Assert.Equal(away, CarryThePress.Passage.Read(away.Write()));
+        Assert.Equal(away with { Home = true }, CarryThePress.Passage.Read((away with { Home = true }).Write()));
+        Assert.Null(CarryThePress.Passage.Read("site=1;spike=1;back=x").Back);
     }
 }

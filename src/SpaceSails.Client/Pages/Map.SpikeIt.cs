@@ -487,8 +487,10 @@ public sealed partial class Map
             StandCaptainAt(island.X, island.Y, "you come out of the tube into the gallery");
         }
 
+        RebuildDockedDeck();   // #1202 slice 4 · the room as the planted contract leaves it: her bar seat empty
         ShowPulseMessage(cheat == SpikeIt.Cheat.Paid
-            ? $"🧪 DEV ?spike=paid — the {body} story did not run and the desk has paid; the receipt is in the satchel; the port rag's line is one cycle off"
+            ? $"🧪 DEV ?spike=paid — the {body} story did not run and the desk has paid; the receipt is in the satchel; the port rag's line is one cycle off; "
+              + $"her bar seat is empty until watch {SpikeIt.BackOnWatch(home.Id, CarryThePress.StoryAt(PassageOf(home))!.Value)} (now {PatronRota.WatchIndex(SimTime)})"
             : cheat == SpikeIt.Cheat.Spiked
             ? $"🧪 DEV ?spike=spiked — the {body} story did not run; the recorder is on the far table; open Comms → dark web for the 💳"
             : $"🧪 DEV ?spike=1 — the {body} story is {SpikeIt.WatchesUntil(CarryThePress.StoryAt(PassageOf(home))!.Value, SimTime)} watches off; "

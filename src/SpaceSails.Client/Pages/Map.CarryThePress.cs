@@ -96,8 +96,9 @@ public sealed partial class Map
             }
         }
 
-        return string.Equals(_dockedHavenId, SpikeIt.Haven, StringComparison.Ordinal)
-            && TheSpikeInHand() is { } spiked && !CarryThePress.StoryIsDue(PassageOf(spiked), SimTime);
+        return (string.Equals(_dockedHavenId, SpikeIt.Haven, StringComparison.Ordinal)
+                && TheSpikeInHand() is { } spiked && !CarryThePress.StoryIsDue(PassageOf(spiked), SimTime))
+            || TheSpikeKeepsHerAway() is not null;   // #1202 slice 4 · …or away after a SPIKED window
     }
 
     // ── THE CONTRACT'S LINE OF STATE ────────────────────────────────────────────────────────────────────
@@ -265,6 +266,11 @@ public sealed partial class Map
                 {
                     FileNote(SpikeIt.Spiked(body), MissingMiddle.Glyph);
                     next = next with { Printed = true };
+                }
+
+                if (next.Back is null)   // #1202 slice 4 · …and from the window's watch her bar seat is empty
+                {
+                    next = next with { Back = SpikeIt.BackOnWatch(q.Id, CarryThePress.StoryAt(p)!.Value) };
                 }
 
                 next = TheRagNoticesTheHole(p, next);   // #1202 slice 4 · the cycle after, port rags only, once

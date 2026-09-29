@@ -215,8 +215,9 @@ public sealed class TheOfficePaysWithPaperTests
     /// <summary>
     /// <c>?spike=paid</c> · a SPIKED window this instant and the desk already paid: the purse on the credits, the
     /// receipt in the satchel beside her pages, the book's line under the Authority and the body, the contract
-    /// Paid, and no rag line yet (it is a cycle off). <b>RED</b> by dropping the <c>TheSpikeIsSettled</c> call from
-    /// the <c>Paid</c> arm of <c>SpikeItIfAsked</c>.
+    /// Paid, no rag line yet (it is a cycle off), and (part 2) her bar seat empty. <b>RED</b> by dropping the
+    /// <c>TheSpikeIsSettled</c> call from the <c>Paid</c> arm of <c>SpikeItIfAsked</c>, and by dropping the
+    /// <c>RebuildDockedDeck</c> call after it (her console still at the bar from the clamp).
     /// </summary>
     [Fact]
     public async Task ThePaidStartHasTheReceiptAndNoRagYet()
@@ -235,5 +236,11 @@ public sealed class TheOfficePaysWithPaperTests
             n => n.Text == SpikeIt.ReceiptDocument && n.Subjects.Length > 0);
         Assert.DoesNotContain((List<NewsWire.NewsEvent>)b.Peek("_newsEvents")!, e => e.Subject == SpikeIt.BylineMissingLine);
         Assert.Contains("DEV ?spike=paid", b.Pulse, StringComparison.Ordinal);
+
+        // #1202 slice 4 part 2 · …and her bar seat is empty: away from the window's watch, no console of hers.
+        Assert.NotNull(p.Back);
+        Assert.True((bool)b.Call("TheStringerIsElsewhere")!);
+        Assert.DoesNotContain(((Rendering.DeckPlan)b.Peek("_deckPlan")!).Consoles,
+            c => c.Label == $"◈ {CarryThePress.Giver}");
     }
 }

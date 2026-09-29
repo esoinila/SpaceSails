@@ -20,8 +20,8 @@ public sealed class SpikeItTests
     // ── THE WORDS ───────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// TWENTY LINES, VERBATIM, AND NO TWENTY-FIRST. Every line of slice 2's brief, the three of slice 3's
-    /// (#1202 · THE TAIL AT HER TABLE) and the three of slice 4's (CHARGED TO PRESERVATION), letter for letter; all
+    /// TWENTY-ONE LINES, VERBATIM, AND NO TWENTY-SECOND. Every line of slice 2's brief, the three of slice 3's
+    /// (#1202 · THE TAIL AT HER TABLE) and the four of slice 4's (CHARGED TO PRESERVATION), letter for letter; all
     /// of them in <see cref="SpikeIt.AllProse"/>; and the slices' own files read for any sentence typed into a
     /// method that is not one of them.
     ///
@@ -29,7 +29,7 @@ public sealed class SpikeItTests
     /// authored), and by "third from the top" rewritten "second from the top" in <c>LeaveYourPageLine</c>.</para>
     /// </summary>
     [Fact]
-    public void TheLinesAreVerbatimAndThereIsNoTwentyFirst()
+    public void TheLinesAreVerbatimAndThereIsNoTwentySecond()
     {
         Assert.Equal("SPIKE IT", SpikeIt.RowLabel);
         Assert.Equal("Somebody would rather the {Body} story did not run. {cr} if it does not; half if it runs different. Her pages are wherever she writes. Nobody said how.", SpikeIt.RowLine);
@@ -54,9 +54,10 @@ public sealed class SpikeItTests
         Assert.Equal("Editorial services, one item. Charged to Preservation.", SpikeIt.ReceiptDocument);
         Assert.Equal("A stringer's byline is missing from the cycle. The floor has not noticed; the floor never reads bylines.", SpikeIt.BylineMissingLine);
         Assert.Equal("spike-receipt", SpikeIt.ReceiptId);
+        Assert.Equal("Somebody read my pages before the window. Somebody paid for that. I file on the cycler window whether I am back or not.", SpikeIt.ReturnLine);
 
         var prose = SpikeIt.AllProse().ToList();
-        Assert.Equal(20, prose.Count);
+        Assert.Equal(21, prose.Count);
         Assert.Equal(prose.Count, prose.Distinct(StringComparer.Ordinal).Count());
 
         var sentences = new List<string>();
