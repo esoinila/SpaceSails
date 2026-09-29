@@ -146,7 +146,7 @@ public sealed class TheDossierCardCarriesItsOwnSayingsTests
     [Fact]
     public void TheObjectCardHasAnOutcomeOfItsOwnAndDrawsIt()
     {
-        Assert.Contains("string? Outcome", Rendering("DeckPlan.cs"), StringComparison.Ordinal);
+        Assert.Contains("string? Outcome", Rendering("DeckPlan.cs") + Rendering("DeckPlan.Vocabulary.cs"), StringComparison.Ordinal);
 
         string block = BlockOf("@if (_viewObject is { } vo)");
         Assert.True(block.Contains("vo.Outcome", StringComparison.Ordinal),
