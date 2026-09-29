@@ -236,6 +236,18 @@ public static class DevStarts
             + "(6) and the Comms ticker, the floor's opinion is on a port's rag, and the book has filed that it ran "
             + "(#1202).",
             "/map?dock=selene-gate&press=filed"),
+        // #1202 slice 2 · SPIKE IT. Her story pending and a spike against it, the stringer writing at the gallery's far
+        // table; and the same contract after a window that passed with her pages in the captain's satchel.
+        new("📰✂", "Spike it — she writes at the far table",
+            "Ashore at Selene Gate in the observation walk's gallery, her story a day from the wire and the client's "
+            + "page in your satchel. Rauha Lind writes at the far table and, on her own clock, goes to feed the machine "
+            + "behind it: sit at her table while she is away and the card carries TAKE THE PAGES; then LEAVE YOUR PAGE "
+            + "(#1202).",
+            "/map?dock=selene-gate&ashore=1&spike=1"),
+        new("📰🕳", "…and the story did not run",
+            "The same contract four sim-days on, her pages in your satchel: the book has the hole under the absence mark, the gallery "
+            + "says the recorder is left on the table, and the dark-web desk's next pulse pays the purse on 💳 (#1202).",
+            "/map?dock=selene-gate&ashore=1&spike=spiked"),
         // #775 · THE WAY IN, AND THE WAY THE FOOD COMES IN. Owner, walking the new B1: "the bar/canteen
         // needs DOORS ON THE MAIN CORRIDOR — today you have to really look for the way in; a venue's
         // entrance should find YOU." The row that proves that has to start OUTSIDE the room, which is the

@@ -695,10 +695,12 @@ public partial class Map
     private void CloseTable() => _seating.CloseTable();
 
     // #794 · …except FEEL UNDER THE LIP, which moves things the seat does not own and is answered by the
-    // page first (Map.ChalkMark's TheLipIsFelt).
+    // page first (Map.ChalkMark's TheLipIsFelt). #1202 slice 2 · …and TAKE THE PAGES / LEAVE YOUR PAGE, for
+    // the same reason (Map.SpikeIt's ThePagesAreTouched).
     /// <inheritdoc cref="Seating.TableMoveClicked"/>
     private Task TableMoveClicked(string moveId) =>
-        TheLipIsFelt(moveId) ? Task.CompletedTask : _seating.TableMoveClicked(moveId);
+        ThePagesAreTouched(moveId) ? Task.CompletedTask
+        : TheLipIsFelt(moveId) ? Task.CompletedTask : _seating.TableMoveClicked(moveId);
 
     /// <inheritdoc cref="Seating.TableMoveOnOffer"/>
     private bool TableMoveOnOffer(Encounter.Move move) => _seating.TableMoveOnOffer(move);

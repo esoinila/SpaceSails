@@ -265,6 +265,16 @@ public partial class Map
         /// hers. Borrowing the coat's errand would have drawn her as the one figure in the game the captain is
         /// meant not to be able to name.</para></summary>
         RidingAlong,
+
+        /// <summary>
+        /// #1202 slice 2 · <b>THE STRINGER AT HER PAGES.</b> Rauha Lind at the far table in Selene Gate's gallery,
+        /// writing while a spike is in hand against her story, and on her own clock (<see cref="Walker.PassHeld"/>)
+        /// up to the machine behind it and back. The walker's <see cref="Walker.Table"/> is her table while she is
+        /// at it or walking back to it, and -1 on the way to the machine and at it.
+        ///
+        /// <para>Its own errand because arriving is not an ending here either — she stays where she got to — and
+        /// because the pages are read off whether she is away from her table, which no other errand means.</para></summary>
+        AtHerPages,
     }
 
     /// <summary>#731 · Every walker's slot is off-map when nobody is in it — the same idiom an unseen guard

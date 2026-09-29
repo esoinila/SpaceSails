@@ -65,6 +65,18 @@ public partial class Map
                 continue;
             }
 
+            // #1202 slice 2 · …and the stringer at her pages, whose route running out is not an ending either:
+            // she stays at her table or the machine and her own clock runs while she stands there.
+            if (w.For == Errand.AtHerPages)
+            {
+                if (StepTheStringerAtHerPages(w, dt, walls, i))
+                {
+                    anybodyLanded = true;
+                }
+
+                continue;
+            }
+
             if (w.For == Errand.Approaching)
             {
                 if (StepAnApproach(bar, w, dt, walls, i))

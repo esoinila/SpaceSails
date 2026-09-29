@@ -144,6 +144,12 @@ public static class CarriedObject
             return new Reveal("", CarryThePress.TinTitle, CarryThePress.TinText);
         }
 
+        // #1202 slice 2 · …and SPIKE IT's two sheets, the same way: titled with their own opening words.
+        if (SpikeIt.IsAuthored(paperId))
+        {
+            return new Reveal("", SpikeIt.Title(paperId), SpikeIt.Document(paperId));
+        }
+
         return HardcaseRep.IsTheSchedule(paperId)
             ? new Reveal("", HardcaseRep.ScheduleLabel, HardcaseRep.ScheduleBody)
             : new Reveal(

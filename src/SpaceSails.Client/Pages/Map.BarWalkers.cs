@@ -281,6 +281,8 @@ public partial class Map
         TheBurnIsToldHere(bar.BodyId);   // #1062 slice 2 · …and whether somebody walked this place first
         CheckTheChalkMark();   // #794 · …and the stone beside the gallery's machines, which sometimes says more
         KeepTheLipHonest();    // #794 · …and a gallery table's card carries FEEL UNDER THE LIP only while it should
+        AdvanceTheStringerAtHerPages(bar);   // #1202 slice 2 · …and a stringer at the gallery's far table, while a spike is in hand
+        KeepThePagesHonest();  // #1202 slice 2 · …and her table's card carries TAKE THE PAGES / LEAVE YOUR PAGE only while it should
     }
 
     /// <summary>#973 L0 · CASTING OFF IS THE ROOM FORGETTING. Same law a turned shift is underground: what

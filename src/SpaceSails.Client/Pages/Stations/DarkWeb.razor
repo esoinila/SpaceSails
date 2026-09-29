@@ -265,6 +265,26 @@
                 </table>
             }
 
+            @* #1202 slice 2 · SPIKE IT. One row, only while a story of hers is pending and no spike is in hand —
+               absent otherwise, never greyed. The label is the verb; every word is Core's (SpikeIt). *@
+            @if (Spike is { } spike)
+            {
+                <table class="table table-sm table-dark mb-2">
+                    <tbody>
+                        <tr>
+                            <td>
+                                @SpikeIt.RowLabel
+                                <div class="text-secondary">@spike.SubLine</div>
+                            </td>
+                            <td class="text-end align-middle text-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1"
+                                        @onclick="() => OnTakeSpike.InvokeAsync()">@SpikeIt.RowLabel</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            }
+
             <div class="text-secondary mb-1">Your sellable tracks (quality ≥ 50%):</div>
             @if (!SellableTracks.Any())
             {

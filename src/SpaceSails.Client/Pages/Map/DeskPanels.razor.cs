@@ -196,6 +196,13 @@ public partial class DeskPanels
     /// <summary>#319 slice 2 · Send the coordinates. Map writes the sale; nothing else moves.</summary>
     [Parameter] public Action SellTheLocation { get; set; } = default!;
 
+    /// <summary>#1202 slice 2 · SPIKE IT, as the desk would draw it — Map's own <c>SpikeOnOffer</c>, null when no
+    /// story of hers is pending.</summary>
+    [Parameter] public Func<SpaceSails.Client.Pages.Stations.DarkWeb.SpikeOffer?> SpikeOnOffer { get; set; } = default!;
+
+    /// <summary>#1202 slice 2 · Take it. Map puts the client's page in the pocket; nothing else moves.</summary>
+    [Parameter] public Action TakeTheSpike { get; set; } = default!;
+
     /// <summary>#711 slice 2 · The ground the box already in the pocket is going to, as the desk prints it —
     /// Map's own <c>TheParcelsDestinationRow</c>, empty while no parcel is carried.</summary>
     [Parameter] public Func<string> TheParcelsDestinationRow { get; set; } = default!;
