@@ -126,6 +126,7 @@ public partial class Map
         if (q.NerveCheat is { } seedPips)
         {
             _nerve = NervePips.FromPips(seedPips);
+            _nerveSeedPips = seedPips;
         }
 
         // #640 · ?nopattern=1 — the policy is already closed. HERE, beside the nerve seed and for the same

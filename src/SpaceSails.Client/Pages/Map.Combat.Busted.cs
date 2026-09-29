@@ -246,6 +246,30 @@ public partial class Map
         StateHasChanged();
     }
 
+    /// <summary>#428 · The <c>?nerve=N</c> seed, kept so the landing can hand it back. Null on every boot without it.</summary>
+    private int? _nerveSeedPips;
+
+    /// <summary>
+    /// #1318 · <c>?nerve=N&amp;land=1</c> SETS THE BOOTS DOWN ON N PIPS, not on whatever the descent eased back.
+    ///
+    /// <para>The seed is laid before the shuttle goes (the descent's first frames read it), and the captain is
+    /// aboard — safe — for every frame of the ride, so the airlock ease handed a pip back each
+    /// <see cref="NervePips.AirlockBeatSeconds"/>: <c>?nerve=1</c> touched down on nine, and the ledger read
+    /// <i>the airlock closes behind you +1</i> eight times over. Booted headless on 2026-09-29. The cheat
+    /// moves the needle and nothing else, so on the ground it reads what the URL asked, and the ledger
+    /// carries no ease the cheat's own ride paid for.</para>
+    /// </summary>
+    private void HoldTheNerveSeedThroughTheDescent()
+    {
+        if (_nerveSeedPips is not { } seed || _surface is null)
+        {
+            return;
+        }
+
+        _nerve = NervePips.FromPips(seed);
+        _nerveLedger = [.. _nerveLedger.Where(e => e.Cause != NervePips.Cause.Airlock)];
+    }
+
     /// <summary>
     /// #621 dev cheat · <c>/map?death=&lt;cause&gt;</c> — land first (if the URL asked to), THEN die.
     ///
@@ -257,6 +281,7 @@ public partial class Map
     private async Task AutoLandThenStageDeathAsync(DeathCause? cause)
     {
         await AutoLandForCheatAsync();
+        HoldTheNerveSeedThroughTheDescent();
         if (cause is { } asked)
         {
             StageDeathCheat(asked);
