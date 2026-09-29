@@ -100,6 +100,11 @@ public sealed partial class DeckPlan
         float X1, float Y1, float X2, float Y2, bool IsWindow, bool IsHull, bool Unseen = false,
         bool IsStone = false, bool IsSeamless = false);
 
+    /// <summary>#465 · How near the captain must be for an auto-door to retract. Lives HERE, not in the
+    /// renderer, because the same number now decides two things that must never disagree: what is DRAWN open
+    /// and what is transparent to sight and gunfire. A door the player sees shut must stop a round.</summary>
+    public const double DoorOpenRadius = 4.0;
+
     /// <summary>An airlock door across a passage. An automatic door slides open as the avatar nears
     /// (a top-down flourish; it never blocks — the passage is always walkable). A <c>Locked</c> door
     /// stays shut and is drawn cold — it marks another berth's sealed hatch, decoration only, and is
@@ -112,11 +117,6 @@ public sealed partial class DeckPlan
     /// That is what finally gives the Old Ones a visible thing to stop at (#462) — the outer door closing
     /// behind you as the inner opens — and it is why a tailgater ends up shut in the tube with the built-in
     /// gun (#461) rather than following you aboard. 0 = an ordinary door with no partner.</para></summary>
-    /// <summary>#465 · How near the captain must be for an auto-door to retract. Lives HERE, not in the
-    /// renderer, because the same number now decides two things that must never disagree: what is DRAWN open
-    /// and what is transparent to sight and gunfire. A door the player sees shut must stop a round.</summary>
-    public const double DoorOpenRadius = 4.0;
-
     /// <param name="Imported">#592 · This door was not made here. Owner: <i>"some special color not
     /// distinctive to the site could then used to draw our attention to a place (like expensive door made
     /// with far away imported materials)."</i> Every ordinary hatch is drawn in its world's own stone, so the
