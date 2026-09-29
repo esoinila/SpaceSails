@@ -155,14 +155,14 @@ public sealed partial class Map
             return;
         }
 
-        CarryThePress.Passage p = PassageOf(q);
-        if (!p.Landed)
+        // Her word about the tin waits until he is standing on the ground and looking: on the pad (and on the
+        // descent's warm-up frame, which is on the pad) she has said nothing yet — see SheReadsHerWordOffTheRecorder.
+        if (!PassageOf(q).Landed && MoonSurface.IsDiggableGround(_avatarX, _avatarY, ex.Floor))
         {
-            string line = CarryThePress.Landing(TheTinsWords(q, ex));
-            FileNote(line, CarryThePress.Glyph);
-            ShowPulseMessage(line);
-            q = RewritePassage(q, p = p with { Landed = true });
+            q = SheReadsHerWordOffTheRecorder(ex, q);
         }
+
+        CarryThePress.Passage p = PassageOf(q);
 
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
         if (her is null)
@@ -210,6 +210,39 @@ public sealed partial class Map
         }
 
         her.Walk.LookTowards(_avatarX, _avatarY);
+    }
+
+    /// <summary>
+    /// #1202 · HER WORD ABOUT THE TIN, TOLD WHEN HE IS STANDING ON THE GROUND AND LOOKING (Fable's ruling,
+    /// 2026-09-29). It used to be said on the landing's warm-up frame, and the very next line — the shuttle's
+    /// own "🛸 Shuttle mated to …" — wrote over it in the one pulse slot, so in play it was only ever read in
+    /// the field book (the seventh bug class: a told line written to a slot the next line overwrites). Now it
+    /// is said, and filed, at one of two moments, whichever comes first and only once (the contract's
+    /// <c>Landed</c> bit): the first-ground card closing (<see cref="CloseGroundLesson"/>), or — on a ground
+    /// with no such card — the captain's first step off the pad onto the regolith. Both are after the
+    /// shuttle's line, so hers is the one left in the slot.
+    /// </summary>
+    private Quest SheReadsHerWordOffTheRecorder(SurfaceExcursion ex, Quest q)
+    {
+        CarryThePress.Passage p = PassageOf(q);
+        if (p.Landed)
+        {
+            return q;
+        }
+
+        string line = CarryThePress.Landing(TheTinsWords(q, ex));
+        FileNote(line, CarryThePress.Glyph);
+        ShowPulseMessage(line);
+        return RewritePassage(q, p with { Landed = true });
+    }
+
+    /// <summary>#1202 · The first-ground card has closed: if this is her ground, she says her word now.</summary>
+    private void SheReadsHerWordAsTheCardCloses()
+    {
+        if (_surface is { } ex && TheStringerOnThisGround(ex) is { } q)
+        {
+            _ = SheReadsHerWordOffTheRecorder(ex, q);
+        }
     }
 
     /// <summary>
