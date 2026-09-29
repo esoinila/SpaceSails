@@ -465,7 +465,9 @@ public sealed partial class Map
     /// #1202 QA · <c>?dock=&lt;berth&gt;&amp;press=1</c> — her contract taken at this berth, she is aboard, and
     /// her ground (one the shuttle can reach from here) is named on the ledger row and on the DEV line;
     /// <c>&amp;press=filed</c> — the same trip, tin dug, paid four sim-days ago, so her story is on the wire and
-    /// the floor has reacted, and the book's entry is filed. It plants what play would have left and nothing
+    /// the floor has reacted, and the book's entry is filed; <c>&amp;press=pending</c> — the same trip, paid this
+    /// instant, so her story is three sim-days off with no spike against it and a dark-web desk carries SPIKE IT
+    /// (#1202 QA, 2026-09-29). It plants what play would have left and nothing
     /// more; everything after it is the shipped path.
     /// </summary>
     private void TakeThePressForCheat()
@@ -503,14 +505,25 @@ public sealed partial class Map
                 return;
             }
 
-            // Filed: the trip made, the tin dug, and her fare paid four sim-days back.
+            // Filed: the trip made, the tin dug, and her fare paid four sim-days back. Pending: the same trip,
+            // her fare paid this instant — the story three sim-days off, nothing against it.
             _satchel = [.. Core.Satchel.Add(_satchel, CarryThePress.TheNote())];
             Quest home = RewritePassage(offer, PassageOf(offer) with
             {
                 Landed = true, Walked = true, Tin = true,
-                TurnedIn = SimTime - CarryThePress.StoryAfterSeconds - CarryThePress.FloorAfterStorySeconds,
+                TurnedIn = cheat == CarryThePress.Cheat.Pending
+                    ? SimTime
+                    : SimTime - CarryThePress.StoryAfterSeconds - CarryThePress.FloorAfterStorySeconds,
             });
             AdvanceMission(home, QuestState.TurnedIn);
+            if (cheat == CarryThePress.Cheat.Pending)
+            {
+                ShowPulseMessage($"🧪 DEV ?press=pending — {CarryThePress.Byline}'s {BodyName(body)} story is "
+                    + $"{SpikeIt.WatchesUntil(CarryThePress.StoryAt(PassageOf(home))!.Value, SimTime)} watches off; "
+                    + "open Comms → dark web for SPIKE IT");
+                return;
+            }
+
             ThePressRunsHerStory();
             ShowPulseMessage($"🧪 DEV ?press=filed — {CarryThePress.Byline}'s story is on the wire (Galley 6, Comms ticker)");
             return;

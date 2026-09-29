@@ -236,6 +236,11 @@ public static class DevStarts
             + "(6) and the Comms ticker, the floor's opinion is on a port's rag, and the book has filed that it ran "
             + "(#1202).",
             "/map?dock=selene-gate&press=filed"),
+        new("📰⏳", "…and her story is pending",
+            "The same trip made, the tin dug, and her fare paid this instant: her story is three sim-days off and "
+            + "nothing is against it yet. Open Comms → dark web: the desk carries SPIKE IT with the client's terms; "
+            + "take it and the row is gone (#1202).",
+            "/map?dock=selene-gate&press=pending"),
         // #1202 slice 2 · SPIKE IT. Her story pending and a spike against it, the stringer writing at the gallery's far
         // table; and the same contract after a window that passed with her pages in the captain's satchel.
         new("📰✂", "Spike it — she writes at the far table",

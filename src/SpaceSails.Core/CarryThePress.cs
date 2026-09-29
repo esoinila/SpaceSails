@@ -366,6 +366,9 @@ public static class CarryThePress
         Aboard,
         /// <summary><c>&amp;press=filed</c> — she has paid long enough ago that her story is on the wire.</summary>
         Filed,
+        /// <summary><c>&amp;press=pending</c> — she has just paid; her story is three sim-days off and nothing is
+        /// against it, so a dark-web desk carries SPIKE IT.</summary>
+        Pending,
     }
 
     /// <summary>Read <c>press=</c> off an address, the <see cref="GeocacheSale.CheatIn"/> way: a dev latch has
@@ -386,6 +389,7 @@ public static class CarryThePress
                 {
                     "1" or "true" or "yes" => Cheat.Aboard,
                     "filed" => Cheat.Filed,
+                    "pending" => Cheat.Pending,
                     _ => Cheat.None,
                 };
             }
