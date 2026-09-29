@@ -183,9 +183,10 @@ public static partial class HavenInterior
     private static BarDesk DefaultBarDesk(string bodyId) => new(bodyId, 0.26f, 0.60f, 4.5f);
 
     /// <summary>#973 L0 · How many figures the docked complex draws before any walker: the ship's three, the
-    /// customs officer, the four seated regulars, the Magpie, the barkeep and the oracle's corner. Named
+    /// customs officer, the four seated regulars, the Magpie, the barkeep, the oracle's corner and (#1202)
+    /// Rauha Lind's own chair. Named
     /// because <see cref="BuildComplex"/> hands it to the plan and the walker band is written after it, and a
     /// buffer offset that is two opinions about one number is how this game has twice thrown
     /// <c>IndexOutOfRangeException</c> at the renderer.</summary>
-    public const int SeatedFigureCount = 11;
+    public const int SeatedFigureCount = 12;
 }

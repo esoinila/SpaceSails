@@ -48,6 +48,14 @@ public partial class Map
             return;
         }
 
+        // #1202 · Rauha Lind at her own chair: her card, before any give-work path a regular's table runs (a
+        // favour called in, a KAAMOS docket) — she books passage and nothing else.
+        if (string.Equals(giver, CarryThePress.Giver, StringComparison.Ordinal) && MakePressOffer() is { } passage)
+        {
+            _pendingOffer = passage;
+            return;
+        }
+
         // The roaming Magpie (PR-F, "people cannot be static furniture"): interaction is gated on their
         // sim-time rota, so walking up to a chair they've left tells you they've moved on, not gives an
         // offer. Handled before the generic give-work paths, which assume a patron who stays put.

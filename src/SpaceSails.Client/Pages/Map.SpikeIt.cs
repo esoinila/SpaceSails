@@ -97,6 +97,7 @@ public sealed partial class Map
         _satchel = [.. Core.Satchel.Add(_satchel, SpikeIt.TheSwap(body))];
         RewritePassage(q, PassageOf(q) with { Spike = true });
         ShowPulseMessage(SpikeIt.Taken(body));
+        RebuildDockedDeck();   // #1202 · …and from here she is at her pages, not at her own chair in the bar
         StateHasChanged();
     }
 
