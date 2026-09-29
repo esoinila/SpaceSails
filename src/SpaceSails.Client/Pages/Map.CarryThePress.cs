@@ -241,6 +241,8 @@ public sealed partial class Map
                     next = next with { Printed = true };
                 }
 
+                next = TheRagNoticesTheHole(p, next);   // #1202 slice 4 · the cycle after, port rags only, once
+
                 if (next != p)
                 {
                     RewritePassage(q, next);

@@ -416,6 +416,7 @@ public sealed partial class Map
             ShowPulseMessage(p.Outcome == SpikeIt.Outcome.Late
                 ? $"💳 {SpikeIt.LateReceipt(p.Watched)}"
                 : $"💳 +{pays.ToString("N0", CultureInfo.InvariantCulture)} cr");
+            TheOfficePaysWithPaper(q, p.Outcome);   // #1202 slice 4 · …and a paid spike leaves a line item
             RewritePassage(q, p with { Paid = true });
             StateHasChanged();
             return;
@@ -450,19 +451,28 @@ public sealed partial class Map
         string body = BodyName(bodyId);
         _quests.Add(offer);
         _satchel = [.. Core.Satchel.Add(_satchel, SpikeIt.TheSwap(body))];
-        double ago = cheat == SpikeIt.Cheat.Spiked
-            ? CarryThePress.StoryAfterSeconds + CarryThePress.FloorAfterStorySeconds
-            : CarryThePress.FloorAfterStorySeconds;
+        bool past = cheat is SpikeIt.Cheat.Spiked or SpikeIt.Cheat.Paid;
+        double ago = cheat switch
+        {
+            SpikeIt.Cheat.Spiked => CarryThePress.StoryAfterSeconds + CarryThePress.FloorAfterStorySeconds,
+            SpikeIt.Cheat.Paid => CarryThePress.StoryAfterSeconds,   // #1202 slice 4 · the window this instant
+            _ => CarryThePress.FloorAfterStorySeconds,
+        };
         Quest home = RewritePassage(offer, PassageOf(offer) with
         {
             Landed = true, Walked = true, Tin = true, TurnedIn = SimTime - ago, Spike = true,
-            Pages = cheat == SpikeIt.Cheat.Spiked ? SpikeIt.Pages.Taken : SpikeIt.Pages.OnHerTable,
+            Pages = past ? SpikeIt.Pages.Taken : SpikeIt.Pages.OnHerTable,
         });
         AdvanceMission(home, QuestState.TurnedIn);
-        if (cheat == SpikeIt.Cheat.Spiked)
+        if (past)
         {
             _satchel = [.. Core.Satchel.Add(_satchel, SpikeIt.ThePages())];
             ThePressRunsHerStory();
+        }
+
+        if (cheat == SpikeIt.Cheat.Paid)
+        {
+            TheSpikeIsSettled();   // #1202 slice 4 · the desk's own payout: the 💳 and the receipt
         }
 
         // #1202 slice 3 · …with a man behind the captain (&tailed=1) the leg into the gallery is the tester's to
@@ -476,7 +486,9 @@ public sealed partial class Map
             StandCaptainAt(island.X, island.Y, "you come out of the tube into the gallery");
         }
 
-        ShowPulseMessage(cheat == SpikeIt.Cheat.Spiked
+        ShowPulseMessage(cheat == SpikeIt.Cheat.Paid
+            ? $"🧪 DEV ?spike=paid — the {body} story did not run and the desk has paid; the receipt is in the satchel; the port rag's line is one cycle off"
+            : cheat == SpikeIt.Cheat.Spiked
             ? $"🧪 DEV ?spike=spiked — the {body} story did not run; the recorder is on the far table; open Comms → dark web for the 💳"
             : $"🧪 DEV ?spike=1 — the {body} story is {SpikeIt.WatchesUntil(CarryThePress.StoryAt(PassageOf(home))!.Value, SimTime)} watches off; "
               + $"{CarryThePress.Plate} writes at gallery table {SpikeIt.HerTable} (the far one); "
