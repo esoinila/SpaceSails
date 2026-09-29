@@ -179,7 +179,9 @@ So `GateReady` is the one answer to "when may a pixel be read?", and every gate 
 readings. It is not a retry and it never re-reads until it likes the answer: a gate that cannot get a still
 screen has not measured anything. An element the page deliberately never rests — computed
 `animation-iteration-count: infinite` — is excluded with its descendants, because a spinner is not evidence
-that the layout is moving.
+that the layout is moving. The same reasoning masks the pulse toast (`.deck-pulse-toast`) out of
+`TheSheetComputesTheSameStyleTests` (#1320): it is on the page only while a line is inside its 1.5–8 s dwell,
+so whether a reading catches it is the runner's timing, not the sheet's — it flaked "ashore · the bar" once.
 
 `TheGateMeasuresAStillScreenTests` is the law itself: the #1234 screen booted three times, read 0 ms,
 1200 ms and 3000 ms after the door, and the toolbar must read as the **same controls on the same lines**

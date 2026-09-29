@@ -513,15 +513,6 @@ the Hive park	.convergence-card	overflow-y	auto
 the Hive park	.convergence-card > .convergence-close	bottom	0px
 the Hive park	.convergence-card > .convergence-close	position	sticky
 the Hive park	.convergence-card > .convergence-close	z-index	3
-the Hive park	.deck-pulse-toast	background-color	rgba(6, 9, 15, 0.82)
-the Hive park	.deck-pulse-toast	background-image	none
-the Hive park	.deck-pulse-toast	color	rgb(255, 212, 121)
-the Hive park	.deck-pulse-toast	font-weight	600
-the Hive park	.deck-pulse-toast	left	640px
-the Hive park	.deck-pulse-toast	max-width	640px
-the Hive park	.deck-pulse-toast	position	absolute
-the Hive park	.deck-pulse-toast	top	96px
-the Hive park	.deck-pulse-toast	z-index	1255
 the Hive park	.ground-lesson-card	display	flex
 the Hive park	.ground-lesson-card	flex-direction	column
 the Hive park	.ground-lesson-card	max-width	672px
@@ -612,15 +603,6 @@ a Hive floor	.convergence-card	overflow-y	auto
 a Hive floor	.convergence-card > .convergence-close	bottom	0px
 a Hive floor	.convergence-card > .convergence-close	position	sticky
 a Hive floor	.convergence-card > .convergence-close	z-index	3
-a Hive floor	.deck-pulse-toast	background-color	rgba(6, 9, 15, 0.82)
-a Hive floor	.deck-pulse-toast	background-image	none
-a Hive floor	.deck-pulse-toast	color	rgb(255, 212, 121)
-a Hive floor	.deck-pulse-toast	font-weight	600
-a Hive floor	.deck-pulse-toast	left	640px
-a Hive floor	.deck-pulse-toast	max-width	640px
-a Hive floor	.deck-pulse-toast	position	absolute
-a Hive floor	.deck-pulse-toast	top	96px
-a Hive floor	.deck-pulse-toast	z-index	1255
 a Hive floor	.ground-lesson-card	display	flex
 a Hive floor	.ground-lesson-card	flex-direction	column
 a Hive floor	.ground-lesson-card	max-width	672px
@@ -711,15 +693,6 @@ a ground	.convergence-card	overflow-y	auto
 a ground	.convergence-card > .convergence-close	bottom	0px
 a ground	.convergence-card > .convergence-close	position	sticky
 a ground	.convergence-card > .convergence-close	z-index	3
-a ground	.deck-pulse-toast	background-color	rgba(6, 9, 15, 0.82)
-a ground	.deck-pulse-toast	background-image	none
-a ground	.deck-pulse-toast	color	rgb(255, 212, 121)
-a ground	.deck-pulse-toast	font-weight	600
-a ground	.deck-pulse-toast	left	640px
-a ground	.deck-pulse-toast	max-width	640px
-a ground	.deck-pulse-toast	position	absolute
-a ground	.deck-pulse-toast	top	96px
-a ground	.deck-pulse-toast	z-index	1255
 a ground	.ground-lesson-card	display	flex
 a ground	.ground-lesson-card	flex-direction	column
 a ground	.ground-lesson-card	max-width	672px
