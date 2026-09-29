@@ -33,8 +33,9 @@ public sealed partial class Map
     // ── THE CARD AT THE TABLE ───────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// #1202 · Her card, when she is the stranger at this table this watch — null, and no card, otherwise. One
-    /// contract at a time: never while one of hers is still in the captain's hand.
+    /// #1202 · Her card, when she is at her own chair in this bar this watch (<c>HavenInterior.TheStringersSeat</c>,
+    /// on the same one-watch-in-three cadence) — null, and no card, otherwise. One contract at a time: never
+    /// while one of hers is still in the captain's hand.
     /// </summary>
     private Quest? MakePressOffer()
     {
@@ -71,8 +72,33 @@ public sealed partial class Map
             DestBodyId: ground.BodyId, SourceBodyId: here, Pin: new CarryThePress.Passage(ground.SiteIndex).Write());
     }
 
-    /// <summary>#1202 · Taken: she stows one bag and the recorder. Said once, at the press that took her.</summary>
-    private void SheStowsOneBag() => SayItWhereTheyAreLooking(CarryThePress.TakenLine);
+    /// <summary>#1202 · Taken: she stows one bag and the recorder. Said once, at the press that took her — and
+    /// her chair at the bar is empty from that press on (<see cref="TheStringerIsElsewhere"/>), so the room is
+    /// re-welded without her console.</summary>
+    private void SheStowsOneBag()
+    {
+        SayItWhereTheyAreLooking(CarryThePress.TakenLine);
+        RebuildDockedDeck();
+    }
+
+    /// <summary>
+    /// #1202 · IS SHE SOMEWHERE OTHER THAN HER OWN CHAIR? Aboard, while a contract of hers is in the captain's
+    /// hand (taken and not yet paid off); or at her pages at the gallery's far table, on the berth and for the
+    /// span <c>AdvanceTheStringerAtHerPages</c> draws her there. Either way her bar seat is empty.
+    /// </summary>
+    private bool TheStringerIsElsewhere()
+    {
+        foreach (Quest q in _quests)
+        {
+            if (q.Kind == QuestKind.CarryThePress && q.State != QuestState.TurnedIn)
+            {
+                return true;
+            }
+        }
+
+        return string.Equals(_dockedHavenId, SpikeIt.Haven, StringComparison.Ordinal)
+            && TheSpikeInHand() is { } spiked && !CarryThePress.StoryIsDue(PassageOf(spiked), SimTime);
+    }
 
     // ── THE CONTRACT'S LINE OF STATE ────────────────────────────────────────────────────────────────────
 
