@@ -21,6 +21,7 @@ public sealed class TheStringerIsCarriedTests
     private const double Day = 86400.0;
     private const string Aboard = "/map?dock=selene-gate&press=1";
     private const string Filed = "/map?dock=selene-gate&press=filed";
+    private const string Pending = "/map?dock=selene-gate&press=pending";
     private const string OnLuna = "/map?dock=selene-gate&body=luna&site=1&land=1";
 
     // ── helpers ─────────────────────────────────────────────────────────────────────────────────────────
@@ -68,6 +69,50 @@ public sealed class TheStringerIsCarriedTests
         Assert.Contains("DEV ?press=1", b.Pulse, StringComparison.Ordinal);
     }
 
+
+    /// <summary>
+    /// <c>?press=pending</c> · THE SPIKE IT ROW, SEEN AT THE DESK. Booted, the desk opened through the comms node
+    /// a player clicks, and the dark-web desk's own subtree read: the row's label and its canon line (her body,
+    /// twice her fare) are there; the SPIKE IT button pressed, the purse is unchanged, the client's page is in
+    /// the satchel, and the row is gone from the redrawn desk. The guide row for this start promises exactly this.
+    ///
+    /// <para><b>RED</b> by staging <c>press=pending</c> as <c>filed</c> (its <c>TurnedIn</c> four sim-days back):
+    /// the story had run, and the desk carried no row.</para>
+    /// </summary>
+    [Fact]
+    public async Task ThePendingStartPutsSpikeItOnTheDesk()
+    {
+        DeskBench b = await DeskBench.BootAsync(Pending);
+        Map.Quest q = Hers(b);
+        Assert.Equal(Map.QuestState.TurnedIn, q.State);
+        Assert.False(CarryThePress.Passage.Read(q.Pin).Spike);
+        Assert.Contains("DEV ?press=pending", b.Pulse, StringComparison.Ordinal);
+        string body = (string)b.Call("BodyName", q.DestBodyId!)!;
+        string line = SpikeIt.Row(body, SpikeIt.Purse(q.Reward));
+
+        await b.SwitchAsync(Pages.ShipDesk.Comms);
+        DeskBench.Painted comms = await b.RenderAsync();
+        DeskBench.Painted.Node node = comms.Root.Descendants()
+            .First(n => n.HasClass("comms-node") && n.Spoken.Contains("Dark web market", StringComparison.Ordinal));
+        await b.PressAsync(node.Handlers["onclick"]);
+        DeskBench.Painted.Node desk = TheDarkWebDesk(await b.RenderAsync());
+        Assert.Contains(line, desk.Spoken, StringComparison.Ordinal);
+        DeskBench.Painted.Node take = desk.Descendants()
+            .Single(n => n.Element == "button" && n.Name == SpikeIt.RowLabel);
+
+        int purse = (int)b.Peek("_credits")!;
+        await b.PressAsync(take.Handlers["onclick"]);
+        desk = TheDarkWebDesk(await b.RenderAsync());
+        Assert.DoesNotContain(line, desk.Spoken, StringComparison.Ordinal);
+        Assert.DoesNotContain(desk.Descendants(), n => n.Element == "button" && n.Name == SpikeIt.RowLabel);
+        Assert.Equal(purse, (int)b.Peek("_credits")!);
+        Assert.True(CarryThePress.Passage.Read(Hers(b).Pin).Spike);
+        Assert.Contains(((IEnumerable<Satchel.Item>)b.Peek("_satchel")!), i => SpikeIt.IsTheSwap(i.Id));
+        Assert.Empty(b.EscapedPastTheGate);
+    }
+
+    private static DeskBench.Painted.Node TheDarkWebDesk(DeskBench.Painted painted) =>
+        painted.Root.Descendants().Single(n => n.HasClass("dark-web-card") && !n.Hidden);
     /// <summary>
     /// <c>?press=1</c> · THE LEDGER ROW NAMES HER AND HER GROUND, read off the painted page (0 Captain → 📜
     /// Ledger), not off the projection: the row a captain reads says who he is carrying and where to. The guide

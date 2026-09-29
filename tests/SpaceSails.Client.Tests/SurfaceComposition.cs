@@ -44,12 +44,30 @@ internal static class SurfaceComposition
     /// code-behind beside it if there is one. That is the same text those guards were reading before the
     /// move, in the same order — the markup first, then the members — so not one of them had to change what
     /// it asserts.</para>
+    ///
+    /// <para>#251 · <b>AND A CODE-BEHIND CAN BE CUT IN ITS TURN.</b> <c>FlowColumn.razor.cs</c> crossed the size
+    /// lane's line as one alphabetical list of <c>[Parameter]</c>s, and its PascalCase half moved VERBATIM to
+    /// <c>FlowColumn.razor.Members.cs</c> — a tail cut. So the component is the razor, then the code-behind,
+    /// then every <c>&lt;Name&gt;.razor.*.cs</c> partial beside it in ordinal order: head + tail, the same text
+    /// in the same order the guards read before the cut. Without this the two surface-write laws would read
+    /// half the column's parameters and find nothing wrong with the other half.</para>
     /// </summary>
     internal static string ComponentText(string razorPath)
     {
         string razor = File.ReadAllText(razorPath);
         string behind = razorPath + ".cs";
-        return File.Exists(behind) ? razor + "\n" + File.ReadAllText(behind) : razor;
+        string text = File.Exists(behind) ? razor + "\n" + File.ReadAllText(behind) : razor;
+        string prefix = Path.GetFileName(razorPath) + ".";
+        foreach (string part in Directory.EnumerateFiles(Path.GetDirectoryName(razorPath)!, "*.cs")
+                     .Where(f => Path.GetFileName(f).StartsWith(prefix, StringComparison.Ordinal)
+                                 && !string.Equals(Path.GetFileName(f), Path.GetFileName(behind),
+                                     StringComparison.Ordinal))
+                     .OrderBy(f => f, StringComparer.Ordinal))
+        {
+            text += "\n" + File.ReadAllText(part);
+        }
+
+        return text;
     }
 
     internal static string RepoRoot()

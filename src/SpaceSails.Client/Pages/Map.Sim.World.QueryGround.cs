@@ -308,7 +308,7 @@ public partial class Map
         }
         else if (pair.StartsWith("press=", StringComparison.OrdinalIgnoreCase))
         {
-            // #1202 dev cheat: /map?dock=<berth>&press=1|filed. CLAIMED here and read nowhere here, the geocache
+            // #1202 dev cheat: /map?dock=<berth>&press=1|filed|pending. CLAIMED here and read nowhere here, the geocache
             // cheat's way: it writes no world at parse time, and a page field for it would move #905's frame
             // ledger. Map.CarryThePress reads it off the address bar (CarryThePress.CheatIn) once clamped.
         }

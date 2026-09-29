@@ -194,7 +194,7 @@ public sealed class ADropForNobodyYouHaveMetTests
         {
             (Path.Combine("Pages", "Map.razor"), "TheParcelsDestinationRow=\"@TheParcelsDestinationRow\""),
             (Path.Combine("Pages", "Map", "FlowColumn.razor"), "TheParcelsDestinationRow=\"@TheParcelsDestinationRow\""),
-            (Path.Combine("Pages", "Map", "FlowColumn.razor.cs"), "Func<string> TheParcelsDestinationRow"),
+            (Path.Combine("Pages", "Map", "FlowColumn.razor.Members.cs"), "Func<string> TheParcelsDestinationRow"),
             (Path.Combine("Pages", "Map", "DeskPanels.razor.cs"), "Func<string> TheParcelsDestinationRow"),
             (Path.Combine("Pages", "Map", "DeskPanels.razor"), "ParcelDestinationRow=\"@TheParcelsDestinationRow()\""),
             (Path.Combine("Pages", "Stations", "DarkWeb.razor.cs"), "string ParcelDestinationRow"),
@@ -289,6 +289,7 @@ public sealed class ADropForNobodyYouHaveMetTests
             Path.Combine("Pages", "Map.Trade.DarkWeb.cs"),
             Path.Combine("Pages", "Map", "DeskPanels.razor"),
             Path.Combine("Pages", "Map", "FlowColumn.razor.cs"),
+            Path.Combine("Pages", "Map", "FlowColumn.razor.Members.cs"),
             Path.Combine("Pages", "Map", "DeskPanels.razor.cs"),
         })
         {
