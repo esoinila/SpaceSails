@@ -4167,6 +4167,14 @@
                                 title="@($"Order the Special — {specialCost} cr")" @onclick="OrderTheSpecial">🍽 @SpaceSails.Core.Interior.TheMenuBoard.SpecialLabel · @specialCost cr</button>
                         <div class="bar-board-line">@boardLine</div>
                     </div>
+                    @* #1332 B · …AND THE GARDEN'S LINE, chalked under the special: one sentence, Fable canon,
+                       verbatim — the garden behind glass off the concourse is the reason it exists, and this is
+                       the one place the station says so. Core owns it (HavenGarden.MenuLineAt) and answers it
+                       wherever there is a board. *@
+                    @if (SpaceSails.Core.HavenGarden.MenuLineAt(keep.BodyId) is { } gardenLine)
+                    {
+                        <div class="bar-board-line">@gardenLine</div>
+                    }
                 </div>
             }
             <div class="deck-offer-actions">

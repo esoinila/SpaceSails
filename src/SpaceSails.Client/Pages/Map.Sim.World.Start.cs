@@ -104,6 +104,13 @@ public partial class Map
                     : "🛗 Test: ?havenfloor= needs a berth with a floor under its concourse. Try &dock=selene-gate.");
             }
 
+            // #1332 B · …and ?garden=1 walks across the concourse to THE door of the garden behind glass, and
+            // stops there — on the hall side, so the first step in is the tester's and so is the line it earns.
+            if (q.GardenCheat)
+            {
+                StandAtTheGardensDoorIfAsked();
+            }
+
             // #1016 · …and ?barcase=1 walks one leg further: onto a free top, sat down, with papers in the
             // sleeve. Immediately after the threshold, because it needs the deck the line above welded and
             // the coordinates it just wrote.

@@ -68,6 +68,7 @@ public partial class Map
         public bool OracleCheat; // #428 /map?oracle=1: seat the station oracle at whatever bar you dock at (she's a coin-flip fixture otherwise)
         public bool AshoreCheat; // #428 /map?ashore=1: boot docked AND already standing in the bar — the ship→tube→hall walk already walked
         public int? HavenFloorCheat; // #1253 /map?havenfloor=-1: …and one floor DOWN, at a cage's landing on the lower concourse (implies ?ashore=1)
+        public bool GardenCheat; // #1332 B /map?garden=1: …and walked to THE door of the garden behind glass (implies ?ashore=1)
         public int? NerveCheat; // #428 /map?nerve=N: seed the nerve gauge at N of NervePips.MaxPips whole pips at boot
         public string? NebulaCheat; // #422 /map?nebula=N|all: assemble N NEBULA fragments (or all) so the readout + truth notice are testable; ?nebula=adjuster instead SEATS the rare bar contact so the tell can be EARNED
         public bool ConvergeCheat; // #422 /map?converge=1: seed enough of BOTH arcs to fire THE CONVERGENCE for a one-URL smoke test

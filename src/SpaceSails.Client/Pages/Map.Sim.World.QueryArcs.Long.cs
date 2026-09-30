@@ -90,6 +90,20 @@ public partial class Map
             string candidate = Uri.UnescapeDataString(pair["ashore=".Length..]).ToLowerInvariant();
             q.AshoreCheat = candidate is "1" or "true" or "yes";
         }
+        else if (pair.StartsWith("garden=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #1332 B dev cheat: /map?dock=<haven>&ashore=1&garden=1 boots ashore and then walks the concourse
+            // to THE door of the garden behind glass — one pace out from it on the hall side, the plate and the
+            // four beds through the doorway, the bench by the far glass. It implies ?ashore=1 for the reason
+            // ?havenfloor= does: being ashore is not what is being tested, the room is. It grants nothing and
+            // forces nothing; walking in is the tester's (and so is hearing the line, once).
+            string candidate = Uri.UnescapeDataString(pair["garden=".Length..]).ToLowerInvariant();
+            if (candidate is "1" or "true" or "yes")
+            {
+                q.GardenCheat = true;
+                q.AshoreCheat = true;
+            }
+        }
         else if (pair.StartsWith("havenfloor=", StringComparison.OrdinalIgnoreCase))
         {
             // #1253 dev cheat: /map?dock=selene-gate&ashore=1&havenfloor=-1 boots ashore and then one floor

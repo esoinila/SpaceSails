@@ -258,10 +258,14 @@ public sealed class TheBootBuildsTheSameWorldTests
             // already built. What the two of them ANSWER is pinned next door, in
             // TheBootReadsTheSameQueryTests, where this URL is its own distinct reading.
             ["/map?dock=selene-gate&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
+            // #1332 B · the garden behind glass: the front door's world, like every ashore row — dumped, not typed.
+            ["/map?dock=selene-gate&ashore=1&garden=1"] = "5702e97b412b144d3fd884426e262007",
             // #1332 A · EVERY HUB IS A LOBBY — the six floors the other hubs grew, one dev row each. Dumped with
             // SPACESAILS_BOOT_FINGERPRINT_DUMP, not typed: each builds the front door's world for the reason
             // Selene Gate's row above does, and no other row of the dump moved.
             ["/map?dock=the-space-bar&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
+            // #1332 B · the garden behind glass: the front door's world, like every ashore row — dumped, not typed.
+            ["/map?dock=the-space-bar&ashore=1&garden=1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=cinder-roost&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=the-tilt&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
