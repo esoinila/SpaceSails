@@ -1,26 +1,5 @@
 namespace SpaceSails.Core;
 
-/// <summary>Deterministic string hashing for the hoard rules (FNV-1a, 64-bit). NOT
-/// <see cref="object.GetHashCode"/> — that is randomized per process and would make a treasure
-/// map's bearing drift between sessions. This is stable forever, so a saved cache re-mints the same
-/// map text and a seeded discovery roll replays identically in a test.</summary>
-internal static class StableHash
-{
-    public static ulong Of(string s)
-    {
-        ulong h = 14695981039346656037UL;
-        foreach (char c in s)
-        {
-            h ^= c;
-            h *= 1099511628211UL;
-        }
-        return h;
-    }
-
-    /// <summary>A stable hash folded with a numeric salt — for per-period rolls.</summary>
-    public static ulong Of(string s, long salt) => Of($"{s}#{salt}");
-}
-
 /// <summary>
 /// Mints the map text for a fresh cache (#223): the honest bearing + paces from the body's best
 /// landmark, derived deterministically from the burial so a saved chest always re-reads the same
