@@ -45,6 +45,13 @@ public partial class Map
         {
             Walker w = ex.Walkers[i];
 
+            // #618 · The man at the door walks on his own clock (Map.GateGuard.cs), the way Brem Kolt and the
+            // stringer do; this loop owns the room's people and he is not one of them.
+            if (IsTheManAtTheDoor(w))
+            {
+                continue;
+            }
+
             // ── #973 L2 · …AND TWO MORE THAT END STANDING UP ─────────────────────────────────────────
             //
             // The salesman's two errands are the escort's shape, not the haulier's: he walks somewhere and

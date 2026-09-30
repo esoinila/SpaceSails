@@ -27,6 +27,7 @@ public partial class Map
         int fromLevel = ex.Floor;
         bool wasUnderground = ex.Floor < 0;
         ex.Floor = level;
+        TheManAtTheDoorSeesYouGo(ex, fromLevel, level);   // #618 · the pass, or the light (Map.GateGuard.Mouth.cs)
 
         if (level == 0)
         {

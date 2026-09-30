@@ -64,7 +64,8 @@ public partial class Map
         int feet = 0;
         foreach (Walker w in ex.Walkers)
         {
-            if (w.For is not (Errand.RepRounds or Errand.RepPitching or Errand.RepLeaving))
+            if (w.For is not (Errand.RepRounds or Errand.RepPitching or Errand.RepLeaving)
+                && !IsTheManAtTheDoor(w))
             {
                 feet++;
             }
@@ -275,6 +276,22 @@ public partial class Map
         /// <para>Its own errand because arriving is not an ending here either — she stays where she got to — and
         /// because the pages are read off whether she is away from her table, which no other errand means.</para></summary>
         AtHerPages,
+
+        /// <summary>
+        /// #618 · <b>THE MAN AT THE DOOR, KEEPING IT.</b> He stands beside the cage's landing on the floor he
+        /// keeps, looking at your hands. Arriving is not an ending: he is simply THERE until something moves him
+        /// (<c>Map.GateGuard.cs</c>). He is not one of the room's people and never eats a slot of
+        /// <c>Egress.MostAtOnce</c>.</summary>
+        GateKeeping,
+
+        /// <summary>#618 · …walking his short beat between the door and the canteen, and back.</summary>
+        GateOnHisRound,
+
+        /// <summary>#618 · …off the wall at the noise, and on the captain's heels in the coat's band.</summary>
+        GateFollowing,
+
+        /// <summary>#618 · …and standing at the mouth of the tube, in the light, while the tide decides.</summary>
+        GateAtTheMouth,
     }
 
     /// <summary>#731 · Every walker's slot is off-map when nobody is in it — the same idiom an unseen guard
