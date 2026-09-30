@@ -73,7 +73,7 @@ public sealed class EveryHubIsALobbyTests
     /// <para><b>Proven RED</b> by switching the told block off (the call in <c>AdvanceBarWalkers</c>'
     /// lower-floor branch removed): the line was never in the slot. <b>RED</b> by dropping its
     /// <c>_pulse.Message is not null</c> clause: the line wrote over a line still being read. <b>RED</b> by
-    /// dropping the <c>_firstRideToldAt</c> clause: told again on the second ride.</para>
+    /// dropping the <c>_toldOnceAtStation</c> clause (then <c>_firstRideToldAt</c>): told again on the second ride.</para>
     /// </summary>
     [Theory]
     [MemberData(nameof(Lobbies))]

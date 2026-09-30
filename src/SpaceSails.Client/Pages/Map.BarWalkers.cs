@@ -292,6 +292,7 @@ public partial class Map
         KeepTheLipHonest();    // #794 · …and a gallery table's card carries FEEL UNDER THE LIP only while it should
         AdvanceTheStringerAtHerPages(bar);   // #1202 slice 2 · …and a stringer at the gallery's far table, while a spike is in hand
         KeepThePagesHonest();  // #1202 slice 2 · …and her table's card carries TAKE THE PAGES / LEAVE YOUR PAGE only while it should
+        TellTheGardenOnce(bar.BodyId);   // #1332 B · …and, once per station, what the garden behind glass is like inside
     }
 
     /// <summary>#973 L0 · CASTING OFF IS THE ROOM FORGETTING. Same law a turned shift is underground: what

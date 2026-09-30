@@ -111,6 +111,21 @@
                    controls are a way OUT of the card, and so is the ✕ beside them: closing IS Leave, which is
                    what lets the general closing law hold here without a special case. Two words, no prose;
                    the room's own line is what the captain is deciding about and it is already on the card. *@
+                @* #618 · THE MAN AT THE DOOR'S MOVES, in the stop's own row idiom one region up. Only the moves
+                   that exist are drawn — a badge that would not pass is not offered and a spent TALK is absent,
+                   never greyed (the Kosh law) — and pressing one replaces the row with his answer, on the card's
+                   Outcome, so the door is one card and never two. The ✕ is walking off; nothing is said. *@
+                @if (TheManAtTheDoorWaits)
+                {
+                    <div class="deck-offer-actions table-actions">
+                        @foreach (SpaceSails.Core.Encounter.Move move in TheManAtTheDoorsMoves())
+                        {
+                            SpaceSails.Core.Encounter.Move m = move;
+                            <button type="button" class="btn btn-sm btn-outline-light" title="@m.Label"
+                                    @onclick="() => AnswerTheManAtTheDoor(m.Id)">@m.Label</button>
+                        }
+                    </div>
+                }
                 @if (TheFindIsWaitingOnAnAnswer)
                 {
                     <div class="satchel-row">

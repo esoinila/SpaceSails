@@ -2069,7 +2069,12 @@
                             + (stop.Pressurised ? "" : " dead");
                         <button type="button" class="@cls" disabled="@stop.IsCurrent"
                                 title="@(TheCarIsInAStation ? null : stop.Refusal ?? (stop.Pressurised ? "holds pressure" : "dead air — the tank runs"))"
-                                @onclick="() => PressLiftButton(stop)">
+                                @onclick="() => Dismiss(() => PressLiftButton(stop))">
+                            @* #1349 · THE MOUSE'S WAY BACK TO THE KEYS (#470's Dismiss, Map.Sim.Keys.cs). A row that
+                               rides the car shuts the panel, and the button under the mouse leaves the DOM with
+                               it: focus fell to <body>, and E or a held A did nothing until the map was clicked.
+                               So the press hands focus home to .map-page, where the deck's keys are bound. On a
+                               row that refuses, the panel stays up and the keys are still the deck's. *@
                             @* #1280 · THE DEPTH COLUMN IS A MOON'S, AND A HAVEN HAS NO MOON ON IT. Owner's QA,
                                at a berth in orbit off Luna: the car's panel painted SURFACE against CONCOURSE
                                and −150 m against SERVICE LEVEL — UndergroundComplex.MetresDown, a depth in
@@ -3703,6 +3708,21 @@
                    controls are a way OUT of the card, and so is the ✕ beside them: closing IS Leave, which is
                    what lets the general closing law hold here without a special case. Two words, no prose;
                    the room's own line is what the captain is deciding about and it is already on the card. *@
+                @* #618 · THE MAN AT THE DOOR'S MOVES, in the stop's own row idiom one region up. Only the moves
+                   that exist are drawn — a badge that would not pass is not offered and a spent TALK is absent,
+                   never greyed (the Kosh law) — and pressing one replaces the row with his answer, on the card's
+                   Outcome, so the door is one card and never two. The ✕ is walking off; nothing is said. *@
+                @if (TheManAtTheDoorWaits)
+                {
+                    <div class="deck-offer-actions table-actions">
+                        @foreach (SpaceSails.Core.Encounter.Move move in TheManAtTheDoorsMoves())
+                        {
+                            SpaceSails.Core.Encounter.Move m = move;
+                            <button type="button" class="btn btn-sm btn-outline-light" title="@m.Label"
+                                    @onclick="() => AnswerTheManAtTheDoor(m.Id)">@m.Label</button>
+                        }
+                    </div>
+                }
                 @if (TheFindIsWaitingOnAnAnswer)
                 {
                     <div class="satchel-row">
@@ -4167,6 +4187,14 @@
                                 title="@($"Order the Special — {specialCost} cr")" @onclick="OrderTheSpecial">🍽 @SpaceSails.Core.Interior.TheMenuBoard.SpecialLabel · @specialCost cr</button>
                         <div class="bar-board-line">@boardLine</div>
                     </div>
+                    @* #1332 B · …AND THE GARDEN'S LINE, chalked under the special: one sentence, Fable canon,
+                       verbatim — the garden behind glass off the concourse is the reason it exists, and this is
+                       the one place the station says so. Core owns it (HavenGarden.MenuLineAt) and answers it
+                       wherever there is a board. *@
+                    @if (SpaceSails.Core.HavenGarden.MenuLineAt(keep.BodyId) is { } gardenLine)
+                    {
+                        <div class="bar-board-line">@gardenLine</div>
+                    }
                 </div>
             }
             <div class="deck-offer-actions">

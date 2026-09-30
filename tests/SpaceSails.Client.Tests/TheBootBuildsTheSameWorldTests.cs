@@ -258,10 +258,14 @@ public sealed class TheBootBuildsTheSameWorldTests
             // already built. What the two of them ANSWER is pinned next door, in
             // TheBootReadsTheSameQueryTests, where this URL is its own distinct reading.
             ["/map?dock=selene-gate&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
+            // #1332 B · the garden behind glass: the front door's world, like every ashore row — dumped, not typed.
+            ["/map?dock=selene-gate&ashore=1&garden=1"] = "5702e97b412b144d3fd884426e262007",
             // #1332 A · EVERY HUB IS A LOBBY — the six floors the other hubs grew, one dev row each. Dumped with
             // SPACESAILS_BOOT_FINGERPRINT_DUMP, not typed: each builds the front door's world for the reason
             // Selene Gate's row above does, and no other row of the dump moved.
             ["/map?dock=the-space-bar&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
+            // #1332 B · the garden behind glass: the front door's world, like every ashore row — dumped, not typed.
+            ["/map?dock=the-space-bar&ashore=1&garden=1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=cinder-roost&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=the-tilt&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
@@ -353,6 +357,10 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?scenario=..%2Foops"] = "b8fdc213e24f2c7c961912adf8eea626",
             ["/map?scenario=sol-eu"] = "9a2c10fbf14d7c2113a5a79511909a4c",
             ["/map?secretlab=1"] = "f417692e1b0894d0ac37b8d978db978c",
+            // #618 · the man at the door, three windows: MEASURED with SPACESAILS_BOOT_FINGERPRINT_DUMP; 3 new, 0 moved.
+            ["/map?secretlab=1&land=1&guard=absent"] = "24407a0ff631b473fe9f07b4c586a5c1",
+            ["/map?secretlab=1&land=1&guard=posted"] = "24407a0ff631b473fe9f07b4c586a5c1",
+            ["/map?secretlab=1&land=1&guard=round"] = "24407a0ff631b473fe9f07b4c586a5c1",
             ["/map?secretlab=deep&land=1&card=next"] = "4590ab2cd50a16c8c085ea78b0e6e33e",
             ["/map?secretlab=deep&land=1&floor=1"] = "c4f74e8002dc01076f211655ee70edee",
             ["/map?secretlab=deep&land=1&floor=1&card=next"] = "b7a61bc4da70d05e964fbb296288c11f",

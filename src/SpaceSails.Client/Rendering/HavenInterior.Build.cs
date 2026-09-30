@@ -42,6 +42,8 @@ public static partial class HavenInterior
 
         LayTheObservationWalk(spec, walls, labels);
 
+        LayTheGarden(spec, walls, labels);   // #1332 B · the green behind glass, off the ring's two north-western faces
+
         // #247 — the bar counter, and the BARKEEP behind it. Owner ashore at the Rusty Roadstead: "How
         // do I get a drink at the Rusty bar here? Did we forget to add the bar-keep :-D". The counter is
         // a real wall (you belly up, you don't walk through it); the barkeep console sits on the players'
@@ -112,12 +114,15 @@ public static partial class HavenInterior
         var tables = SetTheTables(spec, ship);
 
         var backdrops = HangTheBackdrops(spec, ship);
+        HangTheGardensCanvas(spec, backdrops);   // #1332 B · the park's picture, on the garden's floor
 
         WeldTheWings(activeWings, walls, doors, consoles, labels);
 
         OfferTheFreeTops(consoles);
 
         var furniture = FitTheGallery(spec, ship, consoles);
+
+        FitTheGarden(spec, consoles, furniture);   // #1332 B · the bench's press and the drawn beds
 
         return new DeckPlan(walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(),
             spawnX: 2.5, spawnY: 6, // aboard, in the airlock corridor, facing up the tube
@@ -136,6 +141,7 @@ public static partial class HavenInterior
             // deck has no room objects — this lambda IS what a haven means by "which room am I in" — so the
             // walk being a real, named place before and after the beat is exactly this clause existing.
             location: (x, y) => InTheObservationWalk(spec.BodyId, x, y) ? ObservationWalk.Plate
+                              : InTheGarden(spec.BodyId, x, y) ? HavenGarden.Plate   // #1332 B · before the bar's half-plane
                               : x < -14.5 && y is > 15 and < 37 ? "BONDED STORES · BACK ROOM"
                               : y > HallTopY ? spec.BarName
                               : y > HallBottomY ? $"{spec.Authority} IMMIGRATION"

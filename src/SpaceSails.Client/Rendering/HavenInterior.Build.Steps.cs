@@ -76,6 +76,18 @@ public static partial class HavenInterior
                 doors.Add(new(way.X1, way.Y1, way.X2, way.Y2));
                 sealedIdx++;
             }
+            else if (TheGardenOpensOnEdge(spec, k))
+            {
+                // #1332 B · THE GARDEN'S TWO DOORWAYS, cut exactly as the walk's is — two stubs and an unlocked
+                // auto-door — and the sealed-edge counter stepped over each, so every OTHER edge on this station
+                // keeps the department name and the hatch id it always had. What the garden costs is the two
+                // panels these faces carried. The room itself is welded on in LayTheGarden.
+                (WingWall stubA, WingWall stubB, WingDoor way) = CarveTheGardenDoor(k);
+                walls.Add(new(stubA.X1, stubA.Y1, stubA.X2, stubA.Y2, false, true));
+                walls.Add(new(stubB.X1, stubB.Y1, stubB.X2, stubB.Y2, false, true));
+                doors.Add(new(way.X1, way.Y1, way.X2, way.Y2));
+                sealedIdx++;
+            }
             else // a sealed berth / department — or an opened expansion joint
             {
                 string tag = ringTags[sealedIdx % ringTags.Length];

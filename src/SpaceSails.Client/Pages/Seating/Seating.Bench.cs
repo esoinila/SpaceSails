@@ -42,6 +42,15 @@ public partial class Map
         /// </summary>
         public bool TryTakeBench()
         {
+            // #1332 B · …AND AT A BERTH, THE GARDEN'S. There is no excursion under a docked captain, so the park
+            // is not asked; the one bench a station has stands by its garden's glass, and the page's answer
+            // says which end and where standing up puts him — the gallery's own fall-through (#1199), through
+            // the one member a seat already asks the page for, with the host interface unchanged.
+            if (_host.Surface is null)
+            {
+                return TryTakeTheGardenBench();
+            }
+
             if (_host.Surface is not { } ex || ex.Floor >= 0)
             {
                 return false;
@@ -94,23 +103,62 @@ public partial class Map
             }
 
             bool shared = bench.Taken;
-            Encounter.Scene sat = ParkBenches.TheBench(shared);
 
             // Read BEFORE the body moves: the end you take is the end you walked up to, and asking after the
             // snap would be asking where the captain is now sitting, which answers itself.
             (double seatX, double seatY) = bench.EndYouTake(_host.AvatarX, _host.AvatarY);
             (double offX, double offY) = TowardTheWalk(in green, seatX, seatY);
             _host.SitCaptainOn(seatX, seatY);
+            SitOnABench(BenchKey(ex, bench.Index), bench.Index, shared, (offX, offY),
+                ParkBenches.TheBench(shared), watch: 0);
+        }
 
+        /// <summary>
+        /// #1332 B · <b>THE GARDEN'S BENCH</b> — the park bench's own sitting, at a berth. What the park reads off
+        /// its carve (which end, where standing up puts you) the page's answer carries instead; the scene is the
+        /// park bench's, two moves and no third (SIT A WHILE / Stand up), with the room's own plate as its
+        /// setting and the garden's own words (<see cref="HavenGarden.TheBench"/>: no gravel, no walk). Nobody
+        /// is ever on the far end: the garden has no walker and no figure.
+        /// </summary>
+        private bool TryTakeTheGardenBench()
+        {
+            if (_host.TheBarTopUnderfoot() is not { Bench: true, StepOff: { } off } top)
+            {
+                return false;
+            }
+
+            // Already sitting. The press is CONSUMED — [E] is not how you stand up, "Stand up" is.
+            if (Table is not null)
+            {
+                return true;
+            }
+
+            // #820 · the snap, onto the end the page's answer says he walked up to. Never measured here.
+            _host.SitCaptainOn(top.ChairX, top.ChairY);
+            SitOnABench(top.Key, top.Index, shared: false, off,
+                HavenGarden.TheBench() with { Setting = top.Setting }, top.Watch);
+            return true;
+        }
+
+        /// <summary>
+        /// #1332 B · The one construction site a bench sitting is opened at — the park's plank and the garden's
+        /// both come through here, so the count in <c>ThereIsOnePlaceASittingIsOpened</c> stays at eight: a
+        /// second bench is the same seat in a different room, and what differs between the rooms travels in as
+        /// VALUES (the key, the step-off, the scene's setting), never as a ninth construction site. Each caller
+        /// snaps the body itself first (#820), on the end its own room published.
+        /// </summary>
+        private void SitOnABench(string key, int benchIndex, bool shared,
+            (double X, double Y) stepOff, Encounter.Scene sat, long watch)
+        {
             TakeThisSeat(new TableTalk
             {
-                StepOff = (offX, offY),
-                Key = BenchKey(ex, bench.Index),
+                StepOff = stepOff,
+                Key = key,
                 // THE APPROACH ORDINAL, and deliberately not the bench's own. SomebodyComes is seeded on
                 // (site, floor, ordinal, watch, beat), and bench 0 sharing table 0's ordinal would deal the two
                 // seats the same answer on the same shift. Core owns the offset; this only asks for it.
-                Index = ParkBenches.ApproachOrdinal(bench.Index),
-                BenchIndex = bench.Index,
+                Index = ParkBenches.ApproachOrdinal(benchIndex),
+                BenchIndex = benchIndex,
                 Bench = true,
                 Who = CanteenTable.Who.None,
                 Plate = shared ? ParkBenches.SharedPlate : ParkBenches.OwnBenchPlate,
@@ -132,6 +180,9 @@ public partial class Map
                 // this stays false rather than borrowing a picture of a room the captain is not in.
                 Relaxed = false,
                 DrinkInHand = _host.APourInFrontOfYou,
+                // #1332 B · …and the shift, for a bench with no excursion behind it (the garden's): the one thing
+                // a fruitless wait asks a clock. Zero on the park's, where the room's own watch is asked.
+                Watch = watch,
                 // Nobody to ask. The bench is simply taken, and the taking is the scene's opening line.
                 Joined = true,
                 Outcome = sat.Opening,

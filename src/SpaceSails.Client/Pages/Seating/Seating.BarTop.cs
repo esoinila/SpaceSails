@@ -64,7 +64,8 @@ public partial class Map
         /// it does with any press that is not this verb's: nothing.</returns>
         public bool TryTakeBarTop()
         {
-            if (_host.TheBarTopUnderfoot() is not { } top)
+            // #1332 B · A bench is the park bench's verb (Seating.TryTakeBench), never a top's.
+            if (_host.TheBarTopUnderfoot() is not { Bench: false } top)
             {
                 return false;
             }

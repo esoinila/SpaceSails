@@ -63,7 +63,9 @@ public static class ArchiveNode
             return true;   // she is a wreck BECAUSE of it
         }
 
-        return DiceRule.Roll(DiceRule.Seed("archive-aboard", (long)wreckId.GetHashCode(System.StringComparison.Ordinal)),
+        // #1340 · THE SEEDED HASH, never string.GetHashCode: .NET randomises that per process, and this answer was
+        // being dealt per RUN — the node aboard a hull in one boot and gone in the next of the same build.
+        return DiceRule.Roll(DiceRule.Seed("archive-aboard", StableHash.Id(wreckId)),
                              OneInEligibleWrecks).Face == 1;
     }
 
@@ -217,7 +219,7 @@ public static class ArchiveNode
     {
         DiceRoll roll = DiceRule.Roll(
             DiceRule.Seed("archive-confront",
-                          (long)wreckId.GetHashCode(System.StringComparison.Ordinal),
+                          StableHash.Id(wreckId),
                           c.PriorConfrontations),
             DiceRule.D20,
             Modifiers(c));
@@ -362,7 +364,7 @@ public static class ArchiveNode
     public static Resident ResidentOf(string wreckId)
     {
         int face = DiceRule.Roll(
-            DiceRule.Seed("archive-resident", (long)wreckId.GetHashCode(System.StringComparison.Ordinal)),
+            DiceRule.Seed("archive-resident", StableHash.Id(wreckId)),
             DiceRule.D20).Face;
 
         // 1 in 20 is yours. Rare enough to be a story rather than a tax, common enough that an unread

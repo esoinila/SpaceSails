@@ -243,4 +243,115 @@ public sealed class TheOfficePaysWithPaperTests
         Assert.DoesNotContain(((Rendering.DeckPlan)b.Peek("_deckPlan")!).Consoles,
             c => c.Label == $"◈ {CarryThePress.Giver}");
     }
+
+    // ── #1341 · THE READER SAYS NOTHING OVER A SHEET SOMEBODY WROTE ──────────────────────────────────────
+
+    /// <summary>The page's own reading of a paper — the same ending the satchel's 📡 press reaches
+    /// (<c>TheOfferIsAnswered</c>, at the tracker) — and what it leaves on the card and in the pulse.</summary>
+    private static (string Card, string Pulse) ReadAtTheTracker(Pages.Map map, Satchel.Item paper)
+    {
+        Rendering.DeckPlan.ConsoleSpot card = CardReadAtTheTracker(map, paper);
+        return (card.Caption ?? "", Pulse(map));
+    }
+
+    /// <summary>#1345 · The same reading, and the whole card it raised — its head as well as its body.</summary>
+    private static Rendering.DeckPlan.ConsoleSpot CardReadAtTheTracker(Pages.Map map, Satchel.Item paper)
+    {
+        SatchelTry.Outcome said = SatchelTry.Offer(paper, SatchelTry.Target.Tracker);
+        Assert.True(said.Worked);
+        Invoke(map, "TheOfferIsAnswered", said, paper, (SatchelTry.Target.Tracker, (string?)null, "📡"));
+        return (Rendering.DeckPlan.ConsoleSpot?)Read(map, "_viewObject")
+            ?? throw new Xunit.Sdk.XunitException("reading the paper raised no card.");
+    }
+
+    /// <summary>
+    /// #1341 · <b>THE LINE ITEM IS SHOWN, AND NOTHING IS SAID OVER IT.</b> QA 2026-09-30: opening <i>A line item,
+    /// one entry</i> (the <c>?spike=paid</c> receipt) showed the right words and, under them, the generic
+    /// <i>"📡 Better than a name…"</i> — FieldClue's certainty line, which is about sheets the dice composed and
+    /// is nonsense over one somebody wrote. On a live page with the receipt landed by the desk's own payout: the
+    /// card is the receipt's document and nothing else, and no certainty line is pulsed; while a composed sheet
+    /// read the same way still carries its line on the card, exactly as before.
+    ///
+    /// <para><b>Proven RED</b> by dropping the <c>ReadsAsAClue</c> clause from <c>TheOfferIsAnswered</c>: the
+    /// card reads the receipt, a blank line, and <i>"📡 Better than a name…"</i>.</para>
+    /// </summary>
+    [Fact]
+    public void TheLineItemIsShownAndNothingIsSaidOverIt()
+    {
+        Pages.Map map = Clamped("reader-line-item");
+        Plant(map, CarryThePress.StoryAfterSeconds + 1, spike: true, SpikeIt.Pages.Taken);
+        Invoke(map, "TheSpikeIsSettled");
+        Satchel.Item receipt = Satchel_(map).Single(i => SpikeIt.IsTheReceipt(i.Id));
+        Assert.False(FieldClue.ReadsAsAClue(receipt.Id));
+
+        (string card, string pulse) = ReadAtTheTracker(map, receipt);
+        Assert.Equal(FieldClue.Document(receipt.Id), card);
+        Assert.Contains(SpikeIt.ReceiptDocument, card, StringComparison.Ordinal);
+        foreach (FieldClue.Certainty c in Enum.GetValues<FieldClue.Certainty>())
+        {
+            Assert.DoesNotContain(FieldClue.Line(c), card, StringComparison.Ordinal);
+            Assert.DoesNotContain(FieldClue.Line(c), pulse, StringComparison.Ordinal);
+        }
+
+        // …and a sheet the dice composed still says how well it pins a place, on the card, under the page.
+        var composed = new Satchel.Item(Satchel.Kind.Paper, "hive:doc:the-manifest");
+        Assert.True(FieldClue.ReadsAsAClue(composed.Id));
+        (string itsCard, _) = ReadAtTheTracker(map, composed);
+        Assert.EndsWith("\n\n" + FieldClue.Line(FieldClue.CertaintyOf(composed.Id)), itsCard, StringComparison.Ordinal);
+    }
+
+    // ── #1345 · A WRITTEN SHEET IS A PAPER, NOT A CLUE ───────────────────────────────────────────────────
+
+    /// <summary>The captain out on a ground whose rock hides a lab — so a clue read at the tracker has a moon to
+    /// name (<c>NameAMoonWorthLookingAt</c> always offers the ground underfoot). The body is a made-up id the
+    /// shared placement roll (<see cref="SecretLab.Present"/>) happens to seat a lab under.</summary>
+    private static void OnAGroundWithALab(Pages.Map map)
+    {
+        string body = Enumerable.Range(0, 2000).Select(i => $"paper-lead-{i}").First(SecretLab.Present);
+        const System.Reflection.BindingFlags Hidden = TestTree.AnythingOnAnInstance;
+        const System.Reflection.BindingFlags Nested = Hidden | System.Reflection.BindingFlags.Static;
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Nested)!;
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Nested)!;
+        object ex = Activator.CreateInstance(exType, nonPublic: true)!;
+        object stop = Activator.CreateInstance(stopType,
+            new CelestialBody(body, body, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;
+        exType.GetProperty("Stop")!.SetValue(ex, stop);
+        exType.GetProperty("Site")!.SetValue(ex, LandingSites.At("luna", 0));
+        exType.GetProperty("Floor")!.SetValue(ex, 0);
+        Set(map, "_surface", ex);
+    }
+
+    /// <summary>
+    /// #1345 · <b>THE LINE ITEM IS HEADED WITH ITS OWN TITLE, AND NAMES NO MOON.</b> Ruled 2026-09-30: a written
+    /// sheet is a paper, not a clue. On a live page, the receipt landed by the desk's own payout and the captain
+    /// on a ground with a lab under it: reading it at the tracker raises a card headed <i>A line item, one
+    /// entry</i> — never <i>📋 A DESCRIPTION</i> — and banks no lab lead. A composed sheet read the same way, on
+    /// the same ground, is still headed with its certainty word and still names a moon.
+    ///
+    /// <para><b>Proven RED</b> twice: with the card's head back to the certainty label, and with
+    /// <c>GrantLabLead</c> called for every sheet (the receipt banks a lead).</para>
+    /// </summary>
+    [Fact]
+    public void TheLineItemIsHeadedWithItsOwnTitleAndNamesNoMoon()
+    {
+        Pages.Map map = Clamped("reader-own-title");
+        Plant(map, CarryThePress.StoryAfterSeconds + 1, spike: true, SpikeIt.Pages.Taken);
+        Invoke(map, "TheSpikeIsSettled");
+        Satchel.Item receipt = Satchel_(map).Single(i => SpikeIt.IsTheReceipt(i.Id));
+        OnAGroundWithALab(map);
+        var leads = (HashSet<string>)Read(map, "_labLeads")!;
+        Assert.Empty(leads);
+
+        Rendering.DeckPlan.ConsoleSpot card = CardReadAtTheTracker(map, receipt);
+        Assert.Equal(SpikeIt.ReceiptTitle, card.Label);
+        Assert.Equal(FieldClue.Title(receipt.Id), card.Label);
+        Assert.Empty(leads);
+
+        // …and the dice's sheet: still headed with how well it pins a place, and still names a moon.
+        var composed = new Satchel.Item(Satchel.Kind.Paper, "hive:doc:the-manifest");
+        Rendering.DeckPlan.ConsoleSpot itsCard = CardReadAtTheTracker(map, composed);
+        Assert.Equal(
+            $"📋 {FieldClue.Label(FieldClue.CertaintyOf(composed.Id)).ToUpperInvariant()}", itsCard.Label);
+        Assert.Single(leads);
+    }
 }

@@ -112,6 +112,8 @@ public static partial class DevStarts
         new("🍸", "The canteen on B1, with people in it",
             "150 m down, in the one room this facility admits outsiders to: carriers and contractors at the tables, a cork board on the wall, no pass required (#709).",
             "/map?secretlab=deep&land=1&floor=1"),
+        // #618 · …and the man at the top-level door, one row for each way he can be keeping it this window.
+        .. TheManAtTheDoor(),
         // #693 · The card's own row, which until here nobody could look at without a real Key hunt. #692
         // shipped the gated button, the promise it makes and the beat it pays off, and closed with the note
         // that none of the three had been seen in a browser — "a scene nobody can reach on demand is a scene
@@ -379,6 +381,8 @@ public static partial class DevStarts
             "/map?dock=selene-gate&ashore=1&havenfloor=-1"),
         // #1332 A · …and the six floors the other hubs grew, one button each (DevStarts.Below.cs).
         .. BelowTheLobbies(),
+        // #1332 B · …and the garden behind glass off each concourse (DevStarts.Garden.cs).
+        .. TheGardens(),
         // #1016 · THE OWNER'S OWN BUG, IN ONE BUTTON. He sat at a top in The Stormwatch Bar, pressed "Work
         // the case", and nothing happened at all — the seat verbs were every one of them gated on a
         // SurfaceExcursion and a berth has none. Owner: "Maybe it might be good idea to refactor the working

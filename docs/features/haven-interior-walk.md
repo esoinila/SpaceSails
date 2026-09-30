@@ -767,6 +767,53 @@ upstairs.
   starts, the night fence); `EveryHubIsALobbyProseTests` (canon verbatim, the button, reserved words).
 - **Dev starts:** `/map?dock=<haven>&ashore=1&havenfloor=-1` for each haven.
 
+### …and a garden behind glass off every concourse (#1332 slice B, 2026-09-30)
+
+Owner, 2026-09-29: *"the little garden on space ports could be used to produce salad, coffee etc. comforts for
+levels sufficient for the restaurant."*
+
+**Every haven with a bar grows one small pressurised green off its concourse** — the small cousin of the park
+behind the canteen (#759): no sky, no attendance plate, four beds and a bench. Nothing happens in it yet; it
+exists so story can plant a meeting there (#1332 C, #1062, #1202) and so the station reads as a place people
+live. All seven havens have a bar, so all seven have one (`HavenInterior.HasGarden`).
+
+- **Where.** Off the ring's two north-western faces: **THE door** on edge 4 (facing 150°) and the **second door**
+  on edge 3 (facing 120°, beside the bar's own door), each cut with the ring's own doorway arithmetic toward the
+  corner the two faces share. Both are free at every station (tube 8, bar 2, walk 5 at Selene Gate, cars 0/6/10 —
+  Cinder Roost 0/5/10). Each face gives up the one panel it carried (a 🔒 HABITAT RING and a ⚓ BERTH), the
+  bargain the walk and the cars made; the sealed-edge counter is stepped over both, so every other edge keeps
+  its tag and its hatch id. The room runs 16 du west of the ring between the ring's WNW vertex and the bar's floor
+  line; at Selene Gate its south wall stands a stride clear of the observation walk's tube.
+- **Both doors open onto the concourse.** The brief offered the service corridor for the second; the concourse
+  level has none, and the lower corridor is a different floor (a door onto it would be a car or a stair in a
+  garden). Two faces of one hall is the honest second way out — and the tail's shape: in by one, out by the other.
+- **The glass** is the room's north and west walls, drawn as the gallery's (`IsWindow`: collision on the frame,
+  see-through in the ink). The ring side and the south wall are stone.
+- **Canon, verbatim** (`HavenGarden`, `AllProse()`): the room's one plate **GARDEN · GROWERS ONLY AFTER SECOND
+  WATCH** (a room plate on the concourse, as the walk's is — the lower floor still carries exactly its one label);
+  the beds, in order from THE door, **LETTUCE · 14 DAYS**, **COFFEE · DO NOT PICK**, **BASIL**, **TOMATO ·
+  STAKED** (plates, not consoles); the bar board's line, under the special, *"Salad from the garden. Coffee when
+  the coffee is ready."*; and, the first time the captain walks in at a station, told once on a free slot at
+  Status rank and filed nowhere, *"Warm, wet, and quiet. Somebody comes here on purpose."*
+- **The bench by the glass is the park bench's seat.** A `HiveBench` console wearing the park's own plate; `[E]`
+  reaches `Seating.TryTakeBench`, which at a berth falls through to the page's one answer
+  (`TheBarTopUnderfoot`, now carrying `Bench` and `StepOff`) the way the gallery's tables did — `ISeatHost` did not
+  grow, and the park and the garden open their sitting at ONE construction site (`SitOnABench`), so the count in
+  `ThereIsOnePlaceASittingIsOpened` stays **8**. Two moves and no third (SIT A WHILE / Stand up), #820's snap onto
+  the end you walked up to, the setting is the room's plate. The opening line and the silences are the park
+  bench's own; a garden-specific sitting line would be canon, and none was authored.
+- **The canvas** is the park's own picture (`art/b1-park-walk.jpg`: raised beds, a bench, a walk) laid on the floor
+  at its own 16:9 across the room's width — no new art.
+- **The told-once memory** is slice A's set, renamed `_toldOnceAtStation` and keyed by line and berth, so the ride
+  down and the garden share one page field rather than two.
+- **Guards:** `TheGardenBehindGlassTests` (every bar has a garden and its board says so; plates verbatim and the
+  beds in order from the door; the plate is a room plate and not a second floor label; two doors and either one
+  alone a way out; every standable tile reachable; the glass is glass and still a wall; the bench's two moves, snap
+  and step-off; the only press in the room; the line once per station and the ride still owed its own; the menu
+  line on the board's card; the dev starts); `TheGardenBehindGlassProseTests` (canon, the board, reserved words).
+- **Dev starts:** `/map?dock=<haven>&ashore=1&garden=1` (The Rusty Roadstead and Selene Gate in the list; the key
+  works at every haven).
+
 ## The chalk mark: a dead drop under a gallery table (#794 slice 2, 2026-09-28)
 
 The faceless trade's return leg. A parcel taken at any haven's dark-web desk, buried where the desk said and

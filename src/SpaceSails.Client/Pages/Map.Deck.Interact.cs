@@ -65,6 +65,19 @@ public partial class Map
             return;
         }
 
+        // ── #1341 · AND THE CAR YOU JUST CAME OUT OF IS THE CAR YOU ARE AT ──
+        //
+        // QA 2026-09-30: [E] at the car the captain had just ridden did nothing until he stepped off and back
+        // on. The doors set him down one landing's step from the car (CageStepDu, 2.8 du of a 3 du reach), and
+        // at The Deep the concourse's lifeboat plate and an ad stand nearer that square than the car does — so
+        // the nearest console was never the lift. Standing where a car's doors let you out IS being at that
+        // car; the room says where that is (HavenInterior.TheCageLandingAt) and nothing is measured here.
+        if (TheCarWhoseDoorsYouAreAt() is not null)
+        {
+            HavenLiftInteract();
+            return;
+        }
+
         switch (_deckPlan.NearestConsole(_avatarX, _avatarY))
         {
             case DeckPlan.ConsoleKind.None:

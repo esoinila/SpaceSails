@@ -96,8 +96,8 @@ public sealed partial class Map
                                 && name != HullVenting.ValveCompartment
                                 && HullVenting.HidesSurvivor(wreck.Id, name, wreck.Cause) == false
                                 && DiceRule.Roll(
-                                       DiceRule.Seed("sealed-room", (long)wreck.Id.GetHashCode(System.StringComparison.Ordinal),
-                                                     name.GetHashCode(System.StringComparison.Ordinal)),
+                                       DiceRule.Seed("sealed-room", Core.StableHash.Id(wreck.Id),
+                                                     Core.StableHash.Id(name)),
                                        3).Face == 1;
 
             _ventSpaces[name] = new HullVenting.Space(
@@ -284,7 +284,7 @@ public sealed partial class Map
         // the same one.
         long stateKey = (space.Vented ? 1 : 0) | (HullVenting.SoakComplete(space) ? 2 : 0);
         ulong seed = DiceRule.Seed(
-            w.Id, (long)name.GetHashCode(System.StringComparison.Ordinal), stateKey);
+            w.Id, Core.StableHash.Id(name), stateKey);
 
         _ventMessage = null;
         _ventReads[name] = HullVenting.Read(seed, space);
