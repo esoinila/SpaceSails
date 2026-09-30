@@ -172,8 +172,8 @@ public sealed class ThePreservationOfficeTests
     /// <summary>
     /// <b>THE DEV LATCH READS ITS OWN KEY AND NOTHING ELSE.</b>
     ///
-    /// <para><b>Proven RED</b> by matching <c>office=</c> anywhere in the query (a <c>headoffice=1</c> would force
-    /// the door).</para>
+    /// <para><b>Proven RED</b> by dropping the value's case fold (a hand-typed <c>office=Open</c> forced
+    /// nothing).</para>
     /// </summary>
     [Fact]
     public void TheDevLatchReadsItsOwnKey()
@@ -182,6 +182,7 @@ public sealed class ThePreservationOfficeTests
         Assert.Equal(PreservationOffice.Cheat.None, PreservationOffice.CheatIn(at));
         Assert.Equal(PreservationOffice.Cheat.Shut, PreservationOffice.CheatIn(at + "&office=shut"));
         Assert.Equal(PreservationOffice.Cheat.Open, PreservationOffice.CheatIn(at + "&office=open"));
+        Assert.Equal(PreservationOffice.Cheat.Open, PreservationOffice.CheatIn(at + "&office=Open"));
         Assert.Equal(PreservationOffice.Cheat.None, PreservationOffice.CheatIn(at + "&headoffice=1"));
         Assert.Equal(PreservationOffice.Cheat.None, PreservationOffice.CheatIn(null));
     }

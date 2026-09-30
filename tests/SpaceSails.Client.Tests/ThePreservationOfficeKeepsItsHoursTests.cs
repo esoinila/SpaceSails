@@ -204,6 +204,10 @@ public sealed class ThePreservationOfficeKeepsItsHoursTests
             Set(map, "_pulse", PulseSlot.Empty);
             Invoke(map, "InteractAtConsole");
             Assert.Equal(PreservationOffice.ShutLine, InTheSlot(map));
+
+            // Something else in the book between the presses, so the book's own no-repeat-of-the-last-line rule
+            // cannot be what keeps the plate's line to once: the register has to.
+            Invoke(map, "FileNote", "an unrelated line between the two presses", "·");
         }
 
         FieldNote[] filed = [.. Notes(map).Where(n => n.Text == PreservationOffice.PlateReadLine)];

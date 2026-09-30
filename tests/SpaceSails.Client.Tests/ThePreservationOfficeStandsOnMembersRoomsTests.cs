@@ -133,8 +133,7 @@ public sealed class ThePreservationOfficeStandsOnMembersRoomsTests
     /// way over — and every square of the office a body can stand on reachable from the car, the desk's sheet within
     /// an [E] of one of them. Ajar with the desk bare: the same room without the sheet.
     ///
-    /// <para><b>Proven RED</b> by drawing the ajar leaf without cutting the wall (the office unreachable) and by
-    /// cutting the doorway to the cabin's own leaf width (fewer than half the office's squares reached).</para>
+    /// <para><b>Proven RED</b> by drawing the ajar leaf without cutting the wall (the office unreachable).</para>
     /// </summary>
     [Fact]
     public void ShutItIsACabinAndAjarItIsADoorwayABodyWalksThrough()
@@ -204,8 +203,8 @@ public sealed class ThePreservationOfficeStandsOnMembersRoomsTests
     /// <b>NO OFFICE, NO DIFFERENCE.</b> Every other haven's hotel level, asked for with the office ajar or bare, is
     /// byte for byte the plan asked for with it shut — and that is the plan every older caller gets.
     ///
-    /// <para><b>Proven RED</b> by letting <c>DockedDeck</c> hand the office's state to every station (their
-    /// corridor face cut at cabin 3's frontage).</para>
+    /// <para><b>Proven RED</b> by giving every station with a hotel level the office's cabin (its plate over their
+    /// cabin 3, and their corridor face cut there when asked for it ajar).</para>
     /// </summary>
     [Theory]
     [MemberData(nameof(OtherLobbies))]
