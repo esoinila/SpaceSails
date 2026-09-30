@@ -847,6 +847,11 @@ has one, and every other haven's hotel level is the plan it always was, byte for
 - **No new page field.** "Plate read", "sheet taken" and "warm told" are tags on `_roomsTurnedOver`; the door's state is
   asked of the clock and read back off the plan that is drawn; the dev latch (`&office=shut|open`) is read off the
   address bar, the man at the door's way.
+- **#1353 (QA 2026-09-30): the plate keeps to its door, the sheet to its room.** A plate in a row of doors that would
+  run wider than the row's pitch is folded at its ` · ` and set in the stencil size that fits (the words unchanged, in
+  order) — only the office's plate needs it. A viewable thing lying on furniture is a paper: its title is drawn only
+  while no wall or door, open or shut, stands between the captain and it, so from the corridor the sheet is a dot on a
+  desk and inside it has its name (`DeckView.Frame.OverTheDark.Plates.cs`).
 - **Never shut on a man inside.** A captain still in the office when the watch turns keeps the doorway until he steps
   out (the fire code's reason, #822); the next frame he is in the corridor, the door is shut.
 - **Guards:** `ThePreservationOfficeTests` (Core: canon, reserved words and names, one watch in four seeded and pure, the

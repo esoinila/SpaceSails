@@ -106,13 +106,12 @@ public sealed partial class DeckView
             // the forensic line at the owner's cache, because MoonSurface.Layout seeds a DigSite console at
             // that ✗'s own (x, y) BY CONSTRUCTION. A room is named several passes earlier, so a plate that
             // would land on a room's name takes the row over it rather than burying it.
+            //
+            // #1353 · …and the plate asks two things first (DeckView.Frame.OverTheDark.Plates): a plate in a row of
+            // doors folds to its own door's width, and a paper on a desk is read from its room.
             float dot = near ? 5f : 3.5f;
-            double platePx = near ? 10.0 : 9.0;
             _renderer.DrawCircle(sx, sy, dot, c, c);
-            _renderer.DrawText(
-                sx, SeatAboveAMark(sx, sy, dot, console.Label, platePx, TextAlign.Center),
-                console.Label, near ? ConsoleNear : TextDim,
-                near ? "bold 10px monospace" : "9px monospace", TextAlign.Center);
+            PlateTheConsole(plan, in console, in state, sx, sy, dot, near, project);
             if (near)
             {
                 // …and the offer is drawn WHERE YOU ARE STANDING. On a point console that is the console;
