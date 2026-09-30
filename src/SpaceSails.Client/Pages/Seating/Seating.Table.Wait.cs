@@ -171,7 +171,10 @@ public partial class Map
                                 : t.Office
                                 ? RingOffice.NobodyCame(beat)
                                 : t.Bench
-                                    ? ParkBenches.NobodyCame(beat)
+                                    // #1332 · …and the GARDEN is not the park: no walk, no gravel.
+                                    ? HavenGarden.IsTheGardensBench(t.Scene)
+                                        ? HavenGarden.NobodyCameLine
+                                        : ParkBenches.NobodyCame(beat)
                                     // …and the shift is the ROOM's where there is a room, and the sitting's
                                     // own frozen one at the seats that have no excursion behind them.
                                     : SittingAlone.NobodyCame(

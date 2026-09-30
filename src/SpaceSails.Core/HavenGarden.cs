@@ -51,6 +51,34 @@ public static class HavenGarden
     /// on a free slot, never again at that station, filed nowhere. Fable canon, verbatim.</summary>
     public const string FirstVisitLine = "Warm, wet, and quiet. Somebody comes here on purpose.";
 
+    /// <summary>#1332 · <b>SITTING DOWN ON THE GARDEN'S BENCH</b> — the scene's opening, told as the captain takes
+    /// the plank. The park's own sitting speaks of gravel and a run of walk, and the garden has neither. Fable
+    /// canon, verbatim.</summary>
+    public const string SatLine = "Warm on the back of the neck. The lettuce does not care who you are.";
+
+    /// <summary>#1332 · <b>SITTING A WHILE AND NOBODY CAME</b> — the garden's own silence, the answer to every
+    /// fruitless SIT A WHILE on its bench. One line and never a pool: the garden has no walker and no figure, so
+    /// nothing in it changes from one wait to the next. Fable canon, verbatim.</summary>
+    public const string NobodyCameLine = "Nobody came. The tomatoes went on being staked.";
+
+    /// <summary>#1332 · The garden bench's scene id — the park's own two moves under the garden's name, so the
+    /// wait beat can tell whose silence to say without a new field on the sitting.</summary>
+    public const string BenchSceneId = "garden:bench";
+
+    /// <summary>
+    /// #1332 · <b>THE GARDEN'S BENCH, AS A SCENE</b> — the park bench's own (<see cref="ParkBenches.TheBench"/>:
+    /// the same move ids, the same labels, the same stand-up line) with the garden's id, the room's plate as its
+    /// setting and the garden's sitting as its opening. Nobody is ever on the far end, so there is no shared
+    /// form.
+    /// </summary>
+    public static Encounter.Scene TheBench() =>
+        ParkBenches.TheBench(shared: false) with { Id = BenchSceneId, Setting = Plate, Opening = SatLine };
+
+    /// <summary>#1332 · Is this sitting the garden's bench? Asked by the wait beat, which says
+    /// <see cref="NobodyCameLine"/> here and the park's own pool (<see cref="ParkBenches.NobodyCame"/>) on every
+    /// other bench.</summary>
+    public static bool IsTheGardensBench(Encounter.Scene bench) => bench.Id == BenchSceneId;
+
     /// <summary>#1332 B · The menu line at this berth's board, or null where the counter has no board (and so no
     /// kitchen to send salad to). Asked of <see cref="TheMenuBoard.For"/> so the board and the line are read
     /// off one list: a bar that grew a board would grow the line with it.</summary>
@@ -68,5 +96,7 @@ public static class HavenGarden
 
         yield return MenuLine;
         yield return FirstVisitLine;
+        yield return SatLine;
+        yield return NobodyCameLine;
     }
 }

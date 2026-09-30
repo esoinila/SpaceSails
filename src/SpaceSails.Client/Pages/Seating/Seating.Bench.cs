@@ -117,7 +117,8 @@ public partial class Map
         /// #1332 B · <b>THE GARDEN'S BENCH</b> — the park bench's own sitting, at a berth. What the park reads off
         /// its carve (which end, where standing up puts you) the page's answer carries instead; the scene is the
         /// park bench's, two moves and no third (SIT A WHILE / Stand up), with the room's own plate as its
-        /// setting. Nobody is ever on the far end: the garden has no walker and no figure.
+        /// setting and the garden's own words (<see cref="HavenGarden.TheBench"/>: no gravel, no walk). Nobody
+        /// is ever on the far end: the garden has no walker and no figure.
         /// </summary>
         private bool TryTakeTheGardenBench()
         {
@@ -135,7 +136,7 @@ public partial class Map
             // #820 · the snap, onto the end the page's answer says he walked up to. Never measured here.
             _host.SitCaptainOn(top.ChairX, top.ChairY);
             SitOnABench(top.Key, top.Index, shared: false, off,
-                ParkBenches.TheBench(shared: false) with { Setting = top.Setting }, top.Watch);
+                HavenGarden.TheBench() with { Setting = top.Setting }, top.Watch);
             return true;
         }
 

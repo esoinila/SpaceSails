@@ -28,8 +28,45 @@ public sealed class TheGardenBehindGlassProseTests
         Assert.Equal("Salad from the garden. Coffee when the coffee is ready.", HavenGarden.MenuLine);
         Assert.Equal("Warm, wet, and quiet. Somebody comes here on purpose.", HavenGarden.FirstVisitLine);
 
-        Assert.Equal(7, HavenGarden.AllProse().Count());
-        Assert.Equal(7, HavenGarden.AllProse().Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal("Warm on the back of the neck. The lettuce does not care who you are.", HavenGarden.SatLine);
+        Assert.Equal("Nobody came. The tomatoes went on being staked.", HavenGarden.NobodyCameLine);
+
+        Assert.Equal(9, HavenGarden.AllProse().Count());
+        Assert.Equal(9, HavenGarden.AllProse().Distinct(StringComparer.Ordinal).Count());
+        Assert.Contains(HavenGarden.SatLine, HavenGarden.AllProse());
+        Assert.Contains(HavenGarden.NobodyCameLine, HavenGarden.AllProse());
+    }
+
+    /// <summary>
+    /// #1332 · <b>THE GARDEN'S BENCH SPEAKS THE GARDEN; THE PARK KEEPS ITS OWN.</b> The garden's scene opens on
+    /// the garden's sitting and is the one bench the wait beat answers with the garden's silence; the park's
+    /// scene (either end) opens on its own gravel, is never taken for the garden's, and its pool never carries
+    /// either garden line — while the two moves stay the park's own ids and labels.
+    ///
+    /// <para><b>Proven RED</b> by <c>TheBench()</c> dropping its <c>Opening = SatLine</c> (the garden opens on
+    /// gravel) and by <c>IsTheGardensBench</c> answering true for every scene (the park says the tomatoes).</para>
+    /// </summary>
+    [Fact]
+    public void TheGardensBenchSpeaksTheGardenAndTheParkKeepsItsOwn()
+    {
+        Encounter.Scene garden = HavenGarden.TheBench();
+        Assert.Equal(HavenGarden.SatLine, garden.Opening);
+        Assert.Equal(HavenGarden.Plate, garden.Setting);
+        Assert.True(HavenGarden.IsTheGardensBench(garden));
+        Assert.Equal(
+            ParkBenches.TheBench(shared: false).Moves.Select(m => (m.Id, m.Label)),
+            garden.Moves.Select(m => (m.Id, m.Label)));
+
+        foreach (bool shared in new[] { false, true })
+        {
+            Encounter.Scene park = ParkBenches.TheBench(shared);
+            Assert.False(HavenGarden.IsTheGardensBench(park));
+            Assert.NotEqual(HavenGarden.SatLine, park.Opening);
+        }
+
+        Assert.DoesNotContain(HavenGarden.SatLine, ParkBenches.AllProse());
+        Assert.DoesNotContain(HavenGarden.NobodyCameLine, ParkBenches.AllProse());
+        Assert.DoesNotContain("gravel", HavenGarden.SatLine, StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>
