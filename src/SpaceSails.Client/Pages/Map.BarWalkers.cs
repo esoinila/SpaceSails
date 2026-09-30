@@ -275,6 +275,7 @@ public partial class Map
             StepTheBarsFeet(dtRealSeconds, bar);
             AdvanceTheWalk(bar);
             TellTheFirstRideDown(bar.BodyId);   // #1332 A · …and, once per station, what a lobby's car is for
+            KeepTheOfficeHours(bar);   // #1332 C · …and, at Ringside Exchange, the Preservation office's door and its clerk
             return;
         }
 

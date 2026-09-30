@@ -94,6 +94,12 @@ public partial class Map
                 return;
             }
 
+            // #1332 C · …and the disbursement sheet on the Preservation office's desk, a pickup like the schedule.
+            if (TryTheDisbursementSheet(spot.Label))
+            {
+                return;
+            }
+
             _viewObject = MaybeAppendPlaqueGratitude(spot); // #394: Ringside's plaque grows a line once saved
 
             // #411: reading the whole dedication plate that NAMES PROJEKTI KAAMOS (Ringside's, the one place
@@ -173,6 +179,12 @@ public partial class Map
         {
             return;
         }
+        // #1332 C · The Preservation office's door has its own plate and its own answer, and no hatch id.
+        if (TryTheOfficeDoor(in hatch))
+        {
+            return;
+        }
+
         string id = HatchId(hatch.Label);
 
         // An opened expansion joint (PR-F): the hatch is already cracked and the back room is welded
