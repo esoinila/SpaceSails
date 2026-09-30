@@ -147,17 +147,28 @@ public partial class Map
         // So the document is always shown, in full, every time. The tracker gets plotted on the first read
         // and GrantLabLead no-ops on every one after, which is the honest shape: the knowledge is what is
         // one-shot, not the paper.
+        //
+        // #1345 · …and A WRITTEN SHEET IS A PAPER, NOT A CLUE (ruled 2026-09-30). A sheet somebody wrote is headed
+        // with its own title — the name on its row in the sleeve — not with the certainty word, which is how the
+        // dice's sheets are told apart; and reading it names no moon: a paper says what it says and points nowhere
+        // by itself (the book's threads do the pointing, #741). A composed sheet is exactly as before.
         if (item is { Kind: Core.Satchel.Kind.Paper } read && at.Target == SatchelTry.Target.Tracker)
         {
+            bool aClue = Core.FieldClue.ReadsAsAClue(read.Id);
             _viewObject = new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-                $"📋 {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(read.Id)).ToUpperInvariant()}",
+                aClue
+                    ? $"📋 {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(read.Id)).ToUpperInvariant()}"
+                    : Core.FieldClue.Title(read.Id),
                 "",
                 theReaderSpeaks
                     ? Core.FieldClue.Document(read.Id) + "\n\n" + outcome.Line
                     : Core.FieldClue.Document(read.Id));
 
-            GrantLabLead(DiceRule.Seed($"clue:{read.Id}"));
+            if (aClue)
+            {
+                GrantLabLead(DiceRule.Seed($"clue:{read.Id}"));
+            }
         }
 
         CloseSatchel();
