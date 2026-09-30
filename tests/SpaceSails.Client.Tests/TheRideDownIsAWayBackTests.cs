@@ -108,6 +108,46 @@ public sealed class TheRideDownIsAWayBackTests
     }
 
     /// <summary>
+    /// #1341 · <b>[E] AT THE CAR YOU JUST CAME OUT OF OPENS THAT CAR.</b> QA 2026-09-30, at The Deep: <i>"[E] at
+    /// the lift car you just arrived in does nothing until you step off and back on."</i> Every car, down and
+    /// back up the SAME car, on both floors: the press, through the deck's own <c>InteractAtConsole</c> with the
+    /// captain exactly where the doors set him down, raises the panel for the car he rode — never another car,
+    /// never a plate that happens to stand nearer the landing.
+    ///
+    /// <para><b>Proven RED</b> by taking the landing clause out of <c>InteractAtConsole</c>: <i>the-deep: [E] on
+    /// the concourse at car 0's doors, having just ridden it, opened no panel</i> (the lifeboat plate and an ad
+    /// stand nearer that square than the car's own console).</para>
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(Lobbies))]
+    public void EAtTheCarYouJustRodeOpensThatCarsPanel(string berth)
+    {
+        Pages.Map map = Ashore($"e-at-the-car-you-rode-{berth}", berth);
+        (double X, double Y) threshold = Where(map);
+        int cars = HavenInterior.TheCagesAt(berth).Count;
+        for (int cage = 0; cage < cars; cage++)
+        {
+            foreach ((int level, string where) in new[] { (HavenLevels.ServiceLevel, "below"), (HavenLevels.Concourse, "on the concourse") })
+            {
+                Set(map, "_showLiftPanel", false);
+                Assert.True(Ride(map, level, cage), $"car {cage} refused to go {where}.");
+                AssertStandingAtTheCar(map, berth, cage, where);
+                Set(map, "_havenLiftCage", -1);
+
+                Invoke(map, "InteractAtConsole");
+                Assert.True((bool)Read(map, "_showLiftPanel")!,
+                    $"{berth}: [E] {where} at car {cage}'s doors, having just ridden it, opened no panel.");
+                Assert.Equal(cage, (int)Read(map, "_havenLiftCage")!);
+            }
+        }
+
+        // …and away from every car's doors nobody is standing at one: back at the bar's threshold, no car.
+        Set(map, "_avatarX", threshold.X);
+        Set(map, "_avatarY", threshold.Y);
+        Assert.Null(Invoke(map, "TheCarWhoseDoorsYouAreAt"));
+    }
+
+    /// <summary>
     /// <b>THE PANEL IS THE ROAD, AND IT IS THE PANEL THE PLAYER PRESSES.</b> The press goes through the page's
     /// own <c>PressLiftButton</c> — the same <c>Action&lt;LiftStop&gt;</c> <c>LiftPanel.razor</c> binds — so a
     /// ride that worked only when a test called the ride directly would fail here.
