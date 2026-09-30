@@ -237,7 +237,10 @@ public partial class Map
         }
 
         DeckReachability.Point from = new(him.Walk.X, him.Walk.Y);
-        double heading = _avatarHeading;
+        // "Behind" is measured from HIM, not from the captain's nose: he closes on you from the side he is
+        // coming from, rather than walking round you to stand where the coat would. (Watched headless: keyed to
+        // the captain's heading he walked AWAY into the hall behind a captain who stood facing the car.)
+        double heading = Math.Atan2(_avatarY - him.Walk.Y, _avatarX - him.Walk.X);
         // Off the wall he closes to the NEAR edge of the band first — a man who has been waiting all shift for a
         // reason comes right up; after that he keeps the coat's own order, the middle of the band first.
         IEnumerable<double> ranges = offTheWall
