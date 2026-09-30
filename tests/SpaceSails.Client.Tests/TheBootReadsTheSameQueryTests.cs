@@ -225,6 +225,10 @@ public sealed class TheBootReadsTheSameQueryTests
             ["/map?scenario=..%2Foops"] = "246c48d4ab7eddd073e8c28442f24a2a",
             ["/map?scenario=sol-eu"] = "11e69e416b365f325d913c5776718522",
             ["/map?secretlab=1"] = "ea2b32a0a5ef4ec8b1278a24c5cfd8c8",
+            // #618 · the man at the door, three windows: MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP; 3 new, 0 moved.
+            ["/map?secretlab=1&land=1&guard=absent"] = "ea2b32a0a5ef4ec8b1278a24c5cfd8c8",
+            ["/map?secretlab=1&land=1&guard=posted"] = "ea2b32a0a5ef4ec8b1278a24c5cfd8c8",
+            ["/map?secretlab=1&land=1&guard=round"] = "ea2b32a0a5ef4ec8b1278a24c5cfd8c8",
             ["/map?secretlab=deep&land=1&card=next"] = "d9743721b7668ce559ca2a1b12b5176c",
             ["/map?secretlab=deep&land=1&floor=1"] = "d9743721b7668ce559ca2a1b12b5176c",
             ["/map?secretlab=deep&land=1&floor=1&card=next"] = "d9743721b7668ce559ca2a1b12b5176c",
