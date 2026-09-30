@@ -117,6 +117,7 @@ public static class FieldClue
         return HardcaseRep.IsTheSchedule(paperId)
             || CarryThePress.IsTheNote(paperId)
             || SpikeIt.IsAuthored(paperId)
+            || PreservationOffice.IsTheSheet(paperId)
             || UndergroundComplex.AuthoredPaperOf(paperId) is not null
             || UndergroundComplex.LiftCode.PaperIn(paperId) is not null;
     }
@@ -176,6 +177,12 @@ public static class FieldClue
         if (SpikeIt.IsAuthored(paperId))
         {
             return SpikeIt.Document(paperId);
+        }
+
+        // #1332 C · …and the disbursement sheet off the Preservation office's desk, the same way: body ALONE.
+        if (PreservationOffice.IsTheSheet(paperId))
+        {
+            return PreservationOffice.SheetDocument;
         }
 
         // #1074/#1063 · …AND THE FIVE THE ARC WROTE, for exactly the same reason and through exactly the
@@ -290,6 +297,12 @@ public static class FieldClue
         if (SpikeIt.IsAuthored(paperId))
         {
             return SpikeIt.Title(paperId);
+        }
+
+        // #1332 C · …and the disbursement sheet is called what the canon titled it.
+        if (PreservationOffice.IsTheSheet(paperId))
+        {
+            return PreservationOffice.SheetTitle;
         }
 
         // #1074/#1063 · …and the five the arc wrote are called what they are called. Same door as Document

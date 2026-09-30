@@ -83,7 +83,8 @@ public partial class Map
             // the cellar door has no console at his chair any more, and whoever has come out of it and sat
             // down has one at his.
             && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce,
-                                        FillBarWalkerDroids, TheBarsChurn, TubeTierAt(id), _havenFloor) is { } complex)
+                                        FillBarWalkerDroids, TheBarsChurn, TubeTierAt(id), _havenFloor, TheOfficeAsItStands())
+                is { } complex)   // #1332 C · …and the Preservation office's door, as the clock has it
         {
             _deckPlan = complex;
         }
@@ -127,7 +128,8 @@ public partial class Map
             // the cellar door has no console at his chair any more, and whoever has come out of it and sat
             // down has one at his.
             && HavenInterior.DockedDeck(id, UnlockedHatchesFor(id), _dockVisitSimTime, _oracleForce,
-                                        FillBarWalkerDroids, TheBarsChurn, TubeTierAt(id), _havenFloor) is { } complex)
+                                        FillBarWalkerDroids, TheBarsChurn, TubeTierAt(id), _havenFloor, TheOfficeAsItStands())
+                is { } complex)
         {
             _deckPlan = complex;
             _havenName = _ephemeris?.Bodies.FirstOrDefault(b => b.Id == id)?.Name ?? "the haven";

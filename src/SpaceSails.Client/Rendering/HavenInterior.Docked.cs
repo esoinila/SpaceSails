@@ -111,9 +111,14 @@ public static partial class HavenInterior
     /// <para>It is part of the cache key for the reason the watch and the churn are: two floors are two
     /// rooms, and a memo that served whichever was built first is the audit's own named prediction about
     /// what "just drop in a second plan" costs.</para></param>
+    /// <param name="office">#1332 C · How the Preservation office's door stands, at the one station whose hotel
+    /// level has it (<see cref="HasTheOffice"/>) — asked only below the concourse and ignored everywhere else, so
+    /// every other floor of every other station is the plan it always was. <see cref="OfficeDoor.Shut"/>, the
+    /// default, is the plan every caller that only wants the geometry has always got. Part of the memo's key.</param>
     public static DeckPlan? DockedDeck(string bodyId, IReadOnlySet<string>? unlockedHatchIds = null, double simTime = 0,
         bool forceOracle = false, System.Action<DeckPlan.Droid[], int>? fillWalkers = null,
-        RoomChurn? churn = null, ArrivalTube.Tier? tier = null, int level = HavenLevels.Concourse)
+        RoomChurn? churn = null, ArrivalTube.Tier? tier = null, int level = HavenLevels.Concourse,
+        OfficeDoor office = OfficeDoor.Shut)
     {
         if (System.Array.Find(Specs, s => s.BodyId == bodyId) is not { } spec)
         {
@@ -126,13 +131,16 @@ public static partial class HavenInterior
         // level at all, which is what keeps every older caller and every other haven exactly as they were.
         if (level != HavenLevels.Concourse && spec.Lower is { } lower)
         {
+            // #1332 C · A station with no office has one way to draw its hotel level, whatever is asked.
+            OfficeDoor door = lower.Office is null ? OfficeDoor.Shut : office;
             if (fillWalkers is not null)
             {
-                return BuildLowerComplex(spec, lower, fillWalkers);
+                return BuildLowerComplex(spec, lower, fillWalkers, door);
             }
 
             return Cache.GetOrBuild(
-                $"{bodyId}@lower", () => BuildLowerComplex(spec, lower, null));
+                door == OfficeDoor.Shut ? $"{bodyId}@lower" : $"{bodyId}@lower+{door}",
+                () => BuildLowerComplex(spec, lower, null, door));
         }
 
         IReadOnlyList<DeckWing> active = unlockedHatchIds is null

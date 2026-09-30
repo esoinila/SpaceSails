@@ -68,7 +68,9 @@ public static partial class HavenInterior
     /// proven three (<see cref="CageEdges"/>). Only a station that has already spent one of those edges on
     /// something else names its own — Cinder Roost, whose V-06 is the Bonded Stores hatch the Magpie's back
     /// room grows behind.</param>
-    private sealed record LowerSpec(string Name, string Plate, string Art, int[]? Edges = null);
+    /// <param name="Office">#1332 C · Which cabin (one-based) is the Preservation office, or null — every station
+    /// but Ringside Exchange. The office is data on the floor it stands on, not a second floor.</param>
+    private sealed record LowerSpec(string Name, string Plate, string Art, int[]? Edges = null, int? Office = null);
 
     /// <summary>#1332 A · The one backdrop every lower level is laid under: Selene Gate's service-level art,
     /// reused — no new art this slice. A <c>const</c>, so it is folded rather than initialised and no file order
@@ -101,7 +103,8 @@ public static partial class HavenInterior
             "art/ringside-hall.jpg", "art/ringside-bar.jpg",
             "art/souvenir-ringside-tshirt.jpg", "art/souvenir-ringside-magnet.jpg",
             "“I went all the way to Saturn and all I got was this T-shirt.”",
-            new LowerSpec(HavenLevels.RingsidePlate, HavenLevels.RingsidePlate, TheServiceLevelArt)),
+            new LowerSpec(HavenLevels.RingsidePlate, HavenLevels.RingsidePlate, TheServiceLevelArt,
+                Office: PreservationOffice.Cabin)),   // #1332 C · the Preservation office, where money lives
         new("the-tilt", "THE TILT", "URANUS", "everything's sideways out here", "THE TILT BAR",
             "art/the-tilt-hall.jpg", "art/the-tilt-bar.jpg",
             "art/souvenir-tilt-tshirt.jpg", "art/souvenir-tilt-magnet.jpg",

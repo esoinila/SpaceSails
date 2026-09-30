@@ -814,6 +814,50 @@ live. All seven havens have a bar, so all seven have one (`HavenInterior.HasGard
 - **Dev starts:** `/map?dock=<haven>&ashore=1&garden=1` (The Rusty Roadstead and Selene Gate in the list; the key
   works at every haven).
 
+### …and the Preservation office on Ringside Exchange's hotel level (#1332 slice C, 2026-09-30)
+
+Four papers say *Charged to Preservation* — #1097's rail, rota and pour, and #1334's editorial services. A cost
+centre has an office, and an office has a door. **The first of the owner's side offices** stands on MEMBERS' ROOMS,
+Ringside Exchange's hotel level, where money lives: the middle cabin of the row (`PreservationOffice.Cabin`, 3) wears
+the office's plate and the other four stay `CABIN n`. It is data on Ringside's `LowerSpec` (`Office`); no other haven
+has one, and every other haven's hotel level is the plan it always was, byte for byte.
+
+- **Canon, verbatim** (`PreservationOffice`, `AllProse()`): the plate **PRESERVATION · BY APPOINTMENT**; `[E]` at the
+  door while it is shut, every press, *"Appointments are made by the office. The office does not make appointments."*;
+  the first time the plate is read, one book line under 📍, *"A door with the cost centre on it. Somebody pays the rent on
+  Preservation."*; inside while it stands open, once per run, *"Warm still. A chair pushed back the way a chair is pushed
+  back by somebody who means to return."*; the walker's plate `Clerk`; and the sheet — **A disbursement sheet, quarter to
+  date** / *"Perimeter rail. Site watch. Structural remediation. Editorial services. Charged to Preservation."* The clerk
+  never speaks and nothing names anybody.
+- **The clerk's hours are Core arithmetic** of (run seed, watch): one watch in four, the offset seeded off the run's own
+  seed (`WorldSeed`, the thread id folded) — no `Random`, and the same run always answers the same, so a captain can
+  learn it. The door is shut on the other three watches (the cabin's own locked leaf) and ajar on his: the corridor face
+  is cut for a doorway, the leaf hangs part-way over (#563's hauled-leaf idiom), and a desk stands against the back wall
+  with the sheet on it. Nothing announces the ajar watch.
+- **The clerk** steps out at the first second of his watch and walks, at a body's own pace, to the car whose landing is
+  nearest his door, and is gone — an `Errand.Leaving` walker in the room's own band (Kolt's shape), found again by his
+  plate. He is a body on the captain's floor and a clock on every other, GILT-EYE's night's pattern: ride down part-way
+  through his walk and he is where the clock says; ride down after and the office is empty. Never on the concourse,
+  never at another haven.
+- **The sheet** is taken by the building's own paper pick-up (the dropped schedule's, #1061): into the sleeve, the card
+  reading it as papers read away from their room (it joins `FieldClue.IsAuthored`, so it is one sheet and never reads
+  as a clue), the document filed under 📋 with `MoneyTrail.SubjectsFor("Ringside Exchange")` — the Authority and the
+  haven, beat 3's door, so THREADS stacks it with the rail, the rota, the pour and the receipt. The desk is bare for the
+  rest of the run; the office keeps its hours.
+- **No new page field.** "Plate read", "sheet taken" and "warm told" are tags on `_roomsTurnedOver`; the door's state is
+  asked of the clock and read back off the plan that is drawn; the dev latch (`&office=shut|open`) is read off the
+  address bar, the man at the door's way.
+- **Never shut on a man inside.** A captain still in the office when the watch turns keeps the doorway until he steps
+  out (the fire code's reason, #822); the next frame he is in the corridor, the door is shut.
+- **Guards:** `ThePreservationOfficeTests` (Core: canon, reserved words and names, one watch in four seeded and pure, the
+  walk as a clock, the sheet authored and read the same everywhere, the book's two subjects, the latch);
+  `ThePreservationOfficeStandsOnMembersRoomsTests` (only at Ringside; the plate over one door and the floor's one label;
+  shut a cabin nobody reaches, ajar a doorway every square of which is reached, the sheet within an `[E]`; every other
+  haven byte-identical; the clerk's car and his way to it); `ThePreservationOfficeKeepsItsHoursTests` (a live page: the
+  door follows the watch, the clerk only on his watch and floor and not dealt twice, the shut line every press and the
+  book once, the warm line once, the sheet once and filed, never shut on a man inside, the dev start).
+- **Dev starts:** `/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=shut` and `…&office=open`.
+
 ## The chalk mark: a dead drop under a gallery table (#794 slice 2, 2026-09-28)
 
 The faceless trade's return leg. A parcel taken at any haven's dark-web desk, buried where the desk said and

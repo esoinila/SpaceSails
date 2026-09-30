@@ -436,6 +436,12 @@ public partial class Map
             // Map.ChalkMark reads it off the address bar (ChalkMark.CheatIn) right after ?ashore=1 walks the
             // captain in.
         }
+        else if (pair.StartsWith("office=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #1332 C dev cheat: /map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=shut|open forces the
+            // Preservation office's door. CLAIMED here and read nowhere here, the chalk's and the guard's way: it
+            // writes no world at parse time. Map.PreservationOffice reads it off the address bar.
+        }
         else if (pair.StartsWith("guard=", StringComparison.OrdinalIgnoreCase))
         {
             // #618 dev cheat: /map?secretlab=1&land=1&guard=posted|absent|round forces how the man at the Hive's

@@ -151,6 +151,9 @@ public sealed class TheBootReadsTheSameQueryTests
             ["/map?dock=the-space-bar&ashore=1&garden=1"] = "29ec965e1907ee11afc35bc6788005b8",
             ["/map?dock=cinder-roost&ashore=1&havenfloor=-1"] = "540a99672f1543542f72d5598d23e740",
             ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1"] = "b59dc71633c101bd8c3cc14fa520c976",
+            // #1332 C · the Preservation office, shut and on the clerk's watch: MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP; 2 new, 0 moved.
+            ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=open"] = "b59dc71633c101bd8c3cc14fa520c976",
+            ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=shut"] = "b59dc71633c101bd8c3cc14fa520c976",
             ["/map?dock=the-tilt&ashore=1&havenfloor=-1"] = "ad55547bafb6319ff968e067aaf9cc19",
             ["/map?dock=red-eye&ashore=1&havenfloor=-1"] = "779a7327071affc43208a8192c688c74",
             ["/map?dock=the-deep&ashore=1&havenfloor=-1"] = "a3f987bb11fcecd41bc7a8424c62a205",

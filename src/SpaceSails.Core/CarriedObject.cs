@@ -150,6 +150,12 @@ public static class CarriedObject
             return new Reveal("", SpikeIt.Title(paperId), SpikeIt.Document(paperId));
         }
 
+        // #1332 C · …and the disbursement sheet off the Preservation office's desk, titled with its own title.
+        if (PreservationOffice.IsTheSheet(paperId))
+        {
+            return new Reveal("", PreservationOffice.SheetTitle, PreservationOffice.SheetDocument);
+        }
+
         return HardcaseRep.IsTheSchedule(paperId)
             ? new Reveal("", HardcaseRep.ScheduleLabel, HardcaseRep.ScheduleBody)
             : new Reveal(
