@@ -137,7 +137,7 @@ public sealed partial class Map
             return;
         }
 
-        ulong seed = DiceRule.Seed("fire", (long)wreck.Id.GetHashCode(StringComparison.Ordinal), 0);
+        ulong seed = DiceRule.Seed("fire", Core.StableHash.Id(wreck.Id), 0);
         _burning[candidates[(int)(seed % (ulong)candidates.Count)]] = 0.0;
     }
 }

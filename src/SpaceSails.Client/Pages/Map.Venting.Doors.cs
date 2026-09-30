@@ -37,8 +37,8 @@ public sealed partial class Map
             WreckLayout.Compartments, c => c.Name == name);
 
         int came = 1 + DiceRule.Roll(
-            DiceRule.Seed("sealed-count", (long)_wreck.Value.Id.GetHashCode(System.StringComparison.Ordinal),
-                          name.GetHashCode(System.StringComparison.Ordinal)), 2).Face - 1;
+            DiceRule.Seed("sealed-count", Core.StableHash.Id(_wreck.Value.Id),
+                          Core.StableHash.Id(name)), 2).Face - 1;
         for (int i = 0; i < came && _reevers.Count < ReeverEngineCeiling; i++)
         {
             _reevers.Add(new Reever

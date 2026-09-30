@@ -75,7 +75,7 @@ public partial class Map
     // somewhere a test can read it, and TreasureMapArtIsWiredTests now checks it in BOTH directions.
     private static string TreasureMapArtCss(string bodyId)
     {
-        int h = Math.Abs(bodyId.GetHashCode());
+        int h = (int)(Core.StableHash.Of(bodyId) % 360UL);   // #1340 · seeded, so Phobos IS always the same tint
         int hue = h % 360;
         string gradient = $"radial-gradient(circle at 38% 32%, hsl({hue}, 40%, 34%), hsl({(hue + 28) % 360}, 45%, 12%) 70%)";
         return TreasureMapArt.ArtFile(bodyId) is { Length: > 0 } art
