@@ -122,7 +122,17 @@ public partial class Map
             return;
         }
 
-        ShowPulseMessage(outcome.Line);
+        // #1341 · …except the certainty line over a sheet somebody WROTE. The tracker's yes on a paper is FieldClue's
+        // "how well it pins a place" — true of a mention, a description, a position, and nonsense over a line
+        // item or a rate schedule, which pin no place at all. The sheet itself is shown below; nothing is said
+        // over it.
+        bool theReaderSpeaks = item is not { Kind: Core.Satchel.Kind.Paper } sheet
+                               || at.Target != SatchelTry.Target.Tracker
+                               || Core.FieldClue.ReadsAsAClue(sheet.Id);
+        if (theReaderSpeaks)
+        {
+            ShowPulseMessage(outcome.Line);
+        }
 
         // ── #603 · READING A PAPER NEVER SPENDS IT ──
         //
@@ -143,7 +153,9 @@ public partial class Map
                 DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
                 $"📋 {Core.FieldClue.Label(Core.FieldClue.CertaintyOf(read.Id)).ToUpperInvariant()}",
                 "",
-                Core.FieldClue.Document(read.Id) + "\n\n" + outcome.Line);
+                theReaderSpeaks
+                    ? Core.FieldClue.Document(read.Id) + "\n\n" + outcome.Line
+                    : Core.FieldClue.Document(read.Id));
 
             GrantLabLead(DiceRule.Seed($"clue:{read.Id}"));
         }
