@@ -379,6 +379,8 @@ public static partial class DevStarts
             "/map?dock=selene-gate&ashore=1&havenfloor=-1"),
         // #1332 A · …and the six floors the other hubs grew, one button each (DevStarts.Below.cs).
         .. BelowTheLobbies(),
+        // #1332 B · …and the garden behind glass off each concourse (DevStarts.Garden.cs).
+        .. TheGardens(),
         // #1016 · THE OWNER'S OWN BUG, IN ONE BUTTON. He sat at a top in The Stormwatch Bar, pressed "Work
         // the case", and nothing happened at all — the seat verbs were every one of them gated on a
         // SurfaceExcursion and a berth has none. Owner: "Maybe it might be good idea to refactor the working

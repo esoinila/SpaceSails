@@ -66,9 +66,18 @@ public partial class Map
     /// looking AT the fixture, and sitting down you are looking out of whatever is in front of it. At a table
     /// in the observation walk's gallery, what is in front of it is the rail, the glass and the Earth, which
     /// is the plate the room already wears as its floor.</param>
+    /// <param name="Bench">#1332 B · Whether this seat is a BENCH — the garden's, by the glass — rather than a
+    /// top, a desk or a stool. Carried rather than derived, for <paramref name="Stool"/>'s reason: the room
+    /// knows what its furniture is. A bench is taken by the park bench's own verb (<c>Seating.TryTakeBench</c>)
+    /// and never by a top's, so this is the one flag that tells the two presses which of them the answer is
+    /// for.</param>
+    /// <param name="StepOff">#1332 B · Where standing up puts the captain, for a seat that is SOLID — the
+    /// garden's plank, which the sit snaps him onto (#820) and which he has to be stepped off again. Null for a
+    /// top, which is drawn and does not collide: its chair is its own step-off.</param>
     private readonly record struct BarTopUnderfoot(
         int Index, string Key, long Watch, double ChairX, double ChairY, int Seats, string Setting,
-        string Plate, bool Quiet, bool Aboard, bool Stool = false, string? Window = null);
+        string Plate, bool Quiet, bool Aboard, bool Stool = false, string? Window = null,
+        bool Bench = false, (double X, double Y)? StepOff = null);
 
 
     /// <summary>
@@ -107,9 +116,17 @@ public partial class Map
     {
         if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { } spot
             || spot.Kind is not (DeckPlan.ConsoleKind.BarTop or DeckPlan.ConsoleKind.ShipDesk
-                                 or DeckPlan.ConsoleKind.ShipStool))
+                                 or DeckPlan.ConsoleKind.ShipStool or DeckPlan.ConsoleKind.HiveBench))
         {
             return null;
+        }
+
+        // #1332 B · A BENCH IS THE GARDEN'S, AND ONLY THE GARDEN'S, on this answer. The park's benches are an
+        // excursion's and are answered by the park (Seating.TryTakeBench's own path); at a berth the one bench
+        // there is stands by the garden's glass.
+        if (spot.Kind == DeckPlan.ConsoleKind.HiveBench)
+        {
+            return TheGardensBenchUnderfoot(spot);
         }
 
         if (spot.Kind == DeckPlan.ConsoleKind.BarTop && TheDockedBar() is { } bar)
