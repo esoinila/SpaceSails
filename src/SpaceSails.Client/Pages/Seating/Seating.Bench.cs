@@ -108,7 +108,8 @@ public partial class Map
             // snap would be asking where the captain is now sitting, which answers itself.
             (double seatX, double seatY) = bench.EndYouTake(_host.AvatarX, _host.AvatarY);
             (double offX, double offY) = TowardTheWalk(in green, seatX, seatY);
-            SitOnABench(BenchKey(ex, bench.Index), bench.Index, shared, (seatX, seatY), (offX, offY),
+            _host.SitCaptainOn(seatX, seatY);
+            SitOnABench(BenchKey(ex, bench.Index), bench.Index, shared, (offX, offY),
                 ParkBenches.TheBench(shared), watch: 0);
         }
 
@@ -131,7 +132,9 @@ public partial class Map
                 return true;
             }
 
-            SitOnABench(top.Key, top.Index, shared: false, (top.ChairX, top.ChairY), off,
+            // #820 · the snap, onto the end the page's answer says he walked up to. Never measured here.
+            _host.SitCaptainOn(top.ChairX, top.ChairY);
+            SitOnABench(top.Key, top.Index, shared: false, off,
                 ParkBenches.TheBench(shared: false) with { Setting = top.Setting }, top.Watch);
             return true;
         }
@@ -140,13 +143,12 @@ public partial class Map
         /// #1332 B · The one construction site a bench sitting is opened at — the park's plank and the garden's
         /// both come through here, so the count in <c>ThereIsOnePlaceASittingIsOpened</c> stays at eight: a
         /// second bench is the same seat in a different room, and what differs between the rooms travels in as
-        /// VALUES (the key, the end, the step-off, the scene's setting), never as a ninth <c>new TableTalk</c>.
+        /// VALUES (the key, the step-off, the scene's setting), never as a ninth construction site. Each caller
+        /// snaps the body itself first (#820), on the end its own room published.
         /// </summary>
-        private void SitOnABench(string key, int benchIndex, bool shared, (double X, double Y) seat,
+        private void SitOnABench(string key, int benchIndex, bool shared,
             (double X, double Y) stepOff, Encounter.Scene sat, long watch)
         {
-            _host.SitCaptainOn(seat.X, seat.Y);
-
             TakeThisSeat(new TableTalk
             {
                 StepOff = stepOff,

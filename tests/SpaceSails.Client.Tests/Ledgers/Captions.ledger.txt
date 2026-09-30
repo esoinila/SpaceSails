@@ -28,3 +28,10 @@ caption strings | ringside-exchange · the lower level | 11 caption(s), sha256 7
 caption strings | the-tilt · the lower level | 11 caption(s), sha256 34b96deb46d501207d85caf87d0d5e4406464eb8e2d1e01a4fc9a47299e1590b
 caption strings | red-eye · the lower level | 11 caption(s), sha256 159e63e8048c4d8fa3c96f30c5e69e490297d6633f6e5dd3c5c9e2380401b289
 caption strings | the-deep · the lower level | 11 caption(s), sha256 9aaf6a9aeca55719b923f4bbfc5fa31601de58f82cc71008ad2a6e0f984cfc32
+caption strings | the-space-bar · the garden | 52 caption(s), sha256 c61af37eccb3863a8ed9a1fe167ba41b4280504df981c22deae5ab170b9c754e
+caption strings | cinder-roost · the garden | 52 caption(s), sha256 f590629447d08780476a37dc5bd93014436f61da7287cb75b0f0ab38d2236855
+caption strings | ringside-exchange · the garden | 53 caption(s), sha256 e6a20978ab66b743eb9b8790052175c29c82a2347276a8fe21cd0c32b9addfbb
+caption strings | the-tilt · the garden | 52 caption(s), sha256 e136df08ff61a60c4b9cc0b0b6dbc0e8df2967e5b905f6859b0ee07c88ae4a9d
+caption strings | selene-gate · the garden | 58 caption(s), sha256 0ebd184dad83950a37bbc094327638570d9bde07030b0f53b060bc4e78e3b82e
+caption strings | red-eye · the garden | 53 caption(s), sha256 a990335c8444e8dd1394d2ba2e3317d0f797722c70bfa38fd18cc465b5ddf5d4
+caption strings | the-deep · the garden | 53 caption(s), sha256 949ec2ddf323e8a05935180759bec15937ad9d91c457deb949802f8930105b0b

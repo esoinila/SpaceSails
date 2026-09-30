@@ -232,6 +232,13 @@ public sealed class EveryFrameHashesTheSameTests
             yield return $"haven below · {id}";
         }
 
+        // #1332 B · THE GARDEN BEHIND GLASS — each haven's garden, pinned on its own row (measured the day it
+        // was built), standing by the bench so the four plated beds and the room's plate are in the view.
+        foreach (string id in HavenInterior.InteriorBodyIds.Where(HavenInterior.HasGarden))
+        {
+            yield return $"haven garden · {id}";
+        }
+
         yield return "wreck · HullBreach";
 
         foreach (int level in LunaFloors())
@@ -304,6 +311,21 @@ public sealed class EveryFrameHashesTheSameTests
             return new Shot(
                 below,
                 new DeckView.State(landing.X, landing.Y, 0.0, 0, 0,
+                    ShuttleAway: false, ElectricUniverse: false, Docked: true),
+                SimTime: 1000.0);
+        }
+
+        if (name.StartsWith("haven garden · ", StringComparison.Ordinal))
+        {
+            // #1332 B · In the garden, mid-room below the bench, west of the beds — the room's own published numbers.
+            string id = name["haven garden · ".Length..];
+            DeckPlan deck = HavenInterior.DockedDeck(id)!;
+            ParkBenches.Bench bench = HavenInterior.TheGardenBenchAt(id)!.Value;
+            (_, double gy0, _, double gy1) = HavenInterior.TheGardenBox(id)!.Value;
+            DeckReachability.Point stand = new(bench.X, (gy0 + gy1) / 2);   // mid-room, west of the beds
+            return new Shot(
+                deck,
+                new DeckView.State(stand.X, stand.Y, 0.0, 0, 0,
                     ShuttleAway: false, ElectricUniverse: false, Docked: true),
                 SimTime: 1000.0);
         }

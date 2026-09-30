@@ -323,6 +323,25 @@ public sealed class NoTwoCaptionsShareOneBandTests
                 Surface: null,
                 AtLeast: 8);
         }
+
+        // ── #1332 B · …AND THE GARDEN BEHIND GLASS OFF EVERY CONCOURSE ───────────────────────────────────
+        //
+        // A room plate and four bed plates stacked down a row two du apart, next to the concourse's own ring
+        // plates — the kind of stack this sweep exists for, so each garden is swept rather than assumed.
+        foreach (string id in HavenInterior.InteriorBodyIds.Where(HavenInterior.HasGarden))
+        {
+            ParkBenches.Bench bench = HavenInterior.TheGardenBenchAt(id)!.Value;
+            (_, double gy0, _, double gy1) = HavenInterior.TheGardenBox(id)!.Value;
+            DeckReachability.Point stand = new(bench.X, (gy0 + gy1) / 2);   // mid-room, west of the beds
+            yield return new Boot(
+                $"{id} · the garden",
+                HavenInterior.DockedDeck(id)!,
+                new DeckView.State(stand.X, stand.Y, 0.0, 0, 0,
+                    ShuttleAway: false, ElectricUniverse: false, Docked: true),
+                SimTime: 1000.0,
+                Surface: null,
+                AtLeast: 5);
+        }
     }
 
     /// <summary>#1279 · The service level under Selene Gate's concourse, as the page builds it.</summary>
@@ -420,7 +439,7 @@ public sealed class NoTwoCaptionsShareOneBandTests
             + "#1218's ruling: a mark's second line FOLDS INTO ITS PLATE — one plate per anchor, the plate "
             + "grows a second row. Never a second caption at a second hand-typed lift.");
 
-        Assert.Equal(11, worlds);   // #1332 A · five, and the six lower levels every other hub grew
+        Assert.Equal(18, worlds);   // #1332 A · five, and the six lower levels every other hub grew; #1332 B · and seven gardens
         Assert.True(captions > 40, $"only {captions} caption(s) were laid in all — this sweep proves little.");
     }
 
@@ -541,6 +560,6 @@ public sealed class NoTwoCaptionsShareOneBandTests
             + $"intended and owner-sanctioned, re-pin BY MEASUREMENT:{Environment.NewLine}  "
             + PinLedger.Invocation);
 
-        Assert.Equal(11, pinned.Count);   // #1332 A · five, and the six lower levels every other hub grew
+        Assert.Equal(18, pinned.Count);   // #1332 A · five, and the six lower levels every other hub grew; #1332 B · and seven gardens
     }
 }
