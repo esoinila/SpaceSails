@@ -271,12 +271,26 @@ public sealed partial class TheManAtTheDoorTests
         (string _, int floor) = ASiteWithADoor();
         Pages.Map map = CardedAtTheDoor(GateGuard.Posting.OnRound);
         Invoke(map, "CloseViewObject");
+        Set(map, "_pulse", Activator.CreateInstance(Get(map, "_pulse")!.GetType()));   // the slot has come free
         Pages.Map.ManAtTheDoor man = Man(map);
         StandAt(map, man.Post.X + 30, man.Post.Y);
         Assert.False(AnyRowGoesDown(map, floor));
 
-        Frames(map, (int)((GateGuard.AtTheDoorSeconds + 60) / Dt));
-        Assert.Equal(GateGuard.RoundLine, Pulse(map) ?? LastBookOrPulse(map));
+        int f = 0;
+        for (; f < (int)((GateGuard.AtTheDoorSeconds + 60) / Dt) && !man.RoundTold; f++)
+        {
+            if (man.Leg != Pages.Map.RoundLeg.AtTheDoor)
+            {
+                // The bench hands the pulse no clock, so a slot never expires on its own: free it, as time would.
+                Set(map, "_pulse", Activator.CreateInstance(Get(map, "_pulse")!.GetType()));
+            }
+
+            Frames(map, 1);
+        }
+
+        Assert.True(man.RoundTold, "he walked off and the round was never told");
+        Assert.Equal(GateGuard.RoundLine, Pulse(map));
+        Frames(map, (int)((GateGuard.AtTheDoorSeconds + 60) / Dt) - f);
         Assert.NotEqual(Pages.Map.RoundLeg.AtTheDoor, man.Leg);
         Assert.True(AnyRowGoesDown(map, floor), "he is at the canteen and the door is still kept");
 
@@ -284,8 +298,6 @@ public sealed partial class TheManAtTheDoorTests
         Assert.Equal(Pages.Map.RoundLeg.AtTheDoor, man.Leg);
         Assert.False(AnyRowGoesDown(map, floor), "he came back and the door is not his");
     }
-
-    private static string? LastBookOrPulse(Pages.Map map) => Pulse(map);
 
     /// <summary>
     /// <b>OFF HIS FLOOR HE IS NOWHERE.</b> On any other floor of the building no figure plated Gate is in the

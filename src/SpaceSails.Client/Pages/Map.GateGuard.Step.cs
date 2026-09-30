@@ -162,6 +162,14 @@ public partial class Map
     {
         man.RoundClock += dt;
         StepHimWhereHeIsGoing(man, him, dt, walls);
+
+        // The walk away is told once, the first time — into a free pulse slot, never over another line.
+        if (!man.RoundTold && man.Leg != RoundLeg.AtTheDoor && _pulse.Message is null)
+        {
+            man.RoundTold = true;
+            ShowPulseMessage(GateGuard.RoundLine);
+        }
+
         DeckReachability.Point here = new(him.Walk.X, him.Walk.Y);
 
         switch (man.Leg)
@@ -171,11 +179,6 @@ public partial class Map
                 {
                     man.Leg = RoundLeg.WalkingOut;
                     man.RoundClock = 0;
-                    if (!man.RoundTold)
-                    {
-                        man.RoundTold = true;
-                        ShowPulseMessage(GateGuard.RoundLine);
-                    }
                 }
 
                 break;
@@ -259,10 +262,13 @@ public partial class Map
 
     // ── THE EMPTY CHAIR ──────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>Absent: the chair is told once, the first time the captain comes within reach of the door.</summary>
+    /// <summary>Absent: the chair is told once, the first time the captain comes within reach of the door — and,
+    /// with the stringer's courtesy, only into a FREE pulse slot, so the car's own arrival line is not written over
+    /// and this one is not lost under it (watched headless: the two were said on the same frame).</summary>
     private void TheEmptyChairIsTold(ManAtTheDoor man)
     {
-        if (man.AbsentTold || !Within(_avatarX, _avatarY, man.Post.X, man.Post.Y, GateGuard.ReachDu))
+        if (man.AbsentTold || _pulse.Message is not null
+            || !Within(_avatarX, _avatarY, man.Post.X, man.Post.Y, GateGuard.ReachDu))
         {
             return;
         }
