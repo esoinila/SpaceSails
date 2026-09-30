@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Client.Rendering;
@@ -359,5 +359,66 @@ public sealed class ThePreservationOfficeKeepsItsHoursTests
             DeckReachability.Point door = HavenInterior.TheOfficeDoorstepAt(Ringside)!.Value;
             Assert.Equal(open, Hypot(x - door.X, y - door.Y) > DeckPlan.InteractRadius);
         }
+    }
+    /// <summary>
+    /// #1353 · <b>THE SHEET HAS A NAME ONLY IN ITS ROOM.</b> On the clerk's watch, with the door ajar and the sheet on
+    /// the desk, the page's own walked frame is drawn twice: from the corridor at the office's doorstep, where the
+    /// desk is in plain view through the doorway and its paper is a dot with no title; and from inside, a pace and a
+    /// half from the desk, where the title is on the glass. Kosh: the paper is a paper.
+    ///
+    /// <para><b>Proven RED</b> by the paper check taken out of the plate (<c>APaperKeptToItsRoom</c> answering false):
+    /// the title is legible from the corridor again.</para>
+    /// </summary>
+    [Fact]
+    public void TheSheetsTitleIsReadFromInsideTheOfficeAndNotFromTheCorridor()
+    {
+        Pages.Map map = OnTheHotelLevel("office-paper");
+        long his = TheClerksWatch(map);
+        At(map, PreservationOffice.SetsOffAt(his) + 600);
+        Frames(map, 1);
+        Assert.True(HavenInterior.TheSheetLiesIn(Deck(map)), "the desk is bare, so this proves nothing.");
+
+        var pen = new TheWordsOnTheGlass();
+        Set(map, "_deckView", new DeckView(pen));
+        Set(map, "_viewportWidth", 1200);
+        Set(map, "_viewportHeight", 700);
+
+        DeckReachability.Point door = HavenInterior.TheOfficeDoorstepAt(Ringside)!.Value;
+        StandAt(map, door.X, door.Y);
+        Invoke(map, "DrawWalkFrame");
+        Assert.Contains(HavenLevels.CabinDoorPlate(1), pen.Said);   // the frame was drawn, and it is the hotel level
+        Assert.DoesNotContain(PreservationOffice.SheetTitle, pen.Said);
+
+        DeckReachability.Point inside = InsideTheOffice();
+        StandAt(map, inside.X, inside.Y);
+        Assert.True(HavenInterior.InTheOffice(Ringside, inside.X, inside.Y, HavenLevels.ServiceLevel));
+        Invoke(map, "DrawWalkFrame");
+        Assert.Contains(PreservationOffice.SheetTitle, pen.Said);
+    }
+
+    /// <summary>A pen that keeps the words of the last frame and nothing else.</summary>
+    private sealed class TheWordsOnTheGlass : IRenderer
+    {
+        public List<string> Said { get; } = [];
+
+        public void BeginFrame(int widthPx, int heightPx, RgbaColor background) => Said.Clear();
+
+        public void EndFrame() { }
+
+        public int RegisterImage(string url) => 1;
+
+        public void DrawCircle(float x, float y, float r, RgbaColor? fill, RgbaColor stroke, float w = 1f) { }
+
+        public void DrawPolyline(ReadOnlySpan<float> pointsXY, RgbaColor stroke, float w = 1f) { }
+
+        public void DrawPolygon(ReadOnlySpan<float> pointsXY, RgbaColor? fill, RgbaColor stroke, float w = 1f) { }
+
+        public void DrawText(float x, float y, string text, RgbaColor color,
+            string font = "12px sans-serif", TextAlign align = TextAlign.Left) => Said.Add(text);
+
+        public void DrawImage(int id, float x, float y, float w, float h, float a = 1f) { }
+
+        public void DrawImageSlice(int id, float sx, float sy, float sw, float sh,
+            float x, float y, float w, float h, float a = 1f) { }
     }
 }
