@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -326,8 +326,9 @@ public sealed class NoTwoCaptionsShareOneBandTests
 
         // ── #1332 C · …AND THE PRESERVATION OFFICE, AJAR ON THE CLERK'S WATCH ─────────────────────────────
         //
-        // The one plate in a row of numbers that is longer than its door, and — while the door stands open — the
-        // sheet's own title on the desk behind it. Stood at the office's doorstep, under the plate.
+        // The one plate in a row of numbers that is longer than its door, folded to its door's width (#1353). Stood at
+        // the office's doorstep, under the plate — where the sheet on the desk behind it is a dot with no title (#1353:
+        // a paper is read from its room).
         DeckReachability.Point office = HavenInterior.TheOfficeDoorstepAt(PreservationOffice.HavenId)!.Value;
         yield return new Boot(
             "ringside-exchange · the Preservation office, ajar",
@@ -521,16 +522,19 @@ public sealed class NoTwoCaptionsShareOneBandTests
     }
 
     /// <summary>
-    /// #1332 C · <b>ONE PLATE IN THE ROW IS LONGER THAN ITS DOOR, AND IT SMEARS NOTHING.</b> At Ringside Exchange the
-    /// middle door of the cabin row wears the Preservation office's plate. The four door numbers either side stay
-    /// on one row and do not touch (#1279's law), and the office's plate — whatever row the band book gave it —
-    /// is drawn over none of them, nor over the sheet's title on the desk behind it.
+    /// #1332 C · #1353 · <b>ONE PLATE IN THE ROW IS LONGER THAN ITS DOOR, AND IT KEEPS TO ITS DOOR.</b> At Ringside
+    /// Exchange the middle door of the cabin row wears the Preservation office's plate. The four door numbers either
+    /// side stay on one row and do not touch (#1279's law); the office's plate is drawn over none of them, nor over
+    /// anything else; and — the QA finding of 2026-09-30 — every line of it stands inside its own door's frontage (the
+    /// row's pitch, centred on the door), clear of <c>CABIN 2</c>'s and <c>CABIN 4</c>'s columns, and its lines read
+    /// top to bottom are the plate's words, verbatim.
     ///
-    /// <para><b>Proven RED</b> by hanging the office's plate on the doorstep of cabin 2 instead of its own (it
-    /// prints through <c>CABIN 2</c>'s row).</para>
+    /// <para><b>Proven RED</b> by the fold taken out (the plate on one line runs 180 px across a 55 px door, over the
+    /// CABIN 2 and CABIN 4 columns), and — for #1332 C — by hanging the office's plate on the doorstep of cabin 2.
+    /// </para>
     /// </summary>
     [Fact]
-    public void TheOfficesPlateSmearsNoDoorNumberInTheRow()
+    public void TheOfficesPlateKeepsToItsOwnDoorAndSmearsNoDoorNumber()
     {
         IReadOnlyList<Caption> said = CaptionsOf(
             Boots().Single(b => b.Name == "ringside-exchange · the Preservation office, ajar"));
@@ -543,10 +547,29 @@ public sealed class NoTwoCaptionsShareOneBandTests
             Assert.True(row[i - 1].Right < row[i].Left, $"{row[i - 1].Where} touches {row[i].Where}");
         }
 
-        Caption plate = Assert.Single(said, c => c.Text == PreservationOffice.DoorPlate);
-        Assert.All(
-            said.Where(c => c.Text != PreservationOffice.DoorPlate),
-            c => Assert.False(plate.Meets(c), $"the office's plate is drawn over {c.Where}"));
+        string[] words = PreservationOffice.DoorPlate.Split(" · ");
+        var plate = said
+            .Where(c => c.Text == PreservationOffice.DoorPlate || words.Contains(c.Text))
+            .OrderBy(c => c.Y)
+            .ToList();
+        Assert.NotEmpty(plate);
+
+        // The door's frontage on the glass: the row's own pitch, centred on the door the plate names.
+        Caption cabin2 = row.Single(c => c.Text == HavenLevels.CabinDoorPlate(PreservationOffice.Cabin - 1));
+        Caption cabin4 = row.Single(c => c.Text == HavenLevels.CabinDoorPlate(PreservationOffice.Cabin + 1));
+        double doorX = (cabin2.X + cabin4.X) / 2, half = (cabin4.X - cabin2.X) / 4;
+        foreach (Caption line in plate)
+        {
+            Assert.True(line.Left >= doorX - half && line.Right <= doorX + half,
+                $"{line.Where} runs past its door's frontage x {doorX - half:0.#}…{doorX + half:0.#}.");
+            Assert.True(line.Left > cabin2.Right && line.Right < cabin4.Left,
+                $"{line.Where} is over CABIN 2's or CABIN 4's column ({cabin2.Where} / {cabin4.Where}).");
+            Assert.All(
+                said.Where(c => !plate.Contains(c)),
+                c => Assert.False(line.Meets(c), $"the office's plate is drawn over {c.Where}"));
+        }
+
+        Assert.Equal(PreservationOffice.DoorPlate, string.Join(" · ", plate.Select(c => c.Text)));
     }
 
     // ── AND THE WORDS THEMSELVES DID NOT MOVE ─────────────────────────────────────────────────────────
