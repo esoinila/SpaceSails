@@ -121,6 +121,16 @@ public static class FieldClue
             || UndergroundComplex.LiftCode.PaperIn(paperId) is not null;
     }
 
+    /// <summary>#1341 · <b>DOES THIS SHEET READ AS A CLUE?</b> True for every sheet the dice composed (a mention, a
+    /// description, a position — the three <see cref="Line"/>s are about THOSE), false for every sheet somebody
+    /// wrote (<see cref="IsAuthored"/>, asked of the page's source). A line item that says "Charged to
+    /// Preservation" is not "better than a name", and the reader must not say it is.</summary>
+    public static bool ReadsAsAClue(string paperId)
+    {
+        ArgumentNullException.ThrowIfNull(paperId);
+        return !IsAuthored(PageGranularity.SourceOf(paperId));
+    }
+
     /// <summary>#603 · WHAT IS ACTUALLY ON THE PAGE. Owner: <i>"if we open inventory and view the paper from
     /// there then?"</i>
     ///
