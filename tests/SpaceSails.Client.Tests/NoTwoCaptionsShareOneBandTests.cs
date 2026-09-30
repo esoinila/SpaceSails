@@ -303,6 +303,26 @@ public sealed class NoTwoCaptionsShareOneBandTests
             SimTime: 1000.0,
             Surface: null,
             AtLeast: 8);
+
+        // ── #1332 A · …AND THE SIX FLOORS EVERY OTHER HUB GREW ───────────────────────────────────────
+        //
+        // The same row of five leaves under every concourse now, each floor with a plate of its own — and
+        // some of those plates are longer than LOWER CONCOURSE, so each floor is swept here rather than
+        // assumed to read the way Selene Gate's does.
+        foreach (string id in HavenInterior.InteriorBodyIds
+                     .Where(HavenInterior.HasLowerLevel)
+                     .Where(id => !string.Equals(id, TheHaven, StringComparison.Ordinal)))
+        {
+            DeckReachability.Point landing = HavenInterior.TheCageLandingAt(id, 0)!.Value;
+            yield return new Boot(
+                $"{id} · the lower level",
+                HavenInterior.DockedDeck(id, level: HavenLevels.ServiceLevel)!,
+                new DeckView.State(landing.X, landing.Y, 0.0, 0, 0,
+                    ShuttleAway: false, ElectricUniverse: false, Docked: true),
+                SimTime: 1000.0,
+                Surface: null,
+                AtLeast: 8);
+        }
     }
 
     /// <summary>#1279 · The service level under Selene Gate's concourse, as the page builds it.</summary>
@@ -400,7 +420,7 @@ public sealed class NoTwoCaptionsShareOneBandTests
             + "#1218's ruling: a mark's second line FOLDS INTO ITS PLATE — one plate per anchor, the plate "
             + "grows a second row. Never a second caption at a second hand-typed lift.");
 
-        Assert.Equal(5, worlds);
+        Assert.Equal(11, worlds);   // #1332 A · five, and the six lower levels every other hub grew
         Assert.True(captions > 40, $"only {captions} caption(s) were laid in all — this sweep proves little.");
     }
 
@@ -521,6 +541,6 @@ public sealed class NoTwoCaptionsShareOneBandTests
             + $"intended and owner-sanctioned, re-pin BY MEASUREMENT:{Environment.NewLine}  "
             + PinLedger.Invocation);
 
-        Assert.Equal(5, pinned.Count);
+        Assert.Equal(11, pinned.Count);   // #1332 A · five, and the six lower levels every other hub grew
     }
 }

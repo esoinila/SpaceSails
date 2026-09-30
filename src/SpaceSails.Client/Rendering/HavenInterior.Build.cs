@@ -85,6 +85,15 @@ public static partial class HavenInterior
             }
         }
 
+        // #1202 · …and Rauha Lind at her own chair on her watch, the regulars' way: a BarPatron console of
+        // her own (HavenInterior.Stringer). Asked once, here, and handed to the droid fill, so the console and
+        // the figure cannot disagree.
+        SeatedRegular? stringer = TheStringersSeat(spec.BodyId, simTime, churn);
+        if (stringer is { } lind)
+        {
+            consoles.Add(new(DeckPlan.ConsoleKind.BarPatron, (float)lind.X, (float)lind.Y, lind.Label));
+        }
+
         // The station oracle (issue #425), if she's tuned to this bar this watch. A BarPatron console in
         // the port-back corner; the client's E-router matches her by name (OracleRant.Nickname) and hands
         // off to the oracle flow, never the generic quest-giver path. Absent watches leave the stool empty.
@@ -119,7 +128,7 @@ public static partial class HavenInterior
             droidCount: SeatedFigureCount + (fillWalkers is null ? 0 : Egress.BandSlots),
             fillDroids: (simTime, buffer) =>
             {
-                FillComplexDroids(simTime, buffer, backRoomOpen, serviceX, serviceY, regulars, oracleHere);
+                FillComplexDroids(simTime, buffer, backRoomOpen, serviceX, serviceY, regulars, oracleHere, stringer);
                 fillWalkers?.Invoke(buffer, SeatedFigureCount);
             },
             // #1199 · …and the walk answers FIRST, because it is the only room on this deck that reaches
@@ -149,7 +158,8 @@ public static partial class HavenInterior
     // at build time (fixed for the visit), so the droids sit exactly where their consoles do; only the
     // thermal jitter and the Magpie/barkeep pace read the live clock.
     private static void FillComplexDroids(double simTime, DeckPlan.Droid[] buffer, bool backRoomOpen,
-        double barkeepX, double barkeepServiceY, IReadOnlyList<SeatedRegular> regulars, bool oracleHere)
+        double barkeepX, double barkeepServiceY, IReadOnlyList<SeatedRegular> regulars, bool oracleHere,
+        SeatedRegular? stringer)
     {
         DeckPlan.Ship.FillDroids(simTime, buffer); // fills [0..3)
         double sway = 0.05 * System.Math.Sin(simTime * 0.0009);
@@ -193,7 +203,7 @@ public static partial class HavenInterior
         // #425 — the station oracle, hunched over her corner drink when the rota has her here this watch.
         // A seeded thermal shuffle + facing twitch (ReeverIdle) so she reads alive, muttering at the wall;
         // parked far off-frame on the watches she's drifted off (her stool simply empty, no console). Index
-        // 10, the buffer's last complex slot (droidCount 11).
+        // 10 (Rauha Lind, #1202, is 11 — droidCount SeatedFigureCount).
         if (oracleHere)
         {
             ulong oseed = RegularSeed("STATION-ORACLE", PatronRota.WatchIndex(simTime));
@@ -204,6 +214,19 @@ public static partial class HavenInterior
         else
         {
             buffer[10] = new DeckPlan.Droid(-9999, -9999, 0, "Oracle");
+        }
+
+        // #1202 · Rauha Lind at her own chair on her watch — the regulars' seeded shuffle and twitch — and
+        // parked off-frame every other watch and while she is elsewhere. Index 11 (SeatedFigureCount 12).
+        if (stringer is { } lind)
+        {
+            (double ljx, double ljy) = SpaceSails.Core.ReeverIdle.JitterAt(lind.Seed, simTime);
+            double lface = lind.Facing + SpaceSails.Core.ReeverIdle.FacingTwitchAt(lind.Seed, simTime);
+            buffer[11] = new DeckPlan.Droid(lind.X + ljx, lind.Y + ljy, lface, lind.ShortName);
+        }
+        else
+        {
+            buffer[11] = new DeckPlan.Droid(-9999, -9999, 0, SpaceSails.Core.CarryThePress.Plate);
         }
     }
 }

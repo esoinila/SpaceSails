@@ -27,23 +27,42 @@ public sealed class TheLevelUnderTheConcourseTests
     private static string Berth => HavenInterior.TheHavenWithFloors
         ?? throw new InvalidOperationException("no haven in the catalogue has a floor under it at all.");
 
-    private static DeckPlan Concourse => HavenInterior.DockedDeck(Berth)!;
+    /// <summary>#1332 A · <b>EVERY HUB IS A LOBBY</b> — every haven in the catalogue that has a floor under its
+    /// concourse, which since #1332 slice A is every haven with a hub. The laws below that are about THE LEVEL
+    /// (its cars, its corridor, its fire code, its way home, its doors and its one label) are stated over each
+    /// of them rather than over the one station they were first proved at; the laws about Selene Gate's own
+    /// observation walk stay on <see cref="Berth"/>. That the list is the whole catalogue is asserted, not
+    /// assumed (<see cref="EveryHubIsALobbyAndEveryLobbyHasOneFloorUnderIt"/>).</summary>
+    public static TheoryData<string> Lobbies
+    {
+        get
+        {
+            var lobbies = new TheoryData<string>();
+            foreach (string id in HavenInterior.InteriorBodyIds.Where(HavenInterior.HasLowerLevel))
+            {
+                lobbies.Add(id);
+            }
 
-    private static DeckPlan Below =>
-        HavenInterior.DockedDeck(Berth, level: HavenLevels.ServiceLevel)!;
+            return lobbies;
+        }
+    }
+
+    private static DeckPlan ConcourseOf(string berth) => HavenInterior.DockedDeck(berth)!;
+
+    private static DeckPlan BelowOf(string berth) =>
+        HavenInterior.DockedDeck(berth, level: HavenLevels.ServiceLevel)!;
 
     /// <summary>The lattice every sweep in this file walks, and the step it walks it at. The ring's own
     /// footprint with a margin, measured off the hall the level is laid under rather than typed — a basement
     /// swept over a box somebody guessed would be a sweep that proved whatever it happened to cover.</summary>
     private const double Step = 0.5;
 
-    private static (double MinX, double MinY, double MaxX, double MaxY) Bounds
+    private static (double MinX, double MinY, double MaxX, double MaxY) BoundsOf(string berth)
     {
-        get
         {
             double minX = double.MaxValue, minY = double.MaxValue;
             double maxX = double.MinValue, maxY = double.MinValue;
-            foreach (DeckPlan.Wall w in Below.Walls)
+            foreach (DeckPlan.Wall w in BelowOf(berth).Walls)
             {
                 minX = Math.Min(minX, Math.Min(w.X1, w.X2));
                 maxX = Math.Max(maxX, Math.Max(w.X1, w.X2));
@@ -155,43 +174,44 @@ public sealed class TheLevelUnderTheConcourseTests
     }
 
     /// <summary>
-    /// <b>SIX OF THE SEVEN HAVENS HAVE NO FLOOR UNDER THEM, AND ASKING FOR ONE GIVES THEM THEIR CONCOURSE.</b>
+    /// #1332 A · <b>EVERY HUB IS A LOBBY, AND EVERY LOBBY HAS ONE FLOOR UNDER IT.</b> Owner, 2026-09-29: <i>"The
+    /// big round immigration points already look like elevator lobbies, so we might as well have those hubs
+    /// have elevators that take to apartment-hotel-like, usually locked, spaces down below."</i>
     ///
-    /// <para>A station with no basement answers the concourse for any level at all — which is what keeps the
-    /// other six byte-identical whatever a caller passes, and what makes the whole feature additive rather
-    /// than a level term threaded through seven stations' geometry. It also holds the CAGES to one station:
-    /// three lift consoles appearing on a ring that has nothing under it would be an affordance with nothing
-    /// behind it (#212), pressed once and never again.</para>
+    /// <para>Every haven with a hub — every haven in the catalogue: they all share one twelve-gon — has exactly
+    /// the two floors <see cref="HavenLevels.Levels"/> names, three cars on its concourse, and a lower level
+    /// that is a DIFFERENT plan from its concourse. It is also the anti-vacuous half of every
+    /// <see cref="Lobbies"/> theory below: the list those laws run over is asserted to be the whole
+    /// catalogue, so a station that quietly lost its floor would not quietly drop out of the sweep.</para>
     ///
-    /// <para><b>Proven RED</b> by giving a second spec a <c>LowerSpec</c>: <c>red-eye: 3 lift console(s) on a
-    /// station with no floor under it.</c></para>
+    /// <para><b>Proven RED</b> by taking The Deep's <c>LowerSpec</c> off: the sweep's own list falls to six and
+    /// the count clause fires first (<c>Expected: 7, Actual: 6</c>) — which is the anti-vacuous half doing its
+    /// job, since every <see cref="Lobbies"/> theory would otherwise have quietly stopped asking about The
+    /// Deep. The per-haven clause behind it names the station (<c>the-deep: a hub with no floor under
+    /// it.</c>).</para>
     /// </summary>
     [Fact]
-    public void OnlyOneStationHasAFloorUnderItAndTheRestAreUntouched()
+    public void EveryHubIsALobbyAndEveryLobbyHasOneFloorUnderIt()
     {
-        int withFloors = 0;
-        foreach (string id in HavenInterior.InteriorBodyIds)
+        IReadOnlyList<string> havens = HavenInterior.InteriorBodyIds;
+        Assert.True(havens.Count >= 7, $"only {havens.Count} haven(s) in the catalogue — this proved nothing.");
+        Assert.Equal(havens.Count, Lobbies.Count);
+
+        foreach (string id in havens)
         {
-            int cages = HavenInterior.DockedDeck(id)!.Consoles
-                .Count(c => c.Kind == DeckPlan.ConsoleKind.HavenLift);
-
-            if (HavenInterior.HasLowerLevel(id))
-            {
-                withFloors++;
-                Assert.Equal(HavenLevels.Levels.Count, HavenInterior.LevelsOf(id).Count);
-                Assert.Equal(HavenLevels.Cages, cages);
-                continue;
-            }
-
-            Assert.Single(HavenInterior.LevelsOf(id));
-            Assert.Empty(HavenInterior.TheCagesAt(id));
-            Assert.True(cages == 0, $"{id}: {cages} lift console(s) on a station with no floor under it.");
+            Assert.True(HavenInterior.HasLowerLevel(id), $"{id}: a hub with no floor under it.");
+            Assert.Equal(HavenLevels.Levels, HavenInterior.LevelsOf(id));
+            Assert.Equal(HavenLevels.Cages, HavenInterior.TheCagesAt(id).Count);
             Assert.Equal(
-                Fingerprint(HavenInterior.DockedDeck(id)!),
-                Fingerprint(HavenInterior.DockedDeck(id, level: HavenLevels.ServiceLevel)!));
+                HavenLevels.Cages,
+                ConcourseOf(id).Consoles.Count(c => c.Kind == DeckPlan.ConsoleKind.HavenLift));
+            Assert.NotEqual(Fingerprint(ConcourseOf(id)), Fingerprint(BelowOf(id)));
         }
 
-        Assert.Equal(1, withFloors);
+        // …and a berth that is not a haven at all still has no floors and no cars.
+        Assert.False(HavenInterior.HasLowerLevel("luna"));
+        Assert.Empty(HavenInterior.TheCagesAt("luna"));
+        Assert.Empty(HavenInterior.LevelsOf("luna"));
     }
 
     // ── (b) THE CAGES ────────────────────────────────────────────────────────────────────────────────────
@@ -215,10 +235,11 @@ public sealed class TheLevelUnderTheConcourseTests
     /// honest shape of the break: an edge the station has already spent does not grow a second fixture, it
     /// silently loses one.</para>
     /// </summary>
-    [Fact]
-    public void TheThreeCarsStandOnThreeFreeEdgesAndOnTheSameSquareOnBothFloors()
+    [Theory]
+    [MemberData(nameof(Lobbies))]
+    public void TheThreeCarsStandOnThreeFreeEdgesAndOnTheSameSquareOnBothFloors(string berth)
     {
-        IReadOnlyList<DeckReachability.Point> cars = HavenInterior.TheCagesAt(Berth);
+        IReadOnlyList<DeckReachability.Point> cars = HavenInterior.TheCagesAt(berth);
         Assert.Equal(HavenLevels.Cages, cars.Count);
 
         for (int i = 0; i < cars.Count; i++)
@@ -233,10 +254,10 @@ public sealed class TheLevelUnderTheConcourseTests
         }
 
         // The same three squares carry a HavenLift console on the concourse and on the level below.
-        List<(double X, double Y)> above = Concourse.Consoles
+        List<(double X, double Y)> above = ConcourseOf(berth).Consoles
             .Where(c => c.Kind == DeckPlan.ConsoleKind.HavenLift)
             .Select(c => ((double)c.X, (double)c.Y)).OrderBy(p => p.Item1).ThenBy(p => p.Item2).ToList();
-        List<(double X, double Y)> below = Below.Consoles
+        List<(double X, double Y)> below = BelowOf(berth).Consoles
             .Where(c => c.Kind == DeckPlan.ConsoleKind.HavenLift)
             .Select(c => ((double)c.X, (double)c.Y)).OrderBy(p => p.Item1).ThenBy(p => p.Item2).ToList();
 
@@ -250,14 +271,31 @@ public sealed class TheLevelUnderTheConcourseTests
 
         // …and none of them on one of the three edges this ring already spent. The walk's own edge is asked
         // of the room rather than restated: #1199 owns which one it took.
-        DeckReachability.Point? mouth = HavenInterior.TheWalksMouthAt(Berth);
-        Assert.NotNull(mouth);
-        foreach (DeckReachability.Point car in cars)
+        //
+        // #1332 A · Asked only where there IS a walk: every other station's west face is a panel like any
+        // other, and Cinder Roost hangs its middle car on it.
+        if (HavenInterior.TheWalksMouthAt(berth) is { } mouth)
+        {
+            foreach (DeckReachability.Point car in cars)
+            {
+                Assert.True(
+                    Math.Abs(car.X - mouth.X) > DeckPlan.InteractRadius
+                    || Math.Abs(car.Y - mouth.Y) > DeckPlan.InteractRadius,
+                    "a cage stands on the observation walk's own edge.");
+            }
+        }
+
+        // #1332 A · …and never on a hatch that GROWS A ROOM. A car takes an edge's plate, and the one hatch on
+        // a ring that opens onto a back room (Cinder Roost's Bonded Stores, V-06, where the Magpie keeps his
+        // other post) is not a plate this feature may take: the crack job, the wing and the Magpie's rota
+        // would all be pointing at a lift. Proven RED by putting Cinder Roost back on Selene Gate's three
+        // edges: <c>cinder-roost: V-06 grows a wing and is not on the ring any more.</c>
+        foreach (string hatch in new[] { "V-06" }.Where(h => HavenInterior.HatchGrowsWing(berth, h)))
         {
             Assert.True(
-                Math.Abs(car.X - mouth!.Value.X) > DeckPlan.InteractRadius
-                || Math.Abs(car.Y - mouth.Value.Y) > DeckPlan.InteractRadius,
-                "a cage stands on the observation walk's own edge.");
+                ConcourseOf(berth).Consoles.Any(c => c.Kind == DeckPlan.ConsoleKind.Hatch
+                    && c.Label.EndsWith(hatch, StringComparison.Ordinal)),
+                $"{berth}: {hatch} grows a wing and is not on the ring any more.");
         }
     }
 
@@ -276,15 +314,16 @@ public sealed class TheLevelUnderTheConcourseTests
     /// <para><b>Proven RED</b> by removing the <c>sealedIdx</c> step over a cage — nine of the ring's own
     /// panels change their department and this case names them.</para>
     /// </summary>
-    [Fact]
-    public void TheCagesCostTheRingThreePlatesAndNotOneWall()
+    [Theory]
+    [MemberData(nameof(Lobbies))]
+    public void TheCagesCostTheRingThreePlatesAndNotOneWall(string berth)
     {
         // The concourse still hangs exactly one console on each of its sealed/car edges: the ring deals
         // twelve faces, three of them are the tube, the bar door and the walk, and the other nine carry a
         // panel. Three of those nine are cars now.
-        int hatches = Concourse.Consoles.Count(c => c.Kind == DeckPlan.ConsoleKind.Hatch
+        int hatches = ConcourseOf(berth).Consoles.Count(c => c.Kind == DeckPlan.ConsoleKind.Hatch
             && c.Label.Contains('-', StringComparison.Ordinal));
-        int cages = Concourse.Consoles.Count(c => c.Kind == DeckPlan.ConsoleKind.HavenLift);
+        int cages = ConcourseOf(berth).Consoles.Count(c => c.Kind == DeckPlan.ConsoleKind.HavenLift);
         Assert.Equal(HavenLevels.Cages, cages);
 
         // The ring's nine panels, plus the bar's two back-room leaves, are the Hatch consoles on this deck.
@@ -293,7 +332,7 @@ public sealed class TheLevelUnderTheConcourseTests
 
         // Every department id on the ring is still DISTINCT: the counter stepped over the cars rather than
         // being reset by them, which is what stops two edges claiming one designation.
-        List<string> ids = Concourse.Consoles
+        List<string> ids = ConcourseOf(berth).Consoles
             .Where(c => c.Kind is DeckPlan.ConsoleKind.Hatch or DeckPlan.ConsoleKind.HavenLift)
             .Select(c => c.Label[(c.Label.LastIndexOf('·') + 1)..].Trim())
             .ToList();
@@ -312,18 +351,19 @@ public sealed class TheLevelUnderTheConcourseTests
     /// (<c>HallApothem * 0.85</c>): the block seals the corridor and the walk from the car reaches nothing —
     /// <c>2021 of 2021 standable tile(s) down below cannot be walked to from the car.</c></para>
     /// </summary>
-    [Fact]
-    public void EveryStandableTileOfTheLowerConcourseIsReachable()
+    [Theory]
+    [MemberData(nameof(Lobbies))]
+    public void EveryStandableTileOfTheLowerConcourseIsReachable(string berth)
     {
-        IReadOnlyList<SurfaceCollision.Segment> walls = Below.CollisionField;
-        DeckReachability.Point landing = HavenInterior.TheCageLandingAt(Berth, 0)!.Value;
+        IReadOnlyList<SurfaceCollision.Segment> walls = BelowOf(berth).CollisionField;
+        DeckReachability.Point landing = HavenInterior.TheCageLandingAt(berth, 0)!.Value;
 
         IReadOnlyCollection<DeckReachability.Point> reached =
-            DeckReachability.Reachable(landing, walls, DeckPlan.AvatarRadius, Bounds, Step);
+            DeckReachability.Reachable(landing, walls, DeckPlan.AvatarRadius, BoundsOf(berth), Step);
         var got = new HashSet<(int, int)>(
             reached.Select(p => ((int)Math.Round(p.X / Step), (int)Math.Round(p.Y / Step))));
 
-        (double minX, double minY, double maxX, double maxY) = Bounds;
+        (double minX, double minY, double maxX, double maxY) = BoundsOf(berth);
         int standable = 0, missed = 0;
         var worst = new List<string>();
         for (double x = minX; x <= maxX + 1e-9; x += Step)
@@ -331,7 +371,7 @@ public sealed class TheLevelUnderTheConcourseTests
             for (double y = minY; y <= maxY + 1e-9; y += Step)
             {
                 if (!DeckReachability.Standable(x, y, DeckPlan.AvatarRadius, walls)
-                    || !OnTheCorridorFloor(x, y))
+                    || !OnTheCorridorFloor(berth, x, y))
                 {
                     continue;
                 }
@@ -369,31 +409,31 @@ public sealed class TheLevelUnderTheConcourseTests
     ///
     /// <para>The cabin box is read off the DRAWN walls and leaves rather than off the geometry that placed
     /// them, so the exclusion cannot quietly widen with a row that moved.</para></summary>
-    private static bool OnTheCorridorFloor(double x, double y)
+    private static bool OnTheCorridorFloor(string berth, double x, double y)
     {
-        DeckReachability.Point centre = TheMiddleOfTheRing;
+        DeckReachability.Point centre = MiddleOfTheRingOf(berth);
         double dx = x - centre.X, dy = y - centre.Y;
-        if (Math.Sqrt((dx * dx) + (dy * dy)) > RingApothem - DeckPlan.AvatarRadius)
+        if (Math.Sqrt((dx * dx) + (dy * dy)) > RingApothemOf(berth) - DeckPlan.AvatarRadius)
         {
             return false;
         }
 
-        (double cx0, double cy0, double cx1, double cy1) = TheCabinRowBox;
+        (double cx0, double cy0, double cx1, double cy1) = CabinRowBoxOf(berth);
         return x < cx0 - DeckPlan.AvatarRadius || x > cx1 + DeckPlan.AvatarRadius
             || y < cy0 - DeckPlan.AvatarRadius || y > cy1 + DeckPlan.AvatarRadius;
     }
 
     /// <summary>The block of cabins, as the plan drew it — <c>(west, front, east, back)</c>. Off the leaves
     /// and the party walls, never off the placer.</summary>
-    private static (double X0, double Y0, double X1, double Y1) TheCabinRowBox
+    private static (double X0, double Y0, double X1, double Y1) CabinRowBoxOf(string berth)
     {
-        get
         {
-            List<DeckPlan.Door> leaves = Below.Doors.Where(d => d.Locked).ToList();
+            DeckPlan below = BelowOf(berth);
+            List<DeckPlan.Door> leaves = below.Doors.Where(d => d.Locked).ToList();
             Assert.Equal(HavenLevels.Cabins, leaves.Count);
             double face = leaves.Min(d => (double)d.Y1);
 
-            List<DeckPlan.Wall> inner = Below.Walls.Where(w => !w.IsHull).ToList();
+            List<DeckPlan.Wall> inner = below.Walls.Where(w => !w.IsHull).ToList();
             double back = inner
                 .Where(w => Math.Abs(w.Y1 - w.Y2) < 1e-3 && w.Y1 > face + 0.5)
                 .Min(w => (double)w.Y1);
@@ -402,13 +442,12 @@ public sealed class TheLevelUnderTheConcourseTests
         }
     }
 
-    private static DeckReachability.Point TheMiddleOfTheRing
+    private static DeckReachability.Point MiddleOfTheRingOf(string berth)
     {
-        get
         {
-            IReadOnlyList<DeckReachability.Point> cars = HavenInterior.TheCagesAt(Berth);
+            IReadOnlyList<DeckReachability.Point> cars = HavenInterior.TheCagesAt(berth);
             IReadOnlyList<DeckReachability.Point> landings =
-                [.. Enumerable.Range(0, cars.Count).Select(i => HavenInterior.TheCageLandingAt(Berth, i)!.Value)];
+                [.. Enumerable.Range(0, cars.Count).Select(i => HavenInterior.TheCageLandingAt(berth, i)!.Value)];
 
             // The cars sit nine tenths of the way out and their landings a fixed pace further in, both along
             // the line to the middle — so the middle is where those three lines meet, and it is recovered
@@ -418,8 +457,8 @@ public sealed class TheLevelUnderTheConcourseTests
             {
                 double ux = landings[i].X - cars[i].X, uy = landings[i].Y - cars[i].Y;
                 double len = Math.Sqrt((ux * ux) + (uy * uy));
-                cx += cars[i].X + (ux / len * OutToTheMiddle(i));
-                cy += cars[i].Y + (uy / len * OutToTheMiddle(i));
+                cx += cars[i].X + (ux / len * OutToTheMiddle(berth, i));
+                cy += cars[i].Y + (uy / len * OutToTheMiddle(berth, i));
             }
 
             return new DeckReachability.Point(cx / cars.Count, cy / cars.Count);
@@ -428,9 +467,9 @@ public sealed class TheLevelUnderTheConcourseTests
 
     /// <summary>How far the middle is from car <paramref name="i"/> — solved off the pair of cars opposite it
     /// rather than assumed, so nothing in this file holds a copy of the ring's radius.</summary>
-    private static double OutToTheMiddle(int i)
+    private static double OutToTheMiddle(string berth, int i)
     {
-        IReadOnlyList<DeckReachability.Point> cars = HavenInterior.TheCagesAt(Berth);
+        IReadOnlyList<DeckReachability.Point> cars = HavenInterior.TheCagesAt(berth);
         double best = 0;
         for (int j = 0; j < cars.Count; j++)
         {
@@ -446,13 +485,12 @@ public sealed class TheLevelUnderTheConcourseTests
         return best / 2.0;
     }
 
-    private static double RingApothem
+    private static double RingApothemOf(string berth)
     {
-        get
         {
-            DeckReachability.Point centre = TheMiddleOfTheRing;
+            DeckReachability.Point centre = MiddleOfTheRingOf(berth);
             double best = double.MaxValue;
-            foreach (DeckPlan.Wall w in Below.Walls.Where(w => w.IsHull))
+            foreach (DeckPlan.Wall w in BelowOf(berth).Walls.Where(w => w.IsHull))
             {
                 double mx = ((double)w.X1 + w.X2) / 2, my = ((double)w.Y1 + w.Y2) / 2;
                 double dx = mx - centre.X, dy = my - centre.Y;
@@ -486,8 +524,9 @@ public sealed class TheLevelUnderTheConcourseTests
     /// <para><b>Proven RED</b> by deepening a cabin past the threshold: <c>a cabin is 8.5 du on its longest
     /// side and the code lets a room off at 8.0 — it has one leaf and no exemption to stand on.</c></para>
     /// </summary>
-    [Fact]
-    public void TheLowerFloorMeetsTheFireCodeWithNoNewExemption()
+    [Theory]
+    [MemberData(nameof(Lobbies))]
+    public void TheLowerFloorMeetsTheFireCodeWithNoNewExemption(string berth)
     {
         Assert.True(
             UndergroundComplex.MeetsFireCode(HavenLevels.Cages, UndergroundComplex.FireCodeExemption.None),
@@ -497,10 +536,10 @@ public sealed class TheLevelUnderTheConcourseTests
         // …and the three are REAL exits: each is a console on this floor's own plan.
         Assert.Equal(
             HavenLevels.Cages,
-            Below.Consoles.Count(c => c.Kind == DeckPlan.ConsoleKind.HavenLift));
+            BelowOf(berth).Consoles.Count(c => c.Kind == DeckPlan.ConsoleKind.HavenLift));
 
         // The cabins. Longest side against the law's own threshold, measured off the drawn walls.
-        (double width, double depth) = TheCabinBox;
+        (double width, double depth) = CabinBoxOf(berth);
         double longest = Math.Max(width, depth);
         Assert.True(
             longest <= UndergroundComplex.FireCodeSmallRoomDu,
@@ -517,14 +556,14 @@ public sealed class TheLevelUnderTheConcourseTests
     /// <summary>One cabin's box, measured off the drawn party walls rather than off the geometry that drew
     /// them — a guard that asked the same expression the build asked would agree with whatever the build
     /// did.</summary>
-    private static (double Width, double Depth) TheCabinBox
+    private static (double Width, double Depth) CabinBoxOf(string berth)
     {
-        get
         {
-            IReadOnlyList<string> plates = HavenInterior.CabinPlatesAt(Berth);
+            IReadOnlyList<string> plates = HavenInterior.CabinPlatesAt(berth);
             Assert.Equal(HavenLevels.Cabins, plates.Count);
 
-            List<DeckPlan.Door> leaves = Below.Doors.Where(d => d.Locked).ToList();
+            DeckPlan below = BelowOf(berth);
+            List<DeckPlan.Door> leaves = below.Doors.Where(d => d.Locked).ToList();
             Assert.Equal(HavenLevels.Cabins, leaves.Count);
 
             // The row's own front: every leaf is on it, so its y is the corridor face.
@@ -532,7 +571,7 @@ public sealed class TheLevelUnderTheConcourseTests
             Assert.All(leaves, d => Assert.Equal(face, d.Y1, 3));
 
             // The back of the row is the nearest wall running parallel to that face, north of it.
-            double back = Below.Walls
+            double back = below.Walls
                 .Where(w => Math.Abs(w.Y1 - w.Y2) < 1e-3 && w.Y1 > face + 0.5 && !w.IsHull)
                 .Select(w => (double)w.Y1)
                 .DefaultIfEmpty(double.NaN)
@@ -565,26 +604,28 @@ public sealed class TheLevelUnderTheConcourseTests
     /// <para><b>Proven RED</b> by taking the CONCOURSE row off the lower panel (the car only goes down):
     /// <c>the panel on the service level offers no way back to the concourse — #600 in a new coat.</c></para>
     /// </summary>
-    [Fact]
-    public void EverySquareDownBelowReachesACarThatRidesBackToAGangway()
+    [Theory]
+    [MemberData(nameof(Lobbies))]
+    public void EverySquareDownBelowReachesACarThatRidesBackToAGangway(string berth)
     {
-        IReadOnlyList<SurfaceCollision.Segment> below = Below.CollisionField;
-        var cars = new List<DeckReachability.Point>(HavenInterior.TheCagesAt(Berth));
+        IReadOnlyList<SurfaceCollision.Segment> below = BelowOf(berth).CollisionField;
+        var cars = new List<DeckReachability.Point>(HavenInterior.TheCagesAt(berth));
         Assert.NotEmpty(cars);
 
         // LEG TWO, once and for all three cars: the panel on this floor offers the concourse.
-        IReadOnlyList<UndergroundComplex.LiftStop> panel = HavenLevels.Panel(HavenLevels.ServiceLevel);
+        IReadOnlyList<UndergroundComplex.LiftStop> panel =
+            HavenLevels.Panel(HavenLevels.ServiceLevel, HavenInterior.TheLowerStopAt(berth));
         Assert.True(
             panel.Any(s => s.Level == HavenLevels.Concourse && s.Refusal is null && !s.IsCurrent),
             "the panel on the service level offers no way back to the concourse — #600 in a new coat.");
 
         // LEG THREE, once per car: the gangway is reachable from the square its doors open on upstairs.
-        IReadOnlyList<SurfaceCollision.Segment> above = Concourse.CollisionField;
+        IReadOnlyList<SurfaceCollision.Segment> above = ConcourseOf(berth).CollisionField;
         (double gx, double gy, _) = HavenInterior.BarThreshold;
         var gangway = new DeckReachability.Point(2.5, 8);   // the airlock corridor PullAvatarAboard uses
         for (int cage = 0; cage < cars.Count; cage++)
         {
-            DeckReachability.Point landing = HavenInterior.TheCageLandingAt(Berth, cage)!.Value;
+            DeckReachability.Point landing = HavenInterior.TheCageLandingAt(berth, cage)!.Value;
             Assert.True(
                 DeckReachability.Standable(landing.X, landing.Y, DeckPlan.AvatarRadius, above),
                 $"car {cage}'s landing on the concourse is solid ground.");
@@ -599,14 +640,14 @@ public sealed class TheLevelUnderTheConcourseTests
         }
 
         // LEG ONE, swept: every standable tile down below reaches a car.
-        (double minX, double minY, double maxX, double maxY) = Bounds;
+        (double minX, double minY, double maxX, double maxY) = BoundsOf(berth);
         int seen = 0, stranded = 0;
         var worst = new List<string>();
         for (double x = minX; x <= maxX + 1e-9; x += Step)
         {
             for (double y = minY; y <= maxY + 1e-9; y += Step)
             {
-                if (!DeckReachability.Standable(x, y, DeckPlan.AvatarRadius, below) || !OnTheCorridorFloor(x, y))
+                if (!DeckReachability.Standable(x, y, DeckPlan.AvatarRadius, below) || !OnTheCorridorFloor(berth, x, y))
                 {
                     continue;
                 }
@@ -614,7 +655,7 @@ public sealed class TheLevelUnderTheConcourseTests
                 seen++;
                 var from = new DeckReachability.Point(x, y);
                 if (cars.Any(car =>
-                        DeckReachability.CanReach(from, car, below, DeckPlan.AvatarRadius, Bounds)))
+                        DeckReachability.CanReach(from, car, below, DeckPlan.AvatarRadius, BoundsOf(berth))))
                 {
                     continue;
                 }
@@ -668,8 +709,8 @@ public sealed class TheLevelUnderTheConcourseTests
         Assert.False(HavenInterior.InTheGallery(Berth, rail.X, rail.Y, HavenLevels.ServiceLevel));
 
         // …and the floor below says what it is, everywhere on it, through the plan's own location clause.
-        Assert.Equal(HavenLevels.LowerConcoursePlate, Below.Location(rail.X, rail.Y));
-        Assert.Equal(HavenLevels.LowerConcoursePlate, Below.Location(2.5, 40));
+        Assert.Equal(HavenLevels.LowerConcoursePlate, BelowOf(Berth).Location(rail.X, rail.Y));
+        Assert.Equal(HavenLevels.LowerConcoursePlate, BelowOf(Berth).Location(2.5, 40));
     }
 
     // ── (g) THE CABIN LEAVES ─────────────────────────────────────────────────────────────────────────────
@@ -688,10 +729,11 @@ public sealed class TheLevelUnderTheConcourseTests
     ///
     /// <para><b>Proven RED</b> by drawing one leaf unlocked: <c>1 cabin leaf/leaves are not locked.</c></para>
     /// </summary>
-    [Fact]
-    public void TheCabinsAreNumberedLockedAndNobodys()
+    [Theory]
+    [MemberData(nameof(Lobbies))]
+    public void TheCabinsAreNumberedLockedAndNobodys(string berth)
     {
-        List<DeckPlan.ConsoleSpot> plates = Below.Consoles
+        List<DeckPlan.ConsoleSpot> plates = BelowOf(berth).Consoles
             .Where(c => c.Kind == DeckPlan.ConsoleKind.Hatch)
             .ToList();
         Assert.Equal(HavenLevels.Cabins, plates.Count);
@@ -705,18 +747,18 @@ public sealed class TheLevelUnderTheConcourseTests
         {
             string painted = HavenLevels.CabinDoorPlate(i + 1);
             Assert.Contains(plates, p => string.Equals(p.Label, painted, StringComparison.Ordinal));
-            Assert.Equal(painted, HavenInterior.CabinPlatesAt(Berth)[i][..painted.Length]);
+            Assert.Equal(painted, HavenInterior.CabinPlatesAt(berth)[i][..painted.Length]);
             Assert.EndsWith(HavenLevels.CabinTenancy, HavenLevels.CabinPlate(i + 1), StringComparison.Ordinal);
         }
 
-        Assert.Equal(HavenLevels.Cabins, Below.Doors.Count(d => d.Locked));
-        Assert.Equal(HavenLevels.Cabins, Below.Doors.Length);
+        Assert.Equal(HavenLevels.Cabins, BelowOf(berth).Doors.Count(d => d.Locked));
+        Assert.Equal(HavenLevels.Cabins, BelowOf(berth).Doors.Length);
 
         // Nobody is named on this floor. Every string the plan carries is checked against the game's own
         // roster of people, because a plate that learnt a name is the one thing this level may not do.
         var everyString = new List<string>();
-        everyString.AddRange(Below.Consoles.Select(c => c.Label));
-        everyString.AddRange(Below.RoomLabels.Select(l => l.Text));
+        everyString.AddRange(BelowOf(berth).Consoles.Select(c => c.Label));
+        everyString.AddRange(BelowOf(berth).RoomLabels.Select(l => l.Text));
         foreach (string regular in PatronRota.Roster)
         {
             Assert.DoesNotContain(everyString, s => s.Contains(regular, StringComparison.OrdinalIgnoreCase));
@@ -725,33 +767,68 @@ public sealed class TheLevelUnderTheConcourseTests
 
     /// <summary>
     /// <b>THE DOOR PLATE IS THE ONLY SENTENCE THIS LEVEL SAYS ABOUT ITSELF.</b> The concourse side of each
-    /// car wears <see cref="HavenLevels.NoPublicAccessPlate"/> — the inspectorate register every maintenance
-    /// sign in this game is stencilled in — and the floor below carries exactly one label, its own name.
-    /// Nothing explains anything: there is no welcome poster, no plaque, no muster point and no advertising
-    /// down there, because nobody is being welcomed.
+    /// car wears the station's own plate — <see cref="HavenLevels.NoPublicAccessPlate"/> at Selene Gate, the
+    /// inspectorate register every maintenance sign in this game is stencilled in, and at every other haven
+    /// its own line of Fable's (#1332 A: <see cref="HavenLevels.AllProse"/>) — and the floor below carries
+    /// exactly one label, its own name. Nothing explains anything: there is no welcome poster, no plaque, no
+    /// muster point and no advertising down there, because nobody is being welcomed.
     ///
-    /// <para><b>Proven RED</b> by adding any second label to the lower build.</para>
+    /// <para><b>Proven RED</b> by adding any second label to the lower build; and (#1332 A) by painting Selene
+    /// Gate's floor name on every station's floor: <c>the-space-bar: the floor carries 'LOWER CONCOURSE',
+    /// not its own plate.</c></para>
     /// </summary>
-    [Fact]
-    public void ThePlatesAreTheOnlyProseAndTheFloorCarriesOneLabel()
+    [Theory]
+    [MemberData(nameof(Lobbies))]
+    public void ThePlatesAreTheOnlyProseAndTheFloorCarriesOneLabel(string berth)
     {
-        List<DeckPlan.ConsoleSpot> cars = Concourse.Consoles
+        string plate = HavenInterior.TheLowerPlateAt(berth)!;
+        string overTheCars = berth == Berth ? HavenLevels.NoPublicAccessPlate : plate;
+        if (berth == Berth)
+        {
+            Assert.Equal(HavenLevels.LowerConcoursePlate, plate);
+        }
+        else
+        {
+            Assert.Contains(plate, HavenLevels.AllProse());
+        }
+
+        List<DeckPlan.ConsoleSpot> cars = ConcourseOf(berth).Consoles
             .Where(c => c.Kind == DeckPlan.ConsoleKind.HavenLift).ToList();
         Assert.Equal(HavenLevels.Cages, cars.Count);
-        Assert.All(cars, c => Assert.Contains(HavenLevels.NoPublicAccessPlate, c.Label, StringComparison.Ordinal));
+        Assert.All(cars, c => Assert.Contains(overTheCars, c.Label, StringComparison.Ordinal));
 
-        Assert.Single(Below.RoomLabels);
-        Assert.Equal(HavenLevels.LowerConcoursePlate, Below.RoomLabels[0].Text);
+        DeckPlan below = BelowOf(berth);
+        Assert.Single(below.RoomLabels);
+        Assert.True(
+            string.Equals(plate, below.RoomLabels[0].Text, StringComparison.Ordinal),
+            $"{berth}: the floor carries '{below.RoomLabels[0].Text}', not its own plate.");
+        Assert.Equal(plate, below.Location(2.5, 40));
 
         // Every console down there is a cabin plate or a car. Nothing else is planted on this floor.
         Assert.All(
-            Below.Consoles,
+            below.Consoles,
             c => Assert.True(
                 c.Kind is DeckPlan.ConsoleKind.Hatch or DeckPlan.ConsoleKind.HavenLift,
                 $"a {c.Kind} console stands on the service level: '{c.Label}'."));
     }
 
     // ── (h) THE STOP LIST ────────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>#1332 A · Every lobby, on both of its floors.</summary>
+    public static TheoryData<string, int> LobbiesAndFloors
+    {
+        get
+        {
+            var rows = new TheoryData<string, int>();
+            foreach (string id in HavenInterior.InteriorBodyIds.Where(HavenInterior.HasLowerLevel))
+            {
+                rows.Add(id, HavenLevels.Concourse);
+                rows.Add(id, HavenLevels.ServiceLevel);
+            }
+
+            return rows;
+        }
+    }
 
     /// <summary>
     /// <b>THE PANEL OFFERS BOTH FLOORS FROM EITHER FLOOR, AND MARKS THE ONE YOU ARE ON.</b> #600's whole bug
@@ -760,19 +837,25 @@ public sealed class TheLevelUnderTheConcourseTests
     /// <para>And it is <see cref="UndergroundComplex.LiftStop"/> that is being handed back — the same row
     /// <c>LiftPanel.razor</c> has drawn since #600 — so this feature's surface is the one the player already
     /// knows how to read, and a second lift panel is not a thing this game now has.</para>
+    ///
+    /// <para>#1332 A · At every haven, and with that haven's own word on the lower button: its plate's first
+    /// word(s), which at Selene Gate is SERVICE LEVEL to the byte.</para>
     /// </summary>
     [Theory]
-    [InlineData(HavenLevels.Concourse)]
-    [InlineData(HavenLevels.ServiceLevel)]
-    public void ThePanelOffersBothFloorsFromEitherOne(int level)
+    [MemberData(nameof(LobbiesAndFloors))]
+    public void ThePanelOffersBothFloorsFromEitherOne(string berth, int level)
     {
-        IReadOnlyList<UndergroundComplex.LiftStop> stops = HavenLevels.Panel(level);
+        string below = HavenInterior.TheLowerStopAt(berth)!;
+        Assert.Equal(
+            berth == Berth ? HavenLevels.ServiceLevelPlate : HavenLevels.StopNameOf(HavenInterior.TheLowerPlateAt(berth)!),
+            below);
+        IReadOnlyList<UndergroundComplex.LiftStop> stops = HavenLevels.Panel(level, below);
         Assert.Equal(HavenLevels.Levels.Count, stops.Count);
         Assert.Single(stops, s => s.IsCurrent);
         Assert.Equal(level, stops.Single(s => s.IsCurrent).Level);
         Assert.All(stops, s => Assert.Null(s.Refusal));
         Assert.All(stops, s => Assert.True(s.Pressurised, "a haven's floor does not hold air."));
-        Assert.All(stops, s => Assert.Equal(HavenLevels.NameOf(s.Level), s.Name));
+        Assert.All(stops, s => Assert.Equal(HavenLevels.NameOf(s.Level, below), s.Name));
 
         // …and the ride the press asks for is the OTHER floor, never the one under the captain's feet.
         foreach (UndergroundComplex.LiftStop stop in stops)

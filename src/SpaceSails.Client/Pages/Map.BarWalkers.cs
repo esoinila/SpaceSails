@@ -181,8 +181,16 @@ public partial class Map
     private readonly HashSet<string> _barDealt = new(StringComparer.Ordinal);
 
     /// <summary>#731 · The room as this evening has left it — handed to the deck build, the droid fill and the
-    /// barkeep's line through one call, so the three of them cannot come to three views of who is here.</summary>
-    private HavenInterior.RoomChurn TheBarsChurn => new(_barLeft, _barCameIn);
+    /// barkeep's line through one call, so the three of them cannot come to three views of who is here.
+    ///
+    /// <para>#1202 · …and Rauha Lind is in its <c>Left</c> while she is elsewhere — aboard on a contract, or at her
+    /// pages in the gallery (<see cref="TheStringerIsElsewhere"/>) — so her own chair is empty and her console
+    /// gone, and she is never in two rooms at once. A copy: the room's own memory is not written.</para></summary>
+    private HavenInterior.RoomChurn TheBarsChurn =>
+        new(TheStringerIsElsewhere()
+                ? new HashSet<string>(_barLeft, StringComparer.Ordinal) { CarryThePress.Giver }
+                : _barLeft,
+            _barCameIn);
 
     /// <summary>#731 · How far into the frozen docking watch the clock has got. The SCHEDULE is a function of
     /// <see cref="BarWatch"/> and does not move while it is being read; this is only the hand crossing the
@@ -266,6 +274,7 @@ public partial class Map
             // counter in it, and stays where the counter is.
             StepTheBarsFeet(dtRealSeconds, bar);
             AdvanceTheWalk(bar);
+            TellTheFirstRideDown(bar.BodyId);   // #1332 A · …and, once per station, what a lobby's car is for
             return;
         }
 

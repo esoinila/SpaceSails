@@ -173,6 +173,13 @@ public static partial class HavenInterior
             }
         }
 
+        // #1202 · …and Rauha Lind's chair on her watch, reserved whether or not she is in it, so nobody coming
+        // out of the back is ever allotted the seat that is hers (HavenInterior.Stringer).
+        if (TheStringersChair(bodyId, simTime) is { } hers)
+        {
+            taken.Add(hers);
+        }
+
         var free = new List<int>(PatronSeats.Length);
         for (int i = 0; i < PatronSeats.Length; i++)
         {

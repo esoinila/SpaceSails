@@ -69,10 +69,21 @@ public static partial class HavenInterior
     /// demand rather than a static field, for the reason at the head of this file.</summary>
     private static int[] CageEdges => [CageEdgeNorthEast, CageEdgeSouthWest, CageEdgeEast];
 
+    /// <summary>#1332 A · The due-west face (180°) — Selene Gate's observation walk, and so never a car there.
+    /// Cinder Roost takes it for its middle car because its south-west face (6) is V-06, the Bonded Stores
+    /// hatch the Magpie's back room grows behind: a car on that edge would eat the one hatch on the ring that
+    /// opens.</summary>
+    private const int CageEdgeWest = 5;
+
+    /// <summary>#1332 A · The edges THIS station's cars stand on — its own list when it names one, Selene
+    /// Gate's proven three otherwise, and none at a station with no floor under it.</summary>
+    private static int[] CageEdgesOf(StationSpec spec) =>
+        spec.Lower is null ? [] : spec.Lower.Edges ?? CageEdges;
+
     /// <summary>#1253 · Is this edge of the ring a car? Asked by the concourse's own build loop, so the ring
     /// has one opinion about which of its twelve faces carry lifts.</summary>
     private static bool ACageStandsOnEdge(StationSpec spec, int edge) =>
-        spec.Lower is not null && System.Array.IndexOf(CageEdges, edge) >= 0;
+        spec.Lower is not null && System.Array.IndexOf(CageEdgesOf(spec), edge) >= 0;
 
     /// <summary>#1253 · Where a cage's console hangs on the ring — the SAME place the department panel it
     /// replaced would have stood (nine tenths of the way out to the edge's middle), and the same place on
@@ -98,13 +109,14 @@ public static partial class HavenInterior
     /// </summary>
     public static IReadOnlyList<DeckReachability.Point> TheCagesAt(string bodyId)
     {
-        if (!HasLowerLevel(bodyId))
+        if (System.Array.Find(Specs, s => s.BodyId == bodyId) is not { Lower: not null } spec)
         {
             return [];
         }
 
-        var cars = new List<DeckReachability.Point>(CageEdges.Length);
-        foreach (int edge in CageEdges)
+        int[] edges = CageEdgesOf(spec);
+        var cars = new List<DeckReachability.Point>(edges.Length);
+        foreach (int edge in edges)
         {
             (float x, float y) = TheCageOnEdge(edge);
             cars.Add(new DeckReachability.Point(x, y));
@@ -150,12 +162,29 @@ public static partial class HavenInterior
     /// to read this ring's panels can tell the three cars apart without one word being written for him. That
     /// legibility IS the mechanic: which car he took is the thing the captain has to read.</summary>
     private static string CagePlateAbove(StationSpec spec, int edge) =>
-        $"\U0001F6D7 {HavenLevels.NoPublicAccessPlate} · {spec.Authority[0]}-{edge:D2}";
+        $"\U0001F6D7 {spec.Lower!.Plate} · {spec.Authority[0]}-{edge:D2}";
 
     /// <summary>#1253 · …and the plate on the other side of the same door. Down among the staff it is not a
     /// warning, it is the lift — Core's own cage sign, and the same id.</summary>
     private static string CagePlateBelow(StationSpec spec, int edge) =>
         $"{UndergroundComplex.CageSign} · {spec.Authority[0]}-{edge:D2}";
+
+    /// <summary>#1332 A · <b>WHAT THIS STATION'S LOWER BUTTON SAYS</b> — its plate's first word(s)
+    /// (<see cref="HavenLevels.StopNameOf"/>), or null at a berth with no floor under it. Selene Gate's plate
+    /// over the car is <see cref="HavenLevels.NoPublicAccessPlate"/>, so its button reads
+    /// <see cref="HavenLevels.ServiceLevelPlate"/> exactly as it always has; every other station's reads the
+    /// first word(s) of its own. One reader, so the panel, the car's announcement and the book's drawer
+    /// cannot come to two names for one floor.</summary>
+    public static string? TheLowerStopAt(string? bodyId) =>
+        System.Array.Find(Specs, s => s.BodyId == bodyId) is { Lower: { } lower }
+            ? HavenLevels.StopNameOf(lower.Plate)
+            : null;
+
+    /// <summary>#1332 A · The one label this station's lower floor carries, or null at a berth with no floor
+    /// under it — Selene Gate's LOWER CONCOURSE, every other station's plate. Published for the guards, which
+    /// hold each floor to exactly this and nothing else.</summary>
+    public static string? TheLowerPlateAt(string bodyId) =>
+        System.Array.Find(Specs, s => s.BodyId == bodyId)?.Lower?.Name;
 
     // ── THE ROW OF CABINS ────────────────────────────────────────────────────────────────────────────────
     //
@@ -351,7 +380,7 @@ public static partial class HavenInterior
         }
 
         // The three cars, on the same squares they stand on upstairs.
-        foreach (int edge in CageEdges)
+        foreach (int edge in CageEdgesOf(spec))
         {
             (float cx, float cy) = TheCageOnEdge(edge);
             consoles.Add(new(DeckPlan.ConsoleKind.HavenLift, cx, cy, CagePlateBelow(spec, edge)));

@@ -35,8 +35,10 @@ public partial class Map
         _ when giver.Contains("COIL", StringComparison.OrdinalIgnoreCase) => MakeCargoRunOffer(giver),
         _ when giver.Contains("GILT", StringComparison.OrdinalIgnoreCase) => MakeIntelOffer(giver),
         _ when giver.Contains("FIXER", StringComparison.OrdinalIgnoreCase) => MakeFetchOffer(giver) ?? MakeFetchCacheOffer(giver) ?? MakeCrackOffer(giver),
-        // #1202 · …and on one watch in three at a berth, the stranger at the table is a stringer booking passage.
-        _ => MakePressOffer() ?? MakeHuntOffer(giver),
+        // #1202 · Rauha Lind at her own chair books passage (owner 2026-09-29: "own seat sounds like a known
+        // regular"); the stranger's table is his own again and hands over a hunt.
+        _ when string.Equals(giver, CarryThePress.Giver, StringComparison.Ordinal) => MakePressOffer(),
+        _ => MakeHuntOffer(giver),
     };
 
     // Pick a live target for a hunt contract — prefer off-books ships (the kind you couldn't just read

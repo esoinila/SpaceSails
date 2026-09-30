@@ -336,7 +336,10 @@ public sealed class TheStoryCanBeSpikedTests
         {
             case SpikeIt.Outcome.Spiked:
                 Assert.Empty(stories);
-                Assert.Empty(floors);
+                // #1202 slice 4 · the floor has no opinion of a story that did not run; the one line of the floor's
+                // kind is the rag noticing the hole (SpikeIt.BylineMissingLine), which names no body.
+                Assert.Equal(SpikeIt.BylineMissingLine, Assert.Single(floors).Subject);
+                Assert.DoesNotContain(floors, e => e.Subject == CarryThePress.Floor(body));
                 Assert.Single((IEnumerable<FieldNote>)Read(map, "_fieldNotes")!,
                     n => n.Text == SpikeIt.Spiked(body) && n.Glyph == MissingMiddle.Glyph);
                 Assert.Equal(0, Filed(map, CarryThePress.StoryRanLine));

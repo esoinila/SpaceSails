@@ -258,6 +258,15 @@ public sealed class TheBootBuildsTheSameWorldTests
             // already built. What the two of them ANSWER is pinned next door, in
             // TheBootReadsTheSameQueryTests, where this URL is its own distinct reading.
             ["/map?dock=selene-gate&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
+            // #1332 A · EVERY HUB IS A LOBBY — the six floors the other hubs grew, one dev row each. Dumped with
+            // SPACESAILS_BOOT_FINGERPRINT_DUMP, not typed: each builds the front door's world for the reason
+            // Selene Gate's row above does, and no other row of the dump moved.
+            ["/map?dock=the-space-bar&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
+            ["/map?dock=cinder-roost&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
+            ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
+            ["/map?dock=the-tilt&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
+            ["/map?dock=red-eye&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
+            ["/map?dock=the-deep&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
             // #794 slice 2 · the chalk mark's two dev rows, moved from ?park=1 to the gallery with the drop.
             // ?chalk= writes no world and nothing the parse answers (it is read off the address bar after
             // ?ashore=1 walks the captain in), so both are the berth's own line — the park's two rows went,
@@ -271,6 +280,8 @@ public sealed class TheBootBuildsTheSameWorldTests
             // row is `_tailedCheat = true` (the parse sets it before the gate); no other line moved.
             ["/map?dock=selene-gate&ashore=1&spike=1&tailed=1"] = "596d61e170ce75de0eda0754c03b951f",
             ["/map?dock=selene-gate&ashore=1&spike=spiked"] = "5702e97b412b144d3fd884426e262007",
+            // #1202 slice 4 · ?spike=paid — the same latch, read once ashore: measured, the spike rows' own line. No other line moved.
+            ["/map?dock=selene-gate&ashore=1&spike=paid"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=selene-gate&body=luna&site=1&land=1"] = "97b2b0eae504685fd6a9d15cabfaa5b7",
             // #319 slice 2 · the geocache sale's two dev rows. ?geocache= writes no world and nothing the parse
             // answers (it is read off the address bar once the berth is clamped) — dumped and diffed: these two

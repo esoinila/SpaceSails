@@ -275,6 +275,11 @@ public static partial class HiveInterior
     /// building says its name where you arrive, and this drew unconditionally until a name that should have
     /// landed once had landed thirteen times and become wallpaper. Lays down: labels.
     /// </summary>
+    /// <summary>#1318 · How far right of the shaft's centre the facility plate stands: the car's pocket is
+    /// <see cref="UndergroundComplex.ShaftHalf"/> either side, and the plate's centre sits nine du past its
+    /// wall, so the widest name (<c>▣ THE PROCESSING DEPOT</c>) clears the pocket and the depth plate.</summary>
+    internal const double FacilityPlateOffDu = UndergroundComplex.ShaftHalf + 9.0;
+
     private static void NameTheFacility(
         List<(float X, float Y, string Text)> labels, string bodyId, int level,
         UndergroundComplex.Kind kind, double shaftX, double shaftY)
@@ -300,9 +305,16 @@ public static partial class HiveInterior
         // is BandTop and HasUnlistedBand, the same two calls the shafts and the cards are cut from — and a
         // renderer that answered it here would be one more caller reasoning about a shaft it does not own.
         // HiveInterior asks and draws.
+        //
+        // #1318 · …AND BESIDE THE SHAFT, NOT THIRTY DU OFF IT. Owner, 2026-09-29: "our UI should not be the
+        // challenge." It stood 30 du left of the car, which at boot is the screen's left edge under the AIR
+        // readout — so B21's whole payoff (a DIFFERENT name under twenty floors of another) had to be walked
+        // to and found. It stands just right of the car's pocket now, at the same height on the wall: clear
+        // of the depth plate stacked over the car's mouth, of the lift's own [E] plate, and of the round
+        // point painted on the pocket's left.
         if (UndergroundComplex.ShowsFacilityPlate(bodyId, level))
         {
-            labels.Add(((float)shaftX - 30f, (float)(shaftY + 4.5), UndergroundComplex.TitleOf(kind)));
+            labels.Add(((float)(shaftX + FacilityPlateOffDu), (float)(shaftY + 4.5), UndergroundComplex.TitleOf(kind)));
         }
     }
 
