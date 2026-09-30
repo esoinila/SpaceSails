@@ -298,7 +298,12 @@ public sealed class TheGardenBehindGlassTests
     /// the <c>HiveBench</c> arm — opens a sitting that is a BENCH, whose scene is the park bench's two moves and
     /// no third (SIT A WHILE / Stand up, the park's own labels and ids), whose setting is the room's own plate,
     /// that snaps the captain ON the end he walked up to (#820), and that stands him back up on the room's side
-    /// of the plank, on ground he can stand on. SIT A WHILE answers with the park's own silence.
+    /// of the plank, on ground he can stand on. Sitting down and SIT A WHILE speak the GARDEN's own lines (#1332:
+    /// <see cref="HavenGarden.SatLine"/>, <see cref="HavenGarden.NobodyCameLine"/>), never the park's gravel.
+    ///
+    /// <para>#1332 · <b>Proven RED</b> by reverting the garden's scene to <c>ParkBenches.TheBench</c> (the
+    /// opening reads the park's gravel) and by reverting the wait dispatch to the park's pool (the silence
+    /// reads the park's walk).</para>
     ///
     /// <para><b>Proven RED</b> by dropping the berth fall-through from <c>Seating.TryTakeBench</c>: the press
     /// answers nothing and the captain stays on his feet.</para>
@@ -326,17 +331,22 @@ public sealed class TheGardenBehindGlassTests
         Assert.Equal([ParkBenches.WaitLabel, ParkBenches.StandLabel], scene.Moves.Select(m => m.Label));
         Assert.Equal(HavenGarden.Plate, scene.Setting);
         Assert.Equal(ParkBenches.OwnBenchPlate, (string)Get(seat, "Plate")!);
+
+        // #1332 · …in the GARDEN's words, not the park's: no gravel, no run of walk.
+        Assert.Equal(HavenGarden.SatLine, scene.Opening);
+        Assert.Equal(HavenGarden.SatLine, (string)Get(seat, "Outcome")!);
         Assert.StartsWith($"garden:{berth}:", (string)Get(seat, "Key")!, StringComparison.Ordinal);
 
         // #820 · ON the end he walked up to.
         Assert.Equal(endX, (double)Read(map, "_avatarX")!, 6);
         Assert.Equal(endY, (double)Read(map, "_avatarY")!, 6);
 
-        // SIT A WHILE: the park's own silence, on the panel.
+        // SIT A WHILE: the GARDEN's own silence, on the panel (#1332) — never the park's walk or gravel.
         object seating = Read(map, "_seating")!;
         seating.GetType().GetMethod("TableMove", Hidden)!.Invoke(seating, [SittingAlone.Wait]);
         string said = (string)Get(Invoke(map, "get_SeatedTable")!, "Outcome")!;
-        Assert.Contains(ParkBenches.NobodyCameLines, l => said.StartsWith(l, StringComparison.Ordinal));
+        Assert.StartsWith(HavenGarden.NobodyCameLine, said, StringComparison.Ordinal);
+        Assert.DoesNotContain(ParkBenches.NobodyCameLines, l => said.Contains(l, StringComparison.Ordinal));
 
         // Stand up: off the plank, on the room's side, standing clear of the furniture.
         Assert.True((bool)Invoke(map, "StandUpBeforeWalking")!);
