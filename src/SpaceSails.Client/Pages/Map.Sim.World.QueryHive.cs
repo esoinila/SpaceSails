@@ -436,6 +436,13 @@ public partial class Map
             // Map.ChalkMark reads it off the address bar (ChalkMark.CheatIn) right after ?ashore=1 walks the
             // captain in.
         }
+        else if (pair.StartsWith("guard=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #618 dev cheat: /map?secretlab=1&land=1&guard=posted|absent|round forces how the man at the Hive's
+            // top-level door is keeping it on this excursion. CLAIMED here and read nowhere here, the chalk's way:
+            // it writes no world at parse time, and a page field for it would move #905's frame ledger.
+            // Map.GateGuard reads it off the address bar (GateGuard.CheatIn) when the floor he keeps is first drawn.
+        }
         else
         {
             return false;

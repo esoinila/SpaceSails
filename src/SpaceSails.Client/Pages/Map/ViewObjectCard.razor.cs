@@ -45,6 +45,11 @@ public partial class ViewObjectCard
     [Parameter] public Func<Encounter.Move, bool> TheStopMoveOnOffer { get; set; } = default!;
     [Parameter] public Func<Encounter.Move, string> TheStopMoveRefusal { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<Encounter.Move>> TheStopsMoves { get; set; } = default!;
+    // #618 · The man at the door's moves: a gate, the list (only the moves that exist — none is ever drawn
+    // refused), and one press. Three, not five: nothing on his card is ever on offer and refused.
+    [Parameter] public bool TheManAtTheDoorWaits { get; set; }
+    [Parameter] public Func<IReadOnlyList<Encounter.Move>> TheManAtTheDoorsMoves { get; set; } = default!;
+    [Parameter] public Action<string> AnswerTheManAtTheDoor { get; set; } = default!;
     [Parameter] public DeckPlan.ConsoleSpot vo { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.

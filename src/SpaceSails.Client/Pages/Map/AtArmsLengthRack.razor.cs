@@ -72,6 +72,10 @@ public partial class AtArmsLengthRack
     [Parameter] public Func<Encounter.Move, bool> TheStopMoveOnOffer { get; set; } = default!;
     [Parameter] public Func<Encounter.Move, string> TheStopMoveRefusal { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<Encounter.Move>> TheStopsMoves { get; set; } = default!;
+    // #618 · …and the man at the door's three, carried through to the card the same way.
+    [Parameter] public bool TheManAtTheDoorWaits { get; set; }
+    [Parameter] public Func<IReadOnlyList<Encounter.Move>> TheManAtTheDoorsMoves { get; set; } = default!;
+    [Parameter] public Action<string> AnswerTheManAtTheDoor { get; set; } = default!;
     [Parameter] public Func<Satchel.Item, bool> ThePaperInYourHandIs { get; set; } = default!;
     [Parameter] public IReadOnlyList<Satchel.Item> TheWalletFan { get; set; } = default!;
     [Parameter] public bool WalletFanIsUp { get; set; }

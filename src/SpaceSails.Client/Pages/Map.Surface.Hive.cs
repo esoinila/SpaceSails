@@ -129,7 +129,9 @@ public partial class Map
             : TheCarIsStopped
             ? []
             : _surface is { } ex
-            ? UndergroundComplex.LiftPanel(
+            // #618 · …and the man at the door stands in front of the way down, never in front of the way up
+            // (Map.GateGuard.cs). The stops that remain are the building's own, untouched.
+            ? PastTheManAtTheDoor(ex, UndergroundComplex.LiftPanel(
                 ex.Stop.Body.Id, ex.Floor, _liftCar, AuthorityCardIds(), _satchel,
                 // #715 · …and what this site's outfit remembers, which is what decides whether the gate is
                 // content with the paper or wants the face as well.
@@ -141,7 +143,7 @@ public partial class Map
                 // #1149 · …and whether an inspection is running on this trip — the excursion's own flag, on
                 // the excursion for the pad's reason exactly. While it is, the ID CHECK row defers and the
                 // SEALED row opens.
-                ex.InspectionRunning)
+                ex.InspectionRunning))
             : [];
 
     /// <summary>#801 · Which of the two cars the open panel belongs to — set by the press that opened it,

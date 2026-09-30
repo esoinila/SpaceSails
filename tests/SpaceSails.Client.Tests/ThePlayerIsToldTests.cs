@@ -261,6 +261,16 @@ public sealed class ThePlayerIsToldTests
             Surface.RankedPulse, "Patrol/Patrol.Hide.cs", "WaitOutsideTheCubicle",
             "_host.ShowPulseMessage(CubicleLock.KnockLine, PulseRank.Beat);"),
 
+        // #618 · The man at the door, at the mouth of the tube. Both change what the captain can do below: the tide
+        // that has him leaves the door unmanned for the rest of the excursion, and the tide that is down sends him
+        // back to it. Told from the surface, where nothing is in front of the captain but the regolith.
+        new("the tide takes the man who followed you out of the door",
+            Surface.RankedPulse, "Map.GateGuard.Mouth.cs", "StepHimAtTheMouth",
+            "ShowPulseMessage(GateGuard.TideTakesHimLine, PulseRank.Beat);"),
+        new("the tide is down and the man at the door goes back to it",
+            Surface.RankedPulse, "Map.GateGuard.Mouth.cs", "StepHimAtTheMouth",
+            "ShowPulseMessage(GateGuard.TideDownLine, PulseRank.Beat);"),
+
         // ── THE ROUND, AND WHAT IT DECIDES ABOUT YOU ───────────────────────────────────────────────────
         new("a guard hails you and wants to see a face with the paper",
             Surface.RankedPulse, "Patrol/Patrol.Challenge.cs", "TheHail",

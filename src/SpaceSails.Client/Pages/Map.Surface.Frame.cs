@@ -74,6 +74,9 @@ public partial class Map
             // #751 · …or the one a tester pinned with ?watch=N. Applied HERE, at the one place the watch is
             // ever frozen, so the cheat cannot become a second answer to "which shift is this".
             ex.CanteenWatch = _watchCheat ?? PatronRota.WatchIndex(SimTime);
+            // #618 · …and the man at the door is met on the same instant, off the same frozen watch: the floor that
+            // is drawn and the man who keeps it are decided together (Map.GateGuard.cs). Nothing on any other floor.
+            MeetTheDoorIfThisIsHisFloor(ex);
             // #804 · The Hive's deck used to stop counting at the repo crew, which was right while nothing
             // walked a floor. A round does, and it lives in the LAST band — so the count has to be the whole
             // buffer or the guards would be written past DroidCount and drawn by nobody. One number, the
@@ -102,6 +105,7 @@ public partial class Map
             // walks every floor of it, are untouched.
             ComposeHeadOfficeFloor(ex);
             ComposeWhatYouLeft(ex);
+            ComposeTheEmptyChair(ex);   // #618 · an Absent window's chair by the door, with the coat on it
             return;
         }
 
@@ -399,6 +403,9 @@ public partial class Map
         // door the captain's own TRY is refused at, and the one who comes out of one to sit at your table.
         // After the round, deliberately — a walker is not a guard and never shares a list with one.
         AdvanceWalkers(dtRealSeconds);
+        // #618 · …and the man at the door, on his own clock and after the room's people, so a shift that turned
+        // over and cleared the band has already happened when he is put back on it (Map.GateGuard.Step.cs).
+        AdvanceTheManAtTheDoor(dtRealSeconds);
         // #973 L2 · …and the one who is on a payroll and is not the law: the Nebula rep, deciding whether to
         // come in through a door, drift to the next fixture on his beat, or cross the floor to a captain
         // sitting alone. AFTER the walkers, deliberately — the decision is about a floor whose bodies have
