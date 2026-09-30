@@ -294,6 +294,62 @@ public sealed class TheGardenBehindGlassTests
     // ── THE BENCH ────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
+    /// #1348 · <b>…AND THE PARK KEEPS ITS READING.</b> The garden's silence ends on its own sentence; a park
+    /// bench on a real Hive floor (the shipping <see cref="Pages.Map"/> holding a shipping excursion over the
+    /// generator's own floor, the bench taken through <c>TryTakeBench</c>, the verb [E] reaches) still spends
+    /// its SIT A WHILE on the walk — the park's own nobody-came line, then <see cref="FootTail"/>'s reading.
+    /// Nobody is let come over (<c>_approachCheat = false</c>), so the beat is the silence the reading rides on.
+    ///
+    /// <para><b>Proven RED</b> by dropping the tail reading from every bench (<c>seen = null</c>): the park's
+    /// silence carries no reading.</para>
+    /// </summary>
+    [Fact]
+    public void TheParkBenchStillReadsTheWalkAfterItsSilence()
+    {
+        const string body = "luna";
+        int floor = UndergroundComplex.TopPressurisedFloor(body)
+            ?? throw new InvalidOperationException($"{body} has no pressurised floor to sit down on.");
+
+        var map = new Pages.Map();
+        typeof(Microsoft.AspNetCore.Components.ComponentBase)
+            .GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(map, true);
+        Type exType = typeof(Pages.Map).GetNestedType("SurfaceExcursion", Hidden)!;
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden)!;
+        object ex = Activator.CreateInstance(exType, nonPublic: true)!;
+        object stop = Activator.CreateInstance(stopType,
+            new CelestialBody(body, body, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;
+        exType.GetProperty("Stop")!.SetValue(ex, stop);
+        exType.GetProperty("RestoreHavenId")!.SetValue(ex, null);
+        exType.GetProperty("Site")!.SetValue(ex,
+            new LandingSite(0, LandingSiteKind.WildPlain, "The Wild Plain", "", ""));
+        exType.GetProperty("Floor")!.SetValue(ex, floor);
+        Set(map, "_surface", ex);
+        Set(map, "_deckMode", true);
+        Invoke(map, "RebuildSurfaceDeck");
+
+        DeckPlan.ConsoleSpot[] benches = [.. ((DeckPlan)Read(map, "_deckPlan")!).Consoles
+            .Where(c => c.Kind == DeckPlan.ConsoleKind.HiveBench)];
+        Assert.True(benches.Length > 0, $"{body} {floor} carves no park bench to sit on.");
+        Set(map, "_avatarX", (double)benches[0].X);
+        Set(map, "_avatarY", (double)benches[0].Y);
+        Assert.True((bool)Invoke(map, "TryTakeBench")!, "the press at the park bench was not taken.");
+
+        object seat = Invoke(map, "get_SeatedTable")!;
+        Assert.True((bool)Get(seat, "Bench")!);
+        Assert.False(HavenGarden.IsTheGardensBench((Encounter.Scene)Get(seat, "Scene")!));
+
+        Set(map, "_approachCheat", (bool?)false);
+        object seating = Read(map, "_seating")!;
+        seating.GetType().GetMethod("TableMove", Hidden)!.Invoke(seating, [SittingAlone.Wait]);
+        string said = (string)Get(Invoke(map, "get_SeatedTable")!, "Outcome")!;
+
+        Assert.Contains(ParkBenches.NobodyCameLines, l => said.StartsWith(l, StringComparison.Ordinal));
+        Assert.Contains(FootTail.AllProse(), l => said.Contains(l, StringComparison.Ordinal));
+        Assert.DoesNotContain(HavenGarden.NobodyCameLine, said, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// <b>THE BENCH BY THE GLASS IS THE PARK BENCH'S SEAT.</b> [E] at it — through the deck's own dispatch,
     /// the <c>HiveBench</c> arm — opens a sitting that is a BENCH, whose scene is the park bench's two moves and
     /// no third (SIT A WHILE / Stand up, the park's own labels and ids), whose setting is the room's own plate,
@@ -304,6 +360,10 @@ public sealed class TheGardenBehindGlassTests
     /// <para>#1332 · <b>Proven RED</b> by reverting the garden's scene to <c>ParkBenches.TheBench</c> (the
     /// opening reads the park's gravel) and by reverting the wait dispatch to the park's pool (the silence
     /// reads the park's walk).</para>
+    ///
+    /// <para>#1348 · <b>Proven RED</b> (7 of 7 havens) by letting the tail reading ride every bench again
+    /// (<c>seen = t.Bench ? _host.TheTailReading() : null</c>): the garden's silence runs on into "Nobody stops
+    /// when you do. The walk runs on past the beds and out the far gate…".</para>
     ///
     /// <para><b>Proven RED</b> by dropping the berth fall-through from <c>Seating.TryTakeBench</c>: the press
     /// answers nothing and the captain stays on his feet.</para>
@@ -345,8 +405,11 @@ public sealed class TheGardenBehindGlassTests
         object seating = Read(map, "_seating")!;
         seating.GetType().GetMethod("TableMove", Hidden)!.Invoke(seating, [SittingAlone.Wait]);
         string said = (string)Get(Invoke(map, "get_SeatedTable")!, "Outcome")!;
-        Assert.StartsWith(HavenGarden.NobodyCameLine, said, StringComparison.Ordinal);
+        // #1348 · …and NOTHING AFTER IT. The first guard checked how the line started, and the park walk's tail
+        // reading rode in behind it ("…out the far gate") in a glass room with no walk and no gate.
+        Assert.Equal(HavenGarden.NobodyCameLine, said);
         Assert.DoesNotContain(ParkBenches.NobodyCameLines, l => said.Contains(l, StringComparison.Ordinal));
+        Assert.DoesNotContain(FootTail.AllProse(), l => said.Contains(l, StringComparison.Ordinal));
 
         // Stand up: off the plank, on the room's side, standing clear of the furniture.
         Assert.True((bool)Invoke(map, "StandUpBeforeWalking")!);
