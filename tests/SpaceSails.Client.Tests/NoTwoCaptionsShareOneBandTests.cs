@@ -324,6 +324,21 @@ public sealed class NoTwoCaptionsShareOneBandTests
                 AtLeast: 8);
         }
 
+        // ── #1332 C · …AND THE PRESERVATION OFFICE, AJAR ON THE CLERK'S WATCH ─────────────────────────────
+        //
+        // The one plate in a row of numbers that is longer than its door, and — while the door stands open — the
+        // sheet's own title on the desk behind it. Stood at the office's doorstep, under the plate.
+        DeckReachability.Point office = HavenInterior.TheOfficeDoorstepAt(PreservationOffice.HavenId)!.Value;
+        yield return new Boot(
+            "ringside-exchange · the Preservation office, ajar",
+            HavenInterior.DockedDeck(
+                PreservationOffice.HavenId, level: HavenLevels.ServiceLevel, office: HavenInterior.OfficeDoor.Ajar)!,
+            new DeckView.State(office.X, office.Y, 0.0, 0, 0,
+                ShuttleAway: false, ElectricUniverse: false, Docked: true),
+            SimTime: 1000.0,
+            Surface: null,
+            AtLeast: 8);
+
         // ── #1332 B · …AND THE GARDEN BEHIND GLASS OFF EVERY CONCOURSE ───────────────────────────────────
         //
         // A room plate and four bed plates stacked down a row two du apart, next to the concourse's own ring
@@ -439,7 +454,7 @@ public sealed class NoTwoCaptionsShareOneBandTests
             + "#1218's ruling: a mark's second line FOLDS INTO ITS PLATE — one plate per anchor, the plate "
             + "grows a second row. Never a second caption at a second hand-typed lift.");
 
-        Assert.Equal(18, worlds);   // #1332 A · five, and the six lower levels every other hub grew; #1332 B · and seven gardens
+        Assert.Equal(19, worlds);   // #1332 A · five, and the six lower levels every other hub grew; #1332 B · and seven gardens; #1332 C · and the office ajar
         Assert.True(captions > 40, $"only {captions} caption(s) were laid in all — this sweep proves little.");
     }
 
@@ -505,6 +520,35 @@ public sealed class NoTwoCaptionsShareOneBandTests
         }
     }
 
+    /// <summary>
+    /// #1332 C · <b>ONE PLATE IN THE ROW IS LONGER THAN ITS DOOR, AND IT SMEARS NOTHING.</b> At Ringside Exchange the
+    /// middle door of the cabin row wears the Preservation office's plate. The four door numbers either side stay
+    /// on one row and do not touch (#1279's law), and the office's plate — whatever row the band book gave it —
+    /// is drawn over none of them, nor over the sheet's title on the desk behind it.
+    ///
+    /// <para><b>Proven RED</b> by hanging the office's plate on the doorstep of cabin 2 instead of its own (it
+    /// prints through <c>CABIN 2</c>'s row).</para>
+    /// </summary>
+    [Fact]
+    public void TheOfficesPlateSmearsNoDoorNumberInTheRow()
+    {
+        IReadOnlyList<Caption> said = CaptionsOf(
+            Boots().Single(b => b.Name == "ringside-exchange · the Preservation office, ajar"));
+
+        var row = said.Where(c => c.Text.StartsWith("CABIN ", StringComparison.Ordinal)).OrderBy(c => c.Left).ToList();
+        Assert.Equal(HavenLevels.Cabins - 1, row.Count);
+        Assert.All(row, c => Assert.True(Math.Abs(c.Y - row[0].Y) < 0.5, $"{c.Where} left the row."));
+        for (int i = 1; i < row.Count; i++)
+        {
+            Assert.True(row[i - 1].Right < row[i].Left, $"{row[i - 1].Where} touches {row[i].Where}");
+        }
+
+        Caption plate = Assert.Single(said, c => c.Text == PreservationOffice.DoorPlate);
+        Assert.All(
+            said.Where(c => c.Text != PreservationOffice.DoorPlate),
+            c => Assert.False(plate.Meets(c), $"the office's plate is drawn over {c.Where}"));
+    }
+
     // ── AND THE WORDS THEMSELVES DID NOT MOVE ─────────────────────────────────────────────────────────
 
     /// <summary>Every caption drawn, as ledger rows — the set of strings per world, sorted and hashed.</summary>
@@ -560,6 +604,6 @@ public sealed class NoTwoCaptionsShareOneBandTests
             + $"intended and owner-sanctioned, re-pin BY MEASUREMENT:{Environment.NewLine}  "
             + PinLedger.Invocation);
 
-        Assert.Equal(18, pinned.Count);   // #1332 A · five, and the six lower levels every other hub grew; #1332 B · and seven gardens
+        Assert.Equal(19, pinned.Count);   // #1332 A · five, and the six lower levels every other hub grew; #1332 B · and seven gardens; #1332 C · and the office ajar
     }
 }

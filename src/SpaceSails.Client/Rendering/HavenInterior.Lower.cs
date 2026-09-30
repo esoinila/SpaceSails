@@ -243,7 +243,7 @@ public static partial class HavenInterior
     /// (which is what a walker comes out of), so the plate a body carries and the plate the captain is
     /// refused at are one string.</para>
     /// </summary>
-    private static UndergroundComplex.LockedDoor[] CabinLeaves()
+    private static UndergroundComplex.LockedDoor[] CabinLeaves(StationSpec spec)
     {
         var leaves = new UndergroundComplex.LockedDoor[HavenLevels.Cabins];
         float half = CabinWidth / 2f;
@@ -252,7 +252,7 @@ public static partial class HavenInterior
             float x = CabinDoorX(i);
             leaves[i] = new UndergroundComplex.LockedDoor(
                 x - (half * 0.5f), CabinRowSouthY, x + (half * 0.5f), CabinRowSouthY,
-                HavenLevels.CabinPlate(i + 1));
+                CabinRegisterPlateOf(spec, i + 1));   // #1332 C · the office's door has its own name
         }
 
         return leaves;
@@ -262,13 +262,13 @@ public static partial class HavenInterior
     /// (#1253 slice 2) and the guards that sweep them are counting the same doors.</summary>
     public static IReadOnlyList<string> CabinPlatesAt(string bodyId)
     {
-        if (!HasLowerLevel(bodyId))
+        if (SpecOf(bodyId) is not { Lower: not null } spec)
         {
             return [];
         }
 
         var plates = new List<string>(HavenLevels.Cabins);
-        foreach (UndergroundComplex.LockedDoor leaf in CabinLeaves())
+        foreach (UndergroundComplex.LockedDoor leaf in CabinLeaves(spec))
         {
             plates.Add(leaf.Sign);
         }
@@ -312,7 +312,7 @@ public static partial class HavenInterior
             }
         }
 
-        return new BarFloor(spec.BodyId, HallBottomY - 1, CabinLeaves(), fixtures, []);
+        return new BarFloor(spec.BodyId, HallBottomY - 1, CabinLeaves(spec), fixtures, []);
     }
 
     // ── THE WELD ─────────────────────────────────────────────────────────────────────────────────────────
@@ -327,7 +327,8 @@ public static partial class HavenInterior
     /// REACH a car, never that the car is a way OUT (#600/#719).</para>
     /// </summary>
     private static DeckPlan BuildLowerComplex(
-        StationSpec spec, LowerSpec lower, System.Action<DeckPlan.Droid[], int>? fillWalkers)
+        StationSpec spec, LowerSpec lower, System.Action<DeckPlan.Droid[], int>? fillWalkers,
+        OfficeDoor office = OfficeDoor.Shut)
     {
         var walls = new List<DeckPlan.Wall>(HallSides + 12);
         var doors = new List<DeckPlan.Door>();
@@ -348,7 +349,7 @@ public static partial class HavenInterior
         // boxes rather than one long dormitory. The leaves are DRAWN ON the corridor face (it stays unbroken
         // stone), exactly as the bar's cellar and storeroom leaves are — a door a captain is refused at is
         // not a gap in a wall.
-        walls.Add(new(CabinRowWestX, CabinRowSouthY, CabinRowEastX, CabinRowSouthY, false, false));
+        TheCorridorFace(spec, office, walls);   // #1332 C · cut for the office's doorway only while it stands ajar
         walls.Add(new(CabinRowWestX, CabinRowNorthY, CabinRowEastX, CabinRowNorthY, false, false));
         walls.Add(new(CabinRowWestX, CabinRowSouthY, CabinRowWestX, CabinRowNorthY, false, false));
         walls.Add(new(CabinRowEastX, CabinRowSouthY, CabinRowEastX, CabinRowNorthY, false, false));
@@ -369,13 +370,13 @@ public static partial class HavenInterior
         // (`leaf.Sign`, which is what Egress seeds a door roll on and what CabinPlatesAt publishes); what is
         // PAINTED is what differs between the doors. The argument is at HavenLevels.CabinDoorPlate.
         int cabinNo = 0;
-        foreach (UndergroundComplex.LockedDoor leaf in CabinLeaves())
+        foreach (UndergroundComplex.LockedDoor leaf in CabinLeaves(spec))
         {
-            doors.Add(new((float)leaf.X1, (float)leaf.Y1, (float)leaf.X2, (float)leaf.Y2, Locked: true));
+            doors.Add(TheCabinLeafAsDrawn(spec, office, cabinNo, in leaf));   // #1332 C · locked, but for the office's hours
             consoles.Add(new(
                 DeckPlan.ConsoleKind.Hatch,
                 CabinDoorX(cabinNo), CabinRowSouthY - CabinPlateStandoff,
-                HavenLevels.CabinDoorPlate(cabinNo + 1)));
+                CabinDoorPlateOf(spec, cabinNo + 1)));   // #1332 C · CABIN n, or the office's plate on its one door
             cabinNo++;
         }
 
@@ -400,15 +401,20 @@ public static partial class HavenInterior
             new(lower.Art, HallCenterX - 16, HallCenterY + 9, 32, 18, 0.95f),
         };
 
+        // #1332 C · …and, while the office stands open, its desk and the sheet on it.
+        DeckPlan.FurnitureSpot[]? furniture = FurnishTheOffice(spec, office, consoles);
+
         DeckReachability.Point spawn =
             TheCageLandingAt(spec.BodyId, 0) ?? new DeckReachability.Point(HallCenterX, HallCenterY);
 
-        return new DeckPlan(
+        var plan = new DeckPlan(
             walls.ToArray(), consoles.ToArray(), labels.ToArray(), backdrops.ToArray(),
             spawnX: spawn.X, spawnY: spawn.Y,
             droidCount: fillWalkers is null ? 0 : Egress.BandSlots,
             fillDroids: (_, buffer) => fillWalkers?.Invoke(buffer, 0),
             location: (_, _) => lower.Name,
-            doors: doors.ToArray(), shipFixtures: false, followCam: true);
+            doors: doors.ToArray(), shipFixtures: false, followCam: true, furniture: furniture);
+        HangTheOfficeLeafAjar(spec, office, plan);
+        return plan;
     }
 }

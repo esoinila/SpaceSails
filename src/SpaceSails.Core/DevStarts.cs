@@ -381,6 +381,7 @@ public static partial class DevStarts
             "/map?dock=selene-gate&ashore=1&havenfloor=-1"),
         // #1332 A · …and the six floors the other hubs grew, one button each (DevStarts.Below.cs).
         .. BelowTheLobbies(),
+        .. ThePreservationOffice(),   // #1332 C · …and the office on Ringside Exchange's hotel level
         // #1332 B · …and the garden behind glass off each concourse (DevStarts.Garden.cs).
         .. TheGardens(),
         // #1016 · THE OWNER'S OWN BUG, IN ONE BUTTON. He sat at a top in The Stormwatch Bar, pressed "Work

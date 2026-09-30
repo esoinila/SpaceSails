@@ -104,6 +104,10 @@ public partial class Map
                     : "🛗 Test: ?havenfloor= needs a berth with a floor under its concourse. Try &dock=selene-gate.");
             }
 
+            // #1332 C · …and ?office=shut|open stands the captain at (or two doors down from) the Preservation
+            // office's door on Ringside Exchange's hotel level, with its door forced.
+            StandAtTheOfficeIfAsked();
+
             // #1332 B · …and ?garden=1 walks across the concourse to THE door of the garden behind glass, and
             // stops there — on the hall side, so the first step in is the tester's and so is the line it earns.
             if (q.GardenCheat)
