@@ -86,7 +86,12 @@
                             + (stop.Pressurised ? "" : " dead");
                         <button type="button" class="@cls" disabled="@stop.IsCurrent"
                                 title="@(TheCarIsInAStation ? null : stop.Refusal ?? (stop.Pressurised ? "holds pressure" : "dead air — the tank runs"))"
-                                @onclick="() => PressLiftButton(stop)">
+                                @onclick="() => Dismiss(() => PressLiftButton(stop))">
+                            @* #1349 · THE MOUSE'S WAY BACK TO THE KEYS (#470's Dismiss, Map.Sim.Keys.cs). A row that
+                               rides the car shuts the panel, and the button under the mouse leaves the DOM with
+                               it: focus fell to <body>, and E or a held A did nothing until the map was clicked.
+                               So the press hands focus home to .map-page, where the deck's keys are bound. On a
+                               row that refuses, the panel stays up and the keys are still the deck's. *@
                             @* #1280 · THE DEPTH COLUMN IS A MOON'S, AND A HAVEN HAS NO MOON ON IT. Owner's QA,
                                at a berth in orbit off Luna: the car's panel painted SURFACE against CONCOURSE
                                and −150 m against SERVICE LEVEL — UndergroundComplex.MetresDown, a depth in

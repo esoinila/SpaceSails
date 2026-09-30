@@ -308,6 +308,53 @@ internal sealed class DeskBench : Renderer
     public Task TypeAsync(ulong handlerId, string key) =>
         Dispatcher.InvokeAsync(() => DispatchEventAsync(handlerId, null, new KeyboardEventArgs { Key = key }));
 
+    // ── #1349 · Focus, written down ──────────────────────────────────────────────────────────────────
+
+    private readonly List<string> _focused = [];
+
+    /// <summary>
+    /// #1349 · <b>WATCH WHERE FOCUS IS SENT.</b> Off a browser there is no DOM and so no focus to read, and an
+    /// <c>ElementReference</c> captured by a bare renderer has no JS side at all — <c>FocusAsync</c> answers
+    /// "ElementReference has not been configured correctly". This gives the renderer the SAME context a
+    /// browser's WebRenderer uses (<see cref="WebElementReferenceContext"/>) over a JS runtime that answers
+    /// every call with nothing and writes down the element id of every <c>focus</c> it is asked for. Opt-in,
+    /// and only before the first render: element references take their context when they are captured.
+    /// </summary>
+    public void WatchTheFocus()
+    {
+        if (_rootId >= 0)
+        {
+            throw new InvalidOperationException(
+                "WatchTheFocus after the first render: the page's element references were already captured "
+                + "without it, and the focus log would stay empty whatever the page did.");
+        }
+
+        ElementReferenceContext = new WebElementReferenceContext(new FocusLog(_focused));
+    }
+
+    /// <summary>The element ids focus was sent to since the last <see cref="ForgetTheFocus"/>, in order.</summary>
+    public IReadOnlyList<string> Focused => _focused;
+
+    public void ForgetTheFocus() => _focused.Clear();
+
+    private sealed class FocusLog(List<string> into) : Microsoft.JSInterop.IJSRuntime
+    {
+        public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object?[]? args)
+        {
+            if (identifier.EndsWith(".focus", StringComparison.Ordinal)
+                && args is { Length: > 0 } && args[0] is ElementReference element)
+            {
+                into.Add(element.Id);
+            }
+
+            return ValueTask.FromResult(default(TValue)!);
+        }
+
+        public ValueTask<TValue> InvokeAsync<TValue>(
+            string identifier, CancellationToken cancellationToken, object?[]? args) =>
+            InvokeAsync<TValue>(identifier, args);
+    }
+
     /// <summary>The page's own keyboard host — the <c>tabindex="0"</c> div every key in the game arrives
     /// at. A tree that has stopped drawing one is a page that has gone deaf, which is worth failing over
     /// rather than skipping.</summary>
