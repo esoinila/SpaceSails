@@ -234,4 +234,89 @@ public sealed class AGlanceIsNotADigTests
                 Processing.StartLine(work, "📋 a pay sheet", 20), StringComparison.OrdinalIgnoreCase);
         }
     }
+
+    // ── (c) #1345 · A WRITTEN SHEET IS A PAPER, NOT A CLUE ──────────────────────────────────────────────
+
+    /// <summary>Every sheet somebody wrote that this build can mint: the rate schedule, the tin, SPIKE IT's
+    /// swap, pages and line item, and whatever the underground's designated rooms keep (the arc's five, the
+    /// lift code) on three grounds — swept the way <c>ThePageWorthTearingOutTests</c> sweeps them.</summary>
+    private static List<string> WrittenSheets()
+    {
+        var written = new List<string>
+        {
+            HardcaseRep.ScheduleFindId, CarryThePress.NoteId, SpikeIt.PagesId,
+            SpikeIt.TheSwap("Luna").Id, SpikeIt.TheReceipt("Luna").Id,
+        };
+        foreach (string body in new[] { "luna", "miranda", "europa" })
+        {
+            foreach (int level in UndergroundComplex.FloorsOf(body))
+            {
+                for (int room = 0; room < 12; room++)
+                {
+                    string id = UndergroundComplex.FindId(body, level, room);
+                    if (FieldClue.IsAuthored(id))
+                    {
+                        written.Add(id);
+                    }
+                }
+            }
+        }
+        return written;
+    }
+
+    /// <summary>
+    /// #1345 · <b>A DUG WRITTEN SHEET ENDS WHERE ITS DOCUMENT ENDS.</b> Ruled 2026-09-30: the certainty line
+    /// (<i>"📡 Better than a name…"</i>) is about sheets the dice composed; over a line item or a valve-book it is
+    /// nonsense. The seated entry of every written sheet is its heading and its page, and ends with the page's
+    /// last sentence; the standing entry is its heading alone. No certainty line in either.
+    ///
+    /// <para><b>Proven RED</b> by dropping the <c>ReadsAsAClue</c> branch from <c>LeftBehind.GistOf</c>: the dug
+    /// entry of <c>kolt-premium-schedule</c> ends in the certainty line, not in the schedule's last sentence.</para>
+    /// </summary>
+    [Fact]
+    public void A_WRITTEN_SHEET_DugEndsWithItsOwnLastSentence()
+    {
+        List<string> written = WrittenSheets();
+        Assert.True(written.Count >= 7,
+            $"only {written.Count} written sheet(s) were found — the sweep has stopped reaching the arc's paper.");
+
+        foreach (string id in written)
+        {
+            var sheet = new Satchel.Item(Satchel.Kind.Paper, id);
+            Assert.False(FieldClue.ReadsAsAClue(id), $"{id} is a written sheet and reads as a clue.");
+
+            string dug = LeftBehind.GistOf(sheet, Where, kept: true)!;
+            string left = LeftBehind.GistOf(sheet, Where)!;
+            Assert.StartsWith($"📋 {FieldClue.Title(id)} — ", dug, StringComparison.Ordinal);
+            Assert.True(Flat(dug).EndsWith(Flat(FieldClue.Document(id)), StringComparison.Ordinal),
+                $"{id}: the dug entry does not end with the document's last sentence:\n  {dug}");
+            Assert.Equal(
+                $"📋 {FieldClue.Title(id)} — {FieldClue.Label(FieldClue.CertaintyOf(id))}, read and left {Where}.",
+                left);
+            foreach (FieldClue.Certainty c in Enum.GetValues<FieldClue.Certainty>())
+            {
+                Assert.DoesNotContain(FieldClue.Line(c), dug, StringComparison.Ordinal);
+                Assert.DoesNotContain(FieldClue.Line(c), left, StringComparison.Ordinal);
+            }
+        }
+    }
+
+    /// <summary>#1345 · …AND A SHEET THE DICE COMPOSED STILL GISTS AS IT ALWAYS DID: heading, verdict, (the page
+    /// when dug,) and the certainty line last — character for character the pre-#1345 entry.</summary>
+    [Fact]
+    public void A_COMPOSED_SHEET_StillEndsWithHowWellItPinsAPlace()
+    {
+        foreach (string id in ManyIds())
+        {
+            var sheet = new Satchel.Item(Satchel.Kind.Paper, id);
+            Assert.True(FieldClue.ReadsAsAClue(id));
+            FieldClue.Certainty c = FieldClue.CertaintyOf(id);
+            string head = $"📋 {FieldClue.Title(id)} — {FieldClue.Label(c)}, ";
+
+            Assert.Equal(head + $"read and left {Where}. " + FieldClue.Line(c), LeftBehind.GistOf(sheet, Where));
+            string dug = LeftBehind.GistOf(sheet, Where, kept: true)!;
+            Assert.StartsWith(head + $"read through {Where} and copied out. ", dug, StringComparison.Ordinal);
+            Assert.EndsWith(" " + FieldClue.Line(c), dug, StringComparison.Ordinal);
+        }
+    }
 }

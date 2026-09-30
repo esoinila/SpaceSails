@@ -293,6 +293,15 @@ public sealed class LeftBehind
             // FLATTENED, because a field note is one entry and the notebook splits it into bullets by
             // SENTENCE (CaseThreads.BulletsOf) — a paragraph break inside one would be a line the strip
             // prints with a hole in it.
+            //
+            // #1345 · …and A WRITTEN SHEET IS A PAPER, NOT A CLUE (ruled 2026-09-30). The certainty line is about
+            // the sheets the dice composed; over one somebody wrote (FieldClue.ReadsAsAClue) it is nonsense, so a
+            // dug written sheet's entry ends where the document does, and a left one ends at its heading.
+            if (!FieldClue.ReadsAsAClue(item.Id))
+            {
+                return kept ? entry + Flat(FieldClue.Document(item.Id)) : entry.TrimEnd();
+            }
+
             return kept
                 ? entry + Flat(FieldClue.Document(item.Id)) + " " + FieldClue.Line(certainty)
                 : entry + FieldClue.Line(certainty);
