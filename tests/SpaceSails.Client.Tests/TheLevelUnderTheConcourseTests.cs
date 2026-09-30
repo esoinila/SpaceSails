@@ -745,6 +745,16 @@ public sealed class TheLevelUnderTheConcourseTests
         // register's own opening, so nothing can ever come to two spellings for one door.
         for (int i = 0; i < HavenLevels.Cabins; i++)
         {
+            // #1332 C · …except the one door at Ringside Exchange that became the Preservation office: it wears the
+            // office's plate, painted and registered alike, and is still locked here (this is the shut plan). The
+            // office's own laws are ThePreservationOfficeStandsOnMembersRoomsTests'.
+            if (HavenInterior.HasTheOffice(berth) && i == PreservationOffice.Cabin - 1)
+            {
+                Assert.Contains(plates, p => string.Equals(p.Label, PreservationOffice.DoorPlate, StringComparison.Ordinal));
+                Assert.Equal(PreservationOffice.DoorPlate, HavenInterior.CabinPlatesAt(berth)[i]);
+                continue;
+            }
+
             string painted = HavenLevels.CabinDoorPlate(i + 1);
             Assert.Contains(plates, p => string.Equals(p.Label, painted, StringComparison.Ordinal));
             Assert.Equal(painted, HavenInterior.CabinPlatesAt(berth)[i][..painted.Length]);

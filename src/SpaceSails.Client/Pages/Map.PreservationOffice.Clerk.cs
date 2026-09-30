@@ -68,8 +68,13 @@ public partial class Map
     /// </summary>
     private void AdvanceTheClerk(in HavenInterior.BarFloor bar)
     {
-        if (TheClerkAfoot() is not null || _barAfoot.Count >= WalkerBand
-            || TheClerksLeg(bar.BodyId) is not { } leg)
+        if (TheClerkAfoot() is { } afoot)
+        {
+            RideHimUpIfHeIsAtHisCar(bar.BodyId, afoot);
+            return;
+        }
+
+        if (_barAfoot.Count >= WalkerBand || TheClerksLeg(bar.BodyId) is not { } leg)
         {
             return;
         }
@@ -77,9 +82,9 @@ public partial class Map
         double dx = leg.To.X - leg.From.X, dy = leg.To.Y - leg.From.Y;
         double length = System.Math.Sqrt((dx * dx) + (dy * dy));
         if (PreservationOffice.Along(leg.SetOff, length / NpcWalk.PaceDu, SimTime) is not { } along
-            || (1 - along) * length < 2 * DeckPlan.AvatarRadius)
+            || (1 - along) * length < AtHisCarDu)
         {
-            return;
+            return;   // not his walk — or so little of it left that he is at the car, which is where he stops being
         }
 
         IReadOnlyList<SurfaceCollision.Segment> walls = _deckPlan.CollisionField;
@@ -99,5 +104,29 @@ public partial class Map
 
         _barAfoot.Add(new Walker { Walk = walk, Table = -1, For = Errand.Leaving });
         StateHasChanged();
+    }
+
+    /// <summary>#1332 C · How near his car's landing he has to be to be AT it: the courtesy's own width plus a body
+    /// — the reach GILT-EYE's night calls arrived (#1281), because a car's landing is the one square in the
+    /// building that never clears, and a captain standing on it would otherwise hold him a body-width off it for
+    /// ever. The same number keeps him from being dealt again: by the time the route has brought him this near,
+    /// the clock has less than this left of his line.</summary>
+    private static double AtHisCarDu => (NpcWalk.PersonalSpaceInRadii + 1) * DeckPlan.AvatarRadius;
+
+    /// <summary>#1332 C · <b>AT THE CAR, HE RIDES UP</b> — and is not on this floor any more. Nothing is said.</summary>
+    private void RideHimUpIfHeIsAtHisCar(string berth, Walker clerk)
+    {
+        if (HavenInterior.TheClerksCarAt(berth) is not { } car
+            || HavenInterior.TheCageLandingAt(berth, car) is not { } landing)
+        {
+            return;
+        }
+
+        double dx = clerk.Walk.X - landing.X, dy = clerk.Walk.Y - landing.Y;
+        if ((dx * dx) + (dy * dy) <= AtHisCarDu * AtHisCarDu)
+        {
+            _barAfoot.Remove(clerk);
+            StateHasChanged();
+        }
     }
 }

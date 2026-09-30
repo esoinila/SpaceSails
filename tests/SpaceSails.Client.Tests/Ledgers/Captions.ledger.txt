@@ -24,10 +24,11 @@ caption strings | luna B1 · the park | 112 caption(s), sha256 dc15b090656e552e5
 caption strings | selene gate · the lower concourse | 11 caption(s), sha256 312a274045d12cba526dcc22552eeee700f9ff464a05eaf4980c3ff71c979054
 caption strings | the-space-bar · the lower level | 11 caption(s), sha256 86e2993672cb869ae0f15543141b7c833166a657fac612752e5cdd55f84b13b2
 caption strings | cinder-roost · the lower level | 11 caption(s), sha256 2faa12f184f56157c1c65ebaac603d5ca2aaff846b4ef6e2890e7c3404739bbd
-caption strings | ringside-exchange · the lower level | 11 caption(s), sha256 7ba218c5522a44893bb6e1a0bbc50d298d2d56f740571e0fd0e2f6316bc37a42
+caption strings | ringside-exchange · the lower level | 11 caption(s), sha256 2a9f6a615776839a33b43ca5a176b5fe0792b32d6caca18ff0a1bdc28b1efdc4
 caption strings | the-tilt · the lower level | 11 caption(s), sha256 34b96deb46d501207d85caf87d0d5e4406464eb8e2d1e01a4fc9a47299e1590b
 caption strings | red-eye · the lower level | 11 caption(s), sha256 159e63e8048c4d8fa3c96f30c5e69e490297d6633f6e5dd3c5c9e2380401b289
 caption strings | the-deep · the lower level | 11 caption(s), sha256 9aaf6a9aeca55719b923f4bbfc5fa31601de58f82cc71008ad2a6e0f984cfc32
+caption strings | ringside-exchange · the Preservation office, ajar | 12 caption(s), sha256 58dff5fbdde329093a57d2117610399285be371d787b0da07e6a6439c3fb3644
 caption strings | the-space-bar · the garden | 52 caption(s), sha256 c61af37eccb3863a8ed9a1fe167ba41b4280504df981c22deae5ab170b9c754e
 caption strings | cinder-roost · the garden | 52 caption(s), sha256 f590629447d08780476a37dc5bd93014436f61da7287cb75b0f0ab38d2236855
 caption strings | ringside-exchange · the garden | 53 caption(s), sha256 e6a20978ab66b743eb9b8790052175c29c82a2347276a8fe21cd0c32b9addfbb

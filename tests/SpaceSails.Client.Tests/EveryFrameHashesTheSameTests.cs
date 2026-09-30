@@ -232,6 +232,10 @@ public sealed class EveryFrameHashesTheSameTests
             yield return $"haven below · {id}";
         }
 
+        // #1332 C · THE PRESERVATION OFFICE on the clerk's watch — its leaf hung ajar, the desk and the sheet on it —
+        // pinned on its own row (measured the day it was built), stood at the office's doorstep under its plate.
+        yield return $"haven office · {PreservationOffice.HavenId}";
+
         // #1332 B · THE GARDEN BEHIND GLASS — each haven's garden, pinned on its own row (measured the day it
         // was built), standing by the bench so the four plated beds and the room's plate are in the view.
         foreach (string id in HavenInterior.InteriorBodyIds.Where(HavenInterior.HasGarden))
@@ -311,6 +315,21 @@ public sealed class EveryFrameHashesTheSameTests
             return new Shot(
                 below,
                 new DeckView.State(landing.X, landing.Y, 0.0, 0, 0,
+                    ShuttleAway: false, ElectricUniverse: false, Docked: true),
+                SimTime: 1000.0);
+        }
+
+        if (name.StartsWith("haven office · ", StringComparison.Ordinal))
+        {
+            // #1332 C · At the office's doorstep on Ringside Exchange's hotel level, the door ajar — the room's own
+            // published square.
+            string id = name["haven office · ".Length..];
+            DeckPlan below = HavenInterior.DockedDeck(
+                id, level: HavenLevels.ServiceLevel, office: HavenInterior.OfficeDoor.Ajar)!;
+            DeckReachability.Point door = HavenInterior.TheOfficeDoorstepAt(id)!.Value;
+            return new Shot(
+                below,
+                new DeckView.State(door.X, door.Y, 0.0, 0, 0,
                     ShuttleAway: false, ElectricUniverse: false, Docked: true),
                 SimTime: 1000.0);
         }

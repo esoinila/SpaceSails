@@ -449,7 +449,10 @@ public sealed class TheWallsAreHungAndReadTests
         // one argument and the law grew one fact; the count is still two, and it is still the two welds.
         string deckPage = Pages("Map.Deck.cs");
         Assert.Contains("ArrivalTube.TierFor(sky, havenId)", deckPage, StringComparison.Ordinal);
-        Assert.Equal(2, deckPage.Split("TheBarsChurn, TubeTierAt(id), _havenFloor)").Length - 1);
+        //
+        // #1332 C · …and the Preservation office's door, at both welds, for the floor's reason: one argument more,
+        // one fact more, still two welds.
+        Assert.Equal(2, deckPage.Split("TheBarsChurn, TubeTierAt(id), _havenFloor, TheOfficeAsItStands())").Length - 1);
     }
 
     /// <summary>
