@@ -608,7 +608,8 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         string table = Table();
         int waited = table.IndexOf("private void TableWaited(", StringComparison.Ordinal);
         string beat = table[waited..table.IndexOf("\n        /// <summary>", waited, StringComparison.Ordinal)];
-        Assert.Contains("t.Bench ? _host.TheTailReading() : null", beat, StringComparison.Ordinal);
+        Assert.Contains("t.Bench && !HavenGarden.IsTheGardensBench(t.Scene) ? _host.TheTailReading() : null", beat,
+            StringComparison.Ordinal);
 
         // …and the press that sits you down says nothing about it.
         int sit = bench.IndexOf("private void SitOnThisBench(", StringComparison.Ordinal);

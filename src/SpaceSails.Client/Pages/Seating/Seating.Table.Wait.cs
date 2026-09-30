@@ -99,7 +99,11 @@ public partial class Map
             // is following us by foot, as they would need to stop moving also." Sitting still is what makes the
             // reading possible, so the reading is taken on the beat you spend sitting still — never on the press
             // that sat you down, which would be an answer to a question nobody had asked yet.
-            string? seen = t.Bench ? _host.TheTailReading() : null;
+            //
+            // #1348 · …and only on a bench that stands on a WALK. The garden's bench faces glass and tomatoes: no
+            // walk runs past it and no gate lets anyone out of it, so a reading of who stopped on the walk would
+            // describe a room the captain is not in. In the garden the beat says its one line and nothing after.
+            string? seen = t.Bench && !HavenGarden.IsTheGardensBench(t.Scene) ? _host.TheTailReading() : null;
 
             // One approach per top per watch. She came over, and whichever way that went, it went.
             //
