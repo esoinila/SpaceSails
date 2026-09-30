@@ -725,6 +725,48 @@ on the clock.
 **What is deliberately still not here.** The corridor is otherwise empty: the other four cabins are shut and
 nobody's, and the dark-web desk's rows are still rows. The people come one at a time.
 
+### …and every hub is a lobby (#1332 slice A = #1253 slice 3, 2026-09-29)
+
+Owner, 2026-09-29: *"The big round immigration points already look like elevator lobbies, so we might as well
+have those hubs have elevators that take to apartment-hotel-like, usually locked, spaces down below."*
+
+So they are. **Every haven has the lower level now, in Selene Gate's proven shape** — the same five-cabin block
+of `CABIN n` leaves that do not open, the same corridor round it, the same three cars — and what differs per
+station is ONE plate, Fable's, verbatim (`HavenLevels`): the floor's single label, and the plate over its cars
+upstairs.
+
+| Haven | Plate (the floor's one label, and the cars' plate upstairs) | The panel's lower button |
+|---|---|---|
+| Selene Gate | `LOWER CONCOURSE` (cars: `SERVICE LEVEL — NO PUBLIC ACCESS`, unchanged) | SERVICE LEVEL |
+| The Rusty Roadstead | `LONG-STAY · KEYS AT THE BAR` | LONG-STAY |
+| Cinder Roost | `BERTH HOTEL · RESIDENTS ONLY` | BERTH HOTEL |
+| Ringside Exchange | `MEMBERS' ROOMS` | MEMBERS' ROOMS |
+| The Tilt | `ROOMS · MIND THE FLOOR` | ROOMS |
+| The Red Eye | `CREW QUARTERS · NO PUBLIC ACCESS` | CREW QUARTERS |
+| The Deep | `COLD ROOMS · BOOK AT THE DESK` | COLD ROOMS |
+
+- **The button is the plate's first word(s)** (`HavenLevels.StopNameOf`: what stands before the first ` · ` or
+  ` — `), which is exactly how Selene Gate's SERVICE LEVEL already read off its car plate — so Selene's panel is
+  reproduced, not restated. The car's announcement and the field book's drawer read the same word.
+- **Cinder Roost's middle car is on the west face (edge 5), not the south-west (6)**: its V-06 is the Bonded
+  Stores hatch the Magpie's back room grows behind, and a car there would have eaten the one hatch on the ring
+  that opens. Every other station uses Selene Gate's 0/6/10.
+- **The first ride down at each station is told once**, on a free slot at Status rank, filed nowhere: *"The car
+  stops where the public map does not go. Somebody lives here, and it is not you."* The ride itself still says
+  nothing.
+- **GILT-EYE's night stays Selene Gate's.** The night's fork asks only "does this berth have a floor", which is
+  now true everywhere; the claim before it (the berth has the walk) is what keeps him home, and a guard runs a
+  visit past last call on both floors of each new lobby to hold it.
+- **Nothing else.** No walker below, no door that opens, no card; the backdrop is Selene Gate's service-level
+  art reused. Story plants its doors here later (#1332 C, #1062, #1074).
+- **What moved upstairs.** Each hub gave three department panels to its cars (the same bargain Selene made);
+  the concourse frames of The Rusty Roadstead, Cinder Roost, The Red Eye and The Deep draw those plates and
+  moved, and those four rows were left for a ruling rather than re-pinned (see #1332's PR).
+- **Guards:** `TheLevelUnderTheConcourseTests` and `TheRideDownIsAWayBackTests` now run their floor laws over
+  every lobby (`Lobbies`, asserted to be the whole catalogue); `EveryHubIsALobbyTests` (the line, the dev
+  starts, the night fence); `EveryHubIsALobbyProseTests` (canon verbatim, the button, reserved words).
+- **Dev starts:** `/map?dock=<haven>&ashore=1&havenfloor=-1` for each haven.
+
 ## The chalk mark: a dead drop under a gallery table (#794 slice 2, 2026-09-28)
 
 The faceless trade's return leg. A parcel taken at any haven's dark-web desk, buried where the desk said and

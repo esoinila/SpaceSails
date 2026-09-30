@@ -225,6 +225,13 @@ public sealed class EveryFrameHashesTheSameTests
             yield return $"haven · {id}";
         }
 
+        // #1332 A · EVERY HUB IS A LOBBY — each floor under a concourse, pinned on its own row (measured, the
+        // day they were built), so a lower level can move without a concourse row moving and the other way.
+        foreach (string id in HavenInterior.InteriorBodyIds.Where(HavenInterior.HasLowerLevel))
+        {
+            yield return $"haven below · {id}";
+        }
+
         yield return "wreck · HullBreach";
 
         foreach (int level in LunaFloors())
@@ -285,6 +292,20 @@ public sealed class EveryFrameHashesTheSameTests
                     ShuttleAway: false, ElectricUniverse: false,
                     ShowNerve: true, NerveCompact: true, Nerve: 44, NerveReadout: "FRAYED"),
                 SimTime: 2400.0, CrewGlance: true);
+        }
+
+        if (name.StartsWith("haven below · ", StringComparison.Ordinal))
+        {
+            // #1332 A · The floor under the concourse, as the ride puts a captain on it: at the first car's
+            // landing, asked of the room.
+            string id = name["haven below · ".Length..];
+            DeckPlan below = HavenInterior.DockedDeck(id, level: HavenLevels.ServiceLevel)!;
+            DeckReachability.Point landing = HavenInterior.TheCageLandingAt(id, 0)!.Value;
+            return new Shot(
+                below,
+                new DeckView.State(landing.X, landing.Y, 0.0, 0, 0,
+                    ShuttleAway: false, ElectricUniverse: false, Docked: true),
+                SimTime: 1000.0);
         }
 
         if (name.StartsWith("wreck · ", StringComparison.Ordinal))

@@ -274,6 +274,7 @@ public partial class Map
             // counter in it, and stays where the counter is.
             StepTheBarsFeet(dtRealSeconds, bar);
             AdvanceTheWalk(bar);
+            TellTheFirstRideDown(bar.BodyId);   // #1332 A · …and, once per station, what a lobby's car is for
             return;
         }
 

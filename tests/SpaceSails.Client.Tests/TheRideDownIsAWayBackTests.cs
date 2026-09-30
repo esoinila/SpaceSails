@@ -21,15 +21,24 @@ public sealed class TheRideDownIsAWayBackTests
 {
     private static string Berth => HavenInterior.TheHavenWithFloors!;
 
+    /// <summary>#1332 A · Every haven with a floor under its concourse — every haven with a hub. The ride's
+    /// laws (where the doors open, the panel is the road, casting off from below, the book's drawer, the
+    /// silent pool) are asked at each; the laws about Selene Gate's own tail stay on <see cref="Berth"/>.
+    /// That this is the whole catalogue is <c>TheLevelUnderTheConcourseTests</c>' anti-vacuous half.</summary>
+    public static TheoryData<string> Lobbies => TheLevelUnderTheConcourseTests.Lobbies;
+
     /// <summary>A live page clamped on at the one station with a floor under it, ashore in the bar — the
     /// posture a captain is in when he first walks up to a car.</summary>
-    private static Pages.Map Ashore(string canvasId)
+    private static Pages.Map Ashore(string canvasId) => Ashore(canvasId, Berth);
+
+    /// <summary>#1332 A · …the same posture at any haven.</summary>
+    internal static Pages.Map Ashore(string canvasId, string at)
     {
         Pages.Map map = Boot(canvasId);
         var sky = (ICelestialEphemeris)Read(map, "_ephemeris")!;
-        CelestialBody berth = sky.Bodies.First(b => b.Id == Berth);
-        Invoke(map, "ClampOntoHaven", berth, sky.Position(Berth, (double)Read(map, "SimTime")!), null);
-        Assert.Equal(Berth, (string?)Read(map, "_dockedHavenId"));
+        CelestialBody berth = sky.Bodies.First(b => b.Id == at);
+        Invoke(map, "ClampOntoHaven", berth, sky.Position(at, (double)Read(map, "SimTime")!), null);
+        Assert.Equal(at, (string?)Read(map, "_dockedHavenId"));
         Assert.True((bool)Invoke(map, "StandAtTheBarThreshold")!, "the ashore boot refused this berth.");
         Assert.Equal(HavenLevels.Concourse, Floor(map));
         return map;
@@ -67,29 +76,30 @@ public sealed class TheRideDownIsAWayBackTests
     /// <para><b>Proven RED</b> by standing the captain at cage 0's landing whatever cage he rode:
     /// <c>rode car 1 on the concourse and came out 24.0 du from its doors.</c></para>
     /// </summary>
-    [Fact]
-    public void TheDoorsOpenAtTheCarYouRodeOnEitherFloor()
+    [Theory]
+    [MemberData(nameof(Lobbies))]
+    public void TheDoorsOpenAtTheCarYouRodeOnEitherFloor(string berth)
     {
-        Pages.Map map = Ashore("ride-lands-where-you-rode");
-        int cars = HavenInterior.TheCagesAt(Berth).Count;
+        Pages.Map map = Ashore($"ride-lands-where-you-rode-{berth}", berth);
+        int cars = HavenInterior.TheCagesAt(berth).Count;
         Assert.Equal(HavenLevels.Cages, cars);
 
         for (int down = 0; down < cars; down++)
         {
             Assert.True(Ride(map, HavenLevels.ServiceLevel, down), $"car {down} refused to go down.");
             Assert.Equal(HavenLevels.ServiceLevel, Floor(map));
-            AssertStandingAtTheCar(map, down, "below");
+            AssertStandingAtTheCar(map, berth, down, "below");
 
             int up = (down + 1) % cars;   // …and back up on a DIFFERENT one, which is the whole mechanic.
             Assert.True(Ride(map, HavenLevels.Concourse, up), $"car {up} refused to go up.");
             Assert.Equal(HavenLevels.Concourse, Floor(map));
-            AssertStandingAtTheCar(map, up, "on the concourse");
+            AssertStandingAtTheCar(map, berth, up, "on the concourse");
         }
     }
 
-    private static void AssertStandingAtTheCar(Pages.Map map, int cage, string where)
+    private static void AssertStandingAtTheCar(Pages.Map map, string berth, int cage, string where)
     {
-        DeckReachability.Point landing = HavenInterior.TheCageLandingAt(Berth, cage)!.Value;
+        DeckReachability.Point landing = HavenInterior.TheCageLandingAt(berth, cage)!.Value;
         (double x, double y) = Where(map);
         double dx = x - landing.X, dy = y - landing.Y;
         Assert.True(
@@ -106,13 +116,14 @@ public sealed class TheRideDownIsAWayBackTests
     /// the page in the posture the panel is open in. That is what makes this a test of the WIRE rather than
     /// of two methods that happen to agree.</para>
     /// </summary>
-    [Fact]
-    public void PressingTheButtonOnThePanelRidesTheCar()
+    [Theory]
+    [MemberData(nameof(Lobbies))]
+    public void PressingTheButtonOnThePanelRidesTheCar(string berth)
     {
-        Pages.Map map = Ashore("ride-through-the-panel");
+        Pages.Map map = Ashore($"ride-through-the-panel-{berth}", berth);
 
         // Stand at a car and press [E] on it, which is how the panel comes up at all.
-        DeckReachability.Point car = HavenInterior.TheCagesAt(Berth)[1];
+        DeckReachability.Point car = HavenInterior.TheCagesAt(berth)[1];
         Set(map, "_avatarX", car.X);
         Set(map, "_avatarY", car.Y);
         Invoke(map, "HavenLiftInteract");
@@ -127,8 +138,8 @@ public sealed class TheRideDownIsAWayBackTests
 
         Assert.False((bool)Read(map, "_showLiftPanel")!, "the panel stayed open after a ride.");
         Assert.Equal(HavenLevels.ServiceLevel, Floor(map));
-        AssertStandingAtTheCar(map, 1, "below");
-        Assert.Equal(HavenLevels.NameOf(HavenLevels.ServiceLevel), (string)Invoke(map, "LiftPanelDepth")!);
+        AssertStandingAtTheCar(map, berth, 1, "below");
+        Assert.Equal(HavenLevels.NameOf(HavenLevels.ServiceLevel, HavenInterior.TheLowerStopAt(berth)), (string)Invoke(map, "LiftPanelDepth")!);
     }
 
     /// <summary>
@@ -144,10 +155,11 @@ public sealed class TheRideDownIsAWayBackTests
     /// <para><b>Proven RED</b> by restoring the bare <c>_avatarY &gt; ShipDeckTopY</c>: the captain finishes
     /// the cast-off on the service level's own floor, aboard nothing.</para>
     /// </summary>
-    [Fact]
-    public void CastingOffFromTheServiceLevelPutsHimBackAboard()
+    [Theory]
+    [MemberData(nameof(Lobbies))]
+    public void CastingOffFromTheServiceLevelPutsHimBackAboard(string berth)
     {
-        Pages.Map map = Ashore("cast-off-from-below");
+        Pages.Map map = Ashore($"cast-off-from-below-{berth}", berth);
         Assert.True(Ride(map, HavenLevels.ServiceLevel, 1));
 
         // Somewhere down there whose y is inside the ship's own band — the deck is one coordinate space.
@@ -257,19 +269,20 @@ public sealed class TheRideDownIsAWayBackTests
     /// <para><b>Proven RED</b> by having the suffix answer the level's plate at the concourse too: every note
     /// ever filed in a haven bar changes its drawer.</para>
     /// </summary>
-    [Fact]
-    public void TheFieldBookNamesTheFloorOnlyWhenItIsNotTheConcourse()
+    [Theory]
+    [MemberData(nameof(Lobbies))]
+    public void TheFieldBookNamesTheFloorOnlyWhenItIsNotTheConcourse(string berth)
     {
-        Pages.Map map = Ashore("the-book-names-the-floor");
+        Pages.Map map = Ashore($"the-book-names-the-floor-{berth}", berth);
         var inTheBar = (string)Invoke(map, "TheBooksNameForHere")!;
-        Assert.Contains(HavenInterior.BarNameOf(Berth)!, inTheBar, StringComparison.Ordinal);
+        Assert.Contains(HavenInterior.BarNameOf(berth)!, inTheBar, StringComparison.Ordinal);
 
         Assert.True(Ride(map, HavenLevels.ServiceLevel, 0));
         var below = (string)Invoke(map, "TheBooksNameForHere")!;
 
         Assert.NotEqual(inTheBar, below);
-        Assert.Contains(HavenLevels.NameOf(HavenLevels.ServiceLevel), below, StringComparison.Ordinal);
-        Assert.DoesNotContain(HavenInterior.BarNameOf(Berth)!, below, StringComparison.Ordinal);
+        Assert.Contains(HavenLevels.NameOf(HavenLevels.ServiceLevel, HavenInterior.TheLowerStopAt(berth)), below, StringComparison.Ordinal);
+        Assert.DoesNotContain(HavenInterior.BarNameOf(berth)!, below, StringComparison.Ordinal);
     }
 
     /// <summary>
@@ -285,10 +298,11 @@ public sealed class TheRideDownIsAWayBackTests
     /// says <i>"a shudder walks through the concourse and every conversation stops mid-word"</i> in a
     /// corridor with five shut doors on it.</para>
     /// </summary>
-    [Fact]
-    public void TheShudderHasNothingToSayOnTheServiceLevel()
+    [Theory]
+    [MemberData(nameof(Lobbies))]
+    public void TheShudderHasNothingToSayOnTheServiceLevel(string berth)
     {
-        Pages.Map map = Ashore("no-line-down-below");
+        Pages.Map map = Ashore($"no-line-down-below-{berth}", berth);
         Assert.True(Ride(map, HavenLevels.ServiceLevel, 0));
 
         var room = (HullShudder.HavenRoom)Read(map, "TheRoomOfTheHavenHeIsIn")!;

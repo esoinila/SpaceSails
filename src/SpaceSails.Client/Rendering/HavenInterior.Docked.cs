@@ -25,7 +25,7 @@ public static partial class HavenInterior
     /// <summary>Does this haven have a walkable interior (so docking should weld on a tube)?</summary>
     public static bool HasInterior(string bodyId) => System.Array.Exists(Specs, s => s.BodyId == bodyId);
 
-    /// <summary>#1253 · …and does it have a FLOOR UNDER THAT ONE? One station does. Asked here by the deck
+    /// <summary>#1253 · …and does it have a FLOOR UNDER THAT ONE? Every haven with a hub does since #1332 A. Asked here by the deck
     /// build, the cages, the page's own ride and every guard, so "this berth has a basement" is one answer
     /// rather than a body id compared in six files.</summary>
     public static bool HasLowerLevel(string bodyId) =>
@@ -35,9 +35,16 @@ public static partial class HavenInterior
     /// does. Published for the boot cheat, which needs somewhere to default to: a floor cheat pointed at one
     /// of the six one-storey havens is a URL that lands on a concourse and proves nothing. Asked of the
     /// catalogue rather than spelled as an id, so the day a second station grows a basement nothing has to be
-    /// told about it.</summary>
+    /// told about it.
+    ///
+    /// <para>#1332 A · Every haven has a floor under it now, so "the first in the catalogue" would have moved
+    /// the cheat's default to The Rusty Roadstead. It stays where the floors were first built and where the
+    /// night that uses them runs: the station with the observation walk, whenever that station has floors,
+    /// and the catalogue's first otherwise.</para></summary>
     public static string? TheHavenWithFloors =>
-        System.Array.Find(Specs, s => s.Lower is not null)?.BodyId;
+        HasLowerLevel(ObservationWalk.HavenId)
+            ? ObservationWalk.HavenId
+            : System.Array.Find(Specs, s => s.Lower is not null)?.BodyId;
 
     /// <summary>#1253 · Which levels this berth actually has, top down — one floor at six of the seven havens
     /// and two at Selene Gate. Published so a sweep walks the floors a station HAS rather than the floors

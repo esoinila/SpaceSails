@@ -57,6 +57,13 @@ public static class HavenLevels
     /// concourse says; the level below says what the station is willing to call it in public.</summary>
     public static string NameOf(int level) => level == ServiceLevel ? ServiceLevelPlate : ConcoursePlate;
 
+    /// <summary>#1332 A · …and the same question at a station whose lower stop has a name of its own. The
+    /// lower stop is <paramref name="below"/> (what <see cref="StopNameOf"/> reads off that station's plate) and
+    /// the concourse is the concourse everywhere. Null is Selene Gate's answer and every older caller's:
+    /// <see cref="ServiceLevelPlate"/>, to the byte.</summary>
+    public static string NameOf(int level, string? below) =>
+        level == ServiceLevel ? below ?? ServiceLevelPlate : ConcoursePlate;
+
     /// <summary>#1253 · The upper stop's name.</summary>
     public const string ConcoursePlate = "CONCOURSE";
 
@@ -141,7 +148,13 @@ public static class HavenLevels
     /// <para>Both stops, always, from either floor. There is no gate on this car and nothing to earn: #600's
     /// scar is a car that only went down, and the honest way not to repeat it is a panel that cannot.</para>
     /// </summary>
-    public static IReadOnlyList<UndergroundComplex.LiftStop> Panel(int level)
+    public static IReadOnlyList<UndergroundComplex.LiftStop> Panel(int level) => Panel(level, null);
+
+    /// <summary>#1332 A · <b>THE SAME PANEL AT A STATION WHOSE LOWER STOP HAS A NAME OF ITS OWN.</b> The rows,
+    /// the order and the air are <see cref="Panel(int)"/>'s; only the lower button's word is the station's —
+    /// <paramref name="below"/>, which is <see cref="StopNameOf"/> of that station's plate. Null is
+    /// <see cref="ServiceLevelPlate"/>, which is Selene Gate's panel to the byte.</summary>
+    public static IReadOnlyList<UndergroundComplex.LiftStop> Panel(int level, string? below)
     {
         var stops = new List<UndergroundComplex.LiftStop>(Levels.Count);
         foreach (int stop in Levels)
@@ -152,7 +165,7 @@ public static class HavenLevels
             // about regolith. #802's law is about a row TYPING an answer nobody checked — this row's answer
             // is the reason the whole building is walkable, and it is stated here with its reason.
             stops.Add(new UndergroundComplex.LiftStop(
-                stop, NameOf(stop), Pressurised: true, IsCurrent: stop == level, Refusal: null));
+                stop, NameOf(stop, below), Pressurised: true, IsCurrent: stop == level, Refusal: null));
         }
 
         return stops;
@@ -168,4 +181,77 @@ public static class HavenLevels
     /// own plate below it, so one berth's notes group into two drawers rather than one.</summary>
     public static string BookSuffix(int level) =>
         level == Concourse ? "" : NameOf(level);
+
+    /// <summary>#1332 A · …at a station whose lower stop has a name of its own: the drawer is that name.</summary>
+    public static string BookSuffix(int level, string? below) =>
+        level == Concourse ? "" : NameOf(level, below);
+
+    // ── #1332 A · EVERY HUB IS A LOBBY ─────────────────────────────────────────────────────────────────────
+    //
+    // Owner, 2026-09-29: "The big round immigration points already look like elevator lobbies, so we might as
+    // well have those hubs have elevators that take to apartment-hotel-like, usually locked, spaces down
+    // below." So they are. Every haven's hub gets Selene Gate's lower level in Selene Gate's shape, and what
+    // differs per station is ONE plate — the floor's single label, painted over its cars upstairs too — and
+    // the word its panel's lower button carries, which is that plate's first word(s) exactly as Selene
+    // Gate's SERVICE LEVEL is the first words of SERVICE LEVEL — NO PUBLIC ACCESS. Fable canon, verbatim;
+    // the cabin doors keep the shipped CABIN n everywhere, because the hotel is a word on the floor and not
+    // on the doors.
+
+    /// <summary>#1332 A · Cinder Roost's lower level. Fable canon, verbatim.</summary>
+    public const string CinderRoostPlate = "BERTH HOTEL · RESIDENTS ONLY";
+
+    /// <summary>#1332 A · The Rusty Roadstead's (the-space-bar). Fable canon, verbatim.</summary>
+    public const string SpaceBarPlate = "LONG-STAY · KEYS AT THE BAR";
+
+    /// <summary>#1332 A · The Red Eye's. Fable canon, verbatim.</summary>
+    public const string RedEyePlate = "CREW QUARTERS · NO PUBLIC ACCESS";
+
+    /// <summary>#1332 A · Ringside Exchange's. Fable canon, verbatim.</summary>
+    public const string RingsidePlate = "MEMBERS' ROOMS";
+
+    /// <summary>#1332 A · The Tilt's. Fable canon, verbatim.</summary>
+    public const string TiltPlate = "ROOMS · MIND THE FLOOR";
+
+    /// <summary>#1332 A · The Deep's. Fable canon, verbatim.</summary>
+    public const string DeepPlate = "COLD ROOMS · BOOK AT THE DESK";
+
+    /// <summary>#1332 A · <b>THE FIRST RIDE DOWN, TOLD ONCE AT EACH HAVEN</b> — a pulse at Status rank, on a
+    /// free slot, and never again at that station. Fable canon, verbatim. It says nothing about who, and it
+    /// is the only sentence the lower levels have besides their plates.</summary>
+    public const string FirstRideLine =
+        "The car stops where the public map does not go. Somebody lives here, and it is not you.";
+
+    /// <summary>#1332 A · <b>WHAT A LOWER STOP IS CALLED ON THE BUTTON</b> — a plate's first word(s): what
+    /// stands before its first <c> · </c> or <c> — </c>, or the whole plate when it has neither. So
+    /// <c>SERVICE LEVEL — NO PUBLIC ACCESS</c> is <c>SERVICE LEVEL</c> (Selene Gate's button, which this
+    /// reproduces rather than restates) and <c>MEMBERS' ROOMS</c> is itself. Read, never typed: a button
+    /// that kept its own word would be a second name for one floor.</summary>
+    public static string StopNameOf(string plate)
+    {
+        ArgumentNullException.ThrowIfNull(plate);
+        int cut = plate.Length;
+        foreach (string mark in (string[])[" · ", " — "])
+        {
+            int at = plate.IndexOf(mark, StringComparison.Ordinal);
+            if (at > 0 && at < cut)
+            {
+                cut = at;
+            }
+        }
+
+        return plate[..cut];
+    }
+
+    /// <summary>#1332 A · Every sentence this slice can put on a screen: the six new plates and the one
+    /// line. (Selene Gate's plates are #1253's and are held where they were written.)</summary>
+    public static IEnumerable<string> AllProse()
+    {
+        yield return CinderRoostPlate;
+        yield return SpaceBarPlate;
+        yield return RedEyePlate;
+        yield return RingsidePlate;
+        yield return TiltPlate;
+        yield return DeepPlate;
+        yield return FirstRideLine;
+    }
 }

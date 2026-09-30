@@ -327,7 +327,7 @@ public partial class Map
             //
             // (The separator itself is never spelled here — that is #690's law, and this method's own
             // guard reads the body for it.)
-            string floor = HavenLevels.BookSuffix(_havenFloor);
+            string floor = HavenLevels.BookSuffix(_havenFloor, TheLowerStop);
             return Core.FieldNotes.PlaceLabel(
                 DockedStationName(),
                 floor.Length == 0 ? HavenInterior.BarNameOf(berth) : floor);

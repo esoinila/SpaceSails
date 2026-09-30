@@ -24,6 +24,12 @@ namespace SpaceSails.Client.Pages;
 /// <para><b>Nothing is said.</b> No card, no pulse, no line. A captain presses a button, the doors close and
 /// open, and he is somewhere else in the same building — which is what a lift is, and the one place this
 /// feature would be tempted to explain itself is the place it must not.</para>
+///
+/// <para>#1332 A · <b>…with one exception, told once per station and never by the ride itself.</b> Every hub
+/// is a lobby now, and the first time the captain stands on a floor below one, on a free slot, the building
+/// says Fable's one line (<see cref="HavenLevels.FirstRideLine"/>) and then never again at that station
+/// (<see cref="TellTheFirstRideDown"/>). The ride still says nothing; the floor says it, when there is
+/// room.</para>
 /// </summary>
 public partial class Map
 {
@@ -32,6 +38,11 @@ public partial class Map
     /// whole of the tailing craft the owner asked for: a car is not "the lift", it is a PLACE, and the ride
     /// carries which one with it.</summary>
     private int _havenLiftCage;
+
+    /// <summary>#1332 A · The stations at which <see cref="HavenLevels.FirstRideLine"/> has been told — once
+    /// per station, for the run. By berth id; a station is added on the frame the line reaches the slot and
+    /// never before, so a ride whose slot was busy the whole way down is still owed it.</summary>
+    private readonly HashSet<string> _firstRideToldAt = new(StringComparer.Ordinal);
 
     /// <summary>#1253 · Is the captain at a berth with floors, with the deck up? The one question this whole
     /// file is gated on, asked once so the press, the panel and the ride cannot disagree about whether there
@@ -96,7 +107,11 @@ public partial class Map
     /// <summary>#1253 · What this car's panel offers, standing where the captain is standing. Core's, so the
     /// row the player presses and the row a guard walks are one object.</summary>
     private IReadOnlyList<UndergroundComplex.LiftStop> HavenLiftStops() =>
-        TheStationHasFloors ? HavenLevels.Panel(_havenFloor) : [];
+        TheStationHasFloors ? HavenLevels.Panel(_havenFloor, TheLowerStop) : [];
+
+    /// <summary>#1332 A · What this berth's lower button says — its plate's first word(s), and Selene Gate's
+    /// SERVICE LEVEL to the byte. A property, not a field: it is the catalogue's answer, never state.</summary>
+    private string? TheLowerStop => HavenInterior.TheLowerStopAt(_dockedHavenId);
 
     /// <summary>
     /// #1253 · <b>A BUTTON ON A STATION'S PANEL WAS PRESSED</b>, and it is the whole of what such a button
@@ -169,6 +184,29 @@ public partial class Map
         RendererInterop.PlayCue("board");
         StateHasChanged();
         return true;
+    }
+
+    /// <summary>
+    /// #1332 A · <b>THE FIRST RIDE DOWN, TOLD ONCE AT EACH HAVEN.</b> Fable canon, verbatim
+    /// (<see cref="HavenLevels.FirstRideLine"/>): <i>"The car stops where the public map does not go. Somebody
+    /// lives here, and it is not you."</i>
+    ///
+    /// <para>Asked on every frame the captain is on a floor below a concourse and answered at most once per
+    /// station: a pulse at Status rank, on a FREE slot — never over a line that is still being read, which is
+    /// the same courtesy every other told-once line in this game keeps — and filed nowhere. The ride itself
+    /// still says nothing (the class summary's law): the car stops, the doors open, and the building speaks
+    /// only when there is room for it to.</para>
+    /// </summary>
+    private void TellTheFirstRideDown(string berth)
+    {
+        if (OnTheConcourse || !HavenInterior.HasLowerLevel(berth)
+            || _pulse.Message is not null || _firstRideToldAt.Contains(berth))
+        {
+            return;
+        }
+
+        _firstRideToldAt.Add(berth);
+        ShowPulseMessage(HavenLevels.FirstRideLine, PulseRank.Status);
     }
 
     /// <summary>#1253 · The berth's own <c>StandCaptainAt</c>. Same net under it — the placement is nudged

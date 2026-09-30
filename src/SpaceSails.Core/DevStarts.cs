@@ -377,6 +377,8 @@ public static partial class DevStarts
             + "cars back up — each landing at its own edge of the hall, so which one you ride decides where "
             + "you come out. Nothing down here explains anything (#1253).",
             "/map?dock=selene-gate&ashore=1&havenfloor=-1"),
+        // #1332 A · …and the six floors the other hubs grew, one button each (DevStarts.Below.cs).
+        .. BelowTheLobbies(),
         // #1016 · THE OWNER'S OWN BUG, IN ONE BUTTON. He sat at a top in The Stormwatch Bar, pressed "Work
         // the case", and nothing happened at all — the seat verbs were every one of them gated on a
         // SurfaceExcursion and a berth has none. Owner: "Maybe it might be good idea to refactor the working
