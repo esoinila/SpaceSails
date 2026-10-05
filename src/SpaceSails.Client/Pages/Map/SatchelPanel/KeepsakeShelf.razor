@@ -17,6 +17,8 @@
     `keepsake-art` boxes; a picture file drops in by giving the box a background-image. The placeholders carry
     no letters, so no caption is ever doubled in pixels.
 *@
+@{
+@* ── MARKUP BEGINS · written for the shelf, spliced where the panel invokes it ────────────────────────── *@
 @if (KeepsakePieces() is { Count: > 0 } pieces)
 {
     <div class="keepsake-shelf" aria-label="Keepsakes">
@@ -50,4 +52,6 @@
             </div>
         }
     </div>
+}
+@* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
 }
