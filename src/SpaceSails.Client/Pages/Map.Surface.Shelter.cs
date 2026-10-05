@@ -23,7 +23,7 @@ public partial class Map
         SurfaceExcursion ex)
     {
         var list = new List<(double, double, bool, bool, bool)>();
-        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
+        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _) || StationAboard.TryParseStationId(ex.Stop.Body.Id, out _))
         {
             return list;   // a hull has neither a tube mouth nor a shelter
         }

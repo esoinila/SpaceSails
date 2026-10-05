@@ -199,6 +199,7 @@ public partial class Map
         DeathPlace place = dying.Floor < 0
             ? DeathPlace.Underground
             : Derelict.TryParseWreckId(dying.Stop.Body.Id, out _)
+              || StationAboard.TryParseStationId(dying.Stop.Body.Id, out _)   // #653: TODO(inspector) a station has no death prose of her own
                 ? DeathPlace.Derelict
                 : DeathPlace.LandingParty;
         if (!DeathNarration.CanHappen(cause, place))

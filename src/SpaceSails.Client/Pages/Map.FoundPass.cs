@@ -44,7 +44,8 @@ public sealed partial class Map
         foreach (CelestialBody body in _ephemeris.Bodies)
         {
             if (ShuttleExcursion.IsLandableSurface(body.Kind)
-                && !Derelict.TryParseWreckId(body.Id, out _))
+                && !Derelict.TryParseWreckId(body.Id, out _)
+                && !StationAboard.TryParseStationId(body.Id, out _))
             {
                 sites.Add(body.Id);
             }

@@ -59,6 +59,7 @@ public partial class Map
         public string? ExpeditionCheat; // #370 /map?expedition=1|mining: spawn an away-team gig accepted + its site in shuttle range at the berth
         public string? DeflectionCheat; // #394 /map?deflection=1|C|S|M: spawn the deflection gig accepted, rock inbound, ship docked at Ringside
         public bool WreckCheat; // #488 /map?wreck=1: spawn a derelict in shuttle range — board her, read her, then file or strip
+        public bool StationCheat; // #653 /map?station=1: hang a DEAD STATION in shuttle range — board her, walk her, hop her severed tubes
         public Derelict.WreckCause? WreckCauseCheat; // #488 /map?wreck=<cause>: board a wreck that died THAT way
         public bool SecretlabDeep; // #592 /map?secretlab=deep: the rock whose site hides a band
         public bool SecretlabSealed; // #619 /map?secretlab=sealed: the rock whose site carries the refuge that failed (B3)

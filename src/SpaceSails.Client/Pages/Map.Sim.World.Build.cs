@@ -159,6 +159,18 @@ public partial class Map
                 q.DockCheat = berthId; // clamp onto the berth the rock co-orbits, so it's in reach at spawn
             }
         }
+        if (q.StationCheat)
+        {
+            // #653: append the dead station as a boardable site co-orbiting the berth — the wreck cheat's own idiom, so
+            // the whole board/land rail already knows what to do with her. Default the berth to The Tilt.
+            string berthKey = q.DockCheat ?? "the-tilt";
+            string berthId = DockedStarts.TryGetValue(berthKey, out string? stationBerth) ? stationBerth : berthKey;
+            if (scenario.Bodies.Any(b => b.Id == berthId))
+            {
+                scenario = scenario with { Bodies = [.. scenario.Bodies, StationSiteBody(berthId)] };
+                q.DockCheat = berthId; // clamp onto the berth she hangs off, so she is in reach at spawn
+            }
+        }
         if (q.WreckCheat)
         {
             // #488: append the derelict as a boardable site co-orbiting the berth — the same ellipse-cheat

@@ -184,7 +184,7 @@ public partial class Map
     // point of every hull and the link never degraded anywhere. AwayTeamSide is the one place that knows
     // which door you are on the far side of, and now which axis measures the walk away from it.
     private double CommsOnsetBias() =>
-        AwayTeamSide.CommsOnsetBias(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius);
+        AwayTeamSide.CommsOnsetBias(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius, StationDock);
 
     // A scripted onset (a bad expedition beat, solar interference): if no episode is underway, pull the
     // next one forward to NOW. Pure schedule nudge — it changes WHEN the display gate closes, never the

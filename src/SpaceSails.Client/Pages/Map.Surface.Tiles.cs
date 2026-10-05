@@ -50,7 +50,8 @@ public partial class Map
         ex.Floor >= 0
         && !ex.Expedition
         && !ex.Deflection
-        && !Derelict.TryParseWreckId(ex.Stop.Body.Id, out _);
+        && !Derelict.TryParseWreckId(ex.Stop.Body.Id, out _)
+        && !StationAboard.TryParseStationId(ex.Stop.Body.Id, out _);   // #653: a station is not a lattice either
 
     /// <summary>#563 law 7 · THE BACKSTOP, enforced.
     ///
@@ -261,7 +262,7 @@ public partial class Map
     /// metres down and somebody else's steel deck are both real places to be shot on, and neither of them is
     /// a landing site's tile lattice — a husk recorded there would be filed against a coordinate frame it
     /// was never measured in.</summary>
-    private bool TheGroundKeepsHusksHere(SurfaceExcursion ex) => ex.Floor == 0 && !OnWreck;
+    private bool TheGroundKeepsHusksHere(SurfaceExcursion ex) => ex.Floor == 0 && !OnADeadHull;
 
     /// <summary>
     /// ONE OLD ONE GOES DOWN. The single writer, and every path that drops one comes through here — the

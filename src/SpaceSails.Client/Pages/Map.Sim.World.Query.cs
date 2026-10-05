@@ -299,6 +299,14 @@ public partial class Map
                 }
             }
         }
+        else if (pair.StartsWith("station=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #653 dev cheat: /map?station=1 hangs a DEAD STATION off the berth, the same pseudo-body trick ?wreck uses.
+            // She is seeded from her id, so it is the same station every boot: the same tubes severed, the same
+            // locks serviceable and the same faces to cut. Documented in docs/testing-guide.md.
+            string candidate = Uri.UnescapeDataString(pair["station=".Length..]).ToLowerInvariant();
+            q.StationCheat = candidate is "1" or "true" or "yes";
+        }
         else if (pair.StartsWith("archive=", StringComparison.OrdinalIgnoreCase))
         {
             // Dev cheat: /map?archive=1&land=1 boards a derelict that is CARRYING A COLD-ARCHIVE NODE.

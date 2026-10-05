@@ -295,6 +295,7 @@ public partial class Map
         if (_surface is not { } ex
             || ex.Floor < 0
             || Derelict.TryParseWreckId(ex.Stop.Body.Id, out _)
+            || StationAboard.TryParseStationId(ex.Stop.Body.Id, out _)
             || !CaptainGrave.CanRecord(b.Cause))
         {
             return null;

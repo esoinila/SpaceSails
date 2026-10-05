@@ -164,6 +164,10 @@ public sealed partial class DeckPlan
         // so one kind serving both would put a press in a room it cannot ask a single one of those questions
         // about. What the two DO share is the surface the captain looks at (LiftPanel.razor) and the row it
         // draws (UndergroundComplex.LiftStop), because a list of floors is a list of floors.
-        HavenLift }
+        HavenLift,
+        // #653 slice 1 · THE DEAD STATION. Two kinds, because they are two verbs: read a tube that will not let
+        // you through (told, once), and name a part of her the boat can take you to (a hop, or the cut that
+        // makes one possible). Neither is a re-used ShuttleAirlock — that press leaves the whole station.
+        StationTube, StationHop }
 
 }

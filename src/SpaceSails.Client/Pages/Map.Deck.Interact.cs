@@ -434,6 +434,12 @@ public partial class Map
             case DeckPlan.ConsoleKind.WreckPlacard:
                 ReadDamageControlPlacard(); // #488: where the valves are, told at the lock
                 break;
+            case DeckPlan.ConsoleKind.StationTube:
+                ReadTheTube();              // #653: why a severed tube will not let you through — Core's own line
+                break;
+            case DeckPlan.ConsoleKind.StationHop:
+                PressTheHop();              // #653: fly the boat to another part of her, or cut a way in first
+                break;
             case DeckPlan.ConsoleKind.WreckKey:
                 TakeTheBlackOpsKey();       // #535: the code in somebody's kit, and its own card on the spot
                 break;

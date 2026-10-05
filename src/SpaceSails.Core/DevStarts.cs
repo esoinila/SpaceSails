@@ -383,6 +383,7 @@ public static partial class DevStarts
         .. BelowTheLobbies(),
         .. ThePreservationOffice(),   // #1332 C · …and the office on Ringside Exchange's hotel level
         .. TheReturningShuttle(),     // #1074 beat 5 · …and the charter hull on a preserved ground
+        .. TheDeadStation(),          // #653 · …and the dead station, boarded at her crew lock
         // #1332 B · …and the garden behind glass off each concourse (DevStarts.Garden.cs).
         .. TheGardens(),
         // #1016 · THE OWNER'S OWN BUG, IN ONE BUTTON. He sat at a top in The Stormwatch Bar, pressed "Work

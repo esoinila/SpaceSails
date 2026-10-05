@@ -124,7 +124,7 @@ public partial class Map
     /// one instrument a captain cannot survive being lied to by. Two places computing one fact is the bug
     /// even while they agree.</para>
     private bool CaptainBeyondReach =>
-        AwayTeamSide.BackAtTheShuttle(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius);
+        AwayTeamSide.BackAtTheShuttle(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius, StationDock);
 
     private void ResolveReeverSwings(double nowMs)
     {

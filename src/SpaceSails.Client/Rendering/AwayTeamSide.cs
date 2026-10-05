@@ -48,10 +48,18 @@ public static class AwayTeamSide
     /// <param name="avatarX">Deck-unit X — the axis the wreck's lock stands on.</param>
     /// <param name="avatarY">Deck-unit Y — the axis the moon's tube mouth stands on.</param>
     /// <param name="avatarRadius">The captain's own half-width, so "past" means the whole of them.</param>
-    public static bool BackAtTheShuttle(bool onWreck, double avatarX, double avatarY, double avatarRadius) =>
-        onWreck
-            ? WreckLayout.PastTheLock(avatarX, avatarRadius)
-            : MoonSurface.IsSafeAboard(avatarY);
+    /// <param name="stationDock">#653 · The access the boat is mated to when this is a DEAD STATION, else null.
+    /// A station is a third answer to the same question — neither the moon's tube mouth nor a derelict's lock —
+    /// and its deck runs well inside the regolith's top rim, so without this every square of it would answer
+    /// the MOON's rule with YES (the sixth occurrence of the pattern this class exists to close).</param>
+    public static bool BackAtTheShuttle(
+        bool onWreck, double avatarX, double avatarY, double avatarRadius,
+        StationWreck.Access? stationDock = null) =>
+        stationDock is { } dock
+            ? StationAboard.AtTheDock(dock, avatarX, avatarY)
+            : onWreck
+                ? WreckLayout.PastTheLock(avatarX, avatarRadius)
+                : MoonSurface.IsSafeAboard(avatarY);
 
     /// <summary>
     /// HOW FAR PAST THAT DOOR THEY HAVE WALKED — 0 at the threshold, 1 as deep as this place goes.
@@ -66,8 +74,14 @@ public static class AwayTeamSide
     /// deep-in-a-dead-hull comms drop — arguably the best place in the game for one — could never happen.
     /// The number was not wrong; it was answered before the question was asked.</para>
     /// </summary>
-    public static double HowFarInside(bool onWreck, double avatarX, double avatarY)
+    public static double HowFarInside(
+        bool onWreck, double avatarX, double avatarY, StationWreck.Access? stationDock = null)
     {
+        if (stationDock is { } dock)
+        {
+            return StationAboard.HowFarFromTheDock(dock, avatarX, avatarY);
+        }
+
         (double threshold, double deepest, double at) = onWreck
             ? (WreckLayout.ShuttleLockX, WreckLayout.AftX, avatarX)
             : (MoonSurface.SurfaceTopY, MoonSurface.AnchorY, avatarY);
@@ -83,8 +97,10 @@ public static class AwayTeamSide
     /// <para>It lives beside the predicate it is built from rather than in the page, because the page is
     /// where it learned to ask the moon.</para>
     /// </summary>
-    public static double CommsOnsetBias(bool onWreck, double avatarX, double avatarY, double avatarRadius) =>
-        BackAtTheShuttle(onWreck, avatarX, avatarY, avatarRadius)
+    public static double CommsOnsetBias(
+        bool onWreck, double avatarX, double avatarY, double avatarRadius,
+        StationWreck.Access? stationDock = null) =>
+        BackAtTheShuttle(onWreck, avatarX, avatarY, avatarRadius, stationDock)
             ? 0.5
-            : 1.0 + HowFarInside(onWreck, avatarX, avatarY);
+            : 1.0 + HowFarInside(onWreck, avatarX, avatarY, stationDock);
 }
