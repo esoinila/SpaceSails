@@ -185,9 +185,9 @@ public static class CarriedObject
     /// a card that never claims a picture rather than one that wires an unpainted file and hides it on
     /// error.</para></summary>
     public static Reveal RelicReveal(string findId) =>
-        UndergroundComplex.IsHallRecord(findId)
-            ? new Reveal("", UndergroundComplex.FoundRecordCardLabel, UndergroundComplex.FoundRecordCard)
-            : new Reveal(CollarArtUrl, CollarLabel, CollarStory);
+        UndergroundComplex.IsPalletRecord(findId)
+            ? new Reveal(CollarArtUrl, CollarLabel, CollarStory)
+            : new Reveal("", UndergroundComplex.FoundRecordCardLabel, UndergroundComplex.FoundRecordCard);
 
     /// <summary>#614 · THE LOCK, NOT THE DOOR.
     ///

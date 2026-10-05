@@ -89,7 +89,7 @@ public static class Keepsake
     /// makes). The shelf has no state of its own for it.</summary>
     public static bool HoldsTheCollar(IReadOnlyList<Satchel.Item>? carried) =>
         carried is not null && carried.Any(i =>
-            i.Kind == Satchel.Kind.Relic && !UndergroundComplex.IsHallRecord(i.Id));
+            i.Kind == Satchel.Kind.Relic && UndergroundComplex.IsPalletRecord(i.Id));
 
     /// <summary>The pendant's stable id.</summary>
     public const string PendantId = "pendant";
@@ -383,7 +383,7 @@ public static class Keepsake
         // The band is drawn for EVERY piece (a Love sheet's clean line comes off the same stream the pendant's
         // does), but only the pendant's UNSETTLED face and a MONEY-marked sheet can be stung by it.
         bool band = rng.NextInt(0, StingOneIn) == 0;
-        bool money = piece.Theory == HeldMemory.Theory.Money;
+        bool money = !piece.IsFind && piece.Theory == HeldMemory.Theory.Money; // a find never stings, in code
 
         // Only the pendant has a first opening (a sheet's flashback fired at handover): no subject, no first.
         // The UNSETTLED band is the PENDANT's alone: an Unsettled SHEET (not made today, but defined) routes as

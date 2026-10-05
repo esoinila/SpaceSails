@@ -9,7 +9,7 @@ namespace SpaceSails.Client.Pages;
 /// (<see cref="Keepsake"/>); this file owns the three things only the page knows: where the captain is
 /// standing, when the shelf was last looked at, and whether the pendant has ever been opened this run.
 ///
-/// <para>Slice 1 the pendant; slice 2 the held-memory sheets beside it (their minute is Core's too, and a sheet raises no flashback). Nothing here is a second relief seam — the restore goes
+/// <para>Slice 1 the pendant; slice 2 the held-memory sheets beside it (their minute is Core's too, and a sheet raises no flashback); slice 3 the collar, a FIND derived from the held #614 relic (no latch, no flashback, never stung). Nothing here is a second relief seam — the restore goes
 /// through <see cref="NerveModel.DrinkRestore"/> (inside <see cref="Keepsake.Open"/>) and the page applies the
 /// answer exactly the way the bunk and the head do.</para>
 /// </summary>
@@ -24,7 +24,7 @@ public partial class Map
     private string? _keepsakeAskedId;
     private string? _keepsakeSaid;
 
-    /// <summary>What is on the shelf — Core's list: the pendant from the first minute of every run, then every held-memory sheet (#620 slice 2).</summary>
+    /// <summary>What is on the shelf — Core's list: the pendant from the first minute of every run, then the collar while the satchel holds it (slice 3), then every held-memory sheet (slice 2).</summary>
     private IReadOnlyList<Keepsake.Piece> KeepsakePieces() => Keepsake.Shelf(_heldMemories, _satchel);
 
     /// <summary>Is the captain in his own cabin — CABIN 1, the tidy berth with the bunk — and nowhere else?

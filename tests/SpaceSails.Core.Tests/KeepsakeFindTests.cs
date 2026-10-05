@@ -67,6 +67,22 @@ public class KeepsakeFindTests
         Assert.False(Keepsake.FromSheet(Photo).IsFind);
     }
 
+    [Fact]
+    public void ARelicWithNeitherPrefixIsNeitherTheCollarNorOnTheShelf_AndTheTwoNamedPrefixesAreExclusive()
+    {
+        var odd = new Satchel.Item(Satchel.Kind.Relic, "relic-3");
+        Assert.False(UndergroundComplex.IsPalletRecord(odd.Id));
+        Assert.False(UndergroundComplex.IsHallRecord(odd.Id));
+        Assert.False(Keepsake.HoldsTheCollar([odd])); // site 1: the shelf
+        Assert.NotEqual(CarriedObject.CollarLabel, CarriedObject.RelicReveal(odd.Id).Label); // site 2: the look card
+
+        Assert.True(UndergroundComplex.IsPalletRecord(CollarItem.Id));
+        Assert.False(UndergroundComplex.IsHallRecord(CollarItem.Id));
+        Assert.False(UndergroundComplex.IsPalletRecord(HallItem.Id));
+        Assert.True(Keepsake.HoldsTheCollar([CollarItem]));
+        Assert.Equal(CarriedObject.CollarLabel, CarriedObject.RelicReveal(CollarItem.Id).Label);
+    }
+
     // ── CLEAN, AT THE STANDARD 22, NEVER STUNG ────────────────────────────────────────────────────────
 
     [Fact]
@@ -170,8 +186,10 @@ public class KeepsakeFindTests
 
     // ── THE SHARED REFUSALS, BOTH DIRECTIONS ──────────────────────────────────────────────────────────
 
+    /// <summary>Pure-function pin: every piece kind honours a given gap. The REAL cross-piece sharing (one stamp the
+    /// page writes) is pinned at the page in TheKeepsakeCollarTests.TheWindowIsSharedBothWays_CollarThenPendant_AndPendantThenCollar.</summary>
     [Fact]
-    public void TheSatietyWindowIsOneForTheWholeShelf_FindAndPendantAndSheet_EveryOrderedPair()
+    public void AnyPieceIsSatedInsideTheWindow_AndRestoresOutsideIt_EveryPieceKind()
     {
         Keepsake.Piece[] pieces = [Keepsake.Collar, Keepsake.Pendant, Keepsake.FromSheet(Photo), Keepsake.FromSheet(Slip)];
         foreach (Keepsake.Piece first in pieces)
