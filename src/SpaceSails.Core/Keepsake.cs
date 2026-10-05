@@ -10,8 +10,9 @@ namespace SpaceSails.Core;
 ///
 /// <para>A keepsake is an item tier above plot items: a thing whose value is WHO IT POINTS AT, not what it
 /// opens. SLICE 1 is the first memento only — THE PENDANT, seeded on the shelf from the first minute of every
-/// run (the breadcrumb ruling, 2026-09-13: own lineage first). The photograph and the slips (slice 2) and the
-/// annular collar (slice 3) are not here; the model is shaped for them (<see cref="Piece.Theory"/> already
+/// run (the breadcrumb ruling, 2026-09-13: own lineage first). SLICE 2 puts the #973 photograph and the slips on the
+/// shelf beside it (<see cref="FromSheet"/>, <see cref="Shelf(IReadOnlyList{HeldMemory.Sheet})"/>); the
+/// annular collar (slice 3) is not here; the model is shaped for them (<see cref="Piece.Theory"/> already
 /// speaks Love / Money / Unsettled) but nothing else is built.</para>
 ///
 /// <para><b>THE QUIET MINUTE.</b> Opening a memento in the captain's own cabin, alone, restores nerve through
@@ -76,6 +77,28 @@ public static class Keepsake
     /// locker from day one"); the shelf has no other occupant in slice 1. A function, not a stored list, so
     /// nothing mutable lives on a static.</summary>
     public static IReadOnlyList<Piece> Shelf() => [Pendant];
+
+    /// <summary>#620 slice 2 · A held-memory sheet as a memento on the shelf. Everything on the card is the
+    /// sheet's own existing field — its row title (<see cref="HeldMemory.RowTitle"/>) and its book line (whose
+    /// it is, which theory, who handed it over, the day) — so nothing is authored here. A sheet carries no
+    /// flashback subject: its beat (the photograph's, #973) fired at handover, so opening it in the cabin is
+    /// only ever a quiet minute.</summary>
+    public static Piece FromSheet(HeldMemory.Sheet sheet) =>
+        new(sheet.Id, HeldMemory.RowTitle(sheet), sheet.BookLine, sheet.Mark, sheet.Tag, FlashbackSubject: "");
+
+    /// <summary>#620 slice 2 · THE SHELF WITH THE BOOK'S SHEETS — the pendant first, then every sheet the
+    /// captain holds, in the book's own order. No filter: a stray page is still a held memory.</summary>
+    public static IReadOnlyList<Piece> Shelf(IReadOnlyList<HeldMemory.Sheet> book)
+    {
+        ArgumentNullException.ThrowIfNull(book);
+        var pieces = new List<Piece>(book.Count + 1) { Pendant };
+        foreach (HeldMemory.Sheet sheet in book)
+        {
+            pieces.Add(FromSheet(sheet));
+        }
+
+        return pieces;
+    }
 
     // ─────────────────────────────── THE WORDS (canon, verbatim) ───────────────────────────────
 
@@ -144,9 +167,33 @@ public static class Keepsake
     /// <summary>The two not-here refusals.</summary>
     public static IReadOnlyList<string> NotHerePool { get; } = Array.AsReadOnly(NotHereLines);
 
-    // TODO (#620 slice 2): the Money-marked mementos' sting pool (the #973 photograph and slips on the shelf)
-    // is authored in the issue's 2026-10-05 canon comment but is out of this slice's scope; nothing below
-    // rolls a sting for a Money piece until that slice lands.
+    // #620 slice 2 · Three stings for a MONEY-marked memento (a #973 slip or sheet), on the same seeded roll
+    // (canon, verbatim — the issue's "Money-marked mementos" pool).
+    private static readonly string[] MoneyStingLines =
+    [
+        "A good evening, a steady hand on your shoulder, and you know exactly what it cost you, to the decimal. You look anyway.",
+        "They're smiling because the deal hadn't landed yet. You keep it because somebody has to remember the before.",
+        "The picture hasn't changed. Your reading of it does, some nights, and tonight is one of them.",
+    ];
+
+    /// <summary>The three Money-marked sting lines.</summary>
+    public static IReadOnlyList<string> MoneyStingPool { get; } = Array.AsReadOnly(MoneyStingLines);
+
+    /// <summary>Every string this type publishes — the sweep's one source (a reflection test fails on a
+    /// public string constant that is not declared here).</summary>
+    public static IEnumerable<string> AllProse()
+    {
+        yield return PendantTitle;
+        yield return PendantCardLine;
+        yield return FirstOpeningLine;
+        yield return FieldBookLine;
+        yield return FlashbackTitleText;
+        yield return SatietyLine;
+        foreach (string line in CleanLines) { yield return line; }
+        foreach (string line in StingLines) { yield return line; }
+        foreach (string line in MoneyStingLines) { yield return line; }
+        foreach (string line in NotHereLines) { yield return line; }
+    }
 
     // ─────────────────────────────── THE LAW ───────────────────────────────
 
@@ -171,6 +218,11 @@ public static class Keepsake
     /// <summary>The dab a stung minute COSTS instead of restoring — small, on a par with the toilet's scare
     /// so a bad minute undoes a good one and never wrecks a captain. FLAGGED.</summary>
     public const double StingNerve = 4.0;
+
+    /// <summary>#620 slice 2 · The dab a stung Money-marked minute costs — its own constant so the sheets'
+    /// betrayal can be tuned apart from the pendant's unsettled band; the same small number to start.
+    /// FLAGGED.</summary>
+    public const double MoneyStingNerve = 4.0;
 
     /// <summary>What happened when the locket was pressed.</summary>
     public enum Outcome
@@ -239,17 +291,26 @@ public static class Keepsake
         }
 
         // The band and the line share ONE roll — the toilet's idiom: the band is drawn first, then the line.
-        bool stings = piece.Theory == HeldMemory.Theory.Unsettled && rng.NextInt(0, StingOneIn) == 0;
-        if (stings && !firstOpening)
+        // The band is drawn for EVERY piece (a Love sheet's clean line comes off the same stream the pendant's
+        // does), but only the pendant's UNSETTLED face and a MONEY-marked sheet can be stung by it.
+        bool band = rng.NextInt(0, StingOneIn) == 0;
+        bool money = piece.Theory == HeldMemory.Theory.Money;
+
+        // Only the pendant has a first opening (a sheet's flashback fired at handover): no subject, no first.
+        bool first = firstOpening && piece.FlashbackSubject.Length > 0;
+        if (band && !first && (money || piece.Theory == HeldMemory.Theory.Unsettled))
         {
-            double after = NerveModel.Clamp(nerve - StingNerve);
+            double dab = money ? MoneyStingNerve : StingNerve;
+            string[] pool = money ? MoneyStingLines : StingLines;
+            double after = NerveModel.Clamp(nerve - dab);
             return new QuietMinute(Outcome.Stung, after, after - NerveModel.Clamp(nerve),
-                StingLines[rng.NextInt(0, StingLines.Length)]);
+                pool[rng.NextInt(0, pool.Length)]);
         }
 
-        double restored = NerveModel.DrinkRestore(nerve, NerveModel.DrinkKind.Keepsake, totNumber: 1);
+        double restored = NerveModel.DrinkRestore(
+            nerve, money ? NerveModel.DrinkKind.KeepsakeMoney : NerveModel.DrinkKind.Keepsake, totNumber: 1);
         double delta = restored - NerveModel.Clamp(nerve);
-        if (firstOpening)
+        if (first)
         {
             return new QuietMinute(Outcome.FirstOpening, restored, delta, FirstOpeningLine);
         }

@@ -341,6 +341,33 @@
     box-shadow: 0 0 0 1px rgba(216, 184, 132, 0.5);
 }
 
+/* #620 slice 2 · a held-memory SHEET on the shelf: a print, not a locket. Still a CSS placeholder on the same
+   `keepsake-art` box (a picture file drops in as a background-image, no markup change). The two theories are
+   told apart by a warm or a cool paper, never by a word in the picture. */
+.keepsake-art.art-love,
+.keepsake-art.art-money {
+    border-radius: 0.2rem;
+}
+
+.keepsake-art.closed.art-love {
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 55%),
+        linear-gradient(180deg, #e8cfc0, #c9a493);
+}
+
+.keepsake-art.closed.art-money {
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.14), transparent 55%),
+        linear-gradient(180deg, #cdd3c4, #9da58f);
+}
+
+.keepsake-art.inside.art-love,
+.keepsake-art.inside.art-money {
+    background:
+        radial-gradient(ellipse 28% 36% at 50% 46%, rgba(214, 205, 190, 0.55), rgba(214, 205, 190, 0.18) 70%, transparent 72%),
+        linear-gradient(180deg, #2a2226, #120d10);
+}
+
 .keepsake-text {
     display: flex;
     flex-direction: column;
