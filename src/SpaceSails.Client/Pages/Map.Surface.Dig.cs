@@ -56,6 +56,15 @@ public partial class Map
             return;
         }
 
+        // #653 · A DEAD STATION HAS NO REGOLITH, AND HER DECK IS NOT OUT OF ITS COORDINATES. Her Foundry spans
+        // y −41…−15, which is inside the regolith's own diggable band (y < −27), so without this the bare-deck
+        // [E] there would run the beach-comber probe on a steel floor. A derelict never met it because her whole
+        // deck sits within ±9. The floor is the station's, and nothing is dug in it.
+        if (OnStation)
+        {
+            return;
+        }
+
         // ── #723 · THE SHOVEL IS SOMETHING THE GROUND HAS, NOT SOMETHING THE KEY DOES ──
         //
         // Found by playing, on B1 of a Hive: [E] with empty hands in a pressurised spine corridor 150 m

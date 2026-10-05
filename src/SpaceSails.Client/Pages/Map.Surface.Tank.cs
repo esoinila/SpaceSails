@@ -357,6 +357,12 @@ public partial class Map
             return TheClimbHomeDu(stopped);
         }
 
+        // #653 · On a dead station the way home is the boat's own access, wherever she is mated.
+        if (StationDock is { } dock)
+        {
+            return StationAboard.DistanceToTheDock(dock, _avatarX, _avatarY);
+        }
+
         double dx = _avatarX - MoonSurface.SpawnX;
         double dy = _avatarY - MoonSurface.SpawnY;
         return Math.Sqrt((dx * dx) + (dy * dy));

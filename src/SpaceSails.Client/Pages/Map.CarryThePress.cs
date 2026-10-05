@@ -124,7 +124,7 @@ public sealed partial class Map
     /// she is ever drawn.</summary>
     private Quest? TheStringerOnThisGround(SurfaceExcursion ex)
     {
-        if (!HardcaseRep.GroundLikeThis(landed: true, OnWreck, ex.Floor))
+        if (!HardcaseRep.GroundLikeThis(landed: true, OnADeadHull, ex.Floor))
         {
             return null;
         }

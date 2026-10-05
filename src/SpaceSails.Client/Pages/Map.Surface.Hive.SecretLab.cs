@@ -171,7 +171,8 @@ public partial class Map
         var candidates = new List<string>();
         foreach (ShuttleStop stop in ShuttleDestinationsInRange())
         {
-            if (stop.IsLandable && !Derelict.TryParseWreckId(stop.Body.Id, out _))
+            if (stop.IsLandable && !Derelict.TryParseWreckId(stop.Body.Id, out _)
+                && !StationAboard.TryParseStationId(stop.Body.Id, out _))
             {
                 candidates.Add(stop.Body.Id);
             }

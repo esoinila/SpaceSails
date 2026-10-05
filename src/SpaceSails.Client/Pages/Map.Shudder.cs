@@ -107,8 +107,8 @@ public partial class Map
         // its own question directly, which is the habit the whole occurrence list is made of. Routed through
         // the one function that knows which door you are on the far side of, so the rule is enforced on
         // something a caller cannot decline to use. Identical arithmetic off a wreck; unreachable on one.
-        bool onRegolith = _surface is not null && !OnWreck
-            && !AwayTeamSide.BackAtTheShuttle(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius);
+        bool onRegolith = _surface is not null && !OnADeadHull
+            && !AwayTeamSide.BackAtTheShuttle(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius, StationDock);
         // #867 · …AND `onRegolith` IS TRUE IN A PARK. A floor of the Hive is laid inside the surface's own
         // coordinate envelope, so a lit, planted, pressurised gallery two hundred deck units down is below
         // the regolith's top rim and away from the tube, and answered YES to every question above. The

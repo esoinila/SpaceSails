@@ -109,6 +109,17 @@ public partial class Map
             return;
         }
 
+        // #653 · THE DEAD STATION. Routed by body id, the derelict's own trick: one branch, one builder, and nothing
+        // else in the excursion has to know the difference. The boat's access and the cut faces are the deck's only
+        // inputs; the walls, the plates and the tubes are the station's own, seeded off her id.
+        if (StationAboard.TryParseStationId(ex.Stop.Body.Id, out string stationId))
+        {
+            _deckPlan = StationInterior.StationDeck(
+                stationId, TheStationState(ex), SurfaceDroidCount, FillSurfaceDroids);
+            ComposeWhatYouLeft(ex);
+            return;
+        }
+
         if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _) && _wreck is { } aboard)
         {
             _deckPlan = WreckInterior.WreckDeck(
@@ -425,7 +436,7 @@ public partial class Map
         {
             StepExpedition(dtRealSeconds);
         }
-        else if (!OnWreck)
+        else if (!OnADeadHull)
         {
             StepTide(dtRealSeconds);
         }
