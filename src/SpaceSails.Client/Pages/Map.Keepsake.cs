@@ -25,7 +25,7 @@ public partial class Map
     private string? _keepsakeSaid;
 
     /// <summary>What is on the shelf — Core's list: the pendant from the first minute of every run, then every held-memory sheet (#620 slice 2).</summary>
-    private IReadOnlyList<Keepsake.Piece> KeepsakePieces() => Keepsake.Shelf(_heldMemories);
+    private IReadOnlyList<Keepsake.Piece> KeepsakePieces() => Keepsake.Shelf(_heldMemories, _satchel);
 
     /// <summary>Is the captain in his own cabin — CABIN 1, the tidy berth with the bunk — and nowhere else?
     /// The ship's deck is one continuous plane that the docked complex welds onto, so a haven floor or a
