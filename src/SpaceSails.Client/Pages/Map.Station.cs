@@ -25,23 +25,35 @@ public partial class Map
 {
     public sealed partial class SurfaceExcursion
     {
-        /// <summary>#653 · The module whose access the boat is mated to. The hub until she is flown: it is the
-        /// crew's own lock, the only access guaranteed serviceable, and where every boarding begins.</summary>
-        public StationWreck.ModuleId StationDock { get; set; } = StationWreck.ModuleId.Hub;
+        /// <summary>#653 · What this visit to a DEAD STATION is carrying, or null on every other ground — which is
+        /// why it is ONE object and not four fields: the frame ledger prints an excursion's properties, and a
+        /// ground that is not a station should show one <c>Station=null</c> and nothing else (the man at the
+        /// door, <see cref="Gate"/>, is held the same way).</summary>
+        public StationVisit? Station { get; init; }
+    }
 
-        /// <summary>#653 · The access behind <see cref="StationDock"/>, kept so the per-frame questions about
-        /// "back at the boat" do not re-roll the station's seeded locks sixty times a second. Filled when the
-        /// visit is built and whenever the boat is flown.</summary>
-        public StationWreck.Access? StationDockAccess { get; set; }
+    /// <summary>
+    /// #653 · ONE VISIT TO A DEAD STATION: which module's access the boat is mated to, the faces this away team
+    /// has cut, and the canon lines already told. Nothing in it outlives the excursion — carrying the cuts across
+    /// visits is a TODO on the PR (slice 2's keyed told-once set is the right home for it).
+    /// </summary>
+    public sealed class StationVisit
+    {
+        /// <summary>The module whose access the boat is mated to. The hub until she is flown: it is the crew's
+        /// own lock, the only access guaranteed serviceable, and where every boarding begins.</summary>
+        public StationWreck.ModuleId Dock { get; set; } = StationWreck.ModuleId.Hub;
 
-        /// <summary>#653 · Faces this away team has cut into this visit. A cut is permanent for the visit: the
-        /// hop to a cut face is no longer refused. (Carrying it across visits is a TODO on the PR.)</summary>
-        public HashSet<StationWreck.ModuleId> StationCuts { get; } = [];
+        /// <summary>The access behind <see cref="Dock"/>, kept so the per-frame questions about "back at the
+        /// boat" do not re-roll the station's seeded locks sixty times a second.</summary>
+        public StationWreck.Access? DockAccess { get; set; }
 
-        /// <summary>#653 · The canon lines already told this visit — the lock's and the cut face's. The
-        /// first-standing and field-book lines are latched by the book itself (see
-        /// <see cref="ArriveAtTheStation"/>).</summary>
-        public HashSet<string> StationTold { get; } = [];
+        /// <summary>Faces cut this visit. A cut is permanent for the visit: the hop to a cut face is no longer
+        /// refused.</summary>
+        public HashSet<StationWreck.ModuleId> Cuts { get; } = [];
+
+        /// <summary>The canon lines already told this visit — the lock's and the cut face's. The first-standing
+        /// and field-book lines are latched by the book itself (see <see cref="ArriveAtTheStation"/>).</summary>
+        public HashSet<string> Told { get; } = [];
     }
 
     /// <summary>Is the away team inside a dead station?</summary>
@@ -62,15 +74,16 @@ public partial class Map
     {
         get
         {
-            if (_surface is not { } ex || TheStationId is not { } id)
+            if (_surface is not { Station: { } visit } ex || TheStationId is not { } id)
             {
                 return null;
             }
-            return ex.StationDockAccess ??= StationAboard.AccessOf(id, ex.StationDock);
+            return visit.DockAccess ??= StationAboard.AccessOf(id, visit.Dock);
         }
     }
 
-    private StationInterior.StationState TheStationState(SurfaceExcursion ex) => new(ex.StationDock, ex.StationCuts);
+    private StationInterior.StationState TheStationState(SurfaceExcursion ex) =>
+        ex.Station is { } visit ? new(visit.Dock, visit.Cuts) : new(StationWreck.ModuleId.Hub, []);
 
     // ── Standing on her ──────────────────────────────────────────────────────────────────────────────────
 
@@ -85,7 +98,7 @@ public partial class Map
     {
         // The crew lock this boarding has just cycled through is the first lock of the visit: its line is told
         // here, in the log (the pulse is the first-standing line's), and never again this visit.
-        if (_surface is { } visit && visit.StationTold.Add("lock"))
+        if (_surface is { Station: { } visit } && visit.Told.Add("lock"))
         {
             LogAutopilotEvent(StationAboard.LockLine);
         }
@@ -107,7 +120,7 @@ public partial class Map
     /// time so the captain reads it where they are looking.</summary>
     private void TellOnce(SurfaceExcursion ex, string key, string line)
     {
-        if (ex.StationTold.Add(key))
+        if (ex.Station!.Told.Add(key))
         {
             ShowPulseMessage(line);
             LogAutopilotEvent(line);
@@ -141,7 +154,7 @@ public partial class Map
     {
         if (_surface is not { } ex || TheStationId is not { } id
             || _deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is not { Kind: DeckPlan.ConsoleKind.StationHop } spot
-            || StationAboard.DestinationAt(id, ex.StationDock, ex.StationCuts, spot.X, spot.Y) is not { } picked)
+            || StationAboard.DestinationAt(id, ex.Station!.Dock, ex.Station.Cuts, spot.X, spot.Y) is not { } picked)
         {
             return;
         }
@@ -162,16 +175,16 @@ public partial class Map
     /// refusal in Core's own words and the cutter's own — and nothing changes.</summary>
     private void CutIntoTheFace(SurfaceExcursion ex, StationWreck.Access arrival, StationHop.Quote quote)
     {
-        StationEntry.Order order = StationEntry.Enter(arrival, ex.StationCuts, _satchel);
+        StationEntry.Order order = StationEntry.Enter(arrival, ex.Station!.Cuts, _satchel);
         if (!order.Admitted)
         {
-            ShowPulseMessage(StationHop.RefusalLine(quote, StationWreck.ModuleOf(ex.StationDock).Name));
+            ShowPulseMessage(StationHop.RefusalLine(quote, StationWreck.ModuleOf(ex.Station!.Dock).Name));
             LogAutopilotEvent(order.Line);
             return;
         }
 
         _satchel = [.. order.Carried];
-        ex.StationCuts.Add(arrival.Module);
+        ex.Station!.Cuts.Add(arrival.Module);
         AdvanceShuttleClock(order.Seconds);
         if (_busted is not null)
         {
@@ -199,8 +212,8 @@ public partial class Map
             return;
         }
 
-        ex.StationDock = arrival.Module;
-        ex.StationDockAccess = arrival;
+        ex.Station!.Dock = arrival.Module;
+        ex.Station.DockAccess = arrival;
         RendererInterop.PlayCue("board");
         StandCaptainAt(quote.LandX, quote.LandY, "the boat comes alongside");
 

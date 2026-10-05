@@ -96,6 +96,8 @@ public partial class Map
             Expedition = isExpeditionSite,
             Deflection = isDeflectionRock,
             Site = chosenSite,
+            // #653 · what a visit to a dead station carries — null on every other ground (see StationVisit).
+            Station = StationAboard.TryParseStationId(stop.Body.Id, out _) ? new StationVisit() : null,
         };
 
         // #314: pull up to botsToBring sentries off the ship's roster into the sling (carried, not yet
@@ -197,7 +199,7 @@ public partial class Map
         {
             // #653 · She has no tube to walk down: the boat is mated to the crew lock and the away team is set
             // down just inboard of it, by Core's own square.
-            (double stationX, double stationY) = StationInterior.SpawnAt(boardedStation, excursion.StationDock);
+            (double stationX, double stationY) = StationInterior.SpawnAt(boardedStation, StationWreck.ModuleId.Hub);
             StandCaptainAt(stationX, stationY, "the boat sets you down inside her lock");
         }
 

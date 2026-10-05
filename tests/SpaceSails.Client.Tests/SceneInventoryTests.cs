@@ -360,6 +360,15 @@ public sealed class SceneInventoryTests
         [DeckPlan.ConsoleKind.LeftBehind] = "#698 the mark over a square the captain themselves set " +
                                             "something down on — the excursion's LeftBehind store composes " +
                                             "it onto any deck, and no static scene can have one",
+
+        // #653 slice 1 · THE DEAD STATION. A pseudo-body deck (station-…) built from the boat's mated access and
+        // the faces this away team has cut, so no fixed scene in this table can stand one. Both are asserted on
+        // real decks, from every dock of dozens of seeded stations, in TheDeadStationDeckTests (walked with A*,
+        // crowding and labels) and TheDeadStationIsBoardedTests (pressed through the shipping dispatch).
+        [DeckPlan.ConsoleKind.StationTube] = "#653 a severed tube's two ends — only on a station whose seed " +
+                                             "severed one (two or three of four always are)",
+        [DeckPlan.ConsoleKind.StationHop] = "#653 one per place the boat can take the away team — the dock's " +
+                                            "fixtures, rebuilt around wherever she is mated",
     };
 
     /// <summary>

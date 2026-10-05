@@ -262,7 +262,7 @@ public partial class Map
     /// metres down and somebody else's steel deck are both real places to be shot on, and neither of them is
     /// a landing site's tile lattice — a husk recorded there would be filed against a coordinate frame it
     /// was never measured in.</summary>
-    private bool TheGroundKeepsHusksHere(SurfaceExcursion ex) => ex.Floor == 0 && !OnADeadHull;
+    private bool TheGroundKeepsHusksHere(SurfaceExcursion ex) => ex.Floor == 0 && !OnWreck && !OnStation;
 
     /// <summary>
     /// ONE OLD ONE GOES DOWN. The single writer, and every path that drops one comes through here — the
