@@ -270,9 +270,9 @@ public class KeepsakeSheetTests
     public void NothingElseIsAuthoredHere_EveryPublicStringIsDeclaredInAllProse()
     {
         List<string> declared = Keepsake.AllProse().ToList();
-        Assert.Equal(6 + 5 + 4 + 3 + 3 + 2, declared.Count);
+        Assert.Equal(6 + 5 + 4 + 4 + 3 + 3 + 2, declared.Count);
 
-        string[] notProse = [nameof(Keepsake.PendantId), nameof(Keepsake.PendantSubject), nameof(Keepsake.FieldBookGlyph)];
+        string[] notProse = [nameof(Keepsake.PendantId), nameof(Keepsake.CollarId), nameof(Keepsake.PendantSubject), nameof(Keepsake.FieldBookGlyph)];
         foreach (FieldInfo f in typeof(Keepsake).GetFields(BindingFlags.Public | BindingFlags.Static))
         {
             if (f.FieldType == typeof(string) && f.GetValue(null) is string s && !notProse.Contains(f.Name))
@@ -280,7 +280,7 @@ public class KeepsakeSheetTests
                 Assert.True(declared.Contains(s, StringComparer.Ordinal), $"Keepsake publishes undeclared prose: {f.Name}");
             }
         }
-        foreach (string line in Keepsake.CleanPool.Concat(Keepsake.SheetCleanPool).Concat(Keepsake.StingPool).Concat(Keepsake.MoneyStingPool).Concat(Keepsake.NotHerePool))
+        foreach (string line in Keepsake.CleanPool.Concat(Keepsake.SheetCleanPool).Concat(Keepsake.FindCleanPool).Concat(Keepsake.StingPool).Concat(Keepsake.MoneyStingPool).Concat(Keepsake.NotHerePool))
         {
             Assert.Contains(line, declared);
         }

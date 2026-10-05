@@ -307,6 +307,11 @@ public static partial class UndergroundComplex
     /// <summary>The prefix a find out of the halls wears. Not "hive": the whole point is that it is not one.</summary>
     public const string HallFindPrefix = "hall";
 
+    /// <summary>#620 slice 3 · Is this the PALLET record (the annular collar, "hive:" ids)? The collar is NAMED,
+    /// not "whatever is not a hall record": the include-list law applied to relics.</summary>
+    public static bool IsPalletRecord(string? findId) =>
+        findId is not null && findId.StartsWith("hive:", StringComparison.Ordinal);
+
     /// <summary>#677 · Did this find come out of a gallery nobody dug? Asked of the id rather than of a body
     /// and a level, because the satchel keeps the id and nothing else — a row that had to re-derive a band
     /// from a parsed level would be the same fact computed in a second place, which is what this file's own
