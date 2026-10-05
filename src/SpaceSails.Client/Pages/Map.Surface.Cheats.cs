@@ -80,8 +80,8 @@ public partial class Map
         }
 
         ShuttleStop? target =
-            board.FirstOrDefault(s => s.IsLandable && (Derelict.TryParseWreckId(s.Body.Id, out _)
-                                                         || StationAboard.TryParseStationId(s.Body.Id, out _)))
+            board.FirstOrDefault(s => s.IsLandable && (SiteRoute.IsWreck(s.Body.Id)
+                                                         || SiteRoute.IsStation(s.Body.Id)))
             ?? board.FirstOrDefault(s => s.IsLandable);
         if (target is null)
         {
@@ -123,12 +123,12 @@ public partial class Map
         // inside her — MoonSurface's coordinates would put the away team OUTSIDE the hull, standing in
         // vacuum next to the ship they came to search. She keeps her own spawn, just inside her airlock.
         // #653 · A STATION has no regolith either, and the boarding already set the captain down inside her lock.
-        if (_surface is { } onAStation && StationAboard.TryParseStationId(onAStation.Stop.Body.Id, out _))
+        if (_surface is { } onAStation && SiteRoute.IsStation(onAStation.Stop.Body.Id))
         {
             return;
         }
 
-        if (_surface is { } landed && Derelict.TryParseWreckId(landed.Stop.Body.Id, out _))
+        if (_surface is { } landed && SiteRoute.IsWreck(landed.Stop.Body.Id))
         {
             StandCaptainAt(WreckInterior.SpawnX, WreckInterior.SpawnY,
                 "the boarding tube lets you out into her airlock");

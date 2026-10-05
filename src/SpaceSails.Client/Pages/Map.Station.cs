@@ -50,15 +50,11 @@ public partial class Map
         /// <summary>Faces cut this visit. A cut is permanent for the visit: the hop to a cut face is no longer
         /// refused.</summary>
         public HashSet<StationWreck.ModuleId> Cuts { get; } = [];
-
-        /// <summary>The canon lines already told this visit — the lock's and the cut face's. The first-standing
-        /// and field-book lines are latched by the book itself (see <see cref="ArriveAtTheStation"/>).</summary>
-        public HashSet<string> Told { get; } = [];
     }
 
     /// <summary>Is the away team inside a dead station?</summary>
     private bool OnStation =>
-        _surface is { } ex && StationAboard.TryParseStationId(ex.Stop.Body.Id, out _);
+        _surface is { } ex && SiteRoute.IsStation(ex.Stop.Body.Id);
 
     /// <summary>Is the away team inside ANY hull rather than on a ground — a derelict or a station? The one
     /// question the generic "no regolith here" guards ask, so a station is never quietly treated as a moon.</summary>
@@ -66,7 +62,7 @@ public partial class Map
 
     /// <summary>The id of the station the away team is inside, or null.</summary>
     private string? TheStationId =>
-        _surface is { } ex && StationAboard.TryParseStationId(ex.Stop.Body.Id, out string id) ? id : null;
+        _surface is { } ex ? SiteRoute.StationIdOf(ex.Stop.Body.Id) : null;
 
     /// <summary>The access the boat is mated to, or null off a station. Every "back at the boat" question —
     /// the air, the nerve, the comms — is asked of it (<see cref="AwayTeamSide"/>).</summary>
@@ -98,7 +94,7 @@ public partial class Map
     {
         // The crew lock this boarding has just cycled through is the first lock of the visit: its line is told
         // here, in the log (the pulse is the first-standing line's), and never again this visit.
-        if (_surface is { Station: { } visit } && visit.Told.Add("lock"))
+        if (_surface is { Station: not null } here && here.Told.Tell(ToldOnce.StationLock))
         {
             LogAutopilotEvent(StationAboard.LockLine);
         }
@@ -120,7 +116,7 @@ public partial class Map
     /// time so the captain reads it where they are looking.</summary>
     private void TellOnce(SurfaceExcursion ex, string key, string line)
     {
-        if (ex.Station!.Told.Add(key))
+        if (ex.Told.Tell(key))
         {
             ShowPulseMessage(line);
             LogAutopilotEvent(line);
@@ -193,7 +189,7 @@ public partial class Map
         }
 
         RendererInterop.PlayCue("reveal");
-        TellOnce(ex, "cut", order.Line);
+        TellOnce(ex, ToldOnce.StationCut, order.Line);
         LogAutopilotEvent(order.CellLine);
         RebuildSurfaceDeck();   // the console now names a flight, not a cut
         RequestVaultSave();
@@ -220,7 +216,7 @@ public partial class Map
 
         if (arrival.Kind == StationWreck.AccessKind.ServiceableLock)
         {
-            TellOnce(ex, "lock", StationAboard.LockLine);
+            TellOnce(ex, ToldOnce.StationLock, StationAboard.LockLine);
         }
     }
 

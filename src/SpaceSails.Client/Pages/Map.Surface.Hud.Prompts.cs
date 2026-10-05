@@ -87,7 +87,7 @@ public partial class Map
         // a sentry — a bot holding a corridor while a compartment pumps down is the loop this whole lane is
         // for — and this bar used to say otherwise and then hide the key, which is how the owner ended up
         // pressing T at a map that showed him nothing. Affordances never hide (#212).
-        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
+        if (SiteRoute.IsWreck(ex.Stop.Body.Id))
         {
             var aboard = new List<string>
             {

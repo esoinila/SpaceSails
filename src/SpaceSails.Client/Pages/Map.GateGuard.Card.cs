@@ -41,16 +41,16 @@ public partial class Map
 
         man.AtHisElbow = true;
         RaiseAScrimCard(
-            () => HisCardGoesUp(man),
+            () => HisCardGoesUp(ex),
             () => _surface is { } still && ReferenceEquals(still, ex) && TheManKeepsTheWayDown(still));
     }
 
     /// <summary>The card itself, once the glass is his. The approach line is spent here and nowhere else, so a
     /// card that waited behind another and was then no longer wanted has told nothing.</summary>
-    private void HisCardGoesUp(ManAtTheDoor man)
+    private void HisCardGoesUp(SurfaceExcursion ex)
     {
-        string caption = man.ApproachTold ? "" : GateGuard.ApproachLine;
-        man.ApproachTold = true;
+        string caption = ex.Told.Has(ToldOnce.GateApproach) ? "" : GateGuard.ApproachLine;
+        ex.Told.Tell(ToldOnce.GateApproach);
         _viewObject = new DeckPlan.ConsoleSpot(
             DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY, GateGuard.CardTitle, "", caption);
         RendererInterop.PlayCue("reveal");

@@ -382,7 +382,7 @@ public sealed class TheRoundIsWalkableTests
     public void TheHiveDeckHasRoomForARound()
     {
         string rebuild = Between(
-            Pages("Map.Surface.Frame.cs"), "private void RebuildSurfaceDeck()", "if (Derelict.TryParseWreckId(");
+            Pages("Map.Surface.Frame.cs"), "private void RebuildSurfaceDeck()", "if (site == SiteRoute.Kind.Wreck");
         Assert.Contains("HiveInterior.FloorDeck(", rebuild, StringComparison.Ordinal);
         Assert.Contains("SurfaceDroidCount, FillSurfaceDroids", rebuild, StringComparison.Ordinal);
         Assert.DoesNotContain(

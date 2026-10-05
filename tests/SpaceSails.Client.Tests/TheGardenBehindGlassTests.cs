@@ -484,7 +484,7 @@ public sealed class TheGardenBehindGlassTests
     ///
     /// <para><b>Proven RED</b> by removing the <c>TellTheGardenOnce</c> call from <c>AdvanceBarWalkers</c> (never
     /// in the slot); by dropping its <c>_pulse.Message is not null</c> clause (wrote over a line being read);
-    /// by dropping its <c>_toldOnceAtStation</c> clause (told again on the second visit).</para>
+    /// by dropping its <c>_toldOnce</c> clause (told again on the second visit).</para>
     /// </summary>
     [Theory]
     [MemberData(nameof(Gardens))]
