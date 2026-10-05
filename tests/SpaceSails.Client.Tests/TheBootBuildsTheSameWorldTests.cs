@@ -383,6 +383,7 @@ public sealed class TheBootBuildsTheSameWorldTests
             // #619 · the fourth cheat rock. Measured, never transcribed from a guess: the dump run put one
             // new row in this dictionary and moved none of the other 88.
             ["/map?secretlab=sealed&land=1&floor=3"] = "50c5bcad12d1aa7838e2d605829929ac",
+            ["/map?shuttle=1&land=1"] = "8a047e646a4978f7bf6829e2c1cb025f",
             ["/map?skim=saturn"] = "5702e97b412b144d3fd884426e262007",
             ["/map?sling=jupiter"] = "5702e97b412b144d3fd884426e262007",
             ["/map?spread=1"] = "9b477937245f2b3fecec6ec3aad1bba9",
