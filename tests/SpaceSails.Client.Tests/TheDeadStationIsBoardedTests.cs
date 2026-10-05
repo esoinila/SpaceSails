@@ -124,6 +124,27 @@ public sealed class TheDeadStationIsBoardedTests
         Assert.Single(Log(bench), l => l == StationAboard.LockLine);
     }
 
+    /// <summary>The crew lock is a serviceable lock, and a locked door is TIME: boarding spends the crossing's
+    /// seconds AND the lock's. Asked of the shipping boarding from a docked berth, so the delta is the whole of what
+    /// the clock was charged.</summary>
+    [Fact]
+    public async Task TheBoardingPaysTheCrewLocksTimeOnTopOfTheCrossing()
+    {
+        DeskBench bench = await DeskBench.BootAsync("/map?dock=the-tilt&station=1");
+        await bench.RenderAsync();
+        Assert.False(bench.OnSurface, "the bench landed without being asked — this test would measure nothing.");
+
+        object stop = ((System.Collections.IEnumerable)bench.Call("ShuttleDestinationsInRange")!).Cast<object>()
+            .Single(s => StationAboard.TryParseStationId((string)Get(Get(s, "Body")!, "Id")!, out _));
+        double crossing = (double)Get(stop, "TravelSeconds")!;
+        double before = SimTime(bench);
+
+        await (Task)bench.CallOnTheDispatcher("BeginSurfaceExcursion", stop, ShuttleExcursion.Pack(0, 0, []), 0, null)!;
+
+        Assert.True(bench.OnSurface);
+        Assert.Equal(before + crossing + StationAboard.LockCycleSeconds, SimTime(bench), 3);
+    }
+
     // ── A tube that will not let you through ─────────────────────────────────────────────────────────────
 
     [Fact]
@@ -320,12 +341,14 @@ public sealed class TheDeadStationIsBoardedTests
         object ex = Excursion(bench);
         StationWreck.Module foundry = StationWreck.ModuleOf(StationWreck.ModuleId.Foundry);
 
-        // The Foundry's coordinates sit inside the regolith's diggable band — the premise this guard exists for.
-        Assert.True(MoonSurface.IsDiggableGround(foundry.CentreX, foundry.CentreY, 0),
-            "the Foundry no longer overlaps the regolith's diggable band — this guard has drifted.");
+        // A square of the Foundry's floor that sits inside the regolith's diggable band — the premise this guard
+        // exists for. (The band starts at y = −27; the Foundry's centre is −28, so stand a little further in.)
+        double x = foundry.CentreX, y = foundry.CentreY - 4;
+        Assert.True(MoonSurface.IsDiggableGround(x, y, 0),
+            "that square of the Foundry is no longer inside the regolith's diggable band — this guard has drifted.");
 
-        StandAt(bench, foundry.CentreX, foundry.CentreY + 4);
-        Assert.Equal(DeckPlan.ConsoleKind.None, Deck(bench).NearestConsole(foundry.CentreX, foundry.CentreY + 4));
+        StandAt(bench, x, y);
+        Assert.Equal(DeckPlan.ConsoleKind.None, Deck(bench).NearestConsole(x, y));
         Press(bench);
 
         Assert.Null(Get(ex, "Channel"));
