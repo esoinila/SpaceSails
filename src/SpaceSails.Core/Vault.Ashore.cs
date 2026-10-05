@@ -25,6 +25,8 @@ public sealed record NerveSection
     /// <summary>#620 · True once the pendant has been opened in the cabin for the first time this run, so the
     /// flashback plate and its field-book line fire once and never again — however long the book grows.
     /// (Riding the field book instead would let its 80-note cap trim the latch away.)</summary>
+    /// A false latch is never written, so every pre-#620 file round-trips byte for byte.
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault)]
     public bool PendantFirstOpened { get; init; }
 }
 
