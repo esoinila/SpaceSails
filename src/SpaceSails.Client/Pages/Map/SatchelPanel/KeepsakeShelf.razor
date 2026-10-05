@@ -29,7 +29,7 @@
             <div class="keepsake-card @(open ? "open" : "")">
                 <button type="button" class="keepsake-face" title="Open it"
                         @onclick="() => PressKeepsake(piece)">
-                    <span class="keepsake-art @(open ? "inside" : "closed") art-@(SpaceSails.Core.HeldMemory.Label(piece.Theory))" aria-hidden="true"></span>
+                    <span class="keepsake-art @(open ? "inside" : "closed") @(piece.Theory == SpaceSails.Core.HeldMemory.Theory.Love ? "art-love" : piece.Theory == SpaceSails.Core.HeldMemory.Theory.Money ? "art-money" : "art-unsettled")" aria-hidden="true"></span>
                     <span class="keepsake-text">
                         <span class="keepsake-title">@piece.Title</span>
                         <span class="keepsake-line">@piece.CardLine</span>
