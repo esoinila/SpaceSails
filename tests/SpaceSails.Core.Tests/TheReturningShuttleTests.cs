@@ -13,8 +13,8 @@ namespace SpaceSails.Core.Tests;
 /// predicate arm by arm, the next-arrival firing, once-per-run, the first-three-sim-days gate, the phases, the
 /// told-once fixtures, the hull's geometry, and the preserved site left byte-identical.
 ///
-/// <para>Every guard below was watched go RED against a revert of the behaviour it names, and the revert is
-/// quoted on it (#587's lesson: a guard nobody has seen fail is a guess).</para>
+/// <para>The key guards were watched go RED against a revert of the behaviour they name; the table is in the PR
+/// (#587's lesson: a guard nobody has seen fail is a guess).</para>
 /// </summary>
 [Collection(StopRegisterCollection.Name)]
 public sealed class TheReturningShuttleTests
@@ -40,8 +40,7 @@ public sealed class TheReturningShuttleTests
 
     /// <summary>
     /// THE LINES ARE FABLE'S, VERBATIM. Typed out here again on purpose: a constant compared with itself
-    /// proves nothing. <b>Revert that reddened it:</b> a comma moved in the airlock line —
-    /// <i>"Assert.Equal() Failure: Strings differ"</i>.
+    /// proves nothing.
     /// </summary>
     [Fact]
     public void TheCanonLinesAreHeldVerbatim()
@@ -66,8 +65,7 @@ public sealed class TheReturningShuttleTests
 
     /// <summary>
     /// THE REPO'S ORDINARY PAPER SEAMS READ THE PAGE AS THE CANON TITLED IT — away from its room, in the
-    /// satchel and on the card. <b>Revert that reddened it:</b> the arm removed from <c>FieldClue.IsAuthored</c>
-    /// — the id fell through to the generic clue reader and the title was a certainty label.
+    /// satchel and on the card.
     /// </summary>
     [Fact]
     public void TheLogIsAnAuthoredPaperTheBookReadsByItsOwnTitle()
@@ -84,7 +82,7 @@ public sealed class TheReturningShuttleTests
     /// NO FOURTH STRING, AND NO LINE THAT CLOSES THE QUESTION. Every public string the type publishes is in
     /// <see cref="ReturningShuttle.AllProse"/> (bar the two machine words), and none of them says the reserved
     /// word, the canon list, or anything about anybody being alive, dead, found or missing.
-    /// <b>Revert that reddened it:</b> a helpful <c>"Nobody was aboard."</c> constant added — the sweep named it.
+    ///
     /// </summary>
     [Fact]
     public void NoLineClosesTheQuestionAndThereIsNoFourthString()
@@ -124,8 +122,7 @@ public sealed class TheReturningShuttleTests
     // ══ THE ELIGIBILITY PREDICATE, ARM BY ARM ══════════════════════════════════════════════════════════
 
     /// <summary>
-    /// ARM 1 · NO PRESERVED SITE SEEN → NO BEAT, whatever else he has done. <b>Revert that reddened it:</b>
-    /// <c>seen</c> ignored in <c>SiteOfArrival</c> — <i>"Assert.Null() Failure: Value: rock-a"</i>.
+    /// ARM 1 · NO PRESERVED SITE SEEN → NO BEAT, whatever else he has done.
     /// </summary>
     [Fact]
     public void WithoutAPreservedSiteSeenThereIsNoBeat()
@@ -136,8 +133,7 @@ public sealed class TheReturningShuttleTests
 
     /// <summary>
     /// ARM 2 · A SITE SEEN BUT NOTHING OF BEAT 3 OR 4 TOUCHED → NO BEAT. The book holds plenty — just none of
-    /// the five lines that count. <b>Revert that reddened it:</b> <c>TouchedTheTrail</c> returning true for any
-    /// non-empty book.
+    /// the five lines that count.
     /// </summary>
     [Fact]
     public void ASiteSeenWithoutTheTrailTouchedIsNoBeat()
@@ -149,8 +145,7 @@ public sealed class TheReturningShuttleTests
     /// <summary>
     /// ARM 3 · BOTH → ELIGIBLE, by each of the five ways to have touched the trail: a clipped rail, rota or
     /// pour (beat 3) or either colleague's answer (beat 4). The population is asserted to be five.
-    /// <b>Revert that reddened it:</b> the mug dropped from the trail set — <i>"Assert.Equal() Failure:
-    /// Expected: rock-a, Actual: (null)"</i> on that row.
+    ///
     /// </summary>
     [Fact]
     public void ASiteSeenAndTheTrailTouchedIsEligibleByEachOfTheFiveWays()
@@ -172,7 +167,7 @@ public sealed class TheReturningShuttleTests
 
     /// <summary>
     /// A SITE THE OFFICE HAS NOT TAKEN INTO CARE IS NOT A SEEN SITE. The beat is staged on a PRESERVED ground.
-    /// <b>Revert that reddened it:</b> the <c>inCare</c> filter dropped.
+    ///
     /// </summary>
     [Fact]
     public void OnlyAGroundStillInCareCounts()
@@ -184,8 +179,7 @@ public sealed class TheReturningShuttleTests
 
     /// <summary>
     /// IT FIRES ON HIS NEXT ARRIVAL IN THAT SITE'S SYSTEM — the site itself or the berth it orbits — and on no
-    /// other arrival. <b>Revert that reddened it:</b> <c>parentOf</c> ignored (the berth arrival went quiet) /
-    /// the arrival comparison dropped (every arrival fired).
+    /// other arrival.
     /// </summary>
     [Fact]
     public void ItFiresOnTheNextArrivalInTheSitesSystemAndNoOther()
@@ -199,7 +193,7 @@ public sealed class TheReturningShuttleTests
 
     /// <summary>
     /// NEVER IN THE FIRST THREE SIM-DAYS (owner 2026-10-04). Both edges: one second short is no; exactly three
-    /// days is yes. <b>Revert that reddened it:</b> the gate set to 2 days — the 2.5-day arrival fired.
+    /// days is yes.
     /// </summary>
     [Fact]
     public void NeverInTheFirstThreeSimDays()
@@ -214,7 +208,7 @@ public sealed class TheReturningShuttleTests
 
     /// <summary>
     /// ONCE PER RUN: a row that exists — at any phase, on any ground — means it never fires again.
-    /// <b>Revert that reddened it:</b> the <c>existing</c> check dropped — a second hull on the second visit.
+    ///
     /// </summary>
     [Fact]
     public void OncePerRun()
@@ -230,8 +224,7 @@ public sealed class TheReturningShuttleTests
 
     /// <summary>
     /// LANDED, THEN — ONE WORLD WINDOW LATER — RETURNED. And the wire owes its line exactly once, only after
-    /// the return. <b>Revert that reddened it:</b> <c>WindowsToReturn</c> set to 0 — the shuttle came back the
-    /// instant the hull landed.
+    /// the return.
     /// </summary>
     [Fact]
     public void LandedThenReturnedOneWindowLaterAndTheWireIsOwedOnce()
@@ -254,8 +247,7 @@ public sealed class TheReturningShuttleTests
     /// <summary>
     /// NOTHING IS ABOARD UNTIL THE SHUTTLE IS BACK; THEN THREE FIXTURES; AND THE LOG DESK GOES WHEN ITS PAGE
     /// HAS BEEN TAKEN (the 📍 line filed). Judged AFTER the whole sequence, not one pulse of it.
-    /// <b>Revert that reddened it:</b> <c>Told</c> always false — the desk stayed and the page could be taken
-    /// twice.
+    ///
     /// </summary>
     [Fact]
     public void ThreeFixturesOnceTheShuttleIsBackAndTheLogDeskGoesWithItsPage()
@@ -275,8 +267,7 @@ public sealed class TheReturningShuttleTests
 
     /// <summary>
     /// THE AIRLOCK AND THE RACK EACH TELL ONCE — the first press the line, every press after it nothing — and
-    /// the log desk tells no line at all. A sequence, judged at its end. <b>Revert that reddened it:</b> the
-    /// once-check dropped — the second press told it again.
+    /// the log desk tells no line at all. A sequence, judged at its end.
     /// </summary>
     [Fact]
     public void TheAirlockAndTheRackTellOnce()
@@ -312,8 +303,7 @@ public sealed class TheReturningShuttleTests
 
     /// <summary>
     /// ON THE BOARD: the board's tag BEFORE an ordinary hauler callsign, a parked fixture on the ground's own
-    /// orbit with no plan and no cargo, deterministic. <b>Revert that reddened it:</b> the tag moved to a
-    /// suffix — <i>"Assert.StartsWith() Failure"</i>.
+    /// orbit with no plan and no cargo, deterministic.
     /// </summary>
     [Fact]
     public void ThePlateOnTheBoardIsTheTagThenAnOrdinaryCallsign()
@@ -340,8 +330,7 @@ public sealed class TheReturningShuttleTests
     /// <summary>
     /// SHE FITS — inside the field, off the way home, closed but for ONE gap in the long wall, with the three
     /// stations inside her and clear of the walls; and refuses (null) when the ground is blocked everywhere.
-    /// <b>Revert that reddened it:</b> the gap segment drawn closed — <i>"Assert.Equal() Failure: Expected: 5,
-    /// Actual: 6"</i> walls; the stations moved outside — the inside check named them.
+    ///
     /// </summary>
     [Fact]
     public void TheHullFitsHasOneGapAndHoldsTheThreeStationsInside()
@@ -382,9 +371,7 @@ public sealed class TheReturningShuttleTests
     /// THE STUDY NEVER ENDS: the whole beat — the arrival that fires it, the board row, the phases, the
     /// fixtures — leaves the preserved-site and stop registers exactly as it found them, and the vault it rides
     /// differs from the vault without it ONLY in its own two rows. Compared as serialised bytes.
-    /// <b>Revert that reddened it:</b> a stray <c>PreservationZone.Install([])</c> added to <c>Fires</c> — the
-    /// register snapshot differed; a site row written next to the beat's — the JSON differed by more than the
-    /// two properties.
+    ///
     /// </summary>
     [Fact]
     public void ThePreservedSiteIsByteIdenticalBeforeAndAfterTheBeat()
@@ -441,8 +428,7 @@ public sealed class TheReturningShuttleTests
 
     /// <summary>
     /// NULL WHILE EMPTY: a vault in which the beat has not fired carries neither row, so no old save's
-    /// checksum moves. <b>Revert that reddened it:</b> the <c>JsonIgnore</c> removed from <c>Shuttle</c> —
-    /// <i>"shuttle":null</i> appeared in every save.
+    /// checksum moves.
     /// </summary>
     [Fact]
     public void AVaultThatNeverSawTheBeatCarriesNeitherRow()

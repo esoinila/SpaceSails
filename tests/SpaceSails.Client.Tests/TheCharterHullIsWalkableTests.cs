@@ -45,10 +45,7 @@ public sealed class TheCharterHullIsWalkableTests
 
     /// <summary>
     /// SHE IS PARKED ON EVERY GROUND, AND EVERY FIXTURE ABOARD CAN BE WALKED TO — through her gap, from the
-    /// tube, with her walls added to the ground's. <b>Revert that reddened it:</b> the gap wall drawn closed
-    /// (the two halves joined) — <i>"airlock cannot be walked to from the tube"</i> on every ground; and the
-    /// obstruction question answered <c>false</c> — she was parked across a ruin wall and the stations stood
-    /// inside stone.
+    /// tube, with her walls added to the ground's.
     /// </summary>
     [Fact]
     public void EveryFixtureAboardCanBeWalkedToFromTheTube()
@@ -106,8 +103,7 @@ public sealed class TheCharterHullIsWalkableTests
     /// <summary>
     /// THE SITE IS BYTE-IDENTICAL: the preserved ground's own deck — walls, fixtures, labels — is the same
     /// sequence of values before she is parked as after, and she is parked on a ground that is not fenced
-    /// nowhere at all. <b>Revert that reddened it:</b> <c>SurveyHullOn</c> allowed to run on an unfenced
-    /// ground — the second assertion named it.
+    /// nowhere at all.
     /// </summary>
     [Fact]
     public void ParkingHerLeavesThePreservedSitesOwnDeckUntouched()
