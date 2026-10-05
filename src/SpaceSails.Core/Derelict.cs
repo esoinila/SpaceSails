@@ -85,6 +85,7 @@ public static partial class Derelict
     /// wreck a planet, and a code path that must not promise a clamp on one, are asking the same thing.</summary>
     public static bool IsWreckBody(string? bodyId) =>
         TryParseWreckId(bodyId, out _)
+        || StationAboard.TryParseStationId(bodyId, out _)   // #653 · a dead station is a dead hull too
         || string.Equals(bodyId, RoadsterBodyId, System.StringComparison.Ordinal);
 
     /// <summary>The finder's fee for filing an honest accident report, as a fraction of the assessed cargo

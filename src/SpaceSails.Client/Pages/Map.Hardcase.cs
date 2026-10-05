@@ -131,7 +131,7 @@ public sealed partial class Map
     /// only thing this beat ever says.</para>
     /// </summary>
     private string? TheGroundUnderfootForKolt() =>
-        _surface is { } ex && !OnWreck
+        _surface is { } ex && !OnADeadHull
             ? HardcaseRep.GroundKey(ex.Stop.Body.Id, ex.Site.Index)
             : null;
 
@@ -139,7 +139,7 @@ public sealed partial class Map
     /// <see cref="HardcaseRep.GroundLikeThis"/> is asked rather than re-derived, so the law about WHERE he
     /// can appear has exactly one statement and the Core suite can drive it.</summary>
     private bool HeCouldBeAfootNow() =>
-        _surface is { } ex && HardcaseRep.GroundLikeThis(landed: true, OnWreck, ex.Floor);
+        _surface is { } ex && HardcaseRep.GroundLikeThis(landed: true, OnADeadHull, ex.Floor);
 
     /// <summary>
     /// A DIFFERENT GROUND IS A DIFFERENT VISIT. The one place forgetting happens; everything after it only

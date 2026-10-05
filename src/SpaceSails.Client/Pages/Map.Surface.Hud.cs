@@ -41,6 +41,12 @@ public partial class Map
         // holding a corridor while the pump runs is the loop this lane is FOR, so the wreck now gets a
         // REDUCED hud rather than none: the marks that belong on a deck, and none of the regolith's
         // instruments.
+        // #653 · A dead station wears none of the regolith's instruments either, and is not a derelict: her own HUD.
+        if (OnStation)
+        {
+            return BuildStationHud(ex);
+        }
+
         bool onWreck = Derelict.TryParseWreckId(ex.Stop.Body.Id, out _);
         if (onWreck)
         {

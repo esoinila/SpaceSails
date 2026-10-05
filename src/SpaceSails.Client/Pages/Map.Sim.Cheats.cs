@@ -101,6 +101,24 @@ public partial class Map
             ? Derelict.SeededWithCause(forced) ?? Derelict.Seeded(WreckCheatId)
             : Derelict.Seeded(WreckCheatId);
 
+    /// <summary>#653 · The ?station=1 cheat's station id. Chosen, and pinned by <c>TheDeadStationBootTests</c>, so that
+    /// she has BOTH kinds of way in among her severed arms — a lock to cycle and a face to cut — which is what the
+    /// dev start exists to reach. The id is a seed and nothing else.</summary>
+    internal const string StationCheatId = "dev-station-6";
+
+    private static BodyDefinition StationSiteBody(string berthId) => new()
+    {
+        Id = StationAboard.BodyIdFor(StationCheatId),
+        Name = StationAboard.DevStationName,
+        ParentId = berthId,
+        Mu = 0,
+        BodyRadiusM = ExpeditionSite.BodyRadiusMeters,
+        OrbitRadiusM = ExpeditionSite.SpawnFraction * ShuttleRange.RangeMeters * 0.6, // well inside one hop
+        OrbitPeriodS = 1.0e9,       // a static co-orbiting offset — she just hangs there
+        InitialPhaseRad = 4.1,      // her own bearing off the berth, clear of the wreck cheat's 2.2 and the other rocks
+        Kind = "moon",
+    };
+
     private static BodyDefinition WreckSiteBody(string berthId, in Derelict.Wreck wreck) => new()
     {
         Id = Derelict.BodyIdFor(wreck.Id),

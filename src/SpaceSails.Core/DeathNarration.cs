@@ -128,6 +128,11 @@ public enum DeathPlace
     /// death in the Hive inherited the away team's, and every word of it was wrong: no ground to keep you,
     /// no sky, and a way out that somebody has to call a car for.</para></summary>
     Underground,
+
+    /// <summary>#653 · Aboard a dead station. Steel and no air like a derelict, and read as one everywhere
+    /// (the tail, the art, which deaths can happen) except the suffocation words: a station is not a ship, and the
+    /// canon gives her a pool of her own.</summary>
+    Station,
 }
 
 /// <summary>
@@ -254,6 +259,18 @@ public static partial class DeathNarration
         "They never recovered you from {body}. The hull is still logged as empty, which is the part that " +
         "should worry somebody.",
     ];
+
+    /// <summary>#653 · CANON (Fable, #653 addendum 2): the wreck pool's lines 1 and 3 VERBATIM, with the station's own
+    /// line in place of line 2. Pinned byte for byte.</summary>
+    public static readonly string[] SuffocationLinesAboardAStation =
+    [
+        "The tank went dry inside {body}, in vacuum she has held for years. Her air went out a long time " +
+        "before yours did.",
+        "The station does not notice. Her books closed years ago, and they do not reopen for breath.",
+        "On {body} the gauge reached nothing between one bulkhead and the next. She had nothing to give you.",
+    ];
+
+    private static DeathPlace AsAHull(DeathPlace place) => place == DeathPlace.Station ? DeathPlace.Derelict : place;
 
     private static readonly string[] SuffocationLinesAboardAWreck =
     [

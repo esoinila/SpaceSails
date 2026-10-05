@@ -47,7 +47,10 @@ public partial class Map
         // Phase 1 — clear the bay: advance the clock across the crossing (and the discovery scan the
         // time-jump can trigger for buried caches).
         await DescentPhaseAsync("clearing the bay…");
-        AdvanceShuttleClock(stop.TravelSeconds); // the flight down (abstracted by the tube) costs the clock
+        // #653 · A DEAD STATION'S CREW LOCK IS A SERVICEABLE LOCK, and a locked door is TIME, never a key: it cycles
+        // for patience, and the clock is where the patience is paid.
+        double lockSeconds = StationAboard.TryParseStationId(stop.Body.Id, out _) ? StationAboard.LockCycleSeconds : 0;
+        AdvanceShuttleClock(stop.TravelSeconds + lockSeconds); // the flight down (abstracted by the tube) costs the clock
 
         // #1063 · …and the clock having moved, the neighbours have had their shift. THE BURIAL IS EVALUATED
         // HERE and only here: after the crossing's time is spent and before one wall of this ground has been
@@ -93,6 +96,8 @@ public partial class Map
             Expedition = isExpeditionSite,
             Deflection = isDeflectionRock,
             Site = chosenSite,
+            // #653 · what a visit to a dead station carries — null on every other ground (see StationVisit).
+            Station = StationAboard.TryParseStationId(stop.Body.Id, out _) ? new StationVisit() : null,
         };
 
         // #314: pull up to botsToBring sentries off the ship's roster into the sling (carried, not yet
@@ -130,6 +135,12 @@ public partial class Map
         // is that a declined find is still there, which is a promise you can only keep if a KEPT one is not.
         SeedTurnedOverRooms(excursion);
 
+        // #653 · …AND THE FACES THIS CAPTAIN HAS CUT INTO A STATION. Same register, same moment: a cut is permanent evidence.
+        if (excursion.Station is { } stationVisit && StationAboard.TryParseStationId(stop.Body.Id, out string cutStation))
+        {
+            stationVisit.Cuts.UnionWith(StationAboard.CutsIn(_roomsTurnedOver, cutStation));
+        }
+
         // #316 law 1 · …AND THE HUSKS THE LAST VISIT LEFT LYING HERE. Same moment, same reason: what the
         // ground kept is on the ship's ledger, and a field is meant to still be the field you shot it up.
         SeedTheHusksLeftHere(excursion);
@@ -153,7 +164,7 @@ public partial class Map
         // but a boat cannot set down inside a derelict, so that arrival is a docking and a walk in through
         // somebody else's airlock, which is its own build (#584). Landing a boat on a hull's deck plan would
         // be the geometry lying about the fiction, which is the one bug this project keeps paying for.
-        excursion.CollectorsComing = !OnWreck
+        excursion.CollectorsComing = !OnADeadHull
             && (_collectorCheatSeconds is not null
                 || CollectorLanding.WillFollowYouDown(_heat.Level, excursion.ThreatSeed));
         if (excursion.CollectorsComing)
@@ -190,6 +201,13 @@ public partial class Map
         // Phase 2 — weld the tube + wide surface + monolith maze + collision segments onto the deck.
         await DescentPhaseAsync("welding the tube…");
         RebuildSurfaceDeck();
+        if (StationAboard.TryParseStationId(stop.Body.Id, out string boardedStation))
+        {
+            // #653 · She has no tube to walk down: the boat is mated to the crew lock and the away team is set
+            // down just inboard of it, by Core's own square.
+            (double stationX, double stationY) = StationInterior.SpawnAt(boardedStation, StationWreck.ModuleId.Hub);
+            StandCaptainAt(stationX, stationY, "the boat sets you down inside her lock");
+        }
 
         // Phase 3 — read the ground: flip to the deck view, then paint the FIRST surface frame HERE,
         // under the still-up door, before ever handing control to the live loop.
@@ -225,6 +243,10 @@ public partial class Map
             string who = gig.Flavor == ExpeditionFlavor.Science ? "science team" : "survey crew";
             ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. The {who} scrambles down the tube and fans out across the site. The ship holds the course-match above — watch the away clock. Walk them through it.");
         }
+        else if (StationAboard.TryParseStationId(stop.Body.Id, out _))
+        {
+            ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}.");
+        }
         else
         {
             ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. {load}{bots} Walk down the tube. [E] the kiosk, wander, or dig — your call.");
@@ -247,6 +269,14 @@ public partial class Map
         // retreat." Same fixture, same law — the shuttle's own, never bought, never dry — but placed on the
         // wreck's spine just inboard of her airlock, so it covers the corridor you will be running back
         // down. On an INFESTED hull that is the difference between a salvage run and a burial.
+        // #653 · THE DEAD STATION runs no tide and keeps no door sentry: nothing crawls up out of her decks, and the
+        // boat is not under threat. What she gets instead is the first standing aboard, said once.
+        if (StationAboard.TryParseStationId(stop.Body.Id, out _))
+        {
+            ArriveAtTheStation();
+            return;
+        }
+
         if (Derelict.TryParseWreckId(stop.Body.Id, out _))
         {
             _surface!.Bots.Add(new SurfaceBot

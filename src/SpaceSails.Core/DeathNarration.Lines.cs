@@ -46,7 +46,9 @@ public static partial class DeathNarration
     ///
     /// <para>Stated here rather than trusted to callers, so it can be TESTED and so any future death lane
     /// has one place to check itself against.</para></summary>
-    public static bool CanHappen(DeathCause cause, DeathPlace place) => cause switch
+    public static bool CanHappen(DeathCause cause, DeathPlace place) => CanHappenCore(cause, AsAHull(place));
+
+    private static bool CanHappenCore(DeathCause cause, DeathPlace place) => cause switch
     {
         // You have to be at the controls to fly a ship into something.
         DeathCause.Impact => place == DeathPlace.OwnShip,
@@ -94,7 +96,9 @@ public static partial class DeathNarration
     /// the markup to EVERY death — it is BUSTED's own language, about a collector's gun-camera still, and it
     /// was being read out over a captain who suffocated alone on a moon with nobody watching. Same failure
     /// as the borrowed prose, one line further down the card.</summary>
-    public static string Tail(DeathCause cause, DeathPlace place) => (cause, place) switch
+    public static string Tail(DeathCause cause, DeathPlace place) => TailCore(cause, AsAHull(place));
+
+    private static string TailCore(DeathCause cause, DeathPlace place) => (cause, place) switch
     {
         (DeathCause.Collector, _) => " The freeze-frame holds.",
         (_, DeathPlace.Derelict) => " Her log will not mention it.",
@@ -103,8 +107,17 @@ public static partial class DeathNarration
         _ => "",
     };
 
-    public static string Line(DeathCause cause, DeathPlace place, ulong seed, string? bodyName)
+    public static string Line(DeathCause cause, DeathPlace placeAsGiven, ulong seed, string? bodyName)
     {
+        // #653 · A dead station's suffocation has a pool of its own (a station is not a ship); every other death there reads
+        // as aboard a hull, and the tail and the art stand.
+        if (placeAsGiven == DeathPlace.Station && cause == DeathCause.Suffocated)
+        {
+            return SuffocationLinesAboardAStation[(int)(seed % (ulong)SuffocationLinesAboardAStation.Length)]
+                .Replace("{body}", string.IsNullOrWhiteSpace(bodyName) ? "that station" : bodyName!);
+        }
+
+        DeathPlace place = AsAHull(placeAsGiven);
         if (place == DeathPlace.Derelict)
         {
             string[]? aboard = cause switch

@@ -39,7 +39,7 @@ public partial class Map
         // there is no ground for them to come out of, and a wreck that quietly filled with Reevers would be
         // a different (and unearned) story than the one her evidence tells. Whatever is aboard a wreck gets
         // put there on purpose, not by the ground's own cadence.
-        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _))
+        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _) || StationAboard.TryParseStationId(ex.Stop.Body.Id, out _))
         {
             return;
         }

@@ -47,9 +47,11 @@ public sealed partial class Map
     /// their instruments already measure, or the bodyguard is guarding a different road from the one on the
     /// gauge.</para>
     /// </summary>
-    private (double X, double Y) TheWayHome => OnWreck
-        ? (WreckLayout.SpawnX, WreckLayout.SpawnY)
-        : (MoonSurface.SpawnX, MoonSurface.SpawnY);
+    private (double X, double Y) TheWayHome =>
+        StationDock is { } dock ? (dock.X, dock.Y)   // #653 · the boat's own access, wherever she is mated
+        : OnWreck
+            ? (WreckLayout.SpawnX, WreckLayout.SpawnY)
+            : (MoonSurface.SpawnX, MoonSurface.SpawnY);
 
     /// <summary>
     /// #326 · <b>THE RETREAT LINE, or null where there is not one.</b>
@@ -66,7 +68,7 @@ public sealed partial class Map
     {
         get
         {
-            if (_surface is not { } ex || (!OnWreck && ex.Floor < 0))
+            if (_surface is not { } ex || (!OnADeadHull && ex.Floor < 0))
             {
                 return null;
             }

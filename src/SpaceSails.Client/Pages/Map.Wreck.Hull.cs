@@ -242,7 +242,9 @@ public sealed partial class Map
     /// — all offered for a dead ship with a steel deck (owner, on the Cold Harvest: <i>"it shows me three
     /// options on where to board … those are good for Miranda etc moons but … you know"</i>).</summary>
     private bool BoardingAWreck =>
-        _boardTarget is { } target && Derelict.TryParseWreckId(target.Body.Id, out _);
+        _boardTarget is { } target
+        && (Derelict.TryParseWreckId(target.Body.Id, out _)
+            || StationAboard.TryParseStationId(target.Body.Id, out _));   // #653: a dead station is a hull too — no regolith card
 
     /// <summary>Rebuild the derelict's walkable interior — the ✔ marks and the vanished salvage console
     /// are state, so the deck is rebuilt whenever they change.</summary>

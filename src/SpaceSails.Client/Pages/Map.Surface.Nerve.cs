@@ -43,7 +43,7 @@ public partial class Map
         // The name changed with the meaning: it is not the regolith, it is being on the far side of your own
         // door — whichever door this world has (AwayTeamSide).
         bool awayFromSafety = onExcursion
-            && !AwayTeamSide.BackAtTheShuttle(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius)
+            && !AwayTeamSide.BackAtTheShuttle(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius, StationDock)
             && !inShelter;
 
         // #380 item 2: the band this frame opened on — so once, per excursion, we can speak the FIRST slide
@@ -81,7 +81,7 @@ public partial class Map
             // accident). SeesMonolith() now answers the question properly on its own — it asks
             // Monolith.StandsOn, the same predicate the renderer builds the slab from, and a wreck id is
             // not the canon moon — so !OnWreck is belt to that braces rather than the only thing holding it.
-            SeesMonolith: !OnWreck && awayFromSafety && SeesMonolith(),
+            SeesMonolith: !OnADeadHull && awayFromSafety && SeesMonolith(),
             // #446 (owner, live 2026-07-26: "The reevers should not lower sanity unless they get REALLY
             // close"). ChaseActive used to be the bare `_reevers.Count > 0` — a pack EXISTING anywhere on
             // the field, so one Old One drifting on the far rim taxed the captain at the same flat rate as
