@@ -80,18 +80,22 @@ ${HYGIENE}`,
 
 // Cap simultaneous headless browsers: one chunk of BATCH scenes at a time.
 const results = []
-for (let i = 0; i < scenes.length; i += BATCH) {
-  const chunk = scenes.slice(i, i + BATCH)
-  log(`batch ${i / BATCH + 1}: ${chunk.map(c => c.name).join(', ')}`)
-  const part = await pipeline(chunk, lookFn, verifyFn)
-  results.push(...part)
+let sweep = null
+// try/finally: a pass that throws mid-flight is when the most browsers are left behind, so the sweep always runs.
+try {
+  for (let i = 0; i < scenes.length; i += BATCH) {
+    const chunk = scenes.slice(i, i + BATCH)
+    log(`batch ${i / BATCH + 1}: ${chunk.map(c => c.name).join(', ')}`)
+    const part = await pipeline(chunk, lookFn, verifyFn)
+    results.push(...part)
+  }
+} finally {
+  phase('Sweep')
+  sweep = await agent('Run the PowerShell script scripts/qa-zombie-sweep.ps1 from the repo root and report its output verbatim (how many processes it killed, by what match). Do nothing else.', { label: 'sweep', phase: 'Sweep', model: 'haiku', effort: 'low' })
 }
 
 const flat = results.filter(Boolean)
 const confirmed = flat.flatMap(r => (r.verified || []).filter(v => v.real).map(v => ({ scene: r.scene, path: r.path, ...v })))
 log(`sweep done: ${flat.length} scenes, ${confirmed.length} confirmed anomalies`)
-
-phase('Sweep')
-const sweep = await agent('Run the PowerShell script scripts/qa-zombie-sweep.ps1 from the repo root and report its output verbatim (how many processes it killed, by what match). Do nothing else.', { label: 'sweep', phase: 'Sweep', model: 'haiku', effort: 'low' })
 
 return { scenes: flat, confirmed, sweep }

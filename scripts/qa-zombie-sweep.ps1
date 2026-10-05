@@ -5,7 +5,7 @@
 #   node.exe    whose command line matches  browser.mjs
 # Always exits 0: a sweep that finds nothing is a success.
 $rules = @(
-    @{ Name = 'chrome.exe'; Pattern = 'ms-playwright|playwright_chro|\.codegpt\ab-sessions' },
+    @{ Name = 'chrome.exe'; Pattern = 'ms-playwright|playwright_chro|\.codegpt\\ab-sessions' },
     @{ Name = 'node.exe';   Pattern = 'browser\.mjs' }
 )
 $killed = 0
