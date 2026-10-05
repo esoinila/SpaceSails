@@ -224,6 +224,23 @@ public sealed record ProgressSection
         Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public IReadOnlyList<string>? HallsPreserved { get; init; }
 
+    /// <summary>#1074 beat 5 — THE PRESERVED GROUNDS THE CAPTAIN HAS STOOD ON (<see cref="ReturningShuttle"/>):
+    /// the first half of the returning shuttle's eligibility. Order of standing, no repeats.
+    ///
+    /// <para>Null until he has stood on one — the null-while-empty law, here for its exact reason: the
+    /// checksum is taken over the payload, so an eager <c>"shuttleSeen": []</c> would move every old save's
+    /// digest and hang the 📛 tampered marker on an honest voyage.</para></summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? ShuttleSeen { get; init; }
+
+    /// <summary>#1074 beat 5 — THE RETURNING SHUTTLE'S ONE ROW: the ground the charter hull is parked on, the
+    /// window she landed in, and whether the wire has had its one line. Null in every voyage the beat has not
+    /// fired in — which is almost every voyage, and which is also what "once per run" is made of.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(
+        Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public ReturningShuttle.Row? Shuttle { get; init; }
+
     /// <summary>
     /// #525 · <b>THE COLLAR A DECLARED OVERLOAD CLEARED</b>, or null in every voyage where nobody has turned
     /// both keys against his own hull while clamped to somebody's ring — which is almost every voyage.

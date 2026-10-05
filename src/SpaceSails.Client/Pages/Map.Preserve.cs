@@ -95,5 +95,8 @@ public partial class Map
         // fresh voyage, a loaded save and a captain nobody has fenced anything on all share one static, and a
         // world that inherited the last one's register would be the worst bug this feature could have.
         InstallPreserveRegister();
+
+        // #1074 beat 5 · the dev cheat's own step only; asks nothing of the register it just read.
+        TheShuttleCheatLands();
     }
 }

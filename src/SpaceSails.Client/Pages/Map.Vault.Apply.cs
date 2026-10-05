@@ -208,6 +208,7 @@ public partial class Map
         // it has since taken into care — that one restores and installs in one call (Map.Preserve.cs).
         RestoreStop(vault.Progress);
         RestorePreserve(vault.Progress);
+        RestoreShuttle(vault.Progress);   // #1074 beat 5
         // #525: and the one collar a harbour has cleared with a reason on it (Map.BerthScuttle.cs).
         RestoreClearedCollar(vault.Progress);
         // #1151: and the claims file — the counter, the claim awaiting a representative, and the writ

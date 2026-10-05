@@ -267,6 +267,9 @@ public partial class Map
                 HallsStopped = StopRows(),
                 // #1074 beat 2 · …and which of THOSE it has since fenced and signed (Map.Preserve.cs).
                 HallsPreserved = PreserveRows(),
+                // #1074 beat 5 · ...and the returning shuttle: the preserved grounds he has stood on, and the beat's one row.
+                ShuttleSeen = ShuttleSeenRows(),
+                Shuttle = _shuttle,
                 // #525 · …and the one collar a harbour has cleared with a reason on it (Map.BerthScuttle.cs).
                 CollarCleared = ClearedCollarRow(),
                 // #1151 · …and the file the captain is building on himself: how many claims he has lodged,

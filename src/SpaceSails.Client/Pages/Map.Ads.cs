@@ -367,5 +367,6 @@ public partial class Map
     {
         ThePlaceFinishesThePages(bodyId);
         TheOldShipIsAlongside(bodyId);
+        TheShuttleIsAskedAbout(bodyId);   // #1074 beat 5 · the returning shuttle, once per run
     }
 }
