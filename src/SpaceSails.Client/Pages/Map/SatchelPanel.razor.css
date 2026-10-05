@@ -326,7 +326,7 @@
 }
 
 /* the closed pendant: a gold disc, worn smooth, a hairline seam through its middle */
-.keepsake-art.closed {
+.keepsake-art.closed.art-unsettled {
     background:
         linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(60, 40, 10, 0.7) calc(50% - 0.5px), rgba(60, 40, 10, 0.7) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
         radial-gradient(circle at 35% 30%, #f1d58a, #b8923f 60%, #7a5d22);
@@ -334,7 +334,7 @@
 }
 
 /* the picture inside: dark glass, a pale oval where a face would be, said no more than that */
-.keepsake-art.inside {
+.keepsake-art.inside.art-unsettled {
     background:
         radial-gradient(ellipse 28% 36% at 50% 46%, rgba(214, 205, 190, 0.55), rgba(214, 205, 190, 0.18) 70%, transparent 72%),
         radial-gradient(circle at 50% 50%, #1d222c, #0a0d12);
@@ -347,6 +347,7 @@
 .keepsake-art.art-love,
 .keepsake-art.art-money {
     border-radius: 0.2rem;
+    box-shadow: 0 0 0 1px rgba(216, 184, 132, 0.5);
 }
 
 .keepsake-art.closed.art-love {
@@ -366,6 +367,19 @@
     background:
         radial-gradient(ellipse 28% 36% at 50% 46%, rgba(214, 205, 190, 0.55), rgba(214, 205, 190, 0.18) 70%, transparent 72%),
         linear-gradient(180deg, #2a2226, #120d10);
+}
+
+/* #620 slice 2 · the SHEET rows' capped scroll region (UI law: the shelf grows with the book). The pendant
+   card is outside it and stays pinned; the cap is the CappedScrollPanel idiom (max-height, min-height 0,
+   overflow-y auto) so a scrollbar appears only when the sheets outgrow it. */
+.keepsake-sheets {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    min-height: 0;
+    max-height: min(16rem, 40vh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .keepsake-text {

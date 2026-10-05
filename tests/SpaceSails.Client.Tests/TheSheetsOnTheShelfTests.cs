@@ -257,6 +257,45 @@ public class TheSheetsOnTheShelfTests
     }
 
     [Fact]
+    public void ADozenSheetsLiveInACappedScrollRegion_ThePendantStaysPinnedOutsideIt_AndThePocketsAreStillThere()
+    {
+        HeldMemory.Sheet[] twelve = Enumerable.Range(0, 12)
+            .Select(i => new HeldMemory.Sheet(HeldMemory.SlipId($"mate-{i}"), HeldMemory.Mark.His,
+                i % 2 == 0 ? HeldMemory.Theory.Love : HeldMemory.Theory.Money, "a page", ["Somebody"], 86400.0 * i))
+            .ToArray();
+        string html = Render(Keepsake.Shelf(twelve));
+
+        Assert.Equal(13, CardsIn(html));
+        int region = html.IndexOf("class=\"keepsake-sheets\"", StringComparison.Ordinal);
+        Assert.True(region > 0, "the sheet rows need their capped container.");
+        int pendantCard = html.IndexOf(Keepsake.PendantTitle, StringComparison.Ordinal);
+        Assert.True(pendantCard > 0 && pendantCard < region, "the pendant row sits above and outside the scroll region.");
+        Assert.Single(System.Text.RegularExpressions.Regex.Matches(html, "keepsake-art (closed|inside) art-unsettled"));
+        string inRegion = html[region..];
+        Assert.Equal(12, System.Text.RegularExpressions.Regex.Matches(inRegion, "class=\"keepsake-card").Count);
+        Assert.DoesNotContain("art-unsettled", inRegion);
+
+        // no sheets, no region (scroll only where needed)
+        Assert.DoesNotContain("keepsake-sheets", Render(Keepsake.Shelf([])));
+
+        // the cap is the CappedScrollPanel idiom, and the shelf still sits AFTER the carried pockets in the panel
+        string css = File.ReadAllText(Path.Combine(SurfaceComposition.RepoRoot(), "src", "SpaceSails.Client",
+            "Pages", "Map", "SatchelPanel.razor.css"));
+        int rule = css.IndexOf(".keepsake-sheets {", StringComparison.Ordinal);
+        Assert.True(rule > 0);
+        string body = css[rule..css.IndexOf('}', rule)];
+        Assert.Contains("max-height:", body);
+        Assert.Contains("overflow-y: auto", body);
+        Assert.Contains("min-height: 0", body);
+
+        string panel = File.ReadAllText(Path.Combine(SurfaceComposition.RepoRoot(), "src", "SpaceSails.Client",
+            "Pages", "Map", "SatchelPanel.razor"));
+        int pockets = panel.IndexOf("<CarriedPockets", StringComparison.Ordinal);
+        int shelf = panel.IndexOf("<KeepsakeShelf", StringComparison.Ordinal);
+        Assert.True(pockets > 0 && shelf > pockets, "the pockets list is still in the panel, ahead of the shelf.");
+    }
+
+    [Fact]
     public void AnOpenSheetFoldsOpenWithItsLineAndAClose_AndARefusalSitsUnderItsOwnClosedCard()
     {
         IReadOnlyList<Keepsake.Piece> shelf = Keepsake.Shelf([Photo, Slip]);

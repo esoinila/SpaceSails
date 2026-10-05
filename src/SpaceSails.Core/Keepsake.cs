@@ -28,6 +28,12 @@ namespace SpaceSails.Core;
 /// <see cref="DiceRule.Seed(string, long[])"/> + <see cref="DeterministicRandom"/> discipline. The ambiguity
 /// IS the mechanic. No line, card or colleague ever settles it (§13.8).</para>
 ///
+/// <para><b>THE MONEY BAND (slice 2).</b> A held-memory sheet is a memento too. A LOVE-marked sheet restores
+/// clean (22) from the sheets' own four clean lines; a MONEY-marked one restores less
+/// (<see cref="NerveModel.KeepsakeMoneyRestore"/>) and on the same seeded 1-in-<see cref="StingOneIn"/> roll
+/// STINGS instead, from its own three lines. The pendant's Unsettled band belongs to the pendant alone: an
+/// Unsettled sheet routes as Love. The shelf holds faces only (<see cref="IsMemento"/>).</para>
+///
 /// <para>Everything here is PURE and DETERMINISTIC: same nerve + same gap + same sim time + same place →
 /// same minute. Every sentence the player reads is Fable's canon from the issue (2026-10-05), verbatim.
 /// Magnitudes are FLAGGED for the owner's tuning.</para>
@@ -52,7 +58,12 @@ public static class Keepsake
         string CardLine,
         HeldMemory.Mark Mark,
         HeldMemory.Theory Theory,
-        string FlashbackSubject);
+        string FlashbackSubject)
+    {
+        /// <summary>A held-memory SHEET (slice 2) rather than the pendant: it carries no flashback subject, so
+        /// it has no first opening, no unsettled band and no pendant lines.</summary>
+        public bool IsSheet => FlashbackSubject.Length == 0;
+    }
 
     /// <summary>The pendant's stable id.</summary>
     public const string PendantId = "pendant";
@@ -86,15 +97,29 @@ public static class Keepsake
     public static Piece FromSheet(HeldMemory.Sheet sheet) =>
         new(sheet.Id, HeldMemory.RowTitle(sheet), sheet.BookLine, sheet.Mark, sheet.Tag, FlashbackSubject: "");
 
-    /// <summary>#620 slice 2 · THE SHELF WITH THE BOOK'S SHEETS — the pendant first, then every sheet the
-    /// captain holds, in the book's own order. No filter: a stray page is still a held memory.</summary>
+    /// <summary>#620 slice 2 · Is this sheet a MEMENTO — a held FACE? The shelf is for faces, by an EXPLICIT
+    /// include list (coordinator ruling): the #973 photograph, a shipmate's slip (<see cref="HeldMemory.SlipId"/>
+    /// ids) and the summer-party picture (<see cref="OldCrewScene.SummerPartyId"/>, which holds faces). The
+    /// signing memory, the filing-day sheet, walk-in job slips, weather/old-ship pages and strays are ledger
+    /// evidence, not mementos — the canon quiet-minute lines would misfire on them. A future memento opts in
+    /// deliberately by joining this list.</summary>
+    public static bool IsMemento(HeldMemory.Sheet sheet) =>
+        string.Equals(sheet.Id, HeldMemory.PhotographId, StringComparison.Ordinal)
+        || string.Equals(sheet.Id, OldCrewScene.SummerPartyId, StringComparison.Ordinal)
+        || sheet.Id.StartsWith(HeldMemory.SlipId(string.Empty), StringComparison.Ordinal);
+
+    /// <summary>#620 slice 2 · THE SHELF WITH THE BOOK'S FACES — the pendant first, then every held sheet that
+    /// is a memento (<see cref="IsMemento"/>), in the book's own order.</summary>
     public static IReadOnlyList<Piece> Shelf(IReadOnlyList<HeldMemory.Sheet> book)
     {
         ArgumentNullException.ThrowIfNull(book);
         var pieces = new List<Piece>(book.Count + 1) { Pendant };
         foreach (HeldMemory.Sheet sheet in book)
         {
-            pieces.Add(FromSheet(sheet));
+            if (IsMemento(sheet))
+            {
+                pieces.Add(FromSheet(sheet));
+            }
         }
 
         return pieces;
@@ -241,7 +266,7 @@ public static class Keepsake
     /// <summary>What happened when the locket was pressed.</summary>
     public enum Outcome
     {
-        /// <summary>A clean quiet minute: nerve restored, one of the five lines.</summary>
+        /// <summary>A clean quiet minute: nerve restored, one of the pendant's five lines or a sheet's four.</summary>
         Restored,
 
         /// <summary>The unsettled band: the face read differently, a dab was spent instead.</summary>
@@ -311,8 +336,11 @@ public static class Keepsake
         bool money = piece.Theory == HeldMemory.Theory.Money;
 
         // Only the pendant has a first opening (a sheet's flashback fired at handover): no subject, no first.
-        bool first = firstOpening && piece.FlashbackSubject.Length > 0;
-        if (band && !first && (money || piece.Theory == HeldMemory.Theory.Unsettled))
+        // The UNSETTLED band is the PENDANT's alone: an Unsettled SHEET (not made today, but defined) routes as
+        // LOVE — 22 clean from the sheet pool, never stung, never borrowing the pendant's seam lines.
+        bool first = firstOpening && !piece.IsSheet;
+        bool unsettledBand = !piece.IsSheet && piece.Theory == HeldMemory.Theory.Unsettled;
+        if (band && !first && (money || unsettledBand))
         {
             double dab = money ? MoneyStingNerve : StingNerve;
             string[] pool = money ? MoneyStingLines : StingLines;
@@ -329,7 +357,7 @@ public static class Keepsake
             return new QuietMinute(Outcome.FirstOpening, restored, delta, FirstOpeningLine);
         }
 
-        string[] clean = piece.FlashbackSubject.Length == 0 ? SheetCleanLines : CleanLines; // a sheet has no hinge
+        string[] clean = piece.IsSheet ? SheetCleanLines : CleanLines; // a sheet has no hinge
         return new QuietMinute(Outcome.Restored, restored, delta, clean[rng.NextInt(0, clean.Length)]);
     }
 }

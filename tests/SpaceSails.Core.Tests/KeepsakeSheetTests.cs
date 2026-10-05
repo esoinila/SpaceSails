@@ -4,7 +4,7 @@ namespace SpaceSails.Core.Tests;
 
 /// <summary>
 /// #620 slice 2 · THE SHEETS ON THE SHELF. The #973 photograph and the slips are mementos beside the pendant,
-/// and the quiet minute reaches them: a LOVE-marked sheet restores clean (the pendant's own clean pool and its
+/// and the quiet minute reaches them: a LOVE-marked sheet restores clean (its own four-line clean pool, per canon addendum 3, at the pendant's
 /// 22), a MONEY-marked one restores LESS (14) and on the same seeded 1-in-12 roll STINGS instead, from the
 /// issue's three Money lines. The pendant's behaviour is not touched (<see cref="KeepsakeTests"/> holds it).
 ///
@@ -40,12 +40,51 @@ public class KeepsakeSheetTests
         Assert.Equal([Keepsake.PendantId, HeldMemory.PhotographId, HeldMemory.SlipId("fixer")],
             Keepsake.Shelf(book).Select(p => p.Id));
 
-        // a stray is a held memory too — no filter
-        HeldMemory.Sheet stray = ASheet("stray-1", HeldMemory.Mark.NotAnyones, HeldMemory.Theory.Money);
-        Assert.Equal(3, Keepsake.Shelf([Photo, stray]).Count);
+        // …and a stray is NOT a face: the shelf is an explicit include list (F1 ruling)
+        HeldMemory.Sheet stray = ASheet(Flashback.StrayId(0), HeldMemory.Mark.NotAnyones, HeldMemory.Theory.Money);
+        Assert.Equal([Keepsake.PendantId, HeldMemory.PhotographId], Keepsake.Shelf([Photo, stray]).Select(p => p.Id));
 
         // the no-argument shelf is still the slice-1 shelf
         Assert.Equal([Keepsake.PendantId], Keepsake.Shelf().Select(p => p.Id));
+    }
+
+    [Fact]
+    public void TheShelfIsForFaces_LedgerPagesAreNotOnIt_ButThePhotographSlipsAndSummerPartyAre()
+    {
+        HeldMemory.Sheet[] ledgerPages =
+        [
+            ASheet(NebulaRep.SigningMemoryId, HeldMemory.Mark.Mine, HeldMemory.Theory.Money),
+            ASheet(StationAds.TheFilingDay, HeldMemory.Mark.Mine, HeldMemory.Theory.Money),
+            ASheet(WalkIn.FirstSlipId("job-1"), HeldMemory.Mark.NotAnyones, HeldMemory.Theory.Money),
+            ASheet(WalkIn.NoteId(WalkIn.Who.Ilse), HeldMemory.Mark.Hers, HeldMemory.Theory.Love),
+            ASheet(InsuranceWeather.LapsedCousinSheetId, HeldMemory.Mark.His, HeldMemory.Theory.Money),
+            ASheet(TheOldShip.SheetId, HeldMemory.Mark.Mine, HeldMemory.Theory.Money),
+            ASheet(PreservationOffice.SheetId, HeldMemory.Mark.Mine, HeldMemory.Theory.Money),
+            ASheet(Flashback.StrayId(2), HeldMemory.Mark.NotAnyones, HeldMemory.Theory.Money),
+        ];
+        Assert.Equal([Keepsake.PendantId], Keepsake.Shelf(ledgerPages).Select(p => p.Id));
+
+        HeldMemory.Sheet party = ASheet(OldCrewScene.SummerPartyId, HeldMemory.Mark.Mine, HeldMemory.Theory.Love);
+        Assert.Equal([Keepsake.PendantId, HeldMemory.PhotographId, HeldMemory.SlipId("fixer"), OldCrewScene.SummerPartyId],
+            Keepsake.Shelf([.. ledgerPages, Photo, Slip, party]).Select(p => p.Id));
+    }
+
+    [Fact]
+    public void AnUnsettledSheetRoutesAsLove_TwentyTwoCleanFromTheSheetPool_NeverStung_NeverThePendantsLines()
+    {
+        HeldMemory.Sheet odd = ASheet("slip:odd", HeldMemory.Mark.His, HeldMemory.Theory.Unsettled);
+        var seen = new HashSet<string>();
+        for (long t = 0; t < 12_000; t++)
+        {
+            Keepsake.QuietMinute m = Press(odd, 50.0, t);
+            Assert.Equal(Keepsake.Outcome.Restored, m.Outcome);
+            Assert.Equal(NerveModel.KeepsakeRestore, m.Delta, 6);
+            Assert.Contains(m.Line, Keepsake.SheetCleanPool);
+            seen.Add(m.Line);
+        }
+        Assert.Equal(4, seen.Count);
+        Assert.False(Keepsake.FromSheet(odd).Theory == HeldMemory.Theory.Money);
+        Assert.Equal(Keepsake.Outcome.Restored, Press(odd, 50.0, StingTimes[0], firstOpening: true).Outcome); // no first opening either
     }
 
     [Fact]
