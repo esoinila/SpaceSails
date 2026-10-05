@@ -10,6 +10,9 @@ Used by sub-models to smoke-launch every scene, and by the owner for his own pla
 > **For smoke-launch crews, two known harness facts:** (1) the first-time-on-the-ground card must be dismissed
 > ("Boots on, then.") before judging a ground scene; (2) deep links return HTTP 404 on Pages (the SPA fallback) - that is
 > normal, the page still boots.
+>
+> **Smoke-pass hygiene:** smoke passes run batched (default 3 concurrent headless browsers) and end with
+> `scripts/qa-zombie-sweep.ps1`, which kills only QA-harness browsers by command line; anyone can run it by hand after a QA session.
 
 ## 1. Launch the local server
 
