@@ -369,6 +369,24 @@
         linear-gradient(180deg, #2a2226, #120d10);
 }
 
+/* #620 slice 3 · the FIND (the collar): no face, all gravity. A dark alloy ring with its inner band polished
+   bright — closed, the ring; inside, the same ring edge-on, the polish a broad pale stripe. CSS placeholders on
+   the same `keepsake-art` box; a picture file drops in as a background-image. */
+.keepsake-art.art-find {
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px rgba(216, 184, 132, 0.5);
+}
+
+.keepsake-art.closed.art-find {
+    background: radial-gradient(circle at 50% 50%, transparent 46%, #8a93a0 48%, #2b3038 62%, #11141a 100%);
+}
+
+.keepsake-art.inside.art-find {
+    background:
+        linear-gradient(180deg, transparent 38%, rgba(214, 205, 190, 0.5) 50%, transparent 62%),
+        radial-gradient(circle at 50% 50%, #1d222c, #0a0d12);
+}
+
 /* #620 slice 2 · the SHEET rows' capped scroll region (UI law: the shelf grows with the book). The pendant
    card is outside it and stays pinned; the cap is the CappedScrollPanel idiom (max-height, min-height 0,
    overflow-y auto) so a scrollbar appears only when the sheets outgrow it. */

@@ -12,8 +12,8 @@ namespace SpaceSails.Core;
 /// opens. SLICE 1 is the first memento only — THE PENDANT, seeded on the shelf from the first minute of every
 /// run (the breadcrumb ruling, 2026-09-13: own lineage first). SLICE 2 puts the #973 photograph and the slips on the
 /// shelf beside it (<see cref="FromSheet"/>, <see cref="Shelf(IReadOnlyList{HeldMemory.Sheet})"/>); the
-/// annular collar (slice 3) is not here; the model is shaped for them (<see cref="Piece.Theory"/> already
-/// speaks Love / Money / Unsettled) but nothing else is built.</para>
+/// annular collar (slice 3, <see cref="Collar"/>) is the shelf's first FIND: no face, no theory, derived from
+/// the held #614 relic, restoring clean with no sting band and its own four lines.</para>
 ///
 /// <para><b>THE QUIET MINUTE.</b> Opening a memento in the captain's own cabin, alone, restores nerve through
 /// the EXISTING #339 relief seam (<see cref="NerveModel.DrinkRestore"/> with
@@ -52,18 +52,44 @@ public static class Keepsake
     /// <param name="Theory">Which theory the face serves; <see cref="HeldMemory.Theory.Unsettled"/> for the
     /// pendant, which no line ever settles.</param>
     /// <param name="FlashbackSubject">The subject the first opening raises the Flashback beat with.</param>
+    /// <param name="Find">#620 slice 3 · A FIND (the collar) rather than a memento: no face, no theory, no
+    /// flashback — all gravity. Defaulted so every slice-1/2 construction stays as it was.</param>
     public readonly record struct Piece(
         string Id,
         string Title,
         string CardLine,
         HeldMemory.Mark Mark,
         HeldMemory.Theory Theory,
-        string FlashbackSubject)
+        string FlashbackSubject,
+        bool Find = false)
     {
-        /// <summary>A held-memory SHEET (slice 2) rather than the pendant: it carries no flashback subject, so
-        /// it has no first opening, no unsettled band and no pendant lines.</summary>
-        public bool IsSheet => FlashbackSubject.Length == 0;
+        /// <summary>A held-memory SHEET (slice 2) rather than the pendant or a find: it carries no flashback
+        /// subject, so it has no first opening, no unsettled band and no pendant lines.</summary>
+        public bool IsSheet => FlashbackSubject.Length == 0 && !Find;
+
+        /// <summary>#620 slice 3 · A find: it restores clean, has no sting band, no first opening and its own
+        /// clean pool (<see cref="Keepsake.FindCleanPool"/>).</summary>
+        public bool IsFind => Find;
     }
+
+    /// <summary>#620 slice 3 · The collar's stable shelf id (one row however many finds are held).</summary>
+    public const string CollarId = "collar";
+
+    /// <summary>#620 slice 3 · THE COLLAR — the shelf's first FIND. The row wears its #614 identity: the same
+    /// title (<see cref="CarriedObject.CollarLabel"/>) and, for the closed card's one line, the first paragraph
+    /// of its own #614 story — nothing new is authored. No face (<see cref="HeldMemory.Mark.NotAnyones"/>), no
+    /// theory (<see cref="HeldMemory.Theory.Unsettled"/> is inert for a find), no flashback.</summary>
+    public static readonly Piece Collar = new(
+        CollarId, CarriedObject.CollarLabel,
+        CarriedObject.CollarStory[..CarriedObject.CollarStory.IndexOf("\n\n", StringComparison.Ordinal)],
+        HeldMemory.Mark.NotAnyones, HeldMemory.Theory.Unsettled, FlashbackSubject: "", Find: true);
+
+    /// <summary>#620 slice 3 · Is the collar HELD? Derived from the satchel, never persisted: a held #614
+    /// relic that is not a hall record is the collar (the same split <see cref="CarriedObject.RelicReveal"/>
+    /// makes). The shelf has no state of its own for it.</summary>
+    public static bool HoldsTheCollar(IReadOnlyList<Satchel.Item>? carried) =>
+        carried is not null && carried.Any(i =>
+            i.Kind == Satchel.Kind.Relic && UndergroundComplex.IsPalletRecord(i.Id));
 
     /// <summary>The pendant's stable id.</summary>
     public const string PendantId = "pendant";
@@ -110,10 +136,20 @@ public static class Keepsake
 
     /// <summary>#620 slice 2 · THE SHELF WITH THE BOOK'S FACES — the pendant first, then every held sheet that
     /// is a memento (<see cref="IsMemento"/>), in the book's own order.</summary>
-    public static IReadOnlyList<Piece> Shelf(IReadOnlyList<HeldMemory.Sheet> book)
+    public static IReadOnlyList<Piece> Shelf(IReadOnlyList<HeldMemory.Sheet> book) => Shelf(book, null);
+
+    /// <summary>#620 slice 3 · THE SHELF WITH THE FIND — the pendant, then the collar when it is held
+    /// (<see cref="HoldsTheCollar"/>), then the book's faces. Additive: the #614 lens in the satchel is
+    /// untouched; the same held relic is also on the shelf.</summary>
+    public static IReadOnlyList<Piece> Shelf(IReadOnlyList<HeldMemory.Sheet> book, IReadOnlyList<Satchel.Item>? carried)
     {
         ArgumentNullException.ThrowIfNull(book);
-        var pieces = new List<Piece>(book.Count + 1) { Pendant };
+        var pieces = new List<Piece>(book.Count + 2) { Pendant };
+        if (HoldsTheCollar(carried))
+        {
+            pieces.Add(Collar);
+        }
+
         foreach (HeldMemory.Sheet sheet in book)
         {
             if (IsMemento(sheet))
@@ -175,6 +211,19 @@ public static class Keepsake
         "You know where you were standing when this was taken. You can almost feel the floor of it under your boots.",
     ];
 
+    // #620 slice 3 · Four clean minutes for a FIND, on the same seeded roll (Fable's canon addendum 4,
+    // verbatim): find-generic, so a future find reuses them until ruled otherwise.
+    private static readonly string[] FindCleanLines =
+    [
+        "It is exactly as heavy as it was yesterday. You check anyway. Something in you is keeping books on it.",
+        "You turn it once around, the way you'd walk a fence line. All quiet. All wrong. All yours. Steadier, somehow.",
+        "The light goes around it and comes back with nothing to report. You could look at that for a long time. You do.",
+        "You put it away before you notice how long you've been holding it. The minute was good. You don't ask it why.",
+    ];
+
+    /// <summary>The four clean quiet-minute lines for a find (the collar).</summary>
+    public static IReadOnlyList<string> FindCleanPool { get; } = Array.AsReadOnly(FindCleanLines);
+
     /// <summary>The four clean quiet-minute lines for a held-memory sheet (Love or Money alike).</summary>
     public static IReadOnlyList<string> SheetCleanPool { get; } = Array.AsReadOnly(SheetCleanLines);
 
@@ -229,6 +278,7 @@ public static class Keepsake
         yield return SatietyLine;
         foreach (string line in CleanLines) { yield return line; }
         foreach (string line in SheetCleanLines) { yield return line; }
+        foreach (string line in FindCleanLines) { yield return line; }
         foreach (string line in StingLines) { yield return line; }
         foreach (string line in MoneyStingLines) { yield return line; }
         foreach (string line in NotHereLines) { yield return line; }
@@ -333,13 +383,15 @@ public static class Keepsake
         // The band is drawn for EVERY piece (a Love sheet's clean line comes off the same stream the pendant's
         // does), but only the pendant's UNSETTLED face and a MONEY-marked sheet can be stung by it.
         bool band = rng.NextInt(0, StingOneIn) == 0;
-        bool money = piece.Theory == HeldMemory.Theory.Money;
+        bool money = !piece.IsFind && piece.Theory == HeldMemory.Theory.Money; // a find never stings, in code
 
         // Only the pendant has a first opening (a sheet's flashback fired at handover): no subject, no first.
         // The UNSETTLED band is the PENDANT's alone: an Unsettled SHEET (not made today, but defined) routes as
         // LOVE — 22 clean from the sheet pool, never stung, never borrowing the pendant's seam lines.
-        bool first = firstOpening && !piece.IsSheet;
-        bool unsettledBand = !piece.IsSheet && piece.Theory == HeldMemory.Theory.Unsettled;
+        // A FIND (slice 3) draws the band like every piece — one roll per press, so the stream every other piece
+        // reads is unchanged — and DISCARDS it: it has no first opening and can never sting.
+        bool first = firstOpening && !piece.IsSheet && !piece.IsFind;
+        bool unsettledBand = !piece.IsSheet && !piece.IsFind && piece.Theory == HeldMemory.Theory.Unsettled;
         if (band && !first && (money || unsettledBand))
         {
             double dab = money ? MoneyStingNerve : StingNerve;
@@ -357,7 +409,7 @@ public static class Keepsake
             return new QuietMinute(Outcome.FirstOpening, restored, delta, FirstOpeningLine);
         }
 
-        string[] clean = piece.IsSheet ? SheetCleanLines : CleanLines; // a sheet has no hinge
+        string[] clean = piece.IsFind ? FindCleanLines : piece.IsSheet ? SheetCleanLines : CleanLines; // a sheet has no hinge
         return new QuietMinute(Outcome.Restored, restored, delta, clean[rng.NextInt(0, clean.Length)]);
     }
 }
