@@ -95,6 +95,20 @@ public sealed class TheHullGuardsTests
         bench.Poke("_secretLabForceBodyId", BodyId(ex));
         bench.CallOnTheDispatcher("ResolveSecretLab", ex);
         Assert.NotNull(ex.GetType().GetProperty("Lab")!.GetValue(ex));
+
+        // The shelters: the control that lets the hull's emptiness FAIL. On the same tiles a hull is held to,
+        // the moon must have at least one shelter, or the hull assertion would pass with the guard deleted.
+        int sheltered = 0;
+        for (int x = -3; x <= 3; x++)
+        {
+            for (int y = -3; y <= 3; y++)
+            {
+                sheltered += ((IEnumerable)bench.Call("SheltersOnTile", ex, new SurfaceTiles.Address(x, y))!)
+                    .Cast<object>().Count();
+            }
+        }
+
+        Assert.True(sheltered > 0, "the moon has no shelter on the tiles the hull is held to — the shelter guard cannot fail here.");
     }
 
     [Fact]
