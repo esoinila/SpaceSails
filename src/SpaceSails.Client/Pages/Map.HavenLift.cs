@@ -40,7 +40,7 @@ public partial class Map
     private int _havenLiftCage;
 
     /// <summary>#1332 A · The once-per-station lines that have been told, for the run — keyed
-    /// <c>"{line}:{berth}"</c> (<see cref="ToldOnceKey"/>). A key is added on the frame its line reaches the
+    /// <c>"{line}:{berth}"</c> (<see cref="ToldOnce.Key"/>). A key is added on the frame its line reaches the
     /// slot and never before, so a line whose slot was busy the whole time is still owed.
     ///
     /// <para>#1332 B · <b>ONE MEMORY, TWO LINES.</b> It was <c>_firstRideToldAt</c>, holding bare berth ids for
@@ -48,13 +48,10 @@ public partial class Map
     /// the same kind of fact — this line, at this station, has been said — so the set was renamed to say what
     /// it holds and its keys carry which line, rather than the page growing a second set of the same shape
     /// (the brief: no new page field unless a told-once memory genuinely needs one).</para></summary>
-    private readonly HashSet<string> _toldOnceAtStation = new(StringComparer.Ordinal);
-
-    /// <summary>#1332 B · The key a once-per-station line is remembered under: which line, and where.</summary>
-    private static string ToldOnceKey(string line, string berth) => $"{line}:{berth}";
+    private readonly ToldOnce _toldOnce = new();   // #653 slice 2 · the one told-once mechanism (Core/ToldOnce.cs), run scope
 
     /// <summary>#1332 B · The first ride down's key.</summary>
-    private const string FirstRideKey = "ride";
+    private const string FirstRideKey = ToldOnce.FirstRide;
 
     /// <summary>#1253 · Is the captain at a berth with floors, with the deck up? The one question this whole
     /// file is gated on, asked once so the press, the panel and the ride cannot disagree about whether there
@@ -256,12 +253,12 @@ public partial class Map
     private void TellTheFirstRideDown(string berth)
     {
         if (OnTheConcourse || !HavenInterior.HasLowerLevel(berth)
-            || _pulse.Message is not null || _toldOnceAtStation.Contains(ToldOnceKey(FirstRideKey, berth)))
+            || _pulse.Message is not null || _toldOnce.Has(ToldOnce.Key(FirstRideKey, berth)))
         {
             return;
         }
 
-        _toldOnceAtStation.Add(ToldOnceKey(FirstRideKey, berth));
+        _toldOnce.Tell(ToldOnce.Key(FirstRideKey, berth));
         ShowPulseMessage(HavenLevels.FirstRideLine, PulseRank.Status);
     }
 

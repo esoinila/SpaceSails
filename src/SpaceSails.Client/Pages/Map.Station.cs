@@ -50,10 +50,6 @@ public partial class Map
         /// <summary>Faces cut this visit. A cut is permanent for the visit: the hop to a cut face is no longer
         /// refused.</summary>
         public HashSet<StationWreck.ModuleId> Cuts { get; } = [];
-
-        /// <summary>The canon lines already told this visit — the lock's and the cut face's. The first-standing
-        /// and field-book lines are latched by the book itself (see <see cref="ArriveAtTheStation"/>).</summary>
-        public HashSet<string> Told { get; } = [];
     }
 
     /// <summary>Is the away team inside a dead station?</summary>
@@ -98,7 +94,7 @@ public partial class Map
     {
         // The crew lock this boarding has just cycled through is the first lock of the visit: its line is told
         // here, in the log (the pulse is the first-standing line's), and never again this visit.
-        if (_surface is { Station: { } visit } && visit.Told.Add("lock"))
+        if (_surface is { Station: not null } here && here.Told.Tell(ToldOnce.StationLock))
         {
             LogAutopilotEvent(StationAboard.LockLine);
         }
@@ -120,7 +116,7 @@ public partial class Map
     /// time so the captain reads it where they are looking.</summary>
     private void TellOnce(SurfaceExcursion ex, string key, string line)
     {
-        if (ex.Station!.Told.Add(key))
+        if (ex.Told.Tell(key))
         {
             ShowPulseMessage(line);
             LogAutopilotEvent(line);
@@ -193,7 +189,7 @@ public partial class Map
         }
 
         RendererInterop.PlayCue("reveal");
-        TellOnce(ex, "cut", order.Line);
+        TellOnce(ex, ToldOnce.StationCut, order.Line);
         LogAutopilotEvent(order.CellLine);
         RebuildSurfaceDeck();   // the console now names a flight, not a cut
         RequestVaultSave();
@@ -220,7 +216,7 @@ public partial class Map
 
         if (arrival.Kind == StationWreck.AccessKind.ServiceableLock)
         {
-            TellOnce(ex, "lock", StationAboard.LockLine);
+            TellOnce(ex, ToldOnce.StationLock, StationAboard.LockLine);
         }
     }
 

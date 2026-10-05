@@ -20,6 +20,11 @@ public partial class Map
         /// <summary>#618 · The man at the top-level door on this excursion, or null before the captain has
         /// stood on the floor he keeps.</summary>
         public ManAtTheDoor? Gate { get; set; }
+
+        /// <summary>#653 slice 2 · The lines already told THIS VISIT — the gate's approach, empty chair and round, the
+        /// dead station's lock and cut. A new excursion is a new empty set, so "told again next boarding" is the
+        /// holder's lifetime, never a reset (see <see cref="ToldOnce"/>).</summary>
+        public ToldOnce Told { get; } = new();
     }
 
     /// <summary>
@@ -59,14 +64,8 @@ public partial class Map
         /// <summary>The tide had him. The door is unmanned for the rest of the excursion.</summary>
         public bool Taken { get; set; }
 
-        /// <summary>The approach line has gone up on his card this excursion.</summary>
-        public bool ApproachTold { get; set; }
-
-        /// <summary>The empty chair has been told.</summary>
-        public bool AbsentTold { get; set; }
-
-        /// <summary>The round has been told, the first time he walked away from the door.</summary>
-        public bool RoundTold { get; set; }
+        // (The approach line, the empty chair and the round are told once an excursion: kept on the excursion's
+        // own ToldOnce under ToldOnce.GateApproach / GateAbsent / GateRound.)
 
         /// <summary>The captain is inside his reach and has been carded for it; cleared when they walk off
         /// past <see cref="GateGuard.LeftHimDu"/>.</summary>
