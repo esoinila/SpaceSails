@@ -86,7 +86,7 @@ public sealed class TheDeadStationIsBoardedTests
         IReadOnlyList<StationWreck.ModuleId> severed = StationWreck.SeveredTubes(Id);
         Assert.Contains(severed, a => StationAboard.AccessOf(Id, a).Kind == StationWreck.AccessKind.ServiceableLock);
         Assert.Contains(severed, a => StationAboard.AccessOf(Id, a).Kind == StationWreck.AccessKind.CutFace);
-        Assert.Contains("station=1", DevStarts.All.Single(e => e.Label.StartsWith("The dead station", StringComparison.Ordinal)).Url);
+        Assert.Contains("station=1", DevStarts.All.Single(e => e.Label.StartsWith("Ledger Point", StringComparison.Ordinal)).Url);
     }
 
     [Fact]

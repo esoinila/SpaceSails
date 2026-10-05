@@ -25,6 +25,14 @@ public partial class Map
         string body = ex.Stop.Body.Id;
         bool cheat = _secretLabForceBodyId == body;
 
+        // #653 · A HULL HIDES NO LAB. Asked of the stop's BODY ID, because OnADeadHull reads `_surface` and this runs
+        // while the excursion is still being built, before it is assigned.
+        if (Derelict.TryParseWreckId(body, out _) || StationAboard.TryParseStationId(body, out _))
+        {
+            ex.Lab = null;
+            return;
+        }
+
         // ── #411 · THE HEAD OFFICE IS NOT A ROLL. ────────────────────────────────────────────────────────
         //
         // Every other clandestine site in the game is a one-in-forty fact about a moon. The one under the

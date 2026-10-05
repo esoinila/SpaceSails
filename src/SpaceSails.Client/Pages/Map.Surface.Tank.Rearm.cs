@@ -50,7 +50,10 @@ public partial class Map
 
         // Standing anywhere but inside the tube ends it. No penalty and nothing lost: rounds already racked
         // are already in the magazine, and the bar simply starts over next time you come back.
-        if (!MoonSurface.IsInDownTube(_avatarX, _avatarY))
+        // #653 · THE MOON'S TUBE IS A STRIP OF REGOLITH-FRAME COORDINATES, and a station's drum happens to contain it
+        // (x -9…-5, y about -10): a part-spent sentry carried there would be racked and could raise the TUBE REARM card.
+        // A dead hull has no down-tube.
+        if (OnADeadHull || !MoonSurface.IsInDownTube(_avatarX, _avatarY))
         {
             ex.RearmBotIndex = null;
             ex.RearmProgress = 0;

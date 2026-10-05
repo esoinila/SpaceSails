@@ -185,6 +185,7 @@ public partial class Map
 
         _satchel = [.. order.Carried];
         ex.Station!.Cuts.Add(arrival.Module);
+        _roomsTurnedOver.Add(StationAboard.CutTag(TheStationId!, arrival.Module));   // remembered across visits (the vault carries it)
         AdvanceShuttleClock(order.Seconds);
         if (_busted is not null)
         {
@@ -228,6 +229,17 @@ public partial class Map
     private string StationKeyHints(SurfaceExcursion ex)
     {
         var hints = new List<string> { "WASD — move", "E — read / press" };
+        // #212 · AFFORDANCES NEVER HIDE: the wreck branch's sentry lines, mirrored — a bot riding the sling can be set
+        // down aboard, and the remote is in the captain's hand.
+        if (ex.Bots.Count > 0)
+        {
+            hints.Add(_weaponsTight ? "🤖 H — WEAPONS TIGHT (press to free)" : "🤖 H — weapons tight");
+        }
+        if (ex.Bots.Any(b => !b.Deployed))
+        {
+            hints.Add($"🤖 T — {SentryDoctrine.DeployHereLabel}");
+            hints.Add($"🤖 ⇧T — {SentryDoctrine.HoldMyLineHomeLabel}");
+        }
         if (_satchel.Count > 0)
         {
             hints.Add($"🎒 I — items ({_satchel.Count})");

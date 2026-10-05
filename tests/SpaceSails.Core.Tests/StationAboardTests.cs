@@ -51,47 +51,6 @@ public class StationAboardTests
 
     // ── The canon ────────────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>The issue's own words (#653, "CANON: slice 1's lines"), typed from the issue. Pinned because the
-    /// lane's rule is that Core's lines stand and the canon fills only the gaps — so a drift in either is a
-    /// deviation from Fable's text, not a refactor.</summary>
-    [Fact]
-    public void TheCanonIsVerbatim()
-    {
-        Assert.Equal("HUB — TRANSFERS & TALLY", StationAboard.PlateOf(StationWreck.ModuleId.Hub));
-        Assert.Equal("HABITAT — 40 BERTHS, KEEP IT DOWN", StationAboard.PlateOf(StationWreck.ModuleId.Habitat));
-        Assert.Equal("FOUNDRY — EAR PROTECTION PAST THIS LINE", StationAboard.PlateOf(StationWreck.ModuleId.Foundry));
-        Assert.Equal("DOCKING — DECLARE BEFORE YOU BERTH", StationAboard.PlateOf(StationWreck.ModuleId.Docking));
-        Assert.Equal("REACTOR — TWO-MAN RULE, NO EXCEPTIONS", StationAboard.PlateOf(StationWreck.ModuleId.Reactor));
-
-        Assert.StartsWith("Your lamp is the only thing with an opinion.", StationAboard.FirstStandingLine);
-        Assert.EndsWith("every door exactly as somebody left it.", StationAboard.FirstStandingLine);
-        Assert.StartsWith("A dead station, tubes severed, books balanced.", StationAboard.FieldBookLine);
-        Assert.EndsWith("which is two strange things, not one.", StationAboard.FieldBookLine);
-        Assert.StartsWith("The lock is a standard pattern, forty years polite.", StationAboard.LockLine);
-        Assert.EndsWith("patience is the one thing aboard in quantity.", StationAboard.LockLine);
-        Assert.StartsWith("The face comes away clean.", StationAboard.CutFaceLine);
-        Assert.EndsWith("That's the part you file.", StationAboard.CutFaceLine);
-    }
-
-    [Fact]
-    public void NoCanonLineStatesACauseOrWhetherAnyoneRemained()
-    {
-        // §13.8 discipline for dead infrastructure: the station explains nothing, ever.
-        string[] lines =
-        [
-            StationAboard.FirstStandingLine, StationAboard.FieldBookLine, StationAboard.LockLine,
-            StationAboard.CutFaceLine,
-            .. StationWreck.Modules.Select(m => StationAboard.PlateOf(m.Id)),
-        ];
-        foreach (string banned in new[] { "because", "died", "killed", "survivor", "alive", "corpse", "crew died", "murder" })
-        {
-            foreach (string line in lines)
-            {
-                Assert.DoesNotContain(banned, line, StringComparison.OrdinalIgnoreCase);
-            }
-        }
-    }
-
     // ── Where the boat's fixtures stand ──────────────────────────────────────────────────────────────────
 
     [Fact]

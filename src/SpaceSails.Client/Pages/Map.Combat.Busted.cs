@@ -199,9 +199,13 @@ public partial class Map
         DeathPlace place = dying.Floor < 0
             ? DeathPlace.Underground
             : Derelict.TryParseWreckId(dying.Stop.Body.Id, out _)
-              || StationAboard.TryParseStationId(dying.Stop.Body.Id, out _)   // #653: TODO(inspector) a station has no death prose of her own
+              || StationAboard.TryParseStationId(dying.Stop.Body.Id, out _)
                 ? DeathPlace.Derelict
                 : DeathPlace.LandingParty;
+        if (StationAboard.TryParseStationId(dying.Stop.Body.Id, out _))
+        {
+            place = DeathPlace.Station;   // #653 · canon addendum 2: her own suffocation pool
+        }
         if (!DeathNarration.CanHappen(cause, place))
         {
             cause = DeathCause.Reevers;

@@ -92,6 +92,7 @@ public static partial class DeathNarration
     // ship's nose. The place decides the picture; the cause decides the words.
     public static string ArtFile(DeathCause cause, DeathPlace place)
     {
+        place = AsAHull(place);   // #653 · a station's card is the derelict's
         // #609 · A death UNDER a moon is not a death ON one. The red-shirt card is a figure on regolith with
         // a sky over it, and down here there is neither. Owner asked for the picture by name: "let's make a
         // died in a secret lab photo also :-D"

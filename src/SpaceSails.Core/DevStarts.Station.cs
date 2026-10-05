@@ -9,8 +9,8 @@ public static partial class DevStarts
     /// so the boat is how you get to the arms the tubes will not let you walk to.</summary>
     private static IReadOnlyList<Entry> TheDeadStation() =>
     [
-        new("🛰", "The dead station — her severed tubes and the boat between them",
-            "Landed at the crew lock of a dead station: a hub drum and four arms, each plated at its door. Read a severed "
+        new("🛰", StationAboard.DevStationName + " — her severed tubes and the boat between them",
+            "Landed at the crew lock of Ledger Point, a dead station: a hub drum and four arms, each plated at its door. Read a severed "
             + "tube with [E] at its end (the line is the tube's own). Walk to the boat's dock fixtures: a destination "
             + "console prices the flight, and a face with no serviceable lock must be CUT first — with a hull cutter in "
             + "the satchel (🔥 from the bar), spent a cut at a time. A flight spends clock and nothing else: the tank, "

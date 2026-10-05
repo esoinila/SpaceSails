@@ -399,8 +399,8 @@ public sealed class TheBootBuildsTheSameWorldTests
             // SeedTheArcsAndTheJobs), so this sweep sees neither the roadster nor the muscle. What these
             // URLs answer differently is pinned next door, in TheBootReadsTheSameQueryTests.
             ["/map?start=wreck&target=collector"] = "5702e97b412b144d3fd884426e262007",
-            // #653 · the dead station's dev door: MEASURED with SPACESAILS_BOOT_FINGERPRINT_DUMP; 1 new, 0 moved, 0 gone.
-            ["/map?station=1&land=1"] = "c6aa962571d1e384d35b4f00a9995730",
+            // #653 · the dead station's dev door: MEASURED with SPACESAILS_BOOT_FINGERPRINT_DUMP; 1 new, 0 moved, 0 gone — and this row RE-MEASURED when the station was named Ledger Point (the body name is in the built world).
+            ["/map?station=1&land=1"] = "ca4ab8e39b5d3708fa2bb7c03413c894",
             ["/map?stool=1&neighbour=0"] = "f9e728a7d629502d36cc27dba3d05b95",
             ["/map?stool=1&neighbour=1"] = "d43ebdd39415873e169697344e2ab87e",
             ["/map?tablescene=free&approach=1"] = "08e295542754d5a14f8d73823f010ef3",

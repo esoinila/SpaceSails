@@ -109,7 +109,7 @@ public partial class Map
     private static BodyDefinition StationSiteBody(string berthId) => new()
     {
         Id = StationAboard.BodyIdFor(StationCheatId),
-        Name = "Dead station",
+        Name = StationAboard.DevStationName,
         ParentId = berthId,
         Mu = 0,
         BodyRadiusM = ExpeditionSite.BodyRadiusMeters,

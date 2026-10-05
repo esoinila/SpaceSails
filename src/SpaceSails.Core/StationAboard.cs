@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SpaceSails.Core;
 
@@ -45,6 +46,21 @@ public static class StationAboard
     }
 
     // ── The canon, verbatim (issue #653, "CANON: slice 1's lines") ───────────────────────────────────────
+
+    /// <summary>Canon addendum (Fable, 2026-10-05): the station's name on the board and in every label.</summary>
+    public const string DevStationName = "Ledger Point";
+
+    /// <summary>Canon addendum, verbatim (U+2014): the board / approach blurb.</summary>
+    public const string BoardBlurb = "Ledger Point — dark these forty years, and still nothing owing.";
+
+    /// <summary>Every line of prose this file carries — the four lines, the five plates, the name and the
+    /// blurb — so one guard can hold them all to the canon and to the no-cause law.</summary>
+    public static IReadOnlyList<string> AllProse() =>
+    [
+        FirstStandingLine, FieldBookLine, LockLine, CutFaceLine,
+        .. StationWreck.Modules.Select(m => PlateOf(m.Id)),
+        DevStationName, BoardBlurb,
+    ];
 
     /// <summary>First standing aboard — said once.</summary>
     public const string FirstStandingLine =
@@ -228,6 +244,23 @@ public static class StationAboard
             }
         }
         return null;
+    }
+
+    // ── A cut face is remembered ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>The tag a cut face leaves in the durable register (#615's <c>_roomsTurnedOver</c>, the idiom
+    /// #711/#794/#319 already ride): permanent evidence that somebody came in the side.</summary>
+    public static string CutTag(string stationId, StationWreck.ModuleId module) =>
+        $"station-cut:{stationId}:{module}";
+
+    /// <summary>Which faces of this station the register says have been cut. Core reads its own key, so no
+    /// second reader of the format lives in the client.</summary>
+    public static IReadOnlyList<StationWreck.ModuleId> CutsIn(IEnumerable<string> register, string stationId)
+    {
+        ArgumentNullException.ThrowIfNull(register);
+        ArgumentNullException.ThrowIfNull(stationId);
+        var cuts = new HashSet<string>(register, StringComparer.Ordinal);
+        return [.. StationWreck.Arms.Where(m => cuts.Contains(CutTag(stationId, m)))];
     }
 
     // ── Which module a point is in ───────────────────────────────────────────────────────────────────────
