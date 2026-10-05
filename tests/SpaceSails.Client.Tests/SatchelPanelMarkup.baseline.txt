@@ -955,5 +955,46 @@
                     </div>
                 }
                 }
+
+                @* #620 · THE KEEPSAKE SHELF — its own short row under the pockets, on the carried page only.
+                   The pendant is on it from the first minute of every run; the card folds open to its picture
+                   in the captain's own cabin and refuses, in words, everywhere else. *@
+                @if (_satchelPage == SatchelPage.Carried)
+                {
+@if (KeepsakePieces() is { Count: > 0 } pieces)
+{
+    <div class="keepsake-shelf" aria-label="Keepsakes">
+        <div class="satchel-sub keepsake-head">Keepsakes</div>
+        @foreach (SpaceSails.Core.Keepsake.Piece piece in pieces)
+        {
+            bool open = string.Equals(KeepsakeOpenId, piece.Id, StringComparison.Ordinal);
+            <div class="keepsake-card @(open ? "open" : "")">
+                <button type="button" class="keepsake-face" title="Open it"
+                        @onclick="() => PressKeepsake(piece)">
+                    <span class="keepsake-art @(open ? "inside" : "closed")" aria-hidden="true"></span>
+                    <span class="keepsake-text">
+                        <span class="keepsake-title">@piece.Title</span>
+                        <span class="keepsake-line">@piece.CardLine</span>
+                    </span>
+                </button>
+                @if (open)
+                {
+                    <div class="keepsake-fold">
+                        @if (KeepsakeSaid is { Length: > 0 } inside)
+                        {
+                            <div class="keepsake-said">@inside</div>
+                        }
+                        <button type="button" class="satchel-leave keepsake-shut" @onclick="() => FoldKeepsake()">Close</button>
+                    </div>
+                }
+                else if (KeepsakeSaid is { Length: > 0 } refusal && string.Equals(KeepsakeAskedId, piece.Id, StringComparison.Ordinal))
+                {
+                    <div class="satchel-outcome keepsake-refusal">@refusal</div>
+                }
+            </div>
+        }
+    </div>
+}
+                }
             </OverlayShell>
         </div>

@@ -76,6 +76,8 @@ public partial class Map
         _heat = HeatState.None;
         _nerve = NerveModel.Steady;
         _monolithSeen = false;
+        _pendantFirstOpened = false;                          // #620 · a new universe has not opened the locket
+        _lastQuietMinuteSimTime = double.NegativeInfinity;    // …and has never taken a quiet minute
         _insurance = PirateInsurance.Uninsured;
 
         // #1151 · …and the claims file with them. This method's contract is that it is the exact inverse of
@@ -267,6 +269,9 @@ public partial class Map
                 HallsStopped = StopRows(),
                 // #1074 beat 2 · …and which of THOSE it has since fenced and signed (Map.Preserve.cs).
                 HallsPreserved = PreserveRows(),
+                // #1074 beat 5 · ...and the returning shuttle: the preserved grounds he has stood on, and the beat's one row.
+                ShuttleSeen = ShuttleSeenRows(),
+                Shuttle = _shuttle,
                 // #525 · …and the one collar a harbour has cleared with a reason on it (Map.BerthScuttle.cs).
                 CollarCleared = ClearedCollarRow(),
                 // #1151 · …and the file the captain is building on himself: how many claims he has lodged,
@@ -279,7 +284,7 @@ public partial class Map
                 // once-per-loss across a reload (Map.Claims.Rep.cs).
                 LodgingOfferedFor = _lodgingOfferedFor,
             },
-            Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
+            Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen, PendantFirstOpened = _pendantFirstOpened }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
             // #587 · the field book: what was found on the ground, kept so it can be re-read.
             FieldNotes = _fieldNotes.Count > 0 ? new FieldNotesSection { Notes = _fieldNotes } : null,

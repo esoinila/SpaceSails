@@ -242,6 +242,7 @@ public sealed class TheBootReadsTheSameQueryTests
             ["/map?secretlab=deep&land=1&floor=21"] = "d9743721b7668ce559ca2a1b12b5176c",
             // #619 · the fourth cheat rock's own row — an ADDITION, not a change.
             ["/map?secretlab=sealed&land=1&floor=3"] = "819a3d8c7326f7efa078cf72c28b8d7c",
+            ["/map?shuttle=1&land=1"] = "ea2b32a0a5ef4ec8b1278a24c5cfd8c8",
             ["/map?skim=saturn"] = "055d38b2f40415d26e0055cfa20eaedd",
             ["/map?sling=jupiter"] = "24600a2ed3de2ce1705aa97d0a33c184",
             ["/map?spread=1"] = "e8cd1e5840d71f3a95c22195bd5b3472",

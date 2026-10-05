@@ -98,9 +98,9 @@ public partial class Map
                 // Hit anything in the way — not just the intended target (honest ballistics).
                 foreach (NpcState npc in _npcStates)
                 {
-                    if (!npc.Active || npc.Arrived || npc.Disabled)
+                    if (!npc.Active || npc.Arrived || npc.Disabled || ReturningShuttle.IsTheHull(npc.Ship.Id))
                     {
-                        continue;
+                        continue;   // #1074 beat 5 - a round passes the charter hull by
                     }
 
                     // The NPC's matching motion over this span, linearly reconstructed.

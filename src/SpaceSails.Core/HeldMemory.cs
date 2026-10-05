@@ -48,6 +48,12 @@ public static class HeldMemory
 
         /// <summary>Follow the heart.</summary>
         Love = 1,
+
+        /// <summary>#620 · UNSETTLED — the keepsake shelf's own third state. The pendant's face is neither
+        /// money nor love and never gets to be either: no line, card or colleague settles it. It restores
+        /// like love and carries its own rare seeded band where the face reads differently
+        /// (<see cref="Keepsake"/>). Appended LAST so the two stored values keep their numbers.</summary>
+        Unsettled = 2,
     }
 
     /// <summary>The word the book prints for a mark.</summary>
@@ -60,7 +66,12 @@ public static class HeldMemory
     };
 
     /// <summary>The word the book prints for a tag.</summary>
-    public static string Label(Theory theory) => theory == Theory.Love ? "love" : "money";
+    public static string Label(Theory theory) => theory switch
+    {
+        Theory.Love => "love",
+        Theory.Unsettled => "unsettled",
+        _ => "money",
+    };
 
     /// <summary>
     /// One sheet.

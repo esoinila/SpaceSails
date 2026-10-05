@@ -150,6 +150,12 @@ public static class CarriedObject
             return new Reveal("", SpikeIt.Title(paperId), SpikeIt.Document(paperId));
         }
 
+        // #1074 beat 5 · …and the last page of a survey log, titled with its own title.
+        if (ReturningShuttle.IsTheLog(paperId))
+        {
+            return new Reveal("", ReturningShuttle.LogTitle, ReturningShuttle.LogDocument);
+        }
+
         // #1332 C · …and the disbursement sheet off the Preservation office's desk, titled with its own title.
         if (PreservationOffice.IsTheSheet(paperId))
         {

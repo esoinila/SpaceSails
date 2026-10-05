@@ -208,6 +208,7 @@ public partial class Map
         // it has since taken into care — that one restores and installs in one call (Map.Preserve.cs).
         RestoreStop(vault.Progress);
         RestorePreserve(vault.Progress);
+        RestoreShuttle(vault.Progress);   // #1074 beat 5
         // #525: and the one collar a harbour has cleared with a reason on it (Map.BerthScuttle.cs).
         RestoreClearedCollar(vault.Progress);
         // #1151: and the claims file — the counter, the claim awaiting a representative, and the writ
@@ -233,6 +234,7 @@ public partial class Map
             // the pip lattice on the way in, so a legacy 63.4 reads as a clean 6 pips and never drifts again.
             _nerve = NervePips.Snap(NerveModel.Clamp(nerve.Nerve));
             _monolithSeen = nerve.MonolithSeen;
+            _pendantFirstOpened = nerve.PendantFirstOpened; // #620
         }
 
         // The "overheard at the bar" book (owner 2026-07-18): the tips/rumors a player was handed are

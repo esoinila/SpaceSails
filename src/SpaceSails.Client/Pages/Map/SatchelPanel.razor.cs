@@ -119,6 +119,14 @@ public partial class SatchelPanel
     [Parameter] public Action<Core.Satchel.Item> WriteItUp { get; set; } = default!;
     [Parameter] public Func<Core.Satchel.Item, string> WriteUpHint { get; set; } = default!;
 
+    // #620 · The keepsake shelf's members, handed straight on to <KeepsakeShelf>.
+    [Parameter] public Func<IReadOnlyList<Keepsake.Piece>> KeepsakePieces { get; set; } = default!;
+    [Parameter] public string? KeepsakeOpenId { get; set; }
+    [Parameter] public string? KeepsakeAskedId { get; set; }
+    [Parameter] public string? KeepsakeSaid { get; set; }
+    [Parameter] public Action<Keepsake.Piece> PressKeepsake { get; set; } = default!;
+    [Parameter] public Action FoldKeepsake { get; set; } = default!;
+
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);
 }

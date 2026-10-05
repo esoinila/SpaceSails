@@ -270,3 +270,115 @@
 .spread-item .satchel-item-try {
     color: #d8c56a;
 }
+
+/* #620 · THE KEEPSAKE SHELF. Its own short row under the pockets: the item drawn as its PICTURE, a card that
+   folds open to the picture inside and one line. Elegant minimalism — geometric shapes, no scroll bar of its
+   own (the pocket's list is what scrolls), and nothing here ever overlaps the satchel's own close control.
+   The two pictures are CSS-drawn placeholders (the gen-AI art could not be generated this lane); a file
+   drops in as the box's background-image and the geometry stays. */
+.keepsake-shelf {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(200, 170, 120, 0.2);
+}
+
+.keepsake-head {
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+}
+
+.keepsake-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.keepsake-face {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.45rem 0.6rem;
+    font: inherit;
+    text-align: left;
+    color: #e6dcc8;
+    background: #141821;
+    border: 1px solid rgba(200, 170, 120, 0.35);
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+
+.keepsake-face:hover {
+    background: #1b2029;
+    border-color: rgba(216, 184, 132, 0.7);
+}
+
+.keepsake-art {
+    flex: 0 0 auto;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+}
+
+/* the closed pendant: a gold disc, worn smooth, a hairline seam through its middle */
+.keepsake-art.closed {
+    background:
+        linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(60, 40, 10, 0.7) calc(50% - 0.5px), rgba(60, 40, 10, 0.7) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+        radial-gradient(circle at 35% 30%, #f1d58a, #b8923f 60%, #7a5d22);
+    box-shadow: 0 0 0 1px rgba(216, 184, 132, 0.5);
+}
+
+/* the picture inside: dark glass, a pale oval where a face would be, said no more than that */
+.keepsake-art.inside {
+    background:
+        radial-gradient(ellipse 28% 36% at 50% 46%, rgba(214, 205, 190, 0.55), rgba(214, 205, 190, 0.18) 70%, transparent 72%),
+        radial-gradient(circle at 50% 50%, #1d222c, #0a0d12);
+    box-shadow: 0 0 0 1px rgba(216, 184, 132, 0.5);
+}
+
+.keepsake-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.keepsake-title {
+    font-size: 0.9rem;
+    color: #e6dcc8;
+}
+
+.keepsake-line {
+    font-size: 0.78rem;
+    line-height: 1.4;
+    color: #8fa2bb;
+}
+
+.keepsake-fold {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 0.55rem 0.7rem;
+    background: #0f131a;
+    border: 1px solid rgba(200, 170, 120, 0.25);
+    border-radius: 0.5rem;
+}
+
+.keepsake-said {
+    flex: 1 1 auto;
+    font-size: 0.84rem;
+    line-height: 1.55;
+    font-style: italic;
+    color: #d8cdb6;
+}
+
+.keepsake-shut {
+    flex: 0 0 auto;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.74rem;
+}
