@@ -220,6 +220,11 @@ public static partial class StoryBeats
             // other memory — so the signing's sentence stays the sentence for all of them.
             Beat.Flashback when WalkIn.FlashbackCaption(subject) is { } sinceLine => sinceLine,
 
+            // #620 · …and the one whose subject is the pendant's face, whose caption is Fable's first-opening
+            // canon, verbatim and entire, read off the keepsake's own type so the plate and the shelf cannot
+            // come to two accounts of one locket.
+            Beat.Flashback when Keepsake.FlashbackCaption(subject) is { } pendantLine => pendantLine,
+
             Beat.Flashback =>
                 "Bleached to the bone. A pen on a steel desk, every scratch in it sharp; behind it the room, " +
                 "the chair, the one at the far side of the desk, all gone to white. Only the thing that was " +

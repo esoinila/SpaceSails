@@ -1,0 +1,4 @@
+/* #620 · KeepsakeShelf's CSS-SCOPE CARRIER. No rules — on purpose; the shelf's rules live in
+   SatchelPanel.razor.css beside the rest of the satchel kit, and this file exists so the csproj's
+   `Pages\Map\SatchelPanel\*.razor.css` entry pins the component to the page's own scope (b-4dqsdx4p75).
+   See CarriedPockets.razor.css for the long form. */

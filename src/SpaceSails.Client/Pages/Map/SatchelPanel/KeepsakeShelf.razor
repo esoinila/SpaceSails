@@ -1,0 +1,53 @@
+@namespace SpaceSails.Client.Pages
+@implements IHandleEvent
+@*
+    #620 · THE KEEPSAKE SHELF — its own short row under the pockets, never in the grid with the wrenches.
+
+    Owner, 2026-10-04: <i>"Some kind of special treatment in the inventory."</i> A keepsake is drawn as its
+    PICTURE (the closed pendant), not as a line of text with a lens beside it; its card FOLDS OPEN to show the
+    picture inside — a face — and one line beneath it. Pressing the locket is the whole verb: Core decides
+    what happens (Keepsake.Open) and the page only carries the answer here, so this markup has no arithmetic
+    and no words of its own beyond the two labels on the buttons.
+
+    A REFUSAL STAYS ON THE CLOSED CARD (not-here, and the satiety window): only a minute actually spent
+    folds the card open. The fold closes with its own button (UI law: nothing opens that cannot be closed).
+
+    ART — the pendant's two gen-AI pictures could not be generated this lane (the grok CLI was not signed in
+    and needs a device login only the owner can do), so both pictures are CSS-drawn placeholders on the
+    `keepsake-art` boxes; a picture file drops in by giving the box a background-image. The placeholders carry
+    no letters, so no caption is ever doubled in pixels.
+*@
+@if (KeepsakePieces() is { Count: > 0 } pieces)
+{
+    <div class="keepsake-shelf" aria-label="Keepsakes">
+        <div class="satchel-sub keepsake-head">Keepsakes</div>
+        @foreach (SpaceSails.Core.Keepsake.Piece piece in pieces)
+        {
+            bool open = string.Equals(KeepsakeOpenId, piece.Id, StringComparison.Ordinal);
+            <div class="keepsake-card @(open ? "open" : "")">
+                <button type="button" class="keepsake-face" title="Open it"
+                        @onclick="() => PressKeepsake(piece)">
+                    <span class="keepsake-art @(open ? "inside" : "closed")" aria-hidden="true"></span>
+                    <span class="keepsake-text">
+                        <span class="keepsake-title">@piece.Title</span>
+                        <span class="keepsake-line">@piece.CardLine</span>
+                    </span>
+                </button>
+                @if (open)
+                {
+                    <div class="keepsake-fold">
+                        @if (KeepsakeSaid is { Length: > 0 } inside)
+                        {
+                            <div class="keepsake-said">@inside</div>
+                        }
+                        <button type="button" class="satchel-leave keepsake-shut" @onclick="() => FoldKeepsake()">Close</button>
+                    </div>
+                }
+                else if (KeepsakeSaid is { Length: > 0 } refusal && string.Equals(KeepsakeAskedId, piece.Id, StringComparison.Ordinal))
+                {
+                    <div class="satchel-outcome keepsake-refusal">@refusal</div>
+                }
+            </div>
+        }
+    </div>
+}

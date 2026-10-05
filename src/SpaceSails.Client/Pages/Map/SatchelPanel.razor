@@ -123,6 +123,16 @@
                                 TryTheWholeWallet="@TryTheWholeWallet" Wallet="@Wallet"
                                 WalletTarget="@WalletTarget" WriteItUp="@WriteItUp" WriteUpHint="@WriteUpHint" />
                 }
+
+                @* #620 · THE KEEPSAKE SHELF — its own short row under the pockets, on the carried page only.
+                   The pendant is on it from the first minute of every run; the card folds open to its picture
+                   in the captain's own cabin and refuses, in words, everywhere else. *@
+                @if (_satchelPage == SatchelPage.Carried)
+                {
+                    <KeepsakeShelf KeepsakePieces="@KeepsakePieces" KeepsakeOpenId="@KeepsakeOpenId"
+                                   KeepsakeAskedId="@KeepsakeAskedId" KeepsakeSaid="@KeepsakeSaid"
+                                   PressKeepsake="@PressKeepsake" FoldKeepsake="@FoldKeepsake" />
+                }
             </OverlayShell>
         </div>
 @* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────────── *@
