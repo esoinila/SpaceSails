@@ -4550,7 +4550,12 @@
             </div>
             <div class="bury-chooser-body">
                 <div class="bury-note">
-                    @if (BoardingAWreck)
+                    @if (SpaceSails.Core.StationAboard.TryParseStationId(boardStop.Body.Id, out _))
+                    {
+                        @* #653: the station's board blurb is canon, verbatim, and nothing else rides the slot. *@
+                        <text>@SpaceSails.Core.StationAboard.BoardBlurb</text>
+                    }
+                    else if (BoardingAWreck)
                     {
                         <text>
                             She has one airlock and no atmosphere worth the name. Take the bots — a sentry
@@ -4690,7 +4695,7 @@
                    tied to the flight and nothing else. *@
                 <div class="bury-row bury-eta">
                     <span>🛰 Flight down</span>
-                    <span class="bury-cargo">ETA @FormatDuration(boardStop.TravelSeconds) — same with or without a chest</span>
+                    <span class="bury-cargo">ETA @FormatDuration(boardStop.TravelSeconds + (SpaceSails.Core.StationAboard.TryParseStationId(boardStop.Body.Id, out _) ? SpaceSails.Core.StationAboard.LockCycleSeconds : 0)) — same with or without a chest</span>
                 </div>
             </div>
             @* #327 the ship calls home: the hold quote before you commit to the walk down. In-voice, from
