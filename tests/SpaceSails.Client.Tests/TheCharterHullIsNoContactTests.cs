@@ -120,17 +120,24 @@ public sealed class TheCharterHullIsNoContactTests
         Assert.DoesNotContain(r.HullId, ids);
     }
 
-    /// <summary>HUNT: with only the hull and the control eligible, the booth's offer targets the control —
-    /// and never her, though her id sorts first.</summary>
+    /// <summary>HUNT: with only the hull and the control eligible, every offer across sixty sim-times targets
+    /// the control — never her.</summary>
     [Fact]
     public async Task TheHuntBoothNeverOffersTheHull()
     {
         Rig r = await Rigged();
         Assert.True(string.CompareOrdinal(r.HullId, r.ControlId) < 0,
             "the hull's id must sort before the control's, or this guard could not tell pass from fail");
-        object? offer = Call(r.Map, "MakeHuntOffer", "a stranger");
-        Assert.NotNull(offer);
-        Assert.Equal(r.ControlId, (string)Get(offer!, "TargetShipId")!);
+        // The booth's pick is a weighted draw seeded on sim-time, so ONE offer proves little: with the guard
+        // gone it picks the hull about half the time. Sixty draws across sixty sim-times leave no room for
+        // luck, and every one must be the control.
+        for (int i = 0; i < 60; i++)
+        {
+            Set(r.Map, "SimTime", i * 977.0);
+            object? offer = Call(r.Map, "MakeHuntOffer", "a stranger");
+            Assert.NotNull(offer);
+            Assert.Equal(r.ControlId, (string)Get(offer!, "TargetShipId")!);
+        }
     }
 
     /// <summary>BOARDING: a selected, observed hull is not a capture target; the same selection of the control
