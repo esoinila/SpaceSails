@@ -246,6 +246,25 @@ public class KeepsakeTests
     }
 
     [Fact]
+    public void ThePendantsPlateWearsItsOwnStamp_AndNoOtherFlashbackStampMoves()
+    {
+        string stamp = StoryBeats.Title(StoryBeats.Beat.Flashback, Keepsake.PendantSubject);
+        Assert.Equal(FilingLine.Mark + " A PAGE THAT WAS NEVER WRITTEN", stamp);
+        Assert.Equal(FilingLine.Mark + " A PAGE YOU DON'T REMEMBER WRITING", StoryBeats.Title(StoryBeats.Beat.Flashback, "photograph"));
+        Assert.Equal(FilingLine.Mark + " A PAGE YOU DON'T REMEMBER WRITING", StoryBeats.Title(StoryBeats.Beat.Flashback));
+        Assert.Null(Keepsake.FlashbackTitle("photograph"));
+        Assert.Null(Keepsake.FlashbackTitle(null));
+    }
+
+    [Fact]
+    public void TheCanonPoolsCannotBeCastBackToTheirArraysAndMutated()
+    {
+        Assert.False(Keepsake.CleanPool is string[]);
+        Assert.False(Keepsake.StingPool is string[]);
+        Assert.False(Keepsake.NotHerePool is string[]);
+    }
+
+    [Fact]
     public void OnlyTheFirstOpeningRaisesTheFlashback_NotALaterMinuteNorARefusal()
     {
         Assert.False(Later(50.0, 0).RaisesFlashback);
@@ -263,12 +282,5 @@ public class KeepsakeTests
         // …and the real plate agrees: the story-beat caption for the pendant's subject is the canon text.
         Assert.Equal(Keepsake.FirstOpeningLine, StoryBeats.Caption(StoryBeats.Beat.Flashback, Keepsake.PendantSubject));
         Assert.NotEqual(Keepsake.FirstOpeningLine, StoryBeats.Caption(StoryBeats.Beat.Flashback, "photograph"));
-    }
-
-    [Fact]
-    public void TheSteadyingNoteSpeaksInTheMinutesOwnVoice()
-    {
-        Assert.Contains("minute", NerveModel.SteadyingNote(NerveModel.DrinkKind.Keepsake, 1, 22.0));
-        Assert.DoesNotContain("rum", NerveModel.SteadyingNote(NerveModel.DrinkKind.Keepsake, 3, 22.0));
     }
 }

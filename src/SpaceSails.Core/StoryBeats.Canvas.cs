@@ -131,6 +131,8 @@ public static partial class StoryBeats
         // #973 · The stamp is the mark and the label the ledger row already wears, said louder. The subject
         // is the memory id and is deliberately NOT in the stamp: an entry key is bookkeeping, and a card that
         // put one on the screen would be showing the player the filing system instead of the memory.
+        // #620 · …except the pendant's, which was never a page (Fable's canon addendum, verbatim). Same mark.
+        Beat.Flashback when Keepsake.FlashbackTitle(subject) is { } pendantTitle => FilingLine.Mark + " " + pendantTitle,
         Beat.Flashback => FilingLine.Mark + " " + "A PAGE YOU DON'T REMEMBER WRITING",
         // #973 L5b · the stamp names the door, because the door is what the room looked at.
         Beat.WalkIn => "🚪 THE ROOM LOOKS AT THE DOOR",

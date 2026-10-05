@@ -84,6 +84,12 @@ public class TheKeepsakeShelfTests
         Assert.True(Nerve(map) >= 40.0 + 20.0, $"the minute should steady the captain (nerve {Nerve(map)}).");
         Assert.False((bool)Get(map, "_showSatchel")!, "the pocket goes back so the flashback plate is seen.");
         Assert.Null(Said(map));      // the plate's caption IS the line; the card has nothing to repeat
+        // The PLATE is what carries it — assert the page's own plate state, not a slot FoldKeepsake wipes anyway.
+        object plate = Get(map, "_storyPlate") ?? throw new Xunit.Sdk.XunitException("the first opening raised no flashback plate.");
+        Assert.Equal(StoryBeats.Beat.Flashback, plate.GetType().GetField("Item1")!.GetValue(plate));
+        Assert.Equal(Keepsake.PendantSubject, plate.GetType().GetField("Item2")!.GetValue(plate));
+        Assert.Equal(FilingLine.Mark + " A PAGE THAT WAS NEVER WRITTEN",
+            StoryBeats.Title((StoryBeats.Beat)plate.GetType().GetField("Item1")!.GetValue(plate)!, (string?)plate.GetType().GetField("Item2")!.GetValue(plate)));
         Assert.False(Folded(map));
         Assert.Equal(0.0, (double)Get(map, "_lastQuietMinuteSimTime")!, 6); // the shared window is stamped
         Assert.Equal(1, ((IEnumerable<FieldNote>)Get(map, "_fieldNotes")!).Count(n => n.Text == Keepsake.FieldBookLine));
@@ -95,7 +101,7 @@ public class TheKeepsakeShelfTests
         Map map = AMapAt(CabinX, CabinY, nerve: 40.0, simTime: 0.0);
         Press(map);                                           // the first opening
         Set(map, "_showSatchel", true);
-        Set(map, "SimTime", Keepsake.QuietWindowSeconds + 4.0); // past the window; sim time 7204 is a known clean draw? asserted below
+        Set(map, "SimTime", Keepsake.QuietWindowSeconds + 4.0); // past the window (either draw, clean or stung, is a canon line)
         Press(map);
 
         string? said = Said(map);
@@ -104,6 +110,45 @@ public class TheKeepsakeShelfTests
         Assert.True(Folded(map), "a minute actually spent folds the card open on its picture.");
         Assert.True((bool)Get(map, "_showSatchel")!, "a later opening leaves the pocket up.");
         Assert.Equal(1, ((IEnumerable<FieldNote>)Get(map, "_fieldNotes")!).Count(n => n.Text == Keepsake.FieldBookLine));
+    }
+
+    [Fact]
+    public void TheFirstOpeningIsOncePerRun_EvenWhenALongRunTrimsTheFieldBookLineAway()
+    {
+        Map map = AMapAt(CabinX, CabinY, nerve: 40.0, simTime: 0.0);
+        Press(map);
+        Assert.True((bool)Get(map, "_pendantFirstOpened")!);
+
+        // A long run: the book's cap trims its front, the pendant's line with it.
+        for (int i = 0; i < FieldNotes.Cap + 5; i++)
+        {
+            Invoke(map, "FileNote", $"a long run's note {i}", "x");
+        }
+        Assert.False(Filed(map), "the cap should have trimmed the pendant's line off the front of the book.");
+
+        Set(map, "_showSatchel", true);
+        Set(map, "_storyPlate", null);
+        Set(map, "SimTime", Keepsake.QuietWindowSeconds + 4.0);
+        Press(map);
+
+        Assert.False(Filed(map), "a second field-book line was filed — the first opening replayed.");
+        Assert.Null(Get(map, "_storyPlate")); // no second flashback
+        Assert.True(Folded(map));
+        string said = Said(map)!;
+        Assert.True(Keepsake.CleanPool.Contains(said) || Keepsake.StingPool.Contains(said));
+    }
+
+    [Fact]
+    public void TheLatchRidesTheVaultAndAFreshUniverseClearsIt()
+    {
+        Map map = AMapAt(CabinX, CabinY);
+        Press(map);
+        Vault vault = (Vault)Invoke(map, "BuildVault", "", "")!;
+        Assert.True(vault.Nerve!.PendantFirstOpened);
+
+        Invoke(map, "ResetLiveStateForNewGame");
+        Assert.False((bool)Get(map, "_pendantFirstOpened")!);
+        Assert.Equal(double.NegativeInfinity, (double)Get(map, "_lastQuietMinuteSimTime")!);
     }
 
     [Fact]

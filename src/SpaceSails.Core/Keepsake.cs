@@ -97,6 +97,16 @@ public static class Keepsake
     public static string? FlashbackCaption(string? subject) =>
         string.Equals(subject, PendantSubject, StringComparison.Ordinal) ? FirstOpeningLine : null;
 
+    /// <summary>The plate's title stamp for the pendant's flashback (Fable's canon addendum on #620,
+    /// 2026-10-05, verbatim): the pendant was never a page, so the generic "A PAGE YOU DON'T REMEMBER
+    /// WRITING" would contradict it. The caller keeps the mark prefix and the styling.</summary>
+    public const string FlashbackTitleText = "A PAGE THAT WAS NEVER WRITTEN";
+
+    /// <summary>The plate's title for a keepsake subject, or null for every other subject so no other
+    /// flashback's stamp changes.</summary>
+    public static string? FlashbackTitle(string? subject) =>
+        string.Equals(subject, PendantSubject, StringComparison.Ordinal) ? FlashbackTitleText : null;
+
     // Five clean minutes, rotated on the seeded roll (canon, verbatim).
     private static readonly string[] CleanLines =
     [
@@ -126,13 +136,13 @@ public static class Keepsake
     ];
 
     /// <summary>The five clean quiet-minute lines, for the tests and for any reader that needs the pool.</summary>
-    public static IReadOnlyList<string> CleanPool => CleanLines;
+    public static IReadOnlyList<string> CleanPool { get; } = Array.AsReadOnly(CleanLines);
 
     /// <summary>The three unsettled sting lines.</summary>
-    public static IReadOnlyList<string> StingPool => StingLines;
+    public static IReadOnlyList<string> StingPool { get; } = Array.AsReadOnly(StingLines);
 
     /// <summary>The two not-here refusals.</summary>
-    public static IReadOnlyList<string> NotHerePool => NotHereLines;
+    public static IReadOnlyList<string> NotHerePool { get; } = Array.AsReadOnly(NotHereLines);
 
     // TODO (#620 slice 2): the Money-marked mementos' sting pool (the #973 photograph and slips on the shelf)
     // is authored in the issue's 2026-10-05 canon comment but is out of this slice's scope; nothing below

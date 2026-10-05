@@ -76,6 +76,8 @@ public partial class Map
         _heat = HeatState.None;
         _nerve = NerveModel.Steady;
         _monolithSeen = false;
+        _pendantFirstOpened = false;                          // #620 · a new universe has not opened the locket
+        _lastQuietMinuteSimTime = double.NegativeInfinity;    // …and has never taken a quiet minute
         _insurance = PirateInsurance.Uninsured;
 
         // #1151 · …and the claims file with them. This method's contract is that it is the exact inverse of
@@ -282,7 +284,7 @@ public partial class Map
                 // once-per-loss across a reload (Map.Claims.Rep.cs).
                 LodgingOfferedFor = _lodgingOfferedFor,
             },
-            Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen }, // #317
+            Nerve = new NerveSection { Nerve = _nerve, MonolithSeen = _monolithSeen, PendantFirstOpened = _pendantFirstOpened }, // #317
             Overheard = _overheard.Count > 0 ? new OverheardSection { Lines = _overheard } : null, // bar intel, durable
             // #587 · the field book: what was found on the ground, kept so it can be re-read.
             FieldNotes = _fieldNotes.Count > 0 ? new FieldNotesSection { Notes = _fieldNotes } : null,

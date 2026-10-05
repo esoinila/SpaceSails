@@ -411,14 +411,6 @@ public static class NerveModel
                 ? "you were steady before it came — you eat it anyway, and it is still worth eating"
                 : "a hot plate, and the hands come back to you between mouthfuls";
         }
-        if (kind == DrinkKind.Keepsake)
-        {
-            // #620 · The quiet minute's own voice. The canon lines (Keepsake) carry the real words; this
-            // keeps the note voice-true wherever the seam is read, and says nothing about WHO the face is.
-            return restored < 2.0
-                ? "you were steady already — the minute passes, and is yours"
-                : "a minute that belongs to nobody — you pocket it steadier";
-        }
         if (DrunkAt(totNumber))
         {
             return "the rum has stopped helping, captain — drunk is not steady hands";

@@ -21,6 +21,11 @@ public sealed record NerveSection
     /// <summary>True once the captain has laid eyes on the monolith. Persisted so the big first-sight hit
     /// (<see cref="NerveModel.MonolithSightShock"/>) fires once in a life and never again on a revisit.</summary>
     public bool MonolithSeen { get; init; }
+
+    /// <summary>#620 · True once the pendant has been opened in the cabin for the first time this run, so the
+    /// flashback plate and its field-book line fire once and never again — however long the book grows.
+    /// (Riding the field book instead would let its 80-note cap trim the latch away.)</summary>
+    public bool PendantFirstOpened { get; init; }
 }
 
 // ── #638 · The void's countdown, which is a clock and therefore has to survive a save. ──

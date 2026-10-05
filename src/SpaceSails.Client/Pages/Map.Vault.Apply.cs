@@ -234,6 +234,7 @@ public partial class Map
             // the pip lattice on the way in, so a legacy 63.4 reads as a clean 6 pips and never drifts again.
             _nerve = NervePips.Snap(NerveModel.Clamp(nerve.Nerve));
             _monolithSeen = nerve.MonolithSeen;
+            _pendantFirstOpened = nerve.PendantFirstOpened; // #620
         }
 
         // The "overheard at the bar" book (owner 2026-07-18): the tips/rumors a player was handed are

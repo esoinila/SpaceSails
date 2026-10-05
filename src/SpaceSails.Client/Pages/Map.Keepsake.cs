@@ -35,17 +35,16 @@ public partial class Map
     private bool InTheCaptainsCabin() =>
         _surface is null && _havenFloor == HavenLevels.Concourse && DeckPlan.InCaptainsCabin(_avatarX, _avatarY);
 
-    /// <summary>Has this run already opened a keepsake in the cabin? The field book is the memory: the first
-    /// opening files its one line, so the line's presence IS the once-per-run latch and it persists with the
-    /// book.</summary>
-    private bool KeepsakeHasBeenOpened() =>
-        _fieldNotes.Any(n => string.Equals(n.Text, Keepsake.FieldBookLine, StringComparison.Ordinal));
+    // Has this run opened the pendant in the cabin yet? A DEDICATED latch, persisted on the vault's nerve
+    // section (the monolith's idiom) and reset with a new game. The field-book line is only the RECORD of the
+    // first opening: the book is capped and trims its front, so it can never be the latch.
+    private bool _pendantFirstOpened;
 
     /// <summary>The press on a keepsake's card. Core decides (<see cref="Keepsake.Open"/>); the page applies.</summary>
     private void PressKeepsake(Keepsake.Piece piece)
     {
         Keepsake.QuietMinute minute = Keepsake.Open(
-            piece, InTheCaptainsCabin(), firstOpening: !KeepsakeHasBeenOpened(), _nerve,
+            piece, InTheCaptainsCabin(), firstOpening: !_pendantFirstOpened, _nerve,
             SimTime - _lastQuietMinuteSimTime, SimTime);
 
         _keepsakeAskedId = piece.Id;
@@ -76,6 +75,7 @@ public partial class Map
             // the canon first-opening text) and files the field-book line once. The satchel goes back in the
             // pocket so the plate is SEEN — the pocket's layer sits above every card the world raises
             // (#1027) — and the plate's caption IS the line, so the card has nothing to repeat.
+            _pendantFirstOpened = true;
             FileNote(Keepsake.FieldBookLine, Keepsake.FieldBookGlyph);
             LogAutopilotEvent($"{Keepsake.FieldBookGlyph} {Keepsake.FieldBookLine}");
             _keepsakeSaid = null;

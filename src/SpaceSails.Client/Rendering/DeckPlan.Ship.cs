@@ -464,11 +464,23 @@ public sealed partial class DeckPlan
         droids[2] = new Droid(x, 0.6, phase < 0.5 ? 0 : Math.PI, "V-1K");
     }
 
-    /// <summary>#620 · Is the point inside the captain's own cabin — CABIN 1 [x 11..14.5, y -10..-3], the tidy
-    /// berth the bunk lives in? Derived from the same wall segments the room is built off (the CABIN 2 / CABIN 1
-    /// and CABIN 1 / HEAD partitions and the corridor wall), never a threshold typed in the page. The only
-    /// place the pendant's locket opens.</summary>
-    public static bool InCaptainsCabin(double x, double y) => x is > 11 and < 14.5 && y is < -3 and > -10;
+    /// <summary>#620 · Is the point inside the captain's own cabin — the berth that carries the bunk and the
+    /// desk, <see cref="ShipLayout.DeskCabin"/>? The bounds are Core's own (<see cref="ShipLayout.Rooms"/>), so
+    /// the room and this predicate are one fixture and not two numbers; the interior is exclusive of the
+    /// walls. The only place the pendant's locket opens.</summary>
+    public static bool InCaptainsCabin(double x, double y)
+    {
+        foreach (ShipLayout.Room r in ShipLayout.Rooms)
+        {
+            if (string.Equals(r.Name, ShipLayout.DeskCabin, StringComparison.Ordinal))
+            {
+                return x > r.X0 && x < r.X1 && y > r.Y0 && y < r.Y1;
+            }
+        }
+
+        throw new InvalidOperationException(
+            $"#620 · there is no compartment called {ShipLayout.DeskCabin} aboard, so there is no cabin to open the locket in.");
+    }
 
     private static string ShipLocation(double x, double y)
     {
