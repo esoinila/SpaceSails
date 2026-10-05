@@ -216,7 +216,14 @@ public partial class Map
     /// departures, plus a couple of pods so the milk run never dries up.</summary>
     private void RefillTraffic()
     {
-        if (_ephemeris is null || SimTime - _lastRefillCheckSimTime < 3600)
+        if (_ephemeris is null)
+        {
+            return;
+        }
+
+        TheReturningShuttleKeepsItsHours();   // #1074 beat 5 · a row's own clock, cheap while nothing has fired
+
+        if (SimTime - _lastRefillCheckSimTime < 3600)
         {
             return;
         }

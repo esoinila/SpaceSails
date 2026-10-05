@@ -156,6 +156,8 @@ public partial class Map
         // #1061 beat 2 · …and the one thing on this ground somebody ELSE put down, which is why it is not in
         // the store above: every sentence that store prints says "where YOU left it".
         ComposeTheDroppedSchedule(ex);
+        // #1074 beat 5 · ...and the charter hull a returned shuttle left parked on a preserved ground.
+        ComposeTheSurveyHull(ex);
     }
 
     /// <summary>

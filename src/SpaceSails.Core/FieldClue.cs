@@ -118,6 +118,7 @@ public static class FieldClue
             || CarryThePress.IsTheNote(paperId)
             || SpikeIt.IsAuthored(paperId)
             || PreservationOffice.IsTheSheet(paperId)
+            || ReturningShuttle.IsTheLog(paperId)
             || UndergroundComplex.AuthoredPaperOf(paperId) is not null
             || UndergroundComplex.LiftCode.PaperIn(paperId) is not null;
     }
@@ -170,6 +171,12 @@ public static class FieldClue
         if (CarryThePress.IsTheNote(paperId))
         {
             return CarryThePress.TinText;
+        }
+
+        // #1074 beat 5 · …and the survey log's last page, the line it was written in.
+        if (ReturningShuttle.IsTheLog(paperId))
+        {
+            return ReturningShuttle.LogDocument;
         }
 
         // #1202 slice 2 · …and the two sheets of SPIKE IT: the client's page and her pages. Each is the line it
@@ -291,6 +298,12 @@ public static class FieldClue
         if (CarryThePress.IsTheNote(paperId))
         {
             return CarryThePress.TinTitle;
+        }
+
+        // #1074 beat 5 · …and the survey log's last page is called what the canon titled it.
+        if (ReturningShuttle.IsTheLog(paperId))
+        {
+            return ReturningShuttle.LogTitle;
         }
 
         // #1202 slice 2 · …and SPIKE IT's two sheets are called what their own lines open with.

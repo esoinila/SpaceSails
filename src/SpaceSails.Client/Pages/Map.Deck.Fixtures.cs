@@ -94,6 +94,12 @@ public partial class Map
                 return;
             }
 
+            // #1074 beat 5 · …and the three fixtures of the charter hull, recognised by their plates.
+            if (_surface is { } hullEx && TryTheSurveyHull(hullEx, spot.Label))
+            {
+                return;
+            }
+
             // #1332 C · …and the disbursement sheet on the Preservation office's desk, a pickup like the schedule.
             if (TryTheDisbursementSheet(spot.Label))
             {

@@ -122,6 +122,35 @@ public static class MoneyTrail
     public static string SubjectsFor(string? siteName) =>
         CaseSubjects.Line(TheOffice, CaseSubjects.Place(siteName ?? ""));
 
+    /// <summary>#1074 beat 5 - <b>IS THIS FIELD-BOOK NOTE ONE OF THE THREE LINE ITEMS, AS THE GAME FILES IT?</b>
+    /// The game does not file the bare constant: a find is filed as the room's line plus the pocket line
+    /// (<c>"📋 " + text + "  🎒 Into your pocket..."</c>, Map.Surface.KeepOrLeave), so this matches by the
+    /// PRODUCER's own composition (<see cref="UndergroundComplex.MoneyTrailLine"/>) as a prefix, and, where the
+    /// note carries subjects (it always does when filed), requires the office among them.</summary>
+    public static bool IsFiledLineItem(FieldNote note)
+    {
+        if (note.Text is null)
+        {
+            return false;
+        }
+
+        bool ours = false;
+        foreach (Item item in Enum.GetValues<Item>())
+        {
+            if (note.Text.StartsWith(UndergroundComplex.MoneyTrailLine(item), StringComparison.Ordinal))
+            {
+                ours = true;
+                break;
+            }
+        }
+        if (!ours)
+        {
+            return false;
+        }
+
+        return string.IsNullOrEmpty(note.Subjects) || CaseSubjects.On(note).Contains(TheOffice);
+    }
+
     /// <summary>#1074 · The office every one of these papers is about — <see cref="StopOrder.Stamp"/>, beat
     /// 1's own constant and not a second one spelled the same way, so the plate at the seal, the notice at
     /// the gate and the heading in the field book are one office rather than three.</summary>

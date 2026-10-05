@@ -269,6 +269,22 @@ public partial class Map
                 q.SecretlabCheat = true;
             }
         }
+        else if (pair.StartsWith("shuttle=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #1074 beat 5 dev cheat: /map?shuttle=1 is ?preserved=1 with the charter hull already down and her
+            // shuttle already back — the same rock, the same fence, and the hull parked beside it. Everything
+            // the beat does on a real run (the board row, the wire's one line, the three fixtures) is reached
+            // from this boot; the eligibility and the three-day gate are what the cheat steps over.
+            string candidate = Uri.UnescapeDataString(pair["shuttle=".Length..]).ToLowerInvariant();
+            if (candidate is "1" or "true" or "yes")
+            {
+                _shuttleCheat = true;
+                _preservedCheat = true;
+                _stoppedCheat = true;
+                _foundCheat = true;
+                q.SecretlabCheat = true;
+            }
+        }
         else if (pair.StartsWith("card=", StringComparison.OrdinalIgnoreCase))
         {
             // #693 dev cheat: /map?card=next puts ONE authority in the wallet — the one the gate in front

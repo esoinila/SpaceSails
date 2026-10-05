@@ -229,6 +229,11 @@ public sealed partial class Map
         var hulls = new List<FinderCase.Hull>(_npcStates.Length);
         foreach (NpcState npc in _npcStates)
         {
+            if (ReturningShuttle.IsTheHull(npc.Ship.Id))
+            {
+                continue;   // #1074 beat 5 - the charter hull is never a finder's hull
+            }
+
             hulls.Add(new FinderCase.Hull(
                 npc.Ship.Id, npc.Ship.Callsign, ShipHistories.For(npc.Ship.Id)));
         }
