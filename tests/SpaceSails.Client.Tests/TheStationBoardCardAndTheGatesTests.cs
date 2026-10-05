@@ -163,6 +163,23 @@ public sealed class TheStationBoardCardAndTheGatesTests
         Assert.Equal(HullCutter.CutsPerCell - 1, HullCutter.CutsLeft((IReadOnlyList<Satchel.Item>)bench.Peek("_satchel")!));
     }
 
+    // ── 7 · Her own suffocation pool ─────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task ASuffocationAboardTheStationIsRoutedToHerOwnPoolAndTheCardNamesLedgerPoint()
+    {
+        DeskBench bench = await LandedAsync();
+        object ex = bench.Peek("_surface")!;
+
+        bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", ex, false, DeathCause.Suffocated);
+
+        object busted = bench.Peek("_busted")!;
+        Assert.Equal(DeathPlace.Station, (DeathPlace)Get(busted, "Place")!);
+        string said = DeathNarration.Line(DeathCause.Suffocated, (DeathPlace)Get(busted, "Place")!, (ulong)Get(busted, "Seed")!, (string?)Get(busted, "DeathBodyName"));
+        Assert.Equal(StationAboard.DevStationName, (string)Get(busted, "DeathBodyName")!);
+        Assert.Contains(DeathNarration.SuffocationLinesAboardAStation.Select(l => l.Replace("{body}", StationAboard.DevStationName)), l => l == said);
+    }
+
     // ── 5 · Affordances never hide ───────────────────────────────────────────────────────────────────────
 
     [Fact]
