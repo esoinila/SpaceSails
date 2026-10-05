@@ -63,6 +63,12 @@ public partial class Map
             return null;
         }
 
+        // #1074 beat 5 - the charter hull is never a boarding candidate: no heat, no hunter, no loot.
+        if (ReturningShuttle.IsTheHull(npc.Ship.Id))
+        {
+            return null;
+        }
+
         return npc;
     }
 
@@ -240,6 +246,11 @@ public partial class Map
 
     private void SetInterestTarget(string id)
     {
+        if (ReturningShuttle.IsTheHull(id))
+        {
+            return;   // #1074 beat 5 - the charter hull is never a target of interest
+        }
+
         _interestTargetId = _interestTargetId == id ? null : id;
         TheCaseReadsThisHull(_interestTargetId);   // #417 · a hull looked up is a hull read
         _intercept = null;

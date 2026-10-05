@@ -240,7 +240,8 @@ public partial class Map
         var contacts = new List<SpaceSails.Client.Pages.Stations.WarRoom.Contact>();
         foreach (NpcState npc in _npcStates)
         {
-            if (npc.Active && !npc.Arrived && !npc.Boarded && npc.CurrentlyObserved)
+            if (npc.Active && !npc.Arrived && !npc.Boarded && npc.CurrentlyObserved
+                && !ReturningShuttle.IsTheHull(npc.Ship.Id))   // #1074 beat 5 - not a war-room contact
             {
                 contacts.Add(new SpaceSails.Client.Pages.Stations.WarRoom.Contact(
                     npc.Ship, npc.State, npc.WarningShotFired, npc.Bribed));

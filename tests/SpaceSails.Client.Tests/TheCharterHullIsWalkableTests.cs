@@ -54,7 +54,7 @@ public sealed class TheCharterHullIsWalkableTests
         try
         {
             var wrong = new List<string>();
-            int parked = 0;
+            int parked = 0, outposts = 0;
             foreach (string body in Bodies)
             {
                 foreach (LandingSite site in LandingSites.For(body))
@@ -67,8 +67,37 @@ public sealed class TheCharterHullIsWalkableTests
                     parked++;
 
                     DeckPlan deck = Deck(body, site);
+                    // The deck APPENDS two more things on this ground, both seeded: the secret lab's chamber (once
+                    // forced) and the home tile's outpost hut. The strictest reading has them standing.
+                    SecretLab.Placement lab = SecretLab.OnThisSite(body, site.LayoutSalt, Env, forcePresent: true);
+                    SecretLab.Region chamber = SecretLab.Build(body, Env, lab.DoorX, lab.DoorY);
+                    var later = new List<SurfaceLayout.Wall>(chamber.Walls);
+                    var footprints = new List<(double X0, double Y0, double X1, double Y1)>
+                    {
+                        (chamber.MinX, chamber.MinY, chamber.MaxX, chamber.MaxY),
+                    };
+                    SurfaceOutpost.Placement hut = SurfaceOutpost.ForTile(body, site.LayoutSalt, SurfaceTiles.Home);
+                    if (hut.HasOutpost)
+                    {
+                        SurfaceOutpost.Region room = SurfaceOutpost.Build(body, site.LayoutSalt, hut);
+                        later.AddRange(room.Walls);
+                        footprints.Add((room.MinX, room.MinY, room.MaxX, room.MaxY));
+                        outposts++;
+                    }
+
+                    double hx0 = hull.CentreX - (ReturningShuttle.HullLength / 2), hx1 = hull.CentreX + (ReturningShuttle.HullLength / 2);
+                    double hy0 = hull.CentreY - (ReturningShuttle.HullBreadth / 2), hy1 = hull.CentreY + (ReturningShuttle.HullBreadth / 2);
+                    foreach ((double X0, double Y0, double X1, double Y1) f in footprints)
+                    {
+                        if (hx0 <= f.X1 && hx1 >= f.X0 && hy0 <= f.Y1 && hy1 >= f.Y0)
+                        {
+                            wrong.Add($"  {body}/{site.Name}: she is parked across an appended footprint");
+                        }
+                    }
+
                     var segments = deck.Walls
                         .Select(w => new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2))
+                        .Concat(later.Select(w => new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2)))
                         .Concat(hull.Walls.Select(w => new SurfaceCollision.Segment(w.X1, w.Y1, w.X2, w.Y2)))
                         .ToArray();
                     SurfaceCollision.WallIndex walls = SurfaceCollision.WallIndex.Build(segments);
@@ -92,6 +121,7 @@ public sealed class TheCharterHullIsWalkableTests
             }
 
             Assert.True(parked >= 9, $"only {parked} ground(s) had her parked — this proves little.");
+            Assert.True(outposts >= 1, "no ground in the sweep carries an outpost hut — the hut half of this audit proves nothing.");
             Assert.True(wrong.Count == 0, "the hull is not boardable:\n" + string.Join("\n", wrong));
         }
         finally

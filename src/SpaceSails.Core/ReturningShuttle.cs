@@ -50,6 +50,10 @@ public static partial class ReturningShuttle
     /// <summary>The gun rack, told once.</summary>
     public const string RackLine = "The boarding gun is racked, charged, unfired. Nobody lost a fight.";
 
+    /// <summary>What the board and the scope call her cargo — player-facing (the scope line, a boarding toast),
+    /// so it is swept like every other string here.</summary>
+    public const string CargoClass = "Charter survey";
+
     /// <summary>The paper's id — the last page of the survey log.</summary>
     public const string LogPaperId = "survey-log-last";
 
@@ -96,9 +100,11 @@ public static partial class ReturningShuttle
     /// <summary>The beat's whole persisted state, one small row. Null while the beat has not fired — the
     /// vault's null-while-empty law, so no old save's checksum moves.</summary>
     /// <param name="Body">The preserved ground the hull is parked on.</param>
-    /// <param name="Window">The world window the hull landed in.</param>
+    /// <param name="FiredAt">The sim-time (seconds) the hull set down. A TRUE full window is measured from
+    /// this, not from the window INDEX: an index would let a hull set down in the last second of a window
+    /// "return" in the first second of the next.</param>
     /// <param name="Wired">Whether the wire has printed its one line.</param>
-    public sealed record Row(string Body, long Window, bool Wired = false);
+    public sealed record Row(string Body, double FiredAt, bool Wired = false);
 
     /// <summary>The phases the row is in at a given window.</summary>
     public enum Phase
@@ -113,22 +119,25 @@ public static partial class ReturningShuttle
         Returned,
     }
 
-    /// <summary>Which phase the row is in at <paramref name="window"/>.</summary>
-    public static Phase PhaseOf(Row? row, long window) =>
+    /// <summary>Which phase the row is in at <paramref name="simTime"/>: Returned once a TRUE full world window
+    /// (<see cref="DisclosureClock.WindowSeconds"/> x <see cref="WindowsToReturn"/>) has passed since the hull
+    /// set down.</summary>
+    public static Phase PhaseOf(Row? row, double simTime) =>
         row is null ? Phase.None
-        : window - row.Window >= WindowsToReturn ? Phase.Returned
+        : simTime - row.FiredAt >= WindowsToReturn * DisclosureClock.WindowSeconds ? Phase.Returned
         : Phase.Landed;
 
     /// <summary>Does the wire owe its one line — the shuttle is back and the line has not been printed?</summary>
-    public static bool WireIsOwed(Row? row, long window) =>
-        row is { Wired: false } && PhaseOf(row, window) == Phase.Returned;
+    public static bool WireIsOwed(Row? row, double simTime) =>
+        row is { Wired: false } && PhaseOf(row, simTime) == Phase.Returned;
 
     // ── THE ELIGIBILITY PREDICATE ────────────────────────────────────────────────────────────────────────
 
     /// <summary>Is the field book carrying a touch of beat 3 (a clipped line item) or beat 4 (a colleague
-    /// asked)? The book is the register — there is no other record of either — so this reads the notes whose
-    /// text is exactly one of beat 3's three line items (or their field-book bodies) or beat 4's two spoken
-    /// lines.</summary>
+    /// asked)? The book is the register — there is no other record of either — so this reads the notes the
+    /// game actually files: beat 3's line items as <see cref="MoneyTrail.IsFiledLineItem"/> recognises them
+    /// (the producer's composition, not the bare constant) and beat 4's two spoken lines, which are filed raw.
+    /// Nothing else counts — the ruling says line items and colleagues.</summary>
     public static bool TouchedTheTrail(IReadOnlyList<FieldNote>? book)
     {
         if (book is null || book.Count == 0)
@@ -138,7 +147,7 @@ public static partial class ReturningShuttle
 
         foreach (FieldNote note in book)
         {
-            if (TrailLines.Contains(note.Text))
+            if (MoneyTrail.IsFiledLineItem(note) || TrailLines.Contains(note.Text))
             {
                 return true;
             }
@@ -154,12 +163,6 @@ public static partial class ReturningShuttle
         // static readonly in a later file would initialise in file order (the sixth bug class).
         public static readonly HashSet<string> Value = new(StringComparer.Ordinal)
         {
-            MoneyTrail.TextOf(MoneyTrail.Item.Rail),
-            MoneyTrail.TextOf(MoneyTrail.Item.Rota),
-            MoneyTrail.TextOf(MoneyTrail.Item.Pour),
-            PaperHeads.RailDocument,
-            PaperHeads.RotaDocument,
-            PaperHeads.PourDocument,
             CareerCost.ColleagueLine,
             CareerCost.MugLine,
         };
@@ -188,6 +191,32 @@ public static partial class ReturningShuttle
             }
         }
         return null;
+    }
+
+    /// <summary>One arrival's answer: the seen-set afterwards, and the ground the beat fires on (or null).</summary>
+    public readonly record struct Arrived(IReadOnlyList<string> Seen, string? Fires);
+
+    /// <summary>
+    /// <b>ONE ARRIVAL, ASKED ONCE.</b> Notes that the captain is now standing on a preserved ground (when he is)
+    /// and asks whether this arrival fires the beat — against the set as it stood BEFORE this arrival. The
+    /// arrival that first records a site as seen therefore never fires: the first sight and the firing are two
+    /// different arrivals, which is the ruling's "his NEXT arrival".
+    /// </summary>
+    /// <param name="standingOn">The body the boat is down on right now, or null when he is not landed.</param>
+    public static Arrived Arrive(
+        Row? existing, IReadOnlyList<string>? seen, string? standingOn, IReadOnlyList<FieldNote>? book,
+        double simTime, string? arrivalBodyId, Func<string, string?> parentOf, Func<string, bool> inCare)
+    {
+        ArgumentNullException.ThrowIfNull(inCare);
+        IReadOnlyList<string> before = seen ?? [];
+        string? fires = Fires(existing, before, book, simTime, arrivalBodyId, parentOf, inCare);
+
+        IReadOnlyList<string> after = before;
+        if (standingOn is not null && inCare(standingOn) && !before.Contains(standingOn, StringComparer.Ordinal))
+        {
+            after = [.. before, standingOn];
+        }
+        return new Arrived(after, fires);
     }
 
     /// <summary>
@@ -224,7 +253,16 @@ public static partial class ReturningShuttle
             (int)(DiceRule.Seed($"charter-survey|{bodyId}") % (ulong)TrafficSchedule.Callsigns.Count)];
 
     /// <summary>The hull's id on the board.</summary>
-    public static string ShipIdFor(string bodyId) => "charter-survey-" + bodyId;
+    public static string ShipIdFor(string bodyId) => IdPrefix + bodyId;
+
+    /// <summary>Every hull id starts with this.</summary>
+    public const string IdPrefix = "charter-survey-";
+
+    /// <summary>Is this ship id the charter hull? She is a fixture on the board and nothing else: the verbs that
+    /// act on a contact (trade, hunt, capture, ordnance, the war room, the finder) all ask this and leave her
+    /// out, so no verb can make a wreck of the one hull the beat leaves alone.</summary>
+    public static bool IsTheHull(string? shipId) =>
+        shipId is not null && shipId.StartsWith(IdPrefix, StringComparison.Ordinal);
 
     /// <summary>The hull as a ship in the world: a parked, empty-plan fixture on the ground's own orbit —
     /// <see cref="TheOldShip.Berthed"/>'s shape, which is what a ship that never moves again IS.</summary>
@@ -241,7 +279,7 @@ public static partial class ReturningShuttle
         return new NpcShip(
             Id: id,
             Callsign: CallsignFor(bodyId),
-            CargoClass: "Charter survey",
+            CargoClass: CargoClass,
             OriginId: bodyId,
             DestinationId: bodyId,
             Personality: RoutePersonality.Economical,
@@ -270,9 +308,9 @@ public static partial class ReturningShuttle
     /// <summary>The plates standing aboard right now. Nothing until the shuttle is back; then the airlock and
     /// the rack for good, and the log desk until its page has been taken (the 📍 line is filed in the same
     /// breath the page leaves the desk).</summary>
-    public static IReadOnlyList<string> Fixtures(Row? row, long window, IReadOnlyList<FieldNote>? book)
+    public static IReadOnlyList<string> Fixtures(Row? row, double simTime, IReadOnlyList<FieldNote>? book)
     {
-        if (PhaseOf(row, window) != Phase.Returned)
+        if (PhaseOf(row, simTime) != Phase.Returned)
         {
             return [];
         }
@@ -299,6 +337,7 @@ public static partial class ReturningShuttle
     public static IEnumerable<string> AllProse()
     {
         yield return BoardTag;
+        yield return CargoClass;
         yield return WireLine;
         yield return AirlockLine;
         yield return RackLine;

@@ -30,12 +30,17 @@ public partial class Map
     /// shuttle already back. See the query parser.</summary>
     private bool _shuttleCheat;
 
+    /// <summary>#1074 beat 5 · Latched once the hull is on the board, so the slow tick stops scanning for her.
+    /// Not persisted: a load rebuilds the board from nothing and the latch with it.</summary>
+    private bool _shuttleOnTheBoard;
+
     private IReadOnlyList<string>? ShuttleSeenRows() => _shuttleSeen.Count > 0 ? [.. _shuttleSeen] : null;
 
     private void RestoreShuttle(ProgressSection? progress)
     {
         _shuttleSeen = progress?.ShuttleSeen is { } seen ? [.. seen] : [];
         _shuttle = progress?.Shuttle;
+        _shuttleOnTheBoard = false;
     }
 
     /// <summary>The body a body orbits, or null.</summary>
@@ -55,25 +60,35 @@ public partial class Map
             return;
         }
 
-        // He has STOOD on it: the boat is down on this very ground and the ground is in care.
-        if (_surface is { } ex
+        // He has STOOD on it when the boat is down on this very ground and the ground is in care. The arrival
+        // that first records the site never fires (Core's Arrive asks the set as it stood BEFORE it).
+        string? standing = _surface is { } ex
             && string.Equals(ex.Stop.Body.Id, bodyId, System.StringComparison.Ordinal)
             && PreservationZone.On(bodyId)
-            && !_shuttleSeen.Contains(bodyId))
+            ? bodyId : null;
+
+        ReturningShuttle.Arrived arrived = ReturningShuttle.Arrive(
+            _shuttle, _shuttleSeen, standing, _fieldNotes, SimTime, bodyId, ParentOfBody, PreservationZone.On);
+        if (arrived.Seen.Count != _shuttleSeen.Count)
         {
-            _shuttleSeen.Add(bodyId);
+            _shuttleSeen = [.. arrived.Seen];
             RequestVaultSave();
         }
 
-        string? site = ReturningShuttle.Fires(
-            _shuttle, _shuttleSeen, _fieldNotes, SimTime, bodyId, ParentOfBody, PreservationZone.On);
-        if (site is null)
+        if (arrived.Fires is not { } site)
         {
             return;
         }
 
-        _shuttle = new ReturningShuttle.Row(site, DisclosureClock.WindowAt(SimTime));
+        _shuttle = new ReturningShuttle.Row(site, SimTime);
         TheCharterHullIsOnTheBoard();
+
+        // Landed on that very ground as it fires: the hull must be on the deck NOW, not pop in mid-walk at
+        // the next rebuild.
+        if (_surface is { } here && string.Equals(here.Stop.Body.Id, site, System.StringComparison.Ordinal))
+        {
+            RebuildSurfaceDeck();
+        }
         RequestVaultSave();
     }
 
@@ -81,19 +96,18 @@ public partial class Map
     /// board from nothing) puts her back the same way the first firing did.</summary>
     private void TheCharterHullIsOnTheBoard()
     {
-        if (_shuttle is not { } row || _ephemeris is null
+        if (_shuttleOnTheBoard || _shuttle is not { } row || _ephemeris is null
             || _ephemeris.Bodies.All(b => b.Id != row.Body))
         {
             return;
         }
 
         string id = ReturningShuttle.ShipIdFor(row.Body);
-        if (_npcStates.Any(n => n.Ship.Id == id))
+        if (_npcStates.All(n => n.Ship.Id != id))
         {
-            return;
+            _npcStates = [.. _npcStates, new NpcState { Ship = ReturningShuttle.Parked(_ephemeris, row.Body) }];
         }
-
-        _npcStates = [.. _npcStates, new NpcState { Ship = ReturningShuttle.Parked(_ephemeris, row.Body) }];
+        _shuttleOnTheBoard = true;
     }
 
     /// <summary>
@@ -109,7 +123,7 @@ public partial class Map
         }
 
         TheCharterHullIsOnTheBoard();
-        if (ReturningShuttle.WireIsOwed(_shuttle, DisclosureClock.WindowAt(SimTime)))
+        if (ReturningShuttle.WireIsOwed(_shuttle, SimTime))
         {
             PushNewsEvent(NewsWire.NewsEventKind.ArcBeatBreaks, ReturningShuttle.WireLine, StopOrder.Stamp);
             _shuttle = _shuttle with { Wired = true };
@@ -132,7 +146,7 @@ public partial class Map
             _shuttleSeen.Add(site);
         }
         _shuttle = new ReturningShuttle.Row(
-            site, DisclosureClock.WindowAt(SimTime) - ReturningShuttle.WindowsToReturn);
+            site, SimTime - (ReturningShuttle.WindowsToReturn * DisclosureClock.WindowSeconds));
         TheCharterHullIsOnTheBoard();
         RequestVaultSave();
     }
@@ -172,7 +186,7 @@ public partial class Map
         };
 
         var consoles = new List<DeckPlan.ConsoleSpot>();
-        foreach (string plate in ReturningShuttle.Fixtures(row, DisclosureClock.WindowAt(SimTime), _fieldNotes))
+        foreach (string plate in ReturningShuttle.Fixtures(row, SimTime, _fieldNotes))
         {
             (double x, double y) = plate == ReturningShuttle.AirlockPlate ? hull.Airlock
                 : plate == ReturningShuttle.RackPlate ? hull.Rack : hull.Log;

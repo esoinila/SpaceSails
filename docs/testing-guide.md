@@ -1005,7 +1005,8 @@ her shuttle is back on its own autopilot, the wire prints its one line, and the 
   page* — and one 📍 line goes into the book: *"Six went down. The shuttle came up. Nothing on this hull says which
   of those is the strange part."* The desk is gone afterwards.
 - on the wire (Comms ticker / galley card): *"A charter survey's shuttle came back to its ship on its own
-  autopilot. The ship has not moved since. The Authority has posted a structural notice at the site."* — once.
+  autopilot. The ship has not moved since. The Authority has posted a structural notice at the site."* — once. Under `?shuttle=1` it prints on the first
+  tick after boot; on a real run it comes a full world window (about 1.1 hours of sim time) after the hull sets down.
 
 **What a tester must NOT see:** any card, sensor reading or colleague line that says whether anybody is alive or
 what became of the party; a body, a straggler or a second ship; the hull moving; any change to the fence, the

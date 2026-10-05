@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using SpaceSails.Core;
 using Xunit;
 
@@ -28,12 +29,25 @@ public sealed class TheReturningShuttleTests
 
     private static FieldNote Note(string text) => new(text, 0, "somewhere", "📋", "");
 
-    private static IReadOnlyList<FieldNote> Clipped(string text) => [Note("unrelated"), Note(text)];
+    /// <summary>A beat-3 line item as the GAME files it: the producer's own composition
+    /// (<see cref="UndergroundComplex.MoneyTrailLine"/> + the pocket line, exactly as Map.Surface.KeepOrLeave
+    /// composes it) under the producer's own subjects. Built from the producers, never typed, so composition
+    /// drift breaks this red instead of the beat going silently dead on live notes.</summary>
+    private static FieldNote Filed(MoneyTrail.Item item, string site = "Rock A") =>
+        new(UndergroundComplex.MoneyTrailLine(item) + UndergroundComplex.PaperPocketLine, 0, site, "🔦",
+            MoneyTrail.SubjectsFor(site));
+
+    private static IReadOnlyList<FieldNote> Clipped(MoneyTrail.Item item) => [Note("unrelated"), Filed(item)];
+
+    /// <summary>A beat-4 colleague's answer as the canteen files it: the raw line.</summary>
+    private static IReadOnlyList<FieldNote> Asked(string line) => [Note("unrelated"), Note(line)];
+
+    private const double W = 4000.0;   // DisclosureClock.WindowSeconds, asserted below so this cannot drift
 
     private static string? Fires(
         ReturningShuttle.Row? row = null, string[]? seen = null, IReadOnlyList<FieldNote>? book = null,
         double simTime = 10 * Day, string? arrival = Site, Func<string, bool>? inCare = null) =>
-        ReturningShuttle.Fires(row, seen ?? [Site], book ?? Clipped(MoneyTrail.PourLineItem),
+        ReturningShuttle.Fires(row, seen ?? [Site], book ?? Clipped(MoneyTrail.Item.Pour),
             simTime, arrival, ParentOf, inCare ?? InCare);
 
     // ══ THE CANON ══════════════════════════════════════════════════════════════════════════════════════
@@ -80,7 +94,7 @@ public sealed class TheReturningShuttleTests
 
     /// <summary>
     /// NO FOURTH STRING, AND NO LINE THAT CLOSES THE QUESTION. Every public string the type publishes is in
-    /// <see cref="ReturningShuttle.AllProse"/> (bar the two machine words), and none of them says the reserved
+    /// <see cref="ReturningShuttle.AllProse"/> (bar the three machine words: the paper id, the glyph and the id prefix), and none of them says the reserved
     /// word, the canon list, or anything about anybody being alive, dead, found or missing.
     ///
     /// </summary>
@@ -91,7 +105,7 @@ public sealed class TheReturningShuttleTests
         foreach (FieldInfo f in typeof(ReturningShuttle).GetFields(BindingFlags.Public | BindingFlags.Static))
         {
             if (f.FieldType == typeof(string) && f.GetValue(null) is string v
-                && f.Name is not (nameof(ReturningShuttle.LogPaperId) or nameof(ReturningShuttle.FieldBookGlyph)))
+                && f.Name is not (nameof(ReturningShuttle.LogPaperId) or nameof(ReturningShuttle.FieldBookGlyph) or nameof(ReturningShuttle.IdPrefix)))
             {
                 published.Add(v);
             }
@@ -128,7 +142,7 @@ public sealed class TheReturningShuttleTests
     public void WithoutAPreservedSiteSeenThereIsNoBeat()
     {
         Assert.Null(Fires(seen: []));
-        Assert.Null(ReturningShuttle.Fires(null, null, Clipped(MoneyTrail.PourLineItem), 10 * Day, Site, ParentOf, InCare));
+        Assert.Null(ReturningShuttle.Fires(null, null, Clipped(MoneyTrail.Item.Pour), 10 * Day, Site, ParentOf, InCare));
     }
 
     /// <summary>
@@ -140,6 +154,15 @@ public sealed class TheReturningShuttleTests
     {
         Assert.Null(Fires(book: []));
         Assert.Null(Fires(book: [Note("Perimeter rail"), Note("a mug, somewhere"), Note("Transferred.")]));
+
+        // The bare constants are NOT what the game files, so they are not a touch; and the paper bodies
+        // (PaperHeads.*Document) are not line items — the ruling says line items and colleagues.
+        Assert.Null(Fires(book: [Note(MoneyTrail.PourLineItem), Note(MoneyTrail.RailLineItem)]));
+        Assert.Null(Fires(book: [Note(PaperHeads.PourDocument), Note(PaperHeads.RailDocument), Note(PaperHeads.RotaDocument)]));
+
+        // A note that opens like a line item but is filed under another office is somebody else's paper.
+        FieldNote stranger = Filed(MoneyTrail.Item.Rail) with { Subjects = CaseSubjects.Line(CaseSubjects.Place("Rock A")) };
+        Assert.Null(Fires(book: [stranger]));
     }
 
     /// <summary>
@@ -150,19 +173,23 @@ public sealed class TheReturningShuttleTests
     [Fact]
     public void ASiteSeenAndTheTrailTouchedIsEligibleByEachOfTheFiveWays()
     {
-        string[] ways =
-        [
-            MoneyTrail.RailLineItem, MoneyTrail.RotaLineItem, MoneyTrail.PourLineItem,
-            CareerCost.ColleagueLine, CareerCost.MugLine,
-        ];
-        Assert.Equal(5, ways.Distinct().Count());
-        foreach (string way in ways)
+        // beat 3, filed the way the game files it
+        foreach (MoneyTrail.Item item in Enum.GetValues<MoneyTrail.Item>())
         {
-            Assert.Equal(Site, Fires(book: Clipped(way)));
+            Assert.Equal(Site, Fires(book: Clipped(item)));
         }
+        Assert.Equal(3, Enum.GetValues<MoneyTrail.Item>().Length);
 
-        // …and the paper's own field-book body counts as the same clip.
-        Assert.Equal(Site, Fires(book: Clipped(PaperHeads.PourDocument)));
+        // beat 4, filed raw by the canteen (CanteenRegulars hands who.Line = these very constants)
+        var cast = ((System.Collections.IEnumerable)typeof(CanteenRegulars)
+            .GetField("Cast", BindingFlags.NonPublic | BindingFlags.Static)!.GetValue(null)!)
+            .Cast<CanteenRegulars.Character>().Select(c => c.Line).ToArray();
+        Assert.Contains(CareerCost.ColleagueLine, cast);
+        Assert.Contains(CareerCost.MugLine, cast);
+        foreach (string line in new[] { CareerCost.ColleagueLine, CareerCost.MugLine })
+        {
+            Assert.Equal(Site, Fires(book: Asked(line)));
+        }
     }
 
     /// <summary>
@@ -215,9 +242,63 @@ public sealed class TheReturningShuttleTests
     {
         foreach (bool wired in new[] { false, true })
         {
-            Assert.Null(Fires(row: new ReturningShuttle.Row(Site, 5, wired)));
-            Assert.Null(Fires(row: new ReturningShuttle.Row("another-rock", 5, wired)));
+            Assert.Null(Fires(row: new ReturningShuttle.Row(Site, 5.0, wired)));
+            Assert.Null(Fires(row: new ReturningShuttle.Row("another-rock", 5.0, wired)));
         }
+    }
+
+    // ══ THE ARRIVAL THAT FIRST SEES A SITE NEVER FIRES THE BEAT ════════════════════════════════════════
+
+    /// <summary>
+    /// FIRST SIGHT AND THE FIRING ARE TWO ARRIVALS. The boat that first sets down on a preserved ground records
+    /// it as seen and, even with every other arm satisfied, fires NOTHING; the very next arrival there fires.
+    /// Judged across the whole sequence, with the seen-set carried from one call to the next as the Map does.
+    /// </summary>
+    [Fact]
+    public void TheArrivalThatFirstSeesASiteNeverFiresAndTheNextOneDoes()
+    {
+        IReadOnlyList<FieldNote> book = Clipped(MoneyTrail.Item.Pour);
+
+        ReturningShuttle.Arrived first = ReturningShuttle.Arrive(
+            null, [], standingOn: Site, book, 10 * Day, Site, ParentOf, InCare);
+        Assert.Null(first.Fires);
+        Assert.Equal([Site], first.Seen);
+
+        ReturningShuttle.Arrived second = ReturningShuttle.Arrive(
+            null, first.Seen, standingOn: Site, book, 10 * Day, Site, ParentOf, InCare);
+        Assert.Equal(Site, second.Fires);
+        Assert.Equal([Site], second.Seen);   // no duplicate
+
+        // a ground not in care is never recorded as seen
+        ReturningShuttle.Arrived elsewhere = ReturningShuttle.Arrive(
+            null, [], standingOn: "plain-rock", book, 10 * Day, "plain-rock", ParentOf, InCare);
+        Assert.Empty(elsewhere.Seen);
+        Assert.Null(elsewhere.Fires);
+
+        // orbit arrivals (not standing) record nothing and fire on a seen site's berth
+        ReturningShuttle.Arrived orbit = ReturningShuttle.Arrive(
+            null, [Site], standingOn: null, book, 10 * Day, "berth-1", ParentOf, InCare);
+        Assert.Equal(Site, orbit.Fires);
+    }
+
+    // ══ THE HULL IS A FIXTURE AND NOTHING ELSE ═════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// THE HULL'S IDENTITY: the one predicate every closed verb asks. She is recognised by her own id and no
+    /// ordinary hull is mistaken for her; and her cargo class is swept prose.
+    /// </summary>
+    [Fact]
+    public void TheHullIsRecognisedByHerIdAndHerCargoClassIsSweptProse()
+    {
+        Assert.True(ReturningShuttle.IsTheHull(ReturningShuttle.ShipIdFor(Site)));
+        Assert.True(ReturningShuttle.IsTheHull(ReturningShuttle.ShipIdFor("anything-else")));
+        Assert.False(ReturningShuttle.IsTheHull("npc-3"));
+        Assert.False(ReturningShuttle.IsTheHull(TheOldShip.ShipId));
+        Assert.False(ReturningShuttle.IsTheHull(null));
+
+        Assert.Equal("Charter survey", ReturningShuttle.CargoClass);
+        Assert.Contains(ReturningShuttle.CargoClass, ReturningShuttle.AllProse());
+        Assert.Equal(ReturningShuttle.CargoClass, ReturningShuttle.Parked(new OneRock(), Site).CargoClass);
     }
 
     // ══ THE PHASES ═════════════════════════════════════════════════════════════════════════════════════
@@ -227,19 +308,39 @@ public sealed class TheReturningShuttleTests
     /// the return.
     /// </summary>
     [Fact]
-    public void LandedThenReturnedOneWindowLaterAndTheWireIsOwedOnce()
+    public void LandedThenReturnedAFullWindowLaterAndTheWireIsOwedOnce()
     {
+        Assert.Equal(W, DisclosureClock.WindowSeconds);
         Assert.Equal(1, ReturningShuttle.WindowsToReturn);
-        var row = new ReturningShuttle.Row(Site, 100);
-        Assert.Equal(ReturningShuttle.Phase.None, ReturningShuttle.PhaseOf(null, 100));
-        Assert.Equal(ReturningShuttle.Phase.Landed, ReturningShuttle.PhaseOf(row, 100));
-        Assert.Equal(ReturningShuttle.Phase.Returned, ReturningShuttle.PhaseOf(row, 101));
-        Assert.Equal(ReturningShuttle.Phase.Returned, ReturningShuttle.PhaseOf(row, 5000));
+        var row = new ReturningShuttle.Row(Site, 100 * W);
+        Assert.Equal(ReturningShuttle.Phase.None, ReturningShuttle.PhaseOf(null, 100 * W));
+        Assert.Equal(ReturningShuttle.Phase.Landed, ReturningShuttle.PhaseOf(row, 100 * W));
+        Assert.Equal(ReturningShuttle.Phase.Landed, ReturningShuttle.PhaseOf(row, (101 * W) - 1));
+        Assert.Equal(ReturningShuttle.Phase.Returned, ReturningShuttle.PhaseOf(row, 101 * W));
+        Assert.Equal(ReturningShuttle.Phase.Returned, ReturningShuttle.PhaseOf(row, 5000 * W));
 
-        Assert.False(ReturningShuttle.WireIsOwed(null, 500));
-        Assert.False(ReturningShuttle.WireIsOwed(row, 100));
-        Assert.True(ReturningShuttle.WireIsOwed(row, 101));
-        Assert.False(ReturningShuttle.WireIsOwed(row with { Wired = true }, 101));
+        Assert.False(ReturningShuttle.WireIsOwed(null, 500 * W));
+        Assert.False(ReturningShuttle.WireIsOwed(row, 100 * W));
+        Assert.True(ReturningShuttle.WireIsOwed(row, 101 * W));
+        Assert.False(ReturningShuttle.WireIsOwed(row with { Wired = true }, 101 * W));
+    }
+
+    /// <summary>
+    /// THE EDGE THE WINDOW INDEX GOT WRONG: a hull that set down in the LAST second of window W is still
+    /// Landed in the FIRST second of window W+1 — a true full window must pass, not a window boundary.
+    /// </summary>
+    [Fact]
+    public void AHullSetDownInTheLastSecondOfAWindowIsStillLandedInTheFirstOfTheNext()
+    {
+        double lastSecondOfWindow100 = (101 * W) - 1;
+        var row = new ReturningShuttle.Row(Site, lastSecondOfWindow100);
+        Assert.Equal(100, DisclosureClock.WindowAt(lastSecondOfWindow100));
+        Assert.Equal(101, DisclosureClock.WindowAt(101 * W));
+
+        Assert.Equal(ReturningShuttle.Phase.Landed, ReturningShuttle.PhaseOf(row, 101 * W));
+        Assert.False(ReturningShuttle.WireIsOwed(row, 101 * W));
+        Assert.Equal(ReturningShuttle.Phase.Landed, ReturningShuttle.PhaseOf(row, lastSecondOfWindow100 + W - 1));
+        Assert.Equal(ReturningShuttle.Phase.Returned, ReturningShuttle.PhaseOf(row, lastSecondOfWindow100 + W));
     }
 
     // ══ THE FIXTURES ABOARD, TOLD ONCE ═════════════════════════════════════════════════════════════════
@@ -252,17 +353,17 @@ public sealed class TheReturningShuttleTests
     [Fact]
     public void ThreeFixturesOnceTheShuttleIsBackAndTheLogDeskGoesWithItsPage()
     {
-        var row = new ReturningShuttle.Row(Site, 100);
-        Assert.Empty(ReturningShuttle.Fixtures(null, 200, []));
-        Assert.Empty(ReturningShuttle.Fixtures(row, 100, []));
+        var row = new ReturningShuttle.Row(Site, 100 * W);
+        Assert.Empty(ReturningShuttle.Fixtures(null, 200 * W, []));
+        Assert.Empty(ReturningShuttle.Fixtures(row, 100 * W, []));
         Assert.Equal(
             [ReturningShuttle.AirlockPlate, ReturningShuttle.RackPlate, ReturningShuttle.LogPlate],
-            ReturningShuttle.Fixtures(row, 101, []));
+            ReturningShuttle.Fixtures(row, 101 * W, []));
 
         IReadOnlyList<FieldNote> book = [Note(ReturningShuttle.FieldBookLine)];
         Assert.Equal(
             [ReturningShuttle.AirlockPlate, ReturningShuttle.RackPlate],
-            ReturningShuttle.Fixtures(row, 101, book));
+            ReturningShuttle.Fixtures(row, 101 * W, book));
     }
 
     /// <summary>
@@ -387,37 +488,54 @@ public sealed class TheReturningShuttleTests
 
             // the whole sequence, as the Map runs it
             string? fired = ReturningShuttle.Fires(
-                null, [Site], Clipped(MoneyTrail.RailLineItem), 10 * Day, Site, ParentOf, PreservationZone.On);
+                null, [Site], Clipped(MoneyTrail.Item.Rail), 10 * Day, Site, ParentOf, PreservationZone.On);
             Assert.Equal(Site, fired);
-            var row = new ReturningShuttle.Row(fired!, 100);
+            var row = new ReturningShuttle.Row(fired!, 100 * W);
             _ = ReturningShuttle.Parked(new OneRock(), Site);
-            foreach (long window in new long[] { 100, 101, 102 })
+            foreach (double at in new[] { 100 * W, 101 * W, 102 * W })
             {
-                _ = ReturningShuttle.PhaseOf(row, window);
-                _ = ReturningShuttle.WireIsOwed(row, window);
-                _ = ReturningShuttle.Fixtures(row, window, []);
+                _ = ReturningShuttle.PhaseOf(row, at);
+                _ = ReturningShuttle.WireIsOwed(row, at);
+                _ = ReturningShuttle.Fixtures(row, at, []);
             }
 
             Assert.Equal(preserved, PreservationZone.Preserved.ToArray());
             Assert.Equal(stopped, StopOrder.Stopped.ToArray());
             Assert.True(PreservationZone.On(Site));
 
-            // the vault: identical but for the beat's own two properties
-            var plain = new ProgressSection { HallsPreserved = [Site], HallsStopped = [Site] };
-            var after = new ProgressSection
+            // the vault, through the REAL serializer: a vault carrying the beat differs from one without it
+            // ONLY in the beat's two keys, and it round-trips whole.
+            var plain = new Vault { Progress = new ProgressSection { HallsPreserved = [Site], HallsStopped = [Site] } };
+            var withBeat = new Vault
             {
-                HallsPreserved = [Site], HallsStopped = [Site],
-                ShuttleSeen = [Site], Shuttle = row with { Wired = true },
+                Progress = new ProgressSection
+                {
+                    HallsPreserved = [Site], HallsStopped = [Site],
+                    ShuttleSeen = [Site], Shuttle = row with { Wired = true },
+                },
             };
-            JsonElement a = JsonSerializer.SerializeToElement(plain);
-            JsonElement b = JsonSerializer.SerializeToElement(after);
-            var onlyB = b.EnumerateObject().Where(p => !a.TryGetProperty(p.Name, out JsonElement v)
-                || v.GetRawText() != p.Value.GetRawText()).Select(p => p.Name).OrderBy(n => n).ToArray();
-            Assert.Equal(["shuttle", "shuttleseen"], onlyB.Select(n => n.ToLowerInvariant()).OrderBy(n => n).ToArray());
-            foreach (JsonProperty p in a.EnumerateObject())
-            {
-                Assert.Equal(p.Value.GetRawText(), b.GetProperty(p.Name).GetRawText());
-            }
+            string plainJson = VaultSerializer.Save(plain);
+            string beatJson = VaultSerializer.Save(withBeat);
+
+            JsonObject plainProgress = (JsonObject)JsonNode.Parse(plainJson)!["sections"]!["progress"]!;
+            JsonObject beatProgress = (JsonObject)JsonNode.Parse(beatJson)!["sections"]!["progress"]!;
+            Assert.NotNull(beatProgress["shuttle"]);
+            Assert.NotNull(beatProgress["shuttleSeen"]);
+            beatProgress.Remove("shuttle");
+            beatProgress.Remove("shuttleSeen");
+            Assert.Equal(plainProgress.ToJsonString(), beatProgress.ToJsonString());
+
+            Vault loaded = VaultSerializer.Load(beatJson);
+            Assert.False(loaded.Tampered);
+            Assert.Equal(row with { Wired = true }, loaded.Progress!.Shuttle);
+            Assert.Equal([Site], loaded.Progress.ShuttleSeen);
+            Assert.Equal([Site], loaded.Progress.HallsPreserved);
+            Assert.Equal([Site], loaded.Progress.HallsStopped);
+
+            // …and a restored voyage cannot fire it a second time.
+            Assert.Null(ReturningShuttle.Fires(
+                loaded.Progress.Shuttle, loaded.Progress.ShuttleSeen, Clipped(MoneyTrail.Item.Rail),
+                10 * Day, Site, ParentOf, PreservationZone.On));
         }
         finally
         {

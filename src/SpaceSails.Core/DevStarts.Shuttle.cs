@@ -13,8 +13,8 @@ public static partial class DevStarts
             "Landed on the preserved rock: the fence and the notice round the shed as in ?preserved=1, and beside "
             + "it a parked hull plated " + ReturningShuttle.BoardTag + " with a gap in her long wall. Walk in: three "
             + "fixtures, each told once ([E] the airlock, the gun rack, the log desk — the desk hands over a page and "
-            + "files one 📍 line). Press 5 for the traffic board: the hull is on it. Within a world window the wire "
-            + "prints its one line, once. Nothing anywhere says whether anybody is alive (#1074).",
+            + "files one 📍 line). Press 5 for the traffic board: the hull is on it. On the first tick the wire "
+            + "prints its one line, once (on a real run it comes a full world window after the hull sets down). Nothing anywhere says whether anybody is alive (#1074).",
             "/map?shuttle=1&land=1"),
     ];
 }

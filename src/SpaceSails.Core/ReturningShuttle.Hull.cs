@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SpaceSails.Core;
 
@@ -55,8 +56,12 @@ public static partial class ReturningShuttle
         ArgumentNullException.ThrowIfNull(blocked);
 
         double home = Math.Atan2(field.TopY - fenceY, field.HomeX - fenceX);
-        double[] bearings = [Math.PI / 2, -Math.PI / 2, 3 * Math.PI / 4, -3 * Math.PI / 4, Math.PI, Math.PI / 4, -Math.PI / 4];
-        double[] reaches = [fenceRadius + 12, fenceRadius + 18, fenceRadius + 24, fenceRadius + 32];
+        // Beside the sign's approach first, then round the ring in thirty-degree steps; near first, then far.
+        // Wide enough that a ground whose lab chamber and outpost hut are both standing still has a place.
+        double[] bearings = new double[] { 90, -90, 135, -135, 60, -60, 180, 30, -30, 120, -120, 150, -150, 0 }
+            .Select(d => d * Math.PI / 180).ToArray();
+        double[] reaches = [fenceRadius + 12, fenceRadius + 18, fenceRadius + 24, fenceRadius + 32,
+            fenceRadius + 44, fenceRadius + 58, fenceRadius + 76];
 
         foreach (double reach in reaches)
         {
