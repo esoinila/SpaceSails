@@ -58,7 +58,7 @@ public partial class Map
 
     /// <summary>Is the away team inside a dead station?</summary>
     private bool OnStation =>
-        _surface is { } ex && StationAboard.TryParseStationId(ex.Stop.Body.Id, out _);
+        _surface is { } ex && SiteRoute.IsStation(ex.Stop.Body.Id);
 
     /// <summary>Is the away team inside ANY hull rather than on a ground — a derelict or a station? The one
     /// question the generic "no regolith here" guards ask, so a station is never quietly treated as a moon.</summary>
@@ -66,7 +66,7 @@ public partial class Map
 
     /// <summary>The id of the station the away team is inside, or null.</summary>
     private string? TheStationId =>
-        _surface is { } ex && StationAboard.TryParseStationId(ex.Stop.Body.Id, out string id) ? id : null;
+        _surface is { } ex ? SiteRoute.StationIdOf(ex.Stop.Body.Id) : null;
 
     /// <summary>The access the boat is mated to, or null off a station. Every "back at the boat" question —
     /// the air, the nerve, the comms — is asked of it (<see cref="AwayTeamSide"/>).</summary>

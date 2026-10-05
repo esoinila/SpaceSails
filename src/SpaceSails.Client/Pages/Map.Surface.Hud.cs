@@ -47,7 +47,7 @@ public partial class Map
             return BuildStationHud(ex);
         }
 
-        bool onWreck = Derelict.TryParseWreckId(ex.Stop.Body.Id, out _);
+        bool onWreck = SiteRoute.IsWreck(ex.Stop.Body.Id);
         if (onWreck)
         {
             RefreshHudBots(ex);
