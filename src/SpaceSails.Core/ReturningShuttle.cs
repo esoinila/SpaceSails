@@ -258,6 +258,37 @@ public static partial class ReturningShuttle
             DepotPhase: phase);
     }
 
+    // ── WHAT IS ABOARD, AND WHAT EACH PRESS TELLS ──────────────────────────────────────────────────────────
+    //
+    // The field book is the latch (the house pattern: the wreck anomaly's, the clipped story's). A line is told
+    // once because the book already holds it; nothing else records that it was told.
+
+    /// <summary>Has the book already been handed this exact line?</summary>
+    public static bool Told(IReadOnlyList<FieldNote>? book, string line) =>
+        book is not null && book.Any(n => string.Equals(n.Text, line, StringComparison.Ordinal));
+
+    /// <summary>The plates standing aboard right now. Nothing until the shuttle is back; then the airlock and
+    /// the rack for good, and the log desk until its page has been taken (the 📍 line is filed in the same
+    /// breath the page leaves the desk).</summary>
+    public static IReadOnlyList<string> Fixtures(Row? row, long window, IReadOnlyList<FieldNote>? book)
+    {
+        if (PhaseOf(row, window) != Phase.Returned)
+        {
+            return [];
+        }
+        return Told(book, FieldBookLine)
+            ? [AirlockPlate, RackPlate]
+            : [AirlockPlate, RackPlate, LogPlate];
+    }
+
+    /// <summary>What a press at the airlock or the rack tells — the line the first time, null ever after. The
+    /// log desk is not a line (it hands over a paper), so it tells nothing here.</summary>
+    public static string? TellsOnPress(string plate, IReadOnlyList<FieldNote>? book)
+    {
+        string? line = plate == AirlockPlate ? AirlockLine : plate == RackPlate ? RackLine : null;
+        return line is not null && !Told(book, line) ? line : null;
+    }
+
     // ── THE PAPER ────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>Is this paper id the survey log's last page?</summary>

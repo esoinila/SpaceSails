@@ -79,17 +79,15 @@ public static partial class ReturningShuttle
         double hx = (HullLength / 2) + Berth, hy = (HullBreadth / 2) + Berth;
         double x0 = cx - hx, x1 = cx + hx, y0 = cy - hy, y1 = cy + hy;
 
-        // inside the field, with a pace to spare
-        if (x0 < field.LeftX + 1 || x1 > field.RightX - 1 || y0 < field.TopY + 1 || y1 > field.BottomY - 1)
+        // inside the field, with a pace to spare. The ground runs DOWN from the tube: TopY (-20) is the
+        // surface line and BottomY (-280) the far edge, so "inside" is BottomY below and the landing band above.
+        if (x0 < field.LeftX + 1 || x1 > field.RightX - 1
+            || y0 < field.BottomY + 1 || y1 > field.LandingBandY - 1)
         {
             return false;
         }
 
-        // …and clear of the landing band and the way home
-        if (y0 < field.LandingBandY + HomeBerth && Math.Abs(cx - field.HomeX) < HomeBerth + hx)
-        {
-            return false;
-        }
+        // …and clear of the way home
         double dx = cx - field.HomeX, dy = cy - field.TopY;
         if ((dx * dx) + (dy * dy) < HomeBerth * HomeBerth)
         {

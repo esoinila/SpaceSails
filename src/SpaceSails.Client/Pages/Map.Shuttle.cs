@@ -139,9 +139,6 @@ public partial class Map
 
     // ── THE HULL ON THE GROUND ─────────────────────────────────────────────────────────────────────────
 
-    private bool Told(string line) =>
-        _fieldNotes.Any(n => string.Equals(n.Text, line, System.StringComparison.Ordinal));
-
     /// <summary>
     /// #1074 beat 5 · Compose the parked hull onto the preserved ground — walls from the moment she sets
     /// down, her three fixtures only once the shuttle is back. An appended region, so the memoised base
@@ -175,17 +172,11 @@ public partial class Map
         };
 
         var consoles = new List<DeckPlan.ConsoleSpot>();
-        if (ReturningShuttle.PhaseOf(row, DisclosureClock.WindowAt(SimTime)) == ReturningShuttle.Phase.Returned)
+        foreach (string plate in ReturningShuttle.Fixtures(row, DisclosureClock.WindowAt(SimTime), _fieldNotes))
         {
-            consoles.Add(new(DeckPlan.ConsoleKind.ViewObject,
-                (float)hull.Airlock.X, (float)hull.Airlock.Y, ReturningShuttle.AirlockPlate));
-            consoles.Add(new(DeckPlan.ConsoleKind.ViewObject,
-                (float)hull.Rack.X, (float)hull.Rack.Y, ReturningShuttle.RackPlate));
-            if (!Told(ReturningShuttle.FieldBookLine))
-            {
-                consoles.Add(new(DeckPlan.ConsoleKind.ViewObject,
-                    (float)hull.Log.X, (float)hull.Log.Y, ReturningShuttle.LogPlate));
-            }
+            (double x, double y) = plate == ReturningShuttle.AirlockPlate ? hull.Airlock
+                : plate == ReturningShuttle.RackPlate ? hull.Rack : hull.Log;
+            consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, (float)x, (float)y, plate));
         }
 
         _deckPlan.AppendRegion(new DeckPlan.DeckRegion([.. walls], [.. consoles], [.. labels], []));
@@ -199,19 +190,11 @@ public partial class Map
     /// </summary>
     private bool TryTheSurveyHull(SurfaceExcursion ex, string label)
     {
-        if (string.Equals(label, ReturningShuttle.AirlockPlate, System.StringComparison.Ordinal))
+        if (label is ReturningShuttle.AirlockPlate or ReturningShuttle.RackPlate)
         {
-            if (!Told(ReturningShuttle.AirlockLine))
+            if (ReturningShuttle.TellsOnPress(label, _fieldNotes) is { } line)
             {
-                ShowAndFile(ReturningShuttle.AirlockLine, "🛸");
-            }
-            return true;
-        }
-        if (string.Equals(label, ReturningShuttle.RackPlate, System.StringComparison.Ordinal))
-        {
-            if (!Told(ReturningShuttle.RackLine))
-            {
-                ShowAndFile(ReturningShuttle.RackLine, "🛸");
+                ShowAndFile(line, "🛸");
             }
             return true;
         }
@@ -221,7 +204,7 @@ public partial class Map
         }
 
         var page = new Core.Satchel.Item(Core.Satchel.Kind.Paper, ReturningShuttle.LogPaperId);
-        if (Told(ReturningShuttle.FieldBookLine))
+        if (ReturningShuttle.Told(_fieldNotes, ReturningShuttle.FieldBookLine))
         {
             return true;
         }
