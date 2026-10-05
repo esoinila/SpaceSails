@@ -75,28 +75,34 @@ public class KeepsakeSheetTests
             Keepsake.QuietMinute m = Press(Photo, 50.0, t);
             Assert.Equal(Keepsake.Outcome.Restored, m.Outcome);
             Assert.Equal(NerveModel.KeepsakeRestore, m.Delta, 6);
-            Assert.Contains(m.Line, Keepsake.CleanPool);
+            Assert.Contains(m.Line, Keepsake.SheetCleanPool);
+            Assert.DoesNotContain(m.Line, Keepsake.CleanPool); // a photograph has no hinge
             seen.Add(m.Line);
         }
-        Assert.Equal(Keepsake.CleanPool.Count, seen.Count); // all five reachable
+        Assert.Equal(4, seen.Count); // all four sheet lines reachable
     }
 
     [Fact]
-    public void ALoveSheetsMinuteReadsTheSameStreamAsThePendantsOnAKnownCleanRoll()
+    public void TheSheetCleanLinesAreFableCanon_PinnedOnLiteralSimTimes_AllFourReachedByLoveAndMoney()
     {
-        // same sim time, same stream: where the pendant is not stung, the Love sheet says the pendant's line
-        int compared = 0;
-        for (long t = 0; t < 300; t++)
+        string[] canon =
+        [
+            "You hold it by the edges, the way you were never taught and always knew. A minute passes that nobody bills.",
+            "The faces have not aged a day since the last time you looked. Somebody in this picture still owes somebody a drink.",
+            "Paper remembers differently than you do — flatter, kinder. You let its version stand a while.",
+            "You know where you were standing when this was taken. You can almost feel the floor of it under your boots.",
+        ];
+        Assert.Equal(canon, Keepsake.SheetCleanPool);
+
+        // known clean rolls: sim-time 2 draws line 0, 7 line 1, 5 line 2, 0 line 3 (both theories, one stream)
+        long[] at = [2, 7, 5, 0];
+        for (int i = 0; i < at.Length; i++)
         {
-            Keepsake.QuietMinute pendant = Keepsake.Open(Keepsake.Pendant, true, false, 50.0, Never, t);
-            if (pendant.Outcome == Keepsake.Outcome.Restored)
-            {
-                Assert.Equal(pendant.Line, Press(Photo, 50.0, t).Line);
-                compared++;
-            }
+            Assert.Equal(canon[i], Press(Photo, 50.0, at[i]).Line);
+            Assert.Equal(canon[i], Press(Slip, 50.0, at[i]).Line);
         }
-        Assert.True(compared > 200);
     }
+
 
     // ── MONEY: LESS, AND THE STING ────────────────────────────────────────────────────────────────────
 
@@ -113,7 +119,8 @@ public class KeepsakeSheetTests
             Assert.Equal(Keepsake.Outcome.Restored, m.Outcome);
             Assert.Equal(NerveModel.KeepsakeMoneyRestore, m.Delta, 6);
             Assert.Equal(NerveModel.DrinkRestore(nerve, NerveModel.DrinkKind.KeepsakeMoney, 1), m.Nerve, 6);
-            Assert.Contains(m.Line, Keepsake.CleanPool);
+            Assert.Contains(m.Line, Keepsake.SheetCleanPool);
+            Assert.DoesNotContain(m.Line, Keepsake.CleanPool); // a photograph has no hinge
         }
     }
 
@@ -207,7 +214,8 @@ public class KeepsakeSheetTests
             Assert.Equal(Keepsake.Outcome.Restored, m.Outcome);
             Assert.False(m.RaisesFlashback);
             Assert.NotEqual(Keepsake.FirstOpeningLine, m.Line);
-            Assert.Contains(m.Line, Keepsake.CleanPool);
+            Assert.Contains(m.Line, Keepsake.SheetCleanPool);
+            Assert.DoesNotContain(m.Line, Keepsake.CleanPool); // a photograph has no hinge
         }
 
         // …and unlike the pendant (whose first opening is never stung) a Money sheet CAN sting on the first press
@@ -223,7 +231,7 @@ public class KeepsakeSheetTests
     public void NothingElseIsAuthoredHere_EveryPublicStringIsDeclaredInAllProse()
     {
         List<string> declared = Keepsake.AllProse().ToList();
-        Assert.Equal(6 + 5 + 3 + 3 + 2, declared.Count);
+        Assert.Equal(6 + 5 + 4 + 3 + 3 + 2, declared.Count);
 
         string[] notProse = [nameof(Keepsake.PendantId), nameof(Keepsake.PendantSubject), nameof(Keepsake.FieldBookGlyph)];
         foreach (FieldInfo f in typeof(Keepsake).GetFields(BindingFlags.Public | BindingFlags.Static))
@@ -233,7 +241,7 @@ public class KeepsakeSheetTests
                 Assert.True(declared.Contains(s, StringComparer.Ordinal), $"Keepsake publishes undeclared prose: {f.Name}");
             }
         }
-        foreach (string line in Keepsake.CleanPool.Concat(Keepsake.StingPool).Concat(Keepsake.MoneyStingPool).Concat(Keepsake.NotHerePool))
+        foreach (string line in Keepsake.CleanPool.Concat(Keepsake.SheetCleanPool).Concat(Keepsake.StingPool).Concat(Keepsake.MoneyStingPool).Concat(Keepsake.NotHerePool))
         {
             Assert.Contains(line, declared);
         }

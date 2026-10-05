@@ -140,6 +140,19 @@ public static class Keepsake
         "You don't say anything. Neither do they. It's the best conversation you've had all watch.",
     ];
 
+    // #620 slice 2 · Four clean minutes for a SHEET, on the same seeded roll (Fable's canon addendum 3,
+    // verbatim): a photograph has no hinge, so the pendant's five clean lines stay the pendant's.
+    private static readonly string[] SheetCleanLines =
+    [
+        "You hold it by the edges, the way you were never taught and always knew. A minute passes that nobody bills.",
+        "The faces have not aged a day since the last time you looked. Somebody in this picture still owes somebody a drink.",
+        "Paper remembers differently than you do — flatter, kinder. You let its version stand a while.",
+        "You know where you were standing when this was taken. You can almost feel the floor of it under your boots.",
+    ];
+
+    /// <summary>The four clean quiet-minute lines for a held-memory sheet (Love or Money alike).</summary>
+    public static IReadOnlyList<string> SheetCleanPool { get; } = Array.AsReadOnly(SheetCleanLines);
+
     // Three unsettled stings, on the same roll (canon, verbatim).
     private static readonly string[] StingLines =
     [
@@ -190,6 +203,7 @@ public static class Keepsake
         yield return FlashbackTitleText;
         yield return SatietyLine;
         foreach (string line in CleanLines) { yield return line; }
+        foreach (string line in SheetCleanLines) { yield return line; }
         foreach (string line in StingLines) { yield return line; }
         foreach (string line in MoneyStingLines) { yield return line; }
         foreach (string line in NotHereLines) { yield return line; }
@@ -315,6 +329,7 @@ public static class Keepsake
             return new QuietMinute(Outcome.FirstOpening, restored, delta, FirstOpeningLine);
         }
 
-        return new QuietMinute(Outcome.Restored, restored, delta, CleanLines[rng.NextInt(0, CleanLines.Length)]);
+        string[] clean = piece.FlashbackSubject.Length == 0 ? SheetCleanLines : CleanLines; // a sheet has no hinge
+        return new QuietMinute(Outcome.Restored, restored, delta, clean[rng.NextInt(0, clean.Length)]);
     }
 }

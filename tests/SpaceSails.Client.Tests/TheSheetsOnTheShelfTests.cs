@@ -96,7 +96,7 @@ public class TheSheetsOnTheShelfTests
         // the page lands the relief as WHOLE pips (NervePips.ApplyRelief): 22 = two pips = +20 at a pip of 10
         Assert.Equal(NervePips.ApplyRelief(40.0, NerveModel.KeepsakeRestore).Nerve, Nerve(map), 6);
         Assert.Equal(40.0 + 2 * NervePips.PipUnit, Nerve(map), 6);
-        Assert.Contains(Said(map)!, Keepsake.CleanPool);
+        Assert.Contains(Said(map)!, Keepsake.SheetCleanPool);
         Assert.True(Folded(map));
         Assert.True((bool)Get(map, "_showSatchel")!, "a sheet's minute leaves the pocket up — no plate to see.");
         Assert.Null(Get(map, "_storyPlate")); // no flashback beat: the photograph's fired at handover
@@ -114,7 +114,7 @@ public class TheSheetsOnTheShelfTests
         // 14 = ONE pip: visibly less than the loved face's two
         Assert.Equal(NervePips.ApplyRelief(40.0, NerveModel.KeepsakeMoneyRestore).Nerve, Nerve(map), 6);
         Assert.Equal(40.0 + NervePips.PipUnit, Nerve(map), 6);
-        Assert.Contains(Said(map)!, Keepsake.CleanPool);
+        Assert.Contains(Said(map)!, Keepsake.SheetCleanPool);
         Assert.Null(Get(map, "_storyPlate"));
         Assert.False(PendantLatch(map));
     }
