@@ -3504,7 +3504,7 @@
 RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keepsake-card @(string.Equals(KeepsakeOpenId, piece.Id, StringComparison.Ordinal) ? "open" : "")">
                 <button type="button" class="keepsake-face" title="Open it"
                         @onclick="() => PressKeepsake(piece)">
-                    <span class="keepsake-art @(string.Equals(KeepsakeOpenId, piece.Id, StringComparison.Ordinal) ? "inside" : "closed") @(piece.Theory == SpaceSails.Core.HeldMemory.Theory.Love ? "art-love" : piece.Theory == SpaceSails.Core.HeldMemory.Theory.Money ? "art-money" : "art-unsettled")" aria-hidden="true"></span>
+                    <span class="keepsake-art @(string.Equals(KeepsakeOpenId, piece.Id, StringComparison.Ordinal) ? "inside" : "closed") @(piece.IsFind ? "art-find" : piece.Theory == SpaceSails.Core.HeldMemory.Theory.Love ? "art-love" : piece.Theory == SpaceSails.Core.HeldMemory.Theory.Money ? "art-money" : "art-unsettled")" aria-hidden="true"></span>
                     <span class="keepsake-text">
                         <span class="keepsake-title">@piece.Title</span>
                         <span class="keepsake-line">@piece.CardLine</span>
