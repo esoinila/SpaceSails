@@ -45,7 +45,7 @@ public class StationCanonTests
         Assert.Equal(prose.Count, prose.Distinct().Count());
 
         // §13.8 for dead infrastructure: no cause for the severing, no statement of who is aboard.
-        foreach (string banned in new[] { "because", "died", "killed", "survivor", "alive", "corpse", "murder", "reever", "old one" })
+        foreach (string banned in new[] { "because", "died", "killed", "survivor", "alive", "corpse", "murder", "reever", "old one", "monolith" })
         {
             foreach (string line in prose)
             {
