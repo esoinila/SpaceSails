@@ -131,6 +131,8 @@ public static partial class StoryBeats
         // #973 · The stamp is the mark and the label the ledger row already wears, said louder. The subject
         // is the memory id and is deliberately NOT in the stamp: an entry key is bookkeeping, and a card that
         // put one on the screen would be showing the player the filing system instead of the memory.
+        // #620 · …except the pendant's, which was never a page (Fable's canon addendum, verbatim). Same mark.
+        Beat.Flashback when Keepsake.FlashbackTitle(subject) is { } pendantTitle => FilingLine.Mark + " " + pendantTitle,
         Beat.Flashback => FilingLine.Mark + " " + "A PAGE YOU DON'T REMEMBER WRITING",
         // #973 L5b · the stamp names the door, because the door is what the room looked at.
         Beat.WalkIn => "🚪 THE ROOM LOOKS AT THE DOOR",
@@ -219,6 +221,11 @@ public static partial class StoryBeats
             // about a desk. Chosen by the subject, the way a shard's plate already is, and null for every
             // other memory — so the signing's sentence stays the sentence for all of them.
             Beat.Flashback when WalkIn.FlashbackCaption(subject) is { } sinceLine => sinceLine,
+
+            // #620 · …and the one whose subject is the pendant's face, whose caption is Fable's first-opening
+            // canon, verbatim and entire, read off the keepsake's own type so the plate and the shelf cannot
+            // come to two accounts of one locket.
+            Beat.Flashback when Keepsake.FlashbackCaption(subject) is { } pendantLine => pendantLine,
 
             Beat.Flashback =>
                 "Bleached to the bone. A pen on a steel desk, every scratch in it sharp; behind it the room, " +

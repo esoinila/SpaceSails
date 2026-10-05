@@ -263,6 +263,17 @@ public static class NerveModel
         /// <para>Appended LAST on purpose. The five above it were here first, they are read by name, and a
         /// re-order is the cheapest way in the world to give a pill a bunk's numbers.</para></summary>
         Meal,
+
+        /// <summary>#620 · A QUIET MINUTE WITH A KEEPSAKE — the pendant's locket opened in the captain's own
+        /// cabin (owner 2026-10-04: <i>"Also such an item could be used to reduce stress. Some kind of special
+        /// treatment in the inventory."</i>). Not a drink: it reaches the nerve through THIS same relief seam —
+        /// reused, not parallelled — and it rides no rum spree, counts no tot and never makes the deck tilty.
+        /// Flat and level-independent like the bunk and the plate, because a face you carry steadies the hand
+        /// whatever the gauge reads. Its limiter is the one SHARED satiety window
+        /// (<see cref="Keepsake.QuietWindowSeconds"/>), never drunkenness.
+        ///
+        /// <para>Appended LAST on purpose, for the reason written under <see cref="Meal"/>.</para></summary>
+        Keepsake,
     }
 
     /// <summary>Full restore of a lone galley tot at steady hands, before the level-curve and diminishing
@@ -301,6 +312,12 @@ public static class NerveModel
     /// best thing coin alone can do for you at a counter, and still nowhere near company, medicine or rest.
     /// FLAGGED for the owner's tuning.</para></summary>
     public const double MealRestore = 14.0;
+
+    /// <summary>#620 · A QUIET MINUTE'S RESTORE — between a lone galley tot (10) and a night's bunk (40),
+    /// as the design asks, and deliberately a touch above the pill (20) and below the shared glass (24):
+    /// a face is company of a kind, but it is the one kind that never answers. Flat and level-independent.
+    /// FLAGGED for the owner's tuning.</summary>
+    public const double KeepsakeRestore = 22.0;
 
     /// <summary>The single point a lone drink can still manage at the shot floor — you cannot drink your
     /// way back from the edge alone; you need a face across the table (owner: "moves the needle by one").</summary>
@@ -346,6 +363,7 @@ public static class NerveModel
         DrinkKind.CalmingPill => CalmingPillRestore, // flat, level-independent — medicine, not a mood
         DrinkKind.Sleep => SleepRestore,             // flat, level-independent — a whole night's rest
         DrinkKind.Meal => MealRestore,               // flat, level-independent — supper is not a pour
+        DrinkKind.Keepsake => KeepsakeRestore,       // flat, level-independent — a face in a locket
         DrinkKind.BarSpecial => SoloCurve(BarSpecialBaseRestore, nerve),
         DrinkKind.GalleyTot => SoloCurve(GalleyTotBaseRestore, nerve),
         _ => 0.0,

@@ -92,6 +92,7 @@ public partial class Map
         _showSatchel = false;
         _satchelTarget = null;
         _satchelOutcome = null;
+        FoldKeepsake(); // #620 · the locket shuts with the lid
 
         // #741 · …and the pen goes back in the satchel with the book. A pen still in the hand of a captain
         // who has stood up and walked to a door is a state nothing on screen would be saying, and the held
