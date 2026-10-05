@@ -50,8 +50,8 @@ public partial class Map
         ex.Floor >= 0
         && !ex.Expedition
         && !ex.Deflection
-        && !Derelict.TryParseWreckId(ex.Stop.Body.Id, out _)
-        && !StationAboard.TryParseStationId(ex.Stop.Body.Id, out _);   // #653: a station is not a lattice either
+        && !SiteRoute.IsWreck(ex.Stop.Body.Id)
+        && !SiteRoute.IsStation(ex.Stop.Body.Id);   // #653: a station is not a lattice either
 
     /// <summary>#563 law 7 · THE BACKSTOP, enforced.
     ///

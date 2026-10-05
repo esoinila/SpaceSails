@@ -62,7 +62,7 @@ public sealed partial class Map
 
     /// <summary>Is the away team currently inside a derelict (rather than on a moon)?</summary>
     private bool OnWreck =>
-        _surface is { } ex && Derelict.TryParseWreckId(ex.Stop.Body.Id, out _);
+        _surface is { } ex && SiteRoute.IsWreck(ex.Stop.Body.Id);
 
     // ── Reading her ───────────────────────────────────────────────────────────────────────────────────
 

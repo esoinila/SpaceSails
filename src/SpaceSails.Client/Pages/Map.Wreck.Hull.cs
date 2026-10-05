@@ -243,8 +243,7 @@ public sealed partial class Map
     /// options on where to board … those are good for Miranda etc moons but … you know"</i>).</summary>
     private bool BoardingAWreck =>
         _boardTarget is { } target
-        && (Derelict.TryParseWreckId(target.Body.Id, out _)
-            || StationAboard.TryParseStationId(target.Body.Id, out _));   // #653: a dead station is a hull too — no regolith card
+        && SiteRoute.IsHull(target.Body.Id);   // #653: a dead station is a hull too — no regolith card
 
     /// <summary>Rebuild the derelict's walkable interior — the ✔ marks and the vanished salvage console
     /// are state, so the deck is rebuilt whenever they change.</summary>

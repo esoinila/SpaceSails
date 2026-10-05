@@ -14,14 +14,14 @@ namespace SpaceSails.Client.Pages;
 /// words are <see cref="HavenGarden"/>'s; nothing here measures anything.</para>
 ///
 /// <para><b>No new page field.</b> The told-once memory is slice A's set, renamed to say what it holds
-/// (<c>_toldOnceAtStation</c>, keyed by line and berth — see <c>Map.HavenLift.cs</c>). The bench's sitting is
+/// (<c>_toldOnce</c>, keyed by line and berth — see <c>Map.HavenLift.cs</c>). The bench's sitting is
 /// the park bench's (<c>Seating.TryTakeBench</c>), reached through the one answer a seat asks the page for
 /// (<c>TheBarTopUnderfoot</c>) — <see cref="Seating"/>'s host interface did not grow.</para>
 /// </summary>
 public partial class Map
 {
-    /// <summary>#1332 B · The garden's line's key in <c>_toldOnceAtStation</c>.</summary>
-    private const string GardenVisitKey = "garden";
+    /// <summary>#1332 B · The garden's line's key in <c>_toldOnce</c>.</summary>
+    private const string GardenVisitKey = ToldOnce.GardenVisit;
 
     /// <summary>
     /// #1332 B · <b>THE BENCH BY THE GARDEN'S GLASS, AS THE SEAT NEEDS IT.</b> Matched against the room's own
@@ -63,12 +63,12 @@ public partial class Map
     {
         if (!HavenInterior.InTheGarden(berth, _avatarX, _avatarY, _havenFloor)
             || _pulse.Message is not null
-            || _toldOnceAtStation.Contains(ToldOnceKey(GardenVisitKey, berth)))
+            || _toldOnce.Has(ToldOnce.Key(GardenVisitKey, berth)))
         {
             return;
         }
 
-        _toldOnceAtStation.Add(ToldOnceKey(GardenVisitKey, berth));
+        _toldOnce.Tell(ToldOnce.Key(GardenVisitKey, berth));
         ShowPulseMessage(HavenGarden.FirstVisitLine, PulseRank.Status);
     }
 

@@ -58,15 +58,12 @@ public sealed partial class TheManAtTheDoorTests
         throw new InvalidOperationException("no site in the sweep has a top floor with a counter and a floor below it.");
     }
 
-    /// <summary>A shipping page on the floor, with the door kept the way <paramref name="posting"/> says and
-    /// the word working or not. The man is met through the page's own rebuild; only the window is forced.</summary>
-    internal static Pages.Map OnHisFloor(
-        string body, int floor, GateGuard.Posting posting, bool talkWorks = false)
+    /// <summary>(#653 slice 2 pin) A FRESH excursion on the same page, standing on the floor he keeps — what
+    /// a second boarding of the same ground builds. The man is met through the page's own rebuild; only the window
+    /// is forced.</summary>
+    internal static void NewExcursionOnHisFloor(
+        Pages.Map map, string body, int floor, GateGuard.Posting posting, bool talkWorks = false)
     {
-        var map = new Pages.Map();
-        typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
-            .SetValue(map, true);
-
         var ex = new Pages.Map.SurfaceExcursion
         {
             Stop = new Pages.Map.ShuttleStop(
@@ -77,7 +74,6 @@ public sealed partial class TheManAtTheDoorTests
         ex.Floor = floor;
         ex.CanteenWatch = Watch;
         Set(map, "_surface", ex);
-        Set(map, "_deckMode", true);
         Invoke(map, "RebuildSurfaceDeck");
 
         Pages.Map.ManAtTheDoor met = ex.Gate ?? throw new InvalidOperationException("the floor was drawn and nobody met the door.");
@@ -91,6 +87,18 @@ public sealed partial class TheManAtTheDoorTests
             Canteen = met.Canteen,
         };
         Invoke(map, "RebuildSurfaceDeck");
+    }
+
+    /// <summary>A shipping page on the floor, with the door kept the way <paramref name="posting"/> says and
+    /// the word working or not. The man is met through the page's own rebuild; only the window is forced.</summary>
+    internal static Pages.Map OnHisFloor(
+        string body, int floor, GateGuard.Posting posting, bool talkWorks = false)
+    {
+        var map = new Pages.Map();
+        typeof(ComponentBase).GetField("_hasPendingQueuedRender", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(map, true);
+        Set(map, "_deckMode", true);
+        NewExcursionOnHisFloor(map, body, floor, posting, talkWorks);
         return map;
     }
 

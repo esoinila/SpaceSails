@@ -65,7 +65,8 @@ public partial class Map
         // #585 · UNDERGROUND. A floor of the Hive is laid inside the SURFACE'S OWN envelope, so the whole
         // facility costs no new coordinate space - the owner's insight, and the reason "down" beat "wider".
         // Routed here, the same way a derelict is, so nothing else in the excursion has to know.
-        if (ex.Floor < 0)
+        SiteRoute.Kind site = SiteRoute.Of(ex.Stop.Body.Id, ex.Floor);   // #653 slice 2 · the ONE route table (Core/SiteRoute.cs)
+        if (site == SiteRoute.Kind.Hive)
         {
             // #709 · Freeze which shift the canteen is on before the room is drawn, and hand the deck that
             // number rather than a clock. Everything afterwards — the [E] press, a rebuild after searching a
@@ -112,15 +113,15 @@ public partial class Map
         // #653 · THE DEAD STATION. Routed by body id, the derelict's own trick: one branch, one builder, and nothing
         // else in the excursion has to know the difference. The boat's access and the cut faces are the deck's only
         // inputs; the walls, the plates and the tubes are the station's own, seeded off her id.
-        if (StationAboard.TryParseStationId(ex.Stop.Body.Id, out string stationId))
+        if (site == SiteRoute.Kind.Station)
         {
             _deckPlan = StationInterior.StationDeck(
-                stationId, TheStationState(ex), SurfaceDroidCount, FillSurfaceDroids);
+                SiteRoute.StationIdOf(ex.Stop.Body.Id)!, TheStationState(ex), SurfaceDroidCount, FillSurfaceDroids);
             ComposeWhatYouLeft(ex);
             return;
         }
 
-        if (Derelict.TryParseWreckId(ex.Stop.Body.Id, out _) && _wreck is { } aboard)
+        if (site == SiteRoute.Kind.Wreck && _wreck is { } aboard)
         {
             _deckPlan = WreckInterior.WreckDeck(
                 aboard, _wreckExamined, _wreckSalvaged, SurfaceDroidCount, FillSurfaceDroids,

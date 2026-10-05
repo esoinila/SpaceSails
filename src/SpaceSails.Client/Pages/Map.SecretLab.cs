@@ -27,7 +27,7 @@ public partial class Map
 
         // #653 · A HULL HIDES NO LAB. Asked of the stop's BODY ID, because OnADeadHull reads `_surface` and this runs
         // while the excursion is still being built, before it is assigned.
-        if (Derelict.TryParseWreckId(body, out _) || StationAboard.TryParseStationId(body, out _))
+        if (SiteRoute.IsHull(body))
         {
             ex.Lab = null;
             return;

@@ -49,7 +49,7 @@ public partial class Map
         await DescentPhaseAsync("clearing the bay…");
         // #653 · A DEAD STATION'S CREW LOCK IS A SERVICEABLE LOCK, and a locked door is TIME, never a key: it cycles
         // for patience, and the clock is where the patience is paid.
-        double lockSeconds = StationAboard.TryParseStationId(stop.Body.Id, out _) ? StationAboard.LockCycleSeconds : 0;
+        double lockSeconds = SiteRoute.IsStation(stop.Body.Id) ? StationAboard.LockCycleSeconds : 0;
         AdvanceShuttleClock(stop.TravelSeconds + lockSeconds); // the flight down (abstracted by the tube) costs the clock
 
         // #1063 · …and the clock having moved, the neighbours have had their shift. THE BURIAL IS EVALUATED
@@ -97,7 +97,7 @@ public partial class Map
             Deflection = isDeflectionRock,
             Site = chosenSite,
             // #653 · what a visit to a dead station carries — null on every other ground (see StationVisit).
-            Station = StationAboard.TryParseStationId(stop.Body.Id, out _) ? new StationVisit() : null,
+            Station = SiteRoute.IsStation(stop.Body.Id) ? new StationVisit() : null,
         };
 
         // #314: pull up to botsToBring sentries off the ship's roster into the sling (carried, not yet
@@ -136,7 +136,7 @@ public partial class Map
         SeedTurnedOverRooms(excursion);
 
         // #653 · …AND THE FACES THIS CAPTAIN HAS CUT INTO A STATION. Same register, same moment: a cut is permanent evidence.
-        if (excursion.Station is { } stationVisit && StationAboard.TryParseStationId(stop.Body.Id, out string cutStation))
+        if (excursion.Station is { } stationVisit && SiteRoute.StationIdOf(stop.Body.Id) is { } cutStation)
         {
             stationVisit.Cuts.UnionWith(StationAboard.CutsIn(_roomsTurnedOver, cutStation));
         }
@@ -201,7 +201,7 @@ public partial class Map
         // Phase 2 — weld the tube + wide surface + monolith maze + collision segments onto the deck.
         await DescentPhaseAsync("welding the tube…");
         RebuildSurfaceDeck();
-        if (StationAboard.TryParseStationId(stop.Body.Id, out string boardedStation))
+        if (SiteRoute.StationIdOf(stop.Body.Id) is { } boardedStation)
         {
             // #653 · She has no tube to walk down: the boat is mated to the crew lock and the away team is set
             // down just inboard of it, by Core's own square.
@@ -243,7 +243,7 @@ public partial class Map
             string who = gig.Flavor == ExpeditionFlavor.Science ? "science team" : "survey crew";
             ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. The {who} scrambles down the tube and fans out across the site. The ship holds the course-match above — watch the away clock. Walk them through it.");
         }
-        else if (StationAboard.TryParseStationId(stop.Body.Id, out _))
+        else if (SiteRoute.IsStation(stop.Body.Id))
         {
             ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}.");
         }
@@ -271,13 +271,13 @@ public partial class Map
         // down. On an INFESTED hull that is the difference between a salvage run and a burial.
         // #653 · THE DEAD STATION runs no tide and keeps no door sentry: nothing crawls up out of her decks, and the
         // boat is not under threat. What she gets instead is the first standing aboard, said once.
-        if (StationAboard.TryParseStationId(stop.Body.Id, out _))
+        if (SiteRoute.IsStation(stop.Body.Id))
         {
             ArriveAtTheStation();
             return;
         }
 
-        if (Derelict.TryParseWreckId(stop.Body.Id, out _))
+        if (SiteRoute.IsWreck(stop.Body.Id))
         {
             _surface!.Bots.Add(new SurfaceBot
             {

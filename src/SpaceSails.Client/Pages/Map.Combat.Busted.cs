@@ -198,11 +198,11 @@ public partial class Map
         // The floor is the fact, and it is right here on the excursion. It just was not being asked.
         DeathPlace place = dying.Floor < 0
             ? DeathPlace.Underground
-            : Derelict.TryParseWreckId(dying.Stop.Body.Id, out _)
-              || StationAboard.TryParseStationId(dying.Stop.Body.Id, out _)
+            : SiteRoute.IsWreck(dying.Stop.Body.Id)
+              || SiteRoute.IsStation(dying.Stop.Body.Id)
                 ? DeathPlace.Derelict
                 : DeathPlace.LandingParty;
-        if (StationAboard.TryParseStationId(dying.Stop.Body.Id, out _))
+        if (SiteRoute.IsStation(dying.Stop.Body.Id))
         {
             place = DeathPlace.Station;   // #653 · canon addendum 2: her own suffocation pool
         }

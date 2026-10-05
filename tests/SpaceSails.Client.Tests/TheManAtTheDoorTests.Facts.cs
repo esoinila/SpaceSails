@@ -236,7 +236,7 @@ public sealed partial class TheManAtTheDoorTests
     /// <b>ABSENT: THE DOOR IS A DOOR.</b> Nobody on his feet, the panel's own way down, the chair drawn, and the
     /// line told once on reaching it.
     ///
-    /// <para><b>Proven RED</b> by dropping the <c>AbsentTold</c> latch: the second reach re-tells the line and
+    /// <para><b>Proven RED</b> by dropping the <c>GateAbsent</c> told-once latch: the second reach re-tells the line and
     /// <c>Assert.Null() Failure</c> on the pulse after it was cleared.</para>
     /// </summary>
     [Fact]
@@ -277,7 +277,7 @@ public sealed partial class TheManAtTheDoorTests
         Assert.False(AnyRowGoesDown(map, floor));
 
         int f = 0;
-        for (; f < (int)((GateGuard.AtTheDoorSeconds + 60) / Dt) && !man.RoundTold; f++)
+        for (; f < (int)((GateGuard.AtTheDoorSeconds + 60) / Dt) && !Ex(map).Told.Has(ToldOnce.GateRound); f++)
         {
             if (man.Leg != Pages.Map.RoundLeg.AtTheDoor)
             {
@@ -288,7 +288,7 @@ public sealed partial class TheManAtTheDoorTests
             Frames(map, 1);
         }
 
-        Assert.True(man.RoundTold, "he walked off and the round was never told");
+        Assert.True(Ex(map).Told.Has(ToldOnce.GateRound), "he walked off and the round was never told");
         Assert.Equal(GateGuard.RoundLine, Pulse(map));
         Frames(map, (int)((GateGuard.AtTheDoorSeconds + 60) / Dt) - f);
         Assert.NotEqual(Pages.Map.RoundLeg.AtTheDoor, man.Leg);

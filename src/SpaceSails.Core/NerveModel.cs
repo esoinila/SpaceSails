@@ -274,6 +274,14 @@ public static class NerveModel
         ///
         /// <para>Appended LAST on purpose, for the reason written under <see cref="Meal"/>.</para></summary>
         Keepsake,
+
+        /// <summary>#620 slice 2 · A QUIET MINUTE WITH A MONEY-MARKED MEMENTO — a sheet in the black book whose
+        /// face serves the money theory (a slip from an old shipmate who was a fixer to the captain, say). The
+        /// same seam, the same shared satiety window, but it steadies LESS than a loved face does
+        /// (<see cref="KeepsakeMoneyRestore"/>): looking at a deal is not looking at a friend.
+        ///
+        /// <para>Appended LAST on purpose, for the reason written under <see cref="Meal"/>.</para></summary>
+        KeepsakeMoney,
     }
 
     /// <summary>Full restore of a lone galley tot at steady hands, before the level-curve and diminishing
@@ -318,6 +326,12 @@ public static class NerveModel
     /// a face is company of a kind, but it is the one kind that never answers. Flat and level-independent.
     /// FLAGGED for the owner's tuning.</summary>
     public const double KeepsakeRestore = 22.0;
+
+    /// <summary>#620 slice 2 · A MONEY-MARKED MEMENTO'S QUIET MINUTE — less than a loved face (22) and on a par
+    /// with a plate ashore (14): it still steadies, because it is still somebody, but a face you only ever
+    /// did business with does not hold the hand the way one you loved does. Flat and level-independent.
+    /// FLAGGED for the owner's tuning.</summary>
+    public const double KeepsakeMoneyRestore = 14.0;
 
     /// <summary>The single point a lone drink can still manage at the shot floor — you cannot drink your
     /// way back from the edge alone; you need a face across the table (owner: "moves the needle by one").</summary>
@@ -364,6 +378,7 @@ public static class NerveModel
         DrinkKind.Sleep => SleepRestore,             // flat, level-independent — a whole night's rest
         DrinkKind.Meal => MealRestore,               // flat, level-independent — supper is not a pour
         DrinkKind.Keepsake => KeepsakeRestore,       // flat, level-independent — a face in a locket
+        DrinkKind.KeepsakeMoney => KeepsakeMoneyRestore, // flat — a face you did business with
         DrinkKind.BarSpecial => SoloCurve(BarSpecialBaseRestore, nerve),
         DrinkKind.GalleyTot => SoloCurve(GalleyTotBaseRestore, nerve),
         _ => 0.0,

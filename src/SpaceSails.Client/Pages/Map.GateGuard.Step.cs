@@ -41,7 +41,7 @@ public partial class Map
 
             if (ex.Floor == man.Floor && man.Visit.Posting == GateGuard.Posting.Absent)
             {
-                TheEmptyChairIsTold(man);
+                TheEmptyChairIsTold(ex, man);
             }
 
             return;
@@ -164,9 +164,9 @@ public partial class Map
         StepHimWhereHeIsGoing(man, him, dt, walls);
 
         // The walk away is told once, the first time — into a free pulse slot, never over another line.
-        if (!man.RoundTold && man.Leg != RoundLeg.AtTheDoor && _pulse.Message is null)
+        if (!ex.Told.Has(ToldOnce.GateRound) && man.Leg != RoundLeg.AtTheDoor && _pulse.Message is null)
         {
-            man.RoundTold = true;
+            ex.Told.Tell(ToldOnce.GateRound);
             ShowPulseMessage(GateGuard.RoundLine);
         }
 
@@ -268,15 +268,15 @@ public partial class Map
     /// <summary>Absent: the chair is told once, the first time the captain comes within reach of the door — and,
     /// with the stringer's courtesy, only into a FREE pulse slot, so the car's own arrival line is not written over
     /// and this one is not lost under it (watched headless: the two were said on the same frame).</summary>
-    private void TheEmptyChairIsTold(ManAtTheDoor man)
+    private void TheEmptyChairIsTold(SurfaceExcursion ex, ManAtTheDoor man)
     {
-        if (man.AbsentTold || _pulse.Message is not null
+        if (ex.Told.Has(ToldOnce.GateAbsent) || _pulse.Message is not null
             || !Within(_avatarX, _avatarY, man.Post.X, man.Post.Y, GateGuard.ReachDu))
         {
             return;
         }
 
-        man.AbsentTold = true;
+        ex.Told.Tell(ToldOnce.GateAbsent);
         ShowPulseMessage(GateGuard.AbsentLine);
     }
 
