@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using SpaceSails.Core.Interior;
 using Xunit;
 
 namespace SpaceSails.Core.Tests;
@@ -46,6 +47,47 @@ public sealed class HullClaimTests
         Assert.Equal("📍", HullClaim.BookGlyph);
         Assert.Equal(8, HullClaim.AllProse().Count());
         Assert.Equal(8, HullClaim.AllProse().Distinct(StringComparer.Ordinal).Count());
+    }
+
+    /// <summary>
+    /// <b>NOT ONE WORD SPENDS A RESERVED WORD, AND NOT ONE NAMES ANYBODY (the house sweep).</b> No word of the arc the
+    /// captain has not yet earned, no regular's name, and no digit anywhere but the figure itself — {n}, the days the
+    /// mend took, the one number the canon puts in a sentence.
+    ///
+    /// <para><b>Proven RED</b> by "restore" in the booking line, and by a digit in the book entry.</para>
+    /// </summary>
+    [Fact]
+    public void NotOneWordSpendsAReservedWordOrNamesAnybody()
+    {
+        string[] reserved =
+        [
+            "monolith", "reever", "old one", "old ones", "ancient", "alien", "not ours", "not natural",
+            "restore", "backup", "kaamos", "minister", "donor", "they were people", "whose", "who made",
+        ];
+
+        foreach (string line in HullClaim.AllProse())
+        {
+            foreach (string word in reserved)
+            {
+                Assert.DoesNotContain(word, line, StringComparison.OrdinalIgnoreCase);
+            }
+
+            foreach (string regular in PatronRota.Roster)
+            {
+                Assert.DoesNotContain(regular, line, StringComparison.OrdinalIgnoreCase);
+            }
+        }
+
+        string[] withTheFigure = [HullClaim.LossLine(20), HullClaim.FilledDocument(20)];
+        foreach (string line in HullClaim.AllProse().Except(withTheFigure))
+        {
+            Assert.DoesNotContain(line, char.IsDigit);
+        }
+
+        foreach (string line in withTheFigure)
+        {
+            Assert.Equal("2.0", new string([.. line.Where(c => char.IsDigit(c) || c == '.')]).Trim('.'));
+        }
     }
 
     /// <summary>The loss line files under Nebula Mutual and the place of repair — and under nothing else.</summary>
