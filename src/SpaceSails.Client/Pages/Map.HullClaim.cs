@@ -30,6 +30,17 @@ public partial class Map
 
     /// <summary>#1151 · The sail has just been holed (the cloud-top dip, or a bad roll on the haze pass): open the mend
     /// window — or, inside one already open, extend the same loss — and keep the page's own clear time in step.</summary>
+    /// <summary>#1151 · A load or a new voyage begins a life with a whole sail: the mend window of the life before is
+    /// not this one's. (The timer leaked across lives before the claim existed — a holed sail applied over a loaded
+    /// save cleared in the new life — and the claim machinery is what made it consequential: it would have filed the
+    /// last life's loss in this one.)</summary>
+    private void ForgetTheMend()
+    {
+        _sailMend = null;
+        _sailHoled = false;
+        _sailRepairedAtSimTime = 0;
+    }
+
     private void TheSailIsHoled()
     {
         HullClaim.Mend mend = HullClaim.Hole(_sailMend, _ship.SimTime, SailRepairSeconds);
@@ -70,7 +81,8 @@ public partial class Map
         SeatedTable is { Plate: SittingAlone.OwnDeskPlate } && HullClaim.CanFillTheForm(_satchel, _roomsTurnedOver);
 
     /// <summary>#1151 · The press: the newest unclaimed loss is copied onto the form (the paper changes, the loss is
-    /// filed). One loss per form; nothing is said — the paper in the satchel is the answer.</summary>
+    /// filed) and the desk says <see cref="HullClaim.FilledLine"/>. One loss per form; a stale press changes nothing and is
+    /// silent.</summary>
     private void FillTheClaimForm()
     {
         if (!ClaimFormFillable || HullClaim.Fill(_satchel, _roomsTurnedOver) is not { } filled)
@@ -81,6 +93,7 @@ public partial class Map
         _satchel = [.. filled.Satchel];
         _roomsTurnedOver.Add(HullClaim.FiledTag(filled.Loss.DoneAt));
         RequestVaultSave();
+        ShowPulseMessage(HullClaim.FilledLine);
         StateHasChanged();
     }
 
@@ -89,12 +102,14 @@ public partial class Map
     private static bool IsTheAdjusters(SideOffice office) => ReferenceEquals(office, SideOffices.Adjuster);
 
     /// <summary>#1151 · Is there a sheet on this office's desk? As #1365 shipped it (one paper, once per run) — and, in
-    /// the adjuster's room only, once a form has been filled, a fresh blank for a captain holding neither a blank nor a
-    /// filled form ("a second blank form can be fetched from the cold rooms the way the first was").</summary>
+    /// the adjuster's room only, a fresh blank whenever there is something to claim (an unclaimed loss) and the captain
+    /// holds no blank: paper appears only when there is something to put on it, one blank at a time ("a second blank form
+    /// can be fetched from the cold rooms the way the first was"). A captain who never lost a day finds the room as
+    /// #1365 shipped it.</summary>
     private bool TheDeskHasASheet(SideOffice office) =>
         !_roomsTurnedOver.Contains(office.SheetTakenTag)
-        || (IsTheAdjusters(office) && HullClaim.HasFiledAny(_roomsTurnedOver)
-            && !HullClaim.HoldsTheBlank(_satchel) && !HullClaim.HoldsAFilledForm(_satchel));
+        || (IsTheAdjusters(office) && HullClaim.NewestUnclaimed(_roomsTurnedOver) is not null
+            && !HullClaim.HoldsTheBlank(_satchel));
 
     /// <summary>#1151 · The console that books the claim: the adjuster's room, her watch, a filled form held.</summary>
     private bool TheBookingConsoleIsOnOffer(SideOffice office) =>

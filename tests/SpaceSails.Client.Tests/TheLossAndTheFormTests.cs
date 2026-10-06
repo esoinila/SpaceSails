@@ -41,6 +41,8 @@ public sealed class TheLossAndTheFormTests
 
     private static HashSet<string> Register(Pages.Map map) => (HashSet<string>)Read(map, "_roomsTurnedOver")!;
 
+    private static string? InTheSlot(Pages.Map map) => ((PulseSlot)Read(map, "_pulse")!).Message;
+
     private static int Credits(Pages.Map map) => (int)Read(map, "_credits")!;
 
     private static IEnumerable<FieldNote> LossLines(Pages.Map map) =>
@@ -144,6 +146,43 @@ public sealed class TheLossAndTheFormTests
         Invoke(map, "CheckSailHole");
         Assert.Equal([HullClaim.LossLine(25), HullClaim.LossLine(20)], LossLines(map).Select(n => n.Text));
         Assert.Equal(2, Register(map).Count(t => t.StartsWith("claim:loss:", StringComparison.Ordinal)));
+    }
+
+    /// <summary>
+    /// <b>A MEND WINDOW IS THE LIFE'S, NOT THE PAGE'S — A LOAD OR A NEW VOYAGE ENDS IT.</b> Holed in the cloud tops; then
+    /// a vault is applied (a load), or a new voyage begins; then the clock steps past where the window would have
+    /// cleared. The new life has a whole sail: no loss line, no loss tag, and the page's own timer is spent. (Before the
+    /// claim the timer leaked across lives and merely un-holed the next life's sail; with it, the leak would have filed
+    /// the last life's loss in this one.)
+    ///
+    /// <para><b>Proven RED</b> by removing <c>ForgetTheMend</c> from <c>ApplyVault</c>, and again from
+    /// <c>ResetLiveStateForNewGame</c>: a loss line and tag appear for a life that never lost a day.</para>
+    /// </summary>
+    [Theory]
+    [InlineData("ApplyVault")]
+    [InlineData("ResetLiveStateForNewGame")]
+    public void AMendWindowDoesNotOutliveTheLifeItWasOpenedIn(string endOfTheLife)
+    {
+        Pages.Map map = Boot("claim-loss-leak-" + endOfTheLife);
+        double t0 = 30 * Day;
+        At(map, t0);
+        TheSailIsHoledByTheCloudTops(map);
+        Assert.True((bool)Read(map, "_sailHoled")!, "the control: the sail is holed before the life ends.");
+
+        if (endOfTheLife == "ApplyVault")
+        {
+            Invoke(map, "ApplyVault", new Vault());
+        }
+        else
+        {
+            Invoke(map, "ResetLiveStateForNewGame");
+        }
+
+        At(map, t0 + (3 * Day));
+        Invoke(map, "CheckSailHole");
+        Assert.False((bool)Read(map, "_sailHoled")!);
+        Assert.Empty(LossLines(map));
+        Assert.DoesNotContain(Register(map), t => t.StartsWith("claim:loss:", StringComparison.Ordinal));
     }
 
     // ── THE FORM, AT THE SHIP'S OWN DESK ────────────────────────────────────────────────────────────────
@@ -255,13 +294,20 @@ public sealed class TheLossAndTheFormTests
         Lose(map, 900, 27);
         Assert.True(Fillable(map));
 
+        Set(map, "_pulse", PulseSlot.Empty);
         Invoke(map, "FillTheClaimForm");
 
+        // The desk says its line at the moment the loss goes onto the form, in the slot the captain reads.
+        Assert.Equal(
+            "The loss goes onto the form in the desk's best hand. The boxes that want codes stay empty, and stay wanting.",
+            InTheSlot(map));
         Assert.Equal(["an-unrelated-paper", "claim-form-filled:900:27"], Sleeve(map).Select(i => i.Id));
         Assert.Contains("claim:filed:900", Register(map));
         Assert.DoesNotContain("claim:filed:100", Register(map));
         Assert.False(Fillable(map), "the verb persists with no blank held.");
-        Invoke(map, "FillTheClaimForm");   // the stale handler: nothing happens
+        Set(map, "_pulse", PulseSlot.Empty);
+        Invoke(map, "FillTheClaimForm");   // the stale handler: nothing happens, and says nothing
+        Assert.Null(InTheSlot(map));
         Assert.Equal(["an-unrelated-paper", "claim-form-filled:900:27"], Sleeve(map).Select(i => i.Id));
 
         Hold(map, SideOffices.Adjuster.TheSheet);   // "a second blank form can be fetched from the cold rooms"

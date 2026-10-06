@@ -906,15 +906,16 @@ loss the game already has and prices nothing for — **loss of use**: the days a
 amended cut: the game prices no sail repair, so no credit moves anywhere in this slice). Three pieces, every fact a tag
 on `_roomsTurnedOver` (the vault carries them), every word `HullClaim`'s (Fable canon, verbatim):
 
-1. **The loss.** `Map.HullClaim.cs` keeps the mend window the sail-holing code already ran (`_sailMend`: first hole and
+1. **The loss.** `Map.HullClaim.cs` keeps the mend window the sail-holing code already ran (`_sailMend`, forgotten on a load or a new voyage: first hole and
    end; a holing inside an open window extends the SAME loss, one after completion starts a new one). On the frame the
    window completes the book gets one 📋 line under Nebula Mutual and the place she is at, with the days from first hole
    to the frame it cleared — computed, never the constant — and the register gets `claim:loss:{when}:{tenths}`.
 2. **The form.** At the SHIP'S OWN desk (seated — seat-tied, never place-tied; the strip's button
    `✍ Copy the loss onto the claim form`, drawn only with the blank form held and a loss unclaimed) the newest unclaimed
    loss is copied: `claim-form-blank` becomes `claim-form-filled:{when}:{tenths}` (*A claim form, filled*) and the loss
-   is tagged `claim:filed:{when}`. A second blank is fetched from the adjuster's desk (it is laid afresh only for a
-   captain who has filled a form and holds neither a blank nor a filled one).
+   is tagged `claim:filed:{when}`, and the desk says its line (*"The loss goes onto the form in the desk's best hand. The boxes that want codes stay empty, and stay wanting."*, only after a fill that happened). A second blank
+   is fetched from the adjuster's desk: it is laid afresh whenever there is an unclaimed loss and the captain holds no blank
+   (one blank at a time; a captain holding a filled form for an earlier loss need not drop it).
 3. **The booking.** In the adjuster's room, on her shipped one-in-four watch, with a filled form held, a console stands on
    the desk (`🧾 Book the claim — [E]`): the booked line, the 📍 book entry once, and the vault row
    `claim:booked:{when}` once per filled form. Off her watch, the shut door's [E] adds one line after the shipped one,

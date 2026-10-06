@@ -47,6 +47,10 @@ public static class HullClaim
     public const string BookEntryLine =
         "A claim, booked. Nebula Mutual resurrects a man without a form; a sail wants three. Somebody designed that, and it was not the sail.";
 
+    /// <summary>What the desk says when the loss has gone onto the form — said only after a successful fill.</summary>
+    public const string FilledLine =
+        "The loss goes onto the form in the desk's best hand. The boxes that want codes stay empty, and stay wanting.";
+
     /// <summary>The shut door's second line, said only with a filled form in the satchel.</summary>
     public const string ShutExtraLine = "The form stays warm in the satchel. Nothing else here is.";
 
@@ -280,5 +284,6 @@ public static class HullClaim
         yield return BookedLine;
         yield return BookEntryLine;
         yield return ShutExtraLine;
+        yield return FilledLine;
     }
 }

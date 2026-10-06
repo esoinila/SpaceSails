@@ -19,7 +19,7 @@ public sealed class HullClaimTests
     /// <b>THE CANON, TO THE BYTE.</b> Every sentence the slice speaks, full-Assert.Equal, retyped from the issue.
     ///
     /// <para><b>Proven RED</b> by a hyphen for the loss line's em dash, a dropped full stop in the filled form's
-    /// document and a ninth string in <c>AllProse</c>.</para>
+    /// document and a tenth string in <c>AllProse</c>.</para>
     /// </summary>
     [Fact]
     public void TheCanonIsPinnedToTheByte()
@@ -43,10 +43,14 @@ public sealed class HullClaimTests
             + "Somebody designed that, and it was not the sail.",
             HullClaim.BookEntryLine);
         Assert.Equal("The form stays warm in the satchel. Nothing else here is.", HullClaim.ShutExtraLine);
+        Assert.Equal(
+            "The loss goes onto the form in the desk's best hand. The boxes that want codes stay empty, and stay wanting.",
+            HullClaim.FilledLine);
+        Assert.DoesNotContain("''", HullClaim.FilledLine, StringComparison.Ordinal);
         Assert.Equal("📋", HullClaim.LossGlyph);
         Assert.Equal("📍", HullClaim.BookGlyph);
-        Assert.Equal(8, HullClaim.AllProse().Count());
-        Assert.Equal(8, HullClaim.AllProse().Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal(9, HullClaim.AllProse().Count());
+        Assert.Equal(9, HullClaim.AllProse().Distinct(StringComparer.Ordinal).Count());
     }
 
     /// <summary>

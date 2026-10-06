@@ -233,13 +233,13 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
     }
 
     /// <summary>
-    /// <b>A SECOND BLANK IS FETCHED THE WAY THE FIRST WAS — AND THE ROOM IS UNCHANGED FOR ANYONE WHO HAS FILLED
-    /// NOTHING.</b> The sheet taken (the shipped state) and no form ever filled: the desk stays bare on her watch, held
-    /// blank or not. Once a loss has been copied onto a form (a filed tag), a captain holding neither blank nor filled
-    /// form finds a fresh blank on the desk; holding either, the desk is bare; and taking it puts a blank in the sleeve.
+    /// <b>A SECOND BLANK IS FETCHED THE WAY THE FIRST WAS — ONLY WHEN THERE IS SOMETHING TO CLAIM, ONE AT A TIME.</b>
+    /// The sheet taken (the shipped state): with no unclaimed loss the desk stays bare on her watch whatever else is
+    /// held or filed; with an unclaimed loss it lays a blank for a captain who holds none, including one still holding a
+    /// filled (even booked) form for an earlier loss, and is bare again once he holds a blank.
     ///
-    /// <para><b>Proven RED</b> by the restock clause loosened to ignore the held forms (the desk lays a blank beside a
-    /// blank), and by it ignoring the filed tag (the shipped bare desk refilled for a captain who filled nothing).</para>
+    /// <para><b>Proven RED</b> by the unclaimed-loss clause dropped (paper laid with nothing to put on it), and by the
+    /// held-blank clause dropped (a blank laid beside a blank).</para>
     /// </summary>
     [Fact]
     public void ASecondBlankComesOnlyAfterAFormHasBeenFilledAndOnlyToAnEmptyHand()
@@ -251,16 +251,33 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
 
         Carry(map);
         Frames(map, 2);
-        Assert.False(HavenInterior.TheSheetLiesIn(Deck(map)), "the shipped bare desk was refilled for a captain who filled nothing.");
+        Assert.False(HavenInterior.TheSheetLiesIn(Deck(map)), "the shipped bare desk was refilled for a captain who lost nothing.");
 
+        // A loss already copied onto a form is nothing left to claim: still bare, held or not.
+        Register(map).Add(HullClaim.LossTag(ALoss));
         Register(map).Add(HullClaim.FiledTag(ALoss.DoneAt));
+        foreach (Satchel.Item[] held in new[] { Array.Empty<Satchel.Item>(), new[] { TheFilled } })
+        {
+            Carry(map, held);
+            Frames(map, 2);
+            Assert.False(HavenInterior.TheSheetLiesIn(Deck(map)), "paper laid with no unclaimed loss to put on it.");
+        }
+
+        // A NEW loss: a blank for an empty hand, and, booked or not, for a hand still holding the earlier filled form.
+        var next = new HullClaim.Loss(300000, 31);
+        Register(map).Add(HullClaim.LossTag(next));
+        Carry(map);
         Frames(map, 2);
-        Assert.True(HavenInterior.TheSheetLiesIn(Deck(map)), "no fresh blank for a captain who filled a form and holds nothing.");
+        Assert.True(HavenInterior.TheSheetLiesIn(Deck(map)), "no fresh blank for a captain with a new loss and an empty hand.");
+        Carry(map, TheFilled);
+        Register(map).Add(HullClaim.BookedTag(ALoss.DoneAt));
+        Frames(map, 2);
+        Assert.True(HavenInterior.TheSheetLiesIn(Deck(map)), "a captain with a new loss must not have to drop his filed form.");
 
         Carry(map, office.TheSheet);
         Frames(map, 2);
-        Assert.False(HavenInterior.TheSheetLiesIn(Deck(map)));
-        Carry(map, TheFilled);
+        Assert.False(HavenInterior.TheSheetLiesIn(Deck(map)), "a blank laid beside a blank.");
+        Carry(map, TheFilled, office.TheSheet);
         Frames(map, 2);
         Assert.False(HavenInterior.TheSheetLiesIn(Deck(map)));
 
