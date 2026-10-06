@@ -46,5 +46,11 @@ public static partial class DevStarts
             + "book (📋, the days it took) and the blank claim form in the sleeve. Walk back to the ship, sit at her "
             + "own desk, press ✍ to copy the loss onto the form, then come back and [E] the console on the desk (#1151).",
             "/map?claim=1"),
+        new("🧾🪑", "The Deep — the interview, one press from seated (#1151)",
+            "Everything the claim start stages, and the desk's and the console's work already done: the loss copied "
+            + "onto the form, the claim booked (📍), the adjuster's door ajar on her watch. Walk to the desk and "
+            + "[E] the console — the card seats you across from her: three questions, a paper for each, then the "
+            + "outcome (#1151 slice 2).",
+            "/map?claim=2"),
     ];
 }

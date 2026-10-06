@@ -3731,6 +3731,17 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                         </div>
                     }
                 }
+                @* #1151 slice 2 · THE INTERVIEW'S ROWS, the counter's own idiom one region up: every paper in the
+                   sleeve and the policy on the wallet's face, and on the last question an explicit nothing. A wrong
+                   show is a real answer (the question stands, nothing is lost), so every row is always pressable. *@
+                @foreach (SpaceSails.Core.ClaimInterview.Show shown in TheInterviewShows())
+                {
+                    <div class="satchel-row">
+                        <span class="satchel-item-name">@shown.Label</span>
+                        <button type="button" class="satchel-load"
+                                @onclick="() => ShowThePaper(shown)">@SpaceSails.Core.ClaimInterview.ShowLabel</button>
+                    </div>
+                }
                 @* #774 · WHAT THE ACT ACTUALLY FOUND, on the card the act raised — the reveal card's row
                    (#736) on the other full-screen card, because the surface raises this one. The
                    dossier is the case it was grown for: the assembly said two to four sentences and fired

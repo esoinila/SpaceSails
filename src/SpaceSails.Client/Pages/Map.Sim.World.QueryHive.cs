@@ -444,11 +444,11 @@ public partial class Map
         }
         else if (pair.StartsWith("claim=", StringComparison.OrdinalIgnoreCase))
         {
-            // #1151 dev cheat: /map?claim=1 boots at The Deep's hotel level with the adjuster's door ajar, a completed
+            // #1151 dev cheat: /map?claim=1 (and /map?claim=2, slice 2: the form filled and the booking made) boots at The Deep's hotel level with the adjuster's door ajar, a completed
             // mend in the book and the blank claim form held. It IMPLIES the dock, the walk ashore and the ride down
             // (the garden's and the floor's own reason: the scene is what is being tested). CLAIMED here; the staging
             // is Map.HullClaim's, read off the address bar when the floor is first drawn — no world is written here.
-            if (Uri.UnescapeDataString(pair["claim=".Length..]).ToLowerInvariant() is "1" or "true" or "yes")
+            if (Uri.UnescapeDataString(pair["claim=".Length..]).ToLowerInvariant() is "1" or "2" or "true" or "yes")
             {
                 q.DockCheat = AdjustersRoom.HavenId;
                 q.AshoreCheat = true;

@@ -169,6 +169,10 @@ public partial class Map
     {
         _viewObject = null;
 
+        // #1151 slice 2 · …and the interview is answered by the closing too: getting up from her desk is the exit, the
+        // form is consumed only by an outcome, and the next press sits the captain down again from the seating.
+        _interview = null;
+
         // #615 · …and a find waiting on an answer is answered BY the closing. Every road out of this card is
         // LEAVE, which is why the two-verb card needs no special case in the general closing law (no pop-up
         // that cannot be closed): the safe answer is the one the ✕ already gives — nothing is taken and the

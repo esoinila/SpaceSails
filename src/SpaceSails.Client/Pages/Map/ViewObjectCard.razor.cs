@@ -35,6 +35,9 @@ public partial class ViewObjectCard
     [Parameter] public Action<SdrScanner.Hit> PressTheHit { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<NebulaClaims.Ask>> TheClaimAsks { get; set; } = default!;
     [Parameter] public bool TheClaimDeskIsUp { get; set; }
+    // #1151 slice 2 · The interview's rows (empty unless the interview is up) and the one press.
+    [Parameter] public Action<ClaimInterview.Show> ShowThePaper { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<ClaimInterview.Show>> TheInterviewShows { get; set; } = default!;
     [Parameter] public bool TheFindIsWaitingOnAnAnswer { get; set; }
     [Parameter] public bool TheKitsCardIsUp { get; set; }
     [Parameter] public Func<IReadOnlyList<SdrScanner.Hit>> TheKitSweeps { get; set; } = default!;
