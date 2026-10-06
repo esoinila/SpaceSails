@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -15,9 +16,16 @@ public partial class Map
 {
     /// <summary>Called by <c>SettleTheClaim</c> once the outcome is applied. Silent for PAID, DECLINED and every ADJUSTED
     /// after the first (the latch is a register tag, so a reload cannot spend it twice).</summary>
-    private void TheUneaseComes(ClaimInterview.Settlement settled)
+    private void TheUneaseComes(HullClaim.Loss loss, ClaimInterview.Settlement settled)
     {
         if (!ClaimInterview.RaisesTheUnease(settled.Outcome, _roomsTurnedOver))
+        {
+            return;
+        }
+
+        // The unease belongs to a SETTLED claim: the row closed and the settlement's paper in the sleeve. Asked of the page's own
+        // state, so a call made before the outcome is applied is silent rather than a plate over an unsettled desk.
+        if (ClaimInterview.IsOpen(_roomsTurnedOver, loss.DoneAt) || !_satchel.Any(i => i.Id == settled.PaperId))
         {
             return;
         }
