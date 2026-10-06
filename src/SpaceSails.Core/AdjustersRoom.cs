@@ -70,6 +70,7 @@ public static class AdjustersRoom
         PlateReadTag = "adjuster:plate-read",
         SheetTakenTag = "adjuster:sheet-taken",
         AjarToldTag = "adjuster:two-chairs",
+        AjarToldPersists = false,
         FilesTheSheet = false,
         HasAClerk = false,
         Subjects = SubjectsFor,

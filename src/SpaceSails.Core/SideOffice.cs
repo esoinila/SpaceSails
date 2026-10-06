@@ -66,6 +66,11 @@ public sealed class SideOffice
     /// <summary>Register tag: the ajar line has been told.</summary>
     public required string AjarToldTag { get; init; }
 
+    /// <summary>Is the ajar line owed once EVER (a tag on the vault-persisted register, surviving a reload — slice C's
+    /// shipped cadence for the warm chair), or once per run of the page (<see cref="ToldOnce"/> — D's and E's, new
+    /// lines whose "entering once" is read as once per run)?</summary>
+    public required bool AjarToldPersists { get; init; }
+
     /// <summary>Does taking the paper file its document in the book (<c>true</c>), or is it a form that is not
     /// evidence of anything (<c>false</c> — the adjuster's blank claim form)?</summary>
     public required bool FilesTheSheet { get; init; }
@@ -138,6 +143,7 @@ public static class SideOffices
         PlateReadTag = PreservationOffice.PlateReadTag,
         SheetTakenTag = PreservationOffice.SheetTakenTag,
         AjarToldTag = PreservationOffice.WarmToldTag,
+        AjarToldPersists = true,
         FilesTheSheet = true,
         HasAClerk = true,
         Subjects = PreservationOffice.SubjectsFor,

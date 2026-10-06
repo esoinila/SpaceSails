@@ -258,6 +258,46 @@ public sealed class ThePreservationOfficeKeepsItsHoursTests
     }
 
     /// <summary>
+    /// <b>THE WARM CHAIR IS OWED ONCE EVER — A VAULT ROUND-TRIP DOES NOT OWE IT AGAIN.</b> Slice C's shipped cadence is
+    /// a tag on the vault-persisted register, not the page's run-scoped told-once memory (#1361: the mechanism is
+    /// unified, each line's cadence preserved). The register is carried into a fresh page, as a reload carries it, and
+    /// the captain walks in on the clerk's watch: nothing is said.
+    ///
+    /// <para><b>Proven RED</b> against the head that moved the line onto <c>ToldOnce</c> (the reloaded page tells it
+    /// again).</para>
+    /// </summary>
+    [Fact]
+    public void TheWarmChairIsNotOwedAgainAfterAVaultRoundTrip()
+    {
+        Pages.Map map = OnTheHotelLevel("office-warm-reload");
+        long his = TheClerksWatch(map);
+        At(map, PreservationOffice.SetsOffAt(his) + 600);
+        Frames(map, 1);
+        DeckReachability.Point inside = InsideTheOffice();
+        StandAt(map, inside.X, inside.Y);
+        Set(map, "_pulse", PulseSlot.Empty);
+        Frames(map, 1);
+        Assert.Equal(PreservationOffice.WarmStillLine, InTheSlot(map));
+        Assert.Contains(PreservationOffice.WarmToldTag, Register(map));
+
+        Pages.Map reloaded = OnTheHotelLevel("office-warm-reloaded");
+        foreach (string tag in Register(map))
+        {
+            Register(reloaded).Add(tag);
+        }
+
+        At(reloaded, PreservationOffice.SetsOffAt(TheClerksWatch(reloaded)) + 600);
+        Frames(reloaded, 1);
+        StandAt(reloaded, inside.X, inside.Y);
+        for (int i = 0; i < 10; i++)
+        {
+            Set(reloaded, "_pulse", PulseSlot.Empty);
+            Frames(reloaded, 1);
+            Assert.NotEqual(PreservationOffice.WarmStillLine, InTheSlot(reloaded));
+        }
+    }
+
+    /// <summary>
     /// <b>THE SHEET IS TAKEN ONCE PER RUN</b>: into the sleeve, the card reading it as papers read away from their
     /// room, the book filing the document 📋 under the Authority and Ringside Exchange, and the desk bare — on this
     /// watch and on every clerk's watch after it. The office keeps its hours.

@@ -276,6 +276,7 @@ public sealed class TheSideOfficesTests
 
         Assert.Equal([true, false, false], all.Select(o => o.HasAClerk));
         Assert.Equal([true, true, false], all.Select(o => o.FilesTheSheet));
+        Assert.Equal([true, false, false], all.Select(o => o.AjarToldPersists));   // C's warm chair is owed once EVER; D's and E's once per run
         Assert.Equal([4, 5, 4], all.Select(o => o.WatchesPerTurn));
 
         Assert.Same(SideOffices.Forwarding, SideOffices.At("cinder-roost"));

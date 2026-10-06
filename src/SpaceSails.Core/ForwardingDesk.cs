@@ -71,6 +71,7 @@ public static class ForwardingDesk
         PlateReadTag = "forwarding:plate-read",
         SheetTakenTag = "forwarding:sheet-taken",
         AjarToldTag = "forwarding:cold-room",
+        AjarToldPersists = false,
         FilesTheSheet = true,
         HasAClerk = false,
         Subjects = SubjectsFor,

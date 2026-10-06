@@ -100,20 +100,33 @@ public partial class Map
     /// <summary>
     /// #1332 C/D/E · <b>INSIDE, WHILE IT STANDS OPEN — TOLD ONCE PER RUN.</b> Fable canon, verbatim
     /// (<see cref="SideOffice.AjarLine"/>: the warm chair, the cold room, the two chairs). On a free slot only, at
-    /// Status rank, filed nowhere; the page's one told-once memory keeps that it was said (<see cref="ToldOnce"/>,
-    /// keyed by berth — one office to a haven), added on the frame the line reaches the slot and never before.
+    /// Status rank, filed nowhere. Each line keeps its own cadence: slice C's warm chair is owed once EVER (its tag on
+    /// the vault-persisted register, as shipped); D's and E's new lines are once per run of the page, in the page's
+    /// one told-once memory (<see cref="ToldOnce"/>, keyed by berth). Either is marked on the frame the line reaches
+    /// the slot and never before.
     /// </summary>
     private void TellTheAjarLineOnce(string berth, SideOffice office)
     {
         if (!HavenInterior.InTheOffice(berth, _avatarX, _avatarY, _havenFloor)
             || !HavenInterior.TheOfficeStandsOpenIn(_deckPlan)
             || _pulse.Message is not null
-            || _toldOnce.Has(ToldOnce.Key(ToldOnce.OfficeAjar, berth)))
+            || (office.AjarToldPersists
+                ? _roomsTurnedOver.Contains(office.AjarToldTag)
+                : _toldOnce.Has(ToldOnce.Key(ToldOnce.OfficeAjar, berth))))
         {
             return;
         }
 
-        _toldOnce.Tell(ToldOnce.Key(ToldOnce.OfficeAjar, berth));
+        if (office.AjarToldPersists)
+        {
+            _roomsTurnedOver.Add(office.AjarToldTag);
+            RequestVaultSave();
+        }
+        else
+        {
+            _toldOnce.Tell(ToldOnce.Key(ToldOnce.OfficeAjar, berth));
+        }
+
         ShowPulseMessage(office.AjarLine, PulseRank.Status);
     }
 
