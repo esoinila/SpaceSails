@@ -131,13 +131,14 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
         Register(map).Add(office.PlateReadTag);   // the control's tag, written beside the claim's
         StandAtTheConsole(map);
 
-        for (int press = 0; press < 3; press++)
-        {
-            Set(map, "_pulse", PulseSlot.Empty);
-            Invoke(map, "InteractAtConsole");
-            Assert.Equal(HullClaim.BookedLine, InTheSlot(map));
-            Invoke(map, "FileNote", "an unrelated line between the presses", "·");
-        }
+        // The FIRST press books and says the booked line; the presses after it (slice 2) seat the interview instead.
+        Set(map, "_pulse", PulseSlot.Empty);
+        Invoke(map, "InteractAtConsole");
+        Assert.Equal(HullClaim.BookedLine, InTheSlot(map));
+        Invoke(map, "FileNote", "an unrelated line between the presses", "·");
+        Invoke(map, "InteractAtConsole");
+        Assert.NotNull(Read(map, "_interview"));   // the second press SEATS the interview — it does not re-book
+        Invoke(map, "CloseViewObject");
 
         Assert.Equal(1, Register(map).Count(t => t == HullClaim.BookedTag(ALoss.DoneAt)));
         FieldNote entry = Assert.Single(Booked(map));
@@ -164,10 +165,10 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
         At(fresh, Within(TheOfficesWatch(fresh, office)));
         Frames(fresh, 2);
         StandAtTheConsole(fresh);
-        Set(fresh, "_pulse", PulseSlot.Empty);
+        Assert.Null(Read(fresh, "_interview"));
         Invoke(fresh, "InteractAtConsole");
 
-        Assert.Equal(HullClaim.BookedLine, InTheSlot(fresh));
+        Assert.NotNull(Read(fresh, "_interview"));   // the reloaded booking is a BOOKED one: the press seats, it does not re-book
         Assert.Empty(Booked(fresh));   // the register remembered: no second entry for one filled form
     }
 

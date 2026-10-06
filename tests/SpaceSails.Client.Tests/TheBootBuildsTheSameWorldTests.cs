@@ -228,6 +228,9 @@ public sealed class TheBootBuildsTheSameWorldTests
             ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "f805bbf4b1ecef5cb6796435c55ab315",
             // #1151 slice 1 · ?claim=1: MEASURED with SPACESAILS_BOOT_FINGERPRINT_DUMP; 1 new, 0 moved.
             ["/map?claim=1"] = "5702e97b412b144d3fd884426e262007",
+            // #1151 slice 2 · ?claim=2: MEASURED with SPACESAILS_BOOT_FINGERPRINT_DUMP; 1 new, 0 moved (the same world as ?claim=1: the
+            // staging is the page's, written when the floor is first drawn, never at parse time).
+            ["/map?claim=2"] = "5702e97b412b144d3fd884426e262007",
             ["/map?converge=1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?counter=1"] = "dfbb66e9b156cd858b2d7c67c4d36e5a",
             ["/map?counter=1&watch=2"] = "00a2b8b936fe8619cf363119d8b490c4",

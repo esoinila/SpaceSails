@@ -64,6 +64,8 @@ public partial class AtArmsLengthRack
     [Parameter] public Func<Satchel.Item, string, string> TheBookOn { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<NebulaClaims.Ask>> TheClaimAsks { get; set; } = default!;
     [Parameter] public bool TheClaimDeskIsUp { get; set; }
+    [Parameter] public Action<ClaimInterview.Show> ShowThePaper { get; set; } = default!;
+    [Parameter] public Func<IReadOnlyList<ClaimInterview.Show>> TheInterviewShows { get; set; } = default!;
     [Parameter] public bool TheFindIsWaitingOnAnAnswer { get; set; }
     [Parameter] public bool TheKitsCardIsUp { get; set; }
     [Parameter] public Func<IReadOnlyList<SdrScanner.Hit>> TheKitSweeps { get; set; } = default!;

@@ -206,25 +206,34 @@ public static class HullClaim
         return false;
     }
 
-    /// <summary>The dev start: <c>?claim=1</c> on an address — read the way <see cref="PreservationOffice.CheatIn"/> is,
-    /// writing no world at parse time.</summary>
-    public static bool CheatIn(string? uri)
+    /// <summary>The dev start: <c>?claim=1</c> or <c>?claim=2</c> on an address — read the way
+    /// <see cref="PreservationOffice.CheatIn"/> is, writing no world at parse time.</summary>
+    public static bool CheatIn(string? uri) => CheatLevel(uri) > 0;
+
+    /// <summary>Which dev start the address asks for: 0 none, 1 the loss and the blank form (slice 1), 2 the form
+    /// filled and the booking made (slice 2 — everything one stages, plus the desk's and the console's work).</summary>
+    public static int CheatLevel(string? uri)
     {
         int q = uri?.IndexOf('?', StringComparison.Ordinal) ?? -1;
         if (uri is null || q < 0)
         {
-            return false;
+            return 0;
         }
 
+        int level = 0;
         foreach (string pair in uri[(q + 1)..].Split('&', '#'))
         {
             if (pair.Equals("claim=1", StringComparison.OrdinalIgnoreCase))
             {
-                return true;
+                level = Math.Max(level, 1);
+            }
+            else if (pair.Equals("claim=2", StringComparison.OrdinalIgnoreCase))
+            {
+                level = Math.Max(level, 2);
             }
         }
 
-        return false;
+        return level;
     }
 
     /// <summary>The first filled form the satchel holds, or null.</summary>
