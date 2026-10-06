@@ -39,6 +39,7 @@ public sealed class TheSeatCheatsBootCleanTests
     public async Task NoFirstRunCardOverlaysTheSeatedScene(string url)
     {
         using DeskBench bench = await DeskBench.BootAsync(url);
+        Assert.Empty(bench.EscapedPastTheGate);
 
         Assert.False((bool)bench.Peek("_groundLessonOpen")!, $"{url}: the FIRST TIME ON THE GROUND lesson is up");
         Assert.Null(bench.Peek("_viewObject"));   // the 🛗 THE SHAFT card rides this slot
@@ -47,12 +48,12 @@ public sealed class TheSeatCheatsBootCleanTests
         Assert.DoesNotContain(painted.ClassLists, c => c.Contains("ground-lesson-card"));
     }
 
-    /// <summary><b>A REAL FIRST LANDING KEEPS ITS LESSON.</b> No cheat seat, a fresh captain, the shuttle sets
-    /// them down: the card is up and the latch is written. <b>RED PROOF:</b> mark the lesson seen
-    /// unconditionally (drop the <c>ASeatCheatIsBooting</c> test in the Spend method, and call it from the
-    /// plain landing) and this fails on the missing card.</summary>
+    /// <summary><b>A LANDING CHEAT THAT IS NOT A SEAT KEEPS ITS LESSON.</b> <c>?land=1</c> boots through the cheat
+    /// runner with no seat flag: the card is up and the latch is written. The truly real landing (the boarding
+    /// panel) is safe by structure — it never calls the spend method. <b>RED PROOF:</b> make
+    /// <c>ASeatCheatIsBooting</c> return true unconditionally and this fails on the missing card.</summary>
     [Fact]
-    public async Task ARealFirstLandingStillRaisesTheGroundLesson()
+    public async Task ALandingCheatStillRaisesTheGroundLesson()
     {
         using DeskBench bench = await DeskBench.BootAsync("/map?dock=the-tilt&site=0&land=1");
 
