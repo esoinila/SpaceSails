@@ -2318,6 +2318,13 @@
                         @onclick="OpenTheSpread">
                     @SpaceSails.Core.SeatedPosture.WriteGlyph @SpreadDoorLabel
                 </button>
+                @* #1151 · THE SHIP'S DESK'S OWN VERB, seat-tied (2026-08-30): drawn only at her own desk, with the blank
+                   claim form held and an unclaimed loss in the book. Core's words; the press makes the form filled. *@
+                @if (ClaimFormFillable)
+                {
+                    <button type="button" class="btn btn-sm btn-outline-light"
+                            @onclick="FillTheClaimForm">@SpaceSails.Core.HullClaim.VerbLabel</button>
+                }
                 @* #1052 · …AND THE OTHER THING YOU CAN DO IN A CHAIR, beside the case and never instead of
                    it. Owner, 2026-09-01: "Reading the news pop-up could be option when sitting at table,
                    instead of working the case."

@@ -44,7 +44,30 @@ public static partial class HavenInterior
 
         /// <summary>Standing ajar, the desk bare: the sheet has been taken this run.</summary>
         AjarDeskBare,
+
+        /// <summary>#1151 · Ajar, the sheet on the desk — and the adjuster's booking console beside it, because the
+        /// captain is holding a filled claim form on her watch.</summary>
+        AjarBooking,
+
+        /// <summary>#1151 · Ajar, the desk bare — and the booking console.</summary>
+        AjarDeskBareBooking,
     }
+
+    /// <summary>#1151 · How far along the desk (from the sheet) the booking console stands — inside the desk's own
+    /// half-width, so it is reached by walking to it and never shadowed by the sheet.</summary>
+    private const float OfficeBookingOffDu = 0.8f;
+
+    /// <summary>#1151 · Where the adjuster's booking console stands: on the desk, beside the sheet.</summary>
+    public static DeckReachability.Point? TheBookingConsoleAt(string? bodyId) =>
+        TheOfficeDeskAt(bodyId) is { } desk
+            ? new DeckReachability.Point(desk.X + OfficeBookingOffDu, desk.Y)
+            : null;
+
+    /// <summary>#1151 · Does this plan carry the booking console? Read off the plan itself, like the sheet.</summary>
+    public static bool TheBookingConsoleLiesIn(DeckPlan plan) =>
+        System.Array.Exists(plan.Consoles, c =>
+            c.Kind == DeckPlan.ConsoleKind.ViewObject
+            && string.Equals(c.Label, HullClaim.BookLabel, System.StringComparison.Ordinal));
 
     /// <summary>#1332 C · The station's spec, or null for a berth with no interior.</summary>
     private static StationSpec? SpecOf(string? bodyId) => System.Array.Find(Specs, s => s.BodyId == bodyId);
@@ -221,10 +244,18 @@ public static partial class HavenInterior
 
         float back = (float)box.Y1 - OfficeDeskOffBackDu;
         float half = (CabinWidth / 2f) - OfficeJambDu;
-        if (office == OfficeDoor.Ajar)
+        if (office is OfficeDoor.Ajar or OfficeDoor.AjarBooking)
         {
             consoles.Add(new(
                 DeckPlan.ConsoleKind.ViewObject, (float)desk.X, (float)desk.Y, side.SheetTitle));
+        }
+
+        // #1151 · …and, only in the adjuster's room and only while a filled claim form is held on her watch, the
+        // console that books it. The room is the room #1365 shipped on every other path.
+        if (office is OfficeDoor.AjarBooking or OfficeDoor.AjarDeskBareBooking
+            && TheBookingConsoleAt(spec.BodyId) is { } book)
+        {
+            consoles.Add(new(DeckPlan.ConsoleKind.ViewObject, (float)book.X, (float)book.Y, HullClaim.BookLabel));
         }
 
         return
