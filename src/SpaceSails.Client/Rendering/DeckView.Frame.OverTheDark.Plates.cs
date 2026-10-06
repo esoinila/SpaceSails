@@ -51,12 +51,16 @@ public sealed partial class DeckView
 
         // Folded at its separators, and set in the largest half-pixel stencil in which the widest row fits the door.
         string[] rows = console.Label.Split(PlateFold);
-        double widestPerPx = 0.0;
-        foreach (string row in rows)
+        double px = TheStencilThatFits(rows, platePx, room);
+
+        // #1332 D · …and where that stencil is too small to read (the forwarding desk's COLD-CHAIN FORWARDING ran at 4 px
+        // across a 55 px door), the widest row is broken once more at its own space, nearest its middle, until the
+        // stencil is legible or no row has a space left. The words are the plate's own, in order, as before.
+        while (px < LegibleStencilPx && BreakTheWidestRow(rows) is { } broken)
         {
-            widestPerPx = Math.Max(widestPerPx, CommsBand.WidthOf(row, 1.0));
+            rows = broken;
+            px = TheStencilThatFits(rows, platePx, room);
         }
-        double px = Math.Min(platePx, Math.Floor(room / widestPerPx * 2.0) / 2.0);
         string font = string.Create(
             System.Globalization.CultureInfo.InvariantCulture, $"{weight}{px:0.#}px monospace");
 
@@ -74,6 +78,61 @@ public sealed partial class DeckView
 
     /// <summary>Where a plate may be folded: the house separator between the halves of a plate.</summary>
     private const string PlateFold = " · ";
+
+    /// <summary>#1332 D · The smallest stencil a folded plate is left at before its widest row is broken at a space.
+    /// Slice C's office plate is set at 6 px and slice E's at 6.5, both above it, so neither moves.</summary>
+    private const double LegibleStencilPx = 5.5;
+
+    /// <summary>The largest half-pixel stencil, no larger than the plate's own, in which the widest of
+    /// <paramref name="rows"/> fits <paramref name="room"/>.</summary>
+    private static double TheStencilThatFits(string[] rows, double platePx, double room)
+    {
+        double widestPerPx = 0.0;
+        foreach (string row in rows)
+        {
+            widestPerPx = Math.Max(widestPerPx, CommsBand.WidthOf(row, 1.0));
+        }
+
+        return Math.Min(platePx, Math.Floor(room / widestPerPx * 2.0) / 2.0);
+    }
+
+    /// <summary>The same rows with the widest one that has a space in it broken in two at the space nearest its
+    /// middle — or null when no row has a space left.</summary>
+    private static string[]? BreakTheWidestRow(string[] rows)
+    {
+        int widest = -1;
+        double widestWidth = -1.0;
+        for (int i = 0; i < rows.Length; i++)
+        {
+            double width = CommsBand.WidthOf(rows[i], 1.0);
+            if (rows[i].Contains(' ', StringComparison.Ordinal) && width > widestWidth)
+            {
+                (widest, widestWidth) = (i, width);
+            }
+        }
+
+        if (widest < 0)
+        {
+            return null;
+        }
+
+        string row = rows[widest];
+        int at = -1;
+        for (int i = 0; i < row.Length; i++)
+        {
+            if (row[i] == ' ' && (at < 0 || Math.Abs(i - (row.Length / 2.0)) < Math.Abs(at - (row.Length / 2.0))))
+            {
+                at = i;
+            }
+        }
+
+        var broken = new string[rows.Length + 1];
+        Array.Copy(rows, broken, widest);
+        broken[widest] = row[..at];
+        broken[widest + 1] = row[(at + 1)..];
+        Array.Copy(rows, widest + 1, broken, widest + 2, rows.Length - widest - 1);
+        return broken;
+    }
 
     /// <summary>
     /// #1353 · <b>HOW WIDE THIS PLATE'S DOOR IS, ON THE GLASS</b> — the pitch of the row of hatches it stands in
