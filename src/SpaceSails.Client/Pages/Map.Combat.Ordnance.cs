@@ -100,7 +100,7 @@ public partial class Map
                 {
                     if (!npc.Active || npc.Arrived || npc.Disabled || StoryHulls.IsOne(npc.Ship.Id))
                     {
-                        continue;   // #1357 - a round passes every story hull by (the charter hull, ReturningShuttle.IsTheHull, is one)
+                        continue;   // #1357 - a round passes every story hull by
                     }
 
                     // The NPC's matching motion over this span, linearly reconstructed.

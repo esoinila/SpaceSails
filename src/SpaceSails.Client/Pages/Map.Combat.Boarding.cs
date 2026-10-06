@@ -37,6 +37,11 @@ public partial class Map
 
     private void InterestFromMenu(string id)
     {
+        if (StoryHulls.IsOne(id))
+        {
+            return;   // #1357 - a story hull is no target of interest; silence, not a new line
+        }
+
         if (_interestTargetId != id)
         {
             SetInterestTarget(id);

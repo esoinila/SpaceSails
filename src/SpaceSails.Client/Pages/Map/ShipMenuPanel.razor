@@ -61,10 +61,13 @@
             <div class="d-grid gap-1">
                 @if (menuNpc.CurrentlyObserved)
                 {
+                    @if (!StoryHulls.IsOne(menuShipId))
+                    {
                     <button type="button" class="btn btn-sm btn-info" title="Mark her a target of interest — intercept clock and firing solutions"
                             @onclick="() => InterestFromMenu(menuShipId)">
                         🎯 Target of interest — intercept clock &amp; firing solutions
                     </button>
+                    }
                     <button type="button" class="btn btn-sm btn-outline-info" title="Put the telescope on her — sharpen the fix"
                             @onclick="() => TrackShipFromMenu(menuShipId)">
                         📡 Track with telescope — sharpen the intel

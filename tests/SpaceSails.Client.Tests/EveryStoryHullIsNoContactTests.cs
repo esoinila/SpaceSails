@@ -189,4 +189,38 @@ public sealed class EveryStoryHullIsNoContactTests
         Assert.True(purge > 0);
         Assert.Contains("StoryHulls.IsOne", ads[purge..(purge + 400)]);
     }
+
+    /// <summary>The ship menu's 🎯 press on a story hull is silent: no interest, no "Target of interest" pulse
+    /// (silence, never new prose). On the control ship it still marks her and writes the pulse.</summary>
+    [Theory, MemberData(nameof(Hulls))]
+    public async Task TheMenuInterestPressIsSilentForTheHullAndStillWorksForTheControl(string kind)
+    {
+        Rig r = await Rigged(kind);
+
+        Set(r.Map, "_interestTargetId", null);
+        object? before = Get(r.Map, "_pulse");
+        try { Call(r.Map, "InterestFromMenu", r.HullId); } catch (TargetInvocationException) { }
+        Assert.Null(Get(r.Map, "_interestTargetId"));
+        Assert.Equal(before, Get(r.Map, "_pulse"));
+
+        try { Call(r.Map, "InterestFromMenu", r.ControlId); } catch (TargetInvocationException) { }
+        Assert.Equal(r.ControlId, Get(r.Map, "_interestTargetId"));
+        Assert.NotEqual(before, Get(r.Map, "_pulse"));
+    }
+
+    /// <summary>The 🎯 buttons (ship menu, dossier) are not drawn for a story hull: the markup gates each on
+    /// StoryHulls.IsOne (source law; the panels take a dozen delegates and are not renderable alone).</summary>
+    [Fact]
+    public void TheInterestButtonsAreGatedOnTheStoryHullPredicate()
+    {
+        string menu = Page(Path.Combine("Map", "ShipMenuPanel.razor"));
+        int m = menu.IndexOf("Mark her a target of interest", StringComparison.Ordinal);
+        Assert.True(m > 0);
+        Assert.Contains("!StoryHulls.IsOne(menuShipId)", menu[Math.Max(0, m - 250)..m]);
+
+        string card = Page(Path.Combine("Map", "DossierCard.razor"));
+        int d = card.IndexOf("🎯 interest</button>", StringComparison.Ordinal);
+        Assert.True(d > 0);
+        Assert.Contains("!StoryHulls.IsOne(dossierId)", card[Math.Max(0, d - 500)..d]);
+    }
 }

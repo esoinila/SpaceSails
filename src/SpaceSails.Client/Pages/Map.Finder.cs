@@ -231,7 +231,7 @@ public sealed partial class Map
         {
             if (StoryHulls.IsOne(npc.Ship.Id))
             {
-                continue;   // #1357 - a story hull (the charter hull, ReturningShuttle.IsTheHull, is one) is never a finder's hull
+                continue;   // #1357 - a story hull is never a finder's hull
             }
 
             hulls.Add(new FinderCase.Hull(
