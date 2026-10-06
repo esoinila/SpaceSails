@@ -119,6 +119,11 @@ public partial class Map
         // would grey pages of a ledger that does not exist yet.)
         _filingBook = [];
 
+        // #1372 · …and the tag register with them. It rides the vault (turned-over rooms, watches, chalk, geocache
+        // sales, the gate face, station cuts, claim tags, the unease latch), so "the exact inverse of BuildVault"
+        // includes it: left alone, a second New voyage inherited the old life's tags and SAVED them into the fresh thread.
+        _roomsTurnedOver.Clear();
+
         // #973 L5a · …and the old crew with them. A new universe casts its own four, rolls its own history
         // between them and lays down its own summer-party page; the crossings and the sheets are this
         // captain's and go nowhere else.
