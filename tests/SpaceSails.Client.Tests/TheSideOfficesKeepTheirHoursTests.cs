@@ -29,6 +29,12 @@ public sealed class TheSideOfficesKeepTheirHoursTests
 
     private static string NameOf(string berth) => berth == ForwardingDesk.HavenId ? "Cinder Roost" : "The Deep";
 
+    /// <summary>What the book must file this office's lines under, typed here from the design (Plant + Cinder Roost,
+    /// Nebula Mutual + The Deep) and NOT read back off the office, so a guard on it cannot agree with a wrong office.</summary>
+    private static string TheSubjects(string berth) => berth == ForwardingDesk.HavenId
+        ? CaseSubjects.Line(CaseSubjects.Office("Plant"), CaseSubjects.Place("Cinder Roost"))
+        : CaseSubjects.Line(CaseSubjects.Office("Nebula Mutual"), CaseSubjects.Place("The Deep"));
+
     /// <summary>A page docked at the haven, ashore, ridden down the first car to the hotel level, the first ride's own
     /// line told and the slot cleared.</summary>
     private static Pages.Map OnTheHotelLevel(string name, string berth)
@@ -207,7 +213,7 @@ public sealed class TheSideOfficesKeepTheirHoursTests
 
         FieldNote once = Assert.Single(Notes(map), n => n.Text == office.PlateReadLine);
         Assert.Equal(PreservationOffice.PlateReadGlyph, once.Glyph);
-        Assert.Equal(office.Subjects(NameOf(berth)), once.Subjects);
+        Assert.Equal(TheSubjects(berth), once.Subjects);
         Assert.Contains(office.PlateReadTag, Register(map));
         Assert.All(
             SideOffices.All.Where(o => o != office),
@@ -293,11 +299,12 @@ public sealed class TheSideOfficesKeepTheirHoursTests
         Assert.Equal(office.SheetDocument, card.Caption);
         Assert.Contains(office.SheetTakenTag, Register(map));
 
-        if (office.FilesTheSheet)
+        // Typed from the design, not read off the office's own flag: the note is filed, and the form is not.
+        if (berth == ForwardingDesk.HavenId)
         {
             FieldNote filed = Assert.Single(Notes(map), n => n.Text == office.SheetDocument);
             Assert.Equal(PreservationOffice.SheetGlyph, filed.Glyph);
-            Assert.Equal(office.Subjects(NameOf(berth)), filed.Subjects);
+            Assert.Equal(TheSubjects(berth), filed.Subjects);
         }
         else
         {
@@ -408,10 +415,14 @@ public sealed class TheSideOfficesKeepTheirHoursTests
 
             // A watch that is this office's and, where the haven has an office of its own, NOT theirs.
             long w = his;
-            while (theirs is not null && theirs.IsAjarOn(Seed(map), w))
+            for (int guard = 0; theirs is not null && theirs.IsAjarOn(Seed(map), w) && guard < 64; guard++)
             {
                 w += office.WatchesPerTurn;
             }
+
+            Assert.True(
+                theirs is null || !theirs.IsAjarOn(Seed(map), w),
+                $"{other} has {berth}'s office (or one on its clock): no watch of {berth}'s is not also its own.");
 
             At(map, Within(w));
             Frames(map, 3);
