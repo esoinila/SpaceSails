@@ -748,10 +748,10 @@ public sealed class TheLevelUnderTheConcourseTests
             // #1332 C · …except the one door at Ringside Exchange that became the Preservation office: it wears the
             // office's plate, painted and registered alike, and is still locked here (this is the shut plan). The
             // office's own laws are ThePreservationOfficeStandsOnMembersRoomsTests'.
-            if (HavenInterior.HasTheOffice(berth) && i == PreservationOffice.Cabin - 1)
+            if (HavenInterior.TheOfficeAt(berth) is { } office && i == office.Cabin - 1)
             {
-                Assert.Contains(plates, p => string.Equals(p.Label, PreservationOffice.DoorPlate, StringComparison.Ordinal));
-                Assert.Equal(PreservationOffice.DoorPlate, HavenInterior.CabinPlatesAt(berth)[i]);
+                Assert.Contains(plates, p => string.Equals(p.Label, office.DoorPlate, StringComparison.Ordinal));
+                Assert.Equal(office.DoorPlate, HavenInterior.CabinPlatesAt(berth)[i]);
                 continue;
             }
 

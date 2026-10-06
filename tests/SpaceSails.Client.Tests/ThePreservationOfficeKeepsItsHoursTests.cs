@@ -337,7 +337,8 @@ public sealed class ThePreservationOfficeKeepsItsHoursTests
     [Fact]
     public void TheOfficeIsOneDevStartAwayShutOrOpen()
     {
-        string[] rows = [.. DevStarts.All.Select(e => e.Url).Where(u => u.Contains("&office=", StringComparison.Ordinal))];
+        string[] rows = [.. DevStarts.All.Select(e => e.Url)
+            .Where(u => u.Contains("&office=", StringComparison.Ordinal) && u.Contains("dock=" + Ringside, StringComparison.Ordinal))];
         Assert.Equal(
             ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=shut",
              "/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=open"],
