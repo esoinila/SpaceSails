@@ -231,9 +231,34 @@ public static class HullClaim
             {
                 level = Math.Max(level, 2);
             }
+            else if (pair.Equals("claim=3", StringComparison.OrdinalIgnoreCase))
+            {
+                level = Math.Max(level, 3);
+            }
         }
 
         return level;
+    }
+
+    /// <summary>#1151 slice 3 · <c>&amp;signing=1</c> on a <c>?claim=3</c> address - stage the signing sheet HELD (the
+    /// unease then grows its margin line instead of filing the book's entry).</summary>
+    public static bool SigningStaged(string? uri)
+    {
+        int q = uri?.IndexOf('?', StringComparison.Ordinal) ?? -1;
+        if (uri is null || q < 0)
+        {
+            return false;
+        }
+
+        foreach (string pair in uri[(q + 1)..].Split('&', '#'))
+        {
+            if (pair.Equals("signing=1", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>The first filled form the satchel holds, or null.</summary>

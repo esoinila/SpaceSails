@@ -448,12 +448,17 @@ public partial class Map
             // mend in the book and the blank claim form held. It IMPLIES the dock, the walk ashore and the ride down
             // (the garden's and the floor's own reason: the scene is what is being tested). CLAIMED here; the staging
             // is Map.HullClaim's, read off the address bar when the floor is first drawn — no world is written here.
-            if (Uri.UnescapeDataString(pair["claim=".Length..]).ToLowerInvariant() is "1" or "2" or "true" or "yes")
+            if (Uri.UnescapeDataString(pair["claim=".Length..]).ToLowerInvariant() is "1" or "2" or "3" or "true" or "yes")
             {
                 q.DockCheat = AdjustersRoom.HavenId;
                 q.AshoreCheat = true;
                 q.HavenFloorCheat = HavenLevels.ServiceLevel;
             }
+        }
+        else if (pair.StartsWith("signing=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #1151 slice 3 dev cheat: /map?claim=3&signing=1 stages the signing sheet HELD. CLAIMED here and read nowhere here, the
+            // chalk's way: it writes no world at parse time. Map.HullClaim reads it off the address bar (HullClaim.SigningStaged).
         }
         else if (pair.StartsWith("guard=", StringComparison.OrdinalIgnoreCase))
         {

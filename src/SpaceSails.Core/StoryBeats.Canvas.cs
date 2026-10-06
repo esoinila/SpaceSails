@@ -227,6 +227,10 @@ public static partial class StoryBeats
             // come to two accounts of one locket.
             Beat.Flashback when Keepsake.FlashbackCaption(subject) is { } pendantLine => pendantLine,
 
+            // #1151 slice 3 · ...and the one whose subject is the clause in her voice, wearing the GENERIC stamp (the
+            // title switch above has no arm for it, on purpose: this was always that page).
+            Beat.Flashback when ClaimInterview.FlashbackCaptionFor(subject) is { } clauseLine => clauseLine,
+
             Beat.Flashback =>
                 "Bleached to the bone. A pen on a steel desk, every scratch in it sharp; behind it the room, " +
                 "the chair, the one at the far side of the desk, all gone to white. Only the thing that was " +

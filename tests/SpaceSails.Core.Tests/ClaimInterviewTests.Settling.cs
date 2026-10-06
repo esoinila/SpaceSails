@@ -255,7 +255,7 @@ public sealed partial class ClaimInterviewTests
         Assert.Equal(2, HullClaim.CheatLevel("/map?claim=2"));
         Assert.Equal(2, HullClaim.CheatLevel("/map?x=1&claim=2#top"));
         Assert.Equal(0, HullClaim.CheatLevel("/map?claim=0"));
-        Assert.Equal(0, HullClaim.CheatLevel("/map?claim=3"));
+        Assert.Equal(3, HullClaim.CheatLevel("/map?claim=3"));
         Assert.Equal(0, HullClaim.CheatLevel("/map"));
         Assert.Equal(0, HullClaim.CheatLevel(null));
         Assert.True(HullClaim.CheatIn("/map?claim=2"));

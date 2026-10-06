@@ -184,7 +184,8 @@ public static class PreservationOffice
 
             // #1151 · ?claim=1 is its own dev start (The Deep, the door ajar on her watch) — an explicit ?office= still wins.
             claim |= pair.Equals("claim=1", StringComparison.OrdinalIgnoreCase)
-                || pair.Equals("claim=2", StringComparison.OrdinalIgnoreCase);
+                || pair.Equals("claim=2", StringComparison.OrdinalIgnoreCase)
+                || pair.Equals("claim=3", StringComparison.OrdinalIgnoreCase);
         }
 
         return claim ? Cheat.Open : Cheat.None;
