@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Core;
+using SpaceSails.Core.Tests;
 using Xunit;
 using static SpaceSails.Client.Tests.CastawayBench;
 
@@ -14,7 +15,7 @@ namespace SpaceSails.Client.Tests;
 /// vault, so the plant is the load path and not a private poke), a control that the old life's vault carries it, the
 /// reset, and then the first vault of the fresh thread must carry none of it.
 /// </summary>
-[Collection(SpaceSails.Core.Tests.StopRegisterCollection.Name)]
+[Collection(StopRegisterCollection.Name)]
 public sealed class TheVaultRidersDoNotOutliveTheLifeTests
 {
     private static readonly FieldNote Note = new("a plate under the dust", 100.0, "rider-ground", "N");
