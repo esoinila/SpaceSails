@@ -19,6 +19,8 @@ namespace SpaceSails.Core;
 /// different roll. Every magnitude below is FLAGGED: Fable's cut fixed the weights and the day-rate; the acceptance
 /// chance and the clauses' bites are the crew's reading of a gap, said so on the PR.</para>
 ///
+/// <para><b>Q3's verdict belongs to the booking, never to the paper, by design.</b></para>
+///
 /// <para>Every player-facing word is Fable canon (2026-10-07 brief cut, slice 2), verbatim. The adjuster stays unnamed:
 /// the plate is the name, NEBULA MUTUAL is who speaks. The clause is printed, never remembered — the flashback is
 /// slice 3.</para>
@@ -39,6 +41,11 @@ public static class ClaimInterview
 
     /// <summary>Q1 — any other paper (the question stands; no penalty).</summary>
     public const string Q1Wrong = "That is a document. It is not this document.";
+
+    /// <summary>Q2 — the captain holds NO policy card at all (canon addendum, Fable 2026-10-07): replaces the wrong-paper
+    /// line for that press; the question stands.</summary>
+    public const string Q2NoPolicyLine =
+        "The company pays the captains it insures. You are not one, which the company considers a fixable condition.";
 
     /// <summary>Q2 — her ask.</summary>
     public const string Q2Ask =
@@ -132,10 +139,10 @@ public static class ClaimInterview
     public const int ClaimDayRate = 40;
 
     /// <summary>FLAGGED (cut) · the outcome's weights out of <see cref="WeightTotal"/>: PAID, ADJUSTED, DECLINED.</summary>
-    public static readonly int[] BaseWeights = [1, 8, 3];
+    public static IReadOnlyList<int> BaseWeights { get; } = Array.AsReadOnly(new[] { 1, 8, 3 });
 
     /// <summary>FLAGGED (cut) · …shifted toward the captain once question three was accepted.</summary>
-    public static readonly int[] AcceptedWeights = [2, 9, 1];
+    public static IReadOnlyList<int> AcceptedWeights { get; } = Array.AsReadOnly(new[] { 2, 9, 1 });
 
     /// <summary>The die the outcome is rolled on (every weight set sums to this).</summary>
     public const int WeightTotal = 12;
@@ -146,7 +153,7 @@ public static class ClaimInterview
 
     /// <summary>FLAGGED (CREW'S GAP) · each clause's deduction, percent of the gross, by clause number − 1. The cut
     /// says the fractions are FLAGGED and gives none. TODO on the PR for Fable's numbers.</summary>
-    public static readonly int[] ClauseBitePercent = [25, 15, 35];
+    public static IReadOnlyList<int> ClauseBitePercent { get; } = Array.AsReadOnly(new[] { 25, 15, 35 });
 
     // ── THE DICE ────────────────────────────────────────────────────────────────────────────────────────
 
@@ -158,7 +165,7 @@ public static class ClaimInterview
     public static Outcome OutcomeOf(long when, bool q3Accepted)
     {
         int face = DiceRule.Roll(DiceRule.Seed("claim:interview:outcome", when), WeightTotal).Face;
-        int[] w = q3Accepted ? AcceptedWeights : BaseWeights;
+        IReadOnlyList<int> w = q3Accepted ? AcceptedWeights : BaseWeights;
         return face <= w[0] ? Outcome.Paid : face <= w[0] + w[1] ? Outcome.Adjusted : Outcome.Declined;
     }
 
@@ -235,9 +242,11 @@ public static class ClaimInterview
     /// <summary>
     /// <b>ONE PRESS.</b> The filled form for THIS loss answers question one (any other paper, a stale form included,
     /// leaves it standing); the policy — in force — answers question two; question three takes anything once and the
-    /// seeded roll decides. Nothing is ever refused: a wrong show only says its line and the question stands.
+    /// seeded roll decides. A captain holding NO policy card at all hears <see cref="Q2NoPolicyLine"/> whatever he shows
+    /// (a lapsed policy is still a card: the ordinary wrong-paper line). Nothing is ever refused: a wrong show only says its line and the question stands.
     /// </summary>
-    public static Reply Step(Stage stage, Show shown, HullClaim.Loss loss, bool policyInForce)
+    public static Reply Step(
+        Stage stage, Show shown, HullClaim.Loss loss, bool policyInForce, bool policyHeld = true)
     {
         switch (stage)
         {
@@ -248,6 +257,11 @@ public static class ClaimInterview
                     : new Reply(Stage.Loss, Q1Wrong, false);
 
             case Stage.Ship:
+                if (!policyHeld)
+                {
+                    return new Reply(Stage.Ship, Q2NoPolicyLine, false);
+                }
+
                 return shown.Kind == ShowKind.Policy && policyInForce
                     ? new Reply(Stage.Fault, Q2Right, false)
                     : new Reply(Stage.Ship, Q2Wrong, false);
@@ -442,6 +456,7 @@ public static class ClaimInterview
         yield return Q2Ask;
         yield return Q2Right;
         yield return Q2Wrong;
+        yield return Q2NoPolicyLine;
         yield return Q3Ask;
         yield return Q3AcceptedLine;
         yield return Q3RefusedLine;

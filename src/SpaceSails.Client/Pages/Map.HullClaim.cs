@@ -203,6 +203,12 @@ public partial class Map
         // latch), so the console's next press sits the captain down.
         if (HullClaim.CheatLevel(Navigation?.Uri) >= 2 && HullClaim.Fill(_satchel, _roomsTurnedOver) is { } filled)
         {
+            // …and a policy in force, so the ship question can be answered: the one real writer (the rep's sale).
+            if (!NebulaClaims.ThePolicyIsPresentable(_insurance, now))
+            {
+                _insurance = NebulaRep.PolicyAfterBuying(InsuranceTier.Premium, now);
+            }
+
             _satchel = [.. filled.Satchel];
             _roomsTurnedOver.Add(HullClaim.FiledTag(filled.Loss.DoneAt));
             BookTheClaim(filled.Loss, office);

@@ -40,6 +40,9 @@ public sealed partial class ClaimInterviewTests
             "So the ship is yours. The collectors will be told you could prove it; it ruins their whole afternoon.",
             ClaimInterview.Q2Right);
         Assert.Equal("The company has files on who owns what. I am asking whether you do.", ClaimInterview.Q2Wrong);
+        Assert.Equal(
+            "The company pays the captains it insures. You are not one, which the company considers a fixable condition.",
+            ClaimInterview.Q2NoPolicyLine);
         Assert.Equal("Last box. Why was this loss not your doing? You may show me anything. People do.", ClaimInterview.Q3Ask);
         Assert.Equal(
             "…This will do. Not because it proves anything — because it is the kind of paper the file wants inside it.",
@@ -119,7 +122,7 @@ public sealed partial class ClaimInterviewTests
 
         List<string> prose = [.. ClaimInterview.AllProse()];
         Assert.Equal(prose.Count, prose.Distinct(StringComparer.Ordinal).Count());
-        Assert.Equal(33, prose.Count);   // 18 single lines and documents, and the five that fill once per clause or cause
+        Assert.Equal(34, prose.Count);   // 19 single lines and documents, and the five that fill once per clause or cause
         foreach (string line in prose)
         {
             foreach (string word in reserved)
@@ -150,15 +153,24 @@ public sealed partial class ClaimInterviewTests
     [Fact]
     public void TheFlaggedNumbersAreTheCutsAndEverySetSumsToTheDie()
     {
-        Assert.Equal([1, 8, 3], ClaimInterview.BaseWeights);
-        Assert.Equal([2, 9, 1], ClaimInterview.AcceptedWeights);
+        Assert.Equal([1, 8, 3], ClaimInterview.BaseWeights.ToArray());
+        Assert.Equal([2, 9, 1], ClaimInterview.AcceptedWeights.ToArray());
         Assert.Equal(12, ClaimInterview.WeightTotal);
         Assert.Equal(12, ClaimInterview.BaseWeights.Sum());
         Assert.Equal(12, ClaimInterview.AcceptedWeights.Sum());
         Assert.Equal(40, ClaimInterview.ClaimDayRate);
-        Assert.Equal(ClaimInterview.PoolSize, ClaimInterview.ClauseBitePercent.Length);
+        Assert.Equal(ClaimInterview.PoolSize, ClaimInterview.ClauseBitePercent.Count);
         Assert.All(ClaimInterview.ClauseBitePercent, p => Assert.InRange(p, 1, 99));
         Assert.InRange(ClaimInterview.Q3AcceptedInTwelve, 1, 11);
+
+        // F4 · read-only from outside: not arrays, and a write through the list interface throws.
+        foreach (IReadOnlyList<int> set in new[] { ClaimInterview.BaseWeights, ClaimInterview.AcceptedWeights, ClaimInterview.ClauseBitePercent })
+        {
+            Assert.False(set is int[]);
+            Assert.Throws<NotSupportedException>(() => ((IList<int>)set)[0] = 99);
+        }
+
+        Assert.Equal([1, 8, 3], ClaimInterview.BaseWeights.ToArray());   // …and the attempts changed nothing
     }
 
     /// <summary>The day-rate arithmetic: 2.0 days is 80 cr; 3.4 is 136; the bite is a fraction of that.</summary>
@@ -219,6 +231,16 @@ public sealed partial class ClaimInterviewTests
             ClaimInterview.Reply r = ClaimInterview.Step(ClaimInterview.Stage.Ship, wrong, loss, true);
             Assert.Equal(ClaimInterview.Stage.Ship, r.Next);
             Assert.Equal(ClaimInterview.Q2Wrong, r.Said);
+        }
+
+        // NO policy card at all: her own line, whatever is shown (every kind), and the question stands. A held-but-lapsed
+        // card (above) is still the ordinary wrong-paper line.
+        foreach (ClaimInterview.Show any in wrongs.Append(policy).Append(right))
+        {
+            ClaimInterview.Reply none = ClaimInterview.Step(ClaimInterview.Stage.Ship, any, loss, false, false);
+            Assert.Equal(ClaimInterview.Stage.Ship, none.Next);
+            Assert.Equal(ClaimInterview.Q2NoPolicyLine, none.Said);
+            Assert.False(none.Q3Accepted);
         }
 
         Assert.Equal(ClaimInterview.Stage.Ship, ClaimInterview.Step(ClaimInterview.Stage.Ship, policy, loss, false).Next);

@@ -116,7 +116,8 @@ public partial class Map
         }
 
         ClaimInterview.Reply reply = ClaimInterview.Step(
-            iv.Stage, shown, iv.Loss, NebulaClaims.ThePolicyIsPresentable(_insurance, SimTime));
+            iv.Stage, shown, iv.Loss, NebulaClaims.ThePolicyIsPresentable(_insurance, SimTime),
+            _insurance.Tier != InsuranceTier.None);
         _interview = iv with { Stage = reply.Next, Said = reply.Said };
 
         if (reply.Next == ClaimInterview.Stage.Settled)

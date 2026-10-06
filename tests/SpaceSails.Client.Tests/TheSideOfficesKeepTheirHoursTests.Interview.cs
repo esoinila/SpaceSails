@@ -321,7 +321,7 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
     /// wrong show; ✕ gets him up with nothing consumed. (The cut names only the wallet card as the ship↔captain proof;
     /// an uninsured captain cannot finish the interview — flagged on the PR.)
     ///
-    /// <para><b>Proven RED</b> by a lapsed policy answering question two, and by an uninsured captain's card throwing.</para>
+    /// <para><b>Proven RED</b> by a lapsed policy answering question two, and by the no-policy branch reverted (the generic wrong line).</para>
     /// </summary>
     [Fact]
     public void ALapsedOrMissingPolicyIsAWrongPaperAndNeverAnException()
@@ -340,7 +340,8 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
         Press(none, Row(none, HullClaim.FilledId(loss)));
         Assert.DoesNotContain(Rows(none), r => r.Kind == ClaimInterview.ShowKind.Policy);
         Press(none, Row(none, AStrayPaper.Id));
-        Assert.Equal(ClaimInterview.Q2Wrong, TheCard(none).Outcome);
+        Assert.Equal(ClaimInterview.Q2NoPolicyLine, TheCard(none).Outcome);   // NO card at all: her own line, the question stands
+        Assert.Equal(ClaimInterview.Q2Ask, TheCard(none).Caption);
         int purse = (int)Read(none, "_credits")!;
         Invoke(none, "CloseViewObject");
         Assert.Single(Sleeve(none), i => i.Id == HullClaim.FilledId(loss));
@@ -379,7 +380,8 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
         Assert.True(HavenInterior.TheBookingConsoleLiesIn(Deck(map)));
 
         StandAtTheConsole(map);
-        Set(map, "_insurance", NebulaRep.PolicyAfterBuying(InsuranceTier.Premium, (double)Read(map, "SimTime")!));
+        Assert.True(NebulaClaims.ThePolicyIsPresentable((PirateInsurance)Read(map, "_insurance")!, (double)Read(map, "SimTime")!),
+            "the dev start staged no policy in force: the ship question could never be answered.");
         Sit(map);
         Assert.Equal(ClaimInterview.SeatingLine, TheCard(map).Outcome);
         Assert.Equal(ClaimInterview.Q1Ask, TheCard(map).Caption);
@@ -418,5 +420,8 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
         var notes = (IEnumerable<FieldNote>)two.Field("_fieldNotes")!;
         Assert.Single(notes, n => n.Text == HullClaim.LossLine(20));
         Assert.Single(notes, n => n.Text == HullClaim.BookEntryLine);
+        Assert.True(
+            NebulaClaims.ThePolicyIsPresentable(two.Read<PirateInsurance>("_insurance"), two.Read<ShipState>("_ship").SimTime),
+            "the booted dev start staged no policy in force.");
     }
 }
