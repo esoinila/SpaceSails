@@ -41,5 +41,10 @@ public static partial class DevStarts
             + "on it — [E] takes it into the sleeve (a form, not evidence: the book files nothing); the first step in "
             + "says one line, once per run (#1332 E).",
             "/map?dock=the-deep&ashore=1&havenfloor=-1&office=open"),
+        new("🧾✍", "The Deep — the claim, one loss from booked (#1151)",
+            "The Deep's hotel level with the adjuster's door ajar on her watch, a completed sail-mend already in the "
+            + "book (📋, the days it took) and the blank claim form in the sleeve. Walk back to the ship, sit at her "
+            + "own desk, press ✍ to copy the loss onto the form, then come back and [E] the console on the desk (#1151).",
+            "/map?claim=1"),
     ];
 }

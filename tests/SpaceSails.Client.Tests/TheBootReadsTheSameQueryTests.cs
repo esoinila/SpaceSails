@@ -121,6 +121,8 @@ public sealed class TheBootReadsTheSameQueryTests
             ["/map?barcase=1"] = "bc354594c7c4ef2ce8f68e497e52683f",
             ["/map?bond=1"] = "54e148e6a3b6c1646b3dd96ae089c9d1",
             ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "4da723e797d33350845960090030515d",
+            // #1151 slice 1 · ?claim=1: MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP; 1 new, 0 moved.
+            ["/map?claim=1"] = "3d2ef20ec20df6b1616fe30b454e1ebb",
             ["/map?converge=1"] = "1ca918e96cbdff70dde4de5806edc8a4",
             ["/map?counter=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
             ["/map?counter=1&watch=2"] = "127e5605c5a4998adb37a75eb9cb78c0",

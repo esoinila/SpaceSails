@@ -39,6 +39,7 @@ public partial class Map
     {
         // Purse + hold: the same opening stake a fresh boot lays down (Map.Trade constants), so a New voyage
         // is byte-for-byte the standard Earth opening.
+        ForgetTheMend(); // #1151 · …and a whole sail
         _credits = StartingCredits;
         _cargoByClass.Clear();
         foreach ((string cargoClass, int units) in StartingManifest)

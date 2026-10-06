@@ -455,7 +455,7 @@ public partial class Map
         if (!_sailHoled && _frameMaxDragDecel / 9.80665 >= Atmosphere.SailHoleDecelG)
         {
             _sailHoled = true;
-            _sailRepairedAtSimTime = _ship.SimTime + SailRepairSeconds;
+            TheSailIsHoled(); // #1151 · opens the mend window (and sets _sailRepairedAtSimTime)
             StaleFutureNodes(); // the burns she can no longer make
             ShowPulseMessage("🔥 The rigging screams — sail holed in the cloud tops; the crew is sewing");
             RendererInterop.PlayCue("board");
@@ -463,6 +463,7 @@ public partial class Map
         else if (_sailHoled && _ship.SimTime >= _sailRepairedAtSimTime)
         {
             _sailHoled = false;
+            TheMendIsDone(); // #1151 · the loss line, with the days the mend actually took
             ShowPulseMessage("🪡 Sail sewn shut — the drive answers again");
         }
     }

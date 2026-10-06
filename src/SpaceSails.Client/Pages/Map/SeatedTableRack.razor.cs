@@ -25,6 +25,8 @@ public partial class SeatedTableRack
     [Parameter] public List<Core.Satchel.Item> _satchel { get; set; } = default!;
     [Parameter] public bool _seatedNewsOpen { get; set; }
     [Parameter] public bool ACabinetLeafToWork { get; set; }
+    [Parameter] public bool ClaimFormFillable { get; set; }
+    [Parameter] public EventCallback FillTheClaimForm { get; set; } = default!;
     [Parameter] public Func<NewsWire.NewsItem, bool> AlreadyClipped { get; set; } = default!;
     [Parameter] public string CabinetLeafHint { get; set; } = default!;
     [Parameter] public string CabinetLeafLabel { get; set; } = default!;

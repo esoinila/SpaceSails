@@ -169,6 +169,7 @@ public static class PreservationOffice
             return Cheat.None;
         }
 
+        bool claim = false;
         foreach (string pair in uri[(q + 1)..].Split('&', '#'))
         {
             if (pair.StartsWith("office=", StringComparison.OrdinalIgnoreCase))
@@ -180,9 +181,12 @@ public static class PreservationOffice
                     _ => Cheat.None,
                 };
             }
+
+            // #1151 · ?claim=1 is its own dev start (The Deep, the door ajar on her watch) — an explicit ?office= still wins.
+            claim |= pair.Equals("claim=1", StringComparison.OrdinalIgnoreCase);
         }
 
-        return Cheat.None;
+        return claim ? Cheat.Open : Cheat.None;
     }
 
     /// <summary>Every player-facing string this slice publishes — the plate, the two told lines, the book line,
