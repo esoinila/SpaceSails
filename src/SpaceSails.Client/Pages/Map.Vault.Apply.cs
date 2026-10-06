@@ -31,6 +31,7 @@ public partial class Map
         // (especially switching to another universe via the other-voyages door) would MERGE the old run's
         // contacts, hoards, hot flags and discoveries into the loaded one. A load must be the loaded life,
         // whole and alone. (The other sections below already replace-on-apply, so they need no pre-clear.)
+        ForgetTheLifeThatRidesTheVault(); // #1376 · a load is a different life arriving: the slate is clean before any present section lands (Map.Vault.NewVoyage.cs)
         ForgetTheMend(); // #1151 · the mend window is the life's, not the page's
         _contacts.Clear();
         _caches.Clear();

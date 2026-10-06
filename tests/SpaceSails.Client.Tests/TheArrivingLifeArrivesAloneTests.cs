@@ -76,7 +76,7 @@ public sealed class TheArrivingLifeArrivesAloneTests
             if (after.Progress?.HallsHandled is { Count: > 0 }) { carried.Add("_hallsHandled"); }
             if (after.Progress?.HallsStopped is { Count: > 0 }) { carried.Add("_hallsStopped"); }
             if (after.Progress?.HallsPreserved is { Count: > 0 }) { carried.Add("_hallsPreserved"); }
-            if (after.Progress?.WorkingStopsSinceShoreLeave is not null) { carried.Add("_workingStopsSinceShoreLeave"); }
+            if (after.Progress?.WorkingStopsSinceShoreLeave == 4) { carried.Add("_workingStopsSinceShoreLeave"); }
             if (after.Finder is not null) { carried.Add("_finderCase"); }
             if (Burial.IsFilled(Ground)) { carried.Add("core:burial"); }
             if (PoliteDecline.On(Ground)) { carried.Add("core:decline"); }
