@@ -289,6 +289,10 @@ public sealed class ThePreservationOfficeKeepsItsHoursTests
         At(reloaded, PreservationOffice.SetsOffAt(TheClerksWatch(reloaded)) + 600);
         Frames(reloaded, 1);
         StandAt(reloaded, inside.X, inside.Y);
+
+        // The positive control: he IS inside, the door IS ajar, and the register is the only thing keeping the line quiet.
+        Assert.True(HavenInterior.TheOfficeStandsOpenIn(Deck(reloaded)), "the reloaded door is shut; the loop would pass vacuously.");
+        Assert.True(HavenInterior.InTheOffice(Ringside, inside.X, inside.Y, HavenLevels.ServiceLevel));
         for (int i = 0; i < 10; i++)
         {
             Set(reloaded, "_pulse", PulseSlot.Empty);

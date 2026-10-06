@@ -156,7 +156,7 @@ public static class SideOffices
     public static SideOffice Adjuster => AdjustersRoom.Office;
 
     /// <summary>Every office there is, in slice order.</summary>
-    public static IReadOnlyList<SideOffice> All => [Preservation, Forwarding, Adjuster];
+    public static IReadOnlyList<SideOffice> All { get; } = [Preservation, Forwarding, Adjuster];
 
     /// <summary>This haven's office, or null — every haven without one.</summary>
     public static SideOffice? At(string? havenId)
