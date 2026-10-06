@@ -167,24 +167,5 @@ public sealed class TheCharterHullIsNoContactTests
         Assert.Null(Get(r.Map, "_interestTargetId"));
     }
 
-    /// <summary>
-    /// ORDNANCE AND THE FINDER, by source law: each loop that walks <c>_npcStates</c> for them asks
-    /// <c>ReturningShuttle.IsTheHull</c> before it acts. (A round's flight and a case that is null in most
-    /// worlds are not reachable as a pure answer from here.)
-    /// </summary>
-    [Fact]
-    public void TheOrdnanceLoopAndTheFinderAskWhetherItIsTheHull()
-    {
-        string pages = Path.Combine(TheBootBuildsTheSameWorldTests.RepoRoot(), "src", "SpaceSails.Client", "Pages");
-        string ordnance = File.ReadAllText(Path.Combine(pages, "Map.Combat.Ordnance.cs"));
-        string finder = File.ReadAllText(Path.Combine(pages, "Map.Finder.cs"));
-
-        int loop = ordnance.IndexOf("Hit anything in the way", StringComparison.Ordinal);
-        Assert.True(loop > 0);
-        Assert.Contains("ReturningShuttle.IsTheHull", ordnance[loop..(loop + 700)]);
-
-        int hulls = finder.IndexOf("new List<FinderCase.Hull>", StringComparison.Ordinal);
-        Assert.True(hulls > 0);
-        Assert.Contains("ReturningShuttle.IsTheHull", finder[hulls..(hulls + 500)]);
-    }
+    // The ordnance loop and the finder pool source-law pins live in EveryStoryHullIsNoContactTests (#1357).
 }

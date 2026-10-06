@@ -54,7 +54,7 @@ public partial class Map
             }
 
             // #1074 beat 5 - the charter hull is a fixture on the board and nothing to trade with.
-            if (ReturningShuttle.IsTheHull(npc.Ship.Id))
+            if (StoryHulls.IsOne(npc.Ship.Id))
             {
                 continue;
             }
