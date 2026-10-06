@@ -3,9 +3,36 @@
 Everything needed to launch the local server, and then a bunch of cheat-code links to the events we can test.
 Used by sub-models to smoke-launch every scene, and by the owner for his own playtest sessions.
 
+## 0. ZERO-CLAUDE QUICKSTART — test runs with no tokens at all
+
+**The branch with the most features is always `our-own-ship-has-compartments`** (the working base; every lane
+merges there first). `main` only holds the last publish, so the base is equal or ahead. Cold start, copy-paste
+into a PowerShell at `D:\repo12\spaceSails`:
+
+```powershell
+git fetch origin
+git switch our-own-ship-has-compartments
+git pull --ff-only
+./run.ps1          # builds + serves the newest features at http://localhost:5073
+```
+
+If the checkout is on another branch or has a session's uncommitted work, serve the base from a throwaway
+worktree instead (remove it later with `git worktree remove D:\repo12\wt\play`):
+
+```powershell
+git fetch origin
+git worktree add D:\repo12\wt\play origin/our-own-ship-has-compartments
+cd D:\repo12\wt\play
+./run.ps1 -Port 5080     # -> http://localhost:5080
+```
+
+Then click any `[local]` link below (swap in your port if you chose one). No server at all? Use the `[live]`
+links — they track the **last publish**, not the newest merges. Zombie browsers after a QA session:
+`./scripts/qa-zombie-sweep.ps1`.
+
 > **Regenerated on every publish.** The catalog in section 3 mirrors `docs/testing-guide.md` (Appendix A and the scene
 > sections) - extracted, never invented - and must never be hand-edited separately: change the guide, regenerate this.
-> Last regenerated: 2026-10-05.
+> Last regenerated: 2026-10-06.
 >
 > **For smoke-launch crews, two known harness facts:** (1) the first-time-on-the-ground card must be dismissed
 > ("Boots on, then.") before judging a ground scene; (2) deep links return HTTP 404 on Pages (the SPA fallback) - that is
@@ -33,14 +60,17 @@ Every link below is a path; prefix it with a base, or press its `[local]` / `[li
 
 ---
 
-## 2. THIS RELEASE (2026-10-05)
+## 2. THIS RELEASE (2026-10-06)
 
 The newest links first. What a tester should see:
 
+- **Two more doors** (#1332 D+E): `/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=open`  [local](http://localhost:5073/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=open) [live](https://esoinila.github.io/SpaceSails-play/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=open)
+  and `/map?dock=the-deep&ashore=1&havenfloor=-1&office=open`  [local](http://localhost:5073/map?dock=the-deep&ashore=1&havenfloor=-1&office=open) [live](https://esoinila.github.io/SpaceSails-play/map?dock=the-deep&ashore=1&havenfloor=-1&office=open)
+  The COLD-CHAIN FORWARDING desk (cabin 2, a consignment note that names Deep Storage) and Nebula Mutual's adjuster's room (cabin 4, a blank claim form). `office=shut` for the shut-door watch; section 3 has all four rows.
+- **The full keepsake shelf** (#620 complete): boot any ground scene, e.g. `/map?dock=the-tilt&site=0&land=1`  [local](http://localhost:5073/map?dock=the-tilt&site=0&land=1) [live](https://esoinila.github.io/SpaceSails-play/map?dock=the-tilt&site=0&land=1)
+  Press `I` -> Carried -> KEEPSAKES: the pendant pinned on top; held #973 sheets below it in their capped row (Love steadies, Money steadies less and stings); a held collar joins as the first find. In CABIN 1 the quiet minute; the pendant's first opening raises A PAGE THAT WAS NEVER WRITTEN.
 - `/map?shuttle=1&land=1`  [local](http://localhost:5073/map?shuttle=1&land=1) [live](https://esoinila.github.io/SpaceSails-play/map?shuttle=1&land=1)
   The charter hull beside the preserved dig: the AIRLOCK / GUN RACK / SURVEY LOG plates, and the wire's one line on the slow tick (#1074 beat 5).
-- **The keepsake shelf** (#620 slice 1) - boot any ground scene, e.g. `/map?dock=the-tilt&site=0&land=1`  [local](http://localhost:5073/map?dock=the-tilt&site=0&land=1) [live](https://esoinila.github.io/SpaceSails-play/map?dock=the-tilt&site=0&land=1)
-  Press `I` -> the Carried page -> the KEEPSAKES row: the pendant. Then, aboard in CABIN 1, the quiet minute.
 - `/map?station=1&land=1`  [local](http://localhost:5073/map?station=1&land=1) [live](https://esoinila.github.io/SpaceSails-play/map?station=1&land=1)
   Ledger Point, the dead station (#653 slice 1): the drum, the severed tubes, the boat's hop consoles at her dock, the lock that costs 20 s, and the cut face that spends the cutter and stays cut.
 
