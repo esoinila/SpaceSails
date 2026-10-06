@@ -162,6 +162,12 @@ public static class CarriedObject
             return new Reveal("", office.SheetTitle, office.SheetDocument);
         }
 
+        // #1151 · …and the claim form once the ship's desk has copied a loss onto it.
+        if (HullClaim.IsTheFilledForm(paperId))
+        {
+            return new Reveal("", HullClaim.FilledTitle, HullClaim.DocumentOf(paperId));
+        }
+
         return HardcaseRep.IsTheSchedule(paperId)
             ? new Reveal("", HardcaseRep.ScheduleLabel, HardcaseRep.ScheduleBody)
             : new Reveal(

@@ -28,6 +28,8 @@ public partial class SeatedDockedStrip
     [Parameter] public List<Core.Satchel.Item> _satchel { get; set; } = default!;
     [Parameter] public bool _seatedNewsOpen { get; set; }
     [Parameter] public bool ACabinetLeafToWork { get; set; }
+    [Parameter] public bool ClaimFormFillable { get; set; }
+    [Parameter] public EventCallback FillTheClaimForm { get; set; }
     [Parameter] public string CabinetLeafHint { get; set; } = default!;
     [Parameter] public string CabinetLeafLabel { get; set; } = default!;
     [Parameter] public bool CanSpreadTheCaseHere { get; set; }

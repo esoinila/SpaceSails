@@ -59,16 +59,26 @@ public partial class Map
             return HavenInterior.OfficeDoor.Shut;
         }
 
-        return _roomsTurnedOver.Contains(office.SheetTakenTag)
-            ? HavenInterior.OfficeDoor.AjarDeskBare
-            : HavenInterior.OfficeDoor.Ajar;
+        // #1151 · …and the adjuster's console stands on her watch while a filled claim form is held.
+        bool books = TheBookingConsoleIsOnOffer(office);
+        return TheDeskHasASheet(office)
+            ? (books ? HavenInterior.OfficeDoor.AjarBooking : HavenInterior.OfficeDoor.Ajar)
+            : (books ? HavenInterior.OfficeDoor.AjarDeskBareBooking : HavenInterior.OfficeDoor.AjarDeskBare);
     }
 
     /// <summary>#1332 C · …and how the plan under the captain's feet DRAWS it, read off the plan itself.</summary>
-    private HavenInterior.OfficeDoor TheOfficeAsDrawn() =>
-        !HavenInterior.TheOfficeStandsOpenIn(_deckPlan) ? HavenInterior.OfficeDoor.Shut
-        : HavenInterior.TheSheetLiesIn(_deckPlan) ? HavenInterior.OfficeDoor.Ajar
-        : HavenInterior.OfficeDoor.AjarDeskBare;
+    private HavenInterior.OfficeDoor TheOfficeAsDrawn()
+    {
+        if (!HavenInterior.TheOfficeStandsOpenIn(_deckPlan))
+        {
+            return HavenInterior.OfficeDoor.Shut;
+        }
+
+        bool books = HavenInterior.TheBookingConsoleLiesIn(_deckPlan);
+        return HavenInterior.TheSheetLiesIn(_deckPlan)
+            ? (books ? HavenInterior.OfficeDoor.AjarBooking : HavenInterior.OfficeDoor.Ajar)
+            : (books ? HavenInterior.OfficeDoor.AjarDeskBareBooking : HavenInterior.OfficeDoor.AjarDeskBare);
+    }
 
     /// <summary>
     /// #1332 C/D/E · <b>ONE FRAME OF THE OFFICE'S HOURS</b>, on the hotel level of the station that has one and
@@ -147,7 +157,8 @@ public partial class Map
 
         if (!HavenInterior.TheOfficeStandsOpenIn(_deckPlan))
         {
-            ShowPulseMessage(office.ShutLine);
+            // #1151 · …and, in the adjuster's room with a filled claim form in the satchel, one line after it.
+            ShowPulseMessage(TheShutDoorSays(office));
         }
 
         if (_roomsTurnedOver.Add(office.PlateReadTag))
@@ -172,7 +183,7 @@ public partial class Map
     {
         if (_dockedHavenId is not { } berth || HavenInterior.TheOfficeAt(berth) is not { } office
             || !string.Equals(label, office.SheetTitle, StringComparison.Ordinal)
-            || _roomsTurnedOver.Contains(office.SheetTakenTag))
+            || !TheDeskHasASheet(office))
         {
             return false;
         }
@@ -218,6 +229,8 @@ public partial class Map
         {
             return;
         }
+
+        StageTheClaimIfAsked(); // #1151 · ?claim=1 — a completed mend in the book, the blank form in the sleeve
 
         if (_havenFloor != HavenLevels.ServiceLevel
             || HavenInterior.TheOfficeAt(_dockedHavenId) is not { } office

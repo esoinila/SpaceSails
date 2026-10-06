@@ -442,6 +442,19 @@ public partial class Map
             // forces that haven's side-office door. CLAIMED here and read nowhere here, the chalk's and the guard's way: it
             // writes no world at parse time. Map.PreservationOffice reads it off the address bar.
         }
+        else if (pair.StartsWith("claim=", StringComparison.OrdinalIgnoreCase))
+        {
+            // #1151 dev cheat: /map?claim=1 boots at The Deep's hotel level with the adjuster's door ajar, a completed
+            // mend in the book and the blank claim form held. It IMPLIES the dock, the walk ashore and the ride down
+            // (the garden's and the floor's own reason: the scene is what is being tested). CLAIMED here; the staging
+            // is Map.HullClaim's, read off the address bar when the floor is first drawn — no world is written here.
+            if (Uri.UnescapeDataString(pair["claim=".Length..]).ToLowerInvariant() is "1" or "true" or "yes")
+            {
+                q.DockCheat = AdjustersRoom.HavenId;
+                q.AshoreCheat = true;
+                q.HavenFloorCheat = HavenLevels.ServiceLevel;
+            }
+        }
         else if (pair.StartsWith("guard=", StringComparison.OrdinalIgnoreCase))
         {
             // #618 dev cheat: /map?secretlab=1&land=1&guard=posted|absent|round forces how the man at the Hive's

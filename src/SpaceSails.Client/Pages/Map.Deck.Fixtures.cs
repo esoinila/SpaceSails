@@ -100,6 +100,12 @@ public partial class Map
                 return;
             }
 
+            // #1151 · …and the adjuster's booking console, recognised by its plate like the sheet beside it.
+            if (TryTheBookingConsole(spot.Label))
+            {
+                return;
+            }
+
             // #1332 C/D/E · …and the paper on a side office's desk, a pickup like the schedule.
             if (TryTheSheetOnTheDesk(spot.Label))
             {

@@ -118,6 +118,7 @@ public static class FieldClue
             || CarryThePress.IsTheNote(paperId)
             || SpikeIt.IsAuthored(paperId)
             || SideOffices.ForSheet(paperId) is not null   // #1332 C/D/E · the side offices' one paper each
+            || HullClaim.IsTheFilledForm(paperId)          // #1151 · the blank form, once the desk has copied a loss onto it
             || ReturningShuttle.IsTheLog(paperId)
             || UndergroundComplex.AuthoredPaperOf(paperId) is not null
             || UndergroundComplex.LiftCode.PaperIn(paperId) is not null;
@@ -191,6 +192,12 @@ public static class FieldClue
         if (SideOffices.ForSheet(paperId) is { } office)
         {
             return office.SheetDocument;
+        }
+
+        // #1151 · …and the form the ship's desk made of the blank: the loss it names, in the canon's words.
+        if (HullClaim.IsTheFilledForm(paperId))
+        {
+            return HullClaim.DocumentOf(paperId);
         }
 
         // #1074/#1063 · …AND THE FIVE THE ARC WROTE, for exactly the same reason and through exactly the
@@ -317,6 +324,12 @@ public static class FieldClue
         if (SideOffices.ForSheet(paperId) is { } office)
         {
             return office.SheetTitle;
+        }
+
+        // #1151 · …and so is the filled form.
+        if (HullClaim.IsTheFilledForm(paperId))
+        {
+            return HullClaim.FilledTitle;
         }
 
         // #1074/#1063 · …and the five the arc wrote are called what they are called. Same door as Document

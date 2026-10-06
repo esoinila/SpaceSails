@@ -113,7 +113,7 @@ public partial class Map
         if (episode.HolesSail && !_sailHoled)
         {
             _sailHoled = true;
-            _sailRepairedAtSimTime = _ship.SimTime + SailRepairSeconds;
+            TheSailIsHoled(); // #1151 · opens the mend window (and sets _sailRepairedAtSimTime)
             StaleFutureNodes();
             RendererInterop.PlayCue("board");
         }
