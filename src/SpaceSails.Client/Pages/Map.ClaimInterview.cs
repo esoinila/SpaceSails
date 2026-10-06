@@ -150,6 +150,7 @@ public partial class Map
         }
 
         _roomsTurnedOver.Add(ClaimInterview.SettledTag(loss.DoneAt));
+        TheUneaseComes(loss, settled);
         RequestVaultSave();
     }
 }

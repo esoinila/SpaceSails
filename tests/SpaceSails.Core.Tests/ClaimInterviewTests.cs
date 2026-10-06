@@ -122,7 +122,7 @@ public sealed partial class ClaimInterviewTests
 
         List<string> prose = [.. ClaimInterview.AllProse()];
         Assert.Equal(prose.Count, prose.Distinct(StringComparer.Ordinal).Count());
-        Assert.Equal(34, prose.Count);   // 19 single lines and documents, and the five that fill once per clause or cause
+        Assert.Equal(38, prose.Count);   // 19 single lines and documents, the five that fill once per clause or cause, and slice 3 four
         foreach (string line in prose)
         {
             foreach (string word in reserved)
