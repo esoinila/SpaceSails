@@ -174,6 +174,7 @@ public partial class Map
         _scopeIntel.Clear();
 
         TheMilkRunIsUntaught(); // #160: a new universe has not been taught the loop
+        ForgetTheLifeThatRidesTheVault(); // #1374 · and every other section BuildVault writes (Map.Vault.NewVoyage.cs)
         // #292 note: _tutorialPlayed is deliberately NOT reset here. Whether a fresh universe re-runs the
         // tutorial (and its date-triggered target rush) is the docked-starts lane's rework, not this one;
         // this lane owns that the persistence model resets and isolates the mission slate above.
