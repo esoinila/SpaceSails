@@ -398,9 +398,9 @@ public static class ClaimInterview
 
     /// <summary>
     /// The book after a DECLINED outcome: this loss's 📋 line gains the stamp's one word. The line is found by its own
-    /// words and the loss's own moment (the page files it on the frame the mend completes, so its sim-second is the
-    /// loss's); with the moment not matching (a re-filed or hand-staged line) the newest line with those words is the
-    /// one stamped. A line already stamped, or trimmed off a full book, leaves the book as it was.
+    /// words AND the loss's own moment (the page files it on the frame the mend completes, so its sim-second is the
+    /// loss's) — another loss of the same length is never stamped in its place. A line already stamped, or trimmed off a
+    /// full book, leaves the book as it was.
     /// </summary>
     public static IReadOnlyList<FieldNote> Stamp(IReadOnlyList<FieldNote> book, HullClaim.Loss loss)
     {
@@ -418,10 +418,7 @@ public static class ClaimInterview
             if ((long)Math.Floor(book[i].SimTime) == loss.DoneAt)
             {
                 at = i;
-                break;
             }
-
-            at = i;
         }
 
         if (at < 0)

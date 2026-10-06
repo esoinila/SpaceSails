@@ -123,6 +123,9 @@ public sealed class TheBootReadsTheSameQueryTests
             ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "4da723e797d33350845960090030515d",
             // #1151 slice 1 · ?claim=1: MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP; 1 new, 0 moved.
             ["/map?claim=1"] = "3d2ef20ec20df6b1616fe30b454e1ebb",
+            // #1151 slice 2 · ?claim=2: MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP; 1 new, 0 moved (the query says exactly what
+            // ?claim=1 says: the dock, the walk ashore, the ride down).
+            ["/map?claim=2"] = "3d2ef20ec20df6b1616fe30b454e1ebb",
             ["/map?converge=1"] = "1ca918e96cbdff70dde4de5806edc8a4",
             ["/map?counter=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
             ["/map?counter=1&watch=2"] = "127e5605c5a4998adb37a75eb9cb78c0",

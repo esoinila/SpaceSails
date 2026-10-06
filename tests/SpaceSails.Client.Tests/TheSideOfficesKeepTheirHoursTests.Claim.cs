@@ -135,12 +135,10 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
         Set(map, "_pulse", PulseSlot.Empty);
         Invoke(map, "InteractAtConsole");
         Assert.Equal(HullClaim.BookedLine, InTheSlot(map));
-        for (int press = 0; press < 2; press++)
-        {
-            Invoke(map, "FileNote", "an unrelated line between the presses", "·");
-            Invoke(map, "InteractAtConsole");
-            Assert.NotNull(Read(map, "_interview"));
-        }
+        Invoke(map, "FileNote", "an unrelated line between the presses", "·");
+        Invoke(map, "InteractAtConsole");
+        Assert.NotNull(Read(map, "_interview"));   // the second press SEATS the interview — it does not re-book
+        Invoke(map, "CloseViewObject");
 
         Assert.Equal(1, Register(map).Count(t => t == HullClaim.BookedTag(ALoss.DoneAt)));
         FieldNote entry = Assert.Single(Booked(map));
