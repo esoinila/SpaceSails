@@ -1,12 +1,14 @@
+using System.Linq;
 using SpaceSails.Core;
 using SpaceSails.Core.Interior;
 
 namespace SpaceSails.Client.Rendering;
 
 /// <summary>
-/// #1332 C · Part of <see cref="HavenInterior"/> (the header note lives in HavenInterior.cs) — <b>THE PRESERVATION
-/// OFFICE</b>: one of the five cabins on Ringside Exchange's hotel level, become an office with the cost centre on
-/// its door.
+/// #1332 C/D/E · Part of <see cref="HavenInterior"/> (the header note lives in HavenInterior.cs) — <b>THE SIDE
+/// OFFICES</b>: one of the five cabins on a hotel level, become an office with a plate on its door — Ringside
+/// Exchange's Preservation office (C), Cinder Roost's forwarding desk (D), The Deep's adjuster's room (E). The three
+/// are one kit (<see cref="SideOffice"/>) and this file draws whichever the station has.
 ///
 /// <para>Every word it says is Core's (<see cref="PreservationOffice"/>) and every clock it keeps is Core's too;
 /// this file owns only where it stands and how it is drawn. The office is DATA on the station's
@@ -47,22 +49,26 @@ public static partial class HavenInterior
     /// <summary>#1332 C · The station's spec, or null for a berth with no interior.</summary>
     private static StationSpec? SpecOf(string? bodyId) => System.Array.Find(Specs, s => s.BodyId == bodyId);
 
-    /// <summary>#1332 C · Which cabin (one-based) is this station's office, or null — every station but one.</summary>
-    private static int? TheOfficeCabinOf(StationSpec spec) => spec.Lower?.Office;
+    /// <summary>#1332 C · Which cabin (one-based) is this station's office, or null — every station but three.</summary>
+    private static int? TheOfficeCabinOf(StationSpec spec) => spec.Lower?.Office?.Cabin;
 
-    /// <summary>#1332 C · Does this berth have the office on its hotel level? Ringside Exchange, and nowhere else
-    /// — asked of the catalogue so a guard can sweep every haven for it rather than trust one id.</summary>
-    public static bool HasTheOffice(string? bodyId) => SpecOf(bodyId) is { } spec && TheOfficeCabinOf(spec) is not null;
+    /// <summary>#1332 C/D/E · This berth's side office — Ringside Exchange's Preservation office, Cinder Roost's
+    /// forwarding desk, The Deep's adjuster's room — or null at every other haven.</summary>
+    public static SideOffice? TheOfficeAt(string? bodyId) => SpecOf(bodyId)?.Lower?.Office;
+
+    /// <summary>#1332 C · Does this berth have an office on its hotel level? Three havens do — asked of the
+    /// catalogue so a guard can sweep every haven for it rather than trust an id.</summary>
+    public static bool HasTheOffice(string? bodyId) => TheOfficeAt(bodyId) is not null;
 
     /// <summary>#1332 C · What is PAINTED over cabin <paramref name="n"/> (one-based) at this station: the
     /// office's plate on the office's door, <c>CABIN n</c> on every other.</summary>
     private static string CabinDoorPlateOf(StationSpec spec, int n) =>
-        TheOfficeCabinOf(spec) == n ? PreservationOffice.DoorPlate : HavenLevels.CabinDoorPlate(n);
+        spec.Lower?.Office is { } office && office.Cabin == n ? office.DoorPlate : HavenLevels.CabinDoorPlate(n);
 
     /// <summary>#1332 C · …and the leaf's whole name in the register (what <see cref="Egress"/> seeds a door roll
     /// on). The office's door has one name, painted and registered alike.</summary>
     private static string CabinRegisterPlateOf(StationSpec spec, int n) =>
-        TheOfficeCabinOf(spec) == n ? PreservationOffice.DoorPlate : HavenLevels.CabinPlate(n);
+        spec.Lower?.Office is { } office && office.Cabin == n ? office.DoorPlate : HavenLevels.CabinPlate(n);
 
     /// <summary>#1332 C · The five painted plates of this station's row, in the doors' order — for the guards,
     /// which hold every haven but one to <c>CABIN n</c> and that one to the office's plate on one door.</summary>
@@ -168,7 +174,7 @@ public static partial class HavenInterior
     public static bool TheSheetLiesIn(DeckPlan plan) =>
         System.Array.Exists(plan.Consoles, c =>
             c.Kind == DeckPlan.ConsoleKind.ViewObject
-            && string.Equals(c.Label, PreservationOffice.SheetTitle, System.StringComparison.Ordinal));
+            && SideOffices.All.Any(o => string.Equals(c.Label, o.SheetTitle, System.StringComparison.Ordinal)));
 
     /// <summary>#1332 C · The corridor face of the cabin row: one unbroken wall, exactly as every station has
     /// always drawn it — or, at the office's station on the clerk's watch, the same wall with the office's
@@ -207,7 +213,7 @@ public static partial class HavenInterior
     private static DeckPlan.FurnitureSpot[]? FurnishTheOffice(
         StationSpec spec, OfficeDoor office, System.Collections.Generic.List<DeckPlan.ConsoleSpot> consoles)
     {
-        if (office == OfficeDoor.Shut || TheOfficeBox(spec.BodyId) is not { } box
+        if (office == OfficeDoor.Shut || spec.Lower?.Office is not { } side || TheOfficeBox(spec.BodyId) is not { } box
             || TheOfficeDeskAt(spec.BodyId) is not { } desk)
         {
             return null;
@@ -218,7 +224,7 @@ public static partial class HavenInterior
         if (office == OfficeDoor.Ajar)
         {
             consoles.Add(new(
-                DeckPlan.ConsoleKind.ViewObject, (float)desk.X, (float)desk.Y, PreservationOffice.SheetTitle));
+                DeckPlan.ConsoleKind.ViewObject, (float)desk.X, (float)desk.Y, side.SheetTitle));
         }
 
         return

@@ -381,7 +381,7 @@ public static partial class DevStarts
             "/map?dock=selene-gate&ashore=1&havenfloor=-1"),
         // #1332 A · …and the six floors the other hubs grew, one button each (DevStarts.Below.cs).
         .. BelowTheLobbies(),
-        .. ThePreservationOffice(),   // #1332 C · …and the office on Ringside Exchange's hotel level
+        .. TheSideOffices(),   // #1332 C/D/E · …and the three side offices on their hotel levels
         .. TheReturningShuttle(),     // #1074 beat 5 · …and the charter hull on a preserved ground
         .. TheDeadStation(),          // #653 · …and the dead station, boarded at her crew lock
         // #1332 B · …and the garden behind glass off each concourse (DevStarts.Garden.cs).

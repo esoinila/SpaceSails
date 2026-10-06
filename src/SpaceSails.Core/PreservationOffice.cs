@@ -99,15 +99,12 @@ public static class PreservationOffice
     /// The same run always answers the same, so a captain can LEARN it.</summary>
     /// <param name="runSeed">The run's own seed — the page's <c>WorldSeed</c>, the thread id folded.</param>
     public static int OffsetFor(ulong runSeed) =>
-        (int)(DiceRule.Seed(runSeed, SeedTag) % WatchesPerTurn);
+        SideOffices.OffsetOf(runSeed, SeedTag, WatchesPerTurn);
 
     /// <summary><b>IS THIS WATCH THE CLERK'S?</b> Pure arithmetic of (run seed, watch): the door stands ajar for
     /// the whole of it and is shut for the other three. Correct for any watch index, negative included.</summary>
-    public static bool IsTheClerksWatch(ulong runSeed, long watch)
-    {
-        long r = (watch - OffsetFor(runSeed)) % WatchesPerTurn;
-        return (r < 0 ? r + WatchesPerTurn : r) == 0;
-    }
+    public static bool IsTheClerksWatch(ulong runSeed, long watch) =>
+        SideOffices.AjarOn(runSeed, SeedTag, WatchesPerTurn, watch);
 
     /// <summary>When the clerk sets off from the door on his watch: the watch's first second. He walks to the car
     /// and rides up, and the office is empty for the rest of it.</summary>

@@ -30,6 +30,10 @@ public sealed class ToldOnce
     /// <summary>The haven garden's first visit (once per station, per run).</summary>
     public const string GardenVisit = "garden";
 
+    /// <summary>The side office's ajar line (#1332 C/D/E) - the warm chair, the cold room, the two chairs: once per
+    /// haven (one office to a haven), per run.</summary>
+    public const string OfficeAjar = "office:ajar";
+
     /// <summary>The man at the door's approach line, on the first card of an excursion (once per visit).</summary>
     public const string GateApproach = "gate:approach";
 

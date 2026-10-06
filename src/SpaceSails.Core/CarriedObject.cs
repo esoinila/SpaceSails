@@ -156,10 +156,10 @@ public static class CarriedObject
             return new Reveal("", ReturningShuttle.LogTitle, ReturningShuttle.LogDocument);
         }
 
-        // #1332 C · …and the disbursement sheet off the Preservation office's desk, titled with its own title.
-        if (PreservationOffice.IsTheSheet(paperId))
+        // #1332 C/D/E · …and the paper off a side office's desk, titled with its own title.
+        if (SideOffices.ForSheet(paperId) is { } office)
         {
-            return new Reveal("", PreservationOffice.SheetTitle, PreservationOffice.SheetDocument);
+            return new Reveal("", office.SheetTitle, office.SheetDocument);
         }
 
         return HardcaseRep.IsTheSchedule(paperId)
