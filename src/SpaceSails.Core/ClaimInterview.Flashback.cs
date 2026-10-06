@@ -40,6 +40,10 @@ public static partial class ClaimInterview
     /// <summary>The line the signing sheet grows, once ever (canon, verbatim).</summary>
     public const string MarginLine = "In the margin, in a hand that is not yours: 'Read to claimant in full.'";
 
+    /// <summary>What the unease's 📍 entry files under (owner ruling on #1371): the company only - Nebula Mutual, NO place arm,
+    /// because the clause was read to the captain by the company, not by a room. Mirrors <see cref="HullClaim.SubjectsFor"/> without its place.</summary>
+    public static string UneaseSubjects => CaseSubjects.Line(CaseSubjects.Office(NebulaLore.TermsRefiledOffice));
+
     /// <summary>The book's 📍 entry when the signing memory is NOT held, once (canon, verbatim).</summary>
     public const string UneaseBookLine =
         "She read a clause today that I knew before she finished it. Filed under: things the fine print kept.";

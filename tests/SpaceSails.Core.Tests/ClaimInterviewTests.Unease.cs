@@ -113,6 +113,42 @@ public sealed class ClaimInterviewUneaseTests
         Assert.False(ClaimInterview.HasTheMargin(null));
     }
 
+    /// <summary>
+    /// <b>THE UNEASE'S BOOK ENTRY FILES UNDER NEBULA MUTUAL, AND UNDER NO PLACE.</b> The company only (the booking
+    /// entry's idiom without its place arm).
+    ///
+    /// <para><b>Proven RED</b> by a place arm added (The Deep appears) and, on the page, by filing with plain FileNote.</para>
+    /// </summary>
+    [Fact]
+    public void TheUneaseEntryFilesUnderTheCompanyAndNoPlace()
+    {
+        Assert.Equal(CaseSubjects.Line(CaseSubjects.Office(NebulaLore.TermsRefiledOffice)), ClaimInterview.UneaseSubjects);
+        Assert.NotEqual("", ClaimInterview.UneaseSubjects);
+        Assert.DoesNotContain("The Deep", ClaimInterview.UneaseSubjects, StringComparison.Ordinal);
+        Assert.NotEqual(HullClaim.SubjectsFor("The Deep"), ClaimInterview.UneaseSubjects);
+    }
+
+    /// <summary>
+    /// <b>THE MARGIN COMPOSES WITH A REBIRTH'S SENTENCE.</b> After a rebirth the sheet is the canonical text plus the
+    /// reborn line; the margin lands after both, each exactly once, and no canonical text already carries a margin.
+    ///
+    /// <para><b>Proven RED</b> by the margin replacing the reborn line and by a canonical text that carries a margin.</para>
+    /// </summary>
+    [Fact]
+    public void TheMarginComposesWithTheRebornLine()
+    {
+        string reborn = NebulaRep.SigningMemoryFor(1);
+        string grown = ClaimInterview.WithTheMargin(reborn);
+        Assert.Equal(reborn + " " + ClaimInterview.MarginLine, grown);
+        Assert.Equal(1, CountOf(grown, NebulaRep.SigningMemoryReborn));
+        Assert.Equal(1, CountOf(grown, ClaimInterview.MarginLine));
+        Assert.Equal(grown, ClaimInterview.WithTheMargin(grown));
+        foreach (int n in new[] { 0, 1, 4 })
+        {
+            Assert.False(ClaimInterview.HasTheMargin(NebulaRep.SigningMemoryFor(n)));
+        }
+    }
+
     private static int CountOf(string text, string needle)
     {
         int n = 0;

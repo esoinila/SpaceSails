@@ -38,7 +38,7 @@ public partial class Map
         }
         else
         {
-            FileNote(ClaimInterview.UneaseBookLine, HullClaim.BookGlyph);
+            FileNoteAbout(ClaimInterview.UneaseBookLine, HullClaim.BookGlyph, ClaimInterview.UneaseSubjects);
         }
 
         ApplyNerveShock(ClaimInterview.UneaseNerve, ClaimInterview.UneaseShockLabel);

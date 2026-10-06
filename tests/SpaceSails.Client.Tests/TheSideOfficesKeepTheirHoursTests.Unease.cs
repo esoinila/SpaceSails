@@ -124,7 +124,9 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
             Assert.Equal(ClaimInterview.UneaseNerve, NerveCarry(map), 6);
             Assert.Equal(nerve, (double)Read(map, "_nerve")!, 6);
             Assert.Equal(1, UneaseNotes(map));
-            Assert.Equal(HullClaim.BookGlyph, Notes(map).Single(n => n.Text == ClaimInterview.UneaseBookLine).Glyph);
+            FieldNote filed = Notes(map).Single(n => n.Text == ClaimInterview.UneaseBookLine);
+            Assert.Equal(HullClaim.BookGlyph, filed.Glyph);
+            Assert.Equal(ClaimInterview.UneaseSubjects, filed.Subjects);   // filed under Nebula Mutual (owner ruling), not under a place
             Assert.Null(TheSigning(map));
             Assert.Contains(ClaimInterview.UneaseTag, Register(map));
 
@@ -242,6 +244,37 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
         Pages.Map unmarked = SeatedWithNoPlate("claim-unease-sheet-bare", LossOn(ClaimInterview.Outcome.Adjusted, 550000));
         Invoke(unmarked, "RestoreOldCrewSections", VaultSerializer.Load(VaultSerializer.Save(bare)));
         Assert.Equal(0, Margins(unmarked));
+    }
+
+    /// <summary>
+    /// <b>A REBIRTH'S RE-FILING KEEPS THE MARGIN, WITH THE REBORN LINE.</b> The captain has buried one of himself (a thread
+    /// row planted, as the rep's bench does) and holds a sheet already carrying the margin; the sheet's one writer re-runs:
+    /// the text is the reborn canonical text plus the margin, one of each line.
+    ///
+    /// <para><b>Proven RED</b> by the writer's margin guard dropped (the re-filing wipes the margin).</para>
+    /// </summary>
+    [Fact]
+    public void AReFilingAfterARebirthKeepsTheMarginAndTheRebornLine()
+    {
+        HullClaim.Loss loss = LossOn(ClaimInterview.Outcome.Adjusted, 700000);
+        Pages.Map map = SeatedWithNoPlate("claim-unease-reborn", loss);
+        Set(map, "_activeThreadId", "unease-thread");
+        Set(map, "_threadList", (IReadOnlyList<GameThreadInfo>)
+        [
+            new GameThreadInfo { Id = "unease-thread", Retired = [new RetiredCaptain("Someone Who Died", 12)] },
+        ]);
+        Set(map, "_heldMemories", new List<HeldMemory.Sheet>
+        {
+            new(NebulaRep.SigningMemoryId, HeldMemory.Mark.Mine, HeldMemory.Theory.Money,
+                ClaimInterview.WithTheMargin(NebulaRep.SigningMemoryFor(0)), [], 5.0),
+        });
+
+        Invoke(map, "FileTheSigningSheet");
+
+        string text = TheSigning(map)!.Value.Text;
+        Assert.Equal(ClaimInterview.WithTheMargin(NebulaRep.SigningMemoryFor(1)), text);
+        Assert.Equal(1, Margins(map));
+        Assert.Equal(1, text.Split(NebulaRep.SigningMemoryReborn).Length - 1);
     }
 
     /// <summary>
