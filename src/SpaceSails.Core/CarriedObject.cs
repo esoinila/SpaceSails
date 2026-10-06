@@ -168,6 +168,12 @@ public static class CarriedObject
             return new Reveal("", HullClaim.FilledTitle, HullClaim.DocumentOf(paperId));
         }
 
+        // #1151 slice 2 · …and the paper an interview hands over, titled with its own title.
+        if (ClaimInterview.IsAPaper(paperId))
+        {
+            return new Reveal("", ClaimInterview.TitleOf(paperId), ClaimInterview.DocumentOf(paperId));
+        }
+
         return HardcaseRep.IsTheSchedule(paperId)
             ? new Reveal("", HardcaseRep.ScheduleLabel, HardcaseRep.ScheduleBody)
             : new Reveal(

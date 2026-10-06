@@ -922,6 +922,7 @@ on `_roomsTurnedOver` (the vault carries them), every word `HullClaim`'s (Fable 
    only with a filled form held. Every path without a filled form is the room slice E shipped.
 
 - **Dev start:** `/map?claim=1` — docked at The Deep, on its hotel level, the door ajar, a completed mend in the book and
+- **#1151 slice 2 — the interview:** a press on the booking console with the claim already booked and the filled form held, on her watch, seats the captain: one `ViewObject` card plated with the room's plate (`ClaimInterview`, Core; the page side is `Map.ClaimInterview.cs`). Three questions, a paper for each, no retry gates (a wrong show leaves the question standing); the third takes one offer or an explicit nothing. Three rolls (question three's acceptance, the outcome, the clause or cause) are salted from the booking's `{when}` alone, so a reload replays the same interview. PAID / ADJUSTED pay `ClaimDayRate` (40 cr, FLAGGED) per day through `_credits`, less the clause's bite on ADJUSTED; DECLINED pays nothing, returns the form and stamps the loss line. Every outcome consumes the filled form and closes the booked row (`claim:settled:{when}`). Dev start `/map?claim=2`.
   the blank form in the sleeve (staged through the same writers; implies the dock, the walk ashore and the ride down).
 - **Guards:** `HullClaimTests` (Core: canon to the byte, the days computed with a re-hole extending the loss, the
   register, the filled form as an authored sheet, the booking row through a vault round trip with a positive control);

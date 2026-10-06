@@ -139,15 +139,24 @@ public partial class Map
             return true;
         }
 
+        // A filled form not yet booked: the press books it (one row, one entry, once per form) and says the booked line.
         foreach (Satchel.Item held in _satchel)
         {
             if (held.Kind == Satchel.Kind.Paper && HullClaim.TryReadFilled(held.Id, out HullClaim.Loss loss)
-                && _roomsTurnedOver.Add(HullClaim.BookedTag(loss.DoneAt)))
+                && !_roomsTurnedOver.Contains(HullClaim.BookedTag(loss.DoneAt)))
             {
-                FileNoteAbout(HullClaim.BookEntryLine, HullClaim.BookGlyph, office.Subjects(_havenName));
-                RequestVaultSave();
-                break;
+                BookTheClaim(loss, office);
+                ShowPulseMessage(HullClaim.BookedLine);
+                StateHasChanged();
+                return true;
             }
+        }
+
+        // #1151 slice 2 · …and a form already booked, on her watch, is the interview: the press sits the captain down.
+        if (TheBookedFormHeld() is { } booked)
+        {
+            OpenTheInterview(booked);
+            return true;
         }
 
         ShowPulseMessage(HullClaim.BookedLine);
@@ -155,9 +164,21 @@ public partial class Map
         return true;
     }
 
+    /// <summary>The booking itself — the vault row (the BOOKED tag) and the book's 📍 entry, once per filled form.</summary>
+    private void BookTheClaim(HullClaim.Loss loss, SideOffice office)
+    {
+        if (!_roomsTurnedOver.Add(HullClaim.BookedTag(loss.DoneAt)))
+        {
+            return;
+        }
+
+        FileNoteAbout(HullClaim.BookEntryLine, HullClaim.BookGlyph, office.Subjects(_havenName));
+        RequestVaultSave();
+    }
+
     // ── THE DEV START ───────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>#1151 QA · <c>?claim=1</c> — a COMPLETED mend is in the book and the blank form is in the sleeve, at The
+    /// <summary>#1151 QA · <c>?claim=1</c> (and <c>?claim=2</c>, below) — a COMPLETED mend is in the book and the blank form is in the sleeve, at The
     /// Deep's hotel level with the adjuster's door ajar (the <c>office=open</c> idiom). Staged through the same writers
     /// the real path uses, never a typed-in tag.</summary>
     private void StageTheClaimIfAsked()
@@ -176,6 +197,17 @@ public partial class Map
         }
 
         _roomsTurnedOver.Add(office.SheetTakenTag);
+
+        // #1151 slice 2 · ?claim=2 — everything ?claim=1 stages, PLUS the desk's work and the console's: the loss copied
+        // onto the form (the real Fill) and the claim booked (the real booking). Her watch is live (the office=open
+        // latch), so the console's next press sits the captain down.
+        if (HullClaim.CheatLevel(Navigation?.Uri) >= 2 && HullClaim.Fill(_satchel, _roomsTurnedOver) is { } filled)
+        {
+            _satchel = [.. filled.Satchel];
+            _roomsTurnedOver.Add(HullClaim.FiledTag(filled.Loss.DoneAt));
+            BookTheClaim(filled.Loss, office);
+        }
+
         RequestVaultSave();
     }
 }
