@@ -231,6 +231,10 @@ public sealed class TheBootBuildsTheSameWorldTests
             // #1151 slice 2 · ?claim=2: MEASURED with SPACESAILS_BOOT_FINGERPRINT_DUMP; 1 new, 0 moved (the same world as ?claim=1: the
             // staging is the page's, written when the floor is first drawn, never at parse time).
             ["/map?claim=2"] = "5702e97b412b144d3fd884426e262007",
+            // #1151 slice 3 · ?claim=3 and ?claim=3&signing=1: MEASURED with SPACESAILS_BOOT_FINGERPRINT_DUMP; 2 new, 0 moved (the same world again: the
+            // fixed booking moment and the held sheet are the page's staging, written when the floor is first drawn).
+            ["/map?claim=3"] = "5702e97b412b144d3fd884426e262007",
+            ["/map?claim=3&signing=1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?converge=1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?counter=1"] = "dfbb66e9b156cd858b2d7c67c4d36e5a",
             ["/map?counter=1&watch=2"] = "00a2b8b936fe8619cf363119d8b490c4",

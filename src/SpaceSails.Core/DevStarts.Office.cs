@@ -52,5 +52,11 @@ public static partial class DevStarts
             + "[E] the console — the card seats you across from her: three questions, a paper for each, then the "
             + "outcome (#1151 slice 2).",
             "/map?claim=2"),
+        new("🧾🧠", "The Deep - the interview, settling ADJUSTED (#1151 slice 3)",
+            "Everything the interview start stages, with the booking's moment fixed so the real interview lands ADJUSTED whichever way the third question goes. Answer the three questions and the outcome is told - and then, once per run, the Flashback plate (A PAGE YOU DON'T REMEMBER WRITING), a dab on the nerve, and exactly one record: no signing sheet held, so the book's 📍 entry (#1151 slice 3).",
+            "/map?claim=3"),
+        new("🧾🖋", "The Deep - the interview, ADJUSTED, the signing sheet held (#1151 slice 3)",
+            "The same start with #973's signing sheet already in the black book: the unease then grows ONE margin line onto that sheet, once ever, and files no book entry (#1151 slice 3).",
+            "/map?claim=3&signing=1"),
     ];
 }

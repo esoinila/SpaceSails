@@ -126,6 +126,10 @@ public sealed class TheBootReadsTheSameQueryTests
             // #1151 slice 2 · ?claim=2: MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP; 1 new, 0 moved (the query says exactly what
             // ?claim=1 says: the dock, the walk ashore, the ride down).
             ["/map?claim=2"] = "3d2ef20ec20df6b1616fe30b454e1ebb",
+            // #1151 slice 3 · ?claim=3 and ?claim=3&signing=1: MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP; 2 new, 0 moved (the query says exactly what
+            // ?claim=2 says; the signing flag is claimed and read nowhere at parse time).
+            ["/map?claim=3"] = "3d2ef20ec20df6b1616fe30b454e1ebb",
+            ["/map?claim=3&signing=1"] = "3d2ef20ec20df6b1616fe30b454e1ebb",
             ["/map?converge=1"] = "1ca918e96cbdff70dde4de5806edc8a4",
             ["/map?counter=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
             ["/map?counter=1&watch=2"] = "127e5605c5a4998adb37a75eb9cb78c0",

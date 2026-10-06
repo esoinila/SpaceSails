@@ -306,8 +306,13 @@ public partial class Map
     /// </summary>
     private void FileTheSigningSheet()
     {
-        string text = NebulaRep.SigningMemoryFor(RetiredCaptainCount);
         HeldMemory.Sheet? had = HeldMemory.Find(_heldMemories, NebulaRep.SigningMemoryId);
+        string text = NebulaRep.SigningMemoryFor(RetiredCaptainCount);
+        if (ClaimInterview.HasTheMargin(had?.Text))
+        {
+            text = ClaimInterview.WithTheMargin(text);   // #1151 slice 3 · the company's margin note outlives a rebirth's rewrite
+        }
+
         if (had is { } already && string.Equals(already.Text, text, StringComparison.Ordinal))
         {
             return;   // same afternoon, same sentence — nothing to write

@@ -189,7 +189,13 @@ public partial class Map
         }
 
         double now = SimTime;
-        RecordTheLoss(HullClaim.LossOf(HullClaim.Hole(null, now - SailRepairSeconds, SailRepairSeconds), now));
+        HullClaim.Loss staged = HullClaim.LossOf(HullClaim.Hole(null, now - SailRepairSeconds, SailRepairSeconds), now);
+        if (HullClaim.CheatLevel(Navigation?.Uri) >= 3)
+        {
+            staged = staged with { DoneAt = ClaimInterview.Claim3When };   // #1151 slice 3 · the booking's moment, fixed
+        }
+
+        RecordTheLoss(staged);
         SideOffice office = SideOffices.Adjuster;
         if (!HullClaim.HoldsTheBlank(_satchel) && Satchel.CanTake(_satchel, office.TheSheet))
         {
@@ -212,6 +218,13 @@ public partial class Map
             _satchel = [.. filled.Satchel];
             _roomsTurnedOver.Add(HullClaim.FiledTag(filled.Loss.DoneAt));
             BookTheClaim(filled.Loss, office);
+        }
+
+        // #1151 slice 3 · ?claim=3 — the same, with the booking's moment fixed (Claim3When, seed-searched on the real dice
+        // so the interview lands ADJUSTED whichever way question three goes), and &signing=1 holds the signing sheet.
+        if (HullClaim.CheatLevel(Navigation?.Uri) >= 3 && HullClaim.SigningStaged(Navigation?.Uri))
+        {
+            FileTheSigningSheet();
         }
 
         RequestVaultSave();

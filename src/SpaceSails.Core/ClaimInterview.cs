@@ -25,7 +25,7 @@ namespace SpaceSails.Core;
 /// the plate is the name, NEBULA MUTUAL is who speaks. The clause is printed, never remembered — the flashback is
 /// slice 3.</para>
 /// </summary>
-public static class ClaimInterview
+public static partial class ClaimInterview
 {
     // ── THE CANON: SEATING AND THE THREE QUESTIONS ──────────────────────────────────────────────────────
 
@@ -468,6 +468,10 @@ public static class ClaimInterview
         yield return DeclinedLine;
         yield return ReturnedTitle;
         yield return DeclinedStamp.Trim();
+        yield return FlashbackCaption;          // slice 3 · the unease: the plate's caption,
+        yield return UneaseShockLabel;          // ...the nerve ledger's reason,
+        yield return MarginLine;                // ...the sheet's one margin line,
+        yield return UneaseBookLine;            // ...and the book's entry when no sheet is held.
         for (int i = 1; i <= PoolSize; i++)
         {
             yield return ClauseText(i);
