@@ -899,6 +899,35 @@ design gave them: **no walker** (the room is simply empty on its watch) and thei
 - **Dev starts:** `/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=shut|open` and
   `/map?dock=the-deep&ashore=1&havenfloor=-1&office=shut|open`.
 
+### …and the claim that gives the adjuster's room its first reason to be opened (#1151 slice 1)
+
+The owner's 2026-09-06 ruling (every loss but death is a CLAIM) meets the room slice E built. Slice 1 claims the one
+loss the game already has and prices nothing for — **loss of use**: the days a holed sail's mend actually took (the
+amended cut: the game prices no sail repair, so no credit moves anywhere in this slice). Three pieces, every fact a tag
+on `_roomsTurnedOver` (the vault carries them), every word `HullClaim`'s (Fable canon, verbatim):
+
+1. **The loss.** `Map.HullClaim.cs` keeps the mend window the sail-holing code already ran (`_sailMend`: first hole and
+   end; a holing inside an open window extends the SAME loss, one after completion starts a new one). On the frame the
+   window completes the book gets one 📋 line under Nebula Mutual and the place she is at, with the days from first hole
+   to the frame it cleared — computed, never the constant — and the register gets `claim:loss:{when}:{tenths}`.
+2. **The form.** At the SHIP'S OWN desk (seated — seat-tied, never place-tied; the strip's button
+   `✍ Copy the loss onto the claim form`, drawn only with the blank form held and a loss unclaimed) the newest unclaimed
+   loss is copied: `claim-form-blank` becomes `claim-form-filled:{when}:{tenths}` (*A claim form, filled*) and the loss
+   is tagged `claim:filed:{when}`. A second blank is fetched from the adjuster's desk (it is laid afresh only for a
+   captain who has filled a form and holds neither a blank nor a filled one).
+3. **The booking.** In the adjuster's room, on her shipped one-in-four watch, with a filled form held, a console stands on
+   the desk (`🧾 Book the claim — [E]`): the booked line, the 📍 book entry once, and the vault row
+   `claim:booked:{when}` once per filled form. Off her watch, the shut door's [E] adds one line after the shipped one,
+   only with a filled form held. Every path without a filled form is the room slice E shipped.
+
+- **Dev start:** `/map?claim=1` — docked at The Deep, on its hotel level, the door ajar, a completed mend in the book and
+  the blank form in the sleeve (staged through the same writers; implies the dock, the walk ashore and the ride down).
+- **Guards:** `HullClaimTests` (Core: canon to the byte, the days computed with a re-hole extending the loss, the
+  register, the filled form as an authored sheet, the booking row through a vault round trip with a positive control);
+  `TheLossAndTheFormTests` and `TheSideOfficesKeepTheirHoursTests.Claim` (a live page: the line on completion not on
+  holing, the verb only at her desk with both papers, the console only on her watch with a filled form, the booking
+  once, the shut line, the fresh blank, the dev start).
+
 ## The chalk mark: a dead drop under a gallery table (#794 slice 2, 2026-09-28)
 
 The faceless trade's return leg. A parcel taken at any haven's dark-web desk, buried where the desk said and
