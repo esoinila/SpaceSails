@@ -28,7 +28,7 @@ public sealed class ThePreservationOfficeStandsOnMembersRoomsTests
     private static DeckPlan Below(string berth, HavenInterior.OfficeDoor office = HavenInterior.OfficeDoor.Shut) =>
         HavenInterior.DockedDeck(berth, level: HavenLevels.ServiceLevel, office: office)!;
 
-    /// <summary>Every lobby that is not the office's.</summary>
+    /// <summary>Every lobby that has no office (#1332 D and E gave two more havens one).</summary>
     public static TheoryData<string> OtherLobbies
     {
         get
@@ -36,7 +36,7 @@ public sealed class ThePreservationOfficeStandsOnMembersRoomsTests
             var rows = new TheoryData<string>();
             foreach (string id in HavenInterior.InteriorBodyIds.Where(HavenInterior.HasLowerLevel))
             {
-                if (id != Ringside)
+                if (!HavenInterior.HasTheOffice(id))
                 {
                     rows.Add(id);
                 }
@@ -86,19 +86,25 @@ public sealed class ThePreservationOfficeStandsOnMembersRoomsTests
     }
 
     /// <summary>
-    /// <b>THE OFFICE IS AT RINGSIDE EXCHANGE AND NOWHERE ELSE.</b> Swept over the whole catalogue, with the
-    /// anti-vacuous half: seven havens asked, exactly one answers.
+    /// <b>THE PRESERVATION OFFICE IS AT RINGSIDE EXCHANGE, AND THE OTHER TWO OFFICES AT THEIR OWN HAVENS.</b> Swept
+    /// over the whole catalogue, with the anti-vacuous half: seven havens asked, exactly three answer — and each
+    /// answers with its own office (#1332 D: Cinder Roost; E: The Deep).
     ///
-    /// <para><b>Proven RED</b> by giving The Deep's <c>LowerSpec</c> an office too.</para>
+    /// <para><b>Proven RED</b> by giving The Space Bar's <c>LowerSpec</c> an office too.</para>
     /// </summary>
     [Fact]
-    public void TheOfficeExistsOnlyAtRingsideExchange()
+    public void TheOfficesExistOnlyAtTheirThreeHavens()
     {
         IReadOnlyList<string> havens = HavenInterior.InteriorBodyIds;
         Assert.Equal(7, havens.Count);
-        Assert.Equal([Ringside], havens.Where(HavenInterior.HasTheOffice).ToArray());
+        Assert.Equal(
+            ["cinder-roost", Ringside, "the-deep"],
+            havens.Where(HavenInterior.HasTheOffice).OrderBy(h => h, StringComparer.Ordinal).ToArray());
+        Assert.Same(SideOffices.Preservation, HavenInterior.TheOfficeAt(Ringside));
+        Assert.Same(SideOffices.Forwarding, HavenInterior.TheOfficeAt("cinder-roost"));
+        Assert.Same(SideOffices.Adjuster, HavenInterior.TheOfficeAt("the-deep"));
         Assert.True(HavenInterior.HasLowerLevel(Ringside));
-        Assert.All(havens.Where(h => h != Ringside), h => Assert.Null(HavenInterior.TheOfficeBox(h)));
+        Assert.All(havens.Where(h => !HavenInterior.HasTheOffice(h)), h => Assert.Null(HavenInterior.TheOfficeBox(h)));
     }
 
     /// <summary>

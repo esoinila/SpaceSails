@@ -154,6 +154,11 @@ public sealed class TheBootReadsTheSameQueryTests
             // #1332 C · the Preservation office, shut and on the clerk's watch: MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP; 2 new, 0 moved.
             ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=open"] = "643010e988bda2224bb9cd641f359a34",
             ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=shut"] = "643010e988bda2224bb9cd641f359a34",
+            // #1332 D/E · the forwarding desk and the adjuster's room, shut and ajar: MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP; 4 new, 0 moved.
+            ["/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=open"] = "eb027ab996be15b6f21e8fe723bdf929",
+            ["/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=shut"] = "eb027ab996be15b6f21e8fe723bdf929",
+            ["/map?dock=the-deep&ashore=1&havenfloor=-1&office=open"] = "3d2ef20ec20df6b1616fe30b454e1ebb",
+            ["/map?dock=the-deep&ashore=1&havenfloor=-1&office=shut"] = "3d2ef20ec20df6b1616fe30b454e1ebb",
             ["/map?dock=the-tilt&ashore=1&havenfloor=-1"] = "88112b3cdf4254091c5ef5996bc0fcbc",
             ["/map?dock=red-eye&ashore=1&havenfloor=-1"] = "adf2e87e97a2c1204bab86b1ea14ab6e",
             ["/map?dock=the-deep&ashore=1&havenfloor=-1"] = "3d2ef20ec20df6b1616fe30b454e1ebb",

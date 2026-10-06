@@ -271,6 +271,11 @@ public sealed class TheBootBuildsTheSameWorldTests
             // #1332 C · the Preservation office, shut and on the clerk's watch: MEASURED with SPACESAILS_BOOT_FINGERPRINT_DUMP; 2 new, 0 moved.
             ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=open"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=shut"] = "5702e97b412b144d3fd884426e262007",
+            // #1332 D/E · the forwarding desk and the adjuster's room, shut and ajar: MEASURED with SPACESAILS_BOOT_FINGERPRINT_DUMP; 4 new, 0 moved.
+            ["/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=open"] = "5702e97b412b144d3fd884426e262007",
+            ["/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=shut"] = "5702e97b412b144d3fd884426e262007",
+            ["/map?dock=the-deep&ashore=1&havenfloor=-1&office=open"] = "5702e97b412b144d3fd884426e262007",
+            ["/map?dock=the-deep&ashore=1&havenfloor=-1&office=shut"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=the-tilt&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=red-eye&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",
             ["/map?dock=the-deep&ashore=1&havenfloor=-1"] = "5702e97b412b144d3fd884426e262007",

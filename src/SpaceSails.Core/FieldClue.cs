@@ -117,7 +117,7 @@ public static class FieldClue
         return HardcaseRep.IsTheSchedule(paperId)
             || CarryThePress.IsTheNote(paperId)
             || SpikeIt.IsAuthored(paperId)
-            || PreservationOffice.IsTheSheet(paperId)
+            || SideOffices.ForSheet(paperId) is not null   // #1332 C/D/E · the side offices' one paper each
             || ReturningShuttle.IsTheLog(paperId)
             || UndergroundComplex.AuthoredPaperOf(paperId) is not null
             || UndergroundComplex.LiftCode.PaperIn(paperId) is not null;
@@ -186,10 +186,11 @@ public static class FieldClue
             return SpikeIt.Document(paperId);
         }
 
-        // #1332 C · …and the disbursement sheet off the Preservation office's desk, the same way: body ALONE.
-        if (PreservationOffice.IsTheSheet(paperId))
+        // #1332 C/D/E · …and the paper off a side office's desk (the disbursement sheet, the consignment note, the
+        // blank claim form), the same way: body ALONE.
+        if (SideOffices.ForSheet(paperId) is { } office)
         {
-            return PreservationOffice.SheetDocument;
+            return office.SheetDocument;
         }
 
         // #1074/#1063 · …AND THE FIVE THE ARC WROTE, for exactly the same reason and through exactly the
@@ -312,10 +313,10 @@ public static class FieldClue
             return SpikeIt.Title(paperId);
         }
 
-        // #1332 C · …and the disbursement sheet is called what the canon titled it.
-        if (PreservationOffice.IsTheSheet(paperId))
+        // #1332 C/D/E · …and a side office's paper is called what the canon titled it.
+        if (SideOffices.ForSheet(paperId) is { } office)
         {
-            return PreservationOffice.SheetTitle;
+            return office.SheetTitle;
         }
 
         // #1074/#1063 · …and the five the arc wrote are called what they are called. Same door as Document

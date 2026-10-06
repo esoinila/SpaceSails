@@ -438,8 +438,8 @@ public partial class Map
         }
         else if (pair.StartsWith("office=", StringComparison.OrdinalIgnoreCase))
         {
-            // #1332 C dev cheat: /map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=shut|open forces the
-            // Preservation office's door. CLAIMED here and read nowhere here, the chalk's and the guard's way: it
+            // #1332 C/D/E dev cheat: /map?dock=ringside-exchange|cinder-roost|the-deep&ashore=1&havenfloor=-1&office=shut|open
+            // forces that haven's side-office door. CLAIMED here and read nowhere here, the chalk's and the guard's way: it
             // writes no world at parse time. Map.PreservationOffice reads it off the address bar.
         }
         else if (pair.StartsWith("guard=", StringComparison.OrdinalIgnoreCase))
