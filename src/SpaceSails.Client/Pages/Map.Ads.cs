@@ -275,7 +275,7 @@ public partial class Map
         {
             // A universe switch leaves the last world's hull in the roster; she belongs to the world we left.
             _npcStates = [.. _npcStates.Where(
-                n => !TheOldShip.IsHer(n.Ship.Id) && !ReturningShuttle.IsTheHull(n.Ship.Id))];
+                n => !StoryHulls.IsOne(n.Ship.Id))];
             _shuttleOnTheBoard = false;   // #1074 beat 5 - she belonged to the world we left
             _reachSeededFor = thread;
             _reachBerthId = null;

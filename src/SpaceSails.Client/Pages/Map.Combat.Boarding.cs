@@ -37,6 +37,11 @@ public partial class Map
 
     private void InterestFromMenu(string id)
     {
+        if (StoryHulls.IsOne(id))
+        {
+            return;   // #1357 - a story hull is no target of interest; silence, not a new line
+        }
+
         if (_interestTargetId != id)
         {
             SetInterestTarget(id);
@@ -64,7 +69,7 @@ public partial class Map
         }
 
         // #1074 beat 5 - the charter hull is never a boarding candidate: no heat, no hunter, no loot.
-        if (ReturningShuttle.IsTheHull(npc.Ship.Id))
+        if (StoryHulls.IsOne(npc.Ship.Id))
         {
             return null;
         }
@@ -246,7 +251,7 @@ public partial class Map
 
     private void SetInterestTarget(string id)
     {
-        if (ReturningShuttle.IsTheHull(id))
+        if (StoryHulls.IsOne(id))
         {
             return;   // #1074 beat 5 - the charter hull is never a target of interest
         }
