@@ -101,6 +101,8 @@ public partial class Map
     {
         LandingSite site = LandingSites.For(target.Body.Id)[
             Math.Clamp(_forcedSiteIndex ?? 0, 0, LandingSites.For(target.Body.Id).Count - 1)];
+        // #1363 · A SEAT-CHEAT BOOT HAS ALREADY BEEN TOLD THE GROUND: the lesson is spent before the descent reads it.
+        SpendTheFirstGroundLessonForTheSeatCheat();
         // Bring the sling down loaded — a cheat that lands you empty-handed made [T] look broken
         // (owner: "why are there no sentries to plant?" / "Button T stopped working?").
         //
@@ -336,6 +338,7 @@ public partial class Map
                 // in the testing guide is written from. A cheat that inherited whichever car was last
                 // pressed would put a tester somewhere different depending on their last excursion.
                 _liftCar = UndergroundComplex.ShaftKind.Cage;
+                SpendTheShaftCardForTheSeatCheat(landedOn); // #1363
                 RideTheLiftTo(landedOn, UndergroundComplex.NearestFloorTo(cheatBody, askedFor));
 
                 // #746 · …and ?tablescene=1 goes the last leg too, because the scene under test is a

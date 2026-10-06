@@ -504,20 +504,6 @@ ashore · Down Below	.parrot-perch	position	absolute
 ashore · Down Below	.parrot-perch	right	176px
 ashore · Down Below	.parrot-perch	row-gap	6.4px
 ashore · Down Below	.parrot-perch	z-index	26
-the Hive park	.convergence-card	background-color	rgba(0, 0, 0, 0)
-the Hive park	.convergence-card	background-image	linear-gradient(rgb(11, 24, 38) 0%, rgb(10, 18, 32) 55%, rgb(12, 15, 22) 100%)
-the Hive park	.convergence-card	color	rgb(219, 230, 242)
-the Hive park	.convergence-card	max-height	min(828px, 100%)
-the Hive park	.convergence-card	max-width	672px
-the Hive park	.convergence-card	overflow-y	auto
-the Hive park	.convergence-card > .convergence-close	bottom	0px
-the Hive park	.convergence-card > .convergence-close	position	sticky
-the Hive park	.convergence-card > .convergence-close	z-index	3
-the Hive park	.ground-lesson-card	display	flex
-the Hive park	.ground-lesson-card	flex-direction	column
-the Hive park	.ground-lesson-card	max-width	672px
-the Hive park	.ground-lesson-foot	color	rgba(219, 230, 242, 0.78)
-the Hive park	.ground-lesson-foot	font-size	14.4px
 the Hive park	.map-canvas	bottom	0px
 the Hive park	.map-canvas	display	block
 the Hive park	.map-canvas	height	900px
@@ -557,43 +543,6 @@ the Hive park	.parrot-perch	position	absolute
 the Hive park	.parrot-perch	right	176px
 the Hive park	.parrot-perch	row-gap	6.4px
 the Hive park	.parrot-perch	z-index	26
-the Hive park	.view-object	background-color	rgb(12, 16, 23)
-the Hive park	.view-object	background-image	none
-the Hive park	.view-object	column-gap	9.6px
-the Hive park	.view-object	display	flex
-the Hive park	.view-object	flex-direction	column
-the Hive park	.view-object	max-height	min(828px, 100%)
-the Hive park	.view-object	overflow-y	auto
-the Hive park	.view-object	row-gap	9.6px
-the Hive park	.view-object	width	640px
-the Hive park	.view-object > .view-object-close	bottom	0px
-the Hive park	.view-object > .view-object-close	position	sticky
-the Hive park	.view-object > .view-object-close	z-index	3
-the Hive park	.view-object-backdrop	align-items	center
-the Hive park	.view-object-backdrop	background-color	rgba(4, 6, 11, 0.85)
-the Hive park	.view-object-backdrop	background-image	none
-the Hive park	.view-object-backdrop	bottom	0px
-the Hive park	.view-object-backdrop	display	flex
-the Hive park	.view-object-backdrop	justify-content	center
-the Hive park	.view-object-backdrop	left	0px
-the Hive park	.view-object-backdrop	position	absolute
-the Hive park	.view-object-backdrop	right	0px
-the Hive park	.view-object-backdrop	top	0px
-the Hive park	.view-object-backdrop	z-index	1320
-the Hive park	.view-object-caption	color	rgba(232, 236, 244, 0.9)
-the Hive park	.view-object-caption	font-size	15.2px
-the Hive park	.view-object-caption	font-style	italic
-the Hive park	.view-object-close	background-color	rgba(255, 180, 90, 0.14)
-the Hive park	.view-object-close	background-image	none
-the Hive park	.view-object-close	color	rgb(255, 217, 160)
-the Hive park	.view-object-close	font-family	monospace
-the Hive park	.view-object-close	font-size	14.4px
-the Hive park	.view-object-close	font-style	normal
-the Hive park	.view-object-close	font-weight	600
-the Hive park	.view-object-img	background-color	rgb(5, 7, 12)
-the Hive park	.view-object-img	background-image	none
-the Hive park	.view-object-img	max-height	630px
-the Hive park	.view-object-img	width	606px
 a Hive floor	.convergence-card	background-color	rgba(0, 0, 0, 0)
 a Hive floor	.convergence-card	background-image	linear-gradient(rgb(11, 24, 38) 0%, rgb(10, 18, 32) 55%, rgb(12, 15, 22) 100%)
 a Hive floor	.convergence-card	color	rgb(219, 230, 242)
