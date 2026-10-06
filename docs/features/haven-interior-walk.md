@@ -863,6 +863,42 @@ has one, and every other haven's hotel level is the plan it always was, byte for
   book once, the warm line once, the sheet once and filed, never shut on a man inside, the dev start).
 - **Dev starts:** `/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=shut` and `…&office=open`.
 
+### …and the two more doors on the same kit: the forwarding desk and the adjuster's room (#1332 slices D and E)
+
+The office pattern slice C minted (a plate on one hotel cabin, hours seeded on the run, one paper on the desk, nothing
+that acts on the captain) is now a kit — `SideOffice` / `SideOffices` in Core, the three offices as data on their
+havens' `LowerSpec.Office` — and these two doors are the same pattern with other words (Fable's design comment on #1332,
+2026-09-30; every string verbatim, a constant of `ForwardingDesk` / `AdjustersRoom`). They differ from C in what the
+design gave them: **no walker** (the room is simply empty on its watch) and their own cadence.
+
+| | **D · THE FORWARDING DESK** | **E · THE ADJUSTER'S ROOM** |
+|---|---|---|
+| Where | Cinder Roost, BERTH HOTEL · RESIDENTS ONLY, cabin 2 | The Deep, COLD ROOMS · BOOK AT THE DESK, cabin 4 |
+| Plate | **COLD-CHAIN FORWARDING · TRADE ONLY** | **NEBULA MUTUAL · CLAIMS · KNOCK** |
+| `[E]` shut, every press | *"Consignments by arrangement. Arrangements are not made here."* | *"The adjuster keeps hours. The hours are kept elsewhere."* |
+| Book, first read (📍, once) | *"A forwarding desk for goods that must not get warm. The berth hotel is a strange place to keep it."* — Plant + Cinder Roost | *"A claims room with the light off. The policy says they pay for death; the door says they take appointments."* — Nebula Mutual + The Deep |
+| Ajar | one watch in **five**; entering, once per run: *"Cold. The room is colder than the corridor, and the corridor is a rock."* | one watch in **four**; entering, once per run: *"A desk, two chairs, one of them for you. The form on the desk has your kind of loss on it and no line for your name."* |
+| The paper | `forwarding-consignment` — **A consignment note**: *"Reagent, forty kilos, cold. Origin withheld. Destination: Deep Storage. Charged to Plant."* Clipped: filed 📋 under Plant + Cinder Roost. | `claim-form-blank` — **A claim form, blank**: *"Loss (other than death): describe. Witness: name. Captain present: yes. Nebula Mutual pays what the form says, when the form is complete."* **Not clippable as evidence** — a form: taking it files nothing; it is #1151's future seed. |
+
+- **The kit.** Each office carries its own seed tag (`forwarding:desk`, `adjuster:room`, and slice C's unchanged
+  `preservation:clerk`), so the three doors keep three clocks: one watch in N, the offset `DiceRule.Seed(run, tag) % N`,
+  the same run always answering the same. The shared arithmetic is `SideOffices.AjarOn`; slice C's `PreservationOffice`
+  delegates to it, byte-identical offsets.
+- **The page.** `Map.PreservationOffice.cs` is the kit's page code (whichever office the docked haven has); the clerk
+  (`Map.PreservationOffice.Clerk.cs`) is gated on `SideOffice.HasAClerk`, true for the Preservation office alone.
+  "Plate read" and "paper taken" are tags on `_roomsTurnedOver`; the ajar line rides the page's one told-once memory
+  (`ToldOnce.OfficeAjar`, keyed by berth, #653 slice 2) and is added on the frame it reaches a free slot, never before.
+  No new page field, no new `ConsoleKind`, no new verb: the paper is the building's own paper pick-up.
+- **The plates** fold at their ` · ` into the row's pitch (#1353) — and where that would leave a plate under 5.5 px (the forwarding desk's COLD-CHAIN FORWARDING was a 4 px stencil), the widest row is broken once more at its own space, nearest its middle (`DeckView.Frame.OverTheDark.Plates.cs`; the words unchanged, in order; slice C's and E's plates are 6 and 6.5 px and do not move). The paper's title is drawn only from inside the room.
+- **Guards:** `TheSideOfficesTests` (Core: canon to the byte, reserved words and names, one watch in five / in four
+  seeded and pure at both edges of the band, the offsets pinned and the clocks distinct, the papers authored, the two
+  subjects, the kit's shape, the dev starts); `TheSideOfficesKeepTheirHoursTests` (a live page at both havens: the door
+  follows the watch at both edges over six seeds, nobody walks out, the shut line every press and the book once, the ajar
+  line once on a free slot, the paper once — D filed, E not — never shut on a man inside, nothing at another haven, the
+  dev starts, the title only from inside); the slice C guards were generalised to the three havens.
+- **Dev starts:** `/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=shut|open` and
+  `/map?dock=the-deep&ashore=1&havenfloor=-1&office=shut|open`.
+
 ## The chalk mark: a dead drop under a gallery table (#794 slice 2, 2026-09-28)
 
 The faceless trade's return leg. A parcel taken at any haven's dark-web desk, buried where the desk said and

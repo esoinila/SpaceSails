@@ -100,8 +100,8 @@ public partial class Map
                 return;
             }
 
-            // #1332 C · …and the disbursement sheet on the Preservation office's desk, a pickup like the schedule.
-            if (TryTheDisbursementSheet(spot.Label))
+            // #1332 C/D/E · …and the paper on a side office's desk, a pickup like the schedule.
+            if (TryTheSheetOnTheDesk(spot.Label))
             {
                 return;
             }

@@ -212,6 +212,14 @@ exact URL already appeared above is not repeated.
   THE PRESERVATION OFFICE — SHUT (#1332 C). -- see: the plate over the door reads PRESERVATION · BY APPOINTMENT, folded onto two lines in a smaller stencil so it stays inside its own door's width (#1353) — the other four still `CABIN n` on one row ...
 - `/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=open`  [local](http://localhost:5073/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=open) [live](https://esoinila.github.io/SpaceSails-play/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=open)
   THE PRESERVATION OFFICE — THE CLERK'S WATCH (#1332 C). -- see: the office's door ajar — its leaf hung part-way over an open doorway — and, about three seconds in, a walker plated Clerk stepping out of it and walking (never speaking, no card) to the ...
+- `/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=shut`  [local](http://localhost:5073/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=shut) [live](https://esoinila.github.io/SpaceSails-play/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=shut)
+  THE FORWARDING DESK — SHUT (#1332 D). -- see: the plate over the door reads COLD-CHAIN FORWARDING · TRADE ONLY, folded onto three rows (COLD-CHAIN / FORWARDING / TRADE ONLY) in a stencil you can read, inside its own door's width — the other four still `CABIN n` on one row ...
+- `/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=open`  [local](http://localhost:5073/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=open) [live](https://esoinila.github.io/SpaceSails-play/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=open)
+  THE FORWARDING DESK — AJAR (#1332 D). -- see: the door ajar — its leaf hung part-way over an open doorway — and nobody in or near it (this room keeps no walker); a desk against the back wall with one paper on it, a dot with no title from the corridor. Walk in: the paper reads A consignment note over the desk, and the first step in says ...
+- `/map?dock=the-deep&ashore=1&havenfloor=-1&office=shut`  [local](http://localhost:5073/map?dock=the-deep&ashore=1&havenfloor=-1&office=shut) [live](https://esoinila.github.io/SpaceSails-play/map?dock=the-deep&ashore=1&havenfloor=-1&office=shut)
+  THE ADJUSTER'S ROOM — SHUT (#1332 E). -- see: the plate over the door reads NEBULA MUTUAL · CLAIMS · KNOCK, folded onto three rows inside its own door's width — the other four still `CABIN n` on one row, and the floor still carrying its one label, COLD ROOMS · BOOK AT THE DESK ...
+- `/map?dock=the-deep&ashore=1&havenfloor=-1&office=open`  [local](http://localhost:5073/map?dock=the-deep&ashore=1&havenfloor=-1&office=open) [live](https://esoinila.github.io/SpaceSails-play/map?dock=the-deep&ashore=1&havenfloor=-1&office=open)
+  THE ADJUSTER'S ROOM — AJAR (#1332 E). -- see: the door ajar and nobody in it (no walker); a desk with one paper on it, a dot with no title from the corridor. Walk in: the paper reads A claim form, blank, and the first step in says, once per run and only when the slot is free ...
 - `/map?dock=the-space-bar&ashore=1&garden=1`  [local](http://localhost:5073/map?dock=the-space-bar&ashore=1&garden=1) [live](https://esoinila.github.io/SpaceSails-play/map?dock=the-space-bar&ashore=1&garden=1)
   THE GARDEN BEHIND GLASS — THE RUSTY ROADSTEAD (#1332 B). -- see: a doorway in the ring's west-north-west face in front of you, and a second one on the next face round (north-north-west, beside the bar's own door) — both open onto the concourse, both ...
 - `/map?dock=selene-gate&ashore=1&garden=1`  [local](http://localhost:5073/map?dock=selene-gate&ashore=1&garden=1) [live](https://esoinila.github.io/SpaceSails-play/map?dock=selene-gate&ashore=1&garden=1)
@@ -643,7 +651,7 @@ exact URL already appeared above is not repeated.
 
 ## 4. Cross-check: the guide against the DevStarts catalog
 
-`src/SpaceSails.Core/DevStarts*.cs` holds 85 `/map?...` rows (the front door's "DEV START SITES" buttons); the guide asks that
+`src/SpaceSails.Core/DevStarts*.cs` holds 89 `/map?...` rows (the front door's "DEV START SITES" buttons); the guide asks that
 the two be kept in step. `DevStartsTests` pins only the catalog's own shape (every row dressed, `/map?` + key=value, no
 duplicates) - there is no test that compares it with the guide, so this comparison was done by hand when this file was written.
 

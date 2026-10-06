@@ -236,6 +236,11 @@ public sealed class EveryFrameHashesTheSameTests
         // pinned on its own row (measured the day it was built), stood at the office's doorstep under its plate.
         yield return $"haven office · {PreservationOffice.HavenId}";
 
+        // #1332 D/E · …and the forwarding desk and the adjuster's room, each pinned on its own row (measured the day it
+        // was built), stood at its doorstep under its plate with the door ajar.
+        yield return $"haven office · {ForwardingDesk.HavenId}";
+        yield return $"haven office · {AdjustersRoom.HavenId}";
+
         // #1332 B · THE GARDEN BEHIND GLASS — each haven's garden, pinned on its own row (measured the day it
         // was built), standing by the bench so the four plated beds and the room's plate are in the view.
         foreach (string id in HavenInterior.InteriorBodyIds.Where(HavenInterior.HasGarden))
