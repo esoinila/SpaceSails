@@ -49,7 +49,7 @@ public partial class Map
     {
         List<NpcState> candidates = _npcStates
             .Where(n => n.Active && !n.Arrived && !n.Boarded && !n.Ship.IsPod
-                        && !ReturningShuttle.IsTheHull(n.Ship.Id)   // #1074 beat 5 - never a hunt
+                        && !StoryHulls.IsOne(n.Ship.Id)   // #1074 beat 5 - never a hunt
                         && _quests.All(q => q.TargetShipId != n.Ship.Id))
             .OrderByDescending(n => !n.Ship.PublishesTimetable)          // off-books first
             .ThenBy(n => n.Ship.Id, StringComparer.Ordinal)
