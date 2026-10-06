@@ -269,7 +269,7 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
     /// is the booked tag itself: it round-trips beside it.
     ///
     /// <para><b>Proven RED</b> by the settled tag not restored from the vault section (the fresh page seats a second
-    /// interview) and by the unbooked press seating at once.</para>
+    /// interview).</para>
     /// </summary>
     [Fact]
     public void TheConsoleSeatsOnlyABookedUnsettledClaimAndTheClosedRowSurvivesAVault()
