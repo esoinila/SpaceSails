@@ -36,6 +36,12 @@ public sealed class TheArrivingLifeArrivesAloneTests
         {
             Vault blank = throughTheSerializer ? TheBlankLifesVault() : new Vault();
 
+            // The honest expectation, taken BEFORE life A so its register installs cannot be wiped: what a clean page answers
+            // for the shore-leave count after this same vault (loading with no resume section docks, which counts a berth).
+            Pages.Map reference = Boot("arrival-reference");
+            Invoke(reference, "ApplyVault", blank);
+            int? theBlankAnswer = ((Vault)Invoke(reference, "BuildVault", "", "")!).Progress?.WorkingStopsSinceShoreLeave;
+
             Pages.Map map = Boot("arrival-life-a");
             Invoke(map, "ApplyVault", new Vault
             {
@@ -58,6 +64,7 @@ public sealed class TheArrivingLifeArrivesAloneTests
             Assert.True(lifeA.Progress!.OddBooksRead.Count > 0, "control: odd books");
             Assert.True(lifeA.Progress.HallsOpened is { Count: > 0 });
             Assert.NotNull(lifeA.Finder);
+            Assert.True(lifeA.Progress.WorkingStopsSinceShoreLeave >= 4, "control: shore-leave count");
             Assert.True(Burial.IsFilled(Ground), "control: burial register");
             Assert.True(PoliteDecline.On(Ground), "control: decline register");
             Assert.True(QuietHands.On(Ground), "control: quiet hands register");
@@ -76,7 +83,7 @@ public sealed class TheArrivingLifeArrivesAloneTests
             if (after.Progress?.HallsHandled is { Count: > 0 }) { carried.Add("_hallsHandled"); }
             if (after.Progress?.HallsStopped is { Count: > 0 }) { carried.Add("_hallsStopped"); }
             if (after.Progress?.HallsPreserved is { Count: > 0 }) { carried.Add("_hallsPreserved"); }
-            if (after.Progress?.WorkingStopsSinceShoreLeave == 4) { carried.Add("_workingStopsSinceShoreLeave"); }
+            if (after.Progress?.WorkingStopsSinceShoreLeave != theBlankAnswer) { carried.Add("_workingStopsSinceShoreLeave"); }
             if (after.Finder is not null) { carried.Add("_finderCase"); }
             if (Burial.IsFilled(Ground)) { carried.Add("core:burial"); }
             if (PoliteDecline.On(Ground)) { carried.Add("core:decline"); }
