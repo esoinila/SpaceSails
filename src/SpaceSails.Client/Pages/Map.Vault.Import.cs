@@ -101,7 +101,7 @@ public partial class Map
         Vault vault = VaultSerializer.Load(text);
         // An imported file is a whole universe arriving — give it its OWN thread (feat/game-threads) so it
         // never overwrites the autosave of the run that was live; that run stays intact under its own thread
-        // and remains resumable. ApplyVault clears the slate first, so the imported life boards clean.
+        // and remains resumable. ApplyVault clears the slate first (#1376: ForgetTheLifeThatRidesTheVault), so the imported life boards clean.
         BeginNewGameThread();
         ApplyVault(vault);
         RequestVaultSave(); // the new thread's autosave adopts the imported state → Continue matches the screen
