@@ -399,6 +399,52 @@ public sealed class TheSealOnTheRefugeTests
             + "reservoir that does not go down is a tap, and a tap makes the floor free.");
     }
 
+    /// <summary>
+    /// The once-only pump line is said once PER FLOOR's rack. The notes were keyed by the bare refuge index
+    /// (always 0, one refuge per floor), so the first floor's rack used up the line for every later floor.
+    ///
+    /// <para>RED PROOF: key <c>RefugePumpNoted</c> by <c>refuge</c> again in <c>Map.Surface.Tank.cs</c> and the
+    /// second floor's set never grows.</para>
+    /// </summary>
+    [Fact]
+    public void ASecondFloorsRackGetsItsOwnPumpNote()
+    {
+        foreach (string body in Bodies)
+        {
+            int[] holding = UndergroundComplex.FloorsOf(body)
+                .Where(l => UndergroundComplex.StateOfTheRefugeOn(body, l) == UndergroundComplex.RefugeState.Holding)
+                .ToArray();
+            if (holding.Length < 2)
+            {
+                continue;
+            }
+
+            Pages.Map map = StandingInTheRefugeOn(body, holding[0]);
+            object ex = Get(map, "_surface")!;
+            SetOn(ex, "AirSeconds", 300.0);
+            Invoke(map, "StepSuitAir", 1.0);
+            var noted = (HashSet<int>)GetOn(ex, "RefugePumpNoted")!;
+            Assert.Single(noted);
+
+            // …and now the same excursion, one refuge down the stair.
+            SetOn(ex, "Floor", holding[1]);
+            Invoke(map, "RebuildSurfaceDeck");
+            var plan = (DeckPlan)Get(map, "_deckPlan")!;
+            DeckPlan.ConsoleSpot rack = plan.Consoles.Single(c => c.Kind == DeckPlan.ConsoleKind.HiveRefuge);
+            Set(map, "_avatarX", (double)rack.X);
+            Set(map, "_avatarY", (double)rack.Y);
+            SetOn(ex, "AirSeconds", 300.0);
+            Invoke(map, "StepSuitAir", 1.0);
+
+            Assert.Equal(2, noted.Count);
+            return;
+        }
+
+        throw new InvalidOperationException(
+            "no site in the scenario has two floors with a working refuge — this bench is auditing a world "
+            + "that cannot tell pass from fail.");
+    }
+
     // ── (c) THE TRACKER ─────────────────────────────────────────────────────────────────────────────────
 
     [Fact]

@@ -292,6 +292,8 @@ public sealed partial class DeckView
     private static bool IsPatron(string name) => name switch
     {
         "Silas" or "Coil" or "Gilt-Eye" or "The Fixer" or "Regular" or "Magpie" or "Oracle" => true,
+        // #1202 · Rauha Lind, seated (or parked off-frame) as figure 11: a bar regular, not staff.
+        SpaceSails.Core.CarryThePress.Plate => true,
         _ => false,
     };
 }

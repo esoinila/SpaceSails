@@ -124,4 +124,16 @@ public class SurfaceDeckKeyTests
         // … while a changed set misses (the honest rebuild).
         Assert.False(dict.ContainsKey(SurfaceDeckKey.For("miranda", "Miranda", Caches())));
     }
+
+    [Fact]
+    public void TheSiteNameIsPartOfTheKey()
+    {
+        // The layout prints a SET DOWN AT header from the name, so a warm-up built with none must not be
+        // handed back to a landing that has one.
+        var warm = SurfaceDeckKey.For("miranda", "Miranda", null);
+        var landing = SurfaceDeckKey.For("miranda", "Miranda", null, siteName: "The Wild Plain");
+        Assert.NotEqual(warm, landing);
+        Assert.Equal(landing, SurfaceDeckKey.For("miranda", "Miranda", null, siteName: "The Wild Plain"));
+        Assert.Equal(warm, SurfaceDeckKey.For("miranda", "Miranda", null, siteName: null));
+    }
 }

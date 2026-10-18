@@ -154,12 +154,13 @@ public partial class Map
                     ex, RefugeReservoirNow(ex, refuge), dtRealSeconds, out double intoTheTank);
                 if (intoTheTank > 0)
                 {
-                    if (ex.RefugePumpNoted.Add(refuge))
+                    if (ex.RefugePumpNoted.Add(RefugeKey(ex.Floor, refuge)))
                     {
                         ShowPulseMessage(SurfaceShelter.PumpingLine);
                     }
                 }
-                else if (ex.RefugePumpNoted.Contains(refuge) && ex.RefugePumpNoted.Add(-refuge - 1))
+                else if (ex.RefugePumpNoted.Contains(RefugeKey(ex.Floor, refuge))
+                    && ex.RefugePumpNoted.Add(-RefugeKey(ex.Floor, refuge) - 1))
                 {
                     ShowPulseMessage(SurfaceShelter.PumpDoneLine);
                 }

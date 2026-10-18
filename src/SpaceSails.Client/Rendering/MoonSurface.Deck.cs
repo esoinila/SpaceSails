@@ -62,7 +62,7 @@ public static partial class MoonSurface
         // precisely the stale ground this memo has to be unable to serve.
         bool preserved = PreservationZone.On(bodyId);
         SurfaceDeckKey key = SurfaceDeckKey.For(
-            bodyId, bodyDisplayName, ownCaches, siteSalt, monolithEpoch, hasSecretSite, preserved);
+            bodyId, bodyDisplayName, ownCaches, siteSalt, monolithEpoch, hasSecretSite, preserved, siteName);
         // Cheap unbounded-growth guard: each distinct (body, cache-set) leaves one small entry, and a
         // long game of bury/lift cycles could accumulate stale sets nobody revisits. A generous cap
         // that never trips in normal play keeps the cache from creeping; on overflow we simply start

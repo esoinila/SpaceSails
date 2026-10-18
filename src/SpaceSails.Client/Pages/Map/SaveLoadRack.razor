@@ -270,9 +270,9 @@
                                                value="@_renameDraft" @oninput="e => _renameDraft = e.Value?.ToString() ?? string.Empty"
                                                @onkeydown="RenameKeyDown" @onblur="CommitRenameCaptain" />
                                         <button type="button" class="slot-mini" title="Keep this name — it is written on the license and into the saves"
-                                                @onclick="CommitRenameCaptain">✔</button>
+                                                @onmousedown:preventDefault="true" @onclick="CommitRenameCaptain">✔</button>
                                         <button type="button" class="slot-mini" title="Leave the name as it was"
-                                                @onclick="CancelRenameCaptain">✕</button>
+                                                @onmousedown:preventDefault="true" @onclick="CancelRenameCaptain">✕</button>
                                     </span>
                                 }
                                 else

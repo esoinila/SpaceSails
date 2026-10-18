@@ -150,7 +150,7 @@ public sealed partial class DeckView
         _perf?.Mark("DrawTheConsoles");
         DrawTheCaptain(in state, surface, widthPx, heightPx, scale, project);
         _perf?.Mark("DrawTheCaptain");
-        DrawTheInstruments(in state, surface, simTime, widthPx, heightPx, ox);
+        DrawTheInstruments(in state, surface, simTime, widthPx, heightPx);
         _perf?.Mark("DrawTheInstruments");
 
         _mask.Disarm();     // #708 · the lamp is a per-frame fact; nothing survives the frame it was aimed in

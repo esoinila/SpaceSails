@@ -110,7 +110,7 @@ public sealed partial class DeckView
     /// motion fan, #317/#330's nerve gauge and its ledger, #327's orbit line, #825's stall banner on its
     /// own line under it, the keybar, and #440's standing prompt above it.</summary>
     private void DrawTheInstruments(
-        in State state, SurfaceHud? surface, double simTime, int widthPx, int heightPx, float ox)
+        in State state, SurfaceHud? surface, double simTime, int widthPx, int heightPx)
     {
         // #313 the motion tracker: a crude corner fan of MOVING blips (bearing/range), including
         // contacts beyond the grid edge — the early warning. Cadence pulses the blips as they close.
@@ -195,7 +195,7 @@ public sealed partial class DeckView
             : state.KeyHints is { Length: > 0 } deckHints
                 ? deckHints
                 : state.Docked ? DockedKeyHints : DeckKeyHints;
-        _renderer.DrawText(ox, heightPx - 10, bottomHint, TextDim, "11px monospace", TextAlign.Center);
+        _renderer.DrawText(widthPx / 2f, heightPx - 10, bottomHint, TextDim, "11px monospace", TextAlign.Center);
 
         // #440: the standing prompt rides just ABOVE the keybar, bright and a size up — the same eyeline the
         // player already checks for keys, but unmistakably not chrome. Gently breathing so it reads as a
@@ -204,7 +204,7 @@ public sealed partial class DeckView
         {
             double breathe = 0.78 + (0.22 * Math.Sin(simTime * 0.001 * 2.2));
             var promptColor = new RgbaColor(255, 205, 90, (byte)Math.Clamp(255 * breathe, 60, 255));
-            _renderer.DrawText(ox, heightPx - 30, standing, promptColor, "bold 14px monospace", TextAlign.Center);
+            _renderer.DrawText(widthPx / 2f, heightPx - 30, standing, promptColor, "bold 14px monospace", TextAlign.Center);
         }
     }
     // #314: brighten a colour toward white by t (0..1) — the one-frame decrement flash on the magazine

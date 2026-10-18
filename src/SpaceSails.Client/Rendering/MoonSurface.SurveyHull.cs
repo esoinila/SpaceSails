@@ -27,7 +27,7 @@ public static partial class MoonSurface
         siteSalt ??= "";
         siteName ??= "";
         SurfaceDeckKey key = SurfaceDeckKey.For(
-            bodyId, bodyDisplayName, ownCaches, siteSalt, monolithEpoch, hasSecretSite, preserved: true);
+            bodyId, bodyDisplayName, ownCaches, siteSalt, monolithEpoch, hasSecretSite, preserved: true, siteName: siteName);
         Layout layout = _layoutCache.GetOrBuild(key, () => BuildLayout(
             bodyId, bodyDisplayName, ownCaches, siteSalt, siteName, monolithEpoch, hasSecretSite, true));
 
