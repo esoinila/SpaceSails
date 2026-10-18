@@ -191,11 +191,24 @@ public static class AutopilotRehearsal
         TransferPlanner.Schedule? schedule = null)
     {
         var path = new List<TrajectorySample>(capturePath ? 512 : 0);
-        void Record(ShipState s)
+        // `terminal` marks the arrival itself (the insertion, or the dock envelope reached): PlanPasses
+        // judges the target from path[^1] as the achieved park, so that sample must survive the 4096 cap —
+        // when the path is full it takes the place of the last mid-approach sample instead of being dropped.
+        void Record(ShipState s, bool terminal = false)
         {
-            if (capturePath && path.Count < 4096)
+            if (!capturePath)
             {
-                path.Add(new TrajectorySample(s.SimTime, s.Position));
+                return;
+            }
+
+            var sample = new TrajectorySample(s.SimTime, s.Position);
+            if (path.Count < 4096)
+            {
+                path.Add(sample);
+            }
+            else if (terminal)
+            {
+                path[^1] = sample;
             }
         }
 
@@ -318,6 +331,7 @@ public static class AutopilotRehearsal
             // predicate (DockRule.Arrived), which for a wreck is the fetch pickup's own range.
             if (isStation && DockRule.Arrived(ship, bodyPos, bodyVel, body))
             {
+                Record(ship, terminal: true);
                 return new RehearsalResult(
                     true, pulses, approachBurns, ship.SimTime - startTime, false, false, path);
             }
@@ -351,7 +365,7 @@ public static class AutopilotRehearsal
                     int insertCost = OrbitRule.PulseCost(ship, bodyPos, bodyVel, body);
                     pulses += insertCost;
                     ship = OrbitRule.Insert(ship, bodyPos, bodyVel, body);
-                    Record(ship);
+                    Record(ship, terminal: true);
                     // The insertion is the arrival; it may spend into the reserve. Un-affordable
                     // outright (more than the whole budget-plus-reserve) is still a refusal.
                     return new RehearsalResult(

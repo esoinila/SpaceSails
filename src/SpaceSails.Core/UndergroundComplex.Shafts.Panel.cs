@@ -404,7 +404,10 @@ public static partial class UndergroundComplex
             if (stop.Level == toLevel && stop.OpenedBy is not null
                 && !stop.OpenedByChit && !stop.OpenedByInspection)
             {
-                return new AuthorityCard(bodyId, BandOf(toLevel));
+                // #760 · The card the gate actually READ: this site's own, or the standing card from the next
+                // moon. The same lookup the panel row prints its title from.
+                var gate = new AuthorityCard(bodyId, BandOf(toLevel));
+                return heldCardIds.Contains(gate.Id) ? gate : StandingAmong(heldCardIds, gate) ?? gate;
             }
         }
         return null;
