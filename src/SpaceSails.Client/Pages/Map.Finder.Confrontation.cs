@@ -31,6 +31,7 @@ public sealed partial class Map
         if (!_deckMode || _surface is not null || _dockedHavenId is not { } berth
             || _finderReveal is not null || !TheTrailIsLive || !_finderProgress.TrailWalked
             || _finderProgress.Revealed || _finderCase is not { } c
+            || _finderRevealShelvedVisit == _dockVisitSimTime
             || !string.Equals(berth, c.BerthPortId, StringComparison.Ordinal))
         {
             return;
@@ -92,9 +93,21 @@ public sealed partial class Map
     }
 
     /// <summary>Shut the reveal. The choice, once made, is made — closing it again settles nothing, which is
-    /// why the two verbs are gone off the card the moment one of them is pressed.</summary>
+    /// why the two verbs are gone off the card the moment one of them is pressed.
+    ///
+    /// <para>The one exception is a close BEFORE the choice: that settles nothing, so the reveal is still owed
+    /// (#UI law — a close that cannot be reopened must decide). It is put back on the shelf for this visit
+    /// only, so the card is not thrown back in his face the next frame, and raised again at the berth on the
+    /// next one.</para></summary>
     private void CloseTheReveal()
     {
+        if (_finderReveal is not null && _finderProgress.Settled == FinderCase.Outcome.Open)
+        {
+            _finderProgress = _finderProgress with { Revealed = false };
+            _finderRevealShelvedVisit = _dockVisitSimTime;
+            RequestVaultSave();
+        }
+
         _finderReveal = null;
         _finderOutcome = null;
         StateHasChanged();

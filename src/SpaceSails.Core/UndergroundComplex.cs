@@ -165,9 +165,11 @@ public static partial class UndergroundComplex
             return above;
         }
 
-        int kinds = Enum.GetValues<Kind>().Length;
-        int step = DiceRule.Roll(DiceRule.Seed($"hive:unlisted-kind:{bodyId}"), kinds - 1).Face;
-        return (Kind)(((int)above + step) % kinds);   // step is 1..kinds-1, so never `above`
+        // The head office is never rolled (see Kind.HeadOffice), so the unlisted band chooses among the five
+        // BRANCH kinds only: HeadOffice sits last in the enum and its value is the count of the rest.
+        const int branchKinds = (int)Kind.HeadOffice;
+        int step = DiceRule.Roll(DiceRule.Seed($"hive:unlisted-kind:{bodyId}"), branchKinds - 1).Face;
+        return (Kind)(((int)above + step) % branchKinds);   // step is 1..branchKinds-1, so never `above`
     }
 
     /// <summary>What the place calls itself, if it calls itself anything.</summary>

@@ -189,6 +189,48 @@ public sealed partial class TheCastOffIsAStepTests
     }
 
     /// <summary>
+    /// THE HAND-UNDOCK PATH STAYS ALIVE. A captain who casts off by hand before a scheduled departure's epoch
+    /// leaves the plan's undock row standing; when the epoch arrives the executor must RETIRE it (never undock
+    /// a flying ship). Retired, the shape warning clears and the next berth can lay a fresh pair.
+    ///
+    /// <para>RED when the haven filter sat in <c>PendingUndockStep</c> (239883b0): a hand undock nulled the
+    /// docked haven, the filter hid the row, the retire branch was dead code, the CastOffWhileFree warning never
+    /// cleared and the next berth was refused "She can only leave this berth once".</para>
+    /// </summary>
+    [Fact]
+    public void A_HAND_UNDOCK_BEFORE_THE_EPOCH_RetiresTheRow_ClearsTheWarning_AndTheNextBerthMayLayAFreshPair()
+    {
+        Pages.Map map = AShipClampedAtSeleneGate();
+        Set(map, "_scrubOffsetSeconds", 33 * 3600.0);
+        Invoke(map, "AddCastOffAtTop");
+        object undockRow = FirstNodeOfKind(map, PlanStepKind.Undock);
+        double epoch = NodeEpochOf(undockRow);
+
+        Invoke(map, "Undock"); // the captain cast off by hand, well before the plan's hour
+        Assert.Null(Get<string?>(map, "_dockedHavenId"));
+        Assert.Equal(CastOffRule.PlanShapeFault.CastOffWhileFree, (CastOffRule.PlanShapeFault)Invoke(map, "PlanShapeFaultNow")!);
+
+        Set(map, "_scrubOffsetSeconds", 0.0);
+        WarpThroughWithNoFurtherInput(map, Destination, epoch + 600.0);
+
+        Assert.True((bool)FieldOf(undockRow, "Executed")!, "the standing undock row must be retired at its epoch.");
+        Assert.Equal(CastOffRule.PlanShapeFault.None, (CastOffRule.PlanShapeFault)Invoke(map, "PlanShapeFaultNow")!);
+
+        // A later berth: tied up again, the captain may lay a fresh departure pair.
+        Set(map, "_dockedHavenId", Berth);
+        Invoke(map, "AddCastOffAtTop");
+        int live = 0;
+        foreach (object node in PlanNodes(map))
+        {
+            if (KindOf(node) == PlanStepKind.Undock && !(bool)FieldOf(node, "Executed")! && !(bool)FieldOf(node, "Stale")!)
+            {
+                live++;
+            }
+        }
+        Assert.Equal(1, live);
+    }
+
+    /// <summary>
     /// (c) A BURN CANNOT FIRE BEFORE THE CLAMP LETS GO. Scrub back inside a scheduled departure and drop a
     /// burn there: the plan's SHAPE goes bad, the captain is woken once in the rule's own words, and warp is
     /// dropped — the #965 machinery, reused whole.

@@ -201,6 +201,30 @@ public sealed class TheFinderWalksTheWholeCaseTests
     }
 
     /// <summary>
+    /// <b>CLOSING THE REVEAL UNCHOSEN LEAVES IT OWED.</b> The close settles nothing, so it must not spend
+    /// the reveal: not re-thrown the same visit, raised again at the berth next visit, and still settleable.
+    ///
+    /// <para><b>RED</b> by removing the un-reveal from <c>CloseTheReveal</c>: the case is stuck for good.</para>
+    /// </summary>
+    [Fact]
+    public void ClosingTheRevealBeforeChoosingDoesNotLoseTheCase()
+    {
+        Pages.Map map = AtTheReveal();
+        Invoke(map, "CloseTheReveal");
+        Assert.Null(Field(map, "_finderReveal"));
+
+        Invoke(map, "TheRevealAtTheBerth");
+        Assert.Null(Field(map, "_finderReveal"));   // not thrown straight back on the same visit
+
+        Set(map, "_dockVisitSimTime", 1000.0);      // next time he ties up here
+        Invoke(map, "TheRevealAtTheBerth");
+        Assert.NotNull(Field(map, "_finderReveal"));
+
+        Invoke(map, "SettleTheCase", FinderCase.Outcome.TurnedIn);
+        Assert.Equal(FinderCase.Outcome.TurnedIn, Progress(map).Settled);
+    }
+
+    /// <summary>
     /// <b>SHE COMES BACK TO PAY, ONCE, AND THEN SHE IS DONE WITH IT.</b> A settled case is a debt she owes,
     /// and the next bar she finds the captain sitting alone in is where she pays it — with the payoff line
     /// and no second case behind it, because slice 1 is one case.

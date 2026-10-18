@@ -84,7 +84,7 @@ public partial class Map
         // this hunter, but the fit-out delay meant muscle appeared days later with no causal link. This
         // pulse draws the chain in-voice the moment the collector is spawned; the callsign rides the news
         // headline behind it.
-        ShowPulseMessage($"Word's out — your last job bought you a collector ({callsign}). It's fitting out at {origin.Name}; days, not weeks.");
+        ShowPulseAlso($"Word's out — your last job bought you a collector ({callsign}). It's fitting out at {origin.Name}; days, not weeks.");
     }
 
     private void FireWarningShot(string npcId)

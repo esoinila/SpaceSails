@@ -45,6 +45,23 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
         }
     }
 
+    /// <summary>A booking whose own question-three roll WOULD accept a paper, and whose outcome differs between
+    /// the accepted and the refused settlement - the only booking on which showing nothing and showing a paper
+    /// settle differently, so a page that counted nothing as an accepted paper (or ignored the answer and rolled)
+    /// lands on a different outcome than <paramref name="want"/>, the refused one.</summary>
+    private static HullClaim.Loss LossWhereNothingIsTheDifference(ClaimInterview.Outcome want, int tenths = 20)
+    {
+        for (long when = 100000; ; when += 7)
+        {
+            if (ClaimInterview.Q3Accepts(when)
+                && ClaimInterview.OutcomeOf(when, false) == want
+                && ClaimInterview.OutcomeOf(when, true) != want)
+            {
+                return new HullClaim.Loss(when, tenths);
+            }
+        }
+    }
+
     /// <summary>A page at The Deep with the loss in the book (through the real writer), the form filled and booked, a
     /// policy in force and her watch live — one press from seated.</summary>
     private static Pages.Map OnePressFromSeated(string name, HullClaim.Loss loss, PirateInsurance? policy = null)
@@ -113,14 +130,16 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
         [
             (ClaimInterview.Outcome.Paid, true, false),
             (ClaimInterview.Outcome.Adjusted, true, false),
-            (ClaimInterview.Outcome.Adjusted, false, true),
+            (ClaimInterview.Outcome.Adjusted, true, true),
             (ClaimInterview.Outcome.Declined, false, false),
-            (ClaimInterview.Outcome.Declined, false, true),
+            (ClaimInterview.Outcome.Declined, true, true),
         ];
 
         foreach ((ClaimInterview.Outcome want, bool accepted, bool nothing) in cases)
         {
-            HullClaim.Loss loss = LossFor(want, accepted);
+            // An explicit nothing is judged on a booking whose roll WOULD accept a paper but whose refused
+            // settlement is the one wanted: only there does ignoring the answer give a different outcome.
+            HullClaim.Loss loss = nothing ? LossWhereNothingIsTheDifference(want) : LossFor(want, accepted);
             Pages.Map map = OnePressFromSeated($"claim-interview-{want}-{accepted}-{nothing}", loss);
             int purse = (int)Read(map, "_credits")!;
             Assert.Single(Notes(map), n => n.Text == HullClaim.LossLine(loss.Tenths));

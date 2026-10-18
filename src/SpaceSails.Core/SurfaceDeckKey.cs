@@ -56,12 +56,18 @@ public sealed class SurfaceDeckKey : IEquatable<SurfaceDeckKey>
     /// voyage and costs one honest rebuild when it does.</summary>
     public bool Preserved { get; }
 
+    /// <summary>The landing site's name, which the layout writes onto the ground as its "SET DOWN AT"
+    /// header (empty = no header). Part of the key because it is an input to the build: a warm-up built
+    /// with no name and a landing built with one are two different layouts, and the memo must not hand the
+    /// first back for the second.</summary>
+    public string SiteName { get; }
+
     private readonly Cache[] _caches;
     private readonly int _hash;
 
     private SurfaceDeckKey(
         string bodyId, string bodyDisplayName, string siteSalt, Cache[] caches, long monolithEpoch,
-        bool hasSecretSite, bool preserved)
+        bool hasSecretSite, bool preserved, string siteName)
     {
         BodyId = bodyId;
         BodyDisplayName = bodyDisplayName;
@@ -69,6 +75,7 @@ public sealed class SurfaceDeckKey : IEquatable<SurfaceDeckKey>
         MonolithEpoch = monolithEpoch;
         HasSecretSite = hasSecretSite;
         Preserved = preserved;
+        SiteName = siteName;
         _caches = caches;
 
         var hc = new HashCode();
@@ -78,6 +85,7 @@ public sealed class SurfaceDeckKey : IEquatable<SurfaceDeckKey>
         hc.Add(monolithEpoch);
         hc.Add(hasSecretSite);
         hc.Add(preserved);
+        hc.Add(siteName, StringComparer.Ordinal);
         hc.Add(caches.Length);
         foreach (Cache c in caches)
         {
@@ -93,11 +101,12 @@ public sealed class SurfaceDeckKey : IEquatable<SurfaceDeckKey>
         string? bodyId, string? bodyDisplayName,
         IReadOnlyList<(string Id, double X, double Y, int ReeverLevel)>? ownCaches,
         string? siteSalt = null, long monolithEpoch = 0, bool hasSecretSite = false,
-        bool preserved = false)
+        bool preserved = false, string? siteName = null)
     {
         bodyId ??= "";
         bodyDisplayName ??= "";
         siteSalt ??= "";
+        siteName ??= "";
 
         Cache[] caches;
         if (ownCaches is null || ownCaches.Count == 0)
@@ -115,7 +124,7 @@ public sealed class SurfaceDeckKey : IEquatable<SurfaceDeckKey>
         }
 
         return new SurfaceDeckKey(
-            bodyId, bodyDisplayName, siteSalt, caches, monolithEpoch, hasSecretSite, preserved);
+            bodyId, bodyDisplayName, siteSalt, caches, monolithEpoch, hasSecretSite, preserved, siteName);
     }
 
     public bool Equals(SurfaceDeckKey? other)
@@ -137,7 +146,8 @@ public sealed class SurfaceDeckKey : IEquatable<SurfaceDeckKey>
             || !string.Equals(SiteSalt, other.SiteSalt, StringComparison.Ordinal)
             || MonolithEpoch != other.MonolithEpoch
             || HasSecretSite != other.HasSecretSite
-            || Preserved != other.Preserved)
+            || Preserved != other.Preserved
+            || !string.Equals(SiteName, other.SiteName, StringComparison.Ordinal))
         {
             return false;
         }

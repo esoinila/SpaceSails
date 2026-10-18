@@ -150,7 +150,7 @@ public partial class Map
         // the spawn call, which is why "why is this still hunting us" had no answer on any screen — a
         // collector could name herself and nothing else. She carries the job now.
         SpawnHunterForHeatEvent(npc.Ship.Callsign);
-        ShowPulseMessage(compliance == ComplianceState.Stubborn
+        ShowPulseAlso(compliance == ComplianceState.Stubborn
             ? "Her muscle's already inbound. Heat rising fast."
             : "Word travels. Heat rising.");
     }

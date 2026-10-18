@@ -179,7 +179,9 @@
 /* The sticker. Shouted, amber-red, and ABOVE the keys — the affordance states its own cost before the
    first press, which is the whole reason a keypad is allowed on this ground at all (#602). */
 .lift-pad-sticker {
-    font: 700 0.7rem/1.4 var(--ui-font, inherit);
+    font-weight: 700;
+    font-size: 0.7rem;
+    line-height: 1.4;
     letter-spacing: 0.09em;
     text-transform: uppercase;
     color: #ffb0a0;

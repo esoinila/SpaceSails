@@ -127,11 +127,6 @@ public partial class Map
         _collectors.Clear();
         _lastNearestReeverRange = null;
 
-        if (outwalkedTheWrit)
-        {
-            ShowPulseMessage(CollectorLanding.EscapedLine);
-        }
-
         SetDeckForDock(ex.RestoreHavenId); // rebuild the ship/complex; folds the surface away
         (_avatarX, _avatarY, _avatarHeading) = (-6, -6.5, Math.PI / 2); // step off into the bay
         RendererInterop.PlayCue("board");
@@ -169,6 +164,13 @@ public partial class Map
         {
             string tail = escapedWithWatchdogs ? " You outran the Old Ones." : "";
             ShowPulseMessage($"🛸 Back aboard from {ex.Stop.Body.Name}.{tail}{botTail}{dropTail}");
+        }
+
+        // The escape is said BESIDE the liftoff line (it used to be written first and replaced by it in the
+        // same call, so nobody ever read it) — and beside a settled gig's payout line the same way.
+        if (outwalkedTheWrit)
+        {
+            ShowPulseAlso(CollectorLanding.EscapedLine);
         }
 
         // #1202 · …and if this was a stringer's ground, she is aboard, and she sleeps the burn back.

@@ -28,9 +28,8 @@ public sealed class ClickToWalkIsStillWalkingTests
 {
     private static SurfaceLayout.Field Field => MoonSurface.ExpeditionField();
 
-    // The client's own walk speed and its own frame-time clamp. Named here so a simulated walk in this file
-    // spends exactly what a hand-walked one spends; if either drifts in Map.Deck the air law below is the
-    // test that notices.
+    // The client's own walk speed and its own frame-time clamp, for the pure-stepper simulations in this
+    // file. The AIR law below does NOT lean on them: it drives a booted page.
     private const double WalkSpeedDu = 9.0;      // Map.Deck's AvatarSpeed
     private const double FrameDtClampS = 0.1;    // Map.Deck's Math.Min(dtRealSeconds, 0.1)
 
@@ -284,48 +283,136 @@ public sealed class ClickToWalkIsStillWalkingTests
     [Fact]
     public void AnAutoWalkCostsExactlyTheAirAHandWalkOfTheSameLengthCosts()
     {
-        // #573's drain is priced off DISTANCE MOVED per frame, not off which key was down — which is what
+        // #573's drain is priced off DISTANCE MOVED per frame, not off which key was down - which is what
         // makes this checkable at all, and also what makes it fragile in the other direction: the moment an
-        // auto-walk moved further per second, or fewer frames, than a hand-walk, the captain would be buying
-        // depth at a discount and every air decision in the Hive would be a lie.
-        DeckPlan deck = FloorOf("the-clinker", -2);
+        // auto-walk moved further per second than a hand-walk, the captain would be buying depth at a
+        // discount and every air decision in the Hive would be a lie.
+        //
+        // THE PAGE RUNS BOTH. This used to price the walk off the test's own typed speed and the test's own
+        // exertion constant, i.e. it compared a formula with itself and stayed green when Map.Deck's auto-walk
+        // budget doubled. Now a booted surface page is driven through its own MoveAvatar (the route branch,
+        // then the held-key branch) and its own StepSuitAir, and the air is read off the page's tank.
+        const double dt = 1.0 / 60.0;
+        Pages.Map map = OnTheDeadFloor("the-clinker", -2, air: SuitAir.TankSeconds);
+        var deck = (DeckPlan)Get(map, "_deckPlan")!;
         (double sx, double sy) = Spawn;
         var from = new DeckReachability.Point(sx, sy);
         DeckReachability.Point target = TargetsOn(deck)
             .OrderByDescending(t => ((t.X - sx) * (t.X - sx)) + ((t.Y - sy) * (t.Y - sy)))
             .First();
 
-        const double dt = 1.0 / 60.0;
-        AutoWalk route = Plan(deck, from, target);
-        Sim auto = Walk(deck, route, sx, sy, dt);
-        Assert.True(auto.Arrived, "the auto-walk never got there — nothing to price.");
-        Assert.True(auto.WalkedDu > 8, $"only {auto.WalkedDu:F1} du walked — too short to price honestly.");
+        // ── THE AUTO-WALK, through the page ──
+        PutHimAt(map, sx, sy);
+        Set(map, "_autoWalk", Plan(deck, from, target));
+        Set(map, "_autoWalkDeck", deck);
+        (double autoDu, double autoAir, int autoFrames) = RunPageFrames(
+            map, dt, 20_000, stop: () => Get(map, "_autoWalk") is not AutoWalk { Active: true });
+        Assert.True(autoDu > 8, $"only {autoDu:F1} du walked - too short to price honestly.");
+        Assert.True(autoAir > 0, "the auto-walk burned no air at all - the tank is not being drawn on here.");
 
-        // The hand-walk twin: the SAME captain at the SAME speed for the SAME number of frames, holding a
-        // key. Every frame drains dt × Rate(exertion), and exertion is a function of speed alone, so equal
-        // frames at equal speed is equal air — the assertion below is that the auto-walk did not shorten
-        // either factor.
-        double handSeconds = auto.WalkedDu / WalkSpeedDu;
-        int handFrames = (int)Math.Ceiling(handSeconds / dt);
-        double handExertion = SuitAir.Breathing.Walking;   // 9 du/s: between Still (<0.5) and Running (>7)
-        double autoExertion = SuitAir.Breathing.Walking;
+        // ── THE HAND-WALK TWIN, through the same page ── a held key in whichever direction has room for a
+        // full second and a half of it. Same dt, same frame loop, same drain.
+        double handDu = 0, handAir = 0;
+        int handFrames = 0;
+        foreach (string key in new[] { "w", "a", "s", "d" })
+        {
+            PutHimAt(map, sx, sy);
+            Set(map, "_autoWalk", null);
+            Set(map, "_autoWalkDeck", null);
+            var keys = (HashSet<string>)Get(map, "_deckKeys")!;
+            keys.Add(key);
+            (handDu, handAir, handFrames) = RunPageFrames(map, dt, 90, stop: () => false);
+            keys.Clear();
+            if (handDu > 0.95 * Speed * handFrames * dt)
+            {
+                break;
+            }
+        }
+        Assert.True(handDu > 0.95 * Speed * handFrames * dt, "no direction from the lift had room for a hand-walk.");
 
-        double handAir = SuitAir.TankSeconds
-            - SuitAir.Drain(SuitAir.TankSeconds, handFrames * dt * SuitAir.Breathing.Rate(handExertion, 1.0, 0, 3));
-        double autoFrames = Math.Ceiling(auto.SecondsSpent / dt);
-        double autoAir = SuitAir.TankSeconds
-            - SuitAir.Drain(SuitAir.TankSeconds, autoFrames * dt * SuitAir.Breathing.Rate(autoExertion, 1.0, 0, 3));
+        double autoSeconds = autoFrames * dt, handSeconds = handFrames * dt;
+        Assert.True(Math.Abs((autoDu / autoSeconds) - (handDu / handSeconds)) <= 0.03 * (handDu / handSeconds),
+            $"the auto-walk covered {autoDu / autoSeconds:F2} du/s where a hand-walk covers "
+            + $"{handDu / handSeconds:F2} - the route is not walking at the captain's speed.");
+        Assert.True(Math.Abs((autoAir / autoSeconds) - (handAir / handSeconds)) <= 0.03 * (handAir / handSeconds),
+            $"an auto-walk burned {autoAir / autoSeconds:F3} s of tank per second where the same walk by hand "
+            + $"burns {handAir / handSeconds:F3} - depth is being sold at a discount.");
+    }
 
-        // Within a single frame of each other: the auto-walk spends the last partial frame standing still
-        // on the doorstep exactly as a captain releasing the key does.
-        double oneFrame = dt * SuitAir.Breathing.Rate(SuitAir.Breathing.Walking, 1.0, 0, 3);
-        Assert.True(Math.Abs(autoAir - handAir) <= oneFrame + 1e-9,
-            $"an auto-walk of {auto.WalkedDu:F1} du burned {autoAir:F3} s of tank where the same walk by hand "
-            + $"burns {handAir:F3} s — depth is being sold at a discount.");
+    private static double Speed =>
+        (double)typeof(Pages.Map).GetField("AvatarSpeed", System.Reflection.BindingFlags.NonPublic
+            | System.Reflection.BindingFlags.Static)!.GetRawConstantValue()!;
 
-        // And the walk really did take the time it should: distance ÷ speed, not a frame less.
-        Assert.True(auto.SecondsSpent >= handSeconds - dt,
-            $"the auto-walk covered {auto.WalkedDu:F1} du in {auto.SecondsSpent:F2} s — faster than walking.");
+    private const System.Reflection.BindingFlags Hidden = TestTree.PrivateOnAnInstance;
+
+    private static Pages.Map OnTheDeadFloor(string body, int level, double air)
+    {
+        var map = new Pages.Map();
+        typeof(Microsoft.AspNetCore.Components.ComponentBase).GetField(
+            "_hasPendingQueuedRender", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .SetValue(map, true);
+
+        Type exType = typeof(Pages.Map).GetNestedType(
+            "SurfaceExcursion", Hidden | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!;
+        Type stopType = typeof(Pages.Map).GetNestedType(
+            "ShuttleStop", Hidden | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!;
+        object ex = Activator.CreateInstance(exType, nonPublic: true)!;
+        object stop = Activator.CreateInstance(stopType,
+            new CelestialBody(body, body, "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;
+        exType.GetProperty("Stop")!.SetValue(ex, stop);
+        exType.GetProperty("RestoreHavenId")!.SetValue(ex, null);
+        exType.GetProperty("Site")!.SetValue(ex,
+            new LandingSite(0, LandingSiteKind.WildPlain, "The Wild Plain", "", ""));
+        exType.GetProperty("Floor")!.SetValue(ex, level);
+        exType.GetProperty("AirSeconds")!.SetValue(ex, air);
+        Set(map, "_surface", ex);
+        Set(map, "_deckMode", true);
+        Invoke(map, "RebuildSurfaceDeck");
+        return map;
+    }
+
+    private static object? Get(Pages.Map map, string field) =>
+        typeof(Pages.Map).GetField(field, Hidden)!.GetValue(map);
+
+    private static void Set(Pages.Map map, string field, object? value) =>
+        typeof(Pages.Map).GetField(field, Hidden)!.SetValue(map, value);
+
+    private static void Invoke(Pages.Map map, string method, params object?[] args) =>
+        typeof(Pages.Map).GetMethod(method, Hidden)!.Invoke(map, args);
+
+    private static double AirOf(Pages.Map map)
+    {
+        object ex = Get(map, "_surface")!;
+        return (double)ex.GetType().GetProperty("AirSeconds")!.GetValue(ex)!;
+    }
+
+    private static void PutHimAt(Pages.Map map, double x, double y)
+    {
+        Set(map, "_avatarX", x);
+        Set(map, "_avatarY", y);
+        Set(map, "_airLastX", x);
+        Set(map, "_airLastY", y);
+        object ex = Get(map, "_surface")!;
+        ex.GetType().GetProperty("AirSeconds")!.SetValue(ex, SuitAir.TankSeconds);
+    }
+
+    /// <summary>Whole page frames - <c>MoveAvatar</c> then <c>StepSuitAir</c>, the order the surface frame
+    /// runs them in - until <paramref name="stop"/> or the cap. Returns distance moved, tank spent, frames.</summary>
+    private static (double Du, double Air, int Frames) RunPageFrames(
+        Pages.Map map, double dt, int cap, Func<bool> stop)
+    {
+        double du = 0, air0 = AirOf(map);
+        int frames = 0;
+        while (frames < cap && !stop())
+        {
+            double x = (double)Get(map, "_avatarX")!, y = (double)Get(map, "_avatarY")!;
+            Invoke(map, "MoveAvatar", dt);
+            Invoke(map, "StepSuitAir", dt);
+            double nx = (double)Get(map, "_avatarX")!, ny = (double)Get(map, "_avatarY")!;
+            du += Math.Sqrt(((nx - x) * (nx - x)) + ((ny - y) * (ny - y)));
+            frames++;
+        }
+        return (du, air0 - AirOf(map), frames);
     }
 
     [Fact]

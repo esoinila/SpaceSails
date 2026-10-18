@@ -17,6 +17,7 @@ namespace SpaceSails.Client.Tests;
 /// fractions — those are FLAGGED separately and pricing the honest road as though it already had its
 /// mechanic is the mistake the issue closes with a warning about.</para>
 /// </summary>
+[System.Runtime.Versioning.SupportedOSPlatform("browser")]
 public sealed class TheHonestFilingEarnsSomebodyTests
 {
     private static readonly Derelict.Wreck Hull =
@@ -96,6 +97,45 @@ public sealed class TheHonestFilingEarnsSomebodyTests
         Assert.True(after.HasHistory);
         Assert.Equal(Derelict.ContactGoodwill, after.Goodwill);
         Assert.Equal(name, after.DisplayName);
+    }
+
+    /// <summary>
+    /// THE PAGE'S HALF, RUN. <c>BookTheSalvageContact</c> is what turns Core's <c>ContactEarned</c> into a name
+    /// on the book, and the source-text checks below would stay green with its guard deleted. Here the shipping
+    /// method runs on a real page with the three real outcomes: only the honest filing leaves anybody on the
+    /// contact ledger or on the card, and the misfiled and stripped roads leave both exactly as they were.
+    ///
+    /// <para><b>Proven RED</b> by deleting the <c>if (!outcome.ContactEarned)</c> block in
+    /// <c>BookTheSalvageContact</c>.</para>
+    /// </summary>
+    [Fact]
+    public void OnlyTheHonestFilingBooksTheContactOnThePage()
+    {
+        const System.Reflection.BindingFlags Hidden = TestTree.PrivateOnAnInstance;
+        (string id, string name) = Derelict.ContactFor(Hull);
+
+        (string Road, Derelict.SalvageOutcome Outcome, bool Books)[] roads =
+        [
+            ("filed truthfully", Derelict.Resolve(Hull, Derelict.SalvageChoice.FileTheReport, Hull.Cause), true),
+            ("misfiled", Derelict.Resolve(Hull, Derelict.SalvageChoice.FileTheReport, Derelict.WreckCause.Mutiny), false),
+            ("stripped", Derelict.Resolve(Hull, Derelict.SalvageChoice.StripAndSayNothing, null), false),
+        ];
+
+        foreach ((string road, Derelict.SalvageOutcome outcome, bool books) in roads)
+        {
+            var map = new Pages.Map();
+            typeof(Pages.Map).GetMethod("BookTheSalvageContact", Hidden)!.Invoke(map, [Hull, outcome]);
+
+            var contacts = (ContactLedger)typeof(Pages.Map).GetField("_contacts", Hidden)!.GetValue(map)!;
+            var signedBy = (string?)typeof(Pages.Map).GetField("_wreckContact", Hidden)!.GetValue(map);
+
+            Assert.Equal(books, contacts.For(id).HasHistory);
+            Assert.Equal(books ? name : null, signedBy);
+            if (books)
+            {
+                Assert.Equal(Derelict.ContactGoodwill, contacts.For(id).Goodwill);
+            }
+        }
     }
 
     /// <summary>Pure, and seeded from the hull: a captain who files on the same wreck twice does not meet two

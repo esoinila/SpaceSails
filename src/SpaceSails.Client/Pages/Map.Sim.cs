@@ -241,6 +241,19 @@ public partial class Map
         _pulse = _pulse.Write(message, rank, _lastTimestampMs ?? 0);
     }
 
+    /// <summary>A line raised in the SAME call as the one before it, said beside it rather than over it
+    /// (<see cref="PulseSlot.Also"/>). Held behind a card exactly as <see cref="ShowPulseMessage"/> holds.</summary>
+    private void ShowPulseAlso(string message, PulseRank rank = PulseRank.Status)
+    {
+        if (rank.IsPlotSignificant() && ACardStopsTheWorld)
+        {
+            _held = _held.Hold(message, rank, _lastTimestampMs ?? 0);
+            return;
+        }
+
+        _pulse = _pulse.Also(message, rank, _lastTimestampMs ?? 0);
+    }
+
     private string BodyName(string id)
     {
         foreach (CelestialBody body in _ephemeris!.Bodies)

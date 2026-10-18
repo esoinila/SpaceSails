@@ -41,6 +41,13 @@ public partial class Map
         SuitAir.Supply? was = _airSupplyNoted;
         _airSupplyNoted = supply;
 
+        if (was is null)
+        {
+            // The first tick of an excursion measures speed from where the captain STANDS, never from wherever the
+            // last excursion's last drawing tick left the pair (a stale far-away point read as a one-tick Running).
+            (_airLastX, _airLastY) = (_avatarX, _avatarY);
+        }
+
         if (was is null || SuitAir.Drawing(was.Value) == SuitAir.Drawing(supply) || roomSpeaksForItself)
         {
             return;

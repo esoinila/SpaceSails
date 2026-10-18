@@ -74,6 +74,9 @@ public static partial class UndergroundComplex
         {
             ArgumentNullException.ThrowIfNull(bodyId);
             return !IsHeadOffice(bodyId) && SiteHasBand(bodyId, PadBand)
+                   // A LISTED band 1 only: when band 1 is the hidden unlisted band the panel stays silent
+                   // about it and never builds a pad, so a code for it would open nothing (#592).
+                   && !IsUnlisted(bodyId, BandTop(PadBand))
                    && TopPressurisedFloor(bodyId) is { } works
                 ? (works, PaperRoom)
                 : null;

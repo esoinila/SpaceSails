@@ -301,7 +301,9 @@ public static partial class UndergroundComplex
             && !(memory.ShaftsNarrated?.Contains(opened.Band) ?? false))
         {
             said.Add(new(
-                ArrivalBeat.CardAccepted, CardAcceptedLine(opened), "🎫", PulseRank.Beat, opened));
+                ArrivalBeat.CardAccepted,
+                string.Equals(opened.BodyId, bodyId, StringComparison.Ordinal)
+                    ? CardAcceptedLine(opened) : StandingHonouredLine(opened), "🎫", PulseRank.Beat, opened));
         }
 
         // #752 · …and the other paper's arrival, which is the job finishing. A gate that reads a timesheet

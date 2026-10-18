@@ -241,6 +241,10 @@ public partial class Map
     //     wave a death away. Enter presses the button that is already the only way on.
     private bool TryConfirmTopOverlay()
     {
+        // The peek hides every surface (#1038): Enter must not answer a card, the death card included, that
+        // the captain cannot see. Esc is the way out of the peek.
+        if (_peekMap) { return false; }
+
         // The death card draws above everything in the game, so it answers the key before anything else.
         if (_busted is { } bust)
         {

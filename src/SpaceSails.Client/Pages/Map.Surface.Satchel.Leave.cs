@@ -290,6 +290,9 @@ public partial class Map
     /// standing on, and a captain who is on one is never also ashore in a berth.</para></summary>
     private string WhereYouAreStanding() =>
         _surface is { Floor: < 0 } ex ? $"on the floor of B{-ex.Floor}"
+        // A hull's steel is not regolith (#562's class): no line of its own exists yet, so the neutral deck
+        // phrasing stands in rather than a moon's ground.
+        : _surface is not null && OnADeadHull ? "on the haven's deck"
         : _surface is not null ? "on the regolith at your feet"
         // Past the tube, in the station's own rooms — the flag the deck keeps (`RefreshAshore`), never a
         // coordinate re-measured here.

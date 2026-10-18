@@ -147,7 +147,7 @@ public partial class Map
     /// </summary>
     private ShipState PlanStartState()
     {
-        if (_dockedHavenId is not { } haven || _ephemeris is null || PendingUndockStep() is not { } undock)
+        if (_dockedHavenId is not { } haven || _ephemeris is null || PendingUndockStep() is not { } undock || undock.HavenId != haven)
         {
             return _ship;
         }
@@ -216,10 +216,12 @@ public partial class Map
     {
         step.Executed = true;
 
-        if (_dockedHavenId is null)
+        if (_dockedHavenId is null || step.HavenId != _dockedHavenId)
         {
             // Already free — a captain who cast off by hand before the plan got there. The step is simply
             // retired; it must never "undock" a flying ship (that is how a step kind grows a second meaning).
+            // Likewise a row laid at another berth (a life that arrived since): it only ever releases the berth
+            // it was laid at, so here it is retired, never obeyed.
             return;
         }
 
@@ -242,7 +244,7 @@ public partial class Map
     /// </summary>
     private string? CastOffNowLine()
     {
-        if (_dockedHavenId is null || PendingUndockStep() is not { } undock)
+        if (_dockedHavenId is null || PendingUndockStep() is not { } undock || undock.HavenId != _dockedHavenId)
         {
             return null;
         }
@@ -261,5 +263,6 @@ public partial class Map
     /// (there is no second queue to go stale); it simply never says one step twice.
     /// </summary>
     private bool NowLineCarriesTheCastOff(PlanNode node) =>
-        node.Kind == PlanStepKind.Undock && _dockedHavenId is not null && ReferenceEquals(node, PendingUndockStep());
+        node.Kind == PlanStepKind.Undock && _dockedHavenId is not null && node.HavenId == _dockedHavenId
+        && ReferenceEquals(node, PendingUndockStep());
 }

@@ -187,6 +187,7 @@ public partial class Map
         _reevers.Clear();
         _sweepers.Clear();
         _lastNearestReeverRange = null;
+        _airSupplyNoted = null; // #612 · a death or fold-away ends an excursion without a liftoff: the crossing is never inherited
         _chirp = MotionTracker.ChirpState.Fresh; // #338: the long ear starts armed — the first mover chirps
         _sightings = NerveModel.SightingSpell.Fresh; // #379: a fresh watch — the first fright of it lands full
 

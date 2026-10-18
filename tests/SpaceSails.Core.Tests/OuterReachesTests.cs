@@ -57,7 +57,7 @@ public class OuterReachesTests
     }
 
     [Fact]
-    public void UnpublishedShips_ExcludedFromBoardListing_ButStillSensorObservable()
+    public void UnpublishedShips_AreGeneratedBesidePublishedOnes_ButStillSensorObservable()
     {
         var ephemeris = Sol();
         IReadOnlyList<NpcShip> ships = TrafficSchedule.Generate(ephemeris, seed: 42, count: 8);
@@ -65,9 +65,11 @@ public class OuterReachesTests
         List<NpcShip> unpublished = [.. ships.Where(s => !s.PublishesTimetable)];
         Assert.NotEmpty(unpublished);
 
-        // The traffic-board panel's filter predicate (Map.razor): unpublished ships never qualify.
-        Assert.All(unpublished, s => Assert.False(BoardListingPredicate(s)));
-        Assert.All(ships.Where(s => s.PublishesTimetable), s => Assert.True(BoardListingPredicate(s)));
+        // The flag the board panels read is a real split of the generated traffic, not a constant: some of
+        // the same sweep publishes a timetable and some does not. (What each client panel DOES with the flag
+        // is the client's to pin - the board used to be asserted here through a private copy of its own
+        // predicate, which could not go red.)
+        Assert.Contains(ships, s => s.PublishesTimetable);
 
         // But a sensor sweep doesn't care about the board flag: an unpublished ship in range is
         // observed exactly like any other (worldbuilding notes §4/§5 — you have to go looking).
@@ -79,8 +81,6 @@ public class OuterReachesTests
         Assert.True(observed);
         Assert.Equal(target.Id, obs.TargetId);
     }
-
-    private static bool BoardListingPredicate(NpcShip ship) => ship.PublishesTimetable;
 
     [Fact]
     public void Moons_OrbitTheirParentPlanet_NotTheSun()

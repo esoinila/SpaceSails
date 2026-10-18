@@ -176,6 +176,12 @@ public sealed class TheMoneyTrailTests
         {
             using (Fenced(body))
             {
+                // A ground that is stopped, fenced AND filled in: the one world where the maintenance ledger
+                // and the cost-centre papers share a floor. Without the register the ledger is null on every
+                // ground and the clause below could never fail.
+                Burial.Install([body]);
+                try
+                {
                 foreach (MoneyTrail.Item item in Items)
                 {
                     (int level, int room) = UndergroundComplex.MoneyTrailRoomFor(body, item)!.Value;
@@ -187,7 +193,8 @@ public sealed class TheMoneyTrailTests
                     Assert.NotEqual(UndergroundComplex.FoundKeyRoomFor(body), (level, room));
                     Assert.NotEqual(UndergroundComplex.StandingOrderRoomFor(body), (level, room));
                     Assert.NotEqual(UndergroundComplex.ValveBookRoomFor(body), (level, room));
-                    Assert.Null(UndergroundComplex.MaintenanceLedgerRoomFor(body));   // never both (#1063)
+                    Assert.NotNull(UndergroundComplex.MaintenanceLedgerRoomFor(body));   // the ledger really exists here
+                    Assert.NotEqual(UndergroundComplex.MaintenanceLedgerRoomFor(body), (level, room));   // never the same room (#1063)
 
                     UndergroundComplex.FloorPlan floor = UndergroundComplex.Build(body, level, Field);
                     Assert.InRange(room, 0, floor.RoomCentres.Count - 1);
@@ -201,6 +208,11 @@ public sealed class TheMoneyTrailTests
                             UndergroundComplex.Haul.Records, body, level, room, null));
                     Assert.Contains(MoneyTrail.TextOf(item),
                         UndergroundComplex.MoneyTrailLine(item), StringComparison.Ordinal);
+                }
+                }
+                finally
+                {
+                    Burial.Install([]);
                 }
             }
         }

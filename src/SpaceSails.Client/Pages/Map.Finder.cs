@@ -69,6 +69,8 @@ public sealed partial class Map
 
     /// <summary>…and how far down it he has got.</summary>
     private FinderCase.Progress _finderProgress = FinderCase.Progress.Fresh;
+    // The berth visit (its _dockVisitSimTime) at which the reveal was closed unchosen; transient, never saved.
+    private double _finderRevealShelvedVisit = double.NaN;
 
     /// <summary>Which berth this file is remembering. Null off a berth; a different berth is a different
     /// evening — the same fold the salesman and the walk-in keep.</summary>
