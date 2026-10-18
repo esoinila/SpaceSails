@@ -151,21 +151,8 @@ public partial class Map
         //     retired-captain count, is correct and stays.)
         //   · _insurancePosterReads is what makes `fine-print` "the fine print, read TWICE"; carried over, a
         //     fresh captain's very first look at a poster read the small print they had never read.
-        _rebirthsSeen = 0;
-        _insurancePosterReads = 0;
-        _oracleStation = null;
-        _oracleOpen = false;
-        _oracleLine = null;
-        _oracleDraw = 0;
-        _oracleDrinks = 0;
-
-        // #394: a new universe has not saved the Ringside Exchange — its dedication plaque reads its
-        // original bronze until this run's crew earns the gratitude line. Any live gig is dropped too.
-        _ringsideSaved = false;
-        _deflection = null;
-        _deflectionResolved = null;
-        _deflectionRaiseMeters = 0;
-        _deflectionLeftPort = false;
+        // …(they, the oracle's visit state, and #394's Ringside plaque and live deflection gig now reset in
+        // ForgetTheRunCounters, Map.Vault.NewVoyage.cs, so a Load/Import clears them too.)
 
         // THE leak's home: the session-scoped "found it" sets. Clearing _revealedBodyIds re-hides every
         // scenario-hidden body (the derelict roadster among them) so a new game must re-discover it; the

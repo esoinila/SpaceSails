@@ -48,7 +48,7 @@ public partial class Map
     /// the same kind of fact — this line, at this station, has been said — so the set was renamed to say what
     /// it holds and its keys carry which line, rather than the page growing a second set of the same shape
     /// (the brief: no new page field unless a told-once memory genuinely needs one).</para></summary>
-    private readonly ToldOnce _toldOnce = new();   // #653 slice 2 · the one told-once mechanism (Core/ToldOnce.cs), run scope
+    private ToldOnce _toldOnce = new();   // #653 slice 2 · the one told-once mechanism (Core/ToldOnce.cs), run scope: ForgetTheRunCounters hands the page a fresh one when the run ends
 
     /// <summary>#1332 B · The first ride down's key.</summary>
     private const string FirstRideKey = ToldOnce.FirstRide;

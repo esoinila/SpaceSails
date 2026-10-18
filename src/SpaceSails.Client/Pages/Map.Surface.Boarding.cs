@@ -187,7 +187,8 @@ public partial class Map
         _reevers.Clear();
         _sweepers.Clear();
         _lastNearestReeverRange = null;
-        _chirp = MotionTracker.ChirpState.Fresh; // #338: the long ear starts armed — the first mover chirps
+        _airSupplyNoted = null; // #612 · a death or fold-away ends an excursion without a liftoff: the crossing is never inherited
+        _chirp =MotionTracker.ChirpState.Fresh; // #338: the long ear starts armed — the first mover chirps
         _sightings = NerveModel.SightingSpell.Fresh; // #379: a fresh watch — the first fright of it lands full
 
         // #327: snapshot the mothership's hold at the moment of boarding DOWN — the reference the surface
