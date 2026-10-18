@@ -92,7 +92,7 @@ public sealed class TheGeocacheSaleIsWiredTests
         int settled = settle.IndexOf("GeocacheSale.IsSettled(_roomsTurnedOver, sale.CacheId)", StringComparison.Ordinal);
         int dead = settle.IndexOf("GeocacheSale.DeadOn(", StringComparison.Ordinal);
         int shut = settle.IndexOf("GeocacheSale.ShutAt(port.Id)", StringComparison.Ordinal);
-        int told = settle.IndexOf("ShowPulseMessage(GeocacheSale.LiftedFirstLine)", StringComparison.Ordinal);
+        int told = settle.IndexOf("ShowPulseAlso(GeocacheSale.LiftedFirstLine)", StringComparison.Ordinal);
         Assert.True(settled >= 0 && dead > settled && shut > dead && told > shut,
             "the dead sale is not settled, shut and told in that order.");
 

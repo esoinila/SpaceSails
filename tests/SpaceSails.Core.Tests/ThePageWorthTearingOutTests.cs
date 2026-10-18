@@ -552,7 +552,8 @@ public sealed class ThePageWorthTearingOutTests
     public void A_SHEET_THE_ARC_WROTE_IsOneSheet()
     {
         var authored = new List<string> { HardcaseRep.ScheduleFindId };
-        foreach (string body in new[] { "luna", "miranda", "europa" })
+        foreach (string body in new[] { "luna", "phobos", "europa", "ganymede", "callisto", "titan", "enceladus", "miranda", "triton", "the-clinker" }
+            .Concat(Enumerable.Range(0, 40).Select(i => $"probe-moon-{i}")))
         {
             foreach (int level in UndergroundComplex.FloorsOf(body))
             {

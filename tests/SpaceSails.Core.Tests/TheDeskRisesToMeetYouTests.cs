@@ -165,7 +165,10 @@ public sealed class TheDeskRisesToMeetYouTests
         // floors, measured, where it was over 500. Two hundred is still hundreds of rooms on dozens of
         // worlds and it keeps daylight under the measurement rather than resting on it. The desks did not
         // move far enough to need one — the ring's own banks are not in this sweep and never were.
-        Assert.True(desks > 500, $"only {desks} office desk(s) in the whole sweep — this proved little.");
+        // The unlisted band stopped rolling the head office (UndergroundComplex.KindOn): a branch site's hidden
+        // band is now one of the five branch kinds, so the head-office rooms it used to deal are gone and the
+        // desk count is 471, measured. Four hundred keeps the same daylight under it.
+        Assert.True(desks > 400, $"only {desks} office desk(s) in the whole sweep — this proved little.");
         Assert.True(benches > 200, $"only {benches} lab bench(es) in the whole sweep — this proved little.");
         Assert.True(wrong.Count == 0,
             $"{wrong.Count} desk(s) are not the size a person is:{Environment.NewLine}"

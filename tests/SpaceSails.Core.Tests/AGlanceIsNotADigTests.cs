@@ -247,7 +247,8 @@ public sealed class AGlanceIsNotADigTests
             HardcaseRep.ScheduleFindId, CarryThePress.NoteId, SpikeIt.PagesId,
             SpikeIt.TheSwap("Luna").Id, SpikeIt.TheReceipt("Luna").Id,
         };
-        foreach (string body in new[] { "luna", "miranda", "europa" })
+        foreach (string body in new[] { "luna", "phobos", "europa", "ganymede", "callisto", "titan", "enceladus", "miranda", "triton", "the-clinker" }
+            .Concat(Enumerable.Range(0, 40).Select(i => $"probe-moon-{i}")))
         {
             foreach (int level in UndergroundComplex.FloorsOf(body))
             {
