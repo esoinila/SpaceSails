@@ -331,7 +331,14 @@ public static class AutopilotRehearsal
             // predicate (DockRule.Arrived), which for a wreck is the fetch pickup's own range.
             if (isStation && DockRule.Arrived(ship, bodyPos, bodyVel, body))
             {
-                Record(ship, terminal: true);
+                // The dock sample is NOT appended to a path with room: a station's berth sits inside its host
+                // planet's clearance band, and a new final sample there made the whole-path scan judge the host
+                // as threaded (the Roadstead regression). Only a FULL path needs the arrival kept: it then
+                // replaces the last mid-approach sample, never adds one.
+                if (path.Count >= 4096)
+                {
+                    Record(ship, terminal: true);
+                }
                 return new RehearsalResult(
                     true, pulses, approachBurns, ship.SimTime - startTime, false, false, path);
             }
