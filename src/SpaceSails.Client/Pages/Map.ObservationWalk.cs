@@ -310,8 +310,10 @@ public partial class Map
             return;
         }
 
+        // "Later, somewhere else": never at the haven the man just vanished from.
         string person = TheTail.ThePersonOfInterest(ObservationWalk.HavenId);
-        if (!ObservationWalk.IsSpentOn(_observationWalkSpentOn, ObservationWalk.HavenId, person)
+        if (string.Equals(bodyId, ObservationWalk.HavenId, StringComparison.Ordinal)
+            || !ObservationWalk.IsSpentOn(_observationWalkSpentOn, ObservationWalk.HavenId, person)
             || PatronRota.Resolve(person, bodyId, SimTime) != PatronState.AtBar)
         {
             return;

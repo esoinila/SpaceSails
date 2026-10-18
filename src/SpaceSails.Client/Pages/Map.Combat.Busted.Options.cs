@@ -65,6 +65,9 @@ public partial class Map
         _hotCargo.Launder();
         b.Confiscation = c;
         b.Phase = BustedEncounter.Stage.Confiscated;
+        // The debt is collected, so the crew's business here is done (#731): on foot they walk home rather
+        // than serve the same writ again the frame the card closes. A no-op for a space hunter already gone.
+        RemoveHunter(b.HunterId);
         StateHasChanged();
     }
 

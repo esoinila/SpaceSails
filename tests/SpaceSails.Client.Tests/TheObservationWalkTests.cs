@@ -370,6 +370,27 @@ public sealed class TheObservationWalkTests
         Assert.Null(PulseSaying(map));
     }
 
+    /// <summary>
+    /// <b>NOT AT THE HAVEN ITSELF.</b> The sighting is "later, somewhere else": at Selene Gate, in the watch
+    /// the man vanished from, the rota still answers AtBar, so the gate must refuse the haven.
+    ///
+    /// <para><b>Revert that reddened it:</b> the haven check dropped from <c>TheyAreAtTheCounter</c>.</para>
+    /// </summary>
+    [Fact]
+    public void TheSightingIsNeverPaidAtTheHavenTheWalkWasSpentAt()
+    {
+        string person = TheTail.ThePersonOfInterest(ObservationWalk.HavenId);
+        long watch = Enumerable.Range(0, 200).Select(w => (long)w)
+            .First(w => PatronRota.Resolve(person, ObservationWalk.HavenId, w * PatronRota.WatchSeconds) == PatronState.AtBar);
+
+        Pages.Map map = AshoreAt(ObservationWalk.HavenId, watch);
+        Set(map, "_observationWalkSpentOn", ObservationWalk.Key(ObservationWalk.HavenId, person));
+        Invoke(map, "TheyAreAtTheCounter", ObservationWalk.HavenId);
+
+        Assert.Null(Field(map, "_observationWalkSightingAt"));
+        Assert.Null(PulseSaying(map));
+    }
+
     // ── PLUMBING ─────────────────────────────────────────────────────────────────────────────────────────
 
     private static Pages.Map AshoreAt(string berth, long watch = 0)

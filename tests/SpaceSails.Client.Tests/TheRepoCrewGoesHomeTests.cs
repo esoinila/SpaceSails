@@ -454,6 +454,77 @@ public sealed class TheRepoCrewGoesHomeTests
         return string.Join("|", trace);
     }
 
+    // ── (g) THE OTHER ROADS OUT OF A WRIT ───────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// <b>SUBMITTING SETTLES THE DEBT, SO THE CREW GO HOME TOO.</b> Submit (and resist-lost, which calls it
+    /// harsher) confiscated and cleared the heat but never called <c>RemoveHunter</c>, so the crew on foot
+    /// served the same writ again the frame the Confiscated card closed.
+    ///
+    /// <para><b>RED</b> by removing the <c>RemoveHunter</c> call from <c>BustedSubmit</c>.</para>
+    /// </summary>
+    [Fact]
+    public void SUBMITTING_SendsTheCrewHomeAndTheWritIsNeverServedAgain()
+    {
+        Pages.Map map = OnTheGroundWithACrewOnYou();
+        Invoke(map, "BustedSubmit", false);
+        Invoke(map, "CloseBusted");
+        Assert.True(GoingHome(map), "the debt was collected and nobody told the crew they could go.");
+        for (int i = 0; i < 20; i++)
+        {
+            Invoke(map, "StepCollectors", Frame);
+            Assert.True(Get(map, "_busted") is null, $"served again on frame {i + 1} after a submit.");
+        }
+    }
+
+    /// <summary>
+    /// <b>NO OLD ONE IS CLAWED OUT AFTER THE UNDERGROUND CLEAR.</b> StepSurface empties the pack below
+    /// ground and then steps the tide, which spawned one anyway. The control (regolith) must still spawn.
+    ///
+    /// <para><b>RED</b> by removing the <c>Floor &lt; 0</c> return from <c>StepTide</c>.</para>
+    /// </summary>
+    [Fact]
+    public void THE_TideSpawnsNothingBelowGroundButStillRunsOnTheRegolith()
+    {
+        Pages.Map below = OnTheGroundWithACrewOnYou();
+        Set(below, "_busted", null);
+        object exBelow = Get(below, "_surface")!;
+        exBelow.GetType().GetProperty("Floor")!.SetValue(exBelow, -1);
+        var packBelow = (IList)Get(below, "_reevers")!;
+        packBelow.Clear();
+        for (int i = 0; i < 3000; i++) { Invoke(below, "StepTide", Frame); }
+        Assert.Empty(packBelow);
+
+        Pages.Map above = OnTheGroundWithACrewOnYou();
+        Set(above, "_busted", null);
+        var packAbove = (IList)Get(above, "_reevers")!;
+        packAbove.Clear();
+        for (int i = 0; i < 3000; i++) { Invoke(above, "StepTide", Frame); }
+        Assert.NotEmpty(packAbove);
+    }
+
+    /// <summary>
+    /// <b>ENTER DURING A PEEK ANSWERS NO CARD.</b> Every surface is hidden while peeking, so the confirm
+    /// chain must not press a card nobody can see; the control without a peek still answers it.
+    ///
+    /// <para><b>RED</b> by removing the <c>_peekMap</c> return from <c>TryConfirmTopOverlay</c>.</para>
+    /// </summary>
+    [Fact]
+    public void ENTER_DuringAPeekPressesNothing()
+    {
+        Pages.Map map = OnTheGroundWithACrewOnYou();
+        Invoke(map, "BustedSubmit", false);   // the Confiscated card: the one Enter closes
+        Set(map, "_peekMap", true);
+        MethodInfo confirm = typeof(Pages.Map).GetMethod("TryConfirmTopOverlay", Hidden)!;
+        object? phase = Get(Get(map, "_busted")!, "Phase");
+        Assert.False((bool)confirm.Invoke(map, null)!, "Enter answered a card behind a peek.");
+        Assert.Equal(phase, Get(Get(map, "_busted")!, "Phase"));
+        Assert.NotNull(Get(map, "_busted"));
+
+        Set(map, "_peekMap", false);
+        Assert.True((bool)confirm.Invoke(map, null)!, "the control: without a peek Enter answers the card.");
+    }
+
     // ── PLUMBING ────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>A live component standing on real regolith with a repo boat down and its crew on the
