@@ -76,6 +76,16 @@ public partial class Map
             return;
         }
 
+        // The clearance is sized off the live harbour and charged against the tank. If the tank cannot cover the
+        // size the harbour rule asks for, lay nothing and say so: a 1-pulse stub announced as "clear of the
+        // harbour" is the drift into traffic the pair exists to prevent.
+        int needed = Math.Max(MinNodePulses, CastOffRule.Pulses(HavenStateAt(haven, clearAt).Velocity.Length, UndockPushMps));
+        if (PlannedPulseTotal() + needed > _reactionMassPulses)
+        {
+            ShowPulseMessage("Not enough reaction mass");
+            return;
+        }
+
         var undock = new PlanNode
         {
             Kind = PlanStepKind.Undock,

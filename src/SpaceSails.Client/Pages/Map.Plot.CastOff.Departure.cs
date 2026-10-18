@@ -20,7 +20,9 @@ public partial class Map
     {
         foreach (PlanNode node in _planNodes)
         {
-            if (node.Kind == PlanStepKind.Undock && !node.Stale && !node.Executed)
+            // An undock row can only release the berth it was laid at: a row riding in from another life (or another
+            // haven) is not this ship's departure.
+            if (node.Kind == PlanStepKind.Undock && !node.Stale && !node.Executed && node.HavenId == _dockedHavenId)
             {
                 return node;
             }

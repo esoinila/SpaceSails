@@ -158,6 +158,8 @@ public partial class Map
         _dockedHavenId = havenId;
         _dockOffset = _ship.Position - dockPos;
         SetDeckForDock(havenId);
+        StaleFutureNodes();            // a berth cancels any pending burns, as ClampOntoHaven does
+        _armedOrbitBodyId = null;      // …and disarms any pending auto-insert
         (_avatarX, _avatarY, _avatarHeading) = (2.5, 6, Math.PI / 2);
         _deckMode = true;
         _activeDesk = ShipDesk.Deck;

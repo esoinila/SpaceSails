@@ -58,6 +58,30 @@ public partial class Map
         _voidLastToldDay = VoidRule.NothingToldYet;
         _voidSweptDay = long.MinValue;
         _voidHavenInReach = true;
+
+        ForgetTheFlightPlan();
+    }
+
+    /// <summary>
+    /// The plotted plan and the flight intent are the page's, not the vault's (autopilot plans are never saved):
+    /// a load or import arrives with no burns, no cast-off row, no arrival step and no armed autopilot, so an old
+    /// life's pending undock cannot release the new life's berth and its armed transfer cannot fly the new ship.
+    /// </summary>
+    private void ForgetTheFlightPlan()
+    {
+        _planNodes.Clear();
+        _selectedPlanNode = null;
+        if (_openEditor is FlightEditorKind.Burn or FlightEditorKind.Arrive)
+        {
+            _openEditor = FlightEditorKind.None;
+        }
+        RebuildPlan();
+        ClearArriveStep();
+        _destinationBodyId = null;
+        _armedOrbitBodyId = null;
+        ResetAutopilotBudget();
+        _autopilotStandDownReason = null;
+        _dockReadyStatus = null;
     }
 
 }
