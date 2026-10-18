@@ -68,7 +68,14 @@
             }
             // capture=true also catches resource-level failures (blocked/missing scripts,
             // integrity mismatches), which otherwise leave a dead spinner and console-only clues.
+            // ONLY a script or stylesheet is a failure worth a note. A missing art image is expected and
+            // hidden by its own onerror ("no file, no frame"); recording it would show the captain a crash
+            // that never happened and, the first note of a page life winning, shut out the real one.
             window.addEventListener('error', function (e) {
+                var tag = e.target && e.target.tagName;
+                if (tag === 'IMG' || tag === 'PICTURE' || tag === 'SOURCE' || tag === 'VIDEO' || tag === 'AUDIO') {
+                    return;
+                }
                 if (e.target && (e.target.src || e.target.href)) {
                     showError('Failed to load: ' + (e.target.src || e.target.href));
                     noteCrash('page load', 'failed to load ' + (e.target.src || e.target.href), '');

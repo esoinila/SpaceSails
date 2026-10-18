@@ -293,10 +293,10 @@ export function stopLoop(canvasId) {
 // timer on the page is untouched, the swap is put back the moment the boot ends (or is abandoned), and
 // the game's own hidden-tab heartbeat above (`setInterval(…, 1000)`) is well clear of the threshold.
 const SHORTEST_TIMER_MS = 4;
-const tickTimers = new Map(); // our own handles → { fn, cancelled }
+const tickTimers = new Map(); // our own tick numbers → { fn, cancelled }
 let tickTimerChannel = null;
 let rationedSetTimeout = null;  // the browser's own, while ours stands in for it
-let rationedClearTimeout = null;
+let rationedClearTimeout = null; // the browser's own, while our cancel wrapper stands (it outlives the swap until the ticks drain)
 let nextTickTimerId = 1;
 
 /** Is the document hidden — this tab behind another, the window minimised or occluded, the machine
@@ -307,24 +307,72 @@ export function pageIsHidden() {
     return typeof document !== 'undefined' && document.visibilityState === 'hidden';
 }
 
+/** The handle the runtime is given for a tick. An OBJECT, never a number: the browser's own timer ids are
+ *  small integers from one shared list, and a number of ours would be indistinguishable from one of
+ *  theirs — a native `clearTimeout(7)` could cancel OUR tick 7 (and the thread-pool pump with it), and
+ *  after the swap ends a stale handle of ours handed to the browser's `clearTimeout` could cancel an
+ *  unrelated native timer, the hidden-tab heartbeat among them. Truthy, so the runtime's `Xo && …` holds;
+ *  inert to a native `clearTimeout`, which ignores anything that is not a number. */
+function tickHandle(tick) {
+    return Object.freeze({ tick });
+}
+
+/** Once the swap is off AND the last posted tick has been served or cancelled, give the browser's own
+ *  `clearTimeout` back and close the channel. Until then the ticks the runtime already posted still run:
+ *  dropping one would leave the runtime's "a pump is already scheduled" latch set for good, and no
+ *  thread-pool continuation would ever run again. */
+function finishTheDrain() {
+    if (rationedSetTimeout !== null || tickTimers.size > 0 || rationedClearTimeout === null) {
+        return;
+    }
+    globalThis.clearTimeout = rationedClearTimeout;
+    rationedClearTimeout = null;
+    if (tickTimerChannel !== null) {
+        tickTimerChannel.port1.onmessage = null;
+        tickTimerChannel.port1.close();
+        tickTimerChannel = null;
+    }
+}
+
 /**
  * Serve the shortest timers on a message tick (`on`), or hand the browser's own back (`off`).
  * Idempotent in both directions. Returns whether the swap is now standing, so C# can say honestly in a
  * log line whether it got what it asked for — a browser with no `MessageChannel` gets nothing and says so
- * rather than pretending.
+ * rather than pretending. `off` puts `setTimeout` back at once, but ticks already posted are still served.
  */
 export function serveTheShortestTimersOnATick(on) {
     if (on && rationedSetTimeout === null && typeof MessageChannel === 'function') {
-        tickTimerChannel = new MessageChannel();
-        tickTimerChannel.port1.onmessage = (e) => {
-            const pending = tickTimers.get(e.data);
-            tickTimers.delete(e.data);
-            if (pending && !pending.cancelled) { pending.fn(); }
-        };
-        tickTimerChannel.port1.start();
+        if (tickTimerChannel === null) {
+            tickTimerChannel = new MessageChannel();
+            tickTimerChannel.port1.onmessage = (e) => {
+                const pending = tickTimers.get(e.data);
+                tickTimers.delete(e.data);
+                try {
+                    if (pending && !pending.cancelled) { pending.fn(); }
+                } finally {
+                    finishTheDrain();
+                }
+            };
+            tickTimerChannel.port1.start();
+        }
+
+        if (rationedClearTimeout === null) {
+            rationedClearTimeout = globalThis.clearTimeout;
+
+            // The runtime CANCELS its previous timer before scheduling the next one
+            // (`Xo && clearTimeout(Xo)`), so a handle of ours has to be cancellable or a stale tick would
+            // fire work the runtime had already withdrawn.
+            globalThis.clearTimeout = function (id) {
+                if (id !== null && typeof id === 'object') {
+                    const pending = tickTimers.get(id.tick);
+                    if (pending) { pending.cancelled = true; tickTimers.delete(id.tick); finishTheDrain(); }
+                    return;
+                }
+                return rationedClearTimeout.call(globalThis, id);
+            };
+        }
 
         rationedSetTimeout = globalThis.setTimeout;
-        rationedClearTimeout = globalThis.clearTimeout;
 
         globalThis.setTimeout = function (fn, ms, ...rest) {
             // Only the runtime's own "immediately" — and only the plain one-argument form, so a caller
@@ -335,24 +383,12 @@ export function serveTheShortestTimersOnATick(on) {
             const id = nextTickTimerId++;
             tickTimers.set(id, { fn, cancelled: false });
             tickTimerChannel.port2.postMessage(id);
-            return id;
-        };
-
-        // The runtime CANCELS its previous timer before scheduling the next one
-        // (`Xo && clearTimeout(Xo)`), so a handle of ours has to be cancellable or a stale tick would
-        // fire work the runtime had already withdrawn.
-        globalThis.clearTimeout = function (id) {
-            const pending = tickTimers.get(id);
-            if (pending) { pending.cancelled = true; tickTimers.delete(id); return; }
-            return rationedClearTimeout.call(globalThis, id);
+            return tickHandle(id);
         };
     } else if (!on && rationedSetTimeout !== null) {
         globalThis.setTimeout = rationedSetTimeout;
-        globalThis.clearTimeout = rationedClearTimeout;
         rationedSetTimeout = null;
-        rationedClearTimeout = null;
-        tickTimerChannel = null;
-        tickTimers.clear();
+        finishTheDrain();
     }
     return rationedSetTimeout !== null;
 }
@@ -485,6 +521,11 @@ export function playChirp() {
     if (!audioEnabled) {
         return;
     }
+    // Not into an empty room (#167): the same hidden-tab mute playCue has — the sim keeps ticking from the
+    // heartbeat and a contact in a background tab must neither chirp nor queue up for the return.
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        return;
+    }
     try {
         audioCtx ??= new AudioContext();
         if (audioCtx.state === 'suspended') {
@@ -561,12 +602,20 @@ export function scrollIntoView(selector) {
 export function copyText(text) {
     try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text);
+            // The write is a promise and a refusal REJECTS it, after we have returned. An unhandled
+            // rejection reaches index.html's black box and would overwrite the very crash note the captain
+            // is copying, so the refusal is caught here and the old way is tried instead.
+            navigator.clipboard.writeText(text).catch(() => { copyTheOldWay(text); });
             return true;
         }
     } catch {
         // fall through to the old way
     }
+    return copyTheOldWay(text);
+}
+
+/** The hidden-textarea + execCommand copy: the fallback for an insecure origin and for a refused write. */
+function copyTheOldWay(text) {
     try {
         const ta = document.createElement('textarea');
         ta.value = text;
