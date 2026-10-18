@@ -336,6 +336,7 @@ public sealed class ThePadOnTheCarPanelTests
         string[] grounds = [.. PaddedGrounds().Take(40)];
         StopOrder.Install([.. grounds]);
         PreservationZone.Install([.. grounds]);
+        Burial.Install([.. grounds]);   // the ledger only exists on a filled ground
         try
         {
             int ledgersSeen = 0;
@@ -388,13 +389,15 @@ public sealed class ThePadOnTheCarPanelTests
             Assert.True(lineItemsSeen > 20,
                 $"only {lineItemsSeen} cost-centre line items were anywhere near the code paper's floor — "
                 + "the collision this guard is about was never actually possible.");
-            Assert.True(ledgersSeen > 0 || lineItemsSeen > 20,
-                "neither of the other designated papers existed on any swept ground.");
+            Assert.True(ledgersSeen > 20,
+                $"only {ledgersSeen} maintenance ledgers existed on the swept grounds - the ledger-collision "
+                + "clause above was never actually asked.");
         }
         finally
         {
             StopOrder.Install([]);
             PreservationZone.Install([]);
+            Burial.Install([]);
         }
     }
 

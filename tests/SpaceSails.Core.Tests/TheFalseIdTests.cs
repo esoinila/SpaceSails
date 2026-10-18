@@ -129,9 +129,11 @@ public class TheFalseIdTests
         string[] grounds = [.. Grounds().Take(600)];
         StopOrder.Install([.. grounds]);
         PreservationZone.Install([.. grounds]);
+        Burial.Install([.. grounds]);   // the ledger only exists on a filled ground
         try
         {
             int seen = 0;
+            int ledgersSeen = 0;
 
             foreach (string body in grounds)
             {
@@ -155,6 +157,10 @@ public class TheFalseIdTests
                     UndergroundComplex.LiftCode.PaperRoomFor(body) is { } code
                     && code.Level == at.Level && code.RoomIndex == at.RoomIndex,
                     $"{body}: the pass took the code paper's room.");
+                if (UndergroundComplex.MaintenanceLedgerRoomFor(body) is not null)
+                {
+                    ledgersSeen++;
+                }
                 Assert.False(
                     UndergroundComplex.MaintenanceLedgerRoomFor(body) is { } ledger
                     && ledger.Level == at.Level && ledger.RoomIndex == at.RoomIndex,
@@ -187,11 +193,14 @@ public class TheFalseIdTests
             }
 
             Assert.True(seen > 40, $"only {seen} grounds carried a pass at all; this proves little.");
+            Assert.True(ledgersSeen > 20,
+                $"only {ledgersSeen} maintenance ledgers existed beside a pass - the ledger clause was never asked.");
         }
         finally
         {
             StopOrder.Install([]);
             PreservationZone.Install([]);
+            Burial.Install([]);
         }
     }
 
