@@ -290,9 +290,9 @@
                                                value="@_renameDraft" @oninput="e => _renameDraft = e.Value?.ToString() ?? string.Empty"
                                                @onkeydown="RenameKeyDown" @onblur="CommitRenameCaptain" />
                                         <button type="button" class="slot-mini" title="Keep this name — it is written on the license and into the saves"
-                                                @onclick="CommitRenameCaptain">✔</button>
+                                                @onmousedown:preventDefault="true" @onclick="CommitRenameCaptain">✔</button>
                                         <button type="button" class="slot-mini" title="Leave the name as it was"
-                                                @onclick="CancelRenameCaptain">✕</button>
+                                                @onmousedown:preventDefault="true" @onclick="CancelRenameCaptain">✕</button>
                                     </span>
                                 }
                                 else
@@ -1078,7 +1078,7 @@
                     bool hasMsg = !string.IsNullOrEmpty(_ventMessage);
                 }
                 @* Only drawn when it has something to say — an empty bordered strip is furniture. *@
-                @if (hasRead || hasMsg)
+                @if (hasRead || hasMsg || _ventLog.Count > 0)
                 {
                     <div class="vent-log">
                         @if (_ventSelected is { } logRoom && _ventReads.TryGetValue(logRoom, out var logRead))

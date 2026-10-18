@@ -36,7 +36,8 @@ public sealed class TheFacilityPlateStandsBesideTheShaftTests
     /// BESIDE THE CAR, ON SCREEN, ON NOTHING. For every floor that carries it: the plate's centre is right of the
     /// car's pocket and no more than a dozen du from the shaft (the boot's own camera is on the shaft); it is at
     /// least 4 du below the depth plate's lowest line; it is further than [E]'s reach from every console; and no
-    /// door's leaf lies within 4 du of it. Includes B21 of the deep site (<c>▣ THE TRANSIT STATION</c>).
+    /// door's leaf lies within 4 du of it. Includes a floor that carries <c>▣ THE TRANSIT STATION</c> (the longest title; since #1378 the deep site's
+    /// B21 rolls among the five branch kinds only, so the premise is anchored on the plate, not on that one floor).
     ///
     /// <para><b>RED</b> on revert (the plate back at <c>shaftX - 30</c>): every floor's plate stood 30 du from the
     /// shaft.</para>
@@ -47,14 +48,16 @@ public sealed class TheFacilityPlateStandsBesideTheShaftTests
         SurfaceLayout.Field field = MoonSurface.ExpeditionField();
         (double sx, double sy) = UndergroundComplex.ShaftAt(field);
         int floors = 0;
-        bool sawB21 = false;
+        bool sawTransit = false;
+        var titles = new List<string>();
         foreach ((string body, int level) in FloorsWithThePlate())
         {
             DeckPlan deck = HiveInterior.FloorDeck(body, level, field, 0, (_, _) => { }, []);
             string title = UndergroundComplex.TitleOf(UndergroundComplex.KindOn(body, level));
             var plate = Assert.Single(deck.RoomLabels, l => l.Text == title);
             floors++;
-            sawB21 |= body == "secret-lab-site-unlisted" && level == -21 && title == "▣ THE TRANSIT STATION";
+            sawTransit |= title == "▣ THE TRANSIT STATION";
+            titles.Add($"{body} B{-level}: {title}");
 
             double off = plate.X - sx;
             Assert.True(off > UndergroundComplex.ShaftHalf && off <= 12.5,
@@ -79,6 +82,6 @@ public sealed class TheFacilityPlateStandsBesideTheShaftTests
         }
 
         Assert.True(floors >= 6, $"premise: only {floors} floor(s) carry the plate");
-        Assert.True(sawB21, "premise: B21 of the deep site carries ▣ THE TRANSIT STATION");
+        Assert.True(sawTransit, "premise: some floor carries ▣ THE TRANSIT STATION: " + string.Join("; ", titles));
     }
 }

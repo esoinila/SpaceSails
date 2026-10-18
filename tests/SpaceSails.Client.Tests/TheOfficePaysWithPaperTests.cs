@@ -77,6 +77,11 @@ public sealed class TheOfficePaysWithPaperTests
 
     private static string Pulse(Pages.Map map) => Read(map, "_pulse")?.ToString() ?? "";
 
+    /// <summary>What the glass draws: the pulse slot's <c>Message</c>, verbatim. The nav HUD, the ashore deck toast and
+    /// the dark-web desk all print <c>_pulse.Message</c> whole, so a payout joined beside another line by
+    /// <c>PulseSlot.Also</c> is on the glass as the tail of that one string.</summary>
+    private static string PulseText(Pages.Map map) => ((PulseSlot)Read(map, "_pulse")!).Message ?? "";
+
     // ── THE RECEIPT ─────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
@@ -99,7 +104,12 @@ public sealed class TheOfficePaysWithPaperTests
         Invoke(map, "TheSpikeIsSettled");
         int paid = (int)Read(map, "_credits")! - before;
         Assert.True(paid > 0);
-        Assert.Contains($"Message = 💳 +{paid:N0} cr,", Pulse(map), StringComparison.Ordinal);   // the bare 💳, no words
+        // Judged at the glass: the payout is raised with ShowPulseAlso, so it may stand beside the line already up
+        // (here the clamp line, written at the same instant) and not alone. Either way it is the END of the drawn
+        // string, the bare 💳 and the sum with no words, and it is there exactly once.
+        string glass = PulseText(map);
+        Assert.EndsWith($"💳 +{paid:N0} cr", glass, StringComparison.Ordinal);
+        Assert.Equal(1, glass.Split("💳").Length - 1);
         Assert.Equal(1, Receipts(map));
         Satchel.Item receipt = Satchel_(map).Single(i => SpikeIt.IsTheReceipt(i.Id));
         Assert.Equal(SpikeIt.TheReceipt(Body(map)), receipt);
