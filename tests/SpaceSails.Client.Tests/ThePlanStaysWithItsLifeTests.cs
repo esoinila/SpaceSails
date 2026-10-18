@@ -48,7 +48,10 @@ public sealed class ThePlanStaysWithItsLifeTests
     {
         Pages.Map map = ADockedMapWithACastOffLaid();
         Set(map, "_dockedHavenId", "red-eye");
-        Assert.Null(Invoke(map, "PendingUndockStep"));
+        object row = Invoke(map, "PendingUndockStep")!;
+        Invoke(map, "RunTheCastOffStep", row);
+        Assert.Equal("red-eye", Read(map, "_dockedHavenId")); // the foreign row was retired, never obeyed
+        Assert.True((bool)row.GetType().GetField("Executed")!.GetValue(row)!);
     }
 
     [Fact]
