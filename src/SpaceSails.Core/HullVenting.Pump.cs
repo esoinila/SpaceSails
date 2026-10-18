@@ -257,6 +257,12 @@ public static partial class HullVenting
         $"Pumping {name} down — {System.Math.Max(0, (int)secondsLeft)}s. The reserve is filling as the room " +
         "empties. Whatever is in there has time to notice.";
 
+    /// <summary>Is this message a pump's running countdown (or empty)? The countdown refreshes itself only
+    /// over its own kind, so the one-shot warnings a pump start writes — what else it will empty, the room
+    /// being pumped under your feet — are not wiped by the next frame's refresh.</summary>
+    public static bool IsPumpRunningLine(string? message) =>
+        string.IsNullOrEmpty(message) || message.StartsWith("Pumping ", System.StringComparison.Ordinal);
+
     public static string PumpDoneLine(string name) =>
         $"{name} reads hard vacuum, and it did not cost you a thing — the air is in the shuttle's tanks " +
         "instead of forty kilometres behind her. The pump winds down. The room is as dead as if you had " +

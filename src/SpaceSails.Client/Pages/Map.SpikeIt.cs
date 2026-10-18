@@ -414,7 +414,7 @@ public sealed partial class Map
 
             int pays = SpikeIt.Pays(p.Outcome, SpikeIt.Purse(q.Reward));
             _credits += pays;
-            ShowPulseMessage(p.Outcome == SpikeIt.Outcome.Late
+            ShowPulseAlso(p.Outcome == SpikeIt.Outcome.Late
                 ? $"💳 {SpikeIt.LateReceipt(p.Watched)}"
                 : $"💳 +{pays.ToString("N0", CultureInfo.InvariantCulture)} cr");
             TheOfficePaysWithPaper(q, p.Outcome);   // #1202 slice 4 · …and a paid spike leaves a line item

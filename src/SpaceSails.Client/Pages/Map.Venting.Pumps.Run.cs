@@ -133,7 +133,7 @@ public sealed partial class Map
             if (left > 0)
             {
                 _pumps[key] = run with { SecondsLeft = left, RoughBanked = banked };
-                if (_showVentPanel && !banked && _ventSelected is { } watching
+                if (_showVentPanel && !banked && HullVenting.IsPumpRunningLine(_ventMessage) && _ventSelected is { } watching
                     && run.Volume.Contains(watching, System.StringComparer.Ordinal))
                 {
                     _ventMessage = HullVenting.PumpRunningLine(label, left);

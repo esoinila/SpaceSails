@@ -117,6 +117,23 @@ public readonly record struct PulseSlot(
         return new PulseSlot(message, rank, nowMs + DwellFor(message), nowMs + MinDwellMs);
     }
 
+    /// <summary>Write a line BESIDE what this same instant already said, instead of over it. Two sayings
+    /// raised in one synchronous call (a receipt and the consequence it set going, a payout and the payout
+    /// before it) never get a frame between them, so the second would replace the first before anyone could
+    /// read it — equal ranks overwrite. When the slot's line was written at <paramref name="nowMs"/> the two
+    /// are joined, the first line then this one, at the higher of the two ranks; when it was not, this is
+    /// exactly <see cref="Write"/>. No words are added: both sentences are the ones their own call sites
+    /// wrote.</summary>
+    public PulseSlot Also(string message, PulseRank rank, double nowMs)
+    {
+        if (Message is not null && HeldUntilMs == nowMs + MinDwellMs)
+        {
+            return Write($"{Message} {message}", rank > Rank ? rank : Rank, nowMs);
+        }
+
+        return Write(message, rank, nowMs);
+    }
+
     /// <summary>Clear the slot if its line has had its time. An empty slot outranks nothing, which is what
     /// keeps the hold from leaking into the next scene.</summary>
     public PulseSlot Expire(double nowMs) =>

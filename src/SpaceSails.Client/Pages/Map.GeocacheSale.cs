@@ -167,7 +167,7 @@ public sealed partial class Map
             {
                 _roomsTurnedOver.Add(GeocacheSale.ShutAt(port.Id));
             }
-            ShowPulseMessage(GeocacheSale.LiftedFirstLine);
+            ShowPulseAlso(GeocacheSale.LiftedFirstLine);
             RequestVaultSave();
             StateHasChanged();
             return;
