@@ -60,6 +60,28 @@ public partial class Map
         _voidHavenInReach = true;
 
         ForgetTheFlightPlan();
+        ForgetThePageSessionRiders();
+    }
+
+    /// <summary>
+    /// The page-session state that is not a vault field (so the BuildVault audit never saw it) but still belongs to one
+    /// life: the collectors on the chase (a leftover hunter would be stepped across the whole epoch gap in one frame, and
+    /// would keep refusing the long haul), the news wire and hail answers (the wire's hull-loss entries are claim
+    /// receipts), and the mission-moment latch and ledger (a latched roadster raises no card when found again).
+    /// </summary>
+    private void ForgetThePageSessionRiders()
+    {
+        if (_interestTargetId is not null && _hunters.Any(h => h.Id == _interestTargetId))
+        {
+            _interestTargetId = null;
+        }
+        _hunters.Clear();
+        _newsEvents.Clear();
+        _hailAnswers.Clear();
+        _momentsRaisedFor.Clear();
+        _missionMomentLedger.Clear();
+        _missionMomentQueue.Clear();
+        _missionMoment = null;
     }
 
     /// <summary>
