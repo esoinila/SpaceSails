@@ -169,6 +169,10 @@ public sealed class TheRepPitchesAndWithdrawsTests
         Assert.NotNull(TheCard(map));
         Assert.Equal(1, TimesFiled(map, StoryBeats.Beat.Flashback));
 
+        // #1396 · the plate waits under his scrim; it is drawn once the card is put away.
+        Assert.Null(Field(map, "_storyPlate"));
+        FieldOf("_repCard").SetValue(map, null);
+        typeof(Pages.Map).GetMethod("ServeTheStoryQueue", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(map, null);
         var plate = (ValueTuple<StoryBeats.Beat, string?, double>?)Field(map, "_storyPlate");
         Assert.NotNull(plate);
         Assert.Equal(StoryBeats.Beat.Flashback, plate!.Value.Item1);

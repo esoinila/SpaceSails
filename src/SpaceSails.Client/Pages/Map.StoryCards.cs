@@ -67,6 +67,16 @@ public sealed partial class Map
     /// </summary>
     private (StoryBeats.Beat Beat, string? Subject, string? Outcome)? _storyCard;
 
+    /// <summary>
+    /// #1379 · THE STORY-CARD QUEUE. <see cref="_storyCard"/> is the card showing (the head of the line, and the
+    /// one the satchel rewrites the outcome of); this is everything raised BEHIND it, in the order raised. A
+    /// second card on the same press or tick used to overwrite the first, so the arc capstones, the shaft and
+    /// the interview's flashback swallowed one another. Nothing raised is lost now: a card waits here until the
+    /// one in front is closed, and a PLATE raised under a scrim waits here until the glass is clear (#1396), so
+    /// it owns an empty screen for its whole dwell.
+    /// </summary>
+    private readonly List<(StoryBeats.Beat Beat, string? Subject, string? Outcome)> _storyWaiting = [];
+
     /// <summary>The plate riding the edge, and when it goes away.</summary>
     private (StoryBeats.Beat Beat, string? Subject, double UntilSimTime)? _storyPlate;
 
@@ -195,13 +205,29 @@ public sealed partial class Map
             // again, in the one channel the player cannot close. The eight beats that raise their own surface
             // out of nowhere still chime, exactly as before.
             case StoryBeats.Presentation.Plate:
-                _storyPlate = (beat, subject, SimTime + StoryBeats.PlateSeconds);
-                PlayTheBeatsCue(beat);
+                // #1396 · a plate raised under a scrim would be drawn beneath it and expire unread.
+                if (AScrimIsUp)
+                {
+                    _storyWaiting.Add((beat, subject, outcome));
+                }
+                else
+                {
+                    _storyPlate = (beat, subject, SimTime + StoryBeats.PlateSeconds);
+                    PlayTheBeatsCue(beat);
+                }
                 break;
 
             case StoryBeats.Presentation.Card:
-                _storyCard = (beat, subject, outcome);
-                PlayTheBeatsCue(beat);
+                // #1379 · one card at a time, in the order raised; a second waits behind the first.
+                if (_storyCard is null)
+                {
+                    _storyCard = (beat, subject, outcome);
+                    PlayTheBeatsCue(beat);
+                }
+                else
+                {
+                    _storyWaiting.Add((beat, subject, outcome));
+                }
                 break;
 
             case StoryBeats.Presentation.Hosted:
@@ -307,6 +333,11 @@ public sealed partial class Map
             StateHasChanged();
         }
 
+        if (_storyWaiting.Count > 0)
+        {
+            ServeTheStoryQueue();
+        }
+
         // A held card goes up the moment the scene is calm and nothing else is on the screen.
         // #865 · …and once the chair has actually been taken. "The strip is open with the scene by the time
         // any deferred card raises" is the second half of the sit-beat rule, and it is kept here rather than
@@ -335,7 +366,41 @@ public sealed partial class Map
     private void CloseStoryCard()
     {
         _storyCard = null;
-        ReleaseHeldSayings();
+        // #1379 · the next card in line takes the screen. The held sayings stay held until the line is empty:
+        // freeing them here would pulse them under the next card's own scrim.
+        if (!ServeTheStoryQueue())
+        {
+            ReleaseHeldSayings();
+        }
+    }
+
+    /// <summary>#1379 · Put the next waiting card up if the card slot is empty, and let waiting plates out once
+    /// no scrim is up. Returns whether a card now holds the screen.</summary>
+    private bool ServeTheStoryQueue()
+    {
+        if (_storyCard is null)
+        {
+            int next = _storyWaiting.FindIndex(w => StoryBeats.PresentationOf(w.Beat) == StoryBeats.Presentation.Card);
+            if (next >= 0)
+            {
+                var w = _storyWaiting[next];
+                _storyWaiting.RemoveAt(next);
+                _storyCard = (w.Beat, w.Subject, w.Outcome);
+                PlayTheBeatsCue(w.Beat);
+                StateHasChanged();
+            }
+        }
+
+        if (_storyCard is null && _storyWaiting.Count > 0 && !AScrimIsUp)
+        {
+            var w = _storyWaiting[0];
+            _storyWaiting.RemoveAt(0);
+            _storyPlate = (w.Beat, w.Subject, SimTime + StoryBeats.PlateSeconds);
+            PlayTheBeatsCue(w.Beat);
+            StateHasChanged();
+        }
+
+        return _storyCard is not null;
     }
 
     /// <summary>

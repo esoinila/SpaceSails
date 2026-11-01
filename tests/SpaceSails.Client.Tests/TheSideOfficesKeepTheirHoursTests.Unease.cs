@@ -16,8 +16,22 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed partial class TheSideOfficesKeepTheirHoursTests
 {
-    private static (StoryBeats.Beat Beat, string? Subject, double Until)? ThePlate(Pages.Map map) =>
-        ((StoryBeats.Beat, string?, double)?)Read(map, "_storyPlate");
+    /// <summary>#1396 · the plate waits for the glass to clear instead of being drawn under the interview card's
+    /// scrim, so "the plate" is judged the moment the card is closed: if it is still waiting, close the card
+    /// and serve the queue exactly as the frame would.</summary>
+    private static (StoryBeats.Beat Beat, string? Subject, double Until)? ThePlate(Pages.Map map)
+    {
+        if (Read(map, "_viewObject") is not null
+            && ((System.Collections.ICollection)Read(map, "_storyWaiting")!).Count > 0)
+        {
+            object? card = Read(map, "_viewObject");
+            Set(map, "_viewObject", null);
+            typeof(Pages.Map).GetMethod("ServeTheStoryQueue", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(map, null);
+            Set(map, "_viewObject", card);   // later assertions still read the card
+        }
+
+        return ((StoryBeats.Beat, string?, double)?)Read(map, "_storyPlate");
+    }
 
     private static double NerveCarry(Pages.Map map) => (double)Read(map, "_nerveShockCarry")!;
 
