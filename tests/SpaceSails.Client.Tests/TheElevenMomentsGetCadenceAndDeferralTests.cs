@@ -351,7 +351,7 @@ public sealed class TheElevenMomentsGetCadenceAndDeferralTests
     ///
     /// <para><b>RED</b> three ways — mark <c>ArchivePurged</c> non-deferrable (it lands mid-fight), drop the
     /// deferred queue's serve in <c>AdvanceStoryCards</c> (it never lands), or drop <c>Outcome</c> from
-    /// <c>_deferredBeat</c> (it lands with the fiction and none of the facts).</para>
+    /// <c>_deferredBeats</c> (it lands with the fiction and none of the facts).</para>
     /// </summary>
     [Fact]
     public void ADeferrableMomentWaitsForTheFightAndBringsItsArithmeticWithIt()
@@ -367,7 +367,7 @@ public sealed class TheElevenMomentsGetCadenceAndDeferralTests
         Assert.True(CardUp(map) is null,
             "a deferrable card took the screen with the Old Ones on the deck — this is the exact shape that " +
             "killed a captain behind a modal once already.");
-        Assert.NotNull(Field(map, "_deferredBeat"));
+        Assert.NotEmpty((System.Collections.IEnumerable)Field(map, "_deferredBeats")!);
 
         TheDeckIsClearAgain(map);
         Call(map, "AdvanceStoryCards");
@@ -376,7 +376,41 @@ public sealed class TheElevenMomentsGetCadenceAndDeferralTests
         Assert.True(card is not null, "the held card never landed — a deferred beat is postponed, not dropped.");
         Assert.Equal(StoryBeats.Beat.ArchivePurged, card!.Value.Beat);
         Assert.Equal(Receipt, card.Value.Outcome);
-        Assert.Null(Field(map, "_deferredBeat"));
+        Assert.Empty((System.Collections.IEnumerable)Field(map, "_deferredBeats")!);
+    }
+
+    /// <summary>
+    /// #1379 · TWO HELD CARDS ARE BOTH OWED, IN ORDER. The deferred slot used to be a single `??=`: the second
+    /// moment raised mid-fight was dropped for good. Now every held card lands once the fight is over, one per
+    /// close, in the order raised.
+    /// </summary>
+    [Fact]
+    public void TwoDeferredMomentsBothLandInTheOrderRaised()
+    {
+        StoryBeats.Beat[] held = Enum.GetValues<StoryBeats.Beat>()
+            .Where(b => StoryBeats.PresentationOf(b) == StoryBeats.Presentation.Card
+                        && StoryBeats.DeferrableWhileInDanger(b)
+                        && StoryBeats.CadenceOf(b) != StoryBeats.Cadence.Cooled)
+            .Take(2).ToArray();
+        Assert.Equal(2, held.Length);
+
+        Pages.Map map = ACalmDeck();
+        TheOldOnesAreOnHer(map);
+        Raise(map, held[0], ASubjectFor(held[0]));
+        Raise(map, held[1], ASubjectFor(held[1]));
+        Assert.True(CardUp(map) is null);
+
+        TheDeckIsClearAgain(map);
+        Call(map, "AdvanceStoryCards");
+        Assert.Equal(held[0], CardUp(map)!.Value.Beat);
+        Call(map, "AdvanceStoryCards");
+        Assert.Equal(held[0], CardUp(map)!.Value.Beat);   // the second waits for the first to be closed
+
+        Call(map, "CloseStoryCard");
+        Call(map, "AdvanceStoryCards");
+        Assert.Equal(held[1], CardUp(map)!.Value.Beat);
+        Call(map, "CloseStoryCard");
+        Assert.True(CardUp(map) is null);
     }
 
     /// <summary>
@@ -406,7 +440,7 @@ public sealed class TheElevenMomentsGetCadenceAndDeferralTests
         Raise(map, beat, ASubjectFor(beat));
 
         Assert.True(CardUp(map) is not null, $"{beat} was held while the fight it is about was happening.");
-        Assert.Null(Field(map, "_deferredBeat"));
+        Assert.Empty((System.Collections.IEnumerable)Field(map, "_deferredBeats")!);
     }
 
     // ── The source shape: the things a running component cannot say ───────────────────────────────────

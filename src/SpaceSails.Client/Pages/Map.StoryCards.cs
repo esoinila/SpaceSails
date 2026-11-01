@@ -48,13 +48,14 @@ public sealed partial class Map
     /// </summary>
     private readonly Dictionary<(StoryBeats.Beat Beat, string? Subject), double> _beatsSpoken = [];
 
-    /// <summary>A card waiting for a calmer moment. One at a time on purpose: a queue that can stack is a queue
-    /// that will eventually empty itself into the player's face all at once.
+    /// <summary>Cards waiting for a calmer moment, in the order raised (#1379: a second held card used to be
+    /// dropped for good). They drain one at a time, each only once the card in front has been closed, so the
+    /// line never empties itself into the player's face all at once.
     ///
     /// <para>#664 · It holds the OUTCOME too. A deferred card that arrived without its arithmetic would be the
     /// #736 bug back with a delay on it — the caption would land and the 350 cr, the die and the pack count
     /// would not.</para></summary>
-    private (StoryBeats.Beat Beat, string? Subject, string? Outcome)? _deferredBeat;
+    private readonly List<(StoryBeats.Beat Beat, string? Subject, string? Outcome)> _deferredBeats = [];
 
     /// <summary>
     /// The card currently taking the screen, if any.
@@ -117,7 +118,12 @@ public sealed partial class Map
                 || TheSitBeatIsSettling
                 || (StoryBeats.DeferrableWhileInDanger(beat) && CaptainIsInDanger())))
         {
-            _deferredBeat ??= (beat, subject, outcome);
+            // #1379 · …in order, and none of them dropped. The same moment raised twice while held is one
+            // moment (its cadence is unspent until it speaks, so the seen-set cannot say so).
+            if (!_deferredBeats.Exists(d => d.Beat == beat && d.Subject == subject))
+            {
+                _deferredBeats.Add((beat, subject, outcome));
+            }
             return;
         }
 
@@ -205,8 +211,9 @@ public sealed partial class Map
             // again, in the one channel the player cannot close. The eight beats that raise their own surface
             // out of nowhere still chime, exactly as before.
             case StoryBeats.Presentation.Plate:
-                // #1396 · a plate raised under a scrim would be drawn beneath it and expire unread.
-                if (AScrimIsUp)
+                // #1396 · a plate raised under a scrim would be drawn beneath it and expire unread. And a plate
+                // never takes the slot of one still on its clock, nor jumps the plates already waiting.
+                if (AScrimIsUp || _storyPlate is not null || _storyWaiting.Exists(w => IsAPlate(w.Beat)))
                 {
                     _storyWaiting.Add((beat, subject, outcome));
                 }
@@ -346,11 +353,12 @@ public sealed partial class Map
         // #1148 · …and once the gate's latch is off. Asked SECOND, after the queue is known to hold
         // something: the latch lives in the live URL rather than in a field on this page (see
         // StoryBeats.HeldIn for why), and a frame with nothing waiting must not pay to read an address.
-        if (_deferredBeat is { } waiting && !TheBeatsAreHeldForAGate
+        if (_deferredBeats.Count > 0 && !TheBeatsAreHeldForAGate
             && !CaptainIsInDanger() && !TheSitBeatIsSettling
             && _storyCard is null && _busted is null)
         {
-            _deferredBeat = null;
+            var waiting = _deferredBeats[0];
+            _deferredBeats.RemoveAt(0);
             ShowStoryBeat(waiting.Beat, waiting.Subject, waiting.Outcome);
         }
     }
@@ -374,13 +382,16 @@ public sealed partial class Map
         }
     }
 
+    private static bool IsAPlate(StoryBeats.Beat beat) =>
+        StoryBeats.PresentationOf(beat) == StoryBeats.Presentation.Plate;
+
     /// <summary>#1379 · Put the next waiting card up if the card slot is empty, and let waiting plates out once
     /// no scrim is up. Returns whether a card now holds the screen.</summary>
     private bool ServeTheStoryQueue()
     {
         if (_storyCard is null)
         {
-            int next = _storyWaiting.FindIndex(w => StoryBeats.PresentationOf(w.Beat) == StoryBeats.Presentation.Card);
+            int next = _storyWaiting.FindIndex(w => !IsAPlate(w.Beat));
             if (next >= 0)
             {
                 var w = _storyWaiting[next];
@@ -391,7 +402,8 @@ public sealed partial class Map
             }
         }
 
-        if (_storyCard is null && _storyWaiting.Count > 0 && !AScrimIsUp)
+        // …and a waiting plate goes up only when nothing is on the glass AND no plate is still on its clock.
+        if (_storyCard is null && _storyPlate is null && _storyWaiting.Count > 0 && !AScrimIsUp)
         {
             var w = _storyWaiting[0];
             _storyWaiting.RemoveAt(0);

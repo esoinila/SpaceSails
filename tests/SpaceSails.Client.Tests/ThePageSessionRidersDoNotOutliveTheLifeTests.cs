@@ -73,4 +73,23 @@ public sealed class ThePageSessionRidersDoNotOutliveTheLifeTests
         Assert.Empty((HashSet<string>)Read(map, "_momentsRaisedFor")!);
         Assert.Empty((List<(double SimTime, string Text)>)Read(map, "_missionMomentLedger")!);
     }
+
+    [Theory]
+    [MemberData(nameof(Doors))]
+    public void TheCardLineDoesNotRideIntoTheNextLife(string door)
+    {
+        Pages.Map map = Boot("rider-cards-" + door);
+        Invoke(map, "RaiseStoryBeat", StoryBeats.Beat.CrewDeputation, null, null);
+        Invoke(map, "RaiseStoryBeat", StoryBeats.Beat.ArchivePurged, null, null);
+        ((IList)Read(map, "_deferredBeats")!).Add((StoryBeats.Beat.CrewDeputation, (string?)null, (string?)null));
+        Assert.NotNull(Read(map, "_storyCard"));
+        Assert.NotEmpty((IList)Read(map, "_storyWaiting")!);
+
+        Pass(map, door);
+
+        Assert.Null(Read(map, "_storyCard"));
+        Assert.Empty((IList)Read(map, "_storyWaiting")!);
+        Assert.Empty((IList)Read(map, "_deferredBeats")!);
+        Assert.Empty((IList)Read(map, "_viewObjectWaiting")!);
+    }
 }

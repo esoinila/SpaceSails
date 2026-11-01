@@ -100,7 +100,7 @@ public sealed class ThePanelReadIsToldAsACardTests
     {
         string refusal = RefusalPath();
 
-        int raised = refusal.IndexOf("_viewObject = new DeckPlan.ConsoleSpot(", StringComparison.Ordinal);
+        int raised = refusal.IndexOf("RaiseTheRideCard(new DeckPlan.ConsoleSpot(", StringComparison.Ordinal);
         Assert.True(raised >= 0,
             "the panel's read is never raised as a card — the outcome exists and is not TOLD, which is the " +
             "whole of #684's ruling (art + prose in the house idiom, carrying the matrix's line).");
@@ -213,12 +213,12 @@ public sealed class ThePanelReadIsToldAsACardTests
         Assert.True(accepted.Contains("UndergroundComplex.TheGateAccepted(", StringComparison.Ordinal),
             "the gate-accepted beat never composes its card — the gate's finest hour is a pulse line again, " +
             "and #693's law owns that slot (#684/#689).");
-        Assert.True(accepted.Contains("_viewObject = new DeckPlan.ConsoleSpot(", StringComparison.Ordinal),
+        Assert.True(accepted.Contains("RaiseTheRideCard(new DeckPlan.ConsoleSpot(", StringComparison.Ordinal),
             "TheGateAccepted is computed inside the beat and never raised (#684).");
 
         // The sweep can find a raise it is looking for elsewhere in the same arrival, so the scoping above
         // is a real narrowing rather than a search that would fail anywhere (the house's fifth bug class).
-        Assert.Contains("_viewObject = new DeckPlan.ConsoleSpot(", ride, StringComparison.Ordinal);
+        Assert.Contains("RaiseTheRideCard(new DeckPlan.ConsoleSpot(", ride, StringComparison.Ordinal);
     }
 
     /// <summary>

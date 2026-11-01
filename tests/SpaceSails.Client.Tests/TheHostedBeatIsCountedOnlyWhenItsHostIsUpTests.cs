@@ -134,7 +134,7 @@ public sealed class TheHostedBeatIsCountedOnlyWhenItsHostIsUpTests
     /// source. Four things are true at once afterwards and only all four together mean anything: the panel
     /// is up on its DEMAND stage (the canvas exists), the beat is in the seen-set (it was counted), its
     /// words are in the ledger (they survive the panel closing, #761), and <c>_storyCard</c>,
-    /// <c>_storyPlate</c> and <c>_deferredBeat</c> are all still empty (nothing was stacked over the
+    /// <c>_storyPlate</c> and <c>_deferredBeats</c> are all still empty (nothing was stacked over the
     /// canvas, nothing was parked at its edge, nothing was queued to arrive after it).</para>
     ///
     /// <para><b>Proven RED</b> by putting <c>_storyCard = (beat, subject);</c> into the seam's hosted arm —
@@ -174,7 +174,7 @@ public sealed class TheHostedBeatIsCountedOnlyWhenItsHostIsUpTests
         // …and nothing at all was raised over it.
         Assert.Null(Field(map, "_storyCard"));
         Assert.Null(Field(map, "_storyPlate"));
-        Assert.Null(Field(map, "_deferredBeat"));
+        Assert.Empty((System.Collections.IEnumerable)Field(map, "_deferredBeats")!);
 
         Assert.True(LinesSaying(map, "⚠ ENGINE") == 0,
             "the seam refused a raise whose host WAS up — the host check is answering no to the one case it "
@@ -215,7 +215,7 @@ public sealed class TheHostedBeatIsCountedOnlyWhenItsHostIsUpTests
 
         Assert.Null(Field(map, "_storyCard"));
         Assert.Null(Field(map, "_storyPlate"));
-        Assert.Null(Field(map, "_deferredBeat"));
+        Assert.Empty((System.Collections.IEnumerable)Field(map, "_deferredBeats")!);
     }
 
     // ── …and with nothing to host it ──────────────────────────────────────────────────────────────────
@@ -254,7 +254,7 @@ public sealed class TheHostedBeatIsCountedOnlyWhenItsHostIsUpTests
 
         Assert.Null(Field(map, "_storyCard"));
         Assert.Null(Field(map, "_storyPlate"));
-        Assert.Null(Field(map, "_deferredBeat"));
+        Assert.Empty((System.Collections.IEnumerable)Field(map, "_deferredBeats")!);
 
         // Loudly: the ledger names the beat, and quotes Core's own sentence about what should have hosted it.
         Assert.True(LinesSaying(map, "⚠ ENGINE") == 1,

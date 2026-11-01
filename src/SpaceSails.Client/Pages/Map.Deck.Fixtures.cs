@@ -186,7 +186,34 @@ public partial class Map
         // would be four buttons the captain could never reach again, with a man standing in front of them.
         TheStopIsAnsweredByTheClosing();
 
+        // #1395 · a card the ride raised behind this one takes the screen now, and the held sayings wait for
+        // the last of them: freeing them here would pulse them under the next card's scrim.
+        if (_viewObjectWaiting.Count > 0)
+        {
+            _viewObject = _viewObjectWaiting[0];
+            _viewObjectWaiting.RemoveAt(0);
+            return;
+        }
+
         ReleaseHeldSayings();
+    }
+
+    /// <summary>#1395 · The cards a ride raises on one arrival (the first descent's shaft, the dead-air
+    /// warning, the gate's own face) share the one <c>_viewObject</c> slot, and the later write used to
+    /// overwrite the earlier. Raised through here, a card that finds the slot taken waits behind it, in the
+    /// order raised, and <see cref="CloseViewObject"/> shows the next.</summary>
+    private readonly List<DeckPlan.ConsoleSpot> _viewObjectWaiting = [];
+
+    private void RaiseTheRideCard(DeckPlan.ConsoleSpot card)
+    {
+        if (_viewObject is null)
+        {
+            _viewObject = card;
+        }
+        else
+        {
+            _viewObjectWaiting.Add(card);
+        }
     }
 
     private void KnockOnHatch()

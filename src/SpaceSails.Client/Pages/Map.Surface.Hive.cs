@@ -237,9 +237,9 @@ public partial class Map
                 // pop-up that is up, and #736's law is met by the line being ON it rather than only in the
                 // panel row underneath. Once per shaft per excursion, off the same latch as the field note:
                 // one event, one memory, and two latches would eventually disagree (#751's rule).
-                _viewObject = new DeckPlan.ConsoleSpot(
+                RaiseTheRideCard(new DeckPlan.ConsoleSpot(
                     DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-                    read.Label, read.ArtUrl, read.Line);
+                    read.Label, read.ArtUrl, read.Line));
             }
             else
             {

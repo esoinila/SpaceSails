@@ -154,6 +154,14 @@ public partial class Map
         _missionMomentLedger.Clear();
         _missionMomentQueue.Clear();
         _missionMoment = null;
+
+        // #1379/#1395 · the card line, the held cards and the plate are one life's too: a card raised before
+        // a load must not be shown over the next life, nor a held one raised into it.
+        _storyWaiting.Clear();
+        _deferredBeats.Clear();
+        _storyPlate = null;
+        _viewObjectWaiting.Clear();
+        CloseStoryCard();   // the card by its one door, with nothing left behind it to promote
     }
 
     /// <summary>

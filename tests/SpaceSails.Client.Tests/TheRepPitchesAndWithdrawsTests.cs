@@ -16,7 +16,7 @@ namespace SpaceSails.Client.Tests;
 /// <item>the pitch he raises is the one for the policy you actually hold, and a Premium captain is offered
 /// nothing to buy;</item>
 /// <item>"I already have a policy" raises the signing flashback through the one seam — the bleached plate
-/// #973 L1 shipped, counted and logged, with his card still up under it and nothing stacked on it;</item>
+/// #973 L1 shipped, counted and logged, waiting for his card to be put away and nothing stacked on it;</item>
 /// <item>it comes back ONCE PER LIFE, and the next captain gets it again because it is a different man
 /// reaching for it;</item>
 /// <item>told no, he takes the card away and remembers it for the rest of the visit — and not one docking
@@ -148,13 +148,13 @@ public sealed class TheRepPitchesAndWithdrawsTests
 
     /// <summary>
     /// "I ALREADY HAVE A POLICY" HANDS YOU THE DAY YOU SIGNED — through the one seam, as the plate #973 L1
-    /// shipped, with his card still up under it.
+    /// shipped, drawn once his card is put away (it would be unreadable under his scrim).
     ///
     /// <para>Four things have to be true together and only together do they mean anything: the beat went in
     /// under the SIGNING subject (not a ledger page, which is what every other flashback is about), the seam
     /// raised its PLATE rather than a modal (a card here would take the screen off a man who is mid-sentence
     /// and is the presentation a merged guard already pins), its words are in the ledger where they survive
-    /// the picture going (#761), and his card is still there to answer.</para>
+    /// the picture going (#761), and his card is still there to answer until it is put away.</para>
     ///
     /// <para><b>Proven RED</b> by raising the beat with no subject — the subject assertion names it — and
     /// again by closing his card in <c>TellHimYouAlreadyHaveOne</c>.</para>
@@ -171,8 +171,8 @@ public sealed class TheRepPitchesAndWithdrawsTests
 
         // #1396 · the plate waits under his scrim; it is drawn once the card is put away.
         Assert.Null(Field(map, "_storyPlate"));
-        FieldOf("_repCard").SetValue(map, null);
-        typeof(Pages.Map).GetMethod("ServeTheStoryQueue", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!.Invoke(map, null);
+        FieldOf("_repCard").SetValue(map, null);   // his card put away
+        Call(map, "AdvanceStoryCards");            // …and the plate is drawn on the next frame
         var plate = (ValueTuple<StoryBeats.Beat, string?, double>?)Field(map, "_storyPlate");
         Assert.NotNull(plate);
         Assert.Equal(StoryBeats.Beat.Flashback, plate!.Value.Item1);
@@ -181,7 +181,7 @@ public sealed class TheRepPitchesAndWithdrawsTests
         Assert.Contains(Ledger(map),
                         l => l.Contains(StoryBeats.Caption(StoryBeats.Beat.Flashback), StringComparison.Ordinal));
         Assert.Null(Field(map, "_storyCard"));
-        Assert.Null(Field(map, "_deferredBeat"));
+        Assert.Empty((System.Collections.IEnumerable)Field(map, "_deferredBeats")!);
     }
 
     /// <summary>His answer changes once the captain has died — and says nothing whatever about the face he

@@ -346,7 +346,8 @@ public sealed class TheHeldBeatIsStillOwedTests
 
     private static object? Card(Pages.Map map) => Field(map, "_storyCard");
 
-    private static object? Deferred(Pages.Map map) => Field(map, "_deferredBeat");
+    private static object? Deferred(Pages.Map map) =>
+        ((System.Collections.ICollection)Field(map, "_deferredBeats")!).Count > 0 ? Field(map, "_deferredBeats") : null;
 
     /// <summary>The seen-set: what the seam has written down as told. "Spent exactly once" is a count of
     /// this and nothing else.</summary>
