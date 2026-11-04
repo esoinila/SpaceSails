@@ -78,6 +78,31 @@ public sealed partial class Map
     /// </summary>
     private readonly List<(StoryBeats.Beat Beat, string? Subject, string? Outcome)> _storyWaiting = [];
 
+    /// <summary>#1379 · The card the caller just raised is the LAST one in the line when it had to wait. The
+    /// found line a caller says right after raising (<c>SayItWhereTheyAreLooking</c>) belongs to that
+    /// card and not to whichever one is showing; this remembers that the last raise waited, until the line is
+    /// told it once.</summary>
+    private bool _lastRaiseWaited;
+
+    /// <summary>Put an outcome on the card the last raise made WHEN it had to wait behind the showing one: the
+    /// tail of the line. Returns false otherwise, and the caller edits the showing card as it always did.</summary>
+    private bool WriteTheWaitingCardsOutcome(string line)
+    {
+        if (_lastRaiseWaited)
+        {
+            _lastRaiseWaited = false;
+            int last = _storyWaiting.FindLastIndex(w => !IsAPlate(w.Beat));
+            if (last >= 0)
+            {
+                var w = _storyWaiting[last];
+                _storyWaiting[last] = (w.Beat, w.Subject, line);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>The plate riding the edge, and when it goes away.</summary>
     private (StoryBeats.Beat Beat, string? Subject, double UntilSimTime)? _storyPlate;
 
@@ -113,14 +138,11 @@ public sealed partial class Map
         // that bought it). It is the sit-beat arm's shape exactly — it asks nothing about deferrability,
         // because it is not a judgement about the beat at all — and it keeps the same promise the other two
         // keep: the cadence is unspent until the beat speaks, so a held beat is still owed.
-        if (StoryBeats.PresentationOf(beat) == StoryBeats.Presentation.Card
-            && (TheBeatsAreHeldForAGate
-                || TheSitBeatIsSettling
-                || (StoryBeats.DeferrableWhileInDanger(beat) && CaptainIsInDanger())))
+        if (StoryBeats.PresentationOf(beat) == StoryBeats.Presentation.Card && TheSeamHolds(beat))
         {
             // #1379 · …in order, and none of them dropped. The same moment raised twice while held is one
             // moment (its cadence is unspent until it speaks, so the seen-set cannot say so).
-            if (!_deferredBeats.Exists(d => d.Beat == beat && d.Subject == subject))
+            if (!_deferredBeats.Exists(d => HeldKey(d.Beat, d.Subject) == HeldKey(beat, subject)))
             {
                 _deferredBeats.Add((beat, subject, outcome));
             }
@@ -129,6 +151,19 @@ public sealed partial class Map
 
         ShowStoryBeat(beat, subject, outcome);
     }
+
+    /// <summary>The three holds, asked in one place so a card raised and a card promoted from the line obey the
+    /// same law: a browser gate drives a board, a captain is taking a chair, or a deferrable card meets danger.</summary>
+    private bool TheSeamHolds(StoryBeats.Beat beat) =>
+        TheBeatsAreHeldForAGate
+        || TheSitBeatIsSettling
+        || (StoryBeats.DeferrableWhileInDanger(beat) && CaptainIsInDanger());
+
+    /// <summary>#1379 · What makes two held cards the SAME moment: the seen-set's own key for a cadence that
+    /// files by it (so several cooled strangers held in a fight are one, not a stack that outlives its
+    /// cooldown), and beat plus subject for an every-time beat, whose subjects are different moments.</summary>
+    private static (StoryBeats.Beat, string?) HeldKey(StoryBeats.Beat beat, string? subject) =>
+        StoryBeats.CadenceOf(beat) == StoryBeats.Cadence.EveryTime ? (beat, subject) : SeenKey(beat, subject);
 
     /// <summary>
     /// #1148 · ARE THE BEATS HELD FOR A BROWSER GATE? The client half of
@@ -234,6 +269,7 @@ public sealed partial class Map
                 else
                 {
                     _storyWaiting.Add((beat, subject, outcome));
+                    _lastRaiseWaited = true;
                 }
                 break;
 
@@ -359,7 +395,12 @@ public sealed partial class Map
         {
             var waiting = _deferredBeats[0];
             _deferredBeats.RemoveAt(0);
-            ShowStoryBeat(waiting.Beat, waiting.Subject, waiting.Outcome);
+            // #1379 · ...and the cadence is asked AGAIN: it was unspent when the card was held, and a card of the
+            // same cooled moment may have spoken in the meantime. Held is postponed, not exempt.
+            if (BeatMaySpeak(waiting.Beat, waiting.Subject))
+            {
+                ShowStoryBeat(waiting.Beat, waiting.Subject, waiting.Outcome);
+            }
         }
     }
 
@@ -374,6 +415,7 @@ public sealed partial class Map
     private void CloseStoryCard()
     {
         _storyCard = null;
+        _lastRaiseWaited = false;
         // #1379 · the next card in line takes the screen. The held sayings stay held until the line is empty:
         // freeing them here would pulse them under the next card's own scrim.
         if (!ServeTheStoryQueue())
@@ -391,14 +433,24 @@ public sealed partial class Map
     {
         if (_storyCard is null)
         {
-            int next = _storyWaiting.FindIndex(w => !IsAPlate(w.Beat));
-            if (next >= 0)
+            int next;
+            while ((next = _storyWaiting.FindIndex(w => !IsAPlate(w.Beat))) >= 0)
             {
                 var w = _storyWaiting[next];
                 _storyWaiting.RemoveAt(next);
+                if (TheSeamHolds(w.Beat))
+                {
+                    // The fight started (or the chair, or the gate) while the card in front was read: this one
+                    // goes back to the held line, in order, and is owed again, so its cadence is unspent.
+                    _beatsSpoken.Remove(SeenKey(w.Beat, w.Subject));
+                    _deferredBeats.Add(w);
+                    continue;
+                }
+
                 _storyCard = (w.Beat, w.Subject, w.Outcome);
                 PlayTheBeatsCue(w.Beat);
                 StateHasChanged();
+                break;
             }
         }
 

@@ -160,7 +160,9 @@ public partial class Map
         _storyWaiting.Clear();
         _deferredBeats.Clear();
         _storyPlate = null;
+        _lastRaiseWaited = false;
         _viewObjectWaiting.Clear();
+        CloseViewObject();   // the ride's card on the glass, by its one door (nothing is left behind it to promote)
         CloseStoryCard();   // the card by its one door, with nothing left behind it to promote
     }
 

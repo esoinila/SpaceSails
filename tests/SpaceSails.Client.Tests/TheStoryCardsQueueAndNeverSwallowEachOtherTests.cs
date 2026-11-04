@@ -203,4 +203,91 @@ public sealed class TheStoryCardsQueueAndNeverSwallowEachOtherTests
             Assert.DoesNotContain("_viewObject = new DeckPlan.ConsoleSpot(", text, StringComparison.Ordinal);
         }
     }
+
+    private static StoryBeats.Beat[] DeferrableCards(int n) =>
+        Beats(StoryBeats.Presentation.Card).Where(StoryBeats.DeferrableWhileInDanger).Take(n).ToArray();
+
+    /// <summary>A queued card obeys the danger hold on PROMOTION too: two calm cards are up and waiting, a fight
+    /// starts while the first is read, the first is closed, and the second does not take the screen mid-fight; it
+    /// is held, and shows when the fight is over. RED without the hold check in ServeTheStoryQueue.</summary>
+    [Fact]
+    public void AQueuedCardWaitsOutAFightThatStartedWhileTheFirstWasRead()
+    {
+        StoryBeats.Beat[] held = DeferrableCards(2);
+        Assert.Equal(2, held.Length);
+        Pages.Map map = ABench();
+        Call(map, "RaiseStoryBeat", held[0], null, null);
+        Call(map, "RaiseStoryBeat", held[1], null, null);
+        Assert.Equal(held[0], Showing(map));
+
+        SetField(map, "_shipChargesSeconds", 30.0);   // a fight starts while the first is read
+        Assert.True((bool)typeof(Pages.Map).GetMethod("CaptainIsInDanger", Hidden)!.Invoke(map, null)!);
+        Call(map, "CloseStoryCard");
+        Assert.Null(Showing(map));
+
+        SetField(map, "_shipChargesSeconds", null);   // the hold lifts
+        Call(map, "AdvanceStoryCards");
+        Assert.Equal(held[1], Showing(map));
+    }
+
+    /// <summary>Several cooled cards held in danger are ONE moment, and a held card is asked its cadence again
+    /// when it drains: they do not show back to back past their cooldown.</summary>
+    [Fact]
+    public void CooledCardsHeldInDangerDoNotStackPastTheirCooldown()
+    {
+        StoryBeats.Beat cooled = StoryBeats.Beat.StrangerStandsADrink;
+        Assert.Equal(StoryBeats.Cadence.Cooled, StoryBeats.CadenceOf(cooled));
+        Assert.True(StoryBeats.DeferrableWhileInDanger(cooled));
+        Pages.Map map = ABench();
+        SetField(map, "_shipChargesSeconds", 30.0);
+        Call(map, "RaiseStoryBeat", cooled, "a", null);
+        Call(map, "RaiseStoryBeat", cooled, "b", null);
+        Call(map, "RaiseStoryBeat", cooled, "c", null);
+        Assert.Single((System.Collections.IList)Field(map, "_deferredBeats")!);
+
+        SetField(map, "_shipChargesSeconds", null);
+        Call(map, "AdvanceStoryCards");
+        Assert.Equal(cooled, Showing(map));
+        Call(map, "CloseStoryCard");
+        Call(map, "AdvanceStoryCards");
+        Assert.Null(Showing(map));
+    }
+
+    private static string? OutcomeOf(object? card) => (string?)card!.GetType().GetField("Item3")!.GetValue(card);
+
+    /// <summary>A found line said right after raising lands on the card JUST raised, not on the one already
+    /// showing; a line said with nothing just raised still edits the showing card (the satchel path).</summary>
+    [Fact]
+    public void AFoundLineLandsOnTheCardJustRaisedEvenWhenAnotherIsAlreadyUp()
+    {
+        Pages.Map map = ABench();
+        Call(map, "RaiseStoryBeat", First, null, null);
+        Call(map, "RaiseStoryBeat", Second, null, null);
+        Call(map, "SayItWhereTheyAreLooking", "the found line", SpaceSails.Core.PulseRank.Status);
+
+        Assert.Null(OutcomeOf(Field(map, "_storyCard")));
+        var waiting = (System.Collections.IList)Field(map, "_storyWaiting")!;
+        Assert.Equal("the found line", OutcomeOf(waiting[0]));
+
+        // Nothing just raised: the line edits the card on the glass, as the satchel path always did.
+        Call(map, "SayItWhereTheyAreLooking", "the satchel line", SpaceSails.Core.PulseRank.Status);
+        Assert.Equal("the satchel line", OutcomeOf(Field(map, "_storyCard")));
+    }
+
+    /// <summary>A held cooled card is asked its cadence again at the drain: another of the same moment spoke
+    /// while it was held, so it does not follow it past the cooldown.</summary>
+    [Fact]
+    public void AHeldCooledCardIsAskedItsCooldownAgainWhenItDrains()
+    {
+        StoryBeats.Beat cooled = StoryBeats.Beat.StrangerStandsADrink;
+        Pages.Map map = ABench();
+        SetField(map, "_shipChargesSeconds", 30.0);
+        Call(map, "RaiseStoryBeat", cooled, "a", null);      // held
+        SetField(map, "_shipChargesSeconds", null);
+        Call(map, "RaiseStoryBeat", cooled, "b", null);      // speaks now and spends the cooldown
+        Assert.Equal(cooled, Showing(map));
+        Call(map, "CloseStoryCard");
+        Call(map, "AdvanceStoryCards");
+        Assert.Null(Showing(map));
+    }
 }
