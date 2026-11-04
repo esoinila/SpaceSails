@@ -83,7 +83,9 @@ public sealed class TheArrivalHoldsItsLineForTheCardTests
         int released = ride.IndexOf(Release, StringComparison.Ordinal);
         Assert.True(released >= 0, "the arrival never releases what it held — every arrival saying in the " +
             "Hive is now lost, which is worse than #768's bug.");
-        Assert.True(released > ride.LastIndexOf("_viewObject = new", StringComparison.Ordinal),
+        Assert.True(ride.Contains("RaiseTheRideCard(", StringComparison.Ordinal),
+            "the ride raises no card through RaiseTheRideCard any more - this guard would pass on nothing.");
+        Assert.True(released > ride.LastIndexOf("RaiseTheRideCard(", StringComparison.Ordinal),
             "the arrival releases BEFORE the last card it can raise — the release asks whether a card is up " +
             "and is answered by a screen that has not finished happening yet (#768).");
     }

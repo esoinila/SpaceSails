@@ -16,8 +16,27 @@ namespace SpaceSails.Client.Tests;
 /// </summary>
 public sealed partial class TheSideOfficesKeepTheirHoursTests
 {
-    private static (StoryBeats.Beat Beat, string? Subject, double Until)? ThePlate(Pages.Map map) =>
-        ((StoryBeats.Beat, string?, double)?)Read(map, "_storyPlate");
+    /// <summary>#1396 · THE PLATE, JUDGED WHERE THE PLAYER CAN READ IT. A plate raised while the interview's
+    /// card is up must NOT be on the plate slot (it would be drawn under the scrim and expire unread); it is
+    /// drawn once the card is really put away, on the next frame. So this asserts the plate is not shown
+    /// under the card, closes the card by the real door (<c>CloseViewObject</c>), runs the frame, and reads
+    /// the plate. The card is gone afterwards: read anything off the card BEFORE asking for the plate.</summary>
+    private static (StoryBeats.Beat Beat, string? Subject, double Until)? ThePlate(Pages.Map map)
+    {
+        if (Read(map, "_viewObject") is not null)
+        {
+            if (Read(map, "_storyPlate") is ValueTuple<StoryBeats.Beat, string?, double> under)
+            {
+                Assert.NotEqual(StoryBeats.Beat.Flashback, under.Item1);   // never drawn beneath the scrim
+                Set(map, "_storyPlate", null);                              // an older plate has run its clock out
+            }
+
+            Invoke(map, "CloseViewObject");
+            Invoke(map, "AdvanceStoryCards");
+        }
+
+        return ((StoryBeats.Beat, string?, double)?)Read(map, "_storyPlate");
+    }
 
     private static double NerveCarry(Pages.Map map) => (double)Read(map, "_nerveShockCarry")!;
 
@@ -106,6 +125,7 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
             ClaimInterview.Settlement s = ClaimInterview.Settle(loss, ClaimInterview.Q3Accepts(loss.DoneAt));
             Assert.Equal(ClaimInterview.Outcome.Adjusted, s.Outcome);
             Assert.Equal(clause, s.Pick);
+            Assert.Equal(s.Told, TheCard(map).Caption);   // her ADJUSTED line is the card on the glass; the plate waits for it to go
             Assert.NotNull(ThePlate(map));
             var plate = ThePlate(map)!.Value;
             Assert.Equal(StoryBeats.Beat.Flashback, plate.Beat);
@@ -113,7 +133,6 @@ public sealed partial class TheSideOfficesKeepTheirHoursTests
             Assert.Equal(StoryBeats.Title(StoryBeats.Beat.Flashback, NebulaRep.SigningMemoryId), StoryBeats.Title(plate.Beat, plate.Subject));
             Assert.EndsWith("A PAGE YOU DON'T REMEMBER WRITING", StoryBeats.Title(plate.Beat, plate.Subject), StringComparison.Ordinal);
             Assert.Equal(ClaimInterview.FlashbackCaption, StoryBeats.Caption(plate.Beat, plate.Subject));
-            Assert.Equal(s.Told, TheCard(map).Caption);   // her ADJUSTED line is still the card's: the beat is a plate over it
 
             // …the outcome was applied BEFORE it (the purse, the paper, the closed row)…
             Assert.Equal(purse + 80 - ClaimInterview.BiteCr(20, s.Pick), (int)Read(map, "_credits")!);

@@ -22,7 +22,7 @@
 @* ── MARKUP BEGINS · verbatim from Map.razor ─────────────────────────────────────────────────────── *@
     @if (_storyCard is { } told)
     {
-        <StoryCard CloseStoryCard="@CloseStoryCard" Dismiss="@Dismiss" StoryBeatCopy="@StoryBeatCopy" told="@told" />
+        <StoryCard @key="told" CloseStoryCard="@CloseStoryCard" Dismiss="@Dismiss" StoryBeatCopy="@StoryBeatCopy" told="@told" />
     }
 
     @if (_repCard is { } pitch)

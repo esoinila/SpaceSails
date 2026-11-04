@@ -174,6 +174,10 @@ public partial class Map
         // carries the same outcome field and, unlike its twin, a cadence and a deferral. (The dead field's
         // NAME is not written here on purpose: `ThereIsOnlyOneRevealCardSystemLeft` sweeps for it, and a
         // guard that had to learn the difference between a call and a comment would be the weaker guard.)
+        if (WriteTheWaitingCardsOutcome(line))
+        {
+            return;     // #1379 · the card just raised BEHIND the showing one; see the helper
+        }
         if (_storyCard is { } card)
         {
             _storyCard = (card.Beat, card.Subject, line);

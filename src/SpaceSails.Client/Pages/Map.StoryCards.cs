@@ -48,13 +48,14 @@ public sealed partial class Map
     /// </summary>
     private readonly Dictionary<(StoryBeats.Beat Beat, string? Subject), double> _beatsSpoken = [];
 
-    /// <summary>A card waiting for a calmer moment. One at a time on purpose: a queue that can stack is a queue
-    /// that will eventually empty itself into the player's face all at once.
+    /// <summary>Cards waiting for a calmer moment, in the order raised (#1379: a second held card used to be
+    /// dropped for good). They drain one at a time, each only once the card in front has been closed, so the
+    /// line never empties itself into the player's face all at once.
     ///
     /// <para>#664 · It holds the OUTCOME too. A deferred card that arrived without its arithmetic would be the
     /// #736 bug back with a delay on it — the caption would land and the 350 cr, the die and the pack count
     /// would not.</para></summary>
-    private (StoryBeats.Beat Beat, string? Subject, string? Outcome)? _deferredBeat;
+    private readonly List<(StoryBeats.Beat Beat, string? Subject, string? Outcome)> _deferredBeats = [];
 
     /// <summary>
     /// The card currently taking the screen, if any.
@@ -66,6 +67,41 @@ public sealed partial class Map
     /// the screen. Null on a card raised by something that settled nothing, which is most of them.</para>
     /// </summary>
     private (StoryBeats.Beat Beat, string? Subject, string? Outcome)? _storyCard;
+
+    /// <summary>
+    /// #1379 · THE STORY-CARD QUEUE. <see cref="_storyCard"/> is the card showing (the head of the line, and the
+    /// one the satchel rewrites the outcome of); this is everything raised BEHIND it, in the order raised. A
+    /// second card on the same press or tick used to overwrite the first, so the arc capstones, the shaft and
+    /// the interview's flashback swallowed one another. Nothing raised is lost now: a card waits here until the
+    /// one in front is closed, and a PLATE raised under a scrim waits here until the glass is clear (#1396), so
+    /// it owns an empty screen for its whole dwell.
+    /// </summary>
+    private readonly List<(StoryBeats.Beat Beat, string? Subject, string? Outcome)> _storyWaiting = [];
+
+    /// <summary>#1379 · The card the caller just raised is the LAST one in the line when it had to wait. The
+    /// found line a caller says right after raising (<c>SayItWhereTheyAreLooking</c>) belongs to that
+    /// card and not to whichever one is showing; this remembers that the last raise waited, until the line is
+    /// told it once.</summary>
+    private bool _lastRaiseWaited;
+
+    /// <summary>Put an outcome on the card the last raise made WHEN it had to wait behind the showing one: the
+    /// tail of the line. Returns false otherwise, and the caller edits the showing card as it always did.</summary>
+    private bool WriteTheWaitingCardsOutcome(string line)
+    {
+        if (_lastRaiseWaited)
+        {
+            _lastRaiseWaited = false;
+            int last = _storyWaiting.FindLastIndex(w => !IsAPlate(w.Beat));
+            if (last >= 0)
+            {
+                var w = _storyWaiting[last];
+                _storyWaiting[last] = (w.Beat, w.Subject, line);
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /// <summary>The plate riding the edge, and when it goes away.</summary>
     private (StoryBeats.Beat Beat, string? Subject, double UntilSimTime)? _storyPlate;
@@ -102,17 +138,32 @@ public sealed partial class Map
         // that bought it). It is the sit-beat arm's shape exactly — it asks nothing about deferrability,
         // because it is not a judgement about the beat at all — and it keeps the same promise the other two
         // keep: the cadence is unspent until the beat speaks, so a held beat is still owed.
-        if (StoryBeats.PresentationOf(beat) == StoryBeats.Presentation.Card
-            && (TheBeatsAreHeldForAGate
-                || TheSitBeatIsSettling
-                || (StoryBeats.DeferrableWhileInDanger(beat) && CaptainIsInDanger())))
+        if (StoryBeats.PresentationOf(beat) == StoryBeats.Presentation.Card && TheSeamHolds(beat))
         {
-            _deferredBeat ??= (beat, subject, outcome);
+            // #1379 · …in order, and none of them dropped. The same moment raised twice while held is one
+            // moment (its cadence is unspent until it speaks, so the seen-set cannot say so).
+            if (!_deferredBeats.Exists(d => HeldKey(d.Beat, d.Subject) == HeldKey(beat, subject)))
+            {
+                _deferredBeats.Add((beat, subject, outcome));
+            }
             return;
         }
 
         ShowStoryBeat(beat, subject, outcome);
     }
+
+    /// <summary>The three holds, asked in one place so a card raised and a card promoted from the line obey the
+    /// same law: a browser gate drives a board, a captain is taking a chair, or a deferrable card meets danger.</summary>
+    private bool TheSeamHolds(StoryBeats.Beat beat) =>
+        TheBeatsAreHeldForAGate
+        || TheSitBeatIsSettling
+        || (StoryBeats.DeferrableWhileInDanger(beat) && CaptainIsInDanger());
+
+    /// <summary>#1379 · What makes two held cards the SAME moment: the seen-set's own key for a cadence that
+    /// files by it (so several cooled strangers held in a fight are one, not a stack that outlives its
+    /// cooldown), and beat plus subject for an every-time beat, whose subjects are different moments.</summary>
+    private static (StoryBeats.Beat, string?) HeldKey(StoryBeats.Beat beat, string? subject) =>
+        StoryBeats.CadenceOf(beat) == StoryBeats.Cadence.EveryTime ? (beat, subject) : SeenKey(beat, subject);
 
     /// <summary>
     /// #1148 · ARE THE BEATS HELD FOR A BROWSER GATE? The client half of
@@ -195,13 +246,31 @@ public sealed partial class Map
             // again, in the one channel the player cannot close. The eight beats that raise their own surface
             // out of nowhere still chime, exactly as before.
             case StoryBeats.Presentation.Plate:
-                _storyPlate = (beat, subject, SimTime + StoryBeats.PlateSeconds);
-                PlayTheBeatsCue(beat);
+                // #1396 · a plate raised under a scrim would be drawn beneath it and expire unread. And a plate
+                // never takes the slot of one still on its clock, nor jumps the plates already waiting.
+                if (AScrimIsUp || _storyPlate is not null || _storyWaiting.Exists(w => IsAPlate(w.Beat)))
+                {
+                    _storyWaiting.Add((beat, subject, outcome));
+                }
+                else
+                {
+                    _storyPlate = (beat, subject, SimTime + StoryBeats.PlateSeconds);
+                    PlayTheBeatsCue(beat);
+                }
                 break;
 
             case StoryBeats.Presentation.Card:
-                _storyCard = (beat, subject, outcome);
-                PlayTheBeatsCue(beat);
+                // #1379 · one card at a time, in the order raised; a second waits behind the first.
+                if (_storyCard is null)
+                {
+                    _storyCard = (beat, subject, outcome);
+                    PlayTheBeatsCue(beat);
+                }
+                else
+                {
+                    _storyWaiting.Add((beat, subject, outcome));
+                    _lastRaiseWaited = true;
+                }
                 break;
 
             case StoryBeats.Presentation.Hosted:
@@ -307,6 +376,11 @@ public sealed partial class Map
             StateHasChanged();
         }
 
+        if (_storyWaiting.Count > 0)
+        {
+            ServeTheStoryQueue();
+        }
+
         // A held card goes up the moment the scene is calm and nothing else is on the screen.
         // #865 · …and once the chair has actually been taken. "The strip is open with the scene by the time
         // any deferred card raises" is the second half of the sit-beat rule, and it is kept here rather than
@@ -315,12 +389,18 @@ public sealed partial class Map
         // #1148 · …and once the gate's latch is off. Asked SECOND, after the queue is known to hold
         // something: the latch lives in the live URL rather than in a field on this page (see
         // StoryBeats.HeldIn for why), and a frame with nothing waiting must not pay to read an address.
-        if (_deferredBeat is { } waiting && !TheBeatsAreHeldForAGate
+        if (_deferredBeats.Count > 0 && !TheBeatsAreHeldForAGate
             && !CaptainIsInDanger() && !TheSitBeatIsSettling
             && _storyCard is null && _busted is null)
         {
-            _deferredBeat = null;
-            ShowStoryBeat(waiting.Beat, waiting.Subject, waiting.Outcome);
+            var waiting = _deferredBeats[0];
+            _deferredBeats.RemoveAt(0);
+            // #1379 · ...and the cadence is asked AGAIN: it was unspent when the card was held, and a card of the
+            // same cooled moment may have spoken in the meantime. Held is postponed, not exempt.
+            if (BeatMaySpeak(waiting.Beat, waiting.Subject))
+            {
+                ShowStoryBeat(waiting.Beat, waiting.Subject, waiting.Outcome);
+            }
         }
     }
 
@@ -335,7 +415,56 @@ public sealed partial class Map
     private void CloseStoryCard()
     {
         _storyCard = null;
-        ReleaseHeldSayings();
+        _lastRaiseWaited = false;
+        // #1379 · the next card in line takes the screen. The held sayings stay held until the line is empty:
+        // freeing them here would pulse them under the next card's own scrim.
+        if (!ServeTheStoryQueue())
+        {
+            ReleaseHeldSayings();
+        }
+    }
+
+    private static bool IsAPlate(StoryBeats.Beat beat) =>
+        StoryBeats.PresentationOf(beat) == StoryBeats.Presentation.Plate;
+
+    /// <summary>#1379 · Put the next waiting card up if the card slot is empty, and let waiting plates out once
+    /// no scrim is up. Returns whether a card now holds the screen.</summary>
+    private bool ServeTheStoryQueue()
+    {
+        if (_storyCard is null)
+        {
+            int next;
+            while ((next = _storyWaiting.FindIndex(w => !IsAPlate(w.Beat))) >= 0)
+            {
+                var w = _storyWaiting[next];
+                _storyWaiting.RemoveAt(next);
+                if (TheSeamHolds(w.Beat))
+                {
+                    // The fight started (or the chair, or the gate) while the card in front was read: this one
+                    // goes back to the held line, in order, and is owed again, so its cadence is unspent.
+                    _beatsSpoken.Remove(SeenKey(w.Beat, w.Subject));
+                    _deferredBeats.Add(w);
+                    continue;
+                }
+
+                _storyCard = (w.Beat, w.Subject, w.Outcome);
+                PlayTheBeatsCue(w.Beat);
+                StateHasChanged();
+                break;
+            }
+        }
+
+        // …and a waiting plate goes up only when nothing is on the glass AND no plate is still on its clock.
+        if (_storyCard is null && _storyPlate is null && _storyWaiting.Count > 0 && !AScrimIsUp)
+        {
+            var w = _storyWaiting[0];
+            _storyWaiting.RemoveAt(0);
+            _storyPlate = (w.Beat, w.Subject, SimTime + StoryBeats.PlateSeconds);
+            PlayTheBeatsCue(w.Beat);
+            StateHasChanged();
+        }
+
+        return _storyCard is not null;
     }
 
     /// <summary>

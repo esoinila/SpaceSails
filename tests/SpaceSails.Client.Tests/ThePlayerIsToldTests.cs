@@ -170,7 +170,7 @@ public sealed class ThePlayerIsToldTests
         // (1) The gate refuses: a card over the lift panel, carrying the matrix's own line (#684).
         new("a gate refuses your papers, and the outfit writes it down",
             Surface.RaisedCard, "Map.Surface.Hive.cs", "PressLiftButton",
-            "_viewObject = new DeckPlan.ConsoleSpot("),
+            "RaiseTheRideCard(new DeckPlan.ConsoleSpot("),
 
         // (2) The scanner press: said where the captain is looking, through #736's seam.
         new("you press a signal that was not yours to press",
@@ -222,7 +222,7 @@ public sealed class ThePlayerIsToldTests
         // the card cannot eat them, and the gate's own moment gets a card of its own.
         new("your card opens a floor that was shut",
             Surface.RaisedCard, "Map.Surface.Hive.Ride.cs", "RideTheLiftTo",
-            "_viewObject = new DeckPlan.ConsoleSpot("),
+            "RaiseTheRideCard(new DeckPlan.ConsoleSpot("),
 
         // ── SOMEBODY WHO WILL NOW REMEMBER, AND IT IS NOT A PERSON ─────────────────────────────────────
         //
@@ -533,7 +533,7 @@ public sealed class ThePlayerIsToldTests
     [
         "RaiseStoryBeat(", "SayItWhereTheyAreLooking(", "SayWhereTheyAreLookingAndFile(",
         "ShowPulseMessage(", "ShowAndFile(", "ShowAndFileAbout(", "HoldAndFile(", "HoldSaying(",
-        "ShowGroundGrewCardOnce(", "SayAtTheCounter(", "RaiseAScrimCard(",
+        "ShowGroundGrewCardOnce(", "SayAtTheCounter(", "RaiseAScrimCard(", "RaiseTheRideCard(",
     ];
 
     /// <summary>Fragments that only write something DOWN. A method whose whole voice is one of these is a
@@ -639,6 +639,7 @@ public sealed class ThePlayerIsToldTests
     {
         Surface.RaisedCard =>
             proof.Contains("RaiseStoryBeat(", StringComparison.Ordinal)
+            || proof.Contains("RaiseTheRideCard(", StringComparison.Ordinal)   // #1395 · the ride's queue; it writes _viewObject, which the markup draws
             || CardFieldIn(proof) is { } field && markup.Contains(field, StringComparison.Ordinal),
 
         Surface.OnModalOutcome =>

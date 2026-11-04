@@ -117,8 +117,8 @@ public partial class Map
                 // Core decides, so the two can never be shown for the wrong building.
                 (string dLabel, string dArt, string dCard) =
                     UndergroundComplex.FirstDescentCard(ex.Stop.Body.Id);
-                _viewObject = new DeckPlan.ConsoleSpot(
-                    DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY, dLabel, dArt, dCard);
+                RaiseTheRideCard(new DeckPlan.ConsoleSpot(
+                    DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY, dLabel, dArt, dCard));
             }
         }
 
@@ -141,11 +141,11 @@ public partial class Map
         if (UndergroundComplex.IsUnlistedLobby(ex.Stop.Body.Id, level) && !ex.HiveUnlistedPlateShown)
         {
             ex.HiveUnlistedPlateShown = true;
-            _viewObject = new DeckPlan.ConsoleSpot(
+            RaiseTheRideCard(new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
                 UndergroundComplex.UnlistedLobbyLabel,
                 UndergroundComplex.UnlistedLobbyArtUrl,
-                UndergroundComplex.UnlistedLobbyCard);
+                UndergroundComplex.UnlistedLobbyCard));
             RendererInterop.PlayCue("reveal");
         }
 
@@ -212,11 +212,11 @@ public partial class Map
                 // a card nobody reads.
                 case UndergroundComplex.ArrivalBeat.DeadAirFirst:
                     ex.HiveVacuumWarned = true;
-                    _viewObject = new DeckPlan.ConsoleSpot(
+                    RaiseTheRideCard(new DeckPlan.ConsoleSpot(
                         DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
                         UndergroundComplex.VacuumCardLabel,
                         UndergroundComplex.VacuumArtUrl,
-                        UndergroundComplex.VacuumCard(ex.Stop.Body.Id, level, ex.AirSeconds));
+                        UndergroundComplex.VacuumCard(ex.Stop.Body.Id, level, ex.AirSeconds)));
                     break;
 
                 // #689 · THE CARD'S FINEST HOUR. Owner, having found the card, fed the gate and ridden past
@@ -236,9 +236,9 @@ public partial class Map
                 case UndergroundComplex.ArrivalBeat.CardAccepted when saying.Gate is { } opened:
                     ex.HiveShaftsOpened.Add(opened.Band);
                     UndergroundComplex.GateRead told = UndergroundComplex.TheGateAccepted(opened);
-                    _viewObject = new DeckPlan.ConsoleSpot(
+                    RaiseTheRideCard(new DeckPlan.ConsoleSpot(
                         DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
-                        told.Label, told.ArtUrl, told.Line);
+                        told.Label, told.ArtUrl, told.Line));
                     ApplyNerveShock(3.0, "a gate that still obeys an office nobody can find");
                     break;
 

@@ -624,7 +624,7 @@ public sealed class TheSealOnTheRefugeTests
             $"{body} B{-level}: the maintained rack put nothing back — this bench is not in a working "
             + "refuge and proves nothing about the silence below.");
         Assert.Null(FieldOn(map, "_storyCard"));
-        Assert.Null(FieldOn(map, "_deferredBeat"));
+        Assert.Empty((System.Collections.IEnumerable)FieldOn(map, "_deferredBeats")!);
     }
 
     [Fact]

@@ -73,4 +73,33 @@ public sealed class ThePageSessionRidersDoNotOutliveTheLifeTests
         Assert.Empty((HashSet<string>)Read(map, "_momentsRaisedFor")!);
         Assert.Empty((List<(double SimTime, string Text)>)Read(map, "_missionMomentLedger")!);
     }
+
+    [Theory]
+    [MemberData(nameof(Doors))]
+    public void TheCardLineDoesNotRideIntoTheNextLife(string door)
+    {
+        Pages.Map map = Boot("rider-cards-" + door);
+        Invoke(map, "RaiseStoryBeat", StoryBeats.Beat.CrewDeputation, null, null);
+        Invoke(map, "RaiseStoryBeat", StoryBeats.Beat.ArchivePurged, null, null);
+        ((IList)Read(map, "_deferredBeats")!).Add((StoryBeats.Beat.CrewDeputation, (string?)null, (string?)null));
+        Assert.NotNull(Read(map, "_storyCard"));
+        Assert.NotEmpty((IList)Read(map, "_storyWaiting")!);
+
+        ((IList)Read(map, "_viewObjectWaiting")!).Add(SpotFor("OLD LIFE WAITING"));
+        Set(map, "_viewObject", SpotFor("OLD LIFE ON THE GLASS"));
+        Set(map, "_storyPlate", (StoryBeats.Beat.Flashback, (string?)"old life", 1e9));
+
+        Pass(map, door);
+
+        Assert.Null(Read(map, "_viewObject"));
+        Assert.True(Read(map, "_storyPlate") is not ValueTuple<StoryBeats.Beat, string?, double> oldPlate || oldPlate.Item2 != "old life",
+            "the old life's plate is still on the glass");
+        Assert.Null(Read(map, "_storyCard"));
+        Assert.Empty((IList)Read(map, "_storyWaiting")!);
+        Assert.Empty((IList)Read(map, "_deferredBeats")!);
+        Assert.Empty((IList)Read(map, "_viewObjectWaiting")!);
+    }
+
+    private static SpaceSails.Client.Rendering.DeckPlan.ConsoleSpot SpotFor(string label) =>
+        new(SpaceSails.Client.Rendering.DeckPlan.ConsoleKind.ViewObject, 0f, 0f, label, "", "caption");
 }
