@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using SpaceSails.Core.Tests;
 using Xunit;
 using SpaceSails.Core;
 
@@ -160,5 +161,34 @@ public sealed class AnOldOneOffTheDialIsNotDangerTests
         clear.Invoke(list, null);
         add.Invoke(list, [Reever(reach * 0.5)]);
         Assert.True((bool)bench.Call("CaptainIsInDanger")!, "an Old One on the dial no longer counts as danger.");
+    }
+}
+
+/// <summary>#1401 R1-F21 · A load from the ground (or from under a death card) arrives in the loaded life, not under
+/// the ground it left, and the ledger forgets the lines the load undid.</summary>
+[SlowGate]
+[Collection(StopRegisterCollection.Name)]
+public sealed class ALoadLeavesTheGroundBehindTests
+{
+    [Fact]
+    public async Task LoadingFromTheGroundFoldsTheExcursionAwayAndForgetsTheLinesAfterTheSave()
+    {
+        using DeskBench bench = await DeskBench.BootAsync("/map?dock=the-tilt&site=0&land=1");
+        await bench.RenderAsync();
+        Assert.True(bench.OnSurface);
+
+        // The walk that is about to be undone: a death staged, its lines written, a nerve ledger on the books.
+        bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", bench.Peek("_surface"), true, null);
+        Assert.NotNull(bench.Peek("_busted"));
+        var events = (System.Collections.Generic.List<(double SimTime, string Text)>)bench.Peek("_autopilotEvents")!;
+        events.Insert(0, (5.0e8, "🧠 Nerves shot past empty on Titan — the line the load undoes."));
+        events.Insert(0, (-1.0, "a line from before the loaded moment."));
+
+        bench.CallOnTheDispatcher("ApplyVault", new Vault { SavedSimTime = 1000 });
+
+        Assert.False(bench.OnSurface, "the load left the captain standing in the excursion it was loading away from.");
+        Assert.Null(bench.Peek("_busted"));
+        Assert.DoesNotContain(events, e => e.Text.Contains("the line the load undoes", StringComparison.Ordinal));
+        Assert.Contains(events, e => e.Text.StartsWith("a line from before", StringComparison.Ordinal));
     }
 }
