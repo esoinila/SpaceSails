@@ -107,8 +107,18 @@ public static partial class DeathNarration
         _ => "",
     };
 
-    public static string Line(DeathCause cause, DeathPlace placeAsGiven, ulong seed, string? bodyName)
+    public static string Line(
+        DeathCause cause, DeathPlace placeAsGiven, ulong seed, string? bodyName, bool heldStill = false)
     {
+        // #1397 · the sweep team's death forks on what the captain DID with the challenge's three seconds.
+        if (cause == DeathCause.Inspected && heldStill)
+        {
+            string held = InspectedLinesHeldStill[(int)(seed % (ulong)InspectedLinesHeldStill.Length)];
+            string where = string.IsNullOrWhiteSpace(bodyName) ? "in open space" : $"off {bodyName}";
+            return held.Replace("{body}", string.IsNullOrWhiteSpace(bodyName) ? "that world" : bodyName!)
+                .Replace("{where}", where);
+        }
+
         // #653 · A dead station's suffocation has a pool of its own (a station is not a ship); every other death there reads
         // as aboard a hull, and the tail and the art stand.
         if (placeAsGiven == DeathPlace.Station && cause == DeathCause.Suffocated)

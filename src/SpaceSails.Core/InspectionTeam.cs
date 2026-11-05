@@ -170,6 +170,17 @@ public static class InspectionTeam
     /// </summary>
     public const double ChallengeSeconds = 3.0;
 
+    /// <summary>#1397 · How far the captain may drift during the challenge and still count as having stood still, in
+    /// deck units: a breath of settling on the spot, not a step. The card tells the two apart.</summary>
+    public const double StoodStillWithinDu = 1.0;
+
+    /// <summary>#1397 · Did the captain keep still through the challenge? <c>fromX/Y</c> is where the lamp found him.</summary>
+    public static bool HeldStill(double fromX, double fromY, double nowX, double nowY)
+    {
+        double dx = nowX - fromX, dy = nowY - fromY;
+        return (dx * dx) + (dy * dy) <= StoodStillWithinDu * StoodStillWithinDu;
+    }
+
     /// <summary>
     /// #731 v2 · HOW MANY TIMES ROUND THE HULL BEFORE THEY GO.
     ///
