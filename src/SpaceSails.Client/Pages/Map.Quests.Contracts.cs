@@ -187,6 +187,13 @@ public partial class Map
             return shipmate.Name;
         }
 
+        // R1-F66 · a keep's authored name carries a quoted nickname (Cassini “Cass” Roe); title-casing
+        // would lower it to “cass”. An id is never written with quote marks, so quotes mean "authored".
+        if (giver.IndexOfAny(['“', '”', '"']) >= 0)
+        {
+            return giver;
+        }
+
         return string.Join(' ', giver
             .Split(' ', StringSplitOptions.RemoveEmptyEntries)
             .Select(TitleWord));

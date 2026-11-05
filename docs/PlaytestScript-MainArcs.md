@@ -9,7 +9,7 @@ Base: `http://localhost:5073`
 
 | # | Link | The beat must… |
 |---|------|----------------|
-| 1 | [The front door](http://localhost:5073/map?kaamos=bounce) `?kaamos=bounce` | Freight docket at a mission desk bounces: *BERTH HELD, AWAITING CYCLER WINDOW*. "Held" should hook. Fee printed on the button. |
+| 1 | [The front door](http://localhost:5073/map?ashore=1&kaamos=bounce) `?ashore=1&kaamos=bounce` | Freight docket at a mission desk bounces: *BERTH HELD, AWAITING CYCLER WINDOW*. "Held" should hook. Fee printed on the card (the button just says *Take the job*). Beat 1 can only be played from a berth other than Ringside; `?kaamos=bounce` without `?ashore=1` boots free-sailing. |
 | 2 | [The plaque](http://localhost:5073/map?dock=ringside-exchange) `?dock=ringside-exchange` | Walk to the dedication plaque — fragment 1, earned by reading. |
 | 3 | [The cold pod](http://localhost:5073/map?kaamos=pod&land=1) `?kaamos=pod&land=1` | Probe the ground: the pod, *40 souls, logged HELD, not lost*. New painting. |
 | 4 | [Vantar's log](http://localhost:5073/map?secretlab=1&land=1) `?secretlab=1&land=1` | The lab console log — it never names the project, and nothing announces it. |

@@ -280,7 +280,8 @@ public partial class Map
         foreach ((double simTime, string text) in _autopilotEvents)
         {
             tips.Add(new Stations.Captain.LedgerTip(
-                "🛰 Autopilot", [text], $"logged {LedgerClock.Age(simTime, SimTime)}",
+                // R1-F63 · a story card's line is the STORY's, not a handback's.
+                _storyLogLines.Contains(text) ? StoryBeats.LedgerTitle : "🛰 Autopilot", [text], $"logged {LedgerClock.Age(simTime, SimTime)}",
                 ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null,
                 // #973 L1 · a dated page, and therefore one the filing line can take away. Keyed off the
                 // receipt's own stamp and its text, never its rendered age — the age changes every minute.

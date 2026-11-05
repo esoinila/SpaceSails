@@ -48,6 +48,11 @@ public sealed partial class Map
     /// </summary>
     private readonly Dictionary<(StoryBeats.Beat Beat, string? Subject), double> _beatsSpoken = [];
 
+    /// <summary>R1-F63 · The sentences the story seam wrote into the event log, so the Captain's ledger can
+    /// file them under a story heading instead of "🛰 Autopilot". The log itself is untouched (it is still
+    /// where every other reader looks); only the ledger's heading consults this.</summary>
+    private readonly HashSet<string> _storyLogLines = [];
+
     /// <summary>Cards waiting for a calmer moment, in the order raised (#1379: a second held card used to be
     /// dropped for good). They drain one at a time, each only once the card in front has been closed, so the
     /// line never empties itself into the player's face all at once.
@@ -283,7 +288,9 @@ public sealed partial class Map
 
         // The log keeps the words even when the picture has gone, because a card is the only place some of these
         // sentences are ever written down.
-        LogAutopilotEvent($"{StoryBeats.Title(beat, subject)} — {StoryBeats.Caption(beat, subject)}");
+        string storyLine = $"{StoryBeats.Title(beat, subject)} — {StoryBeats.Caption(beat, subject)}";
+        _storyLogLines.Add(storyLine);
+        LogAutopilotEvent(storyLine);
         StateHasChanged();
     }
 

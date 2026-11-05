@@ -219,7 +219,7 @@ public partial class Map
         {
             case "adjuster-tell":
                 TryAssembleNebula("adjuster-tell",
-                    "▓ The barkeep nods at a tired sort nursing a policy folio in the corner — a Nebula Mutual adjuster. " +
+                    "▓ The barkeep nods at a tired sort nursing a policy folio in the corner. " +
                     NebulaLore.ById("adjuster-tell")!.Lore);
                 Overhear("👂 A Nebula adjuster, deep in a drink: \"A policy's not a spare life. It's a lease — on the one you've got.\"", "nebula-adjuster");
                 break;
