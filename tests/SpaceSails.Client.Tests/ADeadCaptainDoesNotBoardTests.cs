@@ -1,0 +1,96 @@
+using System;
+using System.Threading.Tasks;
+using Xunit;
+using SpaceSails.Core;
+
+namespace SpaceSails.Client.Tests;
+
+/// <summary>
+/// #1401 R1-F24 / R1-F25 · <b>THE LIFTOFF AND THE KILL ARE ONE DECISION</b>, and the death line fits the sling.
+///
+/// <para>Proven red on revert: take the <c>_busted is not null</c> guard out of <c>LiftOffFromSurface</c> and the
+/// first law goes red ("Back aboard" under the death card); take the <c>SeedFor</c> call out of the surface death
+/// and the sling law goes red for the seeds that drew the chest line.</para>
+/// </summary>
+[SlowGate]
+public sealed class ADeadCaptainDoesNotBoardTests
+{
+    private const string OnMirandasGround = "/map?dock=the-tilt&site=0&land=1";
+
+    /// <summary>Bring the mothership alongside the ground, course-matched, so the boat can fly home.</summary>
+    private static void BringHerAlongside(DeskBench bench)
+    {
+        var ephemeris = (ICelestialEphemeris)bench.Peek("_ephemeris")!;
+        object excursion = bench.Peek("_surface")!;
+        object stop = excursion.GetType().GetProperty("Stop")!.GetValue(excursion)!;
+        var body = (CelestialBody)stop.GetType().GetProperty("Body")!.GetValue(stop)!;
+        double simTime = (double)bench.Peek("SimTime")!;
+        Vector2d ground = ephemeris.Position(body.Id, simTime);
+        Vector2d groundVelocity = TransferMath.BodyVelocity(ephemeris, body.Id, simTime);
+        Vector2d outward = ground == Vector2d.Zero ? new Vector2d(1, 0) : ground.Normalized();
+        bench.Poke("_ship", new ShipState(ground + (outward * (ShuttleRange.RangeMeters * 0.2)), groundVelocity, simTime));
+        bench.Poke("_dockedHavenId", null);
+        ((System.Collections.IDictionary)bench.Peek("_awayWindowScans")!).Clear();
+    }
+
+    [Fact]
+    public async Task ALivingCaptainBoardsTheSameShuttleOnTheSamePress()
+    {
+        // The control for the law below: on this ground, with this boat, the press DOES take a living captain home.
+        using DeskBench bench = await DeskBench.BootAsync(OnMirandasGround);
+        await bench.RenderAsync();
+        BringHerAlongside(bench);
+        bench.CallOnTheDispatcher("LiftOffFromSurface");
+        Assert.False(bench.OnSurface, $"the control press did not board. Pulse: {bench.Pulse}");
+    }
+
+    [Fact]
+    public async Task ACaptainTheOldOnesHaveTakenCannotAlsoBoardTheShuttle()
+    {
+        using DeskBench bench = await DeskBench.BootAsync(OnMirandasGround);
+        await bench.RenderAsync();
+        Assert.True(bench.OnSurface);
+
+        bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", bench.Peek("_surface"), true, null);
+        Assert.NotNull(bench.Peek("_busted"));
+
+        BringHerAlongside(bench);
+        bench.CallOnTheDispatcher("LiftOffFromSurface");
+
+        Assert.True(bench.OnSurface, "a press on the shuttle took a captain who was already dead back aboard.");
+        Assert.DoesNotContain("Back aboard", bench.Pulse, StringComparison.Ordinal);
+        Assert.DoesNotContain("outran", bench.Pulse, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task AnEmptySlingIsNeverToldTheChestIsStillOutThere()
+    {
+        using DeskBench bench = await DeskBench.BootAsync(OnMirandasGround);
+        await bench.RenderAsync();
+        object ex = bench.Peek("_surface")!;
+        Assert.False((bool)ex.GetType().GetProperty("Carrying")!.GetValue(ex)!, "the bench landed with a chest.");
+
+        // The seed is drawn off the sim clock: sweep clocks, and insist the sweep includes draws the unfitted
+        // pool would have answered with the chest line (else the law proves nothing).
+        double t0 = (double)bench.Peek("SimTime")!;
+        int wouldHaveBeenTheChest = 0;
+        for (int i = 0; i < 40; i++)
+        {
+            double t = t0 + (i * 37.0);
+            bench.Poke("SimTime", t);
+            bench.Poke("_busted", null);
+            if (DiceRule.Seed("overdraw", (long)t) % 3 == 0)
+            {
+                wouldHaveBeenTheChest++;
+            }
+
+            bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", ex, false, DeathCause.Reevers);
+            object busted = bench.Peek("_busted")!;
+            var seed = (ulong)busted.GetType().GetProperty("Seed")!.GetValue(busted)!;
+            var place = (DeathPlace)busted.GetType().GetProperty("Place")!.GetValue(busted)!;
+            Assert.DoesNotContain("chest", DeathNarration.Line(DeathCause.Reevers, place, seed, "Miranda"),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        Assert.True(wouldHaveBeenTheChest > 0, "the swept clocks never drew the chest line, so this proved nothing.");
+    }
+}

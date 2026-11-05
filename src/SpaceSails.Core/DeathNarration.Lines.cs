@@ -107,6 +107,19 @@ public static partial class DeathNarration
         _ => "",
     };
 
+    /// <summary>#1401 R1-F25 · THE FIRST REEVER LINE IS ABOUT A CHEST ("the chest is still out there"), so it is
+    /// only a true thing to say of a captain who put one down on this ground. Nudges the draw off that line when
+    /// no chest rode the excursion; any other draw (and every other cause and place) is returned untouched, so
+    /// a seed that already fit keeps its line.</summary>
+    public static ulong SeedFor(DeathCause cause, DeathPlace placeAsGiven, ulong seed, bool chestOut)
+    {
+        if (chestOut || cause != DeathCause.Reevers || AsAHull(placeAsGiven) != DeathPlace.LandingParty)
+        {
+            return seed;
+        }
+        return seed % (ulong)ReeverLines.Length == 0 ? seed + 1 : seed;
+    }
+
     public static string Line(
         DeathCause cause, DeathPlace placeAsGiven, ulong seed, string? bodyName, bool heldStill = false)
     {

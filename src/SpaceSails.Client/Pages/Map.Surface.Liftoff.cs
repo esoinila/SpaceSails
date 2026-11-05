@@ -44,6 +44,14 @@ public partial class Map
             return;
         }
 
+        // #1401 R1-F24 · THE LIFTOFF AND THE KILL ARE ONE DECISION. Once the captain has been taken (the death
+        // card owns the screen and the excursion is only waiting to be folded away), a press on the shuttle
+        // must not also say "Back aboard… you outran the Old Ones" and ease the nerve ledger home.
+        if (_busted is not null)
+        {
+            return;
+        }
+
         // #540 · AND THIS IS THE ONE THAT MATTERS. Owner: "its doors open once the warm up is complete", and then
         // the scene it is for — "Under a swarm of reevers with slinged autoguns that wait can feel really long
         // time 😎". Departing the SYSTEM was already gated; the ride HOME from a hull was not, which is exactly
