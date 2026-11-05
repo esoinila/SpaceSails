@@ -38,7 +38,7 @@ public sealed class TheBootPulseSurvivesTheFirstFrameTests
         await Task.Delay(200); // the land cheat is fire-and-forget; its refusal is synchronous up to its first await
 
         Map page = booted.Page;
-        Assert.Contains(fragment, booted.Read<PulseSlot>("_pulse").Message ?? "");
+        Assert.Contains(booted.Read<List<string>>("_bootDevLines"), l => l.Contains(fragment));
 
         typeof(Map).GetMethod("TakeTheFrameClock", Hidden)!.Invoke(page, [FirstFrameMs]);
         PulseSlot after = booted.Read<PulseSlot>("_pulse").Expire(FirstFrameMs + 100);

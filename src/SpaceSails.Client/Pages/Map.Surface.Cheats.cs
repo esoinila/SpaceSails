@@ -39,13 +39,41 @@ public partial class Map
     /// id OR name, case-insensitively, because a playtester types what they see on the map.</summary>
     private string? _landBodyCheat;
 
-    /// <summary>#1390 · A BOOT-TIME DEV LINE IS SAID AND FILED. Said on the pulse (it now keeps its dwell past the
-    /// first frame, <see cref="PulseSlot.StartingAt"/>) and filed in the Captain's ledger under the 🧪 glyph,
-    /// so a tester who looked away can still tell "refused" from "ignored" afterwards.</summary>
+    /// <summary>The DEV-cheat lines raised before the first frame, waiting for it.</summary>
+    private readonly List<string> _bootDevLines = [];
+
+    /// <summary>#1390 · A BOOT-TIME DEV LINE IS SAID AND FILED. Filed in the Captain's ledger under the 🧪 glyph
+    /// either way. Said at once once the clock runs; before the first frame it is HELD and said by that frame
+    /// (<see cref="SayTheBootDevLines"/>), because the boot's stages write at 0 ms and the first frame's
+    /// <c>Expire</c>, reading a clock thousands of ms old, cleared the line unseen. Only these DEV lines wait:
+    /// every other boot line keeps behaving exactly as it did.</summary>
     private void SayTheDevLine(string line)
     {
         FileNote(line, "🧪");
+        if (_lastTimestampMs is null)
+        {
+            _bootDevLines.Add(line);
+            return;
+        }
+
         ShowPulseMessage(line);
+    }
+
+    private void SayTheBootDevLines()
+    {
+        for (int i = 0; i < _bootDevLines.Count; i++)
+        {
+            if (i == 0)
+            {
+                ShowPulseMessage(_bootDevLines[i]);
+            }
+            else
+            {
+                ShowPulseAlso(_bootDevLines[i]);
+            }
+        }
+
+        _bootDevLines.Clear();
     }
 
     private async Task AutoLandForCheatAsync()

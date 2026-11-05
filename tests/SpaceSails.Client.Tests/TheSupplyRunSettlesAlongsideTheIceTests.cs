@@ -63,11 +63,23 @@ public sealed class TheSupplyRunSettlesAlongsideTheIceTests
     }
 
     [Fact]
+    public async Task AFlybyThroughTheSameSphereDoesNotSettleTheRun()
+    {
+        PastTheGateBench.Boot b = await Alongside();
+        var ship = b.Read<ShipState>("_ship");
+        typeof(Map).GetField("_ship", Hidden)!.SetValue(b.Page, ship with { Velocity = ship.Velocity + new Vector2d(0, 5000.0) });
+
+        Settle(b);
+
+        Assert.Equal(Map.QuestState.Active, Quests(b).Single(q => q.Id == KaamosLore.SupplyRunQuestId).State);
+    }
+
+    [Fact]
     public async Task TheRunFarFromTheIceIsNotDelivered()
     {
         PastTheGateBench.Boot b = await Alongside();
         var ship = b.Read<ShipState>("_ship");
-        typeof(Map).GetField("_ship", Hidden)!.SetValue(b.Page, ship with { Position = ship.Position + new Vector2d(1.0e9, 0) });
+        typeof(Map).GetField("_ship", Hidden)!.SetValue(b.Page, ship with { Position = ship.Position + new Vector2d(CyclerWindow.ArrivalOffsetMeters * 2.0, 0) });
 
         Settle(b);
 

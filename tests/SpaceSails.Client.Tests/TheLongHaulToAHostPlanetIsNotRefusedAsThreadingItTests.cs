@@ -30,7 +30,8 @@ public sealed class TheLongHaulToAHostPlanetIsNotRefusedAsThreadingItTests
         Assert.Null(b.Threw);
         typeof(Map).GetMethod("Undock", Hidden)!.Invoke(b.Page, null);
 
-        string? block = ClearanceBlock(b, b.Read<ShipState>("_ship"), "saturn");
+        string? block = ClearanceBlock(b, b.Read<ShipState>("_ship"), "saturn", out bool solved);
+        Assert.True(solved, "the Selene Gate to Saturn departure did not solve, so there is no path to judge");
 
         Assert.True(block is null || !block.Contains("Saturn"), $"refused: {block}");
     }
@@ -66,8 +67,13 @@ public sealed class TheLongHaulToAHostPlanetIsNotRefusedAsThreadingItTests
                     continue; // already home: nothing to haul
                 }
 
+                string? block = ClearanceBlock(b, atHaven, host.Id, out bool solved);
+                if (!solved)
+                {
+                    continue;
+                }
+
                 hauls++;
-                string? block = ClearanceBlock(b, atHaven, host.Id);
                 if (block is not null && block.Contains(host.Name))
                 {
                     refused.Add($"{from.Id} -> {host.Id}: {block}");
@@ -75,16 +81,17 @@ public sealed class TheLongHaulToAHostPlanetIsNotRefusedAsThreadingItTests
             }
         }
 
-        Assert.True(hauls > 10, $"the sweep flew only {hauls} hauls");
+        Assert.True(hauls > 10, $"the sweep judged only {hauls} solved hauls");
         Assert.True(refused.Count == 0, $"{refused.Count} of {hauls} hauls refused for threading their own destination:\n"
                                         + string.Join("\n", refused.Take(8)));
     }
 
-    private static string? ClearanceBlock(PastTheGateBench.Boot b, ShipState from, string destId)
+    private static string? ClearanceBlock(PastTheGateBench.Boot b, ShipState from, string destId, out bool solved)
     {
         var eph = (ICelestialEphemeris)b.Field("_ephemeris")!;
         CelestialBody planet = LongHaul.JumpTargetPlanet(eph, destId)!;
         LongHaul.Departure dep = LongHaul.SolveDeparture(from, eph, planet);
+        solved = dep.Ok;
         if (!dep.Ok)
         {
             return null; // an unsolvable haul has no path to judge

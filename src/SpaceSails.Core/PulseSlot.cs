@@ -134,15 +134,6 @@ public readonly record struct PulseSlot(
         return Write(message, rank, nowMs);
     }
 
-    /// <summary>#1390 · A LINE WRITTEN BEFORE THE FIRST FRAME STARTS ITS DWELL AT THE FIRST FRAME. The boot's own
-    /// stages (the <c>?land=</c> refusals, the <c>?deflection=</c> test pulse) say their line while the
-    /// client's clock has not started, so it is stamped at 0 ms and the very first frame — which reads a clock
-    /// already thousands of milliseconds old — found it expired and cleared it unseen. Moving both the expiry
-    /// and the rank hold by the first frame's clock gives the line the dwell it was written with. An empty slot
-    /// stays empty.</summary>
-    public PulseSlot StartingAt(double firstFrameMs) =>
-        Message is null ? this : this with { ExpiresMs = ExpiresMs + firstFrameMs, HeldUntilMs = HeldUntilMs + firstFrameMs };
-
     /// <summary>Clear the slot if its line has had its time. An empty slot outranks nothing, which is what
     /// keeps the hold from leaking into the next scene.</summary>
     public PulseSlot Expire(double nowMs) =>

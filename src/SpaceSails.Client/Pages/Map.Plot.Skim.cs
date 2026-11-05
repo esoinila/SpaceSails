@@ -481,7 +481,7 @@ public partial class Map
         RebuildPlan();
         ReprojectTrajectory();
         _camera.CenterOn(_ship.Position);
-        ShowPulseMessage($"🧪 skim cheat: hyperbolic inbound to {body.Name}, cloud tops ~2 days out. Open Plot ▸ 🔥 Skim.");
+        ShowPulseMessage($"🧪 skim cheat: hyperbolic inbound to {body.Name}, cloud tops ~3 days out. Open Plot ▸ 🔥 Skim.");
     }
 
     // PR-I · the live consequence. A cloud-top dip whose peak drag deceleration crosses the Core damage
