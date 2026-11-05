@@ -24,7 +24,13 @@ public static partial class SecretLab
         // position: a chamber that grew the other way from the one the margin was reserved on would run out
         // through the field edge, and it would do it silently.
         double dir = Frac(bodyId, "door-side") < 0.5 ? 1.0 : -1.0;
-        double cx = doorX, cy = doorY;
+        // #1383 · The chamber starts CLEAR of the lift-head hut, not at its centre. The hut is a full-sized ring
+        // standing ON the door (#606) and the chamber used to grow from the door's own spot, so the ring's
+        // walls ran straight through the antechamber and split the field log, the rig and the core log into
+        // pieces nobody could walk between. The door (the hidden-door console, inside the hut) is unchanged;
+        // the mountain begins just past the hut's worst-case reach, and the walk to it is out of the hut's
+        // own doorway and across open ground to the chamber's near gap.
+        double cx = doorX + (dir * HutStandOff), cy = doorY;
         double half = RoomWidth / 2.0;
         double farCx = cx + (dir * RoomDepth);
 
@@ -45,7 +51,7 @@ public static partial class SecretLab
 
         // ── The inner scheme, distinct from henge/wreck/tunnel: a SERVER SPINE + LAB BENCHES + STASIS PODS,
         //    all tucked to the sides so the central door→console lane (around cy) stays clear. ──
-        double d3 = cx + (dir * 3.0), d6 = cx + (dir * 6.0), d10 = cx + (dir * 10.0), d13 = cx + (dir * 13.0);
+        double d3 = cx + (dir * 3.0), d6 = cx + (dir * 6.0), d10 = cx + (dir * 10.0), d12 = cx + (dir * 12.0), d13 = cx + (dir * 13.0);
         // The server spine: a long low wall run high of centre (the racks), broken by one maintenance gap.
         double spineY = cy + (half * 0.55);
         walls.Add(new(d3, spineY, d6, spineY, true));
@@ -70,6 +76,9 @@ public static partial class SecretLab
             new(LabConsoleKind.DormantSynth, "lab-synth", d10, cy - (half * 0.35), "🦿 DORMANT SYNTHETIC", 3, false),
             // The fat discovery cache at the heart.
             new(LabConsoleKind.DiscoveryCache, "lab-cache", d10, laneY, "🗝 VANTAR'S CACHE", 0, false),
+            // The undated log (VantarLore.KaamosHook, #1382): "a ship came" - the fragment that gestures at the sealed
+            // ice-moon project and files vantar-log. Between the synthetic and the core log, up the open lane.
+            new(LabConsoleKind.LoreLog, "lab-log-hook", d12, cy + (half * 0.2), "🖥 VANTAR — UNDATED LOG", VantarLore.KaamosHook, false),
             // The CORE log at the deep end — reading it is the reveal (nerve hit + the diced outcome).
             new(LabConsoleKind.LoreLog, "lab-log-core", d13, laneY, "🖥 VANTAR — THE CORE LOG", VantarLore.CoreIndex, true),
         };

@@ -1,4 +1,4 @@
-using SpaceSails.Core;
+﻿using SpaceSails.Core;
 
 namespace SpaceSails.Core.Tests;
 
@@ -15,6 +15,40 @@ public sealed class MountainLabTests
         SurfaceLayout.Field field = new(-44, 34, -30, 30, 18, 0, 0);
         SecretLab.Placement p = SecretLab.For(body, field, forcePresent: true);
         return SecretLab.Build(body, field, p.DoorX, p.DoorY);
+    }
+
+    /// <summary>
+    /// #1382 · THE UNDATED LOG HAS A SCREEN. <see cref="VantarLore.KaamosHook"/> ("A ship came...") is the
+    /// fragment that files <c>vantar-log</c> to the ledger, and it sat on no console, so beat 4 had no screen
+    /// and the filing branch in <c>Map.SecretLab</c> was dead code. Exactly one lore console carries it, in the
+    /// antechamber's open lane, on every lab the game can build, and none of the other lore indexes moved.
+    /// <para>Proven RED by removing the console: <c>0 console(s) carry the KaamosHook fragment</c>.</para>
+    /// </summary>
+    [Theory]
+    [InlineData("test-rock")]
+    [InlineData("phobos")]
+    [InlineData("secret-lab-site")]
+    [InlineData("secret-lab-site-unlisted")]
+    [InlineData("rock-a")]
+    [InlineData("rock-b")]
+    [InlineData("rock-c")]
+    public void ExactlyOneConsoleCarriesTheUndatedVantarLog(string body)
+    {
+        SecretLab.Region lab = Lab(body);
+        SecretLab.LabConsole[] carrying = [.. lab.Consoles.Where(c =>
+            c.Kind == SecretLab.LabConsoleKind.LoreLog && c.LoreIndex == VantarLore.KaamosHook)];
+
+        Assert.True(carrying.Length == 1,
+            $"{carrying.Length} console(s) carry the KaamosHook fragment on {body} - beat 4 needs exactly one.");
+        Assert.False(carrying[0].IsCoreLog, "the undated log is not the reveal.");
+        // In the antechamber (before the first door), so the beat does not wait behind a lockdown.
+        double firstDoorX = lab.Doors[0].X;
+        double nearX = carrying[0].X, startX = lab.Walls[0].X1;
+        Assert.True(System.Math.Abs(nearX - startX) < System.Math.Abs(firstDoorX - startX),
+            "the undated log must stand in the antechamber, ahead of the first door.");
+        // Each of the other fragments still has its own screen where it had one.
+        Assert.Contains(lab.Consoles, c => c.LoreIndex == 0);
+        Assert.Contains(lab.Consoles, c => c.LoreIndex == VantarLore.CoreIndex && c.IsCoreLog);
     }
 
     // ── Doors that lock ───────────────────────────────────────────────────────────────────────────────

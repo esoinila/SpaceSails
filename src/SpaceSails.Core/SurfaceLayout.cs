@@ -176,6 +176,8 @@ public static partial class SurfaceLayout
         // every body whether or not this one hides one — the door spot is seeded the same way regardless, so
         // it costs a building's worth of ground and means a lab can never open into somebody's wall.
         list.Add(SecretLab.ChamberFootprint(bodyId ?? "", field, siteSalt));
+        // #1383 · …and its two deeper rooms, which a seeded hut was free to be standing across.
+        list.AddRange(SecretLab.DeepChamberFootprints(bodyId ?? "", field, siteSalt));
 
         // #649 · AND THE MONOLITH, on the one ground that has one. It is 54 du across and its swept apron is
         // 86; a placer that had never heard of it would put a hut inside the stone. Asked of the object
