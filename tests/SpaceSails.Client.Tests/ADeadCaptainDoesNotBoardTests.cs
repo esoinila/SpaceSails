@@ -192,3 +192,21 @@ public sealed class ALoadLeavesTheGroundBehindTests
         Assert.Contains(events, e => e.Text.StartsWith("a line from before", StringComparison.Ordinal));
     }
 }
+
+/// <summary>#1401 R1-F47 · The Trade tile counts only partners the shuttle bay could actually offer: not the
+/// berth she is clamped to.</summary>
+[SlowGate]
+public sealed class TheTradeTileAgreesWithTheShuttleBayTests
+{
+    [Fact]
+    public async Task TheBerthSheIsClampedToIsNotAPartnerInShuttleReach()
+    {
+        using DeskBench bench = await DeskBench.BootAsync("/map?dock=ringside-exchange&simhours=240");
+        await bench.RenderAsync();
+
+        var stops = (System.Collections.IList)bench.Call("ShuttleDestinationsInRange")!;
+        Assert.Empty(stops);   // the bay has nothing to offer from this berth, as in the report
+        string chip = bench.Call("TradeChip")!.ToString()!;
+        Assert.DoesNotContain("shuttle reach", chip, StringComparison.Ordinal);
+    }
+}
