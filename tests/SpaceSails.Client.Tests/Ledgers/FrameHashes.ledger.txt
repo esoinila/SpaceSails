@@ -68,7 +68,7 @@ calls | surface · luna site 0 | 210
 calls | surface · luna site 0, the whole excursion | 318
 calls | surface · luna site 0, dark, and the fan hears something | 263
 calls | surface · titan site 0, a derelict's instruments (none) | 323
-sha256 | ship · under way | 56b0e232f8e30b5b05e9040364ee817865809e0513feb8554015af6dd99c38ae
+sha256 | ship · under way | 0413eeb5b32de01e31a19c3a95769acef1a0a49398cbc95e94d127662701a2f0
 sha256 | ship · docked, the shuttle away and the machine stalling | 19e440e25f8e12774822d917787dfe3157c63fc25fb0f391a43204c6d626206a
 sha256 | ship · hatches dogged, seated at the table | cec37445125d17460f56d31b582a9cb8049cc3d02e18b1ab0adb542c08b7a5a1
 sha256 | haven · the-space-bar | dc7c69a536ce9c035be7d10866dbd775cd362da5a2cd4da8d40ad7931896b7f2
