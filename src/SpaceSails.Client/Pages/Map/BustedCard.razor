@@ -88,10 +88,18 @@
                             <img class="busted-hail-art" src="@StoryBeats.ArtFile(StoryBeats.Beat.CollectorHail)"
                                  alt="" aria-hidden="true" onerror="this.style.display='none'" />
                             <span>⛓ CAUGHT — @bust.HunterCallsign has you grappled</span>
-                            <div class="busted-hail-caption">@StoryBeats.Caption(StoryBeats.Beat.CollectorHail, bust.HunterCallsign)</div>
+                            @* #1392 · on foot the caption is the crew's, not a window full of grapples *@
+                            <div class="busted-hail-caption">@(CollectorLanding.IsAGroundCrew(bust.HunterId) ? CollectorLanding.WritCaptionOnFoot(bust.HunterCallsign) : StoryBeats.Caption(StoryBeats.Beat.CollectorHail, bust.HunterCallsign))</div>
                         </div>
                         <div class="busted-heat">Heat @HeatFlames(bust.Heat) · exposure: @BustedRule.ExposurePhrase(bust.Heat)</div>
-                        <div class="busted-quote">"Heave to. We're collecting. This goes easy or it goes @(bust.Heat >= EncounterRule.MaxHeatLevel ? "Bolivia" : "hard") — your call, captain."</div>
+                        @if (CollectorLanding.IsAGroundCrew(bust.HunterId))
+                        {
+                            <div class="busted-quote">@CollectorLanding.WritQuoteOnFoot(bust.Heat >= EncounterRule.MaxHeatLevel ? "Bolivia" : "hard")</div>
+                        }
+                        else
+                        {
+                            <div class="busted-quote">"Heave to. We're collecting. This goes easy or it goes @(bust.Heat >= EncounterRule.MaxHeatLevel ? "Bolivia" : "hard") — your call, captain."</div>
+                        }
                         @* #422 arc 2 — THE COLLECTOR'S WRIT. The first time a collector grapples you, you get a
                            look at the writ they carry, and it names a policy number, not a manifest. The shard
                            is glimpsed here; the readout below keeps it. *@
@@ -155,7 +163,7 @@
                        catch ends on — the silence is the treasure, not a different button. *@
                     case BustedEncounter.Stage.NoContactLogged:
                         <div class="busted-hail">@SpaceSails.Core.BlackOpsKey.NoContactLoggedPlate</div>
-                        <button type="button" class="btn btn-outline-light busted-close" @onclick="() => Dismiss(CloseBusted)">Fly on</button>
+                        <button type="button" class="btn btn-outline-light busted-close" @onclick="() => Dismiss(CloseBusted)">@CollectorLanding.CloseFace(bust.HunterId)</button>
                         break;
 
                     case BustedEncounter.Stage.Confiscated:
@@ -192,7 +200,7 @@
                             <div class="busted-roll">Collector: @rr.Defender.Describe()</div>
                         }
                         <div class="busted-quote">@bust.ResultMessage</div>
-                        <button type="button" class="btn btn-outline-light busted-close" @onclick="() => Dismiss(CloseBusted)">Fly on</button>
+                        <button type="button" class="btn btn-outline-light busted-close" @onclick="() => Dismiss(CloseBusted)">@CollectorLanding.CloseFace(bust.HunterId)</button>
                         break;
 
                     case BustedEncounter.Stage.ResistLost:
