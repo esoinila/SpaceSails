@@ -186,7 +186,7 @@ public sealed class TheShuttleCanCatchHerTests
     /// <summary>
     /// #1380 · ONE VERDICT: the ring goes GREY where the speed term shuts the link. The ring used to read the
     /// gap alone, so a hull parting company at four times the catch speed drew teal (calm) while the boat,
-    /// asked the same question, refused ("parting company faster than the boat can fly"). Ring, ladder and
+    /// asked the same question, refused ("parting company faster than the boat can fly"). The ring and the
     /// airlock now read <see cref="ShuttleLink.AskTheBoat"/>, speed included. The control is the same range at
     /// a speed the boat CAN match, which must stay on its calm rung.
     /// <para>Proven RED by dropping the TooFastToCatch term from <c>TheShuttleLegsRing</c>: the first

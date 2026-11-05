@@ -281,8 +281,7 @@ public partial class Map
     }
 
     /// <summary>The mothership's velocity off the anchor, by the central difference the rest of Core measures a
-    /// rail with. One reading for the ground (<see cref="TheLinkToHer"/>) and for the board that sends the
-    /// captain down (#1380), so the two cannot disagree about how fast she is going.</summary>
+    /// rail with. One reading for the ground (<see cref="TheLinkToHer"/>), so every reading of her speed comes off one expression.</summary>
     private Vector2d ShipVelocityNow()
     {
         const double h = 1.0;

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -72,6 +72,12 @@ public sealed class AClickAcrossASealedWallAnswersAtOnceTests
                     enabled: true, from, to, field, AvatarRadius,
                     AutoWalk.BoundsFor(walls, from, to), DeckReachability.DefaultStep, AutoWalk.PointingReachDu);
                 sw.Stop();
+                // The deterministic half: the proof itself says sealed (the clock below is only a loose backstop).
+                if (!DeckReachability.ProvablySealedOff(from, to, field, AvatarRadius,
+                        AutoWalk.BoundsFor(walls, from, to), DeckReachability.DefaultStep, AutoWalk.PointingFallbackDu, AutoWalk.SealedProbeCells))
+                {
+                    slow.Add($"{body}/{site.Name}: the pocket proof did not call a sealed ring sealed");
+                }
                 clicks++;
                 _out.WriteLine($"{body}/{site.Name}: {sw.ElapsedMilliseconds} ms, route={(attempt.Route is null ? "refused" : "planned")}");
                 if (attempt.Route is not null)
@@ -122,5 +128,56 @@ public sealed class AClickAcrossASealedWallAnswersAtOnceTests
 
         Assert.True(planned >= 3, $"only {planned} control walk(s) were planned - this proves little.");
         Assert.True(wrong.Count == 0, string.Join("\n", wrong));
+    }
+
+    /// <summary>
+    /// #1384 · A REACHABLE WALK NEVER PAYS FOR THE PROOF. The pocket proof is a flood on the lattice; run before
+    /// every plan it costs more than the search it guards on a short click (measured: 10 ms against 0.3 ms at
+    /// 30 du), and the browser is thirty times slower. So the search goes first with a budget and the proof runs
+    /// only for a search that has spent it. Counted, not timed: the proof's own invocation counter.
+    /// </summary>
+    [Fact]
+    public void AReachableWalkNeverRunsThePocketProof()
+    {
+        int walks = 0;
+        foreach (string body in new[] { "secret-lab-site", "miranda", "luna", "triton" })
+        {
+            foreach (LandingSite site in LandingSites.For(body).Take(2))
+            {
+                List<SurfaceCollision.Segment> walls = GroundOf(body, site);
+                SurfaceCollision.WallIndex field = SurfaceCollision.WallIndex.Build([.. walls]);
+                var from = new DeckReachability.Point(Env.HomeX, Env.TopY - 2.0);
+                foreach (double dy in new[] { 12.0, 30.0, 55.0 })
+                {
+                    var to = new DeckReachability.Point(Env.HomeX, Env.TopY - 2.0 - dy);
+                    if (!DeckReachability.Standable(to.X, to.Y, AvatarRadius, field))
+                    {
+                        continue;
+                    }
+                    int before = DeckReachability.SealedProofsRun;
+                    AutoWalk.Attempt attempt = AutoWalk.Plan(
+                        enabled: true, from, to, field, AvatarRadius,
+                        AutoWalk.BoundsFor(walls, from, to), DeckReachability.DefaultStep, AutoWalk.PointingReachDu);
+                    if (attempt.Route is null)
+                    {
+                        continue;   // not a reachable walk; the sealed test owns that case
+                    }
+                    walks++;
+                    Assert.Equal(before, DeckReachability.SealedProofsRun);
+                }
+            }
+        }
+
+        Assert.True(walks >= 6, $"only {walks} reachable walk(s) were asked - this proves little.");
+
+        // …and the counter is live: a sealed goal DOES run it (so zero above is not a dead counter).
+        List<SurfaceCollision.Segment> sealedWalls = GroundOf("miranda", LandingSites.For("miranda")[0]);
+        var a = new DeckReachability.Point(Env.HomeX, Env.TopY - 2.0);
+        var b = new DeckReachability.Point(Env.HomeX + 40, Env.AnchorY + 4);
+        Seal(sealedWalls, b.X, b.Y, 8.0);
+        int ran = DeckReachability.SealedProofsRun;
+        AutoWalk.Plan(true, a, b, SurfaceCollision.WallIndex.Build([.. sealedWalls]), AvatarRadius,
+            AutoWalk.BoundsFor(sealedWalls, a, b), DeckReachability.DefaultStep, AutoWalk.PointingReachDu);
+        Assert.True(DeckReachability.SealedProofsRun > ran, "a sealed goal never ran the proof - the counter is dead.");
     }
 }

@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 /// <summary>
 /// #1384 · THE CHEAP PROOF THAT A WALK IS IMPOSSIBLE, so a click on a sealed-off place can be refused without
@@ -36,6 +36,7 @@ public static partial class DeckReachability
         int cellBudget)
     {
         ArgumentNullException.ThrowIfNull(walls);
+        SealedProofsRun++;
         var grid = new Lattice(walls, radius, bounds, step);
         if (!grid.TryStandOn(from, out (int Cx, int Cy) start))
         {
@@ -74,15 +75,29 @@ public static partial class DeckReachability
             return false;
         }
 
-        // Flood each side in turn. A side that EXHAUSTS without touching the other has proved it.
-        return Exhausts(grid, arrivals.ToList(), start, cellBudget, touches: arrivals.Contains, targetIsStart: false)
-            || Exhausts(grid, [start], start, cellBudget, touches: arrivals.Contains, targetIsStart: true);
+        // Flood each side in turn. A side that EXHAUSTS without touching the other has proved it; a MEET ends the
+        // question at once (no second flood), and an exhausted budget is "do not know".
+        Flood goalSide = Exhausts(grid, arrivals.ToList(), start, cellBudget, arrivals.Contains, targetIsStart: false);
+        if (goalSide != Flood.OutOfBudget)
+        {
+            return goalSide == Flood.RanDry;
+        }
+        return Exhausts(grid, [start], start, cellBudget, arrivals.Contains, targetIsStart: true) == Flood.RanDry;
     }
 
-    /// <summary>Breadth-first from <paramref name="seeds"/>; true only when the frontier ran dry inside the
+    /// <summary>How a bounded flood ended.</summary>
+    private enum Flood { Met, RanDry, OutOfBudget }
+
+    /// <summary>#1384 · How many times the pocket proof has run on THIS thread. A reachable walk must never pay
+    /// for it (the search goes first, and the proof is only asked once the search has spent its budget), and a
+    /// test can only say so by counting, not by timing.</summary>
+    [ThreadStatic]
+    public static int SealedProofsRun;
+
+    /// <summary>Breadth-first from <paramref name="seeds"/>; RanDry only when the frontier ran dry inside the
     /// budget and no visited cell was a hit (the walker's own cell, or - flooding from the walker - any
     /// arrival cell).</summary>
-    private static bool Exhausts(
+    private static Flood Exhausts(
         Lattice grid, List<(int Cx, int Cy)> seeds, (int Cx, int Cy) start, int cellBudget,
         Func<(int, int), bool> touches, bool targetIsStart)
     {
@@ -92,7 +107,7 @@ public static partial class DeckReachability
         {
             if (seen.Count > cellBudget)
             {
-                return false;   // not a pocket - or not one this cheap: do not know
+                return Flood.OutOfBudget;   // not a pocket - or not one this cheap: do not know
             }
             (int Cx, int Cy) cur = queue.Dequeue();
             foreach ((int dx, int dy) in Neighbours)
@@ -105,12 +120,12 @@ public static partial class DeckReachability
                 bool hit = targetIsStart ? touches((next.Cx, next.Cy)) : next == start;
                 if (hit)
                 {
-                    return false;   // the two ends meet: a road exists
+                    return Flood.Met;   // the two ends meet: a road exists
                 }
                 seen.Add((next.Cx, next.Cy));
                 queue.Enqueue(next);
             }
         }
-        return true;
+        return Flood.RanDry;
     }
 }

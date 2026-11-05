@@ -178,17 +178,23 @@ public sealed class AutoWalk
             return default;
         }
 
-        // #1384 · A goal sealed in a pocket (a console behind the shed's wall, a room behind a shut door) is proved
-        // so in a few thousand cells and refused at once, instead of the search flooding the whole field to
-        // learn it. The widest reach either look below will use is the one the proof is taken at, so it can
-        // only refuse what both looks would have refused.
-        double widestReach = goalReachDu > 0 ? Math.Max(goalReachDu, PointingFallbackDu) : 0;
-        if (DeckReachability.ProvablySealedOff(from, to, walls, radius, bounds, step, widestReach, SealedProbeCells))
+        // #1384 · THE SEARCH GOES FIRST, with a budget. A reachable walk finishes inside it and never pays for
+        // anything else (ordinary clicks and guard routes are most of the traffic). Only a search that has spent
+        // SealedProbeCells and is still going - the signature of a goal with no road, flooding the field - is
+        // handed to the pocket proof: a goal sealed in a pocket (a console behind the shed's wall, a room behind
+        // a shut door) is proved so in a few thousand cells and refused at once. The proof is taken at the widest
+        // reach either look below will use, so it can only refuse what both looks would have refused.
+        Planner first = Planner.Begin(from, to, walls, radius, bounds, step, goalReachDu);
+        if (!first.Advance(SealedProbeCells))
         {
-            return new Attempt(null, RefusalLine);
+            double widestReach = goalReachDu > 0 ? Math.Max(goalReachDu, PointingFallbackDu) : 0;
+            if (DeckReachability.ProvablySealedOff(from, to, walls, radius, bounds, step, widestReach, SealedProbeCells))
+            {
+                return new Attempt(null, RefusalLine);
+            }
         }
 
-        Attempt pointed = Planner.Begin(from, to, walls, radius, bounds, step, goalReachDu).Finish();
+        Attempt pointed = first.Finish();
         if (pointed.Route is not null || goalReachDu is <= 0 or >= PointingFallbackDu)
         {
             return pointed;
