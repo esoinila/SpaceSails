@@ -13,7 +13,6 @@ namespace SpaceSails.Client.Tests;
 /// first law goes red ("Back aboard" under the death card); take the <c>SeedFor</c> call out of the surface death
 /// and the sling law goes red for the seeds that drew the chest line.</para>
 /// </summary>
-[SlowGate]
 public sealed class ADeadCaptainDoesNotBoardTests
 {
     private const string OnMirandasGround = "/map?dock=the-tilt&site=0&land=1";
@@ -52,7 +51,7 @@ public sealed class ADeadCaptainDoesNotBoardTests
         await bench.RenderAsync();
         Assert.True(bench.OnSurface);
 
-        bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", bench.Peek("_surface"), true, null);
+        bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", bench.Peek("_surface"), true, null, false);
         Assert.NotNull(bench.Peek("_busted"));
 
         BringHerAlongside(bench);
@@ -85,7 +84,7 @@ public sealed class ADeadCaptainDoesNotBoardTests
                 wouldHaveBeenTheChest++;
             }
 
-            bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", ex, false, DeathCause.Reevers);
+            bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", ex, false, DeathCause.Reevers, false);
             object busted = bench.Peek("_busted")!;
             var seed = (ulong)busted.GetType().GetProperty("Seed")!.GetValue(busted)!;
             var place = (DeathPlace)busted.GetType().GetProperty("Place")!.GetValue(busted)!;
@@ -97,7 +96,6 @@ public sealed class ADeadCaptainDoesNotBoardTests
 }
 
 /// <summary>#1401 R1-F42 · Keys belong to Brem Kolt's decision card while it is up.</summary>
-[SlowGate]
 public sealed class TheKoltCardHoldsTheKeysTests
 {
     [Fact]
@@ -126,7 +124,6 @@ public sealed class TheKoltCardHoldsTheKeysTests
 }
 
 /// <summary>#1401 R1-F41 · An Old One the tracker cannot show is not danger.</summary>
-[SlowGate]
 public sealed class AnOldOneOffTheDialIsNotDangerTests
 {
     [Fact]
@@ -166,7 +163,6 @@ public sealed class AnOldOneOffTheDialIsNotDangerTests
 
 /// <summary>#1401 R1-F21 · A load from the ground (or from under a death card) arrives in the loaded life, not under
 /// the ground it left, and the ledger forgets the lines the load undid.</summary>
-[SlowGate]
 [Collection(StopRegisterCollection.Name)]
 public sealed class ALoadLeavesTheGroundBehindTests
 {
@@ -178,7 +174,7 @@ public sealed class ALoadLeavesTheGroundBehindTests
         Assert.True(bench.OnSurface);
 
         // The walk that is about to be undone: a death staged, its lines written, a nerve ledger on the books.
-        bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", bench.Peek("_surface"), true, null);
+        bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", bench.Peek("_surface"), true, null, false);
         Assert.NotNull(bench.Peek("_busted"));
         var events = (System.Collections.Generic.List<(double SimTime, string Text)>)bench.Peek("_autopilotEvents")!;
         events.Insert(0, (5.0e8, "🧠 Nerves shot past empty on Titan — the line the load undoes."));
@@ -195,7 +191,6 @@ public sealed class ALoadLeavesTheGroundBehindTests
 
 /// <summary>#1401 R1-F47 · The Trade tile counts only partners the shuttle bay could actually offer: not the
 /// berth she is clamped to.</summary>
-[SlowGate]
 public sealed class TheTradeTileAgreesWithTheShuttleBayTests
 {
     [Fact]
