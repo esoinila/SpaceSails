@@ -404,6 +404,19 @@ public partial class Map
         return OrbitRule.IsBound(_ship, pos, vel, dest, hill);
     }
 
+    /// <summary>#1386 · THE KAAMOS SUPPLY RUN IS DELIVERED ALONGSIDE THE ICE, not bound to it. The cycler lets her go
+    /// on the moon's own track <see cref="CyclerWindow.ArrivalOffsetMeters"/> off the ice, and Enceladus's Hill
+    /// sphere is under a thousand kilometres, so <see cref="IsBoundAtMoonHaven"/> reads her as bound to SATURN
+    /// and the berth that "acknowledged the run" never settled it. This is the same moon-haven path, widened
+    /// for that ONE quest (no ordinary run gets the wider reach) to the standoff the arc itself leaves her at
+    /// (with half again for the drift of a long park). Head office §1's ordinary park still settles it too,
+    /// through <see cref="IsBoundAtMoonHaven"/>.</summary>
+    private bool TheSupplyRunIsAlongsideTheIce(Quest q, CelestialBody dest) =>
+        _ephemeris is not null
+        && q.Id == KaamosLore.SupplyRunQuestId
+        && dest.Id == KaamosLore.IceMoonBodyId
+        && (_ship.Position - _ephemeris.Position(dest.Id, SimTime)).Length <= CyclerWindow.ArrivalOffsetMeters * 1.5;
+
     // #175: settle any moon-haven cargo run the instant the ship is parked in its orbit. Runs on every
     // insertion (manual + autopilot) AND once per tick from UpdateEncounters, so a captain who was
     // ALREADY orbiting when the parcel loaded still gets paid — there is no dock event to hang it on.
@@ -416,7 +429,7 @@ public partial class Map
         {
             if (q is not { Kind: QuestKind.CargoRun or QuestKind.Favor, State: QuestState.Active, DestBodyId: { } destId }) continue;
             if (BodyById(destId) is not { } dest || IsDockableHaven(dest)) continue; // stations: ⚓ Dock path
-            if (IsBoundAtMoonHaven(dest))
+            if (IsBoundAtMoonHaven(dest) || TheSupplyRunIsAlongsideTheIce(q, dest))
             {
                 AdvanceMission(q, QuestState.Complete, q.Kind == QuestKind.Favor
                     ? $"Quiet parcel delivered to {q.TargetCallsign} — the favor's worked off. 📡"
