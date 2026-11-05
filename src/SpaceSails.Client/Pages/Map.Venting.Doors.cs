@@ -1,4 +1,4 @@
-using SpaceSails.Client.Rendering;
+﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -119,8 +119,13 @@ public sealed partial class Map
 
         foreach ((string name, float x0, float x1, bool top) in WreckLayout.Compartments)
         {
+            // #1381 · EVERY DOORWAY THE DECK WALLS, not only the ones ten tonnes are holding. The deck draws a
+            // pressure-door console at each BlockedDoors() doorway - loaded or dogged by hand - so the press
+            // must dispatch on the same set. Asking only for the loaded ones sent E at a dogged hatch to the
+            // nearest LOADED door (ENGINEERING's, 400 px away) and, once the valve was cracked, to nothing at
+            // all, leaving the hand-dogged hatch with no way to be undogged at the door.
             if (!_ventSpaces.TryGetValue(name, out HullVenting.Space s)
-                || !HullVenting.DoorHeldByPressure(s, _spinePressurised))
+                || !HullVenting.DoorwayBlocked(s, _spinePressurised))
             {
                 continue;
             }
