@@ -162,8 +162,16 @@ public partial class Map
         _storyPlate = null;
         _lastRaiseWaited = false;
         _viewObjectWaiting.Clear();
-        CloseViewObject();   // the ride's card on the glass, by its one door (nothing is left behind it to promote)
-        CloseStoryCard();   // the card by its one door, with nothing left behind it to promote
+        // #1429 · the cards come off the glass by clearing the fields, NOT through the close doors: CloseViewObject
+        // answers a guard stop, drops the interview and the pending find and frees the held sayings, and every one
+        // of those is a scene side effect that would be written into the new life (a guard line pulsed and logged,
+        // a name filed into a paper trail already cleared, the old life's held lines pulsed into the new one).
+        _viewObject = null;
+        _interview = null;
+        _pendingFind = null;
+        _storyCard = null;
+        _held = PulseHold.Empty;
+        _patrol.StopUnderway = null;   // the stop belonged to the old life (before, cleared only on a floor change)
     }
 
     /// <summary>
