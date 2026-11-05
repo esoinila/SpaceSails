@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using SpaceSails.Core;
 
@@ -275,10 +275,18 @@ public partial class Map
         // rail with. Taking the gap from ShipAnchorAt and the speed from _ship.Velocity would be two sources
         // for one fact — this repository's oldest bug class — and they really do part company: a clamped ship
         // is anchored to her BERTH's rail, and an armed plan anchors her to the ribbon she is promised to fly.
-        const double h = 1.0;
-        Vector2d shipVelocity = (ShipAnchorAt(SimTime + h) - ShipAnchorAt(SimTime - h)) / (2 * h);
+        Vector2d shipVelocity = ShipVelocityNow();
         Vector2d groundVelocity = TransferMath.BodyVelocity(_ephemeris, bodyId, SimTime);
         return (AwaySeparationAt(bodyId, SimTime), (shipVelocity - groundVelocity).Length);
+    }
+
+    /// <summary>The mothership's velocity off the anchor, by the central difference the rest of Core measures a
+    /// rail with. One reading for the ground (<see cref="TheLinkToHer"/>) and for the board that sends the
+    /// captain down (#1380), so the two cannot disagree about how fast she is going.</summary>
+    private Vector2d ShipVelocityNow()
+    {
+        const double h = 1.0;
+        return (ShipAnchorAt(SimTime + h) - ShipAnchorAt(SimTime - h)) / (2 * h);
     }
 
     /// <summary>#336 · Which rung of the reachability ladder the captain is on — or null when he is aboard,
@@ -314,9 +322,14 @@ public partial class Map
             return null;
         }
 
-        int rung = ShuttleLink.StageFor(link.DistanceMeters, WindowOn(bodyId).Status) is { } stage
-            ? (int)stage
-            : 3;
+        // #1380 · ONE VERDICT. The ring used to read distance alone and paint teal while the boat, asked the same
+        // question with the speed term in, refused ("parting company faster than the boat can fly"). A link the
+        // speed shuts goes grey like any other place that is not answering.
+        int rung = ShuttleLink.AskTheBoat(link.DistanceMeters, link.RelativeSpeedMps) == ShuttleLink.Refusal.TooFastToCatch
+            ? 3
+            : ShuttleLink.StageFor(link.DistanceMeters, WindowOn(bodyId).Status) is { } stage
+                ? (int)stage
+                : 3;
         return (link.DistanceMeters / ShuttleRange.RangeMeters, rung);
     }
 

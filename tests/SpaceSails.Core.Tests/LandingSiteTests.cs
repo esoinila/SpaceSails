@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace SpaceSails.Core.Tests;
@@ -12,9 +12,10 @@ namespace SpaceSails.Core.Tests;
 /// </summary>
 public class LandingSiteTests
 {
-    // The same shared field envelope MoonSurface hands SurfaceLayout (mirrors SurfaceLayoutTests.Env).
-    private static readonly SurfaceLayout.Field Env = new(
-        LeftX: -44, RightX: 34, TopY: -20, BottomY: -84, LandingBandY: -27, AnchorX: -6, AnchorY: -70);
+    // The field the game ships, READ rather than mirrored (#1383). This was a hand-copied 78 x 64 envelope - the
+    // exact drift SurfaceLayout.DefaultField's own note describes - and on a world that small the lab's 52 du
+    // run plus its claims leave two sites with the same four walls, which no 310 x 260 ground ever does.
+    private static readonly SurfaceLayout.Field Env = SurfaceLayout.DefaultField;
 
     private static readonly string[] Bodies =
         ["miranda", "luna", "phobos", "europa", "ganymede", "callisto", "titan", "enceladus", "triton", "the-clinker"];

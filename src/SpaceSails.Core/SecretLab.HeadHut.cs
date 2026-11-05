@@ -93,8 +93,13 @@ public static partial class SecretLab
         // when the gap between their centres beats the sum of their reaches — that sentence, and no constant.
         double reach = SurfaceStructure.EnvelopeOf(HeadHutAt(bodyId, salt, 0, 0)).Reach;
         var taken = new List<(double X, double Y, double R)>();
+        // #1383 · The same shelters at their RAW keep-out, for the mountain to be asked about: the shed is
+        // moved clear of a shelter by its own reach, but the three rooms behind it are a long thin thing the
+        // shed's clearance says nothing about.
+        var shelters = new List<(double X, double Y, double R)>();
         foreach (SurfaceStructure.Spec shelter in SurfaceShelter.SpecsFor(bodyId, salt, field))
         {
+            shelters.Add((shelter.CentreX, shelter.CentreY, SurfaceStructure.KeepOutRadius(shelter)));
             taken.Add((shelter.CentreX, shelter.CentreY,
                 SurfaceStructure.KeepOutRadius(shelter) + reach + HeadBerth));
         }
@@ -120,20 +125,48 @@ public static partial class SecretLab
         // drift apart.
         if (Monolith.KeepOutOn(bodyId, salt, field) is { } slab)
         {
+            shelters.Add(slab);
             taken.Add((slab.X, slab.Y, slab.R + reach));
         }
 
+        // #1383 · And the authored signature at the field's anchor (the twin rails, the muzzle block, the strip
+        // footings): fixed geometry no ledger knows about, deep in the head's own range, that a chamber
+        // grown towards it would meet. Asked of the mountain only - the shed has always been free to stand
+        // near it.
+        shelters.Add((field.AnchorX, field.AnchorY + 9.0, 20.0));
+
         // A handful of seeded retries along the deep field, then give up and take the last one rather than
         // loop: a shed slightly close to a hut is a cosmetic problem, and no shed at all is a dead feature.
-        for (int attempt = 0; attempt < 24 && Clashes(x, y, taken); attempt++)
+        //
+        // #1383 · The question asked of a spot is now TWO: is the shed clear, and is the MOUNTAIN behind it clear
+        // (the three rooms are a long thin thing the shed's own clearance says nothing about). The second is
+        // stricter, and the field is crowded enough that two dozen tries do not always find a spot that passes
+        // both, so the search is wider (it is a handful of multiplications a try) and remembers the first spot
+        // that cleared the shed alone: where no spot clears the mountain, the shed still goes where it used to
+        // rather than anywhere.
+        const int MaxAttempts = 400;
+        (double X, double Y)? shedOnly = null;
+        for (int attempt = 0; attempt < MaxAttempts; attempt++)
         {
-            double loX = field.LeftX + SurfaceLayout.EdgeMargin + RoomDepth;
-            double hiX = field.RightX - SurfaceLayout.EdgeMargin - RoomDepth;
-            double loY = field.BottomY + (RoomWidth / 2.0) + 2.0;
-            double hiY = field.AnchorY + 12.0;
+            bool shedClear = !Clashes(x, y, taken);
+            if (shedClear && !MountainClashes(bodyId, salt, x, y, shelters))
+            {
+                return (x, y);
+            }
+            if (shedClear)
+            {
+                shedOnly ??= (x, y);
+            }
+
+            (double loX, double hiX, double loY, double hiY) = DoorRange(bodyId, field);
 
             x = Lerp(loX, hiX, Frac(bodyId, $"head-x:{salt}:{attempt}"));
             y = Lerp(loY, hiY, Frac(bodyId, $"head-y:{salt}:{attempt}"));
+        }
+
+        if (shedOnly is { } fallback)
+        {
+            return fallback;
         }
 
         return (x, y);
@@ -143,6 +176,18 @@ public static partial class SecretLab
     /// footprints. Enough that the two never read as one complex; small, because every du of it is ground
     /// claimed away from the ordinary buildings (#587).</summary>
     private const double HeadBerth = 4.0;
+
+    /// <summary>#1383 · How far past the door the chamber's near face stands: the lift-head hut's WORST-CASE
+    /// reach (the largest footprint <see cref="HeadHutAt"/> can seed, at the thickest wall) plus a pace of air.
+    /// A constant and not a per-site answer on purpose: <see cref="Build"/> is pure in (body id, door position)
+    /// and seven callers hold only those two, and an over-estimate costs a few du of open ground between the
+    /// shed and the mountain where an under-estimate costs a wall through the antechamber.</summary>
+    public static double HutStandOff => WorstHutReach() + 1.0;
+
+    private static double WorstHutReach() =>
+        SurfaceStructure.EnvelopeOf(SurfaceStructure.Ordinary(
+            0, 0, size: 14.0, thickFrac: 1.0, angleFrac: 0.0, doors: 2,
+            shapeFace: (int)SurfaceStructure.Footprint.Rectangular)).Reach;
 
     private static bool Clashes(double x, double y, List<(double X, double Y, double R)> taken)
     {

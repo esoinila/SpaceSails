@@ -90,7 +90,7 @@ lane**; this lane authors the text and the assembly logic only, and touches none
 |---|--------------------|--------------------------|--------------------------------------------|--------|
 | 1 | `listed-berth`     | The listed berth         | **Plaque** — Ringside dedication (#392)     | Live in-world today |
 | 2 | `cold-pod`         | The cold supply pod      | **DerelictPod** — a dig find (#346/#386)    | Hook — dig lane appends |
-| 3 | `vantar-log`       | Vantar's wintering log   | **LabLog** — a secret lab (#409)            | Hook — labs lane appends |
+| 3 | `vantar-log`       | Vantar's wintering log   | **LabLog** — a secret lab (#409)            | Hook — labs lane: the undated log is the sixth antechamber console (`lab-log-hook`, #1382) |
 | 4 | `holders-tell`     | The berth-holder's tell  | **BarRumor** — a rare contact (#410)        | Hook — contacts rota appends |
 | 5 | `bought-coordinate`| The bought coordinate    | **BoughtTip** — a round bought (#308/#347)  | Hook — drink/overheard appends |
 | 6 | `berth-code`       | The KAAMOS berth code    | **BerthCode** — the earned capstone         | Hook — surfaced only once intel ≥ threshold |

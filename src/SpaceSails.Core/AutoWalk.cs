@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 /// <summary>
 /// #729 · POINT AT THE FLOOR AND WALK THERE. Owner, mid-playtest: <i>"Maybe for testing purposes an
@@ -178,6 +178,16 @@ public sealed class AutoWalk
             return default;
         }
 
+        // #1384 · A goal sealed in a pocket (a console behind the shed's wall, a room behind a shut door) is proved
+        // so in a few thousand cells and refused at once, instead of the search flooding the whole field to
+        // learn it. The widest reach either look below will use is the one the proof is taken at, so it can
+        // only refuse what both looks would have refused.
+        double widestReach = goalReachDu > 0 ? Math.Max(goalReachDu, PointingFallbackDu) : 0;
+        if (DeckReachability.ProvablySealedOff(from, to, walls, radius, bounds, step, widestReach, SealedProbeCells))
+        {
+            return new Attempt(null, RefusalLine);
+        }
+
         Attempt pointed = Planner.Begin(from, to, walls, radius, bounds, step, goalReachDu).Finish();
         if (pointed.Route is not null || goalReachDu is <= 0 or >= PointingFallbackDu)
         {
@@ -278,6 +288,11 @@ public sealed class AutoWalk
         ArgumentNullException.ThrowIfNull(route);
         return new AutoWalk(route);
     }
+
+    /// <summary>#1384 · How many lattice cells a pocket may be and still be proved sealed before a click is
+    /// searched for: 40,000 cells is 10,000 du², more than every lab, room and ring on the ground put together,
+    /// and a few milliseconds of flood where the open field is hundreds of thousands.</summary>
+    public const int SealedProbeCells = 40_000;
 
     /// <summary>A lattice box big enough to hold the deck's stone and both ends of the walk, with a margin
     /// so a route may bulge around the outside of an obstacle that sits on the rim. Derived from the wall
