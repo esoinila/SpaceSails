@@ -97,6 +97,7 @@ public partial class Map
             _surface = null;
             _reevers.Clear();
             _lastNearestReeverRange = null;
+            ForgetTheExcursionsGlass();   // #1398
             LogAutopilotEvent("🛬 The expedition is written off — the away team scrubs the gig and the body path goes to backup.");
         }
 
@@ -160,6 +161,12 @@ public partial class Map
         if (wasOnSurface)
         {
             SetDeckForDock(null);
+
+            // #1398 · …and the successor wakes AT THE RUSTBUCKET'S AIRLOCK. PullAvatarAboard only moves a captain
+            // who is standing in the tube (y above the hatch), and a Hive floor's coordinates (34, −152) read as
+            // "aboard" to it, so the new captain was left at the dead one's lift lobby: a position on no deck,
+            // which is why the plan drew no captain dot and a click on it did not bring one.
+            (_avatarX, _avatarY, _avatarHeading) = (2.5, 8, -Math.PI / 2);
         }
 
         // Evening wind #20 — THE NEW CAPTAIN, on ANY death-resurrection (this overdraw AND the collector /
@@ -186,6 +193,29 @@ public partial class Map
 
         b.Phase = BustedEncounter.Stage.Resurrected;
         StateHasChanged();
+    }
+
+    /// <summary>
+    /// #1398 · <b>THE DEAD EXCURSION'S GLASS GOES WITH IT.</b> A death on the ground or in the Hive folds the
+    /// excursion away, but the cards that excursion had raised (DEAD AIR, THE SHAFT, the ride's queue), the
+    /// stop and the find waiting on an answer, and the pulses held behind them were page fields the fold never
+    /// touched — so the successor boarded the rustbucket under the old captain's air gauge, and closing it
+    /// released the lift's line onto the ship. Cleared by field and not through the close doors, for #1429's
+    /// reason: the doors run scene side effects (a guard stop answered, a held line pulsed).
+    /// </summary>
+    private void ForgetTheExcursionsGlass()
+    {
+        _viewObject = null;
+        _viewObjectWaiting.Clear();
+        _interview = null;
+        _pendingFind = null;
+        _patrol.StopUnderway = null;
+        _storyCard = null;
+        _storyWaiting.Clear();
+        _deferredBeats.Clear();
+        _storyPlate = null;
+        _lastRaiseWaited = false;
+        _held = PulseHold.Empty;
     }
 
     /// <summary>
