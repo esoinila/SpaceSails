@@ -39,6 +39,15 @@ public partial class Map
     /// id OR name, case-insensitively, because a playtester types what they see on the map.</summary>
     private string? _landBodyCheat;
 
+    /// <summary>#1390 · A BOOT-TIME DEV LINE IS SAID AND FILED. Said on the pulse (it now keeps its dwell past the
+    /// first frame, <see cref="PulseSlot.StartingAt"/>) and filed in the Captain's ledger under the 🧪 glyph,
+    /// so a tester who looked away can still tell "refused" from "ignored" afterwards.</summary>
+    private void SayTheDevLine(string line)
+    {
+        FileNote(line, "🧪");
+        ShowPulseMessage(line);
+    }
+
     private async Task AutoLandForCheatAsync()
     {
         if (!_landCheat || _surface is not null)
@@ -69,8 +78,8 @@ public partial class Map
             if (named is null)
             {
                 string inReach = string.Join(", ", board.Where(s => s.IsLandable).Select(s => s.Body.Id));
-                ShowPulseMessage($"🧪 DEV ?land={wanted}: not landable from this berth. In reach: " +
-                                 (inReach.Length > 0 ? inReach : "nothing"));
+                SayTheDevLine($"🧪 DEV ?land={wanted}: not landable from this berth. In reach: " +
+                              (inReach.Length > 0 ? inReach : "nothing"));
                 _landCheat = false;
                 return;
             }
@@ -85,7 +94,7 @@ public partial class Map
             ?? board.FirstOrDefault(s => s.IsLandable);
         if (target is null)
         {
-            ShowPulseMessage("🧪 DEV ?land=1: nothing landable in shuttle reach from this berth.");
+            SayTheDevLine("🧪 DEV ?land=1: nothing landable in shuttle reach from this berth.");
             return;
         }
 

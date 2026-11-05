@@ -123,6 +123,12 @@ public partial class Map
     /// the banner and the controls read. Zero on the very first frame, and never negative.</summary>
     private double TakeTheFrameClock(double highResTimestampMs)
     {
+        if (_lastTimestampMs is null)
+        {
+            // #1390 · whatever the boot said before the clock started (stamped at 0 ms) begins its dwell NOW.
+            _pulse = _pulse.StartingAt(highResTimestampMs);
+        }
+
         double dtRealSeconds = _lastTimestampMs is null
             ? 0
             : Math.Max(0, (highResTimestampMs - _lastTimestampMs.Value) / 1000.0);
