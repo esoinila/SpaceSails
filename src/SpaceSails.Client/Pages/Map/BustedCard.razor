@@ -85,9 +85,9 @@
                            behind the backdrop. So the shipped sentence rides the shipped painting, exactly
                            as it would have on a card of its own — and nothing is shown twice. *@
                         <div class="busted-hail busted-collector-hail">
-                            <img class="busted-hail-art" src="@StoryBeats.ArtFile(StoryBeats.Beat.CollectorHail)"
+                            <img class="busted-hail-art" src="@(CollectorLanding.IsAGroundCrew(bust.HunterId) ? CollectorLanding.WritArtOnFoot : StoryBeats.ArtFile(StoryBeats.Beat.CollectorHail))"
                                  alt="" aria-hidden="true" onerror="this.style.display='none'" />
-                            <span>⛓ CAUGHT — @bust.HunterCallsign has you grappled</span>
+                            <span>@(CollectorLanding.IsAGroundCrew(bust.HunterId) ? CollectorLanding.WritHeaderOnFoot(bust.HunterCallsign) : $"⛓ CAUGHT — {bust.HunterCallsign} has you grappled")</span>
                             @* #1392 · on foot the caption is the crew's, not a window full of grapples *@
                             <div class="busted-hail-caption">@(CollectorLanding.IsAGroundCrew(bust.HunterId) ? CollectorLanding.WritCaptionOnFoot(bust.HunterCallsign) : StoryBeats.Caption(StoryBeats.Beat.CollectorHail, bust.HunterCallsign))</div>
                         </div>

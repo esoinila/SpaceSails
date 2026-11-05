@@ -162,6 +162,25 @@ public sealed class TheArrivalHoldsItsLineForTheCardTests
         }
     }
 
+    /// <summary>#1429 · The two "drop unsaid" helpers are the guard's only exemptions, so they may be called from
+    /// ONE place: <c>ForgetTheExcursionsGlass</c> (a discarded life or excursion). Any other caller is a road out of
+    /// a card that swallows its held line.</summary>
+    [Fact]
+    public void TheUnsaidDropsAreCalledOnlyFromTheForgettingOfAnExcursionsGlass()
+    {
+        foreach (string file in Directory.EnumerateFiles(
+                     Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "*.cs"))
+        {
+            string text = File.ReadAllText(file);
+            foreach (string call in new[] { "DropTheRideCardUnsaid();", "DropTheStoryCardsUnsaid();" })
+            {
+                int n = text.Split(call).Length - 1;
+                int allowed = Path.GetFileName(file) == "Map.Combat.Busted.Wake.cs" ? 1 : 0;
+                Assert.True(n <= allowed, $"{Path.GetFileName(file)} calls {call} outside ForgetTheExcursionsGlass (#1429).");
+            }
+        }
+    }
+
     [Fact]
     public void AMethodThatHOLDSAlwaysRELEASES()
     {

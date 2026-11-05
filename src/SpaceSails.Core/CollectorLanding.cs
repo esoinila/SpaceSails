@@ -207,15 +207,21 @@ public static class CollectorLanding
     /// <summary>The backdrop caption of the demand when it is a crew on foot: the crew, a hand on the carry
     /// loop, nobody hurrying (the ground crew's own closing line says the same of them walking up).</summary>
     public static string WritCaptionOnFoot(string callsign) =>
-        $"The crew, spread wide on the regolith, and a hand on your carry loop. {callsign} is painted small " +
-        "on the boat behind them. Nobody is hurrying — you are the one with the tank.";
+        $"The crew stand spread wide on the regolith and one gloved hand is on your carry loop. {callsign} is painted small " +
+        "on the boat behind them. Nobody is hurrying. Your tank is doing that for them.";
 
     /// <summary>The spoken demand when it is a crew on foot (no one is told to heave to: the captain has no
     /// ship to heave). The stakes clause is the panel's own and is handed in.</summary>
     public static string WritQuoteOnFoot(string stakes) =>
-        $"\"Stand easy, captain. We have a writ and we have all day. This goes easy or it goes {stakes} — your call.\"";
+        $"\"Stay put. We're collecting. This goes easy or it goes {stakes} — your call, captain.\"";
 
     /// <summary>The face of the button that ends a survived writ: on foot there is no "Fly on".</summary>
+    /// <summary>The demand panel's header on foot: nothing is grappled, a hand is on the carry loop.</summary>
+    public static string WritHeaderOnFoot(string callsign) => $"⛓ CAUGHT — {callsign} has you by the carry loop";
+
+    /// <summary>The backdrop of the demand on foot: the boat that came down (the arrival plate's own painting).</summary>
+    public const string WritArtOnFoot = "art/collector-boat-down.jpg";
+
     public const string CloseFaceOnFoot = "…go on";
 
     /// <summary>The face of the button that ends a survived writ, for the encounter id the panel holds.</summary>

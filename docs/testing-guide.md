@@ -1663,8 +1663,9 @@ lab with the **hidden door already revealed**. The loop:
 The **black-ops inspection team**: professionals who work a route through a hull while the captain is inside it.
 They are the inverse of the pack — they see **20 du but only inside a 70° cone**, hear **34 du through walls and
 regardless of where the lamp points**, and **challenge for 3 seconds before shooting** — a window to break the
-lamp's line of sight, not a road: a captain who stands still once found is shot all the same, and the death card says
-so (#1397: *stood still; it made no difference* versus *and did not*). So the counter-play inverts too: you do not
+lamp's line of sight. As shipped, a captain who stands still once found is shot all the same (whether obeying should
+ever hold is an OPEN owner ruling), and the death card no longer tells him he moved (#1397: *and stood still* versus
+*and did not*). So the counter-play inverts too: you do not
 out-run them, you stay somewhere the cone is not, and you do not make a sound.
 
 They ride the **INSURANCE JOB** by default — her own fiction is that the valuable thing aboard is the *evidence*,

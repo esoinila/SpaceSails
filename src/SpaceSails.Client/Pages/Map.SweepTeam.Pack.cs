@@ -167,7 +167,6 @@ public partial class Map
         // #1397 · …and what the captain DID with the three seconds. He was found where LastSeen says; a captain who
         // is still there obeyed the order and it made no difference, and the card may not say he did not.
         bool heldStill = InspectionTeam.HeldStill(s.LastSeenX, s.LastSeenY, _avatarX, _avatarY);
-        _inspectedHeldStill = heldStill;
-        TriggerSurfaceOverdrawDeath(ex, nerveRanOut: false, known: DeathCause.Inspected);
+        TriggerSurfaceOverdrawDeath(ex, nerveRanOut: false, known: DeathCause.Inspected, heldStill: heldStill);
     }
 }

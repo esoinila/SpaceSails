@@ -44,7 +44,7 @@ public sealed class TheSweepTeamTellsTheTruthAboutTheChallengeTests
     public async Task AMotionlessCaptainIsNotToldHeDidNotStandStill()
     {
         string card = await TheCardAfterTheChallengeRunsOut(driftDu: 0.0);
-        Assert.Contains("and standing still. It made no difference", card, StringComparison.Ordinal);
+        Assert.Contains("and standing still. Three seconds, and the sweep goes on", card, StringComparison.Ordinal);
         Assert.DoesNotContain("and did not", card, StringComparison.Ordinal);
         Assert.DoesNotContain("not standing still", card, StringComparison.Ordinal);
     }
@@ -54,6 +54,6 @@ public sealed class TheSweepTeamTellsTheTruthAboutTheChallengeTests
     {
         string card = await TheCardAfterTheChallengeRunsOut(driftDu: 6.0);
         Assert.Contains("and not standing still", card, StringComparison.Ordinal);
-        Assert.DoesNotContain("It made no difference", card, StringComparison.Ordinal);
+        Assert.DoesNotContain("and standing still", card.Replace("not standing still", ""), StringComparison.Ordinal);
     }
 }

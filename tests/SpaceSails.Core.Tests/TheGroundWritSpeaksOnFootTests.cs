@@ -25,7 +25,10 @@ public sealed class TheGroundWritSpeaksOnFootTests
         string quote = CollectorLanding.WritQuoteOnFoot("hard");
         Assert.Contains("THE LONG ARM", caption);
         Assert.Contains("carry loop", caption);
-        foreach (string text in new[] { caption, quote })
+        string header = CollectorLanding.WritHeaderOnFoot("THE LONG ARM");
+        Assert.Contains("has you by the carry loop", header);
+        Assert.Equal("art/collector-boat-down.jpg", CollectorLanding.WritArtOnFoot);
+        foreach (string text in new[] { caption, quote, header })
         {
             Assert.DoesNotContain("grapple", text, System.StringComparison.OrdinalIgnoreCase);
             Assert.DoesNotContain("window", text, System.StringComparison.OrdinalIgnoreCase);

@@ -716,11 +716,10 @@ On one kind of wreck you will not be alone, and the other people aboard will not
 A **black-ops inspection team** works a route through her while you are inside it — three professionals, sweeping
 compartment by compartment. They are the opposite of the Old Ones in every way that matters. They see a long way
 but **only where the lamp is pointed**. They hear through walls and do not care which way they are facing. And
-they **challenge before they shoot**: three flat seconds of *stand still, hands where I can see them*. Those
-seconds are a window and not a mercy — once the lamp has found you, doing as you are told changes nothing (the card
-for that death says so: *told to stand still, and stood still; it made no difference*). What the three seconds are
-for is a bulkhead between you and the lamp, which is the only reason this is a scene you can play rather than a coin
-flip.
+they **challenge before they shoot**: three flat seconds of *stand still, hands where I can see them*. Do not
+mistake the three seconds for an offer — standing still has not saved anybody yet. What they are is a window: time
+enough to put a bulkhead between you and the lamp, which is the only reason this is a scene you can play rather than
+a coin flip.
 
 So the counter-play inverts. You do not out-run a professional, and you do not wait to be found. You stay out of the
 cone, three metres off their axis, and you make no sound.

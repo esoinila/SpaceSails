@@ -100,5 +100,12 @@ public sealed class TheDeathWritsTests
             Call(below, "StepCollectors", 0.1);
         }
         Assert.Null(Field(below, "_busted"));
+
+        // the held crew are standing: no stride left on them for the motion tracker to read
+        foreach (object? c in (System.Collections.IEnumerable)Field(below, "_collectors")!)
+        {
+            Assert.Equal(0.0, (double)c!.GetType().GetField("Vx")!.GetValue(c)!);
+            Assert.Equal(0.0, (double)c.GetType().GetField("Vy")!.GetValue(c)!);
+        }
     }
 }

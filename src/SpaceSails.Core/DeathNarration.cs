@@ -224,14 +224,14 @@ public static partial class DeathNarration
     ];
 
     /// <summary>#1397 · The same death for a captain who DID stand still. The challenge is a window to break the
-    /// lamp's line of sight, not a mercy: once it has found you, standing still buys nothing, and the card says
-    /// so instead of telling a motionless man he did not. The first two lines say nothing about movement and are
+    /// lamp's line of sight; as shipped, standing still does not stop the shot, and whether it ever should is the
+    /// owner's open call. The card says so instead of telling a motionless man he did not. The first two lines say nothing about movement and are
     /// copies of the ordinary pool's; only the third differs.</summary>
     private static readonly string[] InspectedLinesHeldStill =
     [
         "They found you aboard {body} and did what they were sent to do. Nobody raised their voice and nobody hurried.",
         "The lamp stopped on you {where} and three seconds later the sweep went on down the corridor. You were a line in somebody's report.",
-        "You were seen {where}, told to stand still, and stood still. It made no difference — nobody was ever going to wait for an answer, and nobody was there to negotiate. They were there to make sure she stopped existing.",
+        "You were seen {where}, told to stand still, and stood still. Three seconds, flat and bored, and the lamp did not move. They were never there to negotiate — they were there to make sure she stopped existing.",
     ];
 
     private static readonly string[] VoidLines =

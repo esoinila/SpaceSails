@@ -99,6 +99,11 @@ public partial class Map
         // a collector takes no action without the captain present (owner 2026-09-06).
         if (ex.Floor < 0)
         {
+            foreach (Collector held in _collectors)
+            {
+                held.Vx = 0;   // they stand: a motion tracker must not read the last stride as still moving
+                held.Vy = 0;
+            }
             return;
         }
 

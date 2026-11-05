@@ -171,7 +171,7 @@ public sealed class TheStationBoardCardAndTheGatesTests
         DeskBench bench = await LandedAsync();
         object ex = bench.Peek("_surface")!;
 
-        bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", ex, false, DeathCause.Suffocated);
+        bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", ex, false, DeathCause.Suffocated, false);
 
         object busted = bench.Peek("_busted")!;
         Assert.Equal(DeathPlace.Station, (DeathPlace)Get(busted, "Place")!);
