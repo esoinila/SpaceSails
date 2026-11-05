@@ -71,6 +71,16 @@ public static partial class UndergroundComplex
             return bins;
         }
 
+        // #1394 · …and the building's livery stops where the building does. The halls nobody dug and the lobby
+        // of the band nobody listed are not kept by a department, and a PAPER · FLATTEN AND STACK stencil with
+        // a schedule behind it is exactly the department the testing guide says is not there (no doors, no
+        // plates, no canteen, no cubicle, nothing of the building's livery). They breathe, so the pressure
+        // rule above lets them through; this is the rule that does not.
+        if (IsFound(bodyId, level) || IsUnlistedLobby(bodyId, level))
+        {
+            return bins;
+        }
+
         var segs = new List<SurfaceCollision.Segment>(walls.Count);
         foreach (SurfaceLayout.Wall w in walls)
         {

@@ -119,8 +119,12 @@ public sealed partial class Map
 
         foreach ((string name, float x0, float x1, bool top) in WreckLayout.Compartments)
         {
-            if (!_ventSpaces.TryGetValue(name, out HullVenting.Space s)
-                || !HullVenting.DoorHeldByPressure(s, _spinePressurised))
+            // #1381 · EVERY DOORWAY, open or shut. The deck draws a pressure-door console at each doorway
+            // (WreckInterior), so the press must dispatch on the compartment whose doorway the captain is
+            // standing at - not on the loaded ones only, which sent E at a dogged hatch to the nearest LOADED
+            // door (ENGINEERING's, 400 px away) and left an open one with no way to be dogged at its door.
+            // The card itself renders the right branch: gauge when loaded, dog/undog when not.
+            if (!_ventSpaces.TryGetValue(name, out _))
             {
                 continue;
             }
@@ -151,7 +155,7 @@ public sealed partial class Map
     /// still had an atmosphere does not afterwards.</summary>
     private void EqualiseAtDoor(string name)
     {
-        if (_wreck is null || !_ventSpaces.TryGetValue(name, out HullVenting.Space s))
+        if (_wreck is null || !_ventSpaces.TryGetValue(name, out _))
         {
             return;
         }

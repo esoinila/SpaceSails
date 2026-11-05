@@ -27,6 +27,17 @@ public partial class Map
     // The front door's "Continue — <where>": restore the ACTIVE thread's newest slot instead of a fresh start.
     private Task ContinueFromSave() => LoadSlot(Slots.Newest()?.Id);
 
+    /// <summary>#1388 · false only when the sky is built, the save names a resume berth, and the sky lacks
+    /// that body. A save with no berth (old files) and a sky not yet plotted both answer true — the first
+    /// falls back to the tutorial home, the second is asked again once the sky exists.</summary>
+    private bool ThisSkyHoldsTheSavedBerth(Vault? vault) =>
+        _ephemeris is null
+        || vault?.Resume?.HavenId is not { Length: > 0 } haven
+        || _ephemeris.Bodies.Any(b => b.Id == haven);
+
+    /// <summary>#1388 · the Continue row is offered only for a save this sky can resume.</summary>
+    private bool ContinueIsOffered => _resumeAvailable && ThisSkyHoldsTheSavedBerth(_pendingResumeVault);
+
     // ── The captains' roster row actions (owner 2026-07-19): every save row now belongs to a captain
     //    (universe), so Load / Export / Import-into / Clear must target THAT captain's book, not the active
     //    one. In-game the drawer only ever renders the active thread, so these fall through to it. ──
@@ -123,6 +134,7 @@ public partial class Map
     // Load a specific slot by id (the front-door list, the captain's-desk drawer, or Continue-newest).
     private async Task LoadSlot(string? slotId)
     {
+        bool pickerWasUp = _showStartPicker;
         _showStartPicker = false;
         _showSaveDrawer = false;
         await TheRestOfTheBootAsync(); // #161: Continue is clickable while the sky is still being plotted
@@ -130,6 +142,16 @@ public partial class Map
         if (slotId is not null && Slots.ReadPayload(slotId) is { } raw && !string.IsNullOrWhiteSpace(raw))
         {
             Vault vault = VaultSerializer.Load(raw);
+            if (!ThisSkyHoldsTheSavedBerth(vault))
+            {
+                // #1388 · a Sol save read in the Wheel's sky names a berth that sky does not hold. Refuse with
+                // a sentence; the live world is left exactly as it was.
+                ShowPulseMessage($"That save is berthed at {vault.Resume?.HavenName ?? vault.Resume?.HavenId}, which this sky does not hold — open it in the world it was saved in.");
+                _showStartPicker = pickerWasUp;   // nothing was loaded: the door the captain pressed stays open
+                StateHasChanged();
+                return;
+            }
+
             // #951 — a load from the death card is the answer to the death: the catch/impact/regolith card
             // that was open belongs to a timeline this captain just walked out of, so it goes with it. (On
             // every other load path there is no card open and this is a no-op.)

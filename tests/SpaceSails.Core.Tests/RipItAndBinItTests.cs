@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -116,6 +116,13 @@ public sealed class RipItAndBinItTests
             {
                 return floor.TheBins.Count == 0 ? null
                     : $"{floor.TheBins.Count} bin(s) on a floor with no air in it — nobody empties those.";
+            }
+            // #1394 · …and the halls nobody dug and the lobby nobody listed breathe but are not KEPT: no
+            // department, no schedule, no bin (TheHallsNobodyDugKeepNoPaperBinTests owns that law).
+            if (UndergroundComplex.IsFound(body, level) || UndergroundComplex.IsUnlistedLobby(body, level))
+            {
+                return floor.TheBins.Count == 0 ? null
+                    : $"{floor.TheBins.Count} bin(s) on a floor no department keeps.";
             }
             return floor.TheBins.Count > 0 ? null
                 : "a floor that holds pressure and nowhere at all to put a document.";

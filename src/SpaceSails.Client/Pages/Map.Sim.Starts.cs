@@ -206,6 +206,14 @@ public partial class Map
     // of the body's surface. "earth" (and any unknown id) falls back to the standard Earth spawn.
     private ShipState PlaceShipForStart(string id)
     {
+        // #1388 · a start whose anchor body this sky does not hold (a Sol save's Selene Gate read against
+        // the Wheel) is laid down at the standard spawn rather than thrown on: CoMoving/CoOrbital index
+        // the ephemeris by id and a missing id is a KeyNotFoundException on the red error page.
+        if (WhatAStartHangsOff(id) is { } anchor && _ephemeris!.Bodies.All(b => b.Id != anchor.BodyId))
+        {
+            return InitializeShipState();
+        }
+
         if (DockedStarts.ContainsKey(id) && WhatAStartHangsOff(id) is { } berth)
         {
             return CoMovingBy(berth.BodyId, berth.OffsetMeters); // the CLAMPED idiom, out along the Sun's radius
