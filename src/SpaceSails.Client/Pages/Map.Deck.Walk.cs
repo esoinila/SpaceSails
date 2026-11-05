@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -242,6 +242,16 @@ public partial class Map
     /// gets home.</param>
     private bool HandleDeckKey(string key, bool shift = false)
     {
+        // #1401 R1-F42 · THE KEYS BELONG TO A DECISION CARD WHILE IT IS UP. Brem Kolt's pitch asks a question, and
+        // a captain walking off (or probing the pad with E) underneath it has answered nothing. Esc and the
+        // card's own buttons are the ways out; the press is consumed so it does not fall through to the helm.
+        if (_hardcaseCard is not null
+            && key is "w" or "W" or "ArrowUp" or "a" or "A" or "ArrowLeft" or "s" or "S" or "ArrowDown"
+                or "d" or "D" or "ArrowRight" or "e" or "E")
+        {
+            return true;
+        }
+
         switch (key)
         {
             case "w" or "W" or "ArrowUp":

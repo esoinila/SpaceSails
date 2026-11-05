@@ -94,3 +94,32 @@ public sealed class ADeadCaptainDoesNotBoardTests
         Assert.True(wouldHaveBeenTheChest > 0, "the swept clocks never drew the chest line, so this proved nothing.");
     }
 }
+
+/// <summary>#1401 R1-F42 · Keys belong to Brem Kolt's decision card while it is up.</summary>
+[SlowGate]
+public sealed class TheKoltCardHoldsTheKeysTests
+{
+    [Fact]
+    public async Task WalkingKeysAndEDoNothingUnderTheCard_AndWorkWithoutIt()
+    {
+        using DeskBench bench = await DeskBench.BootAsync("/map?dock=the-tilt&site=0&land=1");
+        await bench.RenderAsync();
+        var held = (System.Collections.Generic.HashSet<string>)bench.Peek("_deckKeys")!;
+        held.Clear();
+
+        // Control: with no card up, a walking key is taken.
+        Assert.True((bool)bench.CallOnTheDispatcher("HandleDeckKey", "d", false)!);
+        Assert.Contains("d", held);
+        held.Clear();
+
+        bench.Poke("_hardcaseCard", HardcaseRep.OffersFor(InsuranceTier.Basic));
+        string before = bench.Pulse;
+        foreach (string key in new[] { "w", "a", "s", "d", "ArrowUp", "E" })
+        {
+            Assert.True((bool)bench.CallOnTheDispatcher("HandleDeckKey", key, false)!);
+        }
+
+        Assert.Empty(held);
+        Assert.Equal(before, bench.Pulse);
+    }
+}
