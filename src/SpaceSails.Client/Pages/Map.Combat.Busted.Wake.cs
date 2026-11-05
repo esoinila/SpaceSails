@@ -205,16 +205,9 @@ public partial class Map
     /// </summary>
     private void ForgetTheExcursionsGlass()
     {
-        _viewObject = null;
-        _viewObjectWaiting.Clear();
-        _interview = null;
-        _pendingFind = null;
+        DropTheRideCardUnsaid();
+        DropTheStoryCardsUnsaid();
         _patrol.StopUnderway = null;
-        _storyCard = null;
-        _storyWaiting.Clear();
-        _deferredBeats.Clear();
-        _storyPlate = null;
-        _lastRaiseWaited = false;
         _held = PulseHold.Empty;
     }
 

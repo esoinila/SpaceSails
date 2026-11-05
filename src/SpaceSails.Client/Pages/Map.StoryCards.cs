@@ -412,6 +412,17 @@ public sealed partial class Map
     /// An event that raises a card HOLDS its ranked lines rather than pulsing them under the backdrop, so the
     /// ✕ is where they are finally said. Every road out of the card comes through here — Esc, Enter, the
     /// backdrop, the button — which is why nothing anywhere clears <c>_storyCard</c> by hand.</para></summary>
+    /// <summary>#1398/#1429 · The story card, the line behind it, the plate and the deferred beats, dropped UNSAID
+    /// (see <see cref="DropTheRideCardUnsaid"/>). The one hand-clear of the slot besides <see cref="CloseStoryCard"/>.</summary>
+    private void DropTheStoryCardsUnsaid()
+    {
+        _storyCard = null;
+        _storyWaiting.Clear();
+        _deferredBeats.Clear();
+        _storyPlate = null;
+        _lastRaiseWaited = false;
+    }
+
     private void CloseStoryCard()
     {
         _storyCard = null;

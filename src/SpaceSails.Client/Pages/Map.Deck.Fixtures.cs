@@ -165,6 +165,17 @@ public partial class Map
     /// (#684) — holds its ranked lines rather than pulsing them under the backdrop, so this is the moment
     /// the winner is finally said. Every road out of the card (Esc, Enter, E again, the backdrop, Close)
     /// comes through here.</summary>
+    /// <summary>#1398/#1429 · The ride's card, its queue and what waits on its answer, dropped UNSAID: for a life or an
+    /// excursion that is being thrown away, where the close door's side effects (a guard stop answered, a held line
+    /// pulsed) would be written into the next one. The one hand-clear of the slot besides <see cref="CloseViewObject"/>.</summary>
+    private void DropTheRideCardUnsaid()
+    {
+        _viewObject = null;
+        _viewObjectWaiting.Clear();
+        _interview = null;
+        _pendingFind = null;
+    }
+
     private void CloseViewObject()
     {
         _viewObject = null;

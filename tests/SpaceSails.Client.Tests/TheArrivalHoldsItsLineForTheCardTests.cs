@@ -154,7 +154,7 @@ public sealed class TheArrivalHoldsItsLineForTheCardTests
             {
                 int by = File.ReadAllText(file).Split($"{field} = null").Length - 1;
                 string owner = field == "_viewObject" ? "Map.Deck.Fixtures.cs" : "Map.StoryCards.cs";
-                int allowed = Path.GetFileName(file) == owner ? 1 : 0;   // the Close method itself
+                int allowed = Path.GetFileName(file) == owner ? 2 : 0;   // the Close method itself, and #1429's DropThe…Unsaid (a discarded life/excursion)
                 Assert.True(by <= allowed,
                     $"{Path.GetFileName(file)} clears {field} by hand — that is a road out of the card that " +
                     "never releases what the card was standing on (#768). Call the Close method.");

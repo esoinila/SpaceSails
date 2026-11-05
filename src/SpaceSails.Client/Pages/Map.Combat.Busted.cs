@@ -163,8 +163,10 @@ public partial class Map
     /// <para>#633 · Both branches invented this parameter independently, for the same reason, one day apart
     /// — <c>known</c> here and <c>forcedCause</c> on <c>main</c> (#538's sweep team). One name survives, and
     /// it is this one: nothing is being FORCED, the caller simply is not guessing.</para></param>
+    private bool _inspectedHeldStill;
+
     private void TriggerSurfaceOverdrawDeath(
-        SurfaceExcursion dying, bool nerveRanOut, DeathCause? known = null, bool heldStill = false)
+        SurfaceExcursion dying, bool nerveRanOut, DeathCause? known = null)
     {
         if (_busted is not null)
         {
@@ -174,6 +176,8 @@ public partial class Map
         Warp = 1;
         _effectiveWarp = 1;
 
+        bool heldStill = _inspectedHeldStill;   // #1397 (a field, so the method's signature stays the one its callers know)
+        _inspectedHeldStill = false;
         string body = dying.Stop.Body.Name;
         ulong seed = DiceRule.Seed("overdraw", (long)SimTime);
         // #538 · WHO ACTUALLY KILLED YOU. SurfaceEnd only ever answers "the pack, or the rare Joined at a
