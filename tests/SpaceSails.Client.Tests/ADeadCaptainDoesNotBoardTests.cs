@@ -123,3 +123,42 @@ public sealed class TheKoltCardHoldsTheKeysTests
         Assert.Equal(before, bench.Pulse);
     }
 }
+
+/// <summary>#1401 R1-F41 · An Old One the tracker cannot show is not danger.</summary>
+[SlowGate]
+public sealed class AnOldOneOffTheDialIsNotDangerTests
+{
+    [Fact]
+    public async Task OnlyAnOldOneWithinTheTrackersReachHoldsTheStoryCards()
+    {
+        using DeskBench bench = await DeskBench.BootAsync("/map?dock=the-tilt&site=0&land=1");
+        await bench.RenderAsync();
+        var avatarX = (double)bench.Peek("_avatarX")!;
+        var avatarY = (double)bench.Peek("_avatarY")!;
+        double reach = (double)bench.Call("FanReach")!;
+        Assert.True(reach > 0);
+
+        Type reeverType = typeof(SpaceSails.Client.Pages.Map).GetNestedType("Reever",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public)!;
+        object Reever(double dx)
+        {
+            object r = Activator.CreateInstance(reeverType)!;
+            reeverType.GetField("X")!.SetValue(r, avatarX + dx);
+            reeverType.GetField("Y")!.SetValue(r, avatarY);
+            return r;
+        }
+
+        object list = bench.Peek("_reevers")!;
+        System.Reflection.MethodInfo add = list.GetType().GetMethod("Add")!;
+        System.Reflection.MethodInfo clear = list.GetType().GetMethod("Clear")!;
+        clear.Invoke(list, null);
+        Assert.False((bool)bench.Call("CaptainIsInDanger")!);
+
+        add.Invoke(list, [Reever(reach * 3.0)]);
+        Assert.False((bool)bench.Call("CaptainIsInDanger")!, "an Old One far off the dial held the ground's calm.");
+
+        clear.Invoke(list, null);
+        add.Invoke(list, [Reever(reach * 0.5)]);
+        Assert.True((bool)bench.Call("CaptainIsInDanger")!, "an Old One on the dial no longer counts as danger.");
+    }
+}
