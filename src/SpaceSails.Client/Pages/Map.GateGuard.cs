@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
@@ -69,7 +69,9 @@ public partial class Map
     /// </summary>
     private void MeetTheDoorIfThisIsHisFloor(SurfaceExcursion ex)
     {
-        if (ex.Gate is not null || ex.Floor >= 0
+        // #1385 · The head office keeps no man at the door: its B1 is RECEPTION, perfect order and nobody home,
+        // and the lift there asks nothing. Without this line the top pressurised floor of every site was his.
+        if (ex.Gate is not null || ex.Floor >= 0 || UndergroundComplex.IsHeadOffice(ex.Stop.Body.Id)
             || UndergroundComplex.TopPressurisedFloor(ex.Stop.Body.Id) != ex.Floor)
         {
             return;
@@ -159,6 +161,29 @@ public partial class Map
     private IReadOnlyList<UndergroundComplex.LiftStop> PastTheManAtTheDoor(
         SurfaceExcursion ex, IReadOnlyList<UndergroundComplex.LiftStop> stops)
     {
+        // #1393 · …AND HE STANDS IN FRONT OF THE WAY DOWN FROM THE SURFACE TOO. The surface panel used to list
+        // the whole band and ride straight past him to B4: the door was a door only for a captain who happened
+        // to be standing on his floor. From any floor above his, until he is known to be absent, passed or
+        // gone, the panel stops at his floor - the first ride from the surface lands on B1, he is seeded on
+        // the arrival, and the descent below is then the same ride the B1 panel already governs (which is also
+        // where the book files the first pass, by whatever route).
+        if (ex.Floor > UndergroundComplex.TopPressurisedFloor(ex.Stop.Body.Id)
+            && !UndergroundComplex.IsHeadOffice(ex.Stop.Body.Id)
+            && ex.Gate is not { Passed: true } and not { Taken: true } and not { Visit.Posting: GateGuard.Posting.Absent })
+        {
+            int hisFloor = UndergroundComplex.TopPressurisedFloor(ex.Stop.Body.Id)!.Value;
+            var above = new List<UndergroundComplex.LiftStop>(stops.Count);
+            foreach (UndergroundComplex.LiftStop stop in stops)
+            {
+                if (stop.Level >= hisFloor)
+                {
+                    above.Add(stop);
+                }
+            }
+
+            return above;
+        }
+
         if (!TheManKeepsTheWayDown(ex))
         {
             return stops;
