@@ -134,6 +134,7 @@ public partial class Map
     // Load a specific slot by id (the front-door list, the captain's-desk drawer, or Continue-newest).
     private async Task LoadSlot(string? slotId)
     {
+        bool pickerWasUp = _showStartPicker;
         _showStartPicker = false;
         _showSaveDrawer = false;
         await TheRestOfTheBootAsync(); // #161: Continue is clickable while the sky is still being plotted
@@ -146,6 +147,7 @@ public partial class Map
                 // #1388 · a Sol save read in the Wheel's sky names a berth that sky does not hold. Refuse with
                 // a sentence; the live world is left exactly as it was.
                 ShowPulseMessage($"That save is berthed at {vault.Resume?.HavenName ?? vault.Resume?.HavenId}, which this sky does not hold — open it in the world it was saved in.");
+                _showStartPicker = pickerWasUp;   // nothing was loaded: the door the captain pressed stays open
                 StateHasChanged();
                 return;
             }

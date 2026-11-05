@@ -39,9 +39,9 @@ public sealed class ADoggedHatchIsUndoggedAtItsOwnDoorTests
         return map;
     }
 
-    private static string? PressAtTheBridgeDoor(Map map)
+    private static string? PressAtTheDoorOf(Map map, string room)
     {
-        (string _, float x0, float x1, bool top) = System.Array.Find(WreckLayout.Compartments, c => c.Name == "BRIDGE");
+        (string _, float x0, float x1, bool top) = System.Array.Find(WreckLayout.Compartments, c => c.Name == room);
         float x = (float)typeof(Map).GetMethod("VentDoorX", BindingFlags.Static | BindingFlags.NonPublic)!
             .Invoke(null, [x0, x1])!;
         Set(map, "_avatarX", (double)x);
@@ -51,11 +51,13 @@ public sealed class ADoggedHatchIsUndoggedAtItsOwnDoorTests
     }
 
     [Theory]
-    [InlineData(true)]    // ENGINEERING is ten tonnes loaded 400 px away - the card must still be the BRIDGE's
-    [InlineData(false)]   // nothing loaded at all (the valve was cracked) - the dogged hatch still answers
-    public void PressingEAtADoggedHatchOpensThatHatch(bool engineeringLoaded)
+    [InlineData(true, "BRIDGE")]           // ENGINEERING is ten tonnes loaded 400 px away - the card must still be the BRIDGE's
+    [InlineData(false, "BRIDGE")]          // nothing loaded at all (the valve was cracked) - the dogged hatch still answers
+    [InlineData(true, "FORWARD LOCKER")]   // an OPEN doorway, across the spine from the dogged BRIDGE: its card, so it can be dogged
+    [InlineData(false, "FORWARD LOCKER")]  // ...and with nothing blocked anywhere, E at an open doorway still opens its card
+    public void PressingEAtADoorwayOpensThatDoorwaysCard(bool engineeringLoaded, string room)
     {
         Map map = Aboard(engineeringLoaded);
-        Assert.Equal("BRIDGE", PressAtTheBridgeDoor(map));
+        Assert.Equal(room, PressAtTheDoorOf(map, room));
     }
 }

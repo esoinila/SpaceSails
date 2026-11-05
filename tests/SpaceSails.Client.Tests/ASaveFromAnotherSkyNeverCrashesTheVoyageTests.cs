@@ -57,4 +57,75 @@ public sealed class ASaveFromAnotherSkyNeverCrashesTheVoyageTests
             Assert.True(offered == expected, $"{url}: Continue offered = {offered}, expected {expected}");
         }
     }
+
+    private sealed class MemStore : ISlotStore
+    {
+        private readonly System.Collections.Generic.Dictionary<string, string> _map = new(StringComparer.Ordinal);
+        public string? Read(string key) => _map.TryGetValue(key, out string? v) ? v : null;
+        public void Write(string key, string value) => _map[key] = value;
+        public void Clear(string key) => _map.Remove(key);
+    }
+
+    private static void Set(Map page, string field, object? value) =>
+        typeof(Map).GetField(field, Hidden)!.SetValue(page, value);
+
+    private static void Bank(Map page, string slotId, Vault vault, long ticks)
+    {
+        var book = (SaveSlotBook)typeof(Map).GetProperty("Slots", Hidden)!.GetValue(page)!;
+        var meta = (SaveSlotMeta)Call(page, "BuildSlotMeta", vault, SaveSlotKind.Manual)!;
+        book.Save(slotId, VaultSerializer.Save(vault), meta with { SavedRealTicks = ticks });
+    }
+
+    private static async Task<Map> AWheelWithAnEmptyShelf()
+    {
+        PastTheGateBench.Boot booted = await PastTheGateBench.BootAsync("/map?scenario=wheel");
+        Assert.Null(booted.Threw);
+        Set(booted.Page, "_activeThreadId", "t1");
+        Set(booted.Page, "_slots", new SaveSlotBook(new MemStore(), "t1"));
+        Set(booted.Page, "_slotsBoundThreadId", "t1");
+        return booted.Page;
+    }
+
+    private static Vault AWheelSave(Map page) => new()
+    {
+        SavedSimTime = 2000,
+        Resume = new ResumeSection
+        {
+            HavenId = ((ICelestialEphemeris)typeof(Map).GetField("_ephemeris", Hidden)!.GetValue(page)!).Bodies[0].Id,
+            HavenName = "Somewhere in the Wheel", WasDocked = true,
+        },
+    };
+
+    [Fact]
+    public async Task TheDrawerOffersContinueOnceANewVoyageHasAutosavedOverTheSolSave()
+    {
+        // Boot peek found the Sol save; then a Wheel voyage autosaved; then the logbook opens from the desk
+        // (or the death card). Continue loads the NEWEST save - so it is judged on the newest save.
+        Map page = await AWheelWithAnEmptyShelf();
+        Bank(page, "auto", ASolSaveAtSeleneGate(), ticks: 1);
+        Call(page, "OpenSaveDrawer");
+        Assert.False((bool)typeof(Map).GetProperty("ContinueIsOffered", Hidden)!.GetValue(page)!, "the Sol save is newest");
+
+        Bank(page, "auto", AWheelSave(page), ticks: 2);
+        Call(page, "OpenSaveDrawer");
+        Assert.True((bool)typeof(Map).GetProperty("ContinueIsOffered", Hidden)!.GetValue(page)!,
+            "the newest save is a Wheel voyage this sky can hold");
+    }
+
+    [Fact]
+    public async Task ARefusedLoadSaysSoLeavesTheWorldAloneAndKeepsThePickerUp()
+    {
+        Map page = await AWheelWithAnEmptyShelf();
+        Bank(page, "auto", ASolSaveAtSeleneGate(), ticks: 1);
+        Set(page, "_showStartPicker", true);
+        object shipBefore = typeof(Map).GetField("_ship", Hidden)!.GetValue(page)!;
+
+        await (Task)Call(page, "LoadSlot", "auto")!;
+
+        Assert.True((bool)typeof(Map).GetField("_showStartPicker", Hidden)!.GetValue(page)!, "the picker was closed by a refused load");
+        Assert.Equal(shipBefore, typeof(Map).GetField("_ship", Hidden)!.GetValue(page));
+        object pulse = typeof(Map).GetField("_pulse", Hidden)!.GetValue(page)!;
+        string? message = (string?)pulse.GetType().GetProperty("Message")!.GetValue(pulse);
+        Assert.Contains("does not hold", message);
+    }
 }

@@ -1,4 +1,4 @@
-﻿using SpaceSails.Client.Rendering;
+using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -119,13 +119,12 @@ public sealed partial class Map
 
         foreach ((string name, float x0, float x1, bool top) in WreckLayout.Compartments)
         {
-            // #1381 · EVERY DOORWAY THE DECK WALLS, not only the ones ten tonnes are holding. The deck draws a
-            // pressure-door console at each BlockedDoors() doorway - loaded or dogged by hand - so the press
-            // must dispatch on the same set. Asking only for the loaded ones sent E at a dogged hatch to the
-            // nearest LOADED door (ENGINEERING's, 400 px away) and, once the valve was cracked, to nothing at
-            // all, leaving the hand-dogged hatch with no way to be undogged at the door.
-            if (!_ventSpaces.TryGetValue(name, out HullVenting.Space s)
-                || !HullVenting.DoorwayBlocked(s, _spinePressurised))
+            // #1381 · EVERY DOORWAY, open or shut. The deck draws a pressure-door console at each doorway
+            // (WreckInterior), so the press must dispatch on the compartment whose doorway the captain is
+            // standing at - not on the loaded ones only, which sent E at a dogged hatch to the nearest LOADED
+            // door (ENGINEERING's, 400 px away) and left an open one with no way to be dogged at its door.
+            // The card itself renders the right branch: gauge when loaded, dog/undog when not.
+            if (!_ventSpaces.TryGetValue(name, out _))
             {
                 continue;
             }
@@ -156,7 +155,7 @@ public sealed partial class Map
     /// still had an atmosphere does not afterwards.</summary>
     private void EqualiseAtDoor(string name)
     {
-        if (_wreck is null || !_ventSpaces.TryGetValue(name, out HullVenting.Space s))
+        if (_wreck is null || !_ventSpaces.TryGetValue(name, out _))
         {
             return;
         }

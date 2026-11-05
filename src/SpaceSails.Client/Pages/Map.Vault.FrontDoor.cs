@@ -42,7 +42,24 @@ public partial class Map
         RefreshSlotList();
         _resumeAvailable = Slots.Newest() is not null;
         _resumeHavenName = Slots.Newest()?.Where;
+        // #1388 · …and the vault Continue will actually load, so ContinueIsOffered judges the CURRENT newest save
+        // and not whichever one the boot peek found (a new voyage autosaves over it).
+        _pendingResumeVault = NewestVaultOrNull();
         _showSaveDrawer = true;
+    }
+
+    private Vault? NewestVaultOrNull()
+    {
+        try
+        {
+            return Slots.Newest() is { } newest && Slots.ReadPayload(newest.Id) is { } raw && !string.IsNullOrWhiteSpace(raw)
+                ? VaultSerializer.Load(raw)
+                : null;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private void CloseSaveDrawer() => _showSaveDrawer = false;
