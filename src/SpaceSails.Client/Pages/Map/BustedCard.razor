@@ -85,13 +85,21 @@
                            behind the backdrop. So the shipped sentence rides the shipped painting, exactly
                            as it would have on a card of its own — and nothing is shown twice. *@
                         <div class="busted-hail busted-collector-hail">
-                            <img class="busted-hail-art" src="@StoryBeats.ArtFile(StoryBeats.Beat.CollectorHail)"
+                            <img class="busted-hail-art" src="@(CollectorLanding.IsAGroundCrew(bust.HunterId) ? CollectorLanding.WritArtOnFoot : StoryBeats.ArtFile(StoryBeats.Beat.CollectorHail))"
                                  alt="" aria-hidden="true" onerror="this.style.display='none'" />
-                            <span>⛓ CAUGHT — @bust.HunterCallsign has you grappled</span>
-                            <div class="busted-hail-caption">@StoryBeats.Caption(StoryBeats.Beat.CollectorHail, bust.HunterCallsign)</div>
+                            <span>@(CollectorLanding.IsAGroundCrew(bust.HunterId) ? CollectorLanding.WritHeaderOnFoot(bust.HunterCallsign) : $"⛓ CAUGHT — {bust.HunterCallsign} has you grappled")</span>
+                            @* #1392 · on foot the caption is the crew's, not a window full of grapples *@
+                            <div class="busted-hail-caption">@(CollectorLanding.IsAGroundCrew(bust.HunterId) ? CollectorLanding.WritCaptionOnFoot(bust.HunterCallsign) : StoryBeats.Caption(StoryBeats.Beat.CollectorHail, bust.HunterCallsign))</div>
                         </div>
                         <div class="busted-heat">Heat @HeatFlames(bust.Heat) · exposure: @BustedRule.ExposurePhrase(bust.Heat)</div>
-                        <div class="busted-quote">"Heave to. We're collecting. This goes easy or it goes @(bust.Heat >= EncounterRule.MaxHeatLevel ? "Bolivia" : "hard") — your call, captain."</div>
+                        @if (CollectorLanding.IsAGroundCrew(bust.HunterId))
+                        {
+                            <div class="busted-quote">@CollectorLanding.WritQuoteOnFoot(bust.Heat >= EncounterRule.MaxHeatLevel ? "Bolivia" : "hard")</div>
+                        }
+                        else
+                        {
+                            <div class="busted-quote">"Heave to. We're collecting. This goes easy or it goes @(bust.Heat >= EncounterRule.MaxHeatLevel ? "Bolivia" : "hard") — your call, captain."</div>
+                        }
                         @* #422 arc 2 — THE COLLECTOR'S WRIT. The first time a collector grapples you, you get a
                            look at the writ they carry, and it names a policy number, not a manifest. The shard
                            is glimpsed here; the readout below keeps it. *@
@@ -155,7 +163,7 @@
                        catch ends on — the silence is the treasure, not a different button. *@
                     case BustedEncounter.Stage.NoContactLogged:
                         <div class="busted-hail">@SpaceSails.Core.BlackOpsKey.NoContactLoggedPlate</div>
-                        <button type="button" class="btn btn-outline-light busted-close" @onclick="() => Dismiss(CloseBusted)">Fly on</button>
+                        <button type="button" class="btn btn-outline-light busted-close" @onclick="() => Dismiss(CloseBusted)">@CollectorLanding.CloseFace(bust.HunterId)</button>
                         break;
 
                     case BustedEncounter.Stage.Confiscated:
@@ -192,7 +200,7 @@
                             <div class="busted-roll">Collector: @rr.Defender.Describe()</div>
                         }
                         <div class="busted-quote">@bust.ResultMessage</div>
-                        <button type="button" class="btn btn-outline-light busted-close" @onclick="() => Dismiss(CloseBusted)">Fly on</button>
+                        <button type="button" class="btn btn-outline-light busted-close" @onclick="() => Dismiss(CloseBusted)">@CollectorLanding.CloseFace(bust.HunterId)</button>
                         break;
 
                     case BustedEncounter.Stage.ResistLost:
@@ -263,7 +271,7 @@
                                DeathNarration.Tail, which answers "" for an impact; the guard that pins the
                                law (OnlyACOLLECTORDeathTalksAboutTheFreezeFrame) tests Tail, and the markup
                                was quietly going round it. Both faults are one fix: read the seam. *@
-                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
+                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
                             @* #997 wave 7 · THE OTHER DOOR ONTO THE SAVE SURFACE, ON THE SHELL'S OWN MECHANISM.
                                The card root has been the shell's since wave 3; this row was the last hand-rolled thing on it,
                                and #951 put it on all four death panels — which makes it the way out every player who dies
@@ -299,7 +307,7 @@
                                hardcode the nerve line for everything but Joined — true while nerve was the
                                only thing that ever killed you, wrong now that the five blows decide. *@
                             <div class="busted-freeze-caption">@DeathNarration.SurfaceCaption(bust.Cause, bust.NerveRanOut)</div>
-                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
+                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
                             @* #997 wave 7 · THE OTHER DOOR ONTO THE SAVE SURFACE, ON THE SHELL'S OWN MECHANISM.
                                The card root has been the shell's since wave 3; this row was the last hand-rolled thing on it,
                                and #951 put it on all four death panels — which makes it the way out every player who dies
@@ -371,7 +379,7 @@
                                 <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause, bust.Place)" alt="" aria-hidden="true" />
                             </div>
                             <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause)</div>
-                            <div class="busted-whathappened-line">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName)</div>
+                            <div class="busted-whathappened-line">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill)</div>
                         </div>
                         @* The old hull erupting, one clean hero fireball — the brain-backup beat proper. *@
                         <div class="busted-freeze-art busted-explosion has-art" title="art: the old ship blowing up — the kerosene-explosion budget">

@@ -163,8 +163,10 @@ public partial class Map
     /// <para>#633 · Both branches invented this parameter independently, for the same reason, one day apart
     /// — <c>known</c> here and <c>forcedCause</c> on <c>main</c> (#538's sweep team). One name survives, and
     /// it is this one: nothing is being FORCED, the caller simply is not guessing.</para></param>
+    /// <param name="heldStill">#1397 · For an Inspected death: the captain kept still through the challenge. The
+    /// card and pulse say it made no difference rather than telling a motionless man he did not stand still.</param>
     private void TriggerSurfaceOverdrawDeath(
-        SurfaceExcursion dying, bool nerveRanOut, DeathCause? known = null)
+        SurfaceExcursion dying, bool nerveRanOut, DeathCause? known = null, bool heldStill = false)
     {
         if (_busted is not null)
         {
@@ -225,6 +227,7 @@ public partial class Map
             Place = place,
             NerveRanOut = nerveRanOut,
             DeathBodyName = body,
+            HeldStill = heldStill,   // #1397
         };
 
         RendererInterop.PlayCue("alarm");
@@ -239,6 +242,8 @@ public partial class Map
             DeathCause.Scuttled =>
                 $"☢ The overload ran out with the captain still aboard the {body}. She goes all at once and mostly inward. The insurance will need a new name.",
             // Nothing about this one is about nerve, so it must not narrate as if it were.
+            DeathCause.Inspected when heldStill =>
+                $"🕶 Found aboard {body}, told to stand still, and standing still. Three seconds, and the sweep goes on down the corridor. The insurance will need a new name.",
             DeathCause.Inspected =>
                 $"🕶 Found aboard {body}, told to stand still, and not standing still. The sweep goes on down the corridor. The insurance will need a new name.",
             _ =>

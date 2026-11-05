@@ -404,6 +404,17 @@ public sealed partial class Map
         }
     }
 
+    /// <summary>#1398/#1429 · The story card, the line behind it, the plate and the deferred beats, dropped UNSAID
+    /// (see <see cref="DropTheRideCardUnsaid"/>). The one hand-clear of the slot besides <see cref="CloseStoryCard"/>.</summary>
+    private void DropTheStoryCardsUnsaid()
+    {
+        _storyCard = null;
+        _storyWaiting.Clear();
+        _deferredBeats.Clear();
+        _storyPlate = null;
+        _lastRaiseWaited = false;
+    }
+
     /// <summary>Put the card away. Focus is NOT touched here: every mouse dismissal routes through
     /// <c>Dismiss(...)</c>, which owns handing the keyboard back — the #470 seam, and the reason nine cards used
     /// to leave the deck keys dead.

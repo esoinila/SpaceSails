@@ -152,7 +152,7 @@ public partial class Map
 
     /// <summary>The challenge ran out. Routed into the same staged death the overdraw and the fifth blow use, so
     /// the piracy insurance issues a new captain and the run continues — Fail Forward, and never a special case.</summary>
-    private void ChallengeRunsOut()
+    private void ChallengeRunsOut(Sweeper s)
     {
         if (_surface is not { } ex)
         {
@@ -164,6 +164,9 @@ public partial class Map
         RendererInterop.PlayCue("alarm");
         // The cause is KNOWN here, so it is passed rather than rolled: being shot by a professional is not
         // being run down by the pack, and the card used to say it was.
-        TriggerSurfaceOverdrawDeath(ex, nerveRanOut: false, known: DeathCause.Inspected);
+        // #1397 · …and what the captain DID with the three seconds. He was found where LastSeen says; a captain who
+        // is still there obeyed the order and it made no difference, and the card may not say he did not.
+        bool heldStill = InspectionTeam.HeldStill(s.LastSeenX, s.LastSeenY, _avatarX, _avatarY);
+        TriggerSurfaceOverdrawDeath(ex, nerveRanOut: false, known: DeathCause.Inspected, heldStill: heldStill);
     }
 }
