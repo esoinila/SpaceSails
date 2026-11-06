@@ -1517,11 +1517,11 @@ the assembled shard texts readable beneath it (mirrors the KAAMOS readout).
 **The one-URL shortcuts (these GRANT the shards):**
 
 - **`?nebula=N`** assembles the first N fragments in canonical order; **`?nebula=all`** assembles every one
-  (5 intel shards + the capstone contract). At **4 intel** the ledger flips to *"Enough of the small print to
+  (6 intel shards + the capstone contract). At **4 intel** the ledger flips to *"Enough of the small print to
   earn the contract"* and the bar seam starts offering the capstone.
 - The one-time **"▓▓ THE POLICY'S TRUE TERMS RESOLVE"** notice needs the **capstone contract as well as the
-  intel** (`NebulaLore.KnowsTheTruth` is *both*), and the capstone is fragment **6** in canonical order — so
-  `?nebula=4` and even `?nebula=5` fire nothing, and **`?nebula=all` is the only value that fires it.** (This
+  intel** (`NebulaLore.KnowsTheTruth` is *both*), and the capstone is fragment **7** in canonical order — so
+  `?nebula=4` through `?nebula=6` fire nothing, and **`?nebula=all` is the only value that fires it.** (This
   section used to say "at N ≥ 4"; it was wrong, and `HoldingEveryClauseButNotTheContractIsNotKnowingTheTruth`
   now pins it.)
 - `/map?nebula=3` is the fastest look at the mid-arc card; `/map?nebula=all` is the end state.
