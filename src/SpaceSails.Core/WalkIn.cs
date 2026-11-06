@@ -125,6 +125,10 @@ public static class WalkIn
     /// <summary>The captain's two buttons. Two, and never three: there is nothing to bargain about.</summary>
     public const string Yes = "Yes — I'll find it";
 
+    /// <summary>U01-F25 · the same button, answering HER ask: Ilse wants a berth found ("it"); Nadia asked
+    /// for "the man, not the file", and the button says him.</summary>
+    public static string YesFor(Who who) => who == Who.Ilse ? Yes : "Yes — I'll find him";
+
     /// <summary>…and the other one.</summary>
     public const string No = "No";
 

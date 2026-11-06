@@ -73,7 +73,9 @@ public sealed partial class Map
         _finderCase = c;
         _finderProgress = _finderProgress with { Taken = true };
         FileNoteAbout(FinderCase.LeadBody, FinderGlyph, c.SubjectLine);
-        LogAutopilotEvent($"{FinderGlyph} {FinderCase.DisplayName}: {FinderCase.LeadTitle}.");
+        // U01-F10/F11 · told as the line it is, not logged as an autopilot event: the case is a bar-seat
+        // matter, so it says where it was filed and what comes next.
+        ShowPulseMessage($"{FinderGlyph} {FinderCase.LeadTitle} — filed in the Captain's ledger (0). NEXT: work the case at a top.");
         RequestVaultSave();
     }
 

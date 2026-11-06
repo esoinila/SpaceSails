@@ -45,13 +45,13 @@ public sealed record ShipMission(
     /// "Hunt: He3 haulers", "Trade run: Earth → Mars", "Lay low: Enceladus",
     /// "Survey: Saturn–Mars corridor", "Free sailing".
     /// </summary>
-    public string Describe() => Kind switch
+    public string Describe(Func<string, string>? bodyName = null) => Kind switch
     {
         MissionKind.Hunt => $"Hunt: {TargetCargo} haulers",
-        MissionKind.TradeRun => $"Trade run: {Humanize(OriginBodyId)} → {Humanize(DestinationBodyId)}",
-        MissionKind.LayLow => $"Lay low: {Humanize(HavenBodyId)}",
-        MissionKind.Survey => $"Survey: {Humanize(CorridorA)}–{Humanize(CorridorB)} corridor",
-        MissionKind.FlyTo => $"Make for: {Humanize(DestinationBodyId)} orbit",
+        MissionKind.TradeRun => $"Trade run: {Humanize(OriginBodyId, bodyName)} → {Humanize(DestinationBodyId, bodyName)}",
+        MissionKind.LayLow => $"Lay low: {Humanize(HavenBodyId, bodyName)}",
+        MissionKind.Survey => $"Survey: {Humanize(CorridorA, bodyName)}–{Humanize(CorridorB, bodyName)} corridor",
+        MissionKind.FlyTo => $"Make for: {Humanize(DestinationBodyId, bodyName)} orbit",
         _ => "Free sailing",
     };
 
@@ -64,7 +64,20 @@ public sealed record ShipMission(
     /// the second, and a second copy of "what is this body called" is the shape at the top of the landing-site
     /// spec.</para>
     /// </summary>
-    private static string Humanize(string? bodyId) => BodyNames.Display(bodyId);
+    private static string Humanize(string? bodyId, Func<string, string>? bodyName)
+    {
+        // U01-F20 · the live name when the caller can read one (the expedition rock is named per gig, and
+        // its id humanizes to a second, different name); the id's own humanized form otherwise.
+        if (bodyName is not null && bodyId is not null)
+        {
+            string live = bodyName(bodyId);
+            if (!string.IsNullOrWhiteSpace(live) && live != bodyId)
+            {
+                return live;
+            }
+        }
+        return BodyNames.Display(bodyId);
+    }
 }
 
 /// <summary>

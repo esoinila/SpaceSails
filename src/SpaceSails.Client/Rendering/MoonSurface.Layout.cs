@@ -190,7 +190,7 @@ public static partial class MoonSurface
         {
             structures.Add(new DeckPlan.Structure(
                 AnchorX - (float)Monolith.HalfWidth, AnchorY - (float)Monolith.HalfHeight,
-                AnchorX + (float)Monolith.HalfWidth, AnchorY + (float)Monolith.HalfHeight));
+                AnchorX + (float)Monolith.HalfWidth, AnchorY + (float)Monolith.HalfHeight, IsStone: true));
         }
 
         // #649 · HOW WIDE "THE DEEP AREA" IS depends on what is standing in it. This was a flat 16 du either
@@ -396,6 +396,16 @@ public static partial class MoonSurface
                 AnchorX, AnchorY - (float)FalseSlab.HalfHeight - 2f,
                 FalseSlab.ConsoleLabel, FalseSlab.ArtUrl, FalseSlab.Lore));
         }
+
+        // R1-F81 · ONE LABEL PER OBJECT. A landmark painted its name in the mass while its own console printed
+        // the same name at the face ~50 px away ('▮ THE MONOLITH', '◫ THE FALSE SLAB'). The console is the
+        // one the captain presses, so it keeps the name and the mass's twin is dropped.
+        //
+        // Only the two landmark names: the ship's own room labels (CANTINA, SHUTTLE BAY) legitimately repeat a
+        // console's text and must stay.
+        string[] landmarkNames = [Monolith.ConsoleLabel, FalseSlab.ConsoleLabel];
+        labels.RemoveAll(l => Array.IndexOf(landmarkNames, l.Text) >= 0
+            && consoles.Exists(c => string.Equals(c.Label, l.Text, StringComparison.Ordinal)));
 
         SurfaceScenery.Mark[] scenery = [.. sceneryList];
 

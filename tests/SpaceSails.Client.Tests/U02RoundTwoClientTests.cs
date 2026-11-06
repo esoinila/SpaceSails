@@ -69,7 +69,7 @@ public sealed class U02RoundTwoClientTests
             Assert.Matches(@"~\d+ min", label);
             Assert.DoesNotContain("now", label);
             // "dockside" only where the partner is within a few km at matched speed.
-            Assert.Equal(distance <= 10_000 && relSpeed <= 1.0, label.Contains("dockside"));
+            Assert.Equal(distance <= 10_000 && relSpeed <= 50.0, label.Contains("dockside"));
         }
     }
 

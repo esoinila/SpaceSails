@@ -567,6 +567,58 @@ public sealed class TheFinderWalksTheWholeCaseTests
             + "case in it, so nothing above it is proving anything.");
     }
 
+    /// <summary>
+    /// <b>U01-F10 / F11 (#1415) · TAKING THE JOB IS TOLD, AND THE LEAD IS HER OWN.</b> The card used to close
+    /// with nothing said, and the ledger then stamped her lead "found on the ground" and logged it as an
+    /// autopilot event. Now one pulse says where it was filed and what comes next, and the field page names
+    /// her. <b>RED</b> by restoring the old <c>LogAutopilotEvent</c> line in <c>TakeTheCase</c> (no pulse) and
+    /// by returning the old fixed provenance string.
+    /// </summary>
+    [Fact]
+    public void TakingTheJobIsToldWithANextStepAndTheLeadNamesHerNotTheGround()
+    {
+        Pages.Map map = SheIsAtTheTable();
+        Invoke(map, "AnswerTheFinder", true);
+
+        PulseSlot pulse = (PulseSlot)Field(map, "_pulse")!;
+        Assert.NotNull(pulse.Message);
+        Assert.Contains("Captain's ledger", pulse.Message, StringComparison.Ordinal);
+        Assert.Contains("NEXT", pulse.Message, StringComparison.Ordinal);
+
+        FieldFinding page = FieldNotes.PerPlace(Notes(map)).First(f => f.Lines.Any(l => l.Text == FinderCase.LeadBody));
+        string provenance = (string)typeof(Pages.Map)
+            .GetMethod("FieldProvenance", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)!
+            .Invoke(null, [page])!;
+        Assert.Contains(FinderCase.DisplayName, provenance, StringComparison.Ordinal);
+        Assert.DoesNotContain("found on the ground", provenance, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// <b>U01-F06 (#1415) · THE COGNAC TOAST WAITS BEHIND ITS CARD.</b> The 🥂 line used to be written to the
+    /// pulse while the TWO GLASSES card's scrim was up, so it expired unseen and was gone when "…go on"
+    /// closed the card. Now it is held and said when the glass clears. <b>RED</b> by putting the old
+    /// unconditional <c>ShowPulseMessage</c> back in <c>TryBond</c>.
+    /// </summary>
+    [Fact]
+    public void TheCognacToastIsHeldBehindTheCardAndSaidWhenItCloses()
+    {
+        Pages.Map map = AshoreAt(TheRedEye);
+        Set(map, "_bondForce", true);
+        Invoke(map, "TryBond", StrangerBond.Scare.Shudder, false, 1000.0);
+
+        Assert.NotNull(Field(map, "_storyCard"));
+        PulseSlot up = (PulseSlot)Field(map, "_pulse")!;
+        Assert.False((up.Message ?? "").StartsWith("🥂", StringComparison.Ordinal),
+            "the toast was written under the card's scrim.");
+        var held = (PulseHold)Field(map, "_held")!;
+        Assert.Contains(held.Queued, w => w.Message.StartsWith("🥂", StringComparison.Ordinal));
+
+        Invoke(map, "CloseStoryCard");
+        Invoke(map, "SayWhatTheScrimWasStandingOn");
+        PulseSlot after = (PulseSlot)Field(map, "_pulse")!;
+        Assert.StartsWith("🥂", after.Message ?? "", StringComparison.Ordinal);
+    }
+
     // ══ THE BENCH ════════════════════════════════════════════════════════════════════════════════════════
 
     /// <summary>A page clamped onto a berth, standing in its bar, with a real world and a real traffic wave

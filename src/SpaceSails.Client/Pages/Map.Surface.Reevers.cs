@@ -15,11 +15,21 @@ public partial class Map
 {
     private void StepReevers(double dtRealSeconds)
     {
-        if (_surface is null || _reevers.Count == 0)
+        if (_surface is null)
         {
             return;
         }
         double dt = Math.Min(dtRealSeconds, 0.1);
+        bool packHeld = _surface.PackStillSeconds > 0;   // R1-F27: the stone has the whole pack's attention
+        if (packHeld)
+        {
+            // Counted down before the empty-field return so leftover hold seconds cannot pin a fresh pack later.
+            _surface.PackStillSeconds = Math.Max(0, _surface.PackStillSeconds - dt);
+        }
+        if (_reevers.Count == 0)
+        {
+            return;
+        }
         double step = ReeverSpeed * dt;
         // The other half of the same bug: being CAUGHT was gated on the moon's safe line too, so aboard a
         // wreck nothing was ever found by anything — no blow, and no nerve either.
@@ -124,7 +134,7 @@ public partial class Map
             // #314: a live sentry pins the Old Ones on its arc — a Reever under a deployed, non-dry bot's
             // guns is held where it stands (stopped, not slowed) while it's ground down. Once the counter
             // reads 00 the gun goes quiet and the shamble resumes. This is "bots buy time, never safety".
-            if (PinnedBySentry(r))
+            if (packHeld || PinnedBySentry(r))
             {
                 // The pin is law: the Old One is held where it stands while it's ground down. It is NOT a
                 // statue, though (owner, cruise 2026-07-19) — it shivers in place. Capture the anchor once
@@ -139,7 +149,9 @@ public partial class Map
                 r.Vx = 0;
                 r.Vy = 0;
                 ApplyIdleShiver(r, theirLegs, reeverRadius, now,
-                    Math.Atan2(_avatarY - r.AnchorY, _avatarX - r.AnchorX));
+                    packHeld
+                        ? Math.Atan2(MoonSurface.AnchorY - r.AnchorY, MoonSurface.AnchorX - r.AnchorX)   // square on to the stone
+                        : Math.Atan2(_avatarY - r.AnchorY, _avatarX - r.AnchorX));
                 if (onSurface && ReeverChase.Caught(r.X, r.Y, _avatarX, _avatarY))
                 {
                     caught = true;

@@ -589,7 +589,9 @@ chip's text not matching the desk's own "ship's articles" headline.
    break-in with the status label **"▶ Crack hatch V-06 — code …"** (the hatch id and code are the
    station's own).
 2. Leave the desk and walk the station deck. Press `I`. Confirm the satchel's tab strip reads
-   **🎒 CARRIED · 📓 NOTES · 🗺 MISSIONS**, with a count beside MISSIONS.
+   **🎒 CARRIED · 📓 NOTES · 🧵 THREADS · 🗺 MISSIONS** (four always-drawn tabs; SPREAD and THE BIN join them only while seated
+   or at a bucket), with a count beside MISSIONS. The key opens it anywhere on foot — station deck, bar, ground —
+   and shuts at a desk and in flight.
 3. Press **🗺 MISSIONS**. Confirm the title reads *WHY YOU ARE DOWN HERE*, and that the break-in's
    line shows the job's name, its why, and **the desk's step word for word** — the same hatch id and
    the same code, in the lit ink.
@@ -1585,7 +1587,7 @@ between a tester and the beat under test — and in an automated or backgrounded
 `document.hidden`, so rAF is throttled and WASD never lands. There, the walk is not slow; it is
 **impossible**, and not one bar beat could be smoke-tested at all.
 
-`?ashore=1` boots you docked (default **The Space Bar**; any `?dock=<id>` or `?start=<id>` you pass still
+`?ashore=1` boots you docked (default **THE ROADSTEAD BAR**; any `?dock=<id>` or `?start=<id>` you pass still
 wins) with the captain **already standing one step inside the bar**, facing into the room, Deck up. It
 seats nobody and grants nothing — it moves the captain, exactly as the walk would have.
 
@@ -1615,7 +1617,7 @@ listened to the archived dead too long. Most of what she says is beautiful noise
 but is TRUE"* and can leak a real KAAMOS or NEBULA shard. She is a corner fixture only
 `OracleRant.PresenceChance` (55 %) of watches, so until this cheat existed her whole scene was a coin flip
 to open — and unlike `?kaamos=N` / `?nebula=N`, **nothing ever granted a rant**. `?oracle=1` boots you
-docked at a bar (default **The Space Bar**; combine with `?dock=<id>` for another) and **seats her**,
+docked at a bar (default **THE ROADSTEAD BAR**; combine with `?dock=<id>` for another) and **seats her**,
 whatever her rota says. It hands you the person, never the truth: the lines are the same seeded stream the
 rota would have given.
 
@@ -1775,11 +1777,11 @@ keys at once with the card two rooms deeper than you are.
 The **warm twin** of the ambient-dread system (#430). The same scares that unsettle you — a hull-shudder, an
 unexplained buzzer, a caution PA — can, at a docked bar, **open a co-present stranger** to you instead of only
 chilling the room: a warm word, a whole new contact, or — the hero — a stranger who **stands you a cognac by
-name** (`OLD PERIHELION`), on the fright. `?bond=1` boots you docked at a bar (default **The Space Bar**;
+name** (`OLD PERIHELION`), on the fright. `?bond=1` boots you docked at a bar (default **THE ROADSTEAD BAR**;
 combine with `?dock=<id>` for another) and **forces the next ambient scare to bond**, guaranteeing the cognac
 beat. The loop:
 
-1. `/map?bond=1` → boot docked at The Space Bar with the regulars (strangers, no history yet) at the tables.
+1. `/map?bond=1` → boot docked at THE ROADSTEAD BAR with the regulars (strangers, no history yet) at the tables.
 2. Walk the bar and wait a few seconds — the cheat fires the first hull-shudder within ~3 s (`〰` toast).
 3. Right after the dread beat, the **stranger-bond toast** lands (`🥂 …`): a co-present stranger — “Barkeep —
    two of the **OLD PERIHELION**, on the fright.” — stands you the cognac, your goodwill with them warms, and

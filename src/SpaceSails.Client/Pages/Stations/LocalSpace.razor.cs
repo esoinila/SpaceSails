@@ -223,7 +223,7 @@ public partial class LocalSpace
     // U02-F02 · A same-orbit deal is fee-free, not instant: the drones still ferry it at the geometry's own
     // pace (13.8 M km away it took minutes). "Dockside" is for a partner within a few km at matched speed.
     private static string SameOrbitWords(double relSpeed, double distance) =>
-        distance <= 10_000 && relSpeed <= 1.0 ? "dockside, by drone" : "by drone";
+        distance <= 10_000 && relSpeed <= 50.0 ? "dockside, by drone" : "by drone";
 
     private string SellButtonLabel(CommerceRule.TradeMode mode, double relSpeed, double distance)
     {

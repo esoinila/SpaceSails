@@ -191,8 +191,12 @@ public sealed partial class DeckPlan
     /// <para>Owner: <i>"if we can see into them from the hall then they don't hide anything."</i> A narrow gap
     /// left black reads as a space, and a hiding place drawn as a space is not a hiding place — the whole
     /// knock-on-the-walls search was readable off the map until these were filled.</para>
+    ///
+    /// <para>R1-F32 · <paramref name="IsStone"/> is a mass that is rock and not made: the monolith. It is one flat
+    /// fill of the body's stone ink and carries NO section hatch, because 45° hatching is the drawing idiom for
+    /// CUT material and the one object whose card says "No seam" must not be drawn as if somebody had cut it.</para>
     /// </summary>
-    public readonly record struct Structure(float X0, float Y0, float X1, float Y1);
+    public readonly record struct Structure(float X0, float Y0, float X1, float Y1, bool IsStone = false);
 
     /// <summary>
     /// #868 · ONE PIECE OF FURNITURE, AS THE RECTANGLE IT STANDS ON — filled, so a captain can see it.

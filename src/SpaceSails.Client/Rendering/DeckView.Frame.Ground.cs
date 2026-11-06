@@ -175,6 +175,17 @@ public sealed partial class DeckView
                 continue;
             }
 
+            if (s.IsStone)
+            {
+                // R1-F32 · ROCK, NOT CUT FOAM: one flat fill of the body's stone ink, no hatch. Dimmed so the
+                // mass reads as the darkest solid thing in the picture while its outline (drawn in the same
+                // stone ink as a wall) still separates it from the void.
+                RgbaColor rock = plan.StoneInk is { } rockInk ? new RgbaColor(rockInk.R, rockInk.G, rockInk.B) : StoneLine;
+                FillRect(fx0, fy0, fw, fh, new RgbaColor(
+                    (byte)(rock.R * 0.45), (byte)(rock.G * 0.45), (byte)(rock.B * 0.45), 255));
+                continue;
+            }
+
             FillRect(fx0, fy0, fw, fh, FoamFill);
 
             // SECTION HATCH — the drawing convention for CUT MATERIAL, which is exactly what this is. Owner:

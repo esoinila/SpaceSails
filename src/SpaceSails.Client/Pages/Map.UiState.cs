@@ -181,7 +181,7 @@ public partial class Map
         // #207 dock-wins: a berthed ship's chip reads the same truth as the pilot banner — "Docked
         // at X" — never a stale "Make for X · ETA" from a navigation that already completed.
         bool docked = NavLockedByDock;
-        string primary = DeskChipStatus.PrimaryLine(docked, DockedBodyName(), _mission.Describe());
+        string primary = DeskChipStatus.PrimaryLine(docked, DockedBodyName(), _mission.Describe(BodyName));
         string? eta = DeskChipStatus.EtaLine(docked, _mission.Kind == MissionKind.FlyTo ? DestinationEta() : null);
         // #207: the live contract's next action rides the captain's chip while a job is in hand, so
         // "what to do next" is there where the captain is looking, not only in the Quests tab.

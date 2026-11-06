@@ -7,11 +7,58 @@
    moment it's given. *@
 
 @{
+    RenderFragment<QuestItem> JobCard = q =>
+        @<div class="captain-card captain-quest-@q.StatusKind">
+                                <div class="fw-bold">@q.Title</div>
+                                @* #959 · THE PLAIN BLOCK, ABOVE THE VOICE. Owner, on a row that read
+                                   "Bring down Mars Depot / Hunt Mars Depot — hole her sail or board her":
+                                   "What is this job... should I destroy a ship or rob a place?" So the
+                                   verb (a fixed five-word vocabulary), what completion takes AND what the
+                                   target IS, and the honest distance + lane time stand first. @q.Detail
+                                   keeps every word of its voice one line below. Byte for byte the same
+                                   block the offer card showed before the job was accepted. *@
+                                @if (q.Plain is { Count: > 0 } plain)
+                                {
+                                    <div class="job-plain">
+                                        <div class="job-plain-verb">@plain[0]</div>
+                                        <div class="job-plain-takes">@plain[1]</div>
+                                        <div class="job-plain-effort">@plain[2]</div>
+                                    </div>
+                                }
+                                <div class="captain-card-blurb text-secondary small">@q.Detail</div>
+                                @if (q.NextAction is { } next)
+                                {
+                                    @* #175: the live next action, read off ship state — so the card
+                                       tells the captain what to do RIGHT NOW, not just what the job is. *@
+                                    <div class="captain-quest-next small mt-1">▶ @next</div>
+                                }
+                                @if (q.Steps.Count > 0)
+                                {
+                                    <div class="captain-quest-steps small mt-1">
+                                        @foreach (QuestStep step in q.Steps)
+                                        {
+                                            <div class="text-secondary">@step.Icon @step.Text</div>
+                                        }
+                                    </div>
+                                }
+                                @if (q.ShowScopeButton)
+                                {
+                                    <button type="button" class="btn btn-sm btn-info py-0 px-1 mt-1 text-start"
+                                            title="Aim the scope where the tip points and jump to Sensors to run the scan"
+                                            @onclick="() => OnPointScope.InvokeAsync()">
+                                        🔭 Point the scope where the tip says
+                                    </button>
+                                }
+                                <div class="captain-quest-foot">
+                                    <span class="captain-quest-status captain-quest-status-@q.StatusKind">@q.StatusLabel</span>
+                                    <span class="captain-quest-reward">@q.RewardText</span>
+                                </div>
+                            </div>;
     RenderFragment<ShipMission> Card = m =>
         @<div class="captain-card @(IsSelected(m) ? "captain-card-selected" : "")" role="button" tabindex="0"
               title="Give this order — the ship makes for it at once, and the captain's word is final the moment it's given"
               @onclick="() => Pick(m)" @onkeydown="e => OnCardKeyDown(e, m)">
-            @m.Describe()
+            @m.Describe(BodyName)
         </div>;
 }
 
@@ -124,7 +171,7 @@
     {
         <div class="captain-articles">
             <div class="captain-articles-label">@(_view == CaptainView.Status ? "The ship at a glance" : "The ship's articles")</div>
-            <div class="captain-articles-mission">@CurrentMission.Describe()</div>
+            <div class="captain-articles-mission">@CurrentMission.Describe(BodyName)</div>
         </div>
     }
 
@@ -350,63 +397,29 @@
 
                 <div class="captain-ledger-section-label text-info fw-bold small mt-2">⚓ Jobs</div>
                 <div class="captain-group-cards">
-                    @if (Quests.Count == 0)
+                    @if (!Quests.Any(x => x.Heading is null))
                     {
                         <div class="captain-empty">No contracts in hand. Dock at a haven and go ashore — someone at the bar always has work.</div>
                     }
                     else
                     {
-                        @foreach (QuestItem q in Quests)
+                        @foreach (QuestItem q in Quests.Where(x => x.Heading is null))
                         {
-                            <div class="captain-card captain-quest-@q.StatusKind">
-                                <div class="fw-bold">@q.Title</div>
-                                @* #959 · THE PLAIN BLOCK, ABOVE THE VOICE. Owner, on a row that read
-                                   "Bring down Mars Depot / Hunt Mars Depot — hole her sail or board her":
-                                   "What is this job... should I destroy a ship or rob a place?" So the
-                                   verb (a fixed five-word vocabulary), what completion takes AND what the
-                                   target IS, and the honest distance + lane time stand first. @q.Detail
-                                   keeps every word of its voice one line below. Byte for byte the same
-                                   block the offer card showed before the job was accepted. *@
-                                @if (q.Plain is { Count: > 0 } plain)
-                                {
-                                    <div class="job-plain">
-                                        <div class="job-plain-verb">@plain[0]</div>
-                                        <div class="job-plain-takes">@plain[1]</div>
-                                        <div class="job-plain-effort">@plain[2]</div>
-                                    </div>
-                                }
-                                <div class="captain-card-blurb text-secondary small">@q.Detail</div>
-                                @if (q.NextAction is { } next)
-                                {
-                                    @* #175: the live next action, read off ship state — so the card
-                                       tells the captain what to do RIGHT NOW, not just what the job is. *@
-                                    <div class="captain-quest-next small mt-1">▶ @next</div>
-                                }
-                                @if (q.Steps.Count > 0)
-                                {
-                                    <div class="captain-quest-steps small mt-1">
-                                        @foreach (QuestStep step in q.Steps)
-                                        {
-                                            <div class="text-secondary">@step.Icon @step.Text</div>
-                                        }
-                                    </div>
-                                }
-                                @if (q.ShowScopeButton)
-                                {
-                                    <button type="button" class="btn btn-sm btn-info py-0 px-1 mt-1 text-start"
-                                            title="Aim the scope where the tip points and jump to Sensors to run the scan"
-                                            @onclick="() => OnPointScope.InvokeAsync()">
-                                        🔭 Point the scope where the tip says
-                                    </button>
-                                }
-                                <div class="captain-quest-foot">
-                                    <span class="captain-quest-status captain-quest-status-@q.StatusKind">@q.StatusLabel</span>
-                                    <span class="captain-quest-reward">@q.RewardText</span>
-                                </div>
-                            </div>
+                            @JobCard(q)
                         }
                     }
                 </div>
+
+                @foreach (IGrouping<string, QuestItem> other in Quests.Where(x => x.Heading is not null).GroupBy(x => x.Heading!))
+                {
+                    <div class="captain-ledger-section-label text-info fw-bold small mt-3">@other.Key</div>
+                    <div class="captain-group-cards">
+                        @foreach (QuestItem q in other)
+                        {
+                            @JobCard(q)
+                        }
+                    </div>
+                }
 
                 @* PR-WIRE — the favor bank's books (FridaySecondPlan §0). Balances both ways: coin we've
                    parked with a contact (safe from confiscation), and gas money we owe. Read-only here;
