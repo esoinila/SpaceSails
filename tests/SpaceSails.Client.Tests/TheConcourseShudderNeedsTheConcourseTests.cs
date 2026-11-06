@@ -87,6 +87,25 @@ public sealed class TheConcourseShudderNeedsTheConcourseTests
             $"the walk was told a mood line anyway: {pulse.Message}");
     }
 
+    /// <summary>U10-F03 · THE PARROT'S BUBBLE TIMES OUT ON THE WALKED DECK. The sweep lived only in the map frame, which
+    /// a captain on his feet in the docked hall never reaches, so the dock-time squawk sat on the glass all visit.</summary>
+    [Fact]
+    public void TheParrotsBubbleTimesOutWhileTheCaptainWalksTheHall()
+    {
+        SpaceSails.Client.Pages.Map map = ADockedBerth();
+        StandHimOnTheConcourse(map);
+        Assert.True((bool)Read(map, "_deckMode")!, "premise: the captain is on the walked deck.");
+        double now = Convert.ToDouble(Read(map, "_lastTimestampMs") ?? 0.0);
+        Set(map, "_parrotSquawk", "SQUAWK");
+        Set(map, "_parrotBubbleUntilMs", now + 6000.0);
+
+        CastawayBench.Frame(map);
+        Assert.Equal("SQUAWK", Read(map, "_parrotSquawk"));   // anti-vacuous: not swept early
+
+        Invoke(map, "OnTick", now + 20000.0);
+        Assert.Null(Read(map, "_parrotSquawk"));
+    }
+
     /// <summary>U09-F02 · <b>THE CLOCK HOLDS WHILE A STORY PLATE IS UP.</b> The keepsake's first opening landed
     /// beside a concourse shudder in the private cabin; any plate or card on the glass owns the moment.
     /// Anti-vacuous: with the plate gone the same clock fires.</summary>
