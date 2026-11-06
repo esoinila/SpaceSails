@@ -92,6 +92,8 @@ public partial class Map
         // #1450 · Ilse's card (z 1320, .view-object-backdrop) paints over the paper (1240) and her arrival does not close it, so
         // her rung sits ABOVE the paper's. Esc is her Pass, as the shell's way out is, and it must beat the seat rungs too.
         if (_finderCard is not null) { AnswerTheFinder(false); return true; }
+        // #1440 · Brem Kolt's pitch is a decision card (z 1320, like Ilse's): Esc is his "no", as the card's own ✕ is (the walk keys are swallowed under it, #1438). Above the paper it paints over.
+        if (_hardcaseCard is not null) { TellKoltNo(); return true; }
         // #1450 · The bank prompt (title/note inputs, z 1300) paints over the paper and every seat/offer card below; its inputs bubble Esc up here.
         if (_bankPrompt is not null) { CancelBankPrompt(); return true; }
         // #1052 · THE PAPER AT THE TABLE, and its rung is the whole of what "docked, not modal" costs this

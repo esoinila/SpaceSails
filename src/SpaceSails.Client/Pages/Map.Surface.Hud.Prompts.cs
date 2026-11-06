@@ -114,7 +114,7 @@ public partial class Map
                 aboard.Add($"🤖 T — {SentryDoctrine.DeployHereLabel}");
                 aboard.Add($"🤖 ⇧T — {SentryDoctrine.HoldMyLineHomeLabel}");
             }
-            else if (ex.Bots.Any(b => b.Deployed &&
+            else if (ex.Bots.Any(b => b.Deployed && !SurfaceArrival.IsDoorSentry(b.Unit) &&
                      ((b.X - _avatarX) * (b.X - _avatarX)) + ((b.Y - _avatarY) * (b.Y - _avatarY))
                          <= DeckPlan.InteractRadius * DeckPlan.InteractRadius))
             {
@@ -190,7 +190,7 @@ public partial class Map
             parts.Add(_weaponsTight ? "🤖 H — WEAPONS TIGHT (press to free)" : "🤖 H — weapons tight");
         }
         bool carryingBot = ex.Bots.Any(b => !b.Deployed);
-        bool deployedUnderfoot = ex.Bots.Any(b => b.Deployed &&
+        bool deployedUnderfoot = ex.Bots.Any(b => b.Deployed && !SurfaceArrival.IsDoorSentry(b.Unit) &&
             ((b.X - _avatarX) * (b.X - _avatarX)) + ((b.Y - _avatarY) * (b.Y - _avatarY))
                 <= DeckPlan.InteractRadius * DeckPlan.InteractRadius);
         if (carryingBot)

@@ -215,6 +215,23 @@ public sealed class TheNewsIsASeatVerbTests
         Assert.True((bool)bench.Field("_seatedNewsOpen")!, "the first Escape closed the paper hidden under Ilse's card.");
     }
 
+    /// <summary>#1440/#1450 · Brem Kolt's card (z 1320) paints over the paper; Esc is his "no" first.
+    /// RED PROOF: move the <c>_hardcaseCard</c> rung below <c>ThePaperIsOpen</c>.</summary>
+    [Fact]
+    public async Task EscapeTakesKoltsCardBeforeThePaper()
+    {
+        using DeskBench bench = await DeskBench.BootAsync(SatAtABarTop);
+        bench.Poke("_audioArmed", true);
+        bench.CallOnTheDispatcher("OpenSeatedNews");
+        bench.Poke("_hardcaseCard", HardcaseRep.OffersFor(InsuranceTier.None));
+        DeskBench.Painted painted = await bench.RenderAsync();
+        ulong keyboard = DeskBench.TheKeyboard(painted);
+
+        await bench.TypeAsync(keyboard, "Escape");
+        Assert.Null(bench.Field("_hardcaseCard"));
+        Assert.True((bool)bench.Field("_seatedNewsOpen")!, "the first Escape closed the paper under Kolt's card.");
+    }
+
     [Fact]
     public async Task EscapeTakesTheBankPromptBeforeThePaper()
     {

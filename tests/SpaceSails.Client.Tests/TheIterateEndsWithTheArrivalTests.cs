@@ -406,6 +406,12 @@ public sealed class TheIterateEndsWithTheArrivalTests
         // encounter (#952); take the arrival off the plan again and it snaps back to last burn + 90 d, and
         // a scrub left at the old far end would be standing three hundred days outside the picture.
         Set(map, "_horizonChoice", "auto");
+        // #1459 · with no destination the edge door offers only the NEAREST edge pass (here Luna), so this captain says he is bound for Mars,
+        // which is what the bench always meant (it used to ride the tie and be offered Mercury).
+        Set(map, "_destinationBodyId", "mars");
+        Invoke(map, "ReprojectTrajectory");
+        Sweep(map, 200000.0);
+        ScrubToTheEndOfTheLine(map);
         Invoke(map, "AddArriveAtScrub", ArrivalStepRule.ArrivalKind.Orbit);
         ScrubToTheEndOfTheLine(map);
         double reachedFor = Horizon(map);
