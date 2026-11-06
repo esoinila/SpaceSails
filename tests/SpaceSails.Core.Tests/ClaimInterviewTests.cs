@@ -184,7 +184,24 @@ public sealed partial class ClaimInterviewTests
         {
             int bite = ClaimInterview.BiteCr(20, c);
             Assert.InRange(bite, 1, 79);
-            Assert.Equal((int)Math.Round(80 * ClaimInterview.ClauseBitePercent[c - 1] / 100.0, MidpointRounding.AwayFromZero), bite);
+            if (c != ClaimInterview.FirstDayClause)
+                Assert.Equal((int)Math.Round(80 * ClaimInterview.ClauseBitePercent[c - 1] / 100.0, MidpointRounding.AwayFromZero), bite);
+        }
+    }
+
+    /// <summary>U07-F05/F06 · clause 2 says "the first day of any loss": exactly one day at the day-rate comes off (a
+    /// short loss loses all of it), and the quoted clause in the ADJUSTED line never ends in a doubled period.</summary>
+    [Fact]
+    public void TheFirstDayClauseBitesOneDayAndTheQuoteHasNoDoubledPeriod()
+    {
+        Assert.Equal(40, ClaimInterview.BiteCr(20, ClaimInterview.FirstDayClause));
+        Assert.Equal(40, ClaimInterview.BiteCr(34, ClaimInterview.FirstDayClause));
+        Assert.Equal(20, ClaimInterview.BiteCr(5, ClaimInterview.FirstDayClause));
+        for (int c = 1; c <= ClaimInterview.PoolSize; c++)
+        {
+            string line = ClaimInterview.AdjustedLine(c);
+            Assert.DoesNotContain("..", line);
+            Assert.DoesNotContain(".'.", line);
         }
     }
 

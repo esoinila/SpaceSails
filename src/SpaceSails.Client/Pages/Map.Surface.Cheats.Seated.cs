@@ -38,6 +38,12 @@ public partial class Map
         if (ASeatCheatIsBooting)
         {
             ex.HiveFloorsSeen.Add(0);
+
+            // U07-F09 · …and the venue's OWN place cards (#751: THE HALL, THE CABINET) are spent the same way, off the
+            // same latches the real walk-in writes. A seat-cheat captain is already sat in the room, so a full-scrim
+            // picture card over the strip is not the room under test; a real walk-in still raises both.
+            ex.HiveCantinaHallShown = true;
+            ex.HiveCabinetShown = true;
         }
     }
 }

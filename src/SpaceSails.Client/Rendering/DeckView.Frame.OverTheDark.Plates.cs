@@ -80,8 +80,8 @@ public sealed partial class DeckView
     private const string PlateFold = " · ";
 
     /// <summary>#1332 D · The smallest stencil a folded plate is left at before its widest row is broken at a space.
-    /// Slice C's office plate is set at 6 px and slice E's at 6.5, both above it, so neither moves.</summary>
-    private const double LegibleStencilPx = 5.5;
+    /// Slice C's office plate is set at 6 px and slice E's at 6.5, both at or above it, so neither moves (U07-F03: it was 5.5, which left COLD-CHAIN FORWARDING on two rows at 1600x900).</summary>
+    private const double LegibleStencilPx = 6.0;
 
     /// <summary>The largest half-pixel stencil, no larger than the plate's own, in which the widest of
     /// <paramref name="rows"/> fits <paramref name="room"/>.</summary>
