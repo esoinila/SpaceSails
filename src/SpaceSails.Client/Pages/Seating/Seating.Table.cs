@@ -144,7 +144,9 @@ public partial class Map
                             ? CanteenTable.StrangerScene(plate)
                             : CanteenTable.SceneFor(who, ex.TableTempOverheard),
                         Seats = top.Seats,
-                        Free = top.Free,
+                        // U09-F09 · …and the captain's own chair is taken the moment they sit (SitCaptainOn above), so the
+                        // strip counts the chairs the room has LEFT, not the chairs it had before you came.
+                        Free = Math.Max(0, top.Free - 1),
                         Bark = TheBarkAtThisTop(ex, top),
                         Quiet = top.Quiet,
                         Cabinet = top.Cabinet,

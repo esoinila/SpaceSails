@@ -170,6 +170,17 @@ public static class CommsLink
     public const string FirstLossPulse =
         "📡… static. The ship's telemetry drops out — the orbit readout freezes on its last word. Your suit's tracker and clock still run true; the ship you'll just have to trust. Get moving.";
 
+    /// <summary>U09-F10 · The first-loss notice in the register the ground earns: on a floor that holds its own air
+    /// (the sealed docked canteen, a lit park) the same notice drops its closing imperative - there is no excursion
+    /// clock to hurry anybody along. Not a new sentence: the notice with its last one removed.</summary>
+    public static string FirstLossPulseFor(bool groundHoldsPressure)
+    {
+        const string Imperative = " Get moving.";
+        return groundHoldsPressure && FirstLossPulse.EndsWith(Imperative, System.StringComparison.Ordinal)
+            ? FirstLossPulse[..^Imperative.Length]
+            : FirstLossPulse;
+    }
+
     // ── Copies of the humaniser kept local so Core has no cross-module coupling for a string. ─────────
 
     /// <summary>A compact "time since last contact" for the stale banner: seconds under a minute, then

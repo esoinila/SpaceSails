@@ -151,7 +151,7 @@ public partial class Map
         {
             ex.CommsFirstLossAnnounced = true;
             RendererInterop.PlayCue("alarm");
-            ShowPulseMessage(CommsLink.FirstLossPulse);
+            ShowPulseMessage(CommsLink.FirstLossPulseFor(StandingOnGroundThatHoldsPressure));
         }
 
         // Recovery edge: the episode has ended (phase back to Nominal after being active). Fire the

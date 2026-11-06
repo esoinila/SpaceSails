@@ -160,6 +160,60 @@ public sealed class CoSeatingIsAStripTests
             "be asserting about a state the game cannot reach.");
     }
 
+    /// <summary>U09-F09 · THE CHAIRS THE CARD COUNTS INCLUDE THE CAPTAIN'S OWN. At a top somebody is already
+    /// at, the room's Core count of free chairs (heads before you came) is one more than the card may say
+    /// once you are in a chair. Swept across every HiveRegular on the floor that seats the captain.</summary>
+    [Fact]
+    public void AtATopSomebodyIsAtTheFreeChairsExcludeTheCaptain()
+    {
+        int checkedTops = 0;
+        Pages.Map probe = OnTheFloor();
+        int count = ThePlan(probe).Consoles.Count(c => c.Kind == DeckPlan.ConsoleKind.HiveRegular);
+        for (int i = 0; i < count; i++)
+        {
+            Pages.Map map = OnTheFloor();
+            DeckPlan.ConsoleSpot spot = ThePlan(map).Consoles.Where(c => c.Kind == DeckPlan.ConsoleKind.HiveRegular).ElementAt(i);
+            Set(map, "_avatarX", (double)spot.X);
+            Set(map, "_avatarY", (double)spot.Y);
+            Invoke(map, "TryOpenTable");
+            if (Get(map, "_table") is not { } table)
+            {
+                continue;
+            }
+
+            Type t = table.GetType();
+            int seats = (int)t.GetProperty("Seats")!.GetValue(table)!;
+            int free = (int)t.GetProperty("Free")!.GetValue(table)!;
+            Assert.True(free <= seats - 2,
+                $"the card says {free} of {seats} chairs free with somebody at the top AND the captain in a chair.");
+            checkedTops++;
+        }
+
+        Assert.True(checkedTops > 0, "no occupied top seated the captain, so this law asked nothing.");
+    }
+
+    /// <summary>U09-F10 · ON A FLOOR THAT BREATHES THE LINK-LOSS NOTICE DOES NOT HURRY ANYBODY. The first-loss pulse
+    /// drops its closing "Get moving." while the captain stands on pressurised ground, and keeps it on open ground
+    /// (the second half keeps the first from passing on a notice that was simply deleted).</summary>
+    [Fact]
+    public void TheFirstLossNoticeOnASealedFloorDropsItsImperative()
+    {
+        Pages.Map map = OnTheFloor();
+        Assert.True((bool)Get(map, "StandingOnGroundThatHoldsPressure")!, "premise: this floor holds its own air.");
+        object ex = Get(map, "_surface")!;
+        ex.GetType().GetProperty("CommsNextOnset")!.SetValue(ex, 0.0);
+        for (int i = 0; i < 4000 && !(bool)ex.GetType().GetProperty("CommsFirstLossAnnounced")!.GetValue(ex)!; i++)
+        {
+            Invoke(map, "StepComms", 0.1);
+        }
+
+        Assert.True((bool)ex.GetType().GetProperty("CommsFirstLossAnnounced")!.GetValue(ex)!, "premise: the link dropped.");
+        string said = ((PulseSlot)Get(map, "_pulse")!).Message ?? "";
+        Assert.Contains("telemetry drops out", said);
+        Assert.DoesNotContain("Get moving", said);
+        Assert.Contains("Get moving", CommsLink.FirstLossPulseFor(false));
+    }
+
     // ── (a) NOTHING MODAL COVERS THE SIT BEAT, AT ANY SEAT KIND ───────────────────────────────────────
 
     /// <summary>
