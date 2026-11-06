@@ -293,7 +293,10 @@ public partial class Map
             lines.Add("🗺 E at your ✗ — dig the cache back up");
         }
         // #409: once the hidden lab door is revealed, advertise it until it's forced.
-        if (ex.SecretLabDoorRevealed && !ex.SecretLabForced)
+        // R1-F51 · …and only on the ground: a door in the regolith is not a fitting of any floor under it. R1-F17 ·
+        // …and never at the head office, whose shed has no hidden door (see ComposeSecretLabSite).
+        if (ex.SecretLabDoorRevealed && !ex.SecretLabForced && ex.Floor >= 0
+            && !UndergroundComplex.IsHeadOffice(ex.Stop.Body.Id))
         {
             lines.Add("⚙ E at the ⚙ HIDDEN DOOR — force the secret lab open");
         }

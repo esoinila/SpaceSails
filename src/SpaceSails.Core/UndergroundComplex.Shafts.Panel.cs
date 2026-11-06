@@ -180,6 +180,20 @@ public static partial class UndergroundComplex
                 HasRefuge: RefugeOnThePlan(bodyId, 0)));   // #608 · never, and it ASKS rather than typing false
         }
 
+        // R1-F12 · THE HEAD OFFICE'S CAR LISTS THE WHOLE BUILDING. Its gates are absent (#411), so there is no
+        // band for the car to stop at and no second shaft to point at: one panel, SURFACE and every floor
+        // down to the bottom, and nothing after it.
+        if (IsHeadOffice(bodyId) && car == ShaftKind.Cage)
+        {
+            for (int f = -1; f >= DepthOf(bodyId); f--)
+            {
+                stops.Add(new(
+                    f, NameOf(bodyId, f), HoldsPressure(bodyId, f), f == level, null,
+                    HasRefuge: RefugeOnThePlan(bodyId, f)));
+            }
+            return stops;
+        }
+
         int band = BandOf(Math.Min(level, -1));
         int deepest = BandFloor(bodyId, band);
         for (int f = BandTop(band); f >= deepest; f--)
