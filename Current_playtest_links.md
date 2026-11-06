@@ -156,7 +156,7 @@ exact URL already appeared above is not repeated.
   Seed a representative route tip, with its provenance, into the ledger — the Captain's-ledger Tips & intel rendering without walking a bar for one.
 - `/map?hoard=mine`  [local](http://localhost:5073/map?hoard=mine) [live](https://esoinila.github.io/SpaceSails-play/map?hoard=mine)
   Seed the ledger's 🗺 section (#223): `mine` is one of YOUR chests on Phobos, `rumor` a bought rumour map to somebody else's hoard, `both` one of each — the map card and the dig doors without flying a bury run.
-- `/map?backroom=open`  [local](http://localhost:5073/map?backroom=open) [live](https://esoinila.github.io/SpaceSails-play/map?backroom=open)
+- `/map?start=cinder-roost&backroom=open`  [local](http://localhost:5073/map?start=cinder-roost&backroom=open) [live](https://esoinila.github.io/SpaceSails-play/map?start=cinder-roost&backroom=open)
   Weld the V-06 back room open on the spot, or stage the crack job with its real code so you can key the pad yourself and watch the room grow (PR-F).
 - `/map?rep=1`  [local](http://localhost:5073/map?rep=1) [live](https://esoinila.github.io/SpaceSails-play/map?rep=1)
   Put the Nebula Mutual rep (Harlan Fess) on this ground whatever his rota says — or keep him off it (#973 L2).
@@ -278,7 +278,7 @@ exact URL already appeared above is not repeated.
   SET THE BOOTS DOWN AT A SHELTER (#728) — a pace outside the door of the one building on the ground that fills a tank AND fills a magazine. -- see: `🫁 CHARGING RACK — FILLS YOUR TANK` on one wall and `🔫 EMERGENCY LOCKER — FILLS YOUR MAGAZINES` on the ...
 - `?mags=N`  (template - fill in the value; no fixed link)
   BRING THE SLING DOWN HOLDING N ROUNDS EACH (#728).
-- `/map?dark=1`  [local](http://localhost:5073/map?dark=1) [live](https://esoinila.github.io/SpaceSails-play/map?dark=1)
+- `/map?secretlab=deep&land=1&floor=4&dark=1`  [local](http://localhost:5073/map?secretlab=deep&land=1&floor=4&dark=1) [live](https://esoinila.github.io/SpaceSails-play/map?secretlab=deep&land=1&floor=4&dark=1)
   Put the FIXTURES OUT on every floor this excursion walks — the suit's forward-facing headlights become the whole of the seeing, and everything outside the cone is BLACK rather than dim (#708). The FOUND HALLS (#677) declare themselves dark and are ...
 - `?process=N`  (template - fill in the value; no fixed link)
   How long processing one document takes, in sim seconds — `?process=0` makes it INSTANT (#696). Leaving a paper or a file with 🫳, and reading a paper as a clue at the tracker, are a twenty-second hold of standing still; that IS the mechanic, and it ...
@@ -301,7 +301,7 @@ exact URL already appeared above is not repeated.
   LEDGER POINT, THE DEAD STATION (#653 slice 1) — a hub drum and four arms hanging off the berth, boarded at her crew lock. Two or three of her four tubes are severed (seeded off her id, so it is the same station every boot) and the boat is how you ...
 - `/map?card=next`  [local](http://localhost:5073/map?card=next) [live](https://esoinila.github.io/SpaceSails-play/map?card=next)
 - `?card=N`  (template - fill in the value; no fixed link)
-- `/map?card=all`  [local](http://localhost:5073/map?card=all) [live](https://esoinila.github.io/SpaceSails-play/map?card=all)
+- `/map?card=all&land=1`  [local](http://localhost:5073/map?card=all&land=1) [live](https://esoinila.github.io/SpaceSails-play/map?card=all&land=1)
   MINT AN AUTHORITY CARD BEFORE THE FIRST RIDE (#693) — the one cheat that makes the CARDED lift row, the gate beat and the refusal ladder reachable on an ordinary site.
 - `/map?kit=1`  [local](http://localhost:5073/map?kit=1) [live](https://esoinila.github.io/SpaceSails-play/map?kit=1)
   ASSEMBLE THE FIELD DOSSIER ON THE FIRST PIECE OF SOMEBODY'S KIT, WITH EVERY SENTENCE IT CAN CARRY (#774/#588).
@@ -343,8 +343,8 @@ exact URL already appeared above is not repeated.
   BOOT THE DISPOSAL LOOP (#798) — rip it and bin it, in thirty seconds. -- see: press `[I]` and every paper row now carries a 🗑 beside 🫳 and ✍. Press it. The sheet is torn up and gone from the sleeve — not dropped, so `TryPickUpWhatYouLeft` cannot ...
 - `/map?threads=1`  [local](http://localhost:5073/map?threads=1) [live](https://esoinila.github.io/SpaceSails-play/map?threads=1)
   BOOT THE RED PEN, WITH A CASE ALREADY IN THE BOOK (#741). -- see: the notes are now title-first nodes, collapsed, each with a caret and either a 🧵 count or the words loose end. Press one to fold it open into bullets (the full first sentence is the ...
-- `/map?roll=hi`  [local](http://localhost:5073/map?roll=hi) [live](https://esoinila.github.io/SpaceSails-play/map?roll=hi)
-- `/map?roll=lo`  [local](http://localhost:5073/map?roll=lo) [live](https://esoinila.github.io/SpaceSails-play/map?roll=lo)
+- `/map?tablescene=1&roll=hi`  [local](http://localhost:5073/map?tablescene=1&roll=hi) [live](https://esoinila.github.io/SpaceSails-play/map?tablescene=1&roll=hi)
+- `/map?tablescene=1&roll=lo`  [local](http://localhost:5073/map?tablescene=1&roll=lo) [live](https://esoinila.github.io/SpaceSails-play/map?tablescene=1&roll=lo)
   FORCE THE ENCOUNTER BAND (#746). `hi` makes every rolled move land YES, `lo` makes it NO — AND THE SCENE MOVES; `mid` forces YES, BUT. Owner, in the issue: "testing is a feature." It overrides the BAND and never the roll — the dice still cast, the ...
 - `/map?tender=flash`  [local](http://localhost:5073/map?tender=flash) [live](https://esoinila.github.io/SpaceSails-play/map?tender=flash)
   FORCE THE TENDER'S RARE ROLL (#1022). -- see: open the card on `/map?tender=flash` — the announcement is drawn apart from his voice (indented, italic, brass) with the recovery beneath it; shut the card and open it again and he is himself, because ...
@@ -518,7 +518,7 @@ exact URL already appeared above is not repeated.
   Walk to the counter and the barkeep card carries ▓ Ask about NEBULA — the Nebula Mutual adjuster is in, this watch, at this bar.
 - `/map?oldcrew=1`  [local](http://localhost:5073/map?oldcrew=1) [live](https://esoinila.github.io/SpaceSails-play/map?oldcrew=1)
   #973 L5a · THE OLD CREW. Ashore at the bar with the four shipmates this universe cast working THIS berth, and one captain already in the ground.
-- `/map?tailed=1`  [local](http://localhost:5073/map?tailed=1) [live](https://esoinila.github.io/SpaceSails-play/map?tailed=1)
+- `/map?tailed=1&ashore=1&dock=selene-gate`  [local](http://localhost:5073/map?tailed=1&ashore=1&dock=selene-gate) [live](https://esoinila.github.io/SpaceSails-play/map?tailed=1&ashore=1&dock=selene-gate)
   #1062 slice 2 · SOMEBODY IS BEHIND YOU.
 - `/map?nebula=all`  [local](http://localhost:5073/map?nebula=all) [live](https://esoinila.github.io/SpaceSails-play/map?nebula=all)
   Arc 2 reaches the wire (#663). The truth resolves, and with it 📰 THE STORY BREAKS — the same beat arc 1 raises on the berth-listing edge.
@@ -532,8 +532,8 @@ exact URL already appeared above is not repeated.
 - `/map?ashore=1&kaamos=holder&dock=ringside-exchange`  [local](http://localhost:5073/map?ashore=1&kaamos=holder&dock=ringside-exchange) [live](https://esoinila.github.io/SpaceSails-play/map?ashore=1&kaamos=holder&dock=ringside-exchange)
 - `/map?ashore=1&bond=1`  [local](http://localhost:5073/map?ashore=1&bond=1) [live](https://esoinila.github.io/SpaceSails-play/map?ashore=1&bond=1)
   stand still; the forced scare opens the cognac beat
-- `/map?ashore=1&simhours=9&dock=cinder-roost`  [local](http://localhost:5073/map?ashore=1&simhours=9&dock=cinder-roost) [live](https://esoinila.github.io/SpaceSails-play/map?ashore=1&simhours=9&dock=cinder-roost)
-  the Magpie's third stop, at the back room
+- `/map?ashore=1&simhours=9&dock=cinder-roost&backroom=open`  [local](http://localhost:5073/map?ashore=1&simhours=9&dock=cinder-roost&backroom=open) [live](https://esoinila.github.io/SpaceSails-play/map?ashore=1&simhours=9&dock=cinder-roost&backroom=open)
+  the Magpie's third stop, at the back room (the door is sealed without &backroom=open)
 
 ### Hiding from a sweep — ?sweep=N and the captain's remote (#538)
 

@@ -41,6 +41,27 @@ public sealed class TheRound2U05AndU06ClientPinsTests
         Assert.Equal(SurfaceShelter.PumpDoneLine, Pages.Map.RackGaugeLine(ex, 100, pumpedHere: true));
     }
 
+    [Fact]
+    public async Task TheShelterRackCallerPassesWhetherItEverPumped()
+    {
+        DeskBench bench = await DeskBench.BootAsync("/map?dock=the-tilt&site=0&land=1&shelter=1&mags=12");
+        var deck = (DeckPlan)bench.Peek("_deckPlan")!;
+        DeckPlan.ConsoleSpot rack = deck.Consoles.First(c => c.Kind == DeckPlan.ConsoleKind.ShelterTank);
+        bench.Poke("_avatarX", (double)rack.X);
+        bench.Poke("_avatarY", (double)rack.Y);
+        var ex = (Pages.Map.SurfaceExcursion)bench.Peek("_surface")!;
+
+        bench.Call("ShelterTankInteract");
+        Assert.Contains("stays shut", bench.Pulse, StringComparison.Ordinal);
+
+        var spot = bench.Call("ShelterUnderfoot", ex)!;
+        string key = (string)typeof(Pages.Map).GetMethod("ShelterRackKey",
+            System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!.Invoke(null, [spot])!;
+        ex.ShelterPumpNoted.Add(key);
+        bench.Call("ShelterTankInteract");
+        Assert.Contains("clicks off at two thirds", bench.Pulse, StringComparison.Ordinal);
+    }
+
     // ── U05-F05 · the tube's own door sentry is not a bot the captain set down ─────────────────────────
 
     [Fact]

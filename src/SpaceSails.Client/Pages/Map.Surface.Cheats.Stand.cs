@@ -149,11 +149,11 @@ public partial class Map
         SurfaceOutpost.Placement hut = HutOn(ex, SurfaceTiles.Home, true);
         if (!hut.HasOutpost)
         {
-            ShowPulseMessage("🧪 DEV ?outpost=1: this ground cannot hold a hut.");
+            ShowPulseAlso("🧪 DEV ?outpost=1: this ground cannot hold a hut.");
             return;
         }
 
-        ShowPulseMessage(OutpostCheatLine(_avatarX, _avatarY, hut.DoorX, hut.DoorY));
+        ShowPulseAlso(OutpostCheatLine(_avatarX, _avatarY, hut.DoorX, hut.DoorY));
     }
 
     /// <summary>The ?outpost=1 line, off two points. North is up the screen (smaller Y).</summary>

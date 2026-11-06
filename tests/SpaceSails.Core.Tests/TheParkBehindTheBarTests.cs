@@ -389,7 +389,7 @@ public sealed class TheParkBehindTheBarTests
         foreach ((string body, int level, _, UndergroundComplex.Park park, _) in EveryPark())
         {
             parks++;
-            Assert.Equal(UndergroundComplex.ParkArtUrl, park.ArtUrl);
+            Assert.Equal(UndergroundComplex.ParkFloorArtUrl, park.ArtUrl);
 
             var panels = UndergroundComplex.ParkArtPanels(park);
             Assert.True(panels.Count >= 2,

@@ -17,7 +17,7 @@ split the boot into `Map.Sim.World.*`).
 | link | body id | what it is |
 | --- | --- | --- |
 | `?secretlab=1` | `secret-lab-site` | **▣ THE RECORDS ANNEX** — 4 floors, nothing under them. The shallow case |
-| `?secretlab=deep` | `secret-lab-site-unlisted` | **▣ THE CLINIC** — 20 listed floors **+ an unlisted band B21–B24** (▣ THE TRANSIT STATION). The deep case, and the only one that reaches #592 |
+| `?secretlab=deep` | `secret-lab-site-unlisted` | **▣ THE CLINIC** — 20 listed floors **+ an unlisted band B21–B24** (the name depends on the rock; ▣ THE LABORATORY on the test rock). The deep case, and the only one that reaches #592 |
 | `?found=1` | `secret-lab-site-halls-116` | **▣ THE LABORATORY** — 7 listed, unlisted band B9–B12, then rock, then **the halls nobody dug at B17–B20** (#677) |
 
 `?secretlab=1` **cannot** reach an unlisted band — its site is a four-floor records annex with nothing beneath
@@ -379,7 +379,7 @@ At least double or triple it."*
 
 | | what you should see |
 | --- | --- |
-| **the floor** | green — `art/b1-park-walk.jpg` under the vector grid, laid in **panels** across the room so a 16:9 frame is never stretched to 6:1 |
+| **the floor** | green — `art/b1-park-lawn.jpg` (the lawn band of `b1-park-walk.jpg`) under the vector grid, laid in **panels** across the room so a frame is never stretched to 6:1 |
 | **the window wall** | the near wall, along the whole width of the hall, drawn in the **window ink** (the blue-white the ship's bridge glass uses) and not the poured hull line. Walk into it: you stop. You can see the hall through it and you can never enter that way |
 | **the gate** | the ONE way in — the far end of the hall's own rib corridor, which used to be a dead end with a sealed sign on it |
 | **the beds** | raised boxes, solid, stencilled `🌱 BED n · <CROP> · TO CANTEEN 1`: table greens, stew root, breakfast tomato, soft herbs, salad stock, and six coffee trees on trial |
@@ -591,7 +591,7 @@ three links are that finding, fixed:
 ```
 /map?secretlab=deep&land=1&floor=1     B1  — ▣ THE CLINIC, beside the shaft. PRESENT
 /map?secretlab=deep&land=1&floor=11    B11 — no facility plate. This is the floor he was standing on
-/map?secretlab=deep&land=1&floor=21    B21 — ▣ THE TRANSIT STATION. A DIFFERENT NAME
+/map?secretlab=deep&land=1&floor=21    B21 — a DIFFERENT building's name on the sign (▣ THE LABORATORY on the test rock)
 ```
 
 **B21 is the payoff.** It is the unlisted band's own lobby, and it is the one place in the game where this
