@@ -34,7 +34,11 @@ public partial class Map
     // the ground. The classification is the pure, tested ShuttleExcursion.Destinations rule.
     public sealed record ShuttleStop(
         CelestialBody Body, double DistanceMeters, double TravelSeconds,
-        bool HasBerth, bool IsLandable, bool HasCache, bool OneWayDown = false);
+        bool HasBerth, bool IsLandable, bool HasCache)
+    {
+        // #1380 · set after construction, so the six-argument shape the benches build by reflection stays.
+        public bool OneWayDown { get; init; }
+    }
 
     // Null = the hatch is shut; a list (possibly empty) = the destination board is open.
     private List<ShuttleStop>? _shuttleBayStops;
@@ -80,7 +84,7 @@ public partial class Map
                         d.DistanceMeters,
                         (ShipVelocityNow() - TransferMath.BodyVelocity(_ephemeris, d.BodyId, SimTime)).Length)
                     == ShuttleLink.Refusal.TooFastToCatch;
-                stops.Add(new ShuttleStop(body, d.DistanceMeters, d.TravelSeconds, d.HasBerth, d.IsLandableSurface, d.HasCache, oneWayDown));
+                stops.Add(new ShuttleStop(body, d.DistanceMeters, d.TravelSeconds, d.HasBerth, d.IsLandableSurface, d.HasCache) { OneWayDown = oneWayDown });
             }
         }
         return stops;
