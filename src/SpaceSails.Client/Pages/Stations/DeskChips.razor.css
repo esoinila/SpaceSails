@@ -67,6 +67,7 @@
 @media (max-width: 600px) {
     .desk-chip-strip {
         top: var(--map-masthead-bottom, 4.75rem);
-        max-height: calc(100% - var(--map-masthead-bottom, 4.75rem) - 0.75rem);
+        /* never past the glass less 8rem of bottom chrome (the foot panels), whatever the chips say */
+        max-height: calc(100% - var(--map-masthead-bottom, 4.75rem) - 8rem);
     }
 }
