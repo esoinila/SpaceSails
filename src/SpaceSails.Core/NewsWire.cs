@@ -177,7 +177,7 @@ public static partial class NewsWire
         "{0} futures ticked up on the Ringside Exchange overnight; haulers grumble about margins.",
         "Mercury Compute Farms is quietly stockpiling {0} — for a project nobody will name.",
         "Someone's cornering the {0} market. Ask no questions, sell no lies.",
-        "A {0} shipment went 'missing' in transit. The insurers are not amused; the fences are thrilled.",
+        "A shipment of {0} went 'missing' in transit. The insurers are not amused; the fences are thrilled.",
     ];
 
     private static readonly string[] CargoClasses = ["He3", "Compute cores", "Alloys", "Machinery", "Ice"];
@@ -234,6 +234,12 @@ public static partial class NewsWire
     private static string ShipNameFor(DeterministicRandom rng) =>
         TrafficSchedule.Callsigns[rng.NextInt(0, TrafficSchedule.Callsigns.Count)];
 
+    /// <summary>How many earlier days a day's line is kept distinct from (U01-F17).</summary>
+    private const int RepeatLookbackDays = 8;
+
+    /// <summary>How many re-rolls a repeated line gets (U01-F17); the lookback excludes all of them.</summary>
+    private const int RepeatRerolls = 3;
+
     /// <summary>
     /// Rotating ambient flavor: <paramref name="count"/> items, one per sim-day, newest (today)
     /// first. A pure function of the ephemeris' own bodies, the sim calendar, the masthead and the
@@ -267,7 +273,29 @@ public static partial class NewsWire
         for (int i = 0; i < count; i++)
         {
             long day = today - i;
-            items.Add(new NewsItem(day * SecondsPerDay, HeadlineForDay(bodies, day, scope, salt, port)));
+            // U01-F17 · one ticker does not print the same line twice - and a day's line is a function of the
+            // DAY and the salt alone, never of the window it is printed in ("revisiting a day never
+            // contradicts what was already read"). So a day re-rolls only against the RAW seeded lines of the
+            // fixed run of days before it, however many of them this window happens to show.
+            string line = HeadlineForDay(bodies, day, scope, salt, port);
+            {
+                var earlier = new HashSet<string>(StringComparer.Ordinal);
+                for (int back = 1; back <= RepeatLookbackDays; back++)
+                {
+                    // Every line an earlier day could END UP printing: its raw line and its re-rolls.
+                    earlier.Add(HeadlineForDay(bodies, day - back, scope, salt, port));
+                    for (int a = 1; a <= RepeatRerolls; a++)
+                    {
+                        earlier.Add(HeadlineForDay(bodies, day - back, scope, (salt ?? "") + "#" + a, port));
+                    }
+                }
+
+                for (int attempt = 1; attempt <= RepeatRerolls && earlier.Contains(line); attempt++)
+                {
+                    line = HeadlineForDay(bodies, day, scope, (salt ?? "") + "#" + attempt, port);
+                }
+            }
+            items.Add(new NewsItem(day * SecondsPerDay, line));
         }
 
         return items;

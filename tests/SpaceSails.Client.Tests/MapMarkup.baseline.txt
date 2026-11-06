@@ -1665,7 +1665,7 @@
                 <div class="rep-said">@SpaceSails.Core.WalkIn.TheStory(sheAsks)</div>
                 <div class="rep-offers">
                     <button type="button" class="rep-offer"
-                            @onclick="() => Dismiss(() => AnswerTheWalkIn(true))">@SpaceSails.Core.WalkIn.Yes</button>
+                            @onclick="() => Dismiss(() => AnswerTheWalkIn(true))">@SpaceSails.Core.WalkIn.YesFor(sheAsks)</button>
                     <button type="button" class="rep-offer"
                             @onclick="() => Dismiss(() => AnswerTheWalkIn(false))">@SpaceSails.Core.WalkIn.No</button>
                 </div>
@@ -7655,7 +7655,7 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                    TheGalleyIsACardNotADeskTests asks the band the question directly. *@
                 else if (_activeDesk == ShipDesk.Captain)
                 {
-                    <SpaceSails.Client.Pages.Stations.Captain CurrentMission="_mission" Options="_missionOptions" OnSelectMission="SetMission"
+                    <SpaceSails.Client.Pages.Stations.Captain BodyName="@BodyName" CurrentMission="_mission" Options="_missionOptions" OnSelectMission="SetMission"
                                                               StatusChips="AllStationChips()" OnGoToDesk="SwitchDeskFromClick"
                                                               ShotAuthorized="_shotAuthorized" FireAtWill="_fireAtWill"
                                                               OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill"
