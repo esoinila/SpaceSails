@@ -177,7 +177,7 @@ public static partial class NewsWire
         "{0} futures ticked up on the Ringside Exchange overnight; haulers grumble about margins.",
         "Mercury Compute Farms is quietly stockpiling {0} — for a project nobody will name.",
         "Someone's cornering the {0} market. Ask no questions, sell no lies.",
-        "A {0} shipment went 'missing' in transit. The insurers are not amused; the fences are thrilled.",
+        "{1} {0} shipment went 'missing' in transit. The insurers are not amused; the fences are thrilled.",
     ];
 
     private static readonly string[] CargoClasses = ["He3", "Compute cores", "Alloys", "Machinery", "Ice"];
@@ -267,7 +267,15 @@ public static partial class NewsWire
         for (int i = 0; i < count; i++)
         {
             long day = today - i;
-            items.Add(new NewsItem(day * SecondsPerDay, HeadlineForDay(bodies, day, scope, salt, port)));
+            // U01-F17 · one ticker never prints the same line twice: a day whose seeded line was already
+            // printed re-rolls under a numbered salt (a few tries, then it takes the repeat — a pool
+            // can be smaller than the feed).
+            string line = HeadlineForDay(bodies, day, scope, salt, port);
+            for (int attempt = 1; attempt <= 12 && items.Exists(x => x.Headline == line); attempt++)
+            {
+                line = HeadlineForDay(bodies, day, scope, (salt ?? "") + "#" + attempt, port);
+            }
+            items.Add(new NewsItem(day * SecondsPerDay, line));
         }
 
         return items;
@@ -363,10 +371,18 @@ public static partial class NewsWire
 
         if (group == CargoTemplates)
         {
-            return string.Format(template, CargoClasses[rng.NextInt(0, CargoClasses.Length)]);
+            return CargoLine(template, CargoClasses[rng.NextInt(0, CargoClasses.Length)]);
         }
 
         return template; // FlatLines — no substitution
+    }
+
+    /// <summary>U01-F17 · a cargo line with its article taken from the cargo's first letter ("An Ice
+    /// shipment", "A He3 shipment").</summary>
+    private static string CargoLine(string template, string cargo)
+    {
+        string article = "AEIOUaeiou".Contains(cargo[0]) ? "An" : "A";
+        return string.Format(template, cargo, article);
     }
 
     /// <summary>#1052 · Fill the AUTHOR'S named tokens in an authored line. Named rather than

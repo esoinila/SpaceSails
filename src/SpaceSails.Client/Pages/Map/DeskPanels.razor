@@ -168,7 +168,7 @@
                    TheGalleyIsACardNotADeskTests asks the band the question directly. *@
                 else if (_activeDesk == ShipDesk.Captain)
                 {
-                    <SpaceSails.Client.Pages.Stations.Captain CurrentMission="_mission" Options="_missionOptions" OnSelectMission="SetMission"
+                    <SpaceSails.Client.Pages.Stations.Captain BodyName="@BodyName" CurrentMission="_mission" Options="_missionOptions" OnSelectMission="SetMission"
                                                               StatusChips="AllStationChips()" OnGoToDesk="SwitchDeskFromClick"
                                                               ShotAuthorized="_shotAuthorized" FireAtWill="_fireAtWill"
                                                               OnAuthorizeShot="AuthorizeShot" OnToggleFireAtWill="ToggleFireAtWill"

@@ -335,7 +335,7 @@ public partial class Map
             // stubborn Lark is likewise spawned only when the first hunt ends (SeedSecondHuntTarget).
             initial = lunaDriver.Concat(initial);
         }
-        _npcStates = initial.Select(s => new NpcState { Ship = s }).ToArray();
+        _npcStates = TrafficSchedule.WithDistinctCallsigns(initial).Select(s => new NpcState { Ship = s }).ToArray();
         SayTheBootStageCost("the traffic lanes — the NPC roster laid out");
     }
 

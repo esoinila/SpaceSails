@@ -121,6 +121,15 @@ public partial class Map
 
     /// <summary>How long since the last frame, in real seconds — and the one line into the stall clock both
     /// the banner and the controls read. Zero on the very first frame, and never negative.</summary>
+    /// <summary>U01-F18 · A line raised while the world was still booting was stamped at t = 0 (no frame had
+    /// run), so by the time the loading overlay lifted - several seconds on - its dwell was long spent and the
+    /// first <c>Expire</c> wiped it unseen (the ?oracle=1 toast naming the corner). The first frame is the
+    /// first moment anyone can SEE the slot, so that is where its clock starts.</summary>
+    internal static PulseSlot TheBootPulseStartsItsClockNow(PulseSlot slot, double firstFrameMs) =>
+        slot.Message is { } m
+            ? slot with { ExpiresMs = firstFrameMs + PulseSlot.DwellFor(m), HeldUntilMs = firstFrameMs + PulseSlot.MinDwellMs }
+            : slot;
+
     private double TakeTheFrameClock(double highResTimestampMs)
     {
         double dtRealSeconds = _lastTimestampMs is null
@@ -130,6 +139,7 @@ public partial class Map
         _lastTimestampMs = highResTimestampMs;
         if (firstFrame)
         {
+            _pulse = TheBootPulseStartsItsClockNow(_pulse, highResTimestampMs);
             SayTheBootDevLines();
         }
 

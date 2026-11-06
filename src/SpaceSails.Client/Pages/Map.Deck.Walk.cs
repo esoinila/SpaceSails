@@ -338,10 +338,13 @@ public partial class Map
                 // close it then." One line of feel, and the kind that is invisible until you are in a
                 // corridor with a pack coming and the pocket you opened by reflex will not go away by the
                 // same reflex.
-                if (_surface is not null)
-                {
-                    ToggleSatchel();
-                }
+                //
+                // U01-F05 · …AND IT OPENS WHEREVER THE CAPTAIN STANDS ON FOOT. This used to read
+                // `_surface is not null`, so on a station deck or in a bar (no excursion) the key did nothing and
+                // said nothing, and the MISSIONS page - the fetch's "return to the ship" line - could not be read
+                // anywhere but on a moon. HandleDeckKey is only reached on foot (a desk and flight never get
+                // here), which is exactly the posture the satchel wants.
+                ToggleSatchel();
                 return true;
             case "h" or "H":
                 // #538 · THE REMOTE IS IN YOUR HAND, NOT ON THE BRIDGE. Owner: "the remote to sentries should be

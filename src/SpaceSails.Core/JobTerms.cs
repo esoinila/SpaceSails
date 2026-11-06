@@ -174,8 +174,27 @@ public static class JobTerms
     /// orbit</c>. A target under way carries no place, and says so on line 2 instead of pretending.</summary>
     public static string VerbLine(JobFacts f)
     {
-        string head = $"{VerbWord(Verb(f.Kind))} — {NameOr(f.TargetName, "the mark")}";
-        return string.IsNullOrWhiteSpace(f.WhereName) ? head : $"{head}, {f.WhereName}";
+        string verb = VerbWord(Verb(f.Kind));
+        string target = NameOr(f.TargetName, "the mark");
+        if (string.IsNullOrWhiteSpace(f.WhereName))
+        {
+            return $"{verb} — {target}";
+        }
+
+        // U01-F15 · a place is named ONCE. When the target IS the place ("Derelict Roadster, Derelict
+        // Roadster"), or the place is just the target's own address ("Selene Gate, Selene Gate — EARTH
+        // system"), the line carries the fuller of the two and no repeat.
+        string where = f.WhereName!;
+        if (string.Equals(where, target, StringComparison.OrdinalIgnoreCase))
+        {
+            return $"{verb} — {target}";
+        }
+        if (where.StartsWith(target, StringComparison.OrdinalIgnoreCase)
+            && where.Length > target.Length && where[target.Length] is ' ' or ',')
+        {
+            return $"{verb} — {where}";
+        }
+        return $"{verb} — {target}, {where}";
     }
 
     /// <summary>Line 2 — what completion actually takes, in game terms, plus what the target IS. The

@@ -156,7 +156,19 @@ public partial class Map
         {
             return;
         }
-        ShowPulseMessage("The stranger swirls their drink. “Nothing worth your time right now. Check back.”");
+        ShowPulseMessage($"{BarSpeaker(giver)} swirls their drink. “Nothing worth your time right now. Check back.”");
+    }
+
+    /// <summary>U01-F08 · the name a bar contact answers to in their own reply line: the plate's name for the
+    /// named regulars, "The stranger" only for an unnamed top.</summary>
+    internal static string BarSpeaker(string? giver)
+    {
+        string g = giver ?? "";
+        if (g.Contains("COIL", StringComparison.OrdinalIgnoreCase)) { return "Madam Coil"; }
+        if (g.Contains("GILT", StringComparison.OrdinalIgnoreCase)) { return "Gilt-Eye"; }
+        if (g.Contains("SILAS", StringComparison.OrdinalIgnoreCase)) { return "One-Eye Silas"; }
+        if (g.Contains("FIXER", StringComparison.OrdinalIgnoreCase)) { return "The Fixer"; }
+        return "The stranger";
     }
 
     // The Magpie, a fence's runner who won't sit still (PR-F). Their position is a pure function of

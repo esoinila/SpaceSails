@@ -19,6 +19,9 @@ public partial class Captain
     [Parameter, EditorRequired] public MissionOptions Options { get; set; } = new([], [], [], [], []);
     [Parameter] public EventCallback<ShipMission> OnSelectMission { get; set; }
 
+    /// <summary>U01-F20 · the live body name (the expedition rock is named per gig); null falls back to the id humanized.</summary>
+    [Parameter] public Func<string, string>? BodyName { get; set; }
+
     /// <summary>#963 follow-up — what killed the last voyage, if anything did. Null on a clean run.</summary>
     [Parameter] public SpaceSails.Core.CrashNote? LastError { get; set; }
 
@@ -143,6 +146,10 @@ public partial class Captain
         IReadOnlyList<QuestStep> Steps, bool ShowScopeButton, string? NextAction = null,
         IReadOnlyList<string>? Plain = null)
     {
+        /// <summary>U04-F04 · null = a contract, filed under ⚓ Jobs; otherwise the heading of its own
+        /// section (an away gig, a case).</summary>
+        public string? Heading { get; init; }
+
         public QuestItem(string title, string detail, string rewardText, string statusLabel, string statusKind)
             : this(title, detail, rewardText, statusLabel, statusKind, [], false) { }
     }
