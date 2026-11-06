@@ -64,6 +64,16 @@ public static class CyclerWindow
     /// rather than spot-checking the one somebody happened to boot into.</para></summary>
     public const int ArrivalPhases = 24;
 
+    /// <summary>The fastest relative speed (m/s) that still reads as keeping station with the ice. The cycler
+    /// hands the ship over at about 0.5 km/s; a hyperbolic flyby through the same sphere is not "alongside".</summary>
+    public const double AlongsideMaxRelativeSpeed = 1500.0;
+
+    /// <summary>#1405 · THE ONE ANSWER to "is she alongside the ice?" — shared by the supply run's settle
+    /// (#1386) and the cycler menu / ledger (R1-F45, R1-F10). Within the standoff the ride leaves her at
+    /// (<see cref="ArrivalOffsetMeters"/>, half again for park drift) AND keeping station, not flying by.</summary>
+    public static bool IsAlongside(double distanceMeters, double relativeSpeedMetersPerSecond) =>
+        distanceMeters <= ArrivalOffsetMeters * 1.5 && relativeSpeedMetersPerSecond <= AlongsideMaxRelativeSpeed;
+
     /// <summary>The sim epoch at which arrival phase <paramref name="phase"/> lands, given the moon's own
     /// orbital period. The period is an ARGUMENT and not a constant here on purpose: a moon's number
     /// belongs to the moon, and a copy of it filed under the cycler is the house's oldest bug — a MOON

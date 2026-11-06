@@ -42,13 +42,23 @@ public static class CollisionAlertRule
     /// <param name="keepingHoldsOrbit">The autopilot is holding a parked orbit — keeping active,
     /// funded (next trim affordable) and inside tolerance. False the instant keeping ends.</param>
     /// <param name="ballisticPass">The tightest pass of the ballistic projection (the live course).</param>
+    /// <param name="docked">The hull is clamped to a berth: no course exists to alarm about.</param>
     /// <param name="planPass">The plan's achieved-outcome pass, when armed (see the type remarks).</param>
     public static ClosestApproach.Pass? Evaluate(
         bool armedWithValidPlan,
         bool keepingHoldsOrbit,
         ClosestApproach.Pass? ballisticPass,
-        ClosestApproach.Pass? planPass)
+        ClosestApproach.Pass? planPass,
+        bool docked = false)
     {
+        // #1405 R1-F18: a hull clamped to a berth has no course to judge. The ballistic projection of a
+        // docked ship is the station's own track extended from a clamp, so it "impacts" the very station
+        // she is tied to (3 km, 0.0 km/s relative) and shouted red at warp. Docked, the alarm is silent.
+        if (docked)
+        {
+            return null;
+        }
+
         // #220: a held orbit is the autopilot's promise kept — the between-trim dip is not news. The
         // instant keeping ends the caller clears this flag and the ballistic course is judged again.
         if (keepingHoldsOrbit)
