@@ -109,6 +109,10 @@ public partial class Map
         /// <summary>#1397 · For an Inspected death: the captain kept still through the challenge (and was shot all the
         /// same). The card forks on it so a motionless man is not told he did not stand still.</summary>
         public bool HeldStill { get; init; }
+
+        /// <summary>U08-F06 · The underground floor (negative) a Hive death happened on, so the card's shaft depth is the
+        /// floor's own and not a constant. Null for every other place.</summary>
+        public int? DeathFloor { get; init; }
         // Which meter actually ran out (#480 follow-up): true = the nerve overdrew, false = the five blows
         // landed. Before #469 was fixed nerve was effectively the ONLY way to die out there, so the card
         // hardcoded the nerve line; now that the condition marker really decides, the caption must not

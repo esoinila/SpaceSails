@@ -158,8 +158,8 @@ exact URL already appeared above is not repeated.
   Seed the ledger's 🗺 section (#223): `mine` is one of YOUR chests on Phobos, `rumor` a bought rumour map to somebody else's hoard, `both` one of each — the map card and the dig doors without flying a bury run.
 - `/map?start=cinder-roost&backroom=open`  [local](http://localhost:5073/map?start=cinder-roost&backroom=open) [live](https://esoinila.github.io/SpaceSails-play/map?start=cinder-roost&backroom=open)
   Weld the V-06 back room open on the spot, or stage the crack job with its real code so you can key the pad yourself and watch the room grow (PR-F).
-- `/map?rep=1`  [local](http://localhost:5073/map?rep=1) [live](https://esoinila.github.io/SpaceSails-play/map?rep=1)
-  Put the Nebula Mutual rep (Harlan Fess) on this ground whatever his rota says — or keep him off it (#973 L2).
+- `/map?dock=selene-gate&ashore=1&rep=1`  [local](http://localhost:5073/map?dock=selene-gate&ashore=1&rep=1) [live](https://esoinila.github.io/SpaceSails-play/map?dock=selene-gate&ashore=1&rep=1)
+  Put the Nebula Mutual rep (Harlan Fess) on this ground whatever his rota says — or keep him off it (#973 L2). `?rep=` is a MODIFIER, not a start: bare `/map?rep=1` boots in open space with no ground, so dock and go ashore first (U07-F16).
 - `/map?kolt=1`  [local](http://localhost:5073/map?kolt=1) [live](https://esoinila.github.io/SpaceSails-play/map?kolt=1)
   The same lever for Brem Kolt (#1061 beat 2), whose rota has a ceiling as well as a period — one ground in three, and never more than two grounds in a whole universe.
 - `/map?walkin=1`  [local](http://localhost:5073/map?walkin=1) [live](https://esoinila.github.io/SpaceSails-play/map?walkin=1)
@@ -278,7 +278,7 @@ exact URL already appeared above is not repeated.
   SET THE BOOTS DOWN AT A SHELTER (#728) — a pace outside the door of the one building on the ground that fills a tank AND fills a magazine. -- see: `🫁 CHARGING RACK — FILLS YOUR TANK` on one wall and `🔫 EMERGENCY LOCKER — FILLS YOUR MAGAZINES` on the ...
 - `?mags=N`  (template - fill in the value; no fixed link)
   BRING THE SLING DOWN HOLDING N ROUNDS EACH (#728).
-- `/map?dark=1`  [local](http://localhost:5073/map?dark=1) [live](https://esoinila.github.io/SpaceSails-play/map?dark=1)
+- `/map?secretlab=deep&land=1&floor=4&dark=1`  [local](http://localhost:5073/map?secretlab=deep&land=1&floor=4&dark=1) [live](https://esoinila.github.io/SpaceSails-play/map?secretlab=deep&land=1&floor=4&dark=1)
   Put the FIXTURES OUT on every floor this excursion walks — the suit's forward-facing headlights become the whole of the seeing, and everything outside the cone is BLACK rather than dim (#708). The FOUND HALLS (#677) declare themselves dark and are ...
 - `?process=N`  (template - fill in the value; no fixed link)
   How long processing one document takes, in sim seconds — `?process=0` makes it INSTANT (#696). Leaving a paper or a file with 🫳, and reading a paper as a clue at the tracker, are a twenty-second hold of standing still; that IS the mechanic, and it ...
@@ -301,7 +301,7 @@ exact URL already appeared above is not repeated.
   LEDGER POINT, THE DEAD STATION (#653 slice 1) — a hub drum and four arms hanging off the berth, boarded at her crew lock. Two or three of her four tubes are severed (seeded off her id, so it is the same station every boot) and the boat is how you ...
 - `/map?card=next`  [local](http://localhost:5073/map?card=next) [live](https://esoinila.github.io/SpaceSails-play/map?card=next)
 - `?card=N`  (template - fill in the value; no fixed link)
-- `/map?card=all`  [local](http://localhost:5073/map?card=all) [live](https://esoinila.github.io/SpaceSails-play/map?card=all)
+- `/map?card=all&land=1`  [local](http://localhost:5073/map?card=all&land=1) [live](https://esoinila.github.io/SpaceSails-play/map?card=all&land=1)
   MINT AN AUTHORITY CARD BEFORE THE FIRST RIDE (#693) — the one cheat that makes the CARDED lift row, the gate beat and the refusal ladder reachable on an ordinary site.
 - `/map?kit=1`  [local](http://localhost:5073/map?kit=1) [live](https://esoinila.github.io/SpaceSails-play/map?kit=1)
   ASSEMBLE THE FIELD DOSSIER ON THE FIRST PIECE OF SOMEBODY'S KIT, WITH EVERY SENTENCE IT CAN CARRY (#774/#588).

@@ -170,4 +170,30 @@ public class DeathNarrationTests
         }
         Assert.True(chestLineSeen, "the chest line must stay reachable for a captain who left one.");
     }
+
+    /// <summary>U08-F06 (Fable's ruling) · the Hive suffocation line names the floor's depth in words, rounded to ten metres;
+    /// with no floor known it says "the whole shaft". Swept over seeds so the one shaft line is among them.</summary>
+    [Theory]
+    [InlineData(-1, "a hundred and fifty metres")]
+    [InlineData(-2, "a hundred and sixty metres")]
+    [InlineData(-3, "a hundred and seventy metres")]
+    [InlineData(-5, "two hundred metres")]
+    [InlineData(-9, "two hundred and fifty metres")]
+    [InlineData(null, "the whole shaft")]
+    public void TheHiveSuffocationShaftIsTheFloorsOwnDepthInWords(int? level, string spoken)
+    {
+        int named = 0;
+        for (ulong seed = 0; seed < 12; seed++)
+        {
+            string line = DeathNarration.Line(
+                DeathCause.Suffocated, DeathPlace.Underground, seed, "Ganymede", undergroundLevel: level);
+            Assert.DoesNotContain("{depth}", line);
+            if (line.Contains("above you. It does not come", StringComparison.Ordinal))
+            {
+                Assert.Contains($"and the car is {spoken}{(level is null ? "" : " of shaft")} above you.", line);
+                named++;
+            }
+        }
+        Assert.True(named > 0, "no seed drew the shaft line — the sweep proves nothing.");
+    }
 }

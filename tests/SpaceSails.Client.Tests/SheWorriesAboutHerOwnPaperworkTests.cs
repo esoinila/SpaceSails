@@ -59,6 +59,8 @@ public sealed class SheWorriesAboutHerOwnPaperworkTests
         Set(map, "_deckMode", true);
         Set(map, "_surface", null);
         Set(map, "_dockedHavenId", dockedHaven);
+        // U08-F17 · a haven's voice is for a captain who has walked ashore; a clamped ship's own deck is the ship's.
+        Set(map, "_ashore", dockedHaven is not null);
         Set(map, "_shudderSeed", Seed);
         Set(map, "_nerve", NervePips.FromPips(NervePips.MaxPips));
         return map;

@@ -223,7 +223,7 @@ public sealed class TheBootBuildsTheSameWorldTests
             // stopped anybody: nothing about what these queries DO moved. The third row is the new one
             // and it is new for a different reason, said below on its own line.
             ["/map?badge=1"] = "791696ad6a834cc12e637d913f2cfcb6",
-            ["/map?barcase=1"] = "e9a911765c7b413d7080d926e60a19f9",
+            ["/map?barcase=1"] = "365010c3ecaf860338d0f539d6638fd6",
             ["/map?bond=1"] = "64b4b543d58d0d8a425b53d06e339611",
             ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "caf6026dd9e11b1513dbc855c411cd9d",
             // #1151 slice 1 · ?claim=1: MEASURED with SPACESAILS_BOOT_FINGERPRINT_DUMP; 1 new, 0 moved.

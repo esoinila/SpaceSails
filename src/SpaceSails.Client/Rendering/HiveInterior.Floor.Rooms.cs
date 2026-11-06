@@ -79,6 +79,15 @@ public static partial class HiveInterior
                 labels.Add(((float)bed.X, (float)bed.Y, bed.Plate));
             }
 
+            // U06-F08 · …and the back rooms' PARK-SIDE plates (#801: "Plates beside them, on the park side").
+            // A far-band room's own plate is stencilled by the corridor pass at its STREET door, so a captain
+            // walking the gravel read doors with no names. Each room's plate goes up again on the gravel a
+            // few paces in from its door, in the same words (Core's, never retyped), so the two doors agree.
+            foreach (UndergroundComplex.BackRoom room in green.Rooms)
+            {
+                labels.Add(ParkSidePlate(in green, room));
+            }
+
             SeatTheParkBenches(consoles, labels, benchSeats, in green);
 
             // …and somebody on the far bench, who is scenery. Owner: "benches, the lone figure, the curve
@@ -102,6 +111,19 @@ public static partial class HiveInterior
         }
 
         return null;
+    }
+
+    /// <summary>U06-F08 · Where a back room's plate stands on the gravel: the middle of its park-side door,
+    /// <c>PacesIn</c> toward the park's own middle along whichever axis the door's wall runs across.</summary>
+    internal static (float X, float Y, string Text) ParkSidePlate(
+        in UndergroundComplex.Park green, UndergroundComplex.BackRoom room)
+    {
+        const double PacesIn = 2.5;
+        double cx = (room.Door.X1 + room.Door.X2) / 2.0, cy = (room.Door.Y1 + room.Door.Y2) / 2.0;
+        bool runsAlongX = Math.Abs(room.Door.Y1 - room.Door.Y2) < 0.001;
+        double x = runsAlongX ? cx : cx + (Math.Sign(green.X - cx) * PacesIn);
+        double y = runsAlongX ? cy + (Math.Sign(green.Y - cy) * PacesIn) : cy;
+        return ((float)x, (float)y, room.Plate);
     }
 
     /// <summary>

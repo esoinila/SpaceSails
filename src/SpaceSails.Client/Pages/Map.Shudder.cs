@@ -101,7 +101,9 @@ public partial class Map
         int index = _shudderIndex;
 
         bool deepSite = _surface is not null;                       // a surface / lab / secret-lab landing
-        bool haven = _dockedHavenId is not null && HavenInterior.HasInterior(_dockedHavenId);
+        // U08-F17 · …and the HAVEN voice is for the haven's floor: a clamped ship whose captain stands on her own deck
+        // (the shuttle bay, the cabin) talks to herself in the ship pool, not in a concourse that stops mid-word.
+        bool haven = _dockedHavenId is not null && HavenInterior.HasInterior(_dockedHavenId) && _ashore;
 
         // #590 · OUT ON THE GROUND IS NOT A DEEP SITE. Owner: "the hull flexing feeling buildings should not
         // come when on planet / moon ... we should have place specific ones for the sites, not generic ones
@@ -153,7 +155,9 @@ public partial class Map
         // R1-F26 · …AND ABOARD A DERELICT THERE IS NOBODY TO LOOK UP EITHER. Every pool above is written for a
         // room with a crew in it or for open ground; a dead hull is neither ("the steel laid over the rock",
         // "every head aboard"). Until a hull-only pool is authored the dead hull is silent, by the same null.
-        if (OnWreck)
+        // U08-F10 · …and so is a dead STATION (Ledger Point): "the whole room freezes as one… everyone decides it was
+        // nothing" is a roomful of people, and nobody is there. The same null, for the same reason.
+        if (OnADeadHull)
         {
             line = null;
         }

@@ -142,6 +142,15 @@ public partial class Map
             {
                 _barCaseCheat = true;
                 q.AshoreCheat = true;
+
+                // U07-F08 · …and the room's visitors stand off (the DevStarts idiom: ?approach=0). The stage tests the
+                // DIG, and Ilse Varga's finder card sat down at the top seconds after boot, so "Work the case" answered
+                // "Not with somebody sitting there". An explicit ?finder=/?walkin=/?rep=/?approach= still wins, in
+                // either order; real play keeps the visitors place-tied (08-30 ruling).
+                _finderCheat ??= false;
+                _walkInCheat ??= false;
+                _repCheat ??= false;
+                _approachCheat ??= false;
             }
         }
         else if (pair.StartsWith("oldcrew=", StringComparison.OrdinalIgnoreCase))
