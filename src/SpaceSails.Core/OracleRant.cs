@@ -166,7 +166,7 @@ public static class OracleRant
     public static OracleLine Speak(string stationId, long watch, int drawIndex, int drinksBought)
     {
         ulong seed = LineSeed(stationId ?? string.Empty, watch, drawIndex, drinksBought);
-        ulong visit = VisitSeed(stationId ?? string.Empty, watch, drinksBought);
+        ulong visit = VisitSeed(stationId ?? string.Empty, watch);
         bool isTrue = Unit(Mix(seed, 0x7717_0AC1_E000_0001UL)) < TrueChance(drinksBought);
 
         if (!isTrue)
@@ -279,11 +279,13 @@ public static class OracleRant
     // a drink re-seeds the visit, so the walk reshuffles when the channel widens. Still pure, still
     // deterministic in exactly the four documented inputs — no clock, no System.Random.
 
-    private static ulong VisitSeed(string stationId, long watch, int drinksBought)
+    private static ulong VisitSeed(string stationId, long watch)
     {
         ulong h = Fold(stationId, 0x0C);
         h = Mix(h, (ulong)watch);
-        h = Mix(h, unchecked((ulong)drinksBought) + 0x2000UL);
+        // R1-F70 · drinks are NOT folded in. They used to be ("buying her a drink re-seeds the visit"), and a
+        // re-seeded walk could land on a line she had said minutes before in the same visit. Drinks still
+        // raise the true chance; they no longer move the walk, so one visit never repeats inside a pool cycle.
         return h;
     }
 
