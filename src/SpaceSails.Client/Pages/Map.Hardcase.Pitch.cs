@@ -25,12 +25,12 @@ public sealed partial class Map
     /// not standing there to be sold to.</summary>
     private void HeReachesYou()
     {
-        if (_busted is not null)
+        if (TheDeathCardFreezesTheGround)
         {
-            return;   // the death card is not in the scrim census; a pitch raised now would sit behind it
+            return;   // a death card is not in the scrim census; a pitch raised now would sit behind it
         }
 
-        RaiseAScrimCard(KoltsPitchGoesUp, () => !CaptainBeyondReach && !_hardcaseFled && _busted is null);
+        RaiseAScrimCard(KoltsPitchGoesUp, () => !CaptainBeyondReach && !_hardcaseFled && !TheDeathCardFreezesTheGround);
     }
 
     /// <summary>The pitch itself, once the glass is his — and the moment the ground goes in his book, because
@@ -93,7 +93,7 @@ public sealed partial class Map
     private void AnswerTheHardcase(NebulaRep.RepMove move)
     {
         // A card still in the DOM behind the death card must not sell a policy before the rebirth reads it.
-        if (_hardcaseCard is null || _busted is not null)
+        if (_hardcaseCard is null || TheDeathCardFreezesTheGround)
         {
             return;
         }

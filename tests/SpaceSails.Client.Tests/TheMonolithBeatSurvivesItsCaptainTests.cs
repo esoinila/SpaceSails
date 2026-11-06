@@ -172,4 +172,21 @@ public sealed class TheMonolithBeatSurvivesItsCaptainTests
         Steps(bench, "StepReevers", 60, 0.1);
         Assert.Equal(0.0, (double)ex.GetType().GetProperty("PackStillSeconds")!.GetValue(ex)!);
     }
+
+    /// <summary>A card that is not a death (the on-foot writ's Demand) does not freeze the ground, so Kolt still
+    /// arrives during it and his pitch must still come up.</summary>
+    [Fact]
+    public async Task AKoltWhoArrivesDuringANonDeathCardStillPitches()
+    {
+        using DeskBench bench = await OnTheMonolithsGroundAsync();
+        Type busted = typeof(SpaceSails.Client.Pages.Map).GetNestedType("BustedEncounter", BindingFlags.Public | BindingFlags.NonPublic)!;
+        object card = Activator.CreateInstance(busted, nonPublic: true)!;
+        busted.GetProperty("Phase")!.SetValue(card, Enum.Parse(busted.GetNestedType("Stage")!, "Demand"));
+        bench.Poke("_busted", card);
+        Assert.Null(bench.Peek("_hardcaseCard"));
+
+        bench.CallOnTheDispatcher("HeReachesYou");
+
+        Assert.NotNull(bench.Peek("_hardcaseCard"));
+    }
 }
