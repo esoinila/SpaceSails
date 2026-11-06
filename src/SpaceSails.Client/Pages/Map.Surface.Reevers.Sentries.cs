@@ -207,7 +207,8 @@ public partial class Map
         double bestSq = DeckPlan.InteractRadius * DeckPlan.InteractRadius;
         foreach (SurfaceBot b in ex.Bots)
         {
-            if (!b.Deployed)
+            // #1458 · GATE-1 is the building's, not the captain's: it stands inside InteractRadius of the spawn on a wreck.
+            if (!b.Deployed || SurfaceArrival.IsDoorSentry(b.Unit))
             {
                 continue;
             }

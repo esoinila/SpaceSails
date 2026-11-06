@@ -162,6 +162,22 @@ public partial class Map
         _nerveLedger = [];
         _deathNerveLedger = [];
 
+        // #1440 · the clocks and crews of the life being left. The own-ship charges tick in EVERY frame
+        // (AdvanceShipCharges), so a load taken with them armed let the old countdown run out under the loaded
+        // life and SheGoes() her; the derelict's clock only ticks on the ground, so it froze, kept the Remote
+        // desk's SomethingElseIsCountingDown true and resumed at the next wreck boarding. The sweepers and the
+        // air-crossing latch ride the excursion that is no more.
+        _shipChargesSeconds = null;
+        _shipScuttleWordGiven = false;
+        _shipScuttleSecondKey = null;
+        _shipScuttleMessage = null;
+        _shipScuttleDeterrentSaid = false;
+        _showShipScuttlePanel = false;
+        _scuttleSecondsLeft = null;
+        _showScuttlePanel = false;
+        _sweepers.Clear();
+        _airSupplyNoted = null;
+
         _newsEvents.Clear();
         _hailAnswers.Clear();
         _momentsRaisedFor.Clear();

@@ -29,6 +29,15 @@ public partial class Map
             HeGoesBackDownUntold(ex);
         }
 
+        if (ex.Gate is { Taken: true } taken && fromLevel > taken.Floor && level < taken.Floor)
+        {
+            // #1432 · the tide took him at the mouth, so the captain's next ride down starts from the surface (or
+            // anywhere above his floor), never from it: a ride that carries him from above his floor to below
+            // it still went past where he stood, and the book's line is owed once all the same.
+            ThePassIsFiledOnce(taken);
+            return;
+        }
+
         if (ex.Gate is not { } man || fromLevel != man.Floor)
         {
             return;
