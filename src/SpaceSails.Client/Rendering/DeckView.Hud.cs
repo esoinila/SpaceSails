@@ -18,6 +18,8 @@ public sealed partial class DeckView
     private static double NerveColumnTop => HudColumn.Surface.ColumnTop;
     private const double TrackerDesiredRadius = 116.0;   // owner: "make the motion meter bigger" — the ~115 class
 
+    internal const float TrackerReadoutMarginPx = 6f;
+
     private void DrawMotionTracker(int widthPx, int heightPx, double simTime, in SurfaceHud hud)
     {
         // #324/#330 (owner: "make the motion meter bigger and visible… put the motion under the sanity
@@ -197,7 +199,19 @@ public sealed partial class DeckView
             }
         }
 
-        _renderer.DrawText(cx, cy + r + 14, hud.Readout, TrackerRing, $"{readoutPx:0}px monospace", TextAlign.Center);
+        // U10-F10 · A centred caption wider than the tracker's own distance from the left edge ("something alive -
+        // about 44 du, not walking" at 1024 wide) lost its first letter off the screen. Where it would, it is set
+        // left-aligned at a small margin instead; where it fits it is drawn exactly as it always was.
+        float readoutW = (float)CommsBand.WidthOf(hud.Readout, readoutPx);
+        if (cx - (readoutW / 2f) < TrackerReadoutMarginPx)
+        {
+            _renderer.DrawText(TrackerReadoutMarginPx, cy + r + 14, hud.Readout, TrackerRing,
+                $"{readoutPx:0}px monospace", TextAlign.Left);
+        }
+        else
+        {
+            _renderer.DrawText(cx, cy + r + 14, hud.Readout, TrackerRing, $"{readoutPx:0}px monospace", TextAlign.Center);
+        }
 
         // #564 · THE AIR METER, directly under the tracker where the owner looked for it. It gets a BAR
         // rather than a line of text for the same reason NERVE does: it is one of the two things on a
