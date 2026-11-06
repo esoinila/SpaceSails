@@ -140,8 +140,7 @@ public sealed partial class DeckView
 
         _perf?.Mark("PaintTheDark");
 
-        LayOutTheBand(in state, surface, widthPx);   // #1463 · before anything that must keep out of the band
-        DrawTheSentries(surface, simTime, widthPx, heightPx, scale, project);
+        DrawTheSentries(in state, surface, simTime, widthPx, heightPx, scale, project);
         _perf?.Mark("DrawTheSentries");
         DrawWhatTheFanHeard(surface, simTime, scale, project);
         _perf?.Mark("DrawWhatTheFanHeard");
