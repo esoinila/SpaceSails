@@ -159,11 +159,11 @@
    chips carry each desk's status summary, so they stay on a phone until a card or panel is open; while one is,
    the column steps aside and gives its 11rem to it. */
 @media (max-width: 600px) {
-    .map-page:has(.map-dest-panel, .map-plot, .deck-offer-card) {
+    .map-page:has(.map-dest-panel, [class~="deck-offer-card"], .map-plot) {
         --desk-chip-strip-clearance: 0.75rem;
     }
 
-    .map-page:has(.map-dest-panel, .map-plot, .deck-offer-card) ::deep .desk-chip-strip {
+    .map-page:has(.map-dest-panel, [class~="deck-offer-card"], .map-plot) ::deep .desk-chip-strip {
         display: none;
     }
 }

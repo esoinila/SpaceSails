@@ -61,11 +61,11 @@ public sealed class ThePhoneAndDesktopLayoutPassTests
     public void TheDeskChipColumnStepsAsideOnlyWhileACardIsOpenOnAPhone()
     {
         string map = Src("Pages", "Map.razor.css").ReplaceLineEndings("\n");
-        int at = map.IndexOf(".map-page:has(.map-dest-panel, .map-plot, .deck-offer-card)", StringComparison.Ordinal);
+        int at = map.IndexOf(".map-page:has(.map-dest-panel, [class~=\"deck-offer-card\"], .map-plot)", StringComparison.Ordinal);
         Assert.True(at >= 0, "the chip column needs a card-open rule");
         Assert.Contains("@media (max-width: 600px)", map[..at][^200..]);
         Assert.Contains("--desk-chip-strip-clearance: 0.75rem", map[at..]);
-        Assert.Contains("display: none", RuleAfter(map, ".map-page:has(.map-dest-panel, .map-plot, .deck-offer-card) ::deep .desk-chip-strip"));
+        Assert.Contains("display: none", RuleAfter(map, ".map-page:has(.map-dest-panel, [class~=\"deck-offer-card\"], .map-plot) ::deep .desk-chip-strip"));
 
         // …and the chips themselves are never hidden by width alone: they carry each desk's status summary.
         string chips = Src("Pages", "Stations", "DeskChips.razor.css");
