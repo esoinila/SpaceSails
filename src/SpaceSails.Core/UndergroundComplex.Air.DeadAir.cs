@@ -112,9 +112,11 @@ public static partial class UndergroundComplex
     public static string LockedLine(string sign)
     {
         ArgumentNullException.ThrowIfNull(sign);
+        // U02-F21 · The card prints the sign as its own title ("🔒 sign"), so the body is the sentence UNDER
+        // the plate: leading it with the sign again printed the title twice.
         return StopOrder.IsPlate(sign)
-            ? $"🔒 {sign}. {StopOrder.OrderLine}"
-            : $"🔒 {sign}. The lock is not a lock you can argue with — it is a decision somebody made, and "
+            ? StopOrder.OrderLine
+            : "The lock is not a lock you can argue with — it is a decision somebody made, and "
                 + "it is still being enforced by a building whose owners stopped answering a long time ago.";
     }
 

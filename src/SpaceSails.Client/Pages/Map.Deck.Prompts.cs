@@ -64,7 +64,10 @@ public partial class Map
         //
         // It says the VERB and not the contact's name: a name here would be a second spelling of the one
         // OpenBankAtBar strips off the plate, and the keybar's register is three words, never a sentence.
-        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is { Kind: DeckPlan.ConsoleKind.BarPatron })
+        // U02-F17 · …and only where there IS a table. The Magpie stands at her post (the bar end, the back
+        // room's shelf) with no table drawn, so "at this table" beside her named furniture that is not there.
+        if (_deckPlan.NearestConsoleSpot(_avatarX, _avatarY) is { Kind: DeckPlan.ConsoleKind.BarPatron } patron
+            && !patron.Label.Contains("MAGPIE", StringComparison.OrdinalIgnoreCase))
         {
             parts.Add("💰 B — open an account at this table");
         }

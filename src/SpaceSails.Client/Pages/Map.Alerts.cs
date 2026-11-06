@@ -340,7 +340,7 @@ public partial class Map
 
         if (_ephemeris is not null)
         {
-            items.AddRange(NewsWire.Ambient(_ephemeris, SimTime, ambientCount, scope, salt));
+            items.AddRange(NewsWire.WithoutRepeats(NewsWire.Ambient(_ephemeris, SimTime, ambientCount, scope, salt))); // U02-F12 · ambient only: player events with identical text are never dropped
         }
 
         items.Sort((a, b) => b.SimTime.CompareTo(a.SimTime));

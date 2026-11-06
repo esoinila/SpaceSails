@@ -48,6 +48,14 @@ public partial class Map
             return null;
         }
 
+        // U02-F03 · The roster is the HAVEN bar's: Cass Roe naming Coil and Gilt-Eye at Ringside. An underground
+        // company counter (B1's canteen) can be opened while a haven is docked behind it, and its keep must not
+        // speak a haven's regulars - his Welcome stands alone.
+        if (_barMenu is { } counter && Barkeeps.For(id) != counter)
+        {
+            return null;
+        }
+
         var seatedHere = new List<string>();
         var steppedOut = new List<string>();
         var inTheBack = new List<string>();

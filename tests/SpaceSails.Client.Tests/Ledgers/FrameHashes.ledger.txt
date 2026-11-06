@@ -46,7 +46,7 @@ calls | haven garden · selene-gate | 294
 calls | haven garden · red-eye | 248
 calls | haven garden · the-deep | 248
 calls | wreck · HullBreach | 573
-calls | luna B1 | 659
+calls | luna B1 | 657
 calls | luna B2 | 502
 calls | luna B3 | 87
 calls | luna B4 | 97
@@ -59,11 +59,11 @@ calls | luna B10 | 526
 calls | luna B11 | 71
 calls | luna B12 | 91
 calls | luna B13 | 166
-calls | luna B1 · the lamps are all there is | 129
-calls | luna B1 · sat down at a desk | 674
-calls | luna B1 · the round is out, and the buzzer went | 685
-calls | phobos B1 | 653
-calls | titan B1 | 618
+calls | luna B1 · the lamps are all there is | 128
+calls | luna B1 · sat down at a desk | 672
+calls | luna B1 · the round is out, and the buzzer went | 683
+calls | phobos B1 | 651
+calls | titan B1 | 616
 calls | surface · luna site 0 | 211
 calls | surface · luna site 0, the whole excursion | 319
 calls | surface · luna site 0, dark, and the fan hears something | 264
@@ -96,7 +96,7 @@ sha256 | haven garden · selene-gate | 6f562a66fa5b0d260baef123c74530af043e39976
 sha256 | haven garden · red-eye | 40b631dad4966e6d7217093c723ade2cc8546a8142a402db9a1d186e5e4c68e3
 sha256 | haven garden · the-deep | 5a77b36931e1d13a34e91532839a88eb65687e848434421fe842903d59207a7a
 sha256 | wreck · HullBreach | 935cee65dd7096f5d4cb614754093178f00694759448d1f08af4f92ca92284b9
-sha256 | luna B1 | cc8424d76dafacbdf925e1940fc0696fb3aebbb0f3002ceee7499d1ba9b18c4b
+sha256 | luna B1 | df1cf1818ec38dab00da9c55f09a0a28fdcabbdf78f07fc0793b1e3019546c73
 sha256 | luna B2 | 123c6a0fd25240f3f99d2d2d8be6408f9b633ded2ef15cd82a2fb47bd665cc05
 sha256 | luna B3 | 1a1acf7d1e02d30080e41e19b93a63542e29541579d13098d39e93624a128e93
 sha256 | luna B4 | 12d2e2e9f5ada87e11766ab9835ee19ca2af64f0760b2e73633a58b7dd3f9912
@@ -109,11 +109,11 @@ sha256 | luna B10 | 40942e5d5008cfb0474ad67f59bd242667ad751e708f1686c0f985e77466
 sha256 | luna B11 | 2872e5ea31d503daf9cfe27cb7c30a23d102441d3397765889ba44d6eb780205
 sha256 | luna B12 | 7586cb5635ba3979f268702e4ab5acb14c4f57d024f77c87a571a795b7289a88
 sha256 | luna B13 | b0521890d491dc861686e50a50ad6148b074dfb8092e3102d27f55d1751611c3
-sha256 | luna B1 · the lamps are all there is | f2db4b4314c134010d52610970db9bec837540de85f4f90f1609110e6f507b6a
-sha256 | luna B1 · sat down at a desk | cdaf224637d70d5a0c90ff54c7f167860c9f262be8e65888ade1f715496faeeb
-sha256 | luna B1 · the round is out, and the buzzer went | 743332f36c12d9079dbbfcd5534bf93841f6afd8be8a7b034a544fbc6c188739
-sha256 | phobos B1 | 4da906f0f6a738277eafc751b4b5e895e12003d376e5eb96036eeedc7fe7b861
-sha256 | titan B1 | 3d8cbb26e1f85739e4bfda9ebcef372ea4ec1d3faf729e41e995a36b50ced7de
+sha256 | luna B1 · the lamps are all there is | d97c422f99199e382d26b98fc50e93a59f2b792bbeaf4ab887893bddbe56b06a
+sha256 | luna B1 · sat down at a desk | 83dae5dfea7a80c188c7b0da601e5c70e82a303058ef7ed162ae74318422d2c7
+sha256 | luna B1 · the round is out, and the buzzer went | dc71a18e3450499d35004a2d8f300c2c365686ac0761d94fd28b3d73e02ada13
+sha256 | phobos B1 | c77f88be1c363e46849312bdf655b507d1927c23c88d8ca7b281c812bee450f2
+sha256 | titan B1 | a6d9f0e36bd54f673fe5e0beac0e807c59f4fc2f85a9eeab51bdc98746280192
 sha256 | surface · luna site 0 | c9327d9f8584a36ddd347e87b5737df39d7663588e3e6d12c8f560da6460f616
 sha256 | surface · luna site 0, the whole excursion | 3955c8274828ddb51d21f927fa303d39f874ea5cc0508e7bc5198d7172a13fad
 sha256 | surface · luna site 0, dark, and the fan hears something | 6f5b3ae6c3aa19d086c9d0a1d6186d142dfb99f5bfebdbfdf7c86b518d369b91

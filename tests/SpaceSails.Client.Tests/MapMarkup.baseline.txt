@@ -4203,7 +4203,7 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                     @* #756 · The header stops promising one flat rate, because a card with a 2 cr coffee
                        and a 12 cr double on it cannot have one. Each row prices itself off Core
                        (Drink.PriceAt), so the label, the enabled-ness and the debit are one number. *@
-                    <div class="bar-menu-head">@(keep.SelfService ? "🍸 THE CARD UNDER THE GLASS" : $"🍸 THE MENU — {keep.DrinkPrice} cr a glass")</div>
+                    <div class="bar-menu-head">@(keep.SelfService ? "🍸 THE CARD UNDER THE GLASS" : "🍸 THE MENU")</div>
                     @foreach (Core.Drink drink in Core.DrinkMenu.For(keep))
                     {
                         Core.Drink d = drink;
@@ -6225,7 +6225,7 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
             <div>
                 @* #954: one line for a fact that needs two — the neighbourhood and the thing in it, and the
                    ⚓ hint follows the neighbourhood's haven rather than blinking with the nearest slot. *@
-                Nearest: @NearestReadoutName() (@FormatDistance((_ship.Position - _nearestBodyPosition).Length), @(((_ship.Velocity - _nearestBodyVelocity).Length / 1000).ToString("F1", CultureInfo.InvariantCulture)) km/s rel)@if (_nearestHaven is not null && _dockedHavenId is null)
+                Nearest: @NearestReadoutName() (@NearestReadoutNumbers())@if (_nearestHaven is not null && _dockedHavenId is null)
                 {
                     <span class="text-info"> · ⚓ dockable haven — coast within @((DockReachMeters / 1000).ToString("N0", CultureInfo.InvariantCulture)) km, ≤@((DockMatchSpeedMps / 1000).ToString("N0", CultureInfo.InvariantCulture)) km/s to clamp on</span>
                 }
@@ -7180,6 +7180,11 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                                 @* ⛽ fuel is bought in the always-visible fuel gauge (side panel), so it
                                    answers "how do I fill her up?" (#157) whether or not you're docked. *@
                                 <div class="fw-bold mb-1">Upgrades</div>
+                                @if (_credits < UpgradePrice(_massLevel) || _credits < UpgradePrice(_sensorLevel) || _credits < UpgradePrice(_holdLevel)
+                                     || (_telescopeLevel < 3 && _credits < UpgradePrice(_telescopeLevel)) || (!_hasNetJammer && _credits < NetJammerPriceCr))
+                                {
+                                    <div class="text-secondary small mb-1 trade-upgrade-reason">Greyed upgrades: not enough credits (you have @_credits.ToString("N0", CultureInfo.InvariantCulture) cr).</div>
+                                }
                                 <table class="table table-sm table-dark mb-0">
                                     <tbody>
                                         <tr>

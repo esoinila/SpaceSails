@@ -73,6 +73,9 @@
     width: 100%;
     height: 100%;
     transform: none;
+    /* U02-F10 · an opaque backing: the map's faint labels (Earth, Luna, Selene Gate) printed through the
+       Upgrades header when the column let the canvas show. */
+    background-color: #0e1016;
 }
 
 .local-space-desk-body {

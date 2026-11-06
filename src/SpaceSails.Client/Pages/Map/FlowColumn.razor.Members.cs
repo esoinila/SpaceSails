@@ -214,6 +214,7 @@ public partial class FlowColumn
     [Parameter] public int MissilePulseCost { get; set; }
     [Parameter] public bool NavLockedByDock { get; set; }
     [Parameter] public Func<string> NearestReadoutName { get; set; } = default!;
+    [Parameter] public Func<string> NearestReadoutNumbers { get; set; } = default!;
     [Parameter] public int NetJammerPriceCr { get; set; }
     /// <summary>the page's own `NewsFeed(count, scope, salt)`, crossing as the LAMBDA the page already wrote, one level further up — no method group of it converts to this shape (the page's own optional parameters see to that).</summary>
     [Parameter] public Func<int, NewsWire.NewsScope, string?, IReadOnlyList<NewsWire.NewsItem>> NewsFeed { get; set; } = default!;

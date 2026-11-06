@@ -247,4 +247,25 @@ public partial class Map
         _nearestParentName is { } p && _nearestChildName is { } c
             ? NearestRule.Hierarchy(p, c)
             : _nearestBody?.Name ?? "";
+
+    // U02-F01 · The two numbers that follow the name are the ones for the LAST thing the name names. "Saturn ›
+    // Ringside Exchange" is a hierarchy whose child is a berth riding beside the planet, and the number after
+    // the berth's name used to be the planet's distance and speed (the parking radius), inside the very hint
+    // that is about the berth. So when the neighbourhood names a haven that is not the nearest body itself,
+    // the pair is read off the haven's own rail; docked, the nearest slot already holds the berth.
+    private string NearestReadoutNumbers()
+    {
+        Vector2d position = _nearestBodyPosition;
+        Vector2d velocity = _nearestBodyVelocity;
+        if (_ephemeris is not null && _dockedHavenId is null
+            && _nearestChildName is not null && _nearestHaven is { } haven && haven.Id != _nearestBody?.Id)
+        {
+            const double h = 1.0;
+            position = _ephemeris.Position(haven.Id, SimTime);
+            velocity = (_ephemeris.Position(haven.Id, SimTime + h) - _ephemeris.Position(haven.Id, SimTime - h)) / (2 * h);
+        }
+
+        return $"({FormatDistance((_ship.Position - position).Length)}, "
+             + $"{((_ship.Velocity - velocity).Length / 1000).ToString("F1", System.Globalization.CultureInfo.InvariantCulture)} km/s rel)";
+    }
 }
