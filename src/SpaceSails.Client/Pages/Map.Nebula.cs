@@ -144,7 +144,7 @@ public partial class Map
     }
 
     // ── The intel readout (deliverable: make progress VISIBLE). Mirrors KaamosLedgerTip: a single evergreen
-    //    "NEBULA MUTUAL — N of 5 clauses" card whose lines are the assembled fragment texts, so the corporate
+    //    "NEBULA MUTUAL — N of 6 clauses" card whose lines are the assembled fragment texts, so the corporate
     //    horror builds as the player collects and the shards stay re-readable. Returns null until the first
     //    shard is in hand (nothing to show on a fresh universe). Consumed in Map.Quests' Captain-ledger tips. ──
     private Stations.Captain.LedgerTip? NebulaLedgerTip()

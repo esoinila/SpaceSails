@@ -120,7 +120,7 @@ public static class NebulaLore
 
     /// <summary>The seeded fragment pool, in authored (canonical) order. Deterministic — no wall clock, no
     /// RNG: the same pieces exist in every universe, and only WHICH the player has ASSEMBLED differs (that
-    /// lives per-thread in <see cref="NebulaProgress"/>). Five intel shards from five systems that touch the
+    /// lives per-thread in <see cref="NebulaProgress"/>). Six intel shards from six systems that touch the
     /// player's own deaths, and one capstone contract.</summary>
     public static readonly IReadOnlyList<NebulaFragment> Fragments =
     [
@@ -257,7 +257,7 @@ public static class NebulaLore
     // same afternoon (#411/#634):
     //
     //   · the Captain's-ledger card printed "the shape isn't clear yet — N more shards to read it" with N
-    //     measured against the size of the whole intel POOL (five) instead of the threshold that actually
+    //     measured against the size of the whole intel POOL (six) instead of the threshold that actually
     //     opens the capstone (IntelNeededToUnlock, four). It was always exactly one shard pessimistic: a
     //     captain holding three was told two more, and one more opened the contract.
     //
@@ -266,7 +266,7 @@ public static class NebulaLore
     // can hold the SENTENCE to the SIM.
     //
     // (Arc 2 did NOT share the KAAMOS pass's second bug. The KAAMOS capstone's authored prose named four
-    // specific shards although the gate takes any four of five; this capstone's prose names none — "the
+    // specific shards although the gate takes any four of six; this capstone's prose names none — "the
     // pieces resolve into the clause the sales voice skips" — so it can never credit a piece nobody found.
     // `TheCapstonesOwnLoreNamesNoShard…` pins that it stays that way.)
 

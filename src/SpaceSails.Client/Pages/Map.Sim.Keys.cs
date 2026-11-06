@@ -199,6 +199,14 @@ public partial class Map
             return;
         }
 
+        // R1-F61 · A death card owns the keyboard. Enter and Escape (the card's own YES and CANCEL) were
+        // handled above, and the backtick peek and M mute stay live (the death card plays the game-over music and #1038 lets the peek work over it); the flight keys below (pulse burns, warp, plot) must not reach the sim while the
+        // BUSTED modal is up, or the corpse keeps spending the dead captain's fuel under the card.
+        if (_busted is not null)
+        {
+            return;
+        }
+
         // #406: `/` opens the Nav search box and hands it the keyboard — type a name to find & jump to a
         // target instead of zoom-hunting. Only on the desks that render the solar map (where the box
         // lives — the same Nav/Sensors/WarRoom gate). The box's own keydown stops propagation, so once

@@ -178,8 +178,10 @@ public partial class Map
         // second the wake card reads a line it should not (a seeded flash off this death), and reading it
         // assembles the shard. The oracle (#427) may already have leaked it; this is the first-hand vector,
         // delivered ON the card. The flash shows every rebirth; the shard is gathered once.
-        b.RebirthGlitch = NebulaGlitchFlash(b.Seed);
-        AssembleNebulaSilently("rebirth-glitch");
+        // R1-F22 · the rebirth that ASSEMBLES the shard flashes the canonical line byte-for-byte (the one the
+        // ledger records, PATTERN 40 and all); seeded variants are for the later rebirths only.
+        bool firstGlitch = AssembleNebulaSilently("rebirth-glitch");
+        b.RebirthGlitch = NebulaGlitchFlash(b.Seed, firstGlitch);
 
         // #422 — THE CLINIC'S SECOND PAGE. Surfaces only once you've woken here BEFORE (a prior death this
         // thread or this session): the fragment's own fiction — a policy number "older than you", carrying
@@ -191,6 +193,8 @@ public partial class Map
 
         _rebirthsSeen++;
 
+        // R1-F60 · the bird's last warning belongs to the old captain; it must not hang over the new one.
+        _parrotSquawk = null;
         b.Phase = BustedEncounter.Stage.Resurrected;
         StateHasChanged();
     }
@@ -284,8 +288,8 @@ public partial class Map
         "CONTINUITY: BELIEVED · ORIGINAL: FILED · DO NOT DISTURB THE DARK",
     ];
 
-    private static string NebulaGlitchFlash(ulong seed) =>
-        NebulaGlitchFlashes[(int)(seed % (ulong)NebulaGlitchFlashes.Length)];
+    internal static string NebulaGlitchFlash(ulong seed, bool shardJustGathered = false) =>
+        shardJustGathered ? NebulaGlitchFlashes[0] : NebulaGlitchFlashes[(int)(seed % (ulong)NebulaGlitchFlashes.Length)];
 
     // Issue the successor captain onto the active universe (Evening wind #20). Reads the retiring identity,
     // rolls + persists the new one through the registry (the #368 fields are editable data), and refreshes

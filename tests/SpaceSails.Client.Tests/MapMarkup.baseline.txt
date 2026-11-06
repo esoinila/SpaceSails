@@ -8608,9 +8608,12 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                             <div class="busted-whathappened-line">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill)@DeathNarration.WakeTail(bust.Cause, bust.Place)</div>
                         </div>
                         @* The old hull erupting, one clean hero fireball — the brain-backup beat proper. *@
+                        @if (!DeathNarration.WakeCardRepeatsTheFireball(bust.Cause, bust.Place))
+                        {
                         <div class="busted-freeze-art busted-explosion has-art" title="art: the old ship blowing up — the kerosene-explosion budget">
                             <img class="bf-art" src="art/busted-ship-explosion.jpg" alt="" aria-hidden="true" />
                         </div>
+                        }
                         <div class="busted-quote">
                             You wake at @bust.ClinicName's clinic in @bust.HullDescription. The old ship and
                             everything visible aboard is gone — but nothing buried or banked was ever on it.
