@@ -87,6 +87,7 @@ public partial class Map
         {
             return;
         }
+        _oracleNotice = null;   // each press starts the card's aside afresh; a true line may append below
         OracleLine line = OracleRant.Speak(id, OracleRant.WatchIndex(SimTime), _oracleDraw, _oracleDrinks);
         _oracleDraw++;
         _oracleLine = line;
@@ -113,11 +114,7 @@ public partial class Map
                 {
                     Overhear($"👂 Static Marsh — a true one: {line.Text}", who);
                 }
-                else
-                {
-                    // Already in hand — the perception still lands, no new shard.
-                    SayItWhereTheyAreLooking($"🌀 Static Marsh: {line.Text}");
-                }
+                // Already in hand: nothing to add; her card already shows the line (R1-F65).
                 break;
 
             case OracleTruthKind.NebulaFragment when line.FragmentId is { } nid:
@@ -126,10 +123,7 @@ public partial class Map
                 {
                     Overhear($"👂 Static Marsh — a true one: {line.Text}", who);
                 }
-                else
-                {
-                    SayItWhereTheyAreLooking($"🌀 Static Marsh: {line.Text}");
-                }
+                // Already in hand: nothing to add; her card already shows the line (R1-F65).
                 break;
 
             case OracleTruthKind.SecretLab:
@@ -181,8 +175,9 @@ public partial class Map
         _credits -= keep.DrinkPrice;
         _oracleDrinks++;
         RequestVaultSave(); // the purse moved
-        _oracleNotice = $"You stand Static a {keep.DrinkName} (−{keep.DrinkPrice:N0} cr). She drinks it like water finding a crack. “...clearer now. The channel's wider when the glass is fuller.”";
-        NextOracleLine(); // a drunker oracle, a new — likelier-true — line
+        string receipt = $"You stand Static a {keep.DrinkName} (−{keep.DrinkPrice:N0} cr). She drinks it like water finding a crack. “...clearer now. The channel's wider when the glass is fuller.”";
+        NextOracleLine(); // a drunker oracle, a new — likelier-true — line (a true one may say more on her card)
+        _oracleNotice = _oracleNotice is { } afterwards ? $"{receipt} {afterwards}" : receipt;   // the receipt leads and is never lost
     }
 
     private void CloseOracle()

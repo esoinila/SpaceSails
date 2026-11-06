@@ -644,7 +644,7 @@
    art. Same z band as the plain toast (OverlayBands.DeckPulseToast), so the sync law is untouched. */
 .deck-pulse-toast.deck-pulse-toast-low {
     top: auto;
-    bottom: 0.25rem;
+    bottom: 0;
     /* One line, ellipsised: a card that reaches its height cap ends ~2rem above the glass bottom, and a taller
        toast would sit on its action row. The card carries the full words; the toast is the cue. */
     white-space: nowrap;

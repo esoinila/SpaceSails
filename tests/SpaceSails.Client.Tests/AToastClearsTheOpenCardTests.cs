@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using SpaceSails.Core;
 using Xunit;
@@ -64,5 +65,39 @@ public sealed class AToastClearsTheOpenCardTests
         b.CallOnTheDispatcher("SayItWhereTheyAreLooking", "a true line, said where she is looking", PulseRank.Status);
         Assert.Null(((PulseSlot)b.Peek("_pulse")!).Message);
         Assert.Equal("a true line, said where she is looking", (string)b.Peek("_oracleNotice")!);
+    }
+
+    /// <summary>R1-F65 review · A glass bought for Static Marsh keeps its "(-N cr)" receipt on her card even when the
+    /// new line is a TRUE one (which appends its own words instead of replacing the aside).</summary>
+    [Fact]
+    public async Task AGlassForStaticKeepsItsReceiptWhenTheNextLineIsTrue()
+    {
+        DeskBench b = await DeskBench.BootAsync(Ashore);
+        await b.RenderAsync();   // assigns the render handle a true line's story card needs
+        b.Poke("_credits", 1000000);
+        b.CallOnTheDispatcher("TalkToOracle");
+        int trueLines = 0, glasses = 0;
+        double t0 = (double)b.Peek("SimTime")!;
+        for (int i = 0; i < 300; i++)
+        {
+            b.Poke("SimTime", t0 + (i * 977.0));   // the offer is seeded off the clock: vary it so she accepts some
+            int before = (int)b.Peek("_oracleDrinks")!;
+            b.CallOnTheDispatcher("BuyOracleDrink");
+            string notice = (string?)b.Peek("_oracleNotice") ?? "";
+            if ((int)b.Peek("_oracleDrinks")! == before)
+            {
+                continue;   // she waved the glass off, or a refusal: no receipt owed
+            }
+
+            glasses++;
+            Assert.Contains("(−", notice);
+            Assert.Contains(" cr)", notice);
+            if (((OracleLine)b.Peek("_oracleLine")!).IsTrue)
+            {
+                trueLines++;
+            }
+        }
+
+        Assert.True(glasses > 0 && trueLines > 0, $"the sweep must pour glasses ({glasses}) and reach a true line ({trueLines})");
     }
 }

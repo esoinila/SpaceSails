@@ -225,7 +225,7 @@ public partial class Map
         }
         if (_oracleOpen && _oracleLine is not null)
         {
-            _oracleNotice = line;       // R1-F65 · Static Marsh's true line answers on her own card, not over its title
+            _oracleNotice = _oracleNotice is { } held ? $"{held} {line}" : line;   // APPENDS: a bought glass's receipt stays beside the answer. R1-F65 · Static Marsh's true line answers on her own card, not over its title
             return;
         }
         if (_barMenu is not null)
