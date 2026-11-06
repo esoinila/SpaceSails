@@ -116,7 +116,7 @@ public partial class Map
                 else
                 {
                     // Already in hand — the perception still lands, no new shard.
-                    ShowPulseMessage($"🌀 Static Marsh: {line.Text}");
+                    SayItWhereTheyAreLooking($"🌀 Static Marsh: {line.Text}");
                 }
                 break;
 
@@ -128,7 +128,7 @@ public partial class Map
                 }
                 else
                 {
-                    ShowPulseMessage($"🌀 Static Marsh: {line.Text}");
+                    SayItWhereTheyAreLooking($"🌀 Static Marsh: {line.Text}");
                 }
                 break;
 

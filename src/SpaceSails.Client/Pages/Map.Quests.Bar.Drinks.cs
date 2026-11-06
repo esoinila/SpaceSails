@@ -49,15 +49,13 @@ public partial class Map
         if (!tab.Poured)
         {
             _barNotice = tab.Line;
-            ShowPulseMessage(tab.Line);
             return;
         }
         _credits = tab.RemainingCredits;
         // A lone drink at the counter — weak medicine (NerveModel), steadier the higher your nerve already
         // is, and just one point at the shot floor. The receipt carries the steadying note PourRum builds.
         string receipt = PourRum($"{keep.DrinkName} — {keep.DrinkFlavor}", NerveModel.DrinkKind.BarSpecial, withExcuse: true);
-        _barNotice = receipt;
-        ShowPulseMessage($"{receipt} (−{tab.Cost:N0} cr)");
+        _barNotice = $"{receipt} (−{tab.Cost:N0} cr)";   // R1-F65 · said on the counter card, not over its title
         RequestVaultSave(); // #225: the purse moved (and PourRum saved the nerve)
     }
 
@@ -79,7 +77,6 @@ public partial class Map
             _barNotice = keep.SelfService
                 ? $"The reader declines: {drink.Name} is {cost} cr and the purse is short."
                 : $"“{drink.Name}'s {cost} cr — come back when the purse can cover it, spacer.”";
-            ShowPulseMessage(_barNotice);
             return;
         }
         _credits -= cost;
@@ -90,8 +87,7 @@ public partial class Map
         string receipt = drink.Category == Core.DrinkCategory.Food
             ? $"🍽 {drink.Name} — {cost} cr. {drink.Flavor}"
             : PourRum($"{drink.Name} — {drink.Flavor}", NerveModel.DrinkKind.BarSpecial, withExcuse: true);
-        _barNotice = receipt;
-        ShowPulseMessage($"{receipt} (−{cost:N0} cr)");
+        _barNotice = $"{receipt} (−{cost:N0} cr)";   // R1-F65 · said on the counter card, not over its title
         RequestVaultSave(); // #225: the purse moved (and PourRum saved the nerve)
     }
 
@@ -123,7 +119,6 @@ public partial class Map
         if (!tab.Poured)
         {
             _barNotice = tab.Line;
-            ShowPulseMessage(tab.Line);
             return;
         }
         _credits = tab.RemainingCredits;
@@ -272,7 +267,6 @@ public partial class Map
             _barNotice = keep.SelfService
                 ? "The reader declines: one Special a sitting, and the board has already served yours."
                 : "“One Special a sitting, spacer. Come back next time you're through.”";
-            ShowPulseMessage(_barNotice);
             return;
         }
 
@@ -282,7 +276,6 @@ public partial class Map
             _barNotice = keep.SelfService
                 ? $"The reader declines: the Special is {cost} cr and the purse is short."
                 : $"“Special's {cost} cr — come back when the purse can cover it, spacer.”";
-            ShowPulseMessage(_barNotice);
             return;
         }
 
@@ -305,8 +298,7 @@ public partial class Map
         string receipt =
             $"🍽 {TheMenuBoard.SpecialLabel} — {cost} cr. {board.PlateLine} "
             + $"{TheMenuBoard.OutcomeOf(roll, _specialStoryCheat)} (d20 {roll.Face}) — {steadying}";
-        _barNotice = receipt;
-        ShowPulseMessage($"{receipt} (−{cost:N0} cr)");
+        _barNotice = $"{receipt} (−{cost:N0} cr)";   // R1-F65 · said on the counter card, not over its title
         RequestVaultSave(); // #225: the purse moved (and the relief moved the nerve)
     }
 
@@ -320,7 +312,6 @@ public partial class Map
         string rumor = keep.RumorAt(SimTime);
         _barNotice = rumor;
         Overhear($"🍺 {keep.Name}: {rumor}", keep.Name); // durable — a rumor heard doesn't auto-vanish (#212)
-        ShowPulseMessage($"🍺 {keep.Name}: {rumor}");
         AskingIsBeingSeenAsking(keep);
     }
 }

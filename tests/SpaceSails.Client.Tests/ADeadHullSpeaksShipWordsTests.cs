@@ -78,4 +78,21 @@ public sealed class ADeadHullSpeaksShipWordsTests
         string ground = (string)typeof(Pages.Map).GetMethod("NerveBandDropLine", Hidden | BindingFlags.Static)!.Invoke(null, [false])!;
         Assert.Contains("digging under threat", ground);
     }
+
+    /// <summary>R1-F11 · The page's own field question, at the call site: the spine across the sealed door is not
+    /// the hold, the column's own square is.</summary>
+    [Fact]
+    public void ThePagesArchiveFieldStopsAtTheBulkhead()
+    {
+        Pages.Map map = OnAWreck();
+        Set(map, "_archiveAboard", true);
+        PropertyInfo field = typeof(Pages.Map).GetProperty("InArchiveField", Hidden)!;
+
+        Set(map, "_avatarX", (double)WreckLayout.ArchiveStation.X);
+        Set(map, "_avatarY", 0.0);
+        Assert.False((bool)field.GetValue(map)!, "standing in the spine is not standing in the hold");
+
+        Set(map, "_avatarY", (double)WreckLayout.ArchiveStation.Y);
+        Assert.True((bool)field.GetValue(map)!);
+    }
 }

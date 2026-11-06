@@ -33,7 +33,7 @@
         @* R1-F65 · with a card open the toast drops to the foot of the glass (.deck-pulse-toast-low) instead of
            covering the card's title and art. It stays above the card in z (#212: the rumour a captain paid to hear
            is never occluded), it just stops sitting on the header. *@
-        <div class="deck-pulse-toast@(_pendingOffer is not null || _patronDrink is not null || _bankSession is not null || _barMenu is not null || (_oracleOpen && _oracleLine is not null) || _shuttleBayStops is not null ? " deck-pulse-toast-low" : "")">@_pulse.Message</div>
+        <div class="deck-pulse-toast@(_pendingOffer is not null || _bankSession is not null || _barMenu is not null || (_oracleOpen && _oracleLine is not null) || _shuttleBayStops is not null ? " deck-pulse-toast-low" : "")">@_pulse.Message</div>
     }
 
     @if (_deckMode && _pendingOffer is { } offer)

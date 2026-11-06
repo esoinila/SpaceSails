@@ -223,6 +223,11 @@ public partial class Map
             _ventMessage = line;        // ditto: the valve board says everything else it does right here
             return;
         }
+        if (_oracleOpen && _oracleLine is not null)
+        {
+            _oracleNotice = line;       // R1-F65 · Static Marsh's true line answers on her own card, not over its title
+            return;
+        }
         if (_barMenu is not null)
         {
             _barNotice = line;          // the counter-example #736 was filed against — the keep answers on his card
