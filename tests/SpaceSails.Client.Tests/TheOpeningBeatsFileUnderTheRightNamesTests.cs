@@ -110,5 +110,10 @@ public sealed class TheOpeningBeatsFileUnderTheRightNamesTests
         var line = OracleRant.Truths.Single(l => l.FragmentId == "adjuster-tell" && l.Kind == OracleTruthKind.NebulaFragment);
         Assert.DoesNotContain("{", line.Perception, StringComparison.Ordinal);
         Assert.DoesNotContain("}", line.Perception, StringComparison.Ordinal);
+        // R1-F33: Marsh must not recite the adjuster's own quotes — the shard delivers them, once.
+        Assert.DoesNotContain("six times", line.Perception, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("spare life", line.Perception, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("same number", line.Perception, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("one number", line.Perception, StringComparison.OrdinalIgnoreCase);
     }
 }
