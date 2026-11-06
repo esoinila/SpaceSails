@@ -174,8 +174,8 @@ public static partial class DeathNarration
             // U08-F06 · …and the shaft is the depth of the floor the captain died on (the same MetresDown the DEAD AIR card
             // and the wall paint read), not a constant that contradicted them. Unasked, the old words stand.
             string depth = undergroundLevel is { } level && level < 0
-                ? $"{UndergroundComplex.MetresDown(level):F0} metres"
-                : "three hundred metres";
+                ? DepthInWords(UndergroundComplex.MetresDown(level)) + " of shaft"
+                : "the whole shaft";
             return below[(int)(seed % (ulong)below.Length)]
                 .Replace("{depth}", depth)
                 .Replace("{body}", string.IsNullOrWhiteSpace(bodyName) ? "that moon" : bodyName!);
@@ -199,5 +199,21 @@ public static partial class DeathNarration
         string body = string.IsNullOrWhiteSpace(bodyName) ? "that world" : bodyName!;
         string where = string.IsNullOrWhiteSpace(bodyName) ? "in open space" : $"off {bodyName}";
         return template.Replace("{body}", body).Replace("{where}", where);
+    }
+
+    /// <summary>U08-F06 (Fable's ruling) · A depth spoken, not read off a gauge: rounded to the nearest ten metres (halves
+    /// up), then spelled — "a hundred and sixty metres", "two hundred metres", "ninety metres".</summary>
+    private static string DepthInWords(double metres)
+    {
+        int tens = (int)Math.Floor((metres / 10.0) + 0.5) * 10;
+        string[] units = ["", "ten", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+        string[] hundreds = ["", "a hundred", "two hundred", "three hundred", "four hundred", "five hundred",
+            "six hundred", "seven hundred", "eight hundred", "nine hundred"];
+        int h = Math.Min(tens / 100, 9);
+        int rest = tens % 100 / 10;
+        string words = h == 0
+            ? units[rest]
+            : rest == 0 ? hundreds[h] : $"{hundreds[h]} and {units[rest]}";
+        return $"{words} metres";
     }
 }

@@ -105,3 +105,19 @@ public sealed class RoundTwoU07U08Tests
         }
     }
 }
+
+/// <summary>Pins the precondition of UiGate's TheSatchelPaintsOverTheCardTests fixture outside the wasm gate: the boot it uses
+/// must still raise a view-object arrival card (a seat cheat now spends THE HALL / THE CABINET, so ?rip=1 no longer does).</summary>
+public sealed class TheSatchelFixtureStillGetsAnArrivalCardTests
+{
+    [Theory]
+    [InlineData("/map?dock=selene-gate&secretlab=deep&land=1&floor=1")]
+    [InlineData("/map?dock=selene-gate&secretlab=deep&land=1&floor=2")]
+    public async Task TheFixturesBootLeavesAViewObjectCardUp(string url)
+    {
+        using DeskBench bench = await DeskBench.BootAsync(url);
+        await bench.RenderAsync();
+        Assert.True(bench.OnSurface, url + " never reached the ground.");
+        Assert.NotNull(bench.Peek("_viewObject"));
+    }
+}
