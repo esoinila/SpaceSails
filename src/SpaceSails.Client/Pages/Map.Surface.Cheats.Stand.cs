@@ -135,6 +135,38 @@ public partial class Map
         ShowPulseMessage("🧪 DEV ?shelter=1: this ground has no shelter with a door to stand at.");
     }
 
+    /// <summary>U05-F10 · <c>?outpost=1</c> guarantees a hut on the home tile and, until this, said nothing
+    /// about it: a tester swept the open regolith for ninety seconds and died to the pack looking. One DEV
+    /// line, in the idiom of <c>?shelter=1</c>'s — the distance and the compass bearing from the boots to the
+    /// hut's door. It moves nothing and forces nothing.</summary>
+    private void SayWhereTheOutpostIsIfAsked(SurfaceExcursion ex)
+    {
+        if (!_outpostCheat || ex.Floor < 0)
+        {
+            return;
+        }
+
+        SurfaceOutpost.Placement hut = HutOn(ex, SurfaceTiles.Home, true);
+        if (!hut.HasOutpost)
+        {
+            ShowPulseAlso("🧪 DEV ?outpost=1: this ground cannot hold a hut.");
+            return;
+        }
+
+        ShowPulseAlso(OutpostCheatLine(_avatarX, _avatarY, hut.DoorX, hut.DoorY));
+    }
+
+    /// <summary>The ?outpost=1 line, off two points. North is up the screen (smaller Y).</summary>
+    internal static string OutpostCheatLine(double fromX, double fromY, double doorX, double doorY)
+    {
+        double dx = doorX - fromX, dy = doorY - fromY;
+        double du = Math.Sqrt((dx * dx) + (dy * dy));
+        string[] compass = ["E", "SE", "S", "SW", "W", "NW", "N", "NE"];
+        double deg = (Math.Atan2(dy, dx) * 180.0 / Math.PI + 360.0) % 360.0;
+        string bearing = compass[(int)Math.Round(deg / 45.0) % 8];
+        return $"🧪 DEV ?outpost=1: the hut is on this ground, {du:0} du {bearing} of you (north is up the screen).";
+    }
+
     /// <summary>#759 QA · <c>?park=1</c> — the route to the park, booted. Set in Map.Sim's cheat parse.</summary>
     private bool _parkCheat;
 
