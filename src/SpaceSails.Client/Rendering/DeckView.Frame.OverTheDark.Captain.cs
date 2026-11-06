@@ -137,9 +137,17 @@ public sealed partial class DeckView
         // does not simply trade the ship's buried line for the sentry's.
         string? orbitText = surface is { OrbitComms: { Length: > 0 } ol } ? ol : null;
         string? stallText = state.StallBanner is { Length: > 0 } sb ? sb : null;
-        if (orbitText is not null || stallText is not null)
+        // #1463 item 3 · each line is fitted to the glass first (shrunk, then folded at its " · " separators), so a
+        // phone's 390 px no longer clips the drill HUD at both edges; the plate is measured off the rows as drawn.
+        double glassRoom = widthPx - (2 * CommsBand.EdgeMarginPx);
+        (string[] Rows, double Px) orbitFit = orbitText is null ? ([], CommsBand.LinePx) : CommsBand.Fit(orbitText, glassRoom);
+        (string[] Rows, double Px) stallFit = stallText is null ? ([], CommsBand.LinePx) : CommsBand.Fit(stallText, glassRoom);
+        if (orbitFit.Rows.Length + stallFit.Rows.Length > 0)
         {
-            (double px, double py, double pw, double ph) = CommsBand.PlateFor(widthPx / 2.0, orbitText, stallText);
+            var drawn = new List<(string Text, double Px)>();
+            drawn.AddRange(orbitFit.Rows.Select(r => (r, orbitFit.Px)));
+            drawn.AddRange(stallFit.Rows.Select(r => (r, stallFit.Px)));
+            (double px, double py, double pw, double ph) = CommsBand.PlateForRows(widthPx / 2.0, drawn);
             FillRect((float)px, (float)py, (float)pw, (float)ph, new RgbaColor(6, 11, 10, 205));
         }
 
@@ -165,8 +173,12 @@ public sealed partial class DeckView
                 double f = floor + (1.0 - floor) * (0.5 + 0.5 * Math.Sin(simTime * flickerHz));
                 color = new RgbaColor(170, 180, 190, (byte)(255 * Math.Clamp(f, 0.0, 1.0)));
             }
-            _renderer.DrawText(widthPx / 2f, (float)CommsBand.BaselineY(0), orbitLine, color,
-                $"{CommsBand.LinePx:0}px monospace", TextAlign.Center);
+            for (int r = 0; r < orbitFit.Rows.Length; r++)
+            {
+                _renderer.DrawText(widthPx / 2f, (float)CommsBand.BaselineY(r), orbitFit.Rows[r], color,
+                    string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{orbitFit.Px:0.#}px monospace"),
+                    TextAlign.Center);
+            }
         }
 
         // #825 · THE MACHINE'S OWN BANNER, on its own line, under the ship's. The owner had "SIGNAL BREAKING
@@ -177,9 +189,14 @@ public sealed partial class DeckView
         // already talking so neither fact ever paints over the other.
         if (state.StallBanner is { Length: > 0 } stall)
         {
-            float y = (float)CommsBand.BaselineY(orbitText is null ? 0 : 1);
-            _renderer.DrawText(widthPx / 2f, y, stall,
-                new RgbaColor(255, 190, 100, 235), $"{CommsBand.LinePx:0}px monospace", TextAlign.Center);
+            for (int r = 0; r < stallFit.Rows.Length; r++)
+            {
+                float y = (float)CommsBand.BaselineY(orbitFit.Rows.Length + r);
+                _renderer.DrawText(widthPx / 2f, y, stallFit.Rows[r],
+                    new RgbaColor(255, 190, 100, 235),
+                    string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{stallFit.Px:0.#}px monospace"),
+                    TextAlign.Center);
+            }
         }
 
         // Blind-UI audit finding: with the tube off-camera, nothing said the ship was docked or

@@ -124,4 +124,73 @@ public static class CommsBand
         double w = widest + (2 * PlateInsetPx);
         return (centreX - (w / 2), PlateTop, w, PlateHeight(used));
     }
+
+    /// <summary>#1463 item 3 · The smallest size a band line is shrunk to before it is folded onto a second row.</summary>
+    public const double MinFitPx = 10.0;
+
+    /// <summary>#1463 item 3 · The margin kept clear at each edge of the glass.</summary>
+    public const double EdgeMarginPx = 8.0;
+
+    /// <summary>#1463 item 3 · THE LINE THAT FITS THE GLASS. At 390 px the drill HUD's one centred line was clipped at
+    /// both edges and "· bore, then FIRE" was lost. A line that fits at <see cref="LinePx"/> stays as it was; a wider one
+    /// is shrunk (half-pixel steps) down to <see cref="MinFitPx"/>; a line still too wide at that is folded at its own
+    /// " · " separators into the fewest rows that fit, and only if one segment alone is wider than the glass is the
+    /// whole thing shrunk further. Words and order are never changed, so the clock and the bearing both stay.</summary>
+    public static (string[] Rows, double Px) Fit(string text, double availablePx)
+    {
+        if (WidthOf(text) <= availablePx)
+        {
+            return ([text], LinePx);
+        }
+        double perPx = WidthOf(text, 1.0);
+        double px = System.Math.Floor(availablePx / perPx * 2.0) / 2.0;
+        if (px >= MinFitPx)
+        {
+            return ([text], px);
+        }
+
+        const string sep = " · ";
+        var rows = new System.Collections.Generic.List<string>();
+        string cur = "";
+        foreach (string seg in text.Split(sep))
+        {
+            string joined = cur.Length == 0 ? seg : cur + sep + seg;
+            if (cur.Length > 0 && WidthOf(joined, MinFitPx) > availablePx)
+            {
+                rows.Add(cur);
+                cur = seg;
+            }
+            else
+            {
+                cur = joined;
+            }
+        }
+        rows.Add(cur);
+
+        double widest = 0.0;
+        foreach (string r in rows)
+        {
+            widest = System.Math.Max(widest, WidthOf(r, 1.0));
+        }
+        double fitted = System.Math.Min(MinFitPx, System.Math.Floor(availablePx / widest * 2.0) / 2.0);
+        return (rows.ToArray(), System.Math.Max(fitted, 6.0));
+    }
+
+    /// <summary>#1463 item 3 · The plate for rows that may each be drawn at their own size, stacked one
+    /// <see cref="LineStepPx"/> apart from the first baseline.</summary>
+    public static (double X, double Y, double W, double H) PlateForRows(
+        double centreX, System.Collections.Generic.IReadOnlyList<(string Text, double Px)> rows)
+    {
+        if (rows.Count == 0)
+        {
+            return (0, 0, 0, 0);
+        }
+        double widest = 0.0;
+        foreach ((string text, double px) in rows)
+        {
+            widest = System.Math.Max(widest, WidthOf(text, px));
+        }
+        double w = widest + (2 * PlateInsetPx);
+        return (centreX - (w / 2), PlateTop, w, PlateHeight(rows.Count));
+    }
 }
