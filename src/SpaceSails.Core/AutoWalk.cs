@@ -180,15 +180,19 @@ public sealed class AutoWalk
 
         // #1384 · THE SEARCH GOES FIRST, with a budget. A reachable walk finishes inside it and never pays for
         // anything else (ordinary clicks and guard routes are most of the traffic). Only a search that has spent
-        // SealedProbeCells and is still going - the signature of a goal with no road, flooding the field - is
+        // SealedFirstSearchCells and is still going - the signature of a goal with no road, flooding the field - is
         // handed to the pocket proof: a goal sealed in a pocket (a console behind the shed's wall, a room behind
         // a shut door) is proved so in a few thousand cells and refused at once. The proof is taken at the widest
         // reach either look below will use, so it can only refuse what both looks would have refused.
         Planner first = Planner.Begin(from, to, walls, radius, bounds, step, goalReachDu);
-        if (!first.Advance(SealedProbeCells))
+        if (!first.Advance(SealedFirstSearchCells))
         {
             double widestReach = goalReachDu > 0 ? Math.Max(goalReachDu, PointingFallbackDu) : 0;
-            if (DeckReachability.ProvablySealedOff(from, to, walls, radius, bounds, step, widestReach, SealedProbeCells))
+            CellsExpandedBeforeProof = first.CellsExpanded;
+            // #1437 · GOAL SIDE ONLY: on a reachable goal the goal flood runs out of budget and the start flood would
+            // do the same - a second 40k flood that proves nothing a click needs. A captain sealed in is not proved
+            // here; that click falls back to the search, as it always did.
+            if (DeckReachability.ProvablySealedOff(from, to, walls, radius, bounds, step, widestReach, SealedProbeCells, goalSideOnly: true))
             {
                 return new Attempt(null, RefusalLine);
             }
@@ -268,6 +272,8 @@ public sealed class AutoWalk
         /// <summary>Walk a slice of the search. True once there is nothing left to do.</summary>
         public bool Advance(int cells) => _search.Advance(cells);
 
+        internal int CellsExpanded => _search.CellsExpanded;
+
         /// <summary>Is the route already worked out? Nobody has to ask — <see cref="Finish"/> answers
         /// whatever the state — but a test that could not tell a plan finished during the stand from one
         /// finished on the frame it was needed would be measuring the wrong thing entirely.</summary>
@@ -299,6 +305,18 @@ public sealed class AutoWalk
     /// searched for: 40,000 cells is 10,000 du², more than every lab, room and ring on the ground put together,
     /// and a few milliseconds of flood where the open field is hundreds of thousands.</summary>
     public const int SealedProbeCells = 40_000;
+
+    /// <summary>#1437 · How many cells the click's own search may spend before the pocket proof is asked. A
+    /// sealed click used to spend all of <see cref="SealedProbeCells"/> here first (35-45 ms native, about a
+    /// second in the browser); the proof of a small pocket needs only the pocket's own cells, so the search now
+    /// gives up at a quarter of that and a sealed click costs about 10 ms. Every ordinary click and guard route
+    /// finishes inside it and never pays for the proof; only a walk that winds through more than this many cells
+    /// is handed to it (measured: the proof costs such a walk about +30 ms native, once per click).</summary>
+    public const int SealedFirstSearchCells = 10_000;
+
+    /// <summary>#1437 · Test plumbing: cells the click's own search had expanded when the pocket proof was last asked on this thread.</summary>
+    [ThreadStatic]
+    internal static int CellsExpandedBeforeProof;
 
     /// <summary>A lattice box big enough to hold the deck's stone and both ends of the walk, with a margin
     /// so a route may bulge around the outside of an obstacle that sits on the rim. Derived from the wall

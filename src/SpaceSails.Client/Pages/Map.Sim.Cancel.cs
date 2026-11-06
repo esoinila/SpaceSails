@@ -89,6 +89,13 @@ public partial class Map
         // Owner: "one press confirms, Esc keeps you seated." Listed here rather than under the table so the
         // cancel key cannot answer the question by doing the thing the question is about.
         if (TheStandUpConfirmIsUp) { KeepYourSeat(); return true; }
+        // #1450 · Ilse's card (z 1320, .view-object-backdrop) paints over the paper (1240) and her arrival does not close it, so
+        // her rung sits ABOVE the paper's. Esc is her Pass, as the shell's way out is, and it must beat the seat rungs too.
+        if (_finderCard is not null) { AnswerTheFinder(false); return true; }
+        // #1440 · Brem Kolt's pitch is a decision card (z 1320, like Ilse's): Esc is his "no", as the card's own ✕ is (the walk keys are swallowed under it, #1438). Above the paper it paints over.
+        if (_hardcaseCard is not null) { TellKoltNo(); return true; }
+        // #1450 · The bank prompt (title/note inputs, z 1300) paints over the paper and every seat/offer card below; its inputs bubble Esc up here.
+        if (_bankPrompt is not null) { CancelBankPrompt(); return true; }
         // #1052 · THE PAPER AT THE TABLE, and its rung is the whole of what "docked, not modal" costs this
         // chain.
         //
@@ -121,17 +128,11 @@ public partial class Map
         // the owner ruled that a movement key is a decision already taken ("must stand up before walking"),
         // so the keys pay for the stand instead of asking about it. Esc says nothing about where the captain
         // is going, which is exactly why it is still worth a question.
-        // R1-F67 follow-up · Ilse's card: Esc is her Pass, as the shell's way out is, and it must beat the seat rungs.
-        if (_finderCard is not null) { AnswerTheFinder(false); return true; }
-        // #1440 · Brem Kolt's pitch is a decision card: Esc is his "no", as the card's own ✕ is (the walk keys are swallowed under it, #1438).
-        if (_hardcaseCard is not null) { TellKoltNo(); return true; }
         if (SeatedIsDocked) { AskWhetherToStandUp(); return true; }
         if (CaptainIsSeated) { CloseTable(); return true; }
         if (_pendingContactDrink is not null) { CancelContactDrinkOffer(); return true; }
         if (_patronDrink is not null) { ClosePatronTable(); return true; }
         if (_pendingOffer is not null) { DeclineOffer(); return true; }
-        // The bank prompt (title/note inputs) sits above the bank session and its inputs bubble Esc up here.
-        if (_bankPrompt is not null) { CancelBankPrompt(); return true; }
         if (_bankSession is not null) { CloseBank(); return true; }
         if (_barMenu is not null) { CloseBarkeep(); return true; }
         // #425 · The oracle's corner card was the ONE bar card this chain never knew about (story pass

@@ -228,7 +228,7 @@ public static class CarriedObject
                 "whose lift will not admit that shaft exists. The card is older than the omission.";
         }
 
-        return $"It runs shaft {card.Band + 1} of {BodyNames.Designation(card.BodyId)} SITE, which is not " +
+        return $"It runs shaft {card.Band + 1} of {PatrolBeat.SiteName(card.BodyId)}, which is not " +
             "this one.\n\n" +
             "That is the whole of what the office was prepared to print: a site code, in its own register, " +
             "on the assumption that anybody holding the card already knew which door it was for. No plan, no " +

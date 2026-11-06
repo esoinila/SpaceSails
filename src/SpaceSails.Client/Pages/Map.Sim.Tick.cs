@@ -73,7 +73,7 @@ public partial class Map
         ReprojectTheTrajectoryWhenItIsDue(highResTimestampMs);
 
         SayWhatTheScrimWasStandingOn();
-        _pulse = _pulse.Expire(highResTimestampMs);
+        _pulse = _pulse.Seen(highResTimestampMs).Expire(highResTimestampMs);   // #1439 · dwell starts at the first tick that sees the line
         ExpireTheParrotBubble(highResTimestampMs);   // U10-F03 · every frame, deck included
         SoundTheArcOnItsRisingEdge();
 

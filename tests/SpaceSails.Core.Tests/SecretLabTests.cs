@@ -11,8 +11,7 @@ namespace SpaceSails.Core.Tests;
 public class SecretLabTests
 {
     // The same field envelope MoonSurface hands in (mirrors MoonSurface's constants).
-    private static readonly SurfaceLayout.Field Env = new(
-        LeftX: -44, RightX: 34, TopY: -20, BottomY: -84, LandingBandY: -27, AnchorX: -6, AnchorY: -70);
+    private static readonly SurfaceLayout.Field Env = SurfaceLayout.DefaultField;
 
     private const double AvatarRadius = 0.7; // DeckPlan.AvatarRadius
 

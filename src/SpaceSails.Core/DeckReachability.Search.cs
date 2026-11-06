@@ -108,10 +108,14 @@ public static partial class DeckReachability
 
         /// <summary>Expand at most <paramref name="cells"/> more lattice cells. Returns
         /// <see cref="Done"/> — true when there is nothing left to do.</summary>
+        /// <summary>#1437 · How many lattice cells this search has expanded so far (test plumbing).</summary>
+        internal int CellsExpanded { get; private set; }
+
         public bool Advance(int cells)
         {
             while (!Done && cells-- > 0 && _open.TryDequeue(out (int Cx, int Cy) current, out _))
             {
+                CellsExpanded++;
                 Expand(current);
             }
             if (!Done && _open.Count == 0)

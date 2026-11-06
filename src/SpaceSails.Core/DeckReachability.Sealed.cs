@@ -33,7 +33,8 @@ public static partial class DeckReachability
         (double MinX, double MinY, double MaxX, double MaxY) bounds,
         double step,
         double goalReachDu,
-        int cellBudget)
+        int cellBudget,
+        bool goalSideOnly = false)
     {
         ArgumentNullException.ThrowIfNull(walls);
         SealedProofsRun++;
@@ -82,7 +83,8 @@ public static partial class DeckReachability
         {
             return goalSide == Flood.RanDry;
         }
-        return Exhausts(grid, [start], start, cellBudget, arrivals.Contains, targetIsStart: true) == Flood.RanDry;
+        return !goalSideOnly
+            && Exhausts(grid, [start], start, cellBudget, arrivals.Contains, targetIsStart: true) == Flood.RanDry;
     }
 
     /// <summary>How a bounded flood ended.</summary>
@@ -92,7 +94,7 @@ public static partial class DeckReachability
     /// for it (the search goes first, and the proof is only asked once the search has spent its budget), and a
     /// test can only say so by counting, not by timing.</summary>
     [ThreadStatic]
-    public static int SealedProofsRun;
+    internal static int SealedProofsRun;
 
     /// <summary>Breadth-first from <paramref name="seeds"/>; RanDry only when the frontier ran dry inside the
     /// budget and no visited cell was a hit (the walker's own cell, or - flooding from the walker - any

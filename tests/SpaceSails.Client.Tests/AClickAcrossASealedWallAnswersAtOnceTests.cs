@@ -180,4 +180,28 @@ public sealed class AClickAcrossASealedWallAnswersAtOnceTests
             AutoWalk.BoundsFor(sealedWalls, a, b), DeckReachability.DefaultStep, AutoWalk.PointingReachDu);
         Assert.True(DeckReachability.SealedProofsRun > ran, "a sealed goal never ran the proof - the counter is dead.");
     }
+
+    /// <summary>
+    /// #1437 · A SEALED CLICK SPENDS AT MOST 10,000 CELLS ON ITS OWN SEARCH BEFORE THE PROOF. It used to spend
+    /// 40,000 (35-45 ms native). Counted, not timed: the cells the search had expanded when the proof was asked.
+    /// RED PROOF: <c>SealedFirstSearchCells = 40_000</c> and the count is 40,000.
+    /// </summary>
+    [Fact]
+    public void ASealedClickSpendsAtMostTenThousandCellsBeforeTheProof()
+    {
+        List<SurfaceCollision.Segment> walls = GroundOf("luna", LandingSites.For("luna")[0]);
+        var from = new DeckReachability.Point(Env.HomeX, Env.TopY - 2.0);
+        var to = new DeckReachability.Point(Env.HomeX + 40, Env.AnchorY + 4);
+        Seal(walls, to.X, to.Y, 8.0);
+        SurfaceCollision.WallIndex field = SurfaceCollision.WallIndex.Build([.. walls]);
+
+        AutoWalk.CellsExpandedBeforeProof = 0;
+        int before = DeckReachability.SealedProofsRun;
+        AutoWalk.Attempt attempt = AutoWalk.Plan(true, from, to, field, AvatarRadius,
+            AutoWalk.BoundsFor(walls, from, to), DeckReachability.DefaultStep, AutoWalk.PointingReachDu);
+
+        Assert.Null(attempt.Route);
+        Assert.True(DeckReachability.SealedProofsRun > before, "the proof never ran, so the count below is not this click's.");
+        Assert.InRange(AutoWalk.CellsExpandedBeforeProof, 1, 10_000);
+    }
 }

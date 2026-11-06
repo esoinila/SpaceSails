@@ -64,14 +64,14 @@ public sealed class TheCardsEscAndTheWakeCardTailTests
     [Fact]
     public async Task TheScuttleWakeCardEndsWithTheDeathCardsTail()
     {
-        // The scuttle death through its own trigger (the /map?death=scuttled cheat lands first, which the
-        // bench's timers cannot finish); the cards below are the real ones.
-        using DeskBench bench = await DeskBench.BootAsync("/map?start=wreck");
+        // #1450 · The REAL derelict path: land on a wreck, and die there of her scuttle through the surface
+        // death trigger (the idiom of ADeadCaptainDoesNotBoardTests). Place is derived from the wreck, never poked.
+        using DeskBench bench = await DeskBench.BootAsync("/map?dock=the-tilt&wreck=drivefailure&land=1");
         await bench.RenderAsync();
-        bench.CallOnTheDispatcher("SheGoesWithHim");
-        // The cheat's route lands on the wreck first, so the place is the derelict; stand there the same way.
+        Assert.True(bench.OnSurface);
+        bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", bench.Peek("_surface"), false, DeathCause.Scuttled, false);
         object busted = bench.Field("_busted")!;
-        busted.GetType().GetProperty("Place")!.SetValue(busted, DeathPlace.Derelict);
+        Assert.Equal(DeathPlace.Derelict, busted.GetType().GetProperty("Place")!.GetValue(busted));
         DeskBench.Painted painted = await bench.RenderAsync();
         string quote = painted.Root.Descendants().First(n => n.HasClass("busted-quote")).Spoken;
         const string tail = "Her log will not mention it.";
