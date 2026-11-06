@@ -136,6 +136,14 @@ public partial class Map
 
         (double distance, double lane) = JobTripFrom(targetPos, targetAnchorId);
 
+        // #1405 R1-F44 · the KAAMOS run is not flown by the lanes: the cycler carries it (38 d, no burn). A
+        // "~6.5 y by the lanes" beside "the arc does the flying" quotes a trip nobody makes, so the run
+        // prints its distance alone (the effort line drops a half it has no honest number for).
+        if (q.Id == KaamosLore.SupplyRunQuestId)
+        {
+            lane = 0.0;
+        }
+
         return new JobFacts(
             Kind: kind,
             TargetName: targetName,

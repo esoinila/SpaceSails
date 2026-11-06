@@ -147,7 +147,8 @@ public partial class Map
         bool armedWithPlan = _armedOrbitBodyId is not null && _autopilotPlanPath is { Count: >= 2 };
         bool keepingHoldsOrbit = _orbitKept && _keepTrimFunded;
         ClosestApproach.Pass? collision =
-            CollisionAlertRule.Evaluate(armedWithPlan, keepingHoldsOrbit, _closestPass, _autopilotPlanClosestPass);
+            CollisionAlertRule.Evaluate(armedWithPlan, keepingHoldsOrbit, _closestPass, _autopilotPlanClosestPass,
+                docked: _dockedHavenId is not null);
         if (collision is { } cp)
         {
             string body = cp.BodyName;
