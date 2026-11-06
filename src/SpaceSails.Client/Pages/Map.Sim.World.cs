@@ -202,14 +202,13 @@ public partial class Map
         }
 
         // U05-F09 · ?shelter=, ?kit= and ?outpost= are ADD-ONS to a landing: each reads the ground, and a bare link
-        // booted coasting near Earth with the flag silently ignored. They imply the guide's own route
-        // (the-tilt, the default site, landed) — any ?dock=/?start= the caller passed still wins the berth.
-        if (_shelterCheat || _kitCheat || _outpostCheat)
+        // booted coasting near Earth with the flag silently ignored. A BARE add-on link — nothing in the query
+        // but those keys (and ?site=/?mags=/?scenario=) — implies the guide's own route (the-tilt, landed).
+        // Anything else in the query owns the berth already (?deflection=, ?dock=, ?wreck= …) and is left
+        // exactly as it booted before: the add-on rides on that scene's own ground or nowhere.
+        if ((_shelterCheat || _kitCheat || _outpostCheat) && TheQueryIsOnlyAddOns())
         {
-            if (q.DockCheat is null && q.StartId is null)
-            {
-                q.DockCheat = "the-tilt";
-            }
+            q.DockCheat ??= "the-tilt";
             _landCheat = true;
         }
 
@@ -217,6 +216,27 @@ public partial class Map
         {
             q.DockCheat = "the-tilt";
         }
+    }
+
+    /// <summary>U05-F09 · Is every key in the address one of the add-ons that needs a landing, or one of the
+    /// few that only choose WHICH landing? Read off the address itself so no field joins <c>BootQuery</c>.</summary>
+    private bool TheQueryIsOnlyAddOns()
+    {
+        if ((object?)Navigation is null)
+        {
+            return false;    // a bench that parsed without a page address asked for no landing
+        }
+
+        string[] allowed = ["shelter", "kit", "outpost", "mags", "site", "scenario"];
+        foreach (string pair in new Uri(Navigation.Uri).Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            string key = pair.Split('=')[0];
+            if (!allowed.Contains(key, StringComparer.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     /// <summary>
