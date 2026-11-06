@@ -38,5 +38,16 @@ public static class DrinkExcuses
 
     /// <summary>Pick the captain's excuse for a pour from a caller's seed (sim-time salted upstream), so
     /// the same pour always speaks the same reason. Pure and deterministic — flavour only.</summary>
-    public static string LineFor(ulong seed) => Lines[(int)(seed % (ulong)Lines.Count)];
+    public static string LineFor(ulong seed, bool holdingOrbit = true)
+    {
+        // U02-F22 · "The orbit's holding steady" is a claim about the ship's state; said over a coasting
+        // hull it contradicts the HUD beside it. A ship not holding an orbit draws from the shelf without it.
+        if (holdingOrbit)
+        {
+            return Lines[(int)(seed % (ulong)Lines.Count)];
+        }
+
+        var free = Lines.Where(l => !l.Contains("orbit", StringComparison.OrdinalIgnoreCase)).ToList();
+        return free[(int)(seed % (ulong)free.Count)];
+    }
 }

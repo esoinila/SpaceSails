@@ -122,6 +122,42 @@ public static partial class TrafficSchedule
     private static readonly string[] PodCallsigns =
         ["Milk Run", "Windfall", "Ripe Plum", "Fat Goose", "Easy Keeping", "Tin Kettle", "Slow Coach", "Ferryman's Due", "Sitting Duck", "Loose Change"];
 
+    /// <summary>U01-F09 · ONE SKY, ONE NAME PER HULL. The random pods and Luna's mass driver each draw their
+    /// nicknames from lists that both open on "Milk Run", so the founding sky could carry two live hulls
+    /// under one callsign - and a route tip that names "Milk Run" opens one of them without saying why. The
+    /// first hull to hold a callsign keeps it; each later one is numbered ("Milk Run II"). Ships are
+    /// otherwise untouched (same id, same plan, same state), and a sky with no clash comes back as it was.</summary>
+    public static IReadOnlyList<NpcShip> WithDistinctCallsigns(IEnumerable<NpcShip> ships)
+    {
+        var taken = new HashSet<string>(StringComparer.Ordinal);
+        var result = new List<NpcShip>();
+        foreach (NpcShip ship in ships)
+        {
+            NpcShip kept = ship;
+            if (!taken.Add(ship.Callsign))
+            {
+                int n = 2;
+                string renamed;
+                do
+                {
+                    renamed = $"{ship.Callsign} {Roman(n++)}";
+                }
+                while (!taken.Add(renamed));
+                kept = ship with { Callsign = renamed };
+            }
+
+            result.Add(kept);
+        }
+
+        return result;
+    }
+
+    private static string Roman(int n) => n switch
+    {
+        2 => "II", 3 => "III", 4 => "IV", 5 => "V", 6 => "VI", 7 => "VII", 8 => "VIII", 9 => "IX",
+        _ => n.ToString(System.Globalization.CultureInfo.InvariantCulture),
+    };
+
     // OG vs. reinforcements (owner: "I want to know which were the OGs and which are the new"):
     // the founding traffic present at world-load carries no tag; every later refill wave stamps
     // its ships and pods with "·N" (N = wave number), visible right in the callsign on the board,

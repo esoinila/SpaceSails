@@ -134,6 +134,16 @@ public partial class Map
         };
     }
 
+    /// <summary>U01-F16 · the mid-flight parenthetical fits the run's own length: an inner transfer (under a
+    /// year door to door) takes weeks or months, only a deep run "takes years".</summary>
+    internal static string MidFlightNote(NpcShip ship)
+    {
+        double days = (ship.EstimatedArrivalTime - ship.DepartureTime) / 86400.0;
+        if (days < 90.0) { return "mid-flight — local transfers take weeks"; }
+        if (days < 365.0) { return "mid-flight — inner transfers take months"; }
+        return "mid-flight — outer transfers take years";
+    }
+
     /// <summary>"departs in 4d 14h" / "departed 2366d ago" — the blind playtest read the raw
     /// negative departure values as a data bug; phrased time can't be misread.</summary>
     private string DepartureLabel(NpcShip ship)
@@ -146,7 +156,7 @@ public partial class Map
         double delta = ship.DepartureTime - SimTime;
         var span = TimeSpan.FromSeconds(Math.Abs(delta));
         string amount = span.TotalDays >= 1 ? $"{(int)span.TotalDays}d {span.Hours}h" : $"{span.Hours}h {span.Minutes:D2}m";
-        return delta >= 0 ? $"departs in {amount}" : $"departed {amount} ago (mid-flight — outer transfers take years)";
+        return delta >= 0 ? $"departs in {amount}" : $"departed {amount} ago ({MidFlightNote(ship)})";
     }
 
     /// <summary>
@@ -330,7 +340,7 @@ public partial class Map
 
         if (_ephemeris is not null)
         {
-            items.AddRange(NewsWire.Ambient(_ephemeris, SimTime, ambientCount, scope, salt));
+            items.AddRange(NewsWire.WithoutRepeats(NewsWire.Ambient(_ephemeris, SimTime, ambientCount, scope, salt))); // U02-F12 · ambient only: player events with identical text are never dropped
         }
 
         items.Sort((a, b) => b.SimTime.CompareTo(a.SimTime));

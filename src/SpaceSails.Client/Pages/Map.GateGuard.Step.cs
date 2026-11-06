@@ -266,18 +266,23 @@ public partial class Map
     // ── THE EMPTY CHAIR ──────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>Absent: the chair is told once, the first time the captain comes within reach of the door — and,
-    /// with the stringer's courtesy, only into a FREE pulse slot, so the car's own arrival line is not written over
+    /// with the stringer's courtesy, only into the pulse queue at Beat rank (U04-F13), so the car's own arrival line is not written over
     /// and this one is not lost under it (watched headless: the two were said on the same frame).</summary>
     private void TheEmptyChairIsTold(SurfaceExcursion ex, ManAtTheDoor man)
     {
-        if (ex.Told.Has(ToldOnce.GateAbsent) || _pulse.Message is not null
+        if (ex.Told.Has(ToldOnce.GateAbsent)
             || !Within(_avatarX, _avatarY, man.Post.X, man.Post.Y, GateGuard.ReachDu))
         {
             return;
         }
 
         ex.Told.Tell(ToldOnce.GateAbsent);
-        ShowPulseMessage(GateGuard.AbsentLine);
+        // U04-F13 · It used to wait for a FREE pulse slot and never got one on a floor with a round on it (the
+        // quake and "You there — hold on" took every slot, and the latch was never thrown, so it was neither
+        // shown nor filed). Held at Beat rank and filed under 📍 the frame it is first in reach; the told-once
+        // latch keeps it to one telling, and the car's own arrival line is ranked, not overwritten.
+        HoldAndFile(GateGuard.AbsentLine, "📍", PulseRank.Beat);
+        ReleaseHeldSayingsUnlessACardStopsTheWorld();
     }
 
     /// <summary>

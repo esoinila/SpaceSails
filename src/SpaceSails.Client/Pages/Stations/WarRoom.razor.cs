@@ -36,7 +36,11 @@ public partial class WarRoom
 
     private readonly record struct RenderContact(Contact Contact, ComplianceState Compliance, double Distance, double X, double Y);
 
-    private readonly record struct NearestHunterInfo(string Callsign, double Distance, double BearingDeg);
+    private readonly record struct NearestHunterInfo(string Callsign, double Distance, double BearingDeg, double ClosingSpeed);
+
+    /// <summary>U04-F17 · The headline's verb is the sign of the range rate, the same sign the sensor row
+    /// beside it prints: a collector whose range is opening is not "closing".</summary>
+    public static string HunterHeadlineVerb(double closingSpeedMps) => closingSpeedMps >= 0 ? "closing" : "opening";
 
     /// <summary>A hunter, ready to draw: screen position, bearing, distance, closing speed and
     /// whether it's close enough (within 2x weapon range) to earn a threat line on the circle.</summary>
@@ -240,7 +244,11 @@ public partial class WarRoom
         return list;
     }
 
-    private static string FormatDuration(double seconds) =>
+    /// <summary>U04-F19 · A time that has already come is "0 min", never "-0 min" or "-1 min": a plotted course
+    /// whose closest approach slipped into the past is clamped at zero before it is formatted.</summary>
+    public static string FormatDuration(double seconds) => FormatDurationOf(Math.Max(0, seconds));
+
+    private static string FormatDurationOf(double seconds) =>
         seconds < 3600 ? $"{seconds / 60:F0} min"
         : seconds < 86400 ? $"{seconds / 3600:F1} h"
         : seconds / 86400 >= 365 ? $"{seconds / 86400 / 365:F1} yr"
@@ -278,7 +286,8 @@ public partial class WarRoom
             bearingDeg += 360;
         }
 
-        return new NearestHunterInfo(hunter.Callsign, bestDistance, bearingDeg);
+        return new NearestHunterInfo(
+            hunter.Callsign, bestDistance, bearingDeg, ClosingSpeedMps(rel, bestDistance, hunter.State.Velocity));
     }
 
     private void Hail(RenderContact rc) =>

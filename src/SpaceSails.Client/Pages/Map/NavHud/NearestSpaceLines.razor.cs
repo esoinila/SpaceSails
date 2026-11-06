@@ -27,6 +27,7 @@ public partial class NearestSpaceLines
     [Parameter] public double DockReachMeters { get; set; }
     [Parameter] public Func<double, string> FormatDistance { get; set; } = default!;
     [Parameter] public Func<string> NearestReadoutName { get; set; } = default!;
+    [Parameter] public Func<string> NearestReadoutNumbers { get; set; } = default!;
 
     // NavHud's own event dispatch, repeated: no automatic re-render per event. See the header.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

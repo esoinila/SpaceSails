@@ -21,6 +21,16 @@ namespace SpaceSails.Client.Pages;
 public partial class Map
 {
 
+    /// <summary>U01-F11 · where a field-book page came from: the ground it was dug on, unless every line on it
+    /// is the finder's case, which was taken at a bar seat from its giver.</summary>
+    internal static string FieldProvenance(Core.FieldFinding found)
+    {
+        string day = (found.LatestSimTime / 86400).ToString("F0", CultureInfo.InvariantCulture);
+        return found.Lines.Count > 0 && found.Lines.All(l => l.Glyph == FinderGlyph)
+            ? $"{FinderCase.DisplayName} · ashore · day {day}"
+            : $"found on the ground · day {day}";
+    }
+
     // The fanfare (#185): a completion is a CELEBRATION, not a silent credit. One pop-up at a time;
     // extras queue so a double payout still gets its due.
     private MissionCelebration? _celebration;
@@ -137,6 +147,40 @@ public partial class Map
 
     // Project the quest ledger for the Captain's-desk Quests tab (M-Q2) — newest work on top.
     private Stations.Captain.QuestItem[] QuestCards() =>
+        [.. QuestContractCards(), .. OtherWorkCards(_expedition, _finderCase, _finderProgress)];
+
+    /// <summary>U01-F04 · everything taken on that is not a contract still files in the ledger, under its OWN
+    /// heading and with a NEXT line: the away-team gig (a charter, not a Quest) and the finder's case (a case
+    /// is seat-tied, not a contract — the 08-30 ruling — so it gets a heading of its own, never a Jobs row).</summary>
+    internal static IReadOnlyList<Stations.Captain.QuestItem> OtherWorkCards(
+        ExpeditionPlan? gig, FinderCase.Case? theCase, FinderCase.Progress progress)
+    {
+        var rows = new List<Stations.Captain.QuestItem>();
+        if (gig is { } plan)
+        {
+            string who = plan.Flavor == ExpeditionFlavor.Science ? "scientists" : "a survey crew";
+            rows.Add(new Stations.Captain.QuestItem(
+                $"Away team — {plan.SiteDisplayName}",
+                $"Chartered: ferry {who} down to {plan.SiteDisplayName} and bring every one of them home. Hold the shuttle window — the site does not wait.",
+                $"{plan.BaseFee.ToString("N0", CultureInfo.InvariantCulture)} cr base",
+                "on the books", "active", [], false,
+                NextAction: $"board the shuttle for {plan.SiteDisplayName}") { Heading = "🛰 Charters" });
+        }
+
+        if (theCase is not null && progress.Taken && progress.Settled == FinderCase.Outcome.Open)
+        {
+            rows.Add(new Stations.Captain.QuestItem(
+                $"{FinderCase.LeadTitle} — {FinderCase.DisplayName}",
+                FinderCase.LeadBody,
+                $"{theCase.Value.PayCredits.ToString("N0", CultureInfo.InvariantCulture)} cr · Varga's fee",
+                "case open", "active", [], false,
+                NextAction: progress.WitnessHeard ? "follow the trail in the field book" : "work the case at a top") { Heading = "🕵 Cases" });
+        }
+
+        return rows;
+    }
+
+    private Stations.Captain.QuestItem[] QuestContractCards() =>
         _quests.AsEnumerable().Reverse().Select(q =>
         {
             // #727 · The status label IS this contract's current step, and it is read out of the ONE place
@@ -370,7 +414,7 @@ public partial class Map
             tips.Add(new Stations.Captain.LedgerTip(
                 $"🥾 {found.Place}",
                 found.Lines.Select(l => $"{l.Glyph} {l.Text}").ToArray(),
-                $"found on the ground · day {(found.LatestSimTime / 86400).ToString("F0", CultureInfo.InvariantCulture)}",
+                FieldProvenance(found),
                 ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null,
                 EntryId: FilingLine.EntryId("field", found.LatestSimTime, found.Place),
                 SimTime: found.LatestSimTime));

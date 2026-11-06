@@ -262,7 +262,7 @@ public partial class Map
         {
             // #428: say WHERE she is, not just that she's here — the corner is deliberately clear of every
             // other console, and a captain who can't find her reads the cheat as broken.
-            ShowPulseMessage("🌀 Test: Static Marsh has the port-back corner of this bar, whatever the watch. Walk in, head aft along the left wall, and press E on ◈ “STATIC” MARSH.");
+            SayTheDevLine("🌀 Test: Static Marsh has the port-back corner of this bar, whatever the watch. Walk in, head aft along the left wall, and press E on ◈ “STATIC” MARSH.");
         }
 
         // Tuesday plan PR-A: ?start=wreck drops you 2 km off the roadster — you're on top of her, so

@@ -68,7 +68,12 @@ public partial class Map
     }
     private static readonly RgbaColor DisabledNpcColor = new(150, 150, 160);
 
-    private string NpcName(string id) => FindNpc(id)?.Ship.Callsign ?? id;
+    // U04-F19 · a hired hunter is not on the NPC list, so a round fired at one read "hunter-0" on the war
+    // room's tracker; the hunter roster is asked before the raw id is given up on.
+    private string NpcName(string id) =>
+        FindNpc(id)?.Ship.Callsign
+        ?? _hunters.Where(h => h.Id == id).Select(h => h.Callsign).FirstOrDefault()
+        ?? id;
 
     private void StepNpcs()
     {

@@ -243,23 +243,7 @@ public partial class Map
 
         RendererInterop.PlayCue("alarm");
         RendererInterop.PlayCue("gameover");
-        string line = cause switch
-        {
-            DeathCause.Suffocated => DeathNarration.SuffocationHeadline(body),
-            DeathCause.Joined =>
-                $"🧠 Nerves gone past empty on {body} — the captain turns, and walks TOWARD the crowd. The insurance will need a new name.",
-            // #525 · The one they chose. The pulse must not say an Old One's hand was the last straw over a
-            // captain who turned both keys themselves ninety seconds ago.
-            DeathCause.Scuttled =>
-                $"☢ The overload ran out with the captain still aboard the {body}. She goes all at once and mostly inward. The insurance will need a new name.",
-            // Nothing about this one is about nerve, so it must not narrate as if it were.
-            DeathCause.Inspected when heldStill =>
-                $"🕶 Found aboard {body}, told to stand still, and standing still. Three seconds, and the sweep goes on down the corridor. The insurance will need a new name.",
-            DeathCause.Inspected =>
-                $"🕶 Found aboard {body}, told to stand still, and not standing still. The sweep goes on down the corridor. The insurance will need a new name.",
-            _ =>
-                $"🧠 Nerves shot past empty on {body} — an Old One's hand is the last straw. The captain breaks. The insurance will need a new name.",
-        };
+        string line = DeathNarration.SurfaceDeathPulse(cause, body, nerveRanOut, heldStill);
         LogAutopilotEvent(line);
         ShowPulseMessage(line);
         _shipAlerts.Raise(AlertKind.Collision, AlertSeverity.Red, $"CAPTAIN LOST — {body}", SimTime);

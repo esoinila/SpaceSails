@@ -156,7 +156,25 @@ public partial class Map
         {
             return;
         }
-        ShowPulseMessage("The stranger swirls their drink. “Nothing worth your time right now. Check back.”");
+        ShowPulseMessage($"{BarSpeaker(giver)} swirls the glass. “Nothing worth your time right now. Check back.”");
+    }
+
+    /// <summary>U01-F08 · the name a bar contact answers to in their own reply line: the plate's name for the
+    /// named regulars, "The stranger" only for an unnamed top.</summary>
+    internal static string BarSpeaker(string? giver)
+    {
+        // Named plates (the regulars, Lind, an old shipmate, a keep) answer to their own display name; only a
+        // plate that names nobody ("A CARRIER, WAITING ON A SIGNATURE", "SOMEBODY EATING") stays "The stranger".
+        if (string.IsNullOrWhiteSpace(giver)
+            || giver.StartsWith("A ", StringComparison.OrdinalIgnoreCase)
+            || giver.StartsWith("AN ", StringComparison.OrdinalIgnoreCase)
+            || giver.StartsWith("SOMEBODY", StringComparison.OrdinalIgnoreCase)
+            || giver.StartsWith("STRANGER", StringComparison.OrdinalIgnoreCase))
+        {
+            return "The stranger";
+        }
+
+        return GiverDisplay(giver);
     }
 
     // The Magpie, a fence's runner who won't sit still (PR-F). Their position is a pure function of
@@ -185,9 +203,12 @@ public partial class Map
         {
             { State: QuestState.PickedUp } or { State: QuestState.Complete } or { State: QuestState.TurnedIn }
                 => "“Good hands. Get that parcel to the Fixer and we never spoke.”",
-            _ when backOpen && m.Location == "BACK ROOM"
+            // U02-F16 · The shelf has a parcel on it only when the Fixer's job is on the books (LiftStash says
+            // "nothing worth pocketing" otherwise), so her words about it wait for the job: with the door
+            // welded open by hand and no job, she speaks the pre-job line like everywhere else.
+            _ when backOpen && job is not null && m.Location == "BACK ROOM"
                 => "“You made it in. The parcel's right there on the shelf — lift it before the dockmaster's rounds.”",
-            _ when backOpen
+            _ when backOpen && job is not null
                 => "“You're through the hatch. Package is on the back shelf — go on, it won't bite.”",
             { State: QuestState.Active }
                 => "“The lockup's the easy part — crack V-06 and there's a parcel with nobody's name on it. I'll be around. Somewhere.”",

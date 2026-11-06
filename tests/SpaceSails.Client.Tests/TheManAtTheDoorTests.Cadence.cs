@@ -69,7 +69,9 @@ public sealed partial class TheManAtTheDoorTests
         Frames(map, 30);
         Assert.Null(Pulse(map));
 
-        // A new excursion: the chair is told again on the first reach.
+        // A new excursion: the chair is told again on the first reach. (The held-saying queue drips on the real
+        // clock, which this bench does not run: move it past the last line's dwell, as the passing minutes would.)
+        Set(map, "_lastTimestampMs", (double?)3_600_000.0);
         NewExcursionOnHisFloor(map, body, floor, GateGuard.Posting.Absent);
         FreeTheSlot(map);
         (double x, double y) = Landing();

@@ -86,6 +86,7 @@ public sealed class EveryBackdropSaysWhatItClaimsTests
         // the thing", laid over the desk the carve poured.
         [UndergroundComplex.CantinaHallArtUrl] = Claim.Portrait,
         [UndergroundComplex.ParkArtUrl] = Claim.Portrait,
+        [UndergroundComplex.ParkFloorArtUrl] = Claim.Portrait,
         [UndergroundComplex.CounterArtUrl] = Claim.AtFixture,
     };
 

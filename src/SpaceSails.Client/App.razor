@@ -19,7 +19,10 @@
                         It is written into the ship's log — the Captain's desk is still holding it after a
                         reload, with a copy button, so it can go straight into an issue.
                     </p>
-                    <a class="btn btn-warning" href=".">Reload</a>
+                    @* U01-F03 · a real reload. The old plain anchor was swallowed by the router as a client-side navigation
+                       to "/", which left this very error card standing on a changed URL; only a browser reload
+                       clears the faulted page. *@
+                    <button type="button" class="btn btn-warning" onclick="location.reload()">Reload</button>
                 </div>
             </ErrorContent>
         </ErrorBoundary>

@@ -152,7 +152,7 @@
                     @* #756 · The header stops promising one flat rate, because a card with a 2 cr coffee
                        and a 12 cr double on it cannot have one. Each row prices itself off Core
                        (Drink.PriceAt), so the label, the enabled-ness and the debit are one number. *@
-                    <div class="bar-menu-head">@(keep.SelfService ? "🍸 THE CARD UNDER THE GLASS" : $"🍸 THE MENU — {keep.DrinkPrice} cr a glass")</div>
+                    <div class="bar-menu-head">@(keep.SelfService ? "🍸 THE CARD UNDER THE GLASS" : "🍸 THE MENU")</div>
                     @foreach (Core.Drink drink in Core.DrinkMenu.For(keep))
                     {
                         Core.Drink d = drink;

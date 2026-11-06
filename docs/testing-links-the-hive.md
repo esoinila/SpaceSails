@@ -379,7 +379,7 @@ At least double or triple it."*
 
 | | what you should see |
 | --- | --- |
-| **the floor** | green — `art/b1-park-walk.jpg` under the vector grid, laid in **panels** across the room so a 16:9 frame is never stretched to 6:1 |
+| **the floor** | green — `art/b1-park-lawn.jpg` (the lawn band of `b1-park-walk.jpg`) under the vector grid, laid in **panels** across the room so a frame is never stretched to 6:1 |
 | **the window wall** | the near wall, along the whole width of the hall, drawn in the **window ink** (the blue-white the ship's bridge glass uses) and not the poured hull line. Walk into it: you stop. You can see the hall through it and you can never enter that way |
 | **the gate** | the ONE way in — the far end of the hall's own rib corridor, which used to be a dead end with a sealed sign on it |
 | **the beds** | raised boxes, solid, stencilled `🌱 BED n · <CROP> · TO CANTEEN 1`: table greens, stew root, breakfast tomato, soft herbs, salad stock, and six coffee trees on trial |

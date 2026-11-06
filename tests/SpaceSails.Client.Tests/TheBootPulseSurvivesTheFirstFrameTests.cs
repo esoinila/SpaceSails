@@ -27,6 +27,8 @@ public sealed class TheBootPulseSurvivesTheFirstFrameTests
     [
         ["/map?dock=the-tilt&land=titan", "not landable from this berth"],
         ["/map?deflection=1", "deflection gig accepted"],
+        // U01-F18 (#1415) · the oracle cheat names her corner; it is a DEV line and rides the same hold.
+        ["/map?oracle=1&ashore=1", "Static Marsh has the port-back corner"],
     ];
 
     [Theory]
