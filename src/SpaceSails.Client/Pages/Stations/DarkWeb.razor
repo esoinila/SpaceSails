@@ -135,6 +135,11 @@
                             <td>
                                 @Inspectorate.Plate
                                 <div class="text-secondary">@Inspectorate.LookCardLine</div>
+                                @* U02-F09 · a price you cannot meet says so, in words, under the row. *@
+                                @if (Credits < cardPrice)
+                                {
+                                    <div class="text-warning small dark-web-short">not enough credits — it costs @cardPrice.ToString("N0", CultureInfo.InvariantCulture) cr</div>
+                                }
                             </td>
                             <td class="text-end align-middle text-nowrap">
                                 <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"
@@ -166,6 +171,10 @@
                                 @BlackOpsKey.CardLabel
                                 <div class="text-secondary">@BlackOpsKey.LookCardLine</div>
                                 <div class="text-secondary">@BlackOpsKey.FenceRowLine</div>
+                                @if (Credits < keyPrice)
+                                {
+                                    <div class="text-warning small dark-web-short">not enough credits — it costs @KeyPriceText cr</div>
+                                }
                             </td>
                             <td class="text-end align-middle text-nowrap">
                                 <button type="button" class="btn btn-sm btn-outline-info py-0 px-1"

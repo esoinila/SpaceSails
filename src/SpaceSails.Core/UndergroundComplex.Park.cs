@@ -251,6 +251,13 @@ public static partial class UndergroundComplex
     /// specs."</i></summary>
     public const string ParkArtUrl = "art/b1-park-walk.jpg";
 
+    /// <summary>U02-F04 · The picture the park's FLOOR wears: the lawn-and-gravel band cut from the bottom-left
+    /// of <see cref="ParkArtUrl"/> (520 × 190 px). The whole photograph is an eye-level view whose upper two
+    /// thirds are sky, plaster and facade; laid flat as floor panels it painted blue sky under the park's own
+    /// plate. The floor is the green, so the floor wears only the green (§13.15: the crop is a fact about the
+    /// picture and is published beside it).</summary>
+    public const string ParkFloorArtUrl = "art/b1-park-lawn.jpg";
+
     /// <summary>#759 · Which hall has a park behind it, asked exactly the way <see cref="HallArtFor"/> asks
     /// which halls get a picture — because it is the same question. The branch office's upper canteen is the
     /// room whose own art is shot through a window wall at the green; the head office's dining room is a
@@ -276,7 +283,7 @@ public static partial class UndergroundComplex
 
     /// <summary>#759 · Which picture the park's floor wears, or null where there is no park.</summary>
     public static string? ParkArtFor(string bodyId, Comfort use) =>
-        HasPark(bodyId, use) ? ParkArtUrl : null;
+        HasPark(bodyId, use) ? ParkFloorArtUrl : null;
 
     /// <summary>#759 · The park's floor art, cut into panels across its own box.
     ///
@@ -299,8 +306,9 @@ public static partial class UndergroundComplex
         return cut;
     }
 
-    /// <summary>#759 · The shape of the frames this set is painted in — 1280 × 720, every one of them.</summary>
-    public const double ParkArtAspect = 16.0 / 9.0;
+    /// <summary>#759 · The shape of the frames this set is painted in — U02-F04: the 520 × 190 lawn crop the
+    /// floor wears (the garden's canvas is still the whole 1280 × 720 frame).</summary>
+    public const double ParkArtAspect = 520.0 / 190.0;
 
     /// <summary>#759 · Half the width of a gravel walk. Comfortably wider than <see cref="DoorHalf"/>, for
     /// the reason DoorHalf itself was widened: a path narrower than a couple of the reachability flood's

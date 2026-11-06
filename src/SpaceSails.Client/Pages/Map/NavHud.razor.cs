@@ -176,6 +176,7 @@ public partial class NavHud
     [Parameter] public int MinNodePulses { get; set; }
     [Parameter] public bool NavLockedByDock { get; set; }
     [Parameter] public Func<string> NearestReadoutName { get; set; } = default!;
+    [Parameter] public Func<string> NearestReadoutNumbers { get; set; } = default!;
     [Parameter] public Func<PlanNode, NodeDirection, bool> NodeAimedAlong { get; set; } = default!;
     [Parameter] public Action<PlanNode, int, bool> NudgeDepartureEpoch { get; set; } = default!;
     [Parameter] public Action<PlanNode, int> NudgeNodeAim { get; set; } = default!;

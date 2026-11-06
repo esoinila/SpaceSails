@@ -211,7 +211,8 @@ public partial class LocalSpace
         int cost = CommerceRule.BuyCostCr(mode, buyUnits, unitValue);
         return mode switch
         {
-            CommerceRule.TradeMode.SameOrbit => $"🛒 Buy {buyUnits}u dockside now — {cost:N0} cr · no fee",
+            CommerceRule.TradeMode.SameOrbit =>
+                $"🛒 Buy {buyUnits}u {SameOrbitWords(relSpeed, distance)} — {cost:N0} cr · no fee · ~{EstimateMinutes(mode, relSpeed, distance, buyUnits)} min",
             CommerceRule.TradeMode.DroneMatch =>
                 $"🛒 Buy {buyUnits}u via drones now — {cost:N0} cr (incl {CommerceRule.TransferFeeCr(mode, buyUnits):N0} cr fee) · ~{EstimateMinutes(mode, relSpeed, distance, buyUnits)} min",
             _ =>
@@ -219,12 +220,18 @@ public partial class LocalSpace
         };
     }
 
+    // U02-F02 · A same-orbit deal is fee-free, not instant: the drones still ferry it at the geometry's own
+    // pace (13.8 M km away it took minutes). "Dockside" is for a partner within a few km at matched speed.
+    private static string SameOrbitWords(double relSpeed, double distance) =>
+        distance <= 10_000 && relSpeed <= 1.0 ? "dockside, by drone" : "by drone";
+
     private string SellButtonLabel(CommerceRule.TradeMode mode, double relSpeed, double distance)
     {
         int payout = CommerceRule.SellPayoutCr(mode, CargoUnits, CargoValue);
         return mode switch
         {
-            CommerceRule.TradeMode.SameOrbit => $"📤 Sell hold dockside now — +{payout:N0} cr · no fee",
+            CommerceRule.TradeMode.SameOrbit =>
+                $"📤 Sell hold {SameOrbitWords(relSpeed, distance)} — +{payout:N0} cr · no fee · ~{EstimateMinutes(mode, relSpeed, distance, CargoUnits)} min",
             CommerceRule.TradeMode.DroneMatch =>
                 $"📤 Sell hold via drones now — +{payout:N0} cr · ~{EstimateMinutes(mode, relSpeed, distance, CargoUnits)} min",
             _ =>
@@ -269,6 +276,7 @@ public partial class LocalSpace
             return $"{meters / metersPerAu:F2} AU";
         if (meters >= 1e9)
             return $"{meters / 1e9:F2} M km";
-        return $"{meters / 1000:F0} km";
+        // U02-F11 · thousands separators below the M km switch ("387,401 km", not "387401 km").
+        return $"{(meters / 1000).ToString("N0", System.Globalization.CultureInfo.InvariantCulture)} km";
     }
 }

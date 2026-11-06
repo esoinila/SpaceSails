@@ -351,22 +351,50 @@ public static partial class NewsWire
 
         if (group == BodyTemplates)
         {
-            return string.Format(template, bodies[rng.NextInt(0, bodies.Count)].Name);
+            return TheBodyName(string.Format(template, bodies[rng.NextInt(0, bodies.Count)].Name));
         }
 
         if (group == RouteTemplates)
         {
             int i = rng.NextInt(0, bodies.Count);
             int j = (i + 1 + rng.NextInt(0, bodies.Count - 1)) % bodies.Count; // always != i
-            return string.Format(template, bodies[i].Name, bodies[j].Name);
+            return TheBodyName(string.Format(template, bodies[i].Name, bodies[j].Name));
         }
 
         if (group == CargoTemplates)
         {
-            return string.Format(template, CargoClasses[rng.NextInt(0, CargoClasses.Length)]);
+            string cargo = CargoClasses[rng.NextInt(0, CargoClasses.Length)];
+            string line = string.Format(template, cargo);
+            // U02-F12 · "A Ice shipment", "A Alloys shipment": the article follows the cargo's first letter.
+            return "AEIOU".Contains(cargo[0])
+                ? line.Replace($"A {cargo} ", $"An {cargo} ", StringComparison.Ordinal)
+                : line;
         }
 
         return template; // FlatLines — no substitution
+    }
+
+    /// <summary>U02-F12 · A body called "The Tilt" printed as "the The Tilt–Triton run". A template's own
+    /// lower-case "the" before a name that already carries its article drops the template's.</summary>
+    private static string TheBodyName(string line) =>
+        line.Replace("the The ", "the ", StringComparison.Ordinal).Replace("The The ", "The ", StringComparison.Ordinal);
+
+    /// <summary>U02-F12 · One ticker never prints the same headline twice: the ambient wire draws a line
+    /// per day from a small pool, so a repeat inside a 20-day blend is arithmetic, and a repeat in the
+    /// ticker reads as a stuck feed. The newest copy stays (the list is expected newest-first).</summary>
+    public static List<NewsItem> WithoutRepeats(IEnumerable<NewsItem> newestFirst)
+    {
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        var kept = new List<NewsItem>();
+        foreach (NewsItem item in newestFirst)
+        {
+            if (seen.Add(item.Headline))
+            {
+                kept.Add(item);
+            }
+        }
+
+        return kept;
     }
 
     /// <summary>#1052 · Fill the AUTHOR'S named tokens in an authored line. Named rather than
@@ -384,12 +412,12 @@ public static partial class NewsWire
         string anyBody = bodies.Count > 0 ? bodies[rng.NextInt(0, bodies.Count)].Name : "the yards";
         string portName = port?.Name ?? anyBody;
 
-        return template
+        return TheBodyName(template
             .Replace("{SHIPNAME-template}", shipName, StringComparison.Ordinal)
             .Replace("{PORT}", portName, StringComparison.Ordinal)
             .Replace("{BODY}", anyBody, StringComparison.Ordinal)
             .Replace("{DAY}", DayToken(day), StringComparison.Ordinal)
-            .Replace("{N}", smallInt.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal);
+            .Replace("{N}", smallInt.ToString(System.Globalization.CultureInfo.InvariantCulture), StringComparison.Ordinal));
     }
 
     /// <summary>How a sim-date reads in a printed line — the same "day N" the save slots, the field

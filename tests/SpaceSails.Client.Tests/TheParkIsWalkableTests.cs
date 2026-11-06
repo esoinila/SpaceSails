@@ -491,7 +491,7 @@ public sealed class TheParkIsWalkableTests
             UndergroundComplex.Hall hall = bar.Hall!.Value;
             parks++;
 
-            var panels = deck.Backdrops.Where(b => b.Url == UndergroundComplex.ParkArtUrl).ToList();
+            var panels = deck.Backdrops.Where(b => b.Url == UndergroundComplex.ParkFloorArtUrl).ToList();
             Assert.Equal(UndergroundComplex.ParkArtPanels(park).Count, panels.Count);
             foreach (DeckPlan.Backdrop b in panels)
             {

@@ -334,7 +334,7 @@ public partial class Map
         }
 
         items.Sort((a, b) => b.SimTime.CompareTo(a.SimTime));
-        return items;
+        return NewsWire.WithoutRepeats(items);   // U02-F12 · the same line twice in one ticker reads as a stuck feed
     }
 
     // ---- M28 (Sunday PR-E): the ship's parrot 🦜 — the alarm system with personality ----
