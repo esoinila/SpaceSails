@@ -421,5 +421,8 @@ public partial class Map
         // #728 · …and ?shelter=1 walks the last leg, which is the longest walk on the ground: the shelters
         // are seeded DEEP by design and the fixtures under test are inside one of them.
         StandAtTheShelterIfAsked(landedOn);
+
+        // U05-F10 · …and ?outpost=1 says WHERE the hut it guaranteed is, since nothing else on this ground does.
+        SayWhereTheOutpostIsIfAsked(landedOn);
     }
 }

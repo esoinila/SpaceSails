@@ -391,7 +391,7 @@ public partial class Map
             // seven-segment idiom the reactor overload uses, which is the owner's own comparison
             // ("similar counter as the round count counting down seconds on the map"). A bar in the corner
             // is for glancing at; this is for when glancing is no longer enough.
-            Countdown: SuitAir.RunningLow(ex.AirSeconds, DistanceToTheTube()) || SuitAir.OnTheReserve(ex.AirSeconds)
+            Countdown: SuitAir.CountdownShows(ex.AirSeconds, DistanceToTheTube(), AirSupplyOf(ex))
                 ? (_avatarX, _avatarY + 2.6, $"O2 {(int)(ex.AirSeconds / 60)}:{(int)(ex.AirSeconds % 60):00}")
                 : null,
             Bots: _hudBots,

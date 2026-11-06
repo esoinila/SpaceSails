@@ -278,7 +278,7 @@ exact URL already appeared above is not repeated.
   SET THE BOOTS DOWN AT A SHELTER (#728) — a pace outside the door of the one building on the ground that fills a tank AND fills a magazine. -- see: `🫁 CHARGING RACK — FILLS YOUR TANK` on one wall and `🔫 EMERGENCY LOCKER — FILLS YOUR MAGAZINES` on the ...
 - `?mags=N`  (template - fill in the value; no fixed link)
   BRING THE SLING DOWN HOLDING N ROUNDS EACH (#728).
-- `/map?dark=1`  [local](http://localhost:5073/map?dark=1) [live](https://esoinila.github.io/SpaceSails-play/map?dark=1)
+- `/map?secretlab=deep&land=1&floor=4&dark=1`  [local](http://localhost:5073/map?secretlab=deep&land=1&floor=4&dark=1) [live](https://esoinila.github.io/SpaceSails-play/map?secretlab=deep&land=1&floor=4&dark=1)
   Put the FIXTURES OUT on every floor this excursion walks — the suit's forward-facing headlights become the whole of the seeing, and everything outside the cone is BLACK rather than dim (#708). The FOUND HALLS (#677) declare themselves dark and are ...
 - `?process=N`  (template - fill in the value; no fixed link)
   How long processing one document takes, in sim seconds — `?process=0` makes it INSTANT (#696). Leaving a paper or a file with 🫳, and reading a paper as a clue at the tracker, are a twenty-second hold of standing still; that IS the mechanic, and it ...
@@ -301,7 +301,7 @@ exact URL already appeared above is not repeated.
   LEDGER POINT, THE DEAD STATION (#653 slice 1) — a hub drum and four arms hanging off the berth, boarded at her crew lock. Two or three of her four tubes are severed (seeded off her id, so it is the same station every boot) and the boat is how you ...
 - `/map?card=next`  [local](http://localhost:5073/map?card=next) [live](https://esoinila.github.io/SpaceSails-play/map?card=next)
 - `?card=N`  (template - fill in the value; no fixed link)
-- `/map?card=all`  [local](http://localhost:5073/map?card=all) [live](https://esoinila.github.io/SpaceSails-play/map?card=all)
+- `/map?card=all&land=1`  [local](http://localhost:5073/map?card=all&land=1) [live](https://esoinila.github.io/SpaceSails-play/map?card=all&land=1)
   MINT AN AUTHORITY CARD BEFORE THE FIRST RIDE (#693) — the one cheat that makes the CARDED lift row, the gate beat and the refusal ladder reachable on an ordinary site.
 - `/map?kit=1`  [local](http://localhost:5073/map?kit=1) [live](https://esoinila.github.io/SpaceSails-play/map?kit=1)
   ASSEMBLE THE FIELD DOSSIER ON THE FIRST PIECE OF SOMEBODY'S KIT, WITH EVERY SENTENCE IT CAN CARRY (#774/#588).

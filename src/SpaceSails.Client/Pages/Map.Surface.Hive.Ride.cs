@@ -145,7 +145,7 @@ public partial class Map
                 DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
                 UndergroundComplex.UnlistedLobbyLabel,
                 UndergroundComplex.UnlistedLobbyArtUrl,
-                UndergroundComplex.UnlistedLobbyCard));
+                UndergroundComplex.UnlistedLobbyCardFor(ex.Stop.Body.Id)));
             RendererInterop.PlayCue("reveal");
         }
 

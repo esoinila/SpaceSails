@@ -91,7 +91,7 @@ public partial class Map
         }
 
         double held = ShelterReservoirNow(ex, which);
-        ShowPulseMessage(RackGaugeLine(ex, held));
+        ShowPulseMessage(RackGaugeLine(ex, held, ex.ShelterPumpNoted.Contains(ShelterRackKey(which))));
     }
 
     // ── #608 · THE REFUGE'S RACK [E]. The same gauge, in a poured room under a moon. ─────────────────────
@@ -138,7 +138,8 @@ public partial class Map
             ShowPulseMessage("🫁 The rack's fitting is through the inner door. Step into the air.");
             return;
         }
-        ShowPulseMessage(RackGaugeLine(ex, RefugeReservoirNow(ex, which)));
+        ShowPulseMessage(RackGaugeLine(ex, RefugeReservoirNow(ex, which),
+            ex.RefugePumpNoted.Contains(RefugeKey(ex.Floor, which))));
     }
 
     // ── #619 · THE REFUGE THAT FAILED [E]. A welded door, and a card. ────────────────────────────────────

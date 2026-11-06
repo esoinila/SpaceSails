@@ -88,6 +88,13 @@ public static partial class SuitAir
     /// <summary>Is the tank actually being spent? The single bit the whole readout turns on.</summary>
     public static bool Drawing(Supply supply) => supply == Supply.Tanks;
 
+    /// <summary>U06-F09 · Does the BIG red O2 counter hang over the captain? Only while the tank is both low
+    /// and DRAWING. On a pressurised floor, in a shelter or in her tube the clock is parked
+    /// (<see cref="Drawing"/>), and a counter frozen at 0:14 and still red says the tank is still the
+    /// problem — the gauge beside it says TANK STOPPED, and the two must not argue.</summary>
+    public static bool CountdownShows(double airLeftSeconds, double distanceHome, Supply supply) =>
+        Drawing(supply) && (RunningLow(airLeftSeconds, distanceHome) || OnTheReserve(airLeftSeconds));
+
     /// <summary>The source, as a word. Short enough to sit on the gauge beside AIR.</summary>
     public static string SourceLabel(Supply supply) => supply switch
     {

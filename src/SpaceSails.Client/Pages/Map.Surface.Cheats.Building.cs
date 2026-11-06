@@ -83,8 +83,8 @@ public partial class Map
         ShowPulseMessage(
             "🧪 DEV ?ringoffice=1: INSIDE a room on the ring, looking OUT through its glass at the park — "
             + $"{office.Plate}. The door behind you is on a street; the wall in front of you is a window "
-            + "and it still stops you. Then walk the block: every side of the green is somebody's front "
-            + "wall now.");
+            + "— the premium suites have a door in theirs onto the gravel (#817), the rest stop you. Then "
+            + "walk the block: every side of the green is somebody's front wall now.");
     }
 
     /// <summary>#775 QA · Stand the captain OUT ON THE SPINE, at the hall's front door.

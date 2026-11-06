@@ -227,10 +227,14 @@ public partial class Map
 
     /// <summary>#608 · What a rack — either rack — says when it is asked how it is doing. One reading of one
     /// machine, so the shed on the regolith and the refuge eleven floors down can never describe the same
-    /// state in two different ways.</summary>
-    private static string RackGaugeLine(SurfaceExcursion ex, double held) =>
+    /// state in two different ways.
+    ///
+    /// <para>U05-F03 · <paramref name="pumpedHere"/> is whether this rack has put anything into THIS tank on
+    /// this excursion. "Clicks off at two thirds… that is your lot" narrates a fill that happened; a captain
+    /// who walks in with a tank already past the line gets the stays-shut line instead.</para></summary>
+    internal static string RackGaugeLine(SurfaceExcursion ex, double held, bool pumpedHere) =>
         ex.AirSeconds >= ex.AirBudgetSeconds * SurfaceShelter.FillToFraction
-            ? SurfaceShelter.PumpDoneLine
+            ? (pumpedHere ? SurfaceShelter.PumpDoneLine : SurfaceShelter.AlreadyFullEnoughLine)
             : held > SurfaceShelter.ReservoirSeconds * 0.1
                 ? SurfaceShelter.PumpingLine
                 : SurfaceShelter.TrickleLine;
