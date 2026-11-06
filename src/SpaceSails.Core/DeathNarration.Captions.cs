@@ -19,6 +19,35 @@ public static partial class DeathNarration
     public static string SuffocationHeadline(string bodyName) =>
         $"🫁 The tank read empty on {bodyName}. The suit had said so while there was still a walk back in it.";
 
+    /// <summary>
+    /// U04-F07 · The one-line pulse a surface death prints — the SAME cause the card names, said in one sentence.
+    /// The pulse used to default to the nerve-overdraw sentence for anything it had no arm for, so a captain
+    /// run down by five blows at nerve 3 read "Nerves shot past empty… the captain breaks" over a card that
+    /// (rightly) said the Old Ones ran him down. The nerve sentence now belongs to <paramref name="nerveRanOut"/>
+    /// alone; a blows death says blows.
+    /// </summary>
+    public static string SurfaceDeathPulse(DeathCause cause, string body, bool nerveRanOut, bool heldStill) => cause switch
+    {
+        DeathCause.Suffocated => SuffocationHeadline(body),
+        DeathCause.Joined =>
+            $"🧠 Nerves gone past empty on {body} — the captain turns, and walks TOWARD the crowd. The insurance will need a new name.",
+        // #525 · The one they chose. The pulse must not say an Old One's hand was the last straw over a
+        // captain who turned both keys themselves ninety seconds ago.
+        DeathCause.Scuttled =>
+            $"☢ The overload ran out with the captain still aboard the {body}. She goes all at once and mostly inward. The insurance will need a new name.",
+        // Nothing about this one is about nerve, so it must not narrate as if it were.
+        DeathCause.Inspected when heldStill =>
+            $"🕶 Found aboard {body}, told to stand still, and standing still. Three seconds, and the sweep goes on down the corridor. The insurance will need a new name.",
+        // U04-F08 · reached only when the captain MOVED during the three seconds; the stood-still death has its own arm above.
+        DeathCause.Inspected =>
+            $"🕶 Found aboard {body}, told to stand still, and not standing still. The sweep goes on down the corridor. The insurance will need a new name.",
+        // U04-F07 · the fifth blow: the body gave out, not the nerve.
+        DeathCause.Reevers when !nerveRanOut =>
+            $"🩸 The fifth blow lands on {body} — the Old Ones run the captain down. The insurance will need a new name.",
+        _ =>
+            $"🧠 Nerves shot past empty on {body} — an Old One's hand is the last straw. The captain breaks. The insurance will need a new name.",
+    };
+
     public static DeathCause SurfaceEnd(double nerveAtDeath, ulong seed)
     {
         if (nerveAtDeath > JoinedNerveSliver)

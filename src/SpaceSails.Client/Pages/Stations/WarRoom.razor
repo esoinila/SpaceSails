@@ -45,7 +45,7 @@
             @if (NearestHunter() is { } nhCompact)
             {
                 <div class="war-room-hunter-warning mb-2">
-                    🐺 @nhCompact.Callsign closing — @FormatRange(nhCompact.Distance) at bearing @((int)nhCompact.BearingDeg)°
+                    🐺 @nhCompact.Callsign @HunterHeadlineVerb(nhCompact.ClosingSpeed) — @FormatRange(nhCompact.Distance) at bearing @((int)nhCompact.BearingDeg)°
                 </div>
             }
         }
@@ -389,7 +389,7 @@
                                 }
                                 else
                                 {
-                                    <div class="text-secondary">@(InterestIsHunter ? "Pursuit never enters his catch envelope — he misses this pass." : "Course never enters the boarding envelope — tighten the plot at Nav.")</div>
+                                    <div class="text-secondary">@(InterestIsHunter ? "Pursuit never enters the collector's catch envelope — the pass is missed." : "Course never enters the boarding envelope — tighten the plot at Nav.")</div>
                                 }
                                 @* Wolf-aim: a hunter is predicted by REPLAYING its pursuit law against our plot,
                                    not by the freighter coast — say so, and say what actually bends it. *@
@@ -404,7 +404,7 @@
                     @if (NearestHunter() is { } nh)
                     {
                         <div class="war-room-hunter-warning mb-2">
-                            🐺 @nh.Callsign closing — @FormatRange(nh.Distance) at bearing @((int)nh.BearingDeg)°
+                            🐺 @nh.Callsign @HunterHeadlineVerb(nh.ClosingSpeed) — @FormatRange(nh.Distance) at bearing @((int)nh.BearingDeg)°
                         </div>
                     }
                     @if (SensorTracks.Count > 0)

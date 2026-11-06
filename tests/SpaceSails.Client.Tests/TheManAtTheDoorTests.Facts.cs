@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using SpaceSails.Client.Rendering;
@@ -349,6 +349,38 @@ public sealed partial class TheManAtTheDoorTests
         said.Add(Pulse(absent));
 
         Assert.All(said, s => Assert.Contains(s ?? "∅", canon));
+    }
+
+    /// <summary>
+    /// U04-F13 · <b>THE COAT IS TOLD EVEN WHEN THE PULSE IS BUSY.</b> The chair line used to wait for a free
+    /// pulse slot and, on a floor with a round on it, never got one: it was neither shown nor filed, and the
+    /// told-once latch was never thrown. It is now held at Beat rank and filed the first frame the captain is in
+    /// reach, whatever the pulse is saying.
+    ///
+    /// <para><b>Proven RED</b> by restoring the <c>_pulse.Message is not null</c> early-out: the book never
+    /// gets the line.</para>
+    /// </summary>
+    [Fact]
+    public void TheCoatIsFiledEvenWhenTheSlotIsBusy()
+    {
+        (string body, int floor) = ASiteWithADoor();
+        Pages.Map map = OnHisFloor(body, floor, GateGuard.Posting.Absent);
+        Pages.Map.ManAtTheDoor man = Man(map);
+        StandAt(map, man.Post.X + GateGuard.ReachDu + 30, man.Post.Y);
+        Frames(map, 3);
+        Assert.DoesNotContain(GateGuard.AbsentLine, Book(map));
+
+        // The slot is taken by something that outranks nothing the chair cares about.
+        Invoke(map, "ShowPulseMessage", "You there — hold on.", PulseRank.Beat);
+        Assert.NotNull(Pulse(map));
+
+        StandAt(map, man.Post.X + 1, man.Post.Y);
+        Frames(map, 3);
+
+        Assert.Single(Book(map), t => t == GateGuard.AbsentLine);
+        Assert.True(Ex(map).Told.Has(ToldOnce.GateAbsent));
+        Frames(map, 3);
+        Assert.Single(Book(map), t => t == GateGuard.AbsentLine);
     }
 
     private static double Distance(Pages.Map.Walker w, double x, double y) =>

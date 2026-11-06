@@ -3772,6 +3772,14 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                                     @onclick="() => TheStopMove(m.Id)">@m.Label</button>
                         }
                     </div>
+                    @* U04-F22 · A greyed move says why ON THE CARD, not only in its hover title (#603). *@
+                    @foreach (SpaceSails.Core.Encounter.Move refused in TheStopsMoves())
+                    {
+                        if (!TheStopMoveOnOffer(refused))
+                        {
+                            <div class="reveal-outcome">@refused.Label — @TheStopMoveRefusal(refused)</div>
+                        }
+                    }
                 }
                 @* #615 · KEEP OR LEAVE. Owner: "should we have like keep / leave option when we find stuff?"
                    The kit's own press rows one region up, with two answers instead of one — the find/console
@@ -5322,7 +5330,7 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                     <span class="wc-room">
                         @(WorstSweeperState switch
                         {
-                            InspectionTeam.Awareness.Challenging => "stand still",
+                            InspectionTeam.Awareness.Challenging => "lamp on you",
                             InspectionTeam.Awareness.Hunting => "they know you are aboard",
                             InspectionTeam.Awareness.Investigating => "somebody heard that",
                             _ => "not looking for you yet",
