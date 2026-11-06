@@ -237,7 +237,7 @@ public partial class Map
         // Durable, and in somebody's voice — the ledger's 👂 section keeps it where the captain will meet it
         // again a week later, which is when a front door has to still be standing open.
         Overhear($"👂 {GiverDisplay(offer.Giver)}: \"Held, it says. Not closed. Thirty years and I've never seen held.\"",
-            "kaamos-bounce");
+            offer.Giver);
     }
 
     // ── The bar seam (holders-tell · bought-coordinate · the berth-code capstone). One discoverable action
@@ -293,7 +293,7 @@ public partial class Map
         {
             case "holders-tell":
                 TryAssembleKaamos("holders-tell",
-                    "🌑 The barkeep tips their chin at a lone drinker in the corner — the one who used to run that berth. " +
+                    "🌑 The barkeep tips their chin at a lone drinker in the corner. " +
                     KaamosLore.ById("holders-tell")!.Lore);
                 Overhear("👂 The KAAMOS berth-holder: \"You don't file for that berth. You keep it.\"", "kaamos-holder");
                 break;
@@ -318,8 +318,7 @@ public partial class Map
 
                 _credits -= price;
                 TryAssembleKaamos("bought-coordinate",
-                    $"🌑 A round on the counter (−{price:N0} cr) buys the rest of it. " +
-                    KaamosLore.ById("bought-coordinate")!.Lore);
+                    "🌑 " + KaamosLore.ById("bought-coordinate")!.Lore + $" (−{price:N0} cr)");
                 break;
 
             default:

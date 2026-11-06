@@ -289,7 +289,7 @@ public sealed class TheWreckHasItsOwnArrivalTests
 
     /// <summary>The autopilot's OWN channel — the event log the ledger renders, not the pulse toast.</summary>
     private static List<string> Channel(Pages.Map map) =>
-        Get<List<(double SimTime, string Text)>>(map, "_autopilotEvents").Select(e => e.Text).ToList();
+        Get<List<(double SimTime, string Text, bool Story)>>(map, "_autopilotEvents").Select(e => e.Text).ToList();
 
     private static int Occurrences(string haystack, string needle)
     {

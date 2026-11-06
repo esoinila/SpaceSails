@@ -47,7 +47,13 @@ public partial class Map
             return null;
         }
 
-        var parts = new List<string> { DockedSomewhereWithAFloorAboveIt ? DeckView.DockedKeyHints : DeckView.DeckKeyHints };
+        var parts = new List<string>
+        {
+            // R1-F75 · the airlock sentence is for a captain still aboard; ashore it names a door behind him.
+            DockedSomewhereWithAFloorAboveIt
+                ? (_ashore ? DeckView.AshoreKeyHints : DeckView.DockedKeyHints)
+                : DeckView.DeckKeyHints,
+        };
 
         // ── #440 · THE BANK, AT THE ONE FIXTURE THAT HAS ONE ──
         //

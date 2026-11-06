@@ -29,6 +29,10 @@ namespace SpaceSails.Core;
 /// </summary>
 public static partial class StoryBeats
 {
+    /// <summary>R1-F63 · The Captain's-ledger heading the story cards' event-log lines file under (beside
+    /// "🛰 Autopilot" and "🎯 Mission"): a card told in a bar is not a handback.</summary>
+    public const string LedgerTitle = "📖 Story";
+
     /// <summary>A moment worth showing the player a picture of.</summary>
     public enum Beat
     {

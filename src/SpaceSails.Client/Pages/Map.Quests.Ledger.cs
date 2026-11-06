@@ -277,10 +277,11 @@ public partial class Map
         // handback the owner warped past is still on the record afterward — the established tip idiom.
         // 2026-07-18 playtest: the provenance is the receipt's AGE, not the wall clock — a line cut
         // seconds ago now reads "logged just now", never "logged 0d 16h 13m" (LedgerClock).
-        foreach ((double simTime, string text) in _autopilotEvents)
+        foreach ((double simTime, string text, bool story) in _autopilotEvents)
         {
             tips.Add(new Stations.Captain.LedgerTip(
-                "🛰 Autopilot", [text], $"logged {LedgerClock.Age(simTime, SimTime)}",
+                // R1-F63 · a story card's line is the STORY's, not a handback's.
+                story ? StoryBeats.LedgerTitle : "🛰 Autopilot", [text], $"logged {LedgerClock.Age(simTime, SimTime)}",
                 ScopeTipId: null, ShowDarkWeb: false, DossierShipId: null,
                 // #973 L1 · a dated page, and therefore one the filing line can take away. Keyed off the
                 // receipt's own stamp and its text, never its rendered age — the age changes every minute.

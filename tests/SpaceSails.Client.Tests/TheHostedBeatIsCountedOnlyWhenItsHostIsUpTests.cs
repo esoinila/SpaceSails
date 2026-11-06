@@ -95,7 +95,7 @@ public sealed class TheHostedBeatIsCountedOnlyWhenItsHostIsUpTests
     /// <summary>The ledger, newest first — where a beat's words survive its picture, and where the seam
     /// shouts when a caller hands it a hosted beat with nothing to host it.</summary>
     private static IReadOnlyList<string> Ledger(Pages.Map map) =>
-        [.. ((IEnumerable<(double SimTime, string Text)>)Field(map, "_autopilotEvents")!).Select(e => e.Text)];
+        [.. ((IEnumerable<(double SimTime, string Text, bool Story)>)Field(map, "_autopilotEvents")!).Select(e => e.Text)];
 
     /// <summary>The open BUSTED encounter, or null. Its <c>Phase</c> is reached by name because the type is
     /// private to the page.</summary>

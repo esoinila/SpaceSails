@@ -186,7 +186,9 @@ public sealed partial class EveryRoundFingerprintsTheSameTests
         var events = (IEnumerable)Get(map, "_autopilotEvents")!;
         foreach (object row in events)
         {
-            sb.Append("  log ").Append(R(row)).Append('\n');
+            // The row's kind flag (R1-F63) is a ledger-heading detail, not part of the round's mark: the (time, text) pair renders as pinned.
+            var pair = (System.Runtime.CompilerServices.ITuple)row;
+            sb.Append("  log ").Append(R((pair[0], pair[1]))).Append('\n');
         }
         return sb.ToString();
     }
