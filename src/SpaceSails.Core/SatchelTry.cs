@@ -369,7 +369,7 @@ public static class SatchelTry
 
             return new(false,
                 $"🔒 The gate reads it, and it is somebody else's business: this one was issued for " +
-                $"{BodyNames.Designation(held.BodyId)} SITE. The same office, the same two hands on the " +
+                $"{PatrolBeat.SiteName(held.BodyId)}. The same office, the same two hands on the " +
                 "countersignatures, a different hole under a different moon — and this gate has no opinion " +
                 "about any of that. It is looking for its own site code. It does nothing at all.");
         }

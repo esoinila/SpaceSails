@@ -158,7 +158,7 @@ public static partial class UndergroundComplex
     /// player's inference for them.</para></summary>
     public static string StandingHonouredLine(AuthorityCard held) =>
         $"🎫 The gate reads it, and it is not this building's card — it was issued for " +
-        $"{BodyNames.Designation(held.BodyId)} SITE, and the gate opens anyway. Whoever the " +
+        $"{PatrolBeat.SiteName(held.BodyId)}, and the gate opens anyway. Whoever the " +
         "countersignatures answer to, they answer for this hole too. Nobody down here was ever working for " +
         "the moon.";
 }

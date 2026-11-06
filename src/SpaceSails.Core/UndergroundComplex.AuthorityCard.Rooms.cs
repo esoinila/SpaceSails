@@ -93,7 +93,7 @@ public static partial class UndergroundComplex
     /// never says what the building was for (§13.8), which is the canon that actually matters.</para></summary>
     public static string CardTitle(AuthorityCard card) =>
         $"🎫 SHAFT {card.Band + 1} · {OfficeOf(card).Letterhead} · " +
-        $"{BodyNames.Designation(card.BodyId)} SITE";
+        $"{PatrolBeat.SiteName(card.BodyId)}";
 
     /// <summary>The Key haul, said out loud. It names the shaft it runs, because a card whose purpose is a
     /// mystery is a keypad by another route.
