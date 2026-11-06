@@ -96,7 +96,7 @@ public static partial class KaamosLore
 
     /// <summary>The ledger's state line — where this thread stands and what would move it. The countdown
     /// counts down to the GATE, not to the pool.</summary>
-    public static string LedgerProgressLine(KaamosProgress progress, double? simTime = null, bool alongside = false)
+    public static string LedgerProgressLine(KaamosProgress progress, double? simTime = null, bool alongside = false, bool runFiled = true)
     {
         ArgumentNullException.ThrowIfNull(progress);
         if (progress.Count == 0 && progress.BerthFilingBounced)
@@ -107,7 +107,7 @@ public static partial class KaamosLore
         if (CanReachEnceladus(progress))
         {
             // #1405 R1-F10: the line follows the real window once the caller can say what time it is.
-            return simTime is { } now ? ReachLedgerLineAt(now, alongside) : ReachLedgerLine;
+            return simTime is { } now ? ReachLedgerLineAt(now, alongside, runFiled) : ReachLedgerLine;
         }
 
         if (HasEnoughIntelToEarnTheKey(progress))
@@ -225,16 +225,20 @@ public static partial class KaamosLore
     /// <see cref="CyclerWindow"/> instead of saying "not yet open" at every hour. A line that changes at
     /// the window's edge is the mark that the edge was crossed. Alongside the ice the berth is simply
     /// reached.</summary>
-    public static string ReachLedgerLineAt(double simTime, bool alongside)
+    public static string ReachLedgerLineAt(double simTime, bool alongside, bool runFiled = true)
     {
         const string Listed = "❄ The berth-code is entered and the ice-moon berth is listed to your hull. ";
         if (alongside)
         {
-            return Listed + "The hull is alongside the ice.";
+            return Listed + "She is alongside the ice.";
         }
 
-        return CyclerWindow.IsOpen(simTime)
-            ? Listed + "The cycler window is open now — Nav, right-click Enceladus."
+        // An open window with no run filed is not an instruction: the ride would refuse (NoRunFiled), so the
+        // ledger keeps its resting line rather than say go.
+        return CyclerWindow.IsOpen(simTime) && runFiled
+            ? Listed + "The cycler window is open — the arc is here, and it does not wait. Put her on it at the ice."
+            : CyclerWindow.IsOpen(simTime)
+            ? ReachLedgerLine
             : Listed + $"The cycler window opens {CyclerWindow.Wait(CyclerWindow.SecondsUntilOpen(simTime))} — " +
               "hold the berth and wait for it.";
     }

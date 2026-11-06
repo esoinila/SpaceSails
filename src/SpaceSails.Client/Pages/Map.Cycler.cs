@@ -89,10 +89,9 @@ public partial class Map
     private bool KaamosShipIsAlongsideTheIce() =>
         _ephemeris is not null
         && BodyById(KaamosLore.IceMoonBodyId) is not null
-        && (_ship.Position - _ephemeris.Position(KaamosLore.IceMoonBodyId, SimTime)).Length
-            <= CyclerWindow.ArrivalOffsetMeters * 1.5
-        && (_ship.Velocity - TransferMath.BodyVelocity(_ephemeris, KaamosLore.IceMoonBodyId, SimTime)).Length
-            <= 1500.0;
+        && CyclerWindow.IsAlongside(
+            (_ship.Position - _ephemeris.Position(KaamosLore.IceMoonBodyId, SimTime)).Length,
+            (_ship.Velocity - TransferMath.BodyVelocity(_ephemeris, KaamosLore.IceMoonBodyId, SimTime)).Length);
 
     /// <summary>The row's label: the action when it can go, the wait when the arc is simply not here.</summary>
     private string KaamosCyclerLabel() =>
