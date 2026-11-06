@@ -195,6 +195,9 @@ public sealed partial class DeckView
             : state.KeyHints is { Length: > 0 } deckHints
                 ? deckHints
                 : state.Docked ? DockedKeyHints : DeckKeyHints;
+        // R1-F75 · the keybar owns its band: a backing strip so a plate's label drawn underneath it (NEBULA
+        // MUTUAL, GARDEN · GROWERS ONLY…) cannot print through the hint and make it unreadable.
+        FillRect(0, heightPx - 22, widthPx, 22, new RgbaColor(8, 10, 14, 225));
         _renderer.DrawText(widthPx / 2f, heightPx - 10, bottomHint, TextDim, "11px monospace", TextAlign.Center);
 
         // #440: the standing prompt rides just ABOVE the keybar, bright and a size up — the same eyeline the

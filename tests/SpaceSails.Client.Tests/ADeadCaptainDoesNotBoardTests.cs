@@ -176,9 +176,9 @@ public sealed class ALoadLeavesTheGroundBehindTests
         // The walk that is about to be undone: a death staged, its lines written, a nerve ledger on the books.
         bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", bench.Peek("_surface"), true, null, false);
         Assert.NotNull(bench.Peek("_busted"));
-        var events = (System.Collections.Generic.List<(double SimTime, string Text)>)bench.Peek("_autopilotEvents")!;
-        events.Insert(0, (5.0e8, "🧠 Nerves shot past empty on Titan — the line the load undoes."));
-        events.Insert(0, (-1.0, "a line from before the loaded moment."));
+        var events = (System.Collections.Generic.List<(double SimTime, string Text, bool Story)>)bench.Peek("_autopilotEvents")!;
+        events.Insert(0, (5.0e8, "🧠 Nerves shot past empty on Titan — the line the load undoes.", false));
+        events.Insert(0, (-1.0, "a line from before the loaded moment.", false));
 
         bench.CallOnTheDispatcher("ApplyVault", new Vault { SavedSimTime = 1000 });
 

@@ -61,7 +61,7 @@ public sealed class TheDeadStationIsBoardedTests
     private static double SimTime(DeskBench bench) => (double)bench.Peek("SimTime")!;
 
     private static IEnumerable<string> Log(DeskBench bench) =>
-        ((IEnumerable<(double SimTime, string Text)>)bench.Peek("_autopilotEvents")!).Select(e => e.Text);
+        ((IEnumerable<(double SimTime, string Text, bool Story)>)bench.Peek("_autopilotEvents")!).Select(e => e.Text);
 
     private static void StandAt(DeskBench bench, double x, double y)
     {
