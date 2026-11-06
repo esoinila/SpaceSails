@@ -171,9 +171,15 @@ public partial class Map
             && NerveModel.BandFor(_nerve) > bandBefore)
         {
             dropEx.NerveBandDropAnnounced = true;
-            ShowPulseMessage("Nerves fraying — Reevers, digging under threat, and worse all take their toll. Get back aboard to steady them.");
+            ShowPulseMessage(NerveBandDropLine(OnWreck));
         }
     }
+
+    /// <summary>R1-F26 · The one-per-excursion band-drop receipt. "Digging under threat" is regolith work; aboard a
+    /// derelict hull nobody digs, so the clause goes and the rest of the sentence stands.</summary>
+    internal static string NerveBandDropLine(bool onWreck) => onWreck
+        ? "Nerves fraying — Reevers and worse all take their toll. Get back aboard to steady them."
+        : "Nerves fraying — Reevers, digging under threat, and worse all take their toll. Get back aboard to steady them.";
 
     // #480 · Say it, then keep it. The flash is the in-the-moment cause ("it laid hands on you  −1") that
     // hangs by the gauge for a beat; the ledger is the same line kept so the Captain desk — and the death

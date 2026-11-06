@@ -92,8 +92,7 @@ public sealed partial class Map
     /// thing that spends anything — this answers a question and never has a side effect.</summary>
     private bool InArchiveField =>
         _archiveAboard && !_archivePurged && OnWreck
-        && ArchiveNode.InField(_avatarX - WreckLayout.ArchiveStation.X,
-                               _avatarY - WreckLayout.ArchiveStation.Y);
+        && ArchiveNode.InFieldAt(_avatarX, _avatarY);
 
     /// <summary>The two edges the walk loop cares about: the first crossing INTO the field (which is where
     /// the fiction arrives, one beat before the first pip) and the crossing into arm's length (which is
@@ -110,7 +109,7 @@ public sealed partial class Map
         double dx = _avatarX - WreckLayout.ArchiveStation.X;
         double dy = _avatarY - WreckLayout.ArchiveStation.Y;
 
-        if (!ArchiveNode.InField(dx, dy))
+        if (!ArchiveNode.InFieldAt(_avatarX, _avatarY))
         {
             _archiveAtArmsLength = false;   // leaving re-arms the approach
             return;

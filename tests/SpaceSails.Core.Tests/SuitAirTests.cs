@@ -420,4 +420,33 @@ public class SuitAirTests
             airLeftSeconds: 60, reservoirSeconds: SurfaceShelter.ReservoirSeconds,
             tankSeconds: SuitAir.TankSeconds, dt: 1.0) > 0);
     }
+
+    /// <summary>R1-F56 · Wherever the rate is bad enough to be remarked on, the words name only the causes that
+    /// are true: "hurt" only for a marked captain, "Frightened" only for one whose nerve has moved.</summary>
+    [Fact]
+    public void TheHardBreathingLineNamesOnlyTheCausesThatAreTrue()
+    {
+        int said = 0;
+        foreach (double exertion in new[] { SuitAir.Breathing.Walking, SuitAir.Breathing.Running })
+        {
+            for (int pips = 0; pips <= NervePips.MaxPips; pips++)
+            {
+                for (int hits = 0; hits <= CaptainCondition.MaxHits; hits++)
+                {
+                    double nerve = NervePips.FromPips(pips);
+                    if (SuitAir.Breathing.Rate(exertion, nerve, hits, CaptainCondition.MaxHits) < SuitAir.Breathing.WorthMentioning)
+                    {
+                        continue;
+                    }
+
+                    said++;
+                    string line = SuitAir.Breathing.HardBreathingLineFor(nerve, hits);
+                    Assert.Equal(hits > 0, line.Contains("hurt", StringComparison.OrdinalIgnoreCase));
+                    Assert.Equal(pips < NervePips.MaxPips, line.Contains("Frightened", StringComparison.Ordinal));
+                }
+            }
+        }
+
+        Assert.True(said > 0, "the sweep must reach the remarked-on band or it asserts nothing");
+    }
 }

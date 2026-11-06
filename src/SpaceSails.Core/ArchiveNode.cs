@@ -107,6 +107,14 @@ public static class ArchiveNode
     public static bool InField(double dx, double dy) =>
         (dx * dx) + (dy * dy) <= FieldRadius * FieldRadius;
 
+    /// <summary>R1-F11 · THE FIELD AS THE CAPTAIN LIVES IT, in deck coordinates: inside the radius AND inside the
+    /// <see cref="HoldCompartment"/>. The radius alone reaches through the bulkhead into the spine, and the spine
+    /// stood the captain in front of a door they cannot open while the gauge ran down. The bulkhead is a wall to
+    /// the field; the design says to stand and work IN THERE.</summary>
+    public static bool InFieldAt(double x, double y) =>
+        WreckLayout.CompartmentAt(x, y) == HoldCompartment
+        && InField(x - WreckLayout.ArchiveStation.X, y - WreckLayout.ArchiveStation.Y);
+
     /// <summary>Close enough that looking at it is unavoidable.</summary>
     public static bool AtArmsLength(double dx, double dy) =>
         (dx * dx) + (dy * dy) <= ConfrontRadius * ConfrontRadius;

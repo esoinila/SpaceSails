@@ -54,6 +54,26 @@ public class ArchiveNodeTests
 
     // ── Layer 1: the dwell ────────────────────────────────────────────────────────────────────────────
 
+    /// <summary>R1-F11 · The bulkhead is a wall to the field. The spine just outside the door is within the radius
+    /// of the column and used to drain nerve; only the compartment itself counts.</summary>
+    [Fact]
+    public void TheFieldStopsAtTheBulkhead_TheSpineOutsideTheHoldDrainsNothing()
+    {
+        var st = WreckLayout.ArchiveStation;
+        Assert.True(ArchiveNode.InFieldAt(st.X, st.Y), "the column's own square is in the field");
+        // The spine corridor straight across from the column: inside FieldRadius, outside the compartment.
+        for (double y = -WreckLayout.SpineHalfHeight + 0.5; y <= WreckLayout.SpineHalfHeight; y += 1.0)
+        {
+            // the radius alone WOULD have claimed the spine across the door (that was the bug)
+            if (y < 0)
+            {
+                Assert.True(ArchiveNode.InField(0, y - st.Y));
+            }
+
+            Assert.False(ArchiveNode.InFieldAt(st.X, y), $"spine y={y} is not the hold");
+        }
+    }
+
     [Fact]
     public void TheFieldCoversTheRoom_ButArmsLengthIsSomewhereYouHaveToGo()
     {

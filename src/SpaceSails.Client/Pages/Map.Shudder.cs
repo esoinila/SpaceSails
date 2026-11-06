@@ -142,6 +142,14 @@ public partial class Map
         // next gap is redrawn off the current clock — because a tremor refused is a tremor that happened and
         // was not a scene, and a beat that kept its slot would fire on the very next frame and again on the
         // one after that for as long as the captain stood at the rail.
+        // R1-F26 · …AND ABOARD A DERELICT THERE IS NOBODY TO LOOK UP EITHER. Every pool above is written for a
+        // room with a crew in it or for open ground; a dead hull is neither ("the steel laid over the rock",
+        // "every head aboard"). Until a hull-only pool is authored the dead hull is silent, by the same null.
+        if (OnWreck)
+        {
+            line = null;
+        }
+
         if (line is null)
         {
             _shudderIndex++;
