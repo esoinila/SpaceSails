@@ -595,6 +595,23 @@ public sealed class NoTwoCaptionsShareOneBandTests
         // #1332 D · …and it is READABLE: the forwarding desk's COLD-CHAIN FORWARDING once folded at its one separator
         // into a 4 px stencil (a 21-character row across a 55 px door). The office plates are set at 6 px and over.
         Assert.All(plate, c => Assert.True(c.Px >= 5.5, $"{c.Where} is set at {c.Px} px — too small to read."));
+
+        // U07-F03 · …and the forwarding desk's COLD-CHAIN FORWARDING · TRADE ONLY is three rows in a stencil a captain can
+        // read once the captain has stepped OFF the plate (it once sat folded on two rows at ~5 px).
+        if (officeId == "forwarding")
+        {
+            Boot boot = Boots().Single(b => b.Name == OfficeBootName(side));
+            DeckReachability.Point stepped = HavenInterior.TheOfficeDoorstepAt(side.HavenId)!.Value;
+            var away = boot with { State = boot.State with { AvatarY = stepped.Y + 3.0 } };
+            var pen = new CaptionPen();
+            DeckView.State awayState = away.State;
+            new DeckView(pen).Draw(away.Plan, 1600, 900, away.SimTime, in awayState, 0, 0, away.Surface, null, false);
+            var farRows = pen.Said
+                .Where(c => !c.Text.StartsWith("CABIN", StringComparison.Ordinal) && c.Text.Split(' ').All(w => words.Contains(w)))
+                .ToList();
+            Assert.True(farRows.Count == 3, string.Join(" | ", farRows.Select(c => c.Text + "@" + c.Px)));
+            Assert.All(farRows, c => Assert.True(c.Px >= 6.0, $"{c.Where} is set at {c.Px} px — folded on too few rows."));
+        }
     }
 
     // ── AND THE WORDS THEMSELVES DID NOT MOVE ─────────────────────────────────────────────────────────

@@ -92,7 +92,7 @@ public static partial class ClaimInterview
 
     /// <summary>ADJUSTED (the house outcome), told — {c} the clause's number.</summary>
     public static string AdjustedLine(int clause) =>
-        $"Adjusted and paid. The deduction is Clause {clause}: '{ClauseText(clause)}'. You signed it. Most people did.";
+        $"Adjusted and paid. The deduction is Clause {clause}: '{ClauseText(clause).TrimEnd('.')}'. You signed it. Most people did.";
 
     /// <summary>The adjusted settlement's title.</summary>
     public const string AdjustedTitle = "A settlement, adjusted";
@@ -178,7 +178,13 @@ public static partial class ClaimInterview
 
     /// <summary>What the clause takes off the gross.</summary>
     public static int BiteCr(int tenths, int clause) =>
-        (int)Math.Round(GrossCr(tenths) * ClauseBitePercent[clause - 1] / 100.0, MidpointRounding.AwayFromZero);
+        clause == FirstDayClause
+            ? (int)Math.Round(ClaimDayRate * Math.Min(tenths, 10) / 10.0, MidpointRounding.AwayFromZero)
+            : (int)Math.Round(GrossCr(tenths) * ClauseBitePercent[clause - 1] / 100.0, MidpointRounding.AwayFromZero);
+
+    /// <summary>The clause whose words are "the first day of any loss": it bites one day at the day-rate, not a percentage
+    /// (its <see cref="ClauseBitePercent"/> entry is the nominal share of the 2.0-day loss and is not used).</summary>
+    public const int FirstDayClause = 2;
 
     // ── THE STATE MACHINE ───────────────────────────────────────────────────────────────────────────────
 

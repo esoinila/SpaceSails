@@ -158,8 +158,8 @@ exact URL already appeared above is not repeated.
   Seed the ledger's 🗺 section (#223): `mine` is one of YOUR chests on Phobos, `rumor` a bought rumour map to somebody else's hoard, `both` one of each — the map card and the dig doors without flying a bury run.
 - `/map?start=cinder-roost&backroom=open`  [local](http://localhost:5073/map?start=cinder-roost&backroom=open) [live](https://esoinila.github.io/SpaceSails-play/map?start=cinder-roost&backroom=open)
   Weld the V-06 back room open on the spot, or stage the crack job with its real code so you can key the pad yourself and watch the room grow (PR-F).
-- `/map?rep=1`  [local](http://localhost:5073/map?rep=1) [live](https://esoinila.github.io/SpaceSails-play/map?rep=1)
-  Put the Nebula Mutual rep (Harlan Fess) on this ground whatever his rota says — or keep him off it (#973 L2).
+- `/map?dock=selene-gate&ashore=1&rep=1`  [local](http://localhost:5073/map?dock=selene-gate&ashore=1&rep=1) [live](https://esoinila.github.io/SpaceSails-play/map?dock=selene-gate&ashore=1&rep=1)
+  Put the Nebula Mutual rep (Harlan Fess) on this ground whatever his rota says — or keep him off it (#973 L2). `?rep=` is a MODIFIER, not a start: bare `/map?rep=1` boots in open space with no ground, so dock and go ashore first (U07-F16).
 - `/map?kolt=1`  [local](http://localhost:5073/map?kolt=1) [live](https://esoinila.github.io/SpaceSails-play/map?kolt=1)
   The same lever for Brem Kolt (#1061 beat 2), whose rota has a ceiling as well as a period — one ground in three, and never more than two grounds in a whole universe.
 - `/map?walkin=1`  [local](http://localhost:5073/map?walkin=1) [live](https://esoinila.github.io/SpaceSails-play/map?walkin=1)

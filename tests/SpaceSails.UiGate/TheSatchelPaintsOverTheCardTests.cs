@@ -233,7 +233,9 @@ public sealed class TheSatchelPaintsOverTheCardTests : IAsyncLifetime
     private Task PressTheSatchelKey() => _page.Keyboard.PressAsync("i");
 
     /// <summary>
-    /// Boot <c>?rip=1</c> — the #798 dev row that lands a captain on B1 beside the canteen's slop bin — and
+    /// U07-F09 · The seat cheats (<c>?rip=1</c> among them) now spend the venue's and the shaft's arrival cards, so this boots the
+    /// non-seat floor cheat that still raises 🛗 THE SHAFT; the Client test TheSatchelFixtureStillGetsAnArrivalCardTests pins
+    /// that the URL leaves a view-object card up. (Formerly: boot <c>?rip=1</c> — the #798 dev row that lands a captain on B1 beside the canteen's slop bin — and
     /// walk the boot's own cards down to the arrival card, exactly as the issue's repro does.
     ///
     /// <para>The first-ground family (the briefing, the map-just-grew card) is drawn on
@@ -243,7 +245,7 @@ public sealed class TheSatchelPaintsOverTheCardTests : IAsyncLifetime
     /// </summary>
     private async Task BootIntoTheArrivalCard()
     {
-        await _page.GotoAsync(_host.BaseUrl + "/map?scenario=sol&rip=1", new() { Timeout = BootTimeoutMs });
+        await _page.GotoAsync(_host.BaseUrl + "/map?scenario=sol&dock=selene-gate&secretlab=deep&land=1&floor=1", new() { Timeout = BootTimeoutMs });
         // #1267 · BOTH HALVES OF THE BOOT DOOR, through GateReady — and it replaces a wait that could only
         // ever have been won by luck.
         //

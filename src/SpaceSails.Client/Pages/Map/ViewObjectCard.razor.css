@@ -29,3 +29,11 @@
 ::deep .view-object {
     --card-foot-scrim: rgb(12, 16, 23);
 }
+
+/* U07-F02 · THE INTERVIEW'S PAPER ROWS READ IN FULL INK. On this card the row's label is the CHOICE (which paper to show),
+   not a muted read-it hint as in the sleeve, so it takes the card's caption ink and the row's spare width. */
+.view-object .satchel-row > .satchel-item-name {
+    flex: 1 1 auto;
+    align-self: center;
+    color: rgba(232, 236, 244, 0.95);
+}
