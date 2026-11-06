@@ -96,7 +96,7 @@ public static partial class KaamosLore
 
     /// <summary>The ledger's state line — where this thread stands and what would move it. The countdown
     /// counts down to the GATE, not to the pool.</summary>
-    public static string LedgerProgressLine(KaamosProgress progress)
+    public static string LedgerProgressLine(KaamosProgress progress, double? simTime = null, bool alongside = false)
     {
         ArgumentNullException.ThrowIfNull(progress);
         if (progress.Count == 0 && progress.BerthFilingBounced)
@@ -106,7 +106,8 @@ public static partial class KaamosLore
 
         if (CanReachEnceladus(progress))
         {
-            return ReachLedgerLine;
+            // #1405 R1-F10: the line follows the real window once the caller can say what time it is.
+            return simTime is { } now ? ReachLedgerLineAt(now, alongside) : ReachLedgerLine;
         }
 
         if (HasEnoughIntelToEarnTheKey(progress))
@@ -219,4 +220,22 @@ public static partial class KaamosLore
     public const string ReachLedgerLine =
         "❄ The berth-code is entered and the ice-moon berth is listed to your hull. The cycler window is " +
         "real and not yet open — there is nothing to do now but hold the berth and wait for it.";
+
+    /// <summary>#1405 R1-F10 · The same fact, at rest, but TRUE to the timetable: it reads
+    /// <see cref="CyclerWindow"/> instead of saying "not yet open" at every hour. A line that changes at
+    /// the window's edge is the mark that the edge was crossed. Alongside the ice the berth is simply
+    /// reached.</summary>
+    public static string ReachLedgerLineAt(double simTime, bool alongside)
+    {
+        const string Listed = "❄ The berth-code is entered and the ice-moon berth is listed to your hull. ";
+        if (alongside)
+        {
+            return Listed + "The hull is alongside the ice.";
+        }
+
+        return CyclerWindow.IsOpen(simTime)
+            ? Listed + "The cycler window is open now — Nav, right-click Enceladus."
+            : Listed + $"The cycler window opens {CyclerWindow.Wait(CyclerWindow.SecondsUntilOpen(simTime))} — " +
+              "hold the berth and wait for it.";
+    }
 }

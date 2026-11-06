@@ -154,7 +154,7 @@ public partial class Map
             lines.Add($"◆ {f.Title} — {KaamosLore.LedgerLoreFor(f, _kaamos)}");
         }
 
-        lines.Add(KaamosLore.LedgerProgressLine(_kaamos));
+        lines.Add(KaamosLore.LedgerProgressLine(_kaamos, SimTime, KaamosShipIsAlongsideTheIce()));
 
         return new Stations.Captain.LedgerTip(
             KaamosLore.LedgerHeadline(_kaamos), lines.ToArray(), "the sealed ice-moon mystery",

@@ -15,7 +15,7 @@ Base: `http://localhost:5073`
 | 4 | [Vantar's log](http://localhost:5073/map?secretlab=1&land=1) `?secretlab=1&land=1` | The lab console log — it never names the project, and nothing announces it. |
 | 5 | [The berth-holder](http://localhost:5073/map?ashore=1&kaamos=holder&dock=ringside-exchange) `?ashore=1&kaamos=holder` | Boot straight into the bar (new `?ashore`). His line should land: *"You don't file for that berth, spacer. You keep it."* Portrait painted. |
 | 6 | [The capstone](http://localhost:5073/map?kaamos=all&ashore=1) `?kaamos=all&ashore=1` | The berth-code resolves — plate, not toast. Ledger countdown counts to the gate (4), not the pool (5). |
-| 7 | [The filing](http://localhost:5073/map?kaamos=hq) `?kaamos=hq` | File at the counter; the cycler window comes round; the news wire breaks the beat (first ArcNewsBreaks ever). |
+| 7 | [The filing](http://localhost:5073/map?kaamos=all&ashore=1) `?kaamos=all&ashore=1` | Take the KAAMOS supply run from a patron at a counter; the slip line lands; on Nav warp to day 40 and ride the cycler window (right-click Enceladus). The ledger's resting line follows the window (opens in N d, open now, alongside). The news wire does NOT break here: it already broke at beat 6, the moment the berth-code resolved (*Exchange housekeeping*, the first ArcNewsBreaks). `?kaamos=hq` skips the whole route (already alongside), so it cannot show this beat. |
 | 8 | [The head office](http://localhost:5073/map?kaamos=hq&land=1&floor=24) `?kaamos=hq&land=1&floor=24` | 24 listed floors, **no unlisted band**. Lift asks nothing. Perfect order, nobody home. Floor 24: forty made beds and a forty-first — the 40-nerve throw. Also floors 23 and 12. |
 
 ## Act 2 — NEBULA MUTUAL (the arc you already live)

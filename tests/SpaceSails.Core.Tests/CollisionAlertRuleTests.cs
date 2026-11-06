@@ -14,6 +14,27 @@ public class CollisionAlertRuleTests
     private static ClosestApproach.Pass Clean(string body = "Enceladus") =>
         new(body, body, BodyRadius: 252_000, Distance: 313_000, SimTime: 100, ShipPosition: default);
 
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    public void ADockedHullHasNoCourseToAlarmAbout(bool armedWithValidPlan, bool keepingHoldsOrbit)
+    {
+        // #1405 R1-F18: clamped to a berth the ship's ballistic projection is the station's own track, so it
+        // "impacts" the station she is tied to. Whatever the autopilot state, docked means silence...
+        ClosestApproach.Pass? raised = CollisionAlertRule.Evaluate(
+            armedWithValidPlan, keepingHoldsOrbit, ballisticPass: Impact("The Rusty Roadstead"),
+            planPass: Impact("The Rusty Roadstead"), docked: true);
+        Assert.Null(raised);
+
+        // ...and the same course undocked is still shouted (the guard is the dock, not a blanket mute).
+        if (!armedWithValidPlan && !keepingHoldsOrbit)
+        {
+            Assert.NotNull(CollisionAlertRule.Evaluate(
+                false, false, Impact("The Rusty Roadstead"), null, docked: false));
+        }
+    }
+
     [Fact]
     public void Unarmed_JudgesTheBallisticCourse()
     {

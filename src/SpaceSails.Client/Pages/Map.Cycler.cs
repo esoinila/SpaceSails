@@ -78,7 +78,21 @@ public partial class Map
     /// of the arc is the fiction arriving early (#380), which is the one thing this arc has always got
     /// right and must keep getting right.</summary>
     private bool KaamosCyclerRowVisible(string bodyId) =>
-        bodyId == KaamosLore.IceMoonBodyId && _kaamos.CanReachEnceladus && !_jumpInProgress;
+        bodyId == KaamosLore.IceMoonBodyId && _kaamos.CanReachEnceladus && !_jumpInProgress
+        && !KaamosShipIsAlongsideTheIce();
+
+    /// <summary>#1405 R1-F45 / R1-F10 · Is the hull already keeping station with the ice moon — the place the
+    /// ride lets her go (<see cref="CyclerWindow.ArrivalOffsetMeters"/>, half again for park drift, at
+    /// station-keeping speed)? Once she is, the ride has nothing left to carry her to: the menu row is
+    /// absent (riding again re-armed the window and, on the dev seat, silently burned 38 more days) and the
+    /// ledger says so.</summary>
+    private bool KaamosShipIsAlongsideTheIce() =>
+        _ephemeris is not null
+        && BodyById(KaamosLore.IceMoonBodyId) is not null
+        && (_ship.Position - _ephemeris.Position(KaamosLore.IceMoonBodyId, SimTime)).Length
+            <= CyclerWindow.ArrivalOffsetMeters * 1.5
+        && (_ship.Velocity - TransferMath.BodyVelocity(_ephemeris, KaamosLore.IceMoonBodyId, SimTime)).Length
+            <= 1500.0;
 
     /// <summary>The row's label: the action when it can go, the wait when the arc is simply not here.</summary>
     private string KaamosCyclerLabel() =>
