@@ -161,11 +161,18 @@ public partial class Map
 
         // #973 · …and if the void's weather is in this room tonight, the bond's topic names it. The TOAST
         // only — the durable line above is untouched, because hearing the weather writes nothing anywhere.
-        // U01-F06 · …and a BEAT, not weather, when the cognac raised the TWO GLASSES card: a Status line written
-        // under that card's scrim expired unseen behind it and was gone when "…go on" closed it. A Beat is held
-        // while a card stops the world and said the moment the glass clears.
-        ShowPulseMessage("🥂 " + line + TheWeatherIsWhatTheyWereTalkingAbout(),
-            outcome == StrangerBond.Bond.Drink ? PulseRank.Beat : PulseRank.Status);
+        // U01-F06 · …and if the cognac raised the TWO GLASSES card, the toast waits behind it: a line written
+        // under that card's scrim expired unseen and was gone when "…go on" closed it. The hold is the
+        // scrim's own queue (said, in order, the moment the glass clears) - no new rank is claimed for it.
+        string toast = "🥂 " + line + TheWeatherIsWhatTheyWereTalkingAbout();
+        if (ACardStopsTheWorld)
+        {
+            _held = _held.Hold(toast, PulseRank.Status, _lastTimestampMs ?? 0);
+        }
+        else
+        {
+            ShowPulseMessage(toast);
+        }
 
         _bondLastMs = nowMs;
         _bondIndex++;
