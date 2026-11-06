@@ -92,10 +92,13 @@ public partial class Map
             // the game (40 nerve, one call site, ever) — under "last write wins" the routine air line on the
             // same arrival stood on top of it, exactly as it stood on top of #592's.
             ShowAndFile(UndergroundComplex.WinteringHallLine, "❄", PulseRank.Climax);
-            _viewObject = new DeckPlan.ConsoleSpot(
+            // R1-F15 · …AND IT TAKES ITS PLACE IN THE LINE. A boot straight to B23 raises the first-descent card
+            // and the dead-air card on the same arrival, and a direct write here was overwritten by (or
+            // overwrote) whichever came second; RaiseTheRideCard queues behind a card already up (#1395).
+            RaiseTheRideCard(new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
                 UndergroundComplex.WinteringHallLabel,
-                UndergroundComplex.WinteringHallArtUrl, UndergroundComplex.WinteringHallCard);
+                UndergroundComplex.WinteringHallArtUrl, UndergroundComplex.WinteringHallCard));
 
             // The one place the arc's own number is spent. Core owns it; this is the only call site in the
             // game, and there must never be a second — a reveal that costs 40 twice is a reveal that costs
@@ -107,10 +110,10 @@ public partial class Map
 
         if (ex.Floor == UndergroundComplex.BerthOfficeLevel)
         {
-            _viewObject = new DeckPlan.ConsoleSpot(
+            RaiseTheRideCard(new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
                 UndergroundComplex.BerthOfficeLabel,
-                UndergroundComplex.BerthOfficeArtUrl, UndergroundComplex.BerthOfficeCard);
+                UndergroundComplex.BerthOfficeArtUrl, UndergroundComplex.BerthOfficeCard));
             RendererInterop.PlayCue("reveal");
         }
     }

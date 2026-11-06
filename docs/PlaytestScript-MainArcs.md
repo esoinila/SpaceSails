@@ -16,7 +16,7 @@ Base: `http://localhost:5073`
 | 5 | [The berth-holder](http://localhost:5073/map?ashore=1&kaamos=holder&dock=ringside-exchange) `?ashore=1&kaamos=holder` | Boot straight into the bar (new `?ashore`). His line should land: *"You don't file for that berth, spacer. You keep it."* Portrait painted. |
 | 6 | [The capstone](http://localhost:5073/map?kaamos=all&ashore=1) `?kaamos=all&ashore=1` | The berth-code resolves — plate, not toast. Ledger countdown counts to the gate (4), not the pool (5). |
 | 7 | [The filing](http://localhost:5073/map?kaamos=hq) `?kaamos=hq` | File at the counter; the cycler window comes round; the news wire breaks the beat (first ArcNewsBreaks ever). |
-| 8 | [The head office](http://localhost:5073/map?kaamos=hq&land=1&floor=24) `?kaamos=hq&land=1&floor=24` | 24 listed floors, **no unlisted band**. Lift asks nothing. Perfect order, nobody home. Floor 24: forty made beds and a forty-first — the 40-nerve throw. Also floors 23 and 12. |
+| 8 | [The head office](http://localhost:5073/map?kaamos=hq&land=1&floor=24) `?kaamos=hq&land=1&floor=24` | 24 listed floors, **no unlisted band**. Lift asks nothing. Perfect order, nobody home. Floor 23: forty made beds and a forty-first — the 40-nerve throw; floor 24: the berth office's console. Also floor 12. |
 
 ## Act 2 — NEBULA MUTUAL (the arc you already live)
 

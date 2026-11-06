@@ -304,6 +304,13 @@ public static partial class UndergroundComplex
                 _ => Haul.Dirt,
             };
 
+        // R1-F14 · THE HEAD OFFICE HAS NO GATE PAPER. Its lifts ask for nothing (#411), so a Key rolled on one
+        // of its floors would mint a SHAFT 4 countersignature for a door that is not there. It rolls Records.
+        if (IsHeadOffice(bodyId) && rolled == Haul.Key)
+        {
+            rolled = Haul.Records;
+        }
+
         // ── #608 · AND THEN THE AIR HAS ITS SAY ──────────────────────────────────────────────────────────
         //
         // Both weightings above are the weightings of an OFFICE FLOOR, and they are kept exactly as they

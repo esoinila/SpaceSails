@@ -146,7 +146,10 @@ public partial class Map
 
         if (!ex.SecretLabForced)
         {
-            if (ex.SecretLabDoorRevealed)
+            // R1-F17 · NOT AT THE HEAD OFFICE. The shed on the ice is the lift head, and the only door it has is
+            // the service panel; a second, forceable "hidden door" beside it opened Vantar's lab with a
+            // sweep and an alarm onto a building that has nothing to hide from its staff (#411).
+            if (ex.SecretLabDoorRevealed && !UndergroundComplex.IsHeadOffice(ex.Stop.Body.Id))
             {
                 consoles.Add(new(DeckPlan.ConsoleKind.SecretDoor,
                     (float)placement.DoorX, (float)placement.DoorY, "⚙ HIDDEN DOOR — force it"));
