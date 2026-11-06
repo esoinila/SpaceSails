@@ -379,7 +379,7 @@ public partial class Map
         CelestialBody? body = SlingBody(bodyId, out _);
         if (body is null || body.Atmosphere is null)
         {
-            ShowPulseMessage($"🧪 skim cheat: '{bodyId}' has no atmosphere to skim");
+            SayTheDevLine($"🧪 skim cheat: '{bodyId}' has no atmosphere to skim");
             return;
         }
 
@@ -399,31 +399,68 @@ public partial class Map
         // Flown natural periapsis for an impact parameter b: start off-axis, backed off along the
         // heliocentric velocity so a coast reaches the offset point at the encounter; the body's gravity
         // then focuses it into a genuine close pass.
+        // #1389 · the oracle is the GRAVITY-ONLY periapsis (the same vacuum sim the panel's SOLVE bisects), not the
+        // dragged flight: with the shell's drag in, the post-pass orbit decays and the distance minimum is the
+        // decayed orbit's, not the pass's, so the search surface is neither monotone nor the number the
+        // corridor is defined against.
+        (Simulator vacuum, _, ICelestialEphemeris vacuumEph) = BuildSkimContext(bodyId);
         ShipState BuildAt(double b) => new(jCA + perp * b - vShipCA * passLead, vShipCA, now, _ship.Charge);
-        double NaturalPeri(double b)
+        // #1389 · …MEASURED THE WAY THE LIVE SHIP FLIES. The plot's own projection takes up to 3-hour steps, and
+        // across a three-day approach that is thousands of kilometres of error at a pass six thousand wide: the
+        // same arc reads 65 km above Venus at 3 h steps and 13,100 km at 600 s, converging by 60 s (the live
+        // quantum, AdaptiveWarpQuantum). The shell is 150 km deep, so the oracle must be the converged one.
+        // `coarse` is for the centring sweep alone (600 s: 7 km off 60 s's answer at Venus — plenty to find the V).
+        double NaturalPeri(double b, bool coarse = false)
         {
-            IReadOnlyList<TrajectorySample> path = _simulator!.ProjectAdaptive(
-                BuildAt(b), null, passLead + 3 * 86400.0, minTimeStep: 20, maxTimeStep: 3 * 3600, dynamicalTimeFraction: 1.0 / 96, maxSamples: 30_000);
-            double best = double.MaxValue;
-            foreach (TrajectorySample s in path)
-            {
-                if (s.SimTime < now)
-                {
-                    continue;
-                }
-                double d = (_ephemeris.Position(bodyId, s.SimTime) - s.Position).Length;
-                if (d < best)
-                {
-                    best = d;
-                }
-            }
-            return best;
+            IReadOnlyList<TrajectorySample> path = vacuum.ProjectAdaptive(
+                BuildAt(b), null, passLead + 12 * 3600.0, minTimeStep: 5, maxTimeStep: coarse ? 600 : AdaptiveWarpQuantum,
+                dynamicalTimeFraction: 1.0 / 200, maxSamples: 30_000);
+            return ClosestApproach.Passes(path, vacuumEph).First(p => p.BodyId == bodyId).Distance;
         }
 
-        // Bisect the impact parameter so the flown natural periapsis lands mid-corridor (gravity focuses
-        // a ~12 R offset down to a graze, so the periapsis rises monotonically with b past the impact b).
+        // #1389 · FIND THE CENTRE OF THE PASS BEFORE BISECTING OFF IT. The old bracket (3 R .. 30 R) assumed the
+        // impact parameter that hits the body sits near zero; it does not. The ship is backed off along a STRAIGHT
+        // line while the body swings on its orbit, so three days out the body has left that line by r·θ²/2 —
+        // about 400,000 km at Venus, ~67 R. Every b in the old bracket flew 200–400 thousand km wide, the
+        // bisection ran to its edge, and the cheat booted onto an arc that missed by 60 R (measured: the plot and
+        // the solver's own scan both read 370,000 km). So: a coarse sweep finds the nearest grid pass, a ternary
+        // search finds the true centre b* (the V's floor), and ONLY THEN is the bisection run on the rising side
+        // of the V, from b* up to the shell, where the periapsis does climb monotonically with b.
         double targetPeri = R + 0.4 * body.Atmosphere.TopAltitude; // mid-corridor, matching the panel's default depth
-        double lo = 3 * R, hi = 30 * R;
+        double bestGrid = 0, bestGridPeri = double.MaxValue;
+        for (int k = -40; k <= 40; k++)
+        {
+            double b = k * 5.0 * R;
+            double peri = NaturalPeri(b, coarse: true);
+            if (peri < bestGridPeri)
+            {
+                (bestGrid, bestGridPeri) = (b, peri);
+            }
+        }
+
+        double centreLo = bestGrid - 5.0 * R, centreHi = bestGrid + 5.0 * R;
+        for (int i = 0; i < 30; i++)
+        {
+            double m1 = centreLo + (centreHi - centreLo) / 3.0, m2 = centreHi - (centreHi - centreLo) / 3.0;
+            if (NaturalPeri(m1) < NaturalPeri(m2))
+            {
+                centreHi = m2;
+            }
+            else
+            {
+                centreLo = m1;
+            }
+        }
+
+        double lo = 0.5 * (centreLo + centreHi), hi = lo + 30 * R;
+        if (NaturalPeri(lo) > targetPeri || NaturalPeri(hi) < targetPeri)
+        {
+            // Refuse rather than hand the tester an arc that does not do what the URL promised.
+            SayTheDevLine($"🧪 DEV ?skim={bodyId}: no impact parameter lands the natural pass mid-corridor "
+                          + $"(closest the solver found: {NaturalPeri(lo) / 1000.0:F0} km). Not booted onto an arc.");
+            return;
+        }
+
         for (int i = 0; i < 34; i++)
         {
             double mid = 0.5 * (lo + hi);
@@ -444,7 +481,7 @@ public partial class Map
         RebuildPlan();
         ReprojectTrajectory();
         _camera.CenterOn(_ship.Position);
-        ShowPulseMessage($"🧪 skim cheat: hyperbolic inbound to {body.Name}, cloud tops ~2 days out. Open Plot ▸ 🔥 Skim.");
+        ShowPulseMessage($"🧪 skim cheat: hyperbolic inbound to {body.Name}, cloud tops ~3 days out. Open Plot ▸ 🔥 Skim.");
     }
 
     // PR-I · the live consequence. A cloud-top dip whose peak drag deceleration crosses the Core damage
