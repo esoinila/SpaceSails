@@ -106,7 +106,26 @@ public static partial class PatrolBeat
         ArgumentNullException.ThrowIfNull(tier);
         return string.Equals(bodyId, Inspectorate.IssuerId, StringComparison.Ordinal)
             ? Inspectorate.Plate
-            : $"SITE PASS · {tier} · {BodyNames.Designation(bodyId)} SITE";
+            : $"SITE PASS · {tier} · {SiteName(bodyId)}";
+    }
+
+    /// <summary>U04-F23 · The site as the pass prints it. An ordinary site is its designation and the word SITE
+    /// (<c>LUNA SITE</c>); a site whose id already carries the word (<c>secret-lab-site-unlisted</c>) used to be
+    /// given a second one — <c>SECRET LAB SITE UNLISTED SITE</c> — so the word is kept where it stands and what
+    /// follows it is set off as the suffix: <c>SECRET LAB SITE · UNLISTED</c>.</summary>
+    public static string SiteName(string bodyId)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        string name = BodyNames.Designation(bodyId);
+        string[] words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        int at = Array.IndexOf(words, "SITE");
+        if (at < 0)
+        {
+            return name + " SITE";
+        }
+
+        string head = string.Join(' ', words[..(at + 1)]);
+        return at == words.Length - 1 ? head : head + " · " + string.Join(' ', words[(at + 1)..]);
     }
 
     /// <summary>#605 · The face of a pass read off its OWN id — site and tier together, in one call, so

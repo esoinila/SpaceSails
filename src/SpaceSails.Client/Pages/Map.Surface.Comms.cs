@@ -147,7 +147,10 @@ public partial class Map
 
         // First-loss teaching notice (once per excursion): the feed just dropped — the frozen readout is
         // stale, the suit instruments still run true.
-        if (phase != CommsLink.Phase.Nominal && !ex.CommsFirstLossAnnounced)
+        // U03-F19: the notice teaches that "the orbit readout freezes" - a sentence about a free-flying hull. A ship
+        // clamped at a berth (the deflection gig leaves her at Ringside) has no orbit readout to freeze, so the
+        // teaching waits, unspent, for an excursion whose ship is actually out there.
+        if (phase != CommsLink.Phase.Nominal && !ex.CommsFirstLossAnnounced && _dockedHavenId is null)
         {
             ex.CommsFirstLossAnnounced = true;
             RendererInterop.PlayCue("alarm");

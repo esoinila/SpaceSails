@@ -115,12 +115,17 @@ public static partial class DeflectionGig
 
     /// <summary>Roll one on-site complication for <paramref name="ordinal"/>, seeded by <paramref name="seed"/>,
     /// coloured by the rock <paramref name="type"/> — an M-type snaps bits harder (a deeper drill setback).
-    /// 2D6; pure and deterministic.</summary>
-    public static DeflectionComplication Roll(ulong seed, RockType type, int ordinal)
+    /// 2D6; pure and deterministic.
+    /// <para>U03-F08 · <paramref name="drillProgress"/> is the depth of the bore at the moment of the roll. A bit
+    /// cannot SNAP in a hole that has not been started (the card read "The drill bit SNAPS" at 0 %), so a snap
+    /// roll with nothing to lose lands as the steady bite instead. The default keeps the old unconditional
+    /// pool for callers that do not know the depth.</para></summary>
+    public static DeflectionComplication Roll(ulong seed, RockType type, int ordinal, double drillProgress = 1.0)
     {
         DicePool pool = DiceRule.RollPool(seed, count: 2, sides: 6);
         return pool.Total switch
         {
+            <= 4 when drillProgress <= 0.0 => SteadyBite(pool),
             <= 4 => DrillSnap(pool, type),
             <= 6 => CrewBolt(seed, pool),
             <= 8 => Tremor(pool),

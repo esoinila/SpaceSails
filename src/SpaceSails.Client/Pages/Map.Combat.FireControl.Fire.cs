@@ -124,11 +124,6 @@ public partial class Map
             _fireAtSimTime = SimTime + FireLockLeadSeconds;
             _shotAuthorized = false; // one shot per captain's word (fire-at-will stands)
             ShowPulseMessage("BARREL LOCKED — round away in 60 s (scrub to abort)");
-
-            // #528 · THE FIRST ROUND THIS CAPTAIN EVER FIRED. A smuggler becomes a pirate exactly once, and it
-            // used to be a status line that faded in a second and a half. A PLATE rather than a card, because
-            // this happens mid-fight and must not take the keyboard.
-            RaiseStoryBeat(StoryBeats.Beat.FirstShotFired);
         }
         else if (_fireBlockedBy is not null)
         {
@@ -235,6 +230,12 @@ public partial class Map
         _slewBearingRad = solution.BearingRad;
         _slewUntilSimTime = SimTime + 120; // the barrel swings back — control returns
         ShowPulseMessage($"ROUND AWAY — flight time {FormatDuration(solution.TimeOfFlightSeconds)} 🎯");
+
+        // #528 · THE FIRST ROUND THIS CAPTAIN EVER FIRED. A smuggler becomes a pirate exactly once, and it
+        // used to be a status line that faded in a second and a half. A PLATE rather than a card, because
+        // this happens mid-fight and must not take the keyboard. U04-F05: raised HERE, where a round really
+        // leaves the barrel — not at BARREL LOCKED, where a scrubbed shot spent the OnceEver plate.
+        RaiseStoryBeat(StoryBeats.Beat.FirstShotFired);
         _fireAtSimTime = double.NaN;
         _fireSolution = null;
         // Keep the planned transfer + aim point drawn while the round flies it — the whole

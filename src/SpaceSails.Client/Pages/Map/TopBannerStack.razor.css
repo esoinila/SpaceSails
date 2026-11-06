@@ -34,7 +34,11 @@
     font-size: 0.95rem;
     font-weight: 600;
     opacity: 0.9;
-    white-space: nowrap;
+    /* U03-F13: a long NOW sentence wraps INSIDE the banner (whose max-width is the page minus a margin) instead
+       of widening it across Layers and the find box and off the right edge. */
+    white-space: normal;
+    overflow-wrap: anywhere;
+    max-width: 40rem;   /* …and the title clears the Layers button and the find box on a wide desktop */
 }
 
 /* #159/#184: NEXT and its ▲▼ pager sit on one row; the queue reads dimmer than the pinned NOW. */

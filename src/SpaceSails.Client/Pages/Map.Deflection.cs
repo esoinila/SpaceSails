@@ -116,12 +116,24 @@ public partial class Map
 
         // The diced complications (the #370 cadence): drill snaps, tremors, a crew member bolting.
         int due = DeflectionGig.EpisodesElapsed(ex.DeflectionOnSiteSeconds);
-        int fired = 0;
-        while (ex.DeflectionLastOrdinal + 1 < due && fired < MaxDeflectionBeatsPerFrame)
+        if (!CaptainBeyondReach)
         {
-            int ordinal = ++ex.DeflectionLastOrdinal;
-            fired++;
-            ResolveDeflectionBeat(ex, plan, ordinal);
+            int fired = 0;
+            while (ex.DeflectionLastOrdinal + 1 < due && fired < MaxDeflectionBeatsPerFrame)
+            {
+                int ordinal = ++ex.DeflectionLastOrdinal;
+                fired++;
+                ResolveDeflectionBeat(ex, plan, ordinal);
+            }
+        }
+        else
+        {
+            // U03-F08 · THE BEATS ARE THE ROCK'S, AND THE CAPTAIN'S WHILE HE IS ON IT. They used to be rolled by
+            // the wall clock alone: a captain still standing in the shuttle bay (under HER air) was told "The drill
+            // bit SNAPS" at 0 % and "The bore runs TRUE" moved the HUD to 12 % with nobody at the rig. Back at the
+            // shuttle the beats that come due are simply not rolled (the doom clock above still counts); out on the
+            // rock they roll as ever, and ResolveDeflectionBeat keeps the drill bands for a hole that exists.
+            ex.DeflectionLastOrdinal = Math.Max(ex.DeflectionLastOrdinal, due - 1);
         }
 
         // Auto-fire: once the charge is drilled to depth, hold it until the spinning rock brings the bore into
@@ -142,6 +154,11 @@ public partial class Map
             ResolveImpactOnSite(ex, plan);
         }
     }
+
+    /// <summary>U03-F08 · Is there a hole to talk about? Begun (the channel is open or depth is banked) and the
+    /// charge not yet set - once it is set the bore is done and a drill line would describe nothing.</summary>
+    private static bool TheBoreIsLive(SurfaceExcursion ex) =>
+        !ex.ChargeArmed && (ex.DrillChannel is not null || ex.DrillProgress > 0.0);
 
     // ─────────────────────────────────────────────────────────────────────────────────────────────
     //  THE THREAT LINE — drawn on the nav map (called from OnTick after the bodies). The rock's rail, a red
