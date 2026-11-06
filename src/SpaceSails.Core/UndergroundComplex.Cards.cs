@@ -37,6 +37,25 @@ public static partial class UndergroundComplex
         "of anything you rode down through. You read it again. It says what it said. Above you, twenty " +
         "floors file and grade and answer to one name; the wall down here has been corrected.";
 
+    /// <summary>U06-F03 · The plate card with the building's OWN floor count. The authored sentence says
+    /// "Above you, twenty floors file and grade…", which is only true of a twenty-floor listing; on a shallower
+    /// site the pulse right after it (<see cref="UnlistedArrivalLine"/>) said "7 storeys" off
+    /// <see cref="DepthOf"/>. This reads the same <see cref="DepthOf"/> and swaps ONLY the number word — not a
+    /// syllable of the prose moves, and a listing of twenty reads the authored text byte for byte.</summary>
+    public static string UnlistedLobbyCardFor(string bodyId)
+    {
+        int listed = -DepthOf(bodyId);
+        string[] words =
+        [
+            "", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven",
+            "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen",
+            "twenty", "twenty-one", "twenty-two", "twenty-three", "twenty-four",
+        ];
+        return listed is >= 2 && listed < words.Length
+            ? UnlistedLobbyCard.Replace("twenty floors", $"{words[listed]} floors", StringComparison.Ordinal)
+            : UnlistedLobbyCard;
+    }
+
     public const string StaffMessArtUrl = "art/the-staff-mess.jpg";
 
     public const string StaffMessLabel = "🍽 THE STAFF MESS";

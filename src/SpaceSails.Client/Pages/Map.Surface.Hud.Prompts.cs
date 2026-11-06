@@ -310,7 +310,9 @@ public partial class Map
         // bot. So the moment you had committed both, the key that takes them back up vanished from the
         // screen entirely. Now T is named in EVERY state that has a bot in it, planted or slung.
         int carried = ex.Bots.Count(b => !b.Deployed);
-        int deployed = ex.Bots.Count(b => b.Deployed);
+        // U05-F05 · …and the tube's built-in door sentry is the SHIP's, not a bot the captain set down: it has
+        // its own line and cannot be lifted (Liftoff and the hand-load both skip it), so it is not counted here.
+        int deployed = ex.Bots.Count(b => b.Deployed && !SurfaceArrival.IsDoorSentry(b.Unit));
         if (carried > 0)
         {
             // #326 · …and in WHICH STANCE, on the same plate and at the same moment, because the stance is

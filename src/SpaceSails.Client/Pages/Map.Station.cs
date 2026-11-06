@@ -268,7 +268,7 @@ public partial class Map
             OrbitComms: orbit?.Line, OrbitSeverity: orbit?.Severity ?? 0, CommsState: orbit?.CommsState ?? 0,
             AirSeconds: ex.AirSeconds, AirDistanceHome: home, AirBudgetSeconds: ex.AirBudgetSeconds,
             AirSupply: AirSupplyOf(ex),
-            Countdown: SuitAir.RunningLow(ex.AirSeconds, home) || SuitAir.OnTheReserve(ex.AirSeconds)
+            Countdown: SuitAir.CountdownShows(ex.AirSeconds, home, AirSupplyOf(ex))
                 ? (_avatarX, _avatarY + 2.6, $"O2 {(int)(ex.AirSeconds / 60)}:{(int)(ex.AirSeconds % 60):00}")
                 : null,
             ShuttleLegs: TheShuttleLegsRing());

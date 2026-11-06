@@ -201,6 +201,18 @@ public partial class Map
             q.DockCheat ??= "the-space-bar";
         }
 
+        // U05-F09 · ?shelter=, ?kit= and ?outpost= are ADD-ONS to a landing: each reads the ground, and a bare link
+        // booted coasting near Earth with the flag silently ignored. They imply the guide's own route
+        // (the-tilt, the default site, landed) — any ?dock=/?start= the caller passed still wins the berth.
+        if (_shelterCheat || _kitCheat || _outpostCheat)
+        {
+            if (q.DockCheat is null && q.StartId is null)
+            {
+                q.DockCheat = "the-tilt";
+            }
+            _landCheat = true;
+        }
+
         if (q.DeathCheat is not null && !_landCheat && q.DockCheat is null && q.StartId is null)
         {
             q.DockCheat = "the-tilt";
