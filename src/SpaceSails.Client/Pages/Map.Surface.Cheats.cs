@@ -99,7 +99,7 @@ public partial class Map
         if ((_landBodyCheat ?? _forcedLandingBodyId) is { } wanted)
         {
             ShuttleStop? named = board.FirstOrDefault(
-                s => s.IsLandable && !s.OneWayDown
+                s => s.IsLandable
                      && (string.Equals(s.Body.Id, wanted, StringComparison.OrdinalIgnoreCase)
                          || string.Equals(s.Body.Name, wanted, StringComparison.OrdinalIgnoreCase)));
 
@@ -119,7 +119,11 @@ public partial class Map
         ShuttleStop? target =
             board.FirstOrDefault(s => s.IsLandable && !s.OneWayDown && (SiteRoute.IsWreck(s.Body.Id)
                                                          || SiteRoute.IsStation(s.Body.Id)))
-            ?? board.FirstOrDefault(s => s.IsLandable && !s.OneWayDown);
+            ?? board.FirstOrDefault(s => s.IsLandable && !s.OneWayDown)
+            // #1380 · the bare ?land=1 prefers a ground the boat can fly back from, but falls back to a one-way
+            // one when that is all the board has (The Tilt at the boot epoch): the cheat's job is to get ashore.
+            // A NAMED body (?land=miranda) is honoured as asked, above.
+            ?? board.FirstOrDefault(s => s.IsLandable);
         if (target is null)
         {
             SayTheDevLine("🧪 DEV ?land=1: nothing landable in shuttle reach from this berth.");
