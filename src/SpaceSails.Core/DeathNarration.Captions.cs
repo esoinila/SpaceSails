@@ -43,7 +43,7 @@ public static partial class DeathNarration
             $"🕶 Found aboard {body}, told to stand still, and not standing still. The sweep goes on down the corridor. The insurance will need a new name.",
         // U04-F07 · the fifth blow: the body gave out, not the nerve.
         DeathCause.Reevers when !nerveRanOut =>
-            $"🩸 The fifth blow lands on {body} — the Old Ones run the captain down. The insurance will need a new name.",
+            $"🩸 The fifth blow finds the captain on {body}, guard still up — the Old Ones simply keep coming. The insurance will need a new name.",
         _ =>
             $"🧠 Nerves shot past empty on {body} — an Old One's hand is the last straw. The captain breaks. The insurance will need a new name.",
     };
