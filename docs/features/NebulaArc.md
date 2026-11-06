@@ -94,8 +94,7 @@ reproducing any existing IP: it is our own lattice, our own underwriter, our own
 ## 4. The fragments and where each surfaces
 
 Seven fragments in the seeded pool (`src/SpaceSails.Core/NebulaLore.cs`) — six **intel shards**, one
-**capstone contract**. Each intel shard is delivered by a system that touches the player's **own
-deaths**; this lane authors the text and the assembly logic only, and touches none of those systems.
+**capstone contract**. Each intel shard is delivered by a system the player already lives inside: most by the ones that touch the player's **own deaths**, and one — `the-bleed` — by the captain's **own book**, when a spread of sheets is reconciled and a page is found that nobody filed (`SpreadReconcile`); this lane authors the text and the assembly logic only, and touches none of those systems.
 
 | # | Fragment id       | Title                     | Surfaces via (`NebulaSource`)                       | Status |
 |---|-------------------|---------------------------|-----------------------------------------------------|--------|

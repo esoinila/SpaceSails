@@ -34,7 +34,11 @@ public partial class Map
     // the ground. The classification is the pure, tested ShuttleExcursion.Destinations rule.
     public sealed record ShuttleStop(
         CelestialBody Body, double DistanceMeters, double TravelSeconds,
-        bool HasBerth, bool IsLandable, bool HasCache);
+        bool HasBerth, bool IsLandable, bool HasCache)
+    {
+        // #1380 · set after construction, so the six-argument shape the benches build by reflection stays.
+        public bool OneWayDown { get; init; }
+    }
 
     // Null = the hatch is shut; a list (possibly empty) = the destination board is open.
     private List<ShuttleStop>? _shuttleBayStops;
@@ -68,11 +72,20 @@ public partial class Map
             (shipPos - _ephemeris.Position(b.Id, SimTime)).Length, b.BodyRadius,
             HasInterior: HavenInterior.HasInterior(b.Id), HasCache: _caches.HasCacheAt(b.Id)));
 
+        Vector2d shipVelocity = ShipVelocityNow(); // once for the whole board, not once per stop
         foreach (ShuttleExcursion.Destination d in ShuttleExcursion.Destinations(candidates, _dockedHavenId))
         {
             if (byId.TryGetValue(d.BodyId, out CelestialBody? body))
             {
-                stops.Add(new ShuttleStop(body, d.DistanceMeters, d.TravelSeconds, d.HasBerth, d.IsLandableSurface, d.HasCache));
+                // #1380 · the same question the airlock asks on the way home (TheLinkToHer → AskTheBoat), asked
+                // of the ground before the captain steps down: a ground the boat could not fly back from
+                // stays on the board, greyed and reasoned, never hidden.
+                bool oneWayDown = d.IsLandableSurface
+                    && ShuttleLink.AskTheBoat(
+                        d.DistanceMeters,
+                        (shipVelocity - TransferMath.BodyVelocity(_ephemeris, d.BodyId, SimTime)).Length)
+                    == ShuttleLink.Refusal.TooFastToCatch;
+                stops.Add(new ShuttleStop(body, d.DistanceMeters, d.TravelSeconds, d.HasBerth, d.IsLandableSurface, d.HasCache) { OneWayDown = oneWayDown });
             }
         }
         return stops;

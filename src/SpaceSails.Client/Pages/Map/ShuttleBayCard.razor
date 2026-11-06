@@ -91,9 +91,17 @@
                                    place; what you do on the ground is decided on the ground. *@
                                 @if (local.IsLandable)
                                 {
+                                    @* #1380 · a ground the boat could not fly back from stays on the board — greyed, with
+                                       the reason beside it. The row is never hidden (the board never boots empty). *@
                                     <button type="button" class="btn btn-sm btn-outline-warning"
-                                            title="Board the shuttle for @local.Body.Name — the down-tube grows on the map and you walk down. Bring cargo if you like; decide on the ground."
+                                            disabled="@local.OneWayDown"
+                                            title="@(local.OneWayDown ? ShuttleLink.OneWayDownLine : $"Board the shuttle for {local.Body.Name} — the down-tube grows on the map and you walk down. Bring cargo if you like; decide on the ground.")"
                                             @onclick="() => OpenBoardingPanel(local)">🛸 Board for @local.Body.Name</button>
+                                    @if (local.OneWayDown)
+                                    {
+                                        <span class="deck-shuttle-noberth deck-shuttle-oneway"
+                                              title="@ShuttleLink.OneWayDownLine">@ShuttleLink.OneWayDownFace</span>
+                                    }
                                 }
                                 @if (!local.HasBerth && !local.IsLandable)
                                 {

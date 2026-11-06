@@ -179,6 +179,9 @@ public partial class Map
     private static string GiverDisplay(string giver)
     {
         if (string.IsNullOrWhiteSpace(giver)) return giver;
+        // #1439 · Two seam sources are role ids, not names; their headings are authored rather than title-cased.
+        if (giver == "kaamos-holder") return "The berth-holder";
+        if (giver == "nebula-adjuster") return "The Nebula adjuster";
         // #973 L5a — an old shipmate's row is keyed by a prefixed id and their name is authored rather than
         // shouted, so title-casing it would turn Teodor "Teo" Brask into Teodor "teo" Brask.
         if (Core.OldCrew.IsAnOldShipmate(giver)

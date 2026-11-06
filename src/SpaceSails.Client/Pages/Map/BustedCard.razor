@@ -193,7 +193,7 @@
                     case BustedEncounter.Stage.BribedOff:
                     case BustedEncounter.Stage.ResistWon:
                     case BustedEncounter.Stage.Fled:
-                        <div class="busted-hail">@(bust.Phase == BustedEncounter.Stage.Fled ? "🏴 BROKE CLEAR" : bust.Phase == BustedEncounter.Stage.ResistWon ? "🔫 THEY PEEL OFF" : "💰 PAID OFF")</div>
+                        <div class="busted-hail">@CollectorLanding.OutcomeLabel(bust.HunterId, bust.Phase == BustedEncounter.Stage.Fled ? CollectorLanding.WritOutcome.Fled : bust.Phase == BustedEncounter.Stage.ResistWon ? CollectorLanding.WritOutcome.ResistWon : CollectorLanding.WritOutcome.BribedOff)</div>
                         @if (bust.ResistRoll is { } rr)
                         {
                             <div class="busted-roll">You: @rr.Challenger.Describe()</div>

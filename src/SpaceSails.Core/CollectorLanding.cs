@@ -227,6 +227,46 @@ public static class CollectorLanding
     /// <summary>The face of the button that ends a survived writ, for the encounter id the panel holds.</summary>
     public static string CloseFace(string? hunterId) => IsAGroundCrew(hunterId) ? CloseFaceOnFoot : "Fly on";
 
+    // ── #1434 · THE WRIT'S ANSWERS ON FOOT ──────────────────────────────────────────────────────────
+    //
+    // The stage labels and the three result sentences (bribe, resist won, flee) were the ship's voice for
+    // both catches: "sheers off", "peel off", "tied up at their own ship" said over a crew on regolith.
+    // The branch is the encounter id's, the same one the demand panel reads; the ship strings come back
+    // unchanged from the ship branch.
+
+    /// <summary>The three survived answers whose card heading and result sentence differ on foot.</summary>
+    public enum WritOutcome { Fled, ResistWon, BribedOff }
+
+    /// <summary>The heading of the card that tells how the writ ended, for the encounter id the panel holds.</summary>
+    public static string OutcomeLabel(string? hunterId, WritOutcome outcome) => IsAGroundCrew(hunterId)
+        ? outcome switch
+        {
+            WritOutcome.Fled => "🏴 OUT OF THEIR REACH",
+            WritOutcome.ResistWon => "🔫 THEY STAND OFF",
+            _ => "💰 PAID OFF",
+        }
+        : outcome switch
+        {
+            WritOutcome.Fled => "🏴 BROKE CLEAR",
+            WritOutcome.ResistWon => "🔫 THEY PEEL OFF",
+            _ => "💰 PAID OFF",
+        };
+
+    /// <summary>The bribe's result sentence.</summary>
+    public static string BribeResult(string? hunterId, int total, string callsign) => IsAGroundCrew(hunterId)
+        ? $"{total:N0} cr changes hands, glove to glove. {callsign} logs a clean sweep and walks back to their boat — heat unchanged. You bought this crew, not the law."
+        : $"{total:N0} cr changes hands. {callsign} logs a clean sweep and sheers off — heat unchanged. You bought this patrol, not the law.";
+
+    /// <summary>The resist-won result sentence.</summary>
+    public static string ResistWonResult(string? hunterId, string callsign) => IsAGroundCrew(hunterId)
+        ? $"You break {callsign}'s hold — they fall back to their boat nursing the bruise. Heat climbs; the next crew is meaner."
+        : $"You break {callsign}'s boarding — they peel off nursing the dent. Heat climbs; the next wave is meaner.";
+
+    /// <summary>The flee result sentence.</summary>
+    public static string FleeResult(string? hunterId, string callsign, int heat) => IsAGroundCrew(hunterId)
+        ? $"You fight clear — {callsign} left picking themselves up beside their own boat. You slip away on foot carrying heat {heat}."
+        : $"You fight clear — {callsign} left tied up at their own ship. You slip away carrying heat {heat}.";
+
     /// <summary>#731 · How far off their own boat the crew stand when they get out of it, in deck units — and
     /// the same distance they walk back to when they are finished. One number, so the place they came from
     /// and the place they queue for cannot be two different spots.</summary>
