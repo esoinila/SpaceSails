@@ -79,7 +79,7 @@ public sealed class ADeadHullSpeaksShipWordsTests
         Assert.Contains("digging under threat", ground);
     }
 
-    /// <summary>R1-F11 · The page's own field question, at the call site: the spine across the sealed door is not
+    /// <summary>R1-F11 Â· The page's own field question, at the call site: the spine across the sealed door is not
     /// the hold, the column's own square is.</summary>
     [Fact]
     public void ThePagesArchiveFieldStopsAtTheBulkhead()

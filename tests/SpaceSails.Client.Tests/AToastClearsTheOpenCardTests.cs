@@ -38,7 +38,7 @@ public sealed class AToastClearsTheOpenCardTests
         Assert.False((await ToastAsync(b)).HasClass("deck-pulse-toast-low"));
     }
 
-    /// <summary>R1-F65 · The issue's own repro: Barkeep, then a purchase. The receipt is said on the counter card's own
+    /// <summary>R1-F65 Â· The issue's own repro: Barkeep, then a purchase. The receipt is said on the counter card's own
     /// notice (with its cost) and NOT also as a toast that lands on the card's title and action row.</summary>
     [Fact]
     public async Task APurchaseWithTheBarCardOpenLandsInTheCardsOwnNoticeNotInATitleToast()
@@ -54,7 +54,7 @@ public sealed class AToastClearsTheOpenCardTests
         Assert.Contains(" cr)", notice);
     }
 
-    /// <summary>R1-F65 · Static Marsh's true-line answer rides her own card (the oracle notice), not a toast.</summary>
+    /// <summary>R1-F65 Â· Static Marsh's true-line answer rides her own card (the oracle notice), not a toast.</summary>
     [Fact]
     public async Task AnAnswerSaidWhileTheOraclesCardIsOpenLandsOnHerCard()
     {
