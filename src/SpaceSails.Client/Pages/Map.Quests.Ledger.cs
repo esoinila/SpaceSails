@@ -158,12 +158,13 @@ public partial class Map
         var rows = new List<Stations.Captain.QuestItem>();
         if (gig is { } plan)
         {
+            string who = plan.Flavor == ExpeditionFlavor.Science ? "scientists" : "a survey crew";
             rows.Add(new Stations.Captain.QuestItem(
                 $"Away team — {plan.SiteDisplayName}",
-                "The charter's gig: ferry the team down to the site and bring them home.",
+                $"Chartered: ferry {who} down to {plan.SiteDisplayName} and bring every one of them home. Hold the shuttle window — the site does not wait.",
                 $"{plan.BaseFee.ToString("N0", CultureInfo.InvariantCulture)} cr base",
                 "on the books", "active", [], false,
-                NextAction: $"board the shuttle for {plan.SiteDisplayName}") { Heading = "🛰 Away gig" });
+                NextAction: $"board the shuttle for {plan.SiteDisplayName}") { Heading = "🛰 Charters" });
         }
 
         if (theCase is not null && progress.Taken && progress.Settled == FinderCase.Outcome.Open)
@@ -171,8 +172,9 @@ public partial class Map
             rows.Add(new Stations.Captain.QuestItem(
                 $"{FinderCase.LeadTitle} — {FinderCase.DisplayName}",
                 FinderCase.LeadBody,
-                "a finder's fee", "case open", "active", [], false,
-                NextAction: "work the case at a top") { Heading = "🕵 Cases" });
+                $"{theCase.Value.PayCredits.ToString("N0", CultureInfo.InvariantCulture)} cr · Varga's fee",
+                "case open", "active", [], false,
+                NextAction: progress.WitnessHeard ? "follow the trail in the field book" : "work the case at a top") { Heading = "🕵 Cases" });
         }
 
         return rows;

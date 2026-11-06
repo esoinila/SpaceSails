@@ -225,7 +225,7 @@ public partial class Map
         }
         string speaker = BarSpeaker(_pendingOffer.Giver);
         _pendingOffer = null;
-        ShowPulseMessage($"“Suit yourself.” {speaker} turns back to their drink.");
+        ShowPulseMessage($"“Suit yourself.” {speaker} turns back to the glass.");
     }
 
     // A brought-down target settles any matching hunt contract. Called where a ship is holed or

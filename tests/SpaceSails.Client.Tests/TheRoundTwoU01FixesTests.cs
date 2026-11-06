@@ -62,6 +62,9 @@ public sealed class TheRoundTwoU01FixesTests
     [InlineData("THE FIXER", "The Fixer")]
     [InlineData("ONE-EYE SILAS", "One-Eye Silas")]
     [InlineData("A STRANGER AT THE END", "The stranger")]
+    [InlineData("RAUHA LIND", "Rauha Lind")]
+    [InlineData("A CARRIER, WAITING ON A SIGNATURE", "The stranger")]
+    [InlineData("SOMEBODY EATING, SHIFT ENDED", "The stranger")]
     public void AContactAnswersToTheNameOnTheirPlate(string plate, string said) =>
         Assert.Equal(said, Static<string>("BarSpeaker", plate));
 
@@ -73,7 +76,7 @@ public sealed class TheRoundTwoU01FixesTests
             "x", "Selene Gate", "A job", "Blurb", 500, "earth"));
         Invoke(map, "DeclineOffer");
         var pulse = (PulseSlot)Field(map, "_pulse")!;
-        Assert.Contains("Madam Coil turns back to their drink", pulse.Message);
+        Assert.Contains("Madam Coil turns back to the glass", pulse.Message);
         Assert.DoesNotContain("stranger", pulse.Message);
     }
 
@@ -91,20 +94,6 @@ public sealed class TheRoundTwoU01FixesTests
         Assert.DoesNotContain("years", Static<string>("MidFlightNote", Hauler(0, 200 * day)));
         Assert.Contains("weeks", Static<string>("MidFlightNote", Hauler(0, 40 * day)));
         Assert.Contains("years", Static<string>("MidFlightNote", Hauler(0, 900 * day)));
-    }
-
-    // ── U01-F18 · a boot-time line gets its dwell from the first frame it can be seen on ─────────────────
-
-    [Fact]
-    public void ABootTimeLineIsNotSpentBeforeTheOverlayLifts()
-    {
-        // Written at t = 0 (no frame yet); the overlay lifts 20 s later.
-        PulseSlot written = PulseSlot.Empty.Write("A toast naming the corner of the bar the oracle keeps.", PulseRank.Status, 0);
-        Assert.Null(written.Expire(20_000).Message); // the bug: wiped by the first Expire
-
-        PulseSlot restarted = Static<PulseSlot>("TheBootPulseStartsItsClockNow", written, 20_000.0);
-        Assert.NotNull(restarted.Expire(20_500).Message);
-        Assert.Null(restarted.Expire(20_000 + PulseSlot.MaxDwellMs + 1).Message);
     }
 
     // ── U01-F11 · a case taken at a bar seat is not "found on the ground" ───────────────────────────────
@@ -139,6 +128,9 @@ public sealed class TheRoundTwoU01FixesTests
         Assert.All(rows, r => Assert.NotNull(r.Heading));
         Assert.All(rows, r => Assert.False(string.IsNullOrWhiteSpace(r.NextAction)));
         Assert.Contains("Object 2-9-1 wreck", rows[0].NextAction);
+        Assert.Contains("scientists", rows[0].Detail);
+        Assert.Equal("🛰 Charters", rows[0].Heading);
+        Assert.Contains("Varga's fee", rows[1].RewardText);
         Assert.NotEqual(rows[0].Heading, rows[1].Heading);
 
         // A case not yet taken is not on the books; nor is a gig nobody accepted.

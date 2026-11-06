@@ -139,7 +139,7 @@ public partial class Map
     internal static string MidFlightNote(NpcShip ship)
     {
         double days = (ship.EstimatedArrivalTime - ship.DepartureTime) / 86400.0;
-        if (days < 90.0) { return "mid-flight — inner transfers take weeks"; }
+        if (days < 90.0) { return "mid-flight — local transfers take weeks"; }
         if (days < 365.0) { return "mid-flight — inner transfers take months"; }
         return "mid-flight — outer transfers take years";
     }

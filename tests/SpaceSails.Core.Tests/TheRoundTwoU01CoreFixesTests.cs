@@ -36,7 +36,7 @@ public sealed class TheRoundTwoU01CoreFixesTests
     // ── U01-F17 · the wire reads right ───────────────────────────────────────────────────────────────────
 
     [Fact]
-    public void NoHeadlineSaysAWithAVowelCargo()
+    public void TheCargoLineReadsAShipmentOfTheCargo()
     {
         var eph = Sol();
         int cargoLines = 0;
@@ -46,10 +46,10 @@ public sealed class TheRoundTwoU01CoreFixesTests
             {
                 foreach (NewsWire.NewsItem item in NewsWire.Ambient(eph, 0, 400, scope, salt))
                 {
-                    if (item.Headline.Contains("shipment went 'missing'", StringComparison.Ordinal))
+                    if (item.Headline.Contains("went 'missing' in transit", StringComparison.Ordinal))
                     {
                         cargoLines++;
-                        Assert.DoesNotMatch(@"\bA [AEIOU]\w* shipment", item.Headline);
+                        Assert.StartsWith("A shipment of ", item.Headline, StringComparison.Ordinal);
                     }
                 }
             }
@@ -58,7 +58,7 @@ public sealed class TheRoundTwoU01CoreFixesTests
         // Anti-vacuous: the sweep really met the line, and an Ice one among them.
         Assert.True(cargoLines > 20, $"the sweep met {cargoLines} cargo lines.");
         Assert.Contains(NewsWire.Ambient(eph, 0, 4000).Select(i => i.Headline),
-            h => h.StartsWith("An Ice shipment", StringComparison.Ordinal));
+            h => h.StartsWith("A shipment of Ice", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public sealed class TheRoundTwoU01CoreFixesTests
             {
                 for (int start = 0; start < 60; start++)
                 {
-                    var heads = NewsWire.Ambient(eph, start * NewsWire.SecondsPerDay, 8, scope, salt)
+                    var heads = NewsWire.Ambient(eph, start * NewsWire.SecondsPerDay, 9, scope, salt)
                         .Select(i => i.Headline).ToList();
                     Assert.True(heads.Distinct(StringComparer.Ordinal).Count() == heads.Count,
                         $"{scope}/{salt}/day {start}: a ticker repeated a line:\n{string.Join("\n", heads)}");
@@ -113,5 +113,27 @@ public sealed class TheRoundTwoU01CoreFixesTests
         Assert.Equal("Yes — I'll find him", WalkIn.YesFor(WalkIn.Who.Nadia));
         Assert.Equal("Yes — I'll find it", WalkIn.YesFor(WalkIn.Who.Ilse));
         Assert.Contains("the man, not the file", WalkIn.TheStory(WalkIn.Who.Nadia));
+    }
+
+    [Fact]
+    public void ADaysLineDoesNotDependOnTheWindowItIsPrintedIn()
+    {
+        // "Revisiting a day never contradicts what was already read": day D reads the same whether the
+        // window ends at D, D+1 or D+20.
+        var eph = Sol();
+        foreach (NewsWire.NewsScope scope in new[] { NewsWire.NewsScope.SystemWire, NewsWire.NewsScope.PortRag })
+        {
+            foreach (string? salt in new string?[] { null, "cinder-roost", "ceres" })
+            {
+                for (long d = 40; d < 140; d++)
+                {
+                    string at = NewsWire.Ambient(eph, d * NewsWire.SecondsPerDay, 1, scope, salt)[0].Headline;
+                    string plusOne = NewsWire.Ambient(eph, (d + 1) * NewsWire.SecondsPerDay, 2, scope, salt)[1].Headline;
+                    string plusTwenty = NewsWire.Ambient(eph, (d + 20) * NewsWire.SecondsPerDay, 21, scope, salt)[20].Headline;
+                    Assert.Equal(at, plusOne);
+                    Assert.Equal(at, plusTwenty);
+                }
+            }
+        }
     }
 }

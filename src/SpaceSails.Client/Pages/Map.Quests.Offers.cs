@@ -156,19 +156,25 @@ public partial class Map
         {
             return;
         }
-        ShowPulseMessage($"{BarSpeaker(giver)} swirls their drink. “Nothing worth your time right now. Check back.”");
+        ShowPulseMessage($"{BarSpeaker(giver)} swirls the glass. “Nothing worth your time right now. Check back.”");
     }
 
     /// <summary>U01-F08 · the name a bar contact answers to in their own reply line: the plate's name for the
     /// named regulars, "The stranger" only for an unnamed top.</summary>
     internal static string BarSpeaker(string? giver)
     {
-        string g = giver ?? "";
-        if (g.Contains("COIL", StringComparison.OrdinalIgnoreCase)) { return "Madam Coil"; }
-        if (g.Contains("GILT", StringComparison.OrdinalIgnoreCase)) { return "Gilt-Eye"; }
-        if (g.Contains("SILAS", StringComparison.OrdinalIgnoreCase)) { return "One-Eye Silas"; }
-        if (g.Contains("FIXER", StringComparison.OrdinalIgnoreCase)) { return "The Fixer"; }
-        return "The stranger";
+        // Named plates (the regulars, Lind, an old shipmate, a keep) answer to their own display name; only a
+        // plate that names nobody ("A CARRIER, WAITING ON A SIGNATURE", "SOMEBODY EATING") stays "The stranger".
+        if (string.IsNullOrWhiteSpace(giver)
+            || giver.StartsWith("A ", StringComparison.OrdinalIgnoreCase)
+            || giver.StartsWith("AN ", StringComparison.OrdinalIgnoreCase)
+            || giver.StartsWith("SOMEBODY", StringComparison.OrdinalIgnoreCase)
+            || giver.StartsWith("STRANGER", StringComparison.OrdinalIgnoreCase))
+        {
+            return "The stranger";
+        }
+
+        return GiverDisplay(giver);
     }
 
     // The Magpie, a fence's runner who won't sit still (PR-F). Their position is a pure function of

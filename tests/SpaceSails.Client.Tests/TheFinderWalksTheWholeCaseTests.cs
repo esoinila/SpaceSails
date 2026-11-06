@@ -593,6 +593,32 @@ public sealed class TheFinderWalksTheWholeCaseTests
         Assert.DoesNotContain("found on the ground", provenance, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// <b>U01-F06 (#1415) · THE COGNAC TOAST WAITS BEHIND ITS CARD.</b> The 🥂 line used to be written to the
+    /// pulse while the TWO GLASSES card's scrim was up, so it expired unseen and was gone when "…go on"
+    /// closed the card. Now it is held and said when the glass clears. <b>RED</b> by putting the old
+    /// unconditional <c>ShowPulseMessage</c> back in <c>TryBond</c>.
+    /// </summary>
+    [Fact]
+    public void TheCognacToastIsHeldBehindTheCardAndSaidWhenItCloses()
+    {
+        Pages.Map map = AshoreAt(TheRedEye);
+        Set(map, "_bondForce", true);
+        Invoke(map, "TryBond", StrangerBond.Scare.Shudder, false, 1000.0);
+
+        Assert.NotNull(Field(map, "_storyCard"));
+        PulseSlot up = (PulseSlot)Field(map, "_pulse")!;
+        Assert.False((up.Message ?? "").StartsWith("🥂", StringComparison.Ordinal),
+            "the toast was written under the card's scrim.");
+        var held = (PulseHold)Field(map, "_held")!;
+        Assert.Contains(held.Queued, w => w.Message.StartsWith("🥂", StringComparison.Ordinal));
+
+        Invoke(map, "CloseStoryCard");
+        Invoke(map, "SayWhatTheScrimWasStandingOn");
+        PulseSlot after = (PulseSlot)Field(map, "_pulse")!;
+        Assert.StartsWith("🥂", after.Message ?? "", StringComparison.Ordinal);
+    }
+
     // ══ THE BENCH ════════════════════════════════════════════════════════════════════════════════════════
 
     /// <summary>A page clamped onto a berth, standing in its bar, with a real world and a real traffic wave
