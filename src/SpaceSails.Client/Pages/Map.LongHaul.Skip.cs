@@ -118,7 +118,7 @@ public partial class Map
             : "the arrival window",
         WarpSkip.EventKind.KeepTrim => "the next orbit trim",
         WarpSkip.EventKind.SensorPass => "the sensor pass",
-        WarpSkip.EventKind.PlanEnd => "the plan's end",
+        WarpSkip.EventKind.PlanEnd => "the end of the coast along this orbit",
         _ => "the next event",
     };
 
@@ -151,7 +151,17 @@ public partial class Map
         int commanded = WarpSkip.SkipWarp(next.Epoch - SimTime, MaxWarpLevel);
         Warp = commanded;
         _skipWarpCommanded = commanded;
-        LogAutopilotEvent($"⏭ skip engaged — fast-forwarding to {_skipTargetLabel}");
+        // #1387 · a PlanEnd skip arrives nowhere, and says so the moment it is chosen.
+        if (next.Kind == WarpSkip.EventKind.PlanEnd)
+        {
+            string coastNote = WarpSkip.CoastAlongOrbitNote(FormatDuration(next.Epoch - SimTime));
+            ShowPulseMessage(coastNote);
+            LogAutopilotEvent(coastNote);
+        }
+        else
+        {
+            LogAutopilotEvent($"⏭ skip engaged — fast-forwarding to {_skipTargetLabel}");
+        }
     }
 
     // The ■ stop-skip press (captain's hand wins): drop to 1× and let go.

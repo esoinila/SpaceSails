@@ -325,7 +325,7 @@ public partial class Map
         }
 
         return new(ShipDesk.Trade, "🛰", "Trade", $"{_credits:N0} cr", $"{_cargoUnits}/{CargoCapacity} cargo",
-            tradable > 0 ? $"🚀 {tradable} partner{(tradable == 1 ? "" : "s")} in shuttle reach" : null);
+            tradable > 0 ? $"🚀 {tradable} trade partner{(tradable == 1 ? "" : "s")} in reach" : null);
     }
 
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData CommsChip()

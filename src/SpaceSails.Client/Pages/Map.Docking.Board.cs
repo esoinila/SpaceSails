@@ -34,7 +34,7 @@ public partial class Map
     // the ground. The classification is the pure, tested ShuttleExcursion.Destinations rule.
     public sealed record ShuttleStop(
         CelestialBody Body, double DistanceMeters, double TravelSeconds,
-        bool HasBerth, bool IsLandable, bool HasCache);
+        bool HasBerth, bool IsLandable, bool HasCache, bool OneWayDown = false);
 
     // Null = the hatch is shut; a list (possibly empty) = the destination board is open.
     private List<ShuttleStop>? _shuttleBayStops;
@@ -72,7 +72,15 @@ public partial class Map
         {
             if (byId.TryGetValue(d.BodyId, out CelestialBody? body))
             {
-                stops.Add(new ShuttleStop(body, d.DistanceMeters, d.TravelSeconds, d.HasBerth, d.IsLandableSurface, d.HasCache));
+                // #1380 · the same question the airlock asks on the way home (TheLinkToHer → AskTheBoat), asked
+                // of the ground before the captain steps down: a ground the boat could not fly back from
+                // stays on the board, greyed and reasoned, never hidden.
+                bool oneWayDown = d.IsLandableSurface
+                    && ShuttleLink.AskTheBoat(
+                        d.DistanceMeters,
+                        (ShipVelocityNow() - TransferMath.BodyVelocity(_ephemeris, d.BodyId, SimTime)).Length)
+                    == ShuttleLink.Refusal.TooFastToCatch;
+                stops.Add(new ShuttleStop(body, d.DistanceMeters, d.TravelSeconds, d.HasBerth, d.IsLandableSurface, d.HasCache, oneWayDown));
             }
         }
         return stops;

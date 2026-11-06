@@ -14,6 +14,16 @@ namespace SpaceSails.Core;
 /// </summary>
 public static class SatchelTry
 {
+    /// <summary>#1444 · What the satchel says under "Offering it to ..." for each kind of lock. Only a shaft gate has
+    /// a reader; a room's hasp and a sealed way are mechanical, and each says so in its own words.</summary>
+    public static string SubtitleFor(Target target) => target switch
+    {
+        Target.ShaftGate => "It reads authorities and nothing else — a countersigned card, or nothing at all.",
+        Target.RoomDoor => "A mechanical lock, shut by a key that left with its owner. The wallet is the only thing worth holding up to it.",
+        Target.SealedWay => "No reader on this side. You can hold a card up to it; it is the only thing in the bag that would even be a gesture.",
+        _ => "Pick something.",
+    };
+
     /// <summary>What the captain is holding it up to.</summary>
     public enum Target
     {

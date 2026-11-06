@@ -161,6 +161,14 @@ public static class ShuttleLink
             : Refusal.TooFastToCatch;
     }
 
+    /// <summary>#1380 · Why a ground stays on the board-down list but will not take a boarding.</summary>
+    public const string OneWayDownLine =
+        "🛸 The boat will fly you down and cannot bring you back: the ship is close enough, but she is parting "
+        + "company faster than the boat can fly, and a shuttle that cannot come alongside is a shuttle that does not launch.";
+
+    /// <summary>#1380 · The short face of <see cref="OneWayDownLine"/>, written beside the greyed Board button.</summary>
+    public const string OneWayDownFace = "NO RIDE BACK — she is parting faster than the boat can fly";
+
     /// <summary>What the boat says when she will not go. In her own voice and never one of the three ladder
     /// lines — the ladder is the ship reporting, this is the boat refusing, and a captain who reads the
     /// maroon line as the answer to pressing a button would think the run was over when it is not.</summary>
