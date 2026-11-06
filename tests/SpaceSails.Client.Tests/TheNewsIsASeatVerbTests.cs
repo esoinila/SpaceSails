@@ -197,6 +197,39 @@ public sealed class TheNewsIsASeatVerbTests
             "the second Escape did not reach the seat — the chain stopped at a panel that was already shut.");
     }
 
+    /// <summary>#1450 · Ilse's card (z 1320) and the bank prompt (z 1300) paint OVER the paper (1240), so Esc
+    /// peels them before it. RED PROOF: move either rung back below <c>ThePaperIsOpen</c> in
+    /// <c>TryDismissTopOverlay</c> and the first press closes the paper instead.</summary>
+    [Fact]
+    public async Task EscapeTakesIlsesCardBeforeThePaper()
+    {
+        using DeskBench bench = await DeskBench.BootAsync(SatAtABarTop);
+        bench.Poke("_audioArmed", true);
+        bench.CallOnTheDispatcher("OpenSeatedNews");
+        bench.Poke("_finderCard", (default(FinderCase.Case), false));
+        DeskBench.Painted painted = await bench.RenderAsync();
+        ulong keyboard = DeskBench.TheKeyboard(painted);
+
+        await bench.TypeAsync(keyboard, "Escape");
+        Assert.Null(bench.Field("_finderCard"));
+        Assert.True((bool)bench.Field("_seatedNewsOpen")!, "the first Escape closed the paper hidden under Ilse's card.");
+    }
+
+    [Fact]
+    public async Task EscapeTakesTheBankPromptBeforeThePaper()
+    {
+        using DeskBench bench = await DeskBench.BootAsync(SatAtABarTop);
+        bench.Poke("_audioArmed", true);
+        bench.CallOnTheDispatcher("OpenSeatedNews");
+        bench.Poke("_bankPrompt", (Pages.Map.BankPromptKind?)Pages.Map.BankPromptKind.Bank);
+        DeskBench.Painted painted = await bench.RenderAsync();
+        ulong keyboard = DeskBench.TheKeyboard(painted);
+
+        await bench.TypeAsync(keyboard, "Escape");
+        Assert.Null(bench.Field("_bankPrompt"));
+        Assert.True((bool)bench.Field("_seatedNewsOpen")!, "the first Escape closed the paper under the bank prompt.");
+    }
+
     /// <summary>
     /// <b>STANDING UP TAKES THE PAPER WITH IT, AND ESCAPE STOPS REACHING FOR IT.</b>
     ///

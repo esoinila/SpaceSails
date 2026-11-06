@@ -275,8 +275,8 @@ public static class OracleRant
     // So a draw now walks the pool instead of sampling it: index = (start + stride × draw) mod count with
     // START and STRIDE seeded per VISIT (station, watch — NOT the draw, and NOT the drinks) and gcd(stride, count) = 1.
     // Two consequences, both wanted: consecutive draws can never land the same line (the stride is never
-    // 0 mod count), and a full cycle plays EVERY line in the pool before any of them comes back. Buying her
-    // a drink re-seeds the visit, so the walk reshuffles when the channel widens. Still pure, still
+    // 0 mod count), and a full cycle plays EVERY line in the pool before any of them comes back. A drink does not
+    // re-seed it (the drinks are not among the seed's inputs), so the walk holds across a round. Still pure, still
     // deterministic in exactly the four documented inputs — no clock, no System.Random.
 
     private static ulong VisitSeed(string stationId, long watch)
