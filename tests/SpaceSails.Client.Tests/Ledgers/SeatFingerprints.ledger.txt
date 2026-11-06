@@ -26,7 +26,7 @@ chars | a free top in the hall | 2523
 chars | a park bench | 2549
 chars | a park bench with somebody on the far end | 2555
 chars | a stool at a chamber worktop | 2506
-chars | a top somebody is already at | 2541
+chars | a top somebody is already at | 2540
 chars | a chair in a ring office (with a pour in front of you) | 2575
 chars | a cubicle, with the catch still open (with a pour in front of you) | 2538
 chars | a free top in a cabinet (with a pour in front of you) | 2817
@@ -34,7 +34,7 @@ chars | a free top in the hall (with a pour in front of you) | 2762
 chars | a park bench (with a pour in front of you) | 2537
 chars | a park bench with somebody on the far end (with a pour in front of you) | 2543
 chars | a stool at a chamber worktop (with a pour in front of you) | 2494
-chars | a top somebody is already at (with a pour in front of you) | 2530
+chars | a top somebody is already at (with a pour in front of you) | 2529
 sha256 | a chair in a ring office | c58cf07025b1063b68ae014c6621af46f52828250bbd9c3b9931ce534a72de74
 sha256 | a cubicle, with the catch still open | b15c3c3980ca5893e2780ab8373f0ec7eb0b0e5c9c44daf0ab9fc4cfdea46e1d
 sha256 | a free top in a cabinet | 8e041561c5e5784a3b7dabce6195dfe1d4974a492153ba0f21735b6315294e7a
@@ -42,7 +42,7 @@ sha256 | a free top in the hall | 1726b706035aeabedbf56dd0be2658f2c805dc3bfa7bf2
 sha256 | a park bench | b5987a06ae609d79872c8ea3384de14968d75dd09519eed99535dc3afd59fd37
 sha256 | a park bench with somebody on the far end | fab8ab43c0701732d21b02f46262b46ce2e06c5c0bfa40fc671d7d305b5c966e
 sha256 | a stool at a chamber worktop | 93561137c83471ef8bebf89ce19c62c2eaca2fbec417096165df653075f53ec1
-sha256 | a top somebody is already at | 85e735cfd3923a7c41c4e49bc47eda4c31dc090b8d95ceb7831c8c067839a47a
+sha256 | a top somebody is already at | ebb2f7fc8bf8810b5b32e5dfb711769152b18f564f902d17a1fa585ccb137d98
 sha256 | a chair in a ring office (with a pour in front of you) | afa3341f693f27ff95106682ea2700aba0261facd057b0f8973123ebefda0aad
 sha256 | a cubicle, with the catch still open (with a pour in front of you) | a4c5ea88610e3d7e908760f6c89202def6d28e43c5f5fa070e5ac804367f2ea8
 sha256 | a free top in a cabinet (with a pour in front of you) | b88ab7ca0ed825c8d26d13eb89b316e7a3f58855d23d25a31dc23221dfbf6112
@@ -50,4 +50,4 @@ sha256 | a free top in the hall (with a pour in front of you) | df11c69da65a5acb
 sha256 | a park bench (with a pour in front of you) | 622dd5c7b68052a6dac00541a2232c7f4d0d3074c55fdc439f6107b182163fe1
 sha256 | a park bench with somebody on the far end (with a pour in front of you) | 40104c7bd4bf554db4f567b762d44a68ac493e5fe5c5c39217620162a1babbd7
 sha256 | a stool at a chamber worktop (with a pour in front of you) | cc525b0aab6728e9fd278be291de91fbab7c5e924bb55fbceb241b923e1a3272
-sha256 | a top somebody is already at (with a pour in front of you) | 6b0d28a7369c6c7f0357f21a3cb7da5b4e9d5fc1e8c7190eced584793c7e82bd
+sha256 | a top somebody is already at (with a pour in front of you) | 95199a5365bdb0db0ee64bf4a02755bfd0bd61b6bdf97d541815a94d31b07b44
