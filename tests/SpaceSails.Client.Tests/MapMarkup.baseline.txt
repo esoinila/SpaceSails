@@ -3191,14 +3191,8 @@
                             @* R1-F50 · ONE SENTENCE PER LOCK. Only a shaft gate has a reader; a room's hasp
                                and a sealed way are mechanical, and the answer to a card held up to them says
                                so. A prompt claiming they read authorities contradicted that answer. *@
-                            @if (at.Target == SpaceSails.Core.SatchelTry.Target.ShaftGate)
-                            {
-                                <text>It reads authorities and nothing else — a countersigned card, or nothing at all.</text>
-                            }
-                            else
-                            {
-                                <text>Pick something.</text>
-                            }
+                            @* #1444 · and the sentence is the lock's own: SatchelTry.SubtitleFor. *@
+                            <text>@SpaceSails.Core.SatchelTry.SubtitleFor(at.Target)</text>
                         </text>
                     }
                     else
@@ -4491,9 +4485,17 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                                    place; what you do on the ground is decided on the ground. *@
                                 @if (local.IsLandable)
                                 {
+                                    @* #1380 · a ground the boat could not fly back from stays on the board — greyed, with
+                                       the reason beside it. The row is never hidden (the board never boots empty). *@
                                     <button type="button" class="btn btn-sm btn-outline-warning"
-                                            title="Board the shuttle for @local.Body.Name — the down-tube grows on the map and you walk down. Bring cargo if you like; decide on the ground."
+                                            disabled="@local.OneWayDown"
+                                            title="@(local.OneWayDown ? ShuttleLink.OneWayDownLine : $"Board the shuttle for {local.Body.Name} — the down-tube grows on the map and you walk down. Bring cargo if you like; decide on the ground.")"
                                             @onclick="() => OpenBoardingPanel(local)">🛸 Board for @local.Body.Name</button>
+                                    @if (local.OneWayDown)
+                                    {
+                                        <span class="deck-shuttle-noberth deck-shuttle-oneway"
+                                              title="@ShuttleLink.OneWayDownLine">@ShuttleLink.OneWayDownFace</span>
+                                    }
                                 }
                                 @if (!local.HasBerth && !local.IsLandable)
                                 {
@@ -5867,9 +5869,9 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                Jumps time forward to the next burn/arrival; anything important still pulls you back to 1×.
                Disabled when nothing is armed (no next event to skip to). Becomes ■ stop skip while running. *@
             <button type="button" class="btn btn-sm @(_skipActive ? "btn-warning" : "btn-outline-info") me-2"
-                    title="Jump time forward to the next burn/arrival — anything important (a burn, an arrival, an alert) still pulls you back to 1×"
+                    title="@(!_skipActive && _skipNext.Kind == WarpSkip.EventKind.PlanEnd ? "Ride the coast out along this orbit — the clock runs, the ship stays on the same orbit, and nothing is arrived at. Anything important (a burn, an alert) still pulls you back to 1×." : "Jump time forward to the next burn/arrival — anything important (a burn, an arrival, an alert) still pulls you back to 1×")"
                     disabled="@(!_skipActive && !_skipNext.Found)" @onclick="ToggleSkip">
-                @(_skipActive ? "■ stop skip" : "⏭ next event")
+                @(_skipActive ? "■ stop skip" : _skipNext.Kind == WarpSkip.EventKind.PlanEnd ? "⏭ coast this orbit" : "⏭ next event")
             </button>
             @* The long-coast advert: on a >1-day dead coast the ship OFFERS the cheap ride. A button, so
                it lives in the toolbar band, never the banner. The coast is free — the skip spends only time. *@
@@ -8429,7 +8431,7 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                     case BustedEncounter.Stage.BribedOff:
                     case BustedEncounter.Stage.ResistWon:
                     case BustedEncounter.Stage.Fled:
-                        <div class="busted-hail">@(bust.Phase == BustedEncounter.Stage.Fled ? "🏴 BROKE CLEAR" : bust.Phase == BustedEncounter.Stage.ResistWon ? "🔫 THEY PEEL OFF" : "💰 PAID OFF")</div>
+                        <div class="busted-hail">@CollectorLanding.OutcomeLabel(bust.HunterId, bust.Phase == BustedEncounter.Stage.Fled ? CollectorLanding.WritOutcome.Fled : bust.Phase == BustedEncounter.Stage.ResistWon ? CollectorLanding.WritOutcome.ResistWon : CollectorLanding.WritOutcome.BribedOff)</div>
                         @if (bust.ResistRoll is { } rr)
                         {
                             <div class="busted-roll">You: @rr.Challenger.Describe()</div>
