@@ -154,7 +154,9 @@ public partial class Map
         // and waving them all through offered Mercury to a ship bound for Saturn.
         if (RibbonEnd() is { } end
             && ArrivalStepRule.PassIsOffTheEndOfTheRibbon(pass.SimTime, end.EndSimTime, end.SampleStepSeconds)
-            && (_destinationBodyId is null || pass.BodyId == _destinationBodyId || body.ParentId == _destinationBodyId))
+            && (_destinationBodyId is null
+                ? PassIsTheNearestOffTheEnd(pass, kind, end.EndSimTime, end.SampleStepSeconds)
+                : pass.BodyId == _destinationBodyId || body.ParentId == _destinationBodyId))
         {
             return true;
         }
@@ -173,6 +175,29 @@ public partial class Map
         // anything - so the margin is capped absolutely (Neptune's capture range x10 is 39 AU).
         double reach = Math.Min(limit * ArrivalOfferReachMargin, Math.Max(limit, AstronomicalUnit));
         return pass.Distance <= reach;
+    }
+
+    /// <summary>#1459 · With no destination set, every pass at the ribbon's edge shares one time, so the scrub-nearest
+    /// pick fell to list order (Mercury, 0.9 AU, and the Cinder Roost dock, offered to a ship bound for nobody). The door
+    /// opens for ONE edge pass only: the arrivable-as-this-kind one that passes closest.</summary>
+    private bool PassIsTheNearestOffTheEnd(ClosestApproach.Pass pass, ArrivalStepRule.ArrivalKind kind, double endSimTime, double stepSeconds)
+    {
+        foreach (ClosestApproach.Pass other in _passes)
+        {
+            if (other.BodyId == pass.BodyId
+                || BodyById(other.BodyId) is not { } otherBody || !ArrivableAs(otherBody, kind)
+                || !ArrivalStepRule.PassIsOffTheEndOfTheRibbon(other.SimTime, endSimTime, stepSeconds)
+                || PassIsOnlyTheRibbonsBeginning(other))
+            {
+                continue;
+            }
+
+            if (other.Distance < pass.Distance)
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     /// <summary>Can this body end a plan in this way? A dock haven takes the ⚓ (DockableHavens is the one

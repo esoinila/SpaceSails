@@ -123,6 +123,8 @@ public partial class Map
         // is going, which is exactly why it is still worth a question.
         // R1-F67 follow-up · Ilse's card: Esc is her Pass, as the shell's way out is, and it must beat the seat rungs.
         if (_finderCard is not null) { AnswerTheFinder(false); return true; }
+        // #1440 · Brem Kolt's pitch is a decision card: Esc is his "no", as the card's own ✕ is (the walk keys are swallowed under it, #1438).
+        if (_hardcaseCard is not null) { TellKoltNo(); return true; }
         if (SeatedIsDocked) { AskWhetherToStandUp(); return true; }
         if (CaptainIsSeated) { CloseTable(); return true; }
         if (_pendingContactDrink is not null) { CancelContactDrinkOffer(); return true; }

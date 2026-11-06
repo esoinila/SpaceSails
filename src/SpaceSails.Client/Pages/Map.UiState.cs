@@ -294,6 +294,11 @@ public partial class Map
         return new(ShipDesk.WarRoom, "⚔", "War room", line, FireChipLine() ?? InterceptChipLine());
     }
 
+    /// <summary>The shuttle bay's own filter on WHAT can be a stop (ShuttleExcursion.Destinations): a body with a parent that
+    /// is not a planet. A contact that is no body at all (an NPC hull) is not on the board.</summary>
+    private bool IsAShuttleBayStop(string contactId) =>
+        BodyById(contactId) is { ParentId: not null, Kind: not BodyKind.Planet };
+
     private SpaceSails.Client.Pages.Stations.DeskChips.ChipData TradeChip()
     {
         if (_localTradeTargetId is not null)
@@ -317,7 +322,9 @@ public partial class Map
         {
             // #1401 R1-F47 · the berth she is clamped to is not "in shuttle reach": the shuttle bay leaves it off its
             // board (ShuttleExcursion.Destinations skips the docked haven), so the chip must not count it either.
-            if (c.Id != _dockedHavenId
+            // #1440 item 4 · …and the bay lists BODIES only (moons, stations, havens; never a planet, never a ship): an NPC depot hull
+            // rides ContactsAt/ContactsWithinShuttleRange as a Trade contact but is no stop on that board, so it is not counted.
+            if (c.Id != _dockedHavenId && IsAShuttleBayStop(c.Id)
                 && (c.Actions & CommerceRule.ActionKind.Trade) != 0 && TradeModeFor(c) != CommerceRule.TradeMode.None)
             {
                 tradable++;
