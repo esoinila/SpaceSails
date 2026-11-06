@@ -76,6 +76,10 @@ public static class MonolithWatch
     /// </summary>
     public static double NerveCost => 0.0;
 
+    /// <summary>R1-F27 · How long <see cref="What.ThePackGoesStill"/> is made true: the line says every Old
+    /// One has stopped, so for about this many real seconds the pack is held where it stands.</summary>
+    public const double PackStillSeconds = 8.0;
+
     /// <summary>Is this a ground where it can happen at all? The monolith's own, and nowhere else in the
     /// system. One predicate, asked of the object, exactly like everything else about this place.</summary>
     public static bool CanHappenOn(string? bodyId, string? siteSalt) => Monolith.StandsOn(bodyId, siteSalt);

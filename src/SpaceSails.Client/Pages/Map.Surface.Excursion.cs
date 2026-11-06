@@ -157,6 +157,11 @@ public partial class Map
         public double MonolithDwellSeconds { get; set; }
         public bool MonolithWatchSpent { get; set; }
 
+        // R1-F27 · THE PACK HELD STILL. Seconds left of the beat that tells the captain every Old One has
+        // stopped: for that long every awake one is pinned where it stands (the sentry-pin shape), so the
+        // sentence is true and the tracker reads them still. Per excursion, real-time seconds.
+        public double PackStillSeconds { get; set; }
+
         public ulong ThreatSeed { get; set; }
         public TreasureCache? Cache { get; set; }        // set on a completed bury (for the map card)
 

@@ -3843,7 +3843,7 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
            page's own markup because they wear different colours. No `StopClicks`: this nudge sits over the
            deck on its own anchor, with no backdrop behind it for a click to fall through to. *@
         <OverlayShell class="selfie-offer" Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.ByDecision">
-            <span class="selfie-offer-text">📸 @selfieOffer.Label — grab a selfie for the record?</span>
+            <span class="selfie-offer-text">@selfieOffer.Label — grab a selfie for the record?</span>
             <div class="selfie-offer-actions">
                 <button type="button" class="btn btn-sm btn-info" title="Strike a pose — it goes in the legend ledger" @onclick="AcceptSelfieOffer">Take the shot</button>
                 <button type="button" class="btn btn-sm btn-outline-light" title="Not this time" @onclick="DeclineSelfieOffer">Not now</button>

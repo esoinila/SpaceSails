@@ -128,6 +128,7 @@ public partial class Map
         ProcessingIsInterrupted(Core.Processing.Interruption.LiftedOff);
 
         _surface = null;
+        _selfieOffer = null;   // R1-F29: the offer was for the ground; it does not ride up with the lander
         // #612: the next landing works its own air out from scratch, so no crossing line is ever inherited
         // from the last moon.
         _airSupplyNoted = null;

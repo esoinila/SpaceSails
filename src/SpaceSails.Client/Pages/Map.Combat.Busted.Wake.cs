@@ -209,6 +209,14 @@ public partial class Map
         DropTheStoryCardsUnsaid();
         _patrol.StopUnderway = null;
         _held = PulseHold.Empty;
+
+        // R1-F29/F30 · …and the two offers that belonged to the dead captain's ground: the monolith's selfie
+        // prompt (taken aboard the successor's rustbucket it filed a legend entry for a face that never stood
+        // there) and Brem Kolt's pitch with the scrim queue behind it (re-raised at full strength on the
+        // rustbucket's deck). A grave is not a tube walk, so the #1052 "must not be dropped" does not reach it.
+        _selfieOffer = null;
+        _hardcaseCard = null;
+        _scrimQueued = null;
     }
 
     /// <summary>
@@ -246,6 +254,7 @@ public partial class Map
             _surface = null;
             _reevers.Clear();
             _lastNearestReeverRange = null;
+            ForgetTheExcursionsGlass();
             SetDeckForDock(null);
             LogAutopilotEvent("🛬 The expedition is written off — the away team scrubs the gig, and this time there is nobody to fly the body to.");
         }

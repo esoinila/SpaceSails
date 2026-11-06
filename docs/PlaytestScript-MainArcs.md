@@ -32,7 +32,7 @@ Base: `http://localhost:5073`
 
 | # | Link | The beat must… |
 |---|------|----------------|
-| 14 | [The monolith + the watch](http://localhost:5073/map?dock=the-space-bar&body=phobos&site=0&land=1&watchers=1) `…&watchers=1` | 85 m, 1:4:9, a 370-du shadow to walk up, nothing between the landing band and the stone. Then **stand still 40 s**: the playground moment. Six variants, no creature, zero nerve. Nobody has seen this live. |
+| 14 | [The monolith + the watch](http://localhost:5073/map?dock=the-space-bar&body=phobos&site=0&land=1&watchers=1) `…&watchers=1` | 85 m, 1:4:9, a 370-du shadow to walk up, nothing between the landing band and the stone. Then **40 s inside its sight** (walking counts; `&watchers=1` shortens the wait): the playground moment. Six variants, no creature, zero nerve. |
 | 15 | [The false slab](http://localhost:5073/map?dock=the-tilt&body=miranda&site=0&land=1) `body=miranda&site=0` | Quarried, mortared, tool-marked — *human*. The difference from #14 must read without a word of explanation. |
 
 ## Encores
