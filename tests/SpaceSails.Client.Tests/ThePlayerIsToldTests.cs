@@ -271,6 +271,12 @@ public sealed class ThePlayerIsToldTests
             Surface.RankedPulse, "Map.GateGuard.Mouth.cs", "StepHimAtTheMouth",
             "ShowPulseMessage(GateGuard.TideDownLine, PulseRank.Beat);"),
 
+        // U04-F13 · The empty chair (guard=absent). Held at Beat rank and filed the frame the captain is in reach, so
+        // the round's quake and hail cannot take its slot; told once.
+        new("the chair by the door has a coat on it and no man in it",
+            Surface.RankedPulse, "Map.GateGuard.Step.cs", "TheEmptyChairIsTold",
+            "HoldAndFile(GateGuard.AbsentLine, \"📍\", PulseRank.Beat);"),
+
         // ── THE ROUND, AND WHAT IT DECIDES ABOUT YOU ───────────────────────────────────────────────────
         new("a guard hails you and wants to see a face with the paper",
             Surface.RankedPulse, "Patrol/Patrol.Challenge.cs", "TheHail",
