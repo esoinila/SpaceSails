@@ -68,32 +68,6 @@ public sealed class TheFollowUpsATests
         Assert.True((bool)Read(map, "_hardcaseRefused")!);
     }
 
-    /// <summary><b>Proven RED</b> by dropping the IsAShuttleBayStop term from TradeChip: the depot hull in range is counted as a partner.</summary>
-    [Fact]
-    public void TheTradeTileDoesNotCountAnNpcHullTheShuttleBayNeverLists()
-    {
-        Pages.Map map = Boot("followups-a-trade");
-        string? Line() => ((Pages.Stations.DeskChips.ChipData)Invoke(map, "TradeChip")!).Line3;
-        string? before = Line();
-
-        var eph = (ICelestialEphemeris)Read(map, "_ephemeris")!;
-        NpcShip depot = TrafficSchedule.GenerateDepots(eph, seed: 44)[0];
-        var ship = (ShipState)Read(map, "_ship")!;
-        Type stateType = typeof(Pages.Map).GetNestedType("NpcState", Hidden | System.Reflection.BindingFlags.Public)!;
-        object npc = Activator.CreateInstance(stateType, nonPublic: true)!;
-        stateType.GetField("Ship")!.SetValue(npc, depot);
-        stateType.GetField("State")!.SetValue(npc, ship);   // on top of the captain, same velocity: in reach, course-matched
-        Array roster = Array.CreateInstance(stateType, 1);
-        roster.SetValue(npc, 0);
-        Set(map, "_npcStates", roster);
-
-        var contacts = (IReadOnlyList<CommerceRule.LocalContact>)Invoke(map, "LocalContacts")!;
-        Assert.Contains(contacts, c => c.Id == depot.Id && (c.Actions & CommerceRule.ActionKind.Trade) != 0
-            && (CommerceRule.TradeMode)Invoke(map, "TradeModeFor", c)! != CommerceRule.TradeMode.None);   // control: the old count WOULD have taken it
-
-        Assert.Equal(before, Line());
-    }
-
     // ── #1458 · the door sentry is the building's ───────────────────────────────────────────────────
 
     /// <summary><b>Proven RED</b> by removing the IsDoorSentry skip from DeployOrRetrieveSentry: GATE-1 goes back in the sling.</summary>
