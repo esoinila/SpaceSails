@@ -142,6 +142,32 @@
        .map-topstack now (Map.razor), so that height is the browser's arithmetic and nobody's estimate. */
 }
 
+/* #1463 · THE PHONE'S GLASS.
+
+   THE TAB BAR AND THE TWO MAP CONTROLS. --map-control-top above is the top of the strip under a ONE-row tab
+   bar. The bar wraps (flex-wrap) to two rows at ~412-480 px and three at 390 px, and CSS cannot measure a
+   wrap, so on a phone a small observer (renderer.js, keepTheMapControlsBelowTheTabBar) sets --map-control-top
+   on .map-page to the bar's REAL bottom (only while the bar has wrapped) and sets --map-controls-on to 1 while 🗺 Layers and the find box are
+   up. ShipTabsStrip.razor.css then gives the bar a bottom margin of the controls' own height, so the pilot
+   banner (and everything else in the flow column) starts BELOW them instead of under them. Wider than 600 px
+   the observer clears both properties and the typed values here stand.
+
+   THE DESK-CHIP COLUMN. The right-edge column is a z-30 sibling of the desk layer, so it paints over the
+   right third of an in-desk card (the barkeep, the bar menu, Marsh: every .deck-offer-card), which is only
+   185-265 px wide on a phone, and it reaches down onto the foot panels (the navigation-target panel
+   .map-dest-panel and the Plotting panel .map-plot, which UiGate checks at 390x700 for being painted over). The
+   chips carry each desk's status summary, so they stay on a phone until a card or panel is open; while one is,
+   the column steps aside and gives its 11rem to it. */
+@media (max-width: 600px) {
+    .map-page:has(.map-dest-panel, [class~="deck-offer-card"], .map-plot) {
+        --desk-chip-strip-clearance: 0.75rem;
+    }
+
+    .map-page:has(.map-dest-panel, [class~="deck-offer-card"], .map-plot) ::deep .desk-chip-strip {
+        display: none;
+    }
+}
+
 .map-loading {
     position: absolute;
     inset: 0;

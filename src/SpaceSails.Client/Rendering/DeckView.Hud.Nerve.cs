@@ -40,7 +40,7 @@ public sealed partial class DeckView
         // #561 · The stack down the column — baseY, the bar's height, the pip size, the plate's height and
         // where the next instrument may start — is ONE measurement, held in Core (HudColumn) and read by
         // both the drawing here and the tracker's anchor. Only the widths are the renderer's own business.
-        HudColumn.NerveBlock block = HudColumn.For(compact);
+        HudColumn.NerveBlock block = HudColumn.For(compact).Shifted(_nerveShift);   // #1463: below the band when it reaches over
         float w = compact ? 150f : 210f;
         float h = (float)block.BarHeight;
         float labelPx = compact ? 9f : 11f;

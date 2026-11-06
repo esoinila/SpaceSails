@@ -140,7 +140,7 @@ public sealed partial class DeckView
 
         _perf?.Mark("PaintTheDark");
 
-        DrawTheSentries(surface, simTime, widthPx, heightPx, scale, project);
+        DrawTheSentries(in state, surface, simTime, widthPx, heightPx, scale, project);
         _perf?.Mark("DrawTheSentries");
         DrawWhatTheFanHeard(surface, simTime, scale, project);
         _perf?.Mark("DrawWhatTheFanHeard");

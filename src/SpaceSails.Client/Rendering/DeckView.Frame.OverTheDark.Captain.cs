@@ -106,6 +106,54 @@ public sealed partial class DeckView
         }
     }
 
+    // #1463 · THE BAND AS IT IS REALLY DRAWN. Each line is fitted to the glass (CommsBand.Fit), so on a phone the
+    // drill HUD is two rows (three with a stall banner) and the plate is taller and wider than the two single rows
+    // CommsBand.ReservedBottom was measured for. Everything that must stay out of the band reads these, so none of
+    // them can disagree with the pen: the sentries' readouts (the floor), and the surface nerve block and the
+    // tracker under it, which step DOWN below the plate wherever the plate reaches over their column (#324).
+    private string[] _orbitRows = [], _stallRows = [];
+    private double _orbitPx = CommsBand.LinePx, _stallPx = CommsBand.LinePx;
+    private double _bandBottom = CommsBand.ReservedBottom;
+    private double _nerveShift;
+
+    /// <summary>Where the nerve block's plate would end if nothing shifted it, plus the air under the band.</summary>
+    private const double BandAirPx = 4.0;
+
+    private void LayOutTheBand(in State state, SurfaceHud? surface, int widthPx)
+    {
+        string? orbitText = surface is { OrbitComms: { Length: > 0 } ol } ? ol : null;
+        string? stallText = state.StallBanner is { Length: > 0 } sb ? sb : null;
+        double glassRoom = widthPx - (2 * CommsBand.EdgeMarginPx);
+        (string[] oRows, double oPx) = orbitText is null ? ([], CommsBand.LinePx) : CommsBand.Fit(orbitText, glassRoom);
+        (string[] sRows, double sPx) = stallText is null ? ([], CommsBand.LinePx) : CommsBand.Fit(stallText, glassRoom);
+        (_orbitRows, _orbitPx, _stallRows, _stallPx) = (oRows, oPx, sRows, sPx);
+        _bandBottom = CommsBand.ReservedBottom;
+        _nerveShift = 0.0;
+        if (oRows.Length + sRows.Length == 0)
+        {
+            return;
+        }
+
+        var drawn = new List<(string Text, double Px)>();
+        drawn.AddRange(oRows.Select(r => (r, oPx)));
+        drawn.AddRange(sRows.Select(r => (r, sPx)));
+        (double bx, double by, double bw, double bh) = CommsBand.PlateForRows(widthPx / 2.0, drawn);
+        // The stall banner comes and goes with the frame rate, so everything seated by the band is measured as if
+        // ONE stall row were always up (CommsBand's own "measured for MaxLines on purpose" rule): the gauge, the
+        // tracker and the sentries' seats must not hop a row each time the banner toggles.
+        double plannedBottom = CommsBand.PlateBottom(oRows.Length + Math.Max(1, sRows.Length));
+        _bandBottom = Math.Max(CommsBand.ReservedBottom, plannedBottom);
+        if (state.ShowNerve && !state.NerveCompact)
+        {
+            // The nerve plate's right edge, with the gauge's tremor (up to 3px) allowed for.
+            double nerveRight = 18.0 + 210.0 + HudColumn.PlateInsetPx + 3.0;
+            if (bx < nerveRight)
+            {
+                _nerveShift = Math.Max(0.0, plannedBottom + BandAirPx - HudColumn.Surface.PlateTop);
+            }
+        }
+    }
+
     /// <summary>#870 lane 7b · The corner and edge chrome, which is not the world and never was: #313's
     /// motion fan, #317/#330's nerve gauge and its ledger, #327's orbit line, #825's stall banner on its
     /// own line under it, the keybar, and #440's standing prompt above it.</summary>
@@ -135,11 +183,16 @@ public sealed partial class DeckView
         // One plate, under both lines, in the same ink the other plates use; the band it is measured to
         // (SpaceSails.Core.CommsBand) is the SAME band DrawTheSentries keeps its counters out of, so this
         // does not simply trade the ship's buried line for the sentry's.
-        string? orbitText = surface is { OrbitComms: { Length: > 0 } ol } ? ol : null;
-        string? stallText = state.StallBanner is { Length: > 0 } sb ? sb : null;
-        if (orbitText is not null || stallText is not null)
+        // (#1463) The rows were laid out at the top of the frame by LayOutTheBand, because the sentries' seat and the
+        // nerve block's seat both depend on how many rows the band really needs.
+        (string[] Rows, double Px) orbitFit = (_orbitRows, _orbitPx);
+        (string[] Rows, double Px) stallFit = (_stallRows, _stallPx);
+        if (orbitFit.Rows.Length + stallFit.Rows.Length > 0)
         {
-            (double px, double py, double pw, double ph) = CommsBand.PlateFor(widthPx / 2.0, orbitText, stallText);
+            var drawn = new List<(string Text, double Px)>();
+            drawn.AddRange(orbitFit.Rows.Select(r => (r, orbitFit.Px)));
+            drawn.AddRange(stallFit.Rows.Select(r => (r, stallFit.Px)));
+            (double px, double py, double pw, double ph) = CommsBand.PlateForRows(widthPx / 2.0, drawn);
             FillRect((float)px, (float)py, (float)pw, (float)ph, new RgbaColor(6, 11, 10, 205));
         }
 
@@ -165,8 +218,12 @@ public sealed partial class DeckView
                 double f = floor + (1.0 - floor) * (0.5 + 0.5 * Math.Sin(simTime * flickerHz));
                 color = new RgbaColor(170, 180, 190, (byte)(255 * Math.Clamp(f, 0.0, 1.0)));
             }
-            _renderer.DrawText(widthPx / 2f, (float)CommsBand.BaselineY(0), orbitLine, color,
-                $"{CommsBand.LinePx:0}px monospace", TextAlign.Center);
+            for (int r = 0; r < orbitFit.Rows.Length; r++)
+            {
+                _renderer.DrawText(widthPx / 2f, (float)CommsBand.BaselineY(r), orbitFit.Rows[r], color,
+                    string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{orbitFit.Px:0.#}px monospace"),
+                    TextAlign.Center);
+            }
         }
 
         // #825 · THE MACHINE'S OWN BANNER, on its own line, under the ship's. The owner had "SIGNAL BREAKING
@@ -177,9 +234,14 @@ public sealed partial class DeckView
         // already talking so neither fact ever paints over the other.
         if (state.StallBanner is { Length: > 0 } stall)
         {
-            float y = (float)CommsBand.BaselineY(orbitText is null ? 0 : 1);
-            _renderer.DrawText(widthPx / 2f, y, stall,
-                new RgbaColor(255, 190, 100, 235), $"{CommsBand.LinePx:0}px monospace", TextAlign.Center);
+            for (int r = 0; r < stallFit.Rows.Length; r++)
+            {
+                float y = (float)CommsBand.BaselineY(orbitFit.Rows.Length + r);
+                _renderer.DrawText(widthPx / 2f, y, stallFit.Rows[r],
+                    new RgbaColor(255, 190, 100, 235),
+                    string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{stallFit.Px:0.#}px monospace"),
+                    TextAlign.Center);
+            }
         }
 
         // Blind-UI audit finding: with the tube off-camera, nothing said the ship was docked or

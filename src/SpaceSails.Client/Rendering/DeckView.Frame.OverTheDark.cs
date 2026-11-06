@@ -16,9 +16,13 @@ public sealed partial class DeckView
     /// and OVER the dark, because a sentry carries a lamp and you can see a light in an unlit hall even
     /// when you cannot see what it lights.</summary>
     private void DrawTheSentries(
-        SurfaceHud? surface, double simTime, int widthPx, int heightPx, float scale,
+        in State state, SurfaceHud? surface, double simTime, int widthPx, int heightPx, float scale,
         Func<double, double, (float X, float Y)> project)
     {
+        // #1463 · The band is laid out HERE, first, because the sentries' readouts keep out of it, and the nerve
+        // block and the tracker (drawn later, in DrawTheInstruments) read the same layout.
+        LayOutTheBand(in state, surface, widthPx);
+
         // #314: deployed sentries — a gun-green mark (dim once dry), a zap line to the Old One it's
         // dropping, and its crude two-digit magazine readout riding above (seven-segment red, dim at 00).
         // Drawn ON the grid, not a corner widget — the counter is meant to be read from across the map.
@@ -116,9 +120,9 @@ public sealed partial class DeckView
                 // above), so the seat it picks is always within a plate-height of its own sentry. Unguarded it
                 // was a fixed screen row that any off-frame bot could be parked on, which is how a door sentry
                 // twenty deck units behind the captain ended up wearing its drum over his head.
-                if (plateTop < CommsBand.ReservedBottom)
+                if (plateTop < _bandBottom)
                 {
-                    plateTop = (float)Math.Max(CommsBand.ReservedBottom, sy + (0.8f * scale));
+                    plateTop = (float)Math.Max(_bandBottom, sy + (0.8f * scale));
                     plateBottom = plateTop + ph;
                 }
 
