@@ -98,6 +98,13 @@ public static partial class DeathNarration
     /// as the borrowed prose, one line further down the card.</summary>
     public static string Tail(DeathCause cause, DeathPlace place) => TailCore(cause, AsAHull(place));
 
+    /// <summary>R1-F68 · The wake card's WHAT HAPPENED carries the same closing beat as the death card, so a
+    /// scuttled captain's second card still ends "Her log will not mention it." The one exception is the
+    /// collector's "freeze-frame holds": that is the gun-camera still of the BUSTED freeze beat, which the wake
+    /// card does not show.</summary>
+    public static string WakeTail(DeathCause cause, DeathPlace place) =>
+        cause == DeathCause.Collector ? "" : Tail(cause, place);
+
     private static string TailCore(DeathCause cause, DeathPlace place) => (cause, place) switch
     {
         (DeathCause.Collector, _) => " The freeze-frame holds.",

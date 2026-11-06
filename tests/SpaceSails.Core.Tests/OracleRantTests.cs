@@ -224,4 +224,28 @@ public class OracleRantTests
         Assert.True(OracleRant.IsOracle(OracleRant.ConsoleLabel));
         Assert.False(OracleRant.IsOracle("◈ THE MAGPIE"));
     }
+
+    // R1-F70 · A drink bought mid-visit must not hand back a line already spoken this visit.
+    [Fact]
+    public void BuyingADrinkMidVisit_NeverRepeatsALineWithinThePoolCycle()
+    {
+        int window = OracleRant.Truths.Count; // the shortest pool; no line may return inside it
+        foreach (string station in Stations)
+        {
+            for (long watch = 0; watch < 40; watch++)
+            {
+                for (int drinkAt = 1; drinkAt < window; drinkAt++)
+                {
+                    var heard = new System.Collections.Generic.HashSet<string>();
+                    for (int draw = 0; draw < window; draw++)
+                    {
+                        int drinks = draw >= drinkAt ? 1 : 0;
+                        string text = OracleRant.Speak(station, watch, draw, drinks).Text;
+                        Assert.True(heard.Add(text),
+                            $"{station} watch {watch}: a drink at draw {drinkAt} re-seeded the walk and draw {draw} repeated a line.");
+                    }
+                }
+            }
+        }
+    }
 }

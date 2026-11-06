@@ -166,6 +166,10 @@ public partial class Map
             if (TryDismissTopOverlay())
             {
                 StateHasChanged();
+                // R1-F35 · The card's own button may hold DOM focus (a click on 'Keep listening' put it there);
+                // when the card leaves, focus falls to <body> and E/WASD go deaf until the deck is clicked.
+                // Esc closes the way Done does: hand the keyboard home to .map-page.
+                _ = RefocusMap();
                 return;
             }
             // Ashore, Escape doesn't switch desks (that would leave the surface silently) — let it fall

@@ -166,7 +166,7 @@ public static class OracleRant
     public static OracleLine Speak(string stationId, long watch, int drawIndex, int drinksBought)
     {
         ulong seed = LineSeed(stationId ?? string.Empty, watch, drawIndex, drinksBought);
-        ulong visit = VisitSeed(stationId ?? string.Empty, watch, drinksBought);
+        ulong visit = VisitSeed(stationId ?? string.Empty, watch);
         bool isTrue = Unit(Mix(seed, 0x7717_0AC1_E000_0001UL)) < TrueChance(drinksBought);
 
         if (!isTrue)
@@ -273,17 +273,19 @@ public static class OracleRant
     // pool as much as to a card.
     //
     // So a draw now walks the pool instead of sampling it: index = (start + stride × draw) mod count with
-    // START and STRIDE seeded per VISIT (station, watch, drinks — NOT the draw) and gcd(stride, count) = 1.
+    // START and STRIDE seeded per VISIT (station, watch — NOT the draw, and NOT the drinks) and gcd(stride, count) = 1.
     // Two consequences, both wanted: consecutive draws can never land the same line (the stride is never
     // 0 mod count), and a full cycle plays EVERY line in the pool before any of them comes back. Buying her
     // a drink re-seeds the visit, so the walk reshuffles when the channel widens. Still pure, still
     // deterministic in exactly the four documented inputs — no clock, no System.Random.
 
-    private static ulong VisitSeed(string stationId, long watch, int drinksBought)
+    private static ulong VisitSeed(string stationId, long watch)
     {
         ulong h = Fold(stationId, 0x0C);
         h = Mix(h, (ulong)watch);
-        h = Mix(h, unchecked((ulong)drinksBought) + 0x2000UL);
+        // R1-F70 · drinks are NOT folded in. They used to be ("buying her a drink re-seeds the visit"), and a
+        // re-seeded walk could land on a line she had said minutes before in the same visit. Drinks still
+        // raise the true chance; they no longer move the walk, so one visit never repeats inside a pool cycle.
         return h;
     }
 
