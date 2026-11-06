@@ -265,7 +265,7 @@ public partial class Map
         if (!ex.HardBreathingNoted && rate >= SuitAir.Breathing.WorthMentioning)
         {
             ex.HardBreathingNoted = true;
-            ShowPulseMessage(SuitAir.Breathing.HardBreathingLine);
+            ShowPulseMessage(SuitAir.Breathing.HardBreathingLineFor(_nerve, ex.HitsTaken));
         }
         else if (rate < SuitAir.Breathing.WorthMentioning * 0.8)
         {

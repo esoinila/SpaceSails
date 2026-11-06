@@ -24,7 +24,7 @@ public static class InsuranceRule
     /// journey and the new captain woke stranded with nothing to sell.</summary>
     public static RebirthOutcome DefaultRebirth(int wakeTankPulses) =>
         new(BustedRule.Resurrect(wakeTankPulses), BaseClinicBillCr,
-            "an uninsured insurance rustbucket — starter-grade, everything visible aboard gone");
+            "an uninsured insurance rustbucket — starter-grade");
 
     /// <summary>
     /// Consult a policy at rebirth. An <see cref="PirateInsurance.IsActiveAt"/> policy can cut the

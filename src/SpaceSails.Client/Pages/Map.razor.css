@@ -640,6 +640,20 @@
     z-index: calc(var(--z-desks-popups) + 55);
 }
 
+/* R1-F65 · a card is open: the toast moves to the foot of the glass so it never sits on the card's title and
+   art. Same z band as the plain toast (OverlayBands.DeckPulseToast), so the sync law is untouched. */
+.deck-pulse-toast.deck-pulse-toast-low {
+    top: auto;
+    bottom: 0;
+    /* One line, ellipsised: a card that reaches its height cap ends ~2rem above the glass bottom, and a taller
+       toast would sit on its action row. The card carries the full words; the toast is the cue. */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-top: 0.2rem;
+    padding-bottom: 0.2rem;
+}
+
 .deck-bank-notice {
     color: #9fe6b0;
     line-height: 1.35;

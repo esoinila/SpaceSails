@@ -134,7 +134,10 @@ public partial class Map
                 {
                     // The tell one beat early (#380's law), in the captain's own voice — it used to end on a
                     // parenthesised instruction to the player. Copy in Core beside the fragment it leads to.
-                    ShowPulseMessage(Core.NebulaLore.PosterFirstReadLine);
+                    // R1-F77 · …held behind the poster's own card and said when it closes: pulsed on open it
+                    // printed dimmed behind the modal's backdrop, where nobody reads it.
+                    HoldSaying(Core.NebulaLore.PosterFirstReadLine);
+                    ReleaseHeldSayingsUnlessACardStopsTheWorld();
                 }
                 else if (_insurancePosterReads >= 2)
                 {

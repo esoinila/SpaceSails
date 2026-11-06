@@ -273,7 +273,7 @@ public static class OracleRant
     // pool as much as to a card.
     //
     // So a draw now walks the pool instead of sampling it: index = (start + stride × draw) mod count with
-    // START and STRIDE seeded per VISIT (station, watch, drinks — NOT the draw) and gcd(stride, count) = 1.
+    // START and STRIDE seeded per VISIT (station, watch — NOT the draw, and NOT the drinks) and gcd(stride, count) = 1.
     // Two consequences, both wanted: consecutive draws can never land the same line (the stride is never
     // 0 mod count), and a full cycle plays EVERY line in the pool before any of them comes back. Buying her
     // a drink re-seeds the visit, so the walk reshuffles when the channel widens. Still pure, still

@@ -82,7 +82,7 @@ reproducing any existing IP: it is our own lattice, our own underwriter, our own
    evocative shard, never the whole truth. Assembly is the quest state, **per game-thread** (a new
    voyage is a new universe).
 2. **See the shape.** Once **enough intel shards** are in hand (`IntelNeededToUnlock`, currently 4 of
-   5), the world may offer the way to the capstone. The poster line alone is never enough; one lone
+   6), the world may offer the way to the capstone. The poster line alone is never enough; one lone
    adjuster's drink is never enough.
 3. **Earn the contract.** The capstone fragment — **the policy's true terms** — falls out of the
    assembled pieces. `NebulaLore.KnowsTheTruth` is arc 2's own reveal gate (key **and** intel both).
@@ -93,7 +93,7 @@ reproducing any existing IP: it is our own lattice, our own underwriter, our own
 
 ## 4. The fragments and where each surfaces
 
-Six fragments in the seeded pool (`src/SpaceSails.Core/NebulaLore.cs`) — five **intel shards**, one
+Seven fragments in the seeded pool (`src/SpaceSails.Core/NebulaLore.cs`) — six **intel shards**, one
 **capstone contract**. Each intel shard is delivered by a system that touches the player's **own
 deaths**; this lane authors the text and the assembly logic only, and touches none of those systems.
 
@@ -104,7 +104,8 @@ deaths**; this lane authors the text and the assembly logic only, and touches no
 | 3 | `adjuster-tell`   | The adjuster's tell       | **Adjuster** — a Nebula policy contact (#414/#410)  | **WIRED (#422)** — the "▓ Ask about NEBULA" bar seam when `NebulaFind.AdjusterAtBar` holds |
 | 4 | `collector-writ`  | The collector's writ      | **CollectorWrit** — a heat/collector encounter      | **WIRED (#422)** — `Map.Combat.ApplyHunterCatch`, the writ glimpsed at a collector catch |
 | 5 | `clinic-ledger`   | The clinic's second page  | **ClinicLedger** — the resurrection clinic's books  | **WIRED (#422)** — `Map.Combat.BustedResurrect`, surfaced on a LATER death (woken here before) |
-| 6 | `policy-terms`    | The policy's true terms   | **PolicyTerms** — the earned capstone               | **WIRED (#422)** — the same bar seam once intel ≥ threshold (mirrors KAAMOS `berth-code`) |
+| 6 | `the-bleed`       | The bleed                 | **Lattice** — #973 L3, the captain assembles it out of their own book | **WIRED (#973)** |
+| 7 | `policy-terms`    | The policy's true terms   | **PolicyTerms** — the earned capstone               | **WIRED (#422)** — the same bar seam once intel ≥ threshold (mirrors KAAMOS `berth-code`) |
 
 Each source is **canon** (the `NebulaSource` enum): the agreement about which system hands which piece
 over, so the delivering lanes bind to a fragment id rather than inventing their own lore.
@@ -260,7 +261,7 @@ sanity/#226 lane consumes it when the beat is built.
   `adjuster-tell` at the "▓ Ask about NEBULA" bar seam (`NebulaFind.AdjusterAtBar`), a collector catch
   glimpses `collector-writ` (`Map.Combat.ApplyHunterCatch`), a LATER death shows the clinic's second page
   `clinic-ledger`, and the same bar seam resolves the capstone `policy-terms` once intel ≥ threshold.
-- **The NEBULA readout.** `Map.Nebula.NebulaLedgerTip` surfaces "▓ NEBULA MUTUAL — N of 5 clauses" in the
+- **The NEBULA readout.** `Map.Nebula.NebulaLedgerTip` surfaces "▓ NEBULA MUTUAL — N of 6 clauses" in the
   Captain's ledger, the assembled shard texts readable beneath (mirrors `KaamosLedgerTip`).
 - **The convergence delivery.** Every arc assemble edge (KAAMOS and NEBULA both) funnels through
   `Map.Nebula.MaybeFireConvergence`, which watches `ArcConvergence.ConvergenceRevealPending` and, on the one

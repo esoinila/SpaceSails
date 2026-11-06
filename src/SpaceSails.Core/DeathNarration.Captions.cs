@@ -145,6 +145,12 @@ public static partial class DeathNarration
             : ArtFile(cause);
     }
 
+    /// <summary>R1-F59 · The wake card paints the old ship's fireball as its closing canvas. When the death art
+    /// above it IS that same fireball (impact, a scuttling on her own deck) the card showed one painting twice;
+    /// the second canvas is dropped then, and shown only when the death art is a different picture.</summary>
+    public static bool WakeCardRepeatsTheFireball(DeathCause cause, DeathPlace place) =>
+        ArtFile(cause, place) == "busted-ship-explosion.jpg";
+
     public static string ArtFile(DeathCause cause) => cause switch
     {
         DeathCause.Collector => "busted-freeze-frame.jpg",

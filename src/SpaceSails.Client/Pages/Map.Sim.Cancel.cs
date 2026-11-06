@@ -121,11 +121,15 @@ public partial class Map
         // the owner ruled that a movement key is a decision already taken ("must stand up before walking"),
         // so the keys pay for the stand instead of asking about it. Esc says nothing about where the captain
         // is going, which is exactly why it is still worth a question.
+        // R1-F67 follow-up · Ilse's card: Esc is her Pass, as the shell's way out is, and it must beat the seat rungs.
+        if (_finderCard is not null) { AnswerTheFinder(false); return true; }
         if (SeatedIsDocked) { AskWhetherToStandUp(); return true; }
         if (CaptainIsSeated) { CloseTable(); return true; }
         if (_pendingContactDrink is not null) { CancelContactDrinkOffer(); return true; }
         if (_patronDrink is not null) { ClosePatronTable(); return true; }
         if (_pendingOffer is not null) { DeclineOffer(); return true; }
+        // The bank prompt (title/note inputs) sits above the bank session and its inputs bubble Esc up here.
+        if (_bankPrompt is not null) { CancelBankPrompt(); return true; }
         if (_bankSession is not null) { CloseBank(); return true; }
         if (_barMenu is not null) { CloseBarkeep(); return true; }
         // #425 · The oracle's corner card was the ONE bar card this chain never knew about (story pass
