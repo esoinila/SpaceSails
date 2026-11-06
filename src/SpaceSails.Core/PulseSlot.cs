@@ -89,6 +89,10 @@ public readonly record struct PulseSlot(
     /// frame/round/seat fingerprint that prints the pulse).</summary>
     internal bool Unseen { get; init; }
 
+    /// <summary>#1439 · The stamp this line was written with, which <see cref="Seen"/> does not move - so
+    /// <see cref="Also"/> can tell "the same call" by when it was SAID, not by a hold window Seen rebases.</summary>
+    internal double SaidAtMs { get; init; }
+
     /// <summary>An empty slot — nothing on screen, and nothing to outrank.</summary>
     public static PulseSlot Empty => new(null, PulseRank.Status, 0.0, 0.0);
 
@@ -124,7 +128,7 @@ public readonly record struct PulseSlot(
             return this;
         }
 
-        return new PulseSlot(message, rank, nowMs + DwellFor(message), nowMs + MinDwellMs) { Unseen = awaitFirstTick };
+        return new PulseSlot(message, rank, nowMs + DwellFor(message), nowMs + MinDwellMs) { Unseen = awaitFirstTick, SaidAtMs = nowMs };
     }
 
     /// <summary>Write a line BESIDE what this same instant already said, instead of over it. Two sayings
@@ -136,7 +140,7 @@ public readonly record struct PulseSlot(
     /// wrote.</summary>
     public PulseSlot Also(string message, PulseRank rank, double nowMs, bool awaitFirstTick = false)
     {
-        if (Message is not null && HeldUntilMs == nowMs + MinDwellMs)
+        if (Message is not null && SaidAtMs == nowMs)
         {
             return Write($"{Message} {message}", rank > Rank ? rank : Rank, nowMs, awaitFirstTick || Unseen);
         }
@@ -150,7 +154,7 @@ public readonly record struct PulseSlot(
     /// written before the clock started, is returned unchanged.</summary>
     public PulseSlot Seen(double nowMs) =>
         Unseen && Message is not null
-            ? new PulseSlot(Message, Rank, nowMs + DwellFor(Message), nowMs + MinDwellMs)
+            ? new PulseSlot(Message, Rank, nowMs + DwellFor(Message), nowMs + MinDwellMs) { SaidAtMs = SaidAtMs }
             : this with { Unseen = false };
 
     /// <summary>Clear the slot if its line has had its time. An empty slot outranks nothing, which is what
@@ -324,15 +328,17 @@ public readonly record struct PulseHold(IReadOnlyList<PulseHold.Waiting>? Lines,
     /// slot's own rank law will not take this line yet (something bigger is still inside its breath), the
     /// line keeps its place and is offered again on the next frame rather than being spent on a write that
     /// did not happen.</para></summary>
-    public (PulseSlot Slot, PulseHold Held) ReleaseInto(PulseSlot slot, double nowMs)
+    public (PulseSlot Slot, PulseHold Held) ReleaseInto(PulseSlot slot, double nowMs, bool awaitFirstTick = false)
     {
-        if (!Any || nowMs < SayTheNextAfterMs)
+        // #1439 · …and never onto a line no frame has met yet: its expiry is still the stale stamp's, and
+        // SayTheNextAfterMs (set from it) would let this one overwrite it before it was ever painted.
+        if (!Any || nowMs < SayTheNextAfterMs || slot.Unseen)
         {
             return (slot, this);
         }
 
         Waiting head = Queued[0];
-        PulseSlot after = slot.Write(head.Message, head.Rank, nowMs);
+        PulseSlot after = slot.Write(head.Message, head.Rank, nowMs, awaitFirstTick);
         if (after == slot)
         {
             return (slot, this);   // the slot refused it; it has not been said, so it is not spent

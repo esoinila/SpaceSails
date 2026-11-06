@@ -47,4 +47,33 @@ public sealed class APulseLivesFromTheFirstTickThatSeesItTests
         // seeing it again later does not extend it
         Assert.Equal(slot.ExpiresMs, slot.Seen(9_000).ExpiresMs);
     }
+
+    [Fact]
+    public void ALineFromTheNextFrameWindowIsNotGluedOntoARebasedOne()
+    {
+        // #1439 gap 1 · "the same call" is when the line was SAID, not the hold window Seen rebases.
+        PulseSlot slot = PulseSlot.Empty.Write("First.", PulseRank.Status, 10_000, awaitFirstTick: true).Seen(15_000);
+        // Unrelated line raised at a stamp that happens to equal the REBASED hold window's start.
+        PulseSlot next = slot.Also("Second.", PulseRank.Status, 15_000 - PulseSlot.MinDwellMs + PulseSlot.MinDwellMs);
+        Assert.Equal("Second.", next.Message);
+        // …while two lines raised in one call (same stamp) are still joined.
+        PulseSlot pair = PulseSlot.Empty.Write("A.", PulseRank.Status, 20_000, true).Also("B.", PulseRank.Status, 20_000, true);
+        Assert.Equal("A. B.", pair.Message);
+    }
+
+    [Fact]
+    public void AHeldLineReleasedAtCardCloseIsNotExpiredBeforeItsFirstPaint()
+    {
+        // #1439 gap 2 · ReleaseInto in a throttled tab.
+        var held = PulseHold.Empty.Hold("A held line that waited behind a card for a good while.", PulseRank.Beat, 1_000);
+        (PulseSlot slot, PulseHold rest) = held.ReleaseInto(PulseSlot.Empty, 10_000, awaitFirstTick: true);
+        Assert.False(rest.Any);
+        Assert.NotNull(slot.Seen(16_000).Expire(16_000).Message);
+
+        // …and a second held line does not overwrite one no frame has met.
+        var two = PulseHold.Empty.Hold("One.", PulseRank.Beat, 1_000).Hold("Two.", PulseRank.Beat, 1_001);
+        (PulseSlot s1, PulseHold h1) = two.ReleaseInto(PulseSlot.Empty, 10_000, awaitFirstTick: true);
+        (PulseSlot s2, _) = h1.ReleaseInto(s1, 20_000, awaitFirstTick: true);
+        Assert.Equal("One.", s2.Message);
+    }
 }

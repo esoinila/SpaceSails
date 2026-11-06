@@ -139,7 +139,7 @@ public partial class Map
         {
             return;
         }
-        (_pulse, _held) = _held.ReleaseInto(_pulse, _lastTimestampMs ?? 0);
+        (_pulse, _held) = _held.ReleaseInto(_pulse, _lastTimestampMs ?? 0, awaitFirstTick: _lastTimestampMs is not null);
     }
 
     /// <summary>

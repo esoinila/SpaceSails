@@ -182,32 +182,26 @@ public sealed class AClickAcrossASealedWallAnswersAtOnceTests
     }
 
     /// <summary>
-    /// #1437 · A SEALED CLICK COSTS A QUARTER OF WHAT IT DID (about 10 ms native on a quiet machine, not 40). It used to spend the whole 40,000-cell search budget
-    /// before the pocket proof ran. The fastest of nine clicks is asked for (a minimum shrugs off a busy
-    /// machine); a sealed ring's proof needs only its own few hundred cells, so the search's budget is the cost.
-    /// RED PROOF: <c>SealedFirstSearchCells = 40_000</c> and the fastest sealed click measured 115 ms here against 27 ms with the fix (bound 60 ms, loose for a shared machine).
+    /// #1437 · A SEALED CLICK SPENDS AT MOST 10,000 CELLS ON ITS OWN SEARCH BEFORE THE PROOF. It used to spend
+    /// 40,000 (35-45 ms native). Counted, not timed: the cells the search had expanded when the proof was asked.
+    /// RED PROOF: <c>SealedFirstSearchCells = 40_000</c> and the count is 40,000.
     /// </summary>
     [Fact]
-    public void ASealedClickCostsAboutTenMillisecondsNotForty()
+    public void ASealedClickSpendsAtMostTenThousandCellsBeforeTheProof()
     {
         List<SurfaceCollision.Segment> walls = GroundOf("luna", LandingSites.For("luna")[0]);
         var from = new DeckReachability.Point(Env.HomeX, Env.TopY - 2.0);
         var to = new DeckReachability.Point(Env.HomeX + 40, Env.AnchorY + 4);
         Seal(walls, to.X, to.Y, 8.0);
         SurfaceCollision.WallIndex field = SurfaceCollision.WallIndex.Build([.. walls]);
-        var bounds = AutoWalk.BoundsFor(walls, from, to);
 
-        double fastest = double.MaxValue;
-        for (int i = 0; i < 9; i++)   // the first is the JIT's, and the minimum ignores it
-        {
-            var sw = Stopwatch.StartNew();
-            AutoWalk.Attempt attempt = AutoWalk.Plan(true, from, to, field, AvatarRadius, bounds, DeckReachability.DefaultStep, AutoWalk.PointingReachDu);
-            sw.Stop();
-            Assert.Null(attempt.Route);
-            fastest = Math.Min(fastest, sw.Elapsed.TotalMilliseconds);
-        }
+        AutoWalk.CellsExpandedBeforeProof = 0;
+        int before = DeckReachability.SealedProofsRun;
+        AutoWalk.Attempt attempt = AutoWalk.Plan(true, from, to, field, AvatarRadius,
+            AutoWalk.BoundsFor(walls, from, to), DeckReachability.DefaultStep, AutoWalk.PointingReachDu);
 
-        _out.WriteLine($"fastest sealed click: {fastest:F1} ms");
-        Assert.True(fastest < 60.0, $"a sealed click took {fastest:F1} ms at best - the first search is spending too much before the proof.");
+        Assert.Null(attempt.Route);
+        Assert.True(DeckReachability.SealedProofsRun > before, "the proof never ran, so the count below is not this click's.");
+        Assert.InRange(AutoWalk.CellsExpandedBeforeProof, 1, 10_000);
     }
 }

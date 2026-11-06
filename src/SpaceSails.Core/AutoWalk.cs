@@ -188,7 +188,11 @@ public sealed class AutoWalk
         if (!first.Advance(SealedFirstSearchCells))
         {
             double widestReach = goalReachDu > 0 ? Math.Max(goalReachDu, PointingFallbackDu) : 0;
-            if (DeckReachability.ProvablySealedOff(from, to, walls, radius, bounds, step, widestReach, SealedProbeCells))
+            CellsExpandedBeforeProof = first.CellsExpanded;
+            // #1437 · GOAL SIDE ONLY: on a reachable goal the goal flood runs out of budget and the start flood would
+            // do the same - a second 40k flood that proves nothing a click needs. A captain sealed in is not proved
+            // here; that click falls back to the search, as it always did.
+            if (DeckReachability.ProvablySealedOff(from, to, walls, radius, bounds, step, widestReach, SealedProbeCells, goalSideOnly: true))
             {
                 return new Attempt(null, RefusalLine);
             }
@@ -268,6 +272,8 @@ public sealed class AutoWalk
         /// <summary>Walk a slice of the search. True once there is nothing left to do.</summary>
         public bool Advance(int cells) => _search.Advance(cells);
 
+        internal int CellsExpanded => _search.CellsExpanded;
+
         /// <summary>Is the route already worked out? Nobody has to ask — <see cref="Finish"/> answers
         /// whatever the state — but a test that could not tell a plan finished during the stand from one
         /// finished on the frame it was needed would be measuring the wrong thing entirely.</summary>
@@ -307,6 +313,10 @@ public sealed class AutoWalk
     /// finishes inside it and never pays for the proof; only a walk that winds through more than this many cells
     /// is handed to it (measured: the proof costs such a walk about +30 ms native, once per click).</summary>
     public const int SealedFirstSearchCells = 10_000;
+
+    /// <summary>#1437 · Test plumbing: cells the click's own search had expanded when the pocket proof was last asked on this thread.</summary>
+    [ThreadStatic]
+    internal static int CellsExpandedBeforeProof;
 
     /// <summary>A lattice box big enough to hold the deck's stone and both ends of the walk, with a margin
     /// so a route may bulge around the outside of an obstacle that sits on the rim. Derived from the wall
