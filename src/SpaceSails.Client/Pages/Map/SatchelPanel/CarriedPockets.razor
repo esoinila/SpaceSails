@@ -37,14 +37,8 @@
                             @* R1-F50 · ONE SENTENCE PER LOCK. Only a shaft gate has a reader; a room's hasp
                                and a sealed way are mechanical, and the answer to a card held up to them says
                                so. A prompt claiming they read authorities contradicted that answer. *@
-                            @if (at.Target == SpaceSails.Core.SatchelTry.Target.ShaftGate)
-                            {
-                                <text>It reads authorities and nothing else — a countersigned card, or nothing at all.</text>
-                            }
-                            else
-                            {
-                                <text>Pick something.</text>
-                            }
+                            @* #1444 · and the sentence is the lock's own: SatchelTry.SubtitleFor. *@
+                            <text>@SpaceSails.Core.SatchelTry.SubtitleFor(at.Target)</text>
                         </text>
                     }
                     else

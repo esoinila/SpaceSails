@@ -11,9 +11,9 @@
                Jumps time forward to the next burn/arrival; anything important still pulls you back to 1×.
                Disabled when nothing is armed (no next event to skip to). Becomes ■ stop skip while running. *@
             <button type="button" class="btn btn-sm @(_skipActive ? "btn-warning" : "btn-outline-info") me-2"
-                    title="Jump time forward to the next burn/arrival — anything important (a burn, an arrival, an alert) still pulls you back to 1×"
+                    title="@(!_skipActive && _skipNext.Kind == WarpSkip.EventKind.PlanEnd ? "Ride the coast out along this orbit — the clock runs, the ship stays on the same orbit, and nothing is arrived at. Anything important (a burn, an alert) still pulls you back to 1×." : "Jump time forward to the next burn/arrival — anything important (a burn, an arrival, an alert) still pulls you back to 1×")"
                     disabled="@(!_skipActive && !_skipNext.Found)" @onclick="ToggleSkip">
-                @(_skipActive ? "■ stop skip" : "⏭ next event")
+                @(_skipActive ? "■ stop skip" : _skipNext.Kind == WarpSkip.EventKind.PlanEnd ? "⏭ coast this orbit" : "⏭ next event")
             </button>
             @* The long-coast advert: on a >1-day dead coast the ship OFFERS the cheap ride. A button, so
                it lives in the toolbar band, never the banner. The coast is free — the skip spends only time. *@

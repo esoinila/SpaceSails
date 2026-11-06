@@ -118,7 +118,7 @@ public partial class Map
             : "the arrival window",
         WarpSkip.EventKind.KeepTrim => "the next orbit trim",
         WarpSkip.EventKind.SensorPass => "the sensor pass",
-        WarpSkip.EventKind.PlanEnd => "the plan's end",
+        WarpSkip.EventKind.PlanEnd => "the end of the coast along this orbit",
         _ => "the next event",
     };
 
@@ -130,6 +130,16 @@ public partial class Map
         if (!next.Found)
         {
             return;
+        }
+
+        // #1387 · a PlanEnd skip arrives nowhere, and says so the moment it is chosen — BEFORE the jump-scale
+        // branch, which takes every long coast of an undocked ship.
+        bool planEnd = next.Kind == WarpSkip.EventKind.PlanEnd;
+        if (planEnd)
+        {
+            string coastNote = WarpSkip.CoastAlongOrbitNote(FormatDuration(next.Epoch - SimTime));
+            ShowPulseMessage(coastNote);
+            LogAutopilotEvent(coastNote);
         }
 
         // #261 — a JUMP-SCALE coast is never integrated: that is the #255/#257 freeze class through the
@@ -151,7 +161,10 @@ public partial class Map
         int commanded = WarpSkip.SkipWarp(next.Epoch - SimTime, MaxWarpLevel);
         Warp = commanded;
         _skipWarpCommanded = commanded;
-        LogAutopilotEvent($"⏭ skip engaged — fast-forwarding to {_skipTargetLabel}");
+        if (!planEnd)
+        {
+            LogAutopilotEvent($"⏭ skip engaged — fast-forwarding to {_skipTargetLabel}");
+        }
     }
 
     // The ■ stop-skip press (captain's hand wins): drop to 1× and let go.

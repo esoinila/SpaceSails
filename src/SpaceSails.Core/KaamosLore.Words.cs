@@ -221,6 +221,12 @@ public static partial class KaamosLore
         "❄ The berth-code is entered and the ice-moon berth is listed to your hull. The cycler window is " +
         "real and not yet open — there is nothing to do now but hold the berth and wait for it.";
 
+    /// <summary>#1444 · The window is OPEN and no run is filed: the arc is here, and it takes a run, not a passenger.</summary>
+    public const string ReachLedgerLineOpenNoRun =
+        "❄ The berth-code is entered and the ice-moon berth is listed to your hull. The cycler window is open — " +
+        "the arc is here, and it takes a run, not a passenger. The berth's own consignment is still sitting on " +
+        "a counter somewhere, unfiled.";
+
     /// <summary>#1405 R1-F10 · The same fact, at rest, but TRUE to the timetable: it reads
     /// <see cref="CyclerWindow"/> instead of saying "not yet open" at every hour. A line that changes at
     /// the window's edge is the mark that the edge was crossed. Alongside the ice the berth is simply
@@ -234,11 +240,12 @@ public static partial class KaamosLore
         }
 
         // An open window with no run filed is not an instruction: the ride would refuse (NoRunFiled), so the
-        // ledger keeps its resting line rather than say go.
+        // ledger says the arc is here and that it takes a run (#1444 · it used to fall back to "not yet open",
+        // which was false at the open window).
         return CyclerWindow.IsOpen(simTime) && runFiled
             ? Listed + "The cycler window is open — the arc is here, and it does not wait. Put her on it at the ice."
             : CyclerWindow.IsOpen(simTime)
-            ? ReachLedgerLine
+            ? ReachLedgerLineOpenNoRun
             : Listed + $"The cycler window opens {CyclerWindow.Wait(CyclerWindow.SecondsUntilOpen(simTime))} — " +
               "hold the berth and wait for it.";
     }

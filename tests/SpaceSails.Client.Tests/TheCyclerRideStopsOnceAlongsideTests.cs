@@ -62,7 +62,7 @@ public sealed class TheCyclerRideStopsOnceAlongsideTests
         string openUnfiled = KaamosLore.LedgerProgressLine(
             kaamos, CyclerWindow.PeriodSeconds + 3600.0, alongside: false, runFiled: false);
         Assert.DoesNotContain("Put her on it", openUnfiled);
-        Assert.Equal(KaamosLore.ReachLedgerLine, openUnfiled);
+        Assert.Equal(KaamosLore.ReachLedgerLineOpenNoRun, openUnfiled);
 
         Assert.Equal(3, new[] { shut, open, along }.Distinct().Count());
     }

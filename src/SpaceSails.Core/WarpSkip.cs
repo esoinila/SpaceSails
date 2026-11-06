@@ -246,4 +246,8 @@ public static class WarpSkip
     /// <summary>The arrival announcement once the computed coast is behind you.</summary>
     public static string CoastConsumedAnnounce(int days, string eventLabel) =>
         $"⏭ {days} d of coast computed — arrived at {eventLabel}";
+
+    /// <summary>#1387 · A PlanEnd skip arrives nowhere, and says so the moment it is chosen.</summary>
+    public static string CoastAlongOrbitNote(string span) =>
+        $"⏭ A coast, not a crossing — {span} along this same orbit, and nothing waiting at the far end of it.";
 }

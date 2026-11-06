@@ -81,6 +81,11 @@
     white-space: nowrap;
 }
 
+/* #1380: the reason beside a greyed Board button is a sentence, not a one-word tag — it may wrap. */
+.deck-shuttle-oneway {
+    white-space: normal;
+}
+
 /* #368: the beyond-reach tail — the nearest ground the shuttle can't cross yet. A quiet heading and
    dimmed, button-less rows so it reads as information (watch the gap), never as a place to board. */
 .deck-shuttle-farhead {

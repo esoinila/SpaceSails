@@ -128,7 +128,7 @@ public sealed class ThePlayerIsToldTests
         // BRIBE: the coin moves and the law does not. Said on the card that asked for it.
         new("you buy this patrol, and not the law",
             Surface.OnModalOutcome, "Map.Combat.Busted.Options.cs", "BustedBribe",
-            "b.ResultMessage = $\"{b.Bribe.Total:N0} cr changes hands."),
+            "b.ResultMessage = CollectorLanding.BribeResult("),
 
         // #535 · PRESENT THE KEY: the encounter never happened. This is the strangest row in the table and
         // it is the reason the law is written the way it is — what changed about what the captain knows is

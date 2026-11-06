@@ -115,7 +115,7 @@ public partial class Map
 
         _credits -= b.Bribe.Total;
         RemoveHunter(b.HunterId);
-        b.ResultMessage = $"{b.Bribe.Total:N0} cr changes hands. {b.HunterCallsign} logs a clean sweep and sheers off — heat unchanged. You bought this patrol, not the law.";
+        b.ResultMessage = CollectorLanding.BribeResult(b.HunterId, b.Bribe.Total, b.HunterCallsign);
         b.Phase = BustedEncounter.Stage.BribedOff;
         SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
         StateHasChanged();
@@ -191,7 +191,7 @@ public partial class Map
         {
             RemoveHunter(b.HunterId);
             _heat = EncounterRule.RaiseHeat(_heat, 1, SimTime); // a win pins the wolves meaner
-            b.ResultMessage = $"You break {b.HunterCallsign}'s boarding — they peel off nursing the dent. Heat climbs; the next wave is meaner.";
+            b.ResultMessage = CollectorLanding.ResistWonResult(b.HunterId, b.HunterCallsign);
             b.Phase = BustedEncounter.Stage.ResistWon;
             SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
         }
@@ -244,7 +244,7 @@ public partial class Map
                 RemoveHunter(b.HunterId); // left tied up at their own ship
                 _heat = new HeatState(BoliviaEncounter.FleeHeat, SimTime);
                 _lastAnnouncedHeat = BoliviaEncounter.FleeHeat;
-                b.ResultMessage = $"You fight clear — {b.HunterCallsign} left tied up at their own ship. You slip away carrying heat {BoliviaEncounter.FleeHeat}.";
+                b.ResultMessage = CollectorLanding.FleeResult(b.HunterId, b.HunterCallsign, BoliviaEncounter.FleeHeat);
                 b.Phase = BustedEncounter.Stage.Fled;
                 SquawkNow(Parrot.Squawk.HunterBacksOff, _lastTimestampMs ?? 0, force: true);
             }
