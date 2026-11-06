@@ -154,6 +154,10 @@ public partial class Map
         if (_wreckOutcome is not null) { DismissWreckOutcome(); return true; }
         if (_showWreckChoice) { CloseWreckChoice(); return true; }
         if (_kioskCard is not null) { CloseKioskCard(); return true; }
+        // U10-F04 · THE CAR PANEL. Esc used to fall straight through it to the helm and switch the desk to Nav,
+        // leaving the panel open behind the switch. It is a card the captain went and got (he pressed E at the
+        // doors), so it closes by the house key like the kiosk beside it. Same gate the scrim list reads.
+        if (_showLiftPanel && ThereIsACarToBeStandingIn) { CloseLiftPanel(); return true; }
         // #836 · The wallet, fanned while a guard crosses the floor. Esc means KEEP THE ONE YOU HAVE — the
         // #784 discipline, one system along: the cancel key may shut the question but it may never answer
         // it, and the paper already in the hand is not a choice this key made. It is deliberately NOT in the

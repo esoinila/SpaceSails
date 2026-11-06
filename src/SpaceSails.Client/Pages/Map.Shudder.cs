@@ -48,6 +48,14 @@ public partial class Map
             return;
         }
 
+        // U09-F02 · A STORY PLATE ON THE GLASS OWNS THE MOMENT. The keepsake's first opening (a page nobody
+        // wrote, in the private cabin) landed beside a concourse shudder and the two talked over each other. The
+        // clock simply does not accrue while one is up; the shudder keeps its place in line.
+        if (!_shudderActive && _storyPlate is not null)
+        {
+            return;
+        }
+
         // A shudder is playing: let its shake + pause run out (real-time), then schedule the next calm.
         if (_shudderActive)
         {

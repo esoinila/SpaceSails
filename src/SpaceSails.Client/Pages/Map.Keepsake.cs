@@ -45,7 +45,7 @@ public partial class Map
     {
         Keepsake.QuietMinute minute = Keepsake.Open(
             piece, InTheCaptainsCabin(), firstOpening: !_pendantFirstOpened, _nerve,
-            SimTime - _lastQuietMinuteSimTime, SimTime);
+            SimTime - _lastQuietMinuteSimTime, SimTime, underTheConcourse: _surface is null && _ashore);
 
         _keepsakeAskedId = piece.Id;
         _keepsakeSaid = minute.Line;

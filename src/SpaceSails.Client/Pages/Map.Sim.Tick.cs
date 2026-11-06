@@ -74,6 +74,7 @@ public partial class Map
 
         SayWhatTheScrimWasStandingOn();
         _pulse = _pulse.Expire(highResTimestampMs);
+        ExpireTheParrotBubble(highResTimestampMs);   // U10-F03 · every frame, deck included
         SoundTheArcOnItsRisingEdge();
 
         if (FollowShip)

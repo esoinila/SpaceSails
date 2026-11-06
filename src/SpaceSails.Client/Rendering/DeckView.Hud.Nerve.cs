@@ -119,9 +119,36 @@ public sealed partial class DeckView
     /// (<c>.captains-remote-btn</c>: bottom 5.2rem, a small button about 2rem tall) with a rem to spare.</summary>
     internal const float NerveLedgerBottomClearancePx = 136f;
 
+    /// <summary>U09-F13 · Consecutive identical ledger rows read as one row with a count ("... +1 x9"), so nine
+    /// ticks of the same room-air ease do not bury the one cause above them. Order and the newest-first fade are
+    /// kept; only adjacent repeats merge.</summary>
+    internal static IReadOnlyList<string>? CollapseTheLedgersRuns(IReadOnlyList<string>? ledger)
+    {
+        if (ledger is null || ledger.Count < 2)
+        {
+            return ledger;
+        }
+
+        var rows = new List<string>(ledger.Count);
+        int i = 0;
+        while (i < ledger.Count)
+        {
+            int run = 1;
+            while (i + run < ledger.Count && string.Equals(ledger[i + run], ledger[i], StringComparison.Ordinal))
+            {
+                run++;
+            }
+
+            rows.Add(run == 1 ? ledger[i] : $"{ledger[i]} ×{run}");
+            i += run;
+        }
+
+        return rows;
+    }
+
     private void DrawNerveLedger(in State state, int heightPx)
     {
-        var ledger = state.NerveLedger;
+        IReadOnlyList<string>? ledger = CollapseTheLedgersRuns(state.NerveLedger);
         bool hasFlash = !string.IsNullOrEmpty(state.NerveFlash);
         if (!hasFlash && (ledger is null || ledger.Count == 0))
         {

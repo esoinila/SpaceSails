@@ -47,12 +47,20 @@ public partial class Map
 
     /// <summary>Rising-edge detectors over live ship state, priority ordered — the parrot
     /// yells once when a thing BECOMES true, never per frame.</summary>
-    private void UpdateParrot(double nowMs)
+    /// <summary>U10-F03 · The bubble times out by the wall clock, on EVERY frame. It used to be swept only inside
+    /// <see cref="UpdateParrot"/>, which the walked deck's frame never reaches (it returns before the ship's channel
+    /// is gated), so a squawk raised on docking sat over the deck plan for the whole visit ashore.</summary>
+    private void ExpireTheParrotBubble(double nowMs)
     {
         if (_parrotSquawk is not null && nowMs > _parrotBubbleUntilMs)
         {
             _parrotSquawk = null;
         }
+    }
+
+    private void UpdateParrot(double nowMs)
+    {
+        ExpireTheParrotBubble(nowMs);
 
         // #166: the collision squawk now rides the ShipAlerts channel (UpdateShipAlerts) so the banner
         // strip, the ledger, and the parrot all speak from one crossing — see there for the ROCKS AHEAD.
