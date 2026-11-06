@@ -201,6 +201,29 @@ public class TheKeepsakeShelfTests
     }
 
     [Fact]
+    public void AboardShipOutsideTheCabinTheRefusalNeverSaysTheConcourseIsWatching_AtAnySimTime()
+    {
+        // U09-F12 (#1460 inspection) · aboard her own ship in flight there is no concourse to watch:
+        // the satchel opens anywhere on foot (U01-F05), so the place test must ask whether she is ashore.
+        bool sawConcourseAshore = false;
+        for (int t = 0; t < 40; t++)
+        {
+            Map aboard = AMapAt(0.0, 0.0);
+            Set(aboard, "SimTime", (double)t);
+            Press(aboard);
+            Assert.DoesNotContain("concourse", Said(aboard)!);
+            Assert.Contains(Said(aboard)!, Keepsake.NotHerePool);
+
+            Map haven = AMapAt(0.0, 0.0);
+            Set(haven, "SimTime", (double)t);
+            Set(haven, "_ashore", true);
+            Press(haven);
+            sawConcourseAshore |= Said(haven)!.Contains("concourse");
+        }
+        Assert.True(sawConcourseAshore, "on a haven floor the concourse line must still be in the roll.");
+    }
+
+    [Fact]
     public void OnAHavenFloorOrASurfaceEvenAtTheCabinsCoordinatesTheLocketDoesNotOpen()
     {
         Map below = AMapAt(CabinX, CabinY);
