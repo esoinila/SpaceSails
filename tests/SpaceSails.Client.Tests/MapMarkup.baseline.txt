@@ -1705,8 +1705,6 @@
                     <div class="rep-offers">
                         <button type="button" class="rep-offer"
                                 @onclick="() => Dismiss(() => AnswerTheFinder(true))">Take the job</button>
-                        <button type="button" class="rep-offer"
-                                @onclick="() => Dismiss(() => AnswerTheFinder(false))">Pass</button>
                     </div>
                 }
             </OverlayShell>
@@ -8604,7 +8602,7 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                                 <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause, bust.Place)" alt="" aria-hidden="true" />
                             </div>
                             <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause)</div>
-                            <div class="busted-whathappened-line">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill)</div>
+                            <div class="busted-whathappened-line">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill)@DeathNarration.WakeTail(bust.Cause, bust.Place)</div>
                         </div>
                         @* The old hull erupting, one clean hero fireball — the brain-backup beat proper. *@
                         <div class="busted-freeze-art busted-explosion has-art" title="art: the old ship blowing up — the kerosene-explosion budget">
