@@ -142,6 +142,34 @@
        .map-topstack now (Map.razor), so that height is the browser's arithmetic and nobody's estimate. */
 }
 
+/* #1463 items 1 + 2 · THE PHONE'S GLASS.
+
+   ITEM 1 · At 390 px the desk tab bar (eleven `btn-sm` tabs, flex-wrap) wraps to THREE rows, but
+   --map-control-top above is the top of the strip under a ONE-row bar (0.5rem stack padding + 0.25rem bar
+   padding + one 1.9rem row + the stack gap, ~3.2rem). 🗺 Layers and the find box therefore sat on the
+   second row of tabs (Trade, Comms, Galley, Deck). Both controls read --map-control-top, and so does the
+   masthead's own min-height floor (.map-topstack), so moving the one variable moves the controls AND keeps
+   the desks flowing under them. Two extra rows are 2 x (1.9rem row + 0.25rem gap) = 4.3rem, giving 7.5rem
+   for a three-row bar. CSS cannot measure the wrap, so this is a width tier: the tabs do not fit on three
+   rows above ~480px, where the old one-row value stands for the widths this pass did not see wrap.
+
+   ITEM 2 · The right-edge desk-chip column is a sibling of the desk layer at z 30, i.e. in a stacking
+   context ABOVE the layer's open cards (the barkeep, the bar menu, Marsh), so it painted over the right
+   third of cards only 185-265 px wide. On a phone the column duplicates the tab bar (every chip is "go to
+   that desk"), so it is hidden (DeskChips.razor.css) and the 11rem it reserved on the right is given back
+   to the desks, the scope and the parrot, which all read this one variable. */
+@media (max-width: 480px) {
+    .map-page {
+        --map-control-top: 7.5rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .map-page {
+        --desk-chip-strip-clearance: 0.75rem;
+    }
+}
+
 .map-loading {
     position: absolute;
     inset: 0;
@@ -351,6 +379,22 @@
     bottom: 0;
     z-index: 3;
     box-shadow: 0 12rem 0 12rem var(--card-foot-scrim, rgba(6, 8, 13, 0.94));
+}
+
+/* #1463 item 4 · THE FIRST-GROUND CARD'S FOOT IS NOT BURIED UNDER ITS OWN BUTTON. Same shape as U03-F17 (the
+   mission moment): `.convergence-card > .convergence-close` is in the pinned-foot list below, so "Boots on,
+   then." was position: sticky with a 12rem scrim cast from it, and on a desktop window the footnote that
+   tells a captain the keys stay spelled out ("The keys stay spelled out under the motion tracker...") sat
+   under that button and scrim. This card lays itself out as a column with the footnote ABOVE the button
+   (see the order: 1 rule further down), so the button is simply the last thing in the card: static, and no
+   scrim. Desktop only: on a phone the card is taller than the glass and #735's law (the way on stays on the
+   screen from the first paint) keeps the button pinned. Declared after the list's own rule with the same
+   specificity, so it wins by order. */
+@media (min-width: 700px) {
+    ::deep .ground-lesson-card > .convergence-close {
+        position: static;
+        box-shadow: none;
+    }
 }
 
 /* #1271 · …AND THE ROW THE SCRIM HANGS FROM PAINTED NOTHING.
