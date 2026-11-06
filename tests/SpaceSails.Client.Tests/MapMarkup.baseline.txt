@@ -1680,8 +1680,8 @@
         <div class="view-object-backdrop rep-backdrop">
             @* #997 wave 2's shell, the walk-in's own arrangement: a BARE frame so the foot stays pinned by
                `::deep .view-object > .view-object-close`, the scrim held off by the shell's StopClicks, and
-               the way out running the same verb her "Pass" runs — a ✕ that only took the panel away would
-               leave a woman at your elbow with nothing left to answer. *@
+               the way out IS her "Pass" (the only one) and runs her no-path — a ✕ that only took the panel away
+               would leave a woman at your elbow with nothing left to answer. *@
             <OverlayShell class="view-object rep-card" StopClicks="true"
                           Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
                           DismissClass="view-object-close"
