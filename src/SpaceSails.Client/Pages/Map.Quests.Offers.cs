@@ -203,9 +203,12 @@ public partial class Map
         {
             { State: QuestState.PickedUp } or { State: QuestState.Complete } or { State: QuestState.TurnedIn }
                 => "“Good hands. Get that parcel to the Fixer and we never spoke.”",
-            _ when backOpen && m.Location == "BACK ROOM"
+            // U02-F16 · The shelf has a parcel on it only when the Fixer's job is on the books (LiftStash says
+            // "nothing worth pocketing" otherwise), so her words about it wait for the job: with the door
+            // welded open by hand and no job, she speaks the pre-job line like everywhere else.
+            _ when backOpen && job is not null && m.Location == "BACK ROOM"
                 => "“You made it in. The parcel's right there on the shelf — lift it before the dockmaster's rounds.”",
-            _ when backOpen
+            _ when backOpen && job is not null
                 => "“You're through the hatch. Package is on the back shelf — go on, it won't bite.”",
             { State: QuestState.Active }
                 => "“The lockup's the easy part — crack V-06 and there's a parcel with nobody's name on it. I'll be around. Somewhere.”",

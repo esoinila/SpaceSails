@@ -308,7 +308,7 @@ public partial class Map
                 }
             }
 
-            return new(ShipDesk.Trade, "🛰", "Trade", $"drones → {name} {(int)(_localTradeProgress * 100)}%");
+            return new(ShipDesk.Trade, "🛰", "Trade", $"drones → {name} {(int)(_localTradeProgress * 100)}%", $"{_credits:N0} cr");
         }
 
         // M29: advertise the opportunity — partners the shuttles could reach RIGHT NOW.

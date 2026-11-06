@@ -41,6 +41,11 @@
                                 @* ⛽ fuel is bought in the always-visible fuel gauge (side panel), so it
                                    answers "how do I fill her up?" (#157) whether or not you're docked. *@
                                 <div class="fw-bold mb-1">Upgrades</div>
+                                @if (_credits < UpgradePrice(_massLevel) || _credits < UpgradePrice(_sensorLevel) || _credits < UpgradePrice(_holdLevel)
+                                     || (_telescopeLevel < 3 && _credits < UpgradePrice(_telescopeLevel)) || (!_hasNetJammer && _credits < NetJammerPriceCr))
+                                {
+                                    <div class="text-secondary small mb-1 trade-upgrade-reason">Greyed upgrades: not enough credits (you have @_credits.ToString("N0", CultureInfo.InvariantCulture) cr).</div>
+                                }
                                 <table class="table table-sm table-dark mb-0">
                                     <tbody>
                                         <tr>

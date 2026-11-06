@@ -83,7 +83,7 @@ public partial class Map
         if (withExcuse)
         {
             ulong excuseSeed = DiceRule.Seed("drink-excuse", (long)SimTime, _rumTots);
-            line += $" — “{DrinkExcuses.LineFor(excuseSeed)}”";
+            line += $" — “{DrinkExcuses.LineFor(excuseSeed, holdingOrbit: _docked || _orbitedBodyId is not null)}”";
         }
         if (_rumTots >= 3)
         {

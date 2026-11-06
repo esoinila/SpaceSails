@@ -544,7 +544,7 @@ public sealed class TheCounterTakesOrdersTests
             }
             foreach (DeckPlan.Backdrop beyond in deck.Backdrops.Skip(2))
             {
-                if (beyond.Url != UndergroundComplex.ParkArtUrl)
+                if (beyond.Url != UndergroundComplex.ParkFloorArtUrl)
                 {
                     wrong.Add($"  {body} B{-level}: an unaccounted picture “{beyond.Url}” is on the floor.");
                 }
@@ -678,7 +678,7 @@ public sealed class TheCounterTakesOrdersTests
         Assert.True(images.Count == 2 + parkPanels,
             $"{images.Count} image(s) drawn on the floor, and the rooms on it account for {2 + parkPanels}.");
         Assert.Equal(UndergroundComplex.CantinaHallArtUrl, images[0].Url);
-        Assert.All(images.Skip(2), m => Assert.Equal(UndergroundComplex.ParkArtUrl, m.Url));
+        Assert.All(images.Skip(2), m => Assert.Equal(UndergroundComplex.ParkFloorArtUrl, m.Url));
         Assert.True(images[0].W > 0 && images[0].H > 0, "the art was drawn with no area.");
         Assert.True(Math.Abs(images[0].Alpha - UndergroundComplex.HallArtAlpha) < 0.001f,
             $"drawn at alpha {images[0].Alpha}.");

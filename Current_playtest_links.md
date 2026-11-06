@@ -156,7 +156,7 @@ exact URL already appeared above is not repeated.
   Seed a representative route tip, with its provenance, into the ledger — the Captain's-ledger Tips & intel rendering without walking a bar for one.
 - `/map?hoard=mine`  [local](http://localhost:5073/map?hoard=mine) [live](https://esoinila.github.io/SpaceSails-play/map?hoard=mine)
   Seed the ledger's 🗺 section (#223): `mine` is one of YOUR chests on Phobos, `rumor` a bought rumour map to somebody else's hoard, `both` one of each — the map card and the dig doors without flying a bury run.
-- `/map?backroom=open`  [local](http://localhost:5073/map?backroom=open) [live](https://esoinila.github.io/SpaceSails-play/map?backroom=open)
+- `/map?start=cinder-roost&backroom=open`  [local](http://localhost:5073/map?start=cinder-roost&backroom=open) [live](https://esoinila.github.io/SpaceSails-play/map?start=cinder-roost&backroom=open)
   Weld the V-06 back room open on the spot, or stage the crack job with its real code so you can key the pad yourself and watch the room grow (PR-F).
 - `/map?rep=1`  [local](http://localhost:5073/map?rep=1) [live](https://esoinila.github.io/SpaceSails-play/map?rep=1)
   Put the Nebula Mutual rep (Harlan Fess) on this ground whatever his rota says — or keep him off it (#973 L2).
@@ -532,8 +532,8 @@ exact URL already appeared above is not repeated.
 - `/map?ashore=1&kaamos=holder&dock=ringside-exchange`  [local](http://localhost:5073/map?ashore=1&kaamos=holder&dock=ringside-exchange) [live](https://esoinila.github.io/SpaceSails-play/map?ashore=1&kaamos=holder&dock=ringside-exchange)
 - `/map?ashore=1&bond=1`  [local](http://localhost:5073/map?ashore=1&bond=1) [live](https://esoinila.github.io/SpaceSails-play/map?ashore=1&bond=1)
   stand still; the forced scare opens the cognac beat
-- `/map?ashore=1&simhours=9&dock=cinder-roost`  [local](http://localhost:5073/map?ashore=1&simhours=9&dock=cinder-roost) [live](https://esoinila.github.io/SpaceSails-play/map?ashore=1&simhours=9&dock=cinder-roost)
-  the Magpie's third stop, at the back room
+- `/map?ashore=1&simhours=9&dock=cinder-roost&backroom=open`  [local](http://localhost:5073/map?ashore=1&simhours=9&dock=cinder-roost&backroom=open) [live](https://esoinila.github.io/SpaceSails-play/map?ashore=1&simhours=9&dock=cinder-roost&backroom=open)
+  the Magpie's third stop, at the back room (the door is sealed without &backroom=open)
 
 ### Hiding from a sweep — ?sweep=N and the captain's remote (#538)
 
