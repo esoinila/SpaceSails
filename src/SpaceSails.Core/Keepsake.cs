@@ -360,8 +360,11 @@ public static class Keepsake
     /// <param name="nerve">The current nerve.</param>
     /// <param name="secondsSinceMinute">Sim-seconds since the last quiet minute; negative = never.</param>
     /// <param name="simTime">The sim clock — the roll's salt, never a wall clock.</param>
+    /// <param name="underTheConcourse">U09-F12 · The refusal is picked by PLACE: only where a concourse can be
+    /// watching (a deck, a haven floor) may it say so; on open ground (a surface excursion) it is the cabin line.</param>
     public static QuietMinute Open(
-        Piece piece, bool inOwnCabin, bool firstOpening, double nerve, double secondsSinceMinute, double simTime)
+        Piece piece, bool inOwnCabin, bool firstOpening, double nerve, double secondsSinceMinute, double simTime,
+        bool underTheConcourse = true)
     {
         ulong seed = DiceRule.Seed("keepsake-quiet-minute", (long)simTime);
         var rng = new DeterministicRandom(seed);
@@ -370,8 +373,10 @@ public static class Keepsake
         {
             // The refusal line comes off its own roll, so the one that decides the sting is never perturbed.
             var refusal = new DeterministicRandom(DiceRule.Seed("keepsake-not-here", (long)simTime));
-            return new QuietMinute(Outcome.NotHere, NerveModel.Clamp(nerve), 0.0,
-                NotHereLines[refusal.NextInt(0, NotHereLines.Length)]);
+            string line = underTheConcourse
+                ? NotHereLines[refusal.NextInt(0, NotHereLines.Length)]
+                : NotHereLines[1]; // U09-F12 · open ground has no concourse to watch: "a cabin thing"
+            return new QuietMinute(Outcome.NotHere, NerveModel.Clamp(nerve), 0.0, line);
         }
 
         if (StillSated(secondsSinceMinute))

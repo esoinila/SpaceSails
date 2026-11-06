@@ -87,6 +87,24 @@ public sealed class TheConcourseShudderNeedsTheConcourseTests
             $"the walk was told a mood line anyway: {pulse.Message}");
     }
 
+    /// <summary>U09-F02 · <b>THE CLOCK HOLDS WHILE A STORY PLATE IS UP.</b> The keepsake's first opening landed
+    /// beside a concourse shudder in the private cabin; any plate or card on the glass owns the moment.
+    /// Anti-vacuous: with the plate gone the same clock fires.</summary>
+    [Fact]
+    public void WhileAStoryPlateIsUpTheShudderClockHolds_AndFiresOnceItIsGone()
+    {
+        SpaceSails.Client.Pages.Map map = ADockedBerth();
+        StandHimOnTheConcourse(map);
+        Set(map, "_storyPlate", (StoryBeats.Beat.Flashback, (string?)null, 1e12));
+
+        RunTheShuddersClock(map);
+        Assert.False((bool)Read(map, "_shudderActive")!, "a shudder fired over an open story plate.");
+
+        Set(map, "_storyPlate", null);
+        RunTheShuddersClock(map);
+        Assert.True((bool)Read(map, "_shudderActive")!, "the clock never resumed after the plate went.");
+    }
+
     /// <summary>#1261 · …and the schedule is CONSUMED rather than held. A refused tremor that kept its slot
     /// would be due again on the very next frame and on every frame after it for as long as the captain stood
     /// at the rail — a hundred refusals a second, and a shudder waiting in ambush for the walk back in.
@@ -122,6 +140,9 @@ public sealed class TheConcourseShudderNeedsTheConcourseTests
         CelestialBody berth = sky.Bodies.First(b => b.Id == Port);
         Invoke(map, "ClampOntoHaven", berth, sky.Position(Port, (double)Read(map, "SimTime")!), null);
         Assert.Equal(Port, (string?)Read(map, "_dockedHavenId"));
+        // The berth plate raised by the docking holds the shudder clock now (U09-F02), and this bench never
+        // advances the sim clock to let it expire, so these laws ask their question with the glass clear.
+        Set(map, "_storyPlate", null);
         return map;
     }
 

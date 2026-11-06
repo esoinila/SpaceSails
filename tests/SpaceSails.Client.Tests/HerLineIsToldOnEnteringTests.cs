@@ -128,6 +128,31 @@ public sealed class HerLineIsToldOnEnteringTests
         return b;
     }
 
+    private static string HerTopsLabel(DeskBench b)
+    {
+        DeckReachability.Point top = HavenInterior.GalleryTops(Port)[SpikeIt.HerTable];
+        var plan = (DeckPlan)b.Peek("_deckPlan")!;
+        return plan.Consoles.Single(c => c.Kind == DeckPlan.ConsoleKind.BarTop
+            && Math.Abs(c.X - top.X) < 0.5 && Math.Abs(c.Y - top.Y) < 0.5).Label;
+    }
+
+    /// <summary>U09-F06 · Her table is plated as hers while she sits at it, and as a free top while she is at the
+    /// machine. Anti-vacuous both ways: the label flips back and forth with her.</summary>
+    [Fact]
+    public async Task HerTableIsPlatedAsHersWhileSheSitsAtIt()
+    {
+        DeskBench b = await OutsideWithHerWriting();
+        Assert.Equal($"◈ {CarryThePress.Giver}", HerTopsLabel(b));
+
+        SheGoesToTheMachine(b);
+        Frame(b);
+        Assert.Equal(HavenInterior.BarTopLabel, HerTopsLabel(b));
+
+        SheComesBack(b);
+        Frame(b);
+        Assert.Equal($"◈ {CarryThePress.Giver}", HerTopsLabel(b));
+    }
+
     // ── THE GUARDS ──────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>

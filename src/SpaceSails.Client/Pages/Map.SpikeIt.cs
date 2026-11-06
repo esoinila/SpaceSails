@@ -138,6 +138,44 @@ public sealed partial class Map
     /// </summary>
     private void AdvanceTheStringerAtHerPages(in HavenInterior.BarFloor bar)
     {
+        AdvanceTheStringerAtHerPagesCore(bar);
+        NameHerTableWhileSheSitsAtIt(bar.BodyId);
+    }
+
+    /// <summary>U09-F06 · Her table's console reads <c>◈ RAUHA LIND</c> while she is sitting at it, and goes
+    /// back to the free-top label the moment she is away or gone. The plan's console array is the one the
+    /// deck draws, so this swaps the label in place, on the one top her seat is at, once per change.</summary>
+    private void NameHerTableWhileSheSitsAtIt(string berth)
+    {
+        if (!string.Equals(berth, SpikeIt.Haven, StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        IReadOnlyList<DeckReachability.Point> tops = HavenInterior.GalleryTops(berth);
+        if (tops.Count <= SpikeIt.HerTable)
+        {
+            return;
+        }
+
+        Walker? her = TheStringerAtHerPages();
+        bool seated = her is not null && !SheIsAway(her);
+        string want = seated ? $"◈ {CarryThePress.Giver}" : HavenInterior.BarTopLabel;
+        DeckReachability.Point top = tops[SpikeIt.HerTable];
+        DeckPlan.ConsoleSpot[] consoles = _deckPlan.Consoles;
+        for (int i = 0; i < consoles.Length; i++)
+        {
+            if (consoles[i].Kind == DeckPlan.ConsoleKind.BarTop
+                && Math.Abs(consoles[i].X - top.X) < 0.5 && Math.Abs(consoles[i].Y - top.Y) < 0.5
+                && consoles[i].Label != want)
+            {
+                consoles[i] = consoles[i] with { Label = want };
+            }
+        }
+    }
+
+    private void AdvanceTheStringerAtHerPagesCore(in HavenInterior.BarFloor bar)
+    {
         Walker? her = TheStringerAtHerPages();
         if (!string.Equals(bar.BodyId, SpikeIt.Haven, StringComparison.Ordinal)
             || TheSpikeInHand() is not { } q || CarryThePress.StoryIsDue(PassageOf(q), SimTime))

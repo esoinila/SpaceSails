@@ -185,6 +185,22 @@ public class TheKeepsakeShelfTests
     }
 
     [Fact]
+    public void OnOpenGroundTheRefusalNeverSaysTheConcourseIsWatching_AtAnySimTime()
+    {
+        // U09-F12 · the refusal is picked by place, not by roll: sweep the clock so both pool lines would turn up.
+        for (int t = 0; t < 40; t++)
+        {
+            Map ashore = AMapAt(CabinX, CabinY);
+            Set(ashore, "SimTime", (double)t);
+            Set(ashore, "_surface", Activator.CreateInstance(
+                typeof(Map).GetNestedType("SurfaceExcursion", Hidden)!, nonPublic: true));
+            Press(ashore);
+            Assert.DoesNotContain("concourse", Said(ashore)!);
+            Assert.Contains(Said(ashore)!, Keepsake.NotHerePool);
+        }
+    }
+
+    [Fact]
     public void OnAHavenFloorOrASurfaceEvenAtTheCabinsCoordinatesTheLocketDoesNotOpen()
     {
         Map below = AMapAt(CabinX, CabinY);
