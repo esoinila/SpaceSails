@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
@@ -39,6 +39,7 @@ public sealed partial class Map
         OfferToLodgeIt();
 
         _hardcaseCard = HardcaseRep.OffersFor(_insurance.Tier);
+        _deckKeys.Clear();   // #1401 R1-F42 · a key already held when the card rises stops walking him off
         RememberHeWasFoundHere();
 
         // He is a relationship like every other name in the book, and the book knows him from the first

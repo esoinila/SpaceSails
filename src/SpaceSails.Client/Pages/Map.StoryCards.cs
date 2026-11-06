@@ -1,4 +1,4 @@
-using SpaceSails.Client.Rendering;
+﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -360,7 +360,10 @@ public sealed partial class Map
     /// </summary>
     private bool CaptainIsInDanger() =>
         _busted is not null
-        || _reevers.Count > 0
+        // #1401 R1-F41 · …an Old One the captain's own instrument can show, not one anywhere on the field: a
+        // tide Old One held to its leash far out on the rim is not on the dial, and counting it left the
+        // ground with no calm moment for the deferred plate (#528) until the captain left the surface.
+        || (_reevers.Count > 0 && NearestReeverRange() <= FanReach())
         || _hunters.Exists(h => !h.BrokenOff && !h.CaughtPlayer)
         || _shipChargesSeconds is not null
         // #538: a professional with a lamp on your face is danger, and a story card over that would be the exact

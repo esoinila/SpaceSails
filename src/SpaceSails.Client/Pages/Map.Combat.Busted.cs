@@ -173,6 +173,13 @@ public partial class Map
             return; // already mid-reckoning — one death at a time
         }
 
+        // #1401 R1-F24 · …and a death is only for a captain still on the ground it names: a liftoff accepted
+        // earlier in the same frame has folded the excursion away, and the pack's touch is void.
+        if (!ReferenceEquals(_surface, dying))
+        {
+            return;
+        }
+
         Warp = 1;
         _effectiveWarp = 1;
 
@@ -213,12 +220,16 @@ public partial class Map
             cause = DeathCause.Reevers;
         }
 
+        // #1401 R1-F25 · "the chest is still out there" is only true of a captain who brought one (carried,
+        // buried or dropped); an empty sling draws one of the other Old Ones' lines.
+        bool chestOut = dying.Carrying || dying.Buried || dying.ChestDropped || dying.PendingDeposit is not null;
+
         _busted = new BustedEncounter
         {
             HunterId = string.Empty,     // no collector — the ground and the mind collected
             HunterCallsign = body,
             Heat = 0,
-            Seed = seed,
+            Seed = DeathNarration.SeedFor(cause, place, seed, chestOut),
             Bribe = default,             // unused on a surface death (no bribe to your own nerves)
             Phase = BustedEncounter.Stage.SurfaceEnd,
             Cause = cause,

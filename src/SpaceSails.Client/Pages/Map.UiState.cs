@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -315,7 +315,10 @@ public partial class Map
         int tradable = 0;
         foreach (CommerceRule.LocalContact c in LocalContacts())
         {
-            if ((c.Actions & CommerceRule.ActionKind.Trade) != 0 && TradeModeFor(c) != CommerceRule.TradeMode.None)
+            // #1401 R1-F47 · the berth she is clamped to is not "in shuttle reach": the shuttle bay leaves it off its
+            // board (ShuttleExcursion.Destinations skips the docked haven), so the chip must not count it either.
+            if (c.Id != _dockedHavenId
+                && (c.Actions & CommerceRule.ActionKind.Trade) != 0 && TradeModeFor(c) != CommerceRule.TradeMode.None)
             {
                 tradable++;
             }
