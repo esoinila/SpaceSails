@@ -126,7 +126,7 @@ public sealed class TheCounterTakesOrdersTests
         // its answer has to land in the slot the open card draws — and the card has to draw it.
         string buy = Method("Map.Quests.Bar.Drinks.cs", "private void BuyDrink(");
 
-        Assert.Contains("_barNotice = receipt;", buy, StringComparison.Ordinal);
+        Assert.Contains("_barNotice = $\"{receipt}", buy, StringComparison.Ordinal);   // R1-F65: receipt and cost both ride the card
         Assert.Contains("_barNotice =", buy, StringComparison.Ordinal);
 
         // One price, asked of Core, used by the debit. A handler that debited a different number than the

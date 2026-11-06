@@ -1255,7 +1255,7 @@ that arrives already blown.
 cause where Core guarantees a node, because **the node is why she died**. It is deliberately not a
 "spawn a node anywhere" switch — a spar bolted into a drive failure would be a prop.
 
-Walk aft down the spine and into the **DEEP HOLD** (top row, the second compartment from the stern). Full
+Walk aft down the spine and into the **DEEP HOLD** (bottom row on the deck plan, the second compartment from the stern). Full
 design in [features/the-archive-node.md](features/the-archive-node.md).
 
 | What to check | What you should see |
@@ -1265,7 +1265,7 @@ design in [features/the-archive-node.md](features/the-archive-node.md).
 | **The gauge agrees with the ledger** | This is the one to try to break. A wreck's interior scores as *safe*, so the airlock's give-back beat runs in there — if the two ever cancel, the ledger prints a loss while the gauge sits still. Watch the pip row actually fall. |
 | **Nothing announces anything** | No prompt, no dialog, no "are you sure?". The compartment is a field you chose to stand in. |
 | **Arm's length forces the throw** | Walking up to the column is enough — you do not have to press anything to be looked at. `[E]` on it does the same. Visible arithmetic on the card. |
-| **The visions are art, not captions** | Five painted canvases, no caption telling you what the handlers are. The card never explains, never confirms, and never mentions the Old Ones. |
+| **The visions are art, not captions** | Five painted canvases (a fresh captain meets four; the fifth, *The rack with your number*, needs a death this thread), no caption telling you what the handlers are. The card never explains, never confirms, and never mentions the Old Ones. |
 | **The collar is bought, never given** | Whose pattern is in the spar only appears on the ≤ 8 bands — the ones you were *looked at* for. A clean throw never reads it. |
 | **The label is the confirmation dialog** | `⏻ PURGE NODE — RESIDENT PATTERN NOT RECOVERABLE` is stencilled on the deck. Pressing `[E]` pulls it. That is all that happens, and it is meant to be. |
 | **You can pull it without paying** | The handle stands 3.5 du from the column, deliberately outside the confront radius: you may reach it, pull it, and never find out what you did. |
