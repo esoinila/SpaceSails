@@ -145,6 +145,15 @@ public partial class Map
 
     private bool PassIsWithinReachOfAnArrival(ClosestApproach.Pass pass, CelestialBody body, ArrivalStepRule.ArrivalKind kind)
     {
+        // …EXCEPT the pass that is only the end of a ribbon too short to reach the body (#952): that button is
+        // the iterate loop's own door - the press stretches the line until the real encounter is on it - and
+        // the row reads NOT JUDGED rather than invalid until it is.
+        if (RibbonEnd() is { } end
+            && ArrivalStepRule.PassIsOffTheEndOfTheRibbon(pass.SimTime, end.EndSimTime, end.SampleStepSeconds))
+        {
+            return true;
+        }
+
         double hill = BodyById(body.ParentId) is { } parent ? OrbitRule.HillRadius(body, parent.Mu) : 0;
         return pass.Distance <= ArrivalStepRule.DistanceLimit(kind, hill) * ArrivalOfferReachMargin;
     }
