@@ -28,10 +28,9 @@
     white-space: nowrap;
 }
 
-/* #1463 · On a phone the observer in renderer.js sets --map-controls-on to 1 while 🗺 Layers and the find box are
-   up, and they sit in the strip of band this margin keeps clear under the bar, so the banner flows under them. */
-@media (max-width: 600px) {
-    .desk-tab-bar {
-        margin-bottom: calc(var(--map-controls-on, 0) * (var(--map-control-height) + 0.2rem));
-    }
+/* #1463 · The observer in renderer.js sets --map-controls-on to 1 only while the tab bar has really WRAPPED and
+   🗺 Layers and the find box are up; they sit in the strip of band this margin keeps clear under the bar, so the
+   banner flows under them. One row (or no controls): the variable is unset, the margin is 0, nothing moves. */
+.desk-tab-bar {
+    margin-bottom: calc(var(--map-controls-on, 0) * (var(--map-control-height) + 0.2rem));
 }

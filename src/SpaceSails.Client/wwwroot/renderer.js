@@ -692,13 +692,16 @@ export function vaultImport() {
     });
 }
 
-// #1463 · keepTheMapControlsBelowTheTabBar. On a phone the desk tab bar wraps to two or three rows, and the
-// 🗺 Layers button and the find box are absolutely placed from --map-control-top, a typed one-row value. CSS
-// cannot measure a wrap, so on a narrow glass this sets --map-control-top on .map-page to the bar's REAL
-// bottom, and --map-controls-on to 1 while the controls are up (ShipTabsStrip.razor.css keeps a band of that
-// height clear under the bar, so the banner flows under them). Wider than the phone tier it removes both and
-// the stylesheet's own values stand. A ResizeObserver on the bar catches every wrap; a childList observer on
-// the page catches the controls coming and going with the desk; a slow poll catches the page itself arriving.
+// #1463 · keepTheMapControlsBelowTheTabBar. The desk tab bar WRAPS to two or three rows on a narrow glass (about
+// 390-800 px), and the 🗺 Layers button and the find box are absolutely placed from --map-control-top, a typed
+// one-row value. CSS cannot measure a wrap, so while the bar really has wrapped this sets --map-control-top on
+// .map-page to the bar's REAL bottom, and --map-controls-on to 1 while the controls are up (the bar's bottom
+// margin in ShipTabsStrip.razor.css keeps a band of that height clear under it, so the banner flows under them).
+// With one row nothing is set and the stylesheet's own values stand, so a desktop's side-by-side banner is kept.
+// On a phone (<= 600 px) it also publishes the masthead's real bottom as --map-masthead-bottom, which the
+// desk-chip column docks under. A ResizeObserver on the bar and on the masthead catches every wrap; a childList
+// observer on the page catches the controls coming and going with the desk; a slow poll catches the page itself
+// arriving. When nothing is set and the bar has not wrapped, a pass does no writes at all.
 (function keepTheMapControlsBelowTheTabBar() {
     if (typeof window === 'undefined' || typeof document === 'undefined' || !window.matchMedia) {
         return;
@@ -706,24 +709,48 @@ export function vaultImport() {
     const phone = window.matchMedia('(max-width: 600px)');
     let page = null;
     let bar = null;
+    let stack = null;
     let resizeWatch = null;
     let pageWatch = null;
     let queued = false;
+    let wrote = false;
+    const NAMES = ['--map-control-top', '--map-controls-on', '--map-masthead-bottom'];
 
+    const clear = () => {
+        if (wrote && page) {
+            NAMES.forEach(n => page.style.removeProperty(n));
+        }
+        wrote = false;
+    };
     const apply = () => {
         queued = false;
         if (!page || !page.isConnected) {
+            wrote = false;
             return;
         }
-        if (!phone.matches || !bar || !bar.isConnected) {
+        const pageTop = page.getBoundingClientRect().top;
+        const first = bar ? bar.querySelector('.desk-tab') : null;
+        const wrapped = !!(bar && bar.isConnected && first &&
+            bar.getBoundingClientRect().height > first.getBoundingClientRect().height * 1.5);
+        if (!wrapped && !phone.matches) {
+            clear();
+            return;
+        }
+        if (wrapped) {
+            const top = bar.getBoundingClientRect().bottom - pageTop + 4;
+            const on = page.querySelector(':scope > .map-layers, :scope > .nav-search') ? '1' : '0';
+            page.style.setProperty('--map-control-top', top + 'px');
+            page.style.setProperty('--map-controls-on', on);
+        } else {
             page.style.removeProperty('--map-control-top');
             page.style.removeProperty('--map-controls-on');
-            return;
         }
-        const top = bar.getBoundingClientRect().bottom - page.getBoundingClientRect().top + 4;
-        const on = page.querySelector(':scope > .map-layers, :scope > .nav-search') ? '1' : '0';
-        page.style.setProperty('--map-control-top', top + 'px');
-        page.style.setProperty('--map-controls-on', on);
+        if (phone.matches && stack) {
+            page.style.setProperty('--map-masthead-bottom', (stack.getBoundingClientRect().bottom - pageTop + 4) + 'px');
+        } else {
+            page.style.removeProperty('--map-masthead-bottom');
+        }
+        wrote = true;
     };
     const queue = () => {
         if (!queued) {
@@ -734,20 +761,24 @@ export function vaultImport() {
     const find = () => {
         const p = document.querySelector('.map-page');
         const b = p ? p.querySelector('.desk-tab-bar') : null;
+        const t = p ? p.querySelector('.map-topstack') : null;
         if (p !== page) {
             if (pageWatch) { pageWatch.disconnect(); }
+            wrote = false;
             page = p;
             if (page) {
                 pageWatch = new MutationObserver(queue);
                 pageWatch.observe(page, { childList: true });
             }
         }
-        if (b !== bar) {
+        if (b !== bar || t !== stack) {
             if (resizeWatch) { resizeWatch.disconnect(); }
             bar = b;
-            if (bar && typeof ResizeObserver !== 'undefined') {
+            stack = t;
+            if (typeof ResizeObserver !== 'undefined') {
                 resizeWatch = new ResizeObserver(queue);
-                resizeWatch.observe(bar);
+                if (bar) { resizeWatch.observe(bar); }
+                if (stack) { resizeWatch.observe(stack); }
             }
         }
         queue();

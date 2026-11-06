@@ -147,7 +147,7 @@
    THE TAB BAR AND THE TWO MAP CONTROLS. --map-control-top above is the top of the strip under a ONE-row tab
    bar. The bar wraps (flex-wrap) to two rows at ~412-480 px and three at 390 px, and CSS cannot measure a
    wrap, so on a phone a small observer (renderer.js, keepTheMapControlsBelowTheTabBar) sets --map-control-top
-   on .map-page to the bar's REAL bottom and sets --map-controls-on to 1 while 🗺 Layers and the find box are
+   on .map-page to the bar's REAL bottom (only while the bar has wrapped) and sets --map-controls-on to 1 while 🗺 Layers and the find box are
    up. ShipTabsStrip.razor.css then gives the bar a bottom margin of the controls' own height, so the pilot
    banner (and everything else in the flow column) starts BELOW them instead of under them. Wider than 600 px
    the observer clears both properties and the typed values here stand.

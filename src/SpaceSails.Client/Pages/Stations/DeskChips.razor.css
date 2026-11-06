@@ -59,3 +59,14 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/* #1463 - ON A PHONE THE COLUMN DOCKS UNDER THE MASTHEAD. At 390 px a column starting at 4.75rem covered tab rows 2-3,
+   the find box and the pilot banner's title. renderer.js publishes the masthead's real bottom as
+   --map-masthead-bottom (tabs, controls and banner), so the strip starts below all of it and is only as tall as
+   the room that is left. Until the observer has run, the old top stands. */
+@media (max-width: 600px) {
+    .desk-chip-strip {
+        top: var(--map-masthead-bottom, 4.75rem);
+        max-height: calc(100% - var(--map-masthead-bottom, 4.75rem) - 0.75rem);
+    }
+}

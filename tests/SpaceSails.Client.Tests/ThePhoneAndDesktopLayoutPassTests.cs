@@ -47,6 +47,8 @@ public sealed class ThePhoneAndDesktopLayoutPassTests
         Assert.Contains("getBoundingClientRect().bottom", fn);
         Assert.Contains("--map-control-top", fn);
         Assert.Contains("--map-controls-on", fn);
+        Assert.Contains("--map-masthead-bottom", fn);
+        Assert.Contains("first.getBoundingClientRect().height * 1.5", fn);   // keyed on the bar having really wrapped, not on a width
         Assert.Contains("removeProperty('--map-control-top')", fn);   // wider than a phone the typed values stand
 
         string bar = Src("Pages", "Map", "ShipTabsStrip.razor.css");
@@ -68,5 +70,6 @@ public sealed class ThePhoneAndDesktopLayoutPassTests
         // …and the chips themselves are never hidden by width alone: they carry each desk's status summary.
         string chips = Src("Pages", "Stations", "DeskChips.razor.css");
         Assert.DoesNotContain("display: none", chips);
+        Assert.Contains("top: var(--map-masthead-bottom", chips);   // on a phone it docks under the masthead
     }
 }

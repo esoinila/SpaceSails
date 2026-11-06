@@ -138,4 +138,13 @@ public sealed class TheDrillHudFitsAPhoneGlassTests
             Assert.True(w.Y <= plate.Y + plate.H, $"a band row is drawn at y {w.Y} below its plate's bottom {plate.Y + plate.H}");
         }
     }
+
+    [Fact]
+    public void TheNerveGaugeDoesNotHopWhenTheStallBannerComesAndGoes()
+    {
+        Pen without = Draw(DrillLine);
+        Pen with = Draw(DrillLine, "SIGNAL BREAKING UP");
+        float Y(Pen pen) => Assert.Single(pen.Fills, f => f.Ink == new RgbaColor(14, 18, 24, 220) && f.W > 100).Y;
+        Assert.Equal(Y(without), Y(with));
+    }
 }

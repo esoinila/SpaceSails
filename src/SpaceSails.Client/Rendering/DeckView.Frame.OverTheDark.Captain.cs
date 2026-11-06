@@ -138,14 +138,18 @@ public sealed partial class DeckView
         drawn.AddRange(oRows.Select(r => (r, oPx)));
         drawn.AddRange(sRows.Select(r => (r, sPx)));
         (double bx, double by, double bw, double bh) = CommsBand.PlateForRows(widthPx / 2.0, drawn);
-        _bandBottom = Math.Max(CommsBand.ReservedBottom, by + bh);
+        // The stall banner comes and goes with the frame rate, so everything seated by the band is measured as if
+        // ONE stall row were always up (CommsBand's own "measured for MaxLines on purpose" rule): the gauge, the
+        // tracker and the sentries' seats must not hop a row each time the banner toggles.
+        double plannedBottom = CommsBand.PlateBottom(oRows.Length + Math.Max(1, sRows.Length));
+        _bandBottom = Math.Max(CommsBand.ReservedBottom, plannedBottom);
         if (state.ShowNerve && !state.NerveCompact)
         {
             // The nerve plate's right edge, with the gauge's tremor (up to 3px) allowed for.
             double nerveRight = 18.0 + 210.0 + HudColumn.PlateInsetPx + 3.0;
             if (bx < nerveRight)
             {
-                _nerveShift = Math.Max(0.0, by + bh + BandAirPx - HudColumn.Surface.PlateTop);
+                _nerveShift = Math.Max(0.0, plannedBottom + BandAirPx - HudColumn.Surface.PlateTop);
             }
         }
     }
