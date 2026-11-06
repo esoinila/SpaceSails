@@ -134,8 +134,22 @@ public partial class Map
         }
 
         ShipState postBurn = _ship with { Velocity = departure.PostBurnVelocity };
+        // #1387 · …AND THE PATH ENDS WHERE THE HAUL ENDS: AT THE CAPTURE RANGE, NOT AT THE PLANET'S CENTRE.
+        // `ArrivalCenterTime` is the instant the solved conic reaches the planet's CENTRE (the jump "stops a touch
+        // earlier, at the capture range"), so sampling to it handed `SurfaceClearance.Check` a final sample AT THE
+        // CENTRE of the very planet named as the arrival body — judged from the achieved final sample, as the
+        // comment above promises is exempt — and every long haul to a planet was refused as "that line threads
+        // Saturn" (also Mars, Jupiter: all of them). The arrival is judged where the haul actually stops.
+        double untilEpoch = departure.ArrivalCenterTime;
+        LongHaul.Reach reach = LongHaul.Project(
+            postBurn, _ephemeris, planet, (departure.ArrivalCenterTime - postBurn.SimTime) + 30.0 * DaySeconds);
+        if (reach.Reaches && reach.ArrivalSimTime > postBurn.SimTime)
+        {
+            untilEpoch = Math.Min(untilEpoch, reach.ArrivalSimTime);
+        }
+
         IReadOnlyList<TrajectorySample> path =
-            LongHaul.SampleHeliocentricPath(postBurn, _ephemeris, sun, departure.ArrivalCenterTime);
+            LongHaul.SampleHeliocentricPath(postBurn, _ephemeris, sun, untilEpoch);
         return SurfaceClearance.Check(path, _ephemeris, planet.Id) is { } clearance
             ? $"🚀 {SurfaceClearance.RefusalText(clearance)} — re-plot the departure before the long haul"
             : null;

@@ -151,4 +151,23 @@ public class DeathNarrationTests
         // Walking into the crowd is its own story and outranks the meter that emptied.
         Assert.Contains("footprints", DeathNarration.SurfaceCaption(DeathCause.Joined, nerveRanOut));
     }
+
+    /// <summary>#1401 R1-F25 · "the chest is still out there" is said only to a captain who put a chest down.</summary>
+    [Fact]
+    public void AnEmptySlingNeverHearsAboutTheChest_ButABuriedChestStillCan()
+    {
+        bool chestLineSeen = false;
+        for (ulong seed = 0; seed < 60; seed++)
+        {
+            ulong fit = DeathNarration.SeedFor(DeathCause.Reevers, DeathPlace.LandingParty, seed, chestOut: false);
+            string empty = DeathNarration.Line(DeathCause.Reevers, DeathPlace.LandingParty, fit, "Miranda");
+            Assert.DoesNotContain("chest", empty, StringComparison.OrdinalIgnoreCase);
+
+            ulong kept = DeathNarration.SeedFor(DeathCause.Reevers, DeathPlace.LandingParty, seed, chestOut: true);
+            Assert.Equal(seed, kept);
+            chestLineSeen |= DeathNarration.Line(DeathCause.Reevers, DeathPlace.LandingParty, kept, "Miranda")
+                .Contains("chest", StringComparison.OrdinalIgnoreCase);
+        }
+        Assert.True(chestLineSeen, "the chest line must stay reachable for a captain who left one.");
+    }
 }

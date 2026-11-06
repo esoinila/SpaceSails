@@ -1,4 +1,4 @@
-using SpaceSails.Core;
+﻿using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
 
@@ -148,6 +148,20 @@ public partial class Map
             _interestTargetId = null;
         }
         _hunters.Clear();
+
+        // #1401 R1-F21 · A load (or a new voyage) taken from the ground, or from under a death card, is a different
+        // life arriving: the excursion that was live, the death it was dying and the nerve ledger of that walk
+        // belong to the life being left. Without this the berth was rebuilt UNDER a live surface, the captain woke
+        // "aboard above Titan" in ground mode and died again four seconds later.
+        _surface = null;
+        _busted = null;
+        _reevers.Clear();
+        _collectors.Clear();
+        _lastNearestReeverRange = null;
+        _deckKeys.Clear();
+        _nerveLedger = [];
+        _deathNerveLedger = [];
+
         _newsEvents.Clear();
         _hailAnswers.Clear();
         _momentsRaisedFor.Clear();

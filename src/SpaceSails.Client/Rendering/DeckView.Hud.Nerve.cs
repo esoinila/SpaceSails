@@ -115,6 +115,10 @@ public sealed partial class DeckView
     // the fact (the death card reads the same list). Owner: "what caused the sanity loss and what we did to
     // regain it. Now it is vague and wishy-washy." Losses read red, gains green — a recovery must be as
     // legible as a loss, or only half the ruling is honoured.
+    /// <summary>The gap the ledger leaves under its last line, in canvas px. It must clear the captain's remote
+    /// (<c>.captains-remote-btn</c>: bottom 5.2rem, a small button about 2rem tall) with a rem to spare.</summary>
+    internal const float NerveLedgerBottomClearancePx = 136f;
+
     private void DrawNerveLedger(in State state, int heightPx)
     {
         var ledger = state.NerveLedger;
@@ -133,7 +137,9 @@ public sealed partial class DeckView
         // reading order still runs newest-nearest-the-eye.
         // The bottom margin clears the keybar AND whatever deck control sits in this same corner (the
         // captain's remote today) — at 46 the last ledger line printed straight through the button.
-        const float BottomClearance = 78f;
+        // #1401 R1-F73 · …and 78 still printed over the 📻 Remote button, which stands 5.2rem up and about two
+        // rems tall: the band is now measured from the button's own top (see NerveLedgerBottomClearancePx).
+        const float BottomClearance = NerveLedgerBottomClearancePx;
         float lineH = px + 2f;
         int rows = (ledger?.Count ?? 0) + (ledger is { Count: > 0 } ? 1 : 0) + (hasFlash ? 1 : 0);
         float y = heightPx - BottomClearance - (rows * lineH);

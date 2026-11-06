@@ -173,7 +173,20 @@ public partial class Map
         _jumpInProgress = false;
         _jumpActive = false;
 
-        ShowPulseMessage(CyclerWindow.Arrived);
+        // #1386 · the berth "acknowledges the run" in the arrival line, so the run is settled here, through the
+        // ordinary moon-haven path (no second completion code). Settled BEFORE the arrival line and the line said
+        // BESIDE the delivery rather than over it, so neither is overwritten unseen.
+        string before = _pulse.Message ?? "";
+        CompleteBoundCargoRunQuests();
+        if (_pulse.Message is { } told && told != before)
+        {
+            ShowPulseAlso(CyclerWindow.Arrived);
+        }
+        else
+        {
+            ShowPulseMessage(CyclerWindow.Arrived);
+        }
+
         LogAutopilotEvent(CyclerWindow.Arrived);
         RendererInterop.PlayCue("reveal");
         RequestVaultSave();

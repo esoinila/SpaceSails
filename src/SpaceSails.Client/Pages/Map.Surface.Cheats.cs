@@ -39,6 +39,43 @@ public partial class Map
     /// id OR name, case-insensitively, because a playtester types what they see on the map.</summary>
     private string? _landBodyCheat;
 
+    /// <summary>The DEV-cheat lines raised before the first frame, waiting for it.</summary>
+    private readonly List<string> _bootDevLines = [];
+
+    /// <summary>#1390 · A BOOT-TIME DEV LINE IS SAID AND FILED. Filed in the Captain's ledger under the 🧪 glyph
+    /// either way. Said at once once the clock runs; before the first frame it is HELD and said by that frame
+    /// (<see cref="SayTheBootDevLines"/>), because the boot's stages write at 0 ms and the first frame's
+    /// <c>Expire</c>, reading a clock thousands of ms old, cleared the line unseen. Only these DEV lines wait:
+    /// every other boot line keeps behaving exactly as it did.</summary>
+    private void SayTheDevLine(string line)
+    {
+        FileNote(line, "🧪");
+        if (_lastTimestampMs is null)
+        {
+            _bootDevLines.Add(line);
+            return;
+        }
+
+        ShowPulseMessage(line);
+    }
+
+    private void SayTheBootDevLines()
+    {
+        for (int i = 0; i < _bootDevLines.Count; i++)
+        {
+            if (i == 0)
+            {
+                ShowPulseMessage(_bootDevLines[i]);
+            }
+            else
+            {
+                ShowPulseAlso(_bootDevLines[i]);
+            }
+        }
+
+        _bootDevLines.Clear();
+    }
+
     private async Task AutoLandForCheatAsync()
     {
         if (!_landCheat || _surface is not null)
@@ -69,8 +106,8 @@ public partial class Map
             if (named is null)
             {
                 string inReach = string.Join(", ", board.Where(s => s.IsLandable).Select(s => s.Body.Id));
-                ShowPulseMessage($"🧪 DEV ?land={wanted}: not landable from this berth. In reach: " +
-                                 (inReach.Length > 0 ? inReach : "nothing"));
+                SayTheDevLine($"🧪 DEV ?land={wanted}: not landable from this berth. In reach: " +
+                              (inReach.Length > 0 ? inReach : "nothing"));
                 _landCheat = false;
                 return;
             }
@@ -85,7 +122,7 @@ public partial class Map
             ?? board.FirstOrDefault(s => s.IsLandable);
         if (target is null)
         {
-            ShowPulseMessage("🧪 DEV ?land=1: nothing landable in shuttle reach from this berth.");
+            SayTheDevLine("🧪 DEV ?land=1: nothing landable in shuttle reach from this berth.");
             return;
         }
 

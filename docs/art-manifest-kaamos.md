@@ -40,7 +40,7 @@ with their own scene around them, and none is a turning. Over-carding cheapens t
 
 - **Slot:** `KaamosLore.PlateFor("cold-pod")`. Fires when the beach-comber's probe turns up the derelict
   supply pod on a dig (`Map.Surface` → `KaamosPodHere` → `TryAssembleKaamos`).
-- **Reach it:** `/map?kaamos=pod&land=1` — land, take the metal detector out, probe any square.
+- **Reach it:** `/map?dock=the-tilt&site=0&land=1&kaamos=pod` — land (the landing needs a berth to launch from), take the metal detector out, probe any regolith square (the spawn square can be bedrock — step off it).
 - **Why this one first:** the single most paintable object in the arc. A cargo run that was *packed and
   then not sent*, still sealed, generations later.
 - **Discipline:** the fragment's own prose already reads the manifest slug out loud (CONSUMABLES,

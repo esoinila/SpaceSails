@@ -85,7 +85,7 @@ public partial class Map
         _pendingDeflectionCheat = null;
 
         AnnounceInboundRock(_deflection);
-        ShowPulseMessage(
+        SayTheDevLine(
             $"🧪 Test: deflection gig accepted — {spec.RockName} ({spec.Type.Label}) is inbound on {spec.TargetName}. " +
             "It's a short shuttle hop off the berth. Fly out, land on the rock, drill the charge, and FIRE before T-0. " +
             "Watch the red threat line on the map bend off the station when the burn takes.");

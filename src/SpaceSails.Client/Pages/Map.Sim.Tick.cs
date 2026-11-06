@@ -126,7 +126,13 @@ public partial class Map
         double dtRealSeconds = _lastTimestampMs is null
             ? 0
             : Math.Max(0, (highResTimestampMs - _lastTimestampMs.Value) / 1000.0);
+        bool firstFrame = _lastTimestampMs is null;
         _lastTimestampMs = highResTimestampMs;
+        if (firstFrame)
+        {
+            SayTheBootDevLines();
+        }
+
         _frameNowMs = highResTimestampMs;
         MarkFrameServiced(dtRealSeconds);   // #825: the REAL stall clock — the one both the banner and the controls read
         return dtRealSeconds;

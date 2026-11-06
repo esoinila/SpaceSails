@@ -703,7 +703,7 @@ launch from the home page.
 | **`?kaamos=N\|all`** | **Assemble the first N PROJEKTI KAAMOS fragments (canonical order), or `all` — the intel readout + reach notice without a playthrough (#411).** |
 | **`?kaamos=bounce`** | **Seat the freight agent holding the docket the board keeps sending back at every bar — PROJEKTI KAAMOS's FRONT DOOR (#635). Press `[E]` at any bar patron, take the job, and the filing bounces off your hull too: the arc appears in the Captain's ledger with no shard in hand.** |
 | **`?kaamos=hq`** | **The whole KAAMOS route already ridden: every shard assembled, the berth-code resolved, the supply run filed, and the ship let go alongside the ice moon (#411). Add `&land=1` to put boots on it.** |
-| **`?kaamos=pod`** | **Seat the cold KAAMOS supply pod under the ground this excursion lands on — probe any square with the metal detector and *earn* fragment 2 instead of being handed it (#411). Pair with `&land=1`.** |
+| **`?kaamos=pod`** | **Seat the cold KAAMOS supply pod under the ground this excursion lands on — probe any regolith square with the metal detector (a bedrock square, such as the spawn square on Callisto, answers "too hard to dig" — step off it) and *earn* fragment 2 instead of being handed it (#411). Pair with `&land=1`.** |
 | **`?kaamos=holder`** | **Seat the rare KAAMOS berth-holder at whatever bar you dock at, every watch — the tell (fragment 4) becomes playable on demand (#411). Pair with `&dock=<berth>`.** |
 | **`?site=N`** | **Pre-select landing site N in the boarding panel — board straight onto a specific ground to compare site A vs B → a different surface deck-plan (#320).** |
 | **`?land=1`** | **Ride the shuttle down as soon as the world is ready, onto the first landable body in reach (honours `?site=N`) — the real descent, skipping only the walk to the hatch and the boarding panel. The one-URL way to playtest a surface (#464).** |
@@ -1479,7 +1479,7 @@ Try `/map?start=enceladus&land=1` with no `?kaamos=` at all; the ground must hav
 
 | URL | what you walk |
 | --- | --- |
-| `/map?dock=the-tilt&site=0&land=1&kaamos=pod` | Land, take out the **metal detector**, probe any square: the cold supply pod is under this ground. This is the only fragment with no direct grant-free path — one seeded square in seventeen, on seven outer moons. |
+| `/map?dock=the-tilt&site=0&land=1&kaamos=pod` | Land, take out the **metal detector**, probe any regolith square (not bedrock): the cold supply pod is under this ground. This is the only fragment with no direct grant-free path — one seeded square in seventeen, on seven outer moons. |
 | `/map?dock=ringside-exchange&kaamos=holder` | Walk to the counter and the barkeep card carries **🌑 Ask about KAAMOS** — the berth-holder is in, this watch, at this bar. Unforced they drink at a given bar roughly one watch in four. |
 
 **In-play delivery to verify by hand (the canonical order):**
