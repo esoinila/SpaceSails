@@ -239,6 +239,7 @@ public partial class Map
             NerveRanOut = nerveRanOut,
             DeathBodyName = body,
             HeldStill = heldStill,   // #1397
+            DeathFloor = place == DeathPlace.Underground ? dying.Floor : null,   // U08-F06
         };
 
         RendererInterop.PlayCue("alarm");
@@ -298,10 +299,20 @@ public partial class Map
     /// </summary>
     private async Task AutoLandThenStageDeathAsync(DeathCause? cause, int? nerveSeed)
     {
+        // U08-F04 · A STAGED DEATH OWNS THE SCREEN. The descent raises the first-ground lesson at its end and the
+        // landing speaks a pulse or two; for a dead captain both sat over (or arrived after) the death card. The lesson
+        // is spent before the descent reads it, and what the landing said is dropped before the death is staged.
+        if (cause is not null)
+        {
+            _groundLessonSeen = true;
+        }
         await AutoLandForCheatAsync();
         HoldTheNerveSeedThroughTheDescent(nerveSeed);
         if (cause is { } asked)
         {
+            _groundLessonOpen = false;
+            _pulse = PulseSlot.Empty;
+            _held = PulseHold.Empty;
             StageDeathCheat(asked);
         }
     }
@@ -365,7 +376,11 @@ public partial class Map
                 // Not the freeze-frame — the CATCH, which is where a collector death actually begins. You
                 // get the demand card and have to lose your way through SUBMIT / BRIBE / RESIST → THE
                 // BOLIVIA to reach it, because that ladder is the thing worth playing and reading.
-                _heat = EncounterRule.RaiseHeat(_heat, 2, SimTime);
+                //
+                // U08-F07 · …at the TOP of the ladder. The catch was staged at heat 2, whose RESIST is one opposed roll over a
+                // seed the cheat itself fixes (15 vs 14 on every boot, always won), so the guide's "BUSTED ladder" never
+                // reached a death. At heat 3 RESIST is the Bolivia, which is the road to the nobody-comes ending.
+                _heat = EncounterRule.RaiseHeat(_heat, EncounterRule.MaxHeatLevel, SimTime);
                 SpawnHunterForHeatEvent();
                 if (_hunters.Count == 0)
                 {
@@ -382,6 +397,16 @@ public partial class Map
                 // refusal — that this cause had no lane at all — is the sentence the whole issue was filed
                 // about. The door skips the twenty days and takes the real ending: the same call the watch
                 // makes when the clock runs out, so what a tester sees is what a captain sees.
+                //
+                // U08-F08 · …adrift means ADRIFT: a ship clamped to a berth cannot have run out of days in the dark, and
+                // the card read "you simply could not get home" over a HUD saying "Docked at The Tilt". The bare URL's
+                // default berth (and any ?dock=) is cast off first, and the pulse says so.
+                if (_dockedHavenId is not null)
+                {
+                    string berth = _nearestBody?.Name ?? "the berth";
+                    Undock();
+                    ShowPulseMessage($"🧪 DEV ?death=void: cast off from {berth} first — a docked ship is not adrift.");
+                }
                 TheVoidTakesHer();
                 return;
 

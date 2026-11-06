@@ -170,4 +170,30 @@ public class DeathNarrationTests
         }
         Assert.True(chestLineSeen, "the chest line must stay reachable for a captain who left one.");
     }
+
+    /// <summary>U08-F06 · the Hive suffocation line names the depth of the floor the captain died on (the DEAD AIR card's
+    /// own MetresDown), never a constant that contradicted it. Swept over the seeds so the one line that names the
+    /// shaft is among them.</summary>
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(-2)]
+    [InlineData(-5)]
+    public void TheHiveSuffocationShaftIsTheFloorsOwnDepth(int level)
+    {
+        string depth = UndergroundComplex.MetresDown(level).ToString("F0", System.Globalization.CultureInfo.InvariantCulture);
+        int named = 0;
+        for (ulong seed = 0; seed < 12; seed++)
+        {
+            string line = DeathNarration.Line(
+                DeathCause.Suffocated, DeathPlace.Underground, seed, "Ganymede", undergroundLevel: level);
+            Assert.DoesNotContain("{depth}", line);
+            Assert.DoesNotContain("three hundred", line);
+            if (line.Contains("of shaft above you", StringComparison.Ordinal))
+            {
+                Assert.Contains($"{depth} metres of shaft above you", line);
+                named++;
+            }
+        }
+        Assert.True(named > 0, "no seed drew the shaft line — the sweep proves nothing.");
+    }
 }

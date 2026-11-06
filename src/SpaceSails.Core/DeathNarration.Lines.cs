@@ -128,7 +128,8 @@ public static partial class DeathNarration
     }
 
     public static string Line(
-        DeathCause cause, DeathPlace placeAsGiven, ulong seed, string? bodyName, bool heldStill = false)
+        DeathCause cause, DeathPlace placeAsGiven, ulong seed, string? bodyName, bool heldStill = false,
+        int? undergroundLevel = null)
     {
         // #1397 · the sweep team's death forks on what the captain DID with the challenge's three seconds.
         if (cause == DeathCause.Inspected && heldStill)
@@ -170,7 +171,13 @@ public static partial class DeathNarration
         if (place == DeathPlace.Underground)
         {
             string[] below = cause == DeathCause.Suffocated ? SuffocationLinesBelow : ReeverLinesBelow;
+            // U08-F06 · …and the shaft is the depth of the floor the captain died on (the same MetresDown the DEAD AIR card
+            // and the wall paint read), not a constant that contradicted them. Unasked, the old words stand.
+            string depth = undergroundLevel is { } level && level < 0
+                ? $"{UndergroundComplex.MetresDown(level):F0} metres"
+                : "three hundred metres";
             return below[(int)(seed % (ulong)below.Length)]
+                .Replace("{depth}", depth)
                 .Replace("{body}", string.IsNullOrWhiteSpace(bodyName) ? "that moon" : bodyName!);
         }
 

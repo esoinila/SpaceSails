@@ -312,7 +312,7 @@ public static partial class DeathNarration
     [
         "The readout went amber somewhere on the stairs down and you told yourself you had counted right. " +
         "The corridor is poured concrete, lit on a circuit nobody has paid for in decades, and the car is " +
-        "three hundred metres of shaft above you. It does not come when you are not there to call it.",
+        "{depth} of shaft above you. It does not come when you are not there to call it.",
 
         "You sit down against a wall that was cast in a mould and then finished by hand, under {body}, in a " +
         "building with floors it does not count. The tank stops. The lights stay on, because the lights " +

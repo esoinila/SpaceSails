@@ -91,7 +91,7 @@ public sealed partial class ClaimInterviewTests
             Assert.Equal(clauses[i - 1], ClaimInterview.ClauseText(i));
             Assert.Equal(causes[i - 1], ClaimInterview.CauseText(i));
             Assert.Equal(
-                $"Adjusted and paid. The deduction is Clause {i}: '{clauses[i - 1]}'. You signed it. Most people did.",
+                $"Adjusted and paid. The deduction is Clause {i}: '{clauses[i - 1].TrimEnd('.')}'. You signed it. Most people did.",
                 ClaimInterview.AdjustedLine(i));
             Assert.Equal(
                 $"Hull, holed. 2.0 days at the policy's day-rate, less Clause {i}. The arithmetic is enclosed. "
