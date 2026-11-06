@@ -34,7 +34,7 @@ public sealed class TheOpeningBeatsFileUnderTheRightNamesTests
         DeskBench bench = await DeskBench.BootAsync("/map?ashore=1&kaamos=bounce");
         await bench.RenderAsync();
         bench.CallOnTheDispatcher("RaiseStoryBeat", StoryBeats.Beat.KaamosFilingBounced, null, null);
-        bench.CallOnTheDispatcher("LogAutopilotEvent", "A real handback line.");
+        bench.CallOnTheDispatcher("LogAutopilotEvent", "A real handback line.", false);
 
         var rows = Rows(bench);
         string title = StoryBeats.Title(StoryBeats.Beat.KaamosFilingBounced);
