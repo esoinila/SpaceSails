@@ -40,4 +40,14 @@ public sealed class TheMonolithIsDrawnAsRockAndNamedOnceTests
             Assert.DoesNotContain(plan.RoomLabels, l => l.Text == label);
         }
     }
+
+    [Theory]
+    [InlineData("phobos")]
+    [InlineData("luna")]
+    public void TheShipsOwnRoomNamesStayDrawnOnTheRegolith(string body)
+    {
+        DeckPlan plan = GroundOf(body);
+        Assert.Contains(plan.RoomLabels, l => l.Text.Contains("CANTINA"));
+        Assert.Contains(plan.RoomLabels, l => l.Text.Contains("SHUTTLE BAY"));
+    }
 }

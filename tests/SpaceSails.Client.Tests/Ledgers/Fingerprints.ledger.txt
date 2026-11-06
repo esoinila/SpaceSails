@@ -2127,11 +2127,11 @@ sweep | HerOwnDeckInFlight.OneLongGap | 900 fields, sha256 080941e3acd04442fcc57
 sweep | HerOwnDeckInFlight.AHeldKey | 900 fields, sha256 ca809512c41bd8f5b6e0ea6329552f01c9671b239c6e226162f4f46130e796f1
 sweep | HerOwnDeckInFlight.APlannedRoute | 900 fields, sha256 a770b5b519f9a6af76e7ba9dc6a1d8e132fc5e2204a6fee0bb4615cb97369fbe
 sweep | HerOwnDeckInFlight.AHandOnTheWarpSlider | 900 fields, sha256 fc2974050eb165f03f12ad34d86cbd5e70b216a88994395e9597f82d57b79d17
-sweep | TheRegolithOnFoot.SteadyFrames | 900 fields, sha256 33cab8a9675be8ed0a4ff2acbf60202db5c0f9562d8638aa871f72a2c561a282
-sweep | TheRegolithOnFoot.OneLongGap | 900 fields, sha256 b28fd6dc100930dd95bcd6b815551e7387995c0e71b14a416fb12f6d37b7ba6c
-sweep | TheRegolithOnFoot.AHeldKey | 900 fields, sha256 d5f015b9740c668235df72e1ac6b08e17c6242c7d48f15b7241e96109fd5cbad
-sweep | TheRegolithOnFoot.APlannedRoute | 900 fields, sha256 8429dc66ca2abe2b9520f5590209a4d9eb3734f43953d06a6720714681922db4
-sweep | TheRegolithOnFoot.AHandOnTheWarpSlider | 900 fields, sha256 bff5914040ddb1a24eb2eeb75d5b4f3004a3d35b56d46b348a2e5e37c999aed3
+sweep | TheRegolithOnFoot.SteadyFrames | 900 fields, sha256 c7f60b6475d98583337a494255c895fa4be7a2180c37ed25569c68e628683d54
+sweep | TheRegolithOnFoot.OneLongGap | 900 fields, sha256 24dce58240bdb7dad05ed062339e5d0635d4af1abe212f4ae6baf5abd13c0668
+sweep | TheRegolithOnFoot.AHeldKey | 900 fields, sha256 cf486a381f4bb36f0f420891bbe11394c0c1400d1ce26a644f8d2428883c31b4
+sweep | TheRegolithOnFoot.APlannedRoute | 900 fields, sha256 2cba958cfaff2c33235128ff8e0a0e88dc4086c9bb7a66441a13ee2750764060
+sweep | TheRegolithOnFoot.AHandOnTheWarpSlider | 900 fields, sha256 016e075a337331e316205613caebc819e1273cc735a84627423883d2e3f83026
 sweep | AHiveFloorWithAPatrol.SteadyFrames | 900 fields, sha256 a1173da18aebb970bfd4d553d771d5f430c6fd818260fe779d872ae7a6d535ba
 sweep | AHiveFloorWithAPatrol.OneLongGap | 900 fields, sha256 324857b59b8d1ad95dac98d77aa2404d289bada8bc361f3649a6bcc4273b13e5
 sweep | AHiveFloorWithAPatrol.AHeldKey | 900 fields, sha256 dbdf9912866c03b3e35d803044b210bcefd041aa238f38e51ae9cd988f927a2d
@@ -2157,11 +2157,11 @@ walked-view pen | HerOwnDeckInFlight.OneLongGap | 39526 calls, sha256 acba3984ef
 walked-view pen | HerOwnDeckInFlight.AHeldKey | 39515 calls, sha256 e39f26382e4ab6efd963b49d47ce720ef03f97a9c0d5eca7727a33d56e63dd31
 walked-view pen | HerOwnDeckInFlight.APlannedRoute | 79037 calls, sha256 d7e6babb16dbc03a3bb5f32c90b79ecb3d6db74e4b5fa64d64ad9eb42c69989c
 walked-view pen | HerOwnDeckInFlight.AHandOnTheWarpSlider | 39557 calls, sha256 9e80db72f09e08d751d1748c4453b34c6f98658ad5509c0861704ddaa62c3baa
-walked-view pen | TheRegolithOnFoot.SteadyFrames | 53280 calls, sha256 1a283aeb164d4de2c840211e1d1c2ae844519249930d9d16d901b5a298c47d9c
-walked-view pen | TheRegolithOnFoot.OneLongGap | 53281 calls, sha256 ccdf029885ef412c2352e4cd5b626538228eb8c2a0f2ea2d63d89ac74e5ce764
-walked-view pen | TheRegolithOnFoot.AHeldKey | 51956 calls, sha256 f5e5b64e47c5d416fa4a90505d24553ac15b5d56b398eba9f015bd383021ae32
-walked-view pen | TheRegolithOnFoot.APlannedRoute | 106562 calls, sha256 e7d91d7eb8e99cec2d7d4ab3b1dfb3f8d1103a53611b30165c19ccdd723492c2
-walked-view pen | TheRegolithOnFoot.AHandOnTheWarpSlider | 53308 calls, sha256 9c9cee27f01d89c1c5f38f7477bed93dd39884f15d8098d262d8474b7a23853d
+walked-view pen | TheRegolithOnFoot.SteadyFrames | 53760 calls, sha256 08c1268563b30510f1b390b0f17c33dc41aaf114bdf6910be04e47a8dfa47c5a
+walked-view pen | TheRegolithOnFoot.OneLongGap | 53761 calls, sha256 eba031c98c0124abd6ab24407384a364c0082f4c370a592837ffd35056fd5207
+walked-view pen | TheRegolithOnFoot.AHeldKey | 52436 calls, sha256 81882e34146307daffd7b8b12ad0c2e29d55919555be487ac9e0d5b4ce491576
+walked-view pen | TheRegolithOnFoot.APlannedRoute | 107522 calls, sha256 544d811bcb9667da04cb7f4d473359e7443047160c979f57ea31ee9aee29330f
+walked-view pen | TheRegolithOnFoot.AHandOnTheWarpSlider | 53788 calls, sha256 d87f7fdd6c8e1ecdfb48919b6238a19380c47470e3122594424e9a959c399d40
 walked-view pen | AHiveFloorWithAPatrol.SteadyFrames | 107280 calls, sha256 a4a7655a615b9ce2030e6640206bc717551133bc0062ba4ca9698270c52436cd
 walked-view pen | AHiveFloorWithAPatrol.OneLongGap | 107281 calls, sha256 7e8c984d51938367712789c7c7715a91b51b07ffb6c5c9c4bee457c00010523b
 walked-view pen | AHiveFloorWithAPatrol.AHeldKey | 106166 calls, sha256 c845918ed3a445ba37d7607e01841d3f1083643144f2a67e135cf28b3457c152

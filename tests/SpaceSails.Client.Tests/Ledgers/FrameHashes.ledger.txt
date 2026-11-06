@@ -64,10 +64,10 @@ calls | luna B1 · sat down at a desk | 674
 calls | luna B1 · the round is out, and the buzzer went | 685
 calls | phobos B1 | 653
 calls | titan B1 | 618
-calls | surface · luna site 0 | 207
-calls | surface · luna site 0, the whole excursion | 317
+calls | surface · luna site 0 | 211
+calls | surface · luna site 0, the whole excursion | 319
 calls | surface · luna site 0, dark, and the fan hears something | 264
-calls | surface · titan site 0, a derelict's instruments (none) | 322
+calls | surface · titan site 0, a derelict's instruments (none) | 324
 sha256 | ship · under way | edb1529f503702333229786863a11f732812736e5ed1de3ffc80810756784ad0
 sha256 | ship · docked, the shuttle away and the machine stalling | 22336aa09b09aede0dc107b61aa059b9fc8fcfde6ebbb655050eaa8513e47059
 sha256 | ship · hatches dogged, seated at the table | 5bf18831a8f4cd6ca652ff2014efa43cf00cd7e82b1c1444ad6943ed12db2b03
@@ -114,7 +114,7 @@ sha256 | luna B1 · sat down at a desk | cdaf224637d70d5a0c90ff54c7f167860c9f262
 sha256 | luna B1 · the round is out, and the buzzer went | 743332f36c12d9079dbbfcd5534bf93841f6afd8be8a7b034a544fbc6c188739
 sha256 | phobos B1 | 4da906f0f6a738277eafc751b4b5e895e12003d376e5eb96036eeedc7fe7b861
 sha256 | titan B1 | 3d8cbb26e1f85739e4bfda9ebcef372ea4ec1d3faf729e41e995a36b50ced7de
-sha256 | surface · luna site 0 | e2e212c8e88045bbb17c0feb18bfeedc54e3483b4f6476dbd45e5ee2b30932ff
-sha256 | surface · luna site 0, the whole excursion | 146859de0757d010996b5ece7ba37c6e8c7cd736bd6323ec51b1bccec324bb9b
+sha256 | surface · luna site 0 | c9327d9f8584a36ddd347e87b5737df39d7663588e3e6d12c8f560da6460f616
+sha256 | surface · luna site 0, the whole excursion | 3955c8274828ddb51d21f927fa303d39f874ea5cc0508e7bc5198d7172a13fad
 sha256 | surface · luna site 0, dark, and the fan hears something | 6f5b3ae6c3aa19d086c9d0a1d6186d142dfb99f5bfebdbfdf7c86b518d369b91
-sha256 | surface · titan site 0, a derelict's instruments (none) | 96fc47f414a50848f3469b5aa76595c3e54e4eb7a89f485c6ab526b615891b20
+sha256 | surface · titan site 0, a derelict's instruments (none) | da153f550a4d8e641398b8fe4b4d4246b442cb2c5f24af3dcc8ce41c8cf148c6

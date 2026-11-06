@@ -15,17 +15,22 @@ public partial class Map
 {
     private void StepReevers(double dtRealSeconds)
     {
-        if (_surface is null || _reevers.Count == 0)
+        if (_surface is null)
         {
             return;
         }
         double dt = Math.Min(dtRealSeconds, 0.1);
-        double step = ReeverSpeed * dt;
         bool packHeld = _surface.PackStillSeconds > 0;   // R1-F27: the stone has the whole pack's attention
         if (packHeld)
         {
+            // Counted down before the empty-field return so leftover hold seconds cannot pin a fresh pack later.
             _surface.PackStillSeconds = Math.Max(0, _surface.PackStillSeconds - dt);
         }
+        if (_reevers.Count == 0)
+        {
+            return;
+        }
+        double step = ReeverSpeed * dt;
         // The other half of the same bug: being CAUGHT was gated on the moon's safe line too, so aboard a
         // wreck nothing was ever found by anything — no blow, and no nerve either.
         bool onSurface = !CaptainBeyondReach;

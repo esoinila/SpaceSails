@@ -135,6 +135,8 @@ public sealed class TheMonolithBeatSurvivesItsCaptainTests
         Type offer = typeof(SpaceSails.Client.Pages.Map).GetNestedType("SelfieOffer", BindingFlags.Public | BindingFlags.NonPublic)!;
         bench.Poke("_selfieOffer", Activator.CreateInstance(offer, "first-monolith", "FIRST CONTACT", ""));
         bench.Poke("_hardcaseCard", HardcaseRep.OffersFor(InsuranceTier.Basic));
+        bench.Poke("_scrimQueued", ((Action)(() => { }), (Func<bool>)(() => true)));
+        Assert.NotNull(bench.Peek("_scrimQueued"));   // the queue is really full, so the clear below is a clear
 
         bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", bench.Peek("_surface"), true, null, false);
         bench.CallOnTheDispatcher("BustedResurrect");
@@ -142,5 +144,32 @@ public sealed class TheMonolithBeatSurvivesItsCaptainTests
         Assert.Null(bench.Peek("_selfieOffer"));
         Assert.Null(bench.Peek("_hardcaseCard"));
         Assert.Null(bench.Peek("_scrimQueued"));
+    }
+
+    [Fact]
+    public async Task KoltsCardBehindTheDeathCardCannotSellAPolicy()
+    {
+        using DeskBench bench = await OnTheMonolithsGroundAsync();
+        bench.Poke("_credits", 100000);
+        var before = bench.Peek("_insurance");
+        bench.Poke("_hardcaseCard", HardcaseRep.OffersFor(InsuranceTier.Basic));
+        bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", bench.Peek("_surface"), true, null, false);
+        Assert.NotNull(bench.Peek("_busted"));
+
+        bench.CallOnTheDispatcher("AnswerTheHardcase", NebulaRep.RepMove.BuyPremium);
+        bench.CallOnTheDispatcher("AnswerTheHardcase", NebulaRep.RepMove.BuyBasic);
+
+        Assert.Equal(before, bench.Peek("_insurance"));
+    }
+
+    [Fact]
+    public async Task LeftoverHoldSecondsDoNotPinAFreshPack()
+    {
+        using DeskBench bench = await OnTheMonolithsGroundAsync();
+        object ex = bench.Peek("_surface")!;
+        ex.GetType().GetProperty("PackStillSeconds")!.SetValue(ex, 5.0);
+        ((IList)bench.Peek("_reevers")!).Clear();
+        Steps(bench, "StepReevers", 60, 0.1);
+        Assert.Equal(0.0, (double)ex.GetType().GetProperty("PackStillSeconds")!.GetValue(ex)!);
     }
 }
