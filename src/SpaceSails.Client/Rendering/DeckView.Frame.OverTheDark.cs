@@ -116,9 +116,9 @@ public sealed partial class DeckView
                 // above), so the seat it picks is always within a plate-height of its own sentry. Unguarded it
                 // was a fixed screen row that any off-frame bot could be parked on, which is how a door sentry
                 // twenty deck units behind the captain ended up wearing its drum over his head.
-                if (plateTop < CommsBand.ReservedBottom)
+                if (plateTop < _bandBottom)
                 {
-                    plateTop = (float)Math.Max(CommsBand.ReservedBottom, sy + (0.8f * scale));
+                    plateTop = (float)Math.Max(_bandBottom, sy + (0.8f * scale));
                     plateBottom = plateTop + ph;
                 }
 

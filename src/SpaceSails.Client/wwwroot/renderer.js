@@ -691,3 +691,69 @@ export function vaultImport() {
         }
     });
 }
+
+// #1463 · keepTheMapControlsBelowTheTabBar. On a phone the desk tab bar wraps to two or three rows, and the
+// 🗺 Layers button and the find box are absolutely placed from --map-control-top, a typed one-row value. CSS
+// cannot measure a wrap, so on a narrow glass this sets --map-control-top on .map-page to the bar's REAL
+// bottom, and --map-controls-on to 1 while the controls are up (ShipTabsStrip.razor.css keeps a band of that
+// height clear under the bar, so the banner flows under them). Wider than the phone tier it removes both and
+// the stylesheet's own values stand. A ResizeObserver on the bar catches every wrap; a childList observer on
+// the page catches the controls coming and going with the desk; a slow poll catches the page itself arriving.
+(function keepTheMapControlsBelowTheTabBar() {
+    if (typeof window === 'undefined' || typeof document === 'undefined' || !window.matchMedia) {
+        return;
+    }
+    const phone = window.matchMedia('(max-width: 600px)');
+    let page = null;
+    let bar = null;
+    let resizeWatch = null;
+    let pageWatch = null;
+    let queued = false;
+
+    const apply = () => {
+        queued = false;
+        if (!page || !page.isConnected) {
+            return;
+        }
+        if (!phone.matches || !bar || !bar.isConnected) {
+            page.style.removeProperty('--map-control-top');
+            page.style.removeProperty('--map-controls-on');
+            return;
+        }
+        const top = bar.getBoundingClientRect().bottom - page.getBoundingClientRect().top + 4;
+        const on = page.querySelector(':scope > .map-layers, :scope > .nav-search') ? '1' : '0';
+        page.style.setProperty('--map-control-top', top + 'px');
+        page.style.setProperty('--map-controls-on', on);
+    };
+    const queue = () => {
+        if (!queued) {
+            queued = true;
+            requestAnimationFrame(apply);
+        }
+    };
+    const find = () => {
+        const p = document.querySelector('.map-page');
+        const b = p ? p.querySelector('.desk-tab-bar') : null;
+        if (p !== page) {
+            if (pageWatch) { pageWatch.disconnect(); }
+            page = p;
+            if (page) {
+                pageWatch = new MutationObserver(queue);
+                pageWatch.observe(page, { childList: true });
+            }
+        }
+        if (b !== bar) {
+            if (resizeWatch) { resizeWatch.disconnect(); }
+            bar = b;
+            if (bar && typeof ResizeObserver !== 'undefined') {
+                resizeWatch = new ResizeObserver(queue);
+                resizeWatch.observe(bar);
+            }
+        }
+        queue();
+    };
+    phone.addEventListener('change', find);
+    window.addEventListener('resize', queue);
+    setInterval(find, 500);
+    find();
+})();

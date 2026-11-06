@@ -22,42 +22,51 @@ public sealed class ThePhoneAndDesktopLayoutPassTests
     }
 
     [Fact]
-    public void TheFirstGroundCardsFootIsNotUnderItsOwnPinnedButton()
+    public void TheFirstGroundCardsFootnoteRidesWithItsPinnedButton()
     {
-        string css = Src("Pages", "Map.razor.css");
-        string rule = RuleAfter(css, "::deep .ground-lesson-card > .convergence-close {\n".Replace("\n", css.Contains("\r\n") ? "\r\n" : "\n") + "        position: static");
-        Assert.Contains("position: static", rule);
-        Assert.Contains("box-shadow: none", rule);
-        // …and it comes AFTER the pinned-foot list that would otherwise win the tie on specificity.
-        int list = css.IndexOf("::deep .convergence-card > .convergence-close,", StringComparison.Ordinal);
-        int mine = css.IndexOf("::deep .ground-lesson-card > .convergence-close {", StringComparison.Ordinal);
-        Assert.True(list >= 0 && mine > list, "the override must follow the pinned-foot list");
+        string map = Src("Pages", "Map.razor.css");
+        // The button stays pinned (#735): nothing may take it out of the pinned-foot list or make it static.
+        Assert.Contains("::deep .convergence-card > .convergence-close,", map);
+        Assert.DoesNotContain("ground-lesson-card > .convergence-close {", map.ReplaceLineEndings("\n"));
+
+        string own = Src("Pages", "Map", "GroundLessonCard.razor.css").ReplaceLineEndings("\n");
+        string rule = RuleAfter(own, "::deep .ground-lesson-card > .ground-lesson-foot {");
+        Assert.Contains("position: sticky", rule);
+        Assert.Contains("bottom:", rule);
+        Assert.Contains("background:", rule);   // the card's own fill, so prose slides under it and not through it
     }
 
     [Fact]
-    public void ThePhoneMapControlsClearAThreeRowTabBar()
+    public void ThePhoneMapControlsFollowTheRealTabBar()
     {
-        string css = Src("Pages", "Map.razor.css");
-        int at = css.IndexOf("@media (max-width: 480px)", StringComparison.Ordinal);
-        Assert.True(at >= 0, "a narrow-screen tier must move the map controls");
-        string block = css[at..css.IndexOf("--map-control-top", at)];
-        Assert.Contains(".map-page", css[at..(css.IndexOf("--map-control-top", at) + 40)]);
-        Assert.True(block.Length > 0);
-        string after = css[css.IndexOf("--map-control-top", at)..];
-        double rem = double.Parse(after.Split(':')[1].Split("rem")[0].Trim(), System.Globalization.CultureInfo.InvariantCulture);
-        Assert.True(rem >= 7.0, $"three 1.9rem tab rows plus padding need >= 7rem, found {rem}rem");
-        // Both floating controls and the masthead's floor still read the ONE variable.
+        string js = Src("wwwroot", "renderer.js");
+        int at = js.IndexOf("keepTheMapControlsBelowTheTabBar()", StringComparison.Ordinal);
+        Assert.True(at >= 0, "the tab-bar observer must exist");
+        string fn = js[at..];
+        Assert.Contains("ResizeObserver", fn);
+        Assert.Contains("getBoundingClientRect().bottom", fn);
+        Assert.Contains("--map-control-top", fn);
+        Assert.Contains("--map-controls-on", fn);
+        Assert.Contains("removeProperty('--map-control-top')", fn);   // wider than a phone the typed values stand
+
+        string bar = Src("Pages", "Map", "ShipTabsStrip.razor.css");
+        Assert.Contains("--map-controls-on", bar);   // the banner is pushed below the controls' strip
         Assert.Contains("top: var(--map-control-top)", Src("Pages", "Map", "NavSearchPanel.razor.css"));
         Assert.Contains("var(--map-control-top)", Src("Pages", "Map", "NavSearchChips.razor.css"));
     }
 
     [Fact]
-    public void TheDeskChipColumnStepsOutOfAPhonesWay()
+    public void TheDeskChipColumnStepsAsideOnlyWhileACardIsOpenOnAPhone()
     {
+        string map = Src("Pages", "Map.razor.css").ReplaceLineEndings("\n");
+        int at = map.IndexOf(".map-page:has(.deck-offer-card)", StringComparison.Ordinal);
+        Assert.True(at >= 0, "the chip column needs a card-open rule");
+        Assert.Contains("@media (max-width: 600px)", map[..at][^200..]);
+        Assert.Contains("--desk-chip-strip-clearance: 0.75rem", map[at..]);
+        Assert.Contains("display: none", RuleAfter(map, ".map-page:has(.deck-offer-card) ::deep .desk-chip-strip"));
+
+        // …and the chips themselves are never hidden by width alone: they carry each desk's status summary.
         string chips = Src("Pages", "Stations", "DeskChips.razor.css");
-        int at = chips.IndexOf("@media (max-width: 600px)", StringComparison.Ordinal);
-        Assert.True(at >= 0, "the chip column needs a narrow-screen rule");
-        Assert.Contains("display: none", chips[at..]);
-        Assert.Contains("--desk-chip-strip-clearance: 0.75rem", Src("Pages", "Map.razor.css"));
+        Assert.DoesNotContain("display: none", chips);
     }
 }

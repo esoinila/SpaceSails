@@ -69,6 +69,10 @@ public static class HudColumn
         /// <summary>#561 · Where the NEXT instrument in the column may begin: this block's published bottom
         /// plus <see cref="GapPx"/>. Defect (1): this used to be the typed 82.0.</summary>
         public double ColumnTop => PlateBottom + GapPx;
+
+        /// <summary>#1463 · The same block seated <paramref name="dy"/> lower, when the top-centre band reaches over
+        /// its column on a narrow glass; every derived edge moves with it.</summary>
+        public NerveBlock Shifted(double dy) => this with { BaseY = BaseY + dy };
     }
 
     /// <summary>On the regolith the gauge is the full-size head of the column and the motion tracker seats

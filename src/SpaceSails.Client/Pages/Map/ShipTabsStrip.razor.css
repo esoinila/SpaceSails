@@ -27,3 +27,11 @@
 .desk-tab {
     white-space: nowrap;
 }
+
+/* #1463 · On a phone the observer in renderer.js sets --map-controls-on to 1 while 🗺 Layers and the find box are
+   up, and they sit in the strip of band this margin keeps clear under the bar, so the banner flows under them. */
+@media (max-width: 600px) {
+    .desk-tab-bar {
+        margin-bottom: calc(var(--map-controls-on, 0) * (var(--map-control-height) + 0.2rem));
+    }
+}

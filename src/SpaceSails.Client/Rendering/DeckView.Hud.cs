@@ -26,8 +26,8 @@ public sealed partial class DeckView
         // meter"): the excursion's star instrument, big enough to read at a glance, seated in the top-left
         // column directly beneath the SANITY plate on an opaque disc. It SHRINKS proportionally on a small
         // viewport rather than clipping, and the ship-desk chrome is hidden on-surface so nothing buries it.
-        float r = (float)MotionTracker.TrackerRadius(widthPx, heightPx, NerveColumnTop, TrackerDesiredRadius);
-        (double acx, double acy) = MotionTracker.TrackerAnchor(widthPx, heightPx, r, NerveColumnTop);
+        float r = (float)MotionTracker.TrackerRadius(widthPx, heightPx, NerveColumnTop + _nerveShift, TrackerDesiredRadius);
+        (double acx, double acy) = MotionTracker.TrackerAnchor(widthPx, heightPx, r, NerveColumnTop + _nerveShift);
         float cx = (float)acx, cy = (float)acy;
 
         // Sizes scale with the disc so a shrunk tracker stays legible and a big one reads across the map.

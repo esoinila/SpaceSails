@@ -76,3 +76,19 @@
     border-left: 2px solid rgba(240, 190, 110, 0.5);
     border-radius: 0.3rem;
 }
+
+/* #1463 item 4 · THE FIRST-GROUND CARD'S FOOTNOTE RIDES WITH ITS BUTTON. `.convergence-card > .convergence-close`
+   is in the pinned-foot list (Map.razor.css), so "Boots on, then." is sticky at the bottom of the card's scrollport with a 12rem
+   scrim cast from it, and the footnote above it ("The keys stay spelled out...") scrolled up under that button at
+   the top of the card, where the pinned button and its scrim covered it. The button has to stay pinned (#735: on a
+   window shorter than the card, a static button is below the fold), so the footnote is pinned WITH it: sticky one
+   button-height above the bottom edge, on the card's own bottom fill so the prose slides under it, not through it. */
+::deep .ground-lesson-card > .ground-lesson-foot {
+    position: sticky;
+    bottom: var(--ground-lesson-button, 2.6rem);
+    z-index: 3;
+    margin-top: 0;
+    padding: 0.5rem 0 0.3rem;
+    background: #0c0f16;
+}
+

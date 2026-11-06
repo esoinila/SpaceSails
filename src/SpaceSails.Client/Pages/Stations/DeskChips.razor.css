@@ -59,13 +59,3 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
-
-/* #1463 item 2 - ON A PHONE THE COLUMN IS HIDDEN. At 390 px it painted over the right third of every open card
-   (it is z 30 in the page's own context, above the desk layer the cards live in) and every chip only says "go
-   to that desk", which the wrapped tab bar already does. The page frees the 11rem it reserved at the same
-   width (--desk-chip-strip-clearance, Map.razor.css). */
-@media (max-width: 600px) {
-    .desk-chip-strip {
-        display: none;
-    }
-}
