@@ -105,6 +105,10 @@ public partial class Map
         /// The card reads the same cause differently depending on this, because a derelict has no regolith
         /// to be run down on and an away team is not standing on a deck.</summary>
         public DeathPlace Place { get; set; } = DeathPlace.OwnShip;
+
+        /// <summary>#1397 · For an Inspected death: the captain kept still through the challenge (and was shot all the
+        /// same). The card forks on it so a motionless man is not told he did not stand still.</summary>
+        public bool HeldStill { get; init; }
         // Which meter actually ran out (#480 follow-up): true = the nerve overdrew, false = the five blows
         // landed. Before #469 was fixed nerve was effectively the ONLY way to die out there, so the card
         // hardcoded the nerve line; now that the condition marker really decides, the caption must not

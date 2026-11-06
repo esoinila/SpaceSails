@@ -1,4 +1,4 @@
-using SpaceSails.Core;
+﻿using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
 
@@ -148,6 +148,20 @@ public partial class Map
             _interestTargetId = null;
         }
         _hunters.Clear();
+
+        // #1401 R1-F21 · A load (or a new voyage) taken from the ground, or from under a death card, is a different
+        // life arriving: the excursion that was live, the death it was dying and the nerve ledger of that walk
+        // belong to the life being left. Without this the berth was rebuilt UNDER a live surface, the captain woke
+        // "aboard above Titan" in ground mode and died again four seconds later.
+        _surface = null;
+        _busted = null;
+        _reevers.Clear();
+        _collectors.Clear();
+        _lastNearestReeverRange = null;
+        _deckKeys.Clear();
+        _nerveLedger = [];
+        _deathNerveLedger = [];
+
         _newsEvents.Clear();
         _hailAnswers.Clear();
         _momentsRaisedFor.Clear();
@@ -157,13 +171,11 @@ public partial class Map
 
         // #1379/#1395 · the card line, the held cards and the plate are one life's too: a card raised before
         // a load must not be shown over the next life, nor a held one raised into it.
-        _storyWaiting.Clear();
-        _deferredBeats.Clear();
-        _storyPlate = null;
-        _lastRaiseWaited = false;
-        _viewObjectWaiting.Clear();
-        CloseViewObject();   // the ride's card on the glass, by its one door (nothing is left behind it to promote)
-        CloseStoryCard();   // the card by its one door, with nothing left behind it to promote
+        // #1429 · the cards come off the glass by clearing the fields, NOT through the close doors: CloseViewObject
+        // answers a guard stop, drops the interview and the pending find and frees the held sayings, and every one
+        // of those is a scene side effect that would be written into the new life (a guard line pulsed and logged,
+        // a name filed into a paper trail already cleared, the old life's held lines pulsed into the new one).
+        ForgetTheExcursionsGlass();   // the ride card, the story line, the stop and the held lines, by field
     }
 
     /// <summary>

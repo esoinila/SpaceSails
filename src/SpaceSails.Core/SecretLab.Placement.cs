@@ -19,6 +19,23 @@ public static partial class SecretLab
     public readonly record struct Placement(
         bool HasLab, double DoorX, double DoorY, int DoorSquareX, int DoorSquareY);
 
+    /// <summary>The box a door may be drawn into, for the side this body's lab grows to: the field's safe span
+    /// less the WHOLE run of the mountain, which since #1383 begins <see cref="HutStandOff"/> past the door.
+    /// One answer for <see cref="For"/> and for <see cref="HeadSpot"/>'s retries, so a relocated shed cannot
+    /// grow its mountain out through the field edge the seed would have kept it off.</summary>
+    internal static (double LoX, double HiX, double LoY, double HiY) DoorRange(string bodyId, in SurfaceLayout.Field field)
+    {
+        double lo = field.LeftX + SurfaceLayout.EdgeMargin;
+        double hi = field.RightX - SurfaceLayout.EdgeMargin;
+        bool growsRight = Frac(bodyId, "door-side") < 0.5;
+        double run = TotalDepth + HutStandOff;
+
+        return (growsRight ? lo : lo + run,
+                growsRight ? hi - run : hi,
+                field.BottomY + (RoomWidth / 2.0) + 2.0,
+                field.AnchorY + 12.0);   // deep, well below the landing band
+    }
+
     /// <summary>Resolve a body's hidden-door placement inside its field. <paramref name="forcePresent"/> lets
     /// the client's <c>?secretlab=1</c> cheat guarantee a lab on the test body regardless of the seed (Core
     /// stays deterministic; only the cheat overrides). Pure — the same body always answers the same way.</summary>
@@ -39,15 +56,7 @@ public static partial class SecretLab
         // So the side is drawn from the seed and the position is drawn from that side's own valid range. The
         // lab still lands anywhere along the field; it simply no longer telegraphs which way it runs from where
         // its door is, which is a small improvement thrown in for free.
-        double lo = field.LeftX + SurfaceLayout.EdgeMargin;
-        double hi = field.RightX - SurfaceLayout.EdgeMargin;
-        bool growsRight = Frac(bodyId, "door-side") < 0.5;
-
-        double loX = growsRight ? lo : lo + TotalDepth;
-        double hiX = growsRight ? hi - TotalDepth : hi;
-
-        double loY = field.BottomY + (RoomWidth / 2.0) + 2.0;
-        double hiY = field.AnchorY + 12.0; // deep, well below the landing band
+        (double loX, double hiX, double loY, double hiY) = DoorRange(bodyId, field);
         double doorX = Lerp(loX, hiX, Frac(bodyId, "door-x"));
         double doorY = Lerp(loY, hiY, Frac(bodyId, "door-y"));
 
@@ -140,25 +149,76 @@ public static partial class SecretLab
         // ground it actually stands on unprotected. That is how the maintenance shed ended up inside an
         // outpost hut.
         (double hx, double hy) = HeadSpot(bodyId, siteSalt, field);
-        double midX = (field.LeftX + field.RightX) / 2.0;
-        double dir = hx <= midX ? 1.0 : -1.0;
+        return ChamberDiscs(bodyId, siteSalt, hx, hy)[0];   // the hut at the door
+    }
 
-        // Wide enough to cover the hut at the door AND the chamber that grows away from it — and NO wider.
-        //
-        // #587: this was RoomDepth + RoomWidth/2 (23 du), which was generous to the point of being a bug. On
-        // top of nine shelter reservations it rejected so many seeded features that different bodies started
-        // producing the same sparse ground: SeededBodies_AllDifferFromEachOther went from 8 distinct wall
-        // hashes to 5, and SiteSalt_ParameterizesTheGround found two salts generating an identical field.
-        // A keep-out is a claim on ground, and an over-claim quietly costs the whole world its variety.
-        //
-        // #606 · So when the shed grew into a full-sized hut, the answer was NOT a bigger circle. Two circles
-        // are being covered — the hut standing ON the door, and the chamber whose own bounding circle sits
-        // half its depth out from it — and the smallest disc round both is the one whose diameter is their
-        // span. Recentring it buys almost all of the extra reach for almost none of the extra ground: the hut
-        // roughly doubled and the claim went up by about a du.
+    /// <summary>#1383 · Every disc the lab claims when its shed stands at (<paramref name="hx"/>,
+    /// <paramref name="hy"/>): [0] the hut and the antechamber (the old <see cref="ChamberFootprint"/>), then
+    /// one each for the clean room and the heart. Pure of where the shed ends up, so <see cref="HeadSpot"/> can
+    /// ask whether a candidate spot would put the MOUNTAIN across something, not just the shed.</summary>
+    private static List<(double X, double Y, double R)> ChamberDiscs(
+        string bodyId, string? siteSalt, double hx, double hy)
+    {
+        // #1383 · The way the chamber grows is Build's own seed, not a guess from which half of the field the
+        // shed ended up in: HeadSpot may relocate the shed across the middle, and a claim laid on the wrong
+        // side of it reserves ground the chamber never touches and leaves the ground it does touch to
+        // whatever the next placer likes.
+        double dir = Frac(bodyId, "door-side") < 0.5 ? 1.0 : -1.0;
+
+        // The hut standing ON the door, and nothing else of it: the claim that has always been here, #606's
+        // reach. (#587 · a keep-out is a claim on ground, and an over-claim quietly costs the world its
+        // variety - SeededBodies_AllDifferFromEachOther and SiteSalt_ParameterizesTheGround both went red
+        // when this was one fat disc round hut AND chamber, so the rooms below are separate small discs and
+        // the open ground between the shed and the mountain is NOT claimed.)
         double hut = SurfaceStructure.EnvelopeOf(HeadHutAt(bodyId, siteSalt, 0, 0)).Reach;
+        var discs = new List<(double X, double Y, double R)> { (hx, hy, hut) };
+
+        // The antechamber: RoomDepth x RoomWidth, which begins HutStandOff past the door (#1383).
         double chamber = Math.Sqrt(((RoomDepth / 2.0) * (RoomDepth / 2.0)) + ((RoomWidth / 2.0) * (RoomWidth / 2.0)));
-        double lo = -hut, hi = (RoomDepth / 2.0) + chamber;
-        return (hx + (dir * ((lo + hi) / 2.0)), hy, (hi - lo) / 2.0);
+        discs.Add((hx + (dir * (HutStandOff + (RoomDepth / 2.0))), hy, chamber));
+
+        // …and the two deeper rooms, one disc each, the smallest that holds it.
+        double farCx = hx + (dir * (HutStandOff + RoomDepth));
+        for (int i = 0; i < 2; i++)
+        {
+            double mid = farCx + (dir * DeepChamberDepth * (i + 0.5));
+            double halfWidth = RoomWidth / 2.0 * (i == 0 ? 0.8 : 0.62);
+            double halfDepth = DeepChamberDepth / 2.0;
+            discs.Add((mid, hy, Math.Sqrt((halfDepth * halfDepth) + (halfWidth * halfWidth))));
+        }
+        return discs;
+    }
+
+    /// <summary>Whether the lab, if its shed stood at (<paramref name="hx"/>, <paramref name="hy"/>), would
+    /// have any of its rooms across one of <paramref name="standing"/> (raw keep-out discs). Used by
+    /// <see cref="HeadSpot"/> so the shed is moved for the mountain behind it and not only for itself.</summary>
+    private static bool MountainClashes(
+        string bodyId, string? siteSalt, double hx, double hy, List<(double X, double Y, double R)> standing)
+    {
+        foreach ((double dx0, double dy0, double dr) in ChamberDiscs(bodyId, siteSalt, hx, hy))
+        {
+            foreach ((double sx, double sy, double sr) in standing)
+            {
+                double dx = dx0 - sx, dy = dy0 - sy;
+                if (Math.Sqrt((dx * dx) + (dy * dy)) < dr + sr)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// <summary>#1383 · The ground the MOUNTAIN occupies (the antechamber, the clean room and the heart), as
+    /// discs along the spine that starts at <see cref="ChamberFootprint"/>'s hut. The claim used to stop at the antechamber, so a
+    /// seeded hut could be standing across the clean room and the control panels, the alarm and the card sat
+    /// behind a stranger's wall. One disc per chamber, so the claim follows the mountain and does not swallow
+    /// the field.</summary>
+    public static IReadOnlyList<(double X, double Y, double R)> DeepChamberFootprints(
+        string bodyId, in SurfaceLayout.Field field, string? siteSalt = null)
+    {
+        (double hx, double hy) = HeadSpot(bodyId, siteSalt, field);
+        List<(double X, double Y, double R)> all = ChamberDiscs(bodyId, siteSalt, hx, hy);
+        return all.GetRange(1, all.Count - 1);
     }
 }

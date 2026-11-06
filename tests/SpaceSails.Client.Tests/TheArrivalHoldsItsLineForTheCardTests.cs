@@ -154,10 +154,29 @@ public sealed class TheArrivalHoldsItsLineForTheCardTests
             {
                 int by = File.ReadAllText(file).Split($"{field} = null").Length - 1;
                 string owner = field == "_viewObject" ? "Map.Deck.Fixtures.cs" : "Map.StoryCards.cs";
-                int allowed = Path.GetFileName(file) == owner ? 1 : 0;   // the Close method itself
+                int allowed = Path.GetFileName(file) == owner ? 2 : 0;   // the Close method itself, and #1429's DropThe…Unsaid (a discarded life/excursion)
                 Assert.True(by <= allowed,
                     $"{Path.GetFileName(file)} clears {field} by hand — that is a road out of the card that " +
                     "never releases what the card was standing on (#768). Call the Close method.");
+            }
+        }
+    }
+
+    /// <summary>#1429 · The two "drop unsaid" helpers are the guard's only exemptions, so they may be called from
+    /// ONE place: <c>ForgetTheExcursionsGlass</c> (a discarded life or excursion). Any other caller is a road out of
+    /// a card that swallows its held line.</summary>
+    [Fact]
+    public void TheUnsaidDropsAreCalledOnlyFromTheForgettingOfAnExcursionsGlass()
+    {
+        foreach (string file in Directory.EnumerateFiles(
+                     Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages"), "*.cs"))
+        {
+            string text = File.ReadAllText(file);
+            foreach (string call in new[] { "DropTheRideCardUnsaid();", "DropTheStoryCardsUnsaid();" })
+            {
+                int n = text.Split(call).Length - 1;
+                int allowed = Path.GetFileName(file) == "Map.Combat.Busted.Wake.cs" ? 1 : 0;
+                Assert.True(n <= allowed, $"{Path.GetFileName(file)} calls {call} outside ForgetTheExcursionsGlass (#1429).");
             }
         }
     }

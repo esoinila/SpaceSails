@@ -163,12 +163,21 @@ public partial class Map
     /// <para>#633 · Both branches invented this parameter independently, for the same reason, one day apart
     /// — <c>known</c> here and <c>forcedCause</c> on <c>main</c> (#538's sweep team). One name survives, and
     /// it is this one: nothing is being FORCED, the caller simply is not guessing.</para></param>
+    /// <param name="heldStill">#1397 · For an Inspected death: the captain kept still through the challenge. The
+    /// card and pulse say it made no difference rather than telling a motionless man he did not stand still.</param>
     private void TriggerSurfaceOverdrawDeath(
-        SurfaceExcursion dying, bool nerveRanOut, DeathCause? known = null)
+        SurfaceExcursion dying, bool nerveRanOut, DeathCause? known = null, bool heldStill = false)
     {
         if (_busted is not null)
         {
             return; // already mid-reckoning — one death at a time
+        }
+
+        // #1401 R1-F24 · …and a death is only for a captain still on the ground it names: a liftoff accepted
+        // earlier in the same frame has folded the excursion away, and the pack's touch is void.
+        if (!ReferenceEquals(_surface, dying))
+        {
+            return;
         }
 
         Warp = 1;
@@ -211,12 +220,16 @@ public partial class Map
             cause = DeathCause.Reevers;
         }
 
+        // #1401 R1-F25 · "the chest is still out there" is only true of a captain who brought one (carried,
+        // buried or dropped); an empty sling draws one of the other Old Ones' lines.
+        bool chestOut = dying.Carrying || dying.Buried || dying.ChestDropped || dying.PendingDeposit is not null;
+
         _busted = new BustedEncounter
         {
             HunterId = string.Empty,     // no collector — the ground and the mind collected
             HunterCallsign = body,
             Heat = 0,
-            Seed = seed,
+            Seed = DeathNarration.SeedFor(cause, place, seed, chestOut),
             Bribe = default,             // unused on a surface death (no bribe to your own nerves)
             Phase = BustedEncounter.Stage.SurfaceEnd,
             Cause = cause,
@@ -225,6 +238,7 @@ public partial class Map
             Place = place,
             NerveRanOut = nerveRanOut,
             DeathBodyName = body,
+            HeldStill = heldStill,   // #1397
         };
 
         RendererInterop.PlayCue("alarm");
@@ -239,6 +253,8 @@ public partial class Map
             DeathCause.Scuttled =>
                 $"☢ The overload ran out with the captain still aboard the {body}. She goes all at once and mostly inward. The insurance will need a new name.",
             // Nothing about this one is about nerve, so it must not narrate as if it were.
+            DeathCause.Inspected when heldStill =>
+                $"🕶 Found aboard {body}, told to stand still, and standing still. Three seconds, and the sweep goes on down the corridor. The insurance will need a new name.",
             DeathCause.Inspected =>
                 $"🕶 Found aboard {body}, told to stand still, and not standing still. The sweep goes on down the corridor. The insurance will need a new name.",
             _ =>

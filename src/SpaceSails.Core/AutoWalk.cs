@@ -1,4 +1,4 @@
-namespace SpaceSails.Core;
+﻿namespace SpaceSails.Core;
 
 /// <summary>
 /// #729 · POINT AT THE FLOOR AND WALK THERE. Owner, mid-playtest: <i>"Maybe for testing purposes an
@@ -178,7 +178,23 @@ public sealed class AutoWalk
             return default;
         }
 
-        Attempt pointed = Planner.Begin(from, to, walls, radius, bounds, step, goalReachDu).Finish();
+        // #1384 · THE SEARCH GOES FIRST, with a budget. A reachable walk finishes inside it and never pays for
+        // anything else (ordinary clicks and guard routes are most of the traffic). Only a search that has spent
+        // SealedProbeCells and is still going - the signature of a goal with no road, flooding the field - is
+        // handed to the pocket proof: a goal sealed in a pocket (a console behind the shed's wall, a room behind
+        // a shut door) is proved so in a few thousand cells and refused at once. The proof is taken at the widest
+        // reach either look below will use, so it can only refuse what both looks would have refused.
+        Planner first = Planner.Begin(from, to, walls, radius, bounds, step, goalReachDu);
+        if (!first.Advance(SealedProbeCells))
+        {
+            double widestReach = goalReachDu > 0 ? Math.Max(goalReachDu, PointingFallbackDu) : 0;
+            if (DeckReachability.ProvablySealedOff(from, to, walls, radius, bounds, step, widestReach, SealedProbeCells))
+            {
+                return new Attempt(null, RefusalLine);
+            }
+        }
+
+        Attempt pointed = first.Finish();
         if (pointed.Route is not null || goalReachDu is <= 0 or >= PointingFallbackDu)
         {
             return pointed;
@@ -278,6 +294,11 @@ public sealed class AutoWalk
         ArgumentNullException.ThrowIfNull(route);
         return new AutoWalk(route);
     }
+
+    /// <summary>#1384 · How many lattice cells a pocket may be and still be proved sealed before a click is
+    /// searched for: 40,000 cells is 10,000 du², more than every lab, room and ring on the ground put together,
+    /// and a few milliseconds of flood where the open field is hundreds of thousands.</summary>
+    public const int SealedProbeCells = 40_000;
 
     /// <summary>A lattice box big enough to hold the deck's stone and both ends of the walk, with a margin
     /// so a route may bulge around the outside of an obstacle that sits on the rim. Derived from the wall

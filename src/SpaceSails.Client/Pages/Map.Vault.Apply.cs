@@ -32,6 +32,9 @@ public partial class Map
         // contacts, hoards, hot flags and discoveries into the loaded one. A load must be the loaded life,
         // whole and alone. (The other sections below already replace-on-apply, so they need no pre-clear.)
         ForgetTheLifeThatRidesTheVault(); // #1376 · a load is a different life arriving: the slate is clean before any present section lands (Map.Vault.NewVoyage.cs)
+        // #1401 R1-F21 · …and the ledger forgets what the load undid: every line written AFTER the moment being
+        // loaded (the deaths and the walk that were just left behind) is a line about a future that did not happen.
+        _autopilotEvents.RemoveAll(e => e.SimTime > vault.SavedSimTime);
         ForgetTheMend(); // #1151 · the mend window is the life's, not the page's
         _contacts.Clear();
         _caches.Clear();

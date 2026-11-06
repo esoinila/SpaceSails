@@ -1,4 +1,4 @@
-using SpaceSails.Client.Rendering;
+﻿using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
@@ -360,7 +360,10 @@ public sealed partial class Map
     /// </summary>
     private bool CaptainIsInDanger() =>
         _busted is not null
-        || _reevers.Count > 0
+        // #1401 R1-F41 · …an Old One the captain's own instrument can show, not one anywhere on the field: a
+        // tide Old One held to its leash far out on the rim is not on the dial, and counting it left the
+        // ground with no calm moment for the deferred plate (#528) until the captain left the surface.
+        || (_reevers.Count > 0 && NearestReeverRange() <= FanReach())
         || _hunters.Exists(h => !h.BrokenOff && !h.CaughtPlayer)
         || _shipChargesSeconds is not null
         // #538: a professional with a lamp on your face is danger, and a story card over that would be the exact
@@ -402,6 +405,17 @@ public sealed partial class Map
                 ShowStoryBeat(waiting.Beat, waiting.Subject, waiting.Outcome);
             }
         }
+    }
+
+    /// <summary>#1398/#1429 · The story card, the line behind it, the plate and the deferred beats, dropped UNSAID
+    /// (see <see cref="DropTheRideCardUnsaid"/>). The one hand-clear of the slot besides <see cref="CloseStoryCard"/>.</summary>
+    private void DropTheStoryCardsUnsaid()
+    {
+        _storyCard = null;
+        _storyWaiting.Clear();
+        _deferredBeats.Clear();
+        _storyPlate = null;
+        _lastRaiseWaited = false;
     }
 
     /// <summary>Put the card away. Focus is NOT touched here: every mouse dismissal routes through

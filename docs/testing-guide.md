@@ -703,7 +703,7 @@ launch from the home page.
 | **`?kaamos=N\|all`** | **Assemble the first N PROJEKTI KAAMOS fragments (canonical order), or `all` — the intel readout + reach notice without a playthrough (#411).** |
 | **`?kaamos=bounce`** | **Seat the freight agent holding the docket the board keeps sending back at every bar — PROJEKTI KAAMOS's FRONT DOOR (#635). Press `[E]` at any bar patron, take the job, and the filing bounces off your hull too: the arc appears in the Captain's ledger with no shard in hand.** |
 | **`?kaamos=hq`** | **The whole KAAMOS route already ridden: every shard assembled, the berth-code resolved, the supply run filed, and the ship let go alongside the ice moon (#411). Add `&land=1` to put boots on it.** |
-| **`?kaamos=pod`** | **Seat the cold KAAMOS supply pod under the ground this excursion lands on — probe any square with the metal detector and *earn* fragment 2 instead of being handed it (#411). Pair with `&land=1`.** |
+| **`?kaamos=pod`** | **Seat the cold KAAMOS supply pod under the ground this excursion lands on — probe any regolith square with the metal detector (a bedrock square, such as the spawn square on Callisto, answers "too hard to dig" — step off it) and *earn* fragment 2 instead of being handed it (#411). Pair with `&land=1`.** |
 | **`?kaamos=holder`** | **Seat the rare KAAMOS berth-holder at whatever bar you dock at, every watch — the tell (fragment 4) becomes playable on demand (#411). Pair with `&dock=<berth>`.** |
 | **`?site=N`** | **Pre-select landing site N in the boarding panel — board straight onto a specific ground to compare site A vs B → a different surface deck-plan (#320).** |
 | **`?land=1`** | **Ride the shuttle down as soon as the world is ready, onto the first landable body in reach (honours `?site=N`) — the real descent, skipping only the walk to the hatch and the boarding panel. The one-URL way to playtest a surface (#464).** |
@@ -1479,7 +1479,7 @@ Try `/map?start=enceladus&land=1` with no `?kaamos=` at all; the ground must hav
 
 | URL | what you walk |
 | --- | --- |
-| `/map?dock=the-tilt&site=0&land=1&kaamos=pod` | Land, take out the **metal detector**, probe any square: the cold supply pod is under this ground. This is the only fragment with no direct grant-free path — one seeded square in seventeen, on seven outer moons. |
+| `/map?dock=the-tilt&site=0&land=1&kaamos=pod` | Land, take out the **metal detector**, probe any regolith square (not bedrock): the cold supply pod is under this ground. This is the only fragment with no direct grant-free path — one seeded square in seventeen, on seven outer moons. |
 | `/map?dock=ringside-exchange&kaamos=holder` | Walk to the counter and the barkeep card carries **🌑 Ask about KAAMOS** — the berth-holder is in, this watch, at this bar. Unforced they drink at a given bar roughly one watch in four. |
 
 **In-play delivery to verify by hand (the canonical order):**
@@ -1662,8 +1662,11 @@ lab with the **hidden door already revealed**. The loop:
 
 The **black-ops inspection team**: professionals who work a route through a hull while the captain is inside it.
 They are the inverse of the pack — they see **20 du but only inside a 70° cone**, hear **34 du through walls and
-regardless of where the lamp points**, and **challenge for 3 seconds before shooting**. So the counter-play
-inverts too: you do not out-run them, you stand still somewhere the cone is not, and you do not make a sound.
+regardless of where the lamp points**, and **challenge for 3 seconds before shooting** — a window to break the
+lamp's line of sight. As shipped, a captain who stands still once found is shot all the same (whether obeying should
+ever hold is an OPEN owner ruling), and the death card no longer tells him he moved (#1397: *and stood still* versus
+*and did not*). So the counter-play inverts too: you do not
+out-run them, you stay somewhere the cone is not, and you do not make a sound.
 
 They ride the **INSURANCE JOB** by default — her own fiction is that the valuable thing aboard is the *evidence*,
 so what they came to remove is what you came to take. Or put them on any hull with `?sweep=N`.

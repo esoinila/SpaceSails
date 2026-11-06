@@ -716,11 +716,13 @@ On one kind of wreck you will not be alone, and the other people aboard will not
 A **black-ops inspection team** works a route through her while you are inside it — three professionals, sweeping
 compartment by compartment. They are the opposite of the Old Ones in every way that matters. They see a long way
 but **only where the lamp is pointed**. They hear through walls and do not care which way they are facing. And
-they **challenge before they shoot**: three flat seconds of *stand still, hands where I can see them*, which is
-the only reason this is a scene you can play rather than a coin flip.
+they **challenge before they shoot**: three flat seconds of *stand still, hands where I can see them*. Do not
+mistake the three seconds for an offer — standing still has not saved anybody yet. What they are is a window: time
+enough to put a bulkhead between you and the lamp, which is the only reason this is a scene you can play rather than
+a coin flip.
 
-So the counter-play inverts. You do not out-run a professional. You stand still, three metres off their axis, and
-you make no sound.
+So the counter-play inverts. You do not out-run a professional, and you do not wait to be found. You stay out of the
+cone, three metres off their axis, and you make no sound.
 
 **Your own kit will give you away before you do.** A deployed sentry shoots what it sees and does not know the
 difference between a Reever and a professional; the boat's tube gun will fire on the first person through that

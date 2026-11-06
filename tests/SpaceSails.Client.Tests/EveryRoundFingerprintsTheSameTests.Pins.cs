@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
@@ -120,13 +120,22 @@ public sealed partial class EveryRoundFingerprintsTheSameTests
         //     ladder's own empty-hand rung and byte for byte the read this case used to get for free. The
         //     walk the case is named after is armed by that press.
         //
-        // The third 1,800-frame case ("…and this time he does not press the button for your floor") is
-        // UNTOUCHED, and that is the anti-vacuous half: its staging books the watch full, so the sighting
-        // buys a RADIO CALL rather than a hail and no card is ever raised on it. A re-pin that had moved
-        // that row too would have been a lane reaching a road it has no business on.
+        //
+        // #1383 · RE-PINNED, ONE ROW, for a reason that is not the round's own: the lab a forced door appends now
+        // begins clear of the lift-head hut (SecretLab.HutStandOff), the door is drawn into a range that keeps
+        // the whole run (hut gap + three rooms) inside the field, and the shed is moved for the mountain behind
+        // it as well as for itself. That moves where luna's lab stands, and this row walks luna's patrolled
+        // floor, so the 1,800-frame transcript moved with the ground under it. Nothing in the guard, the
+        // hail, the radio call or the escort rule was touched (the other eight rows are byte-identical), so only the geometry it is walked over is implicated. Seen
+        // moving three ways: reverting only the door range gives a third hash, so it is the placement, not
+        // the walk.
+        // The third 1,800-frame case ("…and this time he does not press the button for your floor") was
+        // UNTOUCHED until the #1383 re-pin above, and was the anti-vacuous half: its staging books the watch full, so the sighting
+        // buys a RADIO CALL rather than a hail and no card is ever raised on it. The #1383 re-pin moved it for the
+        // ground under the round, not for the road the round takes.
         ["he hails you and you walk away from it"] = "88fb450aa2da8c9363c4b734a21de6a76a858957ca50bd924b80b645a612f272",
         ["he crosses the floor, reads your papers, and walks you to the car"] = "9dea49a8d8d03fb3d804312d9130377e60cdcaf161df058ec1b4861f3c7f8675",
-        ["…and this time he does not press the button for your floor"] = "0189602951060c2b4607f72a210dcd853d82c01a6b5e2d72ec3e68bf33f84d47",
+        ["…and this time he does not press the button for your floor"] = "efb2ef76e04582b91239b683f1f48c215ff1a51a32278d145320b57ceb40b6c6",   // #1383 re-pin: see the note above
         ["he calls it in, comes at a run, and he has you"] = "b5f30b958844925a76d5c551e8be80fdc9748a31d7485247437872886099ef4d",
         ["he calls it in, and by the time he moves you are gone"] = "6e092abd4f8b4e53cf8f34cca65e0cdbbe875e9e56bde25c4d13eba597a42418",
         ["you duck into a cubicle and he watched the catch turn"] = "eaea42898bd99509cc4c64f45cb50e03b39a60828b6bcd1d5aca12d0fef4cd35",

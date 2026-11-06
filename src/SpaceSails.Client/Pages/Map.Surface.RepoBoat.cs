@@ -91,6 +91,22 @@ public partial class Map
             return; // one beat to read the sky before they start walking
         }
 
+        // #1391 · THE CREW STAND ON THE REGOLITH, AND THE CAPTAIN IS IN THE ROCK. Below the surface the avatar's
+        // coordinates are a FLOOR PLAN's (the lift lobby of B1, 150 m down), and the crew's are the moon's. Comparing
+        // the two served a writ through a hundred and fifty metres of stone, and walked the crew toward a point
+        // on the field that was never the captain. They wait where they are (the hatch and the boat are on the
+        // surface; the shaft is not a door they came down in a boat to use) until the captain is back on the ground:
+        // a collector takes no action without the captain present (owner 2026-09-06).
+        if (ex.Floor < 0)
+        {
+            foreach (Collector held in _collectors)
+            {
+                held.Vx = 0;   // they stand: a motion tracker must not read the last stride as still moving
+                held.Vy = 0;
+            }
+            return;
+        }
+
         // The maze is law for them too: they bump-and-slide on the SAME segments the captain's boots do, so
         // a building costs them the long way round exactly as it costs an Old One. Unlike an Old One there
         // is no crew-only leash — they came in their own boat and they have their own airlock.
