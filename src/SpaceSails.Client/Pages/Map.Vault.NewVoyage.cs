@@ -152,7 +152,6 @@ public partial class Map
         _hailAnswers.Clear();
         _momentsRaisedFor.Clear();
         _missionMomentLedger.Clear();
-        _storyLogLines.Clear();
         _missionMomentQueue.Clear();
         _missionMoment = null;
 

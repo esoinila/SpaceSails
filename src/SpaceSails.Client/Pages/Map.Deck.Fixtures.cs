@@ -120,9 +120,7 @@ public partial class Map
             {
                 // R1-F33 · the shard's first sentence IS "you read the whole plate", so the card leaves it to
                 // the ledger (which keeps the full shard) and shows only the sentences that are new.
-                string plateLore = Core.KaamosLore.ById("listed-berth")!.Lore;
-                TryAssembleKaamos("listed-berth",
-                    "❄ " + plateLore[(plateLore.IndexOf(". ", StringComparison.Ordinal) + 2)..]);
+                TryAssembleKaamos("listed-berth", "❄ " + Core.KaamosLore.ListedBerthSaidBeside);
             }
 
             // #422: the PIRATE INSURANCE poster (Nebula Mutual, #380/#415). The first read is the cheerful

@@ -554,7 +554,7 @@ public sealed class TheBarKeepsItsOwnHoursTests
         void Transcribe()
         {
             said.Add(((PulseSlot)Field(map, "_pulse")!).Message ?? "");
-            said.Add(string.Join("|", ((IEnumerable<(double SimTime, string Text)>)Field(map, "_autopilotEvents")!)
+            said.Add(string.Join("|", ((IEnumerable<(double SimTime, string Text, bool Story)>)Field(map, "_autopilotEvents")!)
                 .Select(e => e.Text)));
         }
 

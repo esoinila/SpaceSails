@@ -318,8 +318,7 @@ public partial class Map
 
                 _credits -= price;
                 TryAssembleKaamos("bought-coordinate",
-                    $"🌑 −{price:N0} cr. " +
-                    KaamosLore.ById("bought-coordinate")!.Lore);
+                    "🌑 " + KaamosLore.ById("bought-coordinate")!.Lore + $" (−{price:N0} cr)");
                 break;
 
             default:

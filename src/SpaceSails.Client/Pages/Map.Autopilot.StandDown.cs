@@ -33,8 +33,12 @@ public partial class Map
 {
     // The autopilot log — a Captain's-ledger receipt for every stand-down (newest first), projected
     // into the ledger's Tips section alongside the intel receipts (the established idiom).
-    private readonly List<(double SimTime, string Text)> _autopilotEvents = [];
-    private void LogAutopilotEvent(string text) => _autopilotEvents.Insert(0, (SimTime, text));
+    private readonly List<(double SimTime, string Text, bool Story)> _autopilotEvents = [];
+    private void LogAutopilotEvent(string text) => _autopilotEvents.Insert(0, (SimTime, text, false));
+
+    // R1-F63 · a story card's line carries its own kind, so the ledger files it under the story heading
+    // for as long as the line lives (the log outlives a new voyage; a side set would not).
+    private void LogStoryEvent(string text) => _autopilotEvents.Insert(0, (SimTime, text, true));
 
     // A loud stand-down: clear the arm, remember WHY (persistent, not a 1.5-s toast), file a ledger
     // receipt, and drop warp to 1× — an event worth interrupting for, the #139 deep-well philosophy.
