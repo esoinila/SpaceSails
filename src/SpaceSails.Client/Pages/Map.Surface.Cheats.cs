@@ -99,7 +99,7 @@ public partial class Map
         if ((_landBodyCheat ?? _forcedLandingBodyId) is { } wanted)
         {
             ShuttleStop? named = board.FirstOrDefault(
-                s => s.IsLandable
+                s => s.IsLandable && !s.OneWayDown
                      && (string.Equals(s.Body.Id, wanted, StringComparison.OrdinalIgnoreCase)
                          || string.Equals(s.Body.Name, wanted, StringComparison.OrdinalIgnoreCase)));
 
@@ -117,9 +117,9 @@ public partial class Map
         }
 
         ShuttleStop? target =
-            board.FirstOrDefault(s => s.IsLandable && (SiteRoute.IsWreck(s.Body.Id)
+            board.FirstOrDefault(s => s.IsLandable && !s.OneWayDown && (SiteRoute.IsWreck(s.Body.Id)
                                                          || SiteRoute.IsStation(s.Body.Id)))
-            ?? board.FirstOrDefault(s => s.IsLandable);
+            ?? board.FirstOrDefault(s => s.IsLandable && !s.OneWayDown);
         if (target is null)
         {
             SayTheDevLine("🧪 DEV ?land=1: nothing landable in shuttle reach from this berth.");

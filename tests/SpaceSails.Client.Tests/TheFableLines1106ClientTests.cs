@@ -63,4 +63,22 @@ public sealed class TheFableLines1106ClientTests
         Assert.False(board.Attributes.ContainsKey("disabled") && board.Attributes["disabled"] is not null && board.Attributes["disabled"] != "False");
         Assert.DoesNotContain(row.Descendants(), n => n.HasClass("deck-shuttle-oneway"));
     }
+
+    [Fact]
+    public async Task ALongUndockedCoastSaysItArrivesNowhereExactlyOnce()
+    {
+        // An undocked ship with a plan ending 22 days out: the jump-scale branch takes this skip, and the
+        // note must have been said before it did.
+        using DeskBench bench = await DeskBench.BootAsync("/map?start=wreck");
+        double now = (double)bench.Peek("SimTime")!;
+        bench.Poke("_destinationPass", (ClosestApproach.Pass?)new ClosestApproach.Pass(
+            "mars", "Mars", 3.4e6, 1e9, now + 22 * 86_400.0, default));
+        Assert.Null(bench.Peek("_dockedHavenId"));
+
+        await bench.RenderAsync();
+        await (Task)bench.CallOnTheDispatcher("StartSkip")!;
+
+        var events = (System.Collections.Generic.List<(double SimTime, string Text, bool Story)>)bench.Peek("_autopilotEvents")!;
+        Assert.Equal(1, events.Count(e => e.Text.StartsWith("⏭ A coast, not a crossing", StringComparison.Ordinal)));
+    }
 }

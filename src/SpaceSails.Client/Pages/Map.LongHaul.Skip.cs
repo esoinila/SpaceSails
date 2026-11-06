@@ -132,6 +132,16 @@ public partial class Map
             return;
         }
 
+        // #1387 · a PlanEnd skip arrives nowhere, and says so the moment it is chosen — BEFORE the jump-scale
+        // branch, which takes every long coast of an undocked ship.
+        bool planEnd = next.Kind == WarpSkip.EventKind.PlanEnd;
+        if (planEnd)
+        {
+            string coastNote = WarpSkip.CoastAlongOrbitNote(FormatDuration(next.Epoch - SimTime));
+            ShowPulseMessage(coastNote);
+            LogAutopilotEvent(coastNote);
+        }
+
         // #261 — a JUMP-SCALE coast is never integrated: that is the #255/#257 freeze class through the
         // skip's side door (a 717 d arrival coast = ~62M fixed-1 s steps, a pinned tab for minutes). Above
         // the threshold, compute the void — advance the conic in closed form and re-seed like the long haul,
@@ -151,14 +161,7 @@ public partial class Map
         int commanded = WarpSkip.SkipWarp(next.Epoch - SimTime, MaxWarpLevel);
         Warp = commanded;
         _skipWarpCommanded = commanded;
-        // #1387 · a PlanEnd skip arrives nowhere, and says so the moment it is chosen.
-        if (next.Kind == WarpSkip.EventKind.PlanEnd)
-        {
-            string coastNote = WarpSkip.CoastAlongOrbitNote(FormatDuration(next.Epoch - SimTime));
-            ShowPulseMessage(coastNote);
-            LogAutopilotEvent(coastNote);
-        }
-        else
+        if (!planEnd)
         {
             LogAutopilotEvent($"⏭ skip engaged — fast-forwarding to {_skipTargetLabel}");
         }

@@ -72,6 +72,7 @@ public partial class Map
             (shipPos - _ephemeris.Position(b.Id, SimTime)).Length, b.BodyRadius,
             HasInterior: HavenInterior.HasInterior(b.Id), HasCache: _caches.HasCacheAt(b.Id)));
 
+        Vector2d shipVelocity = ShipVelocityNow(); // once for the whole board, not once per stop
         foreach (ShuttleExcursion.Destination d in ShuttleExcursion.Destinations(candidates, _dockedHavenId))
         {
             if (byId.TryGetValue(d.BodyId, out CelestialBody? body))
@@ -82,7 +83,7 @@ public partial class Map
                 bool oneWayDown = d.IsLandableSurface
                     && ShuttleLink.AskTheBoat(
                         d.DistanceMeters,
-                        (ShipVelocityNow() - TransferMath.BodyVelocity(_ephemeris, d.BodyId, SimTime)).Length)
+                        (shipVelocity - TransferMath.BodyVelocity(_ephemeris, d.BodyId, SimTime)).Length)
                     == ShuttleLink.Refusal.TooFastToCatch;
                 stops.Add(new ShuttleStop(body, d.DistanceMeters, d.TravelSeconds, d.HasBerth, d.IsLandableSurface, d.HasCache) { OneWayDown = oneWayDown });
             }
