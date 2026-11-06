@@ -74,6 +74,10 @@ public partial class Map
         MonolithWatch.What what = MonolithWatch.Which(
             ex.Stop.Body.Id, ex.Site.LayoutSalt, epoch, packOnTheField: _reevers.Count > 0);
         ShowAndFile(MonolithWatch.Line(what), MonolithWatch.Glyph);
+        if (what == MonolithWatch.What.ThePackGoesStill)
+        {
+            ex.PackStillSeconds = MonolithWatch.PackStillSeconds;   // R1-F27: the line is told, so it is made true
+        }
 
         // NerveCost is 0.0 and the call is left in on purpose: the number is a feel call the owner may want
         // to make, and a call site that has to be re-found is a decision that quietly never gets made.

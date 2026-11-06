@@ -23,8 +23,15 @@ public sealed partial class Map
     /// for #1052's reason — his legs already brought him here, so the beat happened and must not be dropped;
     /// and asked again on the way out, because a captain who has walked back up the tube in the meantime is
     /// not standing there to be sold to.</summary>
-    private void HeReachesYou() =>
-        RaiseAScrimCard(KoltsPitchGoesUp, () => !CaptainBeyondReach && !_hardcaseFled);
+    private void HeReachesYou()
+    {
+        if (TheDeathCardFreezesTheGround)
+        {
+            return;   // a death card is not in the scrim census; a pitch raised now would sit behind it
+        }
+
+        RaiseAScrimCard(KoltsPitchGoesUp, () => !CaptainBeyondReach && !_hardcaseFled && !TheDeathCardFreezesTheGround);
+    }
 
     /// <summary>The pitch itself, once the glass is his — and the moment the ground goes in his book, because
     /// being found on a ground is what spends one of the two.</summary>
@@ -85,7 +92,8 @@ public sealed partial class Map
     /// </summary>
     private void AnswerTheHardcase(NebulaRep.RepMove move)
     {
-        if (_hardcaseCard is null)
+        // A card still in the DOM behind the death card must not sell a policy before the rebirth reads it.
+        if (_hardcaseCard is null || TheDeathCardFreezesTheGround)
         {
             return;
         }

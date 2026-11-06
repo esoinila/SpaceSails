@@ -82,14 +82,31 @@ public partial class Map
         AdvanceStoryCards();
     }
 
+    /// <summary>R1-F28 · A FREEZE-FRAME FREEZES THE GROUND. While the death card is up the captain does not walk
+    /// and the field does not step: held keys used to keep walking the corpse, and the sight shock, the
+    /// approach pulse, the selfie offer and the once-per-excursion watch all fired for it.</summary>
+    private void StepTheWalkedGround(double dtRealSeconds)
+    {
+        if (TheDeathCardFreezesTheGround)
+        {
+            return;
+        }
+
+        MoveAvatar(dtRealSeconds);
+        StepSurface(dtRealSeconds); // #295/#313: dig channel, the Old Ones' converging chase, linger trickle
+    }
+
+    /// <summary>R1-F28 · True while a death card (the freeze beat, an impact, or a surface end) is open.</summary>
+    private bool TheDeathCardFreezesTheGround =>
+        _busted is { Phase: BustedEncounter.Stage.FreezeFrame or BustedEncounter.Stage.Impact or BustedEncounter.Stage.SurfaceEnd };
+
     /// <summary>The second early stop: the captain is on their feet, so the frame is a walked view and the map
     /// is never opened. True when the frame is finished here.</summary>
     private bool TheWalkedViewOwnsThisFrame(double dtRealSeconds, double highResTimestampMs)
     {
         if (_deckMode)
         {
-            MoveAvatar(dtRealSeconds);
-            StepSurface(dtRealSeconds); // #295/#313: dig channel, the Old Ones' converging chase, linger trickle
+            StepTheWalkedGround(dtRealSeconds);
             // #973 L0 · …and the docked bar's own metabolism, which StepSurface can never reach: it returns on
             // the first line when there is no excursion, and a berth has none. This is the room the owner
             // drinks in finally having people who move in it.
