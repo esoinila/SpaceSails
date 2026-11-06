@@ -83,6 +83,12 @@ public static class Telling
 public readonly record struct PulseSlot(
     string? Message, PulseRank Rank, double ExpiresMs, double HeldUntilMs)
 {
+    /// <summary>#1439 · The line was written between two frames, against the PREVIOUS frame's stamp, and no tick
+    /// has met it yet; <see cref="Seen"/> starts its dwell from the first tick that does. Internal on purpose:
+    /// bookkeeping, not part of what the slot says, so it stays out of the record's printed shape (and of every
+    /// frame/round/seat fingerprint that prints the pulse).</summary>
+    internal bool Unseen { get; init; }
+
     /// <summary>An empty slot — nothing on screen, and nothing to outrank.</summary>
     public static PulseSlot Empty => new(null, PulseRank.Status, 0.0, 0.0);
 
@@ -105,7 +111,11 @@ public readonly record struct PulseSlot(
 
     /// <summary>Write a line into the slot, or decline to. Returns the slot as it stands afterwards — the
     /// same slot, unchanged, when the law refuses the write.</summary>
-    public PulseSlot Write(string message, PulseRank rank, double nowMs)
+    /// <param name="awaitFirstTick">#1439 · True when <paramref name="nowMs"/> is the PREVIOUS frame's stamp (the
+    /// clock has started, the line is written between frames): the dwell is then re-based by <see cref="Seen"/> on
+    /// the first tick that meets the line, so a throttled tab cannot expire it before its first paint. NEVER set for
+    /// a line written before the first frame - boot lines keep the stamp they always had.</param>
+    public PulseSlot Write(string message, PulseRank rank, double nowMs, bool awaitFirstTick = false)
     {
         // THE LAW. Note what it is NOT: it never asks which line is longer, more recent or more interesting,
         // and it never looks at the text at all. Only the rank, and only while the winner is still held.
@@ -114,7 +124,7 @@ public readonly record struct PulseSlot(
             return this;
         }
 
-        return new PulseSlot(message, rank, nowMs + DwellFor(message), nowMs + MinDwellMs);
+        return new PulseSlot(message, rank, nowMs + DwellFor(message), nowMs + MinDwellMs) { Unseen = awaitFirstTick };
     }
 
     /// <summary>Write a line BESIDE what this same instant already said, instead of over it. Two sayings
@@ -124,15 +134,24 @@ public readonly record struct PulseSlot(
     /// are joined, the first line then this one, at the higher of the two ranks; when it was not, this is
     /// exactly <see cref="Write"/>. No words are added: both sentences are the ones their own call sites
     /// wrote.</summary>
-    public PulseSlot Also(string message, PulseRank rank, double nowMs)
+    public PulseSlot Also(string message, PulseRank rank, double nowMs, bool awaitFirstTick = false)
     {
         if (Message is not null && HeldUntilMs == nowMs + MinDwellMs)
         {
-            return Write($"{Message} {message}", rank > Rank ? rank : Rank, nowMs);
+            return Write($"{Message} {message}", rank > Rank ? rank : Rank, nowMs, awaitFirstTick || Unseen);
         }
 
-        return Write(message, rank, nowMs);
+        return Write(message, rank, nowMs, awaitFirstTick);
     }
+
+    /// <summary>#1439 · The first tick to meet a line written between frames starts its dwell NOW. The stamp it
+    /// was written with is the previous frame's, so in a throttled or hidden tab (ticks seconds apart) the very
+    /// next <see cref="Expire"/> would clear a long line before any frame had painted it. A line already seen, or
+    /// written before the clock started, is returned unchanged.</summary>
+    public PulseSlot Seen(double nowMs) =>
+        Unseen && Message is not null
+            ? new PulseSlot(Message, Rank, nowMs + DwellFor(Message), nowMs + MinDwellMs)
+            : this with { Unseen = false };
 
     /// <summary>Clear the slot if its line has had its time. An empty slot outranks nothing, which is what
     /// keeps the hold from leaking into the next scene.</summary>

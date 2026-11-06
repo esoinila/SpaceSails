@@ -311,7 +311,7 @@ public class AwayExpeditionTests
     // ── The special surface schemes ─────────────────────────────────────────────────────────────────
 
     private static SurfaceLayout.Field TestField() =>
-        new(LeftX: -44, RightX: 34, TopY: -20, BottomY: -84, LandingBandY: -27, AnchorX: -6, AnchorY: -70);
+        SurfaceLayout.DefaultField;
 
     [Fact]
     public void ExpeditionSchemes_AreDistinct_FromEachOtherAndFromMiranda()

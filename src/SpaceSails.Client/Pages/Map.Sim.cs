@@ -238,7 +238,7 @@ public partial class Map
             return;
         }
 
-        _pulse = _pulse.Write(message, rank, _lastTimestampMs ?? 0);
+        _pulse = _pulse.Write(message, rank, _lastTimestampMs ?? 0, awaitFirstTick: _lastTimestampMs is not null);
     }
 
     /// <summary>A line raised in the SAME call as the one before it, said beside it rather than over it
@@ -251,7 +251,7 @@ public partial class Map
             return;
         }
 
-        _pulse = _pulse.Also(message, rank, _lastTimestampMs ?? 0);
+        _pulse = _pulse.Also(message, rank, _lastTimestampMs ?? 0, awaitFirstTick: _lastTimestampMs is not null);
     }
 
     private string BodyName(string id)

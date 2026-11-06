@@ -92,7 +92,7 @@ public static partial class DeckReachability
     /// for it (the search goes first, and the proof is only asked once the search has spent its budget), and a
     /// test can only say so by counting, not by timing.</summary>
     [ThreadStatic]
-    public static int SealedProofsRun;
+    internal static int SealedProofsRun;
 
     /// <summary>Breadth-first from <paramref name="seeds"/>; RanDry only when the frontier ran dry inside the
     /// budget and no visited cell was a hit (the walker's own cell, or - flooding from the walker - any
