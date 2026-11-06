@@ -194,15 +194,17 @@ public sealed class TheRoundTwoNavigatorTests
     public async Task OutOnTheRockTheRocksOwnBeatsStillLand()
     {
         // Tremors and a crewman breaking are the rock's, not the bore's: across the sweep at least one is told
-        // before any hole exists, or the gig has gone nearly safe.
+        // before any hole exists, or the gig has gone nearly safe. ONE beat is due each time (ordinal beats-1),
+        // and beats stays under 8 so the T-0 impact line cannot stand in for one.
         int told = 0;
-        for (int beats = 1; beats <= 12; beats++)
+        for (int beats = 1; beats < 8; beats++)
         {
             var (b, ex) = await OnTheRockAsync(atTheBore: true);
             Set(ex, "DeflectionOnSiteSeconds", DeflectionGig.EventCadenceSeconds * (beats + 0.5));
-            Set(ex, "DeflectionLastOrdinal", beats - 1);   // one beat due: this one
+            Set(ex, "DeflectionLastOrdinal", beats - 2);
             b.CallOnTheDispatcher("StepDeflection", 0.016);
-            if (Told(b) is not null) { told++; }
+            Assert.Equal(beats - 1, (int)Get(ex, "DeflectionLastOrdinal"));   // premise: the beat really came due and was resolved
+            if (System.Text.RegularExpressions.Regex.IsMatch(Told(b) ?? "", "GROANS|breaks")) { told++; }
         }
 
         Assert.True(told > 0, "no tremor or bolt was ever told before a hole was begun");
@@ -211,16 +213,20 @@ public sealed class TheRoundTwoNavigatorTests
     [Fact]
     public async Task AnArmedChargeIsNeverToldARigBitingSteady()
     {
-        for (int beats = 1; beats <= 12; beats++)
+        int resolved = 0;
+        for (int beats = 1; beats < 8; beats++)
         {
             var (b, ex) = await OnTheRockAsync(atTheBore: true);
             Set(ex, "ChargeArmed", true);
             Set(ex, "DrillProgress", 1.0);
             Set(ex, "DeflectionOnSiteSeconds", DeflectionGig.EventCadenceSeconds * (beats + 0.5));
-            Set(ex, "DeflectionLastOrdinal", beats - 1);
+            Set(ex, "DeflectionLastOrdinal", beats - 2);
             b.CallOnTheDispatcher("StepDeflection", 0.016);
+            if ((int)Get(ex, "DeflectionLastOrdinal") == beats - 1) { resolved++; }
             Assert.DoesNotMatch(DrillLines, Told(b) ?? "");
         }
+
+        Assert.Equal(7, resolved);   // every sweep step really rolled its beat
     }
 
     [Fact]
