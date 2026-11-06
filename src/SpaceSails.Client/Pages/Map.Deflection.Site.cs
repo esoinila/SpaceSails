@@ -21,6 +21,14 @@ public partial class Map
     {
         ulong seed = DeflectionGig.Seed(plan.AcceptedSimTime, plan.RockBodyId, ordinal);
         DeflectionComplication c = DeflectionGig.Roll(seed, plan.Type, ordinal, ex.ChargeArmed ? 0.0 : ex.DrillProgress);
+        // U03-F08 · THE DRILL BANDS ARE THE BORE'S. Tremors and a crewman breaking still land on a captain who is
+        // out on the rock (the rock is falling whether or not anyone is drilling), but a bit that snaps, a rig that
+        // "bites steady" or a bore that "runs true" are sentences about a hole - silent before one is begun and once
+        // the charge is set.
+        if (!TheBoreIsLive(ex) && c.Band is DeflectionBand.DrillSnap or DeflectionBand.Steady or DeflectionBand.GoodBite)
+        {
+            return;
+        }
         RaiseDiceEvent(c.Event); // the cast dice, shown (the house homage)
 
         if (c.NerveHit > 0)
@@ -108,7 +116,7 @@ public partial class Map
         }
         ex.DrillChannel = new DrillChannel { AnchorX = spot.X, AnchorY = spot.Y };
         RendererInterop.PlayCue("board");
-        ShowPulseMessage($"🛠 Setting the rig — {plan.Type.Label}. {plan.Type.BriefLine} Hold position; step away to pause. The clock does not.");
+        ShowPulseMessage($"🛠 Setting the rig — {plan.Type.Label}. Hold position; step away to pause. The clock does not.");
     }
 
     // THE BURN — the charge fires, ablation shoves the rock, and its rail lifts off the station's orbit. The
@@ -191,7 +199,7 @@ public partial class Map
         ImpactClock clock = DeflectionGig.ClassifyClock(ex.DeflectionOnSiteSeconds);
         int severity = clock switch { ImpactClock.Counting => 1, _ => 2 };
         string word = ex.ChargeArmed ? "CHARGE ARMED — firing solution aligning"
-            : ex.DrillProgress > 0 ? $"drilling {(int)(ex.DrillProgress * 100)}%"
+            : ex.DrillProgress > 0 || ex.DrillChannel is not null ? DrillingWord(ex)
             : DrillPointPointer();
         return ($"⏱ IMPACT — {plan.TargetName.ToUpperInvariant()} — T-{FormatClock(left)} · {word}", severity);
     }
@@ -294,19 +302,38 @@ public partial class Map
         return ((float)(field.AnchorX + 12.0), (float)((field.LandingBandY + field.BottomY) / 2.0)); // open ground below the landing band
     }
 
-    // U03-F07 · THE DRILL POINT ON THE HUD. The line used to say "land and drill" and nothing about WHERE: a tester
-    // never found the console before the clock ran out. It now names the job and gives the bearing from where the
-    // captain stands, in the deck's own units (the way the shelter is pointed at).
-    private string DrillPointPointer()
+    // U03-F07 · THE DRILL POINT ON THE HUD. A tester never found the console before the clock ran out, so the
+    // HUD carries the bearing from where the captain stands, in the ground's own compass (SdrScanner.BearingFrom:
+    // deepward / landingward / eastward / westward - there is no true north down here).
+    private (string Bearing, int Du) DrillPointTokens()
     {
         (float x, float y) = DrillPointSpot();
         double dx = x - _avatarX, dy = y - _avatarY;
-        double du = Math.Sqrt((dx * dx) + (dy * dy));
-        // The deck is drawn with y DOWN, so +y is south and +x is east.
-        string compass = Math.Abs(dx) > Math.Abs(dy) * 2.0 ? (dx > 0 ? "E" : "W")
-            : Math.Abs(dy) > Math.Abs(dx) * 2.0 ? (dy > 0 ? "S" : "N")
-            : (dy > 0 ? "S" : "N") + (dx > 0 ? "E" : "W");
-        return $"🛠 DRILL POINT {(int)Math.Round(du)} du {compass} — drill the charge, then FIRE before T-0";
+        return (SdrScanner.BearingFrom(dx, dy), (int)Math.Round(Math.Sqrt((dx * dx) + (dy * dy))));
+    }
+
+    private string DrillPointPointer()
+    {
+        (string bearing, int du) = DrillPointTokens();
+        return $"DRILL POINT {bearing} — {du} du · bore, then FIRE";
+    }
+
+    // The word while a hole is begun: at the rig it says hold; stepped away it keeps the bearing so the way back
+    // is not lost with the channel.
+    private string DrillingWord(SurfaceExcursion ex)
+    {
+        int pct = (int)(ex.DrillProgress * 100);
+        if (ex.DrillChannel is { } ch)
+        {
+            double dx = _avatarX - ch.AnchorX, dy = _avatarY - ch.AnchorY;
+            if ((dx * dx) + (dy * dy) <= DeckPlan.InteractRadius * DeckPlan.InteractRadius)
+            {
+                return $"drilling {pct}% — hold position";
+            }
+        }
+
+        (string bearing, int du) = DrillPointTokens();
+        return $"bore paused at {pct}% · DRILL POINT {bearing} — {du} du";
     }
 
     // ── The rock's ground: one marked DRILL POINT on open regolith (relabels to FIRE THE CHARGE once armed).

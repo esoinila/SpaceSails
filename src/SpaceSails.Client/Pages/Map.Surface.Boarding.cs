@@ -248,7 +248,7 @@ public partial class Map
         {
             // U03-F07 · The rock is a JOB SITE, not a beach: no chest to bury, no kiosk, no ground to probe. The
             // receipt is the plan's own blurb and the one place to go.
-            ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name} — {rockPlan.Type.Label}. {rockPlan.Type.BriefLine} The DRILL POINT is on the HUD: walk to it, [E] to bore, and FIRE before T-0.");
+            ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. {rockPlan.Type.BriefLine} The HUD carries the bearing to the DRILL POINT. Walk it, [E] to bore, and FIRE before T-0.");
         }
         else if (SiteRoute.IsStation(stop.Body.Id) || SiteRoute.IsWreck(stop.Body.Id))
         {

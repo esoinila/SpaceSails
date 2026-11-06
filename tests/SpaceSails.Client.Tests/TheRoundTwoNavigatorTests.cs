@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
 using SpaceSails.Client.Pages;
+using SpaceSails.Client.Rendering;
 using SpaceSails.Core;
 using Xunit;
 
@@ -64,6 +65,55 @@ public sealed class TheRoundTwoNavigatorTests
         Assert.Equal("jupiter", offered?.BodyId);
     }
 
+    /// <summary>Does this body sit in <paramref name="planet"/>'s own space - the planet, its moons, its havens?</summary>
+    private static bool InSpaceOf(DeskBench b, string id, string planet)
+    {
+        var ephemeris = (ICelestialEphemeris)b.Peek("_ephemeris")!;
+        for (string? at = id; at is not null;)
+        {
+            if (at == planet) { return true; }
+            at = System.Linq.Enumerable.FirstOrDefault(ephemeris.Bodies, x => x.Id == at)?.ParentId;
+        }
+        return false;
+    }
+
+    private static async Task<List<string>> OffersAsync(string url)
+    {
+        DeskBench b = await DeskBench.BootAsync(url);
+        b.Poke("_passDirty", true);
+        b.CallOnTheDispatcher("ReprojectThePassesOnTheirCadence", 1e12);
+        Assert.NotEmpty((System.Collections.IEnumerable)b.Peek("_passes")!);   // premise: there is a pass list to pick from
+        var offers = new List<string>();
+        foreach (string kind in new[] { "Orbit", "Dock" })
+        {
+            object k = Enum.Parse(typeof(ArrivalStepRule.ArrivalKind), kind);
+            if (b.Call("ArriveCandidate", k) is ClosestApproach.Pass p)
+            {
+                offers.Add($"{kind}:{p.BodyId}");
+            }
+        }
+        return offers;
+    }
+
+    [Theory]
+    [InlineData("/map?sling=jupiter", "jupiter")]
+    [InlineData("/map?start=wreck&dest=saturn", "saturn")]
+    public async Task TheButtonsOfferTheNeighbourhoodTheShipIsBoundForOrNothing(string url, string planet)
+    {
+        DeskBench b = await DeskBench.BootAsync(url);
+        b.Poke("_passDirty", true);
+        b.CallOnTheDispatcher("ReprojectThePassesOnTheirCadence", 1e12);
+        Assert.NotEmpty((System.Collections.IEnumerable)b.Peek("_passes")!);
+        foreach (string kind in new[] { "Orbit", "Dock" })
+        {
+            object k = Enum.Parse(typeof(ArrivalStepRule.ArrivalKind), kind);
+            if (b.Call("ArriveCandidate", k) is ClosestApproach.Pass p)
+            {
+                Assert.True(InSpaceOf(b, p.BodyId, planet), $"{url}: '+ Add {kind}' offered {p.BodyId}");
+            }
+        }
+    }
+
     // ── F08 · the drill's complications belong to the bore ─────────────────────────────────────────
 
     [Fact]
@@ -122,14 +172,55 @@ public sealed class TheRoundTwoNavigatorTests
         return (b, ex);
     }
 
+    private const string DrillLines = "SNAPS|runs TRUE|bites steady";
+
+    private static string? Told(DeskBench b) => ((PulseSlot)b.Peek("_pulse")!).Message;
+
     [Fact]
-    public async Task NothingIsRolledOnTheRockUntilABoreIsUnderway()
+    public async Task OutOnTheRockBeforeAHoleIsBegunNoDrillLineIsToldAndNoDepthMoves()
     {
-        var (b, ex) = await OnTheRockAsync(atTheBore: true);
-        b.CallOnTheDispatcher("StepDeflection", 0.016);
-        Assert.Equal(0.0, (double)Get(ex, "DrillProgress"));
-        Assert.Null(((PulseSlot)b.Peek("_pulse")!).Message);
-        Assert.Equal(5, (int)Get(ex, "DeflectionLastOrdinal"));   // the six due beats were passed over, not stored up
+        // Every ordinal the clock has due, across a sweep of how far along it is, so no single seed hides a bug.
+        for (int beats = 1; beats <= 12; beats++)
+        {
+            var (b, ex) = await OnTheRockAsync(atTheBore: true);
+            Set(ex, "DeflectionOnSiteSeconds", DeflectionGig.EventCadenceSeconds * (beats + 0.5));
+            b.CallOnTheDispatcher("StepDeflection", 0.016);
+            Assert.Equal(0.0, (double)Get(ex, "DrillProgress"));
+            Assert.DoesNotMatch(DrillLines, Told(b) ?? "");
+        }
+    }
+
+    [Fact]
+    public async Task OutOnTheRockTheRocksOwnBeatsStillLand()
+    {
+        // Tremors and a crewman breaking are the rock's, not the bore's: across the sweep at least one is told
+        // before any hole exists, or the gig has gone nearly safe.
+        int told = 0;
+        for (int beats = 1; beats <= 12; beats++)
+        {
+            var (b, ex) = await OnTheRockAsync(atTheBore: true);
+            Set(ex, "DeflectionOnSiteSeconds", DeflectionGig.EventCadenceSeconds * (beats + 0.5));
+            Set(ex, "DeflectionLastOrdinal", beats - 1);   // one beat due: this one
+            b.CallOnTheDispatcher("StepDeflection", 0.016);
+            if (Told(b) is not null) { told++; }
+        }
+
+        Assert.True(told > 0, "no tremor or bolt was ever told before a hole was begun");
+    }
+
+    [Fact]
+    public async Task AnArmedChargeIsNeverToldARigBitingSteady()
+    {
+        for (int beats = 1; beats <= 12; beats++)
+        {
+            var (b, ex) = await OnTheRockAsync(atTheBore: true);
+            Set(ex, "ChargeArmed", true);
+            Set(ex, "DrillProgress", 1.0);
+            Set(ex, "DeflectionOnSiteSeconds", DeflectionGig.EventCadenceSeconds * (beats + 0.5));
+            Set(ex, "DeflectionLastOrdinal", beats - 1);
+            b.CallOnTheDispatcher("StepDeflection", 0.016);
+            Assert.DoesNotMatch(DrillLines, Told(b) ?? "");
+        }
     }
 
     [Fact]
@@ -139,7 +230,7 @@ public sealed class TheRoundTwoNavigatorTests
         Set(ex, "DrillProgress", 0.5);
         b.CallOnTheDispatcher("StepDeflection", 0.016);
         Assert.Equal(0.5, (double)Get(ex, "DrillProgress"));
-        Assert.Null(((PulseSlot)b.Peek("_pulse")!).Message);
+        Assert.Null(Told(b));
     }
 
     [Fact]
@@ -149,20 +240,34 @@ public sealed class TheRoundTwoNavigatorTests
         Set(ex, "DrillProgress", 0.5);
         b.CallOnTheDispatcher("StepDeflection", 0.016);
         Assert.True((int)Get(ex, "DeflectionLastOrdinal") >= 0);
-        Assert.NotNull(((PulseSlot)b.Peek("_pulse")!).Message);   // a complication was told
+        Assert.NotNull(Told(b));   // a complication was told
     }
 
     // ── F07 · the rock's HUD line points at the DRILL POINT ────────────────────────────────────────
 
     [Fact]
-    public async Task TheRocksHudLineNamesTheDrillPointAndWhichWayItLies()
+    public async Task TheRocksHudLineNamesTheDrillPointInTheGroundsOwnCompass()
     {
         var (b, _) = await OnTheRockAsync(atTheBore: false);
+        var spot = ((float X, float Y))typeof(Map).GetMethod("DrillPointSpot", Any)!.Invoke(null, null)!;
+        b.Poke("_avatarX", MoonSurface.SpawnX);
+        b.Poke("_avatarY", MoonSurface.SpawnY);
+        double dx = spot.X - MoonSurface.SpawnX, dy = spot.Y - MoonSurface.SpawnY;
+        Assert.True(-dy > Math.Abs(dx), "premise: from the spawn the drill point lies mostly deeper into the ground");
         var line = ((string Line, int Severity)?)b.Call("DeflectionComms");
-        Assert.NotNull(line);
-        Assert.Contains("DRILL POINT", line!.Value.Line);
-        Assert.Matches(@"DRILL POINT [0-9]+ du (N|S|E|W|NE|NW|SE|SW) ", line.Value.Line);
-        Assert.DoesNotContain("land and drill", line.Value.Line);
+        string text = line!.Value.Line;
+        Assert.Contains($"DRILL POINT {SdrScanner.Bearings[3]} — ", text);   // deepward - never "north" or "south"
+        Assert.Contains(" du · bore, then FIRE", text);
+        Assert.DoesNotContain("land and drill", text);
+    }
+
+    [Fact]
+    public async Task SteppingAwayFromTheBoreKeepsTheBearingOnTheHud()
+    {
+        var (b, ex) = await OnTheRockAsync(atTheBore: false);
+        Set(ex, "DrillProgress", 0.4);
+        string text = ((string Line, int Severity)?)b.Call("DeflectionComms") is { } l ? l.Line : "";
+        Assert.Contains("bore paused at 40% · DRILL POINT ", text);
     }
 
     // ── F19 · a clamped ship has no orbit readout to freeze ─────────────────────────────────────────
@@ -195,6 +300,7 @@ public sealed class TheRoundTwoNavigatorTests
         Assert.True(at >= 0, "premise: the banner's mode rule exists");
         string rule = css[at..css.IndexOf('}', at)];
         Assert.DoesNotContain("nowrap", rule);
+        Assert.Contains("max-width", rule);   // capped, so the title clears Layers and the find box
     }
 
     [Fact]
@@ -213,6 +319,7 @@ public sealed class TheRoundTwoNavigatorTests
     {
         string row = Src("Pages", "Map", "NavHud", "ArriveStepRow.razor");
         Assert.Contains("@if (_ac is { Valid: true } _ace)", row);   // the open editor repeats only the green line
+        Assert.DoesNotContain("_ashortEdit", row);                   // …and not the not-judged line either
         Assert.Contains("@if (_ac is { } _acx && !_acx.Valid)", row); // the row keeps the red one
     }
 }

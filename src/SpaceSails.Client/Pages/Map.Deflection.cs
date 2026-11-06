@@ -116,7 +116,7 @@ public partial class Map
 
         // The diced complications (the #370 cadence): drill snaps, tremors, a crew member bolting.
         int due = DeflectionGig.EpisodesElapsed(ex.DeflectionOnSiteSeconds);
-        if (TheBoreIsUnderway(ex))
+        if (!CaptainBeyondReach)
         {
             int fired = 0;
             while (ex.DeflectionLastOrdinal + 1 < due && fired < MaxDeflectionBeatsPerFrame)
@@ -128,11 +128,11 @@ public partial class Map
         }
         else
         {
-            // U03-F08 · THE COMPLICATIONS ARE THE BORE'S. They used to be rolled by the wall clock alone: a captain
-            // still standing in the shuttle bay (under HER air) was told "The drill bit SNAPS" at 0 % and then
-            // "The bore runs TRUE" moved the HUD to 12 % with nobody at the rig. Until a hole is begun, and while the
-            // captain is back at the shuttle, the beats that come due are simply not rolled - the doom clock above
-            // still counts, and the next boundary after the work resumes is the next beat.
+            // U03-F08 · THE BEATS ARE THE ROCK'S, AND THE CAPTAIN'S WHILE HE IS ON IT. They used to be rolled by
+            // the wall clock alone: a captain still standing in the shuttle bay (under HER air) was told "The drill
+            // bit SNAPS" at 0 % and "The bore runs TRUE" moved the HUD to 12 % with nobody at the rig. Back at the
+            // shuttle the beats that come due are simply not rolled (the doom clock above still counts); out on the
+            // rock they roll as ever, and ResolveDeflectionBeat keeps the drill bands for a hole that exists.
             ex.DeflectionLastOrdinal = Math.Max(ex.DeflectionLastOrdinal, due - 1);
         }
 
@@ -155,10 +155,10 @@ public partial class Map
         }
     }
 
-    /// <summary>U03-F08 · Is anyone boring? A hole has been begun (the channel is open, depth is banked, or the
-    /// charge is set) AND the captain is out on the rock rather than back at the shuttle.</summary>
-    private bool TheBoreIsUnderway(SurfaceExcursion ex) =>
-        !CaptainBeyondReach && (ex.DrillChannel is not null || ex.DrillProgress > 0.0 || ex.ChargeArmed);
+    /// <summary>U03-F08 · Is there a hole to talk about? Begun (the channel is open or depth is banked) and the
+    /// charge not yet set - once it is set the bore is done and a drill line would describe nothing.</summary>
+    private static bool TheBoreIsLive(SurfaceExcursion ex) =>
+        !ex.ChargeArmed && (ex.DrillChannel is not null || ex.DrillProgress > 0.0);
 
     // ─────────────────────────────────────────────────────────────────────────────────────────────
     //  THE THREAT LINE — drawn on the nav map (called from OnTick after the bodies). The rock's rail, a red

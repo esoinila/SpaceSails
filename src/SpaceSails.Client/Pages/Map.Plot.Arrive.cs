@@ -143,19 +143,36 @@ public partial class Map
     /// is worth a ✗ row that reads "by how much"; Triton from Jupiter space is not a near miss of anything.</summary>
     internal const double ArrivalOfferReachMargin = 10.0;
 
+    private const double AstronomicalUnit = 1.495978707e11;
+
     private bool PassIsWithinReachOfAnArrival(ClosestApproach.Pass pass, CelestialBody body, ArrivalStepRule.ArrivalKind kind)
     {
         // …EXCEPT the pass that is only the end of a ribbon too short to reach the body (#952): that button is
         // the iterate loop's own door - the press stretches the line until the real encounter is on it - and
-        // the row reads NOT JUDGED rather than invalid until it is.
+        // the row reads NOT JUDGED rather than invalid until it is. Only for the body the captain is making for
+        // (or one of its moons and havens): on a thirty-day ribbon EVERY body's closest pass is the ribbon's edge,
+        // and waving them all through offered Mercury to a ship bound for Saturn.
         if (RibbonEnd() is { } end
-            && ArrivalStepRule.PassIsOffTheEndOfTheRibbon(pass.SimTime, end.EndSimTime, end.SampleStepSeconds))
+            && ArrivalStepRule.PassIsOffTheEndOfTheRibbon(pass.SimTime, end.EndSimTime, end.SampleStepSeconds)
+            && (_destinationBodyId is null || pass.BodyId == _destinationBodyId || body.ParentId == _destinationBodyId))
         {
             return true;
         }
 
-        double hill = BodyById(body.ParentId) is { } parent ? OrbitRule.HillRadius(body, parent.Mu) : 0;
-        return pass.Distance <= ArrivalStepRule.DistanceLimit(kind, hill) * ArrivalOfferReachMargin;
+        CelestialBody? parent = BodyById(body.ParentId);
+        double limit = parent is null ? 0 : ArrivalStepRule.DistanceLimit(kind, OrbitRule.HillRadius(body, parent.Mu));
+        if (kind == ArrivalStepRule.ArrivalKind.Dock && parent is not null
+            && BodyById(parent.ParentId) is { } star && parent.ParentId is not null)
+        {
+            // A station rides its host planet: a rough first plot toward it keeps its "+ Add dock" while the
+            // course is anywhere inside the HOST's capture reach.
+            limit = Math.Max(limit, OrbitRule.CaptureRange(OrbitRule.HillRadius(parent, star.Mu)));
+        }
+
+        // A near miss is worth a ✗ row that says by how much; a body whole AUs away is not a near miss of
+        // anything - so the margin is capped absolutely (Neptune's capture range x10 is 39 AU).
+        double reach = Math.Min(limit * ArrivalOfferReachMargin, Math.Max(limit, AstronomicalUnit));
+        return pass.Distance <= reach;
     }
 
     /// <summary>Can this body end a plan in this way? A dock haven takes the ⚓ (DockableHavens is the one

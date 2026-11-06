@@ -1177,11 +1177,7 @@
                                         @* U03-F14: an INVALID verdict is already printed under the row's line; the open editor repeats only a valid one. *@
                                         @if (_ac is { Valid: true } _ace)
                                         {
-                                            <div class="small mb-1 @(_ace.Valid ? "text-success" : "text-danger")">@ArrivalStepRule.Verdict(_ace)</div>
-                                        }
-                                        @if (_ashortLine is { } _ashortEdit)
-                                        {
-                                            <div class="small mb-1 text-warning">@_ashortEdit</div>
+                                            <div class="small mb-1 text-success">@ArrivalStepRule.Verdict(_ace)</div>
                                         }
                                         @* #969: the finished trip, in one line — "3 burns · arrive in 9 mo — the autopilot
                                            will orbit Mars (≈3 p) · nothing more needed". This is the owner's own sentence
