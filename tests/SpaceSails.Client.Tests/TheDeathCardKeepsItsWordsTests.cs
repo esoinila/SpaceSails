@@ -28,7 +28,7 @@ public sealed class TheDeathCardKeepsItsWordsTests
             Assert.Contains("PATTERN 40", flash, StringComparison.Ordinal);
         }
 
-        // …and later rebirths still vary, each keeping the PATTERN 40 / DO-NOT-REVIVE-ish heart.
+        // …and later rebirths still vary, (the canonical line and variants 1-2 carry PATTERN 40; 3-4 are other tells and are not asserted).
         var seen = new System.Collections.Generic.HashSet<string>();
         for (ulong seed = 0; seed < 64; seed++)
         {
@@ -42,8 +42,10 @@ public sealed class TheDeathCardKeepsItsWordsTests
     {
         using DeskBench bench = await DeskBench.BootAsync(AnImpact);
         await bench.RenderAsync();
-        bench.CallOnTheDispatcher("BustedResurrect");
         object busted = bench.Peek("_busted")!;
+        // seed % 4 != 0, so the unfixed seeded pick lands on a variant and not on the canonical line.
+        busted.GetType().GetProperty("Seed")!.SetValue(busted, 1UL);
+        bench.CallOnTheDispatcher("BustedResurrect");
         string flash = (string)busted.GetType().GetProperty("RebirthGlitch")!.GetValue(busted)!;
         Assert.Contains(flash, NebulaLore.ById("rebirth-glitch")!.Lore, StringComparison.Ordinal);
     }
@@ -80,6 +82,27 @@ public sealed class TheDeathCardKeepsItsWordsTests
         bench.Poke("_parrotSquawk", "WE'RE GOING TO CRASH — Selene Gate!");
         bench.CallOnTheDispatcher("BustedResurrect");
         Assert.Null(bench.Peek("_parrotSquawk"));
+    }
+
+    [Fact]
+    public async Task TheMuteKeyAndTheMapPeekStillWorkUnderTheDeathCard()
+    {
+        using DeskBench bench = await DeskBench.BootAsync(AnImpact);
+        await bench.RenderAsync();
+        Assert.NotNull(bench.Peek("_busted"));
+        bench.Poke("_audioArmed", true);
+        bool audioBefore = (bool)bench.Peek("_audioEnabled")!;
+        bool peekBefore = (bool)bench.Peek("_peekMap")!;
+
+        // ToggleAudio flips the field and then calls the JS interop, which throws in a test host: the field
+        // flipping is the proof the key got past the death-card guard.
+        try { bench.CallOnTheDispatcher("OnKeyDown", new KeyboardEventArgs { Key = "m" }); }
+        catch (System.Reflection.TargetInvocationException) { }
+        Assert.NotEqual(audioBefore, (bool)bench.Peek("_audioEnabled")!);
+
+        try { bench.CallOnTheDispatcher("OnKeyDown", new KeyboardEventArgs { Key = "`" }); }
+        catch (System.Reflection.TargetInvocationException) { }
+        Assert.NotEqual(peekBefore, (bool)bench.Peek("_peekMap")!);
     }
 
     [Fact]

@@ -177,14 +177,6 @@ public partial class Map
             return;
         }
 
-        // R1-F61 · A death card owns the keyboard. Enter and Escape (the card's own YES and CANCEL) were
-        // handled above; the flight keys below (pulse burns, warp, plot) must not reach the sim while the
-        // BUSTED modal is up, or the corpse keeps spending the dead captain's fuel under the card.
-        if (_busted is not null)
-        {
-            return;
-        }
-
         // Owner request: ` peeks at the map — hide every panel to read the sky, tap again to restore. Works
         // on any desk. #1038 · this key TOGGLES and is the only one that does; the 👁 button (still lit on
         // the tab bar, .peek-keep) and Escape (top of the cancel chain above) are the two ways OUT, so no
@@ -200,6 +192,14 @@ public partial class Map
         if (e.Key is "m" or "M")
         {
             ToggleAudio();
+            return;
+        }
+
+        // R1-F61 · A death card owns the keyboard. Enter and Escape (the card's own YES and CANCEL) were
+        // handled above, and the backtick peek and M mute stay live (the death card plays the game-over music and #1038 lets the peek work over it); the flight keys below (pulse burns, warp, plot) must not reach the sim while the
+        // BUSTED modal is up, or the corpse keeps spending the dead captain's fuel under the card.
+        if (_busted is not null)
+        {
             return;
         }
 
