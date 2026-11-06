@@ -78,6 +78,22 @@ public static partial class SuitAir
             "🫁 You can hear yourself in the helmet. Frightened, hurt, and moving — the suit is spending air " +
             "faster than the walk home is getting shorter. Stand still if you can bear to.";
 
+        /// <summary>R1-F56 · The same diagnosis, naming only the causes that are true. The fixed line said
+        /// "frightened, hurt" to an unmarked captain whose condition row read <i>unmarked</i>; the distress
+        /// has two terms (fear, injury) and the words follow whichever is actually raising the rate. Words
+        /// are the fixed line's own, one clause dropped.</summary>
+        /// <param name="nerve">The nerve gauge, 0..100 (100 = steady hands, no fear term).</param>
+        /// <param name="hitsTaken">Blows landed (0 = unmarked).</param>
+        public static string HardBreathingLineFor(double nerve, int hitsTaken)
+        {
+            bool frightened = nerve < 100.0;
+            bool hurt = hitsTaken > 0;
+            string cause = frightened && hurt ? "Frightened, hurt, and moving"
+                : hurt ? "Hurt and moving"
+                : "Frightened and moving";
+            return HardBreathingLine.Replace("Frightened, hurt, and moving", cause);
+        }
+
         /// <summary>Above this the breathing itself is worth remarking on.</summary>
         public const double WorthMentioning = 1.9;
     }

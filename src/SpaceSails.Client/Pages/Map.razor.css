@@ -640,6 +640,13 @@
     z-index: calc(var(--z-desks-popups) + 55);
 }
 
+/* R1-F65 · a card is open: the toast moves to the foot of the glass so it never sits on the card's title and
+   art. Same z band as the plain toast (OverlayBands.DeckPulseToast), so the sync law is untouched. */
+.deck-pulse-toast.deck-pulse-toast-low {
+    top: auto;
+    bottom: 1.5rem;
+}
+
 .deck-bank-notice {
     color: #9fe6b0;
     line-height: 1.35;

@@ -244,9 +244,11 @@ public partial class Map
             string who = gig.Flavor == ExpeditionFlavor.Science ? "science team" : "survey crew";
             ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. The {who} scrambles down the tube and fans out across the site. The ship holds the course-match above — watch the away clock. Walk them through it.");
         }
-        else if (SiteRoute.IsStation(stop.Body.Id))
+        else if (SiteRoute.IsStation(stop.Body.Id) || SiteRoute.IsWreck(stop.Body.Id))
         {
-            ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}.");
+            // R1-F26 · A dead hull has no regolith to probe, no kiosk and nothing to dig: the receipt is the
+            // bare mating (plus the sentry-bot hint, which a derelict's cannon makes just as true).
+            ShowPulseMessage(MatedToAHullLine(stop.Body.Name, SiteRoute.IsWreck(stop.Body.Id) ? bots : ""));
         }
         else
         {
@@ -394,4 +396,9 @@ public partial class Map
     {
         _groundLessonOpen = false;
     }
+
+    /// <summary>R1-F26 · The mating receipt for a hull (a derelict, a station): no ground to probe, no kiosk, nothing
+    /// to dig. <paramref name="bots"/> is the optional sentry-bot hint, already phrased.</summary>
+    internal static string MatedToAHullLine(string bodyName, string bots) =>
+        $"🛸 Shuttle mated to {bodyName}.{bots}";
 }
