@@ -29,6 +29,23 @@ public sealed class TheCardsEscAndTheWakeCardTailTests
     }
 
     [Fact]
+    public async Task EscapeClosesTheHavenCarPanelAndLeavesTheDeckWhereItIs()
+    {
+        // U10-F04 · Esc over the CAR PANEL used to fall through to the helm: the desk switched to Nav and
+        // the panel stayed up behind it.
+        using DeskBench bench = await DeskBench.BootAsync("/map?dock=the-tilt&ashore=1&havenfloor=-1");
+        bench.Poke("_audioArmed", true);
+        DeskBench.Painted painted = await bench.RenderAsync();
+        ulong keyboard = DeskBench.TheKeyboard(painted);
+        bench.Poke("_showLiftPanel", true);
+        await bench.RenderAsync();
+        object desk = bench.Field("_activeDesk")!;
+        await bench.TypeAsync(keyboard, "Escape");
+        Assert.Equal(false, bench.Field("_showLiftPanel"));
+        Assert.Equal(desk, bench.Field("_activeDesk"));
+    }
+
+    [Fact]
     public async Task EscapeIsIlseVargasPass()
     {
         using DeskBench bench = await DeskBench.BootAsync(Docked);
