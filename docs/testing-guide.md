@@ -1101,7 +1101,7 @@ place out of four, and nothing that reaches an impact at all.
 
 ```
 /map?death=impact                                  the ship into a world at speed
-/map?death=collector                               CAUGHT — the demand card, then SUBMIT / BRIBE / RESIST
+/map?death=collector                               CAUGHT — the demand card, then SUBMIT / BRIBE / RESIST (staged at heat 3: RESIST is the Bolivia, U08-F07)
 /map?death=collector&dock=selene-gate              …the same catch, from a berth with muscle in reach (#777)
 /map?death=suffocated&dock=the-tilt&land=1         the tank runs dry on the regolith
 /map?death=reevers&dock=the-tilt&land=1            the Old Ones take you on the ground
