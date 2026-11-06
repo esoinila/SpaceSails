@@ -271,6 +271,10 @@ public partial class Map
         ArrivedAt(_dockedHavenId);
         TheDeskIsOpenAgainBehindYou();   // #319 slice 2 · "one visit" ends at the clamp
         _dockedHavenId = null;
+        // #1405 · a pass projected while clamped is the station's own track; it must not fire a fresh
+        // ROCKS AHEAD on the first frame after cast-off.
+        _closestPass = null;
+        _passDirty = true;
         _berthSlot = null;      // #525 · a ship that is not tied up is not in a slot
         ShowPulseMessage($"Clamps released — pushing off from {name}. 🚀");
         RequestVaultSave(); // #225: undock resumes at the nearest haven; persist the new resume basis

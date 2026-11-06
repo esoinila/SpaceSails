@@ -19,7 +19,7 @@ public sealed class TheStationToldOnceCadenceTests
     private const string Url = "/map?dock=the-tilt&station=1&land=1";
 
     private static IEnumerable<string> Log(DeskBench bench) =>
-        ((IEnumerable<(double SimTime, string Text)>)bench.Peek("_autopilotEvents")!).Select(e => e.Text);
+        ((IEnumerable<(double SimTime, string Text, bool Story)>)bench.Peek("_autopilotEvents")!).Select(e => e.Text);
 
     private static async Task<DeskBench> BootAsync()
     {

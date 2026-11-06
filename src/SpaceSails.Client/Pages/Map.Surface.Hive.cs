@@ -161,6 +161,9 @@ public partial class Map
     /// the sentence the panel has always had: <i>You are at CONCOURSE.</i></para>
     private string LiftPanelLine() =>
         TheStationHasFloors ? ""
+        // R1-F12 · …and the head office's cage has no band to be confined to: it lists the whole building.
+        : _liftCar == UndergroundComplex.ShaftKind.Cage && _surface is { } hqEx
+            && UndergroundComplex.IsHeadOffice(hqEx.Stop.Body.Id) ? ""
         : _liftCar == UndergroundComplex.ShaftKind.Cage
             ? "This car serves its own band and no further."
             : UndergroundComplex.ServiceCarPanelLine;

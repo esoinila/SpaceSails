@@ -98,7 +98,7 @@ public sealed class TheRepPitchesAndWithdrawsTests
         (IReadOnlyDictionary<(StoryBeats.Beat, string?), double>)Field(map, "_beatsSpoken")!;
 
     private static IReadOnlyList<string> Ledger(Pages.Map map) =>
-        [.. ((IEnumerable<(double SimTime, string Text)>)Field(map, "_autopilotEvents")!).Select(e => e.Text)];
+        [.. ((IEnumerable<(double SimTime, string Text, bool Story)>)Field(map, "_autopilotEvents")!).Select(e => e.Text)];
 
     private static int TimesFiled(Pages.Map map, StoryBeats.Beat beat) =>
         Filed(map).Keys.Count(k => k.Beat == beat);

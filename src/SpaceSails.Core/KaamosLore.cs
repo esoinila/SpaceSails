@@ -109,6 +109,13 @@ public static partial class KaamosLore
     /// no RNG: the same pieces exist in every universe, and only WHICH the player has ASSEMBLED differs
     /// (that lives per-thread in <see cref="KaamosProgress"/>). Five intel shards from five systems, and
     /// one capstone key.</summary>
+    /// <summary>The two sentences of the plaque shard that the plaque card says beside the plate: the card
+    /// already says the reader read the plate, so it shows only these. The shard's Lore ends with this very
+    /// const, so the ledger keeps the full text byte for byte.</summary>
+    public const string ListedBerthSaidBeside =
+        "A berth kept open is a berth someone expects a ship to fill. The name means the polar night. " +
+        "Nobody at the Exchange will say whose.";
+
     public static readonly IReadOnlyList<KaamosFragment> Fragments =
     [
         // ── Intel shards — the mystery, gathered. Each is one existing system's piece. ──
@@ -116,8 +123,7 @@ public static partial class KaamosLore
         new("listed-berth", "The listed berth", KaamosSource.Plaque, false,
             "Ringside's dedication says it plainly, if you read the whole plate: her first commission was " +
             "the KAAMOS supply run out to the ice moon, and the berth for it is still on the board, still " +
-            "listed, and nobody has filed for it in a long time. A berth kept open is a berth someone " +
-            "expects a ship to fill. The name means the polar night. Nobody at the Exchange will say whose.",
+            "listed, and nobody has filed for it in a long time. " + ListedBerthSaidBeside,
             "the plate's still-listed berth"),
 
         new("cold-pod", "The cold supply pod", KaamosSource.DerelictPod, false,

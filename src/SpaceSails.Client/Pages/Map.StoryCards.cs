@@ -283,7 +283,8 @@ public sealed partial class Map
 
         // The log keeps the words even when the picture has gone, because a card is the only place some of these
         // sentences are ever written down.
-        LogAutopilotEvent($"{StoryBeats.Title(beat, subject)} — {StoryBeats.Caption(beat, subject)}");
+        string storyLine = $"{StoryBeats.Title(beat, subject)} — {StoryBeats.Caption(beat, subject)}";
+        LogAutopilotEvent(storyLine, story: true);
         StateHasChanged();
     }
 

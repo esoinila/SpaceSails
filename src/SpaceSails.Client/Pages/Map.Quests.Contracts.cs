@@ -187,6 +187,13 @@ public partial class Map
             return shipmate.Name;
         }
 
+        // R1-F66 · a keep's authored name carries a quoted nickname (Cassini “Cass” Roe); title-casing
+        // would lower it to “cass”. An id is never written with quote marks, so quotes mean "authored".
+        if (giver.IndexOfAny(['“', '”', '"']) >= 0)
+        {
+            return giver;
+        }
+
         return string.Join(' ', giver
             .Split(' ', StringSplitOptions.RemoveEmptyEntries)
             .Select(TitleWord));
@@ -415,12 +422,9 @@ public partial class Map
         _ephemeris is not null
         && q.Id == KaamosLore.SupplyRunQuestId
         && dest.Id == KaamosLore.IceMoonBodyId
-        && (_ship.Position - _ephemeris.Position(dest.Id, SimTime)).Length <= CyclerWindow.ArrivalOffsetMeters * 1.5
-        && (_ship.Velocity - TransferMath.BodyVelocity(_ephemeris, dest.Id, SimTime)).Length <= AlongsideMaxRelativeSpeed;
-
-    /// <summary>"Alongside" means keeping station, not flying by: the cycler hands her over at about 0.5 km/s
-    /// relative to the ice; a hyperbolic flyby through the same sphere must not settle the run.</summary>
-    private const double AlongsideMaxRelativeSpeed = 1500.0;
+        && CyclerWindow.IsAlongside(
+            (_ship.Position - _ephemeris.Position(dest.Id, SimTime)).Length,
+            (_ship.Velocity - TransferMath.BodyVelocity(_ephemeris, dest.Id, SimTime)).Length);
 
     // #175: settle any moon-haven cargo run the instant the ship is parked in its orbit. Runs on every
     // insertion (manual + autopilot) AND once per tick from UpdateEncounters, so a captain who was

@@ -107,7 +107,11 @@ public partial class Map
         // its own question directly, which is the habit the whole occurrence list is made of. Routed through
         // the one function that knows which door you are on the far side of, so the rule is enforced on
         // something a caller cannot decline to use. Identical arithmetic off a wreck; unreachable on one.
-        bool onRegolith = _surface is not null && !OnADeadHull
+        // R1-F48 · …AND IT IS NOT REGOLITH BELOW THE GROUND. A vacuum floor of a building (B23 of the head
+        // office, a suit-work floor of the Hive) is inside the surface's coordinate envelope too, and "the flat
+        // black horizon, your own long shadow" was spoken four hundred metres under it. Underground, only the
+        // ground's own pressure fact (above) or the sealed-site pool may speak.
+        bool onRegolith = _surface is { Floor: >= 0 } && !OnADeadHull
             && !AwayTeamSide.BackAtTheShuttle(OnWreck, _avatarX, _avatarY, DeckPlan.AvatarRadius, StationDock);
         // #867 · …AND `onRegolith` IS TRUE IN A PARK. A floor of the Hive is laid inside the surface's own
         // coordinate envelope, so a lit, planted, pressurised gallery two hundred deck units down is below

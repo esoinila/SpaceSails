@@ -93,6 +93,13 @@ public sealed class TheLiftPanelTests
         // the surface, plus at most ONE gated button for the shaft below.
         foreach (string body in Bodies)
         {
+            // R1-F12/F14 (#1406) · the head office is the one building with no bands and no gates; its law is
+            // pinned in TheHeadOfficeIsNotABranchOfficeTests.
+            if (UndergroundComplex.IsHeadOffice(body))
+            {
+                continue;
+            }
+
             foreach (int level in UndergroundComplex.FloorsOf(body))
             {
                 int band = UndergroundComplex.BandOf(level);

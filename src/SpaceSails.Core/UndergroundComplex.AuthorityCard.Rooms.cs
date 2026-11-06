@@ -74,7 +74,8 @@ public static partial class UndergroundComplex
         // #677 · The next shaft that EXISTS, not the next band number. Under the band nobody listed there is
         // a band with nothing in it, and a card for a hole nobody dug is exactly the lie #613 was filed
         // about — a countersigned authority for a floor the building cannot open onto.
-        return NextShaftBelow(bodyId, level) is { } next ? new AuthorityCard(bodyId, next) : null;
+        // R1-F14 · …and the head office has no gate to authorise at all (#411).
+        return !IsHeadOffice(bodyId) && NextShaftBelow(bodyId, level) is { } next ? new AuthorityCard(bodyId, next) : null;
     }
 
     /// <summary>What is printed on the card. Institutional, expensive, and explains nothing — the register
@@ -107,7 +108,9 @@ public static partial class UndergroundComplex
     {
         ArgumentNullException.ThrowIfNull(bodyId);
 
-        if (minted is not { } card)
+        // R1-F14 · THE HEAD OFFICE HAS NO GATES TO PAPER, so a card is never described in it: the owners-stopped-
+        // paying sentence is a branch office's grammar. Whatever reaches here for HQ reads as an empty rack.
+        if (minted is not { } card || IsHeadOffice(bodyId))
         {
             // Nothing was minted, so nothing is described. The room still pays what an ordinary room pays —
             // a look at what somebody did on their way out — and it never once claims you are holding a card.

@@ -3190,7 +3190,10 @@
                            what it reads. It names no card and hints at no wallet — it says what a lock is. *@
                         <text>
                             Offering it to <strong>@at.Label</strong>.
-                            @if (SpaceSails.Core.SatchelTry.IsDoor(at.Target))
+                            @* R1-F50 · ONE SENTENCE PER LOCK. Only a shaft gate has a reader; a room's hasp
+                               and a sealed way are mechanical, and the answer to a card held up to them says
+                               so. A prompt claiming they read authorities contradicted that answer. *@
+                            @if (at.Target == SpaceSails.Core.SatchelTry.Target.ShaftGate)
                             {
                                 <text>It reads authorities and nothing else — a countersigned card, or nothing at all.</text>
                             }

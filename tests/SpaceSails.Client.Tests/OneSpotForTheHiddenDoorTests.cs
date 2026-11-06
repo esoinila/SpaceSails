@@ -54,7 +54,9 @@ public sealed class OneSpotForTheHiddenDoorTests
     private static readonly string[] Bodies =
     [
         "luna", "phobos", "europa", "ganymede", "callisto",
-        "titan", "enceladus", "miranda", "triton", "the-clinker",
+        // R1-F17 (#1406) · "enceladus" is the head office's ice and is not swept: its shed has no hidden door
+        // console at all (TheHeadOfficeIsNotTheHivesSecretLabTests pins that), so there is no spot to agree on.
+        "titan", "miranda", "triton", "the-clinker",
         "secret-lab-site", "secret-lab-site-unlisted",
     ];
 

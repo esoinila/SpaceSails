@@ -75,6 +75,10 @@ public sealed partial class DeckView
     public const string DockedKeyHints =
         "docked ⚓ walk up through the airlock to go ashore ∙ WASD — move ∙ E — interact ∙ Q — helm";
 
+    /// <summary>R1-F75 · The keybar once the captain is past the tube and ashore in the station room: the
+    /// "walk up through the airlock" sentence is about a door he has already walked through.</summary>
+    public const string AshoreKeyHints = "WASD / arrows — move ∙ E — interact ∙ Q — helm";
+
     /// <summary>#440 · The deck's own keybar under way. See <see cref="DockedKeyHints"/> for why it is a
     /// const.</summary>
     public const string DeckKeyHints = "WASD / arrows — move ∙ E — interact ∙ Q — back to the helm";
