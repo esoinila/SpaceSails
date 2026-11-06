@@ -65,7 +65,7 @@ public partial class Map
                 case InspectionTeam.Awareness.Challenging when seesCaptain:
                     if (InspectionTeam.ChallengeExpired(member))
                     {
-                        ChallengeRunsOut();
+                        ChallengeRunsOut(s);
                         return;   // the captain is being dealt with; nothing else this frame matters
                     }
                     FaceToward(s, _avatarX, _avatarY);   // the lamp does not wander during a challenge

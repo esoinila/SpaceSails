@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using SpaceSails.Core;
 using Xunit;
@@ -181,6 +181,33 @@ public sealed class TheShuttleCanCatchHerTests
         Assert.NotEqual(
             ShuttleLink.RefusalLine(ShuttleLink.Refusal.BeyondRange),
             ShuttleLink.RefusalLine(ShuttleLink.Refusal.TooFastToCatch));
+    }
+
+    /// <summary>
+    /// #1380 · ONE VERDICT: the ring goes GREY where the speed term shuts the link. The ring used to read the
+    /// gap alone, so a hull parting company at four times the catch speed drew teal (calm) while the boat,
+    /// asked the same question, refused ("parting company faster than the boat can fly"). The ring and the
+    /// airlock now read <see cref="ShuttleLink.AskTheBoat"/>, speed included. The control is the same range at
+    /// a speed the boat CAN match, which must stay on its calm rung.
+    /// <para>Proven RED by dropping the TooFastToCatch term from <c>TheShuttleLegsRing</c>: the first
+    /// assertion reads rung 0 (teal) instead of 3.</para>
+    /// </summary>
+    [Fact]
+    public async Task AndTheRingGoesGreyWhereTheSpeedShutsTheLink()
+    {
+        DeskBench bench = await AshoreAsync();
+
+        PutHer(bench, hops: 0.15, catches: 4.0, undock: true);
+        Assert.Equal(ShuttleLink.Refusal.TooFastToCatch, AskTheBoat(bench));
+        (double RangeFraction, int Rung)? shut = TheRing(bench);
+        Assert.NotNull(shut);
+        Assert.Equal(3, shut!.Value.Rung);
+
+        PutHer(bench, hops: 0.15, catches: 0.05, undock: true);
+        Assert.Equal(ShuttleLink.Refusal.None, AskTheBoat(bench));
+        (double RangeFraction, int Rung)? open = TheRing(bench);
+        Assert.NotNull(open);
+        Assert.Equal(0, open!.Value.Rung);
     }
 
     [Fact]

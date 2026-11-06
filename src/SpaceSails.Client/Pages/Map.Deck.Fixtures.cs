@@ -160,6 +160,17 @@ public partial class Map
         }
     }
 
+    /// <summary>#1398/#1429 · The ride's card, its queue and what waits on its answer, dropped UNSAID: for a life or an
+    /// excursion that is being thrown away, where the close door's side effects (a guard stop answered, a held line
+    /// pulsed) would be written into the next one. The one hand-clear of the slot besides <see cref="CloseViewObject"/>.</summary>
+    private void DropTheRideCardUnsaid()
+    {
+        _viewObject = null;
+        _viewObjectWaiting.Clear();
+        _interview = null;
+        _pendingFind = null;
+    }
+
     /// <summary>#768 · The card comes down and the sayings it was standing on are freed. An arrival that
     /// raises one of these — the first descent (#585), the dead-air warning (#609), the gate's own face
     /// (#684) — holds its ranked lines rather than pulsing them under the backdrop, so this is the moment

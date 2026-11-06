@@ -223,6 +223,17 @@ public static partial class DeathNarration
         "You were seen {where}, told to stand still, and did not. They were never there to negotiate — they were there to make sure she stopped existing.",
     ];
 
+    /// <summary>#1397 · The same death for a captain who DID stand still. The challenge is a window to break the
+    /// lamp's line of sight; as shipped, standing still does not stop the shot, and whether it ever should is the
+    /// owner's open call. The card says so instead of telling a motionless man he did not. The first two lines say nothing about movement and are
+    /// copies of the ordinary pool's; only the third differs.</summary>
+    private static readonly string[] InspectedLinesHeldStill =
+    [
+        "They found you aboard {body} and did what they were sent to do. Nobody raised their voice and nobody hurried.",
+        "The lamp stopped on you {where} and three seconds later the sweep went on down the corridor. You were a line in somebody's report.",
+        "You were seen {where}, told to stand still, and stood still. Three seconds, flat and bored, and the lamp did not move. They were never there to negotiate — they were there to make sure she stopped existing.",
+    ];
+
     private static readonly string[] VoidLines =
     [
         "Lost to the void — no beacon, no body, just the long dark and a brain-backup that remembers the cold.",

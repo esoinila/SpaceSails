@@ -197,6 +197,36 @@ public static class CollectorLanding
     public static bool IsAGroundCrew(string? hunterId) =>
         hunterId is not null && hunterId.StartsWith(GroundHunterIdPrefix, StringComparison.Ordinal);
 
+    // ── #1392 · THE WRIT ON FOOT SPEAKS ON FOOT ─────────────────────────────────────────────────────
+    //
+    // The demand panel is shared by the two catches (a hull grappled in space, a captain taken by the carry
+    // loop on regolith), and it wore the ship's voice for both: grapples across a window, "heave to", and a
+    // "Fly on" button for a captain with no ship under him. The three answers are the same writ and stay; the
+    // words around them are the encounter id's, and the id is the one fact that tells the two apart.
+
+    /// <summary>The backdrop caption of the demand when it is a crew on foot: the crew, a hand on the carry
+    /// loop, nobody hurrying (the ground crew's own closing line says the same of them walking up).</summary>
+    public static string WritCaptionOnFoot(string callsign) =>
+        $"The crew stand spread wide on the regolith and one gloved hand is on your carry loop. {callsign} is painted small " +
+        "on the boat behind them. Nobody is hurrying. Your tank is doing that for them.";
+
+    /// <summary>The spoken demand when it is a crew on foot (no one is told to heave to: the captain has no
+    /// ship to heave). The stakes clause is the panel's own and is handed in.</summary>
+    public static string WritQuoteOnFoot(string stakes) =>
+        $"\"Stay put. We're collecting. This goes easy or it goes {stakes} — your call, captain.\"";
+
+    /// <summary>The face of the button that ends a survived writ: on foot there is no "Fly on".</summary>
+    /// <summary>The demand panel's header on foot: nothing is grappled, a hand is on the carry loop.</summary>
+    public static string WritHeaderOnFoot(string callsign) => $"⛓ CAUGHT — {callsign} has you by the carry loop";
+
+    /// <summary>The backdrop of the demand on foot: the boat that came down (the arrival plate's own painting).</summary>
+    public const string WritArtOnFoot = "art/collector-boat-down.jpg";
+
+    public const string CloseFaceOnFoot = "…go on";
+
+    /// <summary>The face of the button that ends a survived writ, for the encounter id the panel holds.</summary>
+    public static string CloseFace(string? hunterId) => IsAGroundCrew(hunterId) ? CloseFaceOnFoot : "Fly on";
+
     /// <summary>#731 · How far off their own boat the crew stand when they get out of it, in deck units — and
     /// the same distance they walk back to when they are finished. One number, so the place they came from
     /// and the place they queue for cannot be two different spots.</summary>
