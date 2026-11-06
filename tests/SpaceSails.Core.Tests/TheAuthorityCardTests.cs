@@ -66,6 +66,13 @@ public sealed class TheAuthorityCardTests
         // captain gets into the unlisted band at all.
         foreach (string body in Bodies)
         {
+            // R1-F12/F14 (#1406) · the head office is the one building with no bands and no gates; its law is
+            // pinned in TheHeadOfficeIsNotABranchOfficeTests.
+            if (UndergroundComplex.IsHeadOffice(body))
+            {
+                continue;
+            }
+
             int trueBottom = UndergroundComplex.TrueDepthOf(body);
             int lastBand = UndergroundComplex.BandOf(trueBottom);
 
@@ -272,6 +279,13 @@ public sealed class TheAuthorityCardTests
         // is the bug this issue was filed about.
         foreach (string body in Bodies)
         {
+            // R1-F12/F14 (#1406) · the head office is the one building with no bands and no gates; its law is
+            // pinned in TheHeadOfficeIsNotABranchOfficeTests.
+            if (UndergroundComplex.IsHeadOffice(body))
+            {
+                continue;
+            }
+
             var issued = new HashSet<int>();
             foreach (int level in UndergroundComplex.FloorsOf(body))
             {
