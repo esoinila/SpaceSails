@@ -244,6 +244,12 @@ public partial class Map
             string who = gig.Flavor == ExpeditionFlavor.Science ? "science team" : "survey crew";
             ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name}. The {who} scrambles down the tube and fans out across the site. The ship holds the course-match above — watch the away clock. Walk them through it.");
         }
+        else if (isDeflectionRock && _deflection is { } rockPlan)
+        {
+            // U03-F07 · The rock is a JOB SITE, not a beach: no chest to bury, no kiosk, no ground to probe. The
+            // receipt is the plan's own blurb and the one place to go.
+            ShowPulseMessage($"🛸 Shuttle mated to {stop.Body.Name} — {rockPlan.Type.Label}. {rockPlan.Type.BriefLine} The DRILL POINT is on the HUD: walk to it, [E] to bore, and FIRE before T-0.");
+        }
         else if (SiteRoute.IsStation(stop.Body.Id) || SiteRoute.IsWreck(stop.Body.Id))
         {
             // R1-F26 · A dead hull has no regolith to probe, no kiosk and nothing to dig: the receipt is the

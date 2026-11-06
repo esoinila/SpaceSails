@@ -26,3 +26,13 @@
     line-height: 1.35;
     margin-bottom: 0.4rem;
 }
+
+/* U03-F17 - CLOSE AND SHOW ME SHARE ONE ROW, NEITHER OVER THE OTHER. The celebration's sticky foot pins the LAST
+   button and casts a 12rem scrim from it, because the payday's foot is one button under a scrolling card. Here the
+   last button is `show me` and `Close` sits BEFORE it, so the scrim was painted over Close on the card's first
+   frame. This card is a headline and a bird: it never scrolls, so it needs no pinned foot, and its two buttons
+   simply flow side by side. */
+::deep .mission-moment > button:last-child {
+    position: static;
+    box-shadow: none;
+}

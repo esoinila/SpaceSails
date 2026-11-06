@@ -67,7 +67,8 @@
                                 @if (_aopen)
                                 {
                                     <div class="map-plan-step-edit">
-                                        @if (_ac is { } _ace)
+                                        @* U03-F14: an INVALID verdict is already printed under the row's line; the open editor repeats only a valid one. *@
+                                        @if (_ac is { Valid: true } _ace)
                                         {
                                             <div class="small mb-1 @(_ace.Valid ? "text-success" : "text-danger")">@ArrivalStepRule.Verdict(_ace)</div>
                                         }

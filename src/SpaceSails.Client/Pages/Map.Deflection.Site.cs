@@ -20,7 +20,7 @@ public partial class Map
     private void ResolveDeflectionBeat(SurfaceExcursion ex, DeflectionPlan plan, int ordinal)
     {
         ulong seed = DeflectionGig.Seed(plan.AcceptedSimTime, plan.RockBodyId, ordinal);
-        DeflectionComplication c = DeflectionGig.Roll(seed, plan.Type, ordinal);
+        DeflectionComplication c = DeflectionGig.Roll(seed, plan.Type, ordinal, ex.ChargeArmed ? 0.0 : ex.DrillProgress);
         RaiseDiceEvent(c.Event); // the cast dice, shown (the house homage)
 
         if (c.NerveHit > 0)
@@ -192,7 +192,7 @@ public partial class Map
         int severity = clock switch { ImpactClock.Counting => 1, _ => 2 };
         string word = ex.ChargeArmed ? "CHARGE ARMED — firing solution aligning"
             : ex.DrillProgress > 0 ? $"drilling {(int)(ex.DrillProgress * 100)}%"
-            : "land and drill";
+            : DrillPointPointer();
         return ($"⏱ IMPACT — {plan.TargetName.ToUpperInvariant()} — T-{FormatClock(left)} · {word}", severity);
     }
 
@@ -286,6 +286,29 @@ public partial class Map
         return spot;
     }
 
+    // Where the one DRILL POINT console stands on the rock's open ground (the compose below and the HUD's pointer
+    // read the same square).
+    private static (float X, float Y) DrillPointSpot()
+    {
+        SurfaceLayout.Field field = MoonSurface.ExpeditionField();
+        return ((float)(field.AnchorX + 12.0), (float)((field.LandingBandY + field.BottomY) / 2.0)); // open ground below the landing band
+    }
+
+    // U03-F07 · THE DRILL POINT ON THE HUD. The line used to say "land and drill" and nothing about WHERE: a tester
+    // never found the console before the clock ran out. It now names the job and gives the bearing from where the
+    // captain stands, in the deck's own units (the way the shelter is pointed at).
+    private string DrillPointPointer()
+    {
+        (float x, float y) = DrillPointSpot();
+        double dx = x - _avatarX, dy = y - _avatarY;
+        double du = Math.Sqrt((dx * dx) + (dy * dy));
+        // The deck is drawn with y DOWN, so +y is south and +x is east.
+        string compass = Math.Abs(dx) > Math.Abs(dy) * 2.0 ? (dx > 0 ? "E" : "W")
+            : Math.Abs(dy) > Math.Abs(dx) * 2.0 ? (dy > 0 ? "S" : "N")
+            : (dy > 0 ? "S" : "N") + (dx > 0 ? "E" : "W");
+        return $"🛠 DRILL POINT {(int)Math.Round(du)} du {compass} — drill the charge, then FIRE before T-0";
+    }
+
     // ── The rock's ground: one marked DRILL POINT on open regolith (relabels to FIRE THE CHARGE once armed).
     //    Composed onto the freshly-built base like the expedition site (RebuildSurfaceDeck). ──
     private void ComposeDeflectionSite(SurfaceExcursion ex)
@@ -294,9 +317,7 @@ public partial class Map
         {
             return; // the bore is spent — no console
         }
-        SurfaceLayout.Field field = MoonSurface.ExpeditionField();
-        float x = (float)(field.AnchorX + 12.0);
-        float y = (float)((field.LandingBandY + field.BottomY) / 2.0); // open ground below the landing band
+        (float x, float y) = DrillPointSpot();
         string label = ex.ChargeArmed ? "🧨 FIRE THE CHARGE" : "🛠 DRILL POINT";
         _deckPlan.AppendRegion(new DeckPlan.DeckRegion(
             [], [new DeckPlan.ConsoleSpot(DeckPlan.ConsoleKind.DrillPoint, x, y, label)], [], []));

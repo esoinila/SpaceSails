@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components;
@@ -89,6 +89,15 @@ public partial class Map
         // nothing is flying the ship there, so "ETA 6 d" would be the very lie the owner caught.
         if (AutopilotStoodDown || _destinationBodyId is null || _destinationPass is not { } dp
             || dp.BodyId != _destinationBodyId || dp.SimTime <= SimTime)
+        {
+            return null;
+        }
+
+        // U03-F03 · the pass is only an arrival when it is INSIDE capture range — the same predicate the
+        // navigation-target panel prints its ✓/✗ with. A coast that misses by 8.9 AU quoted "ETA 29 d" (and,
+        // with the plot open, "ETA 120 d": the look-ahead window's edge, which is merely where the path
+        // ends), a time of arrival at nothing. Missing the capture ring says no ETA at all.
+        if (DestinationPassInfo(dp) is { InRange: false })
         {
             return null;
         }

@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Microsoft.AspNetCore.Components;
 using SpaceSails.Core;
 
@@ -106,6 +106,16 @@ public partial class Map
                 continue;
             }
 
+            // U03-F06 — AND NOT A BODY THE COURSE NEVER COMES NEAR. Every body has a "closest pass" on a ribbon
+            // 35 AU long, so with the scrub at zero the nearest-in-time one could be Triton, offered to a ship
+            // ten million km from Jupiter. The button names a place the ship can really be brought to: a pass
+            // within a few times the arrival's own gate (a near miss is still worth a ✗ row that says by how
+            // much); a pass farther than that is no candidate, and with none the button is simply absent.
+            if (!PassIsWithinReachOfAnArrival(pass, body, kind))
+            {
+                continue;
+            }
+
             double delta = Math.Abs(pass.SimTime - scrub);
             if (delta < bestDelta)
             {
@@ -127,6 +137,16 @@ public partial class Map
         }
 
         return best;
+    }
+
+    /// <summary>U03-F06 · How far past its gate a pass may sit and still be OFFERED as an arrival: a near miss
+    /// is worth a ✗ row that reads "by how much"; Triton from Jupiter space is not a near miss of anything.</summary>
+    internal const double ArrivalOfferReachMargin = 10.0;
+
+    private bool PassIsWithinReachOfAnArrival(ClosestApproach.Pass pass, CelestialBody body, ArrivalStepRule.ArrivalKind kind)
+    {
+        double hill = BodyById(body.ParentId) is { } parent ? OrbitRule.HillRadius(body, parent.Mu) : 0;
+        return pass.Distance <= ArrivalStepRule.DistanceLimit(kind, hill) * ArrivalOfferReachMargin;
     }
 
     /// <summary>Can this body end a plan in this way? A dock haven takes the ⚓ (DockableHavens is the one
