@@ -149,9 +149,10 @@ public partial class Map
         // too many — and the capstone used to re-read as a fixed list of four shards whether or not this
         // captain had found them. Neither can drift now: the ledger asks the arc.
         var lines = new List<string>();
-        foreach (KaamosFragment f in _kaamos.Assembled)
+        // R1-F62 polish (Fable ruling 2026-11-07) · intel first, the berth-code key last, wearing the double mark.
+        foreach (KaamosFragment f in _kaamos.Assembled.OrderBy(f => f.IsKey))
         {
-            lines.Add($"◆ {f.Title} — {KaamosLore.LedgerLoreFor(f, _kaamos)}");
+            lines.Add($"{(f.IsKey ? "❄❄" : "◆")} {f.Title} — {KaamosLore.LedgerLoreFor(f, _kaamos)}");
         }
 
         lines.Add(KaamosLore.LedgerProgressLine(_kaamos, SimTime, KaamosShipIsAlongsideTheIce(), KaamosRunFiled));

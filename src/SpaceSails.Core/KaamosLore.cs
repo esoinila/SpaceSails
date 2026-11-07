@@ -147,10 +147,11 @@ public static partial class KaamosLore
             "the holder's tick"),
 
         new("bought-coordinate", "The bought coordinate", KaamosSource.BoughtTip, false,
-            "A round on the counter buys the rest of it: a coordinate off the ephemeris where the charts " +
-            "just say ICE MOON — UNREACHABLE, and a date, and the word CYCLER. \"The window's real,\" they " +
-            "say, pocketing the coin. \"Comes round rare. A ship that's on the board when it opens can ride " +
-            "it in. Getting back out — that's not the part they sell tickets for.\" You have the where and the when.",
+            "A round on the counter buys the rest of it: a fix on the ice itself — a spot the charts carry as " +
+            "nothing at all, on a moon they name without comment — and a date, and the word CYCLER. \"The " +
+            "window's real,\" they say, pocketing the coin. \"Comes round rare. A ship that's on the board when " +
+            "it opens can ride it in. Getting back out — that's not the part they sell tickets for.\" You have " +
+            "the where and the when.",
             "the bought coordinate"),
 
         // ── The capstone. Not a rumor: the earned KEY. Surfaces only once the rest is in hand. Its prose
@@ -258,9 +259,10 @@ public static partial class KaamosLore
         ["cold-pod"] = new(
             "❄ THE POD THAT WAS HELD",
             "art/kaamos-cold-pod.jpg",
-            "Frost has split her along three seams and the dust has scoured her manifest plate down to " +
-            "nothing you can read. Every clamp seal is still latched exactly as it left the yard. She was " +
-            "not lost on the way out — she never went. Somebody stood here, in a shed, and set her down."),
+            "Frost has split her along three seams and the dust has scoured her hull plate down to nothing you " +
+            "can read. The manifest slug under the clamp is another matter — stamped, not painted — and legible " +
+            "to the last word. Every clamp seal is still latched exactly as it left the yard. She was not lost on " +
+            "the way out. She never went. Somebody stood here, in a shed, and set her down."),
 
         ["holders-tell"] = new(
             "🌑 THE ONE WHO KEPT THE BERTH",

@@ -71,16 +71,17 @@ public partial class Map
 
         if (minute.RaisesFlashback)
         {
-            // THE FIRST OPENING raises the existing Flashback plate with the pendant's subject (its caption is
-            // the canon first-opening text) and files the field-book line once. The satchel goes back in the
-            // pocket so the plate is SEEN — the pocket's layer sits above every card the world raises
-            // (#1027) — and the plate's caption IS the line, so the card has nothing to repeat.
+            // THE FIRST OPENING raises its own CARD (U09-F02, Fable ruling 2026-11-07: it rode the Flashback plate,
+            // which fades unread) with the pendant's subject (its caption is the canon first-opening text) and
+            // files the field-book line once. The satchel goes back in the pocket so the card is SEEN — the
+            // pocket's layer sits above every card the world raises (#1027) — and the card's caption IS the line,
+            // so the card has nothing to repeat. The player closes it with the ✕ or Esc.
             _pendantFirstOpened = true;
             FileNote(Keepsake.FieldBookLine, Keepsake.FieldBookGlyph);
             LogAutopilotEvent($"{Keepsake.FieldBookGlyph} {Keepsake.FieldBookLine}");
             _keepsakeSaid = null;
             CloseSatchel();
-            RaiseStoryBeat(StoryBeats.Beat.Flashback, piece.FlashbackSubject);
+            RaiseStoryBeat(StoryBeats.Beat.KeepsakeFirstOpening, piece.FlashbackSubject);
             return;
         }
 

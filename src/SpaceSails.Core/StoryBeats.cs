@@ -161,6 +161,13 @@ public static partial class StoryBeats
         /// it. <see cref="Cadence.EveryTime"/> for the binoculars' own reason — the coin is taken every time,
         /// so the card is owed every time.</summary>
         TheGalleryVendor,
+
+        /// <summary>U09-F02 (Fable ruling 2026-11-07) · <b>THE PENDANT'S FIRST OPENING, AS A CARD THE PLAYER CLOSES.</b>
+        /// It rode the Flashback PLATE, which fades on its own after seven seconds: the one beat in the keepsake
+        /// arc that is entirely words, and the words went away unread. The subject is the keepsake's
+        /// <c>FlashbackSubject</c>; the cadence is <see cref="Cadence.EveryTime"/> because the opening itself is
+        /// already spent once per run against <c>_pendantFirstOpened</c>.</summary>
+        KeepsakeFirstOpening,
     }
 
     /// <summary>How often a beat is allowed to speak.</summary>

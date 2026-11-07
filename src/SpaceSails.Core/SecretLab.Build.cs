@@ -37,6 +37,23 @@ public static partial class SecretLab
         double nearHiY = cy + half, nearLoY = cy - half;
         var walls = new List<SurfaceLayout.Wall>();
 
+        // R1-F103 (Fable ruling 2026-11-07) · THE HEAD OFFICE'S SHED IS A LIFT HEAD, NOT VANTAR'S LAB. The same
+        // geometry seeds both, but the building on the ice has nothing in it: one plain chamber, its four walls
+        // closed and the doorway left in the near face. No consoles, no doors, no deep chambers, no spine,
+        // benches or stasis boxes, no cache, no crawl. (The hidden-door console went in #1442; this is the room
+        // that console used to open, and the room is now just a room.)
+        if (UndergroundComplex.IsHeadOffice(bodyId))
+        {
+            walls.Add(new(cx, nearHiY, farCx, nearHiY, true));
+            walls.Add(new(cx, nearLoY, farCx, nearLoY, true));
+            walls.Add(new(cx, nearHiY, cx, cy + DoorwayHalf, true));
+            walls.Add(new(cx, nearLoY, cx, cy - DoorwayHalf, true));
+            walls.Add(new(farCx, nearHiY, farCx, nearLoY, true));
+            return new Region("THE LIFT HEAD", walls, [], [], 0,
+                System.Math.Min(cx, farCx), nearLoY, System.Math.Max(cx, farCx), nearHiY,
+                cx + (dir * (RoomDepth / 2.0)), cy, [], []);
+        }
+
         // Two side walls (hull — solid, opaque cover), running door → far along the extend axis.
         walls.Add(new(cx, nearHiY, farCx, nearHiY, true));
         walls.Add(new(cx, nearLoY, farCx, nearLoY, true));

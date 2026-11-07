@@ -119,6 +119,13 @@ never finds a secret lab can still assemble the shape.
 > quieter: "It still calls the manifest in. Every window, right on the tick. Same forty names. I
 > stopped reading who was speaking them." Then the glass is empty and the conversation with it.
 
+**`bought-coordinate` — The bought coordinate** (a round bought; the bar card wraps it in the credit receipt):
+> A round on the counter buys the rest of it: a fix on the ice itself — a spot the charts carry as
+> nothing at all, on a moon they name without comment — and a date, and the word CYCLER. "The
+> window's real," they say, pocketing the coin. "Comes round rare. A ship that's on the board when it
+> opens can ride it in. Getting back out — that's not the part they sell tickets for." You have the
+> where and the when.
+
 **`berth-code` — the capstone** (earned, never a rumor). Its authored text names **no** shard; the pieces
 it credits are assembled at read time from the ones this captain actually holds
 (`KaamosLore.KeyResolution` prepends *"The pieces answer each other — …"*):

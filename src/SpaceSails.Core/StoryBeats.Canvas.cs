@@ -85,6 +85,8 @@ public static partial class StoryBeats
         // focus. Fixed rather than keyed by the memory id on purpose — a memory is not a place, and painting
         // one canvas per ledger row is a pool nobody could ever finish.
         Beat.Flashback => "art/flashback.jpg",
+        // U09-F02 · the pendant's first opening wears the flashback's own bleached canvas (there is no pendant painting).
+        Beat.KeepsakeFirstOpening => "art/flashback.jpg",
         // #973 L5b · her portrait, which is also what her card draws. One painting for both women would be
         // one woman, so the canvas is chosen by the subject the beat was raised with.
         Beat.WalkIn => WalkIn.PortraitArt(subject),
@@ -134,6 +136,7 @@ public static partial class StoryBeats
         // #620 · …except the pendant's, which was never a page (Fable's canon addendum, verbatim). Same mark.
         Beat.Flashback when Keepsake.FlashbackTitle(subject) is { } pendantTitle => FilingLine.Mark + " " + pendantTitle,
         Beat.Flashback => FilingLine.Mark + " " + "A PAGE YOU DON'T REMEMBER WRITING",
+        Beat.KeepsakeFirstOpening => FilingLine.Mark + " " + Keepsake.FlashbackTitleText,
         // #973 L5b · the stamp names the door, because the door is what the room looked at.
         Beat.WalkIn => "🚪 THE ROOM LOOKS AT THE DOOR",
         Beat.BerthGreatPort => ArrivalTube.Title(ArrivalTube.Tier.GreatPort),
@@ -221,6 +224,9 @@ public static partial class StoryBeats
             // about a desk. Chosen by the subject, the way a shard's plate already is, and null for every
             // other memory — so the signing's sentence stays the sentence for all of them.
             Beat.Flashback when WalkIn.FlashbackCaption(subject) is { } sinceLine => sinceLine,
+
+            // U09-F02 · the pendant's first opening, now a card of its own: the canon words, verbatim.
+            Beat.KeepsakeFirstOpening => Keepsake.FirstOpeningLine,
 
             // #620 · …and the one whose subject is the pendant's face, whose caption is Fable's first-opening
             // canon, verbatim and entire, read off the keepsake's own type so the plate and the shelf cannot

@@ -31,7 +31,7 @@ public static partial class DevStarts
         // #649 · THE MONOLITH'S OWN GROUND, and it is not Miranda's. The word was reserved for the one
         // object, and the one object stands where every treasure map has said it does since #164.
         new("▮", "Phobos — THE MONOLITH",
-            "Off The Space Bar, straight down onto the Stickney rim: open regolith and the one thing in the system nobody can account for. The long walk, the card on [E], and whatever somebody left at its foot this window (#649).",
+            "Off the Roadstead, straight down onto the Stickney rim: open regolith and the one thing in the system nobody can account for. The long walk, the card on [E], and whatever somebody left at its foot this window (#649).",
             "/map?dock=the-space-bar&body=phobos&site=0&land=1"),
         new("👁", "Phobos — something is paying attention",
             "The monolith's ground with its attentive window forced open and the dwell cut to a couple of seconds. Walk down the shadow, stand at the stone, and wait. Rare by design — one visit-window in three, and then only if you stay (#649).",

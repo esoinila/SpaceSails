@@ -101,8 +101,11 @@ public static class HardcaseRep
     /// <param name="landed">Whether the captain is on an excursion at all — false in a berth.</param>
     /// <param name="onAWreck">Whether that excursion is a derelict rather than a moon.</param>
     /// <param name="floor">Which floor of it: <see cref="SurfaceFloor"/> is the regolith.</param>
-    public static bool GroundLikeThis(bool landed, bool onAWreck, int floor) =>
-        landed && !onAWreck && floor == SurfaceFloor;
+    /// <param name="onAGigRock">U03-F18 (Fable ruling 2026-11-07) · whether that moon is a deflection gig's rock, a
+    /// contract the captain is working under a clock and not ground a hardcase can be found working. Kolt is never
+    /// on one.</param>
+    public static bool GroundLikeThis(bool landed, bool onAWreck, int floor, bool onAGigRock = false) =>
+        landed && !onAWreck && !onAGigRock && floor == SurfaceFloor;
 
     /// <summary>
     /// How many DISTINCT grounds he may ever work in one universe. <b>Two.</b>

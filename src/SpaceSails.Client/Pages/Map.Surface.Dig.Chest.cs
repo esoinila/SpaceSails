@@ -196,7 +196,8 @@ public partial class Map
 
     private void RaiseReevers(ReeverRoll roll)
     {
-        if (!roll.Roused)
+        // R1-F102 (Fable ruling 2026-11-07) · no Old Ones on Enceladus, ever: the dice may say roused, the ice says no.
+        if (!roll.Roused || OldOnesNeverComeHere)
         {
             ShowPulseMessage($"🎲 {roll.Describe()} — the ground stays quiet. For now.");
             return;
@@ -206,10 +207,19 @@ public partial class Map
         ShowPulseMessage($"🎲 {roll.Describe()} — the OLD ONES stir! {roll.Reevers} shamble up from the regolith, converging. Patient, ancient, and many. Don't get cornered.");
     }
 
+    /// <summary>R1-F102 (Fable ruling 2026-11-07) · the head office's ground (Enceladus) is the one place the Old Ones
+    /// are never met: the tide does not claw them up and no pack is spawned there, by dice, lab, expedition or cheat.</summary>
+    private bool OldOnesNeverComeHere => _surface is { } ex && UndergroundComplex.IsHeadOffice(ex.Stop.Body.Id);
+
     // Spawn a pack spread across the deep field so they converge from several bearings (not single file)
     // onto the captain and the tube line — the motion-tracker "wall of signal" moment.
     private void SpawnReevers(int count)
     {
+        if (OldOnesNeverComeHere)
+        {
+            return;   // R1-F102: the one choke point for the dig-roll pack, the lab's pack, the expedition's and the cheats
+        }
+
         double baseY = Math.Min(_avatarY - 4, MoonSurface.AnchorY + 10);
         for (int i = 0; i < count; i++)
         {

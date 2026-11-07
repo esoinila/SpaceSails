@@ -75,6 +75,13 @@ public partial class Map
 
         RemoveHunter(b.HunterId);
 
+        // R1-F91 (Fable ruling 2026-11-07) · a deferred card belongs to the life that earned it. The excursion fold
+        // below clears these only on a SURFACE death; a death anywhere else (a berth, a flight) left the dead
+        // captain's queued beats and the held scrim to raise on the successor's first calm frame. The shard
+        // (the vault) survives; the card does not.
+        _deferredBeats.Clear();
+        _scrimQueued = null;
+
         // ── #563 · WHERE HE FELL, READ BEFORE THE GROUND IS TAKEN AWAY ───────────────────────────────
         //
         // Owner ruling, 2026-09-13: "I love the own lineage." The lineage is only material if it has a
