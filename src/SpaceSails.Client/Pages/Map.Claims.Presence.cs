@@ -165,7 +165,7 @@ public sealed partial class Map
 
         _writPending = null;
 
-        TheDemandGoesUp(
+        TheDemandWaitsItsTurn(
             new HunterState(
                 Id: filed.HunterId ?? filed.Callsign,
                 Callsign: filed.Callsign,

@@ -8,7 +8,7 @@ namespace SpaceSails.Client.Tests;
 /// <summary>
 /// #1476 item 2 · The collector's demand is a card the world raises, so in FLIGHT it waits behind a scrim that is
 /// up and goes up on the first frame the glass is clear (the flight frame pumps the scrim queue). The deaths stay
-/// immediate. Proven RED by (a) routing <c>TheDemandGoesUp</c> straight to <c>TheDemandIsRaised</c> (the wait test
+/// immediate. Proven RED by (a) calling <c>TheDemandGoesUp</c> directly from <c>TheDemandWaitsItsTurn</c> (the wait test
 /// goes red), and (b) removing the <c>PumpTheScrimQueue()</c> line from <c>OnTick</c> (the release test goes red).
 /// </summary>
 public sealed class TheFlightDemandWaitsBehindAScrimTests
@@ -34,7 +34,7 @@ public sealed class TheFlightDemandWaitsBehindAScrimTests
         var hunter = new HunterState(
             Id: "collector-1", Callsign: "The Debt Collector", OriginBodyId: "earth",
             SpawnedAtSimTime: 0, ActivationSimTime: 0, State: ship, CaughtPlayer: true, BrokenOff: false);
-        CastawayBench.Invoke(map, "TheDemandGoesUp", hunter, null);
+        CastawayBench.Invoke(map, "TheDemandWaitsItsTurn", hunter, null);
     }
 
     [Fact]

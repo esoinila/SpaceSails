@@ -41,7 +41,7 @@ public partial class Map
     // inert — it OPENS the boarding pop-up. Warp yanks to 1×, the ship is grappled, and the collector
     // hails with a demand and three options (SUBMIT / BRIBE / RESIST). The seed is folded from the
     // hunter's identity and the sim moment, so every roll in this encounter is reproducible.
-    private void ApplyHunterCatch(HunterState hunter) => TheDemandGoesUp(hunter, onTheTermsOf: null);
+    private void ApplyHunterCatch(HunterState hunter) => TheDemandWaitsItsTurn(hunter, onTheTermsOf: null);
 
     /// <summary>
     /// The body of the catch, and the one place a boarding demand is built. <see cref="ApplyHunterCatch"/> is
@@ -54,13 +54,7 @@ public partial class Map
     /// not today's when a writ is being served, so a captain who kept a collector waiting is charged neither
     /// less nor more for the wait. Everything else about the beat is identical, because it is the same beat:
     /// the same panel, the same three options, the same dice.</param>
-    private void TheDemandGoesUp(HunterState hunter, PendingWritRecord? onTheTermsOf) =>
-        // #1476 · THE DEMAND IS A WORLD-RAISED CARD: it waits behind a scrim that is up (flight included - the flight
-        // frame pumps the queue) and goes up on the first clear frame. The deaths (impact, last stand) are not this
-        // door and stay immediate.
-        RaiseAScrimCard(() => TheDemandIsRaised(hunter, onTheTermsOf), () => _busted is null);
-
-    private void TheDemandIsRaised(HunterState hunter, PendingWritRecord? onTheTermsOf)
+    private void TheDemandGoesUp(HunterState hunter, PendingWritRecord? onTheTermsOf)
     {
         Warp = 1;
         _effectiveWarp = 1;

@@ -106,6 +106,8 @@ public sealed class TheNothingStacksOnArrivalTests
         Assert.Contains("RaiseAScrimCard(", Read("Map.GateGuard.Card.cs"), StringComparison.Ordinal);
         Assert.DoesNotContain("RaiseAScrimCard(", Read("Map.ShipScuttleBoard.cs"), StringComparison.Ordinal);
         Assert.DoesNotContain("RaiseAScrimCard(", Read("Map.Combat.Busted.cs"), StringComparison.Ordinal);
+        // #1476 · the collectors' demand in flight goes through the arbiter too, from its own door.
+        Assert.Contains("RaiseAScrimCard(() => TheDemandGoesUp(", Read("Map.OneScrim.cs"), StringComparison.Ordinal);
     }
 
     [Fact]

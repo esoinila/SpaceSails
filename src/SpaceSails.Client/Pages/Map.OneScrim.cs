@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
 
@@ -172,6 +173,12 @@ public partial class Map
         raise();
         return true;
     }
+
+    /// <summary>#1476 · THE COLLECTOR'S DEMAND IS A WORLD-RAISED CARD: it waits behind a scrim that is up (flight
+    /// included - the flight frame pumps the queue) and goes up on the first clear frame. The deaths (impact, last
+    /// stand) are not this door and stay immediate.</summary>
+    private void TheDemandWaitsItsTurn(HunterState hunter, PendingWritRecord? onTheTermsOf) =>
+        RaiseAScrimCard(() => TheDemandGoesUp(hunter, onTheTermsOf), () => _busted is null);
 
     /// <summary>#1052 · The held card's turn. Called once from the walked frame — the only frame in which a
     /// bar or a canteen is running at all — so a card queued behind the galley goes up on the frame after
