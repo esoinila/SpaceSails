@@ -31,6 +31,7 @@ public partial class TimePassingCardRack
     [Parameter] public string _jumpFlavor { get; set; } = default!;
     [Parameter] public int _jumpTotalYears { get; set; }
     [Parameter] public int _jumpYear { get; set; }
+    [Parameter] public bool _jumpInDays { get; set; }
     /// <summary>the page's `_voidCardTucked = value`, handed down so the write survives the move.</summary>
     [Parameter] public Action<bool> _voidCardTuckedSet { get; set; } = default!;
     /// <summary>the page's `bool _voidCardTucked` — and this markup WRITES it, so it crosses as a pair: the value in, the page's own setter out.</summary>

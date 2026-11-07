@@ -54,24 +54,16 @@ public partial class Map
     // a beat before the void lets out. Pure UI — the tab paints every frame (no heavy work runs during it).
     private async Task RunVoidCinematic()
     {
-        int perTickMs = Math.Clamp(2200 / Math.Max(1, _jumpTotalYears), 90, 400);
-        for (int year = 1; year <= _jumpTotalYears; year++)
+        // R1-F44 · a crossing counted in days ticks at most 30 times, so a 300-day hop is not half a minute.
+        int steps = _jumpInDays ? Math.Min(_jumpTotalYears, 30) : _jumpTotalYears;
+        int perTickMs = Math.Clamp(2200 / Math.Max(1, steps), 90, 400);
+        for (int step = 1; step <= steps; step++)
         {
-            _jumpYear = year;
+            _jumpYear = (int)Math.Ceiling((double)_jumpTotalYears * step / steps);
             StateHasChanged();
             await Task.Delay(perTickMs);
         }
 
         await Task.Delay(260);
     }
-
-    // The overlay's parrot-aging wink, scaled to how much void is being crossed (owner: "maybe the parrot
-    // aging jokes"). Pure flavor; the bird gets saltier the longer the dark.
-    private static string VoidFlavor(int years) => years switch
-    {
-        <= 1 => "🦜 the parrot barely blinks — a short dark",
-        <= 3 => "🦜 the parrot preens through the quiet years",
-        <= 6 => "🦜 the parrot has picked up two new swear words by now",
-        _ => "🦜 the parrot is greying at the crest — mind the long years out here",
-    };
 }
