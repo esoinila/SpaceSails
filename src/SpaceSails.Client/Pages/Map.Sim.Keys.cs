@@ -252,6 +252,15 @@ public partial class Map
             return;
         }
 
+        // #1478 · FLIGHT KEYS ARE INERT ON FOOT. HandleDeckKey consumes only the verbs the deck owns, so a
+        // `-` pressed on the regolith (or `+`, `=`, `_`, O, P, V) used to fall through to the burn switch
+        // below: it undocked the ship, spent a pulse and flipped the view to the deck plan while the surface
+        // HUD stayed up. A captain on foot (deck mode or any excursion) has no hand on the drive.
+        if (_deckMode || _surface is not null)
+        {
+            return;
+        }
+
         bool pulse = false;
         double factor = 1.0;
 
