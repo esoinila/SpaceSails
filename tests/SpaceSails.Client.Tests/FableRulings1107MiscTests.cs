@@ -60,7 +60,7 @@ public sealed class FableRulings1107MiscTests
         Assert.False(bench.OnSurface);   // the berth death: the excursion fold is not the thing doing the clearing
 
         ((IList)bench.Peek("_deferredBeats")!).Add((StoryBeats.Beat.CrewDeputation, (string?)null, (string?)null));
-        bench.Poke("_scrimQueued", ((Action)(() => { }), (Func<bool>)(() => true)));
+        bench.Poke("_scrimQueued", new List<(Action, Func<bool>, string?)> { (() => { }, () => true, null), (() => { }, () => true, "k2") });
         bench.Poke("_busted", AFreezeFrameDeath());
 
         bench.CallOnTheDispatcher("BustedResurrect");

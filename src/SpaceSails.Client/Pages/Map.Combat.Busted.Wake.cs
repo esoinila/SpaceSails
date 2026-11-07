@@ -80,6 +80,7 @@ public partial class Map
         // captain's queued beats and the held scrim to raise on the successor's first calm frame. The shard
         // (the vault) survives; the card does not.
         _deferredBeats.Clear();
+        _scrimQueued?.Clear();   // the FIFO (#1473): the dead captain's held cards do not outlive him
         _scrimQueued = null;
 
         // ── #563 · WHERE HE FELL, READ BEFORE THE GROUND IS TAKEN AWAY ───────────────────────────────
