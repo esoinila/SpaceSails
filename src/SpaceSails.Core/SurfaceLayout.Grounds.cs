@@ -180,7 +180,8 @@ public static partial class SurfaceLayout
     //    outdoors differs by construction while always leaving the flanks open (pathability by design).
     //    Miranda and Luna never reach here; this serves phobos, europa, ganymede, callisto, titan,
     //    enceladus and any future landable body. ──
-    private static Plan Seeded(string bodyId, in Field f, System.Collections.Generic.List<(double X, double Y, double R)> keepOut)
+    private static Plan Seeded(string bodyId, in Field f, System.Collections.Generic.List<(double X, double Y, double R)> keepOut,
+        LandingSiteKind kind = LandingSiteKind.WildPlain)
     {
         double ax = f.AnchorX, ay = f.AnchorY;
         var walls = new System.Collections.Generic.List<Wall>();
@@ -197,6 +198,10 @@ public static partial class SurfaceLayout
         // bigger emptiness. One feature per ~700 du^2, so density holds however the field is sized.
         double area = (maxX - minX) * (maxY - minY);
         int features = System.Math.Clamp(5 + (int)(area / 700.0), 5, 90) + Face(bodyId, "count", 5);
+        if (kind == LandingSiteKind.CraterShelf)
+        {
+            features /= 2;   // U05-F01 · the shelf's long wall is the landscape; the rubble halves
+        }
 
         // #563 · FEATURES MAY NOT BE LAID ON TOP OF ONE ANOTHER. Harmless while every shape was an open
         // span or a U — two overlapping rubble walls are just messier rubble. The moment buildings arrived
@@ -209,22 +214,8 @@ public static partial class SurfaceLayout
         // Ridge Camp fell from 25 segments to 10 and the "more interesting landscape" came out emptier than
         // before. 1.5 is enough to keep one feature's wall off another's doorway.
         var claimed = new System.Collections.Generic.List<(double X0, double Y0, double X1, double Y1)>();
-        const double Elbow = 1.5;
 
-        bool Claim(double cx, double cy, double halfW, double halfH)
-        {
-            (double x0, double y0, double x1, double y1) =
-                (cx - halfW - Elbow, cy - halfH - Elbow, cx + halfW + Elbow, cy + halfH + Elbow);
-            foreach ((double ax0, double ay0, double ax1, double ay1) in claimed)
-            {
-                if (x0 < ax1 && x1 > ax0 && y0 < ay1 && y1 > ay0)
-                {
-                    return false;
-                }
-            }
-            claimed.Add((x0, y0, x1, y1));
-            return true;
-        }
+        bool Claim(double cx, double cy, double halfW, double halfH) => ClaimOn(claimed, cx, cy, halfW, halfH);
 
         // #585 · RECORDING IS NOT ASKING. Reserve puts a footprint in the ledger unconditionally, for things
         // that are ALREADY STANDING and are not up for negotiation.
@@ -238,8 +229,7 @@ public static partial class SurfaceLayout
         //
         // Claim() asks "may I build here?". Reserve() says "something is here." Using the asking one for the
         // saying job is the same category error as sharing a console kind between two different doors.
-        void Reserve(double cx, double cy, double halfW, double halfH) =>
-            claimed.Add((cx - halfW - Elbow, cy - halfH - Elbow, cx + halfW + Elbow, cy + halfH + Elbow));
+        void Reserve(double cx, double cy, double halfW, double halfH) => ReserveOn(claimed, cx, cy, halfW, halfH);
 
         // The deep landmark's own fixture is laid AFTER this loop but stands on real ground. Claim it first,
         // or a building can be seeded around the anchor and then have the fixture dropped across its door.
@@ -261,6 +251,13 @@ public static partial class SurfaceLayout
         foreach ((double sx, double sy, double sr) in keepOut ?? [])
         {
             Reserve(sx, sy, sr, sr);
+        }
+
+        // U05-F01 (#1419) · THE KIND'S LANDMARK STAMP, before the rubble so the rubble lays around it.
+        if (kind is not (LandingSiteKind.WildPlain or LandingSiteKind.QuietBasin))
+        {
+            Stamp stamp = PlaceStamp(kind, bodyId, f, claimed);
+            walls.AddRange(stamp.Walls);
         }
 
         for (int i = 0; i < features; i++)
