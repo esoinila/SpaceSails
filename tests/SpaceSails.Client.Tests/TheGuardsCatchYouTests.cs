@@ -562,9 +562,9 @@ public sealed class TheGuardsCatchYouTests
         Assert.Equal(1, NervePips.TouchPips);
 
         // …and the card is the challenge card's own idiom, with the guard's own face on it (#804 / #684).
-        Assert.Contains("PatrolBeat.TheGuardHasYou(g.Plate, why, EscortsThisWatch)", caught,
+        Assert.Contains("PatrolBeat.TheGuardHasYou(g.Plate, why, EscortsThisWatch, TheAirHolds)", caught,
             StringComparison.Ordinal);
-        Assert.Contains("PatrolBeat.ChallengeArtUrl", caught, StringComparison.Ordinal);
+        Assert.Contains("PatrolBeat.ChallengeArtFor(TheAirHolds)", caught, StringComparison.Ordinal);
         Assert.Contains("EscortDue = g;", caught, StringComparison.Ordinal);
     }
 

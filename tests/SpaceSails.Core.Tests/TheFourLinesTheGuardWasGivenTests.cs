@@ -229,7 +229,7 @@ public sealed class TheFourLinesTheGuardWasGivenTests
                 {
                     bad.Add($"  {site} B{-level}: an empty wallet satisfied him.");
                 }
-                else if (no.Consequence != PatrolBeat.EscortLine)
+                else if (no.Consequence != PatrolBeat.EscortLineFor(UndergroundComplex.HoldsPressure(site, level)))
                 {
                     bad.Add($"  {site} B{-level}: the refusal's consequence was not the escort.");
                 }

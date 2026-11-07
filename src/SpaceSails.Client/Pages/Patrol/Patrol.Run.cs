@@ -200,10 +200,10 @@ public sealed partial class Map
 
             // The same two-armed card the wallet read is told on, with the guard's own plate behind it — one
             // picture for the whole feature, because the man in it has not decided anything yet either (#804).
-            PatrolBeat.Read held = PatrolBeat.TheGuardHasYou(g.Plate, why, EscortsThisWatch);
+            PatrolBeat.Read held = PatrolBeat.TheGuardHasYou(g.Plate, why, EscortsThisWatch, TheAirHolds);
             _host.ViewObject = new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.ViewObject, (float)_host.AvatarX, (float)_host.AvatarY,
-                held.Label, PatrolBeat.ChallengeArtUrl, held.Card, held.Told);
+                held.Label, PatrolBeat.ChallengeArtFor(TheAirHolds), held.Card, held.Told);
             RendererInterop.PlayCue("reveal");
             _host.LogAutopilotEvent($"{held.Label} — {held.Told}");
 

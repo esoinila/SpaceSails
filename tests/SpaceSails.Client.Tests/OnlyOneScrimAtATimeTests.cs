@@ -224,7 +224,11 @@ public sealed class OnlyOneScrimAtATimeTests
         var gates = new HashSet<string>(StringComparer.Ordinal);
         for (int i = 0; i < lines.Length; i++)
         {
-            if (!live[i] || !lines[i].Contains($"class=\"{TheScrim}", StringComparison.Ordinal))
+            // U04-F09 · The collector's demand / death card wears the busted backdrop, a full-viewport dim of its
+            // own (BustedCard.razor) — it is a scrim the arbiter must see, so it is read here as one.
+            if (!live[i]
+                || !(lines[i].Contains($"class=\"{TheScrim}", StringComparison.Ordinal)
+                     || lines[i].Contains("class=\"busted-backdrop", StringComparison.Ordinal)))
             {
                 continue;
             }

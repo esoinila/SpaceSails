@@ -350,11 +350,11 @@ public static class UnlistedParcel
     /// already looking at the next hull, so nothing is escorted, nothing is refused, and the round picks up
     /// where it left off. That is the payoff stated in the only vocabulary the client has for it.</para>
     /// </summary>
-    public static PatrolBeat.Read TheFineIsTold(string plate)
+    public static PatrolBeat.Read TheFineIsTold(string plate, bool holdsPressure = true)
     {
         ArgumentNullException.ThrowIfNull(plate);
         return new PatrolBeat.Read(
-            true, FineLine, PatrolBeat.ChallengeLabel, PatrolBeat.ChallengeCard(plate));
+            true, FineLine, PatrolBeat.ChallengeLabel, PatrolBeat.ChallengeCard(plate, holdsPressure));
     }
 
     /// <summary>

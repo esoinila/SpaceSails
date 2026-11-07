@@ -136,6 +136,13 @@ public sealed partial class EveryRoundFingerprintsTheSameTests
         .Select(i => -i)
         .First(level => PatrolBeat.IsPatrolled(Body, level));
 
+    /// <summary>U04-F12 (Fable ruling 2026-11-07) · …and the floor the round STOPS people on: patrolled, and not the
+    /// NO PASS REQUIRED floor (Canteen 1's), where the round never hails anyone. The hail, the read and the walk-back
+    /// cases are staged here; the cases that never needed a hail stay on <see cref="ThePatrolledFloor"/>.</summary>
+    private static int TheStoppingFloor => Enumerable.Range(1, 14)
+        .Select(i => -i)
+        .First(level => PatrolBeat.IsPatrolled(Body, level) && !UndergroundComplex.IsTheNoPassFloor(Body, level));
+
     /// <summary>…and the one this file hides on: patrolled AND carrying cubicles, because #821's three arms
     /// need a door to be behind.</summary>
     private static int TheFloorWithCubicles => Enumerable.Range(1, 14)
@@ -200,7 +207,7 @@ public sealed partial class EveryRoundFingerprintsTheSameTests
         // ── THE HAIL, THE APPROACH, AND WALKING OFF ────────────────────────────────────────────────
         new("he hails you and you walk away from it", () =>
         {
-            (Pages.Map map, object ex) = OnAPatrolledFloor(ThePatrolledFloor, 1);
+            (Pages.Map map, object ex) = OnAPatrolledFloor(TheStoppingFloor, 1);
             StandInHisWay(map);
             return (map, ex);
         }, (map, ex, frame) =>
@@ -216,7 +223,7 @@ public sealed partial class EveryRoundFingerprintsTheSameTests
         // ── THE READ, AND THE WALK BACK ────────────────────────────────────────────────────────────
         new("he crosses the floor, reads your papers, and walks you to the car", () =>
         {
-            (Pages.Map map, object ex) = OnAPatrolledFloor(ThePatrolledFloor, 1);
+            (Pages.Map map, object ex) = OnAPatrolledFloor(TheStoppingFloor, 1);
             StandInHisWay(map);
             return (map, ex);
         }, (map, ex, frame) =>
@@ -239,7 +246,7 @@ public sealed partial class EveryRoundFingerprintsTheSameTests
 
         new("…and this time he does not press the button for your floor", () =>
         {
-            (Pages.Map map, object ex) = OnAPatrolledFloor(ThePatrolledFloor, 1);
+            (Pages.Map map, object ex) = OnAPatrolledFloor(TheStoppingFloor, 1);
             StandInHisWay(map);
             Set(map, "_escortsThisWatch", PatrolBeat.EscortsAWatchAllows);
             return (map, ex);
