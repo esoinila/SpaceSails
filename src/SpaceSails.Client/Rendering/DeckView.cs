@@ -250,6 +250,7 @@ public sealed partial class DeckView
     // instruments, the gauges, the captain's own mark — it is the canvas itself. Swapped rather than checked
     // at eight hundred call sites, for the reason written on LampMask.
     private readonly IRenderer _canvas;
+    private readonly BandYield _yield;
     private readonly LampMask _mask;
     private IRenderer _renderer;
     private readonly DeckPlan.Droid[] _droids = new DeckPlan.Droid[DeckPlan.MaxDroids];
@@ -315,9 +316,10 @@ public sealed partial class DeckView
 
     public DeckView(IRenderer renderer)
     {
-        _canvas = renderer;
-        _mask = new LampMask(renderer);
-        _renderer = renderer;
+        _yield = new BandYield(renderer);   // #1466 · the world's words step aside for the HUD band
+        _canvas = _yield;
+        _mask = new LampMask(_yield);
+        _renderer = _yield;
     }
 
     /// <summary>

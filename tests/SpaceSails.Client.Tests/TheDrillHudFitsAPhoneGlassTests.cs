@@ -147,4 +147,50 @@ public sealed class TheDrillHudFitsAPhoneGlassTests
         float Y(Pen pen) => Assert.Single(pen.Fills, f => f.Ink == new RgbaColor(14, 18, 24, 220) && f.W > 100).Y;
         Assert.Equal(Y(without), Y(with));
     }
+
+    /// <summary>#1466 · THE WORLD'S WORDS NEVER SIT UNDER THE BAND. The live pass of #1464 found the moored ship's
+    /// "ENGINE ROOM", "SCUTTLING CHARGES", the ⚓ and the boxed AIRLOCK showing through the drill line at 390x700:
+    /// the band is the last thing drawn but its plate is translucent. The moored ship on the rock's ground is drawn at a sweep of
+    /// captain positions (the follow-cam moves every label across the top of the glass) and no text other than the
+    /// band's own rows may touch the plate rectangle.</summary>
+    [Fact]
+    public void NoWorldLabelIsDrawnUnderTheBandPlate()
+    {
+        DeckPlan ship = Scenes.Build("surface:miranda:0");
+        int underneath = 0, drawn = 0; var offenders = new List<string>();
+        for (double dy = -26; dy <= 2; dy += 1.0)
+        {
+            for (double dx = -20; dx <= 20; dx += 4.0)
+            {
+                var state = new DeckView.State(ship.SpawnX + dx, ship.SpawnY + dy, 0.9, 0, 0,
+                    ShuttleAway: false, ElectricUniverse: false,
+                    Nerve: 58, NerveReadout: "FRAYED", ShowNerve: true, NerveCompact: false, HitsTaken: 0);
+                var hud = new DeckView.SurfaceHud(
+                    DigProgress: -1, HasDroppedChest: false, DropX: 0, DropY: 0,
+                    Blips: [], Cadence: 2, Readout: "quiet",
+                    CacheMarks: [], Nerve: 58, NerveReadout: "FRAYED", Instruments: true,
+                    OrbitComms: DrillLine, OrbitSeverity: 1);
+                var pen = new Pen();
+                new DeckView(pen).Draw(ship, PhoneW, PhoneH, simTime: 0.0, in state, surface: hud);
+                var plate = TheBandPlate(pen);
+                foreach (var w in pen.Words)
+                {
+                    if (DrillLine.Contains(w.Text, StringComparison.Ordinal) && w.Align == TextAlign.Center && w.Y < plate.Y + plate.H + 1)
+                    {
+                        continue; // the band's own rows
+                    }
+                    drawn++;
+                    double px = double.Parse(Regex.Match(w.Font, @"(\d+(?:\.\d+)?)px").Groups[1].Value, CultureInfo.InvariantCulture);
+                    double width = CommsBand.WidthOf(w.Text, px);
+                    double left = w.Align == TextAlign.Center ? w.X - (width / 2) : w.Align == TextAlign.Right ? w.X - width : w.X;
+                    if (Meet(plate, ((float)left, (float)(w.Y - MarkBand.AscentOf(px)), (float)width, (float)(MarkBand.AscentOf(px) + MarkBand.DescentOf(px)))))
+                    {
+                        underneath++; offenders.Add($"{w.Text}@{w.X:0},{w.Y:0} {w.Font}");
+                    }
+                }
+            }
+        }
+        Assert.True(drawn > 100, $"premise: the sweep drew only {drawn} labels");
+        Assert.True(underneath == 0, string.Join(" | ", offenders.Distinct()));
+    }
 }

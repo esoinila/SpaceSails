@@ -129,6 +129,7 @@ public sealed partial class DeckView
         (_orbitRows, _orbitPx, _stallRows, _stallPx) = (oRows, oPx, sRows, sPx);
         _bandBottom = CommsBand.ReservedBottom;
         _nerveShift = 0.0;
+        _yield.Disarm();
         if (oRows.Length + sRows.Length == 0)
         {
             return;
@@ -141,6 +142,7 @@ public sealed partial class DeckView
         // The stall banner comes and goes with the frame rate, so everything seated by the band is measured as if
         // ONE stall row were always up (CommsBand's own "measured for MaxLines on purpose" rule): the gauge, the
         // tracker and the sentries' seats must not hop a row each time the banner toggles.
+        _yield.Arm(bx, by, bw, bh);     // #1466 · world words that would touch the plate are not drawn
         double plannedBottom = CommsBand.PlateBottom(oRows.Length + Math.Max(1, sRows.Length));
         _bandBottom = Math.Max(CommsBand.ReservedBottom, plannedBottom);
         if (state.ShowNerve && !state.NerveCompact)

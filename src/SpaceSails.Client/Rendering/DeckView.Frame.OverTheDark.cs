@@ -19,10 +19,8 @@ public sealed partial class DeckView
         in State state, SurfaceHud? surface, double simTime, int widthPx, int heightPx, float scale,
         Func<double, double, (float X, float Y)> project)
     {
-        // #1463 · The band is laid out HERE, first, because the sentries' readouts keep out of it, and the nerve
-        // block and the tracker (drawn later, in DrawTheInstruments) read the same layout.
-        LayOutTheBand(in state, surface, widthPx);
-
+        // #1463 · The band is laid out at the top of the frame (#1466: moved up from here so the world labels can
+        // yield to it): the sentries' readouts keep out of it, and the nerve block and the tracker read it too.
         // #314: deployed sentries — a gun-green mark (dim once dry), a zap line to the Old One it's
         // dropping, and its crude two-digit magazine readout riding above (seven-segment red, dim at 00).
         // Drawn ON the grid, not a corner widget — the counter is meant to be read from across the map.
