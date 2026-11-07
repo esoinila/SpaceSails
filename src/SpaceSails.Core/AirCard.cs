@@ -67,7 +67,9 @@ public static class AirCard
     public static string HeadUnderground(string refugeFloorName, int floorsUp)
     {
         ArgumentNullException.ThrowIfNull(refugeFloorName);
-        string upstairs = floorsUp == 0 ? "this floor" : $"{floorsUp} floor{(floorsUp == 1 ? "" : "s")} up";
+        // Fable ruling (c): this card never raises on a floor that holds air, so there is always a floor to climb.
+        ArgumentOutOfRangeException.ThrowIfLessThan(floorsUp, 1);
+        string upstairs = $"{floorsUp} floor{(floorsUp == 1 ? "" : "s")} up";
         return $"Last third of the tank, and nothing on this floor is breathing with you. The air is {upstairs} — {refugeFloorName}, the top of this shaft band — or in the PRESSURE REFUGE the plan marks on this floor, if it still holds. Start for one of them now.";
     }
 

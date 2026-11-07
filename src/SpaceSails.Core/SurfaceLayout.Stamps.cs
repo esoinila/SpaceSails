@@ -208,7 +208,7 @@ public static partial class SurfaceLayout
                 // One long hull wall along the bottom edge, with two 4 du gaps — the shelf's lip.
                 // #1478 · The shelters and the hidden lab's chambers are never yielded, and on some grounds
                 // they stand across the whole bottom edge. Each short chunk of the lip therefore steps to
-                // the nearest lift where the ledger still has room for it (preferring the lift of the chunk
+                // the nearest lift where the ledger still has room for it (home lift first, so the lip steps back down after an obstacle, then the nearest to the chunk
                 // beside it, so the lip jogs only around an obstacle) instead of being refused outright.
                 double mid = (minX + maxX) / 2;
                 double g1 = Lerp(minX + 30, mid - 15, Frac(key, "stamp:gap1"));
@@ -224,7 +224,7 @@ public static partial class SurfaceLayout
                     {
                         double a = Lerp(from, to, i / (double)n), b = Lerp(from, to, (i + 1) / (double)n);
                         double chosen = lastLift;
-                        foreach (double lift in lifts.OrderBy(l => System.Math.Abs(l - lastLift)))
+                        foreach (double lift in lifts.Take(1).Concat(lifts.Skip(1).OrderBy(l => System.Math.Abs(l - lastLift))))
                         {
                             if (Fits(claimed, (a + b) / 2, f.BottomY + lift, (b - a) / 2, 0.5))
                             {

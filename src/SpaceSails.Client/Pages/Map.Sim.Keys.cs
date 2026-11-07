@@ -256,7 +256,9 @@ public partial class Map
         // `-` pressed on the regolith (or `+`, `=`, `_`, O, P, V) used to fall through to the burn switch
         // below: it undocked the ship, spent a pulse and flipped the view to the deck plan while the surface
         // HUD stayed up. A captain on foot (deck mode or any excursion) has no hand on the drive.
-        if (_deckMode || _surface is not null)
+        // V is the exception on the ship's deck: the charge board (opened in deck mode) and the guide promise "V vents
+        // from anywhere in flight". It is the one flight key a captain walking the ship still owns.
+        if (_surface is not null || (_deckMode && e.Key is not ("v" or "V")))
         {
             return;
         }

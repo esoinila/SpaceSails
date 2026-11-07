@@ -104,6 +104,8 @@ public static partial class UndergroundComplex
         int band = BandOf(level);
         int refuge = BandTop(band);          // the top of this band always holds pressure
         int floorsUp = -level - -refuge;     // how many floors between here and breathable
+        // Fable ruling (c): a dead-air card never raises on a floor that holds air, so there is always a floor up.
+        ArgumentOutOfRangeException.ThrowIfLessThan(floorsUp, 1);
 
         // #740 · THE CARD READS THE GAUGE, it does not do its own sum. This used to format the raw play
         // budget as minutes and seconds — "you have 21 min 01 s" — while the HUD two seconds later on the
@@ -120,9 +122,7 @@ public static partial class UndergroundComplex
               "down the whole way up."
             : "Your gauge is already reading empty, which is its own instruction.";
 
-        string upstairs = floorsUp == 0
-            ? "this floor"
-            : $"{floorsUp} floor{(floorsUp == 1 ? "" : "s")} up";
+        string upstairs = $"{floorsUp} floor{(floorsUp == 1 ? "" : "s")} up";
 
         return (refuge, upstairs, margin);
     }

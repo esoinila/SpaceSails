@@ -101,6 +101,7 @@ public partial class Map
         _groundGrewSeen = false;
         _tubeRearmSeen = false;
         _airCardSeen = false;
+        _airCardFace = null;   // Fable (c): a restored card re-derives its face, gated on the floor it stands on
 
         // The mission/contract slate and every relationship, wiped: a new universe owes nobody and knows
         // nobody (owner: mission statuses reset with the new game). New quest ids mint from zero again.
