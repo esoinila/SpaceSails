@@ -310,4 +310,31 @@ public class SurfaceReachabilityTests
             }
         }
     }
+
+    /// <summary>U05-F01 (#1419) · THE STAMPS SEAL NOTHING. The board only offers each body one to three of the
+    /// six stamped kinds, so the audit above walks the kinds a body happens to carry. A stamp is a pure function of
+    /// (body, kind), and a captain can be sent to any pairing by a boot cheat, so every body x every stamped kind
+    /// is flooded here.</summary>
+    [Fact]
+    public void EveryStampedKindOnEveryBody_LeavesNoStandableGroundSealedOff()
+    {
+        var pockets = new List<string>();
+        foreach (string body in Bodies)
+        {
+            foreach (LandingSiteKind kind in System.Enum.GetValues<LandingSiteKind>()
+                .Where(k => k is not (LandingSiteKind.WildPlain or LandingSiteKind.QuietBasin)))
+            {
+                SurfaceCollision.WallIndex walls = WallsFor(body, kind.ToString());
+                (int biggest, (double X, double Y)? at) = LargestSealedPocket(walls);
+                if (biggest * CellArea > MaxFixtureInteriorArea)
+                {
+                    pockets.Add($"{body}/{kind}: a sealed pocket of {biggest * CellArea:F1} du² around "
+                        + (at is { } s ? $"({s.X:F1}, {s.Y:F1})" : "?"));
+                }
+                Assert.True(DeckReachability.Standable(Spawn.X, Spawn.Y, AvatarRadius, walls),
+                    $"{body}/{kind}: a stamp stands on the tube mouth.");
+            }
+        }
+        Assert.True(pockets.Count == 0, "A stamp sealed ground off:\n  " + string.Join("\n  ", pockets));
+    }
 }

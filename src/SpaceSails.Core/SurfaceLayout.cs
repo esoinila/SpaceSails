@@ -202,7 +202,15 @@ public static partial class SurfaceLayout
     /// visibly different wing/feature layout on the SAME body — different site, different deck-plan. An
     /// away-expedition rock keeps its authored per-kind ground regardless of salt (those gigs are single
     /// authored sites, never a seeded board).</summary>
-    public static Plan For(string bodyId, in Field field, string? siteSalt)
+    public static Plan For(string bodyId, in Field field, string? siteSalt) =>
+        For(bodyId, field, siteSalt, KindOfSalt(siteSalt));
+
+    /// <summary>U05-F01 (#1419) · The same ground for a site of a stated <paramref name="siteKind"/>, which earns
+    /// that kind's landmark stamp (<see cref="StampFor"/>). A site's salt IS its kind's name, so the three-argument
+    /// form derives the kind from it and every caller that holds only the salt lays the identical ground;
+    /// <see cref="LandingSiteKind.WildPlain"/> and <see cref="LandingSiteKind.QuietBasin"/> stamp nothing, and
+    /// site 0 (the empty salt) is byte for byte the ground it was.</summary>
+    public static Plan For(string bodyId, in Field field, string? siteSalt, LandingSiteKind siteKind)
     {
         // #585: the shelters for THIS body and THIS site — computed from the real (bodyId, siteSalt) pair,
         // never from the combined seeded key, because that pair is what SurfaceShelter itself is keyed on.
@@ -240,7 +248,7 @@ public static partial class SurfaceLayout
                 _ => Seeded(bodyId ?? "", field, keepOut),
             };
         }
-        return Seeded($"{bodyId ?? ""}~{siteSalt}", field, keepOut);
+        return Seeded($"{bodyId ?? ""}~{siteSalt}", field, keepOut, siteKind);
     }
 
     /// <summary>#563 · GROUND FOR AN ARBITRARY SEEDED KEY, on an arbitrary field — the treadmill's per-tile

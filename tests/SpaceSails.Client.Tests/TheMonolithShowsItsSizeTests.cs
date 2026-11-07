@@ -127,17 +127,18 @@ public sealed class TheMonolithShowsItsSizeTests
         DeckPlan deck = TheMonolithsGround();
 
         double face = MoonSurface.AnchorY + Monolith.HalfHeight;
-        var shade = deck.Scenery.Where(m =>
-            Math.Abs(Math.Min(m.Y1, m.Y2) - face) < 0.001 && Math.Max(m.Y1, m.Y2) > face).ToList();
+        // R1-F78 (Fable 2026-11-07): the shadow is FILLED QUADS (umbra + penumbra), not a scatter of strokes.
+        var shade = deck.Scenery.Where(m => m.Of == SurfaceScenery.Kind.Shade).ToList();
 
-        Assert.True(shade.Count >= 5, "the shadow is too thin a scatter of strokes to read as shade.");
+        Assert.Equal(2, shade.Count);
+        Assert.Contains(shade, m => Math.Abs(Math.Min(m.Y1, m.Y2) - face) < 0.001);
 
         // It starts at the lit face and it runs all the way to the ground the shuttle sets you down on:
         // there is nowhere on this moon you can stand and not be in it.
         Assert.Contains(shade, m => Math.Max(m.Y1, m.Y2) >= MoonSurface.LandingBandY - 0.001);
 
-        // It is a REGION, not a channel. A rille is two banks; this must never be read as one.
-        double widest = shade.Max(m => Math.Abs(m.X1 - MoonSurface.AnchorX)) * 2;
+        // It is a REGION, not a channel: a quad at least as wide as the thing casting it.
+        double widest = shade.Max(m => Math.Max(m.HalfNear, m.HalfFar)) * 2;
         Assert.True(widest >= Monolith.HalfWidth * 2,
             "the shadow is narrower than the thing casting it.");
 
