@@ -112,6 +112,21 @@ public static partial class HullShudder
         return pool[Index(seed, $"shudder-chill-line:{shudderIndex}", pool.Count)];
     }
 
+    /// <summary>R1-F40 · WHAT THE SHUDDER SAYS, AND WHETHER IT WAS A CHILL — the one place both are decided.
+    /// The chill pools are written for a room with a crew in it ("heads come up as one", "the room freezes as
+    /// one"), so a captain alone on open regolith never gets one: the roll falls through to that setting's own
+    /// pool and the nerve tick the chill would have banked is not spent either. Until a regolith chill pool is
+    /// authored (canon work, on an issue) the ordinary regolith voice is the whole of it.</summary>
+    /// <param name="chillRolled">Whether this shudder is eligible for and won the chill roll.</param>
+    public static (string? Line, bool Chilled) Voice(
+        Setting setting, HavenRoom room, bool groundHoldsPressure, bool chillRolled, ulong seed, int shudderIndex)
+    {
+        bool chill = chillRolled && setting != Setting.Regolith;
+        return chill
+            ? (ChillLine(groundHoldsPressure, seed, shudderIndex), true)
+            : (Line(setting, room, seed, shudderIndex), false);
+    }
+
     /// <summary>#867 · THE WORDS THE NERVE LEDGER KEEPS FOR A CHILL, which is where the owner actually met
     /// this bug: a ledger on a park lawn saying <i>"a cold breath through the hull −1"</i>. The client used
     /// to type this string itself, one call site away from the pool that is chosen here — the same

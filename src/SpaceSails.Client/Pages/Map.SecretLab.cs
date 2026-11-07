@@ -370,7 +370,14 @@ public partial class Map
         // own door, which is where AppendSecretLabGeometry grew the chamber from and where the hidden-door
         // console stood until this line took it off the plan. So the card's plate and the fan's ring name the
         // ground that actually appended, and not a second opinion about where the lab is.
-        TheGroundJustGrew(ex, placement.DoorX, placement.DoorY, teachTheRule: true);
+        //
+        // R1-F38 · …BUT THE GROUND THAT GREW IS THE LAB, NOT ITS DOOR. The captain forces the door standing at it,
+        // so naming the door read "westward — 1 du" with the whole lab drawn to the east (and "0 du" from the
+        // other side). The plate and the fan's ring name the lab's far point instead: the CORE LOG square, the
+        // deep end of the chamber run that actually appended.
+        (double farX, double farY) = SecretLab.FarPoint(SecretLab.Build(
+            ex.Stop.Body.Id, MoonSurface.ExpeditionField(), placement.DoorX, placement.DoorY));
+        TheGroundJustGrew(ex, farX, farY, teachTheRule: true);
     }
 
     /// <summary>The small nerve chill of crossing into the lab (owner: "entering the lab … is a nerve hit").

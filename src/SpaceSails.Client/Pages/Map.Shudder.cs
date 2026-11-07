@@ -135,16 +135,17 @@ public partial class Map
         // secret lab, or a captain whose KAAMOS arc has gone deep, can carry the chill — and even then only
         // some of the time (HullShudder.CarriesChill). A haven/ship shudder never chills.
         bool eligible = deepSite && (AtSecretLab() || ArcGoneDeep());
-        bool chill = eligible && HullShudder.CarriesChill(seed, index);
+        bool chillRolled = eligible && HullShudder.CarriesChill(seed, index);
 
         // #1248 · …AND WHICH ROOM OF THE HAVEN HE IS STANDING IN. Two of the three haven lines are made of
         // the BAR's own furniture and the third names the CONCOURSE, so the pool is picked per room now.
         // The fact is asked through TheCaptainIsInTheDockedBar — the SAME predicate #1222 composed and #1199
         // pointed the buzzer at, never a second one — so a room that moves moves for every beat in it at
         // once. Off a haven the room is simply the concourse and no pool reads it (HullShudder.LinesFor).
-        string? line = chill
-            ? HullShudder.ChillLine(groundHoldsPressure, seed, index)
-            : HullShudder.Line(setting, TheRoomOfTheHavenHeIsIn, seed, index);
+        // R1-F40 · …and a chill is a crowd's line, so out on open regolith the roll falls through to the
+        // regolith pool (HullShudder.Voice owns the rule).
+        (string? line, bool chill) = HullShudder.Voice(
+            setting, TheRoomOfTheHavenHeIsIn, groundHoldsPressure, chillRolled, seed, index);
 
         // #1261 · AND OUT ON THE OBSERVATION WALK THERE IS NOBODY TO SAY IT. The pool answers null for the
         // one interior built to be empty, and this is the whole of what a null means: no line, no shake, no
