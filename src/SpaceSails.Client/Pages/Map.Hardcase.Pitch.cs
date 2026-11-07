@@ -85,7 +85,10 @@ public sealed partial class Map
     internal const string HeStepsBackLine = "He steps back off your elbow mid-sentence, and the pitch goes with him.";
 
     /// <summary>Take the card down. His body stays wherever it is standing; only the panel goes.</summary>
-    private void CloseTheHardcasesCard(HardcaseCloseReason reason = HardcaseCloseReason.Answered)
+    private void CloseTheHardcasesCard() => CloseTheHardcasesCardBecause(HardcaseCloseReason.Answered);
+
+    /// <summary>R1-F42 · …and the same close with its reason named.</summary>
+    private void CloseTheHardcasesCardBecause(HardcaseCloseReason reason)
     {
         _hardcaseCard = null;
         TheRepsCounterCloses();   // #1151 slice 2 · the offer and a finished form go with the conversation
@@ -137,7 +140,7 @@ public sealed partial class Map
     {
         _hardcaseRefused = true;
         ShowPulseMessage(HardcaseRep.OnRefusal);
-        CloseTheHardcasesCard(HardcaseCloseReason.Answered);
+        CloseTheHardcasesCard();
         _hardcaseMoveOnAt = SimTime + HardcaseDwellSeconds;
     }
 
