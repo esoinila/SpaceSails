@@ -12,9 +12,11 @@ namespace SpaceSails.Client.Pages;
 public partial class ParrotAndDiceRack
 {
     [Parameter] public string? _parrotSquawk { get; set; }
+    [Parameter] public bool _deckMode { get; set; }
     [Parameter] public DiceEvent? _diceTrayEvent { get; set; }
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
     [Parameter] public Action DismissDiceTray { get; set; } = default!;
+    [Parameter] public Action DismissParrot { get; set; } = default!;
 
     // The page's own event dispatch, repeated: no automatic re-render per event.
     Task IHandleEvent.HandleEventAsync(EventCallbackWorkItem callback, object? arg) => callback.InvokeAsync(arg);

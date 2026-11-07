@@ -43,8 +43,10 @@ public sealed partial class DeckView
         if (CommsBand.WidthOf(console.Label, platePx) <= room
             || !console.Label.Contains(PlateFold, StringComparison.Ordinal))
         {
+            float seat = SeatAboveAMark(sx, sy, dot, console.Label, platePx, TextAlign.Center);
+            BackThePlate(plan, in console, sx, seat, console.Label, platePx);
             _renderer.DrawText(
-                sx, SeatAboveAMark(sx, sy, dot, console.Label, platePx, TextAlign.Center),
+                sx, seat,
                 console.Label, ink, near ? "bold 10px monospace" : "9px monospace", TextAlign.Center);
             return;
         }
@@ -67,13 +69,50 @@ public sealed partial class DeckView
         // The LAST row takes the plate's own row, at the one lift every plate is seated at; each row before it is
         // seated on the row above the one under it, through the band book, so nothing drawn later prints through.
         float baseline = SeatAboveAMark(sx, sy, dot, rows[^1], px, TextAlign.Center);
+        BackThePlate(plan, in console, sx, baseline, rows[^1], px);
         _renderer.DrawText(sx, baseline, rows[^1], ink, font, TextAlign.Center);
         for (int i = rows.Length - 2; i >= 0; i--)
         {
             double above = MarkBand.RowAbove(baseline - MarkBand.AscentOf(px)) - MarkBand.DescentOf(px);
             baseline = SeatTheCaption(sx, (float)above, rows[i], px, TextAlign.Center);
+            BackThePlate(plan, in console, sx, baseline, rows[i], px);
             _renderer.DrawText(sx, baseline, rows[i], ink, font, TextAlign.Center);
         }
+    }
+
+    /// <summary>U10-F05 · A DOOR'S STENCIL OVER PAINTED ART WEARS THE DARK BACKING THE ROOM LABELS WEAR. The hotel lobby's
+    /// CABIN n and office plates are a hatch's plate drawn straight onto the lobby's photograph, whose ceiling lamps are
+    /// the brightest thing in the frame, so a 9 px dim stencil washed out on them (QA 2026-10-29). Room labels have
+    /// worn <see cref="RoomLabelPlate"/> since #348 for exactly this and the floor and lift plates wear their own
+    /// stencil plate, so a hatch's plate takes the room label's — and only where there IS a photograph under it: a
+    /// plate on the bare plan, which reads fine, is drawn exactly as it was. The plate is the float buffer's (flushed
+    /// under all text), sized to the run the way <see cref="DrawRoomLabel"/> sizes it.</summary>
+    private void BackThePlate(DeckPlan plan, in DeckPlan.ConsoleSpot console, float sx, float baseline, string text, double px)
+    {
+        if (console.Kind != DeckPlan.ConsoleKind.Hatch || !StandsOnPaintedArt(plan, console.X, console.Y))
+        {
+            return;
+        }
+
+        float w = (float)CommsBand.WidthOf(text, px) + 6f;
+        float h = (float)px + 4f;
+        FillRect(sx - (w / 2f), baseline - (float)px - 1f, w, h, RoomLabelPlate);
+    }
+
+    /// <summary>Is the point inside any of the plan's backdrop photographs (deck units)? A backdrop is anchored at its
+    /// top-left and the glass's y runs up, so its box is [X, X + W] by [Y - H, Y] (the draw pass projects (X, Y) and
+    /// paints H deck units DOWN the screen).</summary>
+    private static bool StandsOnPaintedArt(DeckPlan plan, double x, double y)
+    {
+        foreach (DeckPlan.Backdrop b in plan.Backdrops)
+        {
+            if (x >= b.X && x <= b.X + b.W && y <= b.Y && y >= b.Y - b.H)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Where a plate may be folded: the house separator between the halves of a plate.</summary>

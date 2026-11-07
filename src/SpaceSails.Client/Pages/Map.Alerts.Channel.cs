@@ -58,6 +58,11 @@ public partial class Map
         }
     }
 
+    /// <summary>U02-F07 / U10-F03 · A click on the bubble puts it away. The bubble is a control now (it takes the pointer,
+    /// so the click never reaches the click-to-walk canvas beneath it), and a control that cannot be closed is against
+    /// the house law: the squawk is shown only for as long as the captain wants it.</summary>
+    private void DismissParrot() => _parrotSquawk = null;
+
     private void UpdateParrot(double nowMs)
     {
         ExpireTheParrotBubble(nowMs);

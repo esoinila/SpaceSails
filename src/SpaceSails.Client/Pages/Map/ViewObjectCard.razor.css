@@ -28,6 +28,22 @@
 
 ::deep .view-object {
     --card-foot-scrim: rgb(12, 16, 23);
+    --card-foot-fill: rgb(12, 16, 23);
+}
+
+/* U10-F01 · THE CHOICE ROW IS PINNED WITH THE ✕, NOT LEFT IN THE BODY'S SCROLL. A guard's stop (the round, the man
+   at the door) is a picture, a paragraph and then the moves; at 1024 x 700 the picture alone is 341 px, so the moves
+   began below the card's own cap and the only control on screen was Close, which means SAY NOTHING. The row now sticks
+   to the foot exactly one Close high (1.75rem: the button's own 0.9rem line, its 0.35rem padding twice and its border)
+   so it sits flush on the pinned Close, painted with the card's own dark so the prose scrolls UNDER it and never
+   through it. A card that fits does not move: a sticky box at its natural place is just a box. Close keeps its
+   meaning and stays the last thing on the card. */
+.view-object > .table-actions {
+    position: sticky;
+    bottom: 1.75rem;
+    z-index: 3;
+    padding-bottom: 0.6rem;
+    background-color: var(--card-foot-fill, rgb(12, 16, 23));
 }
 
 /* U07-F02 · THE INTERVIEW'S PAPER ROWS READ IN FULL INK. On this card the row's label is the CHOICE (which paper to show),

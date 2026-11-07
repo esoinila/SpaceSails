@@ -970,6 +970,30 @@
     pointer-events: auto;
 }
 
+/* U10-F06 · THE CHECKLIST STANDS BELOW THE NAV COLUMN, NOT ON IT. The lesson checklist is a bottom-left overlay and the
+   Nav column (`.map-hud`: toolbar, readouts, dock hint, frame chip) is in flow from the top, so on a 700-tall window the
+   two overlap: measured at 1024 x 700 the card covers y 423-688 and the dock hint, the nearest-body line and the whole
+   frame-selector row sit under it, printed through each other. Both halves are said here, because a fix that moved
+   only one would trade the overprint for a clipped card: the card is capped at 10rem and its body scrolls (the shell's own
+   `.card-body`), and while it is open the column leaves 11rem under it (the cap, the 0.75rem sill and a hairline) and
+   scrolls inside what remains, the way the readouts already give first on a short window (#992). Nothing changes when the
+   checklist is closed. Gated to windows at least 900px wide: what a smaller window should do is the owner's call (it
+   drops to LOW), and this lane does not make it. */
+@media (min-width: 900px) {
+    ::deep .map-tutorial {
+        max-height: 10rem;
+    }
+
+    ::deep .map-tutorial > .card-body {
+        overflow-y: auto;
+        min-height: 0;
+    }
+
+    .map-page:has(.map-tutorial) .map-hud {
+        margin-bottom: 11rem;
+    }
+}
+
 ::deep .mission-celebration {
     max-width: min(30rem, 90vw);
     padding: 1.25rem 1.5rem;
@@ -1160,14 +1184,43 @@
     gap: 0.4rem;
 }
 
+/* U02-F07 · U10-F03 · THE BUBBLE LEAVES THE PERCH. Hung beside the bird it landed on whatever the desk had in that
+   corner ("Tank's runnin' dry" across FILL HER UP and the +10 top-up on the Trade desk; "Space Bar break" over the plan's
+   tiles on every frame of a garden visit). It rides the foot of the glass instead, bottom-left, just above the key bar
+   and clear of the avatar roundel. That strip is not control-free by construction: it is where the Nav checklist stands
+   when it is open, and on a phone the frame row, the Comms contact rows and the scope all reach down into it. So the
+   bubble only takes the pointer on the walked Deck, where it was MEASURED to have only the canvas beneath it at every
+   size; on every other desk it is pointer-events: none, as the perch always was, a caption that cannot be clicked (it
+   still times out by itself, U10-F03). With the Nav checklist open it steps right into the gap between the checklist and
+   the scope tile at >= 900px. The bird stays on its perch. */
 .parrot-bubble {
+    position: fixed;
+    left: 3.5rem;
+    bottom: 2.4rem;
+    pointer-events: none;
     background: rgba(245, 245, 240, 0.95);
     color: #1c2230;
     border-radius: 0.6rem;
     padding: 0.25rem 0.6rem;
     font-size: 0.8rem;
     font-weight: 600;
-    max-width: 16rem;
+    max-width: min(16rem, calc(100vw - 4.5rem));
+}
+
+/* Measured (live, 390x700, 1024x700 and 1440x900, every desk): the walked Deck is the one desk with nothing but the canvas
+   under that strip at every size, and it is the desk where a click on the bubble used to fall through to click-to-walk.
+   Every other desk has panels reaching into it (Comms' contact rows, Trade's tables, the Galley card's backdrop, the frame
+   row on a phone), so there the bubble stays a caption. */
+.parrot-bubble-deck {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+@media (min-width: 900px) {
+    .map-page:has(.map-tutorial) .parrot-bubble {
+        left: 23rem;
+        max-width: 11.5rem;
+    }
 }
 
 .parrot-bird {

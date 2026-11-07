@@ -23,7 +23,8 @@
     <div class="parrot-perch" aria-live="polite" title="the ship's parrot">
         @if (_parrotSquawk is not null)
         {
-            <div class="parrot-bubble">@_parrotSquawk</div>
+            <div class="parrot-bubble @(_deckMode ? "parrot-bubble-deck" : "")" role="button" title="Click to wave the parrot off"
+                 @onclick="() => Dismiss(DismissParrot)">@_parrotSquawk</div>
         }
         <span class="parrot-bird">🦜</span>
     </div>
