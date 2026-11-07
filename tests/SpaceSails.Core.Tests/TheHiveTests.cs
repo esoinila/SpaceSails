@@ -353,7 +353,8 @@ public sealed class TheHiveTests
             ["reever", "old one", "restore", "backup", "revive", "resurrect", "clone", "slave"];
 
         var text = new List<string> { UndergroundComplex.DescendingLine, UndergroundComplex.PressurisedLine,
-            UndergroundComplex.DeadAirLine };
+            UndergroundComplex.DeadAirLine,
+            UndergroundComplex.HeadOfficeDescendingLine, UndergroundComplex.HeadOfficeDeadAirLine };
         foreach (UndergroundComplex.Kind kind in Enum.GetValues<UndergroundComplex.Kind>())
         {
             text.AddRange(UndergroundComplex.SignsFor(kind));

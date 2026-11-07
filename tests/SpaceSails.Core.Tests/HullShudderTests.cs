@@ -74,6 +74,8 @@ public class HullShudderTests
     [InlineData(HullShudder.Setting.Haven, HullShudder.HavenRoom.Concourse)]
     [InlineData(HullShudder.Setting.Ship, HullShudder.HavenRoom.Concourse)]
     [InlineData(HullShudder.Setting.DeepSite, HullShudder.HavenRoom.Concourse)]
+    [InlineData(HullShudder.Setting.DeadHull, HullShudder.HavenRoom.Concourse)]
+    [InlineData(HullShudder.Setting.HeadOfficeVacuum, HullShudder.HavenRoom.Concourse)]
     public void LinePool_IsNonBlank_AndUnique(HullShudder.Setting setting, HullShudder.HavenRoom room)
     {
         IReadOnlyList<string> pool = HullShudder.LinesFor(setting, room);
@@ -82,10 +84,14 @@ public class HullShudderTests
         Assert.Equal(pool.Count, pool.Distinct().Count()); // no duplicates
     }
 
-    [Fact]
-    public void ChillPool_IsNonBlank_AndUnique()
+    [Theory]
+    [InlineData(HullShudder.Setting.DeepSite)]
+    [InlineData(HullShudder.Setting.Pressurised)]
+    [InlineData(HullShudder.Setting.Regolith)]
+    [InlineData(HullShudder.Setting.DeadHull)]
+    public void ChillPool_IsNonBlank_AndUnique(HullShudder.Setting setting)
     {
-        IReadOnlyList<string> pool = HullShudder.ChillLinesFor(HullShudder.Setting.DeepSite);
+        IReadOnlyList<string> pool = HullShudder.ChillLinesFor(setting);
         Assert.NotEmpty(pool);
         Assert.All(pool, line => Assert.False(string.IsNullOrWhiteSpace(line)));
         Assert.Equal(pool.Count, pool.Distinct().Count());
