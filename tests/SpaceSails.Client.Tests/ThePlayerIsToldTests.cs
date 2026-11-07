@@ -280,7 +280,7 @@ public sealed class ThePlayerIsToldTests
         // ── THE ROUND, AND WHAT IT DECIDES ABOUT YOU ───────────────────────────────────────────────────
         new("a guard hails you and wants to see a face with the paper",
             Surface.RankedPulse, "Patrol/Patrol.Challenge.cs", "TheHail",
-            "_host.ShowPulseMessage(PatrolBeat.HailLine, PulseRank.Beat);"),
+            "_host.ShowPulseMessage(hail, PulseRank.Beat);"),
         // #746 · The ONE pulse a checkpoint has, and it is correct precisely because the panel has just
         // gone: closing the card IS the scene's SAY NOTHING move, so there is no dialog subtree left to say
         // it in. #680 is about which surface the player is looking at, never about pulses being wrong — the

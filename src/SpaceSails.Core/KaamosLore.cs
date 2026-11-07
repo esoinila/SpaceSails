@@ -312,6 +312,7 @@ public static partial class KaamosLore
     public static string BarSeamLabel(string? stepFragmentId) => stepFragmentId switch
     {
         "berth-code" => "❄ Put the KAAMOS pieces together",
+        "holders-plate" => "🌑 Find the one who kept the berth",
         "bought-coordinate" => $"🌑 Buy the KAAMOS coordinate · {KaamosFind.BoughtCoordinateCredits:N0} cr",
         _ => "🌑 Ask about KAAMOS",
     };
@@ -320,6 +321,7 @@ public static partial class KaamosLore
     public static string BarSeamTitle(string? stepFragmentId) => stepFragmentId switch
     {
         "berth-code" => "Spread what you have gathered on the table and let the numbers answer each other",
+        "holders-plate" => "You have the words already. The barkeep knows the stool.",
         "bought-coordinate" =>
             $"Stand a round for the where and the when — {KaamosFind.BoughtCoordinateCredits:N0} cr off the purse",
         _ => "Ask around about the sealed ice-moon berth — PROJEKTI KAAMOS",

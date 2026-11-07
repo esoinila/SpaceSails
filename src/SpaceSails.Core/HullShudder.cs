@@ -55,6 +55,16 @@ public static partial class HullShudder
         /// these lines are allowed is the furniture pressure itself implies — air, fans, lights, a door on
         /// its stop, dust — and a guard sweeps for the rest.</para></summary>
         Pressurised = 4,
+
+        /// <summary>R1-F26 · A DEAD HULL — a wreck or a dead station. A hull with the crew gone: the groan is
+        /// the hull's, and the only witness is the captain. Chosen after the ground's own pressure fact and
+        /// before open regolith.</summary>
+        DeadHull = 5,
+
+        /// <summary>R1-F13 · A VACUUM FLOOR OF THE HEAD OFFICE. Lit, clean, kept and airless: the tremor
+        /// arrives through the boots and the building does not move with it. Chosen when the floor is below
+        /// ground, is the head office, and does not hold pressure.</summary>
+        HeadOfficeVacuum = 6,
     }
 
     // ── Onset cadence (rare-ish): how long the calm holds between shudders. ───────────────────────────
@@ -293,6 +303,37 @@ public static partial class HullShudder
         "The floor groans, and the groan goes on a half-second longer than the floor is long. The fans do not falter and the lights do not flicker, which somehow makes it worse. Nothing here decides it was nothing.",
         "A shudder comes up through good air and every loose thing on the floor moves at once — and then everything is still, and the stillness holds, and the ventilator note is the only thing in the world that is willing to speak.",
         "You hear it arrive and you hear it leave, and between those two there is a sound that this building does not make. The air is warm. The lights are on. You stand in the middle of all that being fine and you do not move.",
+    ];
+
+    // R1-F13 · A VACUUM FLOOR OF THE HEAD OFFICE: lit and clean and without air. Nothing in these moves with
+    // the floor, because there is nothing loose and nothing to carry it.
+    private static readonly string[] HeadOfficeVacuumLines =
+    [
+        "The floor moves. There is no air to carry it to you, so it arrives through your boots and stops there. The lamps ahead of you come up on their schedule, exactly as if nothing had happened, and that is what you decide too.",
+        "A tremor runs down the corridor and nothing on it moves — no dust to lift, nothing loose on any ledge, no door off its stop. Only the floor, and you on it. You wait for it again. The lamps go down behind you on time.",
+        "Something under the ice settles, and you feel it the way a hull would. In vacuum it is silent, and the building is silent with it: no fan to dip, no bulb to swing. You stand in a lit, clean corridor and listen to your own breathing change pace.",
+    ];
+
+    // R1-F26 · A DEAD HULL: nobody aboard to look up, and the captain the only witness.
+    private static readonly string[] DeadHullLines =
+    [
+        "The hull flexes around you with a groan you feel through your glove on the bulkhead and do not hear. She has been doing this a long time with nobody aboard to look up. You look up. Nothing is there to look back.",
+        "A shudder runs the length of her. Somewhere aft a frame takes up slack it has been taking up since before you were born, and settles. You hold still with your lamp on the deck and wait for the second one. It does not come. You decide it was the hull. There is nobody to decide it with.",
+        "The deck moves under you, once, the way a thing moves when something else has shifted its weight a long way off. In vacuum it is entirely silent. You stand in your own breathing and the lamp's circle and wait for her to do it again.",
+    ];
+
+    private static readonly string[] DeadHullChillLines =
+    [
+        "The hull groans and the groan goes on past where a groan ends. You are the only thing aboard with a heartbeat, and it has changed pace without asking. Nobody decides it was nothing. There is nobody to.",
+        "A shudder rolls through her and stops — and the stopping is wrong, too clean, as if it were caught. You stand with your lamp on the deck plates and do not look down the corridor. You look down the corridor.",
+    ];
+
+    // R1-F40 · THE CHILL ON OPEN GROUND: the crowded pool names heads and a hull, and there is neither.
+    private static readonly string[] RegolithChillLines =
+    [
+        "The ground moves and goes on moving a half-second longer than ground should. You wait for it to be nothing. It is not nothing yet. Then it is, and you cannot say when that happened.",
+        "Dust lifts off the regolith ahead of you in a line — a line, not a sheet — and settles. You look along it. It points at nothing you can see, and you decide not to decide what it points at.",
+        "A shiver comes up through your boots and your own breathing stops to listen to it. Nothing follows. The horizon is where it was. You are the only witness, and the witness would rather not have been.",
     ];
 
     // ══ THE UNEXPLAINED SIGNAL · a sibling ambient event (owner, 2026-07-20) ═════════════════════════════

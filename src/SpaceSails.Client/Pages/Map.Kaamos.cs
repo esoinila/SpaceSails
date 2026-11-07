@@ -49,8 +49,13 @@ public partial class Map
     /// first time this shard is held, so a caller narrates a genuinely NEW find and a re-read stays quiet.
     /// The reach-opens notice is appended on the single edge that flips CanReachEnceladus (assembling the
     /// capstone with enough intel behind it), so it fires exactly once per universe and never on reload
-    /// (a load re-hydrates the set without re-assembling).</summary>
-    private bool TryAssembleKaamos(string fragmentId, string foundMessage)
+    /// (a load re-hydrates the set without re-assembling).
+    ///
+    /// <para>R1-F96 · <paramref name="witnessed"/> is whether the captain is standing where the shard is (the
+    /// pod under the probe, the holder across the room). A second-hand leak (Marsh) assembles the shard and
+    /// says so, marks it HEARD, and raises NO plate: the shard is knowledge, the plate is witness, and the
+    /// plate is raised later, once, by <see cref="RaiseKaamosWitness"/>.</para></summary>
+    private bool TryAssembleKaamos(string fragmentId, string foundMessage, bool witnessed = true)
     {
         if (_kaamos.Has(fragmentId))
         {
@@ -61,6 +66,15 @@ public partial class Map
         if (!_kaamos.Assemble(fragmentId))
         {
             return false; // not a real pool id — refused by the spine, never a phantom in the set
+        }
+
+        if (!witnessed)
+        {
+            _kaamos.MarkHeard(fragmentId);
+        }
+        else
+        {
+            _kaamos.MarkWitnessed(fragmentId);
         }
 
         RequestVaultSave(); // a shard gathered is durable — save on the change (Map.Vault autosave)
@@ -87,7 +101,7 @@ public partial class Map
         // be a card with no picture and no words. ONCE PER SUBJECT: a second KAAMOS shard is a different
         // painting about a different thing, and OnceEver here would have shown the first and silently
         // swallowed the rest — the exact failure #541 widened the seen-key to stop.
-        if (KaamosLore.PlateFor(fragmentId) is not null)
+        if (witnessed && KaamosLore.PlateFor(fragmentId) is not null)
         {
             RaiseStoryBeat(StoryBeats.Beat.KaamosShardFound, fragmentId);
         }
@@ -101,6 +115,25 @@ public partial class Map
 
         MaybeFireConvergence(); // #422: an arc-1 shard may be the edge that crosses the JOINT threshold too
         return true;
+    }
+
+    /// <summary>R1-F96 · Is the plate still owed for this shard? Held second-hand and not yet stood over. The
+    /// state is persisted (the vault carries the witnessed set), so a reload owes nothing it already paid.</summary>
+    private bool KaamosWitnessOwed(string fragmentId) => _kaamos.WitnessOwed(fragmentId);
+
+    /// <summary>R1-F96 (Fable ruling A) · The plate is witness: standing at the pod, or pointed at the holder,
+    /// the card is always the subject's OWN plate, whether the shard was dug, read or heard. Raised once, and
+    /// the witness is saved the moment it is raised.</summary>
+    private void RaiseKaamosWitness(string fragmentId)
+    {
+        if (!KaamosWitnessOwed(fragmentId))
+        {
+            return;
+        }
+
+        _kaamos.MarkWitnessed(fragmentId);
+        RequestVaultSave();
+        RaiseStoryBeat(StoryBeats.Beat.KaamosShardFound, fragmentId);
     }
 
     /// <summary>#663 · THE WORLD NOTICES. <c>StoryBeats.Beat.ArcNewsBreaks</c> shipped with a painted canvas,
@@ -191,7 +224,7 @@ public partial class Map
             return null;
         }
 
-        int watchDay = (int)(SimTime / 86400);
+        int watchDay = (int)(_dockVisitSimTime / 86400);   // R1-F104 · the dock clock, like the other rare contacts
         if (!KaamosFind.BounceAtBar(bar, watchDay, forced: _kaamosBounceCheat))
         {
             return null;
@@ -255,11 +288,23 @@ public partial class Map
         }
 
         string bar = _dockedHavenId;
-        int watchDay = (int)(SimTime / 86400);
+        // R1-F104 · the DOCK clock, frozen when the captain tied up - the same one the deck's seated regulars
+        // and the oracle's stool read, so a three-day warp at the counter cannot change who is drinking.
+        int watchDay = (int)(_dockVisitSimTime / 86400);
 
-        if (!_kaamos.Has("holders-tell") && KaamosFind.HolderAtBar(bar, watchDay, forced: _kaamosHolderCheat))
+        // R1-F105 · the holder's tell is offered only to a captain whose thread exists: a shard in hand, or the
+        // bounced filing. The dev seat still forces it.
+        if (!_kaamos.Has("holders-tell")
+            && (_kaamos.Count > 0 || _kaamos.BerthFilingBounced || _kaamosHolderCheat)
+            && KaamosFind.HolderAtBar(bar, watchDay, forced: _kaamosHolderCheat))
         {
             return "holders-tell";
+        }
+
+        // R1-F96 · the plate owed for a tell that was only heard: the holder is here, the words are in hand.
+        if (KaamosWitnessOwed("holders-tell") && KaamosFind.HolderAtBar(bar, watchDay, forced: _kaamosHolderCheat))
+        {
+            return "holders-plate";
         }
 
         if (_kaamos.HasEnoughIntelToEarnTheKey && !_kaamos.Has(KaamosLore.KeyFragment.Id))
@@ -296,6 +341,14 @@ public partial class Map
                     "🌑 The barkeep tips their chin at a lone drinker in the corner. " +
                     KaamosLore.ById("holders-tell")!.Lore);
                 Overhear("👂 The KAAMOS berth-holder: \"You don't file for that berth. You keep it.\"", "kaamos-holder");
+                break;
+
+            case "holders-plate":
+                // The card first, then the line: the seam says it on whatever is now in front of the captain.
+                RaiseKaamosWitness("holders-tell");
+                SayItWhereTheyAreLooking(
+                    "🌑 The barkeep tips their chin at the corner. You have had the words for a while. " +
+                    "Now you have the back of a head that does not turn.");
                 break;
 
             case "berth-code":

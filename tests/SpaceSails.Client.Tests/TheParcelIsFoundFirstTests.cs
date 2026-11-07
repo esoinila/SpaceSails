@@ -170,8 +170,8 @@ public sealed class TheParcelIsFoundFirstTests
             "the arrival walks the wallet ladder — on the fine, that is a name the captain never gave.");
 
         // …and the fine is told on the ROUND'S OWN card: the same label, the same painting, one card.
-        Assert.Contains("UnlistedParcel.TheFineIsTold(g.Plate)", challenge, StringComparison.Ordinal);
-        Assert.Contains("PatrolBeat.ChallengeArtUrl, told.Card, told.Told", challenge, StringComparison.Ordinal);
+        Assert.Contains("UnlistedParcel.TheFineIsTold(g.Plate, TheAirHolds)", challenge, StringComparison.Ordinal);
+        Assert.Contains("PatrolBeat.ChallengeArtFor(TheAirHolds), told.Card, told.Told", challenge, StringComparison.Ordinal);
 
         // The judgement is Core's and only Core's: the page calls the one function and composes no arm of
         // its own — no second heat bank, no second folder write, no fine arithmetic.
@@ -218,7 +218,7 @@ public sealed class TheParcelIsFoundFirstTests
         int opens = challenge.IndexOf("PatrolBeat.Read opening = new(", StringComparison.Ordinal);
         int continues = challenge.IndexOf("UnlistedParcel.TheReadGoesOnAfterIt(", StringComparison.Ordinal);
         int cardUp = challenge.IndexOf(
-            "opening.Label, PatrolBeat.ChallengeArtUrl, opening.Card, opening.Told", StringComparison.Ordinal);
+            "opening.Label, PatrolBeat.ChallengeArtFor(TheAirHolds), opening.Card, opening.Told", StringComparison.Ordinal);
 
         Assert.True(opens > 0, "the arrival composes no opening for the tell to ride the front of.");
         Assert.True(continues > opens, "there is nothing yet for the tell to continue.");

@@ -129,8 +129,15 @@ public static partial class DeathNarration
 
     public static string Line(
         DeathCause cause, DeathPlace placeAsGiven, ulong seed, string? bodyName, bool heldStill = false,
-        int? undergroundLevel = null)
+        int? undergroundLevel = null, bool intoAStation = false)
     {
+        // R1-F23 · An impact into a STATION is hull on hull: the haven pool, not the one that blames the ground.
+        if (cause == DeathCause.Impact && intoAStation)
+        {
+            string haven = ImpactHavenLines[(int)(seed % (ulong)ImpactHavenLines.Length)];
+            return haven.Replace("{body}", string.IsNullOrWhiteSpace(bodyName) ? "that station" : bodyName!);
+        }
+
         // #1397 · the sweep team's death forks on what the captain DID with the challenge's three seconds.
         if (cause == DeathCause.Inspected && heldStill)
         {

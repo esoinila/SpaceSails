@@ -33,6 +33,14 @@ public sealed record KaamosSection
     /// would be exactly the drift <see cref="KaamosProgress.Assemble"/> refuses. A save written before
     /// #635 simply lacks the property and defaults to false.</summary>
     public bool BerthFilingBounced { get; init; }
+
+    /// <summary>R1-F20 · The shards that came second-hand (an oracle leak), so the later witness raises
+    /// Marsh's frame and the supply-run slip knows it was heard. A save without it reads as nothing heard.</summary>
+    public IReadOnlyList<string> HeardFragmentIds { get; init; } = [];
+
+    /// <summary>R1-F96 · The shards whose plate has been raised where it lives, so a reload does not owe the
+    /// witness again. A save without it reads as nothing witnessed, which owes only the heard shards.</summary>
+    public IReadOnlyList<string> WitnessedFragmentIds { get; init; } = [];
 }
 
 // ── NEBULA MUTUAL (#422): the second story arc, the truth behind the player's own deaths, per-thread. ──
@@ -64,6 +72,12 @@ public sealed record NebulaSection
     /// before 2026-09-17, and every captain who left the handle alone or pulled it on somebody else's
     /// jar.</summary>
     public bool PolicyClosed { get; init; }
+
+    /// <summary>R1-F96 · Shards that arrived second-hand (an oracle leak). Mirror of the KAAMOS field.</summary>
+    public IReadOnlyList<string> HeardFragmentIds { get; init; } = [];
+
+    /// <summary>R1-F96 · Shards whose plate has been raised where it lives. Mirror of the KAAMOS field.</summary>
+    public IReadOnlyList<string> WitnessedFragmentIds { get; init; } = [];
 }
 
 // ── The resume berth (owner's law): where the pirate wakes, always docked. ──

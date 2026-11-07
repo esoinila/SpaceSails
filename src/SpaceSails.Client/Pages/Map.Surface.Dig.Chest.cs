@@ -73,11 +73,22 @@ public partial class Map
         // #411: a rare seeded square on an outer icy moon hides a cold KAAMOS supply pod — a cargo run that
         // never arrived, distinct from ordinary treasure. Sweeping it the first time assembles cold-pod (and
         // may open the reach). Once held, the square is ordinary regolith and the normal probe result stands.
-        if (!_kaamos.Has("cold-pod") && KaamosPodHere(ex.Stop.Body.Id, squareX, squareY))
+        // R1-F96 · …and a pod whose shard is already in hand (Marsh told it) is still STOOD OVER: the re-find
+        // line and the witness plate, once.
+        // …but only while that witness is owed: a dug pod, or one already stood over, is ordinary regolith.
+        if (KaamosPodHere(ex.Stop.Body.Id, squareX, squareY)
+            && (!_kaamos.Has("cold-pod") || KaamosWitnessOwed("cold-pod")))
         {
-            TryAssembleKaamos("cold-pod",
-                "❄ Your probe rings off metal a foot down — not a coin, a HULL. You clear the frost and it's a " +
-                "SEALED SUPPLY POD, decades cold. " + KaamosLore.ById("cold-pod")!.Lore);
+            if (!_kaamos.Has("cold-pod"))
+            {
+                TryAssembleKaamos("cold-pod",
+                    "❄ Your probe rings off metal a foot down — not a coin, a HULL. You clear the frost and it's a " +
+                    "SEALED SUPPLY POD, decades cold. " + KaamosLore.ById("cold-pod")!.Lore);
+                return;
+            }
+
+            RaiseKaamosWitness("cold-pod");
+            SayItWhereTheyAreLooking("❄ Your probe rings off metal a foot down. You knew she was here. Knowing is not the same as standing over her.");
             return;
         }
 

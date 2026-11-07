@@ -621,7 +621,7 @@ public class TheRoundsOnTheRestrictedFloorsTests
         PatrolBeat.Read read = PatrolBeat.TheGuardReads(
             "luna", AHandsFloorOf("luna"), 0L, Plate, PatrolBeat.Badge("luna"), false);
         Assert.True(read.Satisfied);
-        Assert.Equal(PatrolBeat.SatisfiedLine, read.Line);
+        Assert.Equal(PatrolBeat.SatisfiedLineFor(UndergroundComplex.HoldsPressure("luna", AHandsFloorOf("luna"))), read.Line);
         Assert.Null(read.Consequence);
         Assert.Equal(read.Line, read.Told);
         Assert.Contains(Plate, read.Card, StringComparison.Ordinal);
@@ -651,11 +651,11 @@ public class TheRoundsOnTheRestrictedFloorsTests
             PatrolBeat.Read read = PatrolBeat.TheGuardReads("luna", -2, 0L, Plate, handed, false);
             Assert.False(read.Satisfied, $"{what} satisfied a guard.");
             Assert.Equal(expect, read.Line);
-            Assert.Equal(PatrolBeat.EscortLine, read.Consequence);
+            Assert.Equal(PatrolBeat.EscortLineFor(UndergroundComplex.HoldsPressure("luna", -2)), read.Consequence);
 
             // #736 · and the sentence the captain acts on is ON the card, under the read, in one string.
             Assert.StartsWith(read.Line, read.Told, StringComparison.Ordinal);
-            Assert.Contains(PatrolBeat.EscortLine, read.Told, StringComparison.Ordinal);
+            Assert.Contains(PatrolBeat.EscortLineFor(UndergroundComplex.HoldsPressure("luna", -2)), read.Told, StringComparison.Ordinal);
         }
     }
 

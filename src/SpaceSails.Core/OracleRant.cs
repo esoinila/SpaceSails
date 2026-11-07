@@ -247,9 +247,9 @@ public static class OracleRant
         new(OracleTruthKind.KaamosFragment, "vantar-log",
             "There's a hand still writing in the cold under the ice, long after the man who owned it was filed dead — I can hear the nib scratch on the down-tick of every hour. He taught them not to sleep through the dark. To hold it. Together, as one held breath."),
         new(OracleTruthKind.KaamosFragment, "holders-tell",
-            "The berth nobody files for is calling its manifest in again — I feel it in my back teeth every window, right on the tick. Same forty names, read out clean. I stopped being able to tell which of them was still doing the reading. You don't file for that berth. You keep it."),
+            "Somebody in this room used to hold a berth that is still being asked for. I can hear it ask — not words, a tick, like a clock that has outlived its wall. They hear it too. That's why they drink where the bulkhead can watch their back."),
         new(OracleTruthKind.KaamosFragment, "cold-pod",
-            "There's a pod going forty-souls-cold in the regolith and never once opened — I can taste the frost on its unbroken seals from here. Consumables. A wintering crew. Held, not lost. Somebody chose not to send it, and the ice moon went hungry for the choice."),
+            "There's a pod out on one of the cold moons that never once got opened — I can taste frost on seals nobody broke. It was packed for the dark and the dark went without it. I'd know lost; this isn't lost. Set down, by a hand that knew what it was setting down."),
 
         // Actual NEBULA MUTUAL shards (#422) — real ids the client hands to NebulaProgress.Assemble.
         new(OracleTruthKind.NebulaFragment, "rebirth-glitch",
