@@ -165,6 +165,21 @@ public static partial class SecretLab
         public IReadOnlyList<HiddenWay> TheHidden => Hidden ?? [];
     }
 
+    /// <summary>R1-F38 · The lab's far point: the CORE LOG square (the deepest console), or the middle of the
+    /// region's bounds if a build ever carries none. What "where the ground grew" names, because the door the
+    /// captain forced is the one spot guaranteed to be beside them.</summary>
+    public static (double X, double Y) FarPoint(in Region region)
+    {
+        foreach (LabConsole c in region.Consoles)
+        {
+            if (c.IsCoreLog)
+            {
+                return (c.X, c.Y);
+            }
+        }
+        return ((region.MinX + region.MaxX) / 2.0, (region.MinY + region.MaxY) / 2.0);
+    }
+
     /// <summary>
     /// #822 · A WAY OUT OF THE MOUNTAIN THAT IS ITSELF HIDDEN.
     ///

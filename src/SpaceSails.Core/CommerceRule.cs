@@ -317,6 +317,13 @@ public static class CommerceRule
         return contacts;
     }
 
+    /// <summary>#1440 · The ONE reach question: is a partner at <paramref name="partnerPosition"/> inside
+    /// shuttle range of the player? <see cref="ContactsWithinShuttleRange"/> asks it, and so does the Trade
+    /// tile, so a contact <see cref="ContactsAt"/> lists because it orbits the same body (a Hill sphere can be
+    /// wider than the shuttle corridor) is not counted as "in reach" when the shuttles could not fly it.</summary>
+    public static bool InShuttleReach(ShipState player, Vector2d partnerPosition) =>
+        (player.Position - partnerPosition).Length <= ShuttleRangeMeters;
+
     /// <summary>
     /// M29: every tradable partner within shuttle range of the PLAYER, wherever it happens to
     /// be keyed — the "send the shuttles" opportunity list. Depots (with their host's fence
@@ -339,7 +346,7 @@ public static class CommerceRule
             }
 
             double distance = (ship.State.Position - player.Position).Length;
-            if (distance > ShuttleRangeMeters)
+            if (!InShuttleReach(player, ship.State.Position))
             {
                 continue;
             }
@@ -372,7 +379,7 @@ public static class CommerceRule
 
             Vector2d position = ephemeris.Position(child.Id, simTime);
             double distance = (position - player.Position).Length;
-            if (distance > ShuttleRangeMeters)
+            if (!InShuttleReach(player, position))
             {
                 continue;
             }

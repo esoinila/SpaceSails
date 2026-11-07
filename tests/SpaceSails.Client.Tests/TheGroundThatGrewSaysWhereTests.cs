@@ -118,13 +118,90 @@ public class TheGroundThatGrewSaysWhereTests
 
                 Call(map, "ForceSecretLabDoor", ex);
 
+                // R1-F38 · the ground that grew is the LAB: its far point, not the door the captain stands at.
+                (double fx, double fy) = SecretLab.FarPoint(SecretLab.Build(body, field, placement.DoorX, placement.DoorY));
                 AssertPlateNames((string)Read(map, "_groundGrewWhere")!, body, level: 0,
-                    placement.DoorX - ax, placement.DoorY - ay, $"{body} · the lab door");
+                    fx - ax, fy - ay, $"{body} · the lab's far point");
                 opened++;
             }
         }
 
         Assert.True(opened > 8, $"only {opened} lab doors were forced.");
+    }
+
+    /// <summary>R1-F38 · Forced from the doorstep, the plate must not read "0 du": the captain stands at the
+    /// door, so a plate that names the door says nothing, and its bearing points at the wrong side. The lab is
+    /// always some real distance away, and the bearing must point to the side the lab is drawn on.</summary>
+    [Fact]
+    public void TheSecretLab_ForcedFromItsDoorstep_NamesTheLabNotTheDoor()
+    {
+        SurfaceLayout.Field field = MoonSurface.ExpeditionField();
+        foreach (string body in new[] { "luna", "titan", "miranda", "phobos" })
+        {
+            SecretLab.Placement placement = SecretLab.For(body, field, forcePresent: true);
+            Map map = OnAnExpedition(body, placement.DoorX, placement.DoorY);
+            object ex = Surface(map);
+            ex.GetType().GetProperty("Lab")!.SetValue(ex, placement);
+            ex.GetType().GetProperty("SecretLabDoorRevealed")!.SetValue(ex, true);
+
+            Call(map, "ForceSecretLabDoor", ex);
+
+            string plate = (string)Read(map, "_groundGrewWhere")!;
+            (double fx, double fy) = SecretLab.FarPoint(SecretLab.Build(body, field, placement.DoorX, placement.DoorY));
+            double range = Math.Sqrt(Math.Pow(fx - placement.DoorX, 2) + Math.Pow(fy - placement.DoorY, 2));
+            Assert.True(range >= 2.0, $"{body}: the lab's far point is only {range:F1} du from its door");
+            Assert.DoesNotContain(" 0 du", plate);
+            Assert.DoesNotContain(" 1 du", plate);
+            Assert.Contains(SdrScanner.BearingFrom(fx - placement.DoorX, fy - placement.DoorY), plate);
+        }
+    }
+
+    /// <summary>R1-F39 · A lab console answers [E] only to a captain who could stand beside it. Drive the shipping
+    /// force, then sweep standing points on the open floor around every lab cache and log: wherever the key would
+    /// answer, no solid wall may lie between the captain and the console.</summary>
+    [Fact]
+    public void LabConsoles_DoNotAnswerThroughASolidWall()
+    {
+        SurfaceLayout.Field field = MoonSurface.ExpeditionField();
+        int answered = 0;
+        foreach (string body in new[] { "luna", "titan", "miranda", "phobos" })
+        {
+            SecretLab.Placement placement = SecretLab.For(body, field, forcePresent: true);
+            Map map = OnAnExpedition(body, placement.DoorX, placement.DoorY);
+            object ex = Surface(map);
+            ex.GetType().GetProperty("Lab")!.SetValue(ex, placement);
+            ex.GetType().GetProperty("SecretLabDoorRevealed")!.SetValue(ex, true);
+            Call(map, "ForceSecretLabDoor", ex);
+            var plan = (DeckPlan)Read(map, "_deckPlan")!;
+
+            foreach (DeckPlan.ConsoleSpot c in plan.Consoles.Where(k =>
+                k.Kind is DeckPlan.ConsoleKind.LabCache or DeckPlan.ConsoleKind.LabConsole))
+            {
+                for (double dx = -3.0; dx <= 3.0; dx += 0.25)
+                {
+                    for (double dy = -3.0; dy <= 3.0; dy += 0.25)
+                    {
+                        double px = c.X + dx, py = c.Y + dy;
+                        if (plan.Collides(px, py) || plan.NearestConsoleSpot(px, py) is not { } hit || hit != c)
+                        {
+                            continue;
+                        }
+                        answered++;
+                        double d = Math.Sqrt((dx * dx) + (dy * dy));
+                        if (d < 0.3)
+                        {
+                            continue;
+                        }
+                        bool walled = plan.CastRay(px, py, -dx / d, -dy / d, out double dist, out bool window, out _, out _)
+                            && !window && dist < d - 0.05;
+                        Assert.False(walled,
+                            $"{body}: [E] at ({px:F2},{py:F2}) reaches '{c.Label}' at ({c.X:F2},{c.Y:F2}) through a wall " +
+                            $"{dist:F2} du along a {d:F2} du line.");
+                    }
+                }
+            }
+        }
+        Assert.True(answered > 100, $"only {answered} reach points were swept.");
     }
 
     // ── LAW 2 · THE FAN CARRIES THE RING AFTER THE REVEAL, AND NOT BEFORE ─────────────────────────────

@@ -208,6 +208,9 @@ public sealed class TheHardcaseOnTheMoonTests
 
         int notesBefore = Notes(map).Count;
         Set(map, "_pulse", default(PulseSlot));
+        // R1-F42 · the FLIGHT is silent; a pitch card torn down by it says one line from the close
+        // (THE_PitchThatIsTornDownSaysSo). This guard runs with no card up, so what it proves is the flight's.
+        Set(map, "_hardcaseCard", null);
         PutAnOldOneAt(map, x + (HardcaseRep.SeesOneAtDu / 2), y);
 
         bool ranAtAll = false;
@@ -224,6 +227,55 @@ public sealed class TheHardcaseOnTheMoonTests
         }
 
         Assert.True(ranAtAll, "nobody ran, so nothing had a chance to be said about it.");
+    }
+
+    /// <summary>
+    /// <b>R1-F42 · THE PITCH GOES WITH HIM, AND SAYS SO.</b> The card is up, an Old One crests the rim, and the
+    /// card that vanishes leaves one line behind — said from the CLOSE, not from the flight.
+    ///
+    /// <para><b>Proven RED</b> by passing <c>Answered</c> from <c>HeBreaksAndRuns</c>: the card still goes and
+    /// nothing is said.</para>
+    /// </summary>
+    [Fact]
+    public void THE_PitchThatIsTornDownSaysSo()
+    {
+        Pages.Map map = OnTheRegolith();
+        for (int i = 0; i < 3000 && Card(map) is null; i++)
+        {
+            RunFrames(map, 1);
+        }
+
+        Assert.NotNull(Card(map));
+        Set(map, "_pulse", default(PulseSlot));
+        (double x, double y) = Where(TheOneOnTheGround(map));
+        PutAnOldOneAt(map, x + (HardcaseRep.SeesOneAtDu / 2), y);
+        for (int i = 0; i < 20 && Card(map) is not null; i++)
+        {
+            RunFrames(map, 1);
+        }
+
+        Assert.Null(Card(map));
+        Assert.Equal("He steps back off your elbow mid-sentence, and the pitch goes with him.", ThePulse(map));
+    }
+
+    /// <summary>R1-F42 · …and an ANSWERED close says only what the answer says: the refusal line, never the
+    /// step-back line.</summary>
+    [Fact]
+    public void THE_PitchThatIsAnsweredDoesNotSayHeStepsBack()
+    {
+        Pages.Map map = OnTheRegolith();
+        for (int i = 0; i < 3000 && Card(map) is null; i++)
+        {
+            RunFrames(map, 1);
+        }
+
+        Assert.NotNull(Card(map));
+        Set(map, "_pulse", default(PulseSlot));
+        Invoke(map, "AnswerTheHardcase", NebulaRep.RepMove.NotToday);
+
+        Assert.Null(Card(map));
+        Assert.Equal(HardcaseRep.OnRefusal, ThePulse(map));
+        Assert.DoesNotContain("steps back", ThePulse(map) ?? "", StringComparison.Ordinal);
     }
 
     /// <summary>…and the same absence, read off the SOURCE, because a line added later lands in a place no

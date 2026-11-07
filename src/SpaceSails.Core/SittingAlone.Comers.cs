@@ -94,6 +94,14 @@ public static partial class SittingAlone
         return pool[(int)(((beat % pool.Count) + pool.Count) % pool.Count)];
     }
 
+    /// <summary>U09-F05 · The silence at a gallery-top table, beat by beat — a call of its own for the reason
+    /// <see cref="NobodyCameAtYourOwnCounter"/> is: the room is neither the hall nor the ship.</summary>
+    /// <param name="beat">How many times you have waited at this table this sitting, from zero.</param>
+    public static string NobodyCameAtTheGalleryTop(int beat) =>
+        NobodyCameGalleryTop[
+            (int)(((beat % NobodyCameGalleryTop.Count) + NobodyCameGalleryTop.Count)
+                  % NobodyCameGalleryTop.Count)];
+
     /// <summary>Every line in all three pools, for the canon grep. The guard walks THIS, so a line added tomorrow
     /// is checked tomorrow.</summary>
     public static IEnumerable<string> AllProse()
@@ -122,6 +130,11 @@ public static partial class SittingAlone
         }
         // #1040 · …and the counter's, walked by the same grep for the same reason.
         foreach (string s in NobodyCameShipCounter)
+        {
+            yield return s;
+        }
+        // U09-F05 · …and the gallery's.
+        foreach (string s in NobodyCameGalleryTop)
         {
             yield return s;
         }
