@@ -99,6 +99,9 @@ public static partial class MoonSurface
     /// <para>It reaches past the top of the field and is clamped there. Nothing marks where it ends, because
     /// the true edge of it is over the horizon and saying so would be the game explaining itself.</para>
     /// </summary>
+    /// <summary>The umbra's and the penumbra's opacity (black over the regolith).</summary>
+    public const double UmbraAlpha = 0.22, PenumbraAlpha = 0.10;
+
     private static void AddShadow(List<SurfaceScenery.Mark> scenery, in SurfaceLayout.Field field)
     {
         double nearY = field.AnchorY + Monolith.HalfHeight;          // the lit face; the shade starts here
@@ -111,22 +114,18 @@ public static partial class MoonSurface
         double nearHalf = Monolith.HalfWidth;
         double farHalf = Monolith.HalfWidth * Monolith.ShadowSpread;   // a low sun's penumbra is not subtle
 
-        // Nine strokes: the two edges of the umbra and seven streaks inside it. Enough that a captain crossing
-        // it reads a REGION of shade rather than a channel with banks — a rille is two lines and this must
-        // never be mistaken for one.
-        const int Strokes = 9;
-        for (int i = 0; i < Strokes; i++)
-        {
-            double t = (i / (double)(Strokes - 1) * 2.0) - 1.0;       // −1 … +1 across the lane
-            // The inner streaks stop short and at staggered lengths, so the far end frays out instead of
-            // ending on a line. A shadow with a hem is a wall's shadow; this one belongs to something whose
-            // top nobody has seen.
-            double reach = i == 0 || i == Strokes - 1 ? 1.0 : 0.55 + (0.4 * ((i * 7 % 5) / 4.0));
-            scenery.Add(new SurfaceScenery.Mark(
-                field.AnchorX + (t * nearHalf), nearY,
-                field.AnchorX + (t * farHalf * reach), nearY + ((farY - nearY) * reach),
-                SurfaceScenery.Kind.Rille));
-        }
+        // R1-F78 (#1411) · Two FILLED quads, not nine strokes (Fable ruling 2026-11-07). Nine near-parallel
+        // strokes read as a rille with banks however they were staggered; a shadow is an AREA. The umbra is the
+        // dark core out to four fifths of the reach; the penumbra is the paler remainder and carries no hem on its
+        // far end — it simply stops being drawn at the top of the walked world, where the shade is over the horizon.
+        double midY = nearY + ((farY - nearY) * 0.8);
+        double midHalf = farHalf * 0.8;
+        scenery.Add(new SurfaceScenery.Mark(
+            field.AnchorX, nearY, field.AnchorX, midY, SurfaceScenery.Kind.Shade,
+            HalfNear: nearHalf, HalfFar: midHalf, Alpha: UmbraAlpha));
+        scenery.Add(new SurfaceScenery.Mark(
+            field.AnchorX, midY, field.AnchorX, farY, SurfaceScenery.Kind.Shade,
+            HalfNear: midHalf, HalfFar: farHalf, Alpha: PenumbraAlpha));
     }
 
     // The ship carries one amber shuttle-airlock door across the (bottom) hatch; drop it so the tube's

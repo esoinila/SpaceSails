@@ -83,6 +83,10 @@ public sealed partial class DeckView
         // collided — they live in their own array precisely so no oversight can give them substance.
         foreach (SpaceSails.Core.SurfaceScenery.Mark m in plan.Scenery)
         {
+            if (m.Of == SpaceSails.Core.SurfaceScenery.Kind.Shade)
+            {
+                continue;   // R1-F78 · a filled area, drawn in its own pass below (after the texture, before any wall)
+            }
             // #563 · OFF THE GLASS IS NOT DRAWN. The regolith used to be one field's worth of weather and
             // could be painted whole without anybody noticing; it is a lattice of tiles now, and the frame
             // carries nine of them. Measured on the pinned regolith run, welding the chunk in put the
@@ -108,6 +112,31 @@ public sealed partial class DeckView
                 _ => (new RgbaColor(58, 60, 66, 175), 1.3f),
             };
             DrawSeg((sx1, sy1), (sx2, sy2), ink, wide);
+        }
+
+        // R1-F78 (#1411) · THE SHADE, after the regolith's texture and before every wall, figure and console.
+        // A filled quad at low alpha with no stroke: a shadow is an area, and scenery never collides.
+        foreach (SpaceSails.Core.SurfaceScenery.Mark m in plan.Scenery)
+        {
+            if (m.Of != SpaceSails.Core.SurfaceScenery.Kind.Shade)
+            {
+                continue;
+            }
+            (float ax, float ay) = project(m.X1 - m.HalfNear, m.Y1);
+            (float bx, float by) = project(m.X1 + m.HalfNear, m.Y1);
+            (float cx, float cy) = project(m.X2 + m.HalfFar, m.Y2);
+            (float dx, float dy) = project(m.X2 - m.HalfFar, m.Y2);
+            const float Reach = 12f;
+            if ((MathF.Max(MathF.Max(ax, bx), MathF.Max(cx, dx)) < -Reach)
+                || (MathF.Min(MathF.Min(ax, bx), MathF.Min(cx, dx)) > _viewW + Reach)
+                || (MathF.Max(MathF.Max(ay, by), MathF.Max(cy, dy)) < -Reach)
+                || (MathF.Min(MathF.Min(ay, by), MathF.Min(cy, dy)) > _viewH + Reach))
+            {
+                continue;
+            }
+            Span<float> q = _scratch.AsSpan(0, 8);
+            q[0] = ax; q[1] = ay; q[2] = bx; q[3] = by; q[4] = cx; q[5] = cy; q[6] = dx; q[7] = dy;
+            _renderer.DrawPolygon(q, new RgbaColor(0, 0, 0, (byte)Math.Round(255 * m.Alpha)), default, 0f);
         }
 
         DrawUnseenFalloff(plan, scale, ox, oy);

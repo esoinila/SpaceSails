@@ -29,7 +29,12 @@ namespace SpaceSails.Core;
 public static class SurfaceScenery
 {
     /// <summary>A drawn-only mark: a line on the ground with no substance.</summary>
-    public readonly record struct Mark(double X1, double Y1, double X2, double Y2, Kind Of);
+    /// <summary>R1-F78 (#1411) · For <see cref="Kind.Shade"/> the mark is a FILLED QUAD, not a stroke: the
+    /// centre line runs (X1, Y1) -> (X2, Y2), the quad is <paramref name="HalfNear"/> wide either side of the near
+    /// end and <paramref name="HalfFar"/> either side of the far end, filled black at <paramref name="Alpha"/> with
+    /// no stroke. Every other kind ignores the three trailing fields.</summary>
+    public readonly record struct Mark(double X1, double Y1, double X2, double Y2, Kind Of,
+        double HalfNear = 0, double HalfFar = 0, double Alpha = 0);
 
     /// <summary>What a mark is, which is only ever a hint to the renderer about weight and tint. Nothing
     /// here has any effect on movement, sight, or anything a test of the ground would ask about.</summary>
@@ -46,6 +51,10 @@ public static class SurfaceScenery
 
         /// <summary>A rille: a channel, drawn as two near-parallel banks.</summary>
         Rille,
+
+        /// <summary>R1-F78 (#1411) · A filled, low-alpha area of shade (the monolith's shadow). Scenery only:
+        /// never collided, never a wall.</summary>
+        Shade,
     }
 
     /// <summary>How many terrain features a site carries. Generous — this is the layer that makes the
@@ -88,6 +97,10 @@ public static class SurfaceScenery
                 default: AddRille(marks, cx, cy, size, turn); break;
             }
         }
+
+        // U05-F01 (#1419) · the kind's landmark stamp draws its own marks (an apron, a fissure's banks).
+        // WildPlain / QuietBasin / site 0 return none, so their scenery is exactly what it was.
+        marks.AddRange(SurfaceLayout.StampFor(bodyId, field, siteSalt).Marks);
 
         return marks;
     }
