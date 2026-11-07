@@ -730,7 +730,7 @@ public sealed class HudCollisionTests : IAsyncLifetime
     ///
     /// <para><b>The sighting</b> (played, 2026-09-17, 1440×1100): <c>/map?start=wreck&amp;dest=saturn</c>, then
     /// <c>P</c> for the plotting table. The table grows the toolbar by four more buttons
-    /// (<c>⏭ next event</c>, <c>⏩ Long coast ahead — skip it</c>, <c>🚀 Long haul</c>, <c>Resume</c>) and the
+    /// (<c>⏭ next event</c>, <c>⏭ Dead coast ahead — sleep through it</c>, <c>🚀 Long haul</c>, <c>Resume</c>) and the
     /// row runs to the right edge of the window — where the desk-chip column is. Measured in the page:
     /// <c>▶ Play</c> at <c>[x 1218, y 125, w 76, h 32]</c>, and
     /// <c>elementFromPoint(right edge, middle)</c> came back <c>.desk-chip</c> (📡 Sensors). Roughly the last

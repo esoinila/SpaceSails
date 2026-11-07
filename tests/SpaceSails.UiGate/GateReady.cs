@@ -14,8 +14,8 @@ namespace SpaceSails.UiGate;
 /// only when something moved):</para>
 /// <code>
 /// [ 13155 ms] Follow Ship visible — THIS IS WHERE THE GATE MEASURES
-/// [ 13173 ms] ⏭ Long coast ahead (30 d) — @388,125 w243 … Follow Ship@880,125 | Follow dest@978,125
-/// [ 13968 ms] ⏭ Long coast ahead (29 d 23 @388,125 w274 … Follow Ship@911,125 | Follow dest@20,165
+/// [ 13173 ms] ⏭ Dead coast ahead (30 d) — @388,125 w243 … Follow Ship@880,125 | Follow dest@978,125
+/// [ 13968 ms] ⏭ Dead coast ahead (29 d 23 @388,125 w274 … Follow Ship@911,125 | Follow dest@20,165
 /// </code>
 /// <para>Eight hundred milliseconds after the boot door came down, the long-coast advert re-read its own
 /// countdown — <c>30 d</c> to <c>29 d 23 h</c>, <b>thirty-one pixels wider</b>. That was more than the row
