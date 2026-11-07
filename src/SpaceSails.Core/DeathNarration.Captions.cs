@@ -227,6 +227,11 @@ public static partial class DeathNarration
         _ => "busted-ship-explosion.jpg",
     };
 
+    /// <summary>R1-F23 · The placed headline: an impact into a station reads "you hit the station"; every other
+    /// case is the unplaced headline below, unchanged.</summary>
+    public static string Headline(DeathCause cause, bool intoAStation) =>
+        cause == DeathCause.Impact && intoAStation ? "WHAT HAPPENED — you hit the station" : Headline(cause);
+
     /// <summary>The short WHAT-HAPPENED headline for the block above the brain-backup copy.</summary>
     public static string Headline(DeathCause cause) => cause switch
     {

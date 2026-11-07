@@ -75,9 +75,16 @@
                                    is open for — and, on an armed plan, the RETURN BY it binds you to, because
                                    the ship flies on whether or not you are back aboard. *@
                                 <span class="deck-shuttle-meta deck-shuttle-window">
-                                    ⏳ @AwayWindowWord(WindowOn(local.Body.Id))@(RouteReturnBySimTime(local.Body.Id) is { } by
-                                        ? $" · RETURN BY {RouteShuttleWindow.Stamp(by)} — the ship flies on"
-                                        : "")
+                                    @if (GigRockWindowRow(local.Body.Id, local.TravelSeconds) is { } gigRockRow)
+                                    {
+                                        @gigRockRow
+                                    }
+                                    else
+                                    {
+                                        <text>⏳ @AwayWindowWord(WindowOn(local.Body.Id))@(RouteReturnBySimTime(local.Body.Id) is { } by
+                                            ? $" · RETURN BY {RouteShuttleWindow.Stamp(by)} — the ship flies on"
+                                            : "")</text>
+                                    }
                                 </span>
                             </div>
                             <div class="deck-shuttle-row-actions">

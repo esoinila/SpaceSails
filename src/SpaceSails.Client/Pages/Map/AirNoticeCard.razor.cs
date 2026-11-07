@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Components;
+using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
 
@@ -23,6 +24,8 @@ public partial class AirNoticeCard
     // changing, and what lets the suite's source guards read it through MapMarkup exactly as they read it
     // when it lived in the page. A parameter that needs saying more than that says it on its own line.
 
+    // R1-F69 · The face the card paints, surface or dead floor - the page works it out from where the captain stands.
+    [Parameter] public AirCard.Face AirCardFace { get; set; } = default!;
     [Parameter] public Action CloseAirCard { get; set; } = default!;
     [Parameter] public Func<Action, Task> Dismiss { get; set; } = default!;
 
