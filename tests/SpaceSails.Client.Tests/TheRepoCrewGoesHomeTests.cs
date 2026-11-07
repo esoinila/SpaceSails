@@ -578,6 +578,13 @@ public sealed class TheRepoCrewGoesHomeTests
         while (Get(map, "_busted") is null && spent < FrameCeiling)
         {
             Invoke(map, "StepCollectors", Frame);
+            // U04-F09 · ARRIVAL, THEN THE WRIT: the boat's arrival card is on the glass and the demand waits behind
+            // it (never stacked on it). The captain reads it and shuts it, and the held demand goes up.
+            if (Get(map, "_storyCard") is not null)
+            {
+                Invoke(map, "CloseStoryCard");
+            }
+            Invoke(map, "PumpTheScrimQueue");
             spent++;
         }
 

@@ -247,6 +247,21 @@ public partial class Map
     /// they want the same thing. What is different is that you walked into it and cannot burn away.</summary>
     private void TheWritIsServed(SurfaceExcursion ex)
     {
+        // U04-F09 (Fable ruling 2026-11-07) · ARRIVAL, THEN THE DOOR, THEN ANYTHING ELSE: the demand is a full-viewport
+        // card like the rest, so it goes through #1052's arbiter and waits behind a card that is already up (the
+        // door-keeper's, a salesman's) rather than stacking on it. It is asked again at the far end of the wait:
+        // the collectors must still hold the captain, on this ground, with nothing else having ended his run. A
+        // DEATH is never routed here — those cards raise the instant the death happens (TriggerImpact,
+        // TriggerSurfaceOverdrawDeath, SheGoesWithHim) and wait behind nothing.
+        RaiseAScrimCard(
+            () => TheWritIsServedNow(ex),
+            () => _busted is null && ReferenceEquals(_surface, ex) && !CaptainBeyondReach
+                  && ex.CollectorsLanded && !ex.CollectorsGoingHome,
+            key: "collectors-writ");
+    }
+
+    private void TheWritIsServedNow(SurfaceExcursion ex)
+    {
         RendererInterop.PlayCue("board");
         ShowPulseMessage(CollectorLanding.ContactLine(ex.CollectorCallsign));
 
