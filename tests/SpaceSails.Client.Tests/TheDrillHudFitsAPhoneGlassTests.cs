@@ -29,6 +29,8 @@ public sealed class TheDrillHudFitsAPhoneGlassTests
     {
         public List<(float X, float Y, string Text, string Font, TextAlign Align)> Words { get; } = [];
 
+        public List<byte> Alphas { get; } = [];
+
         public List<(float X, float Y, float W, float H, RgbaColor Ink)> Fills { get; } = [];
 
         public void BeginFrame(int w, int h, RgbaColor b) { }
@@ -45,8 +47,11 @@ public sealed class TheDrillHudFitsAPhoneGlassTests
             }
         }
         public void DrawPolyline(ReadOnlySpan<float> p, RgbaColor s, float w = 1f) { }
-        public void DrawText(float x, float y, string text, RgbaColor c, string font = "12px sans-serif", TextAlign align = TextAlign.Left) =>
+        public void DrawText(float x, float y, string text, RgbaColor c, string font = "12px sans-serif", TextAlign align = TextAlign.Left)
+        {
             Words.Add((x, y, text, font, align));
+            Alphas.Add(c.A);
+        }
     }
 
     private static Pen Draw(string line, string? stall = null)
@@ -151,7 +156,7 @@ public sealed class TheDrillHudFitsAPhoneGlassTests
     /// <summary>#1466 · THE WORLD'S WORDS NEVER SIT UNDER THE BAND. The live pass of #1464 found the moored ship's
     /// "ENGINE ROOM", "SCUTTLING CHARGES", the ⚓ and the boxed AIRLOCK showing through the drill line at 390x700:
     /// the band is the last thing drawn but its plate is translucent. The moored ship on the rock's ground is drawn at a sweep of
-    /// captain positions (the follow-cam moves every label across the top of the glass) and no text other than the
+    /// captain positions (the follow-cam moves every label across the top of the glass) and no FULL-alpha text other than the
     /// band's own rows may touch the plate rectangle.</summary>
     [Fact]
     public void NoWorldLabelIsDrawnUnderTheBandPlate()
@@ -173,8 +178,10 @@ public sealed class TheDrillHudFitsAPhoneGlassTests
                 var pen = new Pen();
                 new DeckView(pen).Draw(ship, PhoneW, PhoneH, simTime: 0.0, in state, surface: hud);
                 var plate = TheBandPlate(pen);
-                foreach (var w in pen.Words)
+                for (int wi = 0; wi < pen.Words.Count; wi++)
                 {
+                    var w = pen.Words[wi];
+                    if (pen.Alphas[wi] < 128) { continue; }   // a dimmed label is a yielded one
                     if (DrillLine.Contains(w.Text, StringComparison.Ordinal) && w.Align == TextAlign.Center && w.Y < plate.Y + plate.H + 1)
                     {
                         continue; // the band's own rows

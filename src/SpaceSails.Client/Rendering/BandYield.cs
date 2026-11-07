@@ -7,7 +7,7 @@ namespace SpaceSails.Client.Rendering;
 
 /// <summary>
 /// #1466 · THE WORLD'S WORDS YIELD TO THE HUD BAND. An <see cref="IRenderer"/> between <see cref="DeckView"/> and
-/// the canvas that, while armed with the comms band's plate rectangle, refuses any text whose ink box meets it.
+/// the canvas that, while armed with the comms band's plate rectangle, dims (alpha x 0.25) any text whose ink box meets it.
 /// The band is drawn last, but its plate is translucent, so a room name, the ⚓ or the boxed AIRLOCK under it
 /// showed through "bore, then FIRE" on a 390 px phone (the live pass of #1464). Walls, plates and floor art are
 /// untouched: only words yield, and only while the band is up. <see cref="DeckView"/> arms it once the band is
@@ -33,6 +33,11 @@ internal sealed class BandYield(IRenderer inner) : IRenderer
     internal bool Meets(float x, float y, string text, string font, TextAlign align)
     {
         if (!_armed)
+        {
+            return false;
+        }
+        // The cheap vertical bound first (no font is taller than 40 px): most labels never reach the regex.
+        if (y + 12.0 < _y || y - 40.0 > _y + _h)
         {
             return false;
         }
@@ -68,10 +73,10 @@ internal sealed class BandYield(IRenderer inner) : IRenderer
     public void DrawText(float xPx, float yPx, string text, RgbaColor color,
                          string font = "12px sans-serif", TextAlign align = TextAlign.Left)
     {
-        if (!Meets(xPx, yPx, text, font, align))
-        {
-            _inner.DrawText(xPx, yPx, text, color, font, align);
-        }
+        // DIMMED, not dropped: a label that grazes the plate must not vanish and pop back as the camera moves.
+        _inner.DrawText(xPx, yPx, text,
+            Meets(xPx, yPx, text, font, align) ? new RgbaColor(color.R, color.G, color.B, (byte)(color.A * 0.25)) : color,
+            font, align);
     }
 
     public void DrawImage(int imageId, float xPx, float yPx, float widthPx, float heightPx, float alpha = 1f) =>
