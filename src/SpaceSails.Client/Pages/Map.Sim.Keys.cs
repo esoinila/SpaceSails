@@ -96,6 +96,19 @@ public partial class Map
             _audioEnabled = RendererInterop.GetAudioEnabled();
         }
 
+        // #1483 · THE LOGBOOK AND THE FRONT DOOR OWN THE KEYBOARD. With the save rack or the start picker up, 7 and
+        // V (and every other game key) were acting on the voyage behind the modal. Esc still closes the logbook;
+        // nothing else gets through while either is open.
+        if (_showSaveDrawer || _showStartPicker)
+        {
+            if (e.Key == "Escape" && _showSaveDrawer)
+            {
+                CloseSaveDrawer();
+                StateHasChanged();
+            }
+            return;
+        }
+
         if (_shuttleRun is not null)
         {
             switch (e.Key)

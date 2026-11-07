@@ -96,5 +96,7 @@ public sealed class ThePinnedLayoutPassThreeTests
         Assert.Contains("overflow-y: auto", block, StringComparison.Ordinal);
         Assert.Contains(".map-page:has(.map-tutorial) .map-hud", block, StringComparison.Ordinal);
         Assert.Contains("margin-bottom: 11rem", block, StringComparison.Ordinal);
+        // #1483 · …and the card stands right of the captain's roundel (0.75rem + 2.15rem), not under it.
+        Assert.Contains("left: 3.5rem", block, StringComparison.Ordinal);
     }
 }

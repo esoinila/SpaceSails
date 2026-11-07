@@ -214,7 +214,7 @@ public static partial class SurfaceLayout
                 double g1 = Lerp(minX + 30, mid - 15, Frac(key, "stamp:gap1"));
                 double g2 = Lerp(mid + 15, maxX - 30, Frac(key, "stamp:gap2"));
                 (double From, double To)[] runs = [(minX, g1 - 2), (g1 + 2, g2 - 2), (g2 + 2, maxX)];
-                double[] lifts = [8, .. Enumerable.Range(2, 113).Select(h => h / 2.0).Where(h => h != 8)];
+                double[] lifts = [8, .. Enumerable.Range(2, 179).Select(h => h / 2.0).Where(h => h != 8)];
                 var pieces = new List<Piece>();
                 double lastLift = lifts[0];
                 foreach ((double from, double to) in runs)

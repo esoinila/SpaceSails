@@ -150,6 +150,21 @@ public sealed partial class DeckView
     /// there are none. Set by DrawMotionTracker, reset each frame in DrawTheInstruments, read by the ledger.</summary>
     private float _trackerCaptionsBottom;
 
+    /// <summary>Right edge (canvas px) of the tracker disc and its captions this frame; 0 when none is drawn.</summary>
+    private float _trackerRight;
+
+    /// <summary>#1483 · Whether the bottom-anchored block (flash and/or the newest ledger line) clears the key-hint
+    /// captions at the column's left edge. When it does not, the block steps right of the tracker column instead
+    /// of printing over the hints, so the flash and the latest cause are always drawn.</summary>
+    internal static bool NerveBlockFitsBelowCaptions(int wantedLines, bool hasFlash, float lineH, int heightPx, float captionsBottom)
+    {
+        if (wantedLines > 0)
+        {
+            return NerveLedgerLinesThatFit(wantedLines, hasFlash, lineH, heightPx, captionsBottom) > 0;
+        }
+        return heightPx - NerveLedgerBottomClearancePx - lineH >= captionsBottom + 6f;
+    }
+
     /// <summary>#1478 · How many ledger lines may be drawn without the block (flash + header + lines, anchored
     /// above the bottom clearance) reaching up into the captions. Newest lines are kept.</summary>
     internal static int NerveLedgerLinesThatFit(int wanted, bool hasFlash, float lineH, int heightPx, float captionsBottom)
@@ -189,7 +204,16 @@ public sealed partial class DeckView
         float lineH = px + 2f;
         // #1478 · …and it must also clear the key-hint captions the tracker seats beneath itself (at the monolith
         // the T / ⇧T sentry lines ran down into the ledger): the oldest rows give way until the block fits.
-        int keep = NerveLedgerLinesThatFit(ledger?.Count ?? 0, hasFlash, lineH, heightPx, _trackerCaptionsBottom);
+        // #1483 · …and when not even the flash and the newest line clear them (always, at 720 px tall), the block
+        // steps to the right of the tracker column rather than vanishing or overprinting.
+        int wanted = ledger?.Count ?? 0;
+        float captionsBottom = _trackerCaptionsBottom;
+        if (captionsBottom > 0f && !NerveBlockFitsBelowCaptions(wanted, hasFlash, lineH, heightPx, captionsBottom))
+        {
+            x = Math.Max(x, _trackerRight + 14f);
+            captionsBottom = 0f;
+        }
+        int keep = NerveLedgerLinesThatFit(wanted, hasFlash, lineH, heightPx, captionsBottom);
         if (ledger is not null && keep < ledger.Count)
         {
             ledger = [.. ledger.Take(keep)];

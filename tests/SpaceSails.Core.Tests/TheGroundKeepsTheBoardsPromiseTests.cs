@@ -122,7 +122,7 @@ public class TheGroundKeepsTheBoardsPromiseTests
                 // #1478 · the lip steps up around what the ledger will not yield, so it is ONE line only where it can be:
                 // most of it still lies on the modal line.
                 Assert.True(walls.GroupBy(w => Math.Round(w.Y1, 3)).Max(g => g.Sum(Len)) > 0.4 * walls.Sum(Len), $"{at}: the lip is not one line");
-                Assert.True(walls.All(w => w.Y1 < Env.BottomY + 60), $"{at}: the lip is not on the bottom edge");
+                Assert.True(walls.All(w => w.Y1 < Env.BottomY + 95), $"{at}: the lip is not on the bottom edge");
                 var runs = walls.OrderBy(w => w.X1).ToList();
                 int gaps = 0;
                 for (int i = 1; i < runs.Count; i++)

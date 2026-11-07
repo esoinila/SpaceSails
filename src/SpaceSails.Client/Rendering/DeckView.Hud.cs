@@ -29,6 +29,7 @@ public sealed partial class DeckView
         float r = (float)MotionTracker.TrackerRadius(widthPx, heightPx, NerveColumnTop + _nerveShift, TrackerDesiredRadius);
         (double acx, double acy) = MotionTracker.TrackerAnchor(widthPx, heightPx, r, NerveColumnTop + _nerveShift);
         float cx = (float)acx, cy = (float)acy;
+        _trackerRight = cx + r;
 
         // Sizes scale with the disc so a shrunk tracker stays legible and a big one reads across the map.
         float labelPx = (float)Math.Clamp(r * 0.13, 10, 15);
@@ -349,6 +350,7 @@ public sealed partial class DeckView
                     break;
                 }
                 _renderer.DrawText(capX, capY, caption, TextDim, $"{capPx:0}px monospace", TextAlign.Left);
+                _trackerRight = Math.Max(_trackerRight, capX + (caption.Length * capPx * 0.62f));
                 capY += capPx + 5f;
                 _trackerCaptionsBottom = capY;
             }

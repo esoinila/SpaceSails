@@ -80,7 +80,7 @@ public class TheStampsAreWholeTests(ITestOutputHelper output)
             // The lip steps back DOWN to its home line after an obstacle: most of it lies on the home lift.
             double home = s.Walls.Where(w => Math.Abs(w.Y1 - (Env.BottomY + 8)) < 1e-6).Sum(w => Math.Abs(w.X2 - w.X1));
             Assert.True(home >= 0.6 * covered, $"{body}: only {home / covered:P0} of the lip is on the home line.");
-            Assert.True(covered >= 0.8 * width, $"{body}: the lip covers {covered / width:P0} of the field width.");
+            Assert.True(covered >= 0.9 * width, $"{body}: the lip covers {covered / width:P0} of the field width.");
         }
     }
 
