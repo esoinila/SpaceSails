@@ -190,6 +190,14 @@ public static partial class DeathNarration
         "You flew {body}'s periapsis under its own surface. The ground was where the orbit said it would be.",
     ];
 
+    // R1-F23 · The same death, into a station: hull on hull, no ground anywhere in it.
+    private static readonly string[] ImpactHavenLines =
+    [
+        "You put the ship into {body} at speed — hull on hull, no ground anywhere in it, and the station's plating did not care which of you was moving.",
+        "The hull met {body}'s ring at speed. No atmosphere to catch you and no rock to blame — a berth you were meant to slow for, taken without slowing.",
+        "You flew into {body}. The clamps were waiting; the ship arrived before the speed did. Somebody's berth will need re-plating, and your log ends there.",
+    ];
+
     /// <summary>Her own charges, with the captain still standing in her. Every line has to carry the same
     /// fact: this was a decision, taken twice, by two hands — and then not walked away from.</summary>
     private static readonly string[] ScuttledLines =

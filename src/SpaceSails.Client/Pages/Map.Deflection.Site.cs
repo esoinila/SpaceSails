@@ -345,7 +345,7 @@ public partial class Map
             return; // the bore is spent — no console
         }
         (float x, float y) = DrillPointSpot();
-        string label = ex.ChargeArmed ? "🧨 FIRE THE CHARGE" : "🛠 DRILL POINT";
+        string label = ex.ChargeArmed ? "🧨 FIRE THE CHARGE" : "🛠 DRILL POINT — set the bore";
         _deckPlan.AppendRegion(new DeckPlan.DeckRegion(
             [], [new DeckPlan.ConsoleSpot(DeckPlan.ConsoleKind.DrillPoint, x, y, label)], [], []));
     }

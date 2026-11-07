@@ -129,7 +129,11 @@ public partial class Map
         // ground's own fact is asked first and wins outright; see HullShudder.SettingOutside.
         bool groundHoldsPressure = StandingOnGroundThatHoldsPressure;
         HullShudder.Setting setting =
-            HullShudder.SettingOutside(groundHoldsPressure, onRegolith, deepSite, haven);
+            HullShudder.SettingOutside(
+                groundHoldsPressure, onRegolith, deepSite, haven,
+                onADeadHull: OnADeadHull,
+                isHeadOffice: _surface is { } hq && UndergroundComplex.IsHeadOffice(hq.Stop.Body.Id),
+                level: _surface?.Floor ?? 0);
 
         // The bounded escalation (owner: "keep bounded — mostly it IS nothing"): only a deep site that is a
         // secret lab, or a captain whose KAAMOS arc has gone deep, can carry the chill — and even then only
@@ -143,7 +147,7 @@ public partial class Map
         // pointed the buzzer at, never a second one — so a room that moves moves for every beat in it at
         // once. Off a haven the room is simply the concourse and no pool reads it (HullShudder.LinesFor).
         string? line = chill
-            ? HullShudder.ChillLine(groundHoldsPressure, seed, index)
+            ? HullShudder.ChillLine(setting, seed, index)
             : HullShudder.Line(setting, TheRoomOfTheHavenHeIsIn, seed, index);
 
         // #1261 · AND OUT ON THE OBSERVATION WALK THERE IS NOBODY TO SAY IT. The pool answers null for the
@@ -152,16 +156,8 @@ public partial class Map
         // next gap is redrawn off the current clock — because a tremor refused is a tremor that happened and
         // was not a scene, and a beat that kept its slot would fire on the very next frame and again on the
         // one after that for as long as the captain stood at the rail.
-        // R1-F26 · …AND ABOARD A DERELICT THERE IS NOBODY TO LOOK UP EITHER. Every pool above is written for a
-        // room with a crew in it or for open ground; a dead hull is neither ("the steel laid over the rock",
-        // "every head aboard"). Until a hull-only pool is authored the dead hull is silent, by the same null.
-        // U08-F10 · …and so is a dead STATION (Ledger Point): "the whole room freezes as one… everyone decides it was
-        // nothing" is a roomful of people, and nobody is there. The same null, for the same reason.
-        if (OnADeadHull)
-        {
-            line = null;
-        }
-
+        // R1-F26 · A DERELICT HAS ITS OWN VOICE NOW (HullShudder.Setting.DeadHull): the silence #1446 gave a wreck
+        // is replaced by a hull-only pool, so a dead hull or dead station shudders aloud for the captain alone.
         if (line is null)
         {
             _shudderIndex++;
@@ -177,7 +173,7 @@ public partial class Map
             // #867: the ledger line is Core's, beside the pool it belongs to. It used to be typed here — one
             // call site away from the pool the words have to agree with, which is how a captain on a lawn
             // read "a cold breath through the hull −1".
-            ApplyNerveShock(HullShudder.ChillNerveTick, HullShudder.ChillNerveLabel(groundHoldsPressure));
+            ApplyNerveShock(HullShudder.ChillNerveTick, HullShudder.ChillNerveLabel(setting));
         }
 
         _shudderActive = true;

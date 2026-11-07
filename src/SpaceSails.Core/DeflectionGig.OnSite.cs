@@ -82,6 +82,16 @@ public static partial class DeflectionGig
     public static double SecondsToImpact(double elapsedOnSiteSeconds) =>
         System.Math.Max(0.0, ImpactBudgetSeconds - System.Math.Max(0.0, elapsedOnSiteSeconds));
 
+    /// <summary>U03-F07 · The boarding card's blurb for the gig rock: what it is, what the job is, and that there is
+    /// nothing to bury or buy. The spectrometry sentence for the rock's type follows, unchanged.</summary>
+    public static string BoardingBlurb(string rockName, RockType type, string targetName) =>
+        $"{rockName}, {type.Label}, inbound on {targetName}. One marked DRILL POINT on open ground: bore the charge to depth, then fire it before T-0. Nothing to bury out here and nothing to buy — the rock is the job, and the clock is the rock's. {type.BriefLine}";
+
+    /// <summary>U03-F07 · The shuttle board's ⏳ row on the rock: the clock to the target and the crossing, and
+    /// that the rock keeps no window.</summary>
+    public static string BoardRow(string doomClock, string targetName, string shuttleEta) =>
+        $"⏳ T−{doomClock} to {targetName} · shuttle ETA {shuttleEta} — the rock does not wait for a window";
+
     /// <summary>How the doom clock reads right now.</summary>
     public static ImpactClock ClassifyClock(double elapsedOnSiteSeconds)
     {

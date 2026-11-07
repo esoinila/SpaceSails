@@ -46,17 +46,26 @@ public sealed class ADeadHullSpeaksShipWordsTests
         (typeof(Pages.Map).GetField(field, Hidden) ?? throw new InvalidOperationException(field)).SetValue(target, value);
 
     [Fact]
-    public void AmbientShuddersAboardAWreckSpeakNoRockAndNoCrewButTheyStillConsumeTheirSlot()
+    public void AmbientShuddersAboardAWreckSpeakTheDeadHullPoolAndNoRockAndNoCrew()
     {
+        // R1-F26 · #1446 made the wreck shudder SILENT until a hull-only pool was authored. It is authored now
+        // (HullShudder.Setting.DeadHull): the hull speaks, for the captain alone, and still names no ground.
         MethodInfo fire = typeof(Pages.Map).GetMethod("FireShudder", Hidden)!;
         FieldInfo pulse = typeof(Pages.Map).GetField("_pulse", Hidden)!;
+        var pool = HullShudder.LinesFor(HullShudder.Setting.DeadHull, HullShudder.HavenRoom.Concourse);
         for (int i = 0; i < 40; i++)
         {
             Pages.Map map = OnAWreck();
             Set(map, "_shudderIndex", i);
             fire.Invoke(map, [0.0]);
             var slot = (PulseSlot)pulse.GetValue(map)!;
-            Assert.True(slot.Message is null, $"shudder {i} spoke aboard a dead hull: {slot.Message}");
+            Assert.True(slot.Message is not null, $"shudder {i} was silent aboard a dead hull");
+            string said = slot.Message!.TrimStart('〰', ' ');
+            Assert.Contains(said, pool);
+            foreach (string bad in GroundWords)
+            {
+                Assert.DoesNotContain(bad, said, StringComparison.OrdinalIgnoreCase);
+            }
             Assert.Equal(i + 1, (int)typeof(Pages.Map).GetField("_shudderIndex", Hidden)!.GetValue(map)!);
         }
     }

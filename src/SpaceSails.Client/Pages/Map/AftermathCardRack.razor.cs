@@ -51,6 +51,7 @@ public partial class AftermathCardRack
     [Parameter] public Action BustedResurrect { get; set; } = default!;
     [Parameter] public Action<bool> BustedSubmit { get; set; } = default!;
     [Parameter] public bool CarryingABlackOpsKey { get; set; }
+    [Parameter] public AirCard.Face AirCardFace { get; set; } = default!;
     [Parameter] public Action CloseAirCard { get; set; } = default!;
     [Parameter] public Action CloseBusted { get; set; } = default!;
     [Parameter] public Action CloseConvergenceReveal { get; set; } = default!;
