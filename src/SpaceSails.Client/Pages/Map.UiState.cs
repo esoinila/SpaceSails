@@ -317,8 +317,10 @@ public partial class Map
         {
             // #1401 R1-F47 · the berth she is clamped to is not "in shuttle reach": the shuttle bay leaves it off its
             // board (ShuttleExcursion.Destinations skips the docked haven), so the chip must not count it either.
+            // #1469 · Classify IS the reach rule: it answers None beyond the shuttle corridor, and SameOrbit for a
+            // partner the desk deals with from the same orbit however far (a Hill sphere can be wider than the
+            // corridor). So "mode != None" is exactly what the desk lists, and there is no second reach test here.
             if (c.Id != _dockedHavenId
-                && CommerceRule.InShuttleReach(_ship, c.Position)   // #1440 · the one reach predicate
                 && (c.Actions & CommerceRule.ActionKind.Trade) != 0 && TradeModeFor(c) != CommerceRule.TradeMode.None)
             {
                 tradable++;

@@ -231,6 +231,7 @@ public partial class Map
     private void CloseAirCard()
     {
         _airCardOpen = false;
+        _airCardFace = null;
     }
 
     /// <summary>#585 · Walk a body out of solid mass it has ended up inside — a wall that was built around

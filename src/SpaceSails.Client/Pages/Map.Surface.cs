@@ -229,6 +229,7 @@ public partial class Map
     // #573 · the tank-is-low card. Same shape again: a persisted seen-bit, a transient open-bit.
     private bool _airCardSeen;
     private bool _airCardOpen;
+    private AirCard.Face? _airCardFace;   // #1472 · the face worked out ONCE when the card raises, not live
 
     // #318 false-hang follow-up: true while the tube + wide-surface plan welds on after 'Board' — the
     // brief synchronous build the loading-style descent door covers (a flying 🛸), so a slow build reads

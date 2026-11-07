@@ -359,7 +359,9 @@ public sealed class TheGroundIsASafetyDepositBoxTests
     public void TheBoardingRouteIsWhereThePickJoinsTheWalk()
     {
         string boarding = BodyOf("Map.Docking.Boarding.cs", "private async Task ConfirmBoarding(");
-        Assert.Contains("ShuttleExcursion.Pack(_boardCoin, _credits, hold, _boardDeposit)", boarding, StringComparison.Ordinal);
+        Assert.Contains("LoadForTheDoor(stop, hold)", boarding, StringComparison.Ordinal);
+        string door = BodyOf("Map.Docking.Boarding.cs", "private ShuttleExcursion.ChestLoad LoadForTheDoor(");
+        Assert.Contains("ShuttleExcursion.Pack(_boardCoin, _credits, hold, _boardDeposit)", door, StringComparison.Ordinal);
 
         string descent = File.ReadAllText(ClientFile("Map.Surface.Boarding.cs"));
         Assert.Contains("PendingDeposit = chest.Deposit,", descent, StringComparison.Ordinal);

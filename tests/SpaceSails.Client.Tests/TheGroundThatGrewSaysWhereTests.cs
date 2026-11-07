@@ -164,6 +164,7 @@ public class TheGroundThatGrewSaysWhereTests
     {
         SurfaceLayout.Field field = MoonSurface.ExpeditionField();
         int answered = 0;
+        var kindsSwept = new HashSet<DeckPlan.ConsoleKind>();
         foreach (string body in new[] { "luna", "titan", "miranda", "phobos" })
         {
             SecretLab.Placement placement = SecretLab.For(body, field, forcePresent: true);
@@ -175,8 +176,10 @@ public class TheGroundThatGrewSaysWhereTests
             var plan = (DeckPlan)Read(map, "_deckPlan")!;
 
             foreach (DeckPlan.ConsoleSpot c in plan.Consoles.Where(k =>
-                k.Kind is DeckPlan.ConsoleKind.LabCache or DeckPlan.ConsoleKind.LabConsole))
+                k.Kind is DeckPlan.ConsoleKind.LabCache or DeckPlan.ConsoleKind.LabConsole
+                    or DeckPlan.ConsoleKind.LabDoorBoard or DeckPlan.ConsoleKind.LabAlarm or DeckPlan.ConsoleKind.LabKeyCard))
             {
+                kindsSwept.Add(c.Kind);
                 for (double dx = -3.0; dx <= 3.0; dx += 0.25)
                 {
                     for (double dy = -3.0; dy <= 3.0; dy += 0.25)
@@ -202,6 +205,9 @@ public class TheGroundThatGrewSaysWhereTests
             }
         }
         Assert.True(answered > 100, $"only {answered} reach points were swept.");
+        // #1469 · the sweep covers every lab console kind, so a kind that stops being placed (or is dropped from
+        // the filter) cannot leave it green over nothing.
+        Assert.Equal(5, kindsSwept.Count);
     }
 
     // ── LAW 2 · THE FAN CARRIES THE RING AFTER THE REVEAL, AND NOT BEFORE ─────────────────────────────
