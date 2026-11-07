@@ -292,9 +292,9 @@ public sealed class TheGuardStopIsAnEncounterTests
         Assert.Equal(
             new HashSet<string>(StringComparer.Ordinal)
             {
-                "<nothing>", PatrolBeat.EscortLine, GuardStop.StepsAsideLine,
-                // U08-F11 · …and the same walk, spelled for the floor with no air (a department's floor is one).
-                PatrolBeat.EscortLineFor(UndergroundComplex.HoldsPressure(Site, level)),
+                // U08-F11 · The escort is the ladder rows' (a department's floor), spelled by that floor's air.
+                "<nothing>", PatrolBeat.EscortLineFor(UndergroundComplex.HoldsPressure(Site, level)),
+                GuardStop.StepsAsideLine,
             },
             consequences);
     }
