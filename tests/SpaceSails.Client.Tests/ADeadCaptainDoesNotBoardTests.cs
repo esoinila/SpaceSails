@@ -19,7 +19,7 @@ public sealed class ADeadCaptainDoesNotBoardTests
     private const string OnMirandasGround = "/map?dock=the-tilt&site=0&land=1";
 
     /// <summary>Bring the mothership alongside the ground, course-matched, so the boat can fly home.</summary>
-    private static void BringHerAlongside(DeskBench bench)
+    internal static void BringHerAlongside(DeskBench bench)
     {
         var ephemeris = (ICelestialEphemeris)bench.Peek("_ephemeris")!;
         object excursion = bench.Peek("_surface")!;

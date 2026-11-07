@@ -1,4 +1,6 @@
+using System;
 using System.Collections;
+using System.Threading.Tasks;
 using System.Reflection;
 using SpaceSails.Client.Pages;
 using Xunit;
@@ -25,5 +27,37 @@ public class TheRosterNamesEachSentryOnceTests
         Assert.Single(roster);
         string muster = (string)typeof(Map).GetProperty("BotMusterLine", Hidden)!.GetValue(map)!;
         Assert.Equal("R-3B rides escort by default", muster);
+    }
+
+    /// <summary>#1469 · The helper test above calls <c>ReturnSentryToTheRoster</c> directly, so it would not catch
+    /// liftoff bypassing it. This one lifts off for real: a carried R-3B comes home while an R-3B already stands in
+    /// the roster. RED: make <c>LiftOffFromSurface</c> add the carried bot with <c>_shipBots.Add</c> instead.</summary>
+    [Fact]
+    public async Task ACarriedSentryLiftingOffForRealStillStandsInTheRosterOnce()
+    {
+        using DeskBench bench = await DeskBench.BootAsync("/map?dock=the-tilt&site=0&land=1");
+        await bench.RenderAsync();
+        Assert.True(bench.OnSurface);
+        ADeadCaptainDoesNotBoardTests.BringHerAlongside(bench);
+        var roster = (IList)bench.Peek("_shipBots")!;
+        roster.Clear();
+        Type shipBot = typeof(Map).GetNestedType("ShipBot")!;
+        roster.Add(Activator.CreateInstance(shipBot, "R-3B", 40)!);
+
+        object ex = bench.Peek("_surface")!;
+        var carried = (IList)ex.GetType().GetProperty("Bots")!.GetValue(ex)!;
+        carried.Clear();
+        Type surfaceBot = typeof(Map).GetNestedType("SurfaceBot")!;
+        object bot = Activator.CreateInstance(surfaceBot)!;
+        surfaceBot.GetProperty("Unit")!.SetValue(bot, "R-3B");
+        surfaceBot.GetProperty("Rounds")!.SetValue(bot, 12);
+        surfaceBot.GetProperty("Deployed")!.SetValue(bot, false);
+        carried.Add(bot);
+
+        bench.CallOnTheDispatcher("LiftOffFromSurface");
+
+        Assert.False(bench.OnSurface, "the bench never lifted off, so the roster proves nothing.");
+        Assert.Single(roster);
+        Assert.Equal("R-3B rides escort by default", (string)bench.Call("get_BotMusterLine")!);
     }
 }
