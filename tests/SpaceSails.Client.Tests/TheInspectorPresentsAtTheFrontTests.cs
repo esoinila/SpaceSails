@@ -147,13 +147,14 @@ public sealed class TheInspectorPresentsAtTheFrontTests
     /// </code>
     /// </summary>
     [Fact]
-    public void PresentedWhereNobodyIsExpectingAnybodyTheNoPassFloorStopsNobodyAtAll()
+    public void Canteen1StopsNobodyEvenWithTheInspectorsCardAndNoInspectionDue()
     {
-        // U04-F12 (Fable ruling 2026-11-07) · The only floor in the sweep where an inspection is NOT due (no refuge
-        // under it) is Canteen 1's - the NO PASS REQUIRED floor - and the round never stops anyone there. So the
-        // lost bet (HonouredLine, then the walk to the car) cannot be reached by the round any more: it is still
-        // the ladder's own arm (WalletChoice.Outcome.NoInspectionDue), and what this floor now does is nothing: the
-        // same captain, the same three misses, and nobody comes.
+        // U04-F12 (Fable ruling 2026-11-07) · The only pad floor in the sweep where an inspection is NOT due (no
+        // refuge under it) is Canteen 1's - the NO PASS REQUIRED floor - and the round never stops anyone there, so
+        // THIS bench (which drives the pad, and the pad exists only on band 0 to 1) cannot reach the lost bet. The
+        // arm is NOT dead in play: the round reaches it on the lower shaft lobbies and at the staff mess, and
+        // PresentedOnALowerLobbyWhereNobodyIsExpectedTheBetIsLost walks it through the round's own walk-up. What
+        // this floor does is nothing: the same captain, the same three misses, and nobody comes.
         (string body, int floor, UndergroundComplex.LiftStop row) = AFloorWhere(honoured: false, theNoPassFloorToo: true);
         Assert.True(UndergroundComplex.IsTheNoPassFloor(body, floor), "the premise: this is the no-pass floor.");
         Pages.Map map = OnTheFloor(body, floor);
@@ -185,9 +186,89 @@ public sealed class TheInspectorPresentsAtTheFrontTests
             "the round stopped a captain on the NO PASS REQUIRED floor.");
     }
 
+    // ── (c) THE LOST BET, THROUGH THE ROUND'S OWN WALK-UP ────────────────────────────────────────────────
+
+    /// <summary>
+    /// <b>THE LOST BET IS REACHED IN PLAY, NOT ONLY IN THE LADDER.</b> On a lower shaft lobby (depth five or
+    /// more) with no failed refuge, no refuge on the plan, and a watch with nothing on the roster, the round
+    /// sights the captain, hails, walks over and reads the wallet - no pad anywhere. He carries only the
+    /// inspector's card, he is shown it, and he says the authored line and then walks the captain to the car.
+    ///
+    /// <para><b>Proven RED</b> by making <c>Inspectorate.HonouredAt</c> answer true unconditionally: the premise
+    /// assertion on <c>WhatHappens</c> fails (it answers <c>Inspection</c>).</para>
+    /// </summary>
+    [Fact]
+    public void PresentedOnALowerLobbyWhereNobodyIsExpectedTheBetIsLostThroughTheRoundsOwnWalkUp()
+    {
+        (string body, int floor, long watch) = ALowerLobbyWithNothingDue();
+        Satchel.Item card = Inspectorate.Card;
+        Assert.Equal(WalletChoice.Outcome.NoInspectionDue, WalletChoice.WhatHappens(body, floor, watch, card));
+        Assert.True(UndergroundComplex.DepthOf(body) <= -5);
+
+        Pages.Map map = OnTheFloor(body, floor, watch);
+        Assert.False(Running(map));
+
+        Set(map, "_patrolCheat", (int?)null);
+        object round = PatrolState.Round(map)!;
+        object g = Guards(map)[0];
+        Set(map, "_avatarX", (double)Get(g, "X")! + 1.0);
+        Set(map, "_avatarY", (double)Get(g, "Y")!);
+        g.GetType().GetProperty("SinceStop")!.SetValue(g, PatrolBeat.AfterTheStopSeconds + 1.0);
+        round.GetType().GetProperty("FloorSeconds")!.SetValue(round, 1000.0);
+
+        MethodInfo ask = round.GetType().GetMethod("StopTheRoundIfAnybodySeesYou", Hidden | BindingFlags.Public)!;
+        ask.Invoke(round, [new List<SurfaceCollision.Segment>(), new ContactLedger()]);
+        Assert.True((bool)Get(g, "WalkingUp")!, "the round did not hail: this bench has no walk-up to drive.");
+
+        MethodInfo step = typeof(Pages.Map).GetMethod("AdvancePatrol", Hidden)!;
+        for (int i = 0; i < 900 && !(Get(map, "_viewObject") is { } v && (string)Get(v, "Label")! == PatrolBeat.ChallengeLabel); i++)
+        {
+            step.Invoke(map, [Dt]);
+        }
+        object? up = Get(map, "_viewObject");
+        Assert.True(up is not null && (string)Get(up, "Label")! == PatrolBeat.ChallengeLabel,
+            "nobody walked over and read the wallet.");
+
+        typeof(Pages.Map).GetMethod("TheStopMove", Hidden)!.Invoke(map, [GuardStop.Show]);
+
+        string told = (string)Get(Get(map, "_viewObject")!, "Outcome")!;
+        Assert.Contains(Inspectorate.HonouredLine, told, StringComparison.Ordinal);
+        bool air = UndergroundComplex.HoldsPressure(body, floor);
+        Assert.Contains(PatrolBeat.EscortLineFor(air), told, StringComparison.Ordinal);
+        Assert.False(Running(map), "the bet was lost and an inspection is running anyway.");
+    }
+
+    private static (string Body, int Floor, long Watch) ALowerLobbyWithNothingDue()
+    {
+        foreach (string body in Bodies())
+        {
+            if (UndergroundComplex.DepthOf(body) > -5 || UndergroundComplex.FailedRefugeFloorOf(body) is not null)
+            {
+                continue;
+            }
+            foreach (int floor in UndergroundComplex.FloorsOf(body))
+            {
+                if (floor > -5 || !PatrolBeat.IsPatrolled(body, floor)
+                    || UndergroundComplex.IsTheNoPassFloor(body, floor)
+                    || UndergroundComplex.RefugeOnThePlan(body, floor))
+                {
+                    continue;
+                }
+                for (long watch = 0; watch < 64; watch++)
+                {
+                    if (!Inspectorate.InspectionIsDue(body, watch))
+                    {
+                        return (body, floor, watch);
+                    }
+                }
+            }
+        }
+        throw new InvalidOperationException("no lower lobby in the sweep has nothing due on any watch: the bench has nothing to drive.");
+    }
+
     // ── the bench's plumbing (TheCarStopsAndTheStairIsThePriceTests', one feature along) ─────────────────
 
-    private static Pages.Map OnTheFloor(string body, int floor)
+    private static Pages.Map OnTheFloor(string body, int floor, long watch = Watch)
     {
         var map = new Pages.Map();
 
@@ -212,7 +293,7 @@ public sealed class TheInspectorPresentsAtTheFrontTests
             new LandingSite(0, LandingSiteKind.WildPlain, "The Wild Plain", "", ""));
         exType.GetProperty("Floor")!.SetValue(ex, floor);
         exType.GetProperty("AirSeconds")!.SetValue(ex, SuitAir.TankSeconds);
-        exType.GetProperty("CanteenWatch")!.SetValue(ex, Watch);
+        exType.GetProperty("CanteenWatch")!.SetValue(ex, watch);
 
         Set(map, "_surface", ex);
         Set(map, "_deckMode", true);
