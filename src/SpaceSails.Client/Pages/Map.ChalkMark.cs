@@ -127,12 +127,7 @@ public sealed partial class Map
     /// (<c>TheGallerysOwnSeatUnderfoot</c> keys it <c>gallery:{berth}:…</c>), never a position.</summary>
     private bool AtTheGallerysTable(TableTalk t) =>
         _dockedHavenId is { } berth
-        && t.Key.StartsWith($"{GalleryTableKeyPrefix}{berth}:", System.StringComparison.Ordinal);
-
-    /// <summary>The one spelling of the gallery's seat keys. <c>ISeatHost</c> is a ratchet that may only shrink,
-    /// so the seat family (which cannot ask <see cref="AtTheGallerysTable"/>: it has no berth) shares the
-    /// prefix instead of retyping it.</summary>
-    private const string GalleryTableKeyPrefix = "gallery:";
+        && t.Key.StartsWith($"gallery:{berth}:", System.StringComparison.Ordinal);
 
     /// <summary>The return under the table the captain is sitting at, if the move is on offer right now.</summary>
     private ChalkMark? TheDropUnderThisLip(TableTalk t)
