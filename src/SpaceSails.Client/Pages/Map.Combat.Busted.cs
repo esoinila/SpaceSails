@@ -54,7 +54,13 @@ public partial class Map
     /// not today's when a writ is being served, so a captain who kept a collector waiting is charged neither
     /// less nor more for the wait. Everything else about the beat is identical, because it is the same beat:
     /// the same panel, the same three options, the same dice.</param>
-    private void TheDemandGoesUp(HunterState hunter, PendingWritRecord? onTheTermsOf)
+    private void TheDemandGoesUp(HunterState hunter, PendingWritRecord? onTheTermsOf) =>
+        // #1476 · THE DEMAND IS A WORLD-RAISED CARD: it waits behind a scrim that is up (flight included - the flight
+        // frame pumps the queue) and goes up on the first clear frame. The deaths (impact, last stand) are not this
+        // door and stay immediate.
+        RaiseAScrimCard(() => TheDemandIsRaised(hunter, onTheTermsOf), () => _busted is null);
+
+    private void TheDemandIsRaised(HunterState hunter, PendingWritRecord? onTheTermsOf)
     {
         Warp = 1;
         _effectiveWarp = 1;
