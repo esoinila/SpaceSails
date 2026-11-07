@@ -155,8 +155,8 @@ public static partial class SurfaceLayout
                     foreach ((double px, double py) in new[] { (cx - hw, cy - hh), (cx + hw, cy - hh), (cx - hw, cy + hh), (cx + hw, cy + hh) })
                     {
                         var w = new List<Wall>();
-                        AddBox(w, px - 0.5, py - 0.5, px + 0.5, py + 0.5, hull: true);
-                        pieces.Add(new(px, py, 0.5, 0.5, [.. w]));
+                        AddBox(w, px - 0.75, py - 0.75, px + 0.75, py + 0.75, hull: true);
+                        pieces.Add(new(px, py, 0.75, 0.75, [.. w]));
                     }
                     yield return new(pieces, marks);
                 }
@@ -294,8 +294,8 @@ public static partial class SurfaceLayout
                         pieces.Add(new(hx + shift + dx, band + dy, (w / 2) + 1, (h / 2) + 1, [.. ws]));
                     }
                     var mast = new List<Wall>();
-                    AddBox(mast, hx + shift - 46.5, band - 12.5, hx + shift - 45.5, band - 11.5, hull: true);
-                    pieces.Add(new(hx + shift - 46, band - 12, 0.5, 0.5, [.. mast]));
+                    AddBox(mast, hx + shift - 46.75, band - 12.75, hx + shift - 45.25, band - 11.25, hull: true);
+                    pieces.Add(new(hx + shift - 46, band - 12, 0.75, 0.75, [.. mast]));
                     yield return new(pieces, []);
                 }
                 break;

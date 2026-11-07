@@ -108,10 +108,10 @@ public class TheGroundKeepsTheBoardsPromiseTests
         switch (Enum.Parse<LandingSiteKind>(salt))
         {
             case LandingSiteKind.DepotApron:
-                // Four 1x1 post boxes at the apron's corners (a box is four walls), at least two of them
+                // Four 1.5 du post boxes at the apron's corners (a box is four walls), at least two of them
                 // surviving the ledger, and the apron itself centred 18 du below the band.
                 Assert.True(walls.Count >= 8 && walls.Count % 4 == 0, $"{at}: {walls.Count} post walls");
-                Assert.All(walls, w => { Assert.Equal(1.0, Len(w), 3); Assert.True(w.IsHull); });
+                Assert.All(walls, w => { Assert.Equal(1.5, Len(w), 3); Assert.True(w.IsHull); });
                 Assert.Equal(4, stamp.Marks.Count);
                 Assert.Equal(Env.LandingBandY - 18, stamp.Marks.Average(m => (m.Y1 + m.Y2) / 2), 3);
                 break;
@@ -166,9 +166,9 @@ public class TheGroundKeepsTheBoardsPromiseTests
                 break;
 
             case LandingSiteKind.RidgeCamp:
-                // Two U huts, a three-wall lean-to and a 1 x 1 mast: 3 + 3 + 3 + 4 walls.
+                // Two U huts, a three-wall lean-to and a 1.5 du mast: 3 + 3 + 3 + 4 walls.
                 Assert.Equal(13, walls.Count);
-                Assert.Equal(4, walls.Count(w => Math.Abs(Len(w) - 1) < 1e-6));
+                Assert.Equal(4, walls.Count(w => Math.Abs(Len(w) - 1.5) < 1e-6));
                 break;
         }
     }
@@ -202,7 +202,7 @@ public class TheGroundKeepsTheBoardsPromiseTests
     }
 
     /// <summary>Fire code #822: a stamp never builds an ENCLOSED space. Group the stamp's walls into connected
-    /// pieces; a piece that closes a loop must be a 1 du post, never a room — so nothing in a stamp needs a door.</summary>
+    /// pieces; a piece that closes a loop must be a 1.5 du post, never a room — so nothing in a stamp needs a door.</summary>
     [Theory]
     [MemberData(nameof(Stamped))]
     public void NoStampEncloses(string salt)
@@ -232,7 +232,7 @@ public class TheGroundKeepsTheBoardsPromiseTests
                 if (piece.Count >= 4 && piece.All(w => Degree(piece, w.X1, w.Y1) >= 2 && Degree(piece, w.X2, w.Y2) >= 2))
                 {
                     double width = piece.Max(w => Math.Max(w.X1, w.X2)) - piece.Min(w => Math.Min(w.X1, w.X2));
-                    Assert.True(width <= 1.0 + 1e-6, $"{body}/{salt}: a closed room {width:F1} du wide.");
+                    Assert.True(width <= 1.5 + 1e-6, $"{body}/{salt}: a closed room {width:F1} du wide.");
                 }
             }
         }
