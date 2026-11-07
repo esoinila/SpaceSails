@@ -46,12 +46,18 @@ public sealed class ThePinnedLayoutPassThreeTests
     public void TheBubbleIsAControlAndLeavesThePerch()
     {
         string razor = MapMarkup.Read(Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map", "ParrotAndDiceRack.razor"));
-        int at = razor.IndexOf("class=\"parrot-bubble\"", StringComparison.Ordinal);
+        int at = razor.IndexOf("class=\"parrot-bubble ", StringComparison.Ordinal);
         Assert.True(at >= 0, "the bubble is gone from the markup.");
-        Assert.Contains("Dismiss(DismissParrot)", razor[at..(at + 220)], StringComparison.Ordinal);
+        Assert.Contains("Dismiss(DismissParrot)", razor[at..(at + 260)], StringComparison.Ordinal);
+        Assert.Contains("parrot-bubble-deck", razor[at..(at + 120)], StringComparison.Ordinal);
 
+        // Live probe (PR body): at 390x700, 1024x700 and 1440x900 the strip under the bubble holds a pointer target on Nav
+        // (phone), Comms, Galley, Trade, War and Captain, and only the canvas on the walked Deck. So ONLY the Deck's bubble
+        // takes the pointer: every other desk keeps it a caption, and a click can never land on a button or a comms-node.
         string bubble = Rule(Cascade(), ".parrot-bubble");
-        Assert.Contains("pointer-events: auto", bubble, StringComparison.Ordinal);
+        Assert.Contains("pointer-events: none", bubble, StringComparison.Ordinal);
+        Assert.DoesNotContain("pointer-events: auto", bubble, StringComparison.Ordinal);
+        Assert.Contains("pointer-events: auto", Rule(Cascade(), ".parrot-bubble-deck"), StringComparison.Ordinal);
         Assert.Contains("position: fixed", bubble, StringComparison.Ordinal);
         Assert.Contains("left: 3.5rem", bubble, StringComparison.Ordinal);
         Assert.Contains("bottom: 2.4rem", bubble, StringComparison.Ordinal);
