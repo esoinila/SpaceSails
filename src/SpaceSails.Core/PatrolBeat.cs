@@ -155,6 +155,22 @@ public static partial class PatrolBeat
             : 0;
     }
 
+    /// <summary>
+    /// U04-F29 (Fable ruling 2026-11-07, owner may veto; reads #618 as the later word over #863) · ONE MAN ON B1.
+    /// On the floor the door-keeper keeps, a <see cref="GateGuard.Posting.Posted"/> man stands at the door and no
+    /// rota round walks it; an <see cref="GateGuard.Posting.OnRound"/> man's short beat IS B1's round; only an
+    /// <see cref="GateGuard.Posting.Absent"/> window (the coat on the chair) leaves the #863 rota to walk it.
+    /// Every other floor, and a floor with no door-keeper yet met (<c>null</c>), counts as <see cref="GuardsOn(string,int,long)"/>.
+    /// </summary>
+    public static int GuardsOn(string bodyId, int level, long watch, GateGuard.Posting? doorPosting)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return doorPosting is { } posting && posting != GateGuard.Posting.Absent
+               && UndergroundComplex.TopPressurisedFloor(bodyId) == level
+            ? 0
+            : GuardsOn(bodyId, level, watch);
+    }
+
     /// <summary>What is drawn over a guard on the deck. The ROUND, not the person: a rota numbers rounds,
     /// and nobody down here is going to introduce themselves. Kept short because it is drawn in 8px
     /// monospace over a moving dot.</summary>

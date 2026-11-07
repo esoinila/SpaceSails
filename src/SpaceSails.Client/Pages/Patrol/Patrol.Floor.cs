@@ -152,7 +152,7 @@ public sealed partial class Map
 
             int heads = RoundsCheat is { } forced
                 ? System.Math.Clamp(forced, 0, PatrolBeat.MostOnAFloor)
-                : PatrolBeat.GuardsOn(bodyId, level, ex.CanteenWatch);
+                : PatrolBeat.GuardsOn(bodyId, level, ex.CanteenWatch, ex.Gate?.Visit.Posting);   // U04-F29 · one man on B1
 
             for (int i = 0; i < heads; i++)
             {
