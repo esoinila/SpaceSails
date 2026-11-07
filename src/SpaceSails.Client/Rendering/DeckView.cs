@@ -67,7 +67,15 @@ public sealed partial class DeckView
         // was in a park; the gallery is at a berth, where there is no surface HUD, so it rides the deck.
         // Null on every other frame of the game, which is every frame with no paid delivery on record — so
         // the pen draws nothing new.
-        (double X, double Y)? Chalk = null);
+        (double X, double Y)? Chalk = null,
+        // R1-F76 · THE PULSE TOAST'S WORDS, so the world can step aside for the box. The toast is a DOM element laid
+        // over this canvas (.deck-pulse-toast), invisible to the pen: it sat on the floor plate (B24 · THE BERTH
+        // OFFICE, the -426 m), the lift sign and whatever else the camera hung there. The page hands down the line it
+        // is showing and whether it has dropped to the foot of the glass (a card is open); the renderer reserves the
+        // box's rectangle (PulseToastPlate) and the world's words under it dim, exactly as under the comms band.
+        // Null = no toast, which is every frame a test hand-builds.
+        string? PulseToast = null,
+        bool PulseToastLow = false);
 
     /// <summary>#440 · The deck's own keybar, docked at a haven — the one place the tube up into a bar is
     /// worth naming. A <c>const</c> rather than a literal in the draw so that the page composing the

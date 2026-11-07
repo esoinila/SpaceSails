@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using SpaceSails.Core;
@@ -18,26 +19,46 @@ internal sealed class BandYield(IRenderer inner) : IRenderer
     private static readonly Regex PxOfFont = new(@"(\d+(?:\.\d+)?)px", RegexOptions.Compiled);
 
     private readonly IRenderer _inner = inner;
-    private bool _armed;
-    private double _x, _y, _w, _h;
+    private readonly List<(double X, double Y, double W, double H)> _plates = [];
 
+    /// <summary>Arms the yield with ONE plate (the comms band's), dropping any other.</summary>
     internal void Arm(double x, double y, double w, double h)
     {
-        _armed = w > 0 && h > 0;
-        (_x, _y, _w, _h) = (x, y, w, h);
+        _plates.Clear();
+        Reserve(x, y, w, h);
     }
 
-    internal void Disarm() => _armed = false;
+    /// <summary>R1-F76 · ONE RULE FOR EVERY PLATE THAT LIES OVER THE GLASS. The comms band was the first; the page's
+    /// pulse toast (a DOM box laid over the canvas) and the standing prompt above the keybar are the others. Each
+    /// publishes the rectangle it covers and the world's words that touch it are dimmed, never dropped.</summary>
+    internal void Reserve(double x, double y, double w, double h)
+    {
+        if (w > 0 && h > 0)
+        {
+            _plates.Add((x, y, w, h));
+        }
+    }
+
+    internal void Disarm() => _plates.Clear();
 
     /// <summary>Whether a line of text hung at this anchor would touch the armed rectangle.</summary>
     internal bool Meets(float x, float y, string text, string font, TextAlign align)
     {
-        if (!_armed)
+        if (_plates.Count == 0)
         {
             return false;
         }
         // The cheap vertical bound first (no font is taller than 40 px): most labels never reach the regex.
-        if (y + 12.0 < _y || y - 40.0 > _y + _h)
+        bool near = false;
+        foreach ((double _, double py, double _, double ph) in _plates)
+        {
+            if (y + 12.0 >= py && y - 40.0 <= py + ph)
+            {
+                near = true;
+                break;
+            }
+        }
+        if (!near)
         {
             return false;
         }
@@ -51,7 +72,14 @@ internal sealed class BandYield(IRenderer inner) : IRenderer
             _ => x,
         };
         double top = y - MarkBand.AscentOf(px), bottom = y + MarkBand.DescentOf(px);
-        return left < _x + _w && left + width > _x && top < _y + _h && bottom > _y;
+        foreach ((double px0, double py0, double pw, double ph) in _plates)
+        {
+            if (left < px0 + pw && left + width > px0 && top < py0 + ph && bottom > py0)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void BeginFrame(int widthPx, int heightPx, RgbaColor background) =>
