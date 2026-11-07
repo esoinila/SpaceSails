@@ -124,8 +124,8 @@ public sealed class TheMoodAsksTheGroundTests
 
     // ── THE GUARDS ────────────────────────────────────────────────────────────────────────────────────
 
-    /// <summary>THE OWNER'S OWN COMPLAINT, BOTH WAYS. A chill shudder in the park draughts; the same chill
-    /// out on the regolith still breathes cold through the hull. One captain, one seed, one ordinal, two
+    /// <summary>THE OWNER'S OWN COMPLAINT, BOTH WAYS. A chill shudder in the park draughts; the same roll
+    /// out on the regolith speaks the regolith's own voice (R1-F40) and never names a hull. One captain, one seed, one ordinal, two
     /// floors.</summary>
     [Fact]
     public void AChillInTheParkDraughtsAndAChillOnTheSurfaceStillNamesTheHull()
@@ -136,10 +136,14 @@ public sealed class TheMoodAsksTheGroundTests
         (string pulse, string? ledger) surface = OneShudder(0, chill);
 
         Assert.Equal("a cold draught from somewhere the fans do not reach", park.ledger);
-        Assert.Equal("a cold breath through the hull", surface.ledger);
+        // R1-F40 · out on open regolith a won chill roll falls through to the regolith pool and banks no chill
+        // tick: a crowd's line ("heads come up as one") and a hull's cold have nobody to belong to out there.
+        Assert.Null(surface.ledger);
 
         Assert.Contains(park.pulse.TrimStart('〰', ' '), HullShudder.ChillLinesFor(groundHoldsPressure: true));
-        Assert.Contains(surface.pulse.TrimStart('〰', ' '), HullShudder.ChillLinesFor(groundHoldsPressure: false));
+        Assert.Contains(surface.pulse.TrimStart('〰', ' '),
+            HullShudder.LinesFor(HullShudder.Setting.Regolith, HullShudder.HavenRoom.Concourse));
+        Assert.DoesNotContain(surface.pulse.TrimStart('〰', ' '), HullShudder.ChillLinesFor(groundHoldsPressure: false));
     }
 
     /// <summary>AND THE ORDINARY BEAT TOO — the pool the owner was actually walking through, since a chill
