@@ -151,8 +151,9 @@ public sealed partial class Map
             if (!EscortSaidPumps && EscortSeconds >= PatrolBeat.PumpsAfterSeconds)
             {
                 EscortSaidPumps = true;
-                _host.ShowPulseMessage(PatrolBeat.PumpsLine);
-                _host.LogAutopilotEvent(PatrolBeat.PumpsLine);
+                string pumps = PatrolBeat.PumpsLineFor(TheAirHolds);   // U08-F11 · spelled by the floor's air
+                _host.ShowPulseMessage(pumps);
+                _host.LogAutopilotEvent(pumps);
             }
 
             double adx = sx - _host.AvatarX, ady = sy - _host.AvatarY;

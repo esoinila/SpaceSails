@@ -491,13 +491,16 @@ public sealed class TheRoundIsWalkableTests
         string answered = family[saysIt..];
 
         // The card the guard raises carries the plate, by its Core name.
-        Assert.Contains("PatrolBeat.ChallengeArtUrl", stop, StringComparison.Ordinal);
+        Assert.True(
+            stop.Contains("PatrolBeat.ChallengeArtFor(TheAirHolds)", StringComparison.Ordinal)
+            || stop.Contains("PatrolBeat.ChallengeArtUrl", StringComparison.Ordinal),
+            "the stop's card wears no painting.");
         Assert.Contains(
-            "opening.Label, PatrolBeat.ChallengeArtUrl, opening.Card, opening.Told",
+            "opening.Label, PatrolBeat.ChallengeArtFor(TheAirHolds), opening.Card, opening.Told",
             stop, StringComparison.Ordinal);
-        Assert.Contains("PatrolBeat.ChallengeArtUrl", answered, StringComparison.Ordinal);
+        Assert.Contains("PatrolBeat.ChallengeArtFor(TheAirHolds)", answered, StringComparison.Ordinal);
         Assert.Contains(
-            "read.Label, PatrolBeat.ChallengeArtUrl, read.Card, read.Told", answered, StringComparison.Ordinal);
+            "read.Label, PatrolBeat.ChallengeArtFor(TheAirHolds), read.Card, read.Told", answered, StringComparison.Ordinal);
 
         // …and not a filename typed into a page, which is the drift this repo has already paid for once.
         Assert.DoesNotContain(".jpg", stop, StringComparison.Ordinal);

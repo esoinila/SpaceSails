@@ -97,6 +97,15 @@ public static partial class UndergroundComplex
         return TopPressurisedFloor(bodyId) == level || StaffCanteenFloor(bodyId) == level;
     }
 
+    /// <summary>U04-F12 (Fable ruling 2026-11-07) · Is this the floor whose own sign reads <c>NO PASS REQUIRED</c> —
+    /// Canteen 1, on the top pressurised floor of a listed site? Asked by the round, which never stops anyone here:
+    /// a stop is a demand for a pass, and the room has a plate on its wall saying none is needed.</summary>
+    public static bool IsTheNoPassFloor(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        return !IsHeadOffice(bodyId) && IsHallFloor(bodyId, level) && HallUseOn(bodyId, level) == Comfort.UpperCanteen;
+    }
+
     /// <summary>#751 · Which hall this floor's is. The mess wins where a site is shallow enough for the two
     /// to land on the same floor — but <see cref="StaffCanteenFloor"/> returns null in exactly that case, so
     /// this is belt and braces rather than a rule.</summary>

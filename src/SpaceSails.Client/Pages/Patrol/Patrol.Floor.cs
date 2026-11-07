@@ -152,7 +152,7 @@ public sealed partial class Map
 
             int heads = RoundsCheat is { } forced
                 ? System.Math.Clamp(forced, 0, PatrolBeat.MostOnAFloor)
-                : PatrolBeat.GuardsOn(bodyId, level, ex.CanteenWatch);
+                : PatrolBeat.GuardsOn(bodyId, level, ex.CanteenWatch, ex.Gate?.Visit.Posting);   // U04-F29 · one man on B1
 
             for (int i = 0; i < heads; i++)
             {
@@ -174,6 +174,12 @@ public sealed partial class Map
                 Guards.Add(man);
             }
         }
+
+        /// <summary>U08-F11 (Fable ruling 2026-11-07) · Does the floor the captain stands on hold air? Every word the
+        /// round says is spelled by it (<c>PatrolBeat.Vacuum.cs</c>): the owner's lines where it does, the suited
+        /// set where it does not. A page with no excursion answers true - the authored spelling.</summary>
+        private bool TheAirHolds =>
+            _host.Surface is not { } here || UndergroundComplex.HoldsPressure(here.Stop.Body.Id, here.Floor);
 
         // ── THE LOOP ──────────────────────────────────────────────────────────────────────────────────────
 

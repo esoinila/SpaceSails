@@ -135,7 +135,7 @@ public sealed class TheMonolithBeatSurvivesItsCaptainTests
         Type offer = typeof(SpaceSails.Client.Pages.Map).GetNestedType("SelfieOffer", BindingFlags.Public | BindingFlags.NonPublic)!;
         bench.Poke("_selfieOffer", Activator.CreateInstance(offer, "first-monolith", "FIRST CONTACT", ""));
         bench.Poke("_hardcaseCard", HardcaseRep.OffersFor(InsuranceTier.Basic));
-        bench.Poke("_scrimQueued", ((Action)(() => { }), (Func<bool>)(() => true)));
+        bench.Poke("_scrimQueued", new List<(Action, Func<bool>, string?)> { (() => { }, () => true, null) });
         Assert.NotNull(bench.Peek("_scrimQueued"));   // the queue is really full, so the clear below is a clear
 
         bench.CallOnTheDispatcher("TriggerSurfaceOverdrawDeath", bench.Peek("_surface"), true, null, false);
@@ -174,7 +174,8 @@ public sealed class TheMonolithBeatSurvivesItsCaptainTests
     }
 
     /// <summary>A card that is not a death (the on-foot writ's Demand) does not freeze the ground, so Kolt still
-    /// arrives during it and his pitch must still come up.</summary>
+    /// arrives during it - and U04-F09 (nothing stacks): the Demand is a full-viewport card on the scrim census,
+    /// so his pitch is HELD behind it and comes up the moment the glass clears.</summary>
     [Fact]
     public async Task AKoltWhoArrivesDuringANonDeathCardStillPitches()
     {
@@ -187,6 +188,12 @@ public sealed class TheMonolithBeatSurvivesItsCaptainTests
 
         bench.CallOnTheDispatcher("HeReachesYou");
 
-        Assert.NotNull(bench.Peek("_hardcaseCard"));
+        Assert.Null(bench.Peek("_hardcaseCard"));   // not stacked on the Demand...
+        Assert.NotNull(bench.Peek("_scrimQueued")); // ...held behind it, not dropped
+
+        bench.Poke("_busted", null);
+        bench.CallOnTheDispatcher("PumpTheScrimQueue");
+
+        Assert.NotNull(bench.Peek("_hardcaseCard"));   // ...and the pitch arrives when the Demand is answered
     }
 }
