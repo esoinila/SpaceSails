@@ -90,5 +90,9 @@
     margin-top: 0;
     padding: 0.5rem 0 0.3rem;
     background: #0c0f16;
+    /* #1466 item 5 - the footnote ends 2.6rem above the card's bottom and the button is 38 px tall, so a 4 px gap
+       lay between them and the scrolling prose showed through it. The same fill, cast 0.5rem down (under the
+       button, which paints after it), makes the whole pinned region one opaque block. */
+    box-shadow: 0 0.5rem 0 0 #0c0f16;
 }
 
