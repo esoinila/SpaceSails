@@ -228,12 +228,13 @@ public static partial class PatrolBeat
     /// <param name="escortsThisWatch">Escorts BEFORE this one — the same number
     /// <see cref="BookedTooOften"/> is asked at the walk, so the sentence and the sim cannot disagree about
     /// which floor this walk ends on.</param>
-    public static Read TheGuardHasYou(string plate, Provocation why, int escortsThisWatch)
+    public static Read TheGuardHasYou(
+        string plate, Provocation why, int escortsThisWatch, bool holdsPressure = true)
     {
         ArgumentNullException.ThrowIfNull(plate);
         return new(
             false, WhyHeCame(why), CaughtLabel, CaughtCard(plate),
-            BookedTooOften(escortsThisWatch) ? KickOutDueLine : EscortLine);
+            BookedTooOften(escortsThisWatch) ? KickOutDueLine : EscortLineFor(holdsPressure));
     }
 
     /// <summary>#835 · A CLEAN ESCAPE, AND HE IS STILL STANDING THERE. Never a despawn: the man who stopped

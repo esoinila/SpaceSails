@@ -307,12 +307,16 @@ public static partial class PatrolBeat
         ArgumentNullException.ThrowIfNull(bodyId);
         ArgumentNullException.ThrowIfNull(plate);
 
-        string card = ChallengeCard(plate);
+        // U08-F11 · The words are spelled by the floor's air (PatrolBeat.Vacuum.cs): the owner's four lines on a floor
+        // that breathes, the suited set on one that does not.
+        bool air = UndergroundComplex.HoldsPressure(bodyId, level);
+        string card = ChallengeCard(plate, air);
+        string escort = EscortLineFor(air);
 
         switch (WalletChoice.WhatHappens(bodyId, level, watch, shown))
         {
             case WalletChoice.Outcome.Worked:
-                return new(true, SatisfiedLine, ChallengeLabel, card);
+                return new(true, SatisfiedLineFor(air), ChallengeLabel, card);
 
             // #1149 · THE INSPECTOR. The round treats the captain as the man the tag on every valve in this
             // building is about, and there is no roll anywhere in it: the ladder has already asked the one
@@ -320,7 +324,7 @@ public static partial class PatrolBeat
             // die cast here would be a second answer to it.
             case WalletChoice.Outcome.Inspection:
                 return new(
-                    true, inspectionRunning ? SatisfiedLine : Inspectorate.HonouredLine, ChallengeLabel, card);
+                    true, inspectionRunning ? SatisfiedLineFor(air) : Inspectorate.HonouredLine, ChallengeLabel, card);
 
             // #1149 · …AND THE BET, LOST. Nobody inspects unannounced, and this site has nothing on its
             // roster for this watch. He says the SAME sentence — that is what the line is for, and the
@@ -329,7 +333,7 @@ public static partial class PatrolBeat
             // (#719 slice 2, the maintenance break, which is where "he called it in" is already felt). No new
             // security kind is minted for it, and nothing anywhere explains it (§13.8).
             case WalletChoice.Outcome.NoInspectionDue:
-                return new(false, Inspectorate.HonouredLine, ChallengeLabel, card, EscortLine);
+                return new(false, Inspectorate.HonouredLine, ChallengeLabel, card, escort);
 
             // #605 · THE DEPARTMENT LADDER, and the one rung where the paper is entirely genuine. This
             // building issued it, the face on it is yours, and the tier under the site code does not cover
@@ -337,22 +341,22 @@ public static partial class PatrolBeat
             // read — there is no second sentence for it, because the second read IS the sentence — and what
             // it costs is what a refusal has always cost: the escort, and nothing invented for this rung.
             case WalletChoice.Outcome.WrongDepartment:
-                return new(false, ReadsItTwiceLine, ChallengeLabel, card, EscortLine);
+                return new(false, ReadsItTwiceLine, ChallengeLabel, card, escort);
 
             // Somebody else's building. Named, because a refusal that reads the site code out loud is worth
             // carrying (#679) — and because a captain who has worked two sites should learn that the second
             // pass is still worth keeping.
             case WalletChoice.Outcome.WrongSite when shown is { } wrong
                                                      && SiteOfBadge(wrong.Id) is { Length: > 0 } site:
-                return new(false, WrongSiteLine(site), ChallengeLabel, card, EscortLine);
+                return new(false, WrongSiteLine(site), ChallengeLabel, card, escort);
 
             // The cage chit. It is a real paper and it is real cover — for the cage. He says so the way you
             // would say a platform number, which is the most bureaucratic refusal available.
             case WalletChoice.Outcome.WrongPaper:
-                return new(false, WrongPaperLine, ChallengeLabel, card, EscortLine);
+                return new(false, WrongPaperLine, ChallengeLabel, card, escort);
 
             default:
-                return new(false, NothingLine, ChallengeLabel, card, EscortLine);
+                return new(false, NothingLine, ChallengeLabel, card, escort);
         }
     }
 

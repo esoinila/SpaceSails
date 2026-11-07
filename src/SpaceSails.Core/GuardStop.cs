@@ -312,12 +312,12 @@ public static class GuardStop
     /// rather than a wall: you asked a man for directions and he decided you were somebody who should not be
     /// on this floor, and that is a different afternoon from having shown him a bad pass.</para>
     /// </summary>
-    public static Answer TheWayToTheMess(Encounter.Band band, string plate) => band switch
+    public static Answer TheWayToTheMess(Encounter.Band band, string plate, bool holdsPressure = true) => band switch
     {
-        Encounter.Band.Yes => new(Said(PointsTheWayLine, plate), Ending.HeWalksYouToTheHalls),
+        Encounter.Band.Yes => new(Said(PointsTheWayLine, plate, holdsPressure), Ending.HeWalksYouToTheHalls),
         Encounter.Band.YesBut =>
-            new(Said(PointsTheWayLine, plate), Ending.HeWalksYouToTheHalls, NameGoesInTheBook: true),
-        _ => Refused(plate),
+            new(Said(PointsTheWayLine, plate, holdsPressure), Ending.HeWalksYouToTheHalls, NameGoesInTheBook: true),
+        _ => Refused(plate, holdsPressure),
     };
 
     /// <summary>
@@ -328,30 +328,31 @@ public static class GuardStop
     /// about your cover was ever in question: he simply decided not to make this his afternoon. YES-BUT is
     /// the same and your name goes in a book. NO-AND is the escort.</para>
     /// </summary>
-    public static Answer TheWork(Encounter.Band band, string plate) => band switch
+    public static Answer TheWork(Encounter.Band band, string plate, bool holdsPressure = true) => band switch
     {
-        Encounter.Band.Yes => new(Said(NotHisProblemLine, plate), Ending.HeWalksOn),
+        Encounter.Band.Yes => new(Said(NotHisProblemLine, plate, holdsPressure), Ending.HeWalksOn),
         Encounter.Band.YesBut =>
-            new(Said(NotHisProblemLine, plate), Ending.HeWalksOn, NameGoesInTheBook: true),
-        _ => Refused(plate),
+            new(Said(NotHisProblemLine, plate, holdsPressure), Ending.HeWalksOn, NameGoesInTheBook: true),
+        _ => Refused(plate, holdsPressure),
     };
 
     /// <summary>The card an unrolled, unrefused answer is told on: the round's own label, the round's own
     /// picture, the round's own body, and one line. Nothing about the CARD forks per move — #804's law about
     /// the plate applies to the whole scene, because the man in the picture has not decided anything
     /// yet.</summary>
-    private static PatrolBeat.Read Said(string line, string plate) =>
-        new(true, line, PatrolBeat.ChallengeLabel, PatrolBeat.ChallengeCard(plate));
+    private static PatrolBeat.Read Said(string line, string plate, bool holdsPressure) =>
+        new(true, line, PatrolBeat.ChallengeLabel, PatrolBeat.ChallengeCard(plate, holdsPressure));
 
     /// <summary>
     /// NO — AND THE SCENE MOVES. The band that is the whole design, and at a checkpoint it needs no new
     /// sentence at all: <see cref="PatrolBeat.EscortLine"/> opens with the word <i>"No?"</i> and is an answer
     /// to an ask in the owner's own canon copy. A refused ask IS that sentence.
     /// </summary>
-    private static Answer Refused(string plate) =>
+    private static Answer Refused(string plate, bool holdsPressure) =>
         new(
             new PatrolBeat.Read(
-                false, PatrolBeat.EscortLine, PatrolBeat.ChallengeLabel, PatrolBeat.ChallengeCard(plate)),
+                false, PatrolBeat.EscortLineFor(holdsPressure), PatrolBeat.ChallengeLabel,
+                PatrolBeat.ChallengeCard(plate, holdsPressure)),
             Ending.HeWalksYouOut);
 
     // ── THE DICE ──────────────────────────────────────────────────────────────────────────────────────

@@ -253,8 +253,10 @@ public sealed partial class Map
             g.Vy = 0;
             g.Facing = System.Math.Atan2(_host.AvatarY - g.Y, _host.AvatarX - g.X);
 
-            _host.ShowPulseMessage(PatrolBeat.HailLine, PulseRank.Beat);
-            _host.LogAutopilotEvent(PatrolBeat.HailLine);
+            // U08-F11 · spelled by the floor's air: a lamp and a tread through the deck where nothing breathes.
+            string hail = PatrolBeat.HailLineFor(TheAirHolds);
+            _host.ShowPulseMessage(hail, PulseRank.Beat);
+            _host.LogAutopilotEvent(hail);
             RendererInterop.PlayCue("blip");
         }
     }

@@ -175,6 +175,12 @@ public sealed partial class Map
             }
         }
 
+        /// <summary>U08-F11 (Fable ruling 2026-11-07) · Does the floor the captain stands on hold air? Every word the
+        /// round says is spelled by it (<c>PatrolBeat.Vacuum.cs</c>): the owner's lines where it does, the suited
+        /// set where it does not. A page with no excursion answers true - the authored spelling.</summary>
+        private bool TheAirHolds =>
+            _host.Surface is not { } here || UndergroundComplex.HoldsPressure(here.Stop.Body.Id, here.Floor);
+
         // ── THE LOOP ──────────────────────────────────────────────────────────────────────────────────────
 
         /// <summary>Walk them, decide what each side can know about the other, and let a sighting raise the
