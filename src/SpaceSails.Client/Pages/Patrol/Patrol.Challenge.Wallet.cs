@@ -96,6 +96,12 @@ public sealed partial class Map
         private void TheRoundStopsAtYou(
             SurfaceExcursion ex, Guard g, ContactLedger book, double simTime)
         {
+            // U04-F12 · …and a stop already in motion never opens its card on that floor either.
+            if (UndergroundComplex.IsTheNoPassFloor(ex.Stop.Body.Id, ex.Floor))
+            {
+                return;
+            }
+
             g.HeStandsAtYou();
             g.Vx = 0;
             g.Vy = 0;
