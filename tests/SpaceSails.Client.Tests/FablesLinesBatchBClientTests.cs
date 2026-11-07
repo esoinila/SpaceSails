@@ -144,6 +144,35 @@ public sealed class FablesLinesBatchBClientTests
         Assert.Contains("Ringside Exchange", quote, StringComparison.Ordinal);
     }
 
+    /// <summary>#1472 item 1: the impact freeze card's caption and art title fork on <c>ImpactIntoStation</c>.
+    /// RED: revert the two forks in BustedCard.razor's Impact case.</summary>
+    [Fact]
+    public async Task TheImpactFreezeCardNamesTheBerthAtAStationAndTheSurfaceOnTheGround()
+    {
+        const string stationCaption = "\"…the approach said 'berth ahead'. Nobody said 'slow'.\"";
+        const string groundCaption = "\"…the periapsis said 'under the surface'. It wasn't bluffing.\"";
+
+        using (DeskBench station = await DeskBench.BootAsync("/map?start=earth"))
+        {
+            await station.RenderAsync();
+            string id = HavenInterior.InteriorBodyIds.First();
+            station.CallOnTheDispatcher("TriggerImpact", new SurfaceImpact.Crossing(id, "Ringside Exchange", 1.0, 0.0, Vector2d.Zero));
+            DeskBench.Painted painted = await station.RenderAsync();
+            var caption = painted.Root.Descendants().Single(n => n.HasClass("busted-freeze-caption"));
+            Assert.Equal(stationCaption, caption.Spoken);
+            var art = painted.Root.Descendants().Single(n => n.HasClass("busted-explosion"));
+            Assert.Equal("art: the ship folding into a station's plating at the berth — hull on hull, the kerosene-explosion budget",
+                art.Attributes["title"]);
+        }
+
+        using (DeskBench ground = await DeskBench.BootAsync("/map?death=impact&start=earth"))
+        {
+            DeskBench.Painted painted = await ground.RenderAsync();
+            var caption = painted.Root.Descendants().Single(n => n.HasClass("busted-freeze-caption"));
+            Assert.Equal(groundCaption, caption.Spoken);
+        }
+    }
+
     // ── R1-F69 ────────────────────────────────────────────────────────────────────────────────────────
 
     [Fact]

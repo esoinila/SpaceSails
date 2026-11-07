@@ -8517,10 +8517,10 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                             @* PR-BUSTED art (docs/art-manifest-busted.md item 2): busted-ship-explosion.jpg
                                backs this .busted-explosion slot too — same "kerosene-explosion budget"
                                hero fireball as the Resurrected panel. Gradient stays as the load fallback. *@
-                            <div class="busted-freeze-art busted-explosion has-art" title="art: the ship folding into the surface at periapsis — the kerosene-explosion budget">
+                            <div class="busted-freeze-art busted-explosion has-art" title="@(bust.ImpactIntoStation ? "art: the ship folding into a station's plating at the berth — hull on hull, the kerosene-explosion budget" : "art: the ship folding into the surface at periapsis — the kerosene-explosion budget")">
                                 <img class="bf-art" src="art/busted-ship-explosion.jpg" alt="" aria-hidden="true" />
                             </div>
-                            <div class="busted-freeze-caption">"…the periapsis said 'under the surface'. It wasn't bluffing."</div>
+                            <div class="busted-freeze-caption">@(bust.ImpactIntoStation ? "\"…the approach said 'berth ahead'. Nobody said 'slow'.\"" : "\"…the periapsis said 'under the surface'. It wasn't bluffing.\"")</div>
                             @* #621 · This line was TYPED HERE, word for word off ImpactLines[1], and then
                                had "The freeze-frame holds." appended — which is BUSTED's own language about
                                a collector's gun-camera still, on a death with no collector and no camera.
