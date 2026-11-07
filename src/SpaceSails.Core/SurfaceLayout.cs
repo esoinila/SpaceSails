@@ -235,6 +235,12 @@ public static partial class SurfaceLayout
         }
 
         var keepOut = StandingClaims(bodyId ?? "", siteSalt, field);
+        // #1478 · The shelf lip now steps around what it cannot cross, so it must also keep out of the lift head's
+        // fenced ring (PreservationZone): a lip laid up against the ring's open side sealed the shed in.
+        if (!string.IsNullOrEmpty(siteSalt) && siteKind == LandingSiteKind.CraterShelf)
+        {
+            keepOut.Add(LiftHeadFenceZone(bodyId ?? "", siteSalt, field));
+        }
         if (string.IsNullOrEmpty(siteSalt))
         {
             return (bodyId ?? "") switch

@@ -194,6 +194,7 @@ public sealed partial class DeckView
     {
         // #313 the motion tracker: a crude corner fan of MOVING blips (bearing/range), including
         // contacts beyond the grid edge — the early warning. Cadence pulses the blips as they close.
+        _trackerCaptionsBottom = 0f;
         if (surface is { Instruments: true } tHud)
         {
             DrawMotionTracker(widthPx, heightPx, simTime, tHud);

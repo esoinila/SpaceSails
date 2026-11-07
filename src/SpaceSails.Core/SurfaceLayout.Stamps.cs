@@ -56,7 +56,19 @@ public static partial class SurfaceLayout
         {
             ReserveOn(claimed, sx, sy, sr, sr);
         }
+        if (kind == LandingSiteKind.CraterShelf)
+        {
+            (double fx, double fy, double fr) = LiftHeadFenceZone(bodyId, siteSalt, field);
+            ReserveOn(claimed, fx, fy, fr, fr);
+        }
         return PlaceStamp(kind, $"{bodyId}~{siteSalt}", field, claimed);
+    }
+
+    /// <summary>#1478 · The ground the lift head's fence ring (and the walk round it) needs, as a standing claim.</summary>
+    internal static (double X, double Y, double R) LiftHeadFenceZone(string bodyId, string? siteSalt, in Field field)
+    {
+        SurfaceStructure.Spec hut = SecretLab.HeadHut(bodyId, siteSalt, field);
+        return (hut.CentreX, hut.CentreY, SurfaceStructure.EnvelopeOf(hut).Reach + PreservationZone.RailBerth + 4.0);
     }
 
     // The ledger's two verbs, shared by the generator and StampFor so they cannot disagree.
@@ -98,7 +110,8 @@ public static partial class SurfaceLayout
         claimed.Add((cx - halfW - LedgerElbow, cy - halfH - LedgerElbow, cx + halfW + LedgerElbow, cy + halfH + LedgerElbow));
 
     /// <summary>One thing a stamp lays, claimed as a unit: the box it occupies and the walls it adds.</summary>
-    private readonly record struct Piece(double Cx, double Cy, double HalfW, double HalfH, Wall[] Walls);
+    private readonly record struct Piece(double Cx, double Cy, double HalfW, double HalfH, Wall[] Walls,
+        SurfaceScenery.Mark[]? Marks = null);
 
     private readonly record struct Candidate(List<Piece> Pieces, List<SurfaceScenery.Mark> Marks);
 
@@ -111,7 +124,7 @@ public static partial class SurfaceLayout
     {
         Candidate? best = null;
         int bestScore = -1;
-        foreach (Candidate c in Candidates(kind, key, f))
+        foreach (Candidate c in Candidates(kind, key, f, claimed))
         {
             // Every piece is judged against the ledger AS IT STOOD before the stamp began: a stamp's own
             // pieces abut by design, and judging each against its siblings' padded claims made them refuse
@@ -139,19 +152,27 @@ public static partial class SurfaceLayout
         }
 
         var walls = new List<Wall>();
+        // #1478 · A mark that belongs to a piece (the fissure's crack segments) is kept only with the piece:
+        // a refused piece used to leave its crack drawn with no slot walls beside it, an unwalled stretch.
+        var marks = new List<SurfaceScenery.Mark>(chosen.Marks);
         var snapshot = new List<(double X0, double Y0, double X1, double Y1)>(claimed);
         foreach (Piece p in chosen.Pieces)
         {
             if (Fits(snapshot, p.Cx, p.Cy, p.HalfW, p.HalfH))
             {
                 walls.AddRange(p.Walls);
+                if (p.Marks is { } own)
+                {
+                    marks.AddRange(own);
+                }
                 ReserveOn(claimed, p.Cx, p.Cy, p.HalfW, p.HalfH);
             }
         }
-        return new Stamp(walls, chosen.Marks);
+        return new Stamp(walls, marks);
     }
 
-    private static IEnumerable<Candidate> Candidates(LandingSiteKind kind, string key, Field f)
+    private static IEnumerable<Candidate> Candidates(LandingSiteKind kind, string key, Field f,
+        List<(double X0, double Y0, double X1, double Y1)> claimed)
     {
         double hx = f.HomeX, band = f.LandingBandY;
         double minX = f.LeftX + EdgeMargin, maxX = f.RightX - EdgeMargin;
@@ -161,13 +182,13 @@ public static partial class SurfaceLayout
         {
             case LandingSiteKind.DepotApron:
             {
-                // A swept rockcrete apron 18 du below the band (centred on the landing column when it can be);
+                // A swept rockcrete apron 27 du below the band (#1478: its top edge clears the landing square, which reaches 18 du down; centred on the landing column when it can be);
                 // its four corner posts are the dead floodlights. The posts sit outside the landing square
                 // (x +/- 12 clears its 6 du radius) by construction.
                 double[] shifts = [0, 30, -30, 60, -60, 90, -90, 120, -120];
                 foreach (double dx in shifts)
                 {
-                    double cx = hx + dx, cy = band - 18, hw = 12, hh = 7;
+                    double cx = hx + dx, cy = band - 27, hw = 12, hh = 7;
                     var marks = new List<SurfaceScenery.Mark>();
                     RectMarks(marks, cx - hw, cy - hh, cx + hw, cy + hh, SurfaceScenery.Kind.Ridge);
                     var pieces = new List<Piece>();
@@ -185,49 +206,109 @@ public static partial class SurfaceLayout
             case LandingSiteKind.CraterShelf:
             {
                 // One long hull wall along the bottom edge, with two 4 du gaps — the shelf's lip.
+                // #1478 · The shelters and the hidden lab's chambers are never yielded, and on some grounds
+                // they stand across the whole bottom edge. Each short chunk of the lip therefore steps to
+                // the nearest lift where the ledger still has room for it (home lift first, so the lip steps back down after an obstacle, then the nearest to the chunk
+                // beside it, so the lip jogs only around an obstacle) instead of being refused outright.
                 double mid = (minX + maxX) / 2;
                 double g1 = Lerp(minX + 30, mid - 15, Frac(key, "stamp:gap1"));
                 double g2 = Lerp(mid + 15, maxX - 30, Frac(key, "stamp:gap2"));
                 (double From, double To)[] runs = [(minX, g1 - 2), (g1 + 2, g2 - 2), (g2 + 2, maxX)];
-                foreach (double lift in new double[] { 8, 4, 12, 16, 20, 26, 32, 38, 44, 52 })
+                double[] lifts = [8, .. Enumerable.Range(2, 113).Select(h => h / 2.0).Where(h => h != 8)];
+                var pieces = new List<Piece>();
+                double lastLift = lifts[0];
+                foreach ((double from, double to) in runs)
                 {
-                    double y = f.BottomY + lift;
-                    var pieces = new List<Piece>();
-                    foreach ((double from, double to) in runs)
+                    int n = System.Math.Max(1, (int)System.Math.Ceiling((to - from) / 3.0));
+                    for (int i = 0; i < n; i++)
                     {
-                        int n = System.Math.Max(1, (int)System.Math.Ceiling((to - from) / 20.0));
-                        for (int i = 0; i < n; i++)
+                        double a = Lerp(from, to, i / (double)n), b = Lerp(from, to, (i + 1) / (double)n);
+                        double chosen = lastLift;
+                        foreach (double lift in lifts.Take(1).Concat(lifts.Skip(1).OrderBy(l => System.Math.Abs(l - lastLift))))
                         {
-                            double a = Lerp(from, to, i / (double)n), b = Lerp(from, to, (i + 1) / (double)n);
-                            pieces.Add(new((a + b) / 2, y, (b - a) / 2, 0.5, [new Wall(a, y, b, y, true)]));
+                            if (Fits(claimed, (a + b) / 2, f.BottomY + lift, (b - a) / 2, 0.5))
+                            {
+                                chosen = lift;
+                                break;
+                            }
                         }
+                        lastLift = chosen;
+                        double y = f.BottomY + chosen;
+                        pieces.Add(new((a + b) / 2, y, (b - a) / 2, 0.5, [new Wall(a, y, b, y, true)]));
                     }
-                    yield return new(pieces, []);
                 }
+                yield return new(pieces, []);
                 break;
             }
 
             case LandingSiteKind.IceFissure:
             {
                 // A jagged crack across the field with a 2 du slot of walls down it and ONE 4 du bridge.
+                // #1478 · Each crack segment's mark rides with its own piece (see PlaceStamp), so the crack is
+                // drawn only where its slot walls stand; and the crack itself is routed: a dynamic programme
+                // over the vertices' heights finds the path, nearest the seeded jagged target, whose every
+                // segment the ledger has room for. The old fixed crack was refused piecemeal wherever it
+                // crossed a shelter, leaving a stretch of crack with no walls.
                 const int Steps = 12;
+                const int Levels = 110;
+                const double MaxStep = 14.0;
+                double yLo = f.BottomY + 12, yHi = band - 33;
                 int bridge = 2 + Face(key, "stamp:bridge", Steps - 3);
-                for (int c = 0; c < 24; c++)
+                double yc = Lerp(f.AnchorY + 45, band - 55, Frac(key, "stamp:y"));
+                var xs = new double[Steps + 1];
+                var target = new double[Steps + 1];
+                for (int i = 0; i <= Steps; i++)
                 {
-                    double yc = Lerp(f.AnchorY + 45, band - 55, ((c * 7 % 24) + Frac(key, "stamp:y")) / 24.0);
-                    var xs = new double[Steps + 1];
-                    var ys = new double[Steps + 1];
-                    for (int i = 0; i <= Steps; i++)
+                    xs[i] = Lerp(minX, maxX, i / (double)Steps);
+                    target[i] = yc + ((Frac(key, $"stamp:j:{i}") - 0.5) * 12.0);
+                }
+                double LevelY(int k) => Lerp(yLo, yHi, k / (double)(Levels - 1));
+                (double Cx, double Cy, double Hw, double Hh) Box(int i, double ya, double yb) =>
+                    ((xs[i] + xs[i + 1]) / 2, (System.Math.Min(ya, yb) + System.Math.Max(ya, yb)) / 2,
+                     (xs[i + 1] - xs[i]) / 2, (System.Math.Abs(yb - ya) / 2) + 1);
+
+                // cost[i, k] = least total |y - target| of a fully-fitting path ending at vertex i, level k.
+                var cost = new double[Steps + 1, Levels];
+                var back = new int[Steps + 1, Levels];
+                for (int k = 0; k < Levels; k++) { cost[0, k] = System.Math.Abs(LevelY(k) - target[0]); }
+                for (int i = 0; i < Steps; i++)
+                {
+                    for (int j = 0; j < Levels; j++) { cost[i + 1, j] = double.PositiveInfinity; back[i + 1, j] = -1; }
+                    for (int k = 0; k < Levels; k++)
                     {
-                        xs[i] = Lerp(minX, maxX, i / (double)Steps);
-                        ys[i] = yc + ((Frac(key, $"stamp:j:{i}") - 0.5) * 12.0);
+                        if (double.IsPositiveInfinity(cost[i, k])) { continue; }
+                        for (int j = 0; j < Levels; j++)
+                        {
+                            if (System.Math.Abs(LevelY(j) - LevelY(k)) > MaxStep) { continue; }
+                            double c = cost[i, k] + System.Math.Abs(LevelY(j) - target[i + 1]);
+                            if (c >= cost[i + 1, j]) { continue; }
+                            (double cx, double cy, double hw, double hh) = Box(i, LevelY(k), LevelY(j));
+                            if (Fits(claimed, cx, cy, hw, hh))
+                            {
+                                cost[i + 1, j] = c;
+                                back[i + 1, j] = k;
+                            }
+                        }
                     }
-                    var marks = new List<SurfaceScenery.Mark>();
+                }
+                int end = -1;
+                for (int k = 0; k < Levels; k++)
+                {
+                    if (!double.IsPositiveInfinity(cost[Steps, k]) && (end < 0 || cost[Steps, k] < cost[Steps, end])) { end = k; }
+                }
+                if (end >= 0)
+                {
+                    var ys = new double[Steps + 1];
+                    for (int i = Steps, k = end; i >= 0; i--)
+                    {
+                        ys[i] = LevelY(k);
+                        k = back[i, k];
+                    }
                     var pieces = new List<Piece>();
                     for (int i = 0; i < Steps; i++)
                     {
-                        marks.Add(new(xs[i], ys[i], xs[i + 1], ys[i + 1], SurfaceScenery.Kind.Rille));
-                        double lo = System.Math.Min(ys[i], ys[i + 1]) - 1, hi = System.Math.Max(ys[i], ys[i + 1]) + 1;
+                        var crack = new SurfaceScenery.Mark(xs[i], ys[i], xs[i + 1], ys[i + 1], SurfaceScenery.Kind.Rille);
+                        (double cx, double cy, double hw, double hh) = Box(i, ys[i], ys[i + 1]);
                         double span = xs[i + 1] - xs[i];
                         var w = new List<Wall>();
                         for (int sd = -1; sd <= 1; sd += 2)
@@ -242,9 +323,9 @@ public static partial class SurfaceLayout
                                 AddSlotRun(w, xs[i], ys[i], xs[i + 1], ys[i + 1], sd, 0, 1);
                             }
                         }
-                        pieces.Add(new((xs[i] + xs[i + 1]) / 2, (lo + hi) / 2, span / 2, (hi - lo) / 2, [.. w]));
+                        pieces.Add(new(cx, cy, hw, hh, [.. w], [crack]));
                     }
-                    yield return new(pieces, marks);
+                    yield return new(pieces, []);
                 }
                 break;
             }

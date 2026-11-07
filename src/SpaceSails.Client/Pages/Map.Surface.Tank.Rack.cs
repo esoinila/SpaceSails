@@ -246,7 +246,8 @@ public partial class Map
     /// <summary>#1472 · The face for where the captain stands right now: worked out when the card raises, and then
     /// kept, so a floor change under an open card cannot swap its words.</summary>
     private AirCard.Face TheAirCardFaceNow() =>
-        _surface is { Floor: < 0 } below && UndergroundComplex.NearestAir(below.Stop.Body.Id, below.Floor) is var (name, up)
+        _surface is { Floor: < 0 } below && !UndergroundComplex.HoldsPressure(below.Stop.Body.Id, below.Floor)
+        && UndergroundComplex.NearestAir(below.Stop.Body.Id, below.Floor) is var (name, up) && up >= 1
             ? AirCard.For(true, name, up)
             : AirCard.For(false);
 

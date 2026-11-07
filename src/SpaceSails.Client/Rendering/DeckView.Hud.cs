@@ -350,6 +350,7 @@ public sealed partial class DeckView
                 }
                 _renderer.DrawText(capX, capY, caption, TextDim, $"{capPx:0}px monospace", TextAlign.Left);
                 capY += capPx + 5f;
+                _trackerCaptionsBottom = capY;
             }
         }
     }
