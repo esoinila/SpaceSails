@@ -39,8 +39,9 @@ public static partial class SecretLab
 
         // R1-F103 (Fable ruling 2026-11-07) · THE HEAD OFFICE'S SHED IS A LIFT HEAD, NOT VANTAR'S LAB. The same
         // geometry seeds both, but the building on the ice has nothing in it: one plain chamber, its four walls
-        // closed and the doorway left in the near face. No consoles, no doors, no deep chambers, no spine,
-        // benches or stasis boxes, no cache, no crawl. (The hidden-door console went in #1442; this is the room
+        // the doorway left in the near face AND in the far one (the fire code, #822: a room has two ways out; here
+        // the second is just the open ice). No consoles, no doors, no deep chambers, no spine, benches or stasis
+        // boxes, no cache, no crawl. (The hidden-door console went in #1442; this is the room
         // that console used to open, and the room is now just a room.)
         if (UndergroundComplex.IsHeadOffice(bodyId))
         {
@@ -48,7 +49,8 @@ public static partial class SecretLab
             walls.Add(new(cx, nearLoY, farCx, nearLoY, true));
             walls.Add(new(cx, nearHiY, cx, cy + DoorwayHalf, true));
             walls.Add(new(cx, nearLoY, cx, cy - DoorwayHalf, true));
-            walls.Add(new(farCx, nearHiY, farCx, nearLoY, true));
+            walls.Add(new(farCx, nearHiY, farCx, cy + DoorwayHalf, true));
+            walls.Add(new(farCx, nearLoY, farCx, cy - DoorwayHalf, true));
             return new Region("THE LIFT HEAD", walls, [], [], 0,
                 System.Math.Min(cx, farCx), nearLoY, System.Math.Max(cx, farCx), nearHiY,
                 cx + (dir * (RoomDepth / 2.0)), cy, [], []);

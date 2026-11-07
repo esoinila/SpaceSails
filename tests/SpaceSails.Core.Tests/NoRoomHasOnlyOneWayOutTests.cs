@@ -366,6 +366,14 @@ public sealed class NoRoomHasOnlyOneWayOutTests
 
         foreach (string body in Sweep())
         {
+            // R1-F103 (Fable ruling 2026-11-07) · the head office's shed is a lift head, not a lab: no antechamber, no
+            // clean room, no heart, nothing a lockdown can seal. Its one plain room keeps both doorways (the fire code
+            // is still met - see FableRulings1107MiscCoreTests), and it is judged there.
+            if (UndergroundComplex.IsHeadOffice(body))
+            {
+                continue;
+            }
+
             SecretLab.Placement placement = SecretLab.For(body, Field, forcePresent: true);
             SecretLab.Region region = SecretLab.Build(body, Field, placement.DoorX, placement.DoorY);
             labs++;

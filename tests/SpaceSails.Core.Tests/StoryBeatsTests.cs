@@ -222,6 +222,7 @@ public sealed class StoryBeatsTests
                 StoryBeats.Beat.TheClaim,
                 StoryBeats.Beat.TheWalksBinoculars,
                 StoryBeats.Beat.TheGalleryVendor,
+                StoryBeats.Beat.KeepsakeFirstOpening,   // U09-F02: the pendant's first opening (spent once per run by its own latch)
             ],
             everyTime);
     }
