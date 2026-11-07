@@ -37,6 +37,22 @@ public partial class Map
         return false;
     }
 
+    /// <summary>R1-F46 · A carried sentry comes home to the roster, ONCE. The roster is two named units, so a
+    /// unit already standing in it is never added again (the boarding panel read "K-77 and R-3B and R-3B ride
+    /// escort" after K-77 was written off). The rack keeps the fuller magazine if a duplicate ever arrives.</summary>
+    private void ReturnSentryToTheRoster(string unit, int rounds)
+    {
+        ShipBot? standing = _shipBots.Find(x => string.Equals(x.Unit, unit, StringComparison.Ordinal));
+        if (standing is null)
+        {
+            _shipBots.Add(new ShipBot(unit, rounds));
+        }
+        else
+        {
+            standing.Rounds = Math.Max(standing.Rounds, rounds);
+        }
+    }
+
     private void LiftOffFromSurface()
     {
         if (_surface is not { } ex)
@@ -98,7 +114,7 @@ public partial class Map
             }
             else
             {
-                _shipBots.Add(new ShipBot(b.Unit, b.Rounds));
+                ReturnSentryToTheRoster(b.Unit, b.Rounds);
             }
         }
 
