@@ -317,9 +317,13 @@ public partial class Map
         {
             // #1401 R1-F47 · the berth she is clamped to is not "in shuttle reach": the shuttle bay leaves it off its
             // board (ShuttleExcursion.Destinations skips the docked haven), so the chip must not count it either.
+            // #1469 · A SameOrbit partner is counted AS one, wherever it sits: the desk deals with it from the
+            // same orbit (Classify), and a Hill sphere can be wider than the shuttle corridor.
+            CommerceRule.TradeMode mode = TradeModeFor(c);
             if (c.Id != _dockedHavenId
-                && CommerceRule.InShuttleReach(_ship, c.Position)   // #1440 · the one reach predicate
-                && (c.Actions & CommerceRule.ActionKind.Trade) != 0 && TradeModeFor(c) != CommerceRule.TradeMode.None)
+                && (CommerceRule.InShuttleReach(_ship, c.Position)   // #1440 · the one reach predicate
+                    || mode == CommerceRule.TradeMode.SameOrbit)
+                && (c.Actions & CommerceRule.ActionKind.Trade) != 0 && mode != CommerceRule.TradeMode.None)
             {
                 tradable++;
             }
