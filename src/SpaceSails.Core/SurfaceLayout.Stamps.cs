@@ -329,7 +329,10 @@ public static partial class SurfaceLayout
     private static void AddSlotRun(System.Collections.Generic.List<Wall> walls,
         double xa, double ya, double xb, double yb, int side, double t0, double t1)
     {
-        if (t1 - t0 < 0.01)
+        double sx = (xb - xa) * (t1 - t0), sy = (yb - ya) * (t1 - t0);
+        // The house floor (DegenerateWallScan): no wall shorter than the body it blocks. A run that short
+        // beside the bridge is dropped, which only widens the bridge by a hair.
+        if (t1 - t0 < 0.01 || System.Math.Sqrt((sx * sx) + (sy * sy)) < 1.4)
         {
             return;
         }
