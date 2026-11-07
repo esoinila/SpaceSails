@@ -4291,8 +4291,6 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                 }
                 @if (!keep.SelfService)
                 {
-                    <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.RoundPrice)"
-                            title="@($"Buy a round for the room — {keep.RoundPrice} cr — warms the regulars drinking here")" @onclick="BuyRoundForRoom">🍻 Round for the room · @keep.RoundPrice cr</button>
                     @* #781 · The tooltip names WHOEVER is behind this counter, off Core's own field, rather
                        than a role typed here. At the Tilt that is Halden Frost; at Canteen 1 it is `the
                        keep`, which is the only thing the game is ever allowed to call him. *@
