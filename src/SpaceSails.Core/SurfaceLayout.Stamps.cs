@@ -56,7 +56,19 @@ public static partial class SurfaceLayout
         {
             ReserveOn(claimed, sx, sy, sr, sr);
         }
+        if (kind == LandingSiteKind.CraterShelf)
+        {
+            (double fx, double fy, double fr) = LiftHeadFenceZone(bodyId, siteSalt, field);
+            ReserveOn(claimed, fx, fy, fr, fr);
+        }
         return PlaceStamp(kind, $"{bodyId}~{siteSalt}", field, claimed);
+    }
+
+    /// <summary>#1478 · The ground the lift head's fence ring (and the walk round it) needs, as a standing claim.</summary>
+    internal static (double X, double Y, double R) LiftHeadFenceZone(string bodyId, string? siteSalt, in Field field)
+    {
+        SurfaceStructure.Spec hut = SecretLab.HeadHut(bodyId, siteSalt, field);
+        return (hut.CentreX, hut.CentreY, SurfaceStructure.EnvelopeOf(hut).Reach + PreservationZone.RailBerth + 4.0);
     }
 
     // The ledger's two verbs, shared by the generator and StampFor so they cannot disagree.
