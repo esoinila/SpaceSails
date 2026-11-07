@@ -153,8 +153,8 @@ Probed on one boot, sampled every 250 ms, logged only when something moved:
 
 ```
 [ 13155 ms] Follow Ship visible — THIS IS WHERE THE GATE MEASURED
-[ 13173 ms] ⏭ Long coast ahead (30 d) — @388,125 w243 … Follow Ship@880,125 | Follow dest@978,125
-[ 13968 ms] ⏭ Long coast ahead (29 d 23 @388,125 w274 … Follow Ship@911,125 | Follow dest@20,165
+[ 13173 ms] ⏭ Dead coast ahead (30 d) — @388,125 w243 … Follow Ship@880,125 | Follow dest@978,125
+[ 13968 ms] ⏭ Dead coast ahead (29 d 23 @388,125 w274 … Follow Ship@911,125 | Follow dest@20,165
 ```
 
 Eight hundred milliseconds after the boot door came down, the long-coast advert re-read its own countdown —

@@ -45,7 +45,7 @@ public partial class Map
 
         // The soonest pending burn — a plotted node OR the armed transfer schedule's next unfired burn.
         // #989: the ⚓ cast off is lifted out of that pile into its own candidate. A departure scheduled a
-        // day and a half out opens exactly the dead wait this control exists to eat ("⏭ Long coast ahead —
+        // day and a half out opens exactly the dead wait this control exists to eat ("⏭ Dead coast ahead —
         // skip it" now offers the berth's own wait), and a captain sitting on the clamp is not waiting for
         // "the next burn" — the cast off spends nothing.
         double? nextBurn = null;
@@ -377,8 +377,8 @@ public partial class Map
         {
             SquawkNow(Parrot.Squawk.LongHaul, nowMs);
             LogAutopilotEvent(
-                $"⏭ long coast ahead — {FormatDuration(_skipNext.Epoch - SimTime)} to {SkipEventLabel(_skipNext.Kind)}; " +
-                "the coast is free, only time passes — hit ⏭ to skip it");
+                $"⏭ {FormatDuration(_skipNext.Epoch - SimTime)} of nothing to {SkipEventLabel(_skipNext.Kind)}. " +
+                "The coast costs nothing but the time — ⏭ sleeps through it.");
         }
     }
 

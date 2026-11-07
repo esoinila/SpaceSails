@@ -8,8 +8,8 @@ namespace SpaceSails.UiGate;
 /// <para><b>The sighting</b> (#1245's ui-gate, 2026-09-19). #1239's own guard,
 /// <c>The_nav_toolbars_rows_do_not_depend_on_when_the_gate_looked</c>, failed honestly:</para>
 /// <code>
-/// ── at 0 ms ──      line 0: ⏭ Long coast ahead (# d) — skip it      line 0: Follow Ship / Follow dest
-/// ── at 1200 ms ──   line 0: ⏭ Long coast ahead (# d # h) — skip it  line 2: Follow Ship / Follow dest
+/// ── at 0 ms ──      line 0: ⏭ Dead coast ahead (# d) — sleep through it   line 0: Follow Ship / Follow dest
+/// ── at 1200 ms ──   line 0: ⏭ Dead coast ahead (# d # h) — sleep through it line 2: Follow Ship / Follow dest
 /// </code>
 /// <para>The advert grew a second number group when its countdown crossed the month boundary — #989's
 /// ladder coarsens to <c>FormatHorizon</c>'s whole days past thirty, so <c>(30 d)</c> became
@@ -163,7 +163,7 @@ public sealed class TheLongCoastAdvertKeepsItsWidthTests(Xunit.Abstractions.ITes
 
             const controls = () => controlsOf(bar);
 
-            const advert = controls().find(b => (b.innerText || '').includes('Long coast ahead'));
+            const advert = controls().find(b => (b.innerText || '').includes('Dead coast ahead'));
             if (!advert) {
                 return 'premise: the long-coast advert is not on this toolbar, so its width decides nothing.';
             }
@@ -251,7 +251,7 @@ public sealed class TheLongCoastAdvertKeepsItsWidthTests(Xunit.Abstractions.ITes
             const started = performance.now();
             const lengthsSeen = () => new Set([...byText.keys()].map(t => t.length)).size;
             while (performance.now() - started < limit && lengthsSeen() < 2) {
-                const advert = controls().find(b => (b.innerText || '').includes('Long coast ahead'));
+                const advert = controls().find(b => (b.innerText || '').includes('Dead coast ahead'));
                 if (advert) {
                     const slot = advert.querySelector('.map-coast-countdown');
                     const text = (slot ? slot.textContent : advert.innerText || '').trim();
