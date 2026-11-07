@@ -210,10 +210,13 @@ public sealed class FablesLinesBatchBClientTests
         DeskBench.Painted ground = await TheBoardingCard(withTheGigRock: false);
         Assert.Contains(ground.Root.Descendants(), n => n.Spoken.Contains("Coin in the chest", StringComparison.Ordinal));
         Assert.Contains(ground.Root.Descendants(), n => n.Spoken.Contains("Hold loaded with it", StringComparison.Ordinal));
+        Assert.Contains(ground.Root.Descendants(), n => n.Spoken.Contains("Beach-comber kit", StringComparison.Ordinal));
 
-        // The gig rock: no coin dial and no hold row (its own blurb is pinned on the page above).
+        // The gig rock: no coin dial and no hold row (its blurb is printed in the bury-note slot).
         DeskBench.Painted rock = await TheBoardingCard(withTheGigRock: true);
-        // (The blurb itself is static markup the bench's walk does not read; GigRockBlurb is pinned on the page above.)
+        // The rock card prints the blurb in the bury-note slot (this was blank once: an empty <text></text>).
+        Assert.Contains(rock.Root.Descendants(), n => n.HasClass("bury-note") && n.Spoken.Contains("One marked DRILL POINT", StringComparison.Ordinal));
+        Assert.DoesNotContain(rock.Root.Descendants(), n => n.Spoken.Contains("Beach-comber kit", StringComparison.Ordinal));
         Assert.Contains(rock.Root.Descendants(), n => n.HasClass("deck-shuttle-title"));
         Assert.DoesNotContain(rock.Root.Descendants(), n => n.Spoken.Contains("Coin in the chest", StringComparison.Ordinal));
         Assert.DoesNotContain(rock.Root.Descendants(), n => n.Spoken.Contains("Hold loaded with it", StringComparison.Ordinal));

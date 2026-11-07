@@ -49,7 +49,7 @@
                     else if (GigRockBlurb is { } gigRockBlurb)
                     {
                         @* U03-F07: the gig rock is a job site - what it is, what the job is, and that there is nothing to bury or buy. *@
-                        <text></text>
+                        <text>@gigRockBlurb</text>
                     }
                     else if (BoardingAWreck)
                     {
@@ -177,7 +177,7 @@
                    GEN-AI GEAR ART (#348, Grok-generated art/gear-beachcomber-kit.jpg): the kit
                    illustration rides beside this line as a small capped thumbnail — object-fit cover, a
                    modest max-height so the dialog stays compact and the Board button never leaves screen. *@
-                @if (!BoardingAWreck)
+                @if (!BoardingAWreck && GigRockBlurb is null)
                 {
                     <div class="bury-row bury-gear">
                         <img class="gear-thumb" src="art/gear-beachcomber-kit.jpg" alt="" aria-hidden="true" />
