@@ -48,6 +48,30 @@ public sealed class TheShellOwnsTheVoidAndTheWalkInTests
             n => !n.Hidden && n.Handlers.ContainsKey("onclick") && n.Name == named);
 
     /// <summary>
+    /// <b>#1471 follow-up · THE COUNTER'S UNIT REACHES THE GLASS.</b> A crossing under a year counts in days
+    /// (<c>_jumpInDays</c>); the flag is passed page -> rack -> card, and a dropped hand-off would paint "year 12
+    /// of 38" for a thirty-eight-day crossing with every Core test green.
+    ///
+    /// <para><b>Proven RED</b> by dropping <c>_jumpInDays="@_jumpInDays"</c> from the rack's call in
+    /// <c>Map.razor</c>: the card paints "year 12 of 38".</para>
+    /// </summary>
+    [Fact]
+    public async Task TheCrossingsUnitReachesTheRenderedCard()
+    {
+        using DeskBench bench = await DeskBench.BootAsync(FreeFlying);
+        ACrossingIsUnderWay(bench);
+        bench.Poke("_jumpInDays", true);
+        bench.Poke("_jumpTotalYears", 38);
+        bench.Poke("_jumpYear", 12);
+
+        DeskBench.Painted open = await bench.RenderAsync();
+        DeskBench.Painted.Node? sheet = Wearing(open, "jump-overlay");
+        Assert.True(sheet is not null && !sheet.Hidden, "the crossing is under way and no .jump-overlay reached the screen.");
+        Assert.Contains("day 12 of 38", sheet!.Spoken);
+        Assert.DoesNotContain("year 12 of 38", sheet.Spoken);
+    }
+
+    /// <summary>
     /// MINIMISE, TILE, RESTORE — MID-CROSSING, AND THE CROSSING NEVER NOTICED.
     ///
     /// <para>The round trip through the SHELL's mechanism, on the surface that used to own three lines of
