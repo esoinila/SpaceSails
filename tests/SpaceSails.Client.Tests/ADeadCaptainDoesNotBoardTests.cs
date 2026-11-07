@@ -208,7 +208,8 @@ public sealed class TheTradeTileAgreesWithTheShuttleBayTests
 
     /// <summary>#1469 · The chip's contact set is the desk's, and the desk's reach is the shuttle corridor: a
     /// depot <c>ContactsAt</c> lists only because it belongs to the body (the player is far from it, orbiting
-    /// nothing) is not "in reach". RED: count every Trade-capable contact in <c>TradeChip</c>.</summary>
+    /// nothing) is not "in reach". It guards the <c>mode != None</c> test, which is the tile's whole reach rule
+    /// (Classify answers None beyond the corridor). RED: drop that test from <c>TradeChip</c>.</summary>
     [Fact]
     public async Task AFarDepotTheBodyListsIsNotAPartnerInReach()
     {
@@ -226,7 +227,7 @@ public sealed class TheTradeTileAgreesWithTheShuttleBayTests
     }
 
     /// <summary>#1469 · The tile and the desk agree on a SameOrbit partner past the shuttle corridor (a Jupiter-sized
-    /// Hill sphere): the desk deals with it, so the chip counts it. RED: drop the explicit SameOrbit clause.</summary>
+    /// Hill sphere): the desk deals with it, so the chip counts it. RED: reintroduce a bare InShuttleReach filter in <c>TradeChip</c>.</summary>
     [Fact]
     public async Task ASameOrbitPartnerPastTheCorridorIsCountedBecauseTheDeskDealsWithIt()
     {

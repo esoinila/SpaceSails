@@ -195,7 +195,9 @@ public sealed class TheInspectorPresentsAtTheFrontTests
     /// inspector's card, he is shown it, and he says the authored line and then walks the captain to the car.
     ///
     /// <para><b>Proven RED</b> by making <c>Inspectorate.HonouredAt</c> answer true unconditionally: the premise
-    /// assertion on <c>WhatHappens</c> fails (it answers <c>Inspection</c>).</para>
+    /// assertion on <c>WhatHappens</c> fails (it answers <c>Inspection</c>). The mutation that reaches the WALK-UP is
+    /// <c>PatrolBeat.Challenge.cs</c>' <c>NoInspectionDue</c> arm returning <c>ReadsItTwiceLine</c> in place of
+    /// <c>Inspectorate.HonouredLine</c>: the round hails, walks over, and the told text assertion fails.</para>
     /// </summary>
     [Fact]
     public void PresentedOnALowerLobbyWhereNobodyIsExpectedTheBetIsLostThroughTheRoundsOwnWalkUp()
