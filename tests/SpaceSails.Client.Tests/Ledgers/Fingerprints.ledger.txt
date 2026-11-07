@@ -2128,11 +2128,11 @@ sweep | HerOwnDeckInFlight.OneLongGap | 901 fields, sha256 68c21580ed19c9ff01511
 sweep | HerOwnDeckInFlight.AHeldKey | 901 fields, sha256 e0b16d0fbc51f709a5ed5a1f258beca7c38e000ed512ebc47236bc04b71a9e75
 sweep | HerOwnDeckInFlight.APlannedRoute | 901 fields, sha256 b1256007f8fc5ca310801e50348f6d0915c0f6fda17f76fb46fa6ca895896d06
 sweep | HerOwnDeckInFlight.AHandOnTheWarpSlider | 901 fields, sha256 d0d68d1d106397d9c981e1eaa684235b88bc9a5adb294fc9660910935e56fed1
-sweep | TheRegolithOnFoot.SteadyFrames | 901 fields, sha256 6311f9d76865c8223c98acbbb623dca339da9578790ac95c36dc59eea0174559
-sweep | TheRegolithOnFoot.OneLongGap | 901 fields, sha256 5cfd9386d93c01aac8ca581fd33b4dd8cf0a52bab6f3c99d74010f72c73d1eb9
-sweep | TheRegolithOnFoot.AHeldKey | 901 fields, sha256 5645699eb2406618a12f2d6cacb6c6eee6bc54cd1dea932e9b786ff4617affaa
-sweep | TheRegolithOnFoot.APlannedRoute | 901 fields, sha256 d52765225b505560ca5bc2f0c44ca72ed7aae451ef042b1a48d5c91e23d19391
-sweep | TheRegolithOnFoot.AHandOnTheWarpSlider | 901 fields, sha256 58358b2af7da0f952990b4a9473e50d91572512e1c0a783eea48db60ec08d777
+sweep | TheRegolithOnFoot.SteadyFrames | 901 fields, sha256 09417dbb3eb15ca9ee1e7216b5a6ff1c36cd9124b5382cba985c70b913ab5a35
+sweep | TheRegolithOnFoot.OneLongGap | 901 fields, sha256 8d47dcb49a911d18dffe37ed6ca5fcb85d219a4aaee9be9ecf404db5dc16f162
+sweep | TheRegolithOnFoot.AHeldKey | 901 fields, sha256 9400f9841ca829d01d30dbeac48fb96ed2b7af035850ca9613b24d9909ce08ba
+sweep | TheRegolithOnFoot.APlannedRoute | 901 fields, sha256 6124a0dfd1a4b540229367574b70b4c8badcd86177f621403af214e81b30318f
+sweep | TheRegolithOnFoot.AHandOnTheWarpSlider | 901 fields, sha256 854614e1e94b1a8a20ce78036498d658aa2764fb4cf0b855d03459e1752cf068
 sweep | AHiveFloorWithAPatrol.SteadyFrames | 901 fields, sha256 ff13452cf66ad43e65a1873cd9b1e202adba109a68277ffa769e204de7863723
 sweep | AHiveFloorWithAPatrol.OneLongGap | 901 fields, sha256 9bab5457d7be4ecd36f12b366b2df504c09c85e5a2afdfd0771b5b36eed1fdab
 sweep | AHiveFloorWithAPatrol.AHeldKey | 901 fields, sha256 0301aedac3c4fd395d13bcce5efb8b9a8416d64e316ae517daac1a1d398ac869
