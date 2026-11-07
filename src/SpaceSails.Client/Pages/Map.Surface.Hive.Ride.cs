@@ -216,7 +216,9 @@ public partial class Map
                         DeckPlan.ConsoleKind.ViewObject, (float)_avatarX, (float)_avatarY,
                         UndergroundComplex.VacuumCardLabel,
                         UndergroundComplex.VacuumArtUrl,
-                        UndergroundComplex.VacuumCard(ex.Stop.Body.Id, level, ex.AirSeconds)));
+                        UndergroundComplex.IsHeadOffice(ex.Stop.Body.Id)
+                            ? UndergroundComplex.HeadOfficeVacuumCard(ex.Stop.Body.Id, level, ex.AirSeconds)
+                            : UndergroundComplex.VacuumCard(ex.Stop.Body.Id, level, ex.AirSeconds)));
                     break;
 
                 // #689 · THE CARD'S FINEST HOUR. Owner, having found the card, fed the gate and ridden past

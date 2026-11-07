@@ -136,10 +136,11 @@ public sealed class TheMoodAsksTheGroundTests
         (string pulse, string? ledger) surface = OneShudder(0, chill);
 
         Assert.Equal("a cold draught from somewhere the fans do not reach", park.ledger);
-        Assert.Equal("a cold breath through the hull", surface.ledger);
+        // R1-F40 · open regolith has its own chill label now: no hull to breathe through.
+        Assert.Equal(HullShudder.RegolithChillNerveLabel, surface.ledger);
 
-        Assert.Contains(park.pulse.TrimStart('〰', ' '), HullShudder.ChillLinesFor(groundHoldsPressure: true));
-        Assert.Contains(surface.pulse.TrimStart('〰', ' '), HullShudder.ChillLinesFor(groundHoldsPressure: false));
+        Assert.Contains(park.pulse.TrimStart('〰', ' '), HullShudder.ChillLinesFor(HullShudder.Setting.Pressurised));
+        Assert.Contains(surface.pulse.TrimStart('〰', ' '), HullShudder.ChillLinesFor(HullShudder.Setting.Regolith));
     }
 
     /// <summary>AND THE ORDINARY BEAT TOO — the pool the owner was actually walking through, since a chill

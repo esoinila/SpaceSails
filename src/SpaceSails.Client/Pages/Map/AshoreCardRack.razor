@@ -92,7 +92,7 @@
 
     @if (_deckMode && _shuttleBayStops is { } shuttleStops)
     {
-        <ShuttleBayCard _shuttleBayFarStops="@_shuttleBayFarStops" AwayReopenSeconds="@AwayReopenSeconds"
+        <ShuttleBayCard GigRockWindowRow="@GigRockWindowRow" _shuttleBayFarStops="@_shuttleBayFarStops" AwayReopenSeconds="@AwayReopenSeconds"
                         AwayWindowWord="@AwayWindowWord" Board="@Board" CloseShuttleBayDoor="@CloseShuttleBayDoor"
                         Dismiss="@Dismiss" FormatDistance="@FormatDistance" FormatDuration="@FormatDuration"
                         OpenBoardingPanel="@OpenBoardingPanel" RouteReturnBySimTime="@RouteReturnBySimTime"

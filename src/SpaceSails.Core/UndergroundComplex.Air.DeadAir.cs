@@ -40,30 +40,7 @@ public static partial class UndergroundComplex
     /// card and the gauge are describing one tank and a captain compares them by eye.</para></summary>
     public static string VacuumCard(string bodyId, int level, double airSeconds)
     {
-        ArgumentNullException.ThrowIfNull(bodyId);
-        int band = BandOf(level);
-        int refuge = BandTop(band);          // the top of this band always holds pressure
-        int floorsUp = -level - -refuge;     // how many floors between here and breathable
-
-        // #740 · THE CARD READS THE GAUGE, it does not do its own sum. This used to format the raw play
-        // budget as minutes and seconds — "you have 21 min 01 s" — while the HUD two seconds later on the
-        // same floor said AIR 8h09. Both sentences were about the tank and both were honest about the number
-        // they held; they were simply holding it in different units, because the card was the one surface in
-        // the game that had never gone through SuitAir. A captain cannot be expected to know which of two
-        // instruments is quoting the designer's stopwatch, so there is now one clock and the card asks for it.
-        //
-        // …and the sentence OWNS the quantity: it names the instrument the figure came off, so that a captain
-        // who glances at their wrist a second later reads the same characters back, and so that the next hand
-        // to edit this copy cannot quietly re-derive the number from something else.
-        string margin = airSeconds > 0
-            ? $"Your gauge reads {SuitAir.Clock(airSeconds)}, and that is the figure it will go on counting " +
-              "down the whole way up."
-            : "Your gauge is already reading empty, which is its own instruction.";
-
-        string upstairs = floorsUp == 0
-            ? "this floor"
-            : $"{floorsUp} floor{(floorsUp == 1 ? "" : "s")} up";
-
+        (int refuge, string upstairs, string margin) = TheSums(bodyId, level, airSeconds);
         return
             "The doors part on nothing.\n\n" +
             "No pressure, no lights but yours, and the dust has not been disturbed since it settled. You " +
@@ -90,6 +67,66 @@ public static partial class UndergroundComplex
             "The plan marks a refuge on this band. Whether it still holds is not on the plan.";
     }
 
+    /// <summary>R1-F13 · THE HEAD OFFICE'S DEAD-AIR CARD. The same sums as <see cref="VacuumCard"/> and the
+    /// same RULE sentence, byte for byte; the room around it is a kept building rather than a buried
+    /// plant. Selected by <see cref="IsHeadOffice"/>.</summary>
+    public static string HeadOfficeVacuumCard(string bodyId, int level, double airSeconds)
+    {
+        (int refuge, string upstairs, string margin) = TheSums(bodyId, level, airSeconds);
+        return
+            "The doors part on nothing.\n\n" +
+            "No pressure. The lamps come up along the corridor ahead of you on their schedule, as if there were " +
+            "air for them to light, and go down again behind you. There is no dust anywhere for your boots to " +
+            $"mark. You are {MetresDown(level):F0} m under the ice and your tank is now the clock.\n\n" +
+            "THE RULE, because it is the only one down here that can kill you: the TOP FLOOR OF EVERY SHAFT " +
+            "BAND holds pressure. Nothing else does. That is where the reception floors are, and nothing on " +
+            "them has ever been allowed to stop.\n\n" +
+            $"The nearest floor of air is {NameOf(bodyId, refuge)} — {upstairs}. {margin}\n\n" +
+            "There is a PRESSURE REFUGE on this floor, because the plan requires one and this building does " +
+            "what its plan says. It is not beside the lift — it never is — and your tracker paints it as a " +
+            "ring like any shelter on the surface.\n\n" +
+            "The plan marks it. Down here the plan has not been wrong yet.";
+    }
+
+    /// <summary>R1-F69 · The nearest floor that holds pressure from <paramref name="level"/>: its name on the
+    /// plate and how many floors up it is — the same sum <see cref="VacuumCard"/> does, asked by the low-tank card.</summary>
+    public static (string FloorName, int FloorsUp) NearestAir(string bodyId, int level)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        int refuge = BandTop(BandOf(level));
+        return (NameOf(bodyId, refuge), -level - -refuge);
+    }
+
+    // The sums both dead-air cards share: the band top that holds air, how far up it is, and the gauge's margin.
+    private static (int Refuge, string Upstairs, string Margin) TheSums(string bodyId, int level, double airSeconds)
+    {
+        ArgumentNullException.ThrowIfNull(bodyId);
+        int band = BandOf(level);
+        int refuge = BandTop(band);          // the top of this band always holds pressure
+        int floorsUp = -level - -refuge;     // how many floors between here and breathable
+
+        // #740 · THE CARD READS THE GAUGE, it does not do its own sum. This used to format the raw play
+        // budget as minutes and seconds — "you have 21 min 01 s" — while the HUD two seconds later on the
+        // same floor said AIR 8h09. Both sentences were about the tank and both were honest about the number
+        // they held; they were simply holding it in different units, because the card was the one surface in
+        // the game that had never gone through SuitAir. A captain cannot be expected to know which of two
+        // instruments is quoting the designer's stopwatch, so there is now one clock and the card asks for it.
+        //
+        // …and the sentence OWNS the quantity: it names the instrument the figure came off, so that a captain
+        // who glances at their wrist a second later reads the same characters back, and so that the next hand
+        // to edit this copy cannot quietly re-derive the number from something else.
+        string margin = airSeconds > 0
+            ? $"Your gauge reads {SuitAir.Clock(airSeconds)}, and that is the figure it will go on counting " +
+              "down the whole way up."
+            : "Your gauge is already reading empty, which is its own instruction.";
+
+        string upstairs = floorsUp == 0
+            ? "this floor"
+            : $"{floorsUp} floor{(floorsUp == 1 ? "" : "s")} up";
+
+        return (refuge, upstairs, margin);
+    }
+
     /// <summary>Said on stepping out on the top floor — the lie that makes the rest work.</summary>
     public const string PressurisedLine =
         "🫁 The doors part on warm air and standing lights. Your suit stops drawing and the readout holds. " +
@@ -99,6 +136,10 @@ public static partial class UndergroundComplex
     public const string DeadAirLine =
         "🫁 The doors part on nothing. No pressure, no lights but yours, and the dust on the floor has not " +
         "been disturbed since it settled. Your tank starts counting again. From here down, depth costs air.";
+
+    /// <summary>R1-F13 · And on every dead floor of the head office, where the lamps still run.</summary>
+    public const string HeadOfficeDeadAirLine =
+        "🫁 The doors part on nothing. No pressure, and the lamps still come up ahead of you on their schedule, lighting a corridor for nobody to breathe in. Your tank starts counting again. From here down, depth costs air.";
 
     /// <summary>What a locked door says when the captain tries it. It never opens, and the game never pretends
     /// it might — a door that teases is a puzzle, and this is meant to be a WALL with a world behind it.
@@ -118,6 +159,16 @@ public static partial class UndergroundComplex
             ? StopOrder.OrderLine
             : "The lock is not a lock you can argue with — it is a decision somebody made, and "
                 + "it is still being enforced by a building whose owners stopped answering a long time ago.";
+    }
+
+    /// <summary>R1-F13 · The head office's locked door. The stop-order plate keeps its posted order; any other
+    /// door is a decision, kept in good repair.</summary>
+    public static string HeadOfficeLockedLine(string sign)
+    {
+        ArgumentNullException.ThrowIfNull(sign);
+        return StopOrder.IsPlate(sign)
+            ? StopOrder.OrderLine
+            : $"🔒 {sign}. Not a lock you can argue with: a decision, kept in good repair.";
     }
 
     /// <summary>#600 · How far under the regolith the shed's floor a given level sits, in metres.
