@@ -1,4 +1,4 @@
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using SpaceSails.Client.Pages;
 using SpaceSails.Core;
 using Xunit;
@@ -55,6 +55,20 @@ public sealed class TheLogbookSwallowsTheGameKeysTests
             bench.Poke("_showSaveDrawer", true);
             await bench.TypeAsync(keyboard, "Escape");
             Assert.False((bool)bench.Peek("_showSaveDrawer")!);
+        }
+    }
+
+    [Fact]
+    public async Task EscapeOverABankSheetCancelsTheSheetAndLeavesTheLogbook()
+    {
+        (DeskBench bench, ulong keyboard) = await BootOnNavAsync();
+        using (bench)
+        {
+            bench.Poke("_showSaveDrawer", true);
+            bench.Poke("_bankPrompt", Pages.Map.BankPromptKind.Bank);
+            await bench.TypeAsync(keyboard, "Escape");
+            Assert.Null(bench.Peek("_bankPrompt"));
+            Assert.True((bool)bench.Peek("_showSaveDrawer")!);
         }
     }
 }

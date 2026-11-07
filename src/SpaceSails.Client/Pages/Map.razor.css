@@ -1223,7 +1223,7 @@
 @media (min-width: 900px) {
     .map-page:has(.map-tutorial) .parrot-bubble {
         left: 25.5rem;
-        max-width: 11.5rem;
+        max-width: 9rem;
     }
 }
 

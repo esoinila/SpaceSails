@@ -101,9 +101,17 @@ public partial class Map
         // nothing else gets through while either is open.
         if (_showSaveDrawer || _showStartPicker)
         {
-            if (e.Key == "Escape" && _showSaveDrawer)
+            if (e.Key == "Escape")
             {
-                CloseSaveDrawer();
+                // #1450 · the bank / export / edit-page sheet paints over the logbook, so it is the first thing Esc peels.
+                if (_bankPrompt is not null)
+                {
+                    CancelBankPrompt();
+                }
+                else if (_showSaveDrawer)
+                {
+                    CloseSaveDrawer();
+                }
                 StateHasChanged();
             }
             return;

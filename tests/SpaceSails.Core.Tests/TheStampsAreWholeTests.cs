@@ -77,10 +77,13 @@ public class TheStampsAreWholeTests(ITestOutputHelper output)
             SurfaceLayout.Stamp s = SurfaceLayout.StampFor(body, Env, nameof(LandingSiteKind.CraterShelf));
             double covered = s.Walls.Sum(w => Math.Abs(w.X2 - w.X1));
             output.WriteLine($"{body}: lip {covered:F1}/{width:F1} = {covered / width:P0}; missing: " + string.Join(" ", s.Walls.OrderBy(w => w.X1).Zip(s.Walls.OrderBy(w => w.X1).Skip(1), (a, b) => (a, b)).Where(p => p.b.X1 - p.a.X2 > 0.1).Select(p => $"[{p.a.X2:F0}..{p.b.X1:F0}]")));
+            // Coverage is not the law, the open stage is (Fable, #1483): where a shelter, the lab or the spur stands on the
+            // bottom edge the shelf is closed by it and the lip is left out, so the floor is what the 30 du cap measures
+            // (luna 79.7%, phobos 80.7%, europa 80.7%, the other six 97%).
             // The lip steps back DOWN to its home line after an obstacle: most of it lies on the home lift.
             double home = s.Walls.Where(w => Math.Abs(w.Y1 - (Env.BottomY + 8)) < 1e-6).Sum(w => Math.Abs(w.X2 - w.X1));
             Assert.True(home >= 0.6 * covered, $"{body}: only {home / covered:P0} of the lip is on the home line.");
-            Assert.True(covered >= 0.9 * width, $"{body}: the lip covers {covered / width:P0} of the field width.");
+            Assert.True(covered >= 0.75 * width, $"{body}: the lip covers {covered / width:P0} of the field width.");
         }
     }
 
@@ -98,6 +101,18 @@ public class TheStampsAreWholeTests(ITestOutputHelper output)
             {
                 Assert.True(Math.Max(w.Y1, w.Y2) < y - r, $"{body}: an apron post stands in the landing square.");
             }
+        }
+    }
+
+    [Fact]
+    public void NoLipChunkClimbsMoreThanThirtyDuAboveTheHomeLine()
+    {
+        foreach (string body in Bodies)
+        {
+            SurfaceLayout.Stamp s = SurfaceLayout.StampFor(body, Env, nameof(LandingSiteKind.CraterShelf));
+            Assert.NotEmpty(s.Walls);
+            double top = s.Walls.Max(w => w.Y1) - Env.BottomY;
+            Assert.True(top <= 30.0 + 1e-6, $"{body}: a lip chunk stands {top:F1} du up the field (nowhere to hide).");
         }
     }
 }
