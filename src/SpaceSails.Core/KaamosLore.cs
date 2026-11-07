@@ -283,46 +283,6 @@ public static partial class KaamosLore
             "against it in a lifetime. Nobody ever told the board to stop asking, and it has not."),
     };
 
-    // R1-F20 · MARSH'S OWN FRAME. A shard the captain only HEARD, across her counter, gets her painting when
-    // they finally stand where it is (the pod, the holder's stool) — the same two fragments, the same
-    // OncePerSubject cadence, one painting for both. Kept out of PlatesById on purpose: that dictionary is
-    // the witness plates, one per real fragment. TODO(art): art/oracle-marsh-tuned.jpg is not painted yet
-    // (brief: fable-prose-1107.md item 30); the existing oracle painting stands in until it lands.
-    private const string MarshArt = "art/oracle-rant.jpg";
-
-    private static readonly Dictionary<string, RevealPlate> OraclePlatesById = new(StringComparer.Ordinal)
-    {
-        ["cold-pod"] = new(
-            "🌀 A POD SHE HAS NEVER SEEN",
-            MarshArt,
-            "The corner stool, the drink fizzing at the wrong frequency, and her eyes on the bulkhead over your " +
-            "shoulder the whole time she talks. She has never been to the moon she is describing. She knows " +
-            "which way the seals face."),
-
-        ["holders-tell"] = new(
-            "🌀 SHE IS COUNTING",
-            MarshArt,
-            "She is not looking at you. She is counting — lips moving, one finger tapping the bar on a tick " +
-            "nobody else in the room can hear — and she reaches forty and stops, and does not say what she was " +
-            "counting."),
-    };
-
-    /// <summary>The suffix that marks a beat subject as "this shard, witnessed after being heard".</summary>
-    public const string HeardSuffix = "|heard";
-
-    /// <summary>The beat subject for witnessing a shard that arrived second-hand: the fragment id plus
-    /// <see cref="HeardSuffix"/>, so <see cref="PlateFor(string)"/> hands back Marsh's frame.</summary>
-    public static string HeardSubject(string fragmentId) => fragmentId + HeardSuffix;
-
-    /// <summary>Marsh's frame for a heard shard, or null for a fragment she has no painting of.</summary>
-    public static RevealPlate? PlateFor(string fragmentId, bool heard) =>
-        heard && fragmentId is not null && OraclePlatesById.TryGetValue(fragmentId, out RevealPlate? marsh)
-            ? marsh
-            : PlateFor(fragmentId!);
-
-    /// <summary>Marsh's plates with the fragment id each belongs to — the art sweep's handle.</summary>
-    public static IEnumerable<KeyValuePair<string, RevealPlate>> AllOraclePlates => OraclePlatesById;
-
     /// <summary>#635 · The front door's plate. It is NOT in <see cref="PlatesById"/> on purpose: that
     /// dictionary is keyed by fragment id and every key in it must be a real pool fragment (a test says so),
     /// and the returned filing is deliberately not a fragment. It earns a card anyway — it is the first
@@ -340,9 +300,7 @@ public static partial class KaamosLore
     /// Asked by the client at the single seam where a shard is assembled, so a plate can never be shown for
     /// a shard the captain did not just find.</summary>
     public static RevealPlate? PlateFor(string fragmentId) =>
-        fragmentId is not null && fragmentId.EndsWith(HeardSuffix, StringComparison.Ordinal)
-            ? PlateFor(fragmentId[..^HeardSuffix.Length], heard: true)
-            : fragmentId is not null && PlatesById.TryGetValue(fragmentId, out RevealPlate? plate) ? plate : null;
+        fragmentId is not null && PlatesById.TryGetValue(fragmentId, out RevealPlate? plate) ? plate : null;
 
     /// <summary>Every plate in the arc, with the fragment id it belongs to — the tests' handle, so a plate
     /// keyed to a shard that does not exist, or pointed at art nobody painted, fails the build.</summary>

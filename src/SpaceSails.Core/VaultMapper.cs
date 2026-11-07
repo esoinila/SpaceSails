@@ -221,6 +221,7 @@ public static class VaultMapper
             AssembledFragmentIds = progress.AssembledIds,
             BerthFilingBounced = progress.BerthFilingBounced,   // #635 · the front door, per-thread
             HeardFragmentIds = progress.HeardIds,                // R1-F20 · which shards came second-hand
+            WitnessedFragmentIds = progress.WitnessedIds,        // R1-F96 · whose plate has been raised
         };
     }
 
@@ -230,7 +231,7 @@ public static class VaultMapper
     public static void Apply(KaamosSection? section, KaamosProgress progress)
     {
         ArgumentNullException.ThrowIfNull(progress);
-        progress.Load(section?.AssembledFragmentIds, section?.BerthFilingBounced ?? false, section?.HeardFragmentIds);
+        progress.Load(section?.AssembledFragmentIds, section?.BerthFilingBounced ?? false, section?.HeardFragmentIds, section?.WitnessedFragmentIds);
     }
 
     // ── NEBULA MUTUAL (#422) — the second-arc fragment assembly + the one-time convergence bit, per-thread. ──
@@ -246,6 +247,8 @@ public static class VaultMapper
             AssembledFragmentIds = progress.AssembledIds,
             ConvergenceSeen = progress.ConvergenceSeen,
             PolicyClosed = progress.PolicyClosed,   // #640 · nothing on file, and it has to survive the save
+            HeardFragmentIds = progress.HeardIds,
+            WitnessedFragmentIds = progress.WitnessedIds,
         };
     }
 
@@ -258,7 +261,9 @@ public static class VaultMapper
         progress.Load(
             section?.AssembledFragmentIds,
             section?.ConvergenceSeen ?? false,
-            section?.PolicyClosed ?? false);
+            section?.PolicyClosed ?? false,
+            section?.HeardFragmentIds,
+            section?.WitnessedFragmentIds);
     }
 
     public static InsuranceSection ToSection(PirateInsurance policy) =>

@@ -75,7 +75,9 @@ public partial class Map
         // may open the reach). Once held, the square is ordinary regolith and the normal probe result stands.
         // R1-F96 · …and a pod whose shard is already in hand (Marsh told it) is still STOOD OVER: the re-find
         // line and the witness plate, once.
-        if (KaamosPodHere(ex.Stop.Body.Id, squareX, squareY))
+        // …but only while that witness is owed: a dug pod, or one already stood over, is ordinary regolith.
+        if (KaamosPodHere(ex.Stop.Body.Id, squareX, squareY)
+            && (!_kaamos.Has("cold-pod") || KaamosWitnessOwed("cold-pod")))
         {
             if (!_kaamos.Has("cold-pod"))
             {

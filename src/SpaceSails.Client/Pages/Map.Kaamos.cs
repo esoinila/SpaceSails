@@ -72,6 +72,10 @@ public partial class Map
         {
             _kaamos.MarkHeard(fragmentId);
         }
+        else
+        {
+            _kaamos.MarkWitnessed(fragmentId);
+        }
 
         RequestVaultSave(); // a shard gathered is durable — save on the change (Map.Vault autosave)
         string tail = !couldReachBefore && _kaamos.CanReachEnceladus ? KaamosLore.ReachNotice : "";
@@ -113,15 +117,13 @@ public partial class Map
         return true;
     }
 
-    /// <summary>R1-F96 · Has the captain stood over this held shard yet? Held, and neither the plain plate nor
-    /// the heard one has spoken. The witness is owed once, even with the shard long in hand.</summary>
-    private bool KaamosWitnessOwed(string fragmentId) =>
-        _kaamos.Has(fragmentId)
-        && BeatMaySpeak(StoryBeats.Beat.KaamosShardFound, fragmentId)
-        && BeatMaySpeak(StoryBeats.Beat.KaamosShardFound, KaamosLore.HeardSubject(fragmentId));
+    /// <summary>R1-F96 · Is the plate still owed for this shard? Held second-hand and not yet stood over. The
+    /// state is persisted (the vault carries the witnessed set), so a reload owes nothing it already paid.</summary>
+    private bool KaamosWitnessOwed(string fragmentId) => _kaamos.WitnessOwed(fragmentId);
 
-    /// <summary>R1-F96 / R1-F20 · The witness plate for a shard already in hand: Marsh's frame when the shard
-    /// came second-hand, the shard's own plate otherwise. Once per subject, as ever.</summary>
+    /// <summary>R1-F96 (Fable ruling A) · The plate is witness: standing at the pod, or pointed at the holder,
+    /// the card is always the subject's OWN plate, whether the shard was dug, read or heard. Raised once, and
+    /// the witness is saved the moment it is raised.</summary>
     private void RaiseKaamosWitness(string fragmentId)
     {
         if (!KaamosWitnessOwed(fragmentId))
@@ -129,8 +131,9 @@ public partial class Map
             return;
         }
 
-        RaiseStoryBeat(StoryBeats.Beat.KaamosShardFound,
-            _kaamos.WasHeard(fragmentId) ? KaamosLore.HeardSubject(fragmentId) : fragmentId);
+        _kaamos.MarkWitnessed(fragmentId);
+        RequestVaultSave();
+        RaiseStoryBeat(StoryBeats.Beat.KaamosShardFound, fragmentId);
     }
 
     /// <summary>#663 · THE WORLD NOTICES. <c>StoryBeats.Beat.ArcNewsBreaks</c> shipped with a painted canvas,
@@ -221,7 +224,7 @@ public partial class Map
             return null;
         }
 
-        int watchDay = (int)(SimTime / 86400);
+        int watchDay = (int)(_dockVisitSimTime / 86400);   // R1-F104 · the dock clock, like the other rare contacts
         if (!KaamosFind.BounceAtBar(bar, watchDay, forced: _kaamosBounceCheat))
         {
             return null;

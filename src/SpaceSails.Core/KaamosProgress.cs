@@ -42,6 +42,26 @@ public sealed class KaamosProgress
     /// <summary>Record that a held shard arrived second-hand. Only a real, held shard can be heard.</summary>
     public bool MarkHeard(string fragmentId) => _assembled.Contains(fragmentId) && _heard.Add(fragmentId);
 
+    // R1-F96 / D1 · the shards whose plate has been raised at the place itself (the pod under the probe, the
+    // holder across the room). Persisted: the beat seen-set is page memory, so without this every reload would
+    // owe the witness again. A shard that is NOT heard is never owed (an old save's dug or face-to-face shard
+    // was witnessed by the act that found it), so an empty set on an old save is already correct.
+    private readonly HashSet<string> _witnessed = new(StringComparer.Ordinal);
+
+    /// <summary>Whether this held shard's plate has been raised where it lives.</summary>
+    public bool WasWitnessed(string fragmentId) => _witnessed.Contains(fragmentId);
+
+    /// <summary>Record the witness. Only a held shard can be witnessed; true on the first edge.</summary>
+    public bool MarkWitnessed(string fragmentId) => _assembled.Contains(fragmentId) && _witnessed.Add(fragmentId);
+
+    /// <summary>The plate is owed: the shard arrived second-hand and the captain has not yet stood over it.</summary>
+    public bool WitnessOwed(string fragmentId) =>
+        _assembled.Contains(fragmentId) && _heard.Contains(fragmentId) && !_witnessed.Contains(fragmentId);
+
+    /// <summary>The witnessed ids in canonical order — the shape the vault stores.</summary>
+    public IReadOnlyList<string> WitnessedIds =>
+        [.. KaamosLore.Fragments.Where(f => _witnessed.Contains(f.Id)).Select(f => f.Id)];
+
     /// <summary>The second-hand ids in canonical order — the shape the vault stores.</summary>
     public IReadOnlyList<string> HeardIds =>
         [.. KaamosLore.Fragments.Where(f => _heard.Contains(f.Id)).Select(f => f.Id)];
@@ -97,7 +117,7 @@ public sealed class KaamosProgress
     /// <summary>Rehydrate from a saved list of ids (the vault load path), tolerant: unknown ids are
     /// skipped, duplicates collapse, order is irrelevant. Additive over whatever is already held — and so
     /// is the bounce bit, which can only ever go from false to true within a thread.</summary>
-    public void Load(IEnumerable<string>? assembledIds, bool berthFilingBounced = false, IEnumerable<string>? heardIds = null)
+    public void Load(IEnumerable<string>? assembledIds, bool berthFilingBounced = false, IEnumerable<string>? heardIds = null, IEnumerable<string>? witnessedIds = null)
     {
         BerthFilingBounced |= berthFilingBounced;
 
@@ -118,6 +138,11 @@ public sealed class KaamosProgress
         {
             MarkHeard(id);
         }
+
+        foreach (string id in witnessedIds ?? [])
+        {
+            MarkWitnessed(id);
+        }
     }
 
     /// <summary>Wipe back to nothing assembled — the per-game-thread reset (a new voyage is a new
@@ -127,6 +152,7 @@ public sealed class KaamosProgress
     {
         _assembled.Clear();
         _heard.Clear();
+        _witnessed.Clear();
         BerthFilingBounced = false;
     }
 

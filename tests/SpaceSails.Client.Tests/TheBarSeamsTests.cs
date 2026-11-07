@@ -149,11 +149,12 @@ public sealed class TheBarSeamsTests
         Assert.False(new KaamosProgress().MarkHeard("cold-pod"), "a shard nobody holds cannot be heard");
     }
 
-    /// <summary>Later, once, on witness: a probe on the pod square raises Marsh's frame and says the re-find
-    /// line; the second probe raises nothing more. <b>Proven RED</b> by restoring the
-    /// <c>!_kaamos.Has("cold-pod")</c> guard on the pod branch in <c>ProbeHere</c>.</summary>
+    /// <summary>Later, once, on witness: a probe on the pod square raises the pod's OWN plate (Fable ruling A)
+    /// and says the re-find line; the witness is then paid, and a dug pod is ordinary regolith (D3).
+    /// <b>Proven RED</b> by restoring the <c>!_kaamos.Has("cold-pod")</c> guard on the pod branch in
+    /// <c>ProbeHere</c>.</summary>
     [Fact]
-    public void AProbeOnTheHeardPodRaisesMarshsFrameOnceAndTheRefindLine()
+    public void AProbeOnTheHeardPodRaisesItsOwnPlateOnceAndTheRefindLine()
     {
         Pages.Map map = OnTheIce();
         Field(map, "_kaamos", out KaamosProgress kaamos);
@@ -165,33 +166,83 @@ public sealed class TheBarSeamsTests
         Probe(map);
 
         IDictionary spoken = (IDictionary)Get(map, "_beatsSpoken")!;
-        Assert.Single(spoken);
-        var key = spoken.Keys.Cast<object>().Single();
-        Assert.Equal(KaamosLore.HeardSubject("cold-pod"), (string?)key.GetType().GetField("Item2")!.GetValue(key));
+        var key = Assert.Single(spoken.Keys.Cast<object>());
+        Assert.Equal("cold-pod", (string?)key.GetType().GetField("Item2")!.GetValue(key));
         // …said on the card that went up on the same press (#736: a pulse under a card is not on the screen).
         object card = Get(map, "_storyCard")!;
-        Assert.Equal(KaamosLore.HeardSubject("cold-pod"), (string?)card.GetType().GetField("Item2")!.GetValue(card));
+        Assert.Equal("cold-pod", (string?)card.GetType().GetField("Item2")!.GetValue(card));
         Assert.Equal(
             "❄ Your probe rings off metal a foot down. You knew she was here. Knowing is not the same as standing over her.",
             (string?)card.GetType().GetField("Item3")!.GetValue(card));
-
-        Probe(map);
-        Assert.Single(spoken);   // once: the beat's own cadence
+        Assert.True(kaamos.WasWitnessed("cold-pod"));
     }
 
-    /// <summary>The plate itself: a heard subject resolves to Marsh's frame, a plain subject to the pod's.</summary>
+    /// <summary>D3 · a pod that was dug (held, not heard) or already stood over is ordinary regolith: the
+    /// re-find line does not repeat forever. <b>Proven RED</b> by dropping the owed clause from the pod branch.</summary>
     [Fact]
-    public void AHeardSubjectResolvesToMarshsFrameAndAPlainOneToTheShardsOwn()
+    public void ADugPodDoesNotRepeatTheRefindLine()
     {
-        Assert.Equal("🌀 A POD SHE HAS NEVER SEEN", KaamosLore.PlateFor(KaamosLore.HeardSubject("cold-pod"))!.Title);
-        Assert.Equal("🌀 SHE IS COUNTING", KaamosLore.PlateFor(KaamosLore.HeardSubject("holders-tell"))!.Title);
-        Assert.Equal("❄ THE POD THAT WAS HELD", KaamosLore.PlateFor("cold-pod")!.Title);
-        Assert.Null(KaamosLore.PlateFor(KaamosLore.HeardSubject("vantar-log")));
+        Pages.Map map = OnTheIce();
+        Field(map, "_kaamos", out KaamosProgress kaamos);
+        kaamos.Assemble("cold-pod");   // held, never heard: dug, or granted
+        Set(map, "_kaamosPodCheat", true);
+        Set(map, "_pulse", default(PulseSlot));
+
+        Probe(map);
+
+        Assert.Null(Get(map, "_storyCard"));
+        string? said = ((PulseSlot)Get(map, "_pulse")!).Message;
+        Assert.DoesNotContain("You knew she was here", said ?? "", StringComparison.Ordinal);
+    }
+
+    // ── D1 · the witness survives a reload ───────────────────────────────────────────────────────────
+
+    /// <summary>A heard shard, witnessed once, then reloaded through the vault, owes nothing; the same shard
+    /// before the witness still owes it. <b>Proven RED</b> by dropping <c>WitnessedFragmentIds</c> from
+    /// <c>VaultMapper.ToSection</c> (KAAMOS) and its NEBULA twin.</summary>
+    [Fact]
+    public void AWitnessedShardIsNotOwedAgainAfterAReload()
+    {
+        var k = new KaamosProgress();
+        k.Assemble("holders-tell");
+        k.MarkHeard("holders-tell");
+        Assert.True(k.WitnessOwed("holders-tell"));
+        var k2 = new KaamosProgress();
+        VaultMapper.Apply(VaultMapper.ToSection(k), k2);
+        Assert.True(k2.WitnessOwed("holders-tell"), "heard and not yet stood over: still owed after a reload");
+
+        k.MarkWitnessed("holders-tell");
+        var k3 = new KaamosProgress();
+        VaultMapper.Apply(VaultMapper.ToSection(k), k3);
+        Assert.False(k3.WitnessOwed("holders-tell"));
+
+        var n = new NebulaProgress();
+        n.Assemble("adjuster-tell");
+        n.MarkHeard("adjuster-tell");
+        n.MarkWitnessed("adjuster-tell");
+        var n2 = new NebulaProgress();
+        VaultMapper.Apply(VaultMapper.ToSection(n), n2);
+        Assert.True(n2.WasHeard("adjuster-tell"));
+        Assert.False(n2.WitnessOwed("adjuster-tell"));
+    }
+
+    /// <summary>An old save (no heard, no witnessed) owes nothing: a held shard that was not heard was dug or
+    /// read face to face. <b>Proven RED</b> by making <c>WitnessOwed</c> ignore the heard set.</summary>
+    [Fact]
+    public async Task AHeldTellThatWasNotHeardGivesNoPlateStepOnAFreshPage()
+    {
+        DeskBench b = await DeskBench.BootAsync("/map?ashore=1&kaamos=holder");
+        await b.RenderAsync();
+        Kaamos(b).Assemble("holders-tell");   // an old save: held, nothing recorded about how
+        Assert.NotEqual("holders-plate", b.Call("KaamosBarNextStep"));
+        Nebula(b).Assemble("adjuster-tell");
+        b.Poke("_nebulaAdjusterCheat", true);
+        Assert.NotEqual("adjuster-plate", b.Call("NebulaBarNextStep"));
     }
 
     /// <summary>The bar's half: a heard tell with the holder present offers the "holders-plate" step; asking
-    /// raises the card once, and the offer is spent. <b>Proven RED</b> by removing the step from
-    /// <c>KaamosBarNextStep</c>.</summary>
+    /// raises the holder's own card once, and the offer is spent for good (also across a reload).
+    /// <b>Proven RED</b> by removing the step from <c>KaamosBarNextStep</c>.</summary>
     [Fact]
     public async Task AHeardTellWithTheHolderPresentOffersThePlateOnceAndSpendsIt()
     {
@@ -207,6 +258,48 @@ public sealed class TheBarSeamsTests
 
         Assert.Equal(1, Spoken(b));
         Assert.NotEqual("holders-plate", b.Call("KaamosBarNextStep"));
+
+        // …a reload forgets the page's beat memory but not the witness.
+        ((IDictionary)b.Peek("_beatsSpoken")!).Clear();
+        Assert.NotEqual("holders-plate", b.Call("KaamosBarNextStep"));
+    }
+
+    /// <summary>The adjuster's half of the same law. <b>Proven RED</b> by removing the
+    /// <c>adjuster-plate</c> step from <c>NebulaBarNextStep</c>.</summary>
+    [Fact]
+    public async Task AHeardAdjusterTellOffersThePlateStepOnceAndSpendsIt()
+    {
+        DeskBench b = await SittingAsync("/map?oracle=1&ashore=1&nebula=adjuster");
+        b.CallOnTheDispatcher("DeliverOracleLine", ANebulaLine("adjuster-tell"));
+        Assert.True(Nebula(b).WasHeard("adjuster-tell"));
+        Assert.Equal(0, Spoken(b));
+        Assert.Equal("adjuster-plate", b.Call("NebulaBarNextStep"));
+
+        b.CallOnTheDispatcher("AskAboutNebula");
+
+        Assert.Equal(1, Spoken(b));
+        Assert.True(Nebula(b).WasWitnessed("adjuster-tell"));
+        Assert.NotEqual("adjuster-plate", b.Call("NebulaBarNextStep"));
+        ((IDictionary)b.Peek("_beatsSpoken")!).Clear();
+        Assert.NotEqual("adjuster-plate", b.Call("NebulaBarNextStep"));
+    }
+
+    /// <summary>D2 · the sitting's shard allowance belongs to the dock visit: undock and redock at the SAME
+    /// station is a new sitting. <b>Proven RED</b> by keying the fold on the station alone.</summary>
+    [Fact]
+    public async Task ARedockAtTheSameStationIsANewSitting()
+    {
+        DeskBench b = await SittingAsync();
+        b.CallOnTheDispatcher("DeliverOracleLine", AKaamosLine("holders-tell"));
+        Assert.Equal(1, (int)b.Peek("_oracleShardsThisVisit")!);
+
+        b.CallOnTheDispatcher("CloseOracle");
+        b.Poke("_dockVisitSimTime", (double)b.Peek("_dockVisitSimTime")! + (4 * 3600.0));   // cast off, tie up again
+        b.CallOnTheDispatcher("TalkToOracle");
+
+        Assert.Equal(0, (int)b.Peek("_oracleShardsThisVisit")!);
+        b.CallOnTheDispatcher("DeliverOracleLine", AKaamosLine("vantar-log"));
+        Assert.True(Kaamos(b).Has("vantar-log"));
     }
 
     // ── R1-F105 · no "Ask about KAAMOS" at zero shards ───────────────────────────────────────────────
@@ -292,6 +385,30 @@ public sealed class TheBarSeamsTests
         // The sweep can tell pass from fail: the live clock WOULD have moved the answer on some of those days.
         Assert.True(flippedKaamos > 0 && flippedNebula > 0,
             "no day in the sweep moves the seeded rota three days on, so a live-clock read would have passed too");
+    }
+
+    /// <summary>R1-F104 · the returned-filing agent is a rare contact too: a three-day warp at the counter does
+    /// not bring him or send him home. Swept so a live-clock read cannot pass by luck. <b>Proven RED</b> by
+    /// reading <c>SimTime</c> in <c>MakeKaamosBounceOffer</c>.</summary>
+    [Fact]
+    public async Task AThreeDayWarpDoesNotMoveTheFilingAgent()
+    {
+        DeskBench b = await DeskBench.BootAsync("/map?ashore=1");
+        await b.RenderAsync();
+        string bar = (string)b.Peek("_dockedHavenId")!;
+
+        int flipped = 0;
+        for (int day = 0; day < 60; day++)
+        {
+            b.Poke("_dockVisitSimTime", day * 86400.0);
+            b.Poke("SimTime", day * 86400.0);
+            bool before = b.Call("MakeKaamosBounceOffer", "a freight agent") is not null;
+            b.Poke("SimTime", (day + 3) * 86400.0);
+            Assert.Equal(before, b.Call("MakeKaamosBounceOffer", "a freight agent") is not null);
+            flipped += KaamosFind.BounceAtBar(bar, day) != KaamosFind.BounceAtBar(bar, day + 3) ? 1 : 0;
+        }
+
+        Assert.True(flipped > 0, "no day in the sweep moves the seeded agent three days on, so a live-clock read would pass too");
     }
 
     /// <summary>Her stool is the dock's too: warping three days while she sits does not take her away.

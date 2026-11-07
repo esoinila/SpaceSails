@@ -34,6 +34,7 @@ public partial class Map
     // counter is a page field because a sitting spans many presses and nothing durable may hold it - a
     // vault bit would outlive the stool; leads are uncapped.
     private int _oracleShardsThisVisit;
+    private double _oracleVisitAt;   // D2 · the dock visit this sitting belongs to: a redock at the same bar is a new sitting
     private string? _oracleNotice;    // the last aside (a refused glass, an empty purse), shown on the card
 
     // /map?oracle=1 (#428) — the seat cheat. She is a corner fixture only OracleRant.PresenceChance of
@@ -47,9 +48,10 @@ public partial class Map
     // so a drunk oracle at one port doesn't stay prophetic at the next.
     private void EnsureOracleVisit()
     {
-        if (_oracleStation != _dockedHavenId)
+        if (_oracleStation != _dockedHavenId || _oracleVisitAt != _dockVisitSimTime)
         {
             _oracleStation = _dockedHavenId;
+            _oracleVisitAt = _dockVisitSimTime;
             _oracleDraw = 0;
             _oracleDrinks = 0;
             _oracleShardsThisVisit = 0;

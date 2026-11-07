@@ -57,6 +57,15 @@ public partial class Map
             return false; // not a real pool id — refused by the spine
         }
 
+        if (!witnessed)
+        {
+            _nebula.MarkHeard(fragmentId);
+        }
+        else
+        {
+            _nebula.MarkWitnessed(fragmentId);
+        }
+
         RequestVaultSave();
         string tail = !knewBefore && _nebula.KnowsTheTruth ? NebulaLore.TruthNotice : "";
         RendererInterop.PlayCue(tail.Length > 0 ? "reveal" : "board");
@@ -96,13 +105,14 @@ public partial class Map
     /// <summary>R1-F96 · Is the adjuster's plate still owed? The tell is held, and the captain has not yet
     /// been shown the one who held the policy.</summary>
     private bool NebulaWitnessOwed(string fragmentId) =>
-        _nebula.Has(fragmentId) && NebulaLore.PlateFor(fragmentId) is not null
-        && BeatMaySpeak(StoryBeats.Beat.NebulaShardFound, fragmentId);
+        NebulaLore.PlateFor(fragmentId) is not null && _nebula.WitnessOwed(fragmentId);
 
     private void RaiseNebulaWitness(string fragmentId)
     {
         if (NebulaWitnessOwed(fragmentId))
         {
+            _nebula.MarkWitnessed(fragmentId);
+            RequestVaultSave();
             RaiseStoryBeat(StoryBeats.Beat.NebulaShardFound, fragmentId);
         }
     }

@@ -44,6 +44,28 @@ public sealed class NebulaProgress
     /// <summary>True once this shard is in hand. The one question the fine-print predicates ask.</summary>
     public bool Has(string fragmentId) => _assembled.Contains(fragmentId);
 
+    // R1-F96 · the KAAMOS mirror: shards that arrived second-hand, and those whose plate has been raised at
+    // the place itself. Only a heard, unwitnessed shard owes a plate.
+    private readonly HashSet<string> _heard = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _witnessed = new(StringComparer.Ordinal);
+
+    public bool WasHeard(string fragmentId) => _heard.Contains(fragmentId);
+
+    public bool MarkHeard(string fragmentId) => _assembled.Contains(fragmentId) && _heard.Add(fragmentId);
+
+    public bool WasWitnessed(string fragmentId) => _witnessed.Contains(fragmentId);
+
+    public bool MarkWitnessed(string fragmentId) => _assembled.Contains(fragmentId) && _witnessed.Add(fragmentId);
+
+    public bool WitnessOwed(string fragmentId) =>
+        _assembled.Contains(fragmentId) && _heard.Contains(fragmentId) && !_witnessed.Contains(fragmentId);
+
+    public IReadOnlyList<string> HeardIds =>
+        [.. NebulaLore.Fragments.Where(f => _heard.Contains(f.Id)).Select(f => f.Id)];
+
+    public IReadOnlyList<string> WitnessedIds =>
+        [.. NebulaLore.Fragments.Where(f => _witnessed.Contains(f.Id)).Select(f => f.Id)];
+
     /// <summary>True once the one-time CONVERGENCE reveal has fired for this thread (<see cref="ArcConvergence"/>).
     /// Persisted so the heaviest reveal in the game plays once in a captain's universe and never re-fires on a
     /// reload — the wiring lane sets this on the single edge it delivers the reveal. Cleared by
@@ -113,7 +135,8 @@ public sealed class NebulaProgress
     /// <summary>Rehydrate from a saved section (the vault load path), tolerant: unknown ids are skipped,
     /// duplicates collapse, order is irrelevant. Additive over whatever is already held; the convergence flag
     /// is OR-ed in so a save that recorded the reveal keeps it seen.</summary>
-    public void Load(IEnumerable<string>? assembledIds, bool convergenceSeen = false, bool policyClosed = false)
+    public void Load(IEnumerable<string>? assembledIds, bool convergenceSeen = false, bool policyClosed = false,
+        IEnumerable<string>? heardIds = null, IEnumerable<string>? witnessedIds = null)
     {
         if (convergenceSeen)
         {
@@ -140,6 +163,16 @@ public sealed class NebulaProgress
                 _assembled.Add(id);
             }
         }
+
+        foreach (string id in heardIds ?? [])
+        {
+            MarkHeard(id);
+        }
+
+        foreach (string id in witnessedIds ?? [])
+        {
+            MarkWitnessed(id);
+        }
     }
 
     /// <summary>Wipe back to nothing assembled and the reveal unseen — the per-game-thread reset (a new
@@ -147,6 +180,8 @@ public sealed class NebulaProgress
     public void Clear()
     {
         _assembled.Clear();
+        _heard.Clear();
+        _witnessed.Clear();
         ConvergenceSeen = false;
         PolicyClosed = false;   // #640 · a new voyage is a new universe, and its captain has a policy
     }

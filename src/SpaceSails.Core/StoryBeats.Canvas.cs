@@ -59,7 +59,7 @@ public static partial class StoryBeats
     /// </summary>
     public static IEnumerable<string> Canvases(Beat beat) => beat switch
     {
-        Beat.KaamosShardFound => KaamosLore.AllPlates.Concat(KaamosLore.AllOraclePlates).Select(p => p.Value.ArtFile).Distinct(StringComparer.Ordinal),
+        Beat.KaamosShardFound => KaamosLore.AllPlates.Select(p => p.Value.ArtFile).Distinct(StringComparer.Ordinal),
         Beat.NebulaShardFound => NebulaLore.AllPlates.Select(p => p.Value.ArtFile).Distinct(StringComparer.Ordinal),
         // #973 L5b · both women's portraits, so the manifest sweep sees the one that is not on screen too.
         Beat.WalkIn => WalkIn.AllPortraits,
