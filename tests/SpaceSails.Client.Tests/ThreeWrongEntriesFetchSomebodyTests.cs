@@ -69,9 +69,9 @@ public sealed class ThreeWrongEntriesFetchSomebodyTests
             }
             foreach (int floor in UndergroundComplex.FloorsOf(body))
             {
-                if (!PatrolBeat.IsPatrolled(body, floor))
+                if (!PatrolBeat.IsPatrolled(body, floor) || UndergroundComplex.IsTheNoPassFloor(body, floor))
                 {
-                    continue;
+                    continue;   // U04-F12 · the round never stops anyone on the NO PASS REQUIRED floor
                 }
                 foreach (UndergroundComplex.LiftStop stop in UndergroundComplex.LiftPanel(body, floor, []))
                 {

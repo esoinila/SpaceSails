@@ -9,7 +9,6 @@ namespace SpaceSails.Client.Tests;
 /// demand and the death cards wear the busted backdrop, so they are on the scrim census; the arbiter's line is a
 /// FIFO of three whose head alone is released; and a DEATH never waits in it.
 /// </summary>
-[SlowGate]
 public sealed class TheNothingStacksOnArrivalTests
 {
     private const string SatAtABarTop = "/map?barcase=1";

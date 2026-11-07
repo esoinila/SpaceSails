@@ -133,9 +133,9 @@ public sealed partial class EveryRoundFingerprintsTheSameTests
         // UNTOUCHED until the #1383 re-pin above, and was the anti-vacuous half: its staging books the watch full, so the sighting
         // buys a RADIO CALL rather than a hail and no card is ever raised on it. The #1383 re-pin moved it for the
         // ground under the round, not for the road the round takes.
-        ["he hails you and you walk away from it"] = "88fb450aa2da8c9363c4b734a21de6a76a858957ca50bd924b80b645a612f272",
-        ["he crosses the floor, reads your papers, and walks you to the car"] = "9dea49a8d8d03fb3d804312d9130377e60cdcaf161df058ec1b4861f3c7f8675",
-        ["…and this time he does not press the button for your floor"] = "efb2ef76e04582b91239b683f1f48c215ff1a51a32278d145320b57ceb40b6c6",   // #1383 re-pin: see the note above
+        ["he hails you and you walk away from it"] = "861637bcae5d550a523d96a4a653d97d863e802f1b25c7b99889d4938750d7a9",   // U04-F12/U08-F11 re-pin: staged on the first patrolled floor that is NOT Canteen 1's (B1 never hails now), so a vacuum floor with the suited hail/stop spelling
+        ["he crosses the floor, reads your papers, and walks you to the car"] = "66f7104288fde7a71886ac8c6ec6f06db4f72c563e52c722ef3ec9f512cc31c8",
+        ["…and this time he does not press the button for your floor"] = "4a80490b90d79f9e29f8d09848f646f2e2c2268093f7a30c400b1d57a27ec42b",   // #1383 re-pin: see the note above
         ["he calls it in, comes at a run, and he has you"] = "b5f30b958844925a76d5c551e8be80fdc9748a31d7485247437872886099ef4d",
         ["he calls it in, and by the time he moves you are gone"] = "6e092abd4f8b4e53cf8f34cca65e0cdbbe875e9e56bde25c4d13eba597a42418",
         ["you duck into a cubicle and he watched the catch turn"] = "eaea42898bd99509cc4c64f45cb50e03b39a60828b6bcd1d5aca12d0fef4cd35",

@@ -92,6 +92,12 @@ public sealed class TheDeathWritsTests
     {
         Pages.Map control = OnTheGroundWithACrewLanded(floor: 0);
         Call(control, "StepCollectors", 0.1);
+        // U04-F09 · the boat's arrival card is on the glass and the writ waits behind it; the captain shuts it.
+        if (Field(control, "_storyCard") is not null)
+        {
+            Call(control, "CloseStoryCard");
+        }
+        Call(control, "PumpTheScrimQueue");
         Assert.NotNull(Field(control, "_busted"));
 
         Pages.Map below = OnTheGroundWithACrewLanded(floor: -1);

@@ -680,7 +680,7 @@ sweep roster | _scopeIntel | List<ScopeIntel>
 sweep roster | _scopeManualId | String
 sweep roster | _scopeMinimized | Boolean
 sweep roster | _scratch | Single[]
-sweep roster | _scrimQueued | ValueTuple<Action, Func<Boolean>>?
+sweep roster | _scrimQueued | List<ValueTuple<Action, Func<Boolean>, String>>
 sweep roster | _scrubOffsetSeconds | Double
 sweep roster | _scuttleEpitaph | String
 sweep roster | _scuttleHeardIt | Boolean

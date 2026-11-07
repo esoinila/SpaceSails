@@ -491,9 +491,9 @@ public sealed class TheRoundIsWalkableTests
         string answered = family[saysIt..];
 
         // The card the guard raises carries the plate, by its Core name.
-        Assert.Contains("PatrolBeat.ChallengeArtUrl", stop, StringComparison.Ordinal);
+        Assert.Contains("PatrolBeat.ChallengeArtFor(TheAirHolds)", stop, StringComparison.Ordinal);
         Assert.Contains(
-            "opening.Label, PatrolBeat.ChallengeArtUrl, opening.Card, opening.Told",
+            "opening.Label, PatrolBeat.ChallengeArtFor(TheAirHolds), opening.Card, opening.Told",
             stop, StringComparison.Ordinal);
         Assert.Contains("PatrolBeat.ChallengeArtUrl", answered, StringComparison.Ordinal);
         Assert.Contains(

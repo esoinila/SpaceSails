@@ -61,6 +61,7 @@ public sealed class TheCarStopsAndTheStairIsThePriceTests
             foreach (int floor in UndergroundComplex.FloorsOf(body))
             {
                 if (!PatrolBeat.IsPatrolled(body, floor)
+                    || UndergroundComplex.IsTheNoPassFloor(body, floor)   // U04-F12 · the round never stops anyone there
                     || !UndergroundComplex.ACallCanStopTheCarOn(body, floor))
                 {
                     continue;
