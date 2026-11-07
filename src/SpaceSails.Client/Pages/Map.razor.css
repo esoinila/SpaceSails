@@ -970,6 +970,30 @@
     pointer-events: auto;
 }
 
+/* U10-F06 · THE CHECKLIST STANDS BELOW THE NAV COLUMN, NOT ON IT. The lesson checklist is a bottom-left overlay and the
+   Nav column (`.map-hud`: toolbar, readouts, dock hint, frame chip) is in flow from the top, so on a 700-tall window the
+   two overlap: measured at 1024 x 700 the card covers y 423-688 and the dock hint, the nearest-body line and the whole
+   frame-selector row sit under it, printed through each other. Both halves are said here, because a fix that moved
+   only one would trade the overprint for a clipped card: the card is capped at 10rem and its body scrolls (the shell's own
+   `.card-body`), and while it is open the column leaves 11rem under it (the cap, the 0.75rem sill and a hairline) and
+   scrolls inside what remains, the way the readouts already give first on a short window (#992). Nothing changes when the
+   checklist is closed. Gated to windows at least 900px wide: what a smaller window should do is the owner's call (it
+   drops to LOW), and this lane does not make it. */
+@media (min-width: 900px) {
+    ::deep .map-tutorial {
+        max-height: 10rem;
+    }
+
+    ::deep .map-tutorial > .card-body {
+        overflow-y: auto;
+        min-height: 0;
+    }
+
+    .map-page:has(.map-tutorial) .map-hud {
+        margin-bottom: 11rem;
+    }
+}
+
 ::deep .mission-celebration {
     max-width: min(30rem, 90vw);
     padding: 1.25rem 1.5rem;
@@ -1160,14 +1184,25 @@
     gap: 0.4rem;
 }
 
+/* U02-F07 · U10-F03 · THE BUBBLE LEAVES THE PERCH. Hung beside the bird it landed on whatever the desk had in that
+   corner ("Tank's runnin' dry" across FILL HER UP and the +10 top-up on the Trade desk; "Space Bar break" over the plan's
+   tiles on every frame of a garden visit). It rides the foot of the glass instead, bottom-left, just above the key
+   bar and clear of the avatar roundel: the one strip no desk puts a control or a tile in. It takes the pointer, which is
+   the other half of the finding (a click on it used to fall through to click-to-walk and march the captain off), and a
+   click puts it away. The bird stays on its perch. */
 .parrot-bubble {
+    position: fixed;
+    left: 3.5rem;
+    bottom: 2.4rem;
+    pointer-events: auto;
+    cursor: pointer;
     background: rgba(245, 245, 240, 0.95);
     color: #1c2230;
     border-radius: 0.6rem;
     padding: 0.25rem 0.6rem;
     font-size: 0.8rem;
     font-weight: 600;
-    max-width: 16rem;
+    max-width: min(16rem, calc(100vw - 4.5rem));
 }
 
 .parrot-bird {
