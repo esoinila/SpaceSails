@@ -48,14 +48,17 @@ public sealed class TheInspectorPresentsAtTheFrontTests
     /// <summary>A real floor of a real site with all three things this bench needs at once: a round on it, a
     /// SEALED gate with #602's keypad (which is how the challenge is provoked AND the row whose opening is
     /// the point), and an inspection that is <paramref name="honoured"/> there on this watch.</summary>
-    private static (string Body, int Floor, UndergroundComplex.LiftStop Row) AFloorWhere(bool honoured)
+    private static (string Body, int Floor, UndergroundComplex.LiftStop Row) AFloorWhere(
+        bool honoured, bool theNoPassFloorToo = false)
     {
         foreach (string body in Bodies())
         {
             foreach (int floor in UndergroundComplex.FloorsOf(body))
             {
                 if (!PatrolBeat.IsPatrolled(body, floor)
-                    || UndergroundComplex.IsTheNoPassFloor(body, floor)   // U04-F12 · the round never stops anyone there
+                    // U04-F12 (Fable ruling 2026-11-07) · the round never stops anyone on the NO PASS REQUIRED floor, so a
+                    // bench that needs a stop is held off it; the one that asserts the silence is not.
+                    || (!theNoPassFloorToo && UndergroundComplex.IsTheNoPassFloor(body, floor))
                     || Inspectorate.HonouredAt(body, floor, Watch) != honoured)
                 {
                     continue;
@@ -144,22 +147,42 @@ public sealed class TheInspectorPresentsAtTheFrontTests
     /// </code>
     /// </summary>
     [Fact]
-    public void PresentedWhereNobodyIsExpectingAnybodyTheRoundCallsItIn()
+    public void PresentedWhereNobodyIsExpectingAnybodyTheNoPassFloorStopsNobodyAtAll()
     {
-        (string body, int floor, UndergroundComplex.LiftStop row) = AFloorWhere(honoured: false);
+        // U04-F12 (Fable ruling 2026-11-07) · The only floor in the sweep where an inspection is NOT due (no refuge
+        // under it) is Canteen 1's - the NO PASS REQUIRED floor - and the round never stops anyone there. So the
+        // lost bet (HonouredLine, then the walk to the car) cannot be reached by the round any more: it is still
+        // the ladder's own arm (WalletChoice.Outcome.NoInspectionDue), and what this floor now does is nothing: the
+        // same captain, the same three misses, and nobody comes.
+        (string body, int floor, UndergroundComplex.LiftStop row) = AFloorWhere(honoured: false, theNoPassFloorToo: true);
+        Assert.True(UndergroundComplex.IsTheNoPassFloor(body, floor), "the premise: this is the no-pass floor.");
         Pages.Map map = OnTheFloor(body, floor);
         Assert.False(CarStopped(map), "the car was stopped before anything happened to this captain.");
 
-        TheRoundReadsYourWallet(map, row);
+        (double x, double y) = DownHisOwnCorridor(map, 14.0);
+        Set(map, "_avatarX", x);
+        Set(map, "_avatarY", y);
+        string right = UndergroundComplex.LiftCode.CodeFor(body);
+        string wrong = right == "1111" ? "2222" : "1111";
+        for (int i = 0; i < 3; i++)
+        {
+            typeof(Pages.Map).GetMethod("LiftPadClear", Hidden)!.Invoke(map, []);
+            foreach (char c in wrong)
+            {
+                typeof(Pages.Map).GetMethod("LiftPadPush", Hidden)!.Invoke(map, [c.ToString()]);
+            }
+            typeof(Pages.Map).GetMethod("LiftPadSubmit", Hidden)!.Invoke(map, [row]);
+        }
 
-        string told = (string)Get(Get(map, "_viewObject")!, "Outcome")!;
-        Assert.Contains(Inspectorate.HonouredLine, told, StringComparison.Ordinal);
-        Assert.Contains(PatrolBeat.EscortLine, told, StringComparison.Ordinal);
+        MethodInfo step = typeof(Pages.Map).GetMethod("AdvancePatrol", Hidden)!;
+        for (int i = 0; i < 900; i++)
+        {
+            step.Invoke(map, [Dt]);
+        }
 
-        Assert.False(Running(map), "nothing is due at this site and the card was waved through anyway.");
-        Assert.True(CarStopped(map),
-            "the bet was lost and nobody called anything in — the car is still running.");
-        Assert.NotNull(Get(map, "_patrol") is { } p ? Get(p, "EscortDue") : null);
+        object? up = Get(map, "_viewObject");
+        Assert.False(up is not null && (string)Get(up, "Label")! == PatrolBeat.ChallengeLabel,
+            "the round stopped a captain on the NO PASS REQUIRED floor.");
     }
 
     // ── the bench's plumbing (TheCarStopsAndTheStairIsThePriceTests', one feature along) ─────────────────

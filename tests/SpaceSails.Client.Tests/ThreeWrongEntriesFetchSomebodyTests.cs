@@ -55,7 +55,8 @@ public sealed class ThreeWrongEntriesFetchSomebodyTests
     /// the floor. Both asked of Core rather than typed: a hand-picked pair is a pair that goes stale the
     /// first time a generator moves, and a guard standing on a floor with no pad on it would pass forever.
     /// </summary>
-    private static (string Body, int Floor, UndergroundComplex.LiftStop Row) APaddedPatrolledFloor()
+    private static (string Body, int Floor, UndergroundComplex.LiftStop Row) APaddedPatrolledFloor(
+        bool oneThatStopsPeople = true)
     {
         foreach (string body in new[]
                  {
@@ -69,7 +70,10 @@ public sealed class ThreeWrongEntriesFetchSomebodyTests
             }
             foreach (int floor in UndergroundComplex.FloorsOf(body))
             {
-                if (!PatrolBeat.IsPatrolled(body, floor) || UndergroundComplex.IsTheNoPassFloor(body, floor))
+                if (!PatrolBeat.IsPatrolled(body, floor)
+                    || (oneThatStopsPeople
+                        && (UndergroundComplex.IsTheNoPassFloor(body, floor)
+                            || !PatrolBeat.GeneralHandsBelongOn(body, floor))))
                 {
                     continue;   // U04-F12 · the round never stops anyone on the NO PASS REQUIRED floor
                 }
@@ -89,9 +93,10 @@ public sealed class ThreeWrongEntriesFetchSomebodyTests
 
     // ── THE BENCH ─────────────────────────────────────────────────────────────────────────────────────
 
-    private static (Pages.Map Map, object Ex, UndergroundComplex.LiftStop Row) AtThePad(int heads)
+    private static (Pages.Map Map, object Ex, UndergroundComplex.LiftStop Row) AtThePad(
+        int heads, bool onAFloorThatStopsPeople = true)
     {
-        (string body, int floor, UndergroundComplex.LiftStop row) = APaddedPatrolledFloor();
+        (string body, int floor, UndergroundComplex.LiftStop row) = APaddedPatrolledFloor(onAFloorThatStopsPeople);
         var map = new Pages.Map();
 
         FieldInfo pending = typeof(ComponentBase).GetField(
@@ -272,7 +277,7 @@ public sealed class ThreeWrongEntriesFetchSomebodyTests
     [Fact]
     public void TwoTriesOutsideTheWindowFetchNobody()
     {
-        (Pages.Map map, object ex, UndergroundComplex.LiftStop row) = AtThePad(2);
+        (Pages.Map map, object ex, UndergroundComplex.LiftStop row) = AtThePad(2, onAFloorThatStopsPeople: false);   // U04-F12 · a negative: it holds on the no-pass floor too
         string wrong = AWrongCode(BodyOf(ex));
 
         SecondsOnTheGround(ex, 0);
