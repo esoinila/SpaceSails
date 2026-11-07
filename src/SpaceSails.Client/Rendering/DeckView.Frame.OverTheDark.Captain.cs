@@ -130,6 +130,7 @@ public sealed partial class DeckView
         _bandBottom = CommsBand.ReservedBottom;
         _nerveShift = 0.0;
         _yield.Disarm();
+        ReserveTheOtherPlates(in state, surface, widthPx);
         if (oRows.Length + sRows.Length == 0)
         {
             SeatTheNerveBlockUnderTheMasthead(in state);
@@ -143,7 +144,7 @@ public sealed partial class DeckView
         // The stall banner comes and goes with the frame rate, so everything seated by the band is measured as if
         // ONE stall row were always up (CommsBand's own "measured for MaxLines on purpose" rule): the gauge, the
         // tracker and the sentries' seats must not hop a row each time the banner toggles.
-        _yield.Arm(bx, by, bw, bh);     // #1466 · world words that would touch the plate are not drawn
+        _yield.Reserve(bx, by, bw, bh);     // #1466 · world words that would touch the plate dim
         double plannedBottom = CommsBand.PlateBottom(oRows.Length + Math.Max(1, sRows.Length));
         _bandBottom = Math.Max(CommsBand.ReservedBottom, plannedBottom);
         if (state.ShowNerve && !state.NerveCompact)
@@ -157,6 +158,27 @@ public sealed partial class DeckView
         }
 
         SeatTheNerveBlockUnderTheMasthead(in state);
+    }
+
+    /// <summary>R1-F76 · THE OTHER PLATES THAT LIE OVER THE GLASS, reserved with the comms band's: the page's pulse toast
+    /// (a DOM box the pen cannot see, <see cref="PulseToastPlate"/> measures where it is) and the standing prompt above
+    /// the keybar (<c>CARRYING THE CHEST</c> was printed over <c>— MIRANDA SURFACE —</c>). One rule for all of them: the
+    /// world's words that touch a plate dim, the plate is never moved.</summary>
+    private void ReserveTheOtherPlates(in State state, SurfaceHud? surface, int widthPx)
+    {
+        if (state.PulseToast is { Length: > 0 } toast)
+        {
+            (double tx, double ty, double tw, double th) = PulseToastPlate.Of(toast, state.PulseToastLow, widthPx, _viewH);
+            _yield.Reserve(tx, ty, tw, th);
+        }
+        if (surface is { StandingPrompt: { Length: > 0 } standing })
+        {
+            const double px = 14.0;
+            double w = CommsBand.WidthOf(standing, px) + (2 * CommsBand.PlateInsetPx);
+            double baseline = _viewH - 30.0;
+            _yield.Reserve((widthPx - w) / 2.0, baseline - MarkBand.AscentOf(px) - CommsBand.PlateInsetPx, w,
+                MarkBand.AscentOf(px) + MarkBand.DescentOf(px) + (2 * CommsBand.PlateInsetPx));
+        }
     }
 
     /// <summary>#1466 item 3 · On a phone the wrapped desk tab bar lies over the top of the canvas, and the ashore

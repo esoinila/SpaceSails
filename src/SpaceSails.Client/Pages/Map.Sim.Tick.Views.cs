@@ -375,7 +375,11 @@ public partial class Map
             // surface hud's own bar has owned the strip since #324.
             KeyHints: BuildDeckKeyHints(),
             // #794 · …and the chalk on the gallery's stone, while the mark is up. Null on every other frame.
-            Chalk: TheChalkOnTheStone()),
+            Chalk: TheChalkOnTheStone(),
+            // R1-F76 · …and the pulse toast's line, so the world's words under its box dim (PulseToastPlate). The
+            // "low" is PulseToastPlate.IsLow, the same test the razor (AshoreCardRack) asks: the toast drops to the foot of the glass with a card open.
+            PulseToast: _deckMode ? _pulse.Message : null,
+            PulseToastLow: PulseToastPlate.IsLow(_pendingOffer, _patronDrink, _bankSession, _barMenu, _oracleOpen, _oracleLine, _shuttleBayStops)),
             _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
     }
     // Plasma stream ribbons (M7): one translucent wide segment per stream, between the two
