@@ -275,19 +275,16 @@ public static class WreckInterior
             consoles.Add(new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.ArchiveNode,
                 (float)WreckLayout.ArchiveStation.X, (float)WreckLayout.ArchiveStation.Y,
-                archivePurged ? "❄ THE COLUMN — cold" : "❄ THE COLUMN IN THE HOLD"));
+                archivePurged ? "❄ THE COLUMN — cold" : "❄ THE COLUMN IN THE HOLD · ⚡"));
 
             consoles.Add(new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.ArchiveSwitch,
                 (float)WreckLayout.ArchiveSwitchStation.X, (float)WreckLayout.ArchiveSwitchStation.Y,
                 archivePurged ? "⏻ PURGE NODE — pulled" : "⏻ " + ArchiveNode.SwitchLegend));
 
-            // And the thing you can read from the doorway, the way the cradles are counted from the
-            // doorway: on every other hull in the game nothing has power. Here one object does.
-            labels.Add((
-                (float)WreckLayout.ArchiveStation.X,
-                (float)WreckLayout.ArchiveStation.Y + 1.4f,
-                archivePurged ? "NEBULA MUTUAL · SUBSTRATE SPAR" : "NEBULA MUTUAL · SUBSTRATE SPAR · ⚡"));
+            // R1-F95 (Fable ruling 2026-11-07) · the underwriter's line no longer floats over the column: it is
+            // stamped on the first row of the dwell card (ArchiveNode.UnderwriterStamp), and the column's own
+            // console label carries the one fact the doorway needs: this is the object with power.
         }
 
         // ── The one thing aboard that is worth more than her cargo ────────────────────────────────────

@@ -75,21 +75,24 @@ public class TheKeepsakeShelfTests
     // ── THE PRESS, IN THE CABIN ───────────────────────────────────────────────────────────────────────
 
     [Fact]
-    public void TheFirstOpeningInTheCabinFilesTheFieldBookLineOnce_SteadiesTheCaptain_AndShutsThePocketOnThePlate()
+    public void TheFirstOpeningInTheCabinFilesTheFieldBookLineOnce_SteadiesTheCaptain_AndShutsThePocketOnTheCard()
     {
         Map map = AMapAt(CabinX, CabinY, nerve: 40.0);
         Press(map);
 
         Assert.True(Filed(map), "the first opening files the pendant's field-book line.");
         Assert.True(Nerve(map) >= 40.0 + 20.0, $"the minute should steady the captain (nerve {Nerve(map)}).");
-        Assert.False((bool)Get(map, "_showSatchel")!, "the pocket goes back so the flashback plate is seen.");
-        Assert.Null(Said(map));      // the plate's caption IS the line; the card has nothing to repeat
-        // The PLATE is what carries it — assert the page's own plate state, not a slot FoldKeepsake wipes anyway.
-        object plate = Get(map, "_storyPlate") ?? throw new Xunit.Sdk.XunitException("the first opening raised no flashback plate.");
-        Assert.Equal(StoryBeats.Beat.Flashback, plate.GetType().GetField("Item1")!.GetValue(plate));
-        Assert.Equal(Keepsake.PendantSubject, plate.GetType().GetField("Item2")!.GetValue(plate));
+        Assert.False((bool)Get(map, "_showSatchel")!, "the pocket goes back so the card is seen.");
+        Assert.Null(Said(map));      // the card's caption IS the line; the keepsake card has nothing to repeat
+        // U09-F02 (Fable ruling 2026-11-07) · it is a CARD the player closes, not a plate that fades unread.
+        Assert.Null(Get(map, "_storyPlate"));
+        object card = Get(map, "_storyCard") ?? throw new Xunit.Sdk.XunitException("the first opening raised no card.");
+        Assert.Equal(StoryBeats.Beat.KeepsakeFirstOpening, card.GetType().GetField("Item1")!.GetValue(card));
+        Assert.Equal(Keepsake.PendantSubject, card.GetType().GetField("Item2")!.GetValue(card));
         Assert.Equal(FilingLine.Mark + " A PAGE THAT WAS NEVER WRITTEN",
-            StoryBeats.Title((StoryBeats.Beat)plate.GetType().GetField("Item1")!.GetValue(plate)!, (string?)plate.GetType().GetField("Item2")!.GetValue(plate)));
+            StoryBeats.Title((StoryBeats.Beat)card.GetType().GetField("Item1")!.GetValue(card)!, (string?)card.GetType().GetField("Item2")!.GetValue(card)));
+        Assert.Equal(Keepsake.FirstOpeningLine,
+            StoryBeats.Caption((StoryBeats.Beat)card.GetType().GetField("Item1")!.GetValue(card)!, (string?)card.GetType().GetField("Item2")!.GetValue(card)));
         Assert.False(Folded(map));
         Assert.Equal(0.0, (double)Get(map, "_lastQuietMinuteSimTime")!, 6); // the shared window is stamped
         Assert.Equal(1, ((IEnumerable<FieldNote>)Get(map, "_fieldNotes")!).Count(n => n.Text == Keepsake.FieldBookLine));
@@ -127,12 +130,12 @@ public class TheKeepsakeShelfTests
         Assert.False(Filed(map), "the cap should have trimmed the pendant's line off the front of the book.");
 
         Set(map, "_showSatchel", true);
-        Set(map, "_storyPlate", null);
+        Set(map, "_storyCard", null);
         Set(map, "SimTime", Keepsake.QuietWindowSeconds + 4.0);
         Press(map);
 
         Assert.False(Filed(map), "a second field-book line was filed — the first opening replayed.");
-        Assert.Null(Get(map, "_storyPlate")); // no second flashback
+        Assert.Null(Get(map, "_storyCard")); // no second first-opening card
         Assert.True(Folded(map));
         string said = Said(map)!;
         Assert.True(Keepsake.CleanPool.Contains(said) || Keepsake.StingPool.Contains(said));

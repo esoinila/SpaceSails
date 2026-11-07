@@ -44,6 +44,12 @@ public partial class Map
             return;
         }
 
+        // R1-F102 (Fable ruling 2026-11-07) · no Reevers on Enceladus, ever: the head office is not their ground.
+        if (UndergroundComplex.IsHeadOffice(ex.Stop.Body.Id))
+        {
+            return;
+        }
+
         // Underground nothing is seen or heard of them (StepSurface clears the pack each tick, #585), so the
         // tide must not claw a Reever out AFTER that clear: it would be drawn for a frame and the first-stir
         // line would play in a sealed facility.

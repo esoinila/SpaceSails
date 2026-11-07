@@ -59,6 +59,11 @@ public partial class Map
             ex.Lab = SecretLab.OnThisSite(body, ex.Site.LayoutSalt, MoonSurface.ExpeditionField(),
                                           forcePresent: true);
             ex.SecretLabDoorRevealed = true;
+            // R1-F103 (Fable ruling 2026-11-07) · the shed is a lift head with one plain chamber: it stands from the
+            // first frame, with no door to force. Nothing arms off this flag (the lab alarm arms in
+            // ForceSecretLabDoor, which the head office never reaches, and SecretLab.Build gives the head office no
+            // doors to throw), so it only asks ComposeSecretLabSite to draw the chamber.
+            ex.SecretLabForced = true;
             return;
         }
 

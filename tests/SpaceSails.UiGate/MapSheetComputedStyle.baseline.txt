@@ -579,6 +579,8 @@ a Hive floor	.map-page	position	fixed
 a Hive floor	.map-page	right	0px
 a Hive floor	.map-page	top	0px
 a Hive floor	.map-page	z-index	1000
+a Hive floor	.map-page:has(.captains-remote-btn) .view-object-backdrop	background-color	rgba(4, 6, 11, 0.55)
+a Hive floor	.map-page:has(.captains-remote-btn) .view-object-backdrop	background-image	none
 a Hive floor	.map-topstack	align-items	center
 a Hive floor	.map-topstack	column-gap	6.4px
 a Hive floor	.map-topstack	display	flex
@@ -609,7 +611,7 @@ a Hive floor	.view-object > .view-object-close	bottom	0px
 a Hive floor	.view-object > .view-object-close	position	sticky
 a Hive floor	.view-object > .view-object-close	z-index	3
 a Hive floor	.view-object-backdrop	align-items	center
-a Hive floor	.view-object-backdrop	background-color	rgba(4, 6, 11, 0.85)
+a Hive floor	.view-object-backdrop	background-color	rgba(4, 6, 11, 0.55)
 a Hive floor	.view-object-backdrop	background-image	none
 a Hive floor	.view-object-backdrop	bottom	0px
 a Hive floor	.view-object-backdrop	display	flex

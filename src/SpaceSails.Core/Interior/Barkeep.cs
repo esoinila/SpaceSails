@@ -77,6 +77,12 @@ public sealed record Barkeep(
         return i < 0 ? i + Rumors.Count : i;
     }
 
+    /// <summary>U09-F07 (Fable ruling 2026-11-07) · Whether there is a room of HAVEN regulars for a round to warm. True
+    /// for the haven keeps (the ones <see cref="Barkeeps"/> lists); false for the Hive's counter and the #781 keep
+    /// behind it, whose room is not a haven's. The round button is drawn on this and on nothing else, so it can
+    /// never be offered where its tooltip ("warms the regulars drinking here") would be a lie.</summary>
+    public bool HasRegularsToWarm => Barkeeps.For(BodyId) is not null;
+
     /// <summary>A cheap tip, rotated deterministically by sim time (hourly) — flavor intel for now, the
     /// same no-wall-clock idiom the news wire and rum lines use, so it never flickers frame to frame.</summary>
     public string RumorAt(double simTime) =>

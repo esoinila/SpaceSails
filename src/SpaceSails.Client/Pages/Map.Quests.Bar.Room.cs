@@ -48,6 +48,13 @@ public partial class Map
             return null;
         }
 
+        // U09-F07 (Fable ruling 2026-11-07) · the roster is the HAVEN's, and a counter on an excursion is not the
+        // haven's: the Hive's counter card names nobody, whichever haven happens to be docked behind it.
+        if (_surface is not null)
+        {
+            return null;
+        }
+
         // U02-F03 · The roster is the HAVEN bar's: Cass Roe naming Coil and Gilt-Eye at Ringside. An underground
         // company counter (B1's canteen) can be opened while a haven is docked behind it, and its keep must not
         // speak a haven's regulars - his Welcome stands alone.

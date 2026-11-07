@@ -41,6 +41,15 @@
     background: rgba(150, 200, 235, 0.24);
 }
 
+/* R1-F95 (Fable ruling 2026-11-07) · the underwriter's stamp: the card's first row, small caps, quiet. */
+.archive-stamp {
+    color: rgba(207, 230, 247, 0.55);
+    font: 0.7rem/1.2 monospace;
+    font-variant: small-caps;
+    letter-spacing: 0.12em;
+    text-align: center;
+}
+
 /* What happened, in the house voice — above the lore, because the band is the event and the vision is
    only what the event contained. */
 .archive-band {

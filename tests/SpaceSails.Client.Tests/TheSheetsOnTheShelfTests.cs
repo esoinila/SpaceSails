@@ -157,7 +157,7 @@ public class TheSheetsOnTheShelfTests
         PressId(map, Keepsake.PendantId);
         Assert.True(PendantLatch(map));
         Assert.True(Filed(map));
-        Assert.NotNull(Get(map, "_storyPlate"));
+        Assert.NotNull(Get(map, "_storyCard"));   // U09-F02: a card the player closes, not a plate
     }
 
     [Fact]

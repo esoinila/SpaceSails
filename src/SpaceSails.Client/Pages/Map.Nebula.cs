@@ -187,9 +187,12 @@ public partial class Map
         // too many, so the contract opened while the card was still asking for more. It cannot drift now:
         // the ledger asks the arc. (The twin of the KAAMOS pass's first finding, #411/#634.)
         var lines = new List<string>();
+        // R1-F62 polish (Fable ruling 2026-11-07) · the paragraph ends on the capstone and the capstone wears the
+        // double mark. "Intel first, key last" already holds: Assembled is the pool's canonical order, and the
+        // pool lists the key last.
         foreach (NebulaFragment f in _nebula.Assembled)
         {
-            lines.Add($"▓ {f.Title} — {f.Lore}");
+            lines.Add($"{(f.IsKey ? "▓▓" : "▓")} {f.Title} — {f.Lore}");
         }
 
         lines.Add(NebulaLore.LedgerProgressLine(_nebula));

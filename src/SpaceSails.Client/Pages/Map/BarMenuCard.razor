@@ -227,10 +227,16 @@
                             title="@($"Buy the house special — {keep.DrinkPrice} cr")" @onclick="BuyHouseSpecial">🍹 @keep.DrinkName · @keep.DrinkPrice cr</button>
                 }
                 <button type="button" class="btn btn-sm btn-outline-light" title="See the full drinks menu" @onclick="ToggleBarMenu">📜 @(_showBarMenu ? "Hide the menu" : "See the menu")</button>
-                @if (!keep.SelfService)
+                @* U09-F07 (Fable ruling 2026-11-07) · the round is drawn where there are HAVEN regulars to warm, which
+                   is a fact about the keep (HasRegularsToWarm), not about whether anybody stands behind it: the Hive's
+                   kept counter has a person and no regulars. *@
+                @if (keep.HasRegularsToWarm)
                 {
                     <button type="button" class="btn btn-sm btn-outline-warning" disabled="@(_credits < keep.RoundPrice)"
                             title="@($"Buy a round for the room — {keep.RoundPrice} cr — warms the regulars drinking here")" @onclick="BuyRoundForRoom">🍻 Round for the room · @keep.RoundPrice cr</button>
+                }
+                @if (!keep.SelfService)
+                {
                     @* #781 · The tooltip names WHOEVER is behind this counter, off Core's own field, rather
                        than a role typed here. At the Tilt that is Halden Frost; at Canteen 1 it is `the
                        keep`, which is the only thing the game is ever allowed to call him. *@

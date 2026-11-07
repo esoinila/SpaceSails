@@ -459,6 +459,15 @@
     cursor: zoom-out;
 }
 
+/* The world runs under this card (Fable ruling 2026-11-07, R1-F93). On an excursion the exit is owed, not paused:
+   the air keeps draining and the tracker keeps ticking behind a scrim or picture card, so the dim is lighter there
+   and the strip and the air readout stay legible through it. The captain's-remote button is the marker the deck HUD
+   draws on an excursion and nowhere else (`_deckMode && _surface is not null`), so docked and seated cards keep
+   the full dim. */
+.map-page:has(.captains-remote-btn) .view-object-backdrop {
+    background: rgba(4, 6, 11, 0.55);
+}
+
 /* ── Making sure ────────────────────────────────────────────────────────────────────────────────────
    The scuttling panel and the card you read afterwards from your own cockpit. */
 ::deep .scuttle-panel, ::deep .scuttle-epitaph { max-width: 34rem; }

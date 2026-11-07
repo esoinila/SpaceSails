@@ -85,6 +85,11 @@ public static class ArchiveNode
         "❄ Your suit's skin readout climbs three degrees crossing the hold, and stops climbing when you " +
         "stop. Forty years at three kelvin, and something down here is still running warm.";
 
+    /// <summary>R1-F95 (Fable ruling 2026-11-07) · the underwriter's stamp, the first row of the dwell card. It used to
+    /// float over the column on the deck as a label; the card is where a captain is actually reading.</summary>
+    public static string UnderwriterStamp(bool purged) =>
+        purged ? "NEBULA MUTUAL · SUBSTRATE SPAR · cold" : "NEBULA MUTUAL · SUBSTRATE SPAR";
+
     /// <summary>What is left after the handle. Read at the column by a captain who has already pulled it —
     /// the same sentence whatever was inside, because that is the whole point of §5.</summary>
     public const string ColdColumnLine =

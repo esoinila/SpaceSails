@@ -111,6 +111,10 @@ public partial class Map
     // reads it. You drink too, so the round counts as a tot on your own legs.
     private void BuyRoundForRoom()
     {
+        if (_barMenu is { HasRegularsToWarm: false })
+        {
+            return;   // U09-F07: no haven regulars behind this counter (the Hive's), so there is no room to stand a round for
+        }
         if (_barMenu is not { } keep)
         {
             return;

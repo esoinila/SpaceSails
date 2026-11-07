@@ -51,7 +51,8 @@ public sealed partial class Map
     /// read it (<see cref="ArchiveNode.ReadsTheCollar"/>). The price of knowing whose pattern is in there is
     /// a bad throw, never a good one.</param>
     public readonly record struct ArchiveCard(
-        string Title, string Art, string BandLine, string Lore, string Dice, string? Collar);
+        string Title, string Art, string BandLine, string Lore, string Dice, string? Collar,
+        string Stamp = "NEBULA MUTUAL · SUBSTRATE SPAR");
 
     private void CloseArchiveCard() => _archiveCard = null;
 
@@ -173,7 +174,8 @@ public sealed partial class Map
             Dice: roll.Describe(),
             Collar: ArchiveNode.ReadsTheCollar(band)
                 ? ArchiveNode.CollarLine(ArchiveNode.ResidentOf(w.Id))
-                : null);
+                : null,
+            Stamp: ArchiveNode.UnderwriterStamp(_archivePurged));
 
         // THE TRADE THE FEATURE EXISTS FOR: nerve into arc-2 knowledge. Silent — the card is the delivery,
         // and a pulse would fire behind it. See ArchiveShard for which visions carry a shard and why.
