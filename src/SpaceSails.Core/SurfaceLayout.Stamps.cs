@@ -62,6 +62,21 @@ public static partial class SurfaceLayout
     // The ledger's two verbs, shared by the generator and StampFor so they cannot disagree.
     private const double LedgerElbow = 1.5;
 
+    private static bool Fits(System.Collections.Generic.List<(double X0, double Y0, double X1, double Y1)> claimed,
+        double cx, double cy, double halfW, double halfH)
+    {
+        (double x0, double y0, double x1, double y1) =
+            (cx - halfW - LedgerElbow, cy - halfH - LedgerElbow, cx + halfW + LedgerElbow, cy + halfH + LedgerElbow);
+        foreach ((double ax0, double ay0, double ax1, double ay1) in claimed)
+        {
+            if (x0 < ax1 && x1 > ax0 && y0 < ay1 && y1 > ay0)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private static bool ClaimOn(System.Collections.Generic.List<(double X0, double Y0, double X1, double Y1)> claimed,
         double cx, double cy, double halfW, double halfH)
     {
@@ -98,11 +113,13 @@ public static partial class SurfaceLayout
         int bestScore = -1;
         foreach (Candidate c in Candidates(kind, key, f))
         {
-            var trial = new List<(double X0, double Y0, double X1, double Y1)>(claimed);
+            // Every piece is judged against the ledger AS IT STOOD before the stamp began: a stamp's own
+            // pieces abut by design, and judging each against its siblings' padded claims made them refuse
+            // one another (ShadowedRille laid 6 of 12 walls).
             int fit = 0;
             foreach (Piece p in c.Pieces)
             {
-                if (ClaimOn(trial, p.Cx, p.Cy, p.HalfW, p.HalfH))
+                if (Fits(claimed, p.Cx, p.Cy, p.HalfW, p.HalfH))
                 {
                     fit++;
                 }
@@ -122,11 +139,13 @@ public static partial class SurfaceLayout
         }
 
         var walls = new List<Wall>();
+        var snapshot = new List<(double X0, double Y0, double X1, double Y1)>(claimed);
         foreach (Piece p in chosen.Pieces)
         {
-            if (ClaimOn(claimed, p.Cx, p.Cy, p.HalfW, p.HalfH))
+            if (Fits(snapshot, p.Cx, p.Cy, p.HalfW, p.HalfH))
             {
                 walls.AddRange(p.Walls);
+                ReserveOn(claimed, p.Cx, p.Cy, p.HalfW, p.HalfH);
             }
         }
         return new Stamp(walls, chosen.Marks);
@@ -325,6 +344,12 @@ public static partial class SurfaceLayout
         marks.Add(new(x1, y0, x1, y1, kind));
     }
 
+    /// <summary>The fissure slot's half-width. The ruling asked for a 2 du slot; at that width a captain can
+    /// stand inside it, and where rubble then closes its open end it is a sealed pocket (titan 44 du2, triton
+    /// 25 du2 in the reachability flood). 1.2 du across is narrower than a body (1.4), so it cannot be stood
+    /// in and cannot be a pocket: it reads as a crack and walls like one.</summary>
+    private const double SlotHalfWidth = 0.6;
+
     /// <summary>One bank of the fissure's slot, between two parameters along its centre segment.</summary>
     private static void AddSlotRun(System.Collections.Generic.List<Wall> walls,
         double xa, double ya, double xb, double yb, int side, double t0, double t1)
@@ -337,7 +362,7 @@ public static partial class SurfaceLayout
             return;
         }
         walls.Add(new(
-            Lerp(xa, xb, t0), Lerp(ya, yb, t0) + side,
-            Lerp(xa, xb, t1), Lerp(ya, yb, t1) + side, false));
+            Lerp(xa, xb, t0), Lerp(ya, yb, t0) + (side * SlotHalfWidth),
+            Lerp(xa, xb, t1), Lerp(ya, yb, t1) + (side * SlotHalfWidth), false));
     }
 }

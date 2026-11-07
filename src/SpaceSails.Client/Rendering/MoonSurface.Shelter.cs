@@ -88,6 +88,9 @@ public static partial class MoonSurface
         }
     }
 
+    /// <summary>The umbra's and the penumbra's opacity (black over the regolith).</summary>
+    public const double UmbraAlpha = 0.22, PenumbraAlpha = 0.10;
+
     /// <summary>#649 · THE MONOLITH'S SHADOW — a lane of dark running up-field from the slab's face to the
     /// far end of the walked world, drawn and never collided.
     ///
@@ -99,9 +102,6 @@ public static partial class MoonSurface
     /// <para>It reaches past the top of the field and is clamped there. Nothing marks where it ends, because
     /// the true edge of it is over the horizon and saying so would be the game explaining itself.</para>
     /// </summary>
-    /// <summary>The umbra's and the penumbra's opacity (black over the regolith).</summary>
-    public const double UmbraAlpha = 0.22, PenumbraAlpha = 0.10;
-
     private static void AddShadow(List<SurfaceScenery.Mark> scenery, in SurfaceLayout.Field field)
     {
         double nearY = field.AnchorY + Monolith.HalfHeight;          // the lit face; the shade starts here

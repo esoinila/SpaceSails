@@ -77,7 +77,7 @@ public sealed class TheStampsAndTheShadeTests
             foreach (LandingSiteKind kind in Enum.GetValues<LandingSiteKind>()
                 .Where(k => k is not (LandingSiteKind.WildPlain or LandingSiteKind.QuietBasin)))
             {
-                foreach (bool lab in new[] { false })
+                foreach (bool lab in new[] { false, true })
                 {
                     DeckPlan deck = Deck(body, kind.ToString(), lab);
                     if (!DeckReachability.Standable(dropX, dropY, DeckPlan.AvatarRadius, deck.CollisionField))
@@ -108,7 +108,12 @@ public sealed class TheStampsAndTheShadeTests
                     }
                     foreach (DeckPlan.ConsoleSpot con in deck.Consoles)
                     {
-                        if (con.Y >= Field.TopY || !DeckReachability.Standable(con.X, con.Y, DeckPlan.AvatarRadius, deck.CollisionField)) { continue; }   // the ship above the rim is a different place
+                        if (con.Y >= Field.TopY) { continue; }   // the ship above the rim is a different place
+                        if (!DeckReachability.Standable(con.X, con.Y, DeckPlan.AvatarRadius, deck.CollisionField))
+                        {
+                            bad.Add($"{body}/{kind}{(lab ? "+lab" : "")}: {con.Kind} '{con.Label}' at ({con.X:F0}, {con.Y:F0}) is not standable");
+                            continue;
+                        }
                         checkedConsoles++;
                         bool reached = false;
                         for (int dc = -2; dc <= 2 && !reached; dc++)

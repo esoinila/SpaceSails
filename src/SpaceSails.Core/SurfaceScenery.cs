@@ -28,8 +28,7 @@ namespace SpaceSails.Core;
 /// </summary>
 public static class SurfaceScenery
 {
-    /// <summary>A drawn-only mark: a line on the ground with no substance.</summary>
-    /// <summary>R1-F78 (#1411) · For <see cref="Kind.Shade"/> the mark is a FILLED QUAD, not a stroke: the
+    /// <summary>A drawn-only mark: a line on the ground with no substance. R1-F78 (#1411) · For <see cref="Kind.Shade"/> the mark is a FILLED QUAD, not a stroke: the
     /// centre line runs (X1, Y1) -> (X2, Y2), the quad is <paramref name="HalfNear"/> wide either side of the near
     /// end and <paramref name="HalfFar"/> either side of the far end, filled black at <paramref name="Alpha"/> with
     /// no stroke. Every other kind ignores the three trailing fields.</summary>

@@ -131,6 +131,7 @@ public class TheGroundKeepsTheBoardsPromiseTests
                     }
                 }
                 Assert.True(gaps >= 2, $"{at}: {gaps} gaps in the lip");
+                Assert.True(runs.Count >= 10, $"{at}: only {runs.Count} runs of the lip");
                 Assert.True(runs.Sum(Len) > 100, $"{at}: the lip is not long");
                 break;
 
@@ -140,7 +141,8 @@ public class TheGroundKeepsTheBoardsPromiseTests
                 Assert.All(stamp.Marks, m => Assert.Equal(SurfaceScenery.Kind.Rille, m.Of));
                 Assert.True(stamp.Marks.Max(m => m.X2) - stamp.Marks.Min(m => m.X1) > 200, $"{at}: not across the field");
                 Assert.True(stamp.Marks.Select(m => Math.Round(m.Y1, 1)).Distinct().Count() > 5, $"{at}: not jagged");
-                Assert.True(walls.Count >= 6, $"{at}: {walls.Count} slot walls");
+                // Two banks x 11 segments is 22 when nothing is in the way; the ledger may refuse a piece or two.
+                Assert.True(walls.Count >= 16, $"{at}: {walls.Count} slot walls");
                 Assert.All(walls, w => Assert.False(w.IsHull));
                 break;
 
@@ -157,7 +159,7 @@ public class TheGroundKeepsTheBoardsPromiseTests
 
             case LandingSiteKind.ShadowedRille:
                 // Two parallel walls 10 du apart, running down from the band, open at both ends (no cross wall).
-                Assert.True(walls.Count >= 2 && walls.Count % 2 == 0, $"{at}: {walls.Count}");
+                Assert.Equal(12, walls.Count);   // six 10 du segments x two walls: the pieces no longer refuse each other
                 Assert.All(walls, w => Assert.Equal(w.X1, w.X2, 6));
                 double[] xs = [.. walls.Select(w => Math.Round(w.X1, 3)).Distinct().OrderBy(x => x)];
                 Assert.Equal(2, xs.Length);
@@ -201,11 +203,12 @@ public class TheGroundKeepsTheBoardsPromiseTests
         }
     }
 
-    /// <summary>Fire code #822: a stamp never builds an ENCLOSED space. Group the stamp's walls into connected
-    /// pieces; a piece that closes a loop must be a 1.5 du post, never a room — so nothing in a stamp needs a door.</summary>
+    /// <summary>A narrow structural check ONLY: no connected group of the stamp's own walls closes a loop wider
+    /// than a 1.5 du post. It cannot see a room made by a stamp wall together with someone else's wall; the
+    /// real fire-code guard is the sealed-pocket flood in SurfaceReachabilityTests.</summary>
     [Theory]
     [MemberData(nameof(Stamped))]
-    public void NoStampEncloses(string salt)
+    public void NoStampWallsLoopIntoARoom(string salt)
     {
         foreach (string body in Bodies)
         {
