@@ -166,6 +166,9 @@ public sealed class TheArchiveNodeIsOnTheDeckTests
 
         // …and the one thing on the deck that said it still had power stops saying so.
         Assert.DoesNotContain(deck.RoomLabels, l => l.Text.Contains("⚡"));
-        Assert.Contains(deck.RoomLabels, l => l.Text.Contains("SUBSTRATE SPAR"));
+        Assert.DoesNotContain(Of(deck, DeckPlan.ConsoleKind.ArchiveNode), c => c.Label.Contains("⚡"));
+        // R1-F95: the underwriter's line is no longer a floating label; it is the dwell card's first row.
+        Assert.DoesNotContain(deck.RoomLabels, l => l.Text.Contains("SUBSTRATE SPAR"));
+        Assert.Contains("cold", Assert.Single(Of(deck, DeckPlan.ConsoleKind.ArchiveNode)).Label);
     }
 }
