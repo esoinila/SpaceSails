@@ -73,11 +73,22 @@ public partial class Map
         // #411: a rare seeded square on an outer icy moon hides a cold KAAMOS supply pod — a cargo run that
         // never arrived, distinct from ordinary treasure. Sweeping it the first time assembles cold-pod (and
         // may open the reach). Once held, the square is ordinary regolith and the normal probe result stands.
-        if (!_kaamos.Has("cold-pod") && KaamosPodHere(ex.Stop.Body.Id, squareX, squareY))
+        // R1-F96 · …and a pod whose shard is already in hand (Marsh told it) is still STOOD OVER: the re-find
+        // line and the witness plate, once.
+        // …but only while that witness is owed: a dug pod, or one already stood over, is ordinary regolith.
+        if (KaamosPodHere(ex.Stop.Body.Id, squareX, squareY)
+            && (!_kaamos.Has("cold-pod") || KaamosWitnessOwed("cold-pod")))
         {
-            TryAssembleKaamos("cold-pod",
-                "❄ Your probe rings off metal a foot down — not a coin, a HULL. You clear the frost and it's a " +
-                "SEALED SUPPLY POD, decades cold. " + KaamosLore.ById("cold-pod")!.Lore);
+            if (!_kaamos.Has("cold-pod"))
+            {
+                TryAssembleKaamos("cold-pod",
+                    "❄ Your probe rings off metal a foot down — not a coin, a HULL. You clear the frost and it's a " +
+                    "SEALED SUPPLY POD, decades cold. " + KaamosLore.ById("cold-pod")!.Lore);
+                return;
+            }
+
+            RaiseKaamosWitness("cold-pod");
+            SayItWhereTheyAreLooking("❄ Your probe rings off metal a foot down. You knew she was here. Knowing is not the same as standing over her.");
             return;
         }
 
@@ -196,8 +207,13 @@ public partial class Map
 
     private void RaiseReevers(ReeverRoll roll)
     {
-        // R1-F102 (Fable ruling 2026-11-07) · no Old Ones on Enceladus, ever: the dice may say roused, the ice says no.
-        if (!roll.Roused || OldOnesNeverComeHere)
+        // R1-F102 (Fable ruling 2026-11-07) · no Old Ones on Enceladus, ever: the dice may say roused, the ice says no,
+        // and the roll is not pulsed at all there (a "roused ... the ground stays quiet" line would contradict itself).
+        if (OldOnesNeverComeHere)
+        {
+            return;
+        }
+        if (!roll.Roused)
         {
             ShowPulseMessage($"🎲 {roll.Describe()} — the ground stays quiet. For now.");
             return;

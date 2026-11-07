@@ -92,7 +92,7 @@ public sealed partial class Map
     {
         _hardcaseCard = null;
         TheRepsCounterCloses();   // #1151 slice 2 · the offer and a finished form go with the conversation
-        if (reason == HardcaseCloseReason.HeStepsBack)
+        if (reason == HardcaseCloseReason.HeStepsBack && !TheDeathCardFreezesTheGround)
         {
             SayItWhereTheyAreLooking(HeStepsBackLine);
         }

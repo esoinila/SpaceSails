@@ -79,9 +79,11 @@ public partial class Map
         // below clears these only on a SURFACE death; a death anywhere else (a berth, a flight) left the dead
         // captain's queued beats and the held scrim to raise on the successor's first calm frame. The shard
         // (the vault) survives; the card does not.
-        _deferredBeats.Clear();
-        _scrimQueued?.Clear();   // the FIFO (#1473): the dead captain's held cards do not outlive him
+        // Everything the dead captain's glass held, by field (the close doors run scene side effects): the open card, the
+        // line behind it, the plate, the deferred beats, the held pulses; and the scrim FIFO (#1473).
+        DropTheStoryCardsUnsaid();
         _scrimQueued = null;
+        _held = PulseHold.Empty;
 
         // ── #563 · WHERE HE FELL, READ BEFORE THE GROUND IS TAKEN AWAY ───────────────────────────────
         //

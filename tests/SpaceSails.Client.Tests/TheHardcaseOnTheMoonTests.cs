@@ -258,6 +258,41 @@ public sealed class TheHardcaseOnTheMoonTests
         Assert.Equal("He steps back off your elbow mid-sentence, and the pitch goes with him.", ThePulse(map));
     }
 
+    /// <summary>
+    /// <b>#1471 follow-up · THE STEP-BACK LINE DOES NOT SPEAK ON THE FRAME THE DEATH CARD RAISES.</b> The pitch
+    /// card is up, the death card (the freeze beat) goes up the same frame the rep's card is torn down, and the
+    /// line he steps back on would be pulsed to a HUD the death card is standing on top of.
+    ///
+    /// <para><b>Proven RED</b> by dropping <c>&amp;&amp; !TheDeathCardFreezesTheGround</c> from
+    /// <c>CloseTheHardcasesCardBecause</c>: the line is said under the death card.</para></summary>
+    [Fact]
+    public void THE_StepBackLineDoesNotSpeakUnderTheDeathCard()
+    {
+        Pages.Map map = OnTheRegolith();
+        for (int i = 0; i < 3000 && Card(map) is null; i++)
+        {
+            RunFrames(map, 1);
+        }
+
+        Assert.NotNull(Card(map));
+        Type encounter = typeof(Pages.Map).GetNestedType("BustedEncounter", BindingFlags.NonPublic | BindingFlags.Public)!;
+        Type stage = encounter.GetNestedType("Stage", BindingFlags.Public | BindingFlags.NonPublic)!;
+        object death = Activator.CreateInstance(encounter, nonPublic: true)!;
+        encounter.GetProperty("HunterId", Hidden)!.SetValue(death, "no-such-hunter");
+        encounter.GetProperty("HunterCallsign", Hidden)!.SetValue(death, "The Debt Collector");
+        encounter.GetProperty("Phase", Hidden)!.SetValue(death, Enum.Parse(stage, "FreezeFrame"));
+        Set(map, "_busted", death);
+        Set(map, "_pulse", default(PulseSlot));
+
+        Type reason = typeof(Pages.Map).GetNestedType("HardcaseCloseReason", BindingFlags.NonPublic)!;
+        Invoke(map, "CloseTheHardcasesCardBecause", Enum.Parse(reason, "HeStepsBack"));
+
+        Assert.Null(Card(map));
+        Assert.NotEqual(HeStepsBackLine, ThePulse(map));
+    }
+
+    private const string HeStepsBackLine = "He steps back off your elbow mid-sentence, and the pitch goes with him.";
+
     /// <summary>R1-F42 · …and an ANSWERED close says only what the answer says: the refusal line, never the
     /// step-back line.</summary>
     [Fact]

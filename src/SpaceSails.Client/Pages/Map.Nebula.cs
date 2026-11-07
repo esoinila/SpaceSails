@@ -40,8 +40,11 @@ public partial class Map
     /// _kaamos idiom (TryAssembleKaamos) for arc 2. Returns true only the first time a shard is held, so a
     /// caller narrates a genuinely NEW leak and a re-read stays quiet. The truth-resolves notice fires on the
     /// single edge that flips KnowsTheTruth, once per universe, never on reload; the convergence fires on the
-    /// single edge BOTH arcs first cross their joint threshold.</summary>
-    private bool TryAssembleNebula(string fragmentId, string foundMessage)
+    /// single edge BOTH arcs first cross their joint threshold.
+    ///
+    /// <para>R1-F96 · <paramref name="witnessed"/> false is a second-hand leak (Marsh): the shard is assembled
+    /// and said, and no plate goes up. <see cref="RaiseNebulaWitness"/> raises it later, once, on sight.</para></summary>
+    private bool TryAssembleNebula(string fragmentId, string foundMessage, bool witnessed = true)
     {
         if (_nebula.Has(fragmentId))
         {
@@ -52,6 +55,15 @@ public partial class Map
         if (!_nebula.Assemble(fragmentId))
         {
             return false; // not a real pool id — refused by the spine
+        }
+
+        if (!witnessed)
+        {
+            _nebula.MarkHeard(fragmentId);
+        }
+        else
+        {
+            _nebula.MarkWitnessed(fragmentId);
         }
 
         RequestVaultSave();
@@ -70,7 +82,7 @@ public partial class Map
         // still raise nothing at all. #777's HOSTED presentation is the seam's answer for a beat whose canvas
         // is somebody else's card, and it is deliberately not reached for here — those four have no beat of
         // their own to be hosted; they are pages of a card the arc already opened.
-        if (NebulaLore.PlateFor(fragmentId) is not null)
+        if (witnessed && NebulaLore.PlateFor(fragmentId) is not null)
         {
             RaiseStoryBeat(StoryBeats.Beat.NebulaShardFound, fragmentId);
         }
@@ -88,6 +100,21 @@ public partial class Map
 
         MaybeFireConvergence(); // the marquee edge — checked on every arc assemble
         return true;
+    }
+
+    /// <summary>R1-F96 · Is the adjuster's plate still owed? The tell is held, and the captain has not yet
+    /// been shown the one who held the policy.</summary>
+    private bool NebulaWitnessOwed(string fragmentId) =>
+        NebulaLore.PlateFor(fragmentId) is not null && _nebula.WitnessOwed(fragmentId);
+
+    private void RaiseNebulaWitness(string fragmentId)
+    {
+        if (NebulaWitnessOwed(fragmentId))
+        {
+            _nebula.MarkWitnessed(fragmentId);
+            RequestVaultSave();
+            RaiseStoryBeat(StoryBeats.Beat.NebulaShardFound, fragmentId);
+        }
     }
 
     /// <summary>#663 · THE WORLD NOTICES ARC 2. <c>StoryBeats.Beat.ArcNewsBreaks</c> shipped with a painted
@@ -189,11 +216,17 @@ public partial class Map
         }
 
         string bar = _dockedHavenId;
-        int watchDay = (int)(SimTime / 86400);
+        int watchDay = (int)(_dockVisitSimTime / 86400);   // R1-F104 · the dock clock, not the live one
 
         if (!_nebula.Has("adjuster-tell") && NebulaFind.AdjusterAtBar(bar, watchDay, forced: _nebulaAdjusterCheat))
         {
             return "adjuster-tell";
+        }
+
+        // R1-F96 · same law as the holder: a heard tell raised no plate, so the adjuster's is owed on sight.
+        if (NebulaWitnessOwed("adjuster-tell") && NebulaFind.AdjusterAtBar(bar, watchDay, forced: _nebulaAdjusterCheat))
+        {
+            return "adjuster-plate";
         }
 
         if (_nebula.HasEnoughIntelToEarnTheContract && !_nebula.Has(NebulaLore.KeyFragment.Id))
@@ -225,6 +258,13 @@ public partial class Map
                     "▓ The barkeep nods at a tired sort nursing a policy folio in the corner. " +
                     NebulaLore.ById("adjuster-tell")!.Lore);
                 Overhear("👂 A Nebula adjuster, deep in a drink: \"A policy's not a spare life. It's a lease — on the one you've got.\"", "nebula-adjuster");
+                break;
+
+            case "adjuster-plate":
+                RaiseNebulaWitness("adjuster-tell");
+                SayItWhereTheyAreLooking(
+                    "▓ The barkeep nods at a tired sort nursing a policy folio in the corner. " +
+                    NebulaLore.ById("adjuster-tell")!.Lore);
                 break;
 
             case "policy-terms":

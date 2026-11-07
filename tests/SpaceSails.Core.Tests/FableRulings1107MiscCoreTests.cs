@@ -90,25 +90,17 @@ public sealed class FableRulings1107MiscCoreTests
     public void HeIsNeverFoundOnADeflectionGigsRock(bool landed, bool wreck, int floor, bool gigRock, bool his) =>
         Assert.Equal(his, HardcaseRep.GroundLikeThis(landed, wreck, floor, onAGigRock: gigRock));
 
-    // ── U07-F13 · the dock's own name ───────────────────────────────────────────────────────────────────
+    // ── U07-F13 · the dock's own name (a regression guard: the live callers pass the ephemeris lookup, #1451) ──
 
     [Fact]
-    public void LayLowAndFlyToNameTheDockByItsOwnName()
+    public void LayLowReadsTheDocksOwnNameThroughTheEphemerisLookup()
     {
         var roadstead = new CelestialBody("the-space-bar", "The Rusty Roadstead", "mars", 0, 900, 1.2e7, 39910, 3.1, BodyKind.Station, IsHaven: true);
         CelestialBody[] bodies = [roadstead];
 
         ShipMission layLow = MissionCatalog.LayLowOptions(bodies).Single();
-        Assert.Equal("Lay low: The Rusty Roadstead", layLow.Describe());
-        // RED: drop HavenName from LayLowOptions and this reads the humanized id, "Lay low: The Space Bar".
 
-        // The plot builds the same FlyTo without a name; it is still the one mission, so the desk lights its card.
-        var fromThePlot = new ShipMission(MissionKind.FlyTo, DestinationBodyId: "the-space-bar");
-        var fromTheDesk = new ShipMission(MissionKind.FlyTo, DestinationBodyId: "the-space-bar",
-            DestinationName: "The Rusty Roadstead");
-        Assert.Equal(fromThePlot, fromTheDesk);
-        Assert.Equal("Make for: The Rusty Roadstead orbit", fromTheDesk.Describe());
-        Assert.Equal("Make for: The Space Bar orbit", fromThePlot.Describe());
+        Assert.Equal("Lay low: The Rusty Roadstead", layLow.Describe(id => bodies.Single(b => b.Id == id).Name));
     }
 
     // ── U09-F02 · the pendant's first opening is a card ─────────────────────────────────────────────────

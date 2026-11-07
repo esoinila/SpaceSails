@@ -33,22 +33,8 @@ public sealed record ShipMission(
     string? DestinationBodyId = null,
     string? HavenBodyId = null,
     string? CorridorA = null,
-    string? CorridorB = null,
-    string? HavenName = null,
-    string? DestinationName = null)
+    string? CorridorB = null)
 {
-    // U07-F13 (Fable ruling 2026-11-07) · HavenName and DestinationName are the DOCK'S OWN NAME ("The Rusty Roadstead")
-    // where the body id would humanize to a different one ("The Space Bar"). They are display, not identity: a
-    // FlyTo built by the plot (no name) and the same FlyTo offered by the desk (named) are the one mission, so the
-    // desk still lights its current card.
-    public bool Equals(ShipMission? other) =>
-        other is not null && Kind == other.Kind && TargetCargo == other.TargetCargo
-        && OriginBodyId == other.OriginBodyId && DestinationBodyId == other.DestinationBodyId
-        && HavenBodyId == other.HavenBodyId && CorridorA == other.CorridorA && CorridorB == other.CorridorB;
-
-    public override int GetHashCode() =>
-        HashCode.Combine(Kind, TargetCargo, OriginBodyId, DestinationBodyId, HavenBodyId, CorridorA, CorridorB);
-
     /// <summary>The mission until the captain sets one (PR-15 work item 3 — the game starts with
     /// no orders given).</summary>
     public static readonly ShipMission Default = new(MissionKind.FreeSailing);
@@ -63,9 +49,9 @@ public sealed record ShipMission(
     {
         MissionKind.Hunt => $"Hunt: {TargetCargo} haulers",
         MissionKind.TradeRun => $"Trade run: {Humanize(OriginBodyId, bodyName)} → {Humanize(DestinationBodyId, bodyName)}",
-        MissionKind.LayLow => $"Lay low: {HavenName ?? Humanize(HavenBodyId, bodyName)}",
+        MissionKind.LayLow => $"Lay low: {Humanize(HavenBodyId, bodyName)}",
         MissionKind.Survey => $"Survey: {Humanize(CorridorA, bodyName)}–{Humanize(CorridorB, bodyName)} corridor",
-        MissionKind.FlyTo => $"Make for: {DestinationName ?? Humanize(DestinationBodyId, bodyName)} orbit",
+        MissionKind.FlyTo => $"Make for: {Humanize(DestinationBodyId, bodyName)} orbit",
         _ => "Free sailing",
     };
 
@@ -156,7 +142,7 @@ public static class MissionCatalog
         {
             if (body.ParentId is not null && body.Kind != BodyKind.Station)
             {
-                result.Add(new ShipMission(MissionKind.FlyTo, DestinationBodyId: body.Id, DestinationName: body.Name));
+                result.Add(new ShipMission(MissionKind.FlyTo, DestinationBodyId: body.Id));
             }
         }
 
@@ -171,7 +157,7 @@ public static class MissionCatalog
         {
             if (body.IsHaven)
             {
-                result.Add(new ShipMission(MissionKind.LayLow, HavenBodyId: body.Id, HavenName: body.Name));
+                result.Add(new ShipMission(MissionKind.LayLow, HavenBodyId: body.Id));
             }
         }
 

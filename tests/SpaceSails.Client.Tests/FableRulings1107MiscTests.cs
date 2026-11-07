@@ -61,12 +61,19 @@ public sealed class FableRulings1107MiscTests
 
         ((IList)bench.Peek("_deferredBeats")!).Add((StoryBeats.Beat.CrewDeputation, (string?)null, (string?)null));
         bench.Poke("_scrimQueued", new List<(Action, Func<bool>, string?)> { (() => { }, () => true, null), (() => { }, () => true, "k2") });
+        // …and the rest of what the dead captain's glass held: the open card, the line behind it, the plate, the held pulses.
+        bench.Poke("_storyCard", (StoryBeats.Beat.CrewMeeting, (string?)null, (string?)null));
+        ((IList)bench.Peek("_storyWaiting")!).Add((StoryBeats.Beat.CrewDeputation, (string?)null, (string?)null));
+        bench.Poke("_storyPlate", (StoryBeats.Beat.Flashback, (string?)"old life", 1e9));
         bench.Poke("_busted", AFreezeFrameDeath());
 
         bench.CallOnTheDispatcher("BustedResurrect");
 
         Assert.Empty((IList)bench.Peek("_deferredBeats")!);
         Assert.Null(bench.Peek("_scrimQueued"));
+        Assert.Null(bench.Peek("_storyCard"));
+        Assert.Empty((IList)bench.Peek("_storyWaiting")!);
+        Assert.Null(bench.Peek("_storyPlate"));
 
         // The successor's first calm frame: the death card is read and put away, the page ticks the cards.
         bench.Poke("_busted", null);
@@ -120,6 +127,17 @@ public sealed class FableRulings1107MiscTests
         var placement = (SecretLab.Placement)exType.GetProperty("Lab")!.GetValue(ex)!;
         SecretLab.Region chamber = SecretLab.Build(KaamosLore.IceMoonBodyId, MoonSurface.ExpeditionField(), placement.DoorX, placement.DoorY);
         Assert.Equal(6, chamber.Walls.Count);
+        // The fire code (#822), now that the lab sweep skips the head office: each face leaves a doorway at the chamber's
+        // centre line at least two captain radii wide.
+        double cy = chamber.Walls.Where(w => Math.Abs(w.Y1 - w.Y2) < 1e-9).Average(w => w.Y1);
+        foreach (double x in chamber.Walls.Where(w => Math.Abs(w.X1 - w.X2) < 1e-9).Select(w => w.X1).Distinct())
+        {
+            var face = chamber.Walls.Where(w => Math.Abs(w.X1 - x) < 1e-9 && Math.Abs(w.X2 - x) < 1e-9).ToArray();
+            double lowEnd = face.Select(w => Math.Max(w.Y1, w.Y2)).Where(y => y <= cy).DefaultIfEmpty(double.NaN).Max();
+            double highEnd = face.Select(w => Math.Min(w.Y1, w.Y2)).Where(y => y >= cy).DefaultIfEmpty(double.NaN).Min();
+            Assert.False(double.IsNaN(lowEnd) || double.IsNaN(highEnd), $"face at x={x} has no doorway at the centre line");
+            Assert.True(highEnd - lowEnd >= 2 * DeckPlan.AvatarRadius, $"face at x={x} doorway {highEnd - lowEnd} du is narrower than the captain");
+        }
         Assert.Contains(plan.Walls, w => chamber.Walls.Any(c =>
             Math.Abs(c.X1 - w.X1) < 0.01 && Math.Abs(c.Y1 - w.Y1) < 0.01 && Math.Abs(c.X2 - w.X2) < 0.01 && Math.Abs(c.Y2 - w.Y2) < 0.01));
 
@@ -252,6 +270,34 @@ public sealed class FableRulings1107MiscTests
         Assert.True(hive.OnSurface);
         Assert.NotNull(hive.Peek("_dockedHavenId"));
         Assert.Null(hive.Call("WhoIsInTonight"));
+    }
+
+    /// <summary>RED: gate the Round button on <c>!SelfService</c> again (or drop the early return in <c>BuyRoundForRoom</c>).</summary>
+    [Fact]
+    public async Task AKeptWatchCounterOffersTheRumorAndNoRound()
+    {
+        using DeskBench haven = await DeskBench.BootAsync("/map?dock=the-space-bar");
+        var havenKeep = SpaceSails.Core.Interior.Barkeeps.For("the-space-bar")!;
+        haven.Poke("_barMenu", havenKeep);
+        haven.Poke("_credits", 1000);
+        haven.CallOnTheDispatcher("BuyRoundForRoom");
+        Assert.True((int)haven.Peek("_credits")! < 1000, "the control: a haven bar still sells a round");
+
+        using DeskBench hive = await DeskBench.BootAsync("/map?dock=the-tilt&site=0&secretlab=deep&land=1&floor=1&counter=1");
+        long kept = Enumerable.Range(0, 400).Select(w => (long)w).First(w => SpaceSails.Core.Interior.TheKeep.KeptWatch(w));
+        var keep = SpaceSails.Core.Interior.CounterService.OnWatch(
+            SpaceSails.Core.Interior.CounterService.For("test-rock", UndergroundComplex.Comfort.UpperCanteen)!, kept);
+        Assert.False(keep.SelfService);
+        Assert.False(keep.HasRegularsToWarm);
+        hive.Poke("_barMenu", keep);
+        hive.Poke("_credits", 1000);
+        hive.CallOnTheDispatcher("BuyRoundForRoom");
+        Assert.Equal(1000, (int)hive.Peek("_credits")!);   // no round is sold where there is no room to warm
+
+        // The markup draws the rumor button for the person behind the counter and the round button for regulars only.
+        string card = ClientSource("Pages/Map/BarMenuCard.razor");
+        Assert.Contains("@if (keep.HasRegularsToWarm)", card, StringComparison.Ordinal);
+        Assert.Contains("AskBarkeepForRumor", card, StringComparison.Ordinal);
     }
 
     [Fact]

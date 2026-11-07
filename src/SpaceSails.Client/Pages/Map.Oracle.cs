@@ -29,6 +29,12 @@ public partial class Map
     private int _oracleDrinks;        // drinks stood the oracle this visit — raises the true chance
     private OracleLine? _oracleLine;  // the line currently on the card
     private bool _oracleOpen;         // her corner card is up
+    // R1-F97 · arc shards assembled this sitting (one EnsureOracleVisit). At most one KAAMOS or NEBULA shard a
+    // sitting: further true fragment lines still pulse and are overheard, but assemble nothing. The visit
+    // counter is a page field because a sitting spans many presses and nothing durable may hold it - a
+    // vault bit would outlive the stool; leads are uncapped.
+    private int _oracleShardsThisVisit;
+    private double _oracleVisitAt;   // D2 · the dock visit this sitting belongs to: a redock at the same bar is a new sitting
     private string? _oracleNotice;    // the last aside (a refused glass, an empty purse), shown on the card
 
     // /map?oracle=1 (#428) — the seat cheat. She is a corner fixture only OracleRant.PresenceChance of
@@ -42,11 +48,13 @@ public partial class Map
     // so a drunk oracle at one port doesn't stay prophetic at the next.
     private void EnsureOracleVisit()
     {
-        if (_oracleStation != _dockedHavenId)
+        if (_oracleStation != _dockedHavenId || _oracleVisitAt != _dockVisitSimTime)
         {
             _oracleStation = _dockedHavenId;
+            _oracleVisitAt = _dockVisitSimTime;
             _oracleDraw = 0;
             _oracleDrinks = 0;
+            _oracleShardsThisVisit = 0;
             _oracleLine = null;
             _oracleNotice = null;
         }
@@ -61,7 +69,7 @@ public partial class Map
         {
             return;
         }
-        if (!HavenInterior.OraclePresent(id, SimTime, _oracleForce))
+        if (!HavenInterior.OraclePresent(id, _dockVisitSimTime, _oracleForce))
         {
             ShowPulseMessage("The corner stool's empty — a half-finished drink still fizzing at the wrong frequency. Static's drifted off this watch. Try another. 🌀");
             return;
@@ -88,7 +96,7 @@ public partial class Map
             return;
         }
         _oracleNotice = null;   // each press starts the card's aside afresh; a true line may append below
-        OracleLine line = OracleRant.Speak(id, OracleRant.WatchIndex(SimTime), _oracleDraw, _oracleDrinks);
+        OracleLine line = OracleRant.Speak(id, OracleRant.WatchIndex(_dockVisitSimTime), _oracleDraw, _oracleDrinks);
         _oracleDraw++;
         _oracleLine = line;
         DeliverOracleLine(line);
@@ -109,21 +117,44 @@ public partial class Map
         switch (line.Truth)
         {
             case OracleTruthKind.KaamosFragment when line.FragmentId is { } kid:
-                string kLore = KaamosLore.ById(kid)?.Lore ?? string.Empty;
-                if (TryAssembleKaamos(kid, $"🌀 Static Marsh, tuned to a channel you can't hear: {line.Text} {kLore}"))
+                if (_kaamos.Has(kid))
                 {
+                    break; // Already in hand: nothing to add; her card already shows the line (R1-F65).
+                }
+
+                if (_oracleShardsThisVisit >= 1)
+                {
+                    OverhearWithoutAssembling(line, who);
+                    break;
+                }
+
+                string kLore = KaamosLore.ById(kid)?.Lore ?? string.Empty;
+                // R1-F96 · a leak is second-hand: the shard is assembled and heard, the plate waits for a witness.
+                if (TryAssembleKaamos(kid, $"🌀 Static Marsh, tuned to a channel you can't hear: {line.Text} {kLore}", witnessed: false))
+                {
+                    _oracleShardsThisVisit++;
                     Overhear($"👂 Static Marsh — a true one: {line.Text}", who);
                 }
-                // Already in hand: nothing to add; her card already shows the line (R1-F65).
                 break;
 
             case OracleTruthKind.NebulaFragment when line.FragmentId is { } nid:
-                string nLore = NebulaLore.ById(nid)?.Lore ?? string.Empty;
-                if (TryAssembleNebula(nid, $"🌀 Static Marsh, tuned to a channel you can't hear: {line.Text} {nLore}"))
+                if (_nebula.Has(nid))
                 {
+                    break; // Already in hand: nothing to add; her card already shows the line (R1-F65).
+                }
+
+                if (_oracleShardsThisVisit >= 1)
+                {
+                    OverhearWithoutAssembling(line, who);
+                    break;
+                }
+
+                string nLore = NebulaLore.ById(nid)?.Lore ?? string.Empty;
+                if (TryAssembleNebula(nid, $"🌀 Static Marsh, tuned to a channel you can't hear: {line.Text} {nLore}", witnessed: false))
+                {
+                    _oracleShardsThisVisit++;
                     Overhear($"👂 Static Marsh — a true one: {line.Text}", who);
                 }
-                // Already in hand: nothing to add; her card already shows the line (R1-F65).
                 break;
 
             case OracleTruthKind.SecretLab:
@@ -133,6 +164,13 @@ public partial class Map
                 ShowPulseMessage($"🌀 {line.Text}");
                 break;
         }
+    }
+
+    // R1-F97 · A second true fragment in one sitting: she says it, it is overheard and filed, nothing assembles.
+    private void OverhearWithoutAssembling(OracleLine line, string who)
+    {
+        Overhear($"👂 Static Marsh — a true one: {line.Text}", who);
+        ShowPulseMessage($"🌀 {line.Text}");
     }
 
     // Buy the oracle a drink — the drink-offer path (#347), reused: extending the glass is the CAPTAIN's own
@@ -146,7 +184,7 @@ public partial class Map
         {
             return;
         }
-        if (!HavenInterior.OraclePresent(id, SimTime, _oracleForce))
+        if (!HavenInterior.OraclePresent(id, _dockVisitSimTime, _oracleForce))
         {
             _oracleNotice = "Her stool's empty now — she's drifted off mid-sentence.";
             return;
