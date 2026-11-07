@@ -31,6 +31,21 @@ public sealed class KaamosProgress
     /// (#380's law).</para></summary>
     public bool BerthFilingBounced { get; private set; }
 
+    // R1-F20 · the shards that arrived second-hand, across Marsh's counter, and have not been stood over. A
+    // subset of the assembled set; it only decides WHICH plate the later witness raises (and which slip the
+    // supply-run desk hands over), so it rides the vault with the shards.
+    private readonly HashSet<string> _heard = new(StringComparer.Ordinal);
+
+    /// <summary>Whether this shard came second-hand (a leak) rather than by the captain's own hand.</summary>
+    public bool WasHeard(string fragmentId) => _heard.Contains(fragmentId);
+
+    /// <summary>Record that a held shard arrived second-hand. Only a real, held shard can be heard.</summary>
+    public bool MarkHeard(string fragmentId) => _assembled.Contains(fragmentId) && _heard.Add(fragmentId);
+
+    /// <summary>The second-hand ids in canonical order — the shape the vault stores.</summary>
+    public IReadOnlyList<string> HeardIds =>
+        [.. KaamosLore.Fragments.Where(f => _heard.Contains(f.Id)).Select(f => f.Id)];
+
     /// <summary>The assembled fragments, returned in the pool's authored (canonical) order — never in
     /// discovery or hash order — so the ledger renders stably and the vault serialises deterministically.
     /// Only ids the current pool still recognises appear (a stray saved id is held internally but not
@@ -82,7 +97,7 @@ public sealed class KaamosProgress
     /// <summary>Rehydrate from a saved list of ids (the vault load path), tolerant: unknown ids are
     /// skipped, duplicates collapse, order is irrelevant. Additive over whatever is already held — and so
     /// is the bounce bit, which can only ever go from false to true within a thread.</summary>
-    public void Load(IEnumerable<string>? assembledIds, bool berthFilingBounced = false)
+    public void Load(IEnumerable<string>? assembledIds, bool berthFilingBounced = false, IEnumerable<string>? heardIds = null)
     {
         BerthFilingBounced |= berthFilingBounced;
 
@@ -98,6 +113,11 @@ public sealed class KaamosProgress
                 _assembled.Add(id);
             }
         }
+
+        foreach (string id in heardIds ?? [])
+        {
+            MarkHeard(id);
+        }
     }
 
     /// <summary>Wipe back to nothing assembled — the per-game-thread reset (a new voyage is a new
@@ -106,6 +126,7 @@ public sealed class KaamosProgress
     public void Clear()
     {
         _assembled.Clear();
+        _heard.Clear();
         BerthFilingBounced = false;
     }
 

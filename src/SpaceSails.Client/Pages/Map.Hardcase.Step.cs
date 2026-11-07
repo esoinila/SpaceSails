@@ -136,9 +136,10 @@ public sealed partial class Map
     /// <see cref="HardcaseRep.DespairPaceDu"/>, to whichever end of the ground is furthest from the thing he
     /// has just seen.
     ///
-    /// <para><b>Nothing is said and nothing is filed.</b> Not here, not at the far end of the run, not when
-    /// he comes off the ground. The only record of it in the whole game is the sheet lying in the dust, and
-    /// that sheet is about prices.</para>
+    /// <para><b>Nothing is filed.</b> Not here, not at the far end of the run, not when he comes off the
+    /// ground. The only record of it in the whole game is the sheet lying in the dust, and that sheet is about
+    /// prices. The one thing SAID is the close of the pitch (R1-F42): the step-back line, on the card he leaves,
+    /// and never on the frame the death card raises.</para>
     ///
     /// <para>If the lattice cannot get him anywhere he still drops the papers and still comes off the ground.
     /// A man who could not find a way out is not a man who stood politely still.</para>

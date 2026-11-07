@@ -166,6 +166,27 @@ public static partial class KaamosLore
         "the regolith read: CONSUMABLES, WINTERING CREW, 40 SOULS · DEST. KAAMOS · HOLD FOR CYCLER WINDOW. " +
         "Somebody has struck HOLD through with a single line and written a date beside it. The date is soon.";
 
+    /// <summary>R1-F20 · The same slip for a captain who has HEARD the manifest read out (an oracle leak of
+    /// the cold pod) without ever standing over it.</summary>
+    public const string SupplyRunAcceptedHeard =
+        "❄ The slip comes across the counter face-down, the way slips do: CONSUMABLES, WINTERING CREW, 40 SOULS · " +
+        "DEST. KAAMOS · HOLD FOR CYCLER WINDOW. You have heard that manifest read out once, in a bar, by a woman " +
+        "looking at a bulkhead. Somebody has struck HOLD through with a single line and written a date beside it. " +
+        "The date is soon.";
+
+    /// <summary>R1-F20 · The same slip for a captain who has never met the cold pod at all.</summary>
+    public const string SupplyRunAcceptedCold =
+        "❄ The slip comes across the counter face-down, the way slips do: CONSUMABLES, WINTERING CREW, 40 SOULS · " +
+        "DEST. KAAMOS · HOLD FOR CYCLER WINDOW. Somebody has struck HOLD through with a single line and written " +
+        "a date beside it. The date is soon.";
+
+    /// <summary>R1-F20 · Which slip the desk hands over: the dug pod's (the original, byte for byte), the
+    /// heard pod's, or the cold one for a captain whose thread never touched the pod.</summary>
+    public static string SupplyRunAcceptedFor(KaamosProgress kaamos) =>
+        !kaamos.Has("cold-pod") ? SupplyRunAcceptedCold
+        : kaamos.WasHeard("cold-pod") ? SupplyRunAcceptedHeard
+        : SupplyRunAccepted;
+
     // ── #635 · THE FRONT DOOR: a consignment the board will not take ─────────────────────────────────────
     //
     // The issue's four options, and why this is the one built: a bar RUMOUR (option 1) adds another line to

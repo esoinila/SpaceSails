@@ -33,6 +33,10 @@ public sealed record KaamosSection
     /// would be exactly the drift <see cref="KaamosProgress.Assemble"/> refuses. A save written before
     /// #635 simply lacks the property and defaults to false.</summary>
     public bool BerthFilingBounced { get; init; }
+
+    /// <summary>R1-F20 · The shards that came second-hand (an oracle leak), so the later witness raises
+    /// Marsh's frame and the supply-run slip knows it was heard. A save without it reads as nothing heard.</summary>
+    public IReadOnlyList<string> HeardFragmentIds { get; init; } = [];
 }
 
 // ── NEBULA MUTUAL (#422): the second story arc, the truth behind the player's own deaths, per-thread. ──

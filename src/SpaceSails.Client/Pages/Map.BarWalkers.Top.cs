@@ -212,7 +212,7 @@ public partial class Map
             }
 
             return new BarTopUnderfoot(
-                i, $"gallery:{berth}:{BarWatch}:{i}", BarWatch, chair.X, chair.Y,
+                i, $"{GalleryTableKeyPrefix}{berth}:{BarWatch}:{i}", BarWatch, chair.X, chair.Y,
                 HavenInterior.BarTopSeats,
                 SittingAlone.BarSetting(ObservationWalk.Plate),
                 SittingAlone.OwnTablePlate,

@@ -91,7 +91,7 @@ public partial class Map
         // cold pod's, word for word, because it is the same consignment. Nobody remarks on that.
         if (offer.Id == KaamosLore.SupplyRunQuestId)
         {
-            ShowPulseMessage(KaamosLore.SupplyRunAccepted);
+            ShowPulseMessage(KaamosLore.SupplyRunAcceptedFor(_kaamos));
             return;
         }
 

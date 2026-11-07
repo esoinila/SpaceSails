@@ -220,6 +220,7 @@ public static class VaultMapper
         {
             AssembledFragmentIds = progress.AssembledIds,
             BerthFilingBounced = progress.BerthFilingBounced,   // #635 · the front door, per-thread
+            HeardFragmentIds = progress.HeardIds,                // R1-F20 · which shards came second-hand
         };
     }
 
@@ -229,7 +230,7 @@ public static class VaultMapper
     public static void Apply(KaamosSection? section, KaamosProgress progress)
     {
         ArgumentNullException.ThrowIfNull(progress);
-        progress.Load(section?.AssembledFragmentIds, section?.BerthFilingBounced ?? false);
+        progress.Load(section?.AssembledFragmentIds, section?.BerthFilingBounced ?? false, section?.HeardFragmentIds);
     }
 
     // ── NEBULA MUTUAL (#422) — the second-arc fragment assembly + the one-time convergence bit, per-thread. ──
