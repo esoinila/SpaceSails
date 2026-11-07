@@ -70,4 +70,12 @@
         /* never past the glass less 8rem of bottom chrome (the foot panels), whatever the chips say */
         max-height: calc(100% - var(--map-masthead-bottom, 4.75rem) - 8rem);
     }
+
+    /* #1466 item 6 - the scope card (290 x 322 px, bottom 0.75rem, right edge 296 px on a 390 glass) reaches under the
+       strip's column, and its AUTO / next buttons sit at the strip's left edge. While the scope is up, the strip stops
+       above the card (the card's height, its 0.75rem foot and 0.5rem of air = 21.6rem) and scrolls inside that, never
+       less than three rows of ink tall. */
+    .map-page:has(.map-scope) .desk-chip-strip {
+        max-height: max(4.5rem, calc(100% - var(--map-masthead-bottom, 4.75rem) - 21.6rem));
+    }
 }

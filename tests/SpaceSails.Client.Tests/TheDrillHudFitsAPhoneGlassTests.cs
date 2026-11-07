@@ -29,6 +29,8 @@ public sealed class TheDrillHudFitsAPhoneGlassTests
     {
         public List<(float X, float Y, string Text, string Font, TextAlign Align)> Words { get; } = [];
 
+        public List<byte> Alphas { get; } = [];
+
         public List<(float X, float Y, float W, float H, RgbaColor Ink)> Fills { get; } = [];
 
         public void BeginFrame(int w, int h, RgbaColor b) { }
@@ -45,8 +47,11 @@ public sealed class TheDrillHudFitsAPhoneGlassTests
             }
         }
         public void DrawPolyline(ReadOnlySpan<float> p, RgbaColor s, float w = 1f) { }
-        public void DrawText(float x, float y, string text, RgbaColor c, string font = "12px sans-serif", TextAlign align = TextAlign.Left) =>
+        public void DrawText(float x, float y, string text, RgbaColor c, string font = "12px sans-serif", TextAlign align = TextAlign.Left)
+        {
             Words.Add((x, y, text, font, align));
+            Alphas.Add(c.A);
+        }
     }
 
     private static Pen Draw(string line, string? stall = null)
@@ -146,5 +151,77 @@ public sealed class TheDrillHudFitsAPhoneGlassTests
         Pen with = Draw(DrillLine, "SIGNAL BREAKING UP");
         float Y(Pen pen) => Assert.Single(pen.Fills, f => f.Ink == new RgbaColor(14, 18, 24, 220) && f.W > 100).Y;
         Assert.Equal(Y(without), Y(with));
+    }
+
+    /// <summary>#1466 · THE WORLD'S WORDS NEVER SIT UNDER THE BAND. The live pass of #1464 found the moored ship's
+    /// "ENGINE ROOM", "SCUTTLING CHARGES", the ⚓ and the boxed AIRLOCK showing through the drill line at 390x700:
+    /// the band is the last thing drawn but its plate is translucent. The moored ship on the rock's ground is drawn at a sweep of
+    /// captain positions (the follow-cam moves every label across the top of the glass) and no FULL-alpha text other than the
+    /// band's own rows may touch the plate rectangle.</summary>
+    [Fact]
+    public void NoWorldLabelIsDrawnUnderTheBandPlate()
+    {
+        DeckPlan ship = Scenes.Build("surface:miranda:0");
+        int underneath = 0, drawn = 0; var offenders = new List<string>();
+        for (double dy = -26; dy <= 2; dy += 1.0)
+        {
+            for (double dx = -20; dx <= 20; dx += 4.0)
+            {
+                var state = new DeckView.State(ship.SpawnX + dx, ship.SpawnY + dy, 0.9, 0, 0,
+                    ShuttleAway: false, ElectricUniverse: false,
+                    Nerve: 58, NerveReadout: "FRAYED", ShowNerve: true, NerveCompact: false, HitsTaken: 0);
+                var hud = new DeckView.SurfaceHud(
+                    DigProgress: -1, HasDroppedChest: false, DropX: 0, DropY: 0,
+                    Blips: [], Cadence: 2, Readout: "quiet",
+                    CacheMarks: [], Nerve: 58, NerveReadout: "FRAYED", Instruments: true,
+                    OrbitComms: DrillLine, OrbitSeverity: 1);
+                var pen = new Pen();
+                new DeckView(pen).Draw(ship, PhoneW, PhoneH, simTime: 0.0, in state, surface: hud);
+                var plate = TheBandPlate(pen);
+                for (int wi = 0; wi < pen.Words.Count; wi++)
+                {
+                    var w = pen.Words[wi];
+                    if (pen.Alphas[wi] < 128) { continue; }   // a dimmed label is a yielded one
+                    if (DrillLine.Contains(w.Text, StringComparison.Ordinal) && w.Align == TextAlign.Center && w.Y < plate.Y + plate.H + 1)
+                    {
+                        continue; // the band's own rows
+                    }
+                    drawn++;
+                    double px = double.Parse(Regex.Match(w.Font, @"(\d+(?:\.\d+)?)px").Groups[1].Value, CultureInfo.InvariantCulture);
+                    double width = CommsBand.WidthOf(w.Text, px);
+                    double left = w.Align == TextAlign.Center ? w.X - (width / 2) : w.Align == TextAlign.Right ? w.X - width : w.X;
+                    if (Meet(plate, ((float)left, (float)(w.Y - MarkBand.AscentOf(px)), (float)width, (float)(MarkBand.AscentOf(px) + MarkBand.DescentOf(px)))))
+                    {
+                        underneath++; offenders.Add($"{w.Text}@{w.X:0},{w.Y:0} {w.Font}");
+                    }
+                }
+            }
+        }
+        Assert.True(drawn > 100, $"premise: the sweep drew only {drawn} labels");
+        Assert.True(underneath == 0, string.Join(" | ", offenders.Distinct()));
+    }
+
+    /// <summary>#1466 item 3 · THE ASHORE NERVE BLOCK CLEARS A WRAPPED TAB BAR. At 390x700 the three-row desk bar's
+    /// bottom is y 117 while the compact block's plate began at y 92, so "NERVE" (y 95-110) was under the bar.</summary>
+    [Theory]
+    [InlineData(0.0)]
+    [InlineData(117.0)]
+    public void TheCompactNerveBlockStartsBelowTheMasthead(double mastheadBottom)
+    {
+        DeckPlan ship = Scenes.Build("ship");
+        var state = new DeckView.State(ship.SpawnX, ship.SpawnY, 0.9, 0, 0,
+            ShuttleAway: false, ElectricUniverse: false,
+            Nerve: 58, NerveReadout: "FRAYED", ShowNerve: true, NerveCompact: true, HitsTaken: 0);
+        var pen = new Pen();
+        new DeckView(pen) { MastheadBottom = () => mastheadBottom }.Draw(ship, PhoneW, PhoneH, simTime: 0.0, in state);
+        var label = Assert.Single(pen.Words, w => w.Text == "NERVE");
+        var plate = pen.Fills.Where(f => f.Ink == new RgbaColor(6, 11, 10, 205) && f.X < 40 && f.W > 100 && f.W < 200).OrderBy(f => f.Y).First();
+        Assert.True(plate.Y >= mastheadBottom - 0.01,
+            $"#1466 · the nerve plate begins at y {plate.Y:0.#}, under the masthead that ends at y {mastheadBottom:0.#}");
+        Assert.True(label.Y - 9 >= mastheadBottom, $"the NERVE label (baseline y {label.Y:0.#}) rides under the masthead ({mastheadBottom:0.#})");
+        if (mastheadBottom == 0.0)
+        {
+            Assert.InRange(plate.Y, 89.9, 94.1);   // a desktop's gauge stays exactly where it was
+        }
     }
 }

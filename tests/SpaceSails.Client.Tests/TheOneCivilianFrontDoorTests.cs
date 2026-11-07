@@ -416,6 +416,7 @@ public sealed class TheOneCivilianFrontDoorTests
         var keys = new HashSet<string>(StringComparer.Ordinal)
         {
             AutoWalk.QueryFlag, StoryBeats.HoldQueryFlag, "perf",
+            "stall",   // #1466 · the forced stall banner, read off the live address (Map.Deck.Stall.TheBannerIsForced)
         };
 
         foreach (string file in Directory.EnumerateFiles(pages, "Map.Sim.World.Query*.cs"))

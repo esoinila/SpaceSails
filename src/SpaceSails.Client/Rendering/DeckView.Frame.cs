@@ -34,6 +34,9 @@ public sealed partial class DeckView
         float scale = place.Scale, ox = place.Ox, oy = place.Oy;
         (_viewW, _viewH) = (widthPx, heightPx);
 
+        // #1466 · THE BAND IS LAID OUT FIRST, so every world label drawn below can step aside for its plate.
+        LayOutTheBand(in state, surface, widthPx);
+
         // #870 lane 7b · THE PROJECTION, WRITTEN DOWN ONCE AND HANDED ROUND. Every pass below is given
         // this rather than a scale and an origin to multiply out for itself: the arithmetic that says
         // where a deck unit lands on the glass exists in exactly one place on this page, and it is the
@@ -148,6 +151,7 @@ public sealed partial class DeckView
         _perf?.Mark("CountDownTheOverload");
         DrawTheConsoles(plan, in state, project, darkState);
         _perf?.Mark("DrawTheConsoles");
+        _yield.Disarm();    // #1466 · the band itself (DrawTheInstruments) and the captain are not world labels
         DrawTheCaptain(in state, surface, widthPx, heightPx, scale, project);
         _perf?.Mark("DrawTheCaptain");
         DrawTheInstruments(in state, surface, simTime, widthPx, heightPx);
