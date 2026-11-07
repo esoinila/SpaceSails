@@ -30,6 +30,7 @@ public partial class ShuttleBayCard
     // when it lived in the page. A parameter that needs saying more than that says it on its own line.
 
     [Parameter] public List<ShuttleFarStop> _shuttleBayFarStops { get; set; } = default!;
+    [Parameter] public Func<string, double, string?> GigRockWindowRow { get; set; } = default!;
     [Parameter] public Func<string, double?> AwayReopenSeconds { get; set; } = default!;
     [Parameter] public Func<AwayWindow, string> AwayWindowWord { get; set; } = default!;
     [Parameter] public Action<NpcState> Board { get; set; } = default!;

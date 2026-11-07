@@ -26,6 +26,8 @@ public static partial class HullShudder
             Setting.Ship => ShipLines,
             Setting.Regolith => RegolithLines,
             Setting.Pressurised => PressurisedLines,
+            Setting.DeadHull => DeadHullLines,
+            Setting.HeadOfficeVacuum => HeadOfficeVacuumLines,
             _ => DeepSiteLines,
         };
 
@@ -79,8 +81,14 @@ public static partial class HullShudder
     /// <see cref="UndergroundComplex.HoldsPressure"/> of the floor underfoot: on ground that breathes the
     /// chill has air to arrive through, and naming a hull there is the bug this parameter exists to make
     /// impossible.</summary>
-    public static System.Collections.Generic.IReadOnlyList<string> ChillLinesFor(bool groundHoldsPressure) =>
-        groundHoldsPressure ? PressurisedChillLines : ChillLines;
+    public static System.Collections.Generic.IReadOnlyList<string> ChillLinesFor(Setting setting) =>
+        setting switch
+        {
+            Setting.Pressurised => PressurisedChillLines,
+            Setting.Regolith => RegolithChillLines,
+            Setting.DeadHull => DeadHullChillLines,
+            _ => ChillLines,
+        };
 
     // ── Line selection. ───────────────────────────────────────────────────────────────────────────────
 
@@ -106,9 +114,9 @@ public static partial class HullShudder
     /// <para>#867 · …and from the pool the GROUND earns. Both pools are drawn with the same salt, so a
     /// captain who rides the lift up mid-arc gets the same ordinal of a different register rather than a
     /// second stream that has to be kept in step.</para></summary>
-    public static string ChillLine(bool groundHoldsPressure, ulong seed, int shudderIndex)
+    public static string ChillLine(Setting setting, ulong seed, int shudderIndex)
     {
-        System.Collections.Generic.IReadOnlyList<string> pool = ChillLinesFor(groundHoldsPressure);
+        System.Collections.Generic.IReadOnlyList<string> pool = ChillLinesFor(setting);
         return pool[Index(seed, $"shudder-chill-line:{shudderIndex}", pool.Count)];
     }
 
@@ -117,8 +125,19 @@ public static partial class HullShudder
     /// to type this string itself, one call site away from the pool that is chosen here — the same
     /// arrangement this project keeps paying for, two places that must agree and only one getting changed.
     /// The sentence lives beside the pool it belongs to, and the client passes the fact.</summary>
-    public static string ChillNerveLabel(bool groundHoldsPressure) =>
-        groundHoldsPressure ? PressurisedChillNerveLabel : VacuumChillNerveLabel;
+    public static string ChillNerveLabel(Setting setting) => setting switch
+    {
+        Setting.Pressurised => PressurisedChillNerveLabel,
+        Setting.Regolith => RegolithChillNerveLabel,
+        Setting.HeadOfficeVacuum => HeadOfficeChillNerveLabel,
+        _ => VacuumChillNerveLabel,
+    };
+
+    /// <summary>R1-F40 · The chill's ledger line on open regolith: there is no hull to breathe through.</summary>
+    public const string RegolithChillNerveLabel = "a cold that came up through the ground";
+
+    /// <summary>R1-F13 · The chill's ledger line on an airless floor of the head office.</summary>
+    public const string HeadOfficeChillNerveLabel = "a cold the lamps do nothing about";
 
     /// <summary>The chill's ledger line out in vacuum — a hull, and cold on the other side of it. Unchanged
     /// since #480 and pinned byte for byte: #867 forked the sentence, it did not edit this one.</summary>

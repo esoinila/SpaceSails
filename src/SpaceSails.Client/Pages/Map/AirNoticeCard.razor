@@ -34,14 +34,14 @@
         <div class="convergence-backdrop" @onclick="() => Dismiss(CloseAirCard)">
             <OverlayShell class="convergence-card ground-grows-card" StopClicks="true"
                           Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="btn btn-light convergence-close" DismissFace="@AirCard.Dismiss"
+                          DismissClass="btn btn-light convergence-close" DismissFace="@AirCardFace.Dismiss"
                           OnClose="() => Dismiss(CloseAirCard)">
                 <div class="convergence-stamp">@AirCard.Stamp</div>
-                <img class="ground-grows-art" src="@AirCard.ArtFile" alt=""
+                <img class="ground-grows-art" src="@AirCardFace.ArtFile" alt=""
                      onerror="this.style.display='none'" />
-                <div class="convergence-head">@AirCard.Head</div>
+                <div class="convergence-head">@AirCardFace.Head</div>
                 <ul class="ground-grows-beats">
-                    @foreach (string beat in AirCard.Beats)
+                    @foreach (string beat in AirCardFace.Beats)
                     {
                         <li>@beat</li>
                     }

@@ -46,6 +46,11 @@
                         @* #653: the station's board blurb is canon, verbatim, and nothing else rides the slot. *@
                         <text>@SpaceSails.Core.StationAboard.BoardBlurb</text>
                     }
+                    else if (GigRockBlurb is { } gigRockBlurb)
+                    {
+                        @* U03-F07: the gig rock is a job site - what it is, what the job is, and that there is nothing to bury or buy. *@
+                        <text></text>
+                    }
                     else if (BoardingAWreck)
                     {
                         <text>
@@ -92,7 +97,7 @@
                 }
                 @* You do not bury a chest on a wreck, and you do not probe her deck plating for shallow
                    treasure. The coin dial and the hold row are regolith gear; aboard, they are noise. *@
-                @if (!BoardingAWreck)
+                @if (!BoardingAWreck && GigRockBlurb is null)
                 {
                 <div class="bury-row">
                     <span>Coin in the chest (optional)</span>
