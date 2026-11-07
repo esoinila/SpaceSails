@@ -71,6 +71,15 @@ internal static partial class RendererInterop
     [JSImport("serveTheShortestTimersOnATick", ModuleName)]
     private static partial bool TheShortestTimersOnATick(bool on);
 
+    /// <summary>#1466 · The bottom of the desk tab bar over the canvas, in canvas pixels (0 off a phone, off a browser,
+    /// or before the module is in). The canvas HUD's top-left column starts below it.</summary>
+    internal static double MastheadBottom() =>
+        OperatingSystem.IsBrowser() && ModuleIsLoaded ? TheMastheadBottom() : 0.0;
+
+    /// <inheritdoc cref="MastheadBottom"/>
+    [JSImport("mastheadBottomPx", ModuleName)]
+    private static partial double TheMastheadBottom();
+
     [JSImport("initCanvas", ModuleName)]
     internal static partial void InitCanvas(string canvasId, bool observeResize);
 

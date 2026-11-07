@@ -299,6 +299,23 @@ let rationedSetTimeout = null;  // the browser's own, while ours stands in for i
 let rationedClearTimeout = null; // the browser's own, while our cancel wrapper stands (it outlives the swap until the ticks drain)
 let nextTickTimerId = 1;
 
+/** #1466 · THE MASTHEAD'S REAL BOTTOM, in canvas pixels, for the canvas HUD to start under. On a phone (<= 600 px)
+ *  the desk tab bar wraps to up to three rows over the top of the (full-bleed) canvas, and the deck's nerve block
+ *  is drawn at a fixed y, so its NERVE label sat under the bar. This is the same number keepTheMapControlsBelowTheTabBar
+ *  publishes as --map-control-top (the bar's bottom, plus the 4 px of air), read for the canvas. 0 when the bar is
+ *  absent or the glass is not a phone, so a desktop is never moved. */
+export function mastheadBottomPx() {
+    if (typeof document === 'undefined' || !window.matchMedia || !window.matchMedia('(max-width: 600px)').matches) {
+        return 0;
+    }
+    const page = document.querySelector('.map-page');
+    const bar = page ? page.querySelector('.desk-tab-bar') : null;
+    if (!page || !bar || !bar.isConnected) {
+        return 0;
+    }
+    return Math.max(0, bar.getBoundingClientRect().bottom - page.getBoundingClientRect().top + 4);
+}
+
 /** Is the document hidden — this tab behind another, the window minimised or occluded, the machine
  *  locked? Read ONLY by the boot's hand-back, to decide whether its timers are being rationed. It
  *  decides nothing whatever about the world that gets built: #1244's law, held by

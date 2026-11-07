@@ -132,6 +132,7 @@ public sealed partial class DeckView
         _yield.Disarm();
         if (oRows.Length + sRows.Length == 0)
         {
+            SeatTheNerveBlockUnderTheMasthead(in state);
             return;
         }
 
@@ -154,7 +155,36 @@ public sealed partial class DeckView
                 _nerveShift = Math.Max(0.0, plannedBottom + BandAirPx - HudColumn.Surface.PlateTop);
             }
         }
+
+        SeatTheNerveBlockUnderTheMasthead(in state);
     }
+
+    /// <summary>#1466 item 3 · On a phone the wrapped desk tab bar lies over the top of the canvas, and the ashore
+    /// (compact) nerve block's plate begins at y 92 - under a three-row bar whose bottom is y 117. The block is seated
+    /// no higher than the bar's real bottom (the same number the page publishes as <c>--map-control-top</c>), read off
+    /// the page at most twice a second; zero off a phone, so a desktop's gauge stays where it was.</summary>
+    private void SeatTheNerveBlockUnderTheMasthead(in State state)
+    {
+        if (!state.ShowNerve)
+        {
+            return;
+        }
+        long now = Environment.TickCount64;
+        if (now - _mastheadSampledAtMs >= 500)
+        {
+            _mastheadSampledAtMs = now;
+            _mastheadBottomPx = MastheadBottom();
+        }
+        double plateTop = HudColumn.For(state.NerveCompact).PlateTop;
+        _nerveShift = Math.Max(_nerveShift, (_mastheadBottomPx > 0 ? Math.Max(0.0, _mastheadBottomPx + 2.0 - plateTop) : 0.0));
+    }
+
+    private long _mastheadSampledAtMs = long.MinValue / 2;
+    private double _mastheadBottomPx;
+
+    /// <summary>#1466 · Where the page's masthead ends, in canvas pixels. The browser reads the live tab bar; a
+    /// bench sets it to the number it wants to prove the seating against.</summary>
+    internal Func<double> MastheadBottom { get; set; } = RendererInterop.MastheadBottom;
 
     /// <summary>#870 lane 7b · The corner and edge chrome, which is not the world and never was: #313's
     /// motion fan, #317/#330's nerve gauge and its ledger, #327's orbit line, #825's stall banner on its

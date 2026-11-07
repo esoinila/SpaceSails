@@ -193,4 +193,28 @@ public sealed class TheDrillHudFitsAPhoneGlassTests
         Assert.True(drawn > 100, $"premise: the sweep drew only {drawn} labels");
         Assert.True(underneath == 0, string.Join(" | ", offenders.Distinct()));
     }
+
+    /// <summary>#1466 item 3 · THE ASHORE NERVE BLOCK CLEARS A WRAPPED TAB BAR. At 390x700 the three-row desk bar's
+    /// bottom is y 117 while the compact block's plate began at y 92, so "NERVE" (y 95-110) was under the bar.</summary>
+    [Theory]
+    [InlineData(0.0)]
+    [InlineData(117.0)]
+    public void TheCompactNerveBlockStartsBelowTheMasthead(double mastheadBottom)
+    {
+        DeckPlan ship = Scenes.Build("ship");
+        var state = new DeckView.State(ship.SpawnX, ship.SpawnY, 0.9, 0, 0,
+            ShuttleAway: false, ElectricUniverse: false,
+            Nerve: 58, NerveReadout: "FRAYED", ShowNerve: true, NerveCompact: true, HitsTaken: 0);
+        var pen = new Pen();
+        new DeckView(pen) { MastheadBottom = () => mastheadBottom }.Draw(ship, PhoneW, PhoneH, simTime: 0.0, in state);
+        var label = Assert.Single(pen.Words, w => w.Text == "NERVE");
+        var plate = pen.Fills.Where(f => f.Ink == new RgbaColor(6, 11, 10, 205) && f.X < 40 && f.W > 100 && f.W < 200).OrderBy(f => f.Y).First();
+        Assert.True(plate.Y >= mastheadBottom - 0.01,
+            $"#1466 · the nerve plate begins at y {plate.Y:0.#}, under the masthead that ends at y {mastheadBottom:0.#}");
+        Assert.True(label.Y - 9 >= mastheadBottom, $"the NERVE label (baseline y {label.Y:0.#}) rides under the masthead ({mastheadBottom:0.#})");
+        if (mastheadBottom == 0.0)
+        {
+            Assert.InRange(plate.Y, 89.9, 94.1);   // a desktop's gauge stays exactly where it was
+        }
+    }
 }
