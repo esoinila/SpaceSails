@@ -46,7 +46,9 @@ public sealed class TheToastAndThePromptHoldTheirBandTests
             Words.Add((x, y, text, font, align, c.A));
     }
 
-    private static Pen Draw(DeckPlan plan, double dx, double dy, string? toast, bool low, string? prompt)
+    private const string BandLine = "⚓ docked — the station holds the ship, no fuel spent on keeping";
+
+    private static Pen Draw(DeckPlan plan, double dx, double dy, string? toast, bool low, string? prompt, string? band = null)
     {
         var state = new DeckView.State(plan.SpawnX + dx, plan.SpawnY + dy, 0.9, 0, 0,
             ShuttleAway: false, ElectricUniverse: false,
@@ -56,7 +58,7 @@ public sealed class TheToastAndThePromptHoldTheirBandTests
             DigProgress: -1, HasDroppedChest: false, DropX: 0, DropY: 0,
             Blips: [], Cadence: 2, Readout: "quiet",
             CacheMarks: [], Nerve: 58, NerveReadout: "FRAYED", Instruments: true,
-            StandingPrompt: prompt);
+            StandingPrompt: prompt, OrbitComms: band, OrbitSeverity: 0);
         var pen = new Pen();
         new DeckView(pen).Draw(plan, W, H, simTime: 0.0, in state, surface: hud);
         return pen;
@@ -72,7 +74,8 @@ public sealed class TheToastAndThePromptHoldTheirBandTests
 
     /// <summary>Sweeps the captain over the surface; returns the full-alpha words touching the plate and how many dimmed ones did.</summary>
     private static (List<string> Bare, int Dimmed) Sweep(
-        (double X, double Y, double W, double H) plate, string? toast, bool low, string? prompt, Func<string, bool> ownWords)
+        (double X, double Y, double W, double H) plate, string? toast, bool low, string? prompt, Func<string, bool> ownWords,
+        string? band = null)
     {
         DeckPlan ground = Scenes.Build("surface:miranda:0");
         var bare = new List<string>();
@@ -81,7 +84,7 @@ public sealed class TheToastAndThePromptHoldTheirBandTests
         {
             for (double dx = -24; dx <= 24; dx += 4.0)
             {
-                Pen pen = Draw(ground, dx, dy, toast, low, prompt);
+                Pen pen = Draw(ground, dx, dy, toast, low, prompt, band);
                 foreach (var w in pen.Words)
                 {
                     if (ownWords(w.Text))
@@ -132,6 +135,36 @@ public sealed class TheToastAndThePromptHoldTheirBandTests
             t => t == Prompt || t.Contains("WASD", StringComparison.Ordinal));
         Assert.True(dimmed + bare.Count > 0, "premise: nothing sits under the prompt at any captain position");
         Assert.True(bare.Count == 0, "R1-F76 · full-alpha world words under the standing prompt: " + string.Join(" | ", new HashSet<string>(bare)));
+    }
+
+    /// <summary>WITH THE COMMS BAND UP TOO. The band's plate and the toast / prompt are all reserved together: a band that
+    /// re-armed (replacing the other plates) instead of reserving would leave the toast's words bare.</summary>
+    [Fact]
+    public void TheCommsBandDoesNotUnreserveTheToastOrThePrompt()
+    {
+        var toastPlate = PulseToastPlate.Of(Toast, low: false, W, H);
+        (List<string> bareT, int dimT) = Sweep(toastPlate, Toast, low: false, prompt: null, t => NotWorld(t) || t == BandLine, BandLine);
+        Assert.True(dimT > 20, "premise: words sit under the toast");
+        Assert.True(bareT.Count == 0, "with the band up, bare under the toast: " + string.Join(" | ", new HashSet<string>(bareT)));
+
+        const double px = 14.0;
+        double pw = CommsBand.WidthOf(Prompt, px);
+        var promptPlate = ((W - pw) / 2.0, H - 30.0 - MarkBand.AscentOf(px), pw, MarkBand.AscentOf(px) + MarkBand.DescentOf(px));
+        (List<string> bareP, int dimP) = Sweep(promptPlate, toast: null, low: false, Prompt,
+            t => t == Prompt || t == BandLine || t.Contains("WASD", StringComparison.Ordinal), BandLine);
+        Assert.True(dimP > 0, "premise: words sit under the prompt");
+        Assert.True(bareP.Count == 0, "with the band up, bare under the prompt: " + string.Join(" | ", new HashSet<string>(bareP)));
+    }
+
+    /// <summary>The LOW toast is nowrap, so its box grows to min(40rem, 90vw), not to half the glass.</summary>
+    [Fact]
+    public void TheLowToastGrowsToTheCssMaxWidthNotHalfTheGlass()
+    {
+        (double x, double _, double w, double _) = PulseToastPlate.Of(Toast, low: true, 1024, 700);
+        Assert.True(w >= 640 - 0.5, $"a long nowrap line on 1024 wide is a 640 px box, estimated {w:0}");
+        Assert.True(x <= 192 + 0.5, $"left edge {x:0} must reach 192");
+        (double _, double _, double w2, double _) = PulseToastPlate.Of(Toast, low: true, 390, 700);
+        Assert.True(w2 >= 351 - 0.5, $"on a 390 glass the cap is 90vw = 351, estimated {w2:0}");
     }
 
     /// <summary>The estimate covers the box the live site really drew (getBoundingClientRect on the deployed page,

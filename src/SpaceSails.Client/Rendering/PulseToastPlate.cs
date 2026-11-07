@@ -15,6 +15,14 @@ internal static class PulseToastPlate
 {
     private const double Rem = 16.0, LinePx = 16.0, LineStep = 24.0, PadX = 16.0, PadY = 8.0, Border = 2.0;
 
+    /// <summary>The ONE test of whether the toast has dropped to the foot of the glass: a card is open. The razor
+    /// (AshoreCardRack, the class on the div) and the canvas state (Map.Sim.Tick.Views) both ask this, so the box the
+    /// pen reserves and the box the browser draws cannot disagree.</summary>
+    internal static bool IsLow(object? pendingOffer, object? patronDrink, object? bankSession, object? barMenu,
+        bool oracleOpen, object? oracleLine, object? shuttleBayStops) =>
+        pendingOffer is not null || patronDrink is not null || bankSession is not null || barMenu is not null
+        || (oracleOpen && oracleLine is not null) || shuttleBayStops is not null;
+
     /// <summary>The toast's rectangle (x, y, w, h) on a glass of this size, for this line.</summary>
     internal static (double X, double Y, double W, double H) Of(string text, bool low, double glassW, double glassH)
     {
@@ -24,11 +32,12 @@ internal static class PulseToastPlate
         double textW = CommsBand.WidthOf(text, LinePx) * (0.55 / CommsBand.GlyphWidthRatio);   // bold sans, not monospace
         if (low)
         {
-            double lw = Math.Min(maxW, textW + (2 * PadX) + Border);
+            // nowrap: the box grows to the CSS max-width (min(40rem, 90vw)), not to the half-glass a wrapping box shrinks into.
+            double lw = Math.Min(Math.Min(40.0 * Rem, 0.9 * glassW), textW + (2 * PadX) + Border);
             double lh = LineStep + (2 * 0.2 * Rem) + Border;
             return ((glassW - lw) / 2.0, glassH - lh, lw, lh);
         }
-        int lines = Math.Max(1, (int)Math.Ceiling(textW / (inner * 0.95)));
+        int lines = Math.Max(1, (int)Math.Ceiling(textW / (inner * 0.9)));
         double w = lines == 1 ? Math.Min(maxW, textW + (2 * PadX) + Border) : maxW;
         double h = (lines * LineStep) + (2 * PadY) + Border;
         return ((glassW - w) / 2.0, 6.0 * Rem, w, h);
