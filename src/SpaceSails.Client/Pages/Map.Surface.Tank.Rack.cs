@@ -239,6 +239,13 @@ public partial class Map
                 ? SurfaceShelter.PumpingLine
                 : SurfaceShelter.TrickleLine;
 
+    /// <summary>R1-F69 · What the tank-is-low card paints: the surface's words, or - on a dead floor of a building -
+    /// the underground face that names the nearest air (the same sum the DEAD AIR card does).</summary>
+    private AirCard.Face AirCardFace =>
+        _surface is { Floor: < 0 } below && UndergroundComplex.NearestAir(below.Stop.Body.Id, below.Floor) is var (name, up)
+            ? AirCard.For(true, name, up)
+            : AirCard.For(false);
+
     /// <summary>#573 · Raise the tank-is-low card, once per captain ever. Returns true when it went up, so
     /// the caller keeps its pulse line for every later trip.</summary>
     private bool ShowAirCardOnce()

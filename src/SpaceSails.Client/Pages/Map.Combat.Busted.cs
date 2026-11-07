@@ -106,6 +106,10 @@ public partial class Map
     // collector here (the planet collected), no heat, no dice: straight to the freeze. Say-the-state:
     // the ledger logs it, the strip shouts it, the parrot squawks. Docked ships and havens on rails
     // can't reach here — the caller exempts the dock and SurfaceImpact skips zero-radius havens.
+    /// <summary>R1-F23 · Is this body a station or a haven with a deck — somewhere an impact is hull on hull?</summary>
+    private static bool IsAStationBody(string? bodyId) =>
+        bodyId is not null && (SiteRoute.IsStation(bodyId) || HavenInterior.HasInterior(bodyId));
+
     private void TriggerImpact(SurfaceImpact.Crossing hit)
     {
         if (_busted is not null)
@@ -133,10 +137,14 @@ public partial class Map
             Phase = BustedEncounter.Stage.Impact,
             ImpactBodyName = hit.BodyName,
             Cause = DeathCause.Impact,      // #380: the surface collected the ship — a place-dependent death
+            ImpactIntoStation = IsAStationBody(hit.BodyId),   // R1-F23: hull on hull, not ground
             DeathBodyName = hit.BodyName,
         };
 
-        string line = $"💥 IMPACT — the ship struck {hit.BodyName}. Periapsis went under the surface, and the surface won.";
+        // R1-F23 · A station has no surface to win: the same strike into a haven's plating reads hull on hull.
+        string line = IsAStationBody(hit.BodyId)
+            ? $"💥 IMPACT — the ship struck {hit.BodyName}. Hull on hull: the berth you were meant to slow for."
+            : $"💥 IMPACT — the ship struck {hit.BodyName}. Periapsis went under the surface, and the surface won.";
         LogAutopilotEvent(line);
         ShowPulseMessage(line);
         _shipAlerts.Raise(AlertKind.Collision, AlertSeverity.Red, $"IMPACT — struck {hit.BodyName}", SimTime);
@@ -352,6 +360,12 @@ public partial class Map
                 {
                     ShowPulseMessage("🧪 DEV ?death=impact: no body charted yet to fly into.");
                     return;
+                }
+                // R1-F23 · A station is not a world to fly under: at a station the cheat flies into its HOST world
+                // (the parent body), so the card names Earth at ?start=earth and not the station.
+                if (IsAStationBody(rock.Id) && BodyById(rock.ParentId) is { } host)
+                {
+                    rock = host;
                 }
                 TriggerImpact(new SurfaceImpact.Crossing(rock.Id, rock.Name, 1.0, SimTime, _ship.Position));
                 return;

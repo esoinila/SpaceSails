@@ -46,6 +46,11 @@
                         @* #653: the station's board blurb is canon, verbatim, and nothing else rides the slot. *@
                         <text>@SpaceSails.Core.StationAboard.BoardBlurb</text>
                     }
+                    else if (GigRockBlurb is { } gigRockBlurb)
+                    {
+                        @* U03-F07: the gig rock is a job site - what it is, what the job is, and that there is nothing to bury or buy. *@
+                        <text>@gigRockBlurb</text>
+                    }
                     else if (BoardingAWreck)
                     {
                         <text>
@@ -92,7 +97,7 @@
                 }
                 @* You do not bury a chest on a wreck, and you do not probe her deck plating for shallow
                    treasure. The coin dial and the hold row are regolith gear; aboard, they are noise. *@
-                @if (!BoardingAWreck)
+                @if (!BoardingAWreck && GigRockBlurb is null)
                 {
                 <div class="bury-row">
                     <span>Coin in the chest (optional)</span>
@@ -172,7 +177,7 @@
                    GEN-AI GEAR ART (#348, Grok-generated art/gear-beachcomber-kit.jpg): the kit
                    illustration rides beside this line as a small capped thumbnail — object-fit cover, a
                    modest max-height so the dialog stays compact and the Board button never leaves screen. *@
-                @if (!BoardingAWreck)
+                @if (!BoardingAWreck && GigRockBlurb is null)
                 {
                     <div class="bury-row bury-gear">
                         <img class="gear-thumb" src="art/gear-beachcomber-kit.jpg" alt="" aria-hidden="true" />

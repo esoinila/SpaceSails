@@ -63,7 +63,7 @@
                          _coastSkipActive="@_coastSkipActive" _coastSkipDays="@_coastSkipDays"
                          _coastSkipLabel="@_coastSkipLabel" _deckMode="@_deckMode" _jumpActive="@_jumpActive"
                          _jumpDestName="@_jumpDestName" _jumpFlavor="@_jumpFlavor"
-                         _jumpTotalYears="@_jumpTotalYears" _jumpYear="@_jumpYear"
+                         _jumpTotalYears="@_jumpTotalYears" _jumpYear="@_jumpYear" _jumpInDays="@_jumpInDays"
                          _voidCardTuckedSet="@(v => _voidCardTucked = v)" _voidCardTuckedValue="@_voidCardTucked"
                          _worldReady="@_worldReady" ArrivalBrakeAskText="@ArrivalBrakeAskText"
                          BrakeIsAerobrake="@BrakeIsAerobrake" DeclineArrivalBrake="@DeclineArrivalBrake"
@@ -231,7 +231,7 @@
                       ThePaperInYourHandIs="@ThePaperInYourHandIs" TheWalletFan="@TheWalletFan"
                       WalletFanIsUp="@WalletFanIsUp" />
 
-    <AshoreCardRack _bankSession="@_bankSession" _barMenu="@_barMenu" _barNotice="@_barNotice"
+    <AshoreCardRack GigRockWindowRow="@GigRockWindowRow" _bankSession="@_bankSession" _barMenu="@_barMenu" _barNotice="@_barNotice"
                     _contacts="@_contacts" _credits="@_credits" _deckMode="@_deckMode" _heat="@_heat"
                     _oracleDrinks="@_oracleDrinks" _oracleLine="@_oracleLine" _oracleNotice="@_oracleNotice"
                     _oracleOpen="@_oracleOpen" _patronDrink="@_patronDrink" _patronDrinkBlurb="@_patronDrinkBlurb"
@@ -269,7 +269,7 @@
                     TheSpecialOnTheBoard="@TheSpecialOnTheBoard"
                     ToggleBarMenu="@ToggleBarMenu" WhoIsInTonight="@WhoIsInTonight" WindowOn="@WindowOn" />
 
-    <ExpeditionCardRack _boardBots="@_boardBots" _boardCoin="@_boardCoin"
+    <ExpeditionCardRack GigRockBlurb="@GigRockBlurb" _boardBots="@_boardBots" _boardCoin="@_boardCoin"
                         _boardEmptyConfirmSet="@(v => _boardEmptyConfirm = v)"
                         _boardEmptyConfirmValue="@_boardEmptyConfirm" _boardSiteIndex="@_boardSiteIndex"
                         _boardSites="@_boardSites" _boardTarget="@_boardTarget" _cargoUnits="@_cargoUnits"
@@ -641,7 +641,7 @@
         <SpaceSails.Client.Pages.Stations.DeskChips Chips="BuildDeskChips()" OnSelect="SwitchDeskFromClick" />
     }
 
-    <AftermathCardRack _airCardOpen="@_airCardOpen" _busted="@_busted" _celebration="@_celebration"
+    <AftermathCardRack _airCardOpen="@_airCardOpen" AirCardFace="@AirCardFace" _busted="@_busted" _celebration="@_celebration"
                        _convergenceRevealOpen="@_convergenceRevealOpen" _credits="@_credits"
                        _faceScene="@_faceScene" _faceSceneReply="@_faceSceneReply"
                        _groundGrewOpen="@_groundGrewOpen" _groundGrewWhere="@_groundGrewWhere"

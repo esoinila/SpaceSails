@@ -120,6 +120,10 @@ public static partial class UndergroundComplex
         "🛗 The car takes a moment to decide you are allowed, and then it drops. It keeps dropping. Whatever " +
         "this was, nobody dug it in an afternoon and nobody paid for it out of pocket.";
 
+    /// <summary>R1-F13 · What the lift says as it starts down in the head office.</summary>
+    public const string HeadOfficeDescendingLine =
+        "🛗 The car does not decide anything about you. The doors close and it drops, and it keeps dropping, at the pace of a building that has never once been asked to wait. Nobody dug this in an afternoon, and whoever paid for it did not notice the cost.";
+
     /// <summary>#592 · Said ONCE, on stepping out onto the first floor the building never admitted to.
     ///
     /// <para>The whole beat of the feature, and the hardest place in the game to hold the canon line. It may
@@ -255,7 +259,7 @@ public static partial class UndergroundComplex
 
         if (!memory.WasUnderground)
         {
-            said.Add(new(ArrivalBeat.Descending, DescendingLine, "\U0001F6C3", PulseRank.Beat));
+            said.Add(new(ArrivalBeat.Descending, IsHeadOffice(bodyId) ? HeadOfficeDescendingLine : DescendingLine, "\U0001F6C3", PulseRank.Beat));
         }
 
         // #592 · THE FLOOR THAT IS NOT ON THE PLAN, and the reason this function exists. It says the operation
@@ -282,14 +286,14 @@ public static partial class UndergroundComplex
             {
                 // #609 · The first one is a BEAT and it comes with a card: depth is priced in air, and the
                 // owner suffocated on B2 finding that out from a toast that had already faded.
-                said.Add(new(ArrivalBeat.DeadAirFirst, DeadAirLine, "🫁", PulseRank.Beat));
+                said.Add(new(ArrivalBeat.DeadAirFirst, IsHeadOffice(bodyId) ? HeadOfficeDeadAirLine : DeadAirLine, "🫁", PulseRank.Beat));
             }
             else
             {
                 // …and every one after it is the weather. Status, which is what it has always been and what
                 // it was never allowed to stand on top of.
                 said.Add(new(
-                    ArrivalBeat.Air, pressurised ? PressurisedLine : DeadAirLine, "🫁",
+                    ArrivalBeat.Air, pressurised ? PressurisedLine : IsHeadOffice(bodyId) ? HeadOfficeDeadAirLine : DeadAirLine, "🫁",
                     PulseRank.Status));
             }
         }

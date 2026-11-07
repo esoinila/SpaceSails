@@ -1436,7 +1436,7 @@ patron like any other haul. Then the **cycler window** — a real grid over sim 
 | `/map?kaamos=hq&land=1&floor=23` | Straight to **B23 · THE WINTERING HALL** — the card, and the biggest nerve throw in the game (40 of 100). |
 | `/map?kaamos=hq&land=1&floor=24` | **B24 · THE BERTH OFFICE** — the console that has never stopped filing. |
 | `/map?kaamos=hq&land=1&floor=12&nerve=10` | **B12 · THE STANDING ORDER** — search the first room off the nearest rib for the one sheet worth carrying out. |
-| `/map?kaamos=all&ashore=1` | The other end: the berth-code resolves at the bar seam, the ❄❄ notice fires, 📰 **THE STORY BREAKS** raises the arc-news card, and a housekeeping line lands on the wire. |
+| `/map?kaamos=4&ashore=1` | The other end: press the barkeep's **❄ Put the KAAMOS pieces together** — the berth-code resolves at the bar seam, the ❄❄ notice fires, 📰 **THE STORY BREAKS** raises the arc-news card, and a housekeeping line lands on the wire. (`?kaamos=all&ashore=1` is the end STATE, granted whole: no seam is left to press and no plate rises, only a dev pulse.) |
 | `/map?kaamos=hq&arrivalphase=2&land=1&floor=23` | **#742 · the arrival phase that used to drift into the moon.** `&arrivalphase=N` (0–23) winds the clock to phase N of Enceladus's 32.9 h orbit before the arc lets her go, so the one-in-24 placement is bootable on demand instead of waited for. |
 
 **#742 — the arrival phase nobody chose.** The window opens every 40 days and stands open for two, so *which*

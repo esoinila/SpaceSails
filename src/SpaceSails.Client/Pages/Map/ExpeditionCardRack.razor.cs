@@ -47,6 +47,7 @@ public partial class ExpeditionCardRack
     [Parameter] public int AvailableBots { get; set; }
     [Parameter] public Action<NpcState> Board { get; set; } = default!;
     [Parameter] public bool BoardingAWreck { get; set; }
+    [Parameter] public string? GigRockBlurb { get; set; }
     [Parameter] public Func<string> BoardingHoldQuote { get; set; } = default!;
     [Parameter] public Func<int> BoardingHoldSeverity { get; set; } = default!;
     [Parameter] public Func<string, string> BodyName { get; set; } = default!;

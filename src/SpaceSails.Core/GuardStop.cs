@@ -57,7 +57,7 @@ public static class GuardStop
     /// arrives, and that is a man explaining himself. This is the second thing he says, after a pause, with
     /// the palm still out — and a man who has done this a hundred times does not explain himself twice.</para>
     /// </summary>
-    public const string Opening = "Pass.";
+    public const string Opening = "\"Pass.\" Said once, to the palm, which has not moved.";
 
     /// <summary>Hand over whatever the approach put in your hand (#836's <c>WalletChoice</c>). The move the
     /// whole shipped feature used to be.</summary>

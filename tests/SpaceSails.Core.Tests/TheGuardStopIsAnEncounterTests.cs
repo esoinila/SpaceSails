@@ -71,7 +71,7 @@ public sealed class TheGuardStopIsAnEncounterTests
 
         Assert.Equal(Plate, scene.Counterpart);
         Assert.Equal("a checkpoint that walked up to you", scene.Setting);
-        Assert.Equal("Pass.", scene.Opening);
+        Assert.Equal("\"Pass.\" Said once, to the palm, which has not moved.", scene.Opening);
         Assert.Equal(4, scene.Moves.Count);
 
         Assert.Equal(

@@ -271,7 +271,7 @@
                                DeathNarration.Tail, which answers "" for an impact; the guard that pins the
                                law (OnlyACOLLECTORDeathTalksAboutTheFreezeFrame) tests Tail, and the markup
                                was quietly going round it. Both faults are one fix: read the seam. *@
-                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill, bust.DeathFloor)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
+                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill, bust.DeathFloor, bust.ImpactIntoStation)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
                             @* #997 wave 7 · THE OTHER DOOR ONTO THE SAVE SURFACE, ON THE SHELL'S OWN MECHANISM.
                                The card root has been the shell's since wave 3; this row was the last hand-rolled thing on it,
                                and #951 put it on all four death panels — which makes it the way out every player who dies
@@ -302,12 +302,12 @@
                             <div class="busted-freeze-art busted-death-art has-art" title="what happened — a place-dependent surface death">
                                 <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause, bust.Place)" alt="" aria-hidden="true" />
                             </div>
-                            <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause)</div>
+                            <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause, bust.ImpactIntoStation)</div>
                             @* #480 follow-up: the caption names the meter that actually ran out. It used to
                                hardcode the nerve line for everything but Joined — true while nerve was the
                                only thing that ever killed you, wrong now that the five blows decide. *@
                             <div class="busted-freeze-caption">@DeathNarration.SurfaceCaption(bust.Cause, bust.NerveRanOut)</div>
-                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill, bust.DeathFloor)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
+                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill, bust.DeathFloor, bust.ImpactIntoStation)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
                             @* #997 wave 7 · THE OTHER DOOR ONTO THE SAVE SURFACE, ON THE SHELL'S OWN MECHANISM.
                                The card root has been the shell's since wave 3; this row was the last hand-rolled thing on it,
                                and #951 put it on all four death panels — which makes it the way out every player who dies
@@ -378,8 +378,8 @@
                             <div class="busted-freeze-art busted-death-art has-art" title="what happened — a place-dependent death">
                                 <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause, bust.Place)" alt="" aria-hidden="true" />
                             </div>
-                            <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause)</div>
-                            <div class="busted-whathappened-line">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill, bust.DeathFloor)@DeathNarration.WakeTail(bust.Cause, bust.Place)</div>
+                            <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause, bust.ImpactIntoStation)</div>
+                            <div class="busted-whathappened-line">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill, bust.DeathFloor, bust.ImpactIntoStation)@DeathNarration.WakeTail(bust.Cause, bust.Place)</div>
                         </div>
                         @* The old hull erupting, one clean hero fireball — the brain-backup beat proper. *@
                         @if (!DeathNarration.WakeCardRepeatsTheFireball(bust.Cause, bust.Place))

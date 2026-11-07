@@ -77,7 +77,7 @@
 
     @if (_airCardOpen)
     {
-        <AirNoticeCard CloseAirCard="@CloseAirCard" Dismiss="@Dismiss" />
+        <AirNoticeCard AirCardFace="@AirCardFace" CloseAirCard="@CloseAirCard" Dismiss="@Dismiss" />
     }
 
     @if (_faceScene is { } faceGiver && OldCrew.ById(faceGiver[OldCrew.LedgerPrefix.Length..]) is { } faceWho)

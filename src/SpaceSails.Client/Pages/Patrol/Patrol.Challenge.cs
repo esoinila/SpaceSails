@@ -199,7 +199,7 @@ public sealed partial class Map
             }
 
             // U04-F12 (Fable ruling 2026-11-07) · THE ROUND NEVER STOPS ANYONE ON THE NO PASS REQUIRED FLOOR. No hail,
-            // no walk-up, no radio call: the sign on the wall says nobody is asked for a pass here.
+            // no walk-up, no stop (the provocation radio, SomebodySawThat, is another road and is not gated): the sign on the wall says nobody is asked for a pass here.
             if (_host.Surface is { } kind && UndergroundComplex.IsTheNoPassFloor(kind.Stop.Body.Id, kind.Floor))
             {
                 return;

@@ -177,6 +177,10 @@ public partial class Map
         _showScuttlePanel = false;
         _sweepers.Clear();
         _airSupplyNoted = null;
+        // #1440 · …and the endings that life wrote: an epitaph card for a ship that went (or was scuttled) in the life
+        // being left must not stand over the one arriving.
+        _scuttleEpitaph = null;
+        _shipEpitaph = null;
 
         _newsEvents.Clear();
         _hailAnswers.Clear();

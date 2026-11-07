@@ -116,6 +116,12 @@ public static partial class KaamosLore
         "A berth kept open is a berth someone expects a ship to fill. The name means the polar night. " +
         "Nobody at the Exchange will say whose.";
 
+    /// <summary>R1-F33 · What the plaque card SAYS when the plate is read: the lead-in alone, in the
+    /// captain's eye. The shard's own Lore (with <see cref="ListedBerthSaidBeside"/>) stays in the ledger.</summary>
+    public const string ListedBerthPlaqueCard =
+        "You stay at the plate past the point where people move on, and the last two lines stop reading like a dedication. " +
+        "Somebody wrote down a berth that is still waiting, on a plate meant to be glanced at, and nobody has taken the plate down.";
+
     public static readonly IReadOnlyList<KaamosFragment> Fragments =
     [
         // ── Intel shards — the mystery, gathered. Each is one existing system's piece. ──

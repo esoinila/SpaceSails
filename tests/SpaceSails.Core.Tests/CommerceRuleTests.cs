@@ -115,6 +115,35 @@ public class CommerceRuleTests
         Assert.Empty(CommerceRule.ContactsWithinShuttleRange(ephemeris, [], 0, deep));
     }
 
+    /// <summary>#1440 · ContactsAt lists everything keyed to a body (a depot rides its host at any distance), but
+    /// the reach predicate the Trade tile and the shuttle list share must refuse a partner beyond the corridor.</summary>
+    [Fact]
+    public void InShuttleReach_AgreesWithContactsWithinShuttleRange_ForADepotContactsAtListsFarAway()
+    {
+        var ephemeris = Sol();
+        Vector2d earth = ephemeris.Position("earth", 0);
+        var player = At(earth, Vector2d.Zero);
+        var far = At(earth + new Vector2d(3e10, 0), Vector2d.Zero);   // beyond ShuttleRangeMeters (1.2e10)
+        var near = At(earth + new Vector2d(2e9, 0), Vector2d.Zero);
+        CommerceRule.LocalShip[] ships =
+        [
+            new("depot-far", "FAR", far, "earth", "ore", 10),
+            new("depot-near", "NEAR", near, "earth", "ore", 10),
+        ];
+
+        var here = CommerceRule.ContactsAt(ephemeris, ships, 0, "earth");
+        Assert.Contains(here, c => c.Id == "depot-far");    // keyed to the body, so listed with no range check
+        var reach = CommerceRule.ContactsWithinShuttleRange(ephemeris, ships, 0, player);
+
+        foreach (CommerceRule.LocalContact c in here)
+        {
+            Assert.Equal(reach.Any(r => r.Id == c.Id),
+                CommerceRule.InShuttleReach(player, c.Position) && (c.Actions & CommerceRule.ActionKind.Trade) != 0);
+        }
+        Assert.False(CommerceRule.InShuttleReach(player, far.Position));
+        Assert.True(CommerceRule.InShuttleReach(player, near.Position));
+    }
+
     [Fact]
     public void CanTrade_NullOrbitBodies_StillAllowsCourseMatchedTrading()
     {

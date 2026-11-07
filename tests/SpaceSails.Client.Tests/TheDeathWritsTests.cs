@@ -83,6 +83,22 @@ public sealed class TheDeathWritsTests
         return map;
     }
 
+    /// <summary>U04-F09 (Fable ruling 2026-11-07) · The on-foot writ waits behind the boat's arrival card (nothing
+    /// stacks) and is served when the captain shuts it. <b>RED</b> by raising it immediately in TheWritIsServed.</summary>
+    [Fact]
+    public void TheWritWaitsBehindTheArrivalCardAndIsServedWhenItIsShut()
+    {
+        Pages.Map map = OnTheGroundWithACrewLanded(floor: 0);
+        Call(map, "StepCollectors", 0.1);
+        Assert.NotNull(Field(map, "_storyCard"));      // the arrival card is on the glass
+        Assert.Null(Field(map, "_busted"));            // ...so the demand is not stacked on it
+        Assert.NotNull(Field(map, "_scrimQueued"));    // ...it is held
+
+        Call(map, "CloseStoryCard");
+        Call(map, "PumpTheScrimQueue");
+        Assert.NotNull(Field(map, "_busted"));
+    }
+
     /// <summary>#1391 · A captain on B1 whose floor-plan coordinates coincide with a collector's regolith
     /// coordinates is NOT served a writ: the compare is between two different coordinate systems. The control
     /// (the same placement on the regolith) IS served, so the world can tell pass from fail. <b>RED</b> by removing

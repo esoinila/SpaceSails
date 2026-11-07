@@ -107,4 +107,15 @@ public sealed class TheNothingStacksOnArrivalTests
         Assert.DoesNotContain("RaiseAScrimCard(", Read("Map.ShipScuttleBoard.cs"), StringComparison.Ordinal);
         Assert.DoesNotContain("RaiseAScrimCard(", Read("Map.Combat.Busted.cs"), StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task TheSameKeyRaisedTwiceBehindAnOpenCardIsHeldOnce()
+    {
+        using DeskBench bench = await Boot();
+        bench.CallOnTheDispatcher("OpenGalleyCard");
+        bench.Call("RaiseAScrimCard", (Action)(() => { }), (Func<bool>)(() => true), "same");
+        bench.Call("RaiseAScrimCard", (Action)(() => { }), (Func<bool>)(() => true), "same");
+        var held = (System.Collections.ICollection)bench.Field("_scrimQueued")!;
+        Assert.Single(held);
+    }
 }
