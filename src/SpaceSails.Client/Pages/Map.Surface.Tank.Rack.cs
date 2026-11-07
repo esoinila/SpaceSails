@@ -241,7 +241,11 @@ public partial class Map
 
     /// <summary>R1-F69 · What the tank-is-low card paints: the surface's words, or - on a dead floor of a building -
     /// the underground face that names the nearest air (the same sum the DEAD AIR card does).</summary>
-    private AirCard.Face AirCardFace =>
+    private AirCard.Face AirCardFace => _airCardFace ?? TheAirCardFaceNow();
+
+    /// <summary>#1472 · The face for where the captain stands right now: worked out when the card raises, and then
+    /// kept, so a floor change under an open card cannot swap its words.</summary>
+    private AirCard.Face TheAirCardFaceNow() =>
         _surface is { Floor: < 0 } below && UndergroundComplex.NearestAir(below.Stop.Body.Id, below.Floor) is var (name, up)
             ? AirCard.For(true, name, up)
             : AirCard.For(false);
@@ -255,6 +259,7 @@ public partial class Map
             return false;
         }
         _airCardSeen = true;
+        _airCardFace = TheAirCardFaceNow();
         _airCardOpen = true;
         RequestVaultSave();
         StateHasChanged();

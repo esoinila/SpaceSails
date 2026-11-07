@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -190,6 +191,62 @@ public sealed class FablesLinesBatchBClientTests
         Assert.Equal(AirCard.Head, above.Head);
         Assert.Equal(AirCard.Dismiss, above.Dismiss);
         Assert.Same(AirCard.Beats, above.Beats);
+    }
+
+    // ── #1472 items 2-4 ───────────────────────────────────────────────────────────────────────────────
+
+    private static object AStopAt(string id)
+    {
+        Type stopType = typeof(Pages.Map).GetNestedType("ShuttleStop", Hidden | BindingFlags.Public | BindingFlags.Static)!;
+        return Activator.CreateInstance(stopType,
+            new CelestialBody(id, "Somewhere", "sol", 1, 1, 1, 1, 0), 0.0, 0.0, false, true, false)!;
+    }
+
+    /// <summary>RED: drop <c>!IsTheGigRock(stop)</c> from <c>AsksAboutAnEmptySling</c>.</summary>
+    [Fact]
+    public void TheGigRockNeverRaisesTheEmptySlingPromptAndAnOrdinaryGroundStillDoes()
+    {
+        Pages.Map map = WithTheGigRock(out string rock);
+        MethodInfo asks = typeof(Pages.Map).GetMethod("AsksAboutAnEmptySling", Hidden)!;
+        Assert.False((bool)asks.Invoke(map, [AStopAt(rock)])!);
+        Assert.True((bool)asks.Invoke(map, [AStopAt("luna")])!);   // the control: same empty sling, a ground
+    }
+
+    /// <summary>RED: make <c>LoadForTheDoor</c> pack the sling on the rock as it does on a ground.</summary>
+    [Fact]
+    public void TheGigRockPacksNothingDownWhateverTheSlingHeldAndAGroundStillPacksIt()
+    {
+        Pages.Map map = WithTheGigRock(out string rock);
+        Set(map, "_credits", 5000);
+        Set(map, "_boardCoin", 500);
+        MethodInfo load = typeof(Pages.Map).GetMethod("LoadForTheDoor", Hidden)!;
+        var hold = new List<CacheCargo> { new("ore", 3, false) };
+
+        var onRock = (ShuttleExcursion.ChestLoad)load.Invoke(map, [AStopAt(rock), hold])!;
+        Assert.True(onRock.IsEmpty);
+        var onGround = (ShuttleExcursion.ChestLoad)load.Invoke(map, [AStopAt("luna"), hold])!;
+        Assert.Equal(500, onGround.Coin);
+        Assert.Single(onGround.Cargo);
+    }
+
+    /// <summary>RED: have <c>AirCardFace</c> compute live (return <c>TheAirCardFaceNow()</c> unconditionally).</summary>
+    [Fact]
+    public void TheLowAirCardsFaceIsFixedWhenItRaisesAndNotRecomputedWhileItIsOpen()
+    {
+        Pages.Map map = OnAFloorOf("miranda", -2);
+        PropertyInfo face = typeof(Pages.Map).GetProperty("AirCardFace", Hidden)!;
+        Assert.True((bool)typeof(Pages.Map).GetMethod("ShowAirCardOnce", Hidden)!.Invoke(map, [])!);
+        var raised = (AirCard.Face)face.GetValue(map)!;
+        Assert.Equal(AirCard.DismissUnderground, raised.Dismiss);
+
+        // The captain changes floor with the card open: the words stay the ones it was raised with.
+        object ex = typeof(Pages.Map).GetField("_surface", Hidden)!.GetValue(map)!;
+        ex.GetType().GetProperty("Floor")!.SetValue(ex, 0);
+        Assert.Same(raised, face.GetValue(map));
+
+        // Closed, the property goes back to reading where he stands.
+        typeof(Pages.Map).GetMethod("CloseAirCard", Hidden)!.Invoke(map, []);
+        Assert.Equal(AirCard.Dismiss, ((AirCard.Face)face.GetValue(map)!).Dismiss);
     }
 
     // ── U03-F07 ───────────────────────────────────────────────────────────────────────────────────────
