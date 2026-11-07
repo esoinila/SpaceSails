@@ -288,7 +288,9 @@ public partial class Map
         // keybind, and everybody presses the button on the thing that just refused them.
         _lockedDoor = new LockedDoorLook(
             sign,
-            UndergroundComplex.LockedLine(sign),
+            _surface is { } hq && UndergroundComplex.IsHeadOffice(hq.Stop.Body.Id)
+                ? UndergroundComplex.HeadOfficeLockedLine(sign)
+                : UndergroundComplex.LockedLine(sign),
             // #1074 · …and it asks whether there is anything on this door to try a card AGAINST, which is one
             // Core predicate and not two: a rib's sealed mouth and the stop order's seal both answer no, and
             // the client must never be the place that decides what a sign is.

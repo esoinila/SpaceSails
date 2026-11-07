@@ -287,4 +287,15 @@ public static partial class SittingAlone
         "You sit at your own bar. The row of stools goes off into the dark and every one of them is empty, " +
         "which is either restful or it is not, depending on the day.",
     ];
+
+    /// <summary>U09-F05 · And what waiting is like at one of the two steel tables at the end of a Selene Gate
+    /// observation walk: the room made of glass that nobody is in. Its own pool because the hall's lines
+    /// (eighty chairs, a fridge behind a counter) describe a room this one is not.</summary>
+    public static readonly IReadOnlyList<string> NobodyCameGalleryTop =
+    [
+        "A while goes by. Two steel tables, two machines, and the glass under your boots going down to a drop you stopped looking at. Nobody comes up the tube. Nobody was going to.",
+        "You wait. The walk behind you is a straight line to one door, and nothing has come through it since you did.",
+        "A while goes by. The glass floor carries the station's hum up through the chair, very faintly, the way a hull talks to itself. The other table stays wiped.",
+        "Nothing comes. Out past the glass the view does what it was built to do, and does it for nobody — you have the whole of it, and the whole of it is the point.",
+    ];
 }

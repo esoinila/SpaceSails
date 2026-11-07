@@ -241,6 +241,20 @@ public sealed partial class Map
     /// burying a chest, three seeded landing sites with names like The Quiet Basin, a shovel and a pickaxe
     /// — all offered for a dead ship with a steel deck (owner, on the Cold Harvest: <i>"it shows me three
     /// options on where to board … those are good for Miranda etc moons but … you know"</i>).</summary>
+    /// <summary>U03-F07 · The boarding card's blurb when the target is the deflection gig's rock, else null.
+    /// The card then drops the regolith gear (coin dial, hold row) that the rock has no use for.</summary>
+    private string? GigRockBlurb =>
+        _boardTarget is { } rockTarget && _deflection is { } d && d.RockBodyId == rockTarget.Body.Id
+            ? DeflectionGig.BoardingBlurb(d.RockName, d.Type, d.TargetName)
+            : null;
+
+    /// <summary>U03-F07 · The shuttle board's ⏳ row for a stop, when it is the deflection gig's rock, else null.</summary>
+    private string? GigRockWindowRow(string bodyId, double travelSeconds) =>
+        _deflection is { } d && d.RockBodyId == bodyId
+            ? DeflectionGig.BoardRow(
+                FormatClock(DeflectionGig.SecondsToImpact(0.0)), d.TargetName, FormatDuration(travelSeconds))
+            : null;
+
     private bool BoardingAWreck =>
         _boardTarget is { } target
         && SiteRoute.IsHull(target.Body.Id);   // #653: a dead station is a hull too — no regolith card

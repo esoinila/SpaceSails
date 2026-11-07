@@ -104,6 +104,12 @@ public static partial class DeathNarration
             return "\"…nothing hunted you. You simply could not get home.\"";
         }
 
+        // R1-F34 · the scuttle's caption: nothing hunted you here either, and the pack quote below is not hers.
+        if (cause == DeathCause.Scuttled)
+        {
+            return "\"…nothing came for you. You set it, and then you stayed.\"";
+        }
+
         return nerveRanOut
             ? "\"…the nerve was already gone. The hand was only the last of it.\""
             : "\"…they simply kept coming, and the guard did not hold forever.\"";
@@ -220,6 +226,11 @@ public static partial class DeathNarration
         DeathCause.Inspected => "death-landing-party.jpg",
         _ => "busted-ship-explosion.jpg",
     };
+
+    /// <summary>R1-F23 · The placed headline: an impact into a station reads "you hit the station"; every other
+    /// case is the unplaced headline below, unchanged.</summary>
+    public static string Headline(DeathCause cause, bool intoAStation) =>
+        cause == DeathCause.Impact && intoAStation ? "WHAT HAPPENED — you hit the station" : Headline(cause);
 
     /// <summary>The short WHAT-HAPPENED headline for the block above the brain-backup copy.</summary>
     public static string Headline(DeathCause cause) => cause switch

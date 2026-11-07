@@ -80,13 +80,13 @@ public sealed class TheMoodAsksTheGroundTests
             yield return new($"hull-shudder · {inThePark}", line);
         }
 
-        foreach (string line in HullShudder.ChillLinesFor(groundHoldsPressure: InThePark))
+        foreach (string line in HullShudder.ChillLinesFor(HullShudder.Setting.Pressurised))
         {
             yield return new("hull-shudder · chill", line);
         }
 
         yield return new("hull-shudder · chill nerve ledger",
-            HullShudder.ChillNerveLabel(groundHoldsPressure: InThePark));
+            HullShudder.ChillNerveLabel(HullShudder.Setting.Pressurised));
     }
 
     // ── THE FORBIDDEN VOCABULARY ──────────────────────────────────────────────────────────────────────
@@ -163,7 +163,7 @@ public sealed class TheMoodAsksTheGroundTests
         IEnumerable<MoodLine> ambient =
             HullShudder.LinesFor(HullShudder.Setting.Pressurised, HullShudder.HavenRoom.Concourse)
                 .Select(l => new MoodLine("hull-shudder · Pressurised", l))
-                .Concat(HullShudder.ChillLinesFor(groundHoldsPressure: InThePark)
+                .Concat(HullShudder.ChillLinesFor(HullShudder.Setting.Pressurised)
                     .Select(l => new MoodLine("hull-shudder · chill", l)));
 
         foreach (MoodLine mood in ambient)
@@ -246,7 +246,7 @@ public sealed class TheMoodAsksTheGroundTests
         Assert.Equal("warm air and standing lights - the floor is holding",
             NervePips.Name(NervePips.Cause.Airlock, groundHoldsPressure: InThePark));
         Assert.Equal("a cold draught from somewhere the fans do not reach",
-            HullShudder.ChillNerveLabel(groundHoldsPressure: InThePark));
+            HullShudder.ChillNerveLabel(HullShudder.Setting.Pressurised));
     }
 
     /// <summary>THE GROUND ANSWERS FIRST. Whatever else is true of a landing — regolith, a deep site, a
@@ -279,7 +279,7 @@ public sealed class TheMoodAsksTheGroundTests
             NervePips.Name(NervePips.Cause.Airlock, groundHoldsPressure: OutOnTheSurface));
         Assert.Equal("the airlock closes behind you", NervePips.Name(NervePips.Cause.Airlock));
         Assert.Equal("a cold breath through the hull",
-            HullShudder.ChillNerveLabel(groundHoldsPressure: OutOnTheSurface));
+            HullShudder.ChillNerveLabel(HullShudder.Setting.DeepSite));
 
         // The regolith pool is still allowed — required, in fact — to say the thing the park may not.
         IReadOnlyList<string> surface = HullShudder.LinesFor(HullShudder.Setting.Regolith, HullShudder.HavenRoom.Concourse);
@@ -289,8 +289,8 @@ public sealed class TheMoodAsksTheGroundTests
         // And the two grounds share no words at all — a shared line is a line that cannot be about a room.
         IReadOnlyList<string> park = HullShudder.LinesFor(HullShudder.Setting.Pressurised, HullShudder.HavenRoom.Concourse);
         Assert.Empty(park.Intersect(surface, StringComparer.Ordinal));
-        Assert.Empty(HullShudder.ChillLinesFor(InThePark)
-            .Intersect(HullShudder.ChillLinesFor(OutOnTheSurface), StringComparer.Ordinal));
+        Assert.Empty(HullShudder.ChillLinesFor(HullShudder.Setting.Pressurised)
+            .Intersect(HullShudder.ChillLinesFor(HullShudder.Setting.Regolith), StringComparer.Ordinal));
     }
 
     /// <summary>THE MECHANICS DID NOT MOVE. The whole ruling is "same mechanics, different sentence", so the

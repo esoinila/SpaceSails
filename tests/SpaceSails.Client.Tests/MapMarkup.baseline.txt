@@ -535,11 +535,11 @@
                       DismissLabel="Minimise the crossing"
                       DismissTitle="Tuck the crossing into a tile — it keeps its own clock and the map comes back"
                       TileClass="jump-overlay-tile" TileGlyph="🚀"
-                      TileLabel="@LongHaul.VoidYearLine(_jumpYear, _jumpTotalYears)"
+                      TileLabel="@LongHaul.VoidSpanLine(_jumpYear, _jumpTotalYears, _jumpInDays)"
                       TileButtonClass="btn btn-sm btn-outline-info"
                       OpenTitle="Open the crossing back up">
             <div class="jump-overlay-title">🚀 @LongHaul.VoidTitle</div>
-            <div class="jump-overlay-year">@LongHaul.VoidYearLine(_jumpYear, _jumpTotalYears)</div>
+            <div class="jump-overlay-year">@LongHaul.VoidSpanLine(_jumpYear, _jumpTotalYears, _jumpInDays)</div>
             <div class="jump-overlay-bar">
                 <div class="jump-overlay-fill" style="width:@(_jumpTotalYears > 0 ? (int)(100.0 * Math.Clamp(_jumpYear, 0, _jumpTotalYears) / _jumpTotalYears) : 100)%"></div>
             </div>
@@ -4476,9 +4476,16 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                                    is open for — and, on an armed plan, the RETURN BY it binds you to, because
                                    the ship flies on whether or not you are back aboard. *@
                                 <span class="deck-shuttle-meta deck-shuttle-window">
-                                    ⏳ @AwayWindowWord(WindowOn(local.Body.Id))@(RouteReturnBySimTime(local.Body.Id) is { } by
-                                        ? $" · RETURN BY {RouteShuttleWindow.Stamp(by)} — the ship flies on"
-                                        : "")
+                                    @if (GigRockWindowRow(local.Body.Id, local.TravelSeconds) is { } gigRockRow)
+                                    {
+                                        @gigRockRow
+                                    }
+                                    else
+                                    {
+                                        <text>⏳ @AwayWindowWord(WindowOn(local.Body.Id))@(RouteReturnBySimTime(local.Body.Id) is { } by
+                                            ? $" · RETURN BY {RouteShuttleWindow.Stamp(by)} — the ship flies on"
+                                            : "")</text>
+                                    }
                                 </span>
                             </div>
                             <div class="deck-shuttle-row-actions">
@@ -4605,6 +4612,11 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                         @* #653: the station's board blurb is canon, verbatim, and nothing else rides the slot. *@
                         <text>@SpaceSails.Core.StationAboard.BoardBlurb</text>
                     }
+                    else if (GigRockBlurb is { } gigRockBlurb)
+                    {
+                        @* U03-F07: the gig rock is a job site - what it is, what the job is, and that there is nothing to bury or buy. *@
+                        <text>@gigRockBlurb</text>
+                    }
                     else if (BoardingAWreck)
                     {
                         <text>
@@ -4651,7 +4663,7 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                 }
                 @* You do not bury a chest on a wreck, and you do not probe her deck plating for shallow
                    treasure. The coin dial and the hold row are regolith gear; aboard, they are noise. *@
-                @if (!BoardingAWreck)
+                @if (!BoardingAWreck && GigRockBlurb is null)
                 {
                 <div class="bury-row">
                     <span>Coin in the chest (optional)</span>
@@ -4731,7 +4743,7 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                    GEN-AI GEAR ART (#348, Grok-generated art/gear-beachcomber-kit.jpg): the kit
                    illustration rides beside this line as a small capped thumbnail — object-fit cover, a
                    modest max-height so the dialog stays compact and the Board button never leaves screen. *@
-                @if (!BoardingAWreck)
+                @if (!BoardingAWreck && GigRockBlurb is null)
                 {
                     <div class="bury-row bury-gear">
                         <img class="gear-thumb" src="art/gear-beachcomber-kit.jpg" alt="" aria-hidden="true" />
@@ -8516,7 +8528,7 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                                DeathNarration.Tail, which answers "" for an impact; the guard that pins the
                                law (OnlyACOLLECTORDeathTalksAboutTheFreezeFrame) tests Tail, and the markup
                                was quietly going round it. Both faults are one fix: read the seam. *@
-                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill, bust.DeathFloor)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
+                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill, bust.DeathFloor, bust.ImpactIntoStation)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
                             @* #997 wave 7 · THE OTHER DOOR ONTO THE SAVE SURFACE, ON THE SHELL'S OWN MECHANISM.
                                The card root has been the shell's since wave 3; this row was the last hand-rolled thing on it,
                                and #951 put it on all four death panels — which makes it the way out every player who dies
@@ -8547,12 +8559,12 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                             <div class="busted-freeze-art busted-death-art has-art" title="what happened — a place-dependent surface death">
                                 <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause, bust.Place)" alt="" aria-hidden="true" />
                             </div>
-                            <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause)</div>
+                            <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause, bust.ImpactIntoStation)</div>
                             @* #480 follow-up: the caption names the meter that actually ran out. It used to
                                hardcode the nerve line for everything but Joined — true while nerve was the
                                only thing that ever killed you, wrong now that the five blows decide. *@
                             <div class="busted-freeze-caption">@DeathNarration.SurfaceCaption(bust.Cause, bust.NerveRanOut)</div>
-                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill, bust.DeathFloor)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
+                            <div class="busted-quote">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill, bust.DeathFloor, bust.ImpactIntoStation)@DeathNarration.Tail(bust.Cause, bust.Place)</div>
                             @* #997 wave 7 · THE OTHER DOOR ONTO THE SAVE SURFACE, ON THE SHELL'S OWN MECHANISM.
                                The card root has been the shell's since wave 3; this row was the last hand-rolled thing on it,
                                and #951 put it on all four death panels — which makes it the way out every player who dies
@@ -8623,8 +8635,8 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
                             <div class="busted-freeze-art busted-death-art has-art" title="what happened — a place-dependent death">
                                 <img class="bf-art" src="art/@DeathNarration.ArtFile(bust.Cause, bust.Place)" alt="" aria-hidden="true" />
                             </div>
-                            <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause)</div>
-                            <div class="busted-whathappened-line">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill, bust.DeathFloor)@DeathNarration.WakeTail(bust.Cause, bust.Place)</div>
+                            <div class="busted-whathappened-head">@DeathNarration.Headline(bust.Cause, bust.ImpactIntoStation)</div>
+                            <div class="busted-whathappened-line">@DeathNarration.Line(bust.Cause, bust.Place, bust.Seed, bust.DeathBodyName, bust.HeldStill, bust.DeathFloor, bust.ImpactIntoStation)@DeathNarration.WakeTail(bust.Cause, bust.Place)</div>
                         </div>
                         @* The old hull erupting, one clean hero fireball — the brain-backup beat proper. *@
                         @if (!DeathNarration.WakeCardRepeatsTheFireball(bust.Cause, bust.Place))
@@ -8893,14 +8905,14 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
         <div class="convergence-backdrop" @onclick="() => Dismiss(CloseAirCard)">
             <OverlayShell class="convergence-card ground-grows-card" StopClicks="true"
                           Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="btn btn-light convergence-close" DismissFace="@AirCard.Dismiss"
+                          DismissClass="btn btn-light convergence-close" DismissFace="@AirCardFace.Dismiss"
                           OnClose="() => Dismiss(CloseAirCard)">
                 <div class="convergence-stamp">@AirCard.Stamp</div>
-                <img class="ground-grows-art" src="@AirCard.ArtFile" alt=""
+                <img class="ground-grows-art" src="@AirCardFace.ArtFile" alt=""
                      onerror="this.style.display='none'" />
-                <div class="convergence-head">@AirCard.Head</div>
+                <div class="convergence-head">@AirCardFace.Head</div>
                 <ul class="ground-grows-beats">
-                    @foreach (string beat in AirCard.Beats)
+                    @foreach (string beat in AirCardFace.Beats)
                     {
                         <li>@beat</li>
                     }

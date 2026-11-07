@@ -104,6 +104,17 @@ public sealed class TheOpeningBeatsFileUnderTheRightNamesTests
         Assert.EndsWith(KaamosLore.ListedBerthSaidBeside, expected, StringComparison.Ordinal);
     }
 
+    /// <summary>R1-F33 · The plaque card is raised with the lead-in alone. Read off the shipping source, because
+    /// the call sits inside the page's one [E] on a drawn plate.</summary>
+    [Fact]
+    public void ThePlaqueCardIsRaisedWithTheLeadInAlone()
+    {
+        string path = System.IO.Path.Combine(TestTree.RepoRoot(), "src", "SpaceSails.Client", "Pages", "Map.Deck.Fixtures.cs");
+        string src = System.IO.File.ReadAllText(path);
+        Assert.Contains("TryAssembleKaamos(\"listed-berth\", \"❄ \" + Core.KaamosLore.ListedBerthPlaqueCard)", src, StringComparison.Ordinal);
+        Assert.DoesNotContain("ListedBerthSaidBeside", src, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void MarshsAdjusterPerceptionHasNoBraces()
     {

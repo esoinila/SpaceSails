@@ -245,7 +245,7 @@ public static partial class PatrolBeat
         "\"Hold there. Floor's restricted. Show me something.\" The hand is out, palm up, for the thing " +
         "everybody who works this corridor carries. Nothing about it is urgent. That is the part worth " +
         "being frightened of — he has done this a hundred times, it has come to nothing a hundred times, " +
-        "and he will write down whichever way it goes tonight either way.";
+        "and he will write it down whichever way it goes.";
 
     /// <summary>#804 · The guard's read of the wallet, and the card it is told on. Deliberately the same
     /// shape as <see cref="UndergroundComplex.GateRead"/>: two arms, one sentence, one label — so the client

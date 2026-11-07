@@ -179,6 +179,10 @@ public partial class Map
                                     ? HavenGarden.IsTheGardensBench(t.Scene)
                                         ? HavenGarden.NobodyCameLine
                                         : ParkBenches.NobodyCame(beat)
+                                    // U09-F05 · …and the observation walk's two steel tables are a room of glass
+                                    // that nobody is in: the hall's eighty chairs are not what is round them.
+                                    : t.Key.StartsWith("gallery:", StringComparison.Ordinal)
+                                    ? SittingAlone.NobodyCameAtTheGalleryTop(beat)
                                     // …and the shift is the ROOM's where there is a room, and the sitting's
                                     // own frozen one at the seats that have no excursion behind them.
                                     : SittingAlone.NobodyCame(

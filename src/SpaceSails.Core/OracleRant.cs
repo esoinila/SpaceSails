@@ -255,7 +255,7 @@ public static class OracleRant
         new(OracleTruthKind.NebulaFragment, "rebirth-glitch",
             "You woke up wrong once and didn't notice — I saw the seam flicker before the welcome looped clean. RESTORE FROM PATTERN, it read. SUBSCRIBER LUCID. DO NOT REVIVE ORIGINAL. And you felt entirely, warmly yourself. That's the part they charge you for."),
         new(OracleTruthKind.NebulaFragment, "adjuster-tell",
-            "I audited for them, you know, before the frequency took me. There's a folio working the ports with one page thumbed soft — I never had to look that page up either. Listen. That's paper, wearing. Somebody has been holding their place a very long time."),
+            "I audited for them, you know, before the frequency took me. There's a hand I keep shaking in the static — same grip, different sleeve, every time certain it's the first time. They pay you not to count. I counted."),
         new(OracleTruthKind.NebulaFragment, "clinic-ledger",
             "Your policy number's older than you are — I can read the wear on it across the counter. Entries you never made. A column marked LUCIDITY going faint on dates that predate your first death. The archive keeps the tab open. It never once closes a policy."),
     ];

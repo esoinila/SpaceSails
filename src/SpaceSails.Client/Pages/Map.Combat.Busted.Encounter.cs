@@ -113,6 +113,10 @@ public partial class Map
         /// <summary>U08-F06 · The underground floor (negative) a Hive death happened on, so the card's shaft depth is the
         /// floor's own and not a constant. Null for every other place.</summary>
         public int? DeathFloor { get; init; }
+
+        /// <summary>R1-F23 · The impact struck a station or haven (hull on hull), so the card tells the haven pool and
+        /// headline rather than the ground's.</summary>
+        public bool ImpactIntoStation { get; init; }
         // Which meter actually ran out (#480 follow-up): true = the nerve overdrew, false = the five blows
         // landed. Before #469 was fixed nerve was effectively the ONLY way to die out there, so the card
         // hardcoded the nerve line; now that the condition marker really decides, the caption must not

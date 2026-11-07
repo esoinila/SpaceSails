@@ -65,8 +65,12 @@ public static partial class HullShudder
     /// every other flag here: whatever else is true of a landing, a floor that holds its own air is not a
     /// place where nothing carries the sound. Vacuum ground keeps every existing line, byte for byte.</para>
     /// </summary>
-    public static Setting SettingOutside(bool groundHoldsPressure, bool onRegolith, bool deepSite, bool haven) =>
+    public static Setting SettingOutside(
+        bool groundHoldsPressure, bool onRegolith, bool deepSite, bool haven,
+        bool onADeadHull = false, bool isHeadOffice = false, int level = 0) =>
         groundHoldsPressure ? Setting.Pressurised
+        : onADeadHull ? Setting.DeadHull
+        : isHeadOffice && level < 0 ? Setting.HeadOfficeVacuum
         : onRegolith ? Setting.Regolith
         : SettingFor(deepSite, haven);
 

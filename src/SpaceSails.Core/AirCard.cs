@@ -53,6 +53,45 @@ public static class AirCard
     /// <summary>The button — an acknowledgement, not an "OK".</summary>
     public const string Dismiss = "Noted. Turning for home shortly.";
 
+    // ── R1-F69 · THE SAME CARD, UNDERGROUND ──
+    //
+    // On the surface the card says there is no air on this moon and to start back for her tube. Under the
+    // ice that is not true: the nearest air is the top of the shaft band or a pressure refuge on the floor.
+    // The surface words stay exactly as they were; the underground face is a sibling, chosen by the floor.
+
+    /// <summary>R1-F69 · The art for the underground card. TODO: art/air-running-out-underground.jpg is not
+    /// painted yet; the surface art stands in until it is.</summary>
+    public const string ArtFileUnderground = ArtFile;
+
+    /// <summary>R1-F69 · The line under the stamp on a dead floor: where the air is, and to start for it.</summary>
+    public static string HeadUnderground(string refugeFloorName, int floorsUp)
+    {
+        ArgumentNullException.ThrowIfNull(refugeFloorName);
+        string upstairs = floorsUp == 0 ? "this floor" : $"{floorsUp} floor{(floorsUp == 1 ? "" : "s")} up";
+        return $"Last third of the tank, and nothing on this floor is breathing with you. The air is {upstairs} — {refugeFloorName}, the top of this shaft band — or in the PRESSURE REFUGE the plan marks on this floor, if it still holds. Start for one of them now.";
+    }
+
+    /// <summary>R1-F69 · Beats one and three are the surface card's, verbatim; the middle one is the dead floor's.</summary>
+    public static IReadOnlyList<string> BeatsUnderground { get; } =
+    [
+        Beats[0],
+        "The walk back costs the same air as the walk out, and the car does not refill a tank. The top floor of every shaft band holds pressure; nothing under it does. A PRESSURE REFUGE on a dead floor will put two thirds back in and stop there — whether it still holds is not on the plan.",
+        Beats[2],
+    ];
+
+    /// <summary>R1-F69 · The button on a dead floor.</summary>
+    public const string DismissUnderground = "Noted. Heading for air.";
+
+    /// <summary>R1-F69 · Everything the card paints, for the surface or for a dead floor.</summary>
+    public sealed record Face(string Head, IReadOnlyList<string> Beats, string Dismiss, string ArtFile);
+
+    /// <summary>R1-F69 · The card's face for where the captain is standing. Underground, the caller supplies the
+    /// nearest air (name and floors up); on the surface the arguments are ignored.</summary>
+    public static Face For(bool underground, string refugeFloorName = "", int floorsUp = 0) =>
+        underground
+            ? new Face(HeadUnderground(refugeFloorName, floorsUp), BeatsUnderground, DismissUnderground, ArtFileUnderground)
+            : new Face(Head, Beats, Dismiss, ArtFile);
+
     /// <summary>The line under the button: where the rule keeps being stated once the card is gone.</summary>
     public const string Foot =
         "The gauge sits under the motion tracker and changes colour as the margin goes: blue, amber, then red.";
