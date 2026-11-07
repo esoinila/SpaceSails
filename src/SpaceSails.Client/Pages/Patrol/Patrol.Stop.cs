@@ -161,7 +161,7 @@ public sealed partial class Map
                     // conversation it just had.
                     AskedTheWay.Add(stop.Man.Plate);
                     GuardStop.Answer asked = GuardStop.TheWayToTheMess(
-                        TheStopRolls(ex, stop, moveId, nerveMarked), stop.Man.Plate);
+                        TheStopRolls(ex, stop, moveId, nerveMarked), stop.Man.Plate, TheAirHolds);
                     TheStopSaysIt(asked.Read, byClosing);
                     TheStopEndsWith(ex, stop, asked);
                     return;
@@ -170,7 +170,7 @@ public sealed partial class Map
                 default:
                 {
                     GuardStop.Answer talked = GuardStop.TheWork(
-                        TheStopRolls(ex, stop, moveId, nerveMarked), stop.Man.Plate);
+                        TheStopRolls(ex, stop, moveId, nerveMarked), stop.Man.Plate, TheAirHolds);
                     TheStopSaysIt(talked.Read, byClosing);
                     TheStopEndsWith(ex, stop, talked);
                     return;
@@ -312,7 +312,7 @@ public sealed partial class Map
 
             _host.ViewObject = new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.ViewObject, (float)_host.AvatarX, (float)_host.AvatarY,
-                read.Label, PatrolBeat.ChallengeArtUrl, read.Card, read.Told);
+                read.Label, PatrolBeat.ChallengeArtFor(TheAirHolds), read.Card, read.Told);
             RendererInterop.PlayCue("reveal");
             _host.LogAutopilotEvent($"{read.Label} — {read.Told}");
         }

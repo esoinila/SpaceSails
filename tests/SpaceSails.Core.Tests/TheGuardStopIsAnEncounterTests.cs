@@ -159,7 +159,7 @@ public sealed class TheGuardStopIsAnEncounterTests
                 // BYTE FOR BYTE on every arm that costs anything, consequence included.
                 Assert.Equal(ladder.Consequence, answer.Read.Consequence);
                 Assert.Equal(ladder.Told, answer.Read.Told);
-                Assert.Equal(PatrolBeat.EscortLine, answer.Read.Consequence);
+                Assert.Equal(PatrolBeat.EscortLineFor(UndergroundComplex.HoldsPressure(Site, level)), answer.Read.Consequence);
             }
         }
 
@@ -187,7 +187,7 @@ public sealed class TheGuardStopIsAnEncounterTests
 
         Assert.Equal(ladder, answer.Read);
         Assert.Equal(PatrolBeat.NothingLine, answer.Read.Line);
-        Assert.Equal(PatrolBeat.EscortLine, answer.Read.Consequence);
+        Assert.Equal(PatrolBeat.EscortLineFor(UndergroundComplex.HoldsPressure(Site, level)), answer.Read.Consequence);
         Assert.Equal(GuardStop.Ending.HeWalksYouOut, answer.How);
         Assert.False(answer.NameGoesInTheBook);
 
@@ -292,7 +292,9 @@ public sealed class TheGuardStopIsAnEncounterTests
         Assert.Equal(
             new HashSet<string>(StringComparer.Ordinal)
             {
-                "<nothing>", PatrolBeat.EscortLine, GuardStop.StepsAsideLine,
+                // U08-F11 · The escort is the ladder rows' (a department's floor), spelled by that floor's air.
+                "<nothing>", PatrolBeat.EscortLineFor(UndergroundComplex.HoldsPressure(Site, level)),
+                GuardStop.StepsAsideLine,
             },
             consequences);
     }

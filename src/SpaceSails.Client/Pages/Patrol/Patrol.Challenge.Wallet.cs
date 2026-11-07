@@ -96,6 +96,12 @@ public sealed partial class Map
         private void TheRoundStopsAtYou(
             SurfaceExcursion ex, Guard g, ContactLedger book, double simTime)
         {
+            // U04-F12 · …and a stop already in motion never opens its card on that floor either.
+            if (UndergroundComplex.IsTheNoPassFloor(ex.Stop.Body.Id, ex.Floor))
+            {
+                return;
+            }
+
             g.HeStandsAtYou();
             g.Vx = 0;
             g.Vy = 0;
@@ -130,7 +136,7 @@ public sealed partial class Map
             // his one word — built off the plate, so the scene is CONTENT (GuardStop.SceneFor) and this
             // method has no opinion about what a captain may do at a checkpoint.
             PatrolBeat.Read opening = new(
-                false, GuardStop.Opening, PatrolBeat.ChallengeLabel, PatrolBeat.ChallengeCard(g.Plate));
+                false, GuardStop.Opening, PatrolBeat.ChallengeLabel, PatrolBeat.ChallengeCard(g.Plate, TheAirHolds));
 
             // #711 · …AND HE KEPT LOOKING. The one arm where a parcel does not end the afternoon: the tell
             // goes on the front of the card the captain was always going to get, and everything under it —
@@ -147,7 +153,7 @@ public sealed partial class Map
             // is #680's law and the reason the table scene's panel looks the way it does.
             _host.ViewObject = new DeckPlan.ConsoleSpot(
                 DeckPlan.ConsoleKind.ViewObject, (float)_host.AvatarX, (float)_host.AvatarY,
-                opening.Label, PatrolBeat.ChallengeArtUrl, opening.Card, opening.Told);
+                opening.Label, PatrolBeat.ChallengeArtFor(TheAirHolds), opening.Card, opening.Told);
             RendererInterop.PlayCue("reveal");
 
             _host.LogAutopilotEvent($"{opening.Label} — {opening.Told}");
@@ -213,10 +219,10 @@ public sealed partial class Map
                 // the same man, because it is the same thirty seconds. A card shape of its own for this beat
                 // would be the game flagging that something unusual just happened to a captain who has been
                 // told, in as many words, that he is ordinary.
-                PatrolBeat.Read told = UnlistedParcel.TheFineIsTold(g.Plate);
+                PatrolBeat.Read told = UnlistedParcel.TheFineIsTold(g.Plate, TheAirHolds);
                 _host.ViewObject = new DeckPlan.ConsoleSpot(
                     DeckPlan.ConsoleKind.ViewObject, (float)_host.AvatarX, (float)_host.AvatarY,
-                    told.Label, PatrolBeat.ChallengeArtUrl, told.Card, told.Told);
+                    told.Label, PatrolBeat.ChallengeArtFor(TheAirHolds), told.Card, told.Told);
                 RendererInterop.PlayCue("reveal");
                 _host.LogAutopilotEvent($"{told.Label} — {told.Told}");
             }

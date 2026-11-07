@@ -94,6 +94,10 @@ public partial class Map
         yield return ("_showCaptainsRemote", _showCaptainsRemote);
         yield return ("_showDoorBoard", _showDoorBoard);
         yield return ("_showAlarmPanel", _showAlarmPanel);
+        // U04-F09 (Fable ruling 2026-11-07) · The collector's demand and every death card wear the busted
+        // backdrop — a full-viewport dim like the rest. It joins the census so nothing the world raises
+        // (the door-keeper's card, a salesman) goes up over it, and so a card held behind it waits its turn.
+        yield return ("_busted is { } bust && !_showSaveDrawer", _busted is not null && !_showSaveDrawer);
     }
 
     /// <summary>Is anything wearing a full-viewport scrim right now? Asked of the census, so it can never
@@ -119,11 +123,16 @@ public partial class Map
         }
     }
 
-    /// <summary>The card the world wanted to raise while the glass was busy, waiting its turn — or null.
-    /// One slot and not a list: two people cannot both be standing at your elbow (the walker band and the
-    /// approach's own <c>stillWanted</c> see to that), and a queue that could grow would be a card arriving
-    /// minutes after whatever put it there had stopped being true.</summary>
-    private (Action Raise, Func<bool> StillWanted)? _scrimQueued;
+    /// <summary>The cards the world wanted to raise while the glass was busy, waiting their turn, oldest first — or
+    /// null when nothing waits. U04-F09 (Fable ruling 2026-11-07): a FIFO of at most <see cref="MostScrimCardsHeld"/>
+    /// rather than the one slot #1052 had, because the door-keeper's card, a salesman and a collector can all
+    /// arrive in the one stretch a captain spends reading something else. The head alone is released, one per
+    /// clear glass, so nothing stacks and nothing is read out of order.</summary>
+    private List<(Action Raise, Func<bool> StillWanted, string? Key)>? _scrimQueued;
+
+    /// <summary>The longest the line of held cards gets. When a fourth arrives the OLDEST goes — it is the one
+    /// whose moment is most likely over (every held card is asked <c>StillWanted</c> before it goes up).</summary>
+    private const int MostScrimCardsHeld = 3;
 
     /// <summary>#1052 · <b>THE ARBITER.</b> Raise this card if nothing is wearing a scrim; otherwise hold it
     /// behind the one that is. Never stacks, which is the law, and never silently drops, which is #603 (a
@@ -135,18 +144,31 @@ public partial class Map
     /// moment, and the moment can end while the captain reads something else — a captain who has stood up
     /// and walked off does not want a pitch delivered to an empty chair.</param>
     /// <returns>Whether the card went up now.</returns>
-    private bool RaiseAScrimCard(Action raise, Func<bool> stillWanted)
+    /// <param name="key">U04-F09 · Optional. A card raised again every frame by the thing that wants it (the
+    /// collectors' hand on the carry loop) names itself, and a second raise under the same key while one is
+    /// already held is ignored rather than queued behind itself.</param>
+    private bool RaiseAScrimCard(Action raise, Func<bool> stillWanted, string? key = null)
     {
         ArgumentNullException.ThrowIfNull(raise);
         ArgumentNullException.ThrowIfNull(stillWanted);
 
         if (AScrimIsUp)
         {
-            _scrimQueued = (raise, stillWanted);
+            _scrimQueued ??= [];
+            if (key is not null && _scrimQueued.Exists(h => h.Key == key))
+            {
+                return false;
+            }
+
+            _scrimQueued.Add((raise, stillWanted, key));
+            if (_scrimQueued.Count > MostScrimCardsHeld)
+            {
+                _scrimQueued.RemoveAt(0);
+            }
+
             return false;
         }
 
-        _scrimQueued = null;
         raise();
         return true;
     }
@@ -156,12 +178,19 @@ public partial class Map
     /// the captain shuts it, with nobody having to remember to let it through.</summary>
     private void PumpTheScrimQueue()
     {
-        if (_scrimQueued is not { } held)
+        if (_scrimQueued is not { Count: > 0 } line)
         {
+            _scrimQueued = null;
             return;
         }
 
-        if (!held.StillWanted())
+        // Cards whose moment has ended are shed from the front, so a stale head can never hold the line.
+        while (line.Count > 0 && !line[0].StillWanted())
+        {
+            line.RemoveAt(0);
+        }
+
+        if (line.Count == 0)
         {
             _scrimQueued = null;
             return;
@@ -172,7 +201,13 @@ public partial class Map
             return;
         }
 
-        _scrimQueued = null;
-        held.Raise();
+        (Action raise, _, _) = line[0];
+        line.RemoveAt(0);
+        if (line.Count == 0)
+        {
+            _scrimQueued = null;
+        }
+
+        raise();
     }
 }

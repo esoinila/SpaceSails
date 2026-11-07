@@ -337,7 +337,7 @@ public class TheDepartmentLadderTests
                 {
                     Assert.False(read.Satisfied);
                     Assert.Equal(verbatim, read.Line);
-                    Assert.Equal(PatrolBeat.EscortLine, read.Consequence);   // what a refusal already cost
+                    Assert.Equal(PatrolBeat.EscortLineFor(UndergroundComplex.HoldsPressure(body, level)), read.Consequence);   // what a refusal already cost
                     said++;
                 }
                 else
@@ -345,7 +345,7 @@ public class TheDepartmentLadderTests
                     Assert.DoesNotContain(verbatim, read.Told, StringComparison.Ordinal);
                     if (read.Satisfied)
                     {
-                        Assert.Equal(PatrolBeat.SatisfiedLine, read.Line);
+                        Assert.Equal(PatrolBeat.SatisfiedLineFor(UndergroundComplex.HoldsPressure(body, level)), read.Line);
                         Assert.Null(read.Consequence);
                         silent++;
                     }

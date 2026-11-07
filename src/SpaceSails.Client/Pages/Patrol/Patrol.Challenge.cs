@@ -198,6 +198,13 @@ public sealed partial class Map
                 return;
             }
 
+            // U04-F12 (Fable ruling 2026-11-07) · THE ROUND NEVER STOPS ANYONE ON THE NO PASS REQUIRED FLOOR. No hail,
+            // no walk-up, no stop (the provocation radio, SomebodySawThat, is another road and is not gated): the sign on the wall says nobody is asked for a pass here.
+            if (_host.Surface is { } kind && UndergroundComplex.IsTheNoPassFloor(kind.Stop.Body.Id, kind.Floor))
+            {
+                return;
+            }
+
             foreach (Guard g in Guards)
             {
                 if (g.WalkingUp || g.AfterYou)
@@ -246,8 +253,10 @@ public sealed partial class Map
             g.Vy = 0;
             g.Facing = System.Math.Atan2(_host.AvatarY - g.Y, _host.AvatarX - g.X);
 
-            _host.ShowPulseMessage(PatrolBeat.HailLine, PulseRank.Beat);
-            _host.LogAutopilotEvent(PatrolBeat.HailLine);
+            // U08-F11 · spelled by the floor's air: a lamp and a tread through the deck where nothing breathes.
+            string hail = PatrolBeat.HailLineFor(TheAirHolds);
+            _host.ShowPulseMessage(hail, PulseRank.Beat);
+            _host.LogAutopilotEvent(hail);
             RendererInterop.PlayCue("blip");
         }
     }
