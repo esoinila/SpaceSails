@@ -34,6 +34,13 @@
     pointer-events: auto;
 }
 
+/* #1478 · The world runs under these cards on an excursion too (Fable R1-F93, the same ruling the view-object
+   popup keeps in Map.razor.css): the air keeps draining and the tracker keeps ticking, so the full 0.86-0.95 dim
+   blacked the strip and the air bar out under the first-landing card. Excursion-only, on the same marker. */
+.map-page:has(.captains-remote-btn) .convergence-backdrop {
+    background: rgba(4, 6, 11, 0.55);
+}
+
 .convergence-stamp {
     display: inline-block;
     transform: rotate(-3deg);

@@ -146,6 +146,25 @@ public sealed partial class DeckView
         return rows;
     }
 
+    /// <summary>Bottom edge (canvas px) of the key-hint captions drawn under the motion tracker this frame; 0 when
+    /// there are none. Set by DrawMotionTracker, reset each frame in DrawTheInstruments, read by the ledger.</summary>
+    private float _trackerCaptionsBottom;
+
+    /// <summary>#1478 · How many ledger lines may be drawn without the block (flash + header + lines, anchored
+    /// above the bottom clearance) reaching up into the captions. Newest lines are kept.</summary>
+    internal static int NerveLedgerLinesThatFit(int wanted, bool hasFlash, float lineH, int heightPx, float captionsBottom)
+    {
+        for (int n = wanted; n > 0; n--)
+        {
+            int rows = n + 1 + (hasFlash ? 1 : 0);
+            if (heightPx - NerveLedgerBottomClearancePx - (rows * lineH) >= captionsBottom + 6f)
+            {
+                return n;
+            }
+        }
+        return 0;
+    }
+
     private void DrawNerveLedger(in State state, int heightPx)
     {
         IReadOnlyList<string>? ledger = CollapseTheLedgersRuns(state.NerveLedger);
@@ -168,6 +187,13 @@ public sealed partial class DeckView
         // rems tall: the band is now measured from the button's own top (see NerveLedgerBottomClearancePx).
         const float BottomClearance = NerveLedgerBottomClearancePx;
         float lineH = px + 2f;
+        // #1478 · …and it must also clear the key-hint captions the tracker seats beneath itself (at the monolith
+        // the T / ⇧T sentry lines ran down into the ledger): the oldest rows give way until the block fits.
+        int keep = NerveLedgerLinesThatFit(ledger?.Count ?? 0, hasFlash, lineH, heightPx, _trackerCaptionsBottom);
+        if (ledger is not null && keep < ledger.Count)
+        {
+            ledger = [.. ledger.Take(keep)];
+        }
         int rows = (ledger?.Count ?? 0) + (ledger is { Count: > 0 } ? 1 : 0) + (hasFlash ? 1 : 0);
         float y = heightPx - BottomClearance - (rows * lineH);
 
