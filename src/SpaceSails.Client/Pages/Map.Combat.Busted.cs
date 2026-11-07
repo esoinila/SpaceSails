@@ -41,7 +41,7 @@ public partial class Map
     // inert — it OPENS the boarding pop-up. Warp yanks to 1×, the ship is grappled, and the collector
     // hails with a demand and three options (SUBMIT / BRIBE / RESIST). The seed is folded from the
     // hunter's identity and the sim moment, so every roll in this encounter is reproducible.
-    private void ApplyHunterCatch(HunterState hunter) => TheDemandGoesUp(hunter, onTheTermsOf: null);
+    private void ApplyHunterCatch(HunterState hunter) => TheDemandWaitsItsTurn(hunter, onTheTermsOf: null);
 
     /// <summary>
     /// The body of the catch, and the one place a boarding demand is built. <see cref="ApplyHunterCatch"/> is

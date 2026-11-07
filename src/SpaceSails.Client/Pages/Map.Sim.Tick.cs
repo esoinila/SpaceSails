@@ -113,6 +113,10 @@ public partial class Map
             return;
         }
 
+        // #1476 · THE FLIGHT FRAME PUMPS THE SCRIM QUEUE TOO. A card held behind a scrim while the ship flies (the
+        // collector's demand) goes up on the first frame the glass is clear; the walked frame pumps its own.
+        PumpTheScrimQueue();
+
         PaintTheMapFrame();
         DrawTheScopeInsetIfItIsUp();
         LetTheShipSpeakIfAnybodyIsAboard(highResTimestampMs);

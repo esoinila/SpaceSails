@@ -159,13 +159,22 @@ public partial class Map
         // about walking down with nothing to do, and a captain carrying a file he has decided is safer under
         // a rock than in his coat has the most deliberate errand in the game — being asked whether he is sure
         // he did not mean to bring money would be the panel reading his trip back to him wrong.
-        if (_boardCoin <= 0 && _cargoUnits <= 0 && _boardDeposit is null)
+        if (AsksAboutAnEmptySling(stop))
         {
             _boardEmptyConfirm = true; // empty sling — ask once before the walk down
             return;
         }
         await ConfirmBoarding(stop);
     }
+
+    /// <summary>#1472 · The deflection gig's inbound rock: the card hides the whole chest (coin dial, hold row,
+    /// beach-comber kit) there, so the sling is never "empty" and nothing the chest would hold goes down.</summary>
+    private bool IsTheGigRock(ShuttleStop stop) => _deflection is { } d && d.RockBodyId == stop.Body.Id;
+
+    /// <summary>The "are you certain?" prompt belongs to an empty sling on a ground that has a chest. The gig rock
+    /// has none, so it never asks.</summary>
+    private bool AsksAboutAnEmptySling(ShuttleStop stop) =>
+        !IsTheGigRock(stop) && _boardCoin <= 0 && _cargoUnits <= 0 && _boardDeposit is null;
 
     // Land: pack whatever (if anything) was loaded and grow the tube in place. The hold rides as cargo
     // and only leaves the ship's books if it actually goes into the ground at a dig. An empty pack is a
@@ -178,7 +187,7 @@ public partial class Map
         // #319 · …and the thing out of the coat rides down on the SAME load. Pack weighs it against the one
         // rule on the way past (CacheDeposit.IsLightEnough), so the pure builder both boarding routes go
         // through is where a thing too heavy for the tube stops being a thing that can be buried.
-        ShuttleExcursion.ChestLoad chest = ShuttleExcursion.Pack(_boardCoin, _credits, hold, _boardDeposit);
+        ShuttleExcursion.ChestLoad chest = LoadForTheDoor(stop, hold);
         _boardDeposit = null;
         _boardEmptyConfirm = false;
         // #320: carry the picked landing site down — its salt seeds the ground, its name the header.
@@ -187,6 +196,13 @@ public partial class Map
             : LandingSites.At(stop.Body.Id, 0);
         await BeginSurfaceExcursion(stop, chest, _boardBots, site); // #314: bring the loaded sentries down too
     }
+
+    /// <summary>The load the shuttle carries down. #1472 · the gig rock hides the chest, so nothing the chest would hold
+    /// (hold, coin, a picked thing) packs there, whatever the sling held.</summary>
+    private ShuttleExcursion.ChestLoad LoadForTheDoor(ShuttleStop stop, List<CacheCargo> hold) =>
+        IsTheGigRock(stop)
+            ? ShuttleExcursion.Pack(0, _credits, [], null)
+            : ShuttleExcursion.Pack(_boardCoin, _credits, hold, _boardDeposit);
 
     // #327 the quote before you board DOWN: the ship states its hold honestly from the live tank — "can
     // hold this orbit ~N on the tank" — so boarding down with a short clock is the captain's INFORMED

@@ -163,9 +163,9 @@ public sealed partial class Map
             return;   // he is not back at their berth, or he is not on her
         }
 
-        _writPending = null;
-
-        TheDemandGoesUp(
+        // #1479 · THE WRIT IS CLEARED WHEN THE DEMAND REALLY GOES UP, not when it is queued: the queue is not saved,
+        // so a reload with the demand held behind a card must still find the writ on the file.
+        TheDemandWaitsItsTurnOn(
             new HunterState(
                 Id: filed.HunterId ?? filed.Callsign,
                 Callsign: filed.Callsign,
@@ -175,9 +175,15 @@ public sealed partial class Map
                 State: _ship,                 // alongside: they were here before he was
                 CaughtPlayer: true,
                 BrokenOff: false),
-            onTheTermsOf: filed);
-
-        RequestVaultSave();
+            onTheTermsOf: filed,
+            stillWanted: () => _busted is null && _writPending == filed && _dockedHavenId == filed.HavenId
+                               && TheMasterIsAboardHer(),
+            key: "served-writ",
+            afterRaise: () =>
+            {
+                _writPending = null;
+                RequestVaultSave();
+            });
     }
 
     /// <summary>

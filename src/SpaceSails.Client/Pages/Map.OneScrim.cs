@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using SpaceSails.Core;
 
 namespace SpaceSails.Client.Pages;
 
@@ -171,6 +172,35 @@ public partial class Map
 
         raise();
         return true;
+    }
+
+    /// <summary>#1476 · THE COLLECTOR'S DEMAND IS A WORLD-RAISED CARD: it waits behind a scrim that is up (flight
+    /// included - the flight frame pumps the queue) and goes up on the first clear frame. The deaths (impact, last
+    /// stand) are not this door and stay immediate.
+    ///
+    /// <para>The TERMS are fixed at the catch and not at the showing (#1151: a wait is neither a discount nor a
+    /// surcharge): the warp comes down now, and the heat and the moment are captured now, so loitering behind a
+    /// card cannot cheapen the bribe. A served writ already carries its own terms; an ordinary catch is given the
+    /// same record. <paramref name="afterRaise"/> runs when the card really goes up (the writ's clear-and-save).</para>
+    /// </summary>
+    private void TheDemandWaitsItsTurn(HunterState hunter, PendingWritRecord? onTheTermsOf) =>
+        TheDemandWaitsItsTurnOn(hunter, onTheTermsOf, null, null, null);
+
+    private void TheDemandWaitsItsTurnOn(
+        HunterState hunter, PendingWritRecord? onTheTermsOf, Func<bool>? stillWanted, string? key, Action? afterRaise)
+    {
+        Warp = 1;
+        _effectiveWarp = 1;
+        PendingWritRecord terms = onTheTermsOf
+            ?? new PendingWritRecord(hunter.Callsign, string.Empty, SimTime, Math.Max(1, _heat.Level), hunter.Id);
+        RaiseAScrimCard(
+            () =>
+            {
+                TheDemandGoesUp(hunter, terms);
+                afterRaise?.Invoke();
+            },
+            stillWanted ?? (() => _busted is null),
+            key);
     }
 
     /// <summary>#1052 · The held card's turn. Called once from the walked frame — the only frame in which a

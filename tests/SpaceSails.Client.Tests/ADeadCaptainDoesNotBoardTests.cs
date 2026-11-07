@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using SpaceSails.Core.Tests;
 using Xunit;
@@ -18,7 +19,7 @@ public sealed class ADeadCaptainDoesNotBoardTests
     private const string OnMirandasGround = "/map?dock=the-tilt&site=0&land=1";
 
     /// <summary>Bring the mothership alongside the ground, course-matched, so the boat can fly home.</summary>
-    private static void BringHerAlongside(DeskBench bench)
+    internal static void BringHerAlongside(DeskBench bench)
     {
         var ephemeris = (ICelestialEphemeris)bench.Peek("_ephemeris")!;
         object excursion = bench.Peek("_surface")!;
@@ -203,5 +204,54 @@ public sealed class TheTradeTileAgreesWithTheShuttleBayTests
         Assert.Empty(stops);   // the bay has nothing to offer from this berth, as in the report
         string chip = bench.Call("TradeChip")!.ToString()!;
         Assert.DoesNotContain("shuttle reach", chip, StringComparison.Ordinal);
+    }
+
+    /// <summary>#1469 · The chip's contact set is the desk's, and the desk's reach is the shuttle corridor: a
+    /// depot <c>ContactsAt</c> lists only because it belongs to the body (the player is far from it, orbiting
+    /// nothing) is not "in reach". It guards the <c>mode != None</c> test, which is the tile's whole reach rule
+    /// (Classify answers None beyond the corridor). RED: drop that test from <c>TradeChip</c>.</summary>
+    [Fact]
+    public async Task AFarDepotTheBodyListsIsNotAPartnerInReach()
+    {
+        using DeskBench bench = await DeskBench.BootAsync("/map?start=earth");
+        await bench.RenderAsync();
+        ICelestialEphemeris eph = (ICelestialEphemeris)bench.Peek("_ephemeris")!;
+        Vector2d earth = eph.Position("earth", (double)bench.Peek("SimTime")!);
+        bench.Poke("_orbitedBodyId", null);
+        bench.Poke("_nearestBody", eph.Bodies.First(b => b.Id == "earth"));
+        bench.Poke("_dockedHavenId", null);
+        bench.Poke("_ship", new ShipState(earth + new Vector2d(CommerceRule.ShuttleRangeMeters * 4, 0), Vector2d.Zero, 0.0));
+        var contacts = (System.Collections.IList)bench.Call("LocalContacts")!;
+        Assert.NotEmpty(contacts);   // the premise: the body lists its depots, near or far
+        Assert.DoesNotContain("trade partner", bench.Call("TradeChip")!.ToString()!, StringComparison.Ordinal);
+    }
+
+    /// <summary>#1469 · The tile and the desk agree on a SameOrbit partner past the shuttle corridor (a Jupiter-sized
+    /// Hill sphere): the desk deals with it, so the chip counts it. RED: reintroduce a bare InShuttleReach filter in <c>TradeChip</c>.</summary>
+    [Fact]
+    public async Task ASameOrbitPartnerPastTheCorridorIsCountedBecauseTheDeskDealsWithIt()
+    {
+        using DeskBench bench = await DeskBench.BootAsync("/map?start=earth");
+        await bench.RenderAsync();
+        ICelestialEphemeris eph = (ICelestialEphemeris)bench.Peek("_ephemeris")!;
+        Vector2d earth = eph.Position("earth", (double)bench.Peek("SimTime")!);
+        bench.Poke("_orbitedBodyId", "earth");
+        bench.Poke("_dockedHavenId", null);
+        bench.Poke("_ship", new ShipState(earth + new Vector2d(CommerceRule.ShuttleRangeMeters * 4, 0), Vector2d.Zero, 0.0));
+
+        int deskDeals = 0;
+        foreach (CommerceRule.LocalContact c in (System.Collections.IList)bench.Call("LocalContacts")!)
+        {
+            var mode = (CommerceRule.TradeMode)bench.Call("TradeModeFor", c)!;
+            Assert.True(mode == CommerceRule.TradeMode.SameOrbit || (c.Actions & CommerceRule.ActionKind.Trade) == 0
+                || mode == CommerceRule.TradeMode.None);
+            if (mode == CommerceRule.TradeMode.SameOrbit && (c.Actions & CommerceRule.ActionKind.Trade) != 0)
+            {
+                deskDeals++;
+            }
+        }
+        Assert.True(deskDeals > 0, "the premise: earth has a depot the desk deals with from its orbit.");
+        string chip = bench.Call("TradeChip")!.ToString()!;
+        Assert.Contains($"{deskDeals} trade partner", chip, StringComparison.Ordinal);
     }
 }

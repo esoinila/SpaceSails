@@ -30,7 +30,7 @@ public sealed partial class Map
             return;   // a death card is not in the scrim census; a pitch raised now would sit behind it
         }
 
-        RaiseAScrimCard(KoltsPitchGoesUp, () => !CaptainBeyondReach && !_hardcaseFled && !TheDeathCardFreezesTheGround);
+        RaiseAScrimCard(KoltsPitchGoesUp, () => _surface is not null && !CaptainBeyondReach && !_hardcaseFled && !TheDeathCardFreezesTheGround);
     }
 
     /// <summary>The pitch itself, once the glass is his — and the moment the ground goes in his book, because

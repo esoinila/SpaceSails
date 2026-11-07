@@ -332,6 +332,7 @@ public static partial class PatrolBeat
             // has always done: the walk back to the car, and the floor said into a radio on the way
             // (#719 slice 2, the maintenance break, which is where "he called it in" is already felt). No new
             // security kind is minted for it, and nothing anywhere explains it (§13.8).
+            // Reached on the lower shaft lobbies (B5, B9, …) and the staff mess, never on Canteen 1 (U04-F12).
             case WalletChoice.Outcome.NoInspectionDue:
                 return new(false, Inspectorate.HonouredLine, ChallengeLabel, card, escort);
 
