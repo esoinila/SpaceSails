@@ -171,7 +171,8 @@
        with no width, still shrank to the 50% of the glass left of its anchor (202 px of 390). On a phone it takes
        its content's width, up to the family cap (90vw). The table card has its own sizing and is left alone. */
     ::deep .deck-offer-card:not(.table-card) {
-        width: min(34rem, calc(100vw - 2rem));   /* whole pixels: max-content put the centred card on a half pixel (#1467) */
+        width: min(34rem, calc(100vw - 2rem));   /* whole pixels at whole viewports: max-content put the centred card on a half pixel (#1467) */
+        max-width: none;
     }
 }
 
