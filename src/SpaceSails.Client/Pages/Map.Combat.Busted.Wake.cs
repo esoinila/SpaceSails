@@ -79,11 +79,10 @@ public partial class Map
         // below clears these only on a SURFACE death; a death anywhere else (a berth, a flight) left the dead
         // captain's queued beats and the held scrim to raise on the successor's first calm frame. The shard
         // (the vault) survives; the card does not.
-        // Everything the dead captain's glass held, by field (the close doors run scene side effects): the open card, the
-        // line behind it, the plate, the deferred beats, the held pulses; and the scrim FIFO (#1473).
-        DropTheStoryCardsUnsaid();
-        _scrimQueued = null;
-        _held = PulseHold.Empty;
+        // Everything the dead captain's glass held, by field and not through the close doors (which run scene side
+        // effects): the open card, the line behind it, the plate, the deferred beats, the held pulses and the scrim FIFO
+        // (#1473). That is exactly what ForgetTheExcursionsGlass drops (and the #1429 guard keeps the unsaid drops to it).
+        ForgetTheExcursionsGlass();
 
         // ── #563 · WHERE HE FELL, READ BEFORE THE GROUND IS TAKEN AWAY ───────────────────────────────
         //
