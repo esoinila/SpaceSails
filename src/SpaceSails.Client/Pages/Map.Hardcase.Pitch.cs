@@ -77,11 +77,23 @@ public sealed partial class Map
         RequestVaultSave();
     }
 
+    /// <summary>R1-F42 · Why the pitch card came down. An answered close needs no word of its own (the
+    /// captain just spoke); a torn-down one says what happened, or the card simply vanishes.</summary>
+    private enum HardcaseCloseReason { Answered, HeStepsBack }
+
+    /// <summary>R1-F42 · Kolt's card goes when the pack closes: said once, from the close, never from the flight.</summary>
+    internal const string HeStepsBackLine = "He steps back off your elbow mid-sentence, and the pitch goes with him.";
+
     /// <summary>Take the card down. His body stays wherever it is standing; only the panel goes.</summary>
-    private void CloseTheHardcasesCard()
+    private void CloseTheHardcasesCard(HardcaseCloseReason reason = HardcaseCloseReason.Answered)
     {
         _hardcaseCard = null;
         TheRepsCounterCloses();   // #1151 slice 2 · the offer and a finished form go with the conversation
+        if (reason == HardcaseCloseReason.HeStepsBack)
+        {
+            SayItWhereTheyAreLooking(HeStepsBackLine);
+        }
+
         StateHasChanged();
     }
 
@@ -125,7 +137,7 @@ public sealed partial class Map
     {
         _hardcaseRefused = true;
         ShowPulseMessage(HardcaseRep.OnRefusal);
-        CloseTheHardcasesCard();
+        CloseTheHardcasesCard(HardcaseCloseReason.Answered);
         _hardcaseMoveOnAt = SimTime + HardcaseDwellSeconds;
     }
 

@@ -92,12 +92,47 @@ public static partial class LongHaul
     /// ("year 3 of 10"). A sub-year hop still reads as a one-year crossing so the beat always lands.</summary>
     public static int VoidYears(double seconds) => Math.Max(1, (int)Math.Round(seconds / (365.0 * 86_400.0)));
 
+    /// <summary>R1-F44 · A crossing under a year counts its DAYS: 38 days is not "year 1 of 1".</summary>
+    public static bool VoidInDays(double seconds) => seconds < 365.0 * 86_400.0;
+
+    /// <summary>R1-F44 · The counter's whole units — days for a sub-year crossing, years otherwise.</summary>
+    public static int VoidUnits(double seconds) =>
+        VoidInDays(seconds) ? Math.Max(1, (int)Math.Round(seconds / 86_400.0)) : VoidYears(seconds);
+
     /// <summary>The overlay's headline — the crossing, named.</summary>
     public const string VoidTitle = "CROSSING THE VOID";
 
     /// <summary>The ticking sub-line: which year of the crossing this frame is painting.</summary>
     public static string VoidYearLine(int year, int totalYears) =>
         $"year {Math.Clamp(year, 1, Math.Max(1, totalYears))} of {Math.Max(1, totalYears)}";
+
+    /// <summary>R1-F44 · The ticking sub-line in the crossing's own unit: <c>day 12 of 38</c> under a year,
+    /// <c>year 3 of 10</c> from a year up (<see cref="VoidYearLine"/>, unchanged).</summary>
+    public static string VoidSpanLine(int current, int total, bool inDays) =>
+        inDays
+            ? $"day {Math.Clamp(current, 1, Math.Max(1, total))} of {Math.Max(1, total)}"
+            : VoidYearLine(current, total);
+
+    /// <summary>The overlay's parrot-aging wink, scaled to how much void is being crossed (owner: "maybe the
+    /// parrot aging jokes"). Pure flavor; the bird gets saltier the longer the dark. R1-F44 · a crossing counted
+    /// in days has its own two winks, and the cycler's is the quiet one.</summary>
+    public static string VoidFlavor(int units, bool inDays, bool cycler = false)
+    {
+        if (inDays)
+        {
+            return cycler
+                ? "🦜 the parrot sleeps through most of it, and never once asks where the engines went"
+                : "🦜 the parrot counts the days and loses count somewhere past thirty";
+        }
+
+        return units switch
+        {
+            <= 1 => "🦜 the parrot barely blinks — a short dark",
+            <= 3 => "🦜 the parrot preens through the quiet years",
+            <= 6 => "🦜 the parrot has picked up two new swear words by now",
+            _ => "🦜 the parrot is greying at the crest — mind the long years out here",
+        };
+    }
 
     /// <summary>The charming "no cancel" note — the bus does not stop in the void (owner: ESC is not
     /// offered mid-jump, but the overlay says so with a wink rather than a greyed-out button).</summary>

@@ -59,6 +59,7 @@ public partial class Map
     private bool _jumpInProgress;
     private int _jumpYear;
     private int _jumpTotalYears;
+    private bool _jumpInDays;   // R1-F44 · the counter's unit: days for a crossing under a year
     private string _jumpDestName = "";
     private string _jumpFlavor = "";
 

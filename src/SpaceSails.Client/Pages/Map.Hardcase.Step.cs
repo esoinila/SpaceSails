@@ -149,7 +149,7 @@ public sealed partial class Map
         _hardcaseFled = true;
         if (_hardcaseCard is not null)
         {
-            CloseTheHardcasesCard();
+            CloseTheHardcasesCard(HardcaseCloseReason.HeStepsBack);
         }
 
         TheScheduleFalls(ex, who.Walk.X, who.Walk.Y);

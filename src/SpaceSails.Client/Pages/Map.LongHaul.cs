@@ -260,10 +260,11 @@ public partial class Map
 
         // Raise the diegetic overlay and FREEZE the tick (the re-seed owns the clock; nothing integrates).
         // The #246 bottle-pop squawk fires at engage; ESC/cancel is not offered — the overlay says so.
-        _jumpTotalYears = LongHaul.VoidYears(crossingSeconds);
+        _jumpInDays = LongHaul.VoidInDays(crossingSeconds);
+        _jumpTotalYears = LongHaul.VoidUnits(crossingSeconds);
         _jumpYear = 0;
         _jumpDestName = destName;
-        _jumpFlavor = VoidFlavor(_jumpTotalYears);
+        _jumpFlavor = LongHaul.VoidFlavor(_jumpTotalYears, _jumpInDays);
         _jumpActive = true;
         _jumpInProgress = true;
         SquawkNow(Parrot.Squawk.LongHaul, _frameNowMs, force: true);

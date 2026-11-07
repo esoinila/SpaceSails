@@ -147,10 +147,11 @@ public partial class Map
         RequestVaultSave();
         FlushVaultSaveIfDirty();
 
-        _jumpTotalYears = LongHaul.VoidYears(CyclerWindow.CrossingSeconds);
+        _jumpInDays = LongHaul.VoidInDays(CyclerWindow.CrossingSeconds);
+        _jumpTotalYears = LongHaul.VoidUnits(CyclerWindow.CrossingSeconds);
         _jumpYear = 0;
         _jumpDestName = BodyName(KaamosLore.IceMoonBodyId);
-        _jumpFlavor = VoidFlavor(_jumpTotalYears);
+        _jumpFlavor = LongHaul.VoidFlavor(_jumpTotalYears, _jumpInDays, cycler: true);
         _jumpActive = true;
         _jumpInProgress = true;
         RendererInterop.PlayCue("voidjump");

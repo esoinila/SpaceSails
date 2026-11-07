@@ -104,6 +104,12 @@ public static partial class DeathNarration
             return "\"…nothing hunted you. You simply could not get home.\"";
         }
 
+        // R1-F34 · the scuttle's caption: nothing hunted you here either, and the pack quote below is not hers.
+        if (cause == DeathCause.Scuttled)
+        {
+            return "\"…nothing came for you. You set it, and then you stayed.\"";
+        }
+
         return nerveRanOut
             ? "\"…the nerve was already gone. The hand was only the last of it.\""
             : "\"…they simply kept coming, and the guard did not hold forever.\"";

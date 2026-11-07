@@ -51,11 +51,11 @@
                       DismissLabel="Minimise the crossing"
                       DismissTitle="Tuck the crossing into a tile — it keeps its own clock and the map comes back"
                       TileClass="jump-overlay-tile" TileGlyph="🚀"
-                      TileLabel="@LongHaul.VoidYearLine(_jumpYear, _jumpTotalYears)"
+                      TileLabel="@LongHaul.VoidSpanLine(_jumpYear, _jumpTotalYears, _jumpInDays)"
                       TileButtonClass="btn btn-sm btn-outline-info"
                       OpenTitle="Open the crossing back up">
             <div class="jump-overlay-title">🚀 @LongHaul.VoidTitle</div>
-            <div class="jump-overlay-year">@LongHaul.VoidYearLine(_jumpYear, _jumpTotalYears)</div>
+            <div class="jump-overlay-year">@LongHaul.VoidSpanLine(_jumpYear, _jumpTotalYears, _jumpInDays)</div>
             <div class="jump-overlay-bar">
                 <div class="jump-overlay-fill" style="width:@(_jumpTotalYears > 0 ? (int)(100.0 * Math.Clamp(_jumpYear, 0, _jumpTotalYears) / _jumpTotalYears) : 100)%"></div>
             </div>

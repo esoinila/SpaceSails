@@ -118,9 +118,9 @@ public partial class Map
             // the ice-moon project is named) assembles the first shard — the listed berth nobody files for.
             if (_viewObject is { Caption: { } caption } && caption.Contains("KAAMOS", StringComparison.Ordinal))
             {
-                // R1-F33 · the shard's first sentence IS "you read the whole plate", so the card leaves it to
-                // the ledger (which keeps the full shard) and shows only the sentences that are new.
-                TryAssembleKaamos("listed-berth", "❄ " + Core.KaamosLore.ListedBerthSaidBeside);
+                // R1-F33 · the shard's first sentence IS "you read the whole plate", so the card shows Fable's
+                // lead-in alone (KaamosLore.ListedBerthPlaqueCard); the ledger keeps the full shard.
+                TryAssembleKaamos("listed-berth", "❄ " + Core.KaamosLore.ListedBerthPlaqueCard);
             }
 
             // #422: the PIRATE INSURANCE poster (Nebula Mutual, #380/#415). The first read is the cheerful
