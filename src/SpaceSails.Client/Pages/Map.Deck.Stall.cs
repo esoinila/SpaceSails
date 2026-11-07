@@ -88,7 +88,15 @@ public partial class Map
     /// <summary>#825 · The stall banner the deck paints, or empty. Off ONE clock, through ONE threshold —
     /// this method exists so the HUD and <see cref="AcknowledgeHeldControls"/> cannot come to hold two
     /// different opinions about whether the world is live.</summary>
-    private string TheStallBanner() => FrameGap.StallBanner(SimStalenessSeconds);
+    private string TheStallBanner() => FrameGap.StallBanner(
+        TheBannerIsForced ? FrameGap.StallSeconds + 1.0 : SimStalenessSeconds);
+
+    /// <summary>#1466 · <c>?stall=1</c>, FOR VERIFICATION ONLY: paint the stall banner without starving the tab, so a
+    /// layout pass can see how the HUD sits under it. Read off the LIVE ADDRESS like <c>?perf=1</c> (no field on this
+    /// page, no part of <see cref="BootQuery"/>): it changes the banner's line and nothing else - the controls are
+    /// NOT held, no body, berth or cheat moves.</summary>
+    private bool TheBannerIsForced =>
+        Navigation is { } address && address.Uri.Contains("stall=1", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>#825 · A control used inside the gap. The order is NOT dropped — a clicked route is a queued
     /// target that outlives the stall and is walked the moment frames return — so this is a receipt rather
