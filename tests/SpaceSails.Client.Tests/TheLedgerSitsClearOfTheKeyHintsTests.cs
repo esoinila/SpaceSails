@@ -79,4 +79,63 @@ public sealed class TheLedgerSitsClearOfTheKeyHintsTests
         Assert.Equal(6, free);
         Assert.True(squeezed < free, $"the ledger drew {squeezed} rows under the captions, the same as without them.");
     }
+
+    private sealed class RectPen : IRenderer
+    {
+        public List<(string Text, float X, float Y, float W, float H)> Said { get; } = [];
+        public void BeginFrame(int widthPx, int heightPx, RgbaColor background) => Said.Clear();
+        public void EndFrame() { }
+        public int RegisterImage(string url) => 1;
+        public void DrawCircle(float x, float y, float r, RgbaColor? fill, RgbaColor stroke, float w = 1f) { }
+        public void DrawPolyline(ReadOnlySpan<float> pts, RgbaColor stroke, float w = 1f) { }
+        public void DrawPolygon(ReadOnlySpan<float> pts, RgbaColor? fill, RgbaColor stroke, float w = 1f) { }
+        public void DrawText(float x, float y, string text, RgbaColor c, string font = "12px sans-serif",
+                             TextAlign align = TextAlign.Left)
+        {
+            float px = float.Parse(System.Text.RegularExpressions.Regex.Match(font, @"(\d+)px").Groups[1].Value);
+            float w = text.Length * px * 0.6f;
+            Said.Add((text, x, y - px, w, px));
+        }
+        public void DrawImage(int id, float x, float y, float w, float h, float a = 1f) { }
+        public void DrawImageSlice(int id, float sx, float sy, float sw, float sh,
+                                   float x, float y, float w, float h, float a = 1f) { }
+    }
+
+    /// <summary>#1483 · The flash line used to be drawn at its bottom-anchored y whether or not it cleared the
+    /// key-hint captions (at the monolith "you have seen the monolith -3" printed across "T - deploy here"), and at
+    /// 720 px tall the ledger never fitted at all. The block now steps right of the tracker column: the flash is
+    /// always drawn, and nothing it or the ledger says touches a caption.</summary>
+    [Theory]
+    [InlineData(1280, 720)]
+    [InlineData(1440, 900)]
+    public void TheFlashAndTheLedgerNeverTouchTheKeyHints(int w, int h)
+    {
+        string[] captions = ["T — deploy here", "⇧T — hold my line home", "G — dig", "F — leave a bot", "R — recall the bots", "X — set the sentry", "Z — sentry stands down", "C — cache here", "B — bank a find", "N — name the spot", "H — hail the ship", "J — jam the door"];
+        var plan = new DeckPlan([], [], [], [], spawnX: 0, spawnY: 0, droidCount: 0,
+            fillDroids: (_, _) => { }, location: (_, _) => "field");
+        var pen = new RectPen();
+        var hud = new DeckView.SurfaceHud(
+            DigProgress: -1, HasDroppedChest: false, DropX: 0, DropY: 0,
+            Blips: [], Cadence: 1, Readout: "no contact", CacheMarks: [],
+            Nerve: 80, NerveReadout: "STEADY", Instruments: true, TrackerCaptions: captions);
+        string[] ledger = ["cause a  -1", "cause b  -1", "cause c  +1"];
+        var state = new DeckView.State(0, 0, 0, 0, 0, ShuttleAway: false, ElectricUniverse: false,
+            ShowNerve: true, NerveLedger: ledger, NerveFlash: "you have seen the monolith -3");
+        new DeckView(pen).Draw(plan, w, h, simTime: 0, in state, surface: hud);
+
+        var hints = pen.Said.Where(t => captions.Contains(t.Text)).ToList();
+        Assert.Equal(captions.Length, hints.Count);
+        var mine = pen.Said.Where(t => t.Text.StartsWith("cause ", StringComparison.Ordinal)
+            || t.Text.StartsWith("you have seen", StringComparison.Ordinal) || t.Text == "NERVE LEDGER").ToList();
+        Assert.Contains(mine, t => t.Text.StartsWith("you have seen", StringComparison.Ordinal));
+        Assert.Contains(mine, t => t.Text == "cause a  -1");
+        foreach (var m in mine)
+        {
+            foreach (var c in hints)
+            {
+                bool hit = m.X < c.X + c.W && c.X < m.X + m.W && m.Y < c.Y + c.H && c.Y < m.Y + m.H;
+                Assert.False(hit, $"'{m.Text}' overprints '{c.Text}' at {w}x{h}.");
+            }
+        }
+    }
 }

@@ -980,7 +980,11 @@
    checklist is closed. Gated to windows at least 900px wide: what a smaller window should do is the owner's call (it
    drops to LOW), and this lane does not make it. */
 @media (min-width: 900px) {
+    /* #1483 · …and it steps right of the captain's roundel (bottom 0.75rem, 2.15rem across): measured at 1024 x 700 the
+       chip (x 12-46, y 654-688) sat on the card's last line (x 12-364, y 528-688). */
     ::deep .map-tutorial {
+        left: 3.5rem;
+        max-width: calc(100% - 4.25rem);
         max-height: 10rem;
     }
 
@@ -1218,8 +1222,8 @@
 
 @media (min-width: 900px) {
     .map-page:has(.map-tutorial) .parrot-bubble {
-        left: 23rem;
-        max-width: 11.5rem;
+        left: 25.5rem;
+        max-width: 9rem;
     }
 }
 

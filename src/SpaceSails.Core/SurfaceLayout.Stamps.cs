@@ -214,7 +214,7 @@ public static partial class SurfaceLayout
                 double g1 = Lerp(minX + 30, mid - 15, Frac(key, "stamp:gap1"));
                 double g2 = Lerp(mid + 15, maxX - 30, Frac(key, "stamp:gap2"));
                 (double From, double To)[] runs = [(minX, g1 - 2), (g1 + 2, g2 - 2), (g2 + 2, maxX)];
-                double[] lifts = [8, .. Enumerable.Range(2, 113).Select(h => h / 2.0).Where(h => h != 8)];
+                double[] lifts = [8, .. Enumerable.Range(2, 59).Select(h => h / 2.0).Where(h => h != 8)];
                 var pieces = new List<Piece>();
                 double lastLift = lifts[0];
                 foreach ((double from, double to) in runs)
@@ -224,14 +224,23 @@ public static partial class SurfaceLayout
                     {
                         double a = Lerp(from, to, i / (double)n), b = Lerp(from, to, (i + 1) / (double)n);
                         double chosen = lastLift;
+                        bool seated = false;
                         foreach (double lift in lifts.Take(1).Concat(lifts.Skip(1).OrderBy(l => System.Math.Abs(l - lastLift))))
                         {
                             if (Fits(claimed, (a + b) / 2, f.BottomY + lift, (b - a) / 2, 0.5))
                             {
                                 chosen = lift;
+                                seated = true;
                                 break;
                             }
                         }
+                        // #1483 · NOWHERE TO HIDE: the lip never climbs past 30 du. Where it cannot fit, the shelter, lab or
+                        // spur standing on the bottom edge closes the shelf instead, and the chunk is simply not laid.
+                        if (!seated)
+                        {
+                            continue;
+                        }
+
                         lastLift = chosen;
                         double y = f.BottomY + chosen;
                         pieces.Add(new((a + b) / 2, y, (b - a) / 2, 0.5, [new Wall(a, y, b, y, true)]));
