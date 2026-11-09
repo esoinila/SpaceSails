@@ -47,6 +47,11 @@ public partial class Map
         // nothing. Both are one-shot per walk.
         public bool AirLowWarned { get; set; }
 
+        // U09-F03 · The air has run low since the last proper refill. Latched (the pressurised floor parks the
+        // tank, so a stateless read would also work, but the latch is what the owner's rule says); a refill
+        // from the ship or a rack clears it. Only then does the room air ease the nerve, up to its cap.
+        public bool AirSpellLow { get; set; }
+
         // #573 · Whether the secondary pack's cut-in has been announced. One-shot, re-armed by a refill.
         public bool ReserveNoted { get; set; }
 

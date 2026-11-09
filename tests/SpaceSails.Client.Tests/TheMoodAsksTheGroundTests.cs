@@ -201,7 +201,10 @@ public sealed class TheMoodAsksTheGroundTests
             Pages.Map map = Standing(floor);
             // A floor of the Hive is safe by the #585 rule; the surface at this depth is not, so the ease
             // can only be observed where the ground earns it. That IS the fork: same beat, same pip.
-            Set(map, "_nerve", NervePips.FromPips(NervePips.MaxPips - 2));
+            Set(map, "_nerve", NervePips.FromPips(NervePips.RoomAirCapPips - 2));
+            // U09-F03 · the room air only eases a captain whose own air ran low.
+            object excursion = Get<object>(map, "_surface");
+            excursion.GetType().GetProperty("AirSpellLow")!.SetValue(excursion, true);
 
             (typeof(Pages.Map).GetMethod("StepNerve", Hidden)
              ?? throw new InvalidOperationException("Map has no StepNerve."))

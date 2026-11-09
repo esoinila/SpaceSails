@@ -310,9 +310,10 @@ public sealed class TheMoodAsksTheGroundTests
             var frame = new NervePips.Frame(
                 OnExcursion: true, OnRegolith: false, SeesMonolith: false,
                 Stressors: default, FreshSightings: 0, Touched: false,
-                DtSeconds: NervePips.AirlockBeatSeconds, SafeGroundHoldsPressure: pressurised);
+                DtSeconds: NervePips.AirlockBeatSeconds, SafeGroundHoldsPressure: pressurised,
+                AirWasLow: true);   // U09-F03: the floor eases only after a low-air spell
             NervePips.Step step = NervePips.Advance(
-                NervePips.FromPips(NervePips.MaxPips - 2), monolithSeen: false, NervePips.Beats.Fresh, in frame);
+                NervePips.FromPips(NervePips.RoomAirCapPips - 2), monolithSeen: false, NervePips.Beats.Fresh, in frame);
             return Assert.Single(step.Events);
         }
 

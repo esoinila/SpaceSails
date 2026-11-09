@@ -463,6 +463,8 @@ I try to move when sitting down it should ask with a pop-up whether I want to st
 nothing at all — the relief seam is honest and gives nothing back to somebody who has lost nothing, so the
 whole feature would look like a control that did not fire.
 
+**The room air does not pre-empt the chair (U09-F03, owner ruling 2026-11-09, #1423).** On a pressurised floor the warm-air ease ("warm air and standing lights - the floor is holding") gives nerve back only to a captain whose own air has run low (the tank at or under 35% since the last refill), and only up to 7 of 10 pips (about 70%). On this link the tank is full, so the floor gives nothing and the chair has the whole climb to give; to see the room air itself, spend the tank low first (`&air=` with a short tank) and then step onto a pressurised floor.
+
 **What to look at, in order.**
 
 1. **The figure changes.** Before you press `[E]`, the captain is a filled circle with a spoke pointing where

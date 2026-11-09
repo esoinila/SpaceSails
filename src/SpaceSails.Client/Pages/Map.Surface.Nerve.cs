@@ -110,7 +110,9 @@ public partial class Map
             // A pressurised floor of the Hive has been "safe" to this model since #585 and there is no
             // airlock anywhere in it — which is why the owner's ledger, on a park lawn under grow-lights,
             // kept saying "the airlock closes behind you +1".
-            SafeGroundHoldsPressure: StandingOnGroundThatHoldsPressure);
+            SafeGroundHoldsPressure: StandingOnGroundThatHoldsPressure,
+            // U09-F03 · The room air eases nerve only for a captain whose own air ran low (cap: 7 pips).
+            AirWasLow: _surface is { } airEx && (airEx.AirSpellLow || SuitAir.TankIsLow(airEx.AirSeconds)));
 
         NervePips.Step step = NervePips.Advance(_nerve, _monolithSeen, _nerveBeats, in frame);
         bool monolithFired = !_monolithSeen && step.MonolithSeen;

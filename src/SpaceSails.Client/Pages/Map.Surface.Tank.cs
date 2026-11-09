@@ -227,6 +227,7 @@ public partial class Map
             ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, dtRealSeconds * TubeRefillRate);
             ex.AirWarned = false;   // re-arm the warnings: the next walk out gets told again
             ex.AirLowWarned = false;
+            ex.AirSpellLow = SuitAir.TankIsLow(ex.AirSeconds);
             ex.ReserveNoted = false;
             return;
         }
@@ -259,6 +260,10 @@ public partial class Map
 
         double rate = SuitAir.Breathing.Rate(exertion, _nerve, ex.HitsTaken, CaptainCondition.MaxHits);
         ex.AirSeconds = SuitAir.Drain(ex.AirSeconds, dtRealSeconds * rate);
+        if (SuitAir.TankIsLow(ex.AirSeconds))
+        {
+            ex.AirSpellLow = true; // U09-F03: the air has been low; the room air will remember it
+        }
 
         // Say it once when the breathing itself becomes the problem. Not a nag — a diagnosis, and a hint
         // that standing still is a move.
