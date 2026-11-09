@@ -175,7 +175,7 @@ public partial class Map
         }
 
         int units = CommerceRule.MaxBuyableUnits(
-            mode, post.CargoUnits, CargoCapacity - _cargoUnits, _credits, CargoMarket.UnitValue(cargoClass));
+            mode, post.CargoUnits, CargoCapacity - _cargoUnits, _credits, PostSpread.UnitValueCr(PostSpread.PostIdOf(post), cargoClass));
         if (units <= 0)
         {
             ShowPulseMessage(CargoCapacity - _cargoUnits <= 0
@@ -189,7 +189,7 @@ public partial class Map
         _localTradeProgress = 0;
         _localBuyUnits = units;
         _localBuyClass = cargoClass;
-        _localBuyCostCr = CommerceRule.BuyCostCr(mode, units, CargoMarket.UnitValue(cargoClass));
+        _localBuyCostCr = CommerceRule.BuyCostCr(mode, units, PostSpread.UnitValueCr(PostSpread.PostIdOf(post), cargoClass));
         _localTradeMessage = mode == CommerceRule.TradeMode.Shuttle
             ? $"Shuttles away — buying {units}u {cargoClass} for {_localBuyCostCr:N0} cr 🚀"
             : $"{(mode == CommerceRule.TradeMode.SameOrbit ? "Dockside crew" : "Drones")} loading {units}u {cargoClass} — {_localBuyCostCr:N0} cr";
@@ -252,7 +252,7 @@ public partial class Map
             }
             else
             {
-                CompleteLocalSell(mode, shuttle);
+                CompleteLocalSell(contact, mode, shuttle);
             }
 
             _localTradeTargetId = null;
@@ -267,10 +267,10 @@ public partial class Map
         }
     }
 
-    private void CompleteLocalSell(CommerceRule.TradeMode mode, bool shuttle)
+    private void CompleteLocalSell(CommerceRule.LocalContact contact, CommerceRule.TradeMode mode, bool shuttle)
     {
         int units = _cargoUnits;
-        int payout = CommerceRule.SellPayoutCr(mode, units, _cargoValue);
+        int payout = CommerceRule.SellPayoutCr(mode, units, PostSpread.HoldValueCr(PostSpread.PostIdOf(contact), _cargoByClass, _cargoValue));
         int fee = CommerceRule.TransferFeeCr(mode, units);
         _credits += payout;
         _cargoUnits = 0;
@@ -291,14 +291,14 @@ public partial class Map
         int stock = seller is null ? contact.CargoUnits : RemainingStock(seller);
         int units = CommerceRule.MaxBuyableUnits(
             mode, Math.Min(stock, _localBuyUnits), CargoCapacity - _cargoUnits, _credits,
-            CargoMarket.UnitValue(_localBuyClass));
+            PostSpread.UnitValueCr(PostSpread.PostIdOf(contact), _localBuyClass));
         if (units <= 0)
         {
             _localTradeMessage = "Shuttles returned empty — the deal fell through at handover";
             return;
         }
 
-        int cost = CommerceRule.BuyCostCr(mode, units, CargoMarket.UnitValue(_localBuyClass));
+        int cost = CommerceRule.BuyCostCr(mode, units, PostSpread.UnitValueCr(PostSpread.PostIdOf(contact), _localBuyClass));
         _credits -= cost;
         _cargoUnits += units;
         _cargoValue += units * CargoMarket.UnitValue(_localBuyClass);

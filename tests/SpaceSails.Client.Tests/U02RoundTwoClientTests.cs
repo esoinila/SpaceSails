@@ -60,7 +60,7 @@ public sealed class U02RoundTwoClientTests
         MethodInfo sell = typeof(Pages.Stations.LocalSpace).GetMethod("SellButtonLabel", Hidden)!;
 
         string bought = (string)buy.Invoke(ls, [CommerceRule.TradeMode.SameOrbit, AContact(), 1, 1200, relSpeed, distance])!;
-        string sold = (string)sell.Invoke(ls, [CommerceRule.TradeMode.SameOrbit, relSpeed, distance])!;
+        string sold = (string)sell.Invoke(ls, [AContact(), CommerceRule.TradeMode.SameOrbit, relSpeed, distance])!;
 
         foreach (string label in new[] { bought, sold })
         {
@@ -71,6 +71,87 @@ public sealed class U02RoundTwoClientTests
             // "dockside" only where the partner is within a few km at matched speed.
             Assert.Equal(distance <= 10_000 && relSpeed <= 50.0, label.Contains("dockside"));
         }
+    }
+
+    // ── U02-F24 · every post has its own price: the buy/sell row carries one told tail at a non-par post ──
+
+    private static CommerceRule.LocalContact APost(string host, string cargoClass) =>
+        new("depot-" + host, host + " Depot", CommerceRule.LocalContactKind.Depot, default, default, 0,
+            CommerceRule.ActionKind.Trade, cargoClass, 40, HostBodyId: host);
+
+    private static string SellLabelAt(string host, string cargoClass)
+    {
+        object ls = Activator.CreateInstance(typeof(Pages.Stations.LocalSpace))!;
+        typeof(Pages.Stations.LocalSpace).GetProperty("CargoUnits")!.SetValue(ls, 10);
+        typeof(Pages.Stations.LocalSpace).GetProperty("CargoValue")!.SetValue(ls, 1000);
+        typeof(Pages.Stations.LocalSpace).GetProperty("CargoByClass")!.SetValue(ls, new Dictionary<string, int> { [cargoClass] = 10 });
+        return (string)typeof(Pages.Stations.LocalSpace).GetMethod("SellButtonLabel", Hidden)!
+            .Invoke(ls, [APost(host, cargoClass), CommerceRule.TradeMode.Shuttle, 100.0, 1e6])!;
+    }
+
+    [Fact]
+    public void TheSellRowCarriesThePostsTailOffParAndNothingAtPar()
+    {
+        string earth = SellLabelAt("earth", "Ice");
+        Assert.EndsWith(" · −15% here — Earth is short of nothing.", earth);
+        Assert.Contains("+600 cr", earth); // 10 x 85 less the 250 cr shuttle fee
+        string selene = SellLabelAt("selene-gate", "Ice");
+        Assert.DoesNotContain("% here", selene);
+        Assert.DoesNotContain(" · −", selene);
+    }
+
+    [Fact]
+    public void TheBuyRowCarriesThePostsTailOffParAndNothingAtPar()
+    {
+        object ls = Activator.CreateInstance(typeof(Pages.Stations.LocalSpace))!;
+        MethodInfo buy = typeof(Pages.Stations.LocalSpace).GetMethod("BuyButtonLabel", Hidden)!;
+        string deep = (string)buy.Invoke(ls, [CommerceRule.TradeMode.Shuttle, APost("the-deep", "He3"), 2, 1080, 100.0, 1e6])!;
+        Assert.EndsWith(" · −10% here — the moons make it.", deep);
+        string selene = (string)buy.Invoke(ls, [CommerceRule.TradeMode.Shuttle, APost("selene-gate", "He3"), 2, 1200, 100.0, 1e6])!;
+        Assert.DoesNotContain("% here", selene);
+    }
+
+    [Fact]
+    public void TheBuyQuoteAtEarthIsTheScaledValueNotTheFaceValue()
+    {
+        object ls = Activator.CreateInstance(typeof(Pages.Stations.LocalSpace))!;
+        int quote = (int)typeof(Pages.Stations.LocalSpace).GetMethod("PostUnitValue", Hidden | BindingFlags.Static)!
+            .Invoke(null, [APost("earth", "Machinery"), "Machinery"])!;
+        Assert.Equal((int)Math.Round(CargoMarket.UnitValue("Machinery") * PostSpread.Factor("earth", "Machinery")), quote);
+        Assert.True(quote < CargoMarket.UnitValue("Machinery"));
+    }
+
+    [Fact]
+    public void TheDockedSaleAtEarthPaysLessThanFaceSoBuyingThereAndDockSellingIsNoFreeRun()
+    {
+        Pages.Map map = NewMap();
+        ICelestialEphemeris sky = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
+        Set(map, "_scenarioName", TestTree.Sol.Name);
+        Set(map, "_ephemeris", sky);
+        Set(map, "_simulator", new Simulator(sky, timeStepSeconds: 1.0));
+        Set(map, "_ship", new ShipState(sky.Position("earth", 0), Vector2d.Zero, 0.0));
+        Invoke(map, "UpdateDockStatus"); // the one writer of the port-zone flags, not a hand-set world
+        Assert.Equal("earth", Get<string?>(map, "_dockBodyId"));
+        Set(map, "_cargoUnits", 10);
+        Set(map, "_cargoValue", 10 * CargoMarket.UnitValue("Machinery"));
+        Set(map, "_credits", 0);
+        Get<Dictionary<string, int>>(map, "_cargoByClass")["Machinery"] = 10;
+        Invoke(map, "SellCargo");
+        int paid = Get<int>(map, "_credits");
+        Assert.Equal(PostSpread.HoldValueCr("earth", new Dictionary<string, int> { ["Machinery"] = 10 }, 10 * CargoMarket.UnitValue("Machinery")), paid);
+        Assert.True(paid < 10 * CargoMarket.UnitValue("Machinery"));
+    }
+
+    [Fact]
+    public void ATradingPostHasOnePriceWhetherYouReachItsNodeOrItsDepot()
+    {
+        // The node is listed under its parent planet (HostBodyId = earth); the depot is hosted by the post itself.
+        var node = new CommerceRule.LocalContact("satellite-factory", "Highport Satellite Works", CommerceRule.LocalContactKind.Station,
+            default, default, 0, CommerceRule.ActionKind.Trade, HostBodyId: "earth");
+        CommerceRule.LocalContact depot = APost("satellite-factory", "Alloys");
+        Assert.Equal(PostSpread.PostIdOf(depot), PostSpread.PostIdOf(node));
+        Assert.Equal(1.15, PostSpread.Factor(PostSpread.PostIdOf(node), "Alloys"));
+        Assert.Equal(PostSpread.Factor(PostSpread.PostIdOf(depot), "Alloys"), PostSpread.Factor(PostSpread.PostIdOf(node), "Alloys"));
     }
 
     // ── U02-F11 · one distance formatter on the desk ────────────────────────────────────────────────
