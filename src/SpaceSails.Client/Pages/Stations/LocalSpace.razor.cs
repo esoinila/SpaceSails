@@ -24,6 +24,8 @@ public partial class LocalSpace
     [Parameter, EditorRequired] public Vector2d ShipVelocity { get; set; }
     [Parameter] public int CargoUnits { get; set; }
     [Parameter] public int CargoValue { get; set; }
+    /// <summary>U02-F24: the hold's units per class, so a post can price each class at its own factor.</summary>
+    [Parameter] public IReadOnlyDictionary<string, int>? CargoByClass { get; set; }
     [Parameter] public int Credits { get; set; }
     [Parameter] public int HoldSpaceUnits { get; set; }
     [Parameter] public string? ActiveTradeTargetId { get; set; }
@@ -209,14 +211,15 @@ public partial class LocalSpace
         }
 
         int cost = CommerceRule.BuyCostCr(mode, buyUnits, unitValue);
+        string tail = SpreadTail(contact, contact.CargoClass);
         return mode switch
         {
             CommerceRule.TradeMode.SameOrbit =>
-                $"🛒 Buy {buyUnits}u {SameOrbitWords(relSpeed, distance)} — {cost:N0} cr · no fee · ~{EstimateMinutes(mode, relSpeed, distance, buyUnits)} min",
+                $"🛒 Buy {buyUnits}u {SameOrbitWords(relSpeed, distance)} — {cost:N0} cr · no fee · ~{EstimateMinutes(mode, relSpeed, distance, buyUnits)} min{tail}",
             CommerceRule.TradeMode.DroneMatch =>
-                $"🛒 Buy {buyUnits}u via drones now — {cost:N0} cr (incl {CommerceRule.TransferFeeCr(mode, buyUnits):N0} cr fee) · ~{EstimateMinutes(mode, relSpeed, distance, buyUnits)} min",
+                $"🛒 Buy {buyUnits}u via drones now — {cost:N0} cr (incl {CommerceRule.TransferFeeCr(mode, buyUnits):N0} cr fee) · ~{EstimateMinutes(mode, relSpeed, distance, buyUnits)} min{tail}",
             _ =>
-                $"🛒 Buy {buyUnits}u via shuttles now — {cost:N0} cr (incl {CommerceRule.TransferFeeCr(mode, buyUnits):N0} cr fee) · ~{EstimateMinutes(mode, relSpeed, distance, buyUnits)} min",
+                $"🛒 Buy {buyUnits}u via shuttles now — {cost:N0} cr (incl {CommerceRule.TransferFeeCr(mode, buyUnits):N0} cr fee) · ~{EstimateMinutes(mode, relSpeed, distance, buyUnits)} min{tail}",
         };
     }
 
@@ -225,17 +228,41 @@ public partial class LocalSpace
     private static string SameOrbitWords(double relSpeed, double distance) =>
         distance <= 10_000 && relSpeed <= 50.0 ? "dockside, by drone" : "by drone";
 
-    private string SellButtonLabel(CommerceRule.TradeMode mode, double relSpeed, double distance)
+    /// <summary>U02-F24: the post's one told tail (" · −15% here — …"), empty at par.</summary>
+    private static string SpreadTail(CommerceRule.LocalContact contact, string? cargoClass) =>
+        cargoClass is not null && PostSpread.Tail(PostSpread.PostIdOf(contact), cargoClass) is { } t ? $" · {t}" : "";
+
+    /// <summary>The post's price for one unit of a class (face value times the post's factor).</summary>
+    private static int PostUnitValue(CommerceRule.LocalContact contact, string cargoClass) =>
+        PostSpread.UnitValueCr(PostSpread.PostIdOf(contact), cargoClass);
+
+    /// <summary>What this post would pay for the whole hold.</summary>
+    private int PostHoldValue(CommerceRule.LocalContact contact) =>
+        PostSpread.HoldValueCr(PostSpread.PostIdOf(contact), CargoByClass, CargoValue);
+
+    /// <summary>The tail of the hold's most valuable class at this post (a mixed hold gets one line).</summary>
+    private string SellTail(CommerceRule.LocalContact contact)
     {
-        int payout = CommerceRule.SellPayoutCr(mode, CargoUnits, CargoValue);
+        string? top = CargoByClass?
+            .Where(kv => kv.Value > 0)
+            .OrderByDescending(kv => kv.Value * CargoMarket.UnitValue(kv.Key) * Math.Abs(PostSpread.Factor(PostSpread.PostIdOf(contact), kv.Key) - 1.0))
+            .Select(kv => kv.Key)
+            .FirstOrDefault();
+        return SpreadTail(contact, top);
+    }
+
+    private string SellButtonLabel(CommerceRule.LocalContact contact, CommerceRule.TradeMode mode, double relSpeed, double distance)
+    {
+        int payout = CommerceRule.SellPayoutCr(mode, CargoUnits, PostHoldValue(contact));
+        string tail = SellTail(contact);
         return mode switch
         {
             CommerceRule.TradeMode.SameOrbit =>
-                $"📤 Sell hold {SameOrbitWords(relSpeed, distance)} — +{payout:N0} cr · no fee · ~{EstimateMinutes(mode, relSpeed, distance, CargoUnits)} min",
+                $"📤 Sell hold {SameOrbitWords(relSpeed, distance)} — +{payout:N0} cr · no fee · ~{EstimateMinutes(mode, relSpeed, distance, CargoUnits)} min{tail}",
             CommerceRule.TradeMode.DroneMatch =>
-                $"📤 Sell hold via drones now — +{payout:N0} cr · ~{EstimateMinutes(mode, relSpeed, distance, CargoUnits)} min",
+                $"📤 Sell hold via drones now — +{payout:N0} cr · ~{EstimateMinutes(mode, relSpeed, distance, CargoUnits)} min{tail}",
             _ =>
-                $"📤 Sell hold via shuttles now — +{payout:N0} cr (after {CommerceRule.TransferFeeCr(mode, CargoUnits):N0} cr fee) · ~{EstimateMinutes(mode, relSpeed, distance, CargoUnits)} min",
+                $"📤 Sell hold via shuttles now — +{payout:N0} cr (after {CommerceRule.TransferFeeCr(mode, CargoUnits):N0} cr fee) · ~{EstimateMinutes(mode, relSpeed, distance, CargoUnits)} min{tail}",
         };
     }
 

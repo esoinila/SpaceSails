@@ -253,6 +253,14 @@ a level-up costing 2,000 credits and doubling every level thereafter. See the Tr
   orbit). Hauling something heavy? Close in and match orbit to skip the fee — that's the
   economic reason to dock. The fee also means buy-and-flip through the shuttles is always a
   losing round trip; profit comes from hauling goods somewhere better.
+- **Every post has its own price** (U02-F24, #1416): each post prices each cargo class at its own
+  fixed factor, 0.80 to 1.25 of face value, the same both ways (a post has one price for a thing).
+  Inner posts run cheap, the long haul runs dear, and a place that makes a thing sells it low. There
+  is no price board and no history: a post that is off par tells you so once, at the end of the
+  buy or sell row ("-15% here, Earth is short of nothing"), and a par post says nothing. Buy where
+  it is cheap, sell where it is dear, mind the ferry fees (Mars ice to Cinder Roost by drone nets a
+  profit; the same run by shuttle does not). Fence pricing at havens is unchanged. The table is
+  `PostSpread` in Core.
 - Trading tiers: **same-orbit** (the classic bus stop, fee-free), **course-matched** (within
   500,000 km and under 2 km/s — cooperative cargo drones), or **shuttle reach** (a slow pass
   within 12 M km at ≤5 km/s — shuttles fly the long corridor). Transfers run in real time (a

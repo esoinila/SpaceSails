@@ -110,9 +110,9 @@
                         {
                             @if (contact.CargoUnits > 0 && contact.CargoClass is { } stockClass)
                             {
-                                int unitValue = CargoMarket.UnitValue(stockClass);
+                                int unitValue = PostUnitValue(contact, stockClass);
                                 int buyUnits = CommerceRule.MaxBuyableUnits(mode, contact.CargoUnits, HoldSpaceUnits, Credits, unitValue);
-                                <div class="fw-bold mb-1">📦 @stockClass — @contact.CargoUnits u in stock · @unitValue.ToString("N0") cr/u face value</div>
+                                <div class="fw-bold mb-1">📦 @stockClass — @contact.CargoUnits u in stock · @unitValue.ToString("N0") cr/u here</div>
                                 @if (!canTrade)
                                 {
                                     <div class="text-secondary local-space-hint">@OutOfReachText</div>
@@ -155,7 +155,7 @@
                                 <div class="local-space-node" role="button" tabindex="0" title="Open this item's buy options in the detail pane" @onclick="() => _selectedId = itemId">
                                     <span>📦</span>
                                     <span class="flex-grow-1">@stockClass × @contact.CargoUnits</span>
-                                    <span class="text-secondary">@CargoMarket.UnitValue(stockClass).ToString("N0") cr/u</span>
+                                    <span class="text-secondary">@PostUnitValue(contact, stockClass).ToString("N0") cr/u</span>
                                 </div>
                             }
                             else
@@ -176,16 +176,16 @@
                             }
                             else
                             {
-                                <div>hold: @CargoUnits u worth @CargoValue.ToString("N0") cr</div>
+                                <div>hold: @CargoUnits u worth @PostHoldValue(contact).ToString("N0") cr here</div>
                                 <div class="d-grid gap-1 local-space-actions">
                                     <button type="button" class="btn btn-sm btn-outline-info py-0 px-1 text-start"
                                             disabled="@(ActiveTradeTargetId is not null)"
                                             title="Start selling your hold here — ferries the cargo over and credits the payout shown" @onclick="() => OnStartTrade.InvokeAsync(contact.Id)">
-                                        @SellButtonLabel(mode, relSpeed, distance)
+                                        @SellButtonLabel(contact, mode, relSpeed, distance)
                                     </button>
                                     @if (mode != CommerceRule.TradeMode.SameOrbit)
                                     {
-                                        <div class="text-secondary local-space-hint">⚓ other option: dock to sell fee-free (+@CargoValue.ToString("N0") cr)</div>
+                                        <div class="text-secondary local-space-hint">⚓ other option: dock to sell fee-free (+@PostHoldValue(contact).ToString("N0") cr)</div>
                                     }
                                 </div>
                             }
@@ -195,7 +195,7 @@
                             @* The post itself: its whole business at a glance. *@
                             @if (contact.CargoUnits > 0 && contact.CargoClass is { } stockClass)
                             {
-                                <div>carries <span class="fw-bold">@contact.CargoUnits u @stockClass</span> · @CargoMarket.UnitValue(stockClass).ToString("N0") cr/u — open <span class="text-info">Buy</span> under this post for options</div>
+                                <div>carries <span class="fw-bold">@contact.CargoUnits u @stockClass</span> · @PostUnitValue(contact, stockClass).ToString("N0") cr/u — open <span class="text-info">Buy</span> under this post for options</div>
                             }
                             else
                             {
