@@ -39,8 +39,9 @@ public partial class Map
             return;
         }
 
-        _credits += _cargoValue;
-        ShowPulseMessage($"Sold {_cargoUnits} units for {_cargoValue:N0} credits {PlunderLines[(int)((SimTime / 61) % PlunderLines.Length)]}");
+        int payout = PostSpread.HoldValueCr(_dockBodyId, _cargoByClass, _cargoValue);
+        _credits += payout;
+        ShowPulseMessage($"Sold {_cargoUnits} units for {payout:N0} credits {PlunderLines[(int)((SimTime / 61) % PlunderLines.Length)]}");
         _cargoUnits = 0;
         _cargoValue = 0;
         _cargoByClass.Clear();

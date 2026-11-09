@@ -55,6 +55,11 @@ public static class PostSpread
         return row.Default;
     }
 
+    /// <summary>The post a contact prices as: a station or haven node is its own post (not its parent planet's),
+    /// a depot is its host body's. One price whether you reach the node or the depot.</summary>
+    public static string PostIdOf(CommerceRule.LocalContact c) =>
+        c.Kind is CommerceRule.LocalContactKind.Station or CommerceRule.LocalContactKind.Haven ? c.Id : c.HostBodyId ?? c.Id;
+
     /// <summary>A class's per-unit value at this post: the face value times the post's factor.</summary>
     public static int UnitValueCr(string? bodyId, string cargoClass) =>
         (int)Math.Round(CargoMarket.UnitValue(cargoClass) * Factor(bodyId, cargoClass));

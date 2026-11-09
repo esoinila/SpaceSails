@@ -230,22 +230,22 @@ public partial class LocalSpace
 
     /// <summary>U02-F24: the post's one told tail (" · −15% here — …"), empty at par.</summary>
     private static string SpreadTail(CommerceRule.LocalContact contact, string? cargoClass) =>
-        cargoClass is not null && PostSpread.Tail(contact.HostBodyId ?? contact.Id, cargoClass) is { } t ? $" · {t}" : "";
+        cargoClass is not null && PostSpread.Tail(PostSpread.PostIdOf(contact), cargoClass) is { } t ? $" · {t}" : "";
 
     /// <summary>The post's price for one unit of a class (face value times the post's factor).</summary>
     private static int PostUnitValue(CommerceRule.LocalContact contact, string cargoClass) =>
-        PostSpread.UnitValueCr(contact.HostBodyId ?? contact.Id, cargoClass);
+        PostSpread.UnitValueCr(PostSpread.PostIdOf(contact), cargoClass);
 
     /// <summary>What this post would pay for the whole hold.</summary>
     private int PostHoldValue(CommerceRule.LocalContact contact) =>
-        PostSpread.HoldValueCr(contact.HostBodyId ?? contact.Id, CargoByClass, CargoValue);
+        PostSpread.HoldValueCr(PostSpread.PostIdOf(contact), CargoByClass, CargoValue);
 
     /// <summary>The tail of the hold's most valuable class at this post (a mixed hold gets one line).</summary>
     private string SellTail(CommerceRule.LocalContact contact)
     {
         string? top = CargoByClass?
             .Where(kv => kv.Value > 0)
-            .OrderByDescending(kv => kv.Value * CargoMarket.UnitValue(kv.Key))
+            .OrderByDescending(kv => kv.Value * CargoMarket.UnitValue(kv.Key) * Math.Abs(PostSpread.Factor(PostSpread.PostIdOf(contact), kv.Key) - 1.0))
             .Select(kv => kv.Key)
             .FirstOrDefault();
         return SpreadTail(contact, top);
