@@ -464,7 +464,7 @@ public sealed class TheShipSaysWhichWaySheIsGoingTests
         var ship = (ShipState)Read(map, "_ship")!;
         Set(map, "_ship", ship with { Charge = threshold * 2 });
         Set(map, "_plasma", PlasmaEnvironment.FromScenario(
-            ScenarioLoader.LoadFile(Path.Combine(TestTree.RepoRoot(), "scenarios", "sol-eu.json")),
+            ScenarioLoader.LoadFile(Path.Combine(TestTree.RepoRoot(), "tests", "fixtures", "sol-eu.json")),
             (ICelestialEphemeris)Read(map, "_ephemeris")!));
         Assert.True(Read(map, "_plasma") is not null,
             "sol-eu.json handed the page no PlasmaEnvironment — the plume would never be drawn.");

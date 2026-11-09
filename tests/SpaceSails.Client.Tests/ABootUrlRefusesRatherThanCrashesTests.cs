@@ -66,6 +66,9 @@ public sealed class ABootUrlRefusesRatherThanCrashesTests
     [Theory]
     [InlineData("electric")]          // the §3 row's own name, and the one that 404'd on a tester
     [InlineData("not-a-real-scenario")] // the name docs/testing-guide.md step 8 tells the owner to type
+    [InlineData("wheel")]             // the retired Wheel of the World: old links and bookmarks still say it (#1415)
+    [InlineData("sol-eu")]            // the retired Sol (Electric): old links and saves still say it (owner 2026-11-09)
+    [InlineData("oops")]              // the retired Miners' Folly
     [InlineData("sol-e")]             // a plausible typo of a real one
     public async Task AnUnknownScenarioSilentlyFallsBackToSol(string unknown)
     {
@@ -80,7 +83,7 @@ public sealed class ABootUrlRefusesRatherThanCrashesTests
     public async Task ButAScenarioThatEXISTSIsStillTheOneThatLoads()
     {
         // The anti-vacuous half. A fallback that fired on everything would pass the theory above and would
-        // have quietly deleted three of the four worlds this game ships.
+        // have quietly deleted three of the shipped worlds this game ships.
         foreach (string shipped in EveryShippedScenario())
         {
             PastTheGateBench.Boot booted = await PastTheGateBench.BootAsync($"/map?scenario={shipped}");
@@ -98,7 +101,8 @@ public sealed class ABootUrlRefusesRatherThanCrashesTests
         var wrong = new List<string>();
         int swept = 0, honoured = 0, refused = 0;
 
-        foreach (string scenario in EveryShippedScenario())
+        // The retired slugs ride along: they must boot as Sol, start point and all, never crash.
+        foreach (string scenario in EveryShippedScenario().Concat(["wheel", "sol-eu", "oops"]))
         {
             foreach (string start in EveryRegisteredStart())
             {
@@ -129,16 +133,14 @@ public sealed class ABootUrlRefusesRatherThanCrashesTests
             }
         }
 
-        Assert.True(swept >= 4 * 9, $"only {swept} (scenario × start) pairs were swept — the sweep has shrunk.");
+        Assert.True(swept >= 4 * EveryRegisteredStart().Count, $"only {swept} (scenario × start) pairs were swept — the sweep has shrunk.");
         Assert.True(wrong.Count == 0,
             $"{wrong.Count} of {swept} (scenario × start) boots did not survive the start point:\n\n"
             + string.Join("\n\n", wrong));
 
-        // …and the sweep saw BOTH answers. A pass in which everything was refused would prove nothing at all,
-        // and neither would one in which nothing ever was.
-        Assert.True(honoured > 0 && refused > 0,
-            $"the sweep saw {honoured} honoured and {refused} refused — a sweep with only one outcome in it "
-            + "cannot tell a working check from a check that is always on.");
+        // Only Sol ships now, and Sol holds every body the registry names, so the sweep must have honoured
+        // starts; the refusal path survives in the code for any sky that lacks a body.
+        Assert.True(honoured > 0, $"the sweep saw {honoured} honoured and {refused} refused.");
     }
 
     [Fact]
@@ -154,23 +156,6 @@ public sealed class ABootUrlRefusesRatherThanCrashesTests
             Assert.False(booted.Read<bool>("_showStartPicker"),
                 $"?start={start} was refused in Sol, which holds every body the start registry names.");
         }
-    }
-
-    [Theory]
-    [InlineData("sol-eu", "wreck")]   // the crash as it was reported: no derelict-roadster in the electric sky
-    [InlineData("sol-eu", "earth")]   // …and no Selene Gate either
-    [InlineData("wheel", "saturn")]   // the Wheel has eight planets and not one berth
-    public async Task AStartThisSkyCannotAnchorIsRefusedToThePicker(string scenario, string start)
-    {
-        // …and the third half: the predicate has to be able to say NO, or "every start boots" is a sentence
-        // about a check that never fires.
-        PastTheGateBench.Boot booted = await PastTheGateBench.BootAsync($"/map?scenario={scenario}&start={start}");
-
-        Assert.Null(booted.Threw);
-        Assert.True(booted.Read<bool>("_showStartPicker"),
-            $"?scenario={scenario}&start={start} has no anchor body in that sky, so Appendix A's own answer "
-            + "to an unhonourable start — the picker shows — is what the captain must get.");
-        Assert.Null(booted.Field("_dockedHavenId"));
     }
 
     // ── The two readings this file makes of a booted page ────────────────────────────────────────────────

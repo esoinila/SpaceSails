@@ -9,8 +9,8 @@ using Xunit;
 namespace SpaceSails.Client.Tests;
 
 /// <summary>
-/// #1388 · <b>A SOL SAVE CONTINUED FROM THE WHEEL'S LOGBOOK IS REFUSED WITH A SENTENCE, NEVER A THROW.</b>
-/// The Wheel sky holds no <c>selene-gate</c>; the save's resume berth does. <c>ApplyResumeBerth</c> fell back to
+/// #1388 · <b>A SOL SAVE CONTINUED FROM ANOTHER SKY'S LOGBOOK IS REFUSED WITH A SENTENCE, NEVER A THROW.</b>
+/// A sky without a <c>selene-gate</c>; the save's resume berth does. <c>ApplyResumeBerth</c> fell back to
 /// <c>ApplyStart("earth")</c>, whose docked start maps to the missing body, and <c>BerthState.CoMoving</c>
 /// raised <c>KeyNotFoundException</c> onto the red error page. Two halves are pinned: the placement can no
 /// longer throw on a sky lacking its anchor, and the Continue row is not offered for a save the sky cannot hold.
@@ -18,6 +18,17 @@ namespace SpaceSails.Client.Tests;
 public sealed class ASaveFromAnotherSkyNeverCrashesTheVoyageTests
 {
     private const BindingFlags Hidden = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+
+    /// <summary>Only Sol ships now, so "another sky" is Sol with its Selene Gate taken out of the ephemeris —
+    /// what a save from a since-retired world (Miners' Folly, the Wheel) looks like to the one sky left.</summary>
+    private static async Task<PastTheGateBench.Boot> BootASkyWithoutSeleneGateAsync()
+    {
+        PastTheGateBench.Boot booted = await PastTheGateBench.BootAsync("/map");
+        ICelestialEphemeris sol = booted.Read<ICelestialEphemeris>("_ephemeris");
+        typeof(Map).GetField("_ephemeris", Hidden)!.SetValue(booted.Page,
+            new CircularOrbitEphemeris([.. sol.Bodies.Where(b => b.Id != "selene-gate")]));
+        return booted;
+    }
 
     private static Vault ASolSaveAtSeleneGate() => new()
     {
@@ -29,9 +40,9 @@ public sealed class ASaveFromAnotherSkyNeverCrashesTheVoyageTests
         typeof(Map).GetMethod(name, Hidden)!.Invoke(page, args);
 
     [Fact]
-    public async Task ASolSaveAppliedInTheWheelsSkyDoesNotThrow()
+    public async Task ASolSaveAppliedInAnotherSkyDoesNotThrow()
     {
-        PastTheGateBench.Boot booted = await PastTheGateBench.BootAsync("/map?scenario=wheel");
+        PastTheGateBench.Boot booted = await BootASkyWithoutSeleneGateAsync();
         Assert.Null(booted.Threw);
         Assert.DoesNotContain("selene-gate",
             booted.Read<ICelestialEphemeris>("_ephemeris").Bodies.Select(b => b.Id)); // the premise
@@ -46,9 +57,11 @@ public sealed class ASaveFromAnotherSkyNeverCrashesTheVoyageTests
     [Fact]
     public async Task TheContinueRowIsOfferedOnlyForASaveThisSkyCanHold()
     {
-        foreach ((string url, bool expected) in new[] { ("/map?scenario=wheel", false), ("/map", true) })
+        foreach ((string url, bool expected) in new[] { ("a sky without Selene Gate", false), ("/map", true) })
         {
-            PastTheGateBench.Boot booted = await PastTheGateBench.BootAsync(url);
+            PastTheGateBench.Boot booted = expected
+                ? await PastTheGateBench.BootAsync(url)
+                : await BootASkyWithoutSeleneGateAsync();
             Assert.Null(booted.Threw);
             typeof(Map).GetField("_resumeAvailable", Hidden)!.SetValue(booted.Page, true);
             typeof(Map).GetField("_pendingResumeVault", Hidden)!.SetValue(booted.Page, ASolSaveAtSeleneGate());
@@ -76,9 +89,9 @@ public sealed class ASaveFromAnotherSkyNeverCrashesTheVoyageTests
         book.Save(slotId, VaultSerializer.Save(vault), meta with { SavedRealTicks = ticks });
     }
 
-    private static async Task<Map> AWheelWithAnEmptyShelf()
+    private static async Task<Map> AnElectricSkyWithAnEmptyShelf()
     {
-        PastTheGateBench.Boot booted = await PastTheGateBench.BootAsync("/map?scenario=wheel");
+        PastTheGateBench.Boot booted = await BootASkyWithoutSeleneGateAsync();
         Assert.Null(booted.Threw);
         Set(booted.Page, "_activeThreadId", "t1");
         Set(booted.Page, "_slots", new SaveSlotBook(new MemStore(), "t1"));
@@ -86,36 +99,36 @@ public sealed class ASaveFromAnotherSkyNeverCrashesTheVoyageTests
         return booted.Page;
     }
 
-    private static Vault AWheelSave(Map page) => new()
+    private static Vault AnElectricSkySave(Map page) => new()
     {
         SavedSimTime = 2000,
         Resume = new ResumeSection
         {
             HavenId = ((ICelestialEphemeris)typeof(Map).GetField("_ephemeris", Hidden)!.GetValue(page)!).Bodies[0].Id,
-            HavenName = "Somewhere in the Wheel", WasDocked = true,
+            HavenName = "Somewhere in the electric sky", WasDocked = true,
         },
     };
 
     [Fact]
     public async Task TheDrawerOffersContinueOnceANewVoyageHasAutosavedOverTheSolSave()
     {
-        // Boot peek found the Sol save; then a Wheel voyage autosaved; then the logbook opens from the desk
+        // Boot peek found the Sol save; then an electric-sky voyage autosaved; then the logbook opens from the desk
         // (or the death card). Continue loads the NEWEST save - so it is judged on the newest save.
-        Map page = await AWheelWithAnEmptyShelf();
+        Map page = await AnElectricSkyWithAnEmptyShelf();
         Bank(page, "auto", ASolSaveAtSeleneGate(), ticks: 1);
         Call(page, "OpenSaveDrawer");
         Assert.False((bool)typeof(Map).GetProperty("ContinueIsOffered", Hidden)!.GetValue(page)!, "the Sol save is newest");
 
-        Bank(page, "auto", AWheelSave(page), ticks: 2);
+        Bank(page, "auto", AnElectricSkySave(page), ticks: 2);
         Call(page, "OpenSaveDrawer");
         Assert.True((bool)typeof(Map).GetProperty("ContinueIsOffered", Hidden)!.GetValue(page)!,
-            "the newest save is a Wheel voyage this sky can hold");
+            "the newest save is an electric-sky voyage this sky can hold");
     }
 
     [Fact]
     public async Task ARefusedLoadSaysSoLeavesTheWorldAloneAndKeepsThePickerUp()
     {
-        Map page = await AWheelWithAnEmptyShelf();
+        Map page = await AnElectricSkyWithAnEmptyShelf();
         Bank(page, "auto", ASolSaveAtSeleneGate(), ticks: 1);
         Set(page, "_showStartPicker", true);
         object shipBefore = typeof(Map).GetField("_ship", Hidden)!.GetValue(page)!;

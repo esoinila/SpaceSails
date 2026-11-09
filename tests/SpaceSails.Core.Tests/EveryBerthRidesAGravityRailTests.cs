@@ -43,17 +43,12 @@ namespace SpaceSails.Core.Tests;
 /// <see cref="AtTheOwnersRead_TheAutopilotTakesTheDock"/> goes red with the refusal he photographed.
 /// Verified red on 8,000 / 7,200 / 14,000 before the literals were corrected.</para>
 ///
-/// <para><b>Why <c>wheel.json</c> is not held to it</b>, and why that is not a loophole: the Wheel of the
-/// World says of itself that <i>"the spoke is not gravity's work — something older holds it"</i>, so its
-/// planets are supposed to ride a rail no orbit explains. The exemption is bounded by
-/// <see cref="TheOneScenarioAllowedANonGravityRail_BerthsNobodyOnIt"/>: it may bend the rail only
-/// because there is no berth on it to dock at.</para>
 /// </summary>
 public class EveryBerthRidesAGravityRailTests
 {
     /// <summary>The scenarios that claim to be gravity — sol.json says of itself "circular coplanar
     /// orbits at true radii and periods", and the other two are cuts of the same system.</summary>
-    public static TheoryData<string> GravityScenarios() => ["sol.json", "sol-eu.json", "oops.json"];
+    public static TheoryData<string> GravityScenarios() => ["sol.json"];
 
     /// <summary>How far a hand-entered period may sit from Kepler's. The shipped rails use real-world
     /// sidereal periods rather than radius-derived ones, so Luna (0.5%) and Saturn (0.7%) are honestly
@@ -142,19 +137,6 @@ public class EveryBerthRidesAGravityRailTests
         Assert.True(unreachable.Count == 0,
             "#957 — \"nobody will ever play the 'let's fly next to it really quiet so autopilot will "
             + $"agree'\": in {file} flying quiet does not get you there.\n  " + string.Join("\n  ", unreachable));
-    }
-
-    [Fact]
-    public void TheOneScenarioAllowedANonGravityRail_BerthsNobodyOnIt()
-    {
-        // The Wheel of the World holds Venus, Earth and Mars on a rigid spoke around Saturn — deliberate,
-        // declared in its own description, and the reason it is out of the law above. The exemption is
-        // only safe while nothing on that spoke is a place you dock: a berth there would be exactly the
-        // #957 trap again, and this is what would notice.
-        ScenarioDefinition wheel = Load("wheel.json");
-        Assert.Contains("not gravity's work", wheel.Description, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain(wheel.Bodies, b => b.Haven);
-        Assert.DoesNotContain(wheel.Bodies, b => string.Equals(b.Kind, "station", StringComparison.Ordinal));
     }
 
     [Fact]

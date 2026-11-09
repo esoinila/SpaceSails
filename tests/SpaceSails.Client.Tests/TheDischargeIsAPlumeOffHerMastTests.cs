@@ -387,7 +387,7 @@ public sealed class TheDischargeIsAPlumeOffHerMastTests
     {
         Set(map, "_ship", ((ShipState)Read(map, "_ship")!) with { Charge = charge });
         Set(map, "_plasma", PlasmaEnvironment.FromScenario(
-            ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "scenarios", "sol-eu.json")),
+            ScenarioLoader.LoadFile(Path.Combine(RepoRoot(), "tests", "fixtures", "sol-eu.json")),
             (ICelestialEphemeris)Read(map, "_ephemeris")!));
         Assert.True(Read(map, "_plasma") is not null,
             "sol-eu.json handed the page no PlasmaEnvironment — the plume would never be drawn at all.");

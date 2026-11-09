@@ -85,7 +85,7 @@ public sealed record ShipMission(
 /// traffic definition — a pure function, deterministic order (first-seen order walking the
 /// scenario's route/body lists; never sorted or shuffled, so two scenarios with identical data
 /// always offer identical option lists in identical order). Scenarios without a traffic section
-/// (e.g. the Wheel of the World) simply offer no Hunt/Trade run/Survey options; Free sailing (a
+/// simply offer no Hunt/Trade run/Survey options; Free sailing (a
 /// single fixed choice, not scenario data) and Lay low (havens, read straight off the body list)
 /// are unaffected.
 /// </summary>

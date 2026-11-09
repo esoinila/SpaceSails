@@ -2,7 +2,7 @@ namespace SpaceSails.Contracts;
 
 /// <summary>
 /// A scenario data file (e.g. scenarios/sol.json): the celestial topography the engine runs.
-/// The engine is cosmology-agnostic — the Sol system and the Wheel of the World are both just body lists.
+/// The engine is cosmology-agnostic — any sky is just a body list.
 /// </summary>
 public sealed record ScenarioDefinition
 {
@@ -19,8 +19,7 @@ public sealed record ScenarioDefinition
     public IReadOnlyList<StreamDefinition> Streams { get; init; } = [];
 
     /// <summary>
-    /// Data-driven traffic (routes + pod launchers). Optional: scenarios without one (e.g. the
-    /// Wheel of the World) fall back to <c>TrafficSchedule</c>'s built-in hardcoded tables.
+    /// Data-driven traffic (routes + pod launchers). Optional: scenarios without one fall back to <c>TrafficSchedule</c>'s built-in hardcoded tables.
     /// </summary>
     public TrafficDefinition? Traffic { get; init; }
 }

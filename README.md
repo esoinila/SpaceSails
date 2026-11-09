@@ -149,7 +149,7 @@ How to play: in-game **Captain's Guide** at `/guide` (also [docs/user-guide.md](
 | `src/SpaceSails.Contracts` | DTOs and scenario models |
 | `src/SpaceSails.Client` | Blazor WASM client |
 | `archive/SpaceSails.Server` | ASP.NET Core host + SignalR hub (archived — see [archive/README.md](archive/README.md)) |
-| `scenarios/` | Scenario data files (`sol.json`, `sol-eu.json`, `wheel.json`, `oops.json`) |
+| `scenarios/` | Scenario data files (`sol.json`, `sol-eu.json`, `oops.json`) |
 | `labs/` | The Gravity Lab — 44 runnable lesson probes + the lab-viz host |
 | `tests/` | xUnit test projects (Core, Client, and the UI gate), plus `tests/scripts/` — the Python purity/assert accounting a pure-move PR has to show |
 

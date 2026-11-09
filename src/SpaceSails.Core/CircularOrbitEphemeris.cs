@@ -4,7 +4,7 @@ namespace SpaceSails.Core;
 
 /// <summary>
 /// Analytic circular orbits with parent chaining (a body may orbit a body that orbits another —
-/// the Wheel of the World scenario relies on this). Deterministic and allocation-free per query.
+/// moons ride their planets this way). Deterministic and allocation-free per query.
 /// </summary>
 public sealed class CircularOrbitEphemeris : ICelestialEphemeris
 {

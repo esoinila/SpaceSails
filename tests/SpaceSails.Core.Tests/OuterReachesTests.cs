@@ -12,8 +12,7 @@ public class OuterReachesTests
     private static CircularOrbitEphemeris Sol() =>
         CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
-    private static ScenarioDefinition LoadWheel() =>
-        ScenarioLoader.LoadFile(Path.Combine(AppContext.BaseDirectory, "scenarios", "wheel.json"));
+    private static ScenarioDefinition SolWithoutTraffic() => TestTree.Sol with { Traffic = null };
 
     [Fact]
     public void ScenarioDrivenTraffic_IsDeterministic_AndProducesSecretiveHaulers()
@@ -41,16 +40,16 @@ public class OuterReachesTests
     [Fact]
     public void ScenarioWithoutTrafficSection_FallsBackToFixedTables()
     {
-        ScenarioDefinition wheel = LoadWheel();
-        Assert.Null(wheel.Traffic);
+        ScenarioDefinition bare = SolWithoutTraffic();
+        Assert.Null(bare.Traffic);
 
-        var ephemeris = CircularOrbitEphemeris.FromScenario(wheel);
+        var ephemeris = CircularOrbitEphemeris.FromScenario(bare);
         Assert.Null(ephemeris.Traffic);
 
         IReadOnlyList<NpcShip> ships = TrafficSchedule.Generate(ephemeris, seed: 42, count: 8);
         IReadOnlyList<NpcShip> pods = TrafficSchedule.GeneratePods(ephemeris, seed: 43, count: 3);
 
-        // No traffic section anywhere in the Wheel scenario: every ship falls back to the
+        // No traffic section anywhere in the scenario: every ship falls back to the
         // original hardcoded tables, so everyone still publishes a timetable.
         Assert.All(ships, s => Assert.True(s.PublishesTimetable));
         Assert.All(pods, p => Assert.Equal("luna", p.OriginId));

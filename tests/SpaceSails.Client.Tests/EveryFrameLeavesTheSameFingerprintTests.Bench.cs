@@ -249,7 +249,7 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     /// <summary>…and the Electric Universe cut of it, which is the only scenario in the game that hands the
     /// page a <see cref="PlasmaEnvironment"/> — so it is the only world where the charge lane of the frame is
     /// anything but an early return.</summary>
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> SolEu = new(() => Scenario("sol-eu"));
+    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> SolEu = new(() => ScenarioLoader.LoadFile(Path.Combine(TestTree.RepoRoot(), "tests", "fixtures", "sol-eu.json")));
 
     private static SpaceSails.Contracts.ScenarioDefinition Scenario(string name) =>
         ScenarioLoader.LoadFile(Path.Combine(TestTree.RepoRoot(), "scenarios", $"{name}.json"));
