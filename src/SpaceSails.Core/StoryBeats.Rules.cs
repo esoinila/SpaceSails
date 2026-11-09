@@ -192,7 +192,7 @@ public static partial class StoryBeats
     ///
     /// <para><b>What went wrong.</b> The UiGate's canaries script <i>open a board, press its way out</i>, and
     /// nothing in them quiesces this seam. In a loaded 13-minute serial run a card's cadence came due while
-    /// the charge board was open, the card's <c>.view-object-backdrop</c> went over the board's own
+    /// a board was open, the card's <c>.view-object-backdrop</c> went over the board's own
     /// <i>Step away</i>, and Playwright waited sixty seconds for a button a modal was standing on. The same
     /// class passed alone at the base (35 s) and alone at that head (29 s): the gate was measuring the
     /// story's timing rather than the board.</para>

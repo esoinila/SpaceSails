@@ -106,7 +106,7 @@ Ctrl-U). It restores the session without a browser.
   foreground walking **away** from the screen, because it is not news to them.
 - **Cross-ref #380** (*events must introduce their fiction one beat earlier*): this card is that beat.
 
-## 7. `art/charge-let-go.jpg` — SHE LETS GO ✅ PAINTED
+## 7. `art/charge-let-go.jpg` — SHE LETS GO (RETIRED 2026-11-09 with the Electric Universe layer; the beat and the file are gone)
 - **Beat:** `ChargeLetGo` · cooled 10 min · **PLATE**
 - **Fires when wired:** the hull discharge (#523's dump).
 - **Composition:** exterior, close on the mast and antennae of a small spacecraft against black space: a

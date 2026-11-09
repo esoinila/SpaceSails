@@ -160,7 +160,7 @@ public static partial class ShipLayout
     /// the valves are where the machinery is. Unlike a derelict's, hers has a live bridge repeater — which
     /// is the whole difference between owning a ship and boarding one.
     ///
-    /// <para>NOT (−19, −5), which is where I first put it: 1.1 du from her charge dump, so one [E] prompt
+    /// <para>NOT (−19, −5), which is where I first put it: 1.1 du from a neighbouring console, so one [E] prompt
     /// was fighting over two consoles and the captain got whichever won. The wreck has had a test against
     /// exactly this since the scuttling panel landed on the nest — the ship had none, which is why I was
     /// free to make the same mistake a third time. <c>ShipLayoutTests</c> holds it now.</para>
@@ -170,7 +170,7 @@ public static partial class ShipLayout
     /// so the captain got the console they aimed at — but BOTH still drew an [E], because the renderer lit
     /// every console in range while the key only ever answered the nearest. The honest fix was in
     /// <c>DeckView</c> (one prompt, and it is the true one); this is the belt to that braces — the engine
-    /// room is 10 × 20 du and there was never a reason to crowd her valves against her capacitor.</para></summary>
+    /// room is 10 × 20 du and there was never a reason to crowd her valves against a neighbouring console.</para></summary>
     public static DeckReachability.Point ValveStation => new(-16f, -7f);
 
     /// <summary>
@@ -180,7 +180,7 @@ public static partial class ShipLayout
     ///
     /// <para>Port side aft, in the machinery space — the same room a derelict keeps hers in, and the same room
     /// the atmosphere valves are in, because damage control and the last resort are one station's business.
-    /// Well clear of the valves (14 du) and the charge dump, so nobody reaches for the wrong handle in a
+    /// Well clear of the valves (14 du) and the rest, so nobody reaches for the wrong handle in a
     /// hurry: <c>ConsoleCrowdingTests</c> holds that, and the whole reason this is a Core constant rather than
     /// a client literal is that four collisions have already shipped from literals.</para></summary>
     public static DeckReachability.Point ScuttleStation => new(-17f, 7f);
@@ -223,7 +223,7 @@ public static partial class ShipLayout
     // either?" — and, of the ship as a whole, "I expect to have a bar table like this in this ships galley
     // also.... feature complete."
     //
-    // IN CORE, LIKE HER OTHER STATIONS, AND FOR THE SAME REASON THE CHARGE DUMP IS. Four console collisions
+    // IN CORE, LIKE HER OTHER STATIONS, AND FOR THE SAME REASON HER VALVE STATION IS. Four console collisions
     // have shipped on this ship out of client literals, and the comment about the last of them in
     // `DeckPlan.BuildShip` says it in the plainest terms there are: "two numbers for one console, which is
     // the exact shape of every console collision this ship has had. One of them has to be the truth; a test

@@ -3,7 +3,7 @@ namespace SpaceSails.Core;
 /// <summary>
 /// #395 — LAB 35, THE PUSH THAT ISN'T A PUSH (the arc-flash extension). The shipped <see cref="DeflectionGig"/>
 /// already carries the ablation deflection; this is the game's canonical IMPACT-FLASH model, and it is
-/// deliberately Electric-Universe (owner 2026-07-20): SpaceSails already runs EU rules (hull-charge vent #369),
+/// deliberately Electric-Universe (owner 2026-07-20): the Electric-Universe hull-charge layer has since been retired, but this flash model stays;
 /// so when the charge fires — or a slug strikes — bodies at different electric potential ARC, and the flash
 /// exceeds bare kinetics. Owner's own arc-melter reference: 500 A across a 22 kV start spark (Ti on
 /// water-cooled copper, in vacuum) ⇒ ~11 MW of arc power.

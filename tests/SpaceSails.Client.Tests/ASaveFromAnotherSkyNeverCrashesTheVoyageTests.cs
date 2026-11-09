@@ -39,6 +39,27 @@ public sealed class ASaveFromAnotherSkyNeverCrashesTheVoyageTests
     private static object? Call(Map page, string name, params object?[] args) =>
         typeof(Map).GetMethod(name, Hidden)!.Invoke(page, args);
 
+    /// <summary>The refusal half of #1216 case 2, restored after the Electric sky it used to be proved in was
+    /// retired: a start whose anchor body the loaded sky lacks is refused (the boot then shows the picker),
+    /// and the placement beneath it lays the ship at the standard spawn instead of throwing. Both halves are
+    /// asked of the same sky with and without its Selene Gate, so a check that said yes to everything fails.</summary>
+    [Fact]
+    public async Task AStartThisSkyCannotAnchorIsRefusedToThePickerAndPlacedWithoutThrowing()
+    {
+        PastTheGateBench.Boot sol = await PastTheGateBench.BootAsync("/map");
+        Assert.Null(sol.Threw);
+        Assert.True((bool)Call(sol.Page, "ThisSkyCanHonourTheStart", "earth")!,
+            "Sol holds every body the start registry names, so nothing may be refused there.");
+
+        PastTheGateBench.Boot bare = await BootASkyWithoutSeleneGateAsync();
+        Assert.False((bool)Call(bare.Page, "ThisSkyCanHonourTheStart", "earth")!,
+            "this sky has no Selene Gate, so the start that hangs off it must be refused to the picker.");
+        Exception? threw = null;
+        try { Call(bare.Page, "PlaceShipForStart", "earth"); }
+        catch (TargetInvocationException ex) { threw = ex.InnerException; }
+        Assert.Null(threw);
+    }
+
     [Fact]
     public async Task ASolSaveAppliedInAnotherSkyDoesNotThrow()
     {
@@ -89,7 +110,7 @@ public sealed class ASaveFromAnotherSkyNeverCrashesTheVoyageTests
         book.Save(slotId, VaultSerializer.Save(vault), meta with { SavedRealTicks = ticks });
     }
 
-    private static async Task<Map> AnElectricSkyWithAnEmptyShelf()
+    private static async Task<Map> ASkyWithoutSeleneGateAndAnEmptyShelf()
     {
         PastTheGateBench.Boot booted = await BootASkyWithoutSeleneGateAsync();
         Assert.Null(booted.Threw);
@@ -99,36 +120,36 @@ public sealed class ASaveFromAnotherSkyNeverCrashesTheVoyageTests
         return booted.Page;
     }
 
-    private static Vault AnElectricSkySave(Map page) => new()
+    private static Vault ASaveThisSkyCanHold(Map page) => new()
     {
         SavedSimTime = 2000,
         Resume = new ResumeSection
         {
             HavenId = ((ICelestialEphemeris)typeof(Map).GetField("_ephemeris", Hidden)!.GetValue(page)!).Bodies[0].Id,
-            HavenName = "Somewhere in the electric sky", WasDocked = true,
+            HavenName = "Somewhere this sky holds", WasDocked = true,
         },
     };
 
     [Fact]
     public async Task TheDrawerOffersContinueOnceANewVoyageHasAutosavedOverTheSolSave()
     {
-        // Boot peek found the Sol save; then an electric-sky voyage autosaved; then the logbook opens from the desk
+        // Boot peek found the Sol save; then a voyage this sky can hold autosaved; then the logbook opens from the desk
         // (or the death card). Continue loads the NEWEST save - so it is judged on the newest save.
-        Map page = await AnElectricSkyWithAnEmptyShelf();
+        Map page = await ASkyWithoutSeleneGateAndAnEmptyShelf();
         Bank(page, "auto", ASolSaveAtSeleneGate(), ticks: 1);
         Call(page, "OpenSaveDrawer");
         Assert.False((bool)typeof(Map).GetProperty("ContinueIsOffered", Hidden)!.GetValue(page)!, "the Sol save is newest");
 
-        Bank(page, "auto", AnElectricSkySave(page), ticks: 2);
+        Bank(page, "auto", ASaveThisSkyCanHold(page), ticks: 2);
         Call(page, "OpenSaveDrawer");
         Assert.True((bool)typeof(Map).GetProperty("ContinueIsOffered", Hidden)!.GetValue(page)!,
-            "the newest save is an electric-sky voyage this sky can hold");
+            "the newest save is a save this sky can hold");
     }
 
     [Fact]
     public async Task ARefusedLoadSaysSoLeavesTheWorldAloneAndKeepsThePickerUp()
     {
-        Map page = await AnElectricSkyWithAnEmptyShelf();
+        Map page = await ASkyWithoutSeleneGateAndAnEmptyShelf();
         Bank(page, "auto", ASolSaveAtSeleneGate(), ticks: 1);
         Set(page, "_showStartPicker", true);
         object shipBefore = typeof(Map).GetField("_ship", Hidden)!.GetValue(page)!;

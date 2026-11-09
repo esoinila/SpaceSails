@@ -13,7 +13,7 @@
    TheBundleIsTheSameCascadeTests, which holds the whole partition to that law.
 
    SHARED KIT — this file is not private. Other surfaces render classes styled here:
-   ShipBoardPanel, ChargeBoardPanel, ShipScuttlePanel, PressureDoorCard, ScuttlePanel, AlarmPanel,
+   ShipBoardPanel, ShipScuttlePanel, PressureDoorCard, ScuttlePanel, AlarmPanel,
    CaptainsRemotePanel, LiftPanel, DoorBoardPanel, BarMenuCard, and 14 more.
    The kit is filed under the surface it is NAMED after. A value changed here changes those
    surfaces too, so read that list before you touch one.

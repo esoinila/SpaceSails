@@ -94,7 +94,7 @@ namespace SpaceSails.Client.Tests;
 /// <c>?found=1&amp;land=1</c>, <c>?threads=1</c> and the rest. The 34 that did NOT move are the other two
 /// kinds, and both are the law working: every <c>?dock=</c>/<c>?start=</c>/<c>?sling=</c>/<c>?skim=</c> URL
 /// (the old condition already shut the door on those, and the civilian rule shuts it too), and the
-/// genuinely civilian ones — <c>/map</c>, <c>/map?scenario=sol-eu</c>, <c>/map?scenario=..%2Foops</c> —
+/// genuinely civilian ones — <c>/map</c> and <c>/map?scenario=..%2Foops</c> (then also <c>?scenario=sol-eu</c>, a sky since retired) —
 /// whose door is open before and after. A re-pin that had moved <c>/map</c> itself would have been this
 /// lane breaking the front door it was written to protect.</para>
 ///
@@ -129,9 +129,21 @@ namespace SpaceSails.Client.Tests;
 /// <para>Two structural facts say the boot itself did not move. <b>The equality partition is preserved
 /// exactly</b>: 63 distinct hashes before and 63 after, over the same 82 URLs, grouping the same URLs
 /// together — the boot has not started distinguishing or conflating any two worlds. And <b>one URL is
-/// unchanged, <c>/map?scenario=sol-eu</c></b> — the one scenario in the list that has none of the three
-/// berths in it. A re-pin that had moved a third field, split a hash group, or moved <c>sol-eu</c> would
-/// have been a different lane's bug wearing this lane's clothes.</para>
+/// unchanged, <c>/map?scenario=sol-eu</c></b> — the one scenario in the list that had none of the three
+/// berths in it (the sky was retired on 2026-11-09 and the row dropped; see the re-pin note at the foot of
+/// this block). A re-pin that had moved a third field or split a hash group would have been a different
+/// lane's bug wearing this lane's clothes.</para>
+///
+/// <h3>2026-11-09 · ONE SKY LEFT — ALL 123 HASHES RE-PINNED, BY THE SAME ONE CAUSE</h3>
+///
+/// <para>The Wheel, Sol (Electric) and Miners' Folly scenarios and the Electric Universe layer were deleted,
+/// and with them the fields the fingerprint text printed: the page's <c>_plasma</c> and the charge-board
+/// state, and the <c>Charge=0</c> in every printed <c>ShipState</c>. So the text moved for every URL and
+/// every one of the 123 hashes moved, with <b>nothing else in it differing</b> — the ship's position,
+/// velocity and clock print byte-identical. The proof is the structure, not the hex: the equal-hash
+/// grouping is unchanged at <b>68 groups</b>, so no two worlds were conflated or split, and the dump (run with
+/// <c>SPACESAILS_BOOT_FINGERPRINT_DUMP</c>) contains no <c>Charge</c> at all. The <c>?scenario=sol-eu</c> row
+/// is gone with its sky; <c>?scenario=..%2Foops</c> stays, as a sanitizer row that now simply boots Sol.</para>
 ///
 /// <h3>#640 · EIGHTY-FIVE UNCHANGED, ONE ADDED</h3>
 ///

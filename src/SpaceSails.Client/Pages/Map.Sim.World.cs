@@ -251,7 +251,7 @@ public partial class Map
     ///
     /// <para><b>The rule, stated once and nowhere else:</b> a query is <b>civilian</b> — it goes through the
     /// logbook door — <b>iff it asked the boot for nothing but a scenario</b>. An empty query is civilian; so
-    /// is <c>?scenario=sol-eu</c>. Anything the boot's own reader chain CLAIMS is a deliberate bench
+    /// is <c>?scenario=sol</c>. Anything the boot's own reader chain CLAIMS is a deliberate bench
     /// incantation out of <c>docs/testing-guide.md</c> Appendix A, and every one of those keeps the direct
     /// boot the smoke sweeps are written against (#297/#132).</para>
     ///

@@ -10,7 +10,7 @@ namespace SpaceSails.Client.Pages;
 //
 // #251 · the rack owns the boards a captain inside a pressure hull can open, and the cards they raise: the
 // scuttle panel and its epitaph, the life-sign read, the pressure door, the wreck's vent board, the
-// archive vision, our own ship board and the charge board. Its members live in a .cs file beside the
+// archive vision, our own ship board. Its members live in a .cs file beside the
 // component because the razor generator's output is NOT ANALYSED: a finding inside an `@code { … }` block
 // is a finding nobody is ever shown.
 public partial class HullBoardsRack

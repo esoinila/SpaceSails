@@ -178,7 +178,7 @@ public sealed partial class DeckPlan
             // #1040 · THE GALLEY CARD'S OWN DESK, off the middle of the floor at last. It stood at (11, 7.5)
             // with a drawn table 1.5 du under it, which is the owner's "not at the middle of the empty
             // floor" complaint about the havens' barkeeps, unenforced in the one room he owns. Read from
-            // Core, like the charge dump and the cabin desks, and for the reason written at those: two
+            // Core, like the valve station and the cabin desks, and for the reason written at those: two
             // numbers for one console is the exact shape of every console collision this ship has had.
             new(ConsoleKind.Cantina,
                 (float)ShipLayout.CantinaGalleyStation.X, (float)ShipLayout.CantinaGalleyStation.Y,
@@ -317,7 +317,7 @@ public sealed partial class DeckPlan
         // and the corridor, which is what makes it the ship's cabinet rung (the case may be spread there
         // unconditionally).
         //
-        // POSITIONS READ FROM CORE, exactly like the CHARGE DUMP above and for the reason written there: two
+        // POSITIONS READ FROM CORE, exactly like the valve and plate stations and for the reason written there: two
         // numbers for one console is the exact shape of every console collision this ship has had.
         // ShipLayout.CabinDeskStationIn derives each from ITS OWN berth's bounds and explains why the corner
         // is the right one — it is the placement that puts the CHAIR nearer the desk than the bunk, so [E]
