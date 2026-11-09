@@ -1397,91 +1397,6 @@
         </div>
     }
 
-    @if (_showChargeBoard)
-    {
-        <div class="view-object-backdrop" @onclick="() => Dismiss(CloseChargeBoard)">
-            <OverlayShell class="vent-board" StopClicks="true"
-                          Frame="OverlayFrame.Bare" Dismiss="OverlayDismiss.Close"
-                          DismissClass="view-object-close" DismissFace="Step away"
-                          OnClose="() => Dismiss(CloseChargeBoard)">
-                <div class="view-object-title">⚡ HULL CHARGE — HER OWN POTENTIAL</div>
-
-                @if (_plasma is null)
-                {
-                    <div class="vent-sub">
-                        Nothing out here charges her: this voyage runs without the plasma layer, so the board is
-                        a row of dead needles and the dump is a party trick.
-                    </div>
-                }
-                else
-                {
-                    double hullNow = HullChargeNow();
-                    double ambientNow = AmbientChargeNow();
-                    HullCharge.Band band = HullCharge.BandOf(hullNow);
-                    <div class="vent-sub">
-                        HULL: <strong>@HullCharge.BandWord(band)</strong> ·
-                        holding @((hullNow * 100).ToString("0", CultureInfo.InvariantCulture))% of what this
-                        space could put on her
-                    </div>
-                    <div class="vent-readout">@HullCharge.DrivenByLine(ambientNow)</div>
-                    <div class="vent-readout @(band >= HullCharge.Band.Glowing ? "alive" : "")">
-                        @HullCharge.VisibilityLine(hullNow)
-                    </div>
-                    @if (band == HullCharge.Band.Arcing)
-                    {
-                        <div class="vent-refusal">
-                            ⚡ She is arcing across herself. Everything with a telescope has already noticed.
-                        </div>
-                    }
-
-                    <div class="vent-actions">
-                        @* THE AUTOMATIC — the owner's ask, and a real device: a hollow-cathode plasma contactor,
-                           two of which fly on the ISS for exactly this reason. It costs expellant while it runs,
-                           which is what keeps it a decision. *@
-                        <button type="button"
-                                class="btn btn-sm @(_contactorOn ? "btn-success" : "btn-outline-success")"
-                                title="@(_contactorOn ? HullCharge.ContactorOnLine : HullCharge.ContactorOffLine)"
-                                @onclick="ToggleContactor">
-                            @(_contactorOn ? "🜁 CONTACTOR RUNNING — click to secure" : "🜁 Run the contactor (automatic)")
-                        </button>
-                        @* LAB 43: inside a stream the plasma delivers more current than the cathode can emit, so
-                           the automatic can only take the edge off. Ride the river or go unheard, never both. *@
-                        @if (_contactorOn && !HullCharge.ContactorWinsHere(ambientNow))
-                        {
-                            <span class="text-warning small">🜁 outmatched here — she will sit high while you ride the stream</span>
-                        }
-
-                        @* And the switch that was the whole console: dump the hull to space. Instant, free, and
-                           it does not touch what has soaked into the boards.
-                           #440 · It also names its KEY. V vents from anywhere in flight — which is the whole
-                           point of it, since a hull that is arcing is a hull you are not standing at a console
-                           for — and the key was written down only in the Captain's Guide. *@
-                        <button type="button" class="btn btn-outline-info btn-sm"
-                                title="Dump the hull charge to space now — instant, free, and it will start climbing again immediately. (V)"
-                                @onclick="VentCharge">
-                            ⚡ Dump her charge
-                        </button>
-                    </div>
-
-                    <div class="vent-readout">
-                        🜁 Expellant: @_reactionMassPulses pulses ·
-                        the contactor sips @HullCharge.ContactorPulsesPerMinute.ToString("0.0", CultureInfo.InvariantCulture) per minute while it runs
-                    </div>
-
-                    @* THE ADMISSION, always shown. Deep dielectric charging buries itself in the boards over
-                       hours; the hull gauge reads fine the whole time and the contactor does not help. Same law
-                       the wreck's life-sign sensor lives by: the instrument says something is happening, never
-                       what. *@
-                    <div class="vent-sub">@HullCharge.WhatTheGaugeCannotSee</div>
-                }
-
-                @if (_chargeBoardMessage is { Length: > 0 } chargeMsg)
-                {
-                    <div class="vent-message">@chargeMsg</div>
-                }
-            </OverlayShell>
-        </div>
-    }
 
     @if (_storyCard is { } told)
     {
@@ -6039,10 +5954,6 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
         <div class="map-readouts bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
             <div class="mb-1">
                 <span class="fw-bold">@_scenarioName</span>
-                @if (_plasma is not null)
-                {
-                    <span class="badge bg-info text-dark ms-1">EU ⚡</span>
-                }
             </div>
             <div>Sim time: @FormatSimTime(SimTime)</div>
             @if (_skipActive)
@@ -6262,21 +6173,6 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
             @if (_activeRadar)
             {
                 <div class="text-danger">📡 ACTIVE RADAR — loud; everyone in earshot knows where we are</div>
-            }
-            @if (_plasma is not null)
-            {
-                int chargePct = (int)Math.Round(_ship.Charge * 100);
-                string chargeClass = _ship.Charge >= ArcChargeThreshold ? "bg-danger"
-                    : _ship.Charge >= 0.6 ? "bg-warning" : "bg-info";
-                <hr />
-                <div>Charge: @chargePct% @(_ship.Charge >= ArcChargeThreshold ? "— ARCING RISK" : "")</div>
-                <div class="progress" role="progressbar" aria-label="Hull charge">
-                    <div class="progress-bar @chargeClass" style="width: @chargePct%"></div>
-                </div>
-                @if (_ship.Charge >= ArcChargeThreshold)
-                {
-                    <div class="text-danger fw-bold">⚡ ARCING — visible system-wide</div>
-                }
             }
             @if (_pulse.Message is not null)
             {
@@ -7162,7 +7058,7 @@ RenderFragment<SpaceSails.Core.Keepsake.Piece> card = piece => @<div class="keep
     <div class="desk-layer desk-layer-dimmed desk-layer-passthrough @(_activeDesk == ShipDesk.Sensors ? "" : "d-none")">
         <div class="desk-content">
             <SpaceSails.Client.Pages.Stations.TrackingPost @ref="_trackingPost" Visible="_activeDesk == ShipDesk.Sensors" FullScreen="true"
-                SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" ShipCharge="_ship.Charge"
+                SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity"
                 Ephemeris="_ephemeris" Candidates="TrackingCandidates()" MaxTracks="_telescopeLevel + 1"
                 TelescopeSpeedFactor="1 + 0.5 * _telescopeLevel"
                 RadarActive="_activeRadar" OnRadarToggle="SetActiveRadar"

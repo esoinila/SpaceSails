@@ -17,9 +17,9 @@
 # `<count> caption(s), sha256 <digest of the sorted strings>`, so a caption that changed its
 # WORDS is red here even though the sweep beside it is still green.
 
-caption strings | the regolith · your own ✗ | 71 caption(s), sha256 6678504ea0c6c029157a0766204c4165fe5e52a9362a8d320c6f1a964793d2ac
+caption strings | the regolith · your own ✗ | 70 caption(s), sha256 83e733b331d14a867857aa57d9c800d1df23d59e65624b4cd0e33d1123f918e7
 caption strings | a derelict · the DEEP HOLD | 39 caption(s), sha256 43a419b5fb49a5c4407a9d488d489a9ba986d340915d9e95ecd371c6a5fa6437
-caption strings | the ship · her own deck | 50 caption(s), sha256 925c8b6d6e353588f474afdf33e123e609852828270bda495db709c9112a1dcc
+caption strings | the ship · her own deck | 49 caption(s), sha256 5c22b4517df06544d964265126f93c5d969b77c6a58ac8979b26440aa2c6b34e
 caption strings | luna B1 · the park | 116 caption(s), sha256 6ae30009ba0b592c0728da04f3ccbb65ab442c52cdef339159c75eb99f5d7c5d
 caption strings | selene gate · the lower concourse | 11 caption(s), sha256 312a274045d12cba526dcc22552eeee700f9ff464a05eaf4980c3ff71c979054
 caption strings | the-space-bar · the lower level | 11 caption(s), sha256 86e2993672cb869ae0f15543141b7c833166a657fac612752e5cdd55f84b13b2

@@ -9,8 +9,7 @@ namespace SpaceSails.Client.Tests;
 /// <summary>
 /// #1478 · <b>FLIGHT KEYS ARE INERT ON FOOT.</b> Pressing <c>-</c> while landed undocked the ship, fired the
 /// pulse drive and flipped the view to the deck plan, because HandleDeckKey does not consume the burn keys
-/// and they fell through to the burn switch in OnKeyDown. V is the one exception on the SHIP's deck, where the
-/// charge board (opened in deck mode) promises it vents.
+/// and they fell through to the burn switch in OnKeyDown.
 /// </summary>
 public sealed class FlightKeysAreInertOnFootTests
 {

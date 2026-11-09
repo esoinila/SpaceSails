@@ -162,10 +162,6 @@
         <div class="map-readouts bg-dark bg-opacity-75 rounded p-2 mt-2 text-light small">
             <div class="mb-1">
                 <span class="fw-bold">@_scenarioName</span>
-                @if (_plasma is not null)
-                {
-                    <span class="badge bg-info text-dark ms-1">EU ⚡</span>
-                }
             </div>
             <div>Sim time: @FormatSimTime(SimTime)</div>
             @if (_skipActive)
@@ -385,21 +381,6 @@
             @if (_activeRadar)
             {
                 <div class="text-danger">📡 ACTIVE RADAR — loud; everyone in earshot knows where we are</div>
-            }
-            @if (_plasma is not null)
-            {
-                int chargePct = (int)Math.Round(_ship.Charge * 100);
-                string chargeClass = _ship.Charge >= ArcChargeThreshold ? "bg-danger"
-                    : _ship.Charge >= 0.6 ? "bg-warning" : "bg-info";
-                <hr />
-                <div>Charge: @chargePct% @(_ship.Charge >= ArcChargeThreshold ? "— ARCING RISK" : "")</div>
-                <div class="progress" role="progressbar" aria-label="Hull charge">
-                    <div class="progress-bar @chargeClass" style="width: @chargePct%"></div>
-                </div>
-                @if (_ship.Charge >= ArcChargeThreshold)
-                {
-                    <div class="text-danger fw-bold">⚡ ARCING — visible system-wide</div>
-                }
             }
             @if (_pulse.Message is not null)
             {

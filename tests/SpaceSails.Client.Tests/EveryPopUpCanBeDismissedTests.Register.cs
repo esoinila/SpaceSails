@@ -258,9 +258,6 @@ public sealed partial class EveryPopUpCanBeDismissedTests
         new("the ship's own atmosphere board", "view-object-backdrop", Docked, Exit.AControl,
             b => b.Poke("_showShipBoard", true)),
 
-        new("the hull-charge board", "view-object-backdrop", Docked, Exit.AControl,
-            b => b.Poke("_showChargeBoard", true)),
-
         new("her scuttling charges", "view-object-backdrop", Docked, Exit.AControl,
             b => b.Poke("_showShipScuttlePanel", true)),
 

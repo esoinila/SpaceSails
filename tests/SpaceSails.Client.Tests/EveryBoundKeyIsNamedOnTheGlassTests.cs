@@ -123,7 +123,6 @@ public class EveryBoundKeyIsNamedOnTheGlassTests
         "src/SpaceSails.Client/Pages/Map/NavHud/NavToolbar.razor",
         "src/SpaceSails.Client/Pages/Map/NavHud/OrbitAssistBox.razor",
         "src/SpaceSails.Client/Pages/Map/DeskPanels.razor",
-        "src/SpaceSails.Client/Pages/Map/ChargeBoardPanel.razor",
         "src/SpaceSails.Client/Pages/Map.NavToolbar.cs",
     ];
 

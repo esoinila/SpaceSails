@@ -116,7 +116,6 @@ public sealed partial class TheShellOwnsTheViewObjectFamilyAndTheBustedStagesTes
     [Theory]
     [InlineData("the wreck's atmosphere board", FreeFlying, "vent-board", "_showVentPanel", "Step away")]
     [InlineData("her own hull's board", FreeFlying, "vent-board", "_showShipBoard", "Step away")]
-    [InlineData("the hull-charge board", FreeFlying, "vent-board", "_showChargeBoard", "Step away")]
     [InlineData("her scuttling charges", FreeFlying, "vent-board", "_showShipScuttlePanel", "Step away")]
     [InlineData("the scuttling panel", FreeFlying, "vent-board", "_showScuttlePanel", "Step away")]
     [InlineData("the scuttle epitaph", FreeFlying, "vent-board", "_scuttleEpitaph", "Log it")]

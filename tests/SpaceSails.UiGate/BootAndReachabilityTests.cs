@@ -244,11 +244,11 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
             await GotoWithRetry(_host.BaseUrl + "/");
             ILocator launch = _page.Locator("a.btn-primary[href*='scenario=sol']");
 
-            // #1148 · HOLD THE STORY BEATS FOR THE WHOLE OF THIS CANARY. Steps 9, 10 and 11 open a board
+            // #1148 · HOLD THE STORY BEATS FOR THE WHOLE OF THIS CANARY. Steps 9 and 10 open a board
             // and press its way out, and nothing in this file quiesces the story seam: a beat whose
             // presentation is a CARD and whose cadence lands mid-script paints its `.view-object-backdrop`
             // over the button the next line is about to press. That is not a hypothesis — a loaded serial
-            // run of this project's gate classes (#1146) put a card over the open charge board and
+            // run of this project's gate classes (#1146) put a card over an open board and
             // Playwright waited SIXTY SECONDS for *Step away*, while this same class passed alone at the
             // base (35 s) and alone at that head (29 s). The latch DEFERS such a beat rather than dropping
             // it, and leaves plates alone (see StoryBeats.HoldQueryFlag).
@@ -431,32 +431,6 @@ public sealed class BootAndReachabilityTests : IAsyncLifetime
             await charges.WaitForAsync(
                 new() { State = WaitForSelectorState.Hidden, Timeout = ActionTimeoutMs });
             Record("her charge panel closes cold");
-
-            // --- 11. THE CHARGE BOARD (#523). ------------------------------------------------------
-            //
-            // Owner: "Now that desk is kind of lame on the ship, so let's add some kind of on automatic there."
-            // The console used to halve a hidden number and tell a joke about a cat; it is a board now. From the
-            // charges at (−17, 7) the charge dump is at (−21, −3): down the engine room, then a step to port.
-            //
-            // NOTE the gate boots `scenario=sol`, which does NOT enable the plasma layer — so this proves the
-            // board's HONEST branch, the one a standard voyage actually shows: it opens, and it explains why the
-            // needles are dead instead of pretending to read something.
-            await _page.Locator(".map-page").FocusAsync();
-            await WalkAsync("s", 1150);
-            await WalkAsync("a", 500);
-            await _page.Keyboard.PressAsync("e");
-
-            ILocator chargeBoard = _page.Locator(".vent-board");
-            await chargeBoard.WaitForAsync(
-                new() { State = WaitForSelectorState.Visible, Timeout = ActionTimeoutMs });
-            Assert.Contains("HULL CHARGE", await chargeBoard.InnerTextAsync(), StringComparison.Ordinal);
-            Record("her charge board opens at the dump");
-            await ProofShotAsync("her-charge-board");
-
-            await _page.Locator(".vent-board button", new() { HasTextString = "Step away" }).ClickAsync();
-            await chargeBoard.WaitForAsync(
-                new() { State = WaitForSelectorState.Hidden, Timeout = ActionTimeoutMs });
-            Record("her charge board closes");
 
             // --- The console must be clean: no uncaught JS, no unexplained error logs. ----------
             Assert.True(_pageErrors.Count == 0,
