@@ -352,7 +352,7 @@ public partial class Map
     private double _parrotBubbleUntilMs;
     private double _parrotCooldownUntilMs;
     private int _parrotCounter;
-    private bool _parrotSawWobble, _parrotSawArc, _parrotSawHunter, _parrotSawPrey, _parrotSawPyramid;
+    private bool _parrotSawWobble, _parrotSawHunter, _parrotSawPrey, _parrotSawPyramid;
     private readonly HashSet<string> _parrotOffBooks = [];
 
     private readonly List<ScopeIntel> _scopeIntel = [];

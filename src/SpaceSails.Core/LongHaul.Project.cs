@@ -86,7 +86,7 @@ public static partial class LongHaul
         // Advance the running sun-relative state by dt (re-seeding keeps every hop's anomaly small); fold
         // back into world coordinates through the sun's own rail (general even if the root ever drifts).
         ShipState Absolute(Vector2d rp, Vector2d rv, double t) =>
-            new(ephemeris.Position(sun.Id, t) + rp, TransferMath.BodyVelocity(ephemeris, sun.Id, t) + rv, t, ship.Charge);
+            new(ephemeris.Position(sun.Id, t) + rp, TransferMath.BodyVelocity(ephemeris, sun.Id, t) + rv, t);
 
         double DistanceOf(ShipState s) => (s.Position - ephemeris.Position(targetPlanet.Id, s.SimTime)).Length;
 
@@ -220,7 +220,7 @@ public static partial class LongHaul
         // clock, so position and SimTime stay consistent even if a degenerate stride broke the march early.
         Vector2d worldPos = ephemeris.Position(sun.Id, t) + relPos;
         Vector2d worldVel = TransferMath.BodyVelocity(ephemeris, sun.Id, t) + relVel;
-        return new ShipState(worldPos, worldVel, t, ship.Charge);
+        return new ShipState(worldPos, worldVel, t);
     }
 
     /// <summary>

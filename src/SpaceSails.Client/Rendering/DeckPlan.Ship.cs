@@ -191,17 +191,6 @@ public sealed partial class DeckPlan
             // the hinge the surface excursion grows a down-tube from. Kept clear of the SHUTTLE BAY
             // console (−10, −6.5) so [E] doesn't grab the wrong one. Drawn as the amber airlock door.
             new(ConsoleKind.ShuttleAirlock, -6.5f, -8.7f, "🚀 SHUTTLE AIRLOCK"),
-            // RENAMED, because it was never the atmosphere. This dumps the CAPACITOR — a ship-systems
-            // action that happens to share a verb with the thing the whole weekend was about. Two
-            // panels in one engine room both called VENT PANEL would be a trap of my own making.
-            //
-            // POSITION READ FROM CORE, not typed here. It was a literal in this list AND a constant in
-            // ShipLayout at the same time — two numbers for one console, which is the exact shape of every
-            // console collision this ship has had. One of them has to be the truth; a test can only walk
-            // the one in Core.
-            new(ConsoleKind.Vent, (float)ShipLayout.ChargeDumpStation.X, (float)ShipLayout.ChargeDumpStation.Y,
-                "⚡ CHARGE DUMP"),
-
             // The ship's BUILDER'S PLATE — bolted to the engine-room bulkhead by the keel, where a
             // builder's plate belongs (owner's cruise ruling, 2026-07-19, photographing their ship's Aker
             // Finnyards plate: "We could gen-AI the ships and docks some space-dock plaques … add some

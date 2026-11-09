@@ -37,7 +37,7 @@ public static class BerthState
     /// clamp passes <see cref="DockRoster.BearingAt"/> — which is how a station comes to have more than one
     /// slot to tie a hull up in, and therefore a slot it can move a hull to.</param>
     public static ShipState CoMoving(
-        ICelestialEphemeris ephemeris, string bodyId, double simTime, double offsetMeters, double charge = 0,
+        ICelestialEphemeris ephemeris, string bodyId, double simTime, double offsetMeters,
         double bearingRadians = 0)
     {
         ArgumentNullException.ThrowIfNull(ephemeris);
@@ -52,7 +52,7 @@ public static class BerthState
             double sin = Math.Sin(bearingRadians);
             outward = new Vector2d(cos * outward.X - sin * outward.Y, sin * outward.X + cos * outward.Y);
         }
-        return new ShipState(pos + outward * offsetMeters, vel, simTime, charge);
+        return new ShipState(pos + outward * offsetMeters, vel, simTime);
     }
 
     /// <summary>
@@ -96,7 +96,7 @@ public static class BerthState
     /// track to lay the offset along, so the old construction is the only meaningful answer.</para>
     /// </summary>
     public static ShipState CoOrbital(
-        ICelestialEphemeris ephemeris, string bodyId, double simTime, double offsetMeters, double charge = 0)
+        ICelestialEphemeris ephemeris, string bodyId, double simTime, double offsetMeters)
     {
         ArgumentNullException.ThrowIfNull(ephemeris);
 
@@ -112,7 +112,7 @@ public static class BerthState
 
         if (body?.ParentId is null || !(offsetMeters > 0))
         {
-            return CoMoving(ephemeris, bodyId, simTime, offsetMeters, charge);
+            return CoMoving(ephemeris, bodyId, simTime, offsetMeters);
         }
 
         const double h = 1.0;
@@ -127,7 +127,7 @@ public static class BerthState
         // has no such arc at all.
         if (!(radius > 0) || offsetMeters >= 2.0 * radius)
         {
-            return CoMoving(ephemeris, bodyId, simTime, offsetMeters, charge);
+            return CoMoving(ephemeris, bodyId, simTime, offsetMeters);
         }
 
         Vector2d vel = (ephemeris.Position(bodyId, simTime + h) - ephemeris.Position(bodyId, simTime - h)) / (2 * h);
@@ -140,7 +140,7 @@ public static class BerthState
         double angularMomentum = rel.X * relVel.Y - rel.Y * relVel.X;
         if (angularMomentum == 0)
         {
-            return CoMoving(ephemeris, bodyId, simTime, offsetMeters, charge);
+            return CoMoving(ephemeris, bodyId, simTime, offsetMeters);
         }
 
         double arc = -Math.Sign(angularMomentum) * 2.0 * Math.Asin(offsetMeters / (2.0 * radius));
@@ -150,6 +150,6 @@ public static class BerthState
         Vector2d rotatedRel = new(cos * rel.X - sin * rel.Y, sin * rel.X + cos * rel.Y);
         Vector2d rotatedVel = new(cos * relVel.X - sin * relVel.Y, sin * relVel.X + cos * relVel.Y);
 
-        return new ShipState(parent + rotatedRel, parentVel + rotatedVel, simTime, charge);
+        return new ShipState(parent + rotatedRel, parentVel + rotatedVel, simTime);
     }
 }

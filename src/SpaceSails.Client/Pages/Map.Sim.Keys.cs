@@ -314,10 +314,6 @@ public partial class Map
             case "P":
                 TogglePlotMode();
                 return;
-            case "v":
-            case "V":
-                VentCharge();
-                return;
         }
 
         if (pulse)

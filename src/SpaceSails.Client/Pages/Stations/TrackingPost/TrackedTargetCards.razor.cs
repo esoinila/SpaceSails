@@ -28,7 +28,6 @@ public partial class TrackedTargetCards
     [Parameter] public double SimTime { get; set; }
     [Parameter] public Vector2d ShipPosition { get; set; }
     [Parameter] public Vector2d ShipVelocity { get; set; }
-    [Parameter] public double ShipCharge { get; set; }
     [Parameter] public Func<List<TrackedTarget>> OrderedTracks { get; set; } = default!;
     [Parameter] public Func<string, TrackingCandidate?> FindCandidate { get; set; } = default!;
     [Parameter] public Func<string, string> CardCanvasId { get; set; } = default!;

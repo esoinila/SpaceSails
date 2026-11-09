@@ -22,9 +22,6 @@ public sealed class SensorModel(double rangeMeters, double glareHalfAngleRad, do
     /// <summary>Defaults tuned for the Sol scenario: 1e11 m ≈ 0.67 AU, 20° glare cone at ×0.25 range.</summary>
     public static SensorModel Default { get; } = new(1.0e11, 20.0 * Math.PI / 180.0, 0.25);
 
-    /// <summary>A fully charged hull glows: it is seen (1 + this) × farther. M7.</summary>
-    public const double ChargeGlowFactor = 2.0;
-
     public double RangeMeters { get; } = rangeMeters;
     public double GlareHalfAngleRad { get; } = glareHalfAngleRad;
     public double GlareRangeFactor { get; } = glareRangeFactor;
@@ -32,7 +29,7 @@ public sealed class SensorModel(double rangeMeters, double glareHalfAngleRad, do
     public bool TryObserve(Vector2d observerPosition, string targetId, ShipState target, double simTime, out Observation observation)
     {
         double distance = (target.Position - observerPosition).Length;
-        if (distance > EffectiveRange(observerPosition, target.Position, target.Charge))
+        if (distance > EffectiveRange(observerPosition, target.Position))
         {
             observation = default;
             return false;
@@ -44,10 +41,9 @@ public sealed class SensorModel(double rangeMeters, double glareHalfAngleRad, do
 
     /// <summary>
     /// How far this sensor sees toward a specific target: sun glare dims passive detection,
-    /// while a charged hull *radiates* and that glow pierces glare untouched — the sun-side
-    /// ambush tradeoff (plan §M7). Exposed for the M27 mutual-visibility readout.
+    /// the sun-side ambush tradeoff. Exposed for the M27 mutual-visibility readout.
     /// </summary>
-    public double EffectiveRange(Vector2d observerPosition, Vector2d targetPosition, double targetCharge)
+    public double EffectiveRange(Vector2d observerPosition, Vector2d targetPosition)
     {
         Vector2d toTarget = targetPosition - observerPosition;
         double distance = toTarget.Length;
@@ -63,19 +59,19 @@ public sealed class SensorModel(double rangeMeters, double glareHalfAngleRad, do
             }
         }
 
-        return baseRange + RangeMeters * ChargeGlowFactor * targetCharge;
+        return baseRange;
     }
 
     /// <summary>
     /// M27: who spots whom first, assuming the other side carries the same sensor fit. The
     /// telescope's double duty — watching targets AND minding our own signature toward them
-    /// (our hull charge glows in THEIR range term; their glare cone is computed from THEIR sky).
+    /// (their glare cone is computed from THEIR sky).
     /// </summary>
     public SightAdvantage Advantage(ShipState us, ShipState them)
     {
         double distance = (them.Position - us.Position).Length;
-        double ourRange = EffectiveRange(us.Position, them.Position, them.Charge);
-        double theirRange = EffectiveRange(them.Position, us.Position, us.Charge);
+        double ourRange = EffectiveRange(us.Position, them.Position);
+        double theirRange = EffectiveRange(them.Position, us.Position);
         return new SightAdvantage(distance, ourRange, theirRange,
             distance <= ourRange, distance <= theirRange);
     }

@@ -229,8 +229,7 @@ public partial class Map
         // route pairs, havens), so it's built once per scenario load alongside everything else
         // that reads _ephemeris — never recomputed per frame or per desk switch.
         _missionOptions = MissionCatalog.Build(_ephemeris!);
-        _plasma = PlasmaEnvironment.FromScenario(scenario, _ephemeris!);
-        _simulator = new Simulator(_ephemeris!, timeStepSeconds: 1.0, _plasma);
+        _simulator = new Simulator(_ephemeris!, timeStepSeconds: 1.0);
         _npcSimulator = new Simulator(_ephemeris!, TrafficSchedule.NpcTimeStep); // NPCs chargeless in M7
     }
 

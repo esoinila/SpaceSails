@@ -86,14 +86,6 @@ public partial class Map
 
         _parrotSawHunter = hunterNear;
 
-        bool arcing = _plasma is not null && _ship.Charge >= ArcChargeThreshold;
-        if (arcing && !_parrotSawArc)
-        {
-            SquawkNow(Parrot.Squawk.Arcing, nowMs);
-        }
-
-        _parrotSawArc = arcing;
-
         bool wobble = RumWobbleActive;
         if (wobble && !_parrotSawWobble)
         {

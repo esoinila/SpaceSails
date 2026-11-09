@@ -129,7 +129,6 @@ public partial class FlowColumn
     [Parameter] public bool _peekMap { get; set; }
     [Parameter] public bool _pinned { get; set; }
     [Parameter] public List<PlanNode> _planNodes { get; set; } = default!;
-    [Parameter] public PlasmaEnvironment? _plasma { get; set; }
     [Parameter] public string? _plotFrameBodyId { get; set; }
     [Parameter] public string? _plunderOpportunityTargetId { get; set; }
     [Parameter] public PulseSlot _pulse { get; set; } = default!;

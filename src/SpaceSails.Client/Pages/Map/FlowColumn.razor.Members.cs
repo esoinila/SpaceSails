@@ -36,7 +36,6 @@ public partial class FlowColumn
     [Parameter] public EventCallback AddSlingBurn { get; set; }
     [Parameter] public Func<IReadOnlyList<SpaceSails.Client.Pages.Stations.DeskChips.ChipData>> AllStationChips { get; set; } = default!;
     [Parameter] public Action<PlanNode, int> ApplyPulses { get; set; } = default!;
-    [Parameter] public double ArcChargeThreshold { get; set; }
     [Parameter] public EventCallback ArmArriveStep { get; set; }
     [Parameter] public bool ArmedArrivalStillAhead { get; set; }
     [Parameter] public double? ArmedInsertionSimTime { get; set; }

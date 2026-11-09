@@ -12,7 +12,7 @@ public sealed partial class DeckView
 {
     public readonly record struct State(
         double AvatarX, double AvatarY, double HeadingRad,
-        int CargoUnits, double Charge, bool ShuttleAway, bool ElectricUniverse,
+        int CargoUnits, bool ShuttleAway,
         bool Docked = false,
         // #330 (owner: "we could have the sanity meter visible when we walk around"): the nerve gauge
         // rides EVERY walk mode — surface, haven/bar ashore, and aboard the ship (compact, a whisper) —

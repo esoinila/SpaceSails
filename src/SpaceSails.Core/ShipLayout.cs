@@ -173,11 +173,6 @@ public static partial class ShipLayout
     /// room is 10 × 20 du and there was never a reason to crowd her valves against her capacitor.</para></summary>
     public static DeckReachability.Point ValveStation => new(-16f, -7f);
 
-    /// <summary>Her capacitor dump — a ship-systems control that has nothing to do with air, and everything
-    /// to do with why the atmosphere board could not be called the vent panel. In Core so it is a thing the
-    /// separation audit can SEE; it was a client literal, which is precisely how it got sat on.</summary>
-    public static DeckReachability.Point ChargeDumpStation => new(-21f, -3f);
-
     /// <summary>
     /// HER SCUTTLING CHARGES. Owner: <i>"that ship also has the scuttling charges... let's have a captains
     /// approval mechanic for that also on our ship. :-D ... it is the last defence against the Borg in Star
@@ -203,7 +198,6 @@ public static partial class ShipLayout
             {
                 ("the atmosphere valves", ValveStation),
                 ("the bridge repeater", BridgeRepeaterStation),
-                ("the charge dump", ChargeDumpStation),
                 ("the builder's plate", BuildersPlateStation),
                 ("the scuttling charges", ScuttleStation),
                 ("the gangway placard", PlacardStation),

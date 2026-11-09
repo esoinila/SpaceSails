@@ -141,7 +141,7 @@ public partial class Map
         // ordinary one while sitting on a reassigned collar.
         _berthSlot = TheSlotTheRosterGives(havenId);
         _ship = BerthState.CoMoving(
-            _ephemeris, havenId, savedSimTime, BerthState.BerthOffsetMeters, 0,
+            _ephemeris, havenId, savedSimTime, BerthState.BerthOffsetMeters,
             TheBearingOfSlot(havenId, _berthSlot.Value));
 
         SimTime = savedSimTime;

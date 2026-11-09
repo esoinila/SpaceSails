@@ -32,7 +32,7 @@
     <div class="desk-layer desk-layer-dimmed desk-layer-passthrough @(_activeDesk == ShipDesk.Sensors ? "" : "d-none")">
         <div class="desk-content">
             <SpaceSails.Client.Pages.Stations.TrackingPost @ref="_trackingPost" Visible="_activeDesk == ShipDesk.Sensors" FullScreen="true"
-                SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity" ShipCharge="_ship.Charge"
+                SimTime="SimTime" ShipPosition="_ship.Position" ShipVelocity="_ship.Velocity"
                 Ephemeris="_ephemeris" Candidates="TrackingCandidates()" MaxTracks="_telescopeLevel + 1"
                 TelescopeSpeedFactor="1 + 0.5 * _telescopeLevel"
                 RadarActive="_activeRadar" OnRadarToggle="SetActiveRadar"

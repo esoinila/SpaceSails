@@ -25,9 +25,6 @@ public partial class HullBoardsRack
     // than that says it on its own line.
 
     [Parameter] public ArchiveCard? _archiveCard { get; set; }
-    [Parameter] public string? _chargeBoardMessage { get; set; }
-    [Parameter] public bool _contactorOn { get; set; }
-    [Parameter] public PlasmaEnvironment? _plasma { get; set; }
     [Parameter] public string? _pressureDoor { get; set; }
     [Parameter] public int _reactionMassPulses { get; set; }
     [Parameter] public int _refillCharges { get; set; }
@@ -39,7 +36,6 @@ public partial class HullBoardsRack
     [Parameter] public bool _shipPumpOrder { get; set; }
     [Parameter] public int _shipReserve { get; set; }
     [Parameter] public string? _shipSelected { get; set; }
-    [Parameter] public bool _showChargeBoard { get; set; }
     [Parameter] public bool _showScuttlePanel { get; set; }
     [Parameter] public bool _showShipBoard { get; set; }
     [Parameter] public bool _showVentPanel { get; set; }
@@ -54,12 +50,10 @@ public partial class HullBoardsRack
     [Parameter] public Dictionary<string, HullVenting.Space> _ventSpaces { get; set; } = default!;
     [Parameter] public Derelict.Wreck? _wreck { get; set; }
     [Parameter] public EventCallback AbortTheOverload { get; set; } = default!;
-    [Parameter] public Func<double> AmbientChargeNow { get; set; } = default!;
     [Parameter] public EventCallback ArmTheOverload { get; set; } = default!;
     [Parameter] public Func<string, IReadOnlyList<string>> AtmosphereAt { get; set; } = default!;
     [Parameter] public Func<string?> CaptainCompartment { get; set; } = default!;
     [Parameter] public Action CloseArchiveCard { get; set; } = default!;
-    [Parameter] public Action CloseChargeBoard { get; set; } = default!;
     [Parameter] public Action ClosePressureDoorCard { get; set; } = default!;
     [Parameter] public Action CloseScuttleEpitaph { get; set; } = default!;
     [Parameter] public Action CloseScuttlePanel { get; set; } = default!;
@@ -72,7 +66,6 @@ public partial class HullBoardsRack
     [Parameter] public Func<int> FloodCost { get; set; } = default!;
     [Parameter] public EventCallback FloodTheShip { get; set; } = default!;
     [Parameter] public Action<string> GiveTheCaptainsWord { get; set; } = default!;
-    [Parameter] public Func<double> HullChargeNow { get; set; } = default!;
     [Parameter] public EventCallback OrderWholeShipPumped { get; set; } = default!;
     [Parameter] public Func<IReadOnlyList<string>> PumpableRooms { get; set; } = default!;
     [Parameter] public EventCallback PumpEverySealedRoom { get; set; } = default!;
@@ -105,7 +98,6 @@ public partial class HullBoardsRack
     [Parameter] public EventCallback StartSpinePump { get; set; } = default!;
     [Parameter] public Action<string> StopPump { get; set; } = default!;
     [Parameter] public Action<string> StopShipPump { get; set; } = default!;
-    [Parameter] public EventCallback ToggleContactor { get; set; } = default!;
     [Parameter] public Action<string> ToggleSealAtHand { get; set; } = default!;
     [Parameter] public Action<string, bool> ToggleShipDoor { get; set; } = default!;
     [Parameter] public Action<string> ToggleVentDoor { get; set; } = default!;
@@ -113,7 +105,6 @@ public partial class HullBoardsRack
     [Parameter] public EventCallback UnsealTheShip { get; set; } = default!;
     [Parameter] public Func<string, float, float, float, (string Text, string Class), float, string> VentAreaLabelSvg { get; set; } = default!;
     [Parameter] public Func<string, HullVenting.Space, float, (string Text, string Class)> VentAreaTag { get; set; } = default!;
-    [Parameter] public EventCallback VentCharge { get; set; } = default!;
     [Parameter] public Action<string> VentCompartment { get; set; } = default!;
     [Parameter] public Func<float, float, float> VentDoorX { get; set; } = default!;
     [Parameter] public string VentHullOutline { get; set; } = default!;

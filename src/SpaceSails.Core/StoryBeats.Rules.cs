@@ -15,7 +15,6 @@ public static partial class StoryBeats
         Beat.FirstShotFired => Cadence.OnceEver,
         Beat.CrewDeputation => Cadence.OnceEver,   // the FIRST deputation is the beat; later ones are the sheet's job
         Beat.SailHoled => Cadence.Cooled,
-        Beat.ChargeLetGo => Cadence.Cooled,
         // #541: one gangway per berth. Each place gets its establishing shot exactly once.
         Beat.BerthGreatPort or Beat.BerthWorkingBerth or Beat.BerthOutpost => Cadence.OncePerSubject,
 
@@ -83,7 +82,6 @@ public static partial class StoryBeats
     public static double CooldownSeconds(Beat beat) => beat switch
     {
         Beat.SailHoled => 6 * 60.0,
-        Beat.ChargeLetGo => 10 * 60.0,
 
         // #664 · A stranger's cognac is a whole bar visit apart; a sealed hatch is long enough that the three
         // doors of one sweep give one card and not three, and short enough that the NEXT hull is a fresh
@@ -102,7 +100,6 @@ public static partial class StoryBeats
     {
         Beat.FirstShotFired => Presentation.Plate,   // it happens mid-fight; it must not take the keyboard
         Beat.SailHoled => Presentation.Plate,
-        Beat.ChargeLetGo => Presentation.Plate,
         // #541: scene-setting, never a decision — a docking must not wait for anybody to read anything.
         Beat.BerthGreatPort or Beat.BerthWorkingBerth or Beat.BerthOutpost => Presentation.Plate,
         // #777: the grapples arrive AS the BUSTED demand panel, which has been showing this beat's painting

@@ -276,8 +276,8 @@ public partial class Map
                 _deckView.Draw(
                     warm, _viewportWidth, _viewportHeight, SimTime,
                     new DeckView.State(
-                        MoonSurface.SpawnX, MoonSurface.SpawnY, 0, 0, 0,
-                        ShuttleAway: false, ElectricUniverse: false),
+                        MoonSurface.SpawnX, MoonSurface.SpawnY, 0, 0,
+                        ShuttleAway: false),
                     0, 0, hud);
             }
         }

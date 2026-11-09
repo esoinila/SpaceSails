@@ -55,7 +55,7 @@ public partial class Map
 
         // The shuttle sets the ship down on the destination's rail — the shared co-moving berth state (#269).
         Vector2d destPos = _ephemeris.Position(dest.Id, newT);
-        _ship = BerthState.CoMoving(_ephemeris, dest.Id, newT, BerthState.BerthOffsetMeters, _ship.Charge);
+        _ship = BerthState.CoMoving(_ephemeris, dest.Id, newT, BerthState.BerthOffsetMeters);
         SimTime = newT;
 
         _dockedHavenId = dest.Id;
@@ -124,7 +124,7 @@ public partial class Map
         if (_dockedHavenId is not null || _simulator is null || _ephemeris is null || cost <= 0.0)
         {
             double stamped = SimTime + cost;
-            _ship = new ShipState(_ship.Position, _ship.Velocity, stamped, _ship.Charge);
+            _ship = new ShipState(_ship.Position, _ship.Velocity, stamped);
             SimTime = stamped;
             if (_dockedHavenId is not null)
             {

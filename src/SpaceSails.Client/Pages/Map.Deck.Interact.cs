@@ -153,13 +153,6 @@ public partial class Map
                     ShowPulseMessage(rested);
                 }
                 break;
-            case DeckPlan.ConsoleKind.Vent:
-                // #523 · The console's own label still says CAPACITOR, not air. What changed is that the
-                // dump stopped being the whole interaction: it is one switch on a board that also shows what
-                // the hull is holding and what the space around her is doing to it. VentCharge() is still the
-                // act — the board is where you decide to take it.
-                OpenChargeBoard();
-                break;
             case DeckPlan.ConsoleKind.ShipDoor:
                 ToggleShipDoorAtHand();     // her own hatches, dogged by hand at the door
                 break;

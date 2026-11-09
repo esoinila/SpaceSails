@@ -8,9 +8,7 @@ namespace SpaceSails.Client.Pages;
 // captain is on his feet and the map is never opened), the clocks that keep running through them, and then
 // the map frame itself: the plot anchored to its body, the scope inset, the ship's own line, one step of
 // the firing solution, and the HUD on its throttle. `DrawWalkFrame` is the walked view's paint. NOTE:
-// `DrawStreams` was the last member of the monolith, a hundred lines below the warp caps, and it is a map
-// pass — `PaintTheMapFrame` calls it — so it is filed here with the frame that draws it. Byte-identical
-// code; nothing about it was re-decided.
+// the map frame is filed here with the code that draws it.
 public partial class Map
 {
     /// <summary>The first of the frame's three early stops: a shuttle run owns the glass, so the map is not
@@ -56,13 +54,6 @@ public partial class Map
     /// <summary>Her own clocks, which run whether or not the captain is aboard to watch them.</summary>
     private void AdvanceHerOwnClocks(double dtRealSeconds)
     {
-        // #523 · HER CHARGE SYSTEMS BELONG TO THE SHIP, NOT TO A VIEW. The contactor holds the hull down and
-        // spends expellant doing it, and the charge soaking into the boards behind the panel keeps climbing,
-        // whether the captain is walking her corridor or sitting at the helm — the stealth tax is paid in
-        // FLIGHT, which is exactly where it was invisible before. (Ticking it only in deck mode was the first
-        // cut of this, and it would have made the whole system a curiosity you could only see while parked.)
-        AdvanceChargeSystems(dtRealSeconds);
-
         // #538 · a boat that was told to wake keeps waking whether or not the captain is watching her do it.
         AdvanceBoatSpinUp(dtRealSeconds);
         AdvanceSweepTeam(dtRealSeconds);   // #538: somebody else's team, working the hull
@@ -166,7 +157,6 @@ public partial class Map
 
         AnchorThePlotFrameToItsBody();
 
-        DrawStreams();
         // #953 · THE TRADE-LANE CORRIDORS ARE NOT PAINTED HERE ANY MORE. SundaySecondPlan PR-B drew a quad
         // and a name label per anchor pair; #971 hid them by default after the owner's "covered in faint
         // lines with no intersection"; this ruling retired the display outright — "we have never used them
@@ -348,7 +338,7 @@ public partial class Map
         (double sdx, double sdy) = ShudderShakeOffset();
         _deckView!.Draw(_deckPlan, _viewportWidth, _viewportHeight, SimTime, new DeckView.State(
             _avatarX, _avatarY, _avatarHeading,
-            _cargoUnits, _ship.Charge, ShuttleAway: _shuttleRun is not null, _plasma is not null,
+            _cargoUnits, ShuttleAway: _shuttleRun is not null,
             Docked: DockedSomewhereWithAFloorAboveIt,
             // #330: the nerve gauge rides every walk mode — full-size on the regolith, a compact
             // whisper aboard the ship or in a haven bar. (Flight never draws a DeckView, so it
@@ -381,45 +371,5 @@ public partial class Map
             PulseToast: _deckMode ? _pulse.Message : null,
             PulseToastLow: PulseToastPlate.IsLow(_pendingOffer, _patronDrink, _bankSession, _barMenu, _oracleOpen, _oracleLine, _shuttleBayStops)),
             _deckPanX + sdx, _deckPanY + sdy, BuildSurfaceHud(), ShudderNpcHold(), SignalCrewGlancing());
-    }
-    // Plasma stream ribbons (M7): one translucent wide segment per stream, between the two
-    // endpoint bodies at the current sim time. Drawn first so everything else layers on top.
-    // No-op outside an Electric Universe scenario.
-    private void DrawStreams()
-    {
-        if (_plasma is null) return;
-
-        // Drawn as flowing filaments, not one flat band — a single thick polyline read as "a
-        // strange rectangle" (owner report). Four narrow ribbons undulate along the axis with
-        // sim-time phase; alpha fades toward the edges.
-        Span<float> pts = stackalloc float[34];
-        foreach ((string fromId, string toId, double halfWidth) in _plasma.Streams)
-        {
-            Vector2d a = _ephemeris!.Position(fromId, SimTime);
-            Vector2d b = _ephemeris.Position(toId, SimTime);
-            Vector2d axis = b - a;
-            double len = axis.Length;
-            if (len <= 0) continue;
-            Vector2d dir = axis / len;
-            Vector2d perp = new(-dir.Y, dir.X);
-
-            for (int ribbon = 0; ribbon < 4; ribbon++)
-            {
-                double lane = (ribbon - 1.5) / 1.5;              // -1 … 1 across the width
-                double phase = SimTime * 4e-7 + ribbon * 1.7;
-                for (int k = 0; k <= 16; k++)
-                {
-                    double t = k / 16.0;
-                    double wobble = Math.Sin(t * 9.0 + phase) * 0.25;
-                    Vector2d world = a + dir * (len * t) + perp * (halfWidth * (lane * 0.8 + wobble));
-                    (float sx, float sy) = _camera.WorldToScreen(world);
-                    pts[k * 2] = sx;
-                    pts[k * 2 + 1] = sy;
-                }
-                byte alpha = (byte)(30 - 12 * Math.Abs(lane));
-                float widthPx = (float)Math.Clamp(halfWidth * 0.5 / _camera.MetersPerPixel, 1, 60);
-                _renderer!.DrawPolyline(pts, new RgbaColor(80, 220, 220, alpha), widthPx);
-            }
-        }
     }
 }

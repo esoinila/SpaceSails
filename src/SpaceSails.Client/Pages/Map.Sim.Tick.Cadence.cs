@@ -111,16 +111,4 @@ public partial class Map
             ReprojectTrajectory();
         }
     }
-
-    /// <summary>Thunder, once per arcing episode.</summary>
-    private void SoundTheArcOnItsRisingEdge()
-    {
-        // Thunder on the rising edge of an arc (M10 polish) — once per arcing episode.
-        bool arcing = _plasma is not null && _ship.Charge >= ArcChargeThreshold;
-        if (arcing && !_wasArcing)
-        {
-            RendererInterop.PlayCue("arc");
-        }
-        _wasArcing = arcing;
-    }
 }

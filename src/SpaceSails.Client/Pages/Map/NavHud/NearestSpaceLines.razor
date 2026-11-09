@@ -33,21 +33,6 @@
             {
                 <div class="text-danger">📡 ACTIVE RADAR — loud; everyone in earshot knows where we are</div>
             }
-            @if (_plasma is not null)
-            {
-                int chargePct = (int)Math.Round(_ship.Charge * 100);
-                string chargeClass = _ship.Charge >= ArcChargeThreshold ? "bg-danger"
-                    : _ship.Charge >= 0.6 ? "bg-warning" : "bg-info";
-                <hr />
-                <div>Charge: @chargePct% @(_ship.Charge >= ArcChargeThreshold ? "— ARCING RISK" : "")</div>
-                <div class="progress" role="progressbar" aria-label="Hull charge">
-                    <div class="progress-bar @chargeClass" style="width: @chargePct%"></div>
-                </div>
-                @if (_ship.Charge >= ArcChargeThreshold)
-                {
-                    <div class="text-danger fw-bold">⚡ ARCING — visible system-wide</div>
-                }
-            }
             @if (_pulse.Message is not null)
             {
                 <div class="text-warning">@_pulse.Message</div>

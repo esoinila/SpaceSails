@@ -213,11 +213,6 @@ public partial class Map
             _remoteOutcome = line;
             return;
         }
-        if (_showChargeBoard)
-        {
-            _chargeBoardMessage = line; // the board already had a slot of its own — this only aims at it
-            return;
-        }
         if (_showVentPanel)
         {
             _ventMessage = line;        // ditto: the valve board says everything else it does right here

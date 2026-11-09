@@ -41,17 +41,12 @@ public sealed partial class DeckView
             }
         }
 
-        // Reactor + charge conduit (engine room).
+        // Reactor (engine room).
         (float rx, float ry) = project(-19, 2.5);
         _renderer.DrawCircle(rx, ry, 1.6f * scale, null, InnerLine, 2f);
         double throb = 0.5 + 0.5 * Math.Sin(simTime * 0.002);
         var reactor = new RgbaColor(120, 200, 255, (byte)(90 + 70 * throb));
         _renderer.DrawCircle(rx, ry, 0.9f * scale, reactor, reactor);
-        if (state.ElectricUniverse)
-        {
-            var conduit = new RgbaColor(255, 240, 120, (byte)(40 + 180 * state.Charge));
-            DrawSeg(project(-19, 1), project(-20, -4), conduit, 3f);
-        }
     }
 
     /// <summary>#870 lane 7b · #792/#793's seats — a top's ring and the chairs round it, the counter's
