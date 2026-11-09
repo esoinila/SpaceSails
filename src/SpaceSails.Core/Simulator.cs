@@ -12,7 +12,6 @@ namespace SpaceSails.Core;
 public sealed partial class Simulator
 {
     private readonly ICelestialEphemeris _ephemeris;
-    private readonly PlasmaEnvironment? _environment;
 
     // The subset of bodies that carry an atmosphere, cached at construction. Empty for every
     // vacuum scenario, which is what keeps the no-atmosphere path exactly free: the drag block is
@@ -28,11 +27,10 @@ public sealed partial class Simulator
     /// </summary>
     public const double BallisticCoefficient = 120.0;
 
-    public Simulator(ICelestialEphemeris ephemeris, double timeStepSeconds, PlasmaEnvironment? environment = null)
+    public Simulator(ICelestialEphemeris ephemeris, double timeStepSeconds)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(timeStepSeconds);
         _ephemeris = ephemeris;
-        _environment = environment;
         _atmosphereBodies = [.. ephemeris.Bodies.Where(b => b.Atmosphere is not null)];
         TimeStep = timeStepSeconds;
     }
@@ -116,17 +114,6 @@ public sealed partial class Simulator
         }
 
         Vector2d acceleration = GravitationalAcceleration(state.Position, state.SimTime);
-        double charge = state.Charge;
-        if (_environment is not null)
-        {
-            // Hull charge relaxes toward the local ambient level, then the stream force acts on
-            // whatever charge the hull carries this step. Clamped exponential approach: stable
-            // for any dt (ProjectAdaptive can step hours at a time).
-            double ambient = _environment.AmbientCharge(state.Position, state.SimTime);
-            double blend = Math.Min(1.0, dt / PlasmaEnvironment.EquilibrationTau);
-            charge += (ambient - charge) * blend;
-            acceleration += _environment.Acceleration(state.Position, charge, state.SimTime);
-        }
 
         velocity += acceleration * dt;
 
@@ -149,7 +136,7 @@ public sealed partial class Simulator
 
         Vector2d position = state.Position + velocity * dt;
 
-        return new ShipState(position, velocity, state.SimTime + dt, charge);
+        return new ShipState(position, velocity, state.SimTime + dt);
     }
 
     /// <summary>Advance by whole steps until at least <paramref name="durationSeconds"/> has elapsed.</summary>

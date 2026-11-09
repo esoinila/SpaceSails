@@ -23,25 +23,6 @@ public class SensorAdvantageTests
     }
 
     [Fact]
-    public void Advantage_ChargedHull_GlowsInTheirRangeTerm()
-    {
-        // Side by side, perpendicular to the sun line — no glare either way. Dark hulls are
-        // symmetric; charging OUR hull triples THEIR range on us and flips the edge.
-        var us = new ShipState(new Vector2d(1.5e11, 0), Vector2d.Zero, 0);
-        var themPos = new Vector2d(1.5e11, 5e10);
-
-        SightAdvantage dark = SensorModel.Default.Advantage(us, new ShipState(themPos, Vector2d.Zero, 0));
-        Assert.Equal(dark.OurRange, dark.TheirRange, precision: 3);
-        Assert.Equal(0, dark.Edge, precision: 3);
-
-        SightAdvantage glowing = SensorModel.Default.Advantage(
-            us with { Charge = 1.0 }, new ShipState(themPos, Vector2d.Zero, 0));
-        Assert.Equal(dark.TheirRange * (1 + SensorModel.ChargeGlowFactor), glowing.TheirRange, precision: 3);
-        Assert.True(glowing.Edge < 0, "A glowing hull must lose the eyes race.");
-        Assert.True(glowing.TheySeeUs);
-    }
-
-    [Fact]
     public void Radar_RangeAndLoudness()
     {
         var us = Vector2d.Zero;

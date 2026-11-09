@@ -95,7 +95,7 @@ public sealed class TheHeadlightsAreTheWholeOfTheSeeingTests
         {
             var pen = new RecordingRenderer();
             new DeckView(pen).Draw(plan, WidthPx, HeightPx, 0,
-                new DeckView.State(ax, ay, heading, 0, 0, ShuttleAway: false, ElectricUniverse: false,
+                new DeckView.State(ax, ay, heading, 0, ShuttleAway: false,
                                    Dark: dark),
                 0, panY, hud);
             return pen.Marks;

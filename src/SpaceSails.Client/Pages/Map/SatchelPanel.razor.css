@@ -26,7 +26,7 @@
    SHARED KIT — this file is not private, and after the split that is nearly all of what it is. The
    row, the item button, the leave control, the sub-line and the empty line are rendered by four or
    five of the satchel's own surfaces at once; the filter chip by three; and outside the satchel
-   again by SeatedDockedStrip, ViewObjectCard, ChargeBoardPanel, ShipBoardPanel, VentPanel,
+   again by SeatedDockedStrip, ViewObjectCard, ShipBoardPanel, VentPanel,
    BarMenuCard, BoardTargetCard, BodyMenuPanel, BustedCard, DeskPanels, and 28 more.
    The kit is filed under the surface it is NAMED after. A value changed here changes those
    surfaces too, so read that list before you touch one.

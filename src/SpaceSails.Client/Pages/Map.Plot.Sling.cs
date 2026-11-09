@@ -294,7 +294,7 @@ public partial class Map
         var perp = new Vector2d(-vHat.Y, vHat.X);
         Vector2d startPos = jCA + perp * (18 * body.BodyRadius) - vShipCA * passLead;
 
-        _ship = new ShipState(startPos, vShipCA, now, _ship.Charge);
+        _ship = new ShipState(startPos, vShipCA, now);
         _destinationBodyId = bodyId;
         _armedOrbitBodyId = null;
         _planNodes.Clear();

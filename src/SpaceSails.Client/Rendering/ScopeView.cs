@@ -24,7 +24,6 @@ public sealed class ScopeView
         Vector2d Velocity,
         double BodyRadius,       // bodies only
         RgbaColor Color,
-        bool InPlasma,
         bool IsHaven = false,    // bodies only — a pirate bolthole
         bool Dockable = false,   // …and a mass-less one you clamp onto (⚓), not orbit
         bool IsDepot = false);   // a freighter that is really a port's cargo depot (#208), tagged DEPOT
@@ -37,8 +36,6 @@ public sealed class ScopeView
     private static readonly RgbaColor RelOpening = new(225, 195, 120);   // dim amber — the gap is opening
     private static readonly RgbaColor StarDim = new(150, 160, 180, 120);
     private static readonly RgbaColor StarBright = new(230, 235, 245, 200);
-    private static readonly RgbaColor Plasma = new(80, 220, 220, 46);
-    private static readonly RgbaColor PlasmaSpark = new(160, 250, 245, 160);
     private static readonly RgbaColor HullLine = new(200, 210, 225);
     private static readonly RgbaColor SailLine = new(140, 190, 235, 190);
     private static readonly RgbaColor EngineGlow = new(255, 170, 80, 200);
@@ -94,11 +91,6 @@ public sealed class ScopeView
             DrawRim(s);
             _renderer.EndFrame();
             return;
-        }
-
-        if (target.InPlasma)
-        {
-            DrawPlasmaWisps(s, simTime);
         }
 
         double distance = (target.Position - shipPosition).Length;
@@ -228,33 +220,6 @@ public sealed class ScopeView
             h = h * 1664525u + 1013904223u;
             float y = (h >> 7) % 1000 / 1000f * s;
             _renderer.DrawCircle(x, y, 0.6f, new RgbaColor(120, 130, 140, 90), new RgbaColor(120, 130, 140, 90));
-        }
-    }
-
-    private void DrawPlasmaWisps(float s, double simTime)
-    {
-        Span<float> pts = _scratch.AsSpan(0, 34);
-        for (int ribbon = 0; ribbon < 3; ribbon++)
-        {
-            double phase = simTime * 0.00025 + ribbon * 2.1;
-            float baseY = s * (0.3f + 0.2f * ribbon);
-            for (int i = 0; i <= 16; i++)
-            {
-                float x = s * i / 16f;
-                pts[i * 2] = x;
-                pts[i * 2 + 1] = baseY + (float)(Math.Sin(x / s * Math.Tau * 1.5 + phase) * s * 0.06);
-            }
-            _renderer.DrawPolyline(pts, Plasma, 7f);
-        }
-
-        uint h = (uint)(simTime / 400) | 1;
-        for (int i = 0; i < 8; i++)
-        {
-            h = h * 1664525u + 1013904223u;
-            float x = (float)((h >> 8) % 1000 / 1000f * s + simTime * 0.01) % s;
-            h = h * 1664525u + 1013904223u;
-            float y = (h >> 8) % 1000 / 1000f * s;
-            _renderer.DrawCircle(x, y, 1.2f, PlasmaSpark, PlasmaSpark);
         }
     }
 

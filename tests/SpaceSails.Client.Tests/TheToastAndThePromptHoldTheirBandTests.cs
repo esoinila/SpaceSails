@@ -50,8 +50,8 @@ public sealed class TheToastAndThePromptHoldTheirBandTests
 
     private static Pen Draw(DeckPlan plan, double dx, double dy, string? toast, bool low, string? prompt, string? band = null)
     {
-        var state = new DeckView.State(plan.SpawnX + dx, plan.SpawnY + dy, 0.9, 0, 0,
-            ShuttleAway: false, ElectricUniverse: false,
+        var state = new DeckView.State(plan.SpawnX + dx, plan.SpawnY + dy, 0.9, 0,
+            ShuttleAway: false,
             Nerve: 58, NerveReadout: "FRAYED", ShowNerve: true, NerveCompact: false, HitsTaken: 0,
             PulseToast: toast, PulseToastLow: low);
         var hud = new DeckView.SurfaceHud(

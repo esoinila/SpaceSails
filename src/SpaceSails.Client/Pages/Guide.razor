@@ -17,11 +17,6 @@
     <h2 id="scenarios">1. Choosing a voyage</h2>
     <ul>
         <li><strong>Sol</strong> — the classic system. Learn to fly here.</li>
-        <li><strong>Sol (Electric)</strong> ⚡ — same system plus a charged plasma environment:
-            a solar halo that charges your hull near the sun and flowing plasma streams between
-            planets. Charge makes you visible and eventually arcs; vent it with <kbd>V</kbd>.</li>
-        <li><strong>The Wheel</strong> — a rigid-spoke curiosity system with a plasma river,
-            for pilots who want strange skies.</li>
         @* #938 D3b · Two bullets used to stand here advertising a "Join the crew" voyage: a shared live
            session, a callsign, a min-warp rule, and the URL recipe &mp=1&callsign=YourName. None of it
            exists. `git grep -n "multiplayer\|min-warp" -- src` returned those Guide lines and nothing else,
@@ -33,8 +28,7 @@
            owner reported on 2026-07-18: a bookmarked /map?scenario=sol dropped a returning captain into
            a brand-new life without ever offering the saves they had. A link names a SKY; it does not
            decide that starting over is what you wanted. *@
-        <li>Any sky opens from a link: <code>/map?scenario=sol</code>, <code>sol-eu</code>, or
-            <code>wheel</code> — no home-page click needed. You still arrive at the <strong>logbook</strong>,
+        <li>Any sky opens from a link: <code>/map?scenario=sol</code> — no home-page click needed. You still arrive at the <strong>logbook</strong>,
             with Continue at the top and every banked berth listed; the link decides which world
             <em>New voyage</em> would launch into.</li>
     </ul>
@@ -112,8 +106,6 @@
             scales your velocity ±10%. Prograde only — pulses change your speed, never your heading.</li>
         <li><kbd>Shift</kbd> + pulse — <strong>fine trim</strong>, ±1%. For station-keeping and
             orbit matching.</li>
-        <li><kbd>V</kbd> — vent charge (Electric scenarios). The ⚡ <strong>Dump her charge</strong>
-            button names the key in its hover.</li>
         <li>Pulses have a short cooldown and each costs one mass pulse.</li>
         @* #440 · The drive is the one control in this game with no button anywhere, so the gauge
            that counts the pulses carries it. Written down here because the sweep found it: a new
@@ -244,7 +236,7 @@
             further out). Park at the same bus stop, wait for it to swing around, and board it
             like any prey.</li>
         <li>Mind the sun: it is drawn (and enforced) fat — sun-grazing slingshots crawl through
-            wide slow-warp zones, the planner flags them, and in ⚡ scenarios they cook your hull.
+            wide slow-warp zones and the planner flags them.
             The sun never shows the orbit-assist panel — you already orbit it by definition.</li>
     </ul>
 
@@ -515,18 +507,7 @@
             mothership makes a hard run for the pilot.</li>
     </ul>
 
-    <h2 id="electric">16. The electric sky ⚡</h2>
-    <ul>
-        <li>Near the sun the plasma halo charges your hull; the flowing ribbons between planets
-            are <strong>plasma streams</strong> — riding one pushes you along it (charged hulls
-            feel the current).</li>
-        <li>Charge makes you glow on everyone's sensors — it pierces even sun glare — and at full
-            charge you start arcing. <kbd>V</kbd> vents.</li>
-        <li>Mercury's neighborhood runs ~75% ambient charge. Ambush country: everyone there is
-            visible, desperate, or both.</li>
-    </ul>
-
-    <h2 id="tips">17. The physics, honestly</h2>
+    <h2 id="tips">16. The physics, honestly</h2>
     <ul>
         <li><strong>There is no drag.</strong> A circular orbit holds forever with zero thrust
             (measured: −0.025% radius drift over a full year).</li>
@@ -543,7 +524,7 @@
        treatment") — the surface game (Reevers, nerve, sentries, buried caches) shipped with no Guide
        coverage at all; new players met the fiction only when it bit. This section introduces it one
        beat earlier. Descriptive only — no numbers the in-flight nerve lane may still be tuning. *@
-    <h2 id="surface">18. Making planetfall — the surface game</h2>
+    <h2 id="surface">17. Making planetfall — the surface game</h2>
     <p class="text-secondary">
         Small moons are landable. Ride the shuttle down (§15) to bury a hoard where no confiscation
         can ever reach it, to dig up a cache you've charted, or just to comb the regolith for shallow

@@ -75,7 +75,6 @@ public partial class Map
         SayWhatTheScrimWasStandingOn();
         _pulse = _pulse.Seen(highResTimestampMs).Expire(highResTimestampMs);   // #1439 · dwell starts at the first tick that sees the line
         ExpireTheParrotBubble(highResTimestampMs);   // U10-F03 · every frame, deck included
-        SoundTheArcOnItsRisingEdge();
 
         if (FollowShip)
         {

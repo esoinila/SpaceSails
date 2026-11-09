@@ -144,7 +144,7 @@ public partial class Map
             Vault vault = VaultSerializer.Load(raw);
             if (!ThisSkyHoldsTheSavedBerth(vault))
             {
-                // #1388 · a Sol save read in the Wheel's sky names a berth that sky does not hold. Refuse with
+                // #1388 · a Sol save read in a sky names a berth that sky does not hold. Refuse with
                 // a sentence; the live world is left exactly as it was.
                 ShowPulseMessage($"That save is berthed at {vault.Resume?.HavenName ?? vault.Resume?.HavenId}, which this sky does not hold — open it in the world it was saved in.");
                 _showStartPicker = pickerWasUp;   // nothing was loaded: the door the captain pressed stays open

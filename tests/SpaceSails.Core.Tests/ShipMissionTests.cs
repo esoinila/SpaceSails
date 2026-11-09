@@ -11,8 +11,7 @@ public class ShipMissionTests
     private static CircularOrbitEphemeris Sol() =>
         CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
-    private static ScenarioDefinition LoadWheel() =>
-        ScenarioLoader.LoadFile(Path.Combine(AppContext.BaseDirectory, "scenarios", "wheel.json"));
+    private static ScenarioDefinition SolWithoutTraffic() => TestTree.Sol with { Traffic = null };
 
     [Fact]
     public void Describe_MatchesTheAddendumsExamples()
@@ -103,9 +102,9 @@ public class ShipMissionTests
     }
 
     [Fact]
-    public void Catalog_WheelScenario_WithoutTraffic_OffersOnlyLayLowIfAnyHavens()
+    public void Catalog_ScenarioWithoutTraffic_OffersOnlyLayLowIfAnyHavens()
     {
-        var ephemeris = CircularOrbitEphemeris.FromScenario(LoadWheel());
+        var ephemeris = CircularOrbitEphemeris.FromScenario(SolWithoutTraffic());
         Assert.Null(ephemeris.Traffic);
 
         MissionOptions catalog = MissionCatalog.Build(ephemeris);

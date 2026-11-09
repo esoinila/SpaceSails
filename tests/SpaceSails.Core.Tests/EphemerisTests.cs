@@ -48,7 +48,7 @@ public class EphemerisTests
     [Fact]
     public void ParentChaining_OffsetsChildByParentPosition()
     {
-        // A moon on a rotating parent — the mechanism the Wheel of the World scenario is built on.
+        // A moon on a rotating parent — the mechanism every moon rides on.
         var ephemeris = new CircularOrbitEphemeris([
             new CelestialBody("center", "Center", null, 0, 0, 0, 0, 0),
             new CelestialBody("planet", "Planet", "center", 0, 0, OrbitRadius: 1000, OrbitPeriod: 400, InitialPhase: 0),

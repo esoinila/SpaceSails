@@ -54,9 +54,6 @@ public static partial class StoryBeats
         /// <summary>An arc beat breaks on the wire — the story arriving as news rather than as a quest line.</summary>
         ArcNewsBreaks,
 
-        /// <summary>She sheds her charge: a discharge off the antennae, filaments raking outward.</summary>
-        ChargeLetGo,
-
         /// <summary>There is fire in a hull you are standing in — and three ways to answer it (#524).</summary>
         FireAboard,
 

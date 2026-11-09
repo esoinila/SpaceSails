@@ -119,7 +119,7 @@ public sealed class TheOutcomeIsOnThePopUpTests
 
         // If this drops to a handful the extraction has broken, and every assertion below would pass on a
         // world that cannot tell pass from fail — the exact vacuous-green shape this house names as a bug.
-        Assert.True(slots.Count >= 9,
+        Assert.True(slots.Count >= 8,
             $"only {slots.Count} pop-up slots were read out of SayItWhereTheyAreLooking — the seam has been " +
             "rewritten in a shape this guard cannot read, so it is proving nothing.");
 

@@ -54,10 +54,6 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
         /// that cannot cross into JavaScript on a test runner (see the class note).</summary>
         TheMapFrameInFlight,
 
-        /// <summary>Her own deck again, but under <c>scenarios/sol-eu.json</c> with the contactor running —
-        /// the one scenario in the game with a <see cref="PlasmaEnvironment"/> in it, and therefore the only
-        /// world where the frame's charge lane is not a single early return.</summary>
-        TheElectricUniverse,
     }
 
     public enum Sequence
@@ -245,15 +241,6 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
 
     private static int TheFloor => UndergroundComplex.TopPressurisedFloor(Body)
         ?? throw new InvalidOperationException($"{Body} has no pressurised floor to walk about on.");
-
-    /// <summary>…and the Electric Universe cut of it, which is the only scenario in the game that hands the
-    /// page a <see cref="PlasmaEnvironment"/> — so it is the only world where the charge lane of the frame is
-    /// anything but an early return.</summary>
-    private static readonly Lazy<SpaceSails.Contracts.ScenarioDefinition> SolEu = new(() => Scenario("sol-eu"));
-
-    private static SpaceSails.Contracts.ScenarioDefinition Scenario(string name) =>
-        ScenarioLoader.LoadFile(Path.Combine(TestTree.RepoRoot(), "scenarios", $"{name}.json"));
-
     /// <summary>The traffic the shipping boot generates, off the shipping seeds. Cached because the planners
     /// cost seconds and every world wants the same sky.</summary>
     private static readonly Lazy<IReadOnlyList<NpcShip>> Traffic = new(() =>
@@ -315,14 +302,11 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
                 "has moved, and the frame's verbs will throw instead of running.");
         pending.SetValue(map, true);
 
-        SpaceSails.Contracts.ScenarioDefinition scenario =
-            world == World.TheElectricUniverse ? SolEu.Value : TestTree.Sol;
+        SpaceSails.Contracts.ScenarioDefinition scenario = TestTree.Sol;
         ICelestialEphemeris ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
-        PlasmaEnvironment? plasma = PlasmaEnvironment.FromScenario(scenario, ephemeris);
         Set(map, "_scenarioName", scenario.Name);
         Set(map, "_ephemeris", ephemeris);
-        Set(map, "_plasma", plasma);
-        Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0, plasma));
+        Set(map, "_simulator", new Simulator(ephemeris, timeStepSeconds: 1.0));
         Set(map, "_npcSimulator", new Simulator(ephemeris, TrafficSchedule.NpcTimeStep));
         Set(map, "_ship", Invoke(map, "InitializeShipState")!);
         Set(map, "_npcStates", TheTrafficAsTheComponentKeepsIt());
@@ -358,20 +342,6 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
             case World.TheMapFrameInFlight:
                 Set(map, "_deckMode", false);
                 Set(map, "Warp", 100);
-                break;
-
-            case World.TheElectricUniverse:
-                Set(map, "_deckMode", true);
-                Set(map, "Warp", 1000);
-                // The contactor RUNNING is the whole point of this world. Every other world here is a
-                // Newtonian scenario, where AdvanceChargeSystems is one early return — so without this the
-                // charge lane of the frame could be moved anywhere, or off the end of a branch, and twenty
-                // fingerprints would go on being identical. A guard that cannot see a phase move is not
-                // guarding that phase.
-                Set(map, "_contactorOn", true);
-                Assert.True(Get(map, "_plasma") is not null,
-                    "scenarios/sol-eu.json handed the page no PlasmaEnvironment — this world's charge lane " +
-                    "is the same early return as everybody else's, and it would prove nothing.");
                 break;
         }
 

@@ -74,12 +74,10 @@ above, and this is the only place it gets asked.
 3. Confirm you arrive at the **logbook** — Continue at the top, the berth list under it — and *not*
    in a running voyage. The URL reads `/map?scenario=sol`; the scenario decides which sky **New
    voyage** launches into, nothing more (#323).
-4. Start a voyage and confirm the scenario name "Sol" in the HUD, no `EU ⚡` badge.
-5. Go back, click **Launch** on **Sol (Electric)**, start a voyage, and confirm the `EU ⚡` badge
-   appears next to the scenario name.
-6. Manually edit the URL to `/map?scenario=wheel` and reload.
-7. Confirm you get the logbook again, and that starting from it puts you in "Wheel" (Venus/Earth/Mars
-   visibly on a rigid spoke around Saturn once zoomed out).
+4. Start a voyage and confirm the scenario name "Sol" in the HUD.
+5. Sol is the only sky on the home page (the Archived scenarios drawer was removed 2026-11-09).
+6. Manually edit the URL to a retired sky, `/map?scenario=wheel` (then `sol-eu`, then `oops`), and reload.
+7. Confirm each one behaves like any unknown slug: the logbook opens over Sol, silently, no crash.
 8. Try `/map?scenario=not-a-real-scenario` — confirm the logbook opens over Sol, silently, no crash.
 9. Now add any cheat from Appendix A — `/map?scenario=sol&ellipse=1` — and confirm it goes **straight
    in**, no logbook. That is the whole of the civilian rule, both ways round.
@@ -330,32 +328,10 @@ shuttle not returning when the window closes.
 
 ---
 
-## 12. Electric scenario venting
+## 12. (retired)
 
-*(See [electric-sky.md](features/electric-sky.md).)*
-
-1. Launch **Sol (Electric)**. Confirm the HUD shows a Charge bar under the main readouts.
-2. Warp toward the sun (or into a visible plasma stream). Confirm the charge percentage climbs.
-3. Let it reach 90%+. Confirm the HUD flags "⚡ ARCING — visible system-wide" **and that you can see
-   it on the map without reading the HUD at all**: a short whip stands off her beam with three
-   filaments crawling slowly off its tip (#528 §7). It is a PLUME off one extremity, never a ring
-   around the hull — field strength is potential over radius of curvature, so a discharge leaves the
-   sharpest thing she has and a sphere is the one shape it cannot be.
-4. **Pause** (`space`) while she is arcing. Confirm the filaments FREEZE. The crawl is seeded from
-   sim time, so a stopped world draws a stopped plume; a plume that keeps dancing while paused is
-   the wall clock leaking into the picture.
-5. Press `V`. Confirm charge drops to roughly half its prior value, the arcing warning clears once
-   under 90%, and the dump itself SNAPS — five brighter, longer filaments off the same masthead,
-   gone inside about two-thirds of a second. Do it again from a nearly cold hull and confirm the
-   flash is dimmer and shorter: the brightness is the charge that actually left her.
-6. Press `V` again immediately. Confirm a "Vent recharging…" message appears (cooldown) rather
-   than a second instant halving.
-7. Fly into a plasma stream while charged and confirm you feel a push along the stream's
-   direction (speed changes without spending a pulse).
-
-**Broken looks like:** charge never climbing near the sun, arcing warning never appearing, venting
-not reducing the charge value — or the discharge drawn as a ring centred on the ship, drawn while
-she is merely GLOWING, the same brightness whatever she dumped, or still dancing on a paused map.
+The electric scenario venting checklist was removed with the Electric Universe layer (owner ruling
+2026-11-09).
 
 ---
 
@@ -624,7 +600,7 @@ launch from the home page.
 > ### The one civilian front door (#323)
 >
 > **A query is *civilian* — it goes through the logbook — if and only if it asked the boot for nothing
-> but a scenario.** `/map`, `/map?scenario=sol`, `/map?scenario=wheel` all open the same save-rack
+> but a scenario.** `/map`, `/map?scenario=sol`, and any unknown slug such as the retired `/map?scenario=wheel` all open the same save-rack
 > picker the home page's **Launch** button opens: Continue-newest at the top, every banked berth
 > listed, the named scenario merely deciding which sky **New voyage** launches into. A bookmark is not
 > a decision to start over.

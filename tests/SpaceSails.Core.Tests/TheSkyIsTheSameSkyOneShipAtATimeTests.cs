@@ -369,7 +369,6 @@ public class TheSkyIsTheSameSkyOneShipAtATimeTests
             Assert.True(inOneRun.SimTime == answer.SimTime, $"{where}: her clock reads differently");
             Assert.True(inOneRun.Position == answer.Position, $"{where}: she is somewhere else");
             Assert.True(inOneRun.Velocity == answer.Velocity, $"{where}: she is going somewhere else");
-            Assert.True(inOneRun.Charge == answer.Charge, $"{where}: she is carrying a different charge");
 
             // …and it really did hand the caller something to breathe on. A slice size under the run's own
             // step count must produce more than the one final state, or "sliced" is a word and not a fact.

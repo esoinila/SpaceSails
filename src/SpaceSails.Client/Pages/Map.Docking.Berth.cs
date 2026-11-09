@@ -175,7 +175,7 @@ public partial class Map
         // the hull is pinned on the reassigned one. The port's PA reads this number out loud (#525).
         _berthSlot = TheSlotTheRosterGives(dock.Id);
         _ship = BerthState.CoMoving(
-            _ephemeris!, dock.Id, SimTime, BerthState.BerthOffsetMeters, _ship.Charge,
+            _ephemeris!, dock.Id, SimTime, BerthState.BerthOffsetMeters,
             TheBearingOfSlot(dock.Id, _berthSlot.Value));
         TakeTheBerthTheRosterGave(dock.Id);                  // …and a reassignment is spent by being given
         _dockOffset = _ship.Position - dockPos;               // the arm's reach is now the berth offset

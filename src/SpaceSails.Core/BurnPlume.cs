@@ -18,14 +18,14 @@ namespace SpaceSails.Core;
 /// it is exactly the picture a renderer draws by accident.</para>
 ///
 /// <h3>Why the geometry is in Core and not in the renderer</h3>
-/// <para>The same reason <see cref="DischargePlume"/> is: this repo's first named bug class is a client
+/// <para>This repo's first named bug class is a client
 /// geometry literal nobody could put a test on, and its third is the drawn shape reporting one thing while
 /// the sim says another. So the picture is a pure function here — feather count, lengths, angles, reach and
 /// intensity for a given burn — and <c>Map.Burn.cs</c>'s <c>DrawBurnPlume</c> is a pen that walks what this
 /// returns and nothing else.</para>
 ///
 /// <h3>ONE clock, and it is the player's</h3>
-/// <para><see cref="DischargePlume"/> wrote the two-clock rule down (#1086): a FLASH is on the real clock,
+/// <para>The two-clock rule (#1086, first written down for the since-retired discharge plume): a FLASH is on the real clock,
 /// because it is a statement about the player's eye; a CRAWL is on sim time, because it is a statement
 /// about the world. A burn is entirely the first kind, and the issue says why in one line: <i>"at high warp
 /// a burn instant can pass in one frame — the effect should be wall-clock-timed (~1 s), not
@@ -46,8 +46,7 @@ public static class BurnPlume
 {
     // ── Where the nozzle is ───────────────────────────────────────────────────────────────────────────
 
-    /// <summary>How far her stern stands off the marker, in SCREEN PIXELS. Sized like
-    /// <see cref="DischargePlume.MastPx"/> and for the same reason: the map spans thirteen orders of
+    /// <summary>How far her stern stands off the marker, in SCREEN PIXELS. Sized in screen pixels because the map spans thirteen orders of
     /// magnitude of zoom, so a nozzle sized in world metres would be a hair at one end of that range and
     /// would swallow the solar system at the other. It is a glyph, like the ship dot.</summary>
     public const double NozzlePx = 7.0;
@@ -119,7 +118,7 @@ public static class BurnPlume
     public const int MaxFeathers = 6;
 
     /// <summary>Floats per feather in <see cref="Feathers"/>' output: three points, x,y each. One kink, so
-    /// the flame reads as exhaust rather than as spokes — the <see cref="DischargePlume"/> encoding.</summary>
+    /// the flame reads as exhaust rather than as spokes.</summary>
     public const int FloatsPerFeather = 6;
 
     /// <summary>Half the angle the feathers fan across, in radians. Kept well inside a right angle so that
@@ -208,7 +207,7 @@ public static class BurnPlume
         (double nozzleX, double nozzleY) = Nozzle(thrustScreenAngleRad);
 
         // The flame is held still WITHIN a step and re-drawn at the next one: a burn snaps and flutters, it
-        // does not sweep. (DischargePlume's arcing crawl sweeps because it is a state; this is an event.)
+        // does not sweep. (a crawl would sweep because it is a state; this is an event.)
         long step = (long)Math.Floor(phase);
 
         int w = 0;

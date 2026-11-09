@@ -279,22 +279,22 @@ public sealed class EveryFrameHashesTheSameTests
             {
                 "ship · under way" => new Shot(
                     ship,
-                    new DeckView.State(-2.5, 1.5, 0.7, CargoUnits: 7, Charge: 0.62,
-                        ShuttleAway: false, ElectricUniverse: true,
+                    new DeckView.State(-2.5, 1.5, 0.7, CargoUnits: 7,
+                        ShuttleAway: false,
                         ShowNerve: true, NerveCompact: true, Nerve: 71, NerveReadout: "STEADY",
                         HitsTaken: 2, NerveFlash: "it laid hands on you  −1",
                         NerveLedger: ["the dark  −2", "a drink  +1"]),
                     SimTime: 1234.5),
                 "ship · docked, the shuttle away and the machine stalling" => new Shot(
                     ship,
-                    new DeckView.State(4.0, -3.0, 2.4, CargoUnits: 0, Charge: 0.0,
-                        ShuttleAway: true, ElectricUniverse: false, Docked: true,
+                    new DeckView.State(4.0, -3.0, 2.4, CargoUnits: 0,
+                        ShuttleAway: true, Docked: true,
                         StallBanner: "THE WORLD IS BEHIND — 0.8 s since the last tick"),
                     SimTime: 500.0, PanX: 30, PanY: -18),
                 _ => new Shot(
                     ship,
-                    new DeckView.State(0.0, 0.0, 1.0, CargoUnits: 3, Charge: 0.2,
-                        ShuttleAway: false, ElectricUniverse: false, Seated: true),
+                    new DeckView.State(0.0, 0.0, 1.0, CargoUnits: 3,
+                        ShuttleAway: false, Seated: true),
                     SimTime: 9000.0, NpcHoldTime: 8888.0),
             };
         }
@@ -304,8 +304,8 @@ public sealed class EveryFrameHashesTheSameTests
             DeckPlan haven = Scenes.Build($"haven:{name["haven · ".Length..]}");
             return new Shot(
                 haven,
-                new DeckView.State(haven.SpawnX, haven.SpawnY, 0.3, 0, 0,
-                    ShuttleAway: false, ElectricUniverse: false,
+                new DeckView.State(haven.SpawnX, haven.SpawnY, 0.3, 0,
+                    ShuttleAway: false,
                     ShowNerve: true, NerveCompact: true, Nerve: 44, NerveReadout: "FRAYED"),
                 SimTime: 2400.0, CrewGlance: true);
         }
@@ -319,8 +319,8 @@ public sealed class EveryFrameHashesTheSameTests
             DeckReachability.Point landing = HavenInterior.TheCageLandingAt(id, 0)!.Value;
             return new Shot(
                 below,
-                new DeckView.State(landing.X, landing.Y, 0.0, 0, 0,
-                    ShuttleAway: false, ElectricUniverse: false, Docked: true),
+                new DeckView.State(landing.X, landing.Y, 0.0, 0,
+                    ShuttleAway: false, Docked: true),
                 SimTime: 1000.0);
         }
 
@@ -334,8 +334,8 @@ public sealed class EveryFrameHashesTheSameTests
             DeckReachability.Point door = HavenInterior.TheOfficeDoorstepAt(id)!.Value;
             return new Shot(
                 below,
-                new DeckView.State(door.X, door.Y, 0.0, 0, 0,
-                    ShuttleAway: false, ElectricUniverse: false, Docked: true),
+                new DeckView.State(door.X, door.Y, 0.0, 0,
+                    ShuttleAway: false, Docked: true),
                 SimTime: 1000.0);
         }
 
@@ -349,8 +349,8 @@ public sealed class EveryFrameHashesTheSameTests
             DeckReachability.Point stand = new(bench.X, (gy0 + gy1) / 2);   // mid-room, west of the beds
             return new Shot(
                 deck,
-                new DeckView.State(stand.X, stand.Y, 0.0, 0, 0,
-                    ShuttleAway: false, ElectricUniverse: false, Docked: true),
+                new DeckView.State(stand.X, stand.Y, 0.0, 0,
+                    ShuttleAway: false, Docked: true),
                 SimTime: 1000.0);
         }
 
@@ -359,8 +359,8 @@ public sealed class EveryFrameHashesTheSameTests
             DeckPlan wreck = Scenes.Build($"wreck:{name["wreck · ".Length..]}");
             return new Shot(
                 wreck,
-                new DeckView.State(wreck.SpawnX, wreck.SpawnY, 1.9, 0, 0,
-                    ShuttleAway: false, ElectricUniverse: false),
+                new DeckView.State(wreck.SpawnX, wreck.SpawnY, 1.9, 0,
+                    ShuttleAway: false),
                 SimTime: 777.0);
         }
 
@@ -368,8 +368,8 @@ public sealed class EveryFrameHashesTheSameTests
         {
             string body = name.Contains("titan", StringComparison.Ordinal) ? "titan" : "luna";
             DeckPlan ground = Scenes.Build($"surface:{body}:0");
-            var stand = new DeckView.State(ground.SpawnX, ground.SpawnY, 0.9, 0, 0,
-                ShuttleAway: false, ElectricUniverse: false,
+            var stand = new DeckView.State(ground.SpawnX, ground.SpawnY, 0.9, 0,
+                ShuttleAway: false,
                 Nerve: 58, NerveReadout: "FRAYED", ShowNerve: true, HitsTaken: 1,
                 Dark: name.Contains("dark", StringComparison.Ordinal));
             return name switch
@@ -389,7 +389,7 @@ public sealed class EveryFrameHashesTheSameTests
             DeckPlan peopled = HiveInterior.FloorDeck("luna", -1, Field, 8, Everybody(sx, sy), [], 0);
             return new Shot(
                 peopled,
-                new DeckView.State(sx, sy, 0.0, 0, 0, ShuttleAway: false, ElectricUniverse: false),
+                new DeckView.State(sx, sy, 0.0, 0, ShuttleAway: false),
                 SimTime: 1500.0, NpcHoldTime: 1400.0, CrewGlance: true);
         }
 
@@ -397,7 +397,7 @@ public sealed class EveryFrameHashesTheSameTests
         {
             return new Shot(
                 HiveFloor("luna", -1),
-                new DeckView.State(sx, sy, 2.2, 0, 0, ShuttleAway: false, ElectricUniverse: false,
+                new DeckView.State(sx, sy, 2.2, 0, ShuttleAway: false,
                     Dark: true, ShowNerve: true, NerveCompact: true, Nerve: 30, NerveReadout: "RATTLED"),
                 SimTime: 640.0);
         }
@@ -406,7 +406,7 @@ public sealed class EveryFrameHashesTheSameTests
         {
             return new Shot(
                 HiveFloor("luna", -1),
-                new DeckView.State(sx, sy, 1.1, 0, 0, ShuttleAway: false, ElectricUniverse: false,
+                new DeckView.State(sx, sy, 1.1, 0, ShuttleAway: false,
                     Seated: true, ShowNerve: true, NerveCompact: true, Nerve: 88, NerveReadout: "STEADY"),
                 SimTime: 205.0, PanX: -40, PanY: 25);
         }
@@ -415,7 +415,7 @@ public sealed class EveryFrameHashesTheSameTests
         int plainLevel = -int.Parse(name.Split('B')[1], CultureInfo.InvariantCulture);
         return new Shot(
             HiveFloor(plainBody, plainLevel),
-            new DeckView.State(sx, sy, 0.6, 0, 0, ShuttleAway: false, ElectricUniverse: false),
+            new DeckView.State(sx, sy, 0.6, 0, ShuttleAway: false),
             SimTime: 880.0);
     }
 

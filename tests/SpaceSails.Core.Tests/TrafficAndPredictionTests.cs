@@ -294,15 +294,14 @@ public class TrafficAndPredictionTests
     }
 
     [Fact]
-    public void SolEu_AtGenesis_ShowsLitPreyWithinBeaconRange_OfThePlayerStart()
+    public void Sol_AtGenesis_ShowsLitPreyWithinBeaconRange_OfThePlayerStart()
     {
-        // The empty-sky regression (owner, 2026-07-06 screenshot "ZERO ships"): opening sol-eu near
+        // The empty-sky regression (owner, 2026-07-06 screenshot "ZERO ships"): opening Sol near
         // Earth must reveal mobile prey immediately, not depots-only for days. At least one lit,
         // timetable-publishing pod AND at least one lit ship-or-pod must be active within the first
         // catch-up step and inside the 3 AU civilian-beacon range of the player's start. Before the
         // fix, every pod launched 0.5–10 days out and every mid-flight hauler spawned past 3 AU.
-        var scenario = ScenarioLoader.LoadFile(Path.Combine(AppContext.BaseDirectory, "scenarios", "sol-eu.json"));
-        var ephemeris = CircularOrbitEphemeris.FromScenario(scenario);
+        var ephemeris = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
 
         Vector2d earth = ephemeris.Position("earth", 0);
         Vector2d playerStart = earth + earth.Normalized() * 5e9; // mirrors Map.InitializeShipState

@@ -280,7 +280,7 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     /// ---
     /// &gt; _hiddenLayersByDesk={ShipDesk.Nav: []}</code>
     /// <para>The other <b>ten are byte-identical</b> — all five <c>HerOwnDeckInFlight</c> rows and all five
-    /// <c>TheElectricUniverse</c> ones, the worlds that never ask the Nav desk for a layer and so never build
+    /// <c>TheElectricUniverse</c> ones (that world was retired 2026-11-09), the worlds that never ask the Nav desk for a layer and so never build
     /// its hidden set at all. That is the honest signature of a per-desk default changing and nothing else: a
     /// lane draw that had really been ripped out of a painted frame would have moved the pen and the canvas
     /// buffer on the map worlds, and a state field added or dropped would have moved the count. The
@@ -364,8 +364,8 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     /// </list>
     /// <para><b>No ledger row moved, no <c>walked-view pen</c> moved, and no call count moved</b> — this
     /// change draws no new thing, it draws three old things in the right place. And the five
-    /// <see cref="World.TheElectricUniverse"/> rows are <b>byte-identical</b>, because that world is on
-    /// <c>wheel.json</c>, which #957 does not touch: the one world that could not move, did not.</para>
+    /// <c>TheElectricUniverse</c> rows (retired 2026-11-09) were <b>byte-identical</b>, because that world was on
+    /// <c>wheel.json</c> (since deleted), which #957 does not touch: the one world that could not move, did not.</para>
     ///
     /// <para><b>#954 · ALL THIRTY WERE RE-RECORDED, and this is a kind of re-pin the ledger had not seen: a
     /// BEHAVIOUR change. The frame deliberately writes a different answer.</b> Every entry above is a
@@ -483,11 +483,6 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     [InlineData(World.TheMapFrameInFlight, Sequence.AHeldKey)]
     [InlineData(World.TheMapFrameInFlight, Sequence.APlannedRoute)]
     [InlineData(World.TheMapFrameInFlight, Sequence.AHandOnTheWarpSlider)]
-    [InlineData(World.TheElectricUniverse, Sequence.SteadyFrames)]
-    [InlineData(World.TheElectricUniverse, Sequence.OneLongGap)]
-    [InlineData(World.TheElectricUniverse, Sequence.AHeldKey)]
-    [InlineData(World.TheElectricUniverse, Sequence.APlannedRoute)]
-    [InlineData(World.TheElectricUniverse, Sequence.AHandOnTheWarpSlider)]
     public void EveryFrameItRunsFingerprintsTheSame(World world, Sequence sequence)
     {
         string scene = SceneName(world, sequence);
@@ -573,8 +568,8 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     }
 
     /// <summary>The snapshot is worth nothing if the bench cannot tell one world from another — a guard handed
-    /// a world it built itself cannot tell pass from fail (this repo's fifth named bug class). Thirty rows,
-    /// thirty different fingerprints.</summary>
+    /// a world it built itself cannot tell pass from fail (this repo's fifth named bug class). Twenty-five rows,
+    /// twenty-five different fingerprints.</summary>
     [Fact]
     public void EveryRowIsADifferentFrame()
     {
@@ -597,6 +592,6 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
                 "driving the same frame, so one of them could never fail.");
             seen[hash] = scene;
         }
-        Assert.Equal(30, seen.Count);
+        Assert.Equal(25, seen.Count);   // five worlds x five sequences (the Electric Universe world was retired)
     }
 }

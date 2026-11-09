@@ -404,7 +404,7 @@ public partial class Map
         // decayed orbit's, not the pass's, so the search surface is neither monotone nor the number the
         // corridor is defined against.
         (Simulator vacuum, _, ICelestialEphemeris vacuumEph) = BuildSkimContext(bodyId);
-        ShipState BuildAt(double b) => new(jCA + perp * b - vShipCA * passLead, vShipCA, now, _ship.Charge);
+        ShipState BuildAt(double b) => new(jCA + perp * b - vShipCA * passLead, vShipCA, now);
         // #1389 · …MEASURED THE WAY THE LIVE SHIP FLIES. The plot's own projection takes up to 3-hour steps, and
         // across a three-day approach that is thousands of kilometres of error at a pass six thousand wide: the
         // same arc reads 65 km above Venus at 3 h steps and 13,100 km at 600 s, converging by 60 s (the live

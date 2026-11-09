@@ -8,7 +8,7 @@
     Seventy-five consecutive lines of Map.razor and one subject: what a captain standing inside a pressure
     hull can open, and what those boards raise. The overload panel and the epitaph it writes, the life-sign
     read, the pressure door at your hand, the wreck's whole vent board, the archive vision a wreck gives up,
-    OUR OWN ship's board, and the charge board. Two hulls, one idiom — and the two vent boards are the
+    OUR OWN ship's board. Two hulls, one idiom — and the two vent boards are the
     reason the room-label helper crosses this rack twice under one name.
 
     Moved by PURE MOTION: the gates came with the invocations — a gate is what says WHEN a board is on the
@@ -89,11 +89,4 @@
                         WithdrawTheCaptainsWord="@WithdrawTheCaptainsWord" />
     }
 
-    @if (_showChargeBoard)
-    {
-        <ChargeBoardPanel _chargeBoardMessage="@_chargeBoardMessage" _contactorOn="@_contactorOn" _plasma="@_plasma"
-                          _reactionMassPulses="@_reactionMassPulses" AmbientChargeNow="@AmbientChargeNow"
-                          CloseChargeBoard="@CloseChargeBoard" Dismiss="@Dismiss" HullChargeNow="@HullChargeNow"
-                          ToggleContactor="@ToggleContactor" VentCharge="@VentCharge" />
-    }
 @* ── MARKUP ENDS ─────────────────────────────────────────────────────────────────────────────────── *@

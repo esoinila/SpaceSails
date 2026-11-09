@@ -40,8 +40,7 @@ Highlights: the integrator zoo measured (explicit Euler leaks 19.75% of Mercury'
 50 years; the game's semi-implicit doesn't), the Oberth effect at exactly 9× from the same
 burn, a from-scratch n-body integrator quantifying what the rails ephemeris hides, and
 [*Oops at the Moon*](labs/12-oops-at-the-moon/README.md) 🌙, where careless miners un-rail
-Luna and you compute the catastrophe (playable aftermath:
-[`?scenario=oops`](https://esoinila.github.io/SpaceSails-play/map?scenario=oops)). Every
+Luna and you compute the catastrophe. Every
 number in every lesson comes from actually running that lesson's probe.
 
 The later labs left physics behind and kept the method: Lab 34 measures whether a rescue
@@ -75,8 +74,7 @@ Small, linked pages — one station or mechanic per page — under `docs/feature
 - [Dock & economy](docs/features/dock-and-economy.md) — selling cargo, refueling, buying upgrades
 - [Deck view & cantina](docs/features/deck-view.md) — walking the ship, consoles, the rum-wobble mechanic
 - [Boarding run](docs/features/boarding-run.md) — the capture window, automatic timer, and shuttle minigame
-- [Electric sky](docs/features/electric-sky.md) — hull charge, arcing, venting, plasma streams
-- [Scenarios](docs/features/scenarios.md) — the three voyages and the `?scenario=` query string
+- [Scenarios](docs/features/scenarios.md) — the one voyage and the `?scenario=` query string
 - [Tracking post](docs/features/tracking-post.md) — the ship's telescope, sun-blind detection rosette, tracked-targets ledger
 - [Local space](docs/features/local-space.md) — the "what else orbits here" panel, same-orbit/course-matched trading, drone transfers
 - [Dark space web](docs/features/dark-web.md) — buying/selling route intel, tight-beam hails, laser ranging
@@ -149,7 +147,7 @@ How to play: in-game **Captain's Guide** at `/guide` (also [docs/user-guide.md](
 | `src/SpaceSails.Contracts` | DTOs and scenario models |
 | `src/SpaceSails.Client` | Blazor WASM client |
 | `archive/SpaceSails.Server` | ASP.NET Core host + SignalR hub (archived — see [archive/README.md](archive/README.md)) |
-| `scenarios/` | Scenario data files (`sol.json`, `sol-eu.json`, `wheel.json`, `oops.json`) |
+| `scenarios/` | Scenario data files (`sol.json`) |
 | `labs/` | The Gravity Lab — 44 runnable lesson probes + the lab-viz host |
 | `tests/` | xUnit test projects (Core, Client, and the UI gate), plus `tests/scripts/` — the Python purity/assert accounting a pure-move PR has to show |
 

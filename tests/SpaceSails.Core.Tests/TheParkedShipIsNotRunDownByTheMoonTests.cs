@@ -324,7 +324,7 @@ public class TheParkedShipIsNotRunDownByTheMoonTests
         double crossing = ShuttleRange.TravelSeconds(gap);
 
         // The old idiom, exactly: "frozen in place — the shuttle moved, not the mothership".
-        var frozen = new ShipState(parked.Position, parked.Velocity, parked.SimTime + crossing, parked.Charge);
+        var frozen = new ShipState(parked.Position, parked.Velocity, parked.SimTime + crossing);
 
         (SurfaceImpact.Crossing? struck, _, _) = FlyWatching(simulator, eph, frozen, 3600.0, moon);
 
@@ -354,7 +354,7 @@ public class TheParkedShipIsNotRunDownByTheMoonTests
         ShipState parked = BerthState.CoMoving(eph, moon, 0, CyclerWindow.ArrivalOffsetMeters);
         double crossing = ShuttleRange.TravelSeconds(
             (parked.Position - eph.Position(moon, 0)).Length);
-        var frozen = new ShipState(parked.Position, parked.Velocity, parked.SimTime + crossing, parked.Charge);
+        var frozen = new ShipState(parked.Position, parked.Velocity, parked.SimTime + crossing);
 
         LoiterClock.Coast coast = LoiterClock.Advance(simulator, eph, frozen, 3600.0);
 

@@ -93,7 +93,7 @@ exact URL already appeared above is not repeated.
 - `/map?scenario=sol`  [local](http://localhost:5073/map?scenario=sol) [live](https://esoinila.github.io/SpaceSails-play/map?scenario=sol)
   section 1: the logbook opens (Continue at the top, the berth list under it) - a civilian URL, not a running voyage
 - `/map?scenario=wheel`  [local](http://localhost:5073/map?scenario=wheel) [live](https://esoinila.github.io/SpaceSails-play/map?scenario=wheel)
-  section 1: the logbook again; starting from it puts you in "Wheel" (Venus/Earth/Mars on a rigid spoke around Saturn once zoomed out)
+  section 1: a retired sky (the Wheel was removed 2026-11-09) - behaves like any unknown slug: the logbook opens over Sol, no crash
 - `/map?scenario=not-a-real-scenario`  [local](http://localhost:5073/map?scenario=not-a-real-scenario) [live](https://esoinila.github.io/SpaceSails-play/map?scenario=not-a-real-scenario)
   section 1: the logbook opens over Sol, silently, no crash
 - `/map?scenario=sol&ellipse=1`  [local](http://localhost:5073/map?scenario=sol&ellipse=1) [live](https://esoinila.github.io/SpaceSails-play/map?scenario=sol&ellipse=1)

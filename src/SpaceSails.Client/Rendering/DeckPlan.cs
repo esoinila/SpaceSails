@@ -377,7 +377,7 @@ public sealed partial class DeckPlan
     /// array order within the interact radius, which is a different function with the same name — and the
     /// reason the owner could not open her atmosphere board: <i>"those panels won't open there"</i>. Her
     /// valves and her bridge repeater are APPENDED to the console list (they are built per-compartment,
-    /// after the hand-written spots), while the charge dump and the COMMS SEAT sit early in it. So every
+    /// after the hand-written spots), while the valve station and the COMMS SEAT sit early in it. So every
     /// point from which the valves were reachable also reached an earlier console, and the earlier console
     /// took the key. Both of her boards were unpressable, on a deck where both are drawn.</para>
     ///

@@ -199,8 +199,8 @@ public sealed class NoTwoCaptionsShareOneBandTests
         yield return new Boot(
             "the regolith · your own ✗",
             ground,
-            new DeckView.State(CacheX, CacheY + 1.0, 1.4, 0, 0,
-                ShuttleAway: false, ElectricUniverse: false,
+            new DeckView.State(CacheX, CacheY + 1.0, 1.4, 0,
+                ShuttleAway: false,
                 Nerve: 58, NerveReadout: "FRAYED", ShowNerve: true, HitsTaken: 1),
             SimTime: 4321.0,
             new DeckView.SurfaceHud(
@@ -241,8 +241,8 @@ public sealed class NoTwoCaptionsShareOneBandTests
         yield return new Boot(
             "a derelict · the DEEP HOLD",
             hold,
-            new DeckView.State(hx, hy + 1.2, 4.7, 0, 0,
-                ShuttleAway: false, ElectricUniverse: false),
+            new DeckView.State(hx, hy + 1.2, 4.7, 0,
+                ShuttleAway: false),
             SimTime: 777.0,
             new DeckView.SurfaceHud(
                 DigProgress: -1,
@@ -270,8 +270,8 @@ public sealed class NoTwoCaptionsShareOneBandTests
         yield return new Boot(
             "the ship · her own deck",
             Scenes.Build("ship"),
-            new DeckView.State(-2.5, 1.5, 0.7, CargoUnits: 7, Charge: 0.62,
-                ShuttleAway: false, ElectricUniverse: true,
+            new DeckView.State(-2.5, 1.5, 0.7, CargoUnits: 7,
+                ShuttleAway: false,
                 ShowNerve: true, NerveCompact: true, Nerve: 71, NerveReadout: "STEADY"),
             SimTime: 1234.5,
             Surface: null,
@@ -282,7 +282,7 @@ public sealed class NoTwoCaptionsShareOneBandTests
         yield return new Boot(
             "luna B1 · the park",
             HiveInterior.FloorDeck("luna", -1, Field, 0, static (_, _) => { }, [], 0),
-            new DeckView.State(px, py, 0.6, 0, 0, ShuttleAway: false, ElectricUniverse: false,
+            new DeckView.State(px, py, 0.6, 0, ShuttleAway: false,
                 ShowNerve: true, NerveCompact: true, Nerve: 80, NerveReadout: "STEADY"),
             SimTime: 880.0,
             Surface: null,
@@ -298,8 +298,8 @@ public sealed class NoTwoCaptionsShareOneBandTests
         yield return new Boot(
             "selene gate · the lower concourse",
             TheLowerConcourse,
-            new DeckView.State(TheLanding.X, TheLanding.Y, 0.0, 0, 0,
-                ShuttleAway: false, ElectricUniverse: false, Docked: true),
+            new DeckView.State(TheLanding.X, TheLanding.Y, 0.0, 0,
+                ShuttleAway: false, Docked: true),
             SimTime: 1000.0,
             Surface: null,
             AtLeast: 8);
@@ -317,8 +317,8 @@ public sealed class NoTwoCaptionsShareOneBandTests
             yield return new Boot(
                 $"{id} · the lower level",
                 HavenInterior.DockedDeck(id, level: HavenLevels.ServiceLevel)!,
-                new DeckView.State(landing.X, landing.Y, 0.0, 0, 0,
-                    ShuttleAway: false, ElectricUniverse: false, Docked: true),
+                new DeckView.State(landing.X, landing.Y, 0.0, 0,
+                    ShuttleAway: false, Docked: true),
                 SimTime: 1000.0,
                 Surface: null,
                 AtLeast: 8);
@@ -337,8 +337,8 @@ public sealed class NoTwoCaptionsShareOneBandTests
                 OfficeBootName(side),
                 HavenInterior.DockedDeck(
                     side.HavenId, level: HavenLevels.ServiceLevel, office: HavenInterior.OfficeDoor.Ajar)!,
-                new DeckView.State(office.X, office.Y, 0.0, 0, 0,
-                    ShuttleAway: false, ElectricUniverse: false, Docked: true),
+                new DeckView.State(office.X, office.Y, 0.0, 0,
+                    ShuttleAway: false, Docked: true),
                 SimTime: 1000.0,
                 Surface: null,
                 AtLeast: 8);
@@ -356,8 +356,8 @@ public sealed class NoTwoCaptionsShareOneBandTests
             yield return new Boot(
                 $"{id} · the garden",
                 HavenInterior.DockedDeck(id)!,
-                new DeckView.State(stand.X, stand.Y, 0.0, 0, 0,
-                    ShuttleAway: false, ElectricUniverse: false, Docked: true),
+                new DeckView.State(stand.X, stand.Y, 0.0, 0,
+                    ShuttleAway: false, Docked: true),
                 SimTime: 1000.0,
                 Surface: null,
                 AtLeast: 5);

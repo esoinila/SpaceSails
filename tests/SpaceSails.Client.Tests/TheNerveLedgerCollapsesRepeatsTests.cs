@@ -41,7 +41,7 @@ public sealed class TheNerveLedgerCollapsesRepeatsTests
         var plan = new DeckPlan([], [], [], [], spawnX: 0, spawnY: 0, droidCount: 0,
             fillDroids: (_, _) => { }, location: (_, _) => "field");
         var pen = new TextPen();
-        var state = new DeckView.State(0, 0, 0, 0, 0, ShuttleAway: false, ElectricUniverse: false,
+        var state = new DeckView.State(0, 0, 0, 0, ShuttleAway: false,
             ShowNerve: true, NerveLedger: ledger);
         new DeckView(pen).Draw(plan, 1200, 700, simTime: 0, in state);
         return pen.Said;
@@ -85,7 +85,7 @@ public sealed class TheNerveLedgerCollapsesRepeatsTests
                 DigProgress: -1, HasDroppedChest: false, DropX: 0, DropY: 0,
                 Blips: [(0.3, 12.0, true)], Cadence: 1, Readout: Readout, CacheMarks: [],
                 Nerve: 80, NerveReadout: "STEADY", Instruments: true);
-            var state = new DeckView.State(0, 0, 0, 0, 0, ShuttleAway: false, ElectricUniverse: false);
+            var state = new DeckView.State(0, 0, 0, 0, ShuttleAway: false);
             new DeckView(pen).Draw(plan, width, 700, simTime: 0, in state, surface: hud);
 
             (float x, string text, TextAlign align) = pen.At.Single(a => a.Text == Readout);

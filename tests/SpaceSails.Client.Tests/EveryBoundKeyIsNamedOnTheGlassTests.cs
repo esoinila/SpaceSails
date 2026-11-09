@@ -65,7 +65,6 @@ public class EveryBoundKeyIsNamedOnTheGlassTests
         new("M", ["m", "M"], "mute and unmute every cue (#338) — global", ["M"]),
         new("O", ["o", "O"], "enter orbit / arm the capture", ["O"]),
         new("P", ["p", "P"], "the plotting table", ["P"]),
-        new("V", ["v", "V"], "vent the hull charge", ["V"]),
         new("`", ["`", "~"], "peek at the map — hide every panel (#1038)", ["`"]),
         new("/", ["/"], "the nav search box (#406)", ["/"]),
         new("?", ["?"], "raise the plotting card (#949)", ["?"]),
@@ -124,7 +123,6 @@ public class EveryBoundKeyIsNamedOnTheGlassTests
         "src/SpaceSails.Client/Pages/Map/NavHud/NavToolbar.razor",
         "src/SpaceSails.Client/Pages/Map/NavHud/OrbitAssistBox.razor",
         "src/SpaceSails.Client/Pages/Map/DeskPanels.razor",
-        "src/SpaceSails.Client/Pages/Map/ChargeBoardPanel.razor",
         "src/SpaceSails.Client/Pages/Map.NavToolbar.cs",
     ];
 

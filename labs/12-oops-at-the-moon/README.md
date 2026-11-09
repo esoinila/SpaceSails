@@ -125,11 +125,8 @@ listening.]*
 
 ## The playable scenario
 
-`scenarios/oops.json` is a Sol variant whose description tells this story: Luna's orbital
-parameters are set to the mildest computed outcome above (the +15% "mild" case never threatens
-the atmosphere and is the one a player could actually fly through), and a haven is renamed
-"Miners' Folly" in the aftermath. Loads and parses via `ScenarioLoader.Parse` (see
-`tests/SpaceSails.Core.Tests/OopsScenarioTests.cs`); playable at `?scenario=oops`.
+`scenarios/oops.json` (a Sol variant with Luna on the mildest computed orbit and a haven renamed
+"Miners' Folly") was retired on 2026-11-09 along with the other archived skies; the lab is the whole lesson now.
 
 ## Break it yourself
 
@@ -150,4 +147,3 @@ the atmosphere and is the one a player could actually fly through), and a haven 
 - `src/SpaceSails.Core/ManeuverPlan.cs` — the ±10%/etc. velocity-pulse mechanic this lesson's
   "capacitor" reuses on Luna instead of a ship.
 - `scenarios/sol.json` — Luna's real (unperturbed) orbital elements this lesson starts from.
-- `scenarios/oops.json` — the playable aftermath scenario.

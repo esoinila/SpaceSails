@@ -181,7 +181,7 @@ public partial class Map
                 locked.Ship.IsPod ? ScopeView.TargetKind.Pod : ScopeView.TargetKind.Freighter,
                 locked.Ship.Callsign, $"cargo: {locked.Ship.CargoClass} ({locked.Ship.CargoUnits}u)",
                 locked.State.Position, locked.State.Velocity,
-                0, NpcColor, InPlasmaAt(locked.State.Position),
+                0, NpcColor,
                 IsDepot: locked.Ship.DepotBodyId is not null);
         }
 
@@ -203,7 +203,7 @@ public partial class Map
             return new ScopeView.Target(
                 kind, body.Name, note,
                 _nearestBodyPosition, _nearestBodyVelocity,
-                body.BodyRadius, BodyColor(body.Id), InPlasmaAt(_nearestBodyPosition),
+                body.BodyRadius, BodyColor(body.Id),
                 IsHaven: body.IsHaven, Dockable: IsDockableHaven(body));
         }
 
@@ -248,7 +248,7 @@ public partial class Map
                     npc.Ship.IsPod ? ScopeView.TargetKind.Pod : ScopeView.TargetKind.Freighter,
                     npc.Ship.Callsign, $"cargo: {npc.Ship.CargoClass} ({npc.Ship.CargoUnits}u)",
                     npc.State.Position, npc.State.Velocity,
-                    0, NpcColor, InPlasmaAt(npc.State.Position),
+                    0, NpcColor,
                     IsDepot: npc.Ship.DepotBodyId is not null);
             }
         }
@@ -262,7 +262,7 @@ public partial class Map
                 return new ScopeView.Target(
                     ScopeView.TargetKind.Freighter, hunter.Callsign, "hired muscle 🐺",
                     hunter.State.Position, hunter.State.Velocity,
-                    0, HunterColor, InPlasmaAt(hunter.State.Position));
+                    0, HunterColor);
             }
         }
 
@@ -275,7 +275,7 @@ public partial class Map
                 Vector2d velocity = (_ephemeris.Position(body.Id, SimTime + h) - _ephemeris.Position(body.Id, SimTime - h)) / (2 * h);
                 return new ScopeView.Target(
                     ScopeKindOf(body), body.Name, null,
-                    position, velocity, body.BodyRadius, BodyColor(body.Id), InPlasmaAt(position),
+                    position, velocity, body.BodyRadius, BodyColor(body.Id),
                     IsHaven: body.IsHaven, Dockable: IsDockableHaven(body));
             }
         }

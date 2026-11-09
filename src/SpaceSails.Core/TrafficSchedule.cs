@@ -48,7 +48,7 @@ public sealed record NpcShip(
 /// <see cref="Generate"/>/<see cref="GeneratePods"/> read it (via the optional parameter, or via
 /// <see cref="ICelestialEphemeris.Traffic"/> when the ephemeris carries one from its scenario);
 /// when absent, both fall back to the original fixed tables — byte-identical to pre-PR-3
-/// behavior, so scenarios without a traffic section (e.g. the Wheel of the World) are unaffected.
+/// behavior, so scenarios without a traffic section are unaffected.
 /// </summary>
 public static partial class TrafficSchedule
 {

@@ -20,7 +20,6 @@ public partial class ShipReadoutLines
     [Parameter] public int _cargoValue { get; set; }
     [Parameter] public int _credits { get; set; }
     [Parameter] public int _effectiveWarp { get; set; }
-    [Parameter] public PlasmaEnvironment? _plasma { get; set; }
     [Parameter] public int _reactionMassPulses { get; set; }
     [Parameter] public string _scenarioName { get; set; } = default!;
     [Parameter] public ShipState _ship { get; set; } = default!;

@@ -112,7 +112,6 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
         ("the armable pass",     "_armablePass"),
         ("the long haul",        "_longHaulReach"),
         ("the pulse",            "_pulse"),
-        ("arcing",               "_wasArcing"),
         ("the camera",           "_camera"),
         ("the HUD's last paint", "_lastHudUpdateMs"),
         ("the avatar",           "_avatarX"),

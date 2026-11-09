@@ -89,7 +89,7 @@ internal static partial class RendererInterop
     [JSImport("stopLoop", ModuleName)]
     internal static partial void StopLoop(string canvasId);
 
-    /// <summary>Fire an audio cue ("pulse", "vent", "board", "arc"). Decoration only — JS
+    /// <summary>Fire an audio cue ("pulse", "board"). Decoration only — JS
     /// swallows every audio failure, so callers never need to guard.
     ///
     /// <para>#837 · …AND NEITHER DOES A BENCH WITH NO SPEAKER IN IT. The deck-audit project drives the

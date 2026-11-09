@@ -329,12 +329,12 @@ public sealed class ThePeopleWhoDoNotKnowWhyTests
             Vector2d vel = TransferMath.BodyVelocity(sky, port, 0);
 
             ShipState ordinary = BerthState.CoMoving(
-                sky, port, 0, BerthState.BerthOffsetMeters, 0, DockRoster.BearingAt(sky, port));
+                sky, port, 0, BerthState.BerthOffsetMeters, DockRoster.BearingAt(sky, port));
 
             WithHands([new QuietHands.Hand(ground, 5, BerthGiven: false)], () =>
             {
                 ShipState moved = BerthState.CoMoving(
-                    sky, port, 0, BerthState.BerthOffsetMeters, 0, DockRoster.BearingAt(sky, port));
+                    sky, port, 0, BerthState.BerthOffsetMeters, DockRoster.BearingAt(sky, port));
 
                 Assert.True((moved.Position - ordinary.Position).Length > 1.0,
                     $"{port}: the reassigned berth pinned the hull in the same place as the ordinary one");

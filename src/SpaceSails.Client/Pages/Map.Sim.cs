@@ -34,7 +34,6 @@ public partial class Map
     private CanvasRenderer? _renderer;
     private ICelestialEphemeris? _ephemeris;
     private Simulator? _simulator;
-    private PlasmaEnvironment? _plasma;
     private string _scenarioName = "";
     private ShipState _ship;
     private bool _started;
@@ -123,66 +122,10 @@ public partial class Map
         return prograde + diff * phase;
     }
 
-    // M7 additions — Electric Universe layer (only live when _plasma is not null)
-    // #523: the threshold lives in Core now (HullCharge.ArcThreshold) so the sim and the charge board cannot
-    // disagree about when she is arcing. This alias keeps the call sites readable.
-    private const double ArcChargeThreshold = HullCharge.ArcThreshold;
-    private bool _wasArcing;                             // rising-edge detector for the thunder cue
-    private const double VentCooldownSeconds = 1.0;     // separate budget from the thrust pulse cooldown
-    private double _lastVentSimTime = -VentCooldownSeconds; // so the very first vent isn't rejected
-    private int _ventLineSeed;                           // #369: rotates the static-charge flavor pool, one step per vent
-    private float[] _streamScratch = new float[4];      // reused endpoints buffer for stream polylines
-    private static readonly RgbaColor StreamColor = new(80, 200, 220, 36);
-    private static readonly RgbaColor ArcHaloColor = new(255, 240, 120, 150);
-
-    private bool InPlasmaAt(Vector2d position) =>
-        _plasma is not null && _plasma.AmbientCharge(position, SimTime) >= 1.0;
-
-
     private CelestialBody? _nearestBody;
     private Vector2d _nearestBodyPosition;
     private Vector2d _nearestBodyVelocity;
     private ElementReference _focusableDiv;
-
-    // Vent pulse (M7): halve hull charge. No-op outside an Electric Universe scenario. Unlike a
-    // thrust pulse this costs no reaction mass and never stales plan nodes — it only bleeds charge.
-    private void VentCharge()
-    {
-        if (_plasma is null)
-        {
-            return;
-        }
-        if (_ship.SimTime < _lastVentSimTime + VentCooldownSeconds)
-        {
-            // #736 · The dump is pressed from the charge board as often as from the key, and the board's own
-            // backdrop is over the HUD — so both answers go wherever the captain actually is.
-            SayItWhereTheyAreLooking("Vent recharging…");
-            return;
-        }
-
-        _lastVentSimTime = _ship.SimTime;
-        double shed = _ship.Charge * 0.5;
-        _ship = _ship with { Charge = _ship.Charge * 0.5 };
-
-        // #528 §7 / Lab 43 · light the plume at the mast, and tell the story once in a while. Both are cooled
-        // by their own rules — the flash by its 600 ms, the card by StoryBeats.CadenceOf — so a captain who
-        // dumps every minute is not narrated at every minute.
-        //
-        // WHAT left her and WHEN are one event, so they are recorded together. The flash is scaled by the
-        // charge actually dumped (DischargePlume.DumpBrightness, which is SeenFartherFactor's own excess), and
-        // a dump that recorded only its timestamp would light a full hull's discharge and a whisper's exactly
-        // the same — which is what it did before this lane.
-        _lastDischargeMs = _lastTimestampMs ?? 0;
-        _lastDischargeShed = shed;
-        if (shed >= HullCharge.ContactorHoldsAt)
-        {
-            RaiseStoryBeat(StoryBeats.Beat.ChargeLetGo);
-        }
-        // #369: the vent is automatic here, so each discharge reads a rotating flavor quip
-        // (house voice) rather than a bare status line. Deterministic per vent via the counter.
-        SayItWhereTheyAreLooking(StaticCharge.LineFor(_ventLineSeed++));
-        RendererInterop.PlayCue("vent");
-    }
 
     /// <summary>Say it on the HUD's one pulse line.
     ///

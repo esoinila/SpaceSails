@@ -34,7 +34,6 @@ public partial class TrackingPost
     [Parameter, EditorRequired] public double SimTime { get; set; }
     [Parameter, EditorRequired] public Vector2d ShipPosition { get; set; }
     [Parameter, EditorRequired] public Vector2d ShipVelocity { get; set; }
-    [Parameter] public double ShipCharge { get; set; }
     [Parameter] public ICelestialEphemeris? Ephemeris { get; set; }
     [Parameter] public IReadOnlyList<TrackingCandidate> Candidates { get; set; } = [];
     [Parameter] public int MaxTracks { get; set; } = 1;

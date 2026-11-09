@@ -154,7 +154,7 @@ public sealed class SittingDownIsAStateTests
         (double ax, double ay) = HiveInterior.SpawnOn(MoonSurface.ExpeditionField());
         var pen = new RecordingRenderer();
         new DeckView(pen).Draw(plan, WidthPx, HeightPx, 0,
-            new DeckView.State(ax, ay, 0, 0, 0, ShuttleAway: false, ElectricUniverse: false,
+            new DeckView.State(ax, ay, 0, 0, ShuttleAway: false,
                 Dark: false, Seated: seated),
             0, 0, null);
 

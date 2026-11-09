@@ -77,7 +77,7 @@ public sealed class TheOneCivilianFrontDoorTests
     [InlineData("")]                              // the bare front door — /map, nothing after it
     [InlineData("?")]                             // …and the same thing with the question mark typed
     [InlineData("?scenario=sol")]                 // the bookmark the owner had to empty by hand
-    [InlineData("?scenario=wheel")]
+    [InlineData("?scenario=wheel")]               // the retired Wheel: an unknown sky, asked for civilly
     [InlineData("?scenario=electric")]            // a sky that does not exist, asked for civilly (#1216 → Sol)
     [InlineData("?SCENARIO=sol")]                 // the browser's autocomplete does not respect our casing
     [InlineData("?scenario=sol&")]                // a trailing ampersand is not a second ask
@@ -166,16 +166,16 @@ public sealed class TheOneCivilianFrontDoorTests
     }
 
     [Fact]
-    public async Task AndTheScenarioMerelyPRESELECTSWhatNewVoyageWouldLaunch()
+    public async Task ARetiredSkyOffersTheSameBerthsAsSol()
     {
         // The other half of the ask: naming a sky must still decide the sky. The berth list the door offers
         // is the loaded scenario's own, so "New voyage" launches into the world the link named — the param
         // preselects, it does not decide that a new voyage is what the captain wanted.
         PastTheGateBench.Boot sol = await PastTheGateBench.BootAsync("/map?scenario=sol");
-        PastTheGateBench.Boot wheel = await PastTheGateBench.BootAsync("/map?scenario=wheel");
+        PastTheGateBench.Boot retired = await PastTheGateBench.BootAsync("/map?scenario=sol-eu");
 
-        Assert.True(sol.Read<bool>("_showStartPicker") && wheel.Read<bool>("_showStartPicker"));
-        Assert.NotEqual(TheBerthsOfferedBy(sol), TheBerthsOfferedBy(wheel));
+        Assert.True(sol.Read<bool>("_showStartPicker") && retired.Read<bool>("_showStartPicker"));
+        Assert.Equal(TheBerthsOfferedBy(sol), TheBerthsOfferedBy(retired)); // a retired sky is an unknown slug: Sol
         Assert.Contains("selene-gate", TheBerthsOfferedBy(sol));
     }
 

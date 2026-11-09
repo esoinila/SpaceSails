@@ -18,8 +18,7 @@ One locked target, rendered by kind:
 
 Breathing lock brackets frame the target, with its name, kind label (`STAR`/`PLANET`/`FREIGHTER`/
 `CARGO POD`/`SHIP·CREW`), formatted distance (km, thousands of km, or AU as appropriate), and
-relative speed in km/s. If the target sits inside a plasma stream, a wisp overlay is drawn over
-it (see [electric-sky.md](electric-sky.md)). Nothing locked shows `NO TARGET` static.
+relative speed in km/s. Nothing locked shows `NO TARGET` static.
 
 ## Auto-lock vs. manual
 

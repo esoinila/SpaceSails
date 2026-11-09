@@ -178,7 +178,7 @@ public sealed partial class DeckPlan
             // #1040 · THE GALLEY CARD'S OWN DESK, off the middle of the floor at last. It stood at (11, 7.5)
             // with a drawn table 1.5 du under it, which is the owner's "not at the middle of the empty
             // floor" complaint about the havens' barkeeps, unenforced in the one room he owns. Read from
-            // Core, like the charge dump and the cabin desks, and for the reason written at those: two
+            // Core, like the valve station and the cabin desks, and for the reason written at those: two
             // numbers for one console is the exact shape of every console collision this ship has had.
             new(ConsoleKind.Cantina,
                 (float)ShipLayout.CantinaGalleyStation.X, (float)ShipLayout.CantinaGalleyStation.Y,
@@ -191,17 +191,6 @@ public sealed partial class DeckPlan
             // the hinge the surface excursion grows a down-tube from. Kept clear of the SHUTTLE BAY
             // console (−10, −6.5) so [E] doesn't grab the wrong one. Drawn as the amber airlock door.
             new(ConsoleKind.ShuttleAirlock, -6.5f, -8.7f, "🚀 SHUTTLE AIRLOCK"),
-            // RENAMED, because it was never the atmosphere. This dumps the CAPACITOR — a ship-systems
-            // action that happens to share a verb with the thing the whole weekend was about. Two
-            // panels in one engine room both called VENT PANEL would be a trap of my own making.
-            //
-            // POSITION READ FROM CORE, not typed here. It was a literal in this list AND a constant in
-            // ShipLayout at the same time — two numbers for one console, which is the exact shape of every
-            // console collision this ship has had. One of them has to be the truth; a test can only walk
-            // the one in Core.
-            new(ConsoleKind.Vent, (float)ShipLayout.ChargeDumpStation.X, (float)ShipLayout.ChargeDumpStation.Y,
-                "⚡ CHARGE DUMP"),
-
             // The ship's BUILDER'S PLATE — bolted to the engine-room bulkhead by the keel, where a
             // builder's plate belongs (owner's cruise ruling, 2026-07-19, photographing their ship's Aker
             // Finnyards plate: "We could gen-AI the ships and docks some space-dock plaques … add some
@@ -328,7 +317,7 @@ public sealed partial class DeckPlan
         // and the corridor, which is what makes it the ship's cabinet rung (the case may be spread there
         // unconditionally).
         //
-        // POSITIONS READ FROM CORE, exactly like the CHARGE DUMP above and for the reason written there: two
+        // POSITIONS READ FROM CORE, exactly like the valve and plate stations and for the reason written there: two
         // numbers for one console is the exact shape of every console collision this ship has had.
         // ShipLayout.CabinDeskStationIn derives each from ITS OWN berth's bounds and explains why the corner
         // is the right one — it is the placement that puts the CHAIR nearer the desk than the bunk, so [E]

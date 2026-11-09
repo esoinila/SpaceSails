@@ -308,7 +308,7 @@
                         bool isThreat = candidate?.IsThreat ?? false;
                         bool onScope = _schedule.Active?.TargetShipId == entry.ShipId;
                         SightAdvantage sight = SensorModel.Default.Advantage(
-                            new ShipState(ShipPosition, ShipVelocity, SimTime, ShipCharge),
+                            new ShipState(ShipPosition, ShipVelocity, SimTime),
                             new ShipState(position, velocity, SimTime));
                         <div class="sensor-card sensor-card-row @(onScope ? "sensor-card-live" : "") @(isThreat ? "sensor-card-threat" : "")"
                              @key="entry.ShipId">

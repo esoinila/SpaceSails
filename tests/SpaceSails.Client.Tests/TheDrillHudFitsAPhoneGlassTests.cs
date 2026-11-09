@@ -57,8 +57,8 @@ public sealed class TheDrillHudFitsAPhoneGlassTests
     private static Pen Draw(string line, string? stall = null)
     {
         DeckPlan ground = Scenes.Build("surface:miranda:0");
-        var state = new DeckView.State(ground.SpawnX, ground.SpawnY, 0.9, 0, 0,
-            ShuttleAway: false, ElectricUniverse: false,
+        var state = new DeckView.State(ground.SpawnX, ground.SpawnY, 0.9, 0,
+            ShuttleAway: false,
             Nerve: 58, NerveReadout: "FRAYED", ShowNerve: true, NerveCompact: false, HitsTaken: 0,
             StallBanner: stall);
         var hud = new DeckView.SurfaceHud(
@@ -167,8 +167,8 @@ public sealed class TheDrillHudFitsAPhoneGlassTests
         {
             for (double dx = -20; dx <= 20; dx += 4.0)
             {
-                var state = new DeckView.State(ship.SpawnX + dx, ship.SpawnY + dy, 0.9, 0, 0,
-                    ShuttleAway: false, ElectricUniverse: false,
+                var state = new DeckView.State(ship.SpawnX + dx, ship.SpawnY + dy, 0.9, 0,
+                    ShuttleAway: false,
                     Nerve: 58, NerveReadout: "FRAYED", ShowNerve: true, NerveCompact: false, HitsTaken: 0);
                 var hud = new DeckView.SurfaceHud(
                     DigProgress: -1, HasDroppedChest: false, DropX: 0, DropY: 0,
@@ -209,8 +209,8 @@ public sealed class TheDrillHudFitsAPhoneGlassTests
     public void TheCompactNerveBlockStartsBelowTheMasthead(double mastheadBottom)
     {
         DeckPlan ship = Scenes.Build("ship");
-        var state = new DeckView.State(ship.SpawnX, ship.SpawnY, 0.9, 0, 0,
-            ShuttleAway: false, ElectricUniverse: false,
+        var state = new DeckView.State(ship.SpawnX, ship.SpawnY, 0.9, 0,
+            ShuttleAway: false,
             Nerve: 58, NerveReadout: "FRAYED", ShowNerve: true, NerveCompact: true, HitsTaken: 0);
         var pen = new Pen();
         new DeckView(pen) { MastheadBottom = () => mastheadBottom }.Draw(ship, PhoneW, PhoneH, simTime: 0.0, in state);

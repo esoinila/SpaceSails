@@ -69,7 +69,6 @@ public partial class Map
         yield return ("_showVentPanel && _wreck is { } ventWreck", _showVentPanel && _wreck is not null);
         yield return ("_archiveCard is { } vision", _archiveCard is not null);
         yield return ("_showShipBoard", _showShipBoard);
-        yield return ("_showChargeBoard", _showChargeBoard);
         yield return ("_storyCard is { } told", _storyCard is not null);
         yield return ("_repCard is { } pitch", _repCard is not null);
         yield return ("_hardcaseCard is { } koltOffers", _hardcaseCard is not null);

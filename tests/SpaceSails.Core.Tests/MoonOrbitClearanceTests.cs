@@ -19,8 +19,6 @@ public class MoonOrbitClearanceTests
 
     [Theory]
     [InlineData("sol.json")]
-    [InlineData("sol-eu.json")]
-    [InlineData("oops.json")]
     public void EveryMoon_StandardKeptOrbit_ClearsItsParent(string scenarioFile)
     {
         var eph = CircularOrbitEphemeris.FromScenario(Load(scenarioFile));

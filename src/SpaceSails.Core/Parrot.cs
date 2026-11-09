@@ -12,7 +12,6 @@ public static class Parrot
     {
         Impact,
         DrunkDriver,
-        Arcing,
         HunterNear,
         PreyInGlass,
         OffTheBooks,
@@ -55,8 +54,6 @@ public static class Parrot
         ["WE'RE GOING TO CRASH — {0}!", "{0}! {0} DEAD AHEAD! SQUAWK!", "BRACE! {0} ON THE BOW!"],
         // DrunkDriver
         ["Drunk driver! Drunk driver!", "SQUAWK — who gave the helm the bottle!", "Steady as she… hic… goes!"],
-        // Arcing
-        ["She's glowing! SHE'S GLOWING!", "Sparks in the rigging! Vent! VENT!", "Too bright! Everyone can see us!"],
         // HunterNear
         ["Hunter on the wind!", "Wolf in the wake! SQUAWK!", "They're coming for the coin, captain!"],
         // PreyInGlass

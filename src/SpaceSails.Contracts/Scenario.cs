@@ -2,7 +2,7 @@ namespace SpaceSails.Contracts;
 
 /// <summary>
 /// A scenario data file (e.g. scenarios/sol.json): the celestial topography the engine runs.
-/// The engine is cosmology-agnostic — the Sol system and the Wheel of the World are both just body lists.
+/// The engine is cosmology-agnostic — any sky is just a body list.
 /// </summary>
 public sealed record ScenarioDefinition
 {
@@ -12,15 +12,8 @@ public sealed record ScenarioDefinition
 
     public required IReadOnlyList<BodyDefinition> Bodies { get; init; }
 
-    /// <summary>Enables the Electric Universe layer (charge, plasma streams). Off = pure Newtonian.</summary>
-    public bool ElectricUniverse { get; init; }
-
-    /// <summary>Plasma stream ribbons. Only meaningful when <see cref="ElectricUniverse"/> is true.</summary>
-    public IReadOnlyList<StreamDefinition> Streams { get; init; } = [];
-
     /// <summary>
-    /// Data-driven traffic (routes + pod launchers). Optional: scenarios without one (e.g. the
-    /// Wheel of the World) fall back to <c>TrafficSchedule</c>'s built-in hardcoded tables.
+    /// Data-driven traffic (routes + pod launchers). Optional: scenarios without one fall back to <c>TrafficSchedule</c>'s built-in hardcoded tables.
     /// </summary>
     public TrafficDefinition? Traffic { get; init; }
 }
@@ -63,20 +56,6 @@ public sealed record PodLauncherDefinition
     public required string Body { get; init; }
 
     public required string Cargo { get; init; }
-}
-
-/// <summary>
-/// A plasma stream: a straight ribbon between two bodies (endpoints track their orbits).
-/// Ships inside feel an along-stream force proportional to their charge.
-/// </summary>
-public sealed record StreamDefinition
-{
-    public required string FromBodyId { get; init; }
-
-    public required string ToBodyId { get; init; }
-
-    /// <summary>Half-width of the ribbon in meters.</summary>
-    public required double HalfWidthM { get; init; }
 }
 
 /// <summary>

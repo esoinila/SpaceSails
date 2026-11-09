@@ -79,7 +79,6 @@ public static partial class StoryBeats
         Beat.CrewDeputation => "art/crew-deputation.jpg",
         Beat.CrewMeeting => "art/crew-meeting.jpg",
         Beat.ArcNewsBreaks => "art/arc-news.jpg",
-        Beat.ChargeLetGo => "art/charge-let-go.jpg",
         Beat.FireAboard => "art/fire-aboard.jpg",
         // #973 · One plate for every flashback, and one style: bleached to white, a single object left in
         // focus. Fixed rather than keyed by the memory id on purpose — a memory is not a place, and painting
@@ -128,7 +127,6 @@ public static partial class StoryBeats
         Beat.CrewDeputation => "🧑‍🔧 A DEPUTATION",
         Beat.CrewMeeting => "🕯 THE MEETING YOU WERE NOT ASKED TO",
         Beat.ArcNewsBreaks => "📰 THE STORY BREAKS",
-        Beat.ChargeLetGo => "⚡ SHE LETS GO",
         Beat.FireAboard => "🔥 THERE IS FIRE IN HER",
         // #973 · The stamp is the mark and the label the ledger row already wears, said louder. The subject
         // is the memory id and is deliberately NOT in the stamp: an entry key is bookkeeping, and a card that
@@ -201,13 +199,6 @@ public static partial class StoryBeats
             Beat.ArcNewsBreaks =>
                 $"The concourse screen is mid-broadcast and the room has turned up to watch it. One figure walks " +
                 $"away from the screen instead of toward it, because {it} is not news to them.",
-
-            // Lab 43 corrected this line's last clause. A discharge is 85,514× DIMMER than her own reflected
-            // sunlight — nobody watches it through a telescope. She is not brighter; she is LOUDER, and every
-            // receiver in the volume gets that for free without pointing anything at her.
-            Beat.ChargeLetGo =>
-                "A blue-white core sits on the mast for a moment with filaments raking off it into the dark, and " +
-                "then there is nothing on the hull at all. Nobody saw that. Everything with a receiver heard it.",
 
             // #541: the tube's words live with the tube. The subject is the berth's name, and every line reads
             // whole without it — the tier is what the plate is about.

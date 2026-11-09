@@ -71,7 +71,6 @@ public partial class NavHud
     [Parameter] public FlightEditorKind _openEditor { get; set; } = default!;
     [Parameter] public bool _orbitKept { get; set; }
     [Parameter] public List<PlanNode> _planNodes { get; set; } = default!;
-    [Parameter] public PlasmaEnvironment? _plasma { get; set; }
     [Parameter] public string? _plotFrameBodyId { get; set; }
     [Parameter] public string? _plunderOpportunityTargetId { get; set; }
     [Parameter] public PulseSlot _pulse { get; set; } = default!;
@@ -111,7 +110,6 @@ public partial class NavHud
     [Parameter] public EventCallback AddSkimBurn { get; set; }
     [Parameter] public EventCallback AddSlingBurn { get; set; }
     [Parameter] public Action<PlanNode, int> ApplyPulses { get; set; } = default!;
-    [Parameter] public double ArcChargeThreshold { get; set; }
     [Parameter] public EventCallback ArmArriveStep { get; set; }
     [Parameter] public bool ArmedArrivalStillAhead { get; set; }
     [Parameter] public double? ArmedInsertionSimTime { get; set; }

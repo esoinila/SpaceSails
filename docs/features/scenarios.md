@@ -3,31 +3,24 @@
 What this is: the different solar systems you can sail, and how the game loads them.
 
 Where: pick one from the home page (`/`), or launch the map directly with a `?scenario=` query
-string, e.g. `/map?scenario=sol-eu`.
+string, e.g. `/map?scenario=sol`.
 
-## The four voyages
+## The one voyage
 
 | Card | Slug | File | What it is |
 |---|---|---|---|
 | Sol | `sol` | `scenarios/sol.json` | The real solar system, pure Newtonian. Nine worlds on rails, He3 haulers inbound from Saturn, Luna's mass drivers lobbing compute-core pods. Learn to fly here. |
-| Sol (Electric) ⚡ | `sol-eu` | `scenarios/sol-eu.json` | The same sky, awake — a charged plasma environment (see [electric-sky.md](electric-sky.md)). |
-| The Wheel | `wheel` | `scenarios/wheel.json` | A rigid-spoke curiosity system: Venus, Earth, and Mars ride a spoke around Saturn as hub. The spoke isn't gravity's doing, but your ship still obeys Newton. Also electric. |
-| Sol (Miners' Folly) 🌙 | `oops` | `scenarios/oops.json` | Sol, pure Newtonian, one accident later: a mining rig shorted its own capacitor and kicked Luna's orbital speed +15%. Wider, more eccentric, still bound — the honest computed aftermath from `labs/12-oops-at-the-moon`. The wreck itself is a new haven station orbiting Luna. |
 
-The home page's Launch buttons just link to `map?scenario=<slug>` — there's nothing special about
-using the buttons versus typing the URL yourself.
+The home page's Launch button just links to `map?scenario=sol` — there's nothing special about
+using the button versus typing the URL yourself.
 
-### Why the three alternate skies are not archived
+### The archived skies are gone (owner ruling 2026-11-09)
 
-Issue #161 proposed moving `sol-eu.json`, `wheel.json` and `oops.json` to `archive/scenarios/`, on
-the guess that carrying them was slowing the load. Measured (#251 item 2, the boot's own phase log):
-a boot fetches **exactly one** scenario file, the one its `?scenario=` names, and that fetch plus
-its parse is **~0.18 s of a ~15 s boot**. The other three are never downloaded. Archiving them would
-save nothing at load time — and it would cost plenty elsewhere, because all three are live: the home
-page's Archived drawer launches them, the client `.csproj` mirrors `scenarios/*.json` into
-`wwwroot`, and they are the world under `ElectricUniverseTests`, `OopsScenarioTests`,
-`EveryBerthRidesAGravityRailTests`, the `sol-eu` scenes of the frame-fingerprint sweep and the
-`/map?scenario=sol-eu` row of the boot fingerprint. They stay where they are.
+Wheel of the World (`wheel`), Sol (Electric) (`sol-eu`) and Sol (Miners' Folly) (`oops`) were taken
+down with their Archived drawer: only the sky the game is actually played in ships. An old link or
+bookmark that still names one of them (`/map?scenario=wheel`) is not an error: the slug is simply an
+unknown scenario, and an unknown scenario silently falls back to Sol, the same as any typo. The
+Electric Universe hull-charge layer went with them.
 
 ## The query string
 
@@ -67,7 +60,6 @@ traffic from data instead of the hardcoded Sol tables — see the [traffic
 board](traffic-board.md#off-the-books-ships) for what `publishesTimetable: false` does to a route's
 ships.
 
-See also: [electric-sky.md](electric-sky.md) for what the `EU ⚡` scenarios add,
-[map-and-warp.md](map-and-warp.md) for the view all scenarios share,
+See also: [map-and-warp.md](map-and-warp.md) for the view all scenarios share,
 [local-space.md](local-space.md) for what stations/havens offer once you're in orbit near one,
 [dark-web.md](dark-web.md) for the far-trading-post/haven intel trade.

@@ -13,16 +13,10 @@ aboard.
 ## 1. Choosing a voyage
 
 - **Sol** — the classic system. Learn to fly here.
-- **Sol (Electric)** ⚡ — same system plus a charged plasma environment:
-a solar halo that charges your hull near the sun and flowing plasma streams between
-planets. Charge makes you visible and eventually arcs; vent it with `V`.
-- **The Wheel** — a rigid-spoke curiosity system with a plasma river,
-for pilots who want strange skies.
 - **Join the crew** — multiplayer: enter a callsign and share a live
 session. Warp runs at the *slowest* crew member's request (the min-warp rule),
 and you only see what your own sensors can see.
-- Any voyage can be loaded straight from a link: `/map?scenario=sol`,
-`sol-eu`, or `wheel`. Append `&mp=1&callsign=YourName` to join multiplayer
+- Any voyage can be loaded straight from a link: `/map?scenario=sol`. Append `&mp=1&callsign=YourName` to join multiplayer
 directly on that scenario, no home-page click needed.
 
 
@@ -93,8 +87,6 @@ docking at a market. Run dry far from port and you drift on whatever orbit you b
 scales your velocity ±10%. Prograde only — pulses change your speed, never your heading.
 - `Shift` + pulse — **fine trim**, ±1%. For station-keeping and
 orbit matching.
-- `V` — vent charge (Electric scenarios). The ⚡ **Dump her charge** button names the key in
-its hover.
 - Pulses have a short cooldown and each costs one mass pulse.
 - The drive is the one control in the game with no button anywhere, so the **⛽ FUEL** gauge
 on the Nav desk carries it in its hover: *"+ / − (or ↑ / ↓) fires one; hold Shift for a
@@ -792,18 +784,6 @@ and explained by none.
 
 What everyone knows is what it costs, and that doing it the other way costs nothing at all. That is most of what
 you need to know about why the labs are in mountains.
-
-
-
-## 19. The electric sky ⚡
-
-- Near the sun the plasma halo charges your hull; the flowing ribbons between planets
-are **plasma streams** — riding one pushes you along it (charged hulls
-feel the current).
-- Charge makes you glow on everyone's sensors — it pierces even sun glare — and at full
-charge you start arcing. `V` vents.
-- Mercury's neighborhood runs ~75% ambient charge. Ambush country: everyone there is
-visible, desperate, or both.
 
 
 
