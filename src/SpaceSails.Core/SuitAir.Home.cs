@@ -92,6 +92,12 @@ public static partial class SuitAir
     /// stays and starts mattering when the ground stops being a rectangle (#563).</para></summary>
     public const double LowAirFraction = 0.35;
 
+    /// <summary>U09-F03 · Is the tank low in the plain, distance-free sense — at or under
+    /// <see cref="LowAirFraction"/> of a full tank? This is "the air has been low" for the nerve's room-air
+    /// ease; unlike <see cref="RunningLow"/> it does not care how far the tube is.</summary>
+    public static bool TankIsLow(double airLeftSeconds) =>
+        airLeftSeconds <= TankSeconds * LowAirFraction;
+
     /// <summary>Is the tank low enough to be worth saying — AND far enough from home for it to matter?
     ///
     /// <para>Owner: <i>"we want to keep that tank mechanism for cases where we travel far out in the open
@@ -112,10 +118,10 @@ public static partial class SuitAir
     /// opinions to itself. A quarter: comfortably far from trouble, comfortably short of complacent.</summary>
     public const double HomeIsCloseEnough = 0.25;
 
-    /// <summary>The low-air line. Says the number, says what it buys, and does NOT pretend to know whether
+    /// <summary>The low-air line. Names the last third, says what it buys, and does NOT pretend to know whether
     /// the captain is in trouble — that is what the point-of-no-return line is for.</summary>
     public static string LowAirWarning(double airLeftSeconds, double distanceHomeDu) =>
-        $"🫁 AIR LOW — {SuitClock(airLeftSeconds)} left in the suit. " +
+        "🫁 AIR LOW — the last third of the tank. " +
         (PastPointOfNoReturn(airLeftSeconds, distanceHomeDu)
             ? "And the walk back already costs more than that."
             : $"Enough for about {RemainingReachDu(airLeftSeconds, distanceHomeDu):F0} du further out, then home.");

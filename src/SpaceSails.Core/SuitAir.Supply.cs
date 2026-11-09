@@ -173,6 +173,18 @@ public static partial class SuitAir
             return "AIR — EMPTY";
         }
 
+        // U06-F05 · ONE NUMBER ON SCREEN AT A TIME, and only a live instrument may carry it. Once the big
+        // real-seconds O2 counter hangs over the captain (CountdownShows), the gauge hands the figure over
+        // and says only which kind of trouble it is — two clocks in two units on one tank was the bug.
+        if (CountdownShows(airLeftSeconds, distanceHomeDu, supply))
+        {
+            return BandFor(airLeftSeconds, distanceHomeDu) == Band.PastTheLine
+                ? "AIR ▼ PAST THE LINE — the count is on you."
+                : OnTheReserve(airLeftSeconds)
+                    ? "AIR ▼ RESERVE — the count is on you."
+                    : "AIR ▼ LOW — the count is on you.";
+        }
+
         string clock = Clock(airLeftSeconds);
 
         return BandFor(airLeftSeconds, distanceHomeDu) switch

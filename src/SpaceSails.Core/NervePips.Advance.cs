@@ -50,7 +50,13 @@ public static partial class NervePips
         double DtSeconds,
         int HealthPipsLeft = int.MaxValue,
         bool InArchiveField = false,
-        bool SafeGroundHoldsPressure = false);
+        bool SafeGroundHoldsPressure = false,
+        bool AirWasLow = false);
+
+    /// <summary>U09-F03 (owner ruling 2026-11-09, #1423) · THE ROOM AIR'S CEILING, in whole pips: about 70%
+    /// of a full gauge, which is 7 of <see cref="MaxPips"/>. Owner: "if the air has been low, the air helps the
+    /// nerves, up to about 70%". The rest of the way back is the chair's, the bunk's and the drink's to give.</summary>
+    public const int RoomAirCapPips = 7;
 
     /// <summary>The result of one frame: the new (still pip-aligned) nerve, the latched monolith flag, the
     /// advanced beat clock, every named event that fired THIS frame — in the order they happened, for the
@@ -107,7 +113,12 @@ public static partial class NervePips
         (double closeCarry, int closeBeats) = Tick(Cause.Close, beats.Close, close, f.DtSeconds);
         (double cornerCarry, int cornerBeats) = Tick(Cause.Cornered, beats.Cornered, cornered, f.DtSeconds);
         (double digCarry, int digBeats) = Tick(Cause.DigUnderThreat, beats.Dig, digging, f.DtSeconds);
-        (double airCarry, int airBeats) = Tick(Cause.Airlock, beats.Airlock, safe, f.DtSeconds);
+        // U09-F03 · A pressurised floor's room air is not a free refill. It only gives nerve back to a captain
+        // whose own air ran low, and only up to RoomAirCapPips; otherwise its clock does not even run. Every
+        // other safe ground (the ship, her tube, a shelter) keeps the plain ease.
+        bool airEases = safe && (!f.SafeGroundHoldsPressure
+                                 || (f.AirWasLow && PipsOf(n) < RoomAirCapPips));
+        (double airCarry, int airBeats) = Tick(Cause.Airlock, beats.Airlock, airEases, f.DtSeconds);
         (double archiveCarry, int archiveBeats) = Tick(Cause.Archive, beats.Archive, archive, f.DtSeconds);
 
         // The touch latch re-arms the moment the captain is CLEAR — safe up the tube, or with nothing near
@@ -164,6 +175,10 @@ public static partial class NervePips
         {
             for (int i = 0; i < airBeats; i++)
             {
+                if (f.SafeGroundHoldsPressure && PipsOf(n) >= RoomAirCapPips)
+                {
+                    break; // the room air has done what it can; never takes nerve from anyone above it either
+                }
                 // …and says so IN THE REGISTER THE GROUND EARNS (#867). The beat, the pip and the cause are
                 // identical on both grounds; only the sentence asks where the captain is standing.
                 Fire(Cause.Airlock, -BeatPips, Name(Cause.Airlock, f.SafeGroundHoldsPressure));

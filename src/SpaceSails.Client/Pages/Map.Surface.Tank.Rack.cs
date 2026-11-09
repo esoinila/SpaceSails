@@ -83,6 +83,7 @@ public partial class Map
         {
             ex.AirSeconds = SuitAir.Refill(ex.AirSeconds, pumped);
             ex.AirLowWarned = false;
+            ex.AirSpellLow = SuitAir.TankIsLow(ex.AirSeconds);
             ex.AirWarned = false;
             ex.ReserveNoted = false;
         }
