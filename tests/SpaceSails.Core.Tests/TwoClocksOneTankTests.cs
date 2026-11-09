@@ -94,30 +94,23 @@ public sealed class TwoClocksOneTankTests
                 string clock = SuitAir.Clock(air);
                 quoted.Add(clock);
 
-                // (b) THE TWO NUMBERS AGREE — the same characters, not merely the same quantity rounded two
-                // ways, because a captain compares glyphs and not quantities.
-                if (!card.Contains(clock, StringComparison.Ordinal))
+                // U06-F05 · THE CARD CARRIES NO FIGURE. Its face freezes when it is raised while the gauge
+                // keeps counting, so any number here is stale by the time it is read. It points at the
+                // gauge instead, and the gauge is the one instrument that carries the clock.
+                if (card.Contains(clock, StringComparison.Ordinal) || PlayBudgetMinutes.IsMatch(card))
                 {
-                    bad.Add($"  {body} B{-level} @ {air:F0}s: the gauge reads \"{clock}\" and the card does not say it.");
+                    bad.Add($"  {body} B{-level} @ {air:F0}s: the card still quotes a figure (\"{clock}\").");
                 }
-                if (!hud.Contains(clock, StringComparison.Ordinal))
+                if (!card.Contains("Your gauge has the figure", StringComparison.Ordinal))
+                {
+                    bad.Add($"  {body} B{-level} @ {air:F0}s: the card does not point at the gauge.");
+                }
+
+                // The strip carries its clock whenever the big counter is NOT hanging over the captain.
+                bool counterShows = SuitAir.CountdownShows(air, 0, SuitAir.Supply.Tanks);
+                if (!counterShows && !hud.Contains(clock, StringComparison.Ordinal))
                 {
                     bad.Add($"  {body} B{-level} @ {air:F0}s: the HUD line \"{hud}\" does not carry its own clock.");
-                }
-
-                // …and no SECOND figure beside it. Agreement is worthless if the card also prints the old
-                // number underneath — two clocks on one card is the bug with a witness attached.
-                if (PlayBudgetMinutes.IsMatch(card))
-                {
-                    Match m = PlayBudgetMinutes.Match(card);
-                    bad.Add($"  {body} B{-level} @ {air:F0}s: the card still quotes the play budget (\"{m.Value}\").");
-                }
-
-                // (a) THE SENTENCE OWNS IT — it says which instrument the figure came off, so the next
-                // person to edit this copy cannot quietly re-derive the number from something else.
-                if (!card.Contains($"gauge reads {clock}", StringComparison.Ordinal))
-                {
-                    bad.Add($"  {body} B{-level} @ {air:F0}s: the card prints \"{clock}\" without naming the gauge.");
                 }
             }
         }
@@ -140,15 +133,16 @@ public sealed class TwoClocksOneTankTests
         // clock. The card is read by a captain, so it reads in the captain's units — and on the secondary
         // pack it says RESERVE, exactly as the gauge does, because those are different promises.
         string full = UndergroundComplex.VacuumCard("miranda", -2, SuitAir.TankSeconds);
-        Assert.Contains($"{(int)SuitAir.PrimaryHours}h", full, StringComparison.Ordinal);
         Assert.False(PlayBudgetMinutes.IsMatch(full),
             "a full tank is eight hours on the gauge; the card is still quoting the play budget.");
+        Assert.Contains($"{(int)SuitAir.PrimaryHours}h",
+            SuitAir.Readout(SuitAir.FullSeconds, 0, SuitAir.Supply.Tanks), StringComparison.Ordinal);
 
-        string reserve = UndergroundComplex.VacuumCard("miranda", -2, SuitAir.ReserveSeconds * 0.5);
-        Assert.True(SuitAir.OnTheReserve(SuitAir.ReserveSeconds * 0.5),
+        double half = SuitAir.ReserveSeconds * 0.5;
+        Assert.True(SuitAir.OnTheReserve(half),
             "the reserve sample is not actually on the reserve — this case would prove nothing.");
-        Assert.Contains("RESERVE", reserve, StringComparison.Ordinal);
-        Assert.Contains(SuitAir.Clock(SuitAir.ReserveSeconds * 0.5), reserve, StringComparison.Ordinal);
+        // On the reserve the big counter is the live figure, so the strip names the state and not a number.
+        Assert.Equal("AIR ▼ RESERVE — the count is on you.", SuitAir.Readout(half, 0, SuitAir.Supply.Tanks));
     }
 
     [Fact]
@@ -160,10 +154,13 @@ public sealed class TwoClocksOneTankTests
         foreach (double air in Tanks.Where(a => a > 0))
         {
             string clock = SuitAir.Clock(air);
-            Assert.Contains(clock, SuitAir.Readout(air, 0, SuitAir.Supply.Tanks), StringComparison.Ordinal);
+            if (!SuitAir.CountdownShows(air, 0, SuitAir.Supply.Tanks))
+            {
+                Assert.Contains(clock, SuitAir.Readout(air, 0, SuitAir.Supply.Tanks), StringComparison.Ordinal);
+            }
             Assert.Contains(clock, SuitAir.Readout(air, 0, SuitAir.Supply.Room), StringComparison.Ordinal);
             Assert.Contains(clock, SuitAir.Readout(air, 0, SuitAir.Supply.Ship), StringComparison.Ordinal);
-            Assert.Contains(clock, UndergroundComplex.VacuumCard("miranda", -2, air), StringComparison.Ordinal);
+            Assert.DoesNotContain(clock, UndergroundComplex.VacuumCard("miranda", -2, air), StringComparison.Ordinal);
         }
     }
 

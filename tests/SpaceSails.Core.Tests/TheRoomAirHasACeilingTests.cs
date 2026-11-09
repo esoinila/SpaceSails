@@ -48,6 +48,21 @@ public sealed class TheRoomAirHasACeilingTests
         Assert.Equal(NervePips.RoomAirCapPips - 2, events);
     }
 
+    [Fact]
+    public void ALongFrameCannotEaseThePipsPastTheCapInOneStep()
+    {
+        // The in-loop break in Advance: a frame of three beats starting at six pips owes three eases, and
+        // the second would carry the nerve to eight. It must stop at exactly the cap.
+        double n = NervePips.FromPips(NervePips.RoomAirCapPips - 1);
+        var f = new NervePips.Frame(
+            OnExcursion: true, OnRegolith: false, SeesMonolith: false, Stressors: default,
+            FreshSightings: 0, Touched: false, DtSeconds: 3 * NervePips.AirlockBeatSeconds,
+            SafeGroundHoldsPressure: true, AirWasLow: true);
+        NervePips.Step s = NervePips.Advance(n, false, NervePips.Beats.Fresh, in f);
+        Assert.Equal(NervePips.RoomAirCapPips, NervePips.PipsOf(s.Nerve));
+        Assert.Single(s.Events);
+    }
+
     [Theory]
     [InlineData(7)]
     [InlineData(8)]
