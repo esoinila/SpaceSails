@@ -92,6 +92,12 @@ public static partial class SuitAir
     /// stays and starts mattering when the ground stops being a rectangle (#563).</para></summary>
     public const double LowAirFraction = 0.35;
 
+    /// <summary>U09-F03 · Is the tank low in the plain, distance-free sense — at or under
+    /// <see cref="LowAirFraction"/> of a full tank? This is "the air has been low" for the nerve's room-air
+    /// ease; unlike <see cref="RunningLow"/> it does not care how far the tube is.</summary>
+    public static bool TankIsLow(double airLeftSeconds) =>
+        airLeftSeconds <= TankSeconds * LowAirFraction;
+
     /// <summary>Is the tank low enough to be worth saying — AND far enough from home for it to matter?
     ///
     /// <para>Owner: <i>"we want to keep that tank mechanism for cases where we travel far out in the open
