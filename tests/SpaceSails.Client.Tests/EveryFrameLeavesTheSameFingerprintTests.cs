@@ -483,11 +483,6 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     [InlineData(World.TheMapFrameInFlight, Sequence.AHeldKey)]
     [InlineData(World.TheMapFrameInFlight, Sequence.APlannedRoute)]
     [InlineData(World.TheMapFrameInFlight, Sequence.AHandOnTheWarpSlider)]
-    [InlineData(World.TheElectricUniverse, Sequence.SteadyFrames)]
-    [InlineData(World.TheElectricUniverse, Sequence.OneLongGap)]
-    [InlineData(World.TheElectricUniverse, Sequence.AHeldKey)]
-    [InlineData(World.TheElectricUniverse, Sequence.APlannedRoute)]
-    [InlineData(World.TheElectricUniverse, Sequence.AHandOnTheWarpSlider)]
     public void EveryFrameItRunsFingerprintsTheSame(World world, Sequence sequence)
     {
         string scene = SceneName(world, sequence);

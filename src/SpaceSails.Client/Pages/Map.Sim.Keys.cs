@@ -274,12 +274,10 @@ public partial class Map
         }
 
         // #1478 · FLIGHT KEYS ARE INERT ON FOOT. HandleDeckKey consumes only the verbs the deck owns, so a
-        // `-` pressed on the regolith (or `+`, `=`, `_`, O, P, V) used to fall through to the burn switch
+        // `-` pressed on the regolith (or `+`, `=`, `_`, O, P) used to fall through to the burn switch
         // below: it undocked the ship, spent a pulse and flipped the view to the deck plan while the surface
         // HUD stayed up. A captain on foot (deck mode or any excursion) has no hand on the drive.
-        // V is the exception on the ship's deck: the charge board (opened in deck mode) and the guide promise "V vents
-        // from anywhere in flight". It is the one flight key a captain walking the ship still owns.
-        if (_surface is not null || (_deckMode && e.Key is not ("v" or "V")))
+        if (_surface is not null || _deckMode)
         {
             return;
         }

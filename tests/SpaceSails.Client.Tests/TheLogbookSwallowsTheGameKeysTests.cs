@@ -17,15 +17,13 @@ public sealed class TheLogbookSwallowsTheGameKeysTests
         await bench.SwitchAsync(ShipDesk.Nav);
         ulong keyboard = DeskBench.TheKeyboard(await bench.RenderAsync());
         bench.Poke("_audioArmed", true);
-        bench.Poke("_plasma", new PlasmaEnvironment((ICelestialEphemeris)bench.Peek("_ephemeris")!, []));
-        bench.Poke("_ship", ((ShipState)bench.Peek("_ship")!) with { Charge = 10 });
         return (bench, keyboard);
     }
 
     [Theory]
     [InlineData("_showSaveDrawer")]
     [InlineData("_showStartPicker")]
-    public async Task SevenAndVDoNothingBehindAnOpenModal(string modalFlag)
+    public async Task SevenDoesNothingBehindAnOpenModal(string modalFlag)
     {
         (DeskBench bench, ulong keyboard) = await BootOnNavAsync();
         using (bench)
@@ -34,15 +32,12 @@ public sealed class TheLogbookSwallowsTheGameKeysTests
             ShipDesk desk = bench.ActiveDesk;
             bool deckMode = bench.DeckMode;
             object? ship = bench.Peek("_ship");
-            object? vented = bench.Peek("_lastVentSimTime");
 
             await bench.TypeAsync(keyboard, "7");
-            await bench.TypeAsync(keyboard, "V");
 
             Assert.Equal(desk, bench.ActiveDesk);
             Assert.Equal(deckMode, bench.DeckMode);
             Assert.Equal(ship, bench.Peek("_ship"));
-            Assert.Equal(vented, bench.Peek("_lastVentSimTime"));
         }
     }
 

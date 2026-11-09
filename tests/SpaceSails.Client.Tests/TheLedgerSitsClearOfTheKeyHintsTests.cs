@@ -62,7 +62,7 @@ public sealed class TheLedgerSitsClearOfTheKeyHintsTests
             Blips: [], Cadence: 1, Readout: "no contact", CacheMarks: [],
             Nerve: 80, NerveReadout: "STEADY", Instruments: true, TrackerCaptions: captions);
         string[] ledger = ["cause a  -1", "cause b  -1", "cause c  +1", "cause d  -1", "cause e  -1", "cause f  +1"];
-        var state = new DeckView.State(0, 0, 0, 0, 0, ShuttleAway: false, ElectricUniverse: false,
+        var state = new DeckView.State(0, 0, 0, 0, ShuttleAway: false,
             ShowNerve: true, NerveLedger: ledger);
         new DeckView(pen).Draw(plan, 1200, 700, simTime: 0, in state, surface: hud);
         return pen.Said.Count(t => t.StartsWith("cause ", StringComparison.Ordinal));
@@ -119,7 +119,7 @@ public sealed class TheLedgerSitsClearOfTheKeyHintsTests
             Blips: [], Cadence: 1, Readout: "no contact", CacheMarks: [],
             Nerve: 80, NerveReadout: "STEADY", Instruments: true, TrackerCaptions: captions);
         string[] ledger = ["cause a  -1", "cause b  -1", "cause c  +1"];
-        var state = new DeckView.State(0, 0, 0, 0, 0, ShuttleAway: false, ElectricUniverse: false,
+        var state = new DeckView.State(0, 0, 0, 0, ShuttleAway: false,
             ShowNerve: true, NerveLedger: ledger, NerveFlash: "you have seen the monolith -3");
         new DeckView(pen).Draw(plan, w, h, simTime: 0, in state, surface: hud);
 

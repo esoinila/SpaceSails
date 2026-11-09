@@ -48,12 +48,4 @@ public class BerthStateTests
         Assert.True((berth.Position - tiltPos).Length <= DockRule.EnvelopeMeters);
         Assert.True((berth.Velocity - tiltVel).Length <= DockRule.MatchSpeed);
     }
-
-    [Fact]
-    public void CoMoving_PreservesCharge()
-    {
-        ICelestialEphemeris eph = SolEphemeris();
-        ShipState berth = BerthState.CoMoving(eph, "the-tilt", 1.0e8, BerthState.BerthOffsetMeters, charge: 4200);
-        Assert.Equal(4200, berth.Charge);
-    }
 }

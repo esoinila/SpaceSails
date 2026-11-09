@@ -77,8 +77,8 @@ public sealed class TheBootWarmUpActuallyPaintsTests
 
         var pen = new CountingPen();
         var state = new DeckView.State(
-            MoonSurface.SpawnX, MoonSurface.SpawnY, 0, 0, 0,
-            ShuttleAway: false, ElectricUniverse: false);
+            MoonSurface.SpawnX, MoonSurface.SpawnY, 0, 0,
+            ShuttleAway: false);
 
         // The exact call the boot makes. Before the fix this threw NullReferenceException out of
         // IsSweeper(null) — into a catch that turned a dead perf fix into silence.

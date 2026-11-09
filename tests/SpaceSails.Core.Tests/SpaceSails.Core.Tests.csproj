@@ -49,9 +49,6 @@
 
   <ItemGroup>
     <Content Include="..\..\scenarios\*.json" Link="scenarios\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
-    <!-- The retired Sol (Electric) sky is no longer a playable scenario; its file survives as a test fixture so the
-         hull-charge mechanic (still in the code, unreachable in play) keeps its tests until the owner rules on it. -->
-    <Content Include="..ixtures\*.json" Link="scenarios\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- #299 — the z-band sync gate reads the LIVE stylesheets. Copy them beside the test assembly every

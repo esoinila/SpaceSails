@@ -106,7 +106,7 @@ public sealed partial class OneWallOneTruthTests
         DeckPlan plan, double ax, double ay, DeckView.SurfaceHud? hud = null)
     {
         var pen = new WallPen();
-        var state = new DeckView.State(ax, ay, 0, 0, 0, ShuttleAway: false, ElectricUniverse: false);
+        var state = new DeckView.State(ax, ay, 0, 0, ShuttleAway: false);
         new DeckView(pen).Draw(plan, WidthPx, HeightPx, simTime: 0, in state, surface: hud);
         return (pen.Strokes, DeckView.PlacementFor(plan, WidthPx, HeightPx, ax, ay, 0, 0));
     }

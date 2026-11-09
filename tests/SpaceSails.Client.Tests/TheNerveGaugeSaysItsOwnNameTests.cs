@@ -59,8 +59,8 @@ public sealed class TheNerveGaugeSaysItsOwnNameTests
         var pen = new TextRecordingPen();
         new DeckView(pen).Draw(DeckPlan.Ship, WidthPx, HeightPx, 0,
             new DeckView.State(
-                DeckPlan.Ship.SpawnX, DeckPlan.Ship.SpawnY, 0, CargoUnits: 0, Charge: 0,
-                ShuttleAway: false, ElectricUniverse: false,
+                DeckPlan.Ship.SpawnX, DeckPlan.Ship.SpawnY, 0, CargoUnits: 0,
+                ShuttleAway: false,
                 Nerve: NerveModel.Max * 0.5, NerveReadout: "", ShowNerve: true, NerveCompact: compact),
             0, 0, null);
         return pen.Texts;

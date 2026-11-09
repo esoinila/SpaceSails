@@ -189,7 +189,7 @@ public sealed class TheHallsAreDrawnInAThirdIdiomTests
             {
                 var pen = new RecordingRenderer();
                 new DeckView(pen).Draw(plan, WidthPx, HeightPx, 0,
-                    new DeckView.State(ax, ay, 0, 0, 0, ShuttleAway: false, ElectricUniverse: false, Dark: false),
+                    new DeckView.State(ax, ay, 0, 0, ShuttleAway: false, Dark: false),
                     0, 0, null);
                 marks.AddRange(pen.Marks);
             }

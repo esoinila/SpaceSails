@@ -71,7 +71,7 @@ public sealed class TheCabinetDrawsItsCurtainTests
 
         var pen = new RecordingPen();
         (double ax, double ay) = HiveInterior.SpawnOn(Field);
-        var state = new DeckView.State(ax, ay, 0, 0, 0, ShuttleAway: false, ElectricUniverse: false);
+        var state = new DeckView.State(ax, ay, 0, 0, ShuttleAway: false);
         new DeckView(pen).Draw(plan, WidthPx, HeightPx, 0, in state, 0, 0, null);
         return [.. pen.Marks.Where(m => m.Kind == "text").Select(m => m.Text)];
     }

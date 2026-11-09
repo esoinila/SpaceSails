@@ -210,14 +210,14 @@ public sealed class AWreckIsNotAPlanetTests
     /// outline scaled and centred with no rotation to unpick.</summary>
     private static ScopeView.Target AWreckAt(double x) => new(
         ScopeView.TargetKind.Derelict, "Derelict Roadster", null,
-        new Vector2d(x, 0), new Vector2d(1_000, 0), 3, new RgbaColor(180, 180, 180), InPlasma: false);
+        new Vector2d(x, 0), new Vector2d(1_000, 0), 3, new RgbaColor(180, 180, 180));
 
     private static ScopeView.Target ABodyLike(CelestialBody body) => new(
         body.Kind == BodyKind.Station && Derelict.IsWreckBody(body.Id)
             ? ScopeView.TargetKind.Derelict
             : ScopeView.TargetKind.Body,
         body.Name, null, new Vector2d(body.OrbitRadius + 1e9, 0), new Vector2d(1_000, 0),
-        body.BodyRadius, new RgbaColor(180, 180, 180), InPlasma: false,
+        body.BodyRadius, new RgbaColor(180, 180, 180),
         IsHaven: body.IsHaven, Dockable: DockableHavens.IsDockable(body));
 
     private static string TagFor(in ScopeView.Target target)

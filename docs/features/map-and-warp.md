@@ -28,8 +28,7 @@ Where: this is the default screen at `/map` (or launch a scenario from the home 
 
 The dark panel under the toolbar always shows:
 
-- Scenario name (and an `EU ⚡` badge if it's an Electric Universe scenario — see
-  [electric-sky.md](electric-sky.md)).
+- Scenario name.
 - Sim time and current warp.
 - Ship speed, with **circular here** alongside it — the speed that would hold a circular orbit
   around the sun at your current distance. Matching it means you coast forever; it's the

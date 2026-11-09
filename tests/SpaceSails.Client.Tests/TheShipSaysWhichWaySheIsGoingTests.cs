@@ -198,68 +198,6 @@ public sealed class TheShipSaysWhichWaySheIsGoingTests
         Assert.Equal(VelocityArrow.ApexDegrees, ApexDegreesAt(1e5), 3);
     }
 
-    // ── GUARD (e) · AND HER MAST IS EXACTLY WHERE IT WAS ───────────────────────────────────────────────
-
-    /// <summary>
-    /// LAW FIVE — Lab 43's discharge is untouched. The arrowhead is drawn AFTER the ship dot and adds one
-    /// polygon (or one circle); the mast, the filaments and the core at the tip are the same marks in the
-    /// same order they were before, because that plume is a physical claim this lane has no business editing.
-    ///
-    /// <para>The control is exact: ONE ship state — the shipping boot's own, co-moving with Earth — painted
-    /// twice with the contactor arcing, once read in the Sun's frame (29.8 km/s: a dart) and once in Earth's
-    /// (dead stop: a ring). The ship's position, her charge and her heading are byte-identical across the
-    /// two, so the plume MUST be too; only the new pass has anything to change.</para>
-    ///
-    /// <para>And the ORDER stands: every arc-halo mark comes before her arrowhead, because the plume leaves
-    /// her mast first and the shape that says where she is going is painted on top of the whole marker. RED
-    /// PROOF, three ways: paint the arrowhead in <c>ArcHaloColor</c> and the two lists differ; let it touch
-    /// <c>_lastDischargeMs</c> (a flashing plume is a different plume) and they differ; move
-    /// <c>DrawVelocityArrowhead</c> above <c>DrawDischarge</c> and the ordering assertion fails.</para>
-    /// </summary>
-    [Fact]
-    public void TheDischargeOffHerMastIsUntouched()
-    {
-        Pages.Map dart = Boot();
-        MakeHerArc(dart);
-        float[] dartFrame = Paint(dart);
-
-        List<string> plume = DischargeMarks(dartFrame);
-        Assert.True(plume.Count > 0,
-            "no discharge marks in the frame at all — this row is not looking at Lab 43's plume.");
-        Assert.NotNull(FindHerTriangle(dartFrame));
-
-        Pages.Map ring = Boot();
-        MakeHerArc(ring);
-        Set(ring, "_plotFrameBodyId", "earth");
-        float[] ringFrame = Paint(ring);
-        Assert.True(HasHerRing(ringFrame), "the ringed control drew no ring — the two frames are not a pair.");
-        Assert.Null(FindHerTriangle(ringFrame));
-
-        Assert.Equal(plume, DischargeMarks(ringFrame));
-
-        // …and her plume is laid before her arrowhead, in both frames.
-        AssertThePlumeComesFirst(dartFrame, "the dart");
-        AssertThePlumeComesFirst(ringFrame, "the ring");
-    }
-
-    /// <summary>The plume leaves her mast first; whatever the velocity pass draws goes on top of the whole
-    /// marker afterwards.</summary>
-    private static void AssertThePlumeComesFirst(float[] buffer, string what)
-    {
-        List<Mark> marks = Marks(buffer);
-        int lastPlume = marks.FindLastIndex(m => m.Stroke.R == ArcHalo.R && m.Stroke.G == ArcHalo.G
-                                                 && m.Stroke.B == ArcHalo.B);
-        int hers = marks.FindLastIndex(m => (m.Op == OpPolygon && m.Points.Length == 6 && m.Stroke == HerInk)
-                                            || (m.Op == OpCircle
-                                                && Math.Abs(m.Points[2] - VelocityArrow.RingRadiusPx) < 1e-4
-                                                && m.Stroke == (HerInk.R, HerInk.G, HerInk.B, 200f)));
-        Assert.True(lastPlume >= 0, $"no plume in {what}'s frame.");
-        Assert.True(hers >= 0, $"no velocity shape in {what}'s frame.");
-        Assert.True(lastPlume < hers,
-            $"in {what}'s frame the last discharge mark is at {lastPlume} and her velocity shape at {hers} — " +
-            "the arrowhead pass has been moved in front of Lab 43's plume.");
-    }
-
     // ── The words the Guide teaches ────────────────────────────────────────────────────────────────────
 
     /// <summary>LAW SIX — the in-game Guide's plotting section teaches the two shapes apart, in the sentence
@@ -348,20 +286,6 @@ public sealed class TheShipSaysWhichWaySheIsGoingTests
         Marks(buffer).Any(m => m.Op == OpCircle
                                && Math.Abs(m.Points[2] - VelocityArrow.RingRadiusPx) < 1e-4
                                && m.Stroke == (HerInk.R, HerInk.G, HerInk.B, 200f));
-
-    /// <summary>Every mark Lab 43's plume laid, written out — the ink is <c>ArcHaloColor</c>, which nothing
-    /// else in the frame uses.</summary>
-    private static List<string> DischargeMarks(float[] buffer) =>
-    [
-        .. Marks(buffer)
-            .Where(m => m.Stroke.R == ArcHalo.R && m.Stroke.G == ArcHalo.G && m.Stroke.B == ArcHalo.B)
-            .Select(m => $"{m.Op}:{string.Join(',', m.Points.Select(p => p.ToString("R")))}:{m.Stroke}")
-    ];
-
-    /// <summary>Lab 43's ink, read off the page itself rather than typed in a second time.</summary>
-    private static readonly RgbaColor ArcHalo = (RgbaColor)typeof(Pages.Map)
-        .GetField("ArcHaloColor", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)!
-        .GetValue(null)!;
 
     private static void AssertPointsAlong(float[] buffer, double expectedScreenRad, string what)
     {
@@ -452,22 +376,6 @@ public sealed class TheShipSaysWhichWaySheIsGoingTests
         var ephemeris = (ICelestialEphemeris)Read(map, "_ephemeris")!;
         double t = (double)Read(map, "SimTime")!;
         return (ephemeris.Position("earth", t + 1) - ephemeris.Position("earth", t - 1)) / 2.0;
-    }
-
-    /// <summary>Turn the contactor on and charge her past the arcing threshold, so Lab 43's plume is actually
-    /// in the frame guard (e) inspects.</summary>
-    private static void MakeHerArc(Pages.Map map)
-    {
-        double threshold = (double)typeof(Pages.Map)
-            .GetField("ArcChargeThreshold", BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public)!
-            .GetValue(null)!;
-        var ship = (ShipState)Read(map, "_ship")!;
-        Set(map, "_ship", ship with { Charge = threshold * 2 });
-        Set(map, "_plasma", PlasmaEnvironment.FromScenario(
-            ScenarioLoader.LoadFile(Path.Combine(TestTree.RepoRoot(), "tests", "fixtures", "sol-eu.json")),
-            (ICelestialEphemeris)Read(map, "_ephemeris")!));
-        Assert.True(Read(map, "_plasma") is not null,
-            "sol-eu.json handed the page no PlasmaEnvironment — the plume would never be drawn.");
     }
 
     /// <summary>Her velocity in the frame the plan is being read in, read off the page's own one function so

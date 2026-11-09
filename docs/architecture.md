@@ -62,7 +62,7 @@ Three projects carry the weight (`SpaceSails.slnx`):
   zero-copy `JSType.MemoryView` over a `Span<float>` instead of a JSON-serialized array — the
   interop budget is two calls per frame (`drawFrame` + `drawTexts`), not one per primitive.
 
-Scenarios (`scenarios/sol.json`, `scenarios/wheel.json`, `scenarios/sol-eu.json`) are the
+Scenarios (`scenarios/sol.json`) is the
 canonical copy at the repo root. `SpaceSails.Client.csproj`'s `CopyScenariosIntoWwwroot` MSBuild
 target mirrors them into `wwwroot/scenarios` before static-web-asset discovery runs (a plain
 linked `<Content>` item resolves fine at build time but 200s with a zero-length body at request

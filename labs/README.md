@@ -30,7 +30,6 @@ dotnet run --project labs/07-hill-spheres-and-bus-stops -c Release
 dotnet run --project labs/08-seeing-through-uncertainty -c Release
 dotnet run --project labs/09-what-the-rails-hide -c Release
 dotnet run --project labs/10-fast-enough-for-ten-thousand-x -c Release
-dotnet run --project labs/11-the-electric-sandbox -c Release
 dotnet run --project labs/12-oops-at-the-moon -c Release
 dotnet run --project labs/13-shooting-literally -c Release
 dotnet run --project labs/14-two-points-and-a-clock -c Release
@@ -151,13 +150,10 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     performance war stories, reproduced honestly on a dev machine: `RunAdaptive`'s real per-call
     cost, one ship vs. the game's actual 23-NPC roster, and the determinism constraint
     (byte-identical below warp 100) verified rather than asserted.
-11. [**The Electric Sandbox**](11-the-electric-sandbox/README.md) ⚡ — `PlasmaEnvironment`'s real
-    halo and stream mechanics computed straight, plus a clearly labeled speculative playground:
-    "what if effective μ depended on the electrical environment?"
 12. [**Oops at the Moon**](12-oops-at-the-moon/README.md) 🌙 — the finale: the one lesson that
     un-rails a body. A velocity kick to Luna's orbit (the game's own ±% pulse mechanic, by
     accident), integrated as a genuine free body — departs, degrades, or spirals in, computed
-    honestly, plus a playable `scenarios/oops.json` aftermath.
+    honestly. (Its former `oops.json` playable aftermath was retired 2026-11-09.)
 13. [**Shooting, literally**](13-shooting-literally/README.md) 🎖 — the encore: the firing
     solution as a boundary value problem, solved by the shooting method — Newton over launch
     bearing and charge, every residual flown through the real integrator (the war room's
@@ -438,21 +434,10 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
 > paid for twice, and asked people to cite them by directory in the meantime. That was a workaround, not a
 > fix — some forty shipping comments say "Lab 43" or "Lab 44" and each of them pointed at two labs. The tie
 > is broken by **chronology**, which is what the numbers have always meant here: `43-the-sharpest-point`
-> (2026-07-30) and `44-knock-on-the-hull` (2026-07-30) came first and keep their numbers;
+> (2026-07-30, since retired with the Electric-Universe layer) and `44-knock-on-the-hull` (2026-07-30) came first and keep their numbers;
 > `43-miranda-sites` (2026-07-31) is now **47** and `44-a-lab-about-the-lab` (2026-08-01) is now **48** —
 > the next free numbers, since 45 and 46 have been taken since. `LabNumbersAreUniqueTests` holds the line.
 
-43. [**The sharpest point**](43-the-sharpest-point/README.md) — the owner asked for a plasma-ball effect on
-    the hull discharge and attached a condition: *"if physics supports it."* So the lab asked before anything was
-    drawn, and came back with a prettier effect than the one I was going to make, plus a correction to a fiction
-    the game had been telling since M7. Field strength is potential over radius of curvature, so a discharge
-    leaves from whatever is **sharpest**: her antenna whip runs **20,000×** the field of the hull skin, which
-    means a sphere of light around the ship would be drawing the one place it cannot start. A fully wound hull
-    holds **0.22 J** — a static shock off a door handle — so the dump gets no explosion cue. And the flash is
-    **85,514× dimmer** than her own reflected sunlight, which killed "a charged hull is SEEN" outright: she is
-    not brighter, she is **LOUDER**, a broadband radio source everything with a receiver gets for free. Also
-    derived a trade nobody designed: inside a plasma stream **23.8 mA arrives against ~10 mA emitted**, so the
-    automatic cannot win there — *you may go fast or you may go unheard.*
 
 44. [**Knock on the hull**](44-knock-on-the-hull/README.md) — the owner specified a search mechanic in two
     sentences (*"Sweeping could cost time… like pumping vacuum does… idea is to know where to do it"* and *"it

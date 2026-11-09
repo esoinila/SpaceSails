@@ -217,7 +217,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
         (double ax, double ay) = HiveInterior.SpawnOn(Field);
         var pen = new RecordingRenderer();
         new DeckView(pen).Draw(plan, WidthPx, HeightPx, 0,
-            new DeckView.State(ax, ay, 0, 0, 0, ShuttleAway: false, ElectricUniverse: false),
+            new DeckView.State(ax, ay, 0, 0, ShuttleAway: false),
             0, 0, null);
         return (pen.Marks, plan, DeckView.PlacementFor(plan, WidthPx, HeightPx, ax, ay, 0, 0));
     }
@@ -352,7 +352,7 @@ public sealed class TheParkBenchIsAGumshoeMoveTests
     {
         var pen = new RecordingRenderer();
         new DeckView(pen).Draw(plan, WidthPx, HeightPx, 0,
-            new DeckView.State(0, 0, 0, 0, 0, ShuttleAway: false, ElectricUniverse: false),
+            new DeckView.State(0, 0, 0, 0, ShuttleAway: false),
             0, 0, null);
         return pen.Marks;
     }

@@ -290,20 +290,6 @@ public sealed class StoryBeatsTests
         Assert.Contains(ArrivalTube.WalkLine(tier), StoryBeats.Caption(beat), StringComparison.Ordinal);
     }
 
-    /// <summary>
-    /// LAB 43 CORRECTED THIS CAPTION, and the law keeps it corrected. The discharge card used to end
-    /// <i>"Everything with a telescope just watched that happen"</i> — but a discharge is 85,514× dimmer than her
-    /// own reflected sunlight, so nobody watches it through anything. She is not brighter; she is LOUDER.
-    /// </summary>
-    [Fact]
-    public void TheDischargeCardSaysHeardAndNotSeen()
-    {
-        string caption = StoryBeats.Caption(StoryBeats.Beat.ChargeLetGo);
-
-        Assert.DoesNotContain("telescope", caption, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("receiver", caption, StringComparison.OrdinalIgnoreCase);
-    }
-
     // ── "Does not block the playing too much" ─────────────────────────────────────────────────────────
 
     /// <summary>
@@ -314,7 +300,6 @@ public sealed class StoryBeatsTests
     [Theory]
     [InlineData(StoryBeats.Beat.FirstShotFired)]
     [InlineData(StoryBeats.Beat.SailHoled)]
-    [InlineData(StoryBeats.Beat.ChargeLetGo)]
     public void MomentsThatHappenMidActionNeverTakeTheScreen(StoryBeats.Beat beat) =>
         Assert.Equal(StoryBeats.Presentation.Plate, StoryBeats.PresentationOf(beat));
 

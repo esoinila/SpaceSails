@@ -130,8 +130,8 @@ public sealed class TheNerveBlockOwnsItsOwnColumnTests
     private static MeasuringPen OnTheRegolith()
     {
         DeckPlan ground = Scenes.Build("surface:luna:0");
-        var state = new DeckView.State(ground.SpawnX, ground.SpawnY, 0.9, 0, 0,
-            ShuttleAway: false, ElectricUniverse: false,
+        var state = new DeckView.State(ground.SpawnX, ground.SpawnY, 0.9, 0,
+            ShuttleAway: false,
             Nerve: 58, NerveReadout: "FRAYED", ShowNerve: true, NerveCompact: false, HitsTaken: 1);
         var hud = new DeckView.SurfaceHud(
             DigProgress: -1, HasDroppedChest: false, DropX: 0, DropY: 0,
@@ -148,8 +148,8 @@ public sealed class TheNerveBlockOwnsItsOwnColumnTests
     private static MeasuringPen Aboard()
     {
         DeckPlan ship = Scenes.Build("ship");
-        var state = new DeckView.State(-2.5, 1.5, 0.7, CargoUnits: 7, Charge: 0.62,
-            ShuttleAway: false, ElectricUniverse: false,
+        var state = new DeckView.State(-2.5, 1.5, 0.7, CargoUnits: 7,
+            ShuttleAway: false,
             ShowNerve: true, NerveCompact: true, Nerve: 71, NerveReadout: "STEADY", HitsTaken: 2);
 
         var pen = new MeasuringPen();

@@ -56,8 +56,8 @@ public sealed class TheRazorRenderCssSweepTests
 
         float BarX(double dx)
         {
-            var state = new DeckView.State(ground.SpawnX + dx, ground.SpawnY, 0.9, 0, 0,
-                ShuttleAway: false, ElectricUniverse: false);
+            var state = new DeckView.State(ground.SpawnX + dx, ground.SpawnY, 0.9, 0,
+                ShuttleAway: false);
             var pen = new WordPen();
             new DeckView(pen).Draw(ground, WidthPx, HeightPx, simTime: 0.0, in state, surface: null);
             return pen.Words.Single(w => w.Y == HeightPx - 10).X;

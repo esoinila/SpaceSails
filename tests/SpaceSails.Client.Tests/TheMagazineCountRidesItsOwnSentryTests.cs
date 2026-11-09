@@ -134,8 +134,8 @@ public sealed class TheMagazineCountRidesItsOwnSentryTests
     private static MeasuringPen AFrameWithTheCaptainAt(double captainY, double botX, double botY)
     {
         DeckPlan field = TheField();
-        var state = new DeckView.State(field.SpawnX, captainY, 0.9, 0, 0,
-            ShuttleAway: false, ElectricUniverse: false,
+        var state = new DeckView.State(field.SpawnX, captainY, 0.9, 0,
+            ShuttleAway: false,
             Nerve: 58, NerveReadout: "FRAYED", ShowNerve: true, NerveCompact: false, HitsTaken: 0);
         var hud = new DeckView.SurfaceHud(
             DigProgress: -1, HasDroppedChest: false, DropX: 0, DropY: 0,

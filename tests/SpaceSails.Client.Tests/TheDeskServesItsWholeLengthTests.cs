@@ -364,7 +364,7 @@ public sealed class TheDeskServesItsWholeLengthTests
         DeckPlan plan = Deck();
         var pen = new RecordingRenderer();
         new DeckView(pen).Draw(plan, WidthPx, HeightPx, 0,
-            new DeckView.State(atX, atY, 0, 0, 0, ShuttleAway: false, ElectricUniverse: false),
+            new DeckView.State(atX, atY, 0, 0, ShuttleAway: false),
             0, 0, null);
         return (pen.Marks, DeckView.PlacementFor(plan, WidthPx, HeightPx, atX, atY, 0, 0));
     }

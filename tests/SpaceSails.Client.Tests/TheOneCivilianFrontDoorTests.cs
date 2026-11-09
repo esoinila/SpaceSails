@@ -166,16 +166,16 @@ public sealed class TheOneCivilianFrontDoorTests
     }
 
     [Fact]
-    public async Task AndTheScenarioMerelyPRESELECTSWhatNewVoyageWouldLaunch()
+    public async Task ARetiredSkyOffersTheSameBerthsAsSol()
     {
         // The other half of the ask: naming a sky must still decide the sky. The berth list the door offers
         // is the loaded scenario's own, so "New voyage" launches into the world the link named — the param
         // preselects, it does not decide that a new voyage is what the captain wanted.
         PastTheGateBench.Boot sol = await PastTheGateBench.BootAsync("/map?scenario=sol");
-        PastTheGateBench.Boot electric = await PastTheGateBench.BootAsync("/map?scenario=sol-eu");
+        PastTheGateBench.Boot retired = await PastTheGateBench.BootAsync("/map?scenario=sol-eu");
 
-        Assert.True(sol.Read<bool>("_showStartPicker") && electric.Read<bool>("_showStartPicker"));
-        Assert.NotEqual(TheBerthsOfferedBy(sol), TheBerthsOfferedBy(electric));
+        Assert.True(sol.Read<bool>("_showStartPicker") && retired.Read<bool>("_showStartPicker"));
+        Assert.Equal(TheBerthsOfferedBy(sol), TheBerthsOfferedBy(retired)); // a retired sky is an unknown slug: Sol
         Assert.Contains("selene-gate", TheBerthsOfferedBy(sol));
     }
 

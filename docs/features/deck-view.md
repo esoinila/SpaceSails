@@ -28,7 +28,6 @@ Walking up to a console and pressing `E` opens the matching desk (see
 - **CANTINA** — opens the **Galley** desk (`6`) — the rum locker (see below) lives there now,
   alongside the news wire.
 - **CARGO** (in the Cargo Hold) — shows your loot as crates.
-- **VENT PANEL** — vents hull charge (Electric scenarios only — see [electric-sky.md](electric-sky.md)).
 - **SHUTTLE BAY** — launches the boarding shuttle when a capture window is engaged — see
   [boarding-run.md](boarding-run.md).
 
@@ -70,4 +69,4 @@ development. Nobody ever uses it." The top-down deck plan is the only walked vie
 is deliberately unbound rather than quietly remapped.
 
 See also: [plotting-desk.md](plotting-desk.md), [scope.md](scope.md),
-[boarding-run.md](boarding-run.md), [electric-sky.md](electric-sky.md).
+[boarding-run.md](boarding-run.md).

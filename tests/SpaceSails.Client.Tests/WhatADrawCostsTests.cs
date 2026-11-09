@@ -145,8 +145,8 @@ public sealed class WhatADrawCostsTests
         {
             perf.OpenWalkFrame();
             view.Draw(plan, WidthPx, HeightPx, 1000.0 + i,
-                new DeckView.State(sx, sy, 0.3, 0, 0,
-                    ShuttleAway: false, ElectricUniverse: false,
+                new DeckView.State(sx, sy, 0.3, 0,
+                    ShuttleAway: false,
                     ShowNerve: true, Nerve: 58, NerveReadout: "FRAYED", Dark: dark));
         }
 
@@ -329,8 +329,8 @@ public sealed class WhatADrawCostsTests
         for (int i = 0; i < 4; i++)
         {
             quiet.Draw(plan, WidthPx, HeightPx, 1000.0 + i,
-                new DeckView.State(plan.SpawnX, plan.SpawnY, 0.3, 0, 0,
-                    ShuttleAway: false, ElectricUniverse: false,
+                new DeckView.State(plan.SpawnX, plan.SpawnY, 0.3, 0,
+                    ShuttleAway: false,
                     ShowNerve: true, Nerve: 58, NerveReadout: "FRAYED"));
         }
 

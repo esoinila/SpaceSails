@@ -38,7 +38,7 @@ Below the articles, the desk lists every mission you can select, grouped by kind
 **One click selects — no confirm dialog.** The captain's word is final the moment it's given; the
 mission updates instantly and every desk's summary chip reflects it on the very next render.
 
-If a scenario has no traffic section (e.g. the Wheel of the World), Hunt/Trade run/Survey simply
+If a scenario has no traffic section Hunt/Trade run/Survey simply
 offer nothing to pick — Free sailing and Lay low (which only needs the body list, not traffic)
 still work.
 

@@ -40,7 +40,6 @@ public sealed class SceneInventoryTests
             DeckPlan.ConsoleKind.ShipValves,
             DeckPlan.ConsoleKind.ShipScuttle,
             DeckPlan.ConsoleKind.ShipDoor,
-            DeckPlan.ConsoleKind.Vent,          // the charge dump
             DeckPlan.ConsoleKind.MedKit,
             DeckPlan.ConsoleKind.Cantina,
             // #1016/#1040 · …and somewhere to SIT DOWN, in all three shapes her rooms now offer: a top under

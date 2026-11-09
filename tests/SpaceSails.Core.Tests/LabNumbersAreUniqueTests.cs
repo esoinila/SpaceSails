@@ -71,7 +71,7 @@ public sealed class LabNumbersAreUniqueTests
         Assert.True(labs.Count >= 40, $"only {labs.Count} numbered lab directories found — the sweep is looking " +
                                       "in the wrong place, and an empty sweep proves uniqueness trivially.");
         Assert.Contains(labs, l => l.Dir == "01-falling-is-orbiting");
-        Assert.Contains(labs, l => l.Dir == "43-the-sharpest-point");
+        Assert.Contains(labs, l => l.Dir == "45-what-a-frame-costs");
         Assert.Contains(labs, l => l.Dir == "44-knock-on-the-hull");
     }
 
