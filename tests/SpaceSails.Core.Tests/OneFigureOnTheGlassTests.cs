@@ -86,7 +86,8 @@ public sealed class OneFigureOnTheGlassTests
     [Fact]
     public void TheOneShotLinesQuoteNoNumberOfAirLeft()
     {
-        Assert.DoesNotMatch(@"\d", SuitAir.ReserveEngagedLine);
+        Assert.Equal("🫁 PRIMARY EXHAUSTED — the secondary pack cuts in. It is the last air you have, and the count is on you now. Whatever you were going to do out here, you are doing it on the way back.", SuitAir.ReserveEngagedLine);
+        Assert.DoesNotMatch(@"\d|(?i:minute)", SuitAir.ReserveEngagedLine);
         double air = SuitAir.TankSeconds * SuitAir.LowAirFraction * 0.9;
         Assert.StartsWith("🫁 AIR LOW — the last third of the tank. ", SuitAir.LowAirWarning(air, 50));
         Assert.DoesNotMatch(@"\d+h\d\d", SuitAir.LowAirWarning(air, 50));
@@ -111,7 +112,8 @@ public sealed class OneFigureOnTheGlassTests
             {
                 string line = lines[i];
                 if (line.TrimStart().StartsWith("//") || line.TrimStart().StartsWith("///")
-                    || line.Contains("public static string"))
+                    || line.Contains("public static string SuitClock(", StringComparison.Ordinal)
+                    || line.Contains("public static string Clock(", StringComparison.Ordinal))
                 {
                     continue;
                 }

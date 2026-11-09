@@ -107,7 +107,7 @@ public static partial class UndergroundComplex
         // Fable ruling (c): a dead-air card never raises on a floor that holds air, so there is always a floor up.
         ArgumentOutOfRangeException.ThrowIfLessThan(floorsUp, 1);
 
-        // U06-F05 · The card never quotes a figure. Its face is frozen the moment it is raised (#472) while
+        // U06-F05 · The card never quotes a figure. Its face is frozen the moment it is raised (#1472) while
         // the gauge keeps counting, so any number printed here is stale by the time it is read (it said
         // 1h09 over a strip reading 13m). Only a live instrument may carry the number.
         string margin = airSeconds > 0
