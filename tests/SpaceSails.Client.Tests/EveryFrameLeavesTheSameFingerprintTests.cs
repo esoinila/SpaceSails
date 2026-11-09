@@ -568,8 +568,8 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     }
 
     /// <summary>The snapshot is worth nothing if the bench cannot tell one world from another — a guard handed
-    /// a world it built itself cannot tell pass from fail (this repo's fifth named bug class). Thirty rows,
-    /// thirty different fingerprints.</summary>
+    /// a world it built itself cannot tell pass from fail (this repo's fifth named bug class). Twenty-five rows,
+    /// twenty-five different fingerprints.</summary>
     [Fact]
     public void EveryRowIsADifferentFrame()
     {
@@ -592,6 +592,6 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
                 "driving the same frame, so one of them could never fail.");
             seen[hash] = scene;
         }
-        Assert.Equal(30, seen.Count);
+        Assert.Equal(25, seen.Count);   // five worlds x five sequences (the Electric Universe world was retired)
     }
 }
