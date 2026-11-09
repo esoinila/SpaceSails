@@ -139,7 +139,8 @@ public sealed class DyingUnderAMoonTests
             // And the tank, so the margin is a number rather than a feeling — quoted off the gauge rather
             // than worked out again here (#740: this line used to pin "12 min", which was the raw play
             // budget the HUD never shows anybody).
-            Assert.Contains(SuitAir.Clock(754), card, StringComparison.Ordinal);
+            Assert.Contains("Your gauge has the figure", card, StringComparison.Ordinal);
+            Assert.DoesNotContain(SuitAir.Clock(754), card, StringComparison.Ordinal);
         }
     }
 

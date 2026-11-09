@@ -107,19 +107,11 @@ public static partial class UndergroundComplex
         // Fable ruling (c): a dead-air card never raises on a floor that holds air, so there is always a floor up.
         ArgumentOutOfRangeException.ThrowIfLessThan(floorsUp, 1);
 
-        // #740 · THE CARD READS THE GAUGE, it does not do its own sum. This used to format the raw play
-        // budget as minutes and seconds — "you have 21 min 01 s" — while the HUD two seconds later on the
-        // same floor said AIR 8h09. Both sentences were about the tank and both were honest about the number
-        // they held; they were simply holding it in different units, because the card was the one surface in
-        // the game that had never gone through SuitAir. A captain cannot be expected to know which of two
-        // instruments is quoting the designer's stopwatch, so there is now one clock and the card asks for it.
-        //
-        // …and the sentence OWNS the quantity: it names the instrument the figure came off, so that a captain
-        // who glances at their wrist a second later reads the same characters back, and so that the next hand
-        // to edit this copy cannot quietly re-derive the number from something else.
+        // U06-F05 · The card never quotes a figure. Its face is frozen the moment it is raised (#472) while
+        // the gauge keeps counting, so any number printed here is stale by the time it is read (it said
+        // 1h09 over a strip reading 13m). Only a live instrument may carry the number.
         string margin = airSeconds > 0
-            ? $"Your gauge reads {SuitAir.Clock(airSeconds)}, and that is the figure it will go on counting " +
-              "down the whole way up."
+            ? "Your gauge has the figure, and it goes on counting down the whole way up."
             : "Your gauge is already reading empty, which is its own instruction.";
 
         string upstairs = $"{floorsUp} floor{(floorsUp == 1 ? "" : "s")} up";

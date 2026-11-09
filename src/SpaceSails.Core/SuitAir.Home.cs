@@ -121,7 +121,7 @@ public static partial class SuitAir
     /// <summary>The low-air line. Says the number, says what it buys, and does NOT pretend to know whether
     /// the captain is in trouble — that is what the point-of-no-return line is for.</summary>
     public static string LowAirWarning(double airLeftSeconds, double distanceHomeDu) =>
-        $"🫁 AIR LOW — {SuitClock(airLeftSeconds)} left in the suit. " +
+        "🫁 AIR LOW — the last third of the tank. " +
         (PastPointOfNoReturn(airLeftSeconds, distanceHomeDu)
             ? "And the walk back already costs more than that."
             : $"Enough for about {RemainingReachDu(airLeftSeconds, distanceHomeDu):F0} du further out, then home.");

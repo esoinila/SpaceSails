@@ -177,8 +177,8 @@ public static partial class SuitAir
 
     /// <summary>The line as the primary gives out and the secondary pack cuts in — once, loudly.</summary>
     public const string ReserveEngagedLine =
-        "🫁 PRIMARY EXHAUSTED — the secondary pack cuts in. Thirty minutes, and it is the last thirty you " +
-        "have. Whatever you were going to do out here, you are doing it on the way back now.";
+        "🫁 PRIMARY EXHAUSTED — the secondary pack cuts in. It is the last air you have, and the count is on " +
+        "you now. Whatever you were going to do out here, you are doing it on the way back.";
 
     /// <summary>How much more air than the bare walk home the suit insists on before it stops warning. The
     /// walk back is never clean — you will detour round a scarp, you will stop, and something may make you
