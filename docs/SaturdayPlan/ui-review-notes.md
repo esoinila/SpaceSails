@@ -64,13 +64,6 @@ closing {speed:F0} (dock ≤ {DockSpeedLimit})` readout during the flight (line 
 1234  ∙  closing 42 (dock ≤ 55)", with `DockSpeedLimit = 55` px/s and the closing-speed text
 color-coded (glow color under the limit, amber over it). No action needed.)*
 
-## Electric sky (`docs/features/electric-sky.md`)
-
-- Venting has a cooldown, but the only feedback when it's still cooling is the text message "Vent
-  recharging…" with no indication of how much longer to wait. Since charge management is a real
-  decision point near arcing (90%), a small cooldown timer (even just a thin progress bar like the
-  boarding-progress one already used elsewhere in the HUD) would remove the guesswork.
-
 ## General
 
 - Several panels (plot card, dock card, tutorial card) are all `position`-stacked as separate

@@ -27,7 +27,7 @@
 ## Server (senior-implemented — the authoritative host)
 
 - `SessionHost` (singleton `BackgroundService`):
-  - Owns ephemeris + `PlasmaEnvironment` (scenario fixed at startup via config; default
+  - Owns ephemeris + `PlasmaEnvironment` (deleted 2026-11-09 with the Electric layer; scenario fixed at startup via config; default
     `sol`), NPC states (from `TrafficSchedule` seed 42/43 — same as single player), and a
     `PlayerShip` map (connectionId → callsign, `ShipState`, reaction mass, requested warp,
     `ManeuverPlan`, pulse/vent cooldown bookkeeping).

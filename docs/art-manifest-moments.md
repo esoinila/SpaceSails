@@ -117,7 +117,7 @@ Ctrl-U). It restores the session without a browser.
   renderer animation rather than a still) is the follow-up the owner asked for: *"could have plasma ball like
   beautifull effect if physics supports it."*
 - **The canvas obeys the lab.** It came back as a filament plume off the antenna whip's tip with the hull edge-lit
-  below — which is Lab 43's Finding 1 (the whip runs **20,000×** the hull's surface field) drawn without being
+  below — which was the retired Lab 43's Finding 1 (the whip runs **20,000×** the hull's surface field) drawn without being
   told twice. Nothing to regenerate.
 
 ## 8. `art/fire-aboard.jpg` — THERE IS FIRE IN HER ✅ PAINTED

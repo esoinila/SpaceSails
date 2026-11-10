@@ -31,9 +31,10 @@ the only control. This addendum records what grew on top of it, so a reader does
 one-month-old brief for the current shape of the game.*
 
 **What the brief predicted correctly.** The plotting-first sailing pace, the pirate premise,
-the He3 runs from Saturn, the Electric Universe layer with hull charge and arcing, the Wheel
-of the World as a second scenario, and predicted-path cones over other ships' plans — all
-shipped, all substantially as described.
+the He3 runs from Saturn and predicted-path cones over other ships' plans — all shipped,
+all substantially as described. The brief's Electric Universe layer and Wheel of the World
+scenario also shipped, and were retired on 2026-11-09: **one sky, Sol.** (The brief above
+stays verbatim as history.)
 
 **What it did not predict, in the order it happened.**
 

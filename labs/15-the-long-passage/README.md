@@ -140,4 +140,4 @@ and re-acquire at the far end, lesson 8's telescope work scheduled six years in 
    near-field bends the approach? (Lesson 3 knows.)
 3. **Sign the Neptune contract.** Section A quotes Neptune at 30.58 years. Re-aim Section B
    at Neptune with a 12-year TOF instead and read the dv bill for buying the clock down.
-   Who signs that contract — and would lesson 11's electric sandbox change the answer?
+   Who signs that contract, and what would it cost you to be late?

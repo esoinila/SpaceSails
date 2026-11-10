@@ -11,7 +11,7 @@ namespace SpaceSails.Core;
 /// bulkhead is perfectly concealed and perfectly betrayed by a lit shuttle clamped to the lock with its
 /// transponder answering and a gun tracking the hatch.</para>
 ///
-/// <para>And it is the same law Lab 43 found for the hull: <b>you are given away by what you EMIT.</b> The lab
+/// <para>And it is the same law the retired Lab 43 found for the hull: <b>you are given away by what you EMIT.</b> The lab
 /// killed the idea that a charged hull is *seen* — she is heard. This is that finding applied to a boarding: the
 /// boat's lights, its transponder, its warm reactor and its automation are all emissions, and an inspection team
 /// notices an anomaly long before it notices a man.</para>

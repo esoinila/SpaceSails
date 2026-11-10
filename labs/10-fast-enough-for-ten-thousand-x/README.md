@@ -15,7 +15,7 @@ on it. Two real war stories set the stakes:
 > TrafficSchedule.NpcTimeStep (60 s) instead of the player's dt=1 s... 53-57 fps after."
 
 > M19 (commit `63b06de`): "at effective warp >= 100 the accumulator is consumed in fixed 60 s
-> quanta via RunAdaptive... Measured headless in sol-eu (plasma on, full traffic): 9,969 sim-s
+> quanta via RunAdaptive... Measured headless, in M19's day, on a since-retired sky (full traffic): 9,969 sim-s
 > per real-s at 10000x — effectively the full requested rate."
 
 Both numbers came from a browser/server loop (M5's own notes elsewhere in this repo: "Debug
@@ -71,8 +71,8 @@ RunAdaptive(60 s quantum)   0.00039                 2582.0
 
 On this dev machine, native Release, one ship, no rendering: fixed dt=1 already clears 60 fps
 at warp 10000x (101 fps) — nowhere near M5's "~1 fps," because a native Release console loop
-is a wildly cheaper environment than Debug WASM in a browser with rendering, traffic, and
-plasma alongside it. That gap **is** the lesson: the M5/M19 numbers were never really about
+is a wildly cheaper environment than Debug WASM in a browser with rendering and traffic
+alongside it. That gap **is** the lesson: the M5/M19 numbers were never really about
 this arithmetic being slow in the abstract; they were about where that arithmetic runs.
 `NpcTimeStep=60` (54x here) and `RunAdaptive` (26x here) both being drastically faster than
 dt=1, on *any* machine, is the part that actually transfers.

@@ -159,7 +159,6 @@ satchel, `T` plants a sentry, `G` drops the chest.
 /map?converge=1      arc convergence
 /map?deflection=1    a live deflection gig
 /map?expedition=1    an away expedition
-/map?scenario=wheel  scenario boot
 /map?credits=N&fuel=N&simhours=N    set up state without flying to it
 ```
 
