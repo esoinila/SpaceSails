@@ -39,21 +39,12 @@ public sealed class ASaveFromAnotherSkyNeverCrashesTheVoyageTests
     private static object? Call(Map page, string name, params object?[] args) =>
         typeof(Map).GetMethod(name, Hidden)!.Invoke(page, args);
 
-    /// <summary>The refusal half of #1216 case 2, restored after the Electric sky it used to be proved in was
-    /// retired: a start whose anchor body the loaded sky lacks is refused (the boot then shows the picker),
-    /// and the placement beneath it lays the ship at the standard spawn instead of throwing. Both halves are
-    /// asked of the same sky with and without its Selene Gate, so a check that said yes to everything fails.</summary>
+    /// <summary>The placement half of #1216 case 2: a start whose anchor body the loaded sky lacks (an old
+    /// save from a retired sky) is laid at the standard spawn instead of thrown on.</summary>
     [Fact]
-    public async Task AStartThisSkyCannotAnchorIsRefusedToThePickerAndPlacedWithoutThrowing()
+    public async Task AStartThisSkyCannotAnchorIsPlacedWithoutThrowing()
     {
-        PastTheGateBench.Boot sol = await PastTheGateBench.BootAsync("/map");
-        Assert.Null(sol.Threw);
-        Assert.True((bool)Call(sol.Page, "ThisSkyCanHonourTheStart", "earth")!,
-            "Sol holds every body the start registry names, so nothing may be refused there.");
-
         PastTheGateBench.Boot bare = await BootASkyWithoutSeleneGateAsync();
-        Assert.False((bool)Call(bare.Page, "ThisSkyCanHonourTheStart", "earth")!,
-            "this sky has no Selene Gate, so the start that hangs off it must be refused to the picker.");
         Exception? threw = null;
         try { Call(bare.Page, "PlaceShipForStart", "earth"); }
         catch (TargetInvocationException ex) { threw = ex.InnerException; }

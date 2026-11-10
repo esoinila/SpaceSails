@@ -14,10 +14,10 @@ namespace SpaceSails.Client;
 /// teaches the bench to stop reading it.
 /// </para>
 /// <para>
-/// The roster is NOT constant, so "print once, ever" would be a lie: <c>?scenario=</c> loads a different
-/// world with different berths, and the cheats bolt extra bodies on. So the rule is "print when it is
+/// The roster is NOT constant, so "print once, ever" would be a lie: the cheats bolt extra bodies
+/// onto the one sky's berths. So the rule is "print when it is
 /// news": remember what was last said and stay quiet while the answer is the same one. A second lap round
-/// the same world is silent; a different world announces itself.
+/// the same world is silent; a changed roster announces itself.
 /// </para>
 /// </remarks>
 internal sealed class BootRegistryAnnouncement

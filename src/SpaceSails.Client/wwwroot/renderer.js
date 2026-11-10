@@ -477,7 +477,7 @@ const CUES = {
     blip:  { freq: 1046, to: 1245, duration: 0.06, gain: 0.05, type: 'square' },  // `pulse`'s short square tick, two octaves up and a third the length — a console acknowledging a keypress, not an engine
     gameover:{ freq: 220, to: 55, duration: 1.2,  gain: 0.13, type: 'sine' },     // `miss`'s sad sine fall (the round that went nowhere) dropped an octave and held two and a half times as long — the same shape at the scale of a life
     burn:  { freq: 110, to: 220, duration: 0.55, gain: 0.08, type: 'square' },    // `pulse`'s engine thump an octave down and six times longer — a burn IS the thump, sustained
-    door:  { freq: 420, to: 180, duration: 0.18, gain: 0.05, type: 'sawtooth' },  // `vent`'s sawtooth hiss-fall, shortened and pitched into the middle — the same escaping air, through a seal instead of a nozzle
+    door:  { freq: 420, to: 180, duration: 0.18, gain: 0.05, type: 'sawtooth' },  // a sawtooth hiss-fall pitched into the middle — escaping air, through a seal instead of a nozzle
 };
 
 export function playCue(kind, scale = 1) {

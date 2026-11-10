@@ -39,12 +39,6 @@ public sealed class EveryPaintingHasAMomentTests
     /// </summary>
     private static readonly Dictionary<string, string> KnownOrphans = new(StringComparer.OrdinalIgnoreCase)
     {
-        // The 3D interior renovation (#90) dressed three starboard berths: cabin-tidy, cabin-messy-a and
-        // cabin-messy-b. The owner turned CABIN 3 into the MED BAY on 2026-07-18 and the room took
-        // ship-med-bay.jpg with it (DeckPlan.cs, the `backdrops` table), which left the second messy cabin a
-        // texture for a room that no longer exists. It is NOT a story card and there is no third berth to
-        // hang it in, so wiring it would mean inventing a room to justify a file — the opposite of the point.
-        ["cabin-messy-b.jpg"] = "#90's third berth became the MED BAY (owner 2026-07-18); the room is gone, the texture is not",
     };
 
     private static string RepoRoot()

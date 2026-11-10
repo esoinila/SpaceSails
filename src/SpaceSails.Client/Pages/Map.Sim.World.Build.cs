@@ -22,49 +22,22 @@ public partial class Map
 {
 
     /// <summary>
-    /// The one fetch the boot waits on: <c>scenarios/&lt;name&gt;.json</c>, parsed.
-    ///
-    /// <para>#1216 case 1 · <b>AN UNKNOWN SCENARIO IS SOL, NOT A STACK TRACE.</b> The game's own contract
-    /// (<c>docs/testing-guide.md</c> Appendix A, and the checklist step that types a bad name on purpose)
-    /// has always read <i>"unknown → silent fall back to Sol"</i>, and the parse side already keeps its half
-    /// of it: <c>?scenario=</c> is sanitised to a slug before it ever becomes a path segment
-    /// (Map.Sim.World.Query). The FETCH side never did. <c>GetStringAsync</c> throws on a 404, the boot has
-    /// nothing above it that catches, and the captain gets the red "The voyage hit an error" page — which is
-    /// what <c>/map?scenario=electric</c>, a name §3 of the 2026-09-17 links handed a tester, did twice in two
-    /// browsers.</para>
-    ///
-    /// <para><b>A missing file IS the unknown name</b>, and that is the whole change: the request is made with
-    /// <c>GetAsync</c> so a non-200 can be read rather than thrown, and a non-200 means Sol. Nothing else is
-    /// caught — a scenario that is present but malformed still fails loudly at the parse, because that is a
-    /// broken world and not a typo, and <b>Sol's own failure is not a fallback at all</b>: there is nothing
-    /// under it, so it is fetched the plain way and throws the way it always did.</para>
+    /// The one fetch the boot waits on: <c>scenarios/sol.json</c>, parsed. #1216 · <b>AN UNKNOWN SCENARIO IS
+    /// SOL, NOT A STACK TRACE</b>, and since Sol is the only sky the answer is simpler than it was: the
+    /// query reader ignores <c>?scenario=</c> altogether, so an old bookmark (<c>?scenario=electric</c>) boots
+    /// here like any other. A malformed Sol still fails loudly at the parse; there is nothing under it.
     /// </summary>
     private async Task<ScenarioDefinition> FetchTheScenarioAsync(BootQuery q, CancellationToken abandoned)
     {
-        string json = await TheScenarioAskedForOrSolAsync(q, abandoned);
+        string json = await TheScenarioAskedForOrSolAsync(abandoned);
         ScenarioDefinition scenario = ScenarioLoader.Parse(json);
         return scenario;
     }
 
-    /// <summary>#1216 · The named scenario's JSON, or Sol's when this sky does not exist. The name the boot
-    /// actually loaded is written back onto the query, so nothing downstream goes on believing a world that
-    /// was never fetched.</summary>
-    private async Task<string> TheScenarioAskedForOrSolAsync(BootQuery q, CancellationToken abandoned)
-    {
-        if (!string.Equals(q.ScenarioName, BootQuery.DefaultScenario, StringComparison.Ordinal))
-        {
-            using HttpResponseMessage answer =
-                await Http.GetAsync($"scenarios/{q.ScenarioName}.json", abandoned);
-            if (answer.IsSuccessStatusCode)
-            {
-                return await answer.Content.ReadAsStringAsync(abandoned);
-            }
-
-            q.ScenarioName = BootQuery.DefaultScenario;   // unknown → Sol, silently, as Appendix A promises
-        }
-
-        return await Http.GetStringAsync($"scenarios/{BootQuery.DefaultScenario}.json", abandoned);
-    }
+    /// <summary>Sol's JSON — the one sky. A <c>?scenario=</c> in an old bookmark is ignored by the query
+    /// reader, so nothing here asks which file to fetch.</summary>
+    private async Task<string> TheScenarioAskedForOrSolAsync(CancellationToken abandoned) =>
+        await Http.GetStringAsync("scenarios/sol.json", abandoned);
 
     /// <summary>Everything a <c>?query</c> hangs off the berth before the ephemeris is built. The order
     /// is the order the cheats are written in, and it is load-bearing: each of these may overwrite
@@ -221,8 +194,8 @@ public partial class Map
         }
     }
 
-    /// <summary>The three things built ONCE per scenario off the finished ephemeris — the mission
-    /// catalog, the plasma environment, and the two simulators (the ship’s and the NPCs’).</summary>
+    /// <summary>The things built ONCE per scenario off the finished ephemeris — the mission
+    /// catalog and the two simulators (the ship’s and the NPCs’).</summary>
     private void BuildWhatTheEphemerisFeeds(ScenarioDefinition scenario)
     {
         // PR-15, the captain's position: the mission catalog is scenario data (cargo classes,

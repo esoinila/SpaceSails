@@ -160,7 +160,7 @@ public partial class Map
         // #953 · THE TRADE-LANE CORRIDORS ARE NOT PAINTED HERE ANY MORE. SundaySecondPlan PR-B drew a quad
         // and a name label per anchor pair; #971 hid them by default after the owner's "covered in faint
         // lines with no intersection"; this ruling retired the display outright — "we have never used them
-        // to find anything." One flag records it (ShipLanes.Archived) and the lane GEOMETRY still serves the
+        // to find anything." The lane GEOMETRY still serves the
         // telescope's lane sweeps; nothing on this stack draws it.
         DrawShipTrajectory();
         // #167 · the burn's beat washes the stretch of that ribbon she is about to fly — over the ribbon

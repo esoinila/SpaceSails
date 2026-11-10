@@ -17,7 +17,7 @@ namespace SpaceSails.Client.Tests;
 /// Two URLs the docs themselves hand a tester ended on the red <i>"The voyage hit an error"</i> screen:</para>
 /// <list type="number">
 ///   <item><c>/map?scenario=electric</c> — <c>HttpRequestException … 404</c>. There is no
-///   <c>scenarios/electric.json</c>; the plasma world is <c>sol-eu</c>. The game's own contract, written in
+///   <c>scenarios/electric.json</c> (the Electric world has since been retired altogether). The game's own contract, written in
 ///   <c>docs/testing-guide.md</c> Appendix A and exercised by step 8 of its scenario checklist, is
 ///   <i>"unknown → silent fall back to Sol"</i>. The name was already sanitised to a slug; the FETCH was the
 ///   half nobody kept.</item>

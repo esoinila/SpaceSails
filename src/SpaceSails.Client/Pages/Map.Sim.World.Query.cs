@@ -27,17 +27,13 @@ public partial class Map
     /// <c>?target=</c>, <c>?dest=</c> and <c>?simhours=</c>.</summary>
     private bool ReadTheWorldAndTheJobs(string pair, BootQuery q)
     {
-        // /map?scenario=sol-eu loads scenarios/sol-eu.json; default sol. Name is sanitized to a
-        // simple slug — it becomes a URL path segment. /map?start=space-bar jumps the freshly-built
-        // world straight to a named start point (see StartPoints) — the playtest "skip the set-up"
-        // shortcut, and the same registry the boot picker offers. Unknown start id → the picker shows.
+        // /map?scenario=<anything> is IGNORED: Sol is the one sky, so an old bookmark still lands in it.
+        // /map?start=space-bar jumps the freshly-built world straight to a named start point (see
+        // StartPoints) — the playtest "skip the set-up" shortcut, and the same registry the boot picker
+        // offers. Unknown start id → the picker shows.
         if (pair.StartsWith("scenario=", StringComparison.OrdinalIgnoreCase))
         {
-            string candidate = Uri.UnescapeDataString(pair["scenario=".Length..]);
-            if (candidate.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
-            {
-                q.ScenarioName = candidate;
-            }
+            // nothing to read — the name no longer picks a world
         }
         else if (pair.StartsWith("start=", StringComparison.OrdinalIgnoreCase))
         {

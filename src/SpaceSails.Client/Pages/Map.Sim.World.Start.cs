@@ -34,25 +34,17 @@ public partial class Map
         {
             StartDockedAtHaven(dockHaven); // #288: boot already clamped on at any dockable berth
         }
-        else if (q.StartId is { } asked && ThisSkyCanHonourTheStart(asked))
+        else if (q.StartId is { } asked)
         {
             ApplyStart(asked);
         }
-        else if (q.StartId is not null || q.DockCheat is not null)
+        else if (q.DockCheat is not null)
         {
-            // #1216 case 2 · THE SKY THAT WAS LOADED CANNOT HONOUR IT, so the boot refuses the way Appendix A
-            // has always said an unknown start is refused: THE PICKER SHOWS. `/map?scenario=sol-eu&start=wreck`
-            // used to reach CircularOrbitEphemeris.Position with a body id that sky has never held and throw
-            // KeyNotFoundException onto the red error page — a legal pair of whitelisted cheats ending in a
-            // stack trace. A start an id names and a start a WORLD can honour are two questions, and until now
-            // only the first was asked (Map.Sim.World.Query checks the registry, which is scenario-blind).
-            //
-            // The door was never raised at the top of the boot, precisely because a cheat WAS asked for
-            // (#323's civilian rule in RaiseTheFrontDoorWhileTheReactorWarms), so raising it here is the
-            // refusal: the captain gets the berth list this scenario actually has, which is the same answer
-            // a mistyped start gets.
-            // Nothing is said — a dev cheat that cannot be honoured is a shortcut that did not work, never a
-            // new failure mode, which is the rule `?dest=` is already written to (Map.Sim.World.Start).
+            // THE BERTH ASKED FOR IS NOT ONE THIS SKY HAS, so the boot refuses the way Appendix A has always
+            // said an unknown start is refused: THE PICKER SHOWS. Nothing is said — a dev cheat that cannot
+            // be honoured is a shortcut that did not work, never a new failure mode. (The door was never
+            // raised at the top of the boot, precisely because a cheat WAS asked for — #323's civilian rule
+            // in RaiseTheFrontDoorWhileTheReactorWarms — so raising it here is the refusal.)
             _showStartPicker = true;
             StateHasChanged();
         }

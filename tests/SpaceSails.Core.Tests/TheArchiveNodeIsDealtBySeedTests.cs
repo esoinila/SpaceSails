@@ -78,7 +78,7 @@ public sealed class TheArchiveNodeIsDealtBySeedTests
     /// <c>DischargePlume</c>'s filament jitter, render-only) decide nothing about the world.
     ///
     /// <para><b>Proven RED</b> by restoring any one of the seven sites #1340 moved — e.g.
-    /// <c>Map.Venting.Fire.cs</c>'s <c>(long)wreck.Id.GetHashCode(StringComparison.Ordinal)</c>.</para>
+    /// the venting code's <c>(long)wreck.Id.GetHashCode(StringComparison.Ordinal)</c>.</para>
     /// </summary>
     [Fact]
     public void NoWorldDecisionIsSeededOnAPerProcessHash()

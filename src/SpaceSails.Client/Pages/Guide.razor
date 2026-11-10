@@ -16,21 +16,12 @@
 
     <h2 id="scenarios">1. Choosing a voyage</h2>
     <ul>
-        <li><strong>Sol</strong> — the classic system. Learn to fly here.</li>
-        @* #938 D3b · Two bullets used to stand here advertising a "Join the crew" voyage: a shared live
-           session, a callsign, a min-warp rule, and the URL recipe &mp=1&callsign=YourName. None of it
-           exists. `git grep -n "multiplayer\|min-warp" -- src` returned those Guide lines and nothing else,
-           the home page has never offered such a voyage, and the boot's query reader (Map.Sim.World.Query)
-           has no `mp=` or `callsign=` key among the eighty-odd it does read. This guide's own opening
-           promises it "covers everything currently aboard", so the passage is gone rather than softened —
-           and nothing has been written in its place, because there is nothing to describe. *@
-        @* #323 · This used to say a voyage "loads STRAIGHT from a link", which is precisely the bug the
-           owner reported on 2026-07-18: a bookmarked /map?scenario=sol dropped a returning captain into
-           a brand-new life without ever offering the saves they had. A link names a SKY; it does not
-           decide that starting over is what you wanted. *@
-        <li>Any sky opens from a link: <code>/map?scenario=sol</code> — no home-page click needed. You still arrive at the <strong>logbook</strong>,
-            with Continue at the top and every banked berth listed; the link decides which world
-            <em>New voyage</em> would launch into.</li>
+        <li><strong>Sol</strong> — the one sky: the real solar system. Learn to fly here.</li>
+        @* #323 · A link must never skip the logbook: a bookmarked /map?scenario=sol once dropped a
+           returning captain into a brand-new life without offering the saves they had. *@
+        <li>Open <code>/map</code> from a link or the home page's Launch button. You arrive at the <strong>logbook</strong>,
+            with Continue at the top and every banked berth listed; <em>New voyage</em> starts a fresh life in Sol.
+            An old link that still carries <code>?scenario=…</code> lands in Sol as well.</li>
     </ul>
 
     <h2 id="duty-stations">2. The duty stations</h2>
@@ -452,8 +443,8 @@
     <h2 id="scope">13. The scope</h2>
     <ul>
         <li>The scope sits in the bottom-right corner of the Nav desk — a small instrument overlay:
-            auto-locks the nearest interesting contact, draws it (freighters, pods, players,
-            planets, the sun, plasma wisps), and reads out distance and relative speed.</li>
+            auto-locks the nearest interesting contact, draws it (freighters, pods, derelicts,
+            landmarks, planets, the sun), and reads out distance and relative speed.</li>
         <li><strong>◀ / ▶</strong> cycle targets manually; the middle button returns to
             <strong>AUTO</strong> (a set destination owns the scope as 🎯 DEST). For the tracked
             ledger with full target cards, see the Sensors desk (§9) instead.</li>

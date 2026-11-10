@@ -80,7 +80,7 @@ public partial class Map
     /// <summary>
     /// Her drive, and what is coming off it — and <b>the geometry is not here</b>. It is
     /// <see cref="BurnPlume"/> in Core, where a test can ask it questions; this is a pen that walks what
-    /// Core hands back and nothing else, the discipline <c>DrawDischarge</c> was built to.
+    /// Core hands back and nothing else.
     ///
     /// <para>Drawn every map frame while the window is open, paused included: the flash is on the wall
     /// clock, so a captain who hits pause the instant an automated burn fires still watches it fade. It is
@@ -101,7 +101,7 @@ public partial class Map
 
         // World Y is up, canvas Y is down (Camera.WorldToScreen flips it) — so the screen angle is the world
         // angle mirrored, and the flip lives HERE, once, at the one call that crosses from one to the other.
-        // The same rule DrawVelocityArrowhead and DrawDischarge obey.
+        // The same rule DrawVelocityArrowhead obeys.
         double thrustScreenRad = Math.Atan2(-_lastBurnDeltaV.Y, _lastBurnDeltaV.X);
 
         (double nozzleX, double nozzleY) = BurnPlume.Nozzle(thrustScreenRad);
