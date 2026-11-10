@@ -96,3 +96,15 @@
     box-shadow: 0 0.5rem 0 0 #0c0f16;
 }
 
+
+/* THE PINNED BUTTON'S SCRIM MUST REACH BOTH EDGES OF THE CARD. The family's foot scrim is a 12rem-spread
+   shadow cast from the button, which is 12rem plus the button's own width wide and no wider; this card is
+   42rem across and the button is a lone centred 134 px, so the lines of the tips list scrolled past on its
+   left and right in the band under the footnote ("wor…", "Th…", "firs…" showing beside "Boots on, then.",
+   found live at 1280 x 800). Spread it to the card's own maximum width instead, so the button's band is one
+   opaque block with the footnote above it. The offset EQUALS the spread, as in the family rule, so the
+   scrim starts at the button's own top edge and all of it falls below. */
+::deep .ground-lesson-card > .convergence-close,
+::deep .ground-grows-card > .convergence-close {
+    box-shadow: 0 42rem 0 42rem var(--card-foot-scrim, rgba(6, 8, 13, 0.94));
+}
