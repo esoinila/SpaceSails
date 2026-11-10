@@ -12,9 +12,9 @@
 # and for a sweep row the NAME of the field that appeared or disappeared. The report is what
 # a reviewer reads; this file is what CI compares against.
 #
-# SIX WORLDS × FIVE INPUT SEQUENCES — everything one frame after another writes on Pages.Map.
-# Taken on the PRE-SPLIT code (#870 lane 7c): the first twenty on b19ef16, the plasma world's four
-# on 04bb219, the warp slider's six on the commit that put the unsplit method back to capture them.
+# FIVE WORLDS × FIVE INPUT SEQUENCES — everything one frame after another writes on Pages.Map.
+# First taken on the PRE-SPLIT code (#870 lane 7c) as six worlds; the sixth (the Electric Universe)
+# was retired on 2026-11-09 and its five rows with it. Every row has been re-recorded since.
 # Probes: `stopped-at` and the thirty-eight named LEDGER readings say WHERE; `sweep` says NOTHING
 # ESCAPED (a count and a hash over every instance field of the page); `sweep roster` names those
 # fields one per row, so a field joining the page reddens by name; `walked-view pen` and
