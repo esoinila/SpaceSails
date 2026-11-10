@@ -40,6 +40,13 @@
          the taper column it was read off, so the function that printed it IS the function under test —
          copying it in here would only prove the copy agrees with itself. -->
     <Compile Include="..\..\labs\31-the-beanstalk\Beanstalk.cs" Link="Lab31\Beanstalk.cs" />
+    <!-- Lab-only physics: lives in the lab that prints it, linked here so its tests still hold the printed numbers. -->
+    <Compile Include="..\..\labs\29-the-harbor-pattern\ApproachCorridor.cs" Link="Lab29\ApproachCorridor.cs" />
+    <Compile Include="..\..\labs\35-the-push-that-isnt-a-push\ImpactArcFlash.cs" Link="Lab35\ImpactArcFlash.cs" />
+    <Compile Include="..\..\labs\27-the-getaway\PursuitOdds.cs" Link="Lab27\PursuitOdds.cs" />
+    <Compile Include="..\..\labs\49-the-paint-job\RockMassDriver.cs" Link="Lab49\RockMassDriver.cs" />
+    <Compile Include="..\..\labs\49-the-paint-job\LaserAblation.cs" Link="Lab49\LaserAblation.cs" />
+    <Compile Include="..\..\labs\49-the-paint-job\YarkovskyPaint.cs" Link="Lab49\YarkovskyPaint.cs" />
   </ItemGroup>
 
   <ItemGroup>

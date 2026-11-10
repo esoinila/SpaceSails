@@ -46,7 +46,7 @@ public static partial class HullSounding
     {
         ArgumentNullException.ThrowIfNull(compartments);
 
-        // Lab 44 probe D found the FIRST version of this wrong, which is exactly what the lab is for. It measured
+        // retired Lab 44 probe D found the FIRST version of this wrong, which is exactly what the lab is for. It measured
         // each room against the total overlap opposite it and then guessed where the shortfall sat — and guessed
         // both the END and the SIDE wrong: with NEAR HOLD's bulkhead moved four frames forward it pointed at
         // x −4…0 on the TOP side when the unaccounted space is x −15…−11 on the BOTTOM. A clue that names the

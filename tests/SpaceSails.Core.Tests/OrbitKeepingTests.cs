@@ -2,7 +2,7 @@ namespace SpaceSails.Core.Tests;
 
 /// <summary>
 /// Friday §0 (owner ruling): "armed auto-orbit ends in a KEPT orbit, not an achieved one." These
-/// tests pin the station-keeping contract Lab 25 measured and the game ships: keeping engages after
+/// tests pin the station-keeping contract retired Lab 25 measured and the game ships: keeping engages after
 /// a park, trims HOLD the orbit inside tolerance over a long propagation in the real N-body sim, the
 /// arm-time quote carries the trim rate, the tank running dry loses the orbit (the loud handback's
 /// backstop), and the status surface reads "AUTOPILOT HOLDS THE ORBIT", never "you have the ship".
@@ -119,7 +119,7 @@ public class OrbitKeepingTests
 
         Assert.True(el.Bound);
         // The energy is pinned to the PARK orbit, so a ≈ park despite trimming at 1.15× park radius —
-        // the fix for the deep-well semi-major-axis walk that crashed the naive re-circularize (Lab 25).
+        // the fix for the deep-well semi-major-axis walk that crashed the naive re-circularize (retired Lab 25).
         Assert.Equal(park, el.SemiMajorAxis, park * 0.02);
     }
 
@@ -133,7 +133,7 @@ public class OrbitKeepingTests
         var kept = FlyKeeping("enceladus", days: 6, pulseBudget: int.MaxValue);
         Assert.True(kept.Held, "keeping should hold the Enceladus orbit off the surface");
         Assert.True(kept.Trims > 0, "keeping must actually be firing trims to hold this park");
-        // The osculating periapsis dips toward the surface (Lab 25 measured ≈0.86 R) but the real
+        // The osculating periapsis dips toward the surface (retired Lab 25 measured ≈0.86 R) but the real
         // trajectory — Held above — never touches it; the tide never lets the extrapolation complete.
         Assert.True(kept.PeriMinR > 0.8, $"the kept orbit did not collapse to the ground (osc. peri min {kept.PeriMinR:F2} R)");
     }
@@ -173,7 +173,7 @@ public class OrbitKeepingTests
         CelestialBody titan = field.Bodies.First(b => b.Id == "titan");
         double tHill = OrbitRule.HillRadius(titan, SaturnMu);
         int tDay = OrbitKeepingTable.TrimPulsesPerDay(titan, tHill, SaturnMu, titan.OrbitRadius, BodyVel(field, "titan", 0).Length);
-        Assert.True(pDay > tDay, "Enceladus must quote a higher trim budget than Titan (Lab 25)");
+        Assert.True(pDay > tDay, "Enceladus must quote a higher trim budget than Titan (retired Lab 25)");
     }
 
     [Fact]

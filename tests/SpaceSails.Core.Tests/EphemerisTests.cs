@@ -12,7 +12,7 @@ public class EphemerisTests
         // Mercury Compute Farms, Highport Satellite Works, Europa/Ganymede/Callisto, Titan,
         // Enceladus, Ringside Exchange, plus the inner grey-market docks Cinder Roost (Venus),
         // The Space Bar (Mars) and The Tilt (Uranus) — the derelict roadster (go-ashore fetch job),
-        // and Selene Gate, the Luna-vicinity fuel port that closes Lab 28's stranded-at-Luna gap (#157).
+        // and Selene Gate, the Luna-vicinity fuel port that closes retired Lab 28's stranded-at-Luna gap (#157).
         // +Phobos (#164) +Miranda (#246, the shuttle-bury moon off The Tilt) +The Red Eye (Jupiter) and
         // +The Deep (Neptune) — the outer oases that close the Jupiter/Neptune pump deserts (#289).
         // +Triton (retrograde) off Neptune and +The Clinker off Venus — the two landing skerries that

@@ -8,7 +8,7 @@ namespace SpaceSails.Core.Tests;
 /// </summary>
 public class OrbitHoldTests
 {
-    // ── The hold clock: pulses ÷ the Lab 25 trim bill ──
+    // ── The hold clock: pulses ÷ the retired Lab 25 trim bill ──
 
     [Fact]
     public void HoldSeconds_IsPulsesOverTrimRate_InSimDays()
@@ -93,7 +93,7 @@ public class OrbitHoldTests
         // A long simulated excursion at the expensive park: the tank pays one trim per cadence tick.
         // Assert the ship stays out of Lost every tick a trim is still funded, walks the full ladder,
         // and reaches Lost only on the tick the pulses can no longer buy the next trim.
-        const int trimPulsesPerDay = 27;      // Enceladus, Lab 25
+        const int trimPulsesPerDay = 27;      // Enceladus, retired Lab 25
         const int trimsPerDay = 3;            // ~9 pulses/trim
         int pulsesPerTrim = trimPulsesPerDay / trimsPerDay;
         int tank = 90;                        // ~30 trims of runway

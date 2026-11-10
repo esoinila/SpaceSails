@@ -1,8 +1,8 @@
 namespace SpaceSails.Core.Tests;
 
 /// <summary>
-/// QA gates for Lab 30 — The mass-driver timetable (worldbuilding notes §1: Luna's drivers lob
-/// ballistic compute-core pods). See labs/30-the-mass-driver-timetable/README.md and Probe.cs.
+/// QA gates for retired Lab 30 — The mass-driver timetable (worldbuilding notes §1: Luna's drivers lob
+/// ballistic compute-core pods). See retired Lab 30 (removed 2026-11-10).
 /// Every gate exercises the SAME Core code the probe and the game spend with:
 /// <see cref="TransferMath.PropagateKepler"/> (the analytic rail) and <see cref="MassDriverSchedule"/>
 /// (launch state, timetable, cadence). The theme: a pod has zero maneuver budget, so its whole

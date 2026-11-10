@@ -22,13 +22,13 @@ namespace SpaceSails.Core;
 ///
 /// <para><b>The reserve floor is well-aware, not flat.</b> The #146 lesson is that a flat 18% of the
 /// tank (<see cref="AutopilotRehearsal.ReserveFraction"/>, ~45 p on the base tank) does not track the
-/// crawl: from a dry moon the nearest pump can be farther than the flat reserve (Lab 28 measures the
+/// crawl: from a dry moon the nearest pump can be farther than the flat reserve (retired Lab 28 measures the
 /// reach to Enceladus from a parked-at-Titan doorstep at ~77 p, above the 45 p flat floor). So the
 /// amber floor RIDES the reach: <c>SafeReserve = nearest-reach + flat 18% cushion</c>. When the ship
 /// is alongside a pump the reach is 0 and this collapses to the plain 18% amber of #166; out in the
 /// well it rises to include the fare home. The reach is priced live by the same
 /// <see cref="TransferPlanner"/> kernel the flight software spends with, so the alarm and the bill
-/// cannot drift; the reference red lines are documented in <c>labs/28-the-pump-crawl</c>.</para>
+/// cannot drift; the reference red lines are documented in <c>retired lab 28</c>.</para>
 ///
 /// <para><b>Parked at a dry moon.</b> The planner rightly refuses a departure from inside a moon's
 /// Hill sphere (a documented follow-up), so when the given state sits inside a non-pump moon's Hill,

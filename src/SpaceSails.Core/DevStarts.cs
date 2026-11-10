@@ -282,7 +282,7 @@ public static partial class DevStarts
             + "the cage, on the other face of the main corridor. Press E: it runs these four floors and it "
             + "does not climb out. Now walk to the other one and see how far that is (#801).",
             "/map?goodscar=1"),
-        // #841 / Lab 46 · WHAT A DRAW COSTS, ON THE ONE FLOOR THE QUESTION IS ABOUT. Lab 45 priced the SIM
+        // #841 / retired Lab 46 · WHAT A DRAW COSTS, ON THE ONE FLOOR THE QUESTION IS ABOUT. Lab 45 priced the SIM
         // side of #841 at 0.36% of a frame and closed with the half it could not reach: draw cost, which has
         // no headless path and which this repo's own law says may not be timed from an MCP-driven tab. So
         // the game carries its own stopwatch, and this is the button that arms it — pointed at B1, because

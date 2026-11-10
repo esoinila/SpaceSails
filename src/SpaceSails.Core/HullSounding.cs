@@ -101,7 +101,7 @@ public static partial class HullSounding
     /// </summary>
     public static bool Completed(double heldSeconds, Method method) => heldSeconds >= Seconds(method);
 
-    /// <summary>How many spots it takes to cover an area with one gear, at best packing. Used by Lab 44 and by
+    /// <summary>How many spots it takes to cover an area with one gear, at best packing. Used by retired Lab 44 and by
     /// the panel that tells a captain what a blind search would cost them.</summary>
     public static int SpotsToCover(Method method, double areaSquareDu)
     {

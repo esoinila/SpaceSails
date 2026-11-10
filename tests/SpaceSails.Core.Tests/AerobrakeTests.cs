@@ -27,7 +27,7 @@ public class AerobrakeTests
     [Fact]
     public void TheStranding_PropulsiveIsImpossible_ButTheHazePaysItInsideTheTank()
     {
-        // The owner's headline (Lab 32 §D): 42 propulsive (over 32 = impossible), the haze pays ~11 pulses
+        // The owner's headline (retired Lab 32 §D): 42 propulsive (over 32 = impossible), the haze pays ~11 pulses
         // down to a payable bridge that fits the tank. The corridor is CLOSED at 29.8 km/s — a hybrid, not solo.
         Aerobrake.Quote q = Aerobrake.Price(Uranus(UranusAtm), StrandVinf, Tank);
 
@@ -45,7 +45,7 @@ public class AerobrakeTests
     [Fact]
     public void ASlowArrival_ReopensANearFreeSoloCorridor()
     {
-        // Lab 32 §E: at a typical ~6 km/s Uranus arrival the corridor is OPEN — one survivable pass captures
+        // retired Lab 32 §E: at a typical ~6 km/s Uranus arrival the corridor is OPEN — one survivable pass captures
         // and free passes circularise, no bridge burn owed. Speed, not aim, is the gate.
         Aerobrake.Quote q = Aerobrake.Price(Uranus(UranusAtm), 6000, Tank);
 
@@ -72,7 +72,7 @@ public class AerobrakeTests
     [Fact]
     public void LandingAndAirlessWorlds_AreRefusedNoSkimAir()
     {
-        // Titan/Venus are landing atmospheres (Lab 32 §E) and an airless world has nothing to skim — the
+        // Titan/Venus are landing atmospheres (retired Lab 32 §E) and an airless world has nothing to skim — the
         // affordance must not offer at any of them.
         Assert.Equal(Aerobrake.Outcome.RefuseNoSkimAir, Aerobrake.Price(Uranus(TitanAtm), StrandVinf, Tank).Outcome);
         Assert.Equal(Aerobrake.Outcome.RefuseNoSkimAir, Aerobrake.Price(Uranus(atm: null), StrandVinf, Tank).Outcome);
@@ -147,7 +147,7 @@ public class AerobrakeTests
     [Fact]
     public void SolJson_NowCarriesTheSkimShells_ForTheGiantsEarthAndMars()
     {
-        // #290 ships Lab 32's proposed ice-giant + Mars shells so the aerobrake has air to brake against.
+        // #290 ships retired Lab 32's proposed ice-giant + Mars shells so the aerobrake has air to brake against.
         var scenario = TestTree.Sol;
         var eph = CircularOrbitEphemeris.FromScenario(scenario);
 

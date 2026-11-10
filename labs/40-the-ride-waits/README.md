@@ -128,7 +128,7 @@ transfer, not a trim. **That is the arm and the leg, and it is caused entirely b
    point in space is the expensive version of the same idea and buys nothing.
 2. **The quote can honestly read "free".** Arm-time should say so plainly: *"holding — the ship will be
    here when you get back."* No pulses/day figure is needed for the ordinary case, because there isn't
-   one. That is a nicer promise than the orbit keeper's *"trim ≈27 p/day"* (#193/Lab 25) and it is earned.
+   one. That is a nicer promise than the orbit keeper's *"trim ≈27 p/day"* (#193/retired Lab 25) and it is earned.
 3. **The failure mode to guard is the HAND-OFF, not the fuel.** Endurance is set almost entirely by how
    well the ship matched the wreck before the shuttle left. So the mode's real precondition is a match
    check at arm time — refuse to launch the away team while the relative velocity is large — rather than

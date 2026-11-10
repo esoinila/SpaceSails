@@ -3,7 +3,7 @@
   <!-- #852 · WHAT A FRAME COSTS. Owner, watching a single guard walk a corridor: "the guard seems to move
        somehow much more heavily than the reevers who we can have so many on the screen without slowdown."
 
-       This one references the CLIENT for the same reason Lab 44 does, and it is the whole point: the floor
+       This one references the CLIENT for the same reason retired Lab 44 does, and it is the whole point: the floor
        being timed has to be the floor the game generates — HiveInterior.FloorDeck, with its own
        DeckPlan.CollisionField and its own DeckPlan.CollisionSegments — because the question on trial is
        whether the difference between a guard and a Reever is WHICH OF THOSE TWO LISTS each one is handed.

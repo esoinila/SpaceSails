@@ -1,7 +1,7 @@
 namespace SpaceSails.Core;
 
 /// <summary>
-/// The per-body station-keeping table — the machine-readable artifact Lab 25 "The tide that takes
+/// The per-body station-keeping table — the machine-readable artifact retired Lab 25 "The tide that takes
 /// it back" measured and this game consumes (Friday §0). Each row is a moon's trim BUDGET, flown
 /// honestly in the real N-body sim: the Δv/day the parent's tide forces on a held 0.33-Hill park and
 /// how many trims a day the tolerance triggers, at <see cref="OrbitKeeping.TrimCadenceFraction"/>
@@ -10,7 +10,7 @@ namespace SpaceSails.Core;
 /// <see cref="OrbitKeeping.TrimPulsesPerDay"/>.
 ///
 /// <para><b>GENERATED — do not hand-edit.</b> The rows below are pasted verbatim from the Section C
-/// printout of <c>dotnet run --project labs/25-the-tide-that-takes-it-back -c Release</c>
+/// printout of <c>the retired Lab 25 printout</c>
 /// (2026-07-17 run). If the physics or the keeping constants change, rerun the lab and re-paste —
 /// never edit a number by hand (repo law: every number came from a probe that printed it).</para>
 ///
@@ -22,7 +22,7 @@ namespace SpaceSails.Core;
 /// </summary>
 public static class OrbitKeepingTable
 {
-    /// <summary>Measured keeping profiles by body id (Lab 25 Section C, 2026-07-17).</summary>
+    /// <summary>Measured keeping profiles by body id (retired Lab 25 Section C, 2026-07-17).</summary>
     public static readonly IReadOnlyDictionary<string, OrbitKeeping.KeepProfile> ByBody =
         new Dictionary<string, OrbitKeeping.KeepProfile>
         {
@@ -31,7 +31,7 @@ public static class OrbitKeepingTable
             ["titan"] = new("titan", 0.33, 77.13127658990058, 2.2827870216160395),
         };
 
-    /// <summary>The keeping profile for a body — the measured row if Lab 25 flew it, otherwise the
+    /// <summary>The keeping profile for a body — the measured row if retired Lab 25 flew it, otherwise the
     /// tide-acceleration estimate (<see cref="OrbitKeeping.EstimateProfile"/>) so the arm-time quote
     /// is never silent for a moon the lab never measured. Needs the body's Hill radius, its parent's
     /// gravitational parameter, and its distance from that parent.</summary>
@@ -42,7 +42,7 @@ public static class OrbitKeepingTable
 
     /// <summary>The trim budget in mass pulses per day for a parked ship, priced at its world
     /// (heliocentric) speed — the number the arm-time contract quotes ("trim ≈N p/day"). Measured
-    /// where Lab 25 flew the body; estimated otherwise.</summary>
+    /// where retired Lab 25 flew the body; estimated otherwise.</summary>
     public static int TrimPulsesPerDay(CelestialBody body, double hill, double parentMu, double parentDistance, double worldSpeed) =>
         OrbitKeeping.TrimPulsesPerDay(For(body, hill, parentMu, parentDistance), worldSpeed);
 }

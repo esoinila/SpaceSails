@@ -3,7 +3,7 @@ using SpaceSails.Contracts;
 namespace SpaceSails.Core;
 
 /// <summary>
-/// Luna's mass drivers, lobbing compute-core pods (worldbuilding notes §1; Lab 30 "The mass-driver
+/// Luna's mass drivers, lobbing compute-core pods (worldbuilding notes §1; retired Lab 30 "The mass-driver
 /// timetable"). A driver imparts its whole Δv at the instant of launch — the pod leaves the surface
 /// with a fixed speed in a fixed direction and NEVER thrusts again (<c>ManeuverBudget = 0</c>, empty
 /// plan). From that launch state it rides a pure two-body conic, so <see cref="TransferMath.PropagateKepler"/>
@@ -37,7 +37,7 @@ public static class MassDriverSchedule
         double LifespanSeconds)
     {
         /// <summary>A gentle inner-system Luna lob: fires twice a day, each pod good for 200 days on
-        /// the rails — the visible "milk run" cadence the map shows and Lab 30 measures.</summary>
+        /// the rails — the visible "milk run" cadence the map shows and retired Lab 30 measures.</summary>
         public static MassDriverRun LunaMilkRun(string cargo = "Compute cores", string destinationId = "venus") =>
             new("luna", cargo, destinationId, LaunchSpeed: 3200.0, AzimuthRad: Math.PI,
                 CadenceSeconds: 0.5 * Day, LifespanSeconds: 200 * Day);

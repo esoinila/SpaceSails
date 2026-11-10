@@ -6,15 +6,15 @@ namespace SpaceSails.Core;
 /// #290 — 🪂 AEROBRAKE: the ice giant's haze as a findable, PRICED arrival brake. The owner arrived at
 /// Uranus stranded (playtest 2026-07-17): 29.8 km/s relative, 32 pulses in the tank, the atmosphere right
 /// there. A pure-propulsive capture costs 42 pulses — flatly impossible on a 32-pulse tank — but the air
-/// pays ~11 of them, dropping the burn to a payable 31. This module turns Lab 32's printed physics
-/// (labs/32-aerocapture-at-the-ice-giant) into an honestly-quoted third way to pay the arrival bill,
+/// pays ~11 of them, dropping the burn to a payable 31. This module turns retired Lab 32's printed physics
+/// (the retired labs/32 lab) into an honestly-quoted third way to pay the arrival bill,
 /// beside the propulsive insertion (<see cref="LongHaul.SolveInsertion"/>) and the warn-and-coast.
 ///
 /// <para><b>One physics, no forked model.</b> Every number is MEASURED by flying real passes through the
 /// exact Core drag the game already uses (<see cref="Simulator.RunAdaptiveWithDrag"/> / drag report), in a
 /// planet-centred (body-at-origin) frame so the two-body energy is clean. Drag depends only on speed
 /// RELATIVE to the air, so this frame is Galilean-identical to the live sim where the shell translates with
-/// the planet's rail — Lab 33 proves the very campaign converges under the live n-body integrator.</para>
+/// the planet's rail — retired Lab 33 proves the very campaign converges under the live n-body integrator.</para>
 ///
 /// <para><b>The honest trade.</b> A hyperbolic arrival gets ONE periapsis pass. Below a critical arrival
 /// speed a single survivable (≤ 3 g) pass captures to a bound orbit and free tightening passes circularise
@@ -38,14 +38,14 @@ public static class Aerobrake
     /// <see cref="Atmosphere.SailHoleDecelG"/> = 3 g. A pass at or above it holes the sail.</summary>
     public const double GBudgetG = Atmosphere.SailHoleDecelG;
 
-    /// <summary>The skim / landing split (Lab 32 Section E). Thick shells — Titan (5.3 kg/m³), Venus
+    /// <summary>The skim / landing split (retired Lab 32 Section E). Thick shells — Titan (5.3 kg/m³), Venus
     /// (65) — grab any entering pass only at brutal g: they are LANDING atmospheres, not brakes. The
     /// giants (~1×10⁻⁵), Earth (1.2) and Mars (0.02) sit below this line and give a gentle skim corridor.
     /// One documented threshold, so an aerobrake affordance offers only where a captain can actually skim.</summary>
     public const double LandingAtmosphereDensityThreshold = 2.0;
 
     /// <summary>Once bound, the free tightening campaign is flown at most this many passes before the
-    /// quote hands off to a small circularisation trim (Lab 32 C2 needed 5). Bounds the quote's flying.</summary>
+    /// quote hands off to a small circularisation trim (retired Lab 32 C2 needed 5). Bounds the quote's flying.</summary>
     public const int MaxTighteningPasses = 12;
 
     /// <summary>An aerobrake that would save fewer than this many pulses over the propulsive brake is not
@@ -55,7 +55,7 @@ public static class Aerobrake
 
     /// <summary>Below this hyperbolic-excess speed (m/s) the arrival is effectively already captured — there
     /// is nothing to brake, so the quote is moot. This is the CAPTURE floor (a near-parabolic arrival), NOT
-    /// the dock clamp speed: a 6 km/s v∞ Uranus arrival is genuinely hyperbolic and wants braking (Lab 32's
+    /// the dock clamp speed: a 6 km/s v∞ Uranus arrival is genuinely hyperbolic and wants braking (retired Lab 32's
     /// Section E corridor), so the floor sits far below the 8 km/s <see cref="DockRule.MatchSpeed"/>.</summary>
     public const double MinExcessSpeed = 300.0;
 
@@ -98,7 +98,7 @@ public static class Aerobrake
     /// <param name="AerobrakePulses">The aerobrake's own bill: the bridge burn (0 on a solo capture).</param>
     /// <param name="PulsesSaved">Pulses the haze pays — <see cref="PropulsivePulses"/> − <see cref="AerobrakePulses"/>.</param>
     /// <param name="PassesNeeded">Total passes: the capture/bridge pass plus the free tightening passes.</param>
-    /// <param name="TighteningPasses">Free bound passes that circularise after capture (Lab 32 C2 ≈ 5).</param>
+    /// <param name="TighteningPasses">Free bound passes that circularise after capture (retired Lab 32 C2 ≈ 5).</param>
     /// <param name="PeakG">Peak drag deceleration of the priced pass, in g (the hull load taken).</param>
     /// <param name="PeakDynamicPressurePa">Peak dynamic pressure — the heat proxy a thermal model would read.</param>
     /// <param name="PriceBasisSpeed">The world speed the pulses are priced against (periapsis speed).</param>
@@ -130,7 +130,7 @@ public static class Aerobrake
 
     /// <summary>A single-body, body-at-origin pinned sim (parentId null + orbitPeriod 0 pins the body at
     /// the origin with zero rail velocity), so v_rel is just the ship's velocity and the two-body energy is
-    /// clean — the same rig Lab 32's probe and QA gates fly. One physics: the live drag, isolated.</summary>
+    /// clean — the same rig retired Lab 32's probe and QA gates fly. One physics: the live drag, isolated.</summary>
     private static Simulator PinnedSim(double mu, double radius, Atmosphere atmosphere) =>
         new(new CircularOrbitEphemeris([new CelestialBody("b", "b", null, mu, radius, 0, 0, 0, Atmosphere: atmosphere)]),
             timeStepSeconds: 1.0);
@@ -147,7 +147,7 @@ public static class Aerobrake
     }
 
     /// <summary>Incoming BOUND state on the ellipse with the given periapsis and apoapsis (seeds the free
-    /// tightening campaign from a just-captured wide orbit — Lab 32 C2's symmetry trick).</summary>
+    /// tightening campaign from a just-captured wide orbit — retired Lab 32 C2's symmetry trick).</summary>
     private static ShipState BoundArrival(double mu, double rStart, double rPeri, double rApo)
     {
         double a = (rPeri + rApo) / 2.0;
@@ -174,7 +174,7 @@ public static class Aerobrake
     /// <summary>One flown pass: from an above-shell entry, down through periapsis, until the ship climbs
     /// back above the shell top (measured, so a captured pass is never double-counted). The trapped-orbit
     /// guard (a bound orbit whose apoapsis stays below the shell top can never climb clear — a landing, not
-    /// a capture) ends the pass as a crash. Identical to Lab 32's probe/QA FlyPass.</summary>
+    /// a capture) ends the pass as a crash. Identical to retired Lab 32's probe/QA FlyPass.</summary>
     private readonly record struct PassResult(
         ShipState Post, double PeakDecel, double DvShed, double PeakDynamicPressure, double MinAltitude, bool Crashed);
 
@@ -271,7 +271,7 @@ public static class Aerobrake
         }
 
         // The bill, priced at the periapsis speed of the priced pass (the speed a capture burn actually
-        // fires at) — the same OrbitRule.PulsesFor kernel the autopilot spends with, matching Lab 32 §D.
+        // fires at) — the same OrbitRule.PulsesFor kernel the autopilot spends with, matching retired Lab 32 §D.
         double rPeriPriced = R + bestFreeAltKm * 1000.0;
         double vPeri = Math.Sqrt(arrivalVinf * arrivalVinf + 2 * mu / rPeriPriced);
         double vEscPeri = Vesc(mu, rPeriPriced);
@@ -310,7 +310,7 @@ public static class Aerobrake
             bestFreeG, bestFreeQ, vPeri);
     }
 
-    /// <summary>Fly Lab 32 C2's free tightening campaign once bound (a just-captured wide orbit at a gentle
+    /// <summary>Fly retired Lab 32 C2's free tightening campaign once bound (a just-captured wide orbit at a gentle
     /// periapsis) and count the passes until the apoapsis is tight enough to hand to a small circularisation
     /// trim. Each next entry is reconstructed from the exit orbit's energy + |h| exactly (the symmetry trick),
     /// so the long coast between passes is skipped, not approximated. Bounded by <see cref="MaxTighteningPasses"/>.</summary>
