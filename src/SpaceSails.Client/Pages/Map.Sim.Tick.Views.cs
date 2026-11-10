@@ -324,7 +324,7 @@ public partial class Map
     // — off the rAF loop, on its own yield — leaves the live loop warm.
     private void DrawWalkFrame()
     {
-        // #841 / retired Lab 46 · the draw-cost probe's outer bracket, and it is a LOCAL rather than a field —
+        // #841 / Lab 46 · the draw-cost probe's outer bracket, and it is a LOCAL rather than a field —
         // #905's frame ledger sweeps every field of this component into a pinned hash, and a wall-clock
         // stamp is the one kind of reading that cannot be in it. Null unless ?perf=1 armed the probe;
         // DeckView.Draw closes the bracket. What this catches that Draw alone cannot is the surface HUD

@@ -350,7 +350,7 @@ public partial class Map
         _scopeView = new ScopeView(new CanvasRenderer(ScopeCanvasId));
         _deckView = new DeckView(_renderer!);
 
-        // #841 / retired Lab 46 · ?perf=1 ARMS THE DRAW-COST PROBE, and it is read HERE rather than into BootQuery
+        // #841 / Lab 46 · ?perf=1 ARMS THE DRAW-COST PROBE, and it is read HERE rather than into BootQuery
         // for two reasons. It changes nothing about the world — no body, no berth, no cheat — so it has no
         // business in the holder that pins what the parse ANSWERED; and it belongs to the one object it
         // arms, which is built on the line above. What it costs when nobody asked for it is a null check

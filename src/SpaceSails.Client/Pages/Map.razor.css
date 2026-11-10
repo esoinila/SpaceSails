@@ -248,7 +248,7 @@
     cursor: grabbing;
 }
 
-/* #841 / retired Lab 46 · THE DRAW-COST LINE. Present only under ?perf=1, but a dev instrument is still text a
+/* #841 / Lab 46 · THE DRAW-COST LINE. Present only under ?perf=1, but a dev instrument is still text a
    human has to read off a phone-sized screen at a glance, so it keeps #782's law rather than pleading dev:
    its OWN near-opaque ground (never the hall painting behind the canvas), a real font size above the 14 px
    floor, and a halo on top of that because the numbers are what is being read. It wraps rather than

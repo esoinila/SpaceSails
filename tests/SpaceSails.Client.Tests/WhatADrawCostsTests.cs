@@ -12,7 +12,7 @@ using Xunit;
 namespace SpaceSails.Client.Tests;
 
 /// <summary>
-/// #841 / retired Lab 46 · THE DRAW-COST PROBE TIMES THE CODE IT SAYS IT TIMES.
+/// #841 / Lab 46 · THE DRAW-COST PROBE TIMES THE CODE IT SAYS IT TIMES.
 ///
 /// <para>Lab 45 closed #841's sim half at 0.36% of a frame and left the draw half open, because there is no
 /// headless path to a canvas and a timing read out of an MCP-driven tab is invalid here by standing law.
@@ -243,7 +243,7 @@ public sealed class WhatADrawCostsTests
             // p95 ≤ max, and mean ≤ max. NOT mean ≤ p95: one cold first frame (a JIT warm-up here, a
             // shader compile or a GC in a browser) sits above the 95th percentile and drags the mean over
             // it, which is a real property of the data and not a broken percentile. It is worth knowing
-            // that it happens — retired Lab 46's recipe says to read the means, and this is the shape of the tail
+            // that it happens — Lab 46's recipe says to read the means, and this is the shape of the tail
             // that can move one.
             if (r.P95Ms > r.MaxMs + 1e-9 || r.MeanMs > r.MaxMs + 1e-9)
             {
@@ -266,7 +266,7 @@ public sealed class WhatADrawCostsTests
     // ── LAW 3 · THE CONSOLE LINE IS THE CONTRACT ───────────────────────────────────────────────────────
 
     /// <summary>
-    /// The owner's whole workflow is: open the tab, walk about, copy the console into retired Lab 46's table. So the
+    /// The owner's whole workflow is: open the tab, walk about, copy the console into Lab 46's table. So the
     /// block is emitted once per full window, one line per row plus a header, and every line matches the
     /// exact regex the lab's recipe tells him to grep for.
     /// </summary>
