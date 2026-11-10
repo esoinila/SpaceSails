@@ -96,7 +96,7 @@ public static partial class KaamosLore
 
     /// <summary>The ledger's state line — where this thread stands and what would move it. The countdown
     /// counts down to the GATE, not to the pool.</summary>
-    public static string LedgerProgressLine(KaamosProgress progress, double? simTime = null, bool alongside = false, bool runFiled = true)
+    public static string LedgerProgressLine(KaamosProgress progress, double? simTime = null, bool alongside = false, bool runFiled = true, bool runSignedFor = false)
     {
         ArgumentNullException.ThrowIfNull(progress);
         if (progress.Count == 0 && progress.BerthFilingBounced)
@@ -107,7 +107,7 @@ public static partial class KaamosLore
         if (CanReachEnceladus(progress))
         {
             // #1405 R1-F10: the line follows the real window once the caller can say what time it is.
-            return simTime is { } now ? ReachLedgerLineAt(now, alongside, runFiled) : ReachLedgerLine;
+            return simTime is { } now ? ReachLedgerLineAt(now, alongside, runFiled, runSignedFor) : ReachLedgerLine;
         }
 
         if (HasEnoughIntelToEarnTheKey(progress))
@@ -242,6 +242,10 @@ public static partial class KaamosLore
         "❄ The berth-code is entered and the ice-moon berth is listed to your hull. The cycler window is " +
         "real and not yet open — there is nothing to do now but hold the berth and wait for it.";
 
+    /// <summary>R1-F99 · The pulse when the berth settles the KAAMOS supply run: no counter, no hand.</summary>
+    public static string SupplyRunSettledLine(int reward) =>
+        $"❄ The berth signs for the consignment. No hand takes it. The manifest line flips to RECEIVED, and {reward:N0} cr clears to your hull from an account nobody has drawn on in a lifetime.";
+
     /// <summary>#1444 · The window is OPEN and no run is filed: the arc is here, and it takes a run, not a passenger.</summary>
     public const string ReachLedgerLineOpenNoRun =
         "❄ The berth-code is entered and the ice-moon berth is listed to your hull. The cycler window is open — " +
@@ -252,9 +256,14 @@ public static partial class KaamosLore
     /// <see cref="CyclerWindow"/> instead of saying "not yet open" at every hour. A line that changes at
     /// the window's edge is the mark that the edge was crossed. Alongside the ice the berth is simply
     /// reached.</summary>
-    public static string ReachLedgerLineAt(double simTime, bool alongside, bool runFiled = true)
+    public static string ReachLedgerLineAt(double simTime, bool alongside, bool runFiled = true, bool runSignedFor = false)
     {
         const string Listed = "❄ The berth-code is entered and the ice-moon berth is listed to your hull. ";
+        if (alongside && runSignedFor)
+        {
+            return Listed + "She is alongside the ice and the run is signed for. The listing reads FILLED.";
+        }
+
         if (alongside)
         {
             return Listed + "She is alongside the ice.";

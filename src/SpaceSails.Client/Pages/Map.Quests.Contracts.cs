@@ -348,6 +348,8 @@ public partial class Map
             {
                 AdvanceMission(q, QuestState.Complete, q.Kind == QuestKind.Favor
                     ? $"Quiet parcel delivered to {q.TargetCallsign} — the favor's worked off. 📡"
+                    : q.Id == KaamosLore.SupplyRunQuestId
+                    ? KaamosLore.SupplyRunSettledLine(q.Reward)
                     : $"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
             }
             // #223: a fetch-a-cache job pays when the DUG chest is carried back to the giver's bar.
@@ -446,6 +448,8 @@ public partial class Map
             {
                 AdvanceMission(q, QuestState.Complete, q.Kind == QuestKind.Favor
                     ? $"Quiet parcel delivered to {q.TargetCallsign} — the favor's worked off. 📡"
+                    : q.Id == KaamosLore.SupplyRunQuestId
+                    ? KaamosLore.SupplyRunSettledLine(q.Reward)
                     : $"Parcel delivered to {q.TargetCallsign} — {q.Reward:N0} cr on the counter. 📦");
                 delivered = true;
             }

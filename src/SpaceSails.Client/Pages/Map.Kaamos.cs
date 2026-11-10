@@ -189,7 +189,7 @@ public partial class Map
             lines.Add($"{(f.IsKey ? "❄❄" : "◆")} {f.Title} — {KaamosLore.LedgerLoreFor(f, _kaamos)}");
         }
 
-        lines.Add(KaamosLore.LedgerProgressLine(_kaamos, SimTime, KaamosShipIsAlongsideTheIce(), KaamosRunFiled));
+        lines.Add(KaamosLore.LedgerProgressLine(_kaamos, SimTime, KaamosShipIsAlongsideTheIce(), KaamosRunFiled, KaamosRunSignedFor));
 
         return new Stations.Captain.LedgerTip(
             KaamosLore.LedgerHeadline(_kaamos), lines.ToArray(), "the sealed ice-moon mystery",

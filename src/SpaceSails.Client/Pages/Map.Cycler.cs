@@ -42,6 +42,9 @@ public partial class Map
     private bool KaamosRunFiled =>
         _quests.Any(q => q.Id == KaamosLore.SupplyRunQuestId && q.State != QuestState.TurnedIn);
 
+    private bool KaamosRunSignedFor =>
+        _quests.Any(q => q.Id == KaamosLore.SupplyRunQuestId && q.State == QuestState.TurnedIn);
+
     /// <summary>Has this universe ever been handed the run? (Filed, delivered or otherwise — the offer is
     /// made once.)</summary>
     private bool KaamosRunEverTaken => _quests.Any(q => q.Id == KaamosLore.SupplyRunQuestId);
