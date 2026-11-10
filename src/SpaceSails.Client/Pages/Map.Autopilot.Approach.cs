@@ -238,7 +238,7 @@ public partial class Map
                 BurnFired(insertCharge, _ship.Velocity - beforeTheInsertion);
                 // Friday §0 (owner ruling): "armed auto-orbit ends in a KEPT orbit, not an achieved
                 // one." The park is NOT a handback — the autopilot stays in command and now STATION-KEEPS
-                // the orbit (holds it with trims, priced from Lab 25). _armedOrbitBodyId stays set to the
+                // the orbit (holds it with trims, priced from retired Lab 25). _armedOrbitBodyId stays set to the
                 // kept body; _orbitKept flips keeping on. The transfer/approach machinery is done, so its
                 // budget/schedule/plan-path clear, but keeping owns the ship until the captain disarms
                 // (double-confirm) or the tank runs dry (a loud handback). Never "you have the ship" while

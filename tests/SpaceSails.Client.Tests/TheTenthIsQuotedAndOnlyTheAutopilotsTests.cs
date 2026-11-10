@@ -26,7 +26,7 @@ namespace SpaceSails.Client.Tests;
 /// <item><b>EVERY AUTOPILOT BURN CHARGES THROUGH THE ACCUMULATOR, AND NOTHING ELSE DOES.</b> The three
 /// autopilot burn sites (the #146 transfer impulse, the approach burn, the insertion) take what they
 /// subtract from <c>AutopilotRehearsal.ChargeForBurn</c>; the two hand-spent sites in the same file (the
-/// captain's ⏎ orbital insertion, and a station-keeping trim, which is quoted from Lab 25 and paid in
+/// captain's ⏎ orbital insertion, and a station-keeping trim, which is quoted from retired Lab 25 and paid in
 /// full) do not. RED by charging a hand-pressed insertion at the tenth.</item>
 /// <item><b>A MANUAL PULSE COSTS ONE.</b> The captain's own reflex burn is still <c>_reactionMassPulses--</c>,
 /// and no file that spends the tank by hand — the pulse key, the plotted burns, the skim and the sling,

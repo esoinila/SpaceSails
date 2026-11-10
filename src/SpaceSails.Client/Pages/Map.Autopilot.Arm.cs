@@ -209,7 +209,7 @@ public partial class Map
             _autopilotStandDownReason = null;
 
             // Friday §0: the park will be KEPT, so quote the trim budget at arm time (honest pricing —
-            // "trim ≈N p/day" on top of the transfer). Lab 25's per-body table, priced at the target's
+            // "trim ≈N p/day" on top of the transfer). retired Lab 25's per-body table, priced at the target's
             // world (heliocentric) speed ≈ the parked ship's. Only for a real orbit-able moon (μ>0); a
             // μ=0 station is never orbit-kept.
             _keepTrimPulsesPerDay = 0;

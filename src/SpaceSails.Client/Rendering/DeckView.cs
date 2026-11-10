@@ -264,7 +264,7 @@ public sealed partial class DeckView
     private readonly DeckPlan.Droid[] _droids = new DeckPlan.Droid[DeckPlan.MaxDroids];
     private readonly float[] _scratch = new float[32];
 
-    // #841 / Lab 46 · THE STOPWATCH, AND IT IS NULL. Everything the draw-cost probe knows lives on this one
+    // #841 / retired Lab 46 · THE STOPWATCH, AND IT IS NULL. Everything the draw-cost probe knows lives on this one
     // object, and it does not exist unless ?perf=1 asked for it: every mark site in the conductor is
     // `_perf?.Mark(…)`, so an unarmed build pays one null check per pass and never reads a clock. It hangs
     // HERE rather than on the Map component on purpose — see FramePerf's own note on #905's frame ledger.

@@ -91,7 +91,7 @@ public sealed partial class DeckView
         //    a wall drawn after a room label paints over the label, and a plate drawn before the fan's
         //    smudges hides a contact heard through a wall. The snapshot guard pins this list.
         //
-        //    #841 / Lab 46 · …AND IT IS ALSO THE SEAM A CLOCK GOES ON. One timestamp after each pass, so a
+        //    #841 / retired Lab 46 · …AND IT IS ALSO THE SEAM A CLOCK GOES ON. One timestamp after each pass, so a
         //    pass's cost is the gap to the one before it. `_perf` is null unless ?perf=1 armed it, the
         //    names are LITERALS (a pass renamed without its mark is red — see FramePerf.Mark), and a pass
         //    behind an `if` is marked OUTSIDE the `if` on purpose: "the ship's dressing cost nothing on

@@ -20,7 +20,7 @@ namespace SpaceSails.Client.Pages;
 /// <summary>
 /// Friday §0 · A KEPT ORBIT, AND THE CAPTAIN'S OWN INSERTION — owner ruling: <i>"armed auto-orbit ends
 /// in a KEPT orbit, not an achieved one."</i> The autopilot holds the park with trim burns and quotes
-/// the trim budget out of Lab 25.
+/// the trim budget out of retired Lab 25.
 ///
 /// <para>Trims are CONSIDERED once every quarter park period rather than every tick — riding the
 /// tide's reversible forced eccentricity instead of fighting it, which is the lab's treadmill. There
@@ -36,7 +36,7 @@ namespace SpaceSails.Client.Pages;
 public partial class Map
 {
     // Friday §0: STATION-KEEPING — the autopilot holds the park with trim burns (OrbitKeeping, budgets
-    // from Lab 25). Runs every tick while _orbitKept, but only CONSIDERS a trim once every quarter park
+    // from retired Lab 25). Runs every tick while _orbitKept, but only CONSIDERS a trim once every quarter park
     // period (OrbitKeeping.TrimCadenceFraction) — riding the tide's reversible forced eccentricity
     // instead of fighting it every tick (the lab's treadmill). Two ways out, both loud: the captain
     // disarms (ToggleArmedInsertion's #179 double-confirm), or the tank can't afford the next trim —
@@ -68,8 +68,8 @@ public partial class Map
 
         // #928: a keeping trim is NOT economized. The tenth is the price of an APPROACH — the fine
         // trajectory a hand cannot fly — while the kept orbit's trims are quoted honestly and separately
-        // from Lab 25's per-body table ("trim ≈N p/day") and spent in full, so OrbitHold's "holds for N
-        // days" and the tank keep telling the same story (the Lab 25 law is untouched).
+        // from retired Lab 25's per-body table ("trim ≈N p/day") and spent in full, so OrbitHold's "holds for N
+        // days" and the tank keep telling the same story (the retired Lab 25 law is untouched).
         int cost = OrbitKeeping.TrimPulseCost(_ship, bodyPos, bodyVel, body, park);
         // (b) the tank running dry — the LOUD handback (Friday §0). Reuse the escalating degradation
         // surface as the BACKSTOP, not the defense: keeping can no longer hold, so hand back loudly and

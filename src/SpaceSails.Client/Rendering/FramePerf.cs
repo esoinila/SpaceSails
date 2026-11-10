@@ -4,7 +4,7 @@ using System.Globalization;
 namespace SpaceSails.Client.Rendering;
 
 /// <summary>
-/// #841 / Lab 46 · WHAT A DRAW COSTS — the stopwatch the walked view carries when, and only when, it is
+/// #841 / retired Lab 46 · WHAT A DRAW COSTS — the stopwatch the walked view carries when, and only when, it is
 /// asked to.
 ///
 /// <para><b>Why this exists.</b> Lab 45 measured the SIM side of #841 to the microsecond and closed with a
@@ -44,7 +44,7 @@ public sealed class FramePerf
     /// furnished room changes the number while you are still standing in it.</summary>
     public const int Window = 120;
 
-    /// <summary>The one greppable prefix. The owner copies the console straight into Lab 46's table, so the
+    /// <summary>The one greppable prefix. The owner copies the console straight into retired Lab 46's table, so the
     /// shape of this line is a contract and the guard next door parses it.</summary>
     public const string Tag = "[perf]";
 
@@ -207,7 +207,7 @@ public sealed class FramePerf
         return new Reading(sum / n, sorted[Math.Clamp(p95, 0, n - 1)], sorted[n - 1], n);
     }
 
-    /// <summary>The exact block the owner copies out of the console and into Lab 46's table. One line per
+    /// <summary>The exact block the owner copies out of the console and into retired Lab 46's table. One line per
     /// row, fixed shape, never localised — three decimals is a microsecond, which is finer than the browser
     /// clock can resolve and therefore leaves nothing of the reading on the floor.</summary>
     public IReadOnlyList<string> TheConsoleBlock()

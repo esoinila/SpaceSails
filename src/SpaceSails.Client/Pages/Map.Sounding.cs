@@ -4,7 +4,7 @@ using SpaceSails.Core;
 namespace SpaceSails.Client.Pages;
 
 /// <summary>
-/// #537 · THE SEARCH, ON THE DECK. The arithmetic is <see cref="HullSounding"/> and Lab 44; this is the standing
+/// #537 · THE SEARCH, ON THE DECK. The arithmetic is <see cref="HullSounding"/> and retired Lab 44; this is the standing
 /// still, the racket, and the plate coming off.
 ///
 /// <para><b>The loop, in the owner's own order.</b> He asked for <i>"a combi of detect tool that scans on timer
@@ -25,7 +25,7 @@ public sealed partial class Map
     private HullSounding.HiddenVoid? _hullVoid;
 
     /// <summary>Whether the paper this hull lies in has been read. The clue is a DOCUMENT — until somebody
-    /// opens the right one, there is nothing to compare the wall to, and the search is the blind one Lab 44
+    /// opens the right one, there is nothing to compare the wall to, and the search is the blind one retired Lab 44
     /// priced at 22 rackets.
     ///
     /// <para>#537 slice 3 · It is no longer only the manifest. Three papers can carry the lie now
@@ -97,7 +97,7 @@ public sealed partial class Map
         _sounding = (_avatarX, _avatarY, 0);
         ShowPulseMessage(HullSounding.WorkingLine(SoundingGear));
 
-        // THE NOISE IS MADE AT THE START, not on completion. Lab 44's finding is that the noise is the teeth of
+        // THE NOISE IS MADE AT THE START, not on completion. retired Lab 44's finding is that the noise is the teeth of
         // this mechanic, and a captain who begins a sounding and thinks better of it has still hit the plating.
         MakeNoiseAboard(_avatarX, _avatarY, HullSounding.Earshot(SoundingGear));
         RendererInterop.PlayCue("board");

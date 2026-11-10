@@ -144,12 +144,12 @@ public partial class Map
 
     // ---- Friday §0 (owner ruling): "armed auto-orbit ends in a KEPT orbit, not an achieved one."
     // When the autopilot inserts, it does NOT hand the ship back — it enters STATION-KEEPING for
-    // _armedOrbitBodyId: holding the park with trim burns (OrbitKeeping, budgets from Lab 25) until
+    // _armedOrbitBodyId: holding the park with trim burns (OrbitKeeping, budgets from retired Lab 25) until
     // the captain deliberately disarms (the #179 double-confirm) or the tank runs dry (a LOUD
     // handback, after which the #180 degradation alert is the backstop). The status reads "AUTOPILOT
     // HOLDS THE ORBIT", never "you have the ship", expressed through FlightPlanStatus. ----
     private bool _orbitKept;                              // parked and now station-keeping _armedOrbitBodyId
-    private int _keepTrimPulsesPerDay;                    // Lab 25 trim budget quoted at arm time / at park
+    private int _keepTrimPulsesPerDay;                    // retired Lab 25 trim budget quoted at arm time / at park
     private double _keepNextCheckTime;                    // sim-time of the next trim-cadence check
     private int _keepTrimsFired;                          // trims spent this keeping session (diagnostic/ledger)
     // #220: the next trim is affordable — recomputed every tick keeping is active (CheckArmedInsertion's
