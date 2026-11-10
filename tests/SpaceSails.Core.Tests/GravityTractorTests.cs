@@ -4,7 +4,7 @@ namespace SpaceSails.Core.Tests;
 /// #395 — LAB 37, THE SLOW HAND. Pins the gravity-tractor Core math the lab certifies: the feeble tow
 /// a = G·m_ship/d² (independent of the rock's mass), the continuous-tow miss = 1.5·a·T², the headline
 /// lead-time-to-clear-Ringside (years, not days — the early-detection lesson), the √mass scaling that
-/// says the slow hand can't be muscled, and the hover thrust that ties it to Lab 25's station-keeping.
+/// says the slow hand can't be muscled, and the hover thrust that ties it to retired Lab 25's station-keeping.
 /// </summary>
 public class GravityTractorTests
 {

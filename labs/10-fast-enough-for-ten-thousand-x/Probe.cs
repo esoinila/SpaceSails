@@ -12,7 +12,7 @@
 //     client to "~1 fps at 10000x warp." The fix — TrafficSchedule.NpcTimeStep = 60 s — got it
 //     back to 53-57 fps. Section A reproduces the *mechanism* of that story on this machine.
 //   - M19 (commit 63b06de): RunAdaptive's 60 s quanta measured "9,969 sim-s per real-s at
-//     10000x" headless in sol-eu. That number came from a full game loop (rendering-free
+//     10000x" headless (a historical measurement, on a sky since retired). That number came from a full game loop (rendering-free
 //     browser/server run, Debug WASM even slower per this repo's own notes); Section A's numbers
 //     come from a bare native Release console loop, so they are NOT the same measurement — they
 //     are reported honestly as "a dev machine, native Release," and only the *relative* shape
@@ -125,8 +125,8 @@ Console.WriteLine();
 
 Console.WriteLine("=== Reproducing the M5 war story: fps at warp 10000x, single player ship ===");
 Console.WriteLine("(M5's own number: NPCs at dt=1s -> ~1 fps at 10000x; NpcTimeStep=60 -> 53-57 fps.");
-Console.WriteLine(" M19's own number: 9,969 sim-s/real-s at 10000x, measured headless in sol-eu with");
-Console.WriteLine(" plasma + full traffic in the browser/server loop — a very different, heavier");
+Console.WriteLine(" M19's own number: 9,969 sim-s/real-s at 10000x, measured headless in M19's day on a");
+Console.WriteLine(" since-retired sky with full traffic in the browser/server loop — a very different, heavier");
 Console.WriteLine(" measurement than this bare native console loop. Numbers below are THIS machine,");
 Console.WriteLine(" native Release, one ship, no rendering — reported honestly, not as a repro of 9,969.)");
 Console.WriteLine();

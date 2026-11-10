@@ -5,7 +5,7 @@ namespace SpaceSails.Core;
 /// the owner's playbook (#395): instead of ramming the rock (<see cref="KineticImpactor"/>, lab 36), towing it
 /// (<see cref="GravityTractor"/>, lab 37) or drilling a charge (<see cref="DeflectionGig"/>, lab 35), you LAND
 /// a mass-driver rig and throw the asteroid's OWN mass overboard as reaction propellant. The rock becomes both
-/// the ship and the fuel — the Luna mass-driver canon (<see cref="MassDriverSchedule"/>, lab 30) turned on the
+/// the ship and the fuel — the Luna mass-driver canon (<see cref="MassDriverSchedule"/>, retired lab 30) turned on the
 /// threat itself: the away-mission rig hauls up a bucket-thrower and a reactor, and every tonne of regolith it
 /// flings off the far side kicks the rest a little farther from Ringside.
 ///
@@ -27,12 +27,12 @@ public static class RockMassDriver
     // ─────────────────────────────────────────────────────────────────────────────────────────────
     //  THE RIG — a bucket-thrower and its reactor, landed on the rock. The exhaust velocity is the speed it
     //  flings the rock's own regolith; the throughput is how fast it can feed the driver. Both LAB-REPRESENTATIVE
-    //  / OWNER-TUNABLE — a rock rig is a more modest cousin of Luna's 3.2 km/s pod driver (lab 30).
+    //  / OWNER-TUNABLE — a rock rig is a more modest cousin of Luna's 3.2 km/s pod driver (retired lab 30).
     // ─────────────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>The driver muzzle speed (m/s) — the velocity the rig flings the rock's own mass off the far
     /// side, i.e. the effective exhaust velocity of the rocket equation. A modest rock rig; Luna's compute-pod
-    /// driver (lab 30) throws at ~3.2 km/s. OWNER-TUNABLE.</summary>
+    /// driver (retired lab 30) throws at ~3.2 km/s. OWNER-TUNABLE.</summary>
     public const double ExhaustVelocityMetersPerSecond = 2500.0;
 
     /// <summary>A reference rig throughput (kg/s) — how much regolith the driver flings per second at full feed.

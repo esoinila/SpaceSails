@@ -1,13 +1,13 @@
 namespace SpaceSails.Core.Tests;
 
 /// <summary>
-/// QA gates for <see cref="FuelReachability"/> — Lab 28 "The pump crawl" (#146/#157/#166), the
+/// QA gates for <see cref="FuelReachability"/> — retired Lab 28 "The pump crawl" (#146/#157/#166), the
 /// service that answers "from where I am, with the pulses I have, can I still reach a fuel pump?".
 /// Lab-gate style: inline system factories, invariant BANDS and structural invariants not exact
 /// probe numbers, every assert independent of the probe (the lesson's prose can evolve without
 /// touching these). The Saturn system is the sol.json subset (Saturn parentless at the origin +
 /// Titan + the Enceladus haven + the Ringside station-haven); the Earth system is Earth + Luna +
-/// the LEO Highport station. See labs/28-the-pump-crawl/README.md and Probe.cs for the lesson.
+/// the LEO Highport station. See retired Lab 28 for the lesson (removed 2026-11-10).
 /// </summary>
 public class FuelReachabilityTests
 {
@@ -227,7 +227,7 @@ public class FuelReachabilityTests
     [Fact]
     public void G12_SeleneGate_ClosesTheLunaStrandedGap_InTheRealSolScenario()
     {
-        // #157 / Lab 28's recommendation, implemented: the sol.json Selene Gate (an Earth-well fuel port
+        // #157 / retired Lab 28's recommendation, implemented: the sol.json Selene Gate (an Earth-well fuel port
         // co-orbiting with Luna) turns the "stranded at Luna" verdict into a finite, reachable pump.
         var eph = CircularOrbitEphemeris.FromScenario(TestTree.Sol);
         var sim = new Simulator(eph, timeStepSeconds: 60);

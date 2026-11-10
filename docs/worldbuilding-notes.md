@@ -1,8 +1,8 @@
 # Worldbuilding notes — themes waiting for their milestone
 
 *Captured 2026-07-03 from the project owner. Nothing here is scheduled; this is the pantry to
-pull from when content is needed — M6 (economy/piracy loop), M7 (Electric Universe layer),
-M8 (Wheel of the World scenario), M10 (polish/onboarding text). Plotting mode is the heart of
+pull from when content is needed — M6 (economy/piracy loop), (M7 Electric Universe layer and M8 Wheel
+of the World scenario were retired 2026-11-09: one sky, Sol), M10 (polish/onboarding text). Plotting mode is the heart of
 the game — where space-captains earn their salt — and world content should feed it, not
 distract from it.*
 
@@ -26,8 +26,8 @@ distract from it.*
 - Game hooks: an NPC class that ignores the traffic board entirely (no departure entry — the
   board is a *human* institution), extremely old ephemeris-stable orbits, and sensor behavior
   that doesn't match SensorModel expectations (e.g. they see *you* through sun glare). Mystery
-  encounters, not combat. Possibly the in-fiction source of scenario B's "Wheel of the World"
-  cosmology (M8): the Wheel is how the ancients describe the sky.
+  encounters, not combat. (The Wheel of the World scenario this once seeded was retired 2026-11-09; the
+  ancients' old-sky stories can live in lore alone.)
 
 ## 3. Mercury's polar craters — the compute capital
 

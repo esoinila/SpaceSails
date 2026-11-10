@@ -73,7 +73,7 @@ foreach (double m in new[] { 1.0e4, 5.0e4, 1.0e5, 5.0e5, 1.0e6 })
 }
 Console.WriteLine();
 
-// ---- Section D: the HOVER bill (Lab 25 tie) ------------------------------------------------------
+// ---- Section D: the HOVER bill (retired Lab 25 tie) ------------------------------------------------------
 Console.WriteLine("=== Section D: the HOVER bill — station-keeping so the tug doesn't fall in (the Lab-25 tie) ===");
 Console.WriteLine("To hover, the tug must thrust to cancel the ROCK's pull on IT: F = m_ship·G·M_rock/d². Tiny force,");
 Console.WriteLine("but sustained for the whole multi-year tow — the slow hand's cost is DURATION, not Δv.");
@@ -91,5 +91,5 @@ foreach (RockType t in types)
 Console.WriteLine();
 Console.WriteLine("GAMEPLAY HOOK enabled: a gravity-tractor gig variant that REWARDS EARLY DETECTION — arrive years");
 Console.WriteLine("ahead and a gentle hover saves the port for zero collision risk; arrive late and the slow hand is");
-Console.WriteLine("useless (the cannonball or the drilled charge is your only option). It also composes with Lab 25:");
+Console.WriteLine("useless (the cannonball or the drilled charge is your only option). It also composes with retired Lab 25:");
 Console.WriteLine("the hover IS station-keeping, a standoff held instead of a park.");

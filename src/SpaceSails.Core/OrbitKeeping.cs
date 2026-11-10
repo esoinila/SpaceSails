@@ -7,7 +7,7 @@ namespace SpaceSails.Core;
 /// the tide-stable band and strips over hours (the owner's stranded Enceladus ship, #180). Keeping
 /// holds the park with periodic TRIM burns — re-circularizing at the current radius the moment the
 /// tide has pumped the eccentricity past a tight tolerance — priced in pulses like every assisted
-/// burn. The tolerance and the per-body trim BUDGET come from Lab 25 "The tide that takes it back",
+/// burn. The tolerance and the per-body trim BUDGET come from retired Lab 25 "The tide that takes it back",
 /// measured honestly in the real N-body sim, not guessed.
 ///
 /// <para>The trim burn is exactly <see cref="OrbitRule.Insert"/> — the same circularization the
@@ -17,14 +17,14 @@ namespace SpaceSails.Core;
 public static class OrbitKeeping
 {
     /// <summary>Re-circularize once the parent's tide has pumped the two-body eccentricity past this.
-    /// Lab 25's drift sweep: at Enceladus/Luna/Titan a 0.02 band holds the whole orbit inside the
+    /// retired Lab 25's drift sweep: at Enceladus/Luna/Titan a 0.02 band holds the whole orbit inside the
     /// tide-stable zone over a 30-day propagation while keeping trims rare (a few per day at most).
     /// Tighter wastes pulses on noise; looser lets the apoapsis reach the chaotic band between trims.</summary>
     public const double TrimEccentricity = 0.02;
 
     /// <summary>How often keeping CONSIDERS a trim, as a fraction of the local park period. The
     /// parent's tide forces a bounded eccentricity that reverses every orbit; correcting it on every
-    /// tick pays for motion the tide would undo for free (Lab 25's treadmill). Checking once every
+    /// tick pays for motion the tide would undo for free (retired Lab 25's treadmill). Checking once every
     /// ~quarter park period lets the reversible oscillation reverse itself, so the ship pays for the
     /// SECULAR drift alone — dramatically cheaper, and still far finer than the drift timescale.</summary>
     public const double TrimCadenceFraction = 0.25;
@@ -77,7 +77,7 @@ public static class OrbitKeeping
     /// <paramref name="parkRadius"/> via vis-viva: v = √(μ(2/r − 1/park)). This is the crucial
     /// difference from a naive re-circularize-at-current-radius: pinning the energy to the PARK
     /// orbit stops the semi-major axis random-walking into the surface when trims fire off-radius —
-    /// the deep-well failure Lab 25 measured (at Enceladus, re-circularizing at the current radius
+    /// the deep-well failure retired Lab 25 measured (at Enceladus, re-circularizing at the current radius
     /// crashed the ship; pinning a=park holds it). At the park radius it is exactly the circular
     /// insert; off it, the current radius becomes an apsis of a park-sized orbit that oscillates
     /// back, so the residual eccentricity stays bounded by the radial offset |r−park|/park.</summary>
@@ -115,7 +115,7 @@ public static class OrbitKeeping
     public static ShipState Trim(ShipState ship, Vector2d bodyPos, Vector2d bodyVel, CelestialBody body, double parkRadius) =>
         ship with { Velocity = TrimVelocity(ship, bodyPos, bodyVel, body, parkRadius) };
 
-    /// <summary>The measured station-keeping demand of one body's park (Lab 25). Frame-independent
+    /// <summary>The measured station-keeping demand of one body's park (retired Lab 25). Frame-independent
     /// physics: the tide's Δv/day and how many trims a day it forces. Pulses/day is derived from these
     /// at the ship's real world speed by <see cref="TrimPulsesPerDay"/>, because a pulse buys Δv as a
     /// fraction of heliocentric speed and a park deep in a giant's well rides fast.</summary>
@@ -145,18 +145,18 @@ public static class OrbitKeeping
     /// physics that drives the whole keeping bill (m/s²): a_tide ≈ 2·μ_parent·r / D³, the gradient of
     /// the parent's pull over the park radius <paramref name="parkRadius"/> at the moon's distance
     /// <paramref name="parentDistance"/> from its parent of gravitational parameter
-    /// <paramref name="parentMu"/>. Used by <see cref="EstimateProfile"/> to price bodies Lab 25 never
+    /// <paramref name="parentMu"/>. Used by <see cref="EstimateProfile"/> to price bodies retired Lab 25 never
     /// measured, and printed in the lab as the calibration axis.</summary>
     public static double TideAcceleration(double parkRadius, double parentMu, double parentDistance) =>
         parentDistance > 0 ? 2 * parentMu * parkRadius / (parentDistance * parentDistance * parentDistance) : 0;
 
-    /// <summary>Dimensionless calibration constant fitting <see cref="EstimateProfile"/> to Lab 25's
+    /// <summary>Dimensionless calibration constant fitting <see cref="EstimateProfile"/> to retired Lab 25's
     /// three measured moons: TrimDvPerDay ≈ Ktide · a_tide · 86400. Set to the mean Ktide the lab
     /// printed (Section C, 2026-07-17 run: 2.004). Only the fallback for un-measured bodies leans on
     /// it; the moons that ship today (Enceladus/Luna/Titan) quote from the measured table.</summary>
-    public const double TideBudgetConstant = 2.0; // mean Ktide, Lab 25 — see OrbitKeepingTable
+    public const double TideBudgetConstant = 2.0; // mean Ktide, retired Lab 25 — see OrbitKeepingTable
 
-    /// <summary>A physics estimate of a body's keeping demand for bodies Lab 25 never measured — the
+    /// <summary>A physics estimate of a body's keeping demand for bodies retired Lab 25 never measured — the
     /// honest fallback so the arm-time quote is never silent. Δv/day scales with the tide the parent
     /// raises across the park (<see cref="TideAcceleration"/>), calibrated by
     /// <see cref="TideBudgetConstant"/>; trims/day is derived from the tolerance and the park period.</summary>

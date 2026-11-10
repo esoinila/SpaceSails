@@ -67,8 +67,8 @@ public static class AutopilotRehearsal
     /// for the docs, the labs and the diagnostics.</para>
     ///
     /// <para><b>Not economized:</b> the kept orbit's station-keeping trims. Those are quoted separately
-    /// and honestly from Lab 25's per-body table ("trim ≈N p/day") and spent in full — the tenth is the
-    /// price of an APPROACH, and the Lab 25 law (auto-orbit ends in a KEPT orbit, held until you disarm
+    /// and honestly from retired Lab 25's per-body table ("trim ≈N p/day") and spent in full — the tenth is the
+    /// price of an APPROACH, and the retired Lab 25 law (auto-orbit ends in a KEPT orbit, held until you disarm
     /// or the tank runs dry) reads off an unchanged trim budget.</para>
     /// </summary>
     public const int EconomyFactor = 10;

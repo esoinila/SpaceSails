@@ -29,13 +29,6 @@ flowchart TB
     end
 
     Browser -.ships as static assets via.-> Pipeline
-
-    subgraph Archived["Archived (archive/SpaceSails.Server)"]
-        direction TB
-        ASPNET["ASP.NET Core host"] --> Hub["GameHub (SignalR)"]
-        Hub --> Session["SessionHost\nauthoritative session, one sim tick,\nper-player sensor-filtered broadcasts"]
-        Session --> Core
-    end
 ```
 
 Three projects carry the weight (`SpaceSails.slnx`):
@@ -47,8 +40,7 @@ Three projects carry the weight (`SpaceSails.slnx`):
   design — see [Why WebAssembly](#why-webassembly) below. The three biggest generators here are
   partial classes split by department, not single files —
   see [Where the code lives](#where-the-code-lives--the-families).
-- **`src/SpaceSails.Contracts`** — DTOs and scenario models (`Scenario.cs`,
-  `Multiplayer.cs`) shared by anything that talks to Core or the (archived) hub.
+- **`src/SpaceSails.Contracts`** — the scenario models (`Scenario.cs`) shared by anything that talks to Core.
 - **`src/SpaceSails.Client`** — the Blazor WASM app. `Pages/Map.razor` is the single host page
   (`@page "/map"`, 765 lines of markup after #251 cut the rest into 98 surfaces under `Pages/Map/`,
   19 more under `Pages/Map/NavHud/` and 10 under `Pages/Map/SatchelPanel/` — the two surfaces that
@@ -74,14 +66,10 @@ The publish pipeline (`.github/workflows/pages.yml`) runs `dotnet publish
 src/SpaceSails.Client -c Release`, patches `index.html` for the `SpaceSails-play` subpath and
 cache-busts the stylesheets, then force-pushes `publish/wwwroot` as the entire `main` branch of
 the public `esoinila/SpaceSails-play` repo, which serves GitHub Pages from it. The source repo
-stays private; the built repo is the only public artifact. See
-[archive/README.md](../archive/README.md) for why it's a force-push to a separate repo rather
-than Pages-from-this-repo (Pages doesn't serve private repos on the plan this project is on).
+stays private; the built repo is the only public artifact. It is a force-push to a separate repo rather
+than Pages-from-this-repo because Pages doesn't serve private repos on the plan this project is on.
 
-The archived path — `archive/SpaceSails.Server` (`GameHub.cs`, `SessionHost.cs`) — is an
-ASP.NET Core host that serves the same client plus a SignalR hub over an authoritative
-`SessionHost`. It isn't part of the default build or CI; see
-[archive/README.md](../archive/README.md) for what's there and how to bring it back.
+The old multiplayer host (an ASP.NET Core server with a SignalR hub and an authoritative `SessionHost`) was deleted on 2026-11-10 with the rest of the archive; it lives in git history.
 
 ## Where the code lives — the families
 
@@ -231,7 +219,7 @@ into a floating card left no room to actually read it. See
 
 This is a design discussion, not a build sheet — nothing here is implemented.
 
-The archived server (`archive/SpaceSails.Server/SessionHost.cs`) already solved the hard parts
+The old archived server (`SessionHost`, since deleted — see git history) already solved the hard parts
 of one flavor of multiplayer: one authoritative session, one sim tick, 2-8 pirates. Two
 properties carry over directly:
 
@@ -282,7 +270,7 @@ archived server already leaned on.
 
 `SpaceSails.Core` is a plain .NET class library referenced by both the WASM client
 (`SpaceSails.Client.csproj`) and, when resurrected, the ASP.NET server
-(`archive/SpaceSails.Server`) — one integrator, one source of truth for orbital mechanics,
+(the long-deleted `SpaceSails.Server`) — one integrator, one source of truth for orbital mechanics,
 traffic, and encounter rules, running unmodified on both sides. That's the actual reason for
 choosing Blazor WebAssembly over, say, a JS/canvas frontend talking to a thin API: the
 simulation itself ships as browser code, not just a client for someone else's simulation.

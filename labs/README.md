@@ -9,8 +9,8 @@ lab equipment; you are not reading about orbital mechanics, you are running it.
 
 Standard physics is presented as standard, with Curtis, *Orbital Mechanics for Engineering
 Students*, as the reference the lab talks to by chapter. Wherever a lesson strays into the
-game's fictional cosmology (mass drivers, ancients' pyramid satellites, the Electric Universe
-layer), it says so plainly — **in this house we compute both, and we label which is which.**
+game's fictional cosmology (mass drivers, ancients' pyramid satellites, the retired Electric Universe
+speculation), it says so plainly — **in this house we compute both, and we label which is which.**
 The lab's honesty is the whole brand: every number printed in every lesson's `README.md` came
 from actually running that lesson's probe. If you change a probe's code, its numbers go stale
 — rerun it and re-paste, never hand-edit a table.
@@ -30,7 +30,6 @@ dotnet run --project labs/07-hill-spheres-and-bus-stops -c Release
 dotnet run --project labs/08-seeing-through-uncertainty -c Release
 dotnet run --project labs/09-what-the-rails-hide -c Release
 dotnet run --project labs/10-fast-enough-for-ten-thousand-x -c Release
-dotnet run --project labs/12-oops-at-the-moon -c Release
 dotnet run --project labs/13-shooting-literally -c Release
 dotnet run --project labs/14-two-points-and-a-clock -c Release
 dotnet run --project labs/15-the-long-passage -c Release
@@ -42,20 +41,13 @@ dotnet run --project labs/20-the-long-goodbye -c Release
 dotnet run --project labs/22-the-air-brake -c Release
 dotnet run --project labs/23-the-moon-run -c Release
 dotnet run --project labs/24-the-last-mile -c Release
-dotnet run --project labs/25-the-tide-that-takes-it-back -c Release
 dotnet run --project labs/27-the-getaway -c Release
-dotnet run --project labs/28-the-pump-crawl -c Release
 dotnet run --project labs/29-the-harbor-pattern -c Release
-dotnet run --project labs/30-the-mass-driver-timetable -c Release
 dotnet run --project labs/31-the-beanstalk -c Release
-dotnet run --project labs/32-aerocapture-at-the-ice-giant -c Release
-dotnet run --project labs/33-aerobrake-in-the-live-loop -c Release
 dotnet run --project labs/34-the-unclickable-lifeline -c Release
 dotnet run --project labs/35-the-push-that-isnt-a-push -c Release
 dotnet run --project labs/36-the-cannonball -c Release
 dotnet run --project labs/37-the-slow-hand -c Release
-dotnet run --project labs/38-the-rock-that-mines-itself -c Release
-dotnet run --project labs/39-the-long-knife -c Release
 dotnet run --project labs/49-the-paint-job -c Release
 ```
 
@@ -150,10 +142,6 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     performance war stories, reproduced honestly on a dev machine: `RunAdaptive`'s real per-call
     cost, one ship vs. the game's actual 23-NPC roster, and the determinism constraint
     (byte-identical below warp 100) verified rather than asserted.
-12. [**Oops at the Moon**](12-oops-at-the-moon/README.md) 🌙 — the finale: the one lesson that
-    un-rails a body. A velocity kick to Luna's orbit (the game's own ±% pulse mechanic, by
-    accident), integrated as a genuine free body — departs, degrades, or spirals in, computed
-    honestly. (Its former `oops.json` playable aftermath was retired 2026-11-09.)
 13. [**Shooting, literally**](13-shooting-literally/README.md) 🎖 — the encore: the firing
     solution as a boundary value problem, solved by the shooting method — Newton over launch
     bearing and charge, every residual flown through the real integrator (the war room's
@@ -238,17 +226,6 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     cheaper-vs-sooner trade table (the "heat on us" tactic); `--viz` draws the phasing loop with the
     direct hop and the legacy chase as toggleable groups.
 
-25. [**The tide that takes it back**](25-the-tide-that-takes-it-back/README.md) — the lesson where
-    the autopilot learns to KEEP an orbit, not just reach one. The owner auto-parked at Enceladus and
-    watched the orbit quietly die. Swept in the live N-body field: Luna and Titan have a stable park
-    core out to ~0.5 Hill, but **Enceladus has none** — its Hill sphere is only 3.8 body radii, so the
-    0.33-Hill park sits at 1.24 R and Saturn's tide forces e≈0.3, crashing an unkept orbit within half
-    a day (the owner's stranded ship, from first principles). Then the keeping bill: a park-radius-pinned
-    trim on a quarter-period cadence (fighting the tide every tick is a treadmill — 332 trims/day — but
-    riding its reversible oscillation pays only the secular drift) holds Enceladus for **27 pulses/day**,
-    Luna for **2**, Titan for **3**, each priced in the game's own pulses. The three measured rows become
-    `OrbitKeeping`/`OrbitKeepingTable` in Core; the armed autopilot now quotes the trim budget at arm time
-    and holds the park until the captain disarms or the tank runs dry.
 26. **The soft arrival** — *reserved* (Titan aerocapture as an arrival mode; composes labs 22 + 23).
 27. [**The getaway**](27-the-getaway/README.md) — the lesson where the wolves get an honesty contract.
     The game already flags `CaughtPlayer`, but PR-BUSTED's RESIST/RUN dice want real odds. Flown through
@@ -265,17 +242,6 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     six-lap bus — the owner's cheaper-sooner tradeoff. Ships `PursuitOdds` in Core: a pure query mapping
     a chase geometry to the honest chance-class (and dice modifier) of each escape — the seam the BUSTED
     pop-up reads. `--viz` draws one sling escape (whip past Jupiter) and one juke (stale the intercept).
-28. [**The pump crawl**](28-the-pump-crawl/README.md) — the lesson where the ship learns to ask *can I
-    still refuel?* before the tank answers for it (#146/#157/#166). Depots ride the rails at planets,
-    stations and havens but **never at an ordinary moon**, so Titan and Luna are dry. Priced with the
-    game's own `TransferPlanner` and pulse kernel, the reach to the nearest pump is **29 pulses** from
-    a parked-at-Titan doorstep (Ringside) or **77** to the always-there haven (Enceladus) — the reliable
-    reach already **exceeds the flat 45-p / 18% autopilot reserve**, the #146 starve in one number. The
-    red line per region: **27–29 p** in the Saturn well, **infinite at Luna** (its only depot host is a
-    LEO station the 5 km/s capture cap can't match — a real gap for #157). Ships a Core service,
-    `FuelReachability.Assess`, that returns a well-aware verdict — Comfortable / Thin / CannotReachAPump —
-    for the #166 banner and 🦜 parrot squawk; the amber floor `reach + 18%` rides the crawl instead of a
-    flat fraction the well outgrows.
 29. [**The harbor pattern**](29-the-harbor-pattern/README.md) — the lesson where the ship learns what
     a safe arrival looks like. The owner kept landing WRONG: in orbit "by luck" at Enceladus (#180),
     stuck near a station with no way to deliver (#175). Two harbor doors, measured by flying a spread of
@@ -288,17 +254,6 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     OnPattern/Hot/Missed + next-gate query — the seam the banner NEXT row (#159) and the #160 tutorial
     narration speak. `--viz` draws the Enceladus corridor: a textbook fall coiling into a park beside a
     botched one punching through.
-30. [**The mass-driver timetable**](30-the-mass-driver-timetable/README.md) — the lesson where the
-    owner's canon (Luna's mass drivers lobbing compute-core pods) becomes measured physics. A pod has
-    zero maneuver budget — the driver gives it everything at launch — so its whole future is a
-    closed-form Kepler conic, a rail (`TransferMath.PropagateKepler`). Above the **2.376 km/s** lunar
-    escape floor, a **retrograde** lob of ~2.6 km/s drops perihelion into Venus's lane, and ~**7.6 km/s**
-    threads perihelion to **0.373 AU** — the showpiece long shot to the Mercury compute yards; prograde
-    lobs climb toward Mars. The repeating cadence (`MassDriverSchedule`) is a bus timetable read off the
-    rail — half the pods always already in flight. The tactical punchline, priced with the game's own
-    `OrbitRule.PulsesFor`: a pod is cheapest at the launch end — **loiter-and-match near Earth for ~3.5
-    km/s (12 pulses)** vs a full Venus chase at **5202 m/s (17 pulses)**; chase it mid-dive and you buy
-    the transfer yourself. `--viz` draws the launch fan off Luna over the inner system.
 31. [**The beanstalk**](31-the-beanstalk/README.md) — the owner asked for "a space elevator somewhere
     where materials stress would not be an issue", and the answer is one exponential over six bodies:
     `taper = exp(dPhi / (sigma/rho))`. Everybody who says the elevator is science fiction is quoting
@@ -313,31 +268,7 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     above it *and* to this README's copy — flip the threshold and four gates go red. The flagship, by
     a rule stated before the data (buildable from stock material, most propellant saved): **Luna**, at
     **2,421 m/s = 1,163 kg of propellant per tonne shipped**, eight times the next candidate — the
-    same moon that already flings pods by mass driver in lab 30. Two launch industries, one rock.
-32. [**Aerocapture: the ice giant's haze is the free brake**](32-aerocapture-at-the-ice-giant/README.md) —
-    the lesson where the owner arrives at Uranus stranded (29.8 km/s relative, 32 pulses) and asks if the
-    air can stop him. Reusing lab 22's Core drag unchanged, the corridor is measured against arrival
-    *speed*: **300 km wide at 4 km/s, ~20 km at 16 km/s, then CLOSED above ~16 km/s** — the stranding at
-    29.8 is nearly double critical, so no single pass both captures and survives 3 g. The honest campaign:
-    a hyperbolic arrival gets **one** pass, so a pure air campaign can't even begin; the 3 g pass sheds
-    **4 km/s free** and you bridge the remaining **11.3 km/s** propulsively — and once bound, five free
-    passes drop the apoapsis **60 → 1.4 R_U** for zero fuel. In game units the punch lands: a pure-propellant
-    capture is **42 pulses (impossible on 32)**; the haze pays **11**, bringing it to **31 — one pulse
-    inside the tank**. The which-worlds table sorts the system by a single `grab g`: the giants, Earth and
-    Mars **PLAY** (gentle sub-g corridors); Titan (**12.8 g**) and Venus (**310 g**) are landing
-    atmospheres, not skim atmospheres — the first flight of the sol.json Titan/Venus shells for capture.
-    Proposes Uranus/Neptune/Mars shells and feeds a future AEROBRAKE step (#262/PR-D1).
-33. [**Aerobrake in the LIVE loop**](33-aerobrake-in-the-live-loop/README.md) — Lab 32 printed the physics in
-    a clean pinned frame; this flies the same Core drag in the **live n-body sim** (Sun pinned, Uranus on its
-    real orbit at ~6.8 km/s, its atmosphere translating with it) to prove the #290 aerobrake affordance before
-    the button ships. The shipped quote `Aerobrake.Price` reproduces Lab 32's headline to the pulse
-    (**42 propulsive / 31 air-assisted / 11 saved, corridor closed**); the free tightening campaign
-    **converges under the real integrator** (apoapsis strictly falls, pass after pass); a Galilean check shows
-    the moving atmosphere sheds the **exact** Δv the pinned frame did (Δ = 0.00 m/s) — the pinned lab was
-    honest. It also surfaces one refinement the energy accounting glossed: the live at-periapsis bridge runs a
-    few pulses dearer than the quote (~13 vs 11.3 km/s), because only the pre-periapsis half of the free shed
-    precedes the capture burn — flagged for the owner's quote calibration.
-
+    same moon that already flings pods by mass driver (the retired lab 30). Two launch industries, one rock.
 34. [**The unclickable lifeline**](34-the-unclickable-lifeline/README.md) — the lab that measures the
     *UI* the way the others measure physics, because "the rescue-me button was barely clickable when we
     ran out of power… this problem keeps biting us." Whether a control buried in a ~15-layer overlay
@@ -361,8 +292,8 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     charge), Zubrin's C/S/M drill (9.8/14/22.4 s) and ablation efficiency (1.2/1.0/0.7), the honest geometry
     where a periapsis raise of ΔR yields a miss of *exactly* ΔR on the real Kepler rail, and the heroic
     payout bands (12k/6k/floor). Then the honest science the movie skips — DART proved a loose rock's ejecta
-    AMPLIFIES the push (β≈3.6), so the eager C-type over-delivers — and the game's Electric-Universe
-    impact-flash model (`ImpactArcFlash`, ⚡ flagged non-mainstream): the conductive M-type arcs hardest
+    AMPLIFIES the push (β≈3.6), so the eager C-type over-delivers — and the retired Electric-Universe
+    impact-flash model (`ImpactArcFlash`, now lab-only, ⚡ flagged non-mainstream): the conductive M-type arcs hardest
     (2.5× a pure-kinetic flash), owner's 500 A × 22 kV ≈ 11 MW arc-melter reference.
 36. [**The cannonball**](36-the-cannonball/README.md) — the kinetic impactor, priced honestly at REAL
     city-killer sizes (the gig's on-map rock is a 4000 km camera abstraction; a real one is 50 m – 1 km).
@@ -379,22 +310,6 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     only as √mass — the slow hand can't be muscled, only started early. Ties to lesson 25: the hover is
     station-keeping (a standoff held instead of a park, priced as a few newtons sustained for years). Enables
     a gravity-tractor variant that rewards early detection — the owner's favourite lesson, in hard numbers.
-38. [**The rock that mines itself**](38-the-rock-that-mines-itself/README.md) — the mass driver ON the rock: land
-    a rig and throw the asteroid's OWN mass off the far side, the rock as both ship and fuel (the Luna
-    mass-driver canon, lesson 30, turned on the threat). The rocket equation Δv = v_ex·ln(M0/M_final) says the
-    FRACTION you must fling is a rounding error (**0.0127 %** to clear a rock with a year's warning) but the
-    absolute mass is not: **~3,900 t** for a 140 m rock, **~1.4 million t** for a 1 km one. At a 20 kg/s rig
-    that's **~2.3 days** of throwing for the 140 m rock — but the 1 km rock needs **>2 years**, longer than the
-    warning (the honest negative), and the reactor draws **62.5 MW**. Enables a "land a driver and eat the rock"
-    multi-visit engineering gig — no ammunition to haul, reusable, and (like the tractor) it rewards early
-    detection.
-39. [**The long knife**](39-the-long-knife/README.md) — laser / standoff ablation: a big laser boils the rock
-    from a distance, the vaporised jet is the thrust, nothing ever lands. Two honest limits — diffraction (spot
-    ≈ d·λ/D, intensity ∝ 1/d², so standoff is CHEAP: a 1 MW rig reaches **~1,683 km**) and momentum coupling
-    (F = C_m·P, so thrust is bought in megawatts). The headline: continuous ablation (miss = 1.5·a·T², lesson
-    37's leverage) clears a 140 m rock in **~3.5 years at 1 MW**, **~0.35 years (130 days) at 100 MW** — clear
-    time falls as 1/√P, so the technique is POWER-gated. Enables an upgrade-gated late-game "standoff laser"
-    variant: the deflection you earn by investing in a reactor, honest that thrust, not reach, is the wall.
 40. [**The ride waits**](40-the-ride-waits/README.md) — boardable derelicts need an autopilot that holds the
     ship at shuttle range while the away team is inside, or it leaves without them (issue #488). The lab asked
     what that costs and **changed the feature's design**: a *fixed-offset* hold near a body is a different
@@ -415,40 +330,16 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     reproduces the original bug so the guard is proved to be capable of failing. It earned its keep on its
     first run by catching a console standing on top of a bulkhead. Wired into CI as `WreckLayoutTests`.
 
-42. [**One atmosphere, however many rooms it's in**](42-one-atmosphere/README.md) — a breadth-first flood
-    across open doors, so a pump prices what it will ACTUALLY empty. Written after the owner read my pump
-    rules back to me and they were wrong: I had a per-room interlock, a special case for the corridor and a
-    refusal if any hatch stood open, and *"the only check we need is to make sure we don't evacuate a room
-    by accident of leaving its door open."* Three rules wearing different clothes. The lab shows the graph on
-    two rooms and a corridor, prices the same press three ways as one hatch opens (**50s → 140s → 240s**),
-    and then EXHAUSTS the ship: eight hatches is 256 configurations, so partition, symmetry and isolation
-    are not sampled but proved — with the volume count falling out **binomial**, C(8,k), which is the model
-    checking its own arithmetic. Also draws the trap that hid a real charge leak all evening: a room's whole
-    50s run starts *below* the corridor's 72s rough mark, so measuring one against the other never throws —
-    it silently never fires. The lesson: *a rule written as its answer stops being true the day the geometry
-    moves.* Wired into CI as `HullVentingTests`.
-
 > **43 and 44 were shared by two labs each, and are not any more (#664).** The branches `main` and
 > `our-own-ship-has-compartments` ran apart for a day and each numbered its next two labs the same way; the
 > reunification merge (#633) kept **all four**, because a lab that is deleted is a measurement that has to be
 > paid for twice, and asked people to cite them by directory in the meantime. That was a workaround, not a
 > fix — some forty shipping comments say "Lab 43" or "Lab 44" and each of them pointed at two labs. The tie
 > is broken by **chronology**, which is what the numbers have always meant here: `43-the-sharpest-point`
-> (2026-07-30, since retired with the Electric-Universe layer) and `44-knock-on-the-hull` (2026-07-30) came first and keep their numbers;
+> (2026-07-30, since retired with the Electric-Universe layer) and `44-knock-on-the-hull` (2026-07-30, also since retired) came first and kept their numbers;
 > `43-miranda-sites` (2026-07-31) is now **47** and `44-a-lab-about-the-lab` (2026-08-01) is now **48** —
 > the next free numbers, since 45 and 46 have been taken since. `LabNumbersAreUniqueTests` holds the line.
 
-
-44. [**Knock on the hull**](44-knock-on-the-hull/README.md) — the owner specified a search mechanic in two
-    sentences (*"Sweeping could cost time… like pumping vacuum does… idea is to know where to do it"* and *"it
-    might be noisy to say knock on walls etc"*) and the lab existed to answer the one question they rest on: **is
-    believing the clue actually worth anything?** It is — 22× on the sounder — but the finding that matters is
-    that **the noise is the teeth, not the clock**: a blind hull-wide search is 22 separate loud events against a
-    pack cap designed to absorb one, so the whole authored pack is up after the second spot. It also refuted me
-    twice, which is why it ran before any pixels: my clue rule named **the wrong wall on the wrong side of the
-    keel**, and the third "odd" reading I had built as a general convergence turns out to *lose* for the loud
-    gear at narrow bands — it is what makes the QUIET gear usable, and it is now sold as nothing more. Wired into
-    CI as `HullSoundingTests`.
 
 45. [**What a frame costs**](45-what-a-frame-costs/README.md) — the owner, watching one man walk a corridor:
     *"the guard seems to move somehow much more heavily than the reevers who we can have so many on the screen
@@ -478,11 +369,6 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
     **decision rule**: culling earns a lane if the furnished floor's p95 clears X ms at phone size, or if the
     furniture passes are more than Y% of the draw — suggested 4 ms / 30%, the owner's call, agreed before the
     data arrives so that a threshold is a threshold and not a description.
-
-47. [**What is actually on a landing site?**](47-miranda-sites/README.md) — measures the ground a moon
-    generates, and draws it, because a descent will not render in an automated browser tab. Written when the
-    owner found Miranda's canon site to be the *thinnest* ground on the moon. *(Ran 2026-07-31 as "Lab 43";
-    renumbered by #664, which broke the fork's duplicate numbering by first-commit date.)*
 
 48. [**A lab about the lab**](48-a-lab-about-the-lab/README.md) — renders one underground floor of the Hive
     and washes it with everywhere the captain can actually stand, so a sealed room is an unwashed island with
@@ -524,6 +410,7 @@ Add a `ProjectReference` to `labs/SpaceSails.LabViz/SpaceSails.LabViz.csproj` in
 
 ## Framing rule
 
-Standard physics is presented as standard; Curtis is the reference. The EU-flavored lessons
-(11, 12) are explicitly labeled as the game's fictional cosmology / speculative playgrounds.
+Standard physics is presented as standard; Curtis is the reference. Where a lesson touches the game's
+fictional cosmology it is explicitly labeled as such. (The Electric-Universe lessons and skies were
+retired 2026-11-09: one sky, Sol.)
 See `docs/SaturdayPlan/GravityLab.md` for the full plan and PR lanes.

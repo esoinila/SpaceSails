@@ -1,7 +1,7 @@
 namespace SpaceSails.Core.Tests;
 
 /// <summary>
-/// QA gates for Lab 33 — Aerobrake in the LIVE loop. Where Lab 32 (and <see cref="AerobrakeTests"/>) fly a
+/// QA gates for retired Lab 33 — Aerobrake in the LIVE loop. Where retired Lab 32 (and <see cref="AerobrakeTests"/>) fly a
 /// clean body-at-origin frame, these fly the SAME Core drag in a two-body-rail ephemeris — the Sun pinned,
 /// Uranus on its real sol.json orbit at ~6.8 km/s — so v_rel genuinely includes the planet's heliocentric
 /// motion and the integrator is n-body. The gates pin the live-loop findings: the campaign still converges
@@ -115,7 +115,7 @@ public class Lab33LiveLoopTests
     [Fact]
     public void TheFreeTighteningCampaign_Converges_UnderTheLiveIntegrator()
     {
-        // Lab 33 §C: seeded on a captured wide orbit, each free live pass strictly lowers apoapsis — the
+        // retired Lab 33 §C: seeded on a captured wide orbit, each free live pass strictly lowers apoapsis — the
         // campaign converges with a MOVING atmosphere and a live solar tug, not just in the pinned frame.
         (Simulator sim, CircularOrbitEphemeris e) = LiveUranus();
         double startAlt = UranusAtm.TopAltitude + 3.0e5;
@@ -139,13 +139,13 @@ public class Lab33LiveLoopTests
     [Fact]
     public void TheMovingAtmosphere_ShedsWhatThePinnedFrameDid_Galilean()
     {
-        // Lab 33 §E: because drag depends only on speed relative to the air, the live moving-frame pass and
-        // Lab 32's pinned-frame pass shed the same Δv at the same peak g — the pinned lab was honest.
+        // retired Lab 33 §E: because drag depends only on speed relative to the air, the live moving-frame pass and
+        // retired Lab 32's pinned-frame pass shed the same Δv at the same peak g — the pinned lab was honest.
         (Simulator liveSim, CircularOrbitEphemeris e) = LiveUranus();
         double startAlt = UranusAtm.TopAltitude + 3.0e5, rPeri = UranusR + 110e3;
         var live = LivePass(liveSim, e, LiveArrival(e, 0, UranusR + startAlt, rPeri, StrandVinf));
 
-        // Pinned frame (Lab 32's rig): the same body at the origin, zero rail velocity.
+        // Pinned frame (retired Lab 32's rig): the same body at the origin, zero rail velocity.
         var pinnedEph = new CircularOrbitEphemeris([new CelestialBody("u", "u", null, UranusMu, UranusR, 0, 0, 0, Atmosphere: UranusAtm)]);
         var pinnedSim = new Simulator(pinnedEph, timeStepSeconds: 1.0);
         double rStart = UranusR + startAlt;

@@ -46,11 +46,11 @@ break it, learn programming and physics at once. The game engine is the lab equi
 10. **Fast enough for 10,000×** — performance lesson: making gravity math run at warp in
     WASM (fixed-step batching, the 60 s NPC quantum, adaptive quanta at high warp — the
     real M19 numbers), measured with BenchmarkDotNet-style timings from the probe.
-11. **The Electric Sandbox** ⚡ — the game's `PlasmaEnvironment` coupled with gravity:
+11. **The Electric Sandbox** ⚡ — *(CUT 2026-11-09: the plasma layer is gone.)* The game's `PlasmaEnvironment` coupled with gravity:
     charge-dependent forces, stream riding, glare-country ambushes — and a clearly-labeled
     speculative playground: "what if effective μ depended on the electrical environment?"
     Parameterize μ(t) and compute the consequences honestly.
-12. **Oops at the Moon** 🌙 — the finale the owner imagined: miners drill a moon and short
+12. **Oops at the Moon** 🌙 — *(CUT 2026-11-09: lab and scenario deleted.)* The finale the owner imagined: miners drill a moon and short
     the capacitor; its effective μ / the local force model changes mid-sim. Compute the
     decaying orbit, the ring-like-a-bell seismic flavor text, the disaster-movie timeline —
     perturbed dynamics as a playable catastrophe scenario (`labs` probe + a game scenario).

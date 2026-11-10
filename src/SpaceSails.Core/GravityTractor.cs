@@ -9,7 +9,7 @@ namespace SpaceSails.Core;
 /// so tiny that the tractor only works with YEARS of warning — early detection is not a nicety, it is the
 /// entire technique.
 ///
-/// <para>Ties to Lab 25 (orbit-keeping): to hover the tug must continuously thrust AWAY from the rock, or
+/// <para>Ties to retired Lab 25 (orbit-keeping): to hover the tug must continuously thrust AWAY from the rock, or
 /// it falls in — the same station-keeping discipline the autopilot spends at a moon, here spent to hold a
 /// standoff instead of a park. <see cref="HoverThrust"/> prices that hold. NOT a shipped gig; this certifies
 /// the physics and prints how early you must arrive for a gravity tractor to save Ringside — the

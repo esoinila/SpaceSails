@@ -13,7 +13,7 @@ dotnet run --project labs/31-the-beanstalk -c Release
 
 ## Why this lesson exists
 
-Lab 30 measured Luna's other launch industry — the mass driver, one impulse and then the pod is a
+retired Lab 30 measured Luna's other launch industry — the mass driver, one impulse and then the pod is a
 stone. This is its rival: the cable that never lets go. It matters here because the elevator is the
 one piece of megastructure the game can afford to take *literally*. Its two ends are ports, its
 middle is a ride, and whether it exists at a body is not a matter of taste — it is
@@ -136,7 +136,7 @@ Phobos            1.00         1.00         1.00         1.00         1.00
 Deimos            1.00         1.00         1.00         1.00         1.00
 ```
 
-**Thresholds, stated before the data** (lab 46's rule — a threshold agreed after you have seen the
+**Thresholds, stated before the data** (retired lab 46's rule — a threshold agreed after you have seen the
 numbers is a description, not a threshold): a cable is **practical at taper ≤ 10**, and the material
 has **stopped mattering at all at taper ≤ 1.1**. "Real" means somebody has made some; the theory
 column is on the table precisely so that *"nothing real does it"* can be said with a number behind it.
@@ -255,11 +255,11 @@ The beanstalk is that family's **vertical member**: **the long ride**.
   cable is **5.57 km** long and its taper is **1.00**, so the port that shouldn't exist has an
   elevator no engineer had to be clever about. *Nobody agrees who built the monolith; everybody
   agrees the anchor bolts for the cable went in suspiciously easily.*
-- **The rhyme with Luna's mass drivers.** Lab 30 measured Luna's other launch industry: fling the pod
+- **The rhyme with Luna's mass drivers.** retired Lab 30 measured Luna's other launch industry: fling the pod
   and let go. Now the same moon is the flagship for the industry that **never** lets go — and it is
   the flagship by a factor of eight over the next candidate. Two ways off one rock, one violent and
   one patient, competing for the same cargo. The mass driver is cheap, ballistic and interceptable
-  (lab 30's whole pirate lesson); the cable is expensive, precise, and cannot be robbed in flight
+  (retired lab 30's whole pirate lesson); the cable is expensive, precise, and cannot be robbed in flight
   because there is no flight. That is a trade lane with an argument inside it.
 
 ## Break it

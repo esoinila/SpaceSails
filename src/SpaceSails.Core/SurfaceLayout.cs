@@ -93,7 +93,7 @@ public static partial class SurfaceLayout
     ///
     /// <para>It lived as constants in the client's <c>MoonSurface</c>, and every test and lab that needed it
     /// kept its own hand-copied duplicate. So when the field grew sixteenfold, the client shipped a
-    /// 310 x 260 du world while <c>SurfaceReachabilityTests</c> and Lab 47 went on auditing and drawing the
+    /// 310 x 260 du world while <c>SurfaceReachabilityTests</c> and retired Lab 47 went on auditing and drawing the
     /// old 78 x 64 one — and passed, and printed confident numbers about a world that no longer existed.</para>
     ///
     /// <para>That is the same drift this project keeps paying for, one level up from geometry: a test that

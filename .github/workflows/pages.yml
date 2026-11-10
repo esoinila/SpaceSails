@@ -3,8 +3,8 @@
 # The source repo is private and the plan doesn't allow Pages on private repos, so the
 # built client is force-pushed to the public build-only repo SpaceSails-play, which serves
 # Pages from its main branch. Auth: SSH deploy key (write) on SpaceSails-play, private half
-# in this repo's PAGES_DEPLOY_KEY secret. Multiplayer (SpaceSails.Server + SignalR) is
-# archived under archive/ — see archive/README.md.
+# in this repo's PAGES_DEPLOY_KEY secret. The old multiplayer
+# hub was deleted 2026-11-10 (git history).
 
 name: Publish to SpaceSails-play
 
