@@ -27,7 +27,7 @@ namespace SpaceSails.Core;
 /// <para>Every number here is SCREEN PIXELS and every point that comes out is a screen point. The map spans
 /// thirteen orders of magnitude of zoom (<c>Camera.MetersPerPixel</c> 1e-2 → 1e11); an arrowhead sized in
 /// world metres would be a hair at one end of that and would swallow the solar system at the other. It is a
-/// glyph, like the ship dot and like her mast (Lab 43): the same size at every zoom.</para>
+/// glyph, like the ship dot and like her mast (the retired Lab 43): the same size at every zoom.</para>
 ///
 /// <h3>Angles are SCREEN angles</h3>
 /// <para><c>dirRad</c> is measured on the canvas — 0 = +X (right), increasing CLOCKWISE on screen, because
@@ -66,7 +66,7 @@ public static class VelocityArrow
     public const double RingBelowMps = 1.0;
 
     /// <summary>The ring's radius in screen pixels when the arrow collapses. Sits just outside the 4 px ship
-    /// dot: a collar, not a halo — the halo shape belongs to nothing on this map (Lab 43 took the discharge
+    /// dot: a collar, not a halo — the halo shape belongs to nothing on this map (the retired Lab 43 took the discharge
     /// off it for good reasons of its own).</summary>
     public const float RingRadiusPx = 7f;
 

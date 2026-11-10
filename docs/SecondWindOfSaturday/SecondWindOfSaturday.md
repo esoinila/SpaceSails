@@ -6,7 +6,7 @@ elder sibling (#279), it is for the owner's read — the lanes are already dispa
 
 ## What the morning merged (the first wind, banked)
 
-- **#280** (#258) — Sol is the front door; the other three skies fold into an Archived drawer.
+- **#280** (#258) — Sol is the front door; the other three skies fold into an Archived drawer. (All three skies were deleted 2026-11-09: one sky, Sol.)
 - **#281** (#254) — the build stamp on the first page: `build <sha> · <utc>`, ghost-hunting retired.
 - **#282** (#253) — context menus clamp to the viewport; the Long-haul rocket hides no more.
 - **#283** (#247) — every bar a barkeep: the Rusted Bolt, the Sulphur Sour, the Ringside, the

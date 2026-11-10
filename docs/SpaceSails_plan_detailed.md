@@ -11,17 +11,17 @@ A solar-system-scale "sailing" game. Ships are slow and heavy — they move at s
 ## 2. Design Pillars
 
 1. **Plot, then commit.** The planning map is the primary instrument. Real-time flight is the payoff, not the main interface.
-2. **Everything moves.** No static backdrop — planets, cargo ships, and plasma streams all follow trajectories. An intercept is a solution to a moving problem.
+2. **Everything moves.** No static backdrop — planets and cargo ships all follow trajectories. An intercept is a solution to a moving problem.
 3. **Simple controls, deep consequences.** ±10% velocity increments only. Depth comes from *when*, not *what*.
-4. **The in-between is the game.** Flying wide circles is easy; threading between planets (gravity, charge gradients, traffic) is where risk and reward live.
-5. **Readable exotic physics.** Electric-Universe flavor mechanics (charge management, plasma streams) are deterministic and visualized, never random punishment.
+4. **The in-between is the game.** Flying wide circles is easy; threading between planets (gravity, traffic) is where risk and reward live.
+5. **Readable physics.** Every mechanic is deterministic and visualized, never random punishment. *(The original Electric-Universe flavor layer, with charge and plasma streams, was retired on 2026-11-09: one sky, Sol.)*
 
 ## 3. Core Mechanics
 
 ### 3.1 Movement
 - Ship state: position, velocity (2D, ecliptic plane — see §5 "2D decision").
 - Controls: `+` scales velocity vector by 1.10, `−` by 0.90. Each pulse consumes reaction mass (budgeted per voyage). A cooldown (~1 s game-time per pulse) prevents machine-gunning.
-- Later trim controls (Milestone 7): sail attitude (solar radiation pressure), charge level (electric force), thermal evaporator vent (small lateral thrust from the dark side).
+- Later trim controls (a later milestone): sail attitude (solar radiation pressure), thermal evaporator vent (small lateral thrust from the dark side).
 
 ### 3.2 Plotting mode (the heart of the game)
 - Pause-and-plan map: time slider scrubs the future; all celestial bodies and *known* trajectories advance deterministically.
@@ -46,16 +46,12 @@ A solar-system-scale "sailing" game. Ships are slow and heavy — they move at s
 4. Endgame: match velocity within a capture threshold (relative speed < X m/s at distance < Y km) for a boarding window. Failing = flyby, re-plot or abort.
 5. Fence the He3, spend on reaction mass / sails / sensors. (Economy is deliberately thin until late milestones.)
 
-### 3.6 Electric Universe layer (Milestone 7 — flavor physics, opt-in per scenario)
-- The Sun maintains a radial **charge potential field**; every ship carries hull charge that equilibrates slowly to local potential.
-- Changing solar distance too fast without managing charge (venting/absorbing) builds a differential → **arcing discharge** ("Thunderbolts") that damages systems and, importantly, *lights the ship up on every sensor in the system* — stealth and charge management are the same skill.
-- **Sun-side approach:** sensors looking sunward are degraded, so approaching a target from lower solar orbit is the classic pirate ambush.
-- **Plasma streams:** persistent Birkeland-current "rivers" between bodies, rendered as aurora-like ribbons. A deliberately over-charged ship inside a stream gains free momentum along it (charge sign picks direction) — space's trade winds. High charge inside a stream also widens your sensor signature: fast but loud.
+### 3.6 Electric Universe layer — RETIRED
+- Planned as Milestone 7 (charge potential field, arcing, plasma streams). Retired 2026-11-09 with the other alternate skies: the game has one sky, Sol. The milestone text is gone; see git history.
 
 ### 3.7 Scenarios / topographies
-- **Scenario A — Sol (default):** real solar system, circular coplanar orbits at true-ish radii and periods (scaled, see §5). Ships fly Expanse/Zubrin-style Newtonian physics.
-- **Scenario B — Wheel of the World (Velikovskian):** Earth–Mars–Venus aligned on a rotating spoke around Saturn (a dim proto-sun), which itself orbits the Sun. Compact, fast-moving, chaotic — the "hard mode" map.
-- Scenarios are **data files** (JSON): body list, orbit parameters, charge field config, traffic routes. The engine doesn't know which cosmology it's running.
+- **Scenario — Sol (the only sky; the Wheel of the World was retired 2026-11-09):** real solar system, circular coplanar orbits at true-ish radii and periods (scaled, see §5). Ships fly Expanse/Zubrin-style Newtonian physics.
+- Scenarios are **data files** (JSON): body list, orbit parameters, traffic routes. The engine doesn't know which cosmology it's running.
 
 ## 4. Technology Stack (Microsoft-first)
 
@@ -78,7 +74,7 @@ A solar-system-scale "sailing" game. Ships are slow and heavy — they move at s
 - **2D, ecliptic plane.** Both scenarios are essentially coplanar; 2D makes plotting UI, uncertainty cones, and rendering tractable. Data structures use `Vector2d` but keep a `double Z` slot reserved so 2.5D (inclination flavor) isn't a rewrite.
 - **Doubles everywhere in sim.** Solar-system coordinates in meters overflow `float` precision badly. Render layer converts to camera-relative floats (floating origin) before drawing.
 - **Planets on rails.** Celestial bodies follow analytic orbits (circular to start, Keplerian later): position is a pure function of time. This is what makes plotting-mode time scrubbing instant and deterministic. The Wheel scenario is just a different analytic function (spoke rotation).
-- **Ships are integrated.** Semi-implicit Euler at fixed dt (start dt = 1 s sim time; tune later), forces = gravity from rails bodies + maneuvers + (M7) charge/radiation/stream forces. Gravity is behind an `IForceField` interface so the EU charge model is a swap, not a fork.
+- **Ships are integrated.** Semi-implicit Euler at fixed dt (start dt = 1 s sim time; tune later), forces = gravity from rails bodies + maneuvers + radiation pressure. Gravity is behind an `IForceField` interface so the EU charge model is a swap, not a fork.
 - **Units:** SI internally (meters, seconds, kg). Scenario files may scale reality for playability (e.g., compress distances 10×, speed up orbits) — that's data, not code.
 - **Trajectory projection:** re-running the same integrator forward N steps. Plot-mode responsiveness budget: full re-projection of player path (30 days sim @ dt-coarsened adaptive steps) in < 50 ms in WASM. Coarsen dt for projection, never for live sim.
 
@@ -98,11 +94,9 @@ spaceSails/
 │   ├── SpaceSails.Core/          # deterministic sim: bodies, ships, plans, integrator, forces, prediction
 │   ├── SpaceSails.Contracts/     # DTOs shared client/server: snapshots, commands, scenario JSON models
 │   ├── SpaceSails.Client/        # Blazor WASM: Razor+Bootstrap UI, Canvas interop renderer, input, plotting UI
-│   └── SpaceSails.Server/        # ASP.NET Core: serves client, SignalR hub, authoritative sim host, NPC planner
 ├── tests/
 │   ├── SpaceSails.Core.Tests/    # physics, determinism replay, planner, prediction
-│   └── SpaceSails.Server.Tests/  # hub contract tests
-├── scenarios/                    # sol.json, wheel.json
+├── scenarios/                    # sol.json
 ├── docs/                         # this plan + ADRs (one ADR per big decision)
 ├── .github/workflows/            # ci.yml, deploy.yml
 └── Dockerfile
@@ -158,14 +152,8 @@ Each milestone ends with: tests green, a runnable demo, and a **review gate** (s
 - Single scripted "first hunt" tutorial voyage.
 - **Accept:** full loop — pick target, plot, chase, capture, sell, upgrade — is playable and fun-ish. **This is the go/no-go review for everything after.**
 
-### M7 — Electric Universe layer
-- Charge potential field + ship charge state, equilibration, venting control, arcing (damage + system-wide sensor ping), sun-side sensor shadow, plasma streams as scenario-defined ribbon paths with along-stream force ∝ charge.
-- All under `IForceField`/scenario flags so Scenario A can run pure-Newtonian.
-- **Accept:** the low-solar-orbit sneak-up ambush works; riding a stream Saturn→Jupiter is faster but gets you spotted.
-
-### M8 — Wheel of the World scenario
-- `wheel.json`: Saturn as sub-center with Earth–Mars–Venus on the rotating spoke; tune traffic routes for it.
-- **Accept:** both scenarios selectable at start; Wheel is playably harder.
+### M7 and M8 — retired
+- The Electric Universe layer (M7) and the Wheel of the World scenario (M8) were retired on 2026-11-09: one sky, Sol. See git history for the original milestone text.
 
 ### M9 — Multiplayer
 - SignalR hub: join session, authoritative tick, interest-managed state broadcast, command channel (maneuver nodes + live pulses), server-side observation filtering (hidden info stays hidden).

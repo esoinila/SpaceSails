@@ -54,7 +54,7 @@ public static partial class SurfaceLayout
         // #563 · THE CANON GROUND GETS BUILDINGS TOO. Owner, standing on it: "no real buildings and
         // one-thick walls still" — because site 0 is AUTHORED and routes here, bypassing the seeded
         // generator where the structures live. So the flagship ground, the one carrying the story and the
-        // one every captain lands on by default, was the only one that never got the new content: Lab 47
+        // one every captain lands on by default, was the only one that never got the new content: retired Lab 47
         // measured it at 12 wall segments over 12% of the field, the emptiest site on the moon.
         //
         // The maze itself is untouched — it is canon and stays exactly as authored. These stand OUT in the

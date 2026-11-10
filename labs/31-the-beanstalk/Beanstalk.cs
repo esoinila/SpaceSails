@@ -112,7 +112,7 @@ public static class Beanstalk
 {
     // ---------------------------------------------------------------------------------------------
     // The thresholds. Stated BEFORE the data, so a threshold is a threshold and not a description
-    // (lab 46's rule). A taper ratio of 10 means the cable is ten times fatter at its waist than at
+    // (retired lab 46's rule). A taper ratio of 10 means the cable is ten times fatter at its waist than at
     // its anchor; past that the mass of the thing runs away and nobody costs it seriously.
     // ---------------------------------------------------------------------------------------------
 

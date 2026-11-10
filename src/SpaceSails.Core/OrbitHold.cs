@@ -8,11 +8,11 @@ namespace SpaceSails.Core;
 ///
 /// <para>This is the pure, in-voice instrument that speaks the truth the keeper already lives by
 /// (Friday §0, <see cref="OrbitKeeping"/>: the autopilot HOLDS the park with trim burns priced from
-/// Lab 25 until the tank can't pay). The keeper holds while the tank pays; the honest maroon happens
+/// retired Lab 25 until the tank can't pay). The keeper holds while the tank pays; the honest maroon happens
 /// only when the pulses run out. This clock turns that law into words the captain can read:</para>
 /// <list type="bullet">
 /// <item><b>The hold clock</b> (<see cref="HoldSeconds"/>): how long the tank can sustain the trim bill
-/// — remaining pulses ÷ the Lab 25 trim rate (pulses/sim-day). A free park (no tide bill) never
+/// — remaining pulses ÷ the retired Lab 25 trim rate (pulses/sim-day). A free park (no tide bill) never
 /// strands. This is the quote before you board down, and the countdown while you're on the ground.</item>
 /// <item><b>The escalating ladder</b> (<see cref="StageFor"/>): as the hold erodes the ship calls down —
 /// steady → slipping → failing → lost — thresholds are fractions of the hold you boarded with, so the
@@ -25,7 +25,7 @@ namespace SpaceSails.Core;
 /// </summary>
 public static class OrbitHold
 {
-    /// <summary>One sim-day in seconds — the unit the Lab 25 trim budget is quoted in (pulses/day).</summary>
+    /// <summary>One sim-day in seconds — the unit the retired Lab 25 trim budget is quoted in (pulses/day).</summary>
     private const double DaySeconds = 86400.0;
 
     /// <summary>How long the tank can sustain station-keeping, in seconds of sim time: the pulses on

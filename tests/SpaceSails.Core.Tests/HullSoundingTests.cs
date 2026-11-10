@@ -7,7 +7,7 @@ namespace SpaceSails.Core.Tests;
 /// know where to do it… so some logic on selection based on map or other clues"</i> and <i>"Also it might be noisy
 /// to say knock on walls etc."</i>
 ///
-/// <para>Numbers derived in <c>labs/44-knock-on-the-hull</c>, which found two things worth having: the clue is
+/// <para>Numbers derived in <c>retired Lab 44</c>, which found two things worth having: the clue is
 /// worth 22× and 21 loud events (so it is a mechanic), and the first version of the clue rule pointed at the wrong
 /// wall on the wrong side of the keel.</para>
 /// </summary>
@@ -81,7 +81,7 @@ public sealed class HullSoundingTests
     }
 
     /// <summary>
-    /// THE ODD READING IS THE QUIET GEAR'S ENABLER, AND NOT A GENERAL SPEED-UP — Lab 44 probe E refuted the
+    /// THE ODD READING IS THE QUIET GEAR'S ENABLER, AND NOT A GENERAL SPEED-UP — retired Lab 44 probe E refuted the
     /// claim I built it on. Tiling beats striding for the SOUNDER at a 24 du band (3 spots vs 4, because a 4 du
     /// disc is already big against 24), and striding beats tiling for KNUCKLES everywhere past a short band
     /// (12 du: 6 → 4; 60 du: 29 → 11).
@@ -114,7 +114,7 @@ public sealed class HullSoundingTests
         Assert.Empty(HullSounding.Discrepancies(
             WreckLayout.Compartments, WreckLayout.SpineHalfHeight, WreckLayout.TopY, WreckLayout.BottomY));
 
-    /// <summary>The doctored layout Lab 44 probe D uses: NEAR HOLD's bulkhead four frames forward, which is what
+    /// <summary>The doctored layout retired Lab 44 probe D uses: NEAR HOLD's bulkhead four frames forward, which is what
     /// a void built into her aft end looks like on the plans.</summary>
     private static (string, float, float, bool)[] WithAVoidAftOfTheNearHold() =>
     [
@@ -129,7 +129,7 @@ public sealed class HullSoundingTests
     ];
 
     /// <summary>
-    /// AND IT MUST NAME THE RIGHT WALL. Lab 44 caught the first version of this rule pointing at <c>x −4…0</c> on
+    /// AND IT MUST NAME THE RIGHT WALL. retired Lab 44 caught the first version of this rule pointing at <c>x −4…0</c> on
     /// the TOP side when the unaccounted space is <c>x −15…−11</c> on the BOTTOM — wrong end, wrong side of the
     /// keel. A clue that names the wrong wall is worse than no clue: a captain sounds it, hears solid, and stops
     /// believing the instrument. So the exact band is pinned.
@@ -150,7 +150,7 @@ public sealed class HullSoundingTests
     }
 
     /// <summary>
-    /// THE CLUE HAS TO BE WORTH BELIEVING, or none of this is a mechanic. Lab 44: 22× on the sounder and 43× on
+    /// THE CLUE HAS TO BE WORTH BELIEVING, or none of this is a mechanic. retired Lab 44: 22× on the sounder and 43× on
     /// knuckles, and — the part that actually bites — 21 fewer loud events.
     /// </summary>
     [Fact]
@@ -173,7 +173,7 @@ public sealed class HullSoundingTests
     }
 
     /// <summary>
-    /// THE NOISE, NOT THE CLOCK, IS THE TEETH. Lab 44's sharpest finding: a blind sounder search is ~22 separate
+    /// THE NOISE, NOT THE CLOCK, IS THE TEETH. retired Lab 44's sharpest finding: a blind sounder search is ~22 separate
     /// loud events, and the pack's <c>NoiseRousesAtMost = 2</c> is a PACING rule that stops one racket summoning
     /// the ship — it does nothing about twenty-two. So a blind search must cost more loud events than the whole
     /// authored pack can absorb, or searching everywhere is simply the correct play.
@@ -210,7 +210,7 @@ public sealed class HullSoundingTests
     [Fact]
     public void TheSameShipYieldsTheSameSecretInEveryProcessThatEverRunsHer()
     {
-        // The value was derived by labs/44-knock-on-the-hull (probe F prints it) so it can be re-derived rather
+        // The value was derived by retired Lab 44 (probe F prints it) so it can be re-derived rather
         // than guessed at if the placement is ever changed ON PURPOSE. Under the old GetHashCode seeding this
         // assertion fails on almost every launch, which is the whole point of writing it down.
         HullSounding.HiddenVoid hidden = Assert.NotNull(VoidOn("golden-hull"));
@@ -238,7 +238,7 @@ public sealed class HullSoundingTests
     }
 
     /// <summary>
-    /// MOST SHIPS ARE EXACTLY WHAT THEY LOOK LIKE. Lab 44 probe F: 3 of the 10 seeded hulls hide something. If
+    /// MOST SHIPS ARE EXACTLY WHAT THEY LOOK LIKE. retired Lab 44 probe F: 3 of the 10 seeded hulls hide something. If
     /// every wreck lied, measuring would be routine and finding one would be worth nothing; if none did, the
     /// manifest would be furniture. Pinned as a band rather than a count, so the roll can be tuned.
     /// </summary>
@@ -345,7 +345,7 @@ public sealed class HullSoundingTests
     }
 
     /// <summary>The band the clue names is the band the plate opens into — a clue that points somewhere other than
-    /// the find is the bug Lab 44 caught in the first geometry rule, wearing a new costume.</summary>
+    /// the find is the bug retired Lab 44 caught in the first geometry rule, wearing a new costume.</summary>
     [Fact]
     public void TheClueAndThePlateAgreeAboutWhereSheIsLying()
     {
@@ -435,7 +435,7 @@ public sealed class HullSoundingTests
     }
 
     /// <summary>Whichever paper she lies in, the band it names is the band the plate opens into. A clue that
-    /// points somewhere other than the find is the bug Lab 44 caught in the first geometry rule, and adding
+    /// points somewhere other than the find is the bug retired Lab 44 caught in the first geometry rule, and adding
     /// two more sources of the same <c>Discrepancy</c> is exactly how it would come back.</summary>
     [Fact]
     public void EveryClueKindNamesTheSameBandAsThePlate()

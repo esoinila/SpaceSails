@@ -258,7 +258,7 @@ foreach (double au in new[] { 1.0, ringsideAu })
 // ---- Section F: the same axis as the rest of the playbook -------------------------------------------
 Console.WriteLine("=== Section F: the whole playbook on ONE axis — warning needed to open SafeMiss on a 140 m S-type ===");
 Console.WriteLine("Every constant below is the sibling lab's own, read from Core, not retyped: lab 36 (200 t hull at 6 km/s),");
-Console.WriteLine($"lab 37 ({F(GravityTractor.ReferenceShipMassKg / 1000.0, 0)} t tug at {F(GravityTractor.StandoffFactor, 1)}R), lab 38 ({F(RockMassDriver.ReferenceThroughputKgPerSecond, 0)} kg/s rig), lab 39 ({F(LaserAblation.ReferencePlatformPowerWatts / 1e6, 0)} MW), and this lab.");
+Console.WriteLine($"lab 37 ({F(GravityTractor.ReferenceShipMassKg / 1000.0, 0)} t tug at {F(GravityTractor.StandoffFactor, 1)}R), retired lab 38 ({F(RockMassDriver.ReferenceThroughputKgPerSecond, 0)} kg/s rig), retired lab 39 ({F(LaserAblation.ReferencePlatformPowerWatts / 1e6, 0)} MW), and this lab.");
 Console.WriteLine();
 {
     const double R = 140.0;
@@ -272,7 +272,7 @@ Console.WriteLine();
     double paintRing = YarkovskyPaint.RequiredWarningSeconds(
         YarkovskyPaint.PaintDeltaAccel(sRock, R, ringsideAu, YarkovskyPaint.ReferenceSpinPeriodSeconds, 0.0, YarkovskyPaint.WhitePaintBondAlbedo, 1.0), SafeMiss);
 
-    // Lab 38's rig quotes a RUN time for a given lead, so its "warning needed" is the lead at which the run
+    // retired Lab 38's rig quotes a RUN time for a given lead, so its "warning needed" is the lead at which the run
     // just fits inside it — bisected on the lab's own function rather than on a formula retyped here.
     double driver;
     {

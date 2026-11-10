@@ -82,7 +82,7 @@ public class ShipMissionTests
 
         // Havens in sol.json: Enceladus (moon) and Ringside Exchange (station) out at Saturn, plus
         // the inner grey-market docks Cinder Roost (Venus), The Space Bar (Mars) and The Tilt (Uranus),
-        // and Selene Gate — the Luna-vicinity fuel port added for #157 (its haven flag closes Lab 28's
+        // and Selene Gate — the Luna-vicinity fuel port added for #157 (its haven flag closes retired Lab 28's
         // stranded-at-Luna gap and, like any haven, offers a lay-low berth).
         Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "enceladus");
         Assert.Contains(catalog.LayLow, m => m.HavenBodyId == "ringside-exchange");

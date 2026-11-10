@@ -1,8 +1,8 @@
 namespace SpaceSails.Core.Tests;
 
 /// <summary>
-/// QA gates for Lab 32 — Aerocapture: the ice giant's haze is the free brake. See
-/// labs/32-aerocapture-at-the-ice-giant/README.md and Probe.cs. Every gate flies real trajectories
+/// QA gates for retired Lab 32 — Aerocapture: the ice giant's haze is the free brake. See
+/// the retired Lab 32 README and probe. Every gate flies real trajectories
 /// through <see cref="Simulator"/> in a planet-centered (body-at-origin) frame, reusing lab 22's Core
 /// drag unchanged, so the two-body energy is clean and the drag physics is isolated. The lab's
 /// headline findings are pinned here: the corridor CLOSES above a critical speed, one pass cannot

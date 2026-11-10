@@ -61,7 +61,7 @@ Marker anchors in Map.razor + this plan doc. Everything else branches after this
   `<base href="/spaceSails/">` → `.nojekyll` + `404.html` (copy of index.html for SPA deep
   links) → `actions/upload-pages-artifact` + `deploy-pages` (HordeDefence pattern).
 - Archive multiplayer *softly*: move `SpaceSails.Server` (+ Server.Tests) out of the default
-  build path into `archive/` with a README explaining why & how to resurrect; keep
+  build path into `archive/` with a README explaining why & how to resurrect *(done; the archive itself was deleted 2026-11-10 and lives in git history)*; keep
   git history. Home page: replace "Join the crew" card with a "single-player, play in your
   browser" framing. **Do NOT strip `_mp` code from Map.razor yet** — that's PR-9 (cleanup),
   precisely because it would conflict with every Wave-1/2 lane.
@@ -71,7 +71,7 @@ Marker anchors in Map.razor + this plan doc. Everything else branches after this
 **PR-2 · 📚 The ship's library** *(F2 + F3)* — MERGED #27
 - `docs/features/` — one small page per station: map & warp, plotting desk, traffic board,
   scope, orbit assist & insertion, depots, dock & economy, deck view & cantina, boarding run,
-  electric sky. Screenshots where cheap (headless Playwright).
+  *(electric sky: retired 2026-11-09)*. Screenshots where cheap (headless Playwright).
 - `docs/testing-guide.md` — scripted playtest per major feature (what to click, what you
   should see, what "broken" looks like) — the owner's regression checklist.
 - Update `docs/user-guide.md` gaps: depots (M22), armed insertion, orbit-assist cost,

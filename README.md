@@ -39,8 +39,7 @@ dotnet run --project labs/01-falling-is-orbiting -c Release
 Highlights: the integrator zoo measured (explicit Euler leaks 19.75% of Mercury's energy in
 50 years; the game's semi-implicit doesn't), the Oberth effect at exactly 9× from the same
 burn, a from-scratch n-body integrator quantifying what the rails ephemeris hides, and
-[*Oops at the Moon*](labs/12-oops-at-the-moon/README.md) 🌙, where careless miners un-rail
-Luna and you compute the catastrophe. Every
+transfers found without formulas. Every
 number in every lesson comes from actually running that lesson's probe.
 
 The later labs left physics behind and kept the method: Lab 34 measures whether a rescue
@@ -119,9 +118,8 @@ dotnet run -c Release --project src/SpaceSails.Client
 # open http://localhost:5073
 ```
 
-Multiplayer (SignalR hub, "Join the crew") is archived — untested, and the fun core of the
-game is single-player navigation and plotting. See [archive/README.md](archive/README.md) for
-what's there and how to bring it back.
+The game is single-player navigation and plotting. (The old multiplayer hub was deleted
+with the rest of its archive on 2026-11-10; it is in git history.)
 
 Tips:
 
@@ -144,11 +142,10 @@ How to play: in-game **Captain's Guide** at `/guide` (also [docs/user-guide.md](
 | Path | What |
 |------|------|
 | `src/SpaceSails.Core` | Deterministic simulation (shared client/server) |
-| `src/SpaceSails.Contracts` | DTOs and scenario models |
+| `src/SpaceSails.Contracts` | Scenario models |
 | `src/SpaceSails.Client` | Blazor WASM client |
-| `archive/SpaceSails.Server` | ASP.NET Core host + SignalR hub (archived — see [archive/README.md](archive/README.md)) |
 | `scenarios/` | Scenario data files (`sol.json`) |
-| `labs/` | The Gravity Lab — 44 runnable lesson probes + the lab-viz host |
+| `labs/` | The Gravity Lab — 33 runnable lesson probes + the lab-viz host |
 | `tests/` | xUnit test projects (Core, Client, and the UI gate), plus `tests/scripts/` — the Python purity/assert accounting a pure-move PR has to show |
 
 ## Provenance

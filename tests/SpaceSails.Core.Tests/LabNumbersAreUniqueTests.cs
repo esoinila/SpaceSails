@@ -62,17 +62,17 @@ public sealed class LabNumbersAreUniqueTests
     }
 
     /// <summary>A sweep that finds nothing passes every uniqueness claim ever written. Pin the floor first —
-    /// this repo has had forty-plus labs since #932 and the count only goes up.</summary>
+    /// the labs were pruned to 33 on 2026-11-10 (one sky, Sol); the floor guards the sweep, not the count.</summary>
     [Fact]
     public void TheSweepActuallySeesTheLabs()
     {
         List<(int Number, string Dir)> labs = NumberedLabs();
 
-        Assert.True(labs.Count >= 40, $"only {labs.Count} numbered lab directories found — the sweep is looking " +
+        Assert.True(labs.Count >= 30, $"only {labs.Count} numbered lab directories found — the sweep is looking " +
                                       "in the wrong place, and an empty sweep proves uniqueness trivially.");
         Assert.Contains(labs, l => l.Dir == "01-falling-is-orbiting");
         Assert.Contains(labs, l => l.Dir == "45-what-a-frame-costs");
-        Assert.Contains(labs, l => l.Dir == "44-knock-on-the-hull");
+        Assert.Contains(labs, l => l.Dir == "48-a-lab-about-the-lab");
     }
 
     /// <summary>THE LAW. One number, one lab.</summary>

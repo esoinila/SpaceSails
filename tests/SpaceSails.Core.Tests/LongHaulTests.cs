@@ -582,7 +582,7 @@ public class LongHaulTests
     [Fact]
     public void PodRailAndCacheTimers_LandClosedForm_AtTheJumpEpoch()
     {
-        // The mode's premise for the rest of the world: pod rails (Lab 30 closed-form conic) and cache
+        // The mode's premise for the rest of the world: pod rails (retired Lab 30 closed-form conic) and cache
         // discovery windows (floor(t / period)) are pure functions of sim time. The post-jump world reads
         // them at the arrival epoch directly — no integration of the void — and lands exactly where
         // stepping tick-by-tick would.
