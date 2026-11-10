@@ -137,9 +137,9 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     /// <c>ThePinsAreRewrittenOnlyWhenAskedTests</c>.</para>
     /// </summary>
     internal static string Preamble =>
-        "SIX WORLDS × FIVE INPUT SEQUENCES — everything one frame after another writes on Pages.Map.\n"
-        + "Taken on the PRE-SPLIT code (#870 lane 7c): the first twenty on b19ef16, the plasma world's four\n"
-        + "on 04bb219, the warp slider's six on the commit that put the unsplit method back to capture them.\n"
+        "FIVE WORLDS × FIVE INPUT SEQUENCES — everything one frame after another writes on Pages.Map.\n"
+        + "First taken on the PRE-SPLIT code (#870 lane 7c) as six worlds; the sixth (the Electric Universe)\n"
+        + "was retired on 2026-11-09 and its five rows with it. Every row has been re-recorded since.\n"
         + $"Probes: `stopped-at` and the {Spelled(TheLedger.Length)} named LEDGER readings say WHERE; "
         + "`sweep` says NOTHING\n"
         + "ESCAPED (a count and a hash over every instance field of the page); `sweep roster` names those\n"
@@ -186,12 +186,12 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     // ── THE THIRTY ROWS ────────────────────────────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Six worlds × five sequences. Each row's readings are pinned in
+    /// Five worlds × five sequences. Each row's readings are pinned in
     /// <c>Ledgers/Fingerprints.ledger.txt</c> under the scene name <c>&lt;world&gt;.&lt;sequence&gt;</c>
     /// (#1055; until then they were thirty separate texts under <c>Fingerprints/</c>, hand-edited by every
-    /// lane that moved a field), taken on the PRE-SPLIT code — the first twenty on
-    /// commit b19ef16, the plasma world's four on 04bb219, and the warp slider's six on the commit that put
-    /// the unsplit method back in the tree to capture them.
+    /// lane that moved a field), first taken on the PRE-SPLIT code
+    /// as thirty (six worlds; the sixth, the Electric Universe, was retired on 2026-11-09 and its five rows
+    /// dropped), and re-recorded by every lane since.
     ///
     /// <para><b>#618 · ALL THIRTY WERE RE-RECORDED, AND IT IS THE STATE-SHAPE KIND OF CHANGE — the third kind
     /// <c>EveryRoundFingerprintsTheSameTests</c> names, and the same proof.</b> The sweep walks the page's
@@ -365,7 +365,7 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     /// <para><b>No ledger row moved, no <c>walked-view pen</c> moved, and no call count moved</b> — this
     /// change draws no new thing, it draws three old things in the right place. And the five
     /// <c>TheElectricUniverse</c> rows (retired 2026-11-09) were <b>byte-identical</b>, because that world was on
-    /// <c>wheel.json</c> (since deleted), which #957 does not touch: the one world that could not move, did not.</para>
+    /// a scenario file of its own (since deleted), which #957 does not touch: the one world that could not move, did not.</para>
     ///
     /// <para><b>#954 · ALL THIRTY WERE RE-RECORDED, and this is a kind of re-pin the ledger had not seen: a
     /// BEHAVIOUR change. The frame deliberately writes a different answer.</b> Every entry above is a
@@ -379,7 +379,7 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     ///
     /// <para><b>Which is exactly what these thirty rows show, and it is the same substitution every time.</b>
     /// On all thirty the nearest reading was a BERTH — <c>selene-gate</c> on twenty-five, the works platform
-    /// <c>satellite-factory</c> on the five <c>wheel.json</c> rows — and on all thirty it is now the planet
+    /// <c>satellite-factory</c> on the five rows of the since-retired Electric Universe world — and on all thirty it is now the planet
     /// those berths ride: <b>Earth</b>, radius 6,371,000 either way. Four ledger rows moved and no others:
     /// <c>nearest body</c>, <c>nearest body at</c> and <c>nearest body moving</c> — the slot and its
     /// kinematics, the same fact three times — and <c>sweep</c>. The field count moved 742 → 743: ONE field
@@ -389,7 +389,7 @@ public sealed partial class EveryFrameLeavesTheSameFingerprintTests
     /// <para>The <c>SPACESAILS_SWEEP_DUMP</c> dump-and-diff was run on the base (b301cc3) and on this lane,
     /// and out of 743 fields <b>exactly four differ on every row</b> — <c>_nearestBody</c>,
     /// <c>_nearestBodyPosition</c> and <c>_nearestBodyVelocity</c> changed, <c>_neighbourhoodHavenId</c>
-    /// added — plus, on the five <c>wheel.json</c> rows ONLY, <c>_nearestParentName</c> and
+    /// added — plus, on the five rows of that since-retired world ONLY, <c>_nearestParentName</c> and
     /// <c>_nearestChildName</c> going to their defaults: that world's works platform is not a dockable
     /// berth, so with the planet in the slot there is no berth for the line to name, and it reads "Earth"
     /// where it read "Earth › Highport Satellite Works". Those five rows have <c>_nearestHaven</c> at ∅ on

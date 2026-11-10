@@ -192,7 +192,7 @@ public partial class Map
         _sightings = NerveModel.SightingSpell.Fresh; // #379: a fresh watch — the first fright of it lands full
 
         // #327: snapshot the mothership's hold at the moment of boarding DOWN — the reference the surface
-        // ladder erodes against. A kept orbit quotes pulses ÷ Lab-25 trim rate; an unkept one is 0 (the
+        // ladder erodes against. A kept orbit quotes pulses ÷ retired Lab-25 trim rate; an unkept one is 0 (the
         // surface then flies a standing "not holding" red). A berthed ship carries no orbit risk (0 too;
         // SurfaceOrbitComms gates it out by _dockedHavenId anyway).
         _orbitHoldAtBoarding = _orbitKept && _dockedHavenId is null

@@ -20,8 +20,8 @@ namespace SpaceSails.Client.Tests;
 /// row in the Layers panel, no corridor quads, no lane name labels, and none of it left commented out. The
 /// GEOMETRY stays compiled, because it turned out not to be decoration —
 /// <see cref="TheLaneSweepsAreKeptBecauseTheyPutRealContactsInTheLedger"/> carries that verdict and its
-/// evidence. The decision itself is written on one flag, <see cref="ShipLanes.Archived"/>, so a redesign has
-/// one thing to read and one thing to flip.</para>
+/// evidence. The kill-switch flag it once pinned is gone: the row and the draw are deleted outright, and
+/// this file keeps the laws that still apply.</para>
 ///
 /// <h3>Why the drawing guard paints instead of grepping</h3>
 ///
@@ -145,8 +145,6 @@ public sealed class TheShipLanesAreArchivedTests
     [Fact]
     public void TheLayerTreeNoLongerOffersTradeLanes()
     {
-        Assert.True(ShipLanes.Archived);
-
         MapLayerTree.Group routes = MapLayerTree.Groups.Single(g => g.Key == "routes");
         Assert.Equal(["routes.plan", "routes.rails"], routes.Leaves.Select(l => l.Key));
         Assert.DoesNotContain("routes.lanes", MapLayerTree.AllLeafKeys);

@@ -207,7 +207,7 @@ public partial class Map
     // #327 the quote before you board DOWN: the ship states its hold honestly from the live tank — "can
     // hold this orbit ~N on the tank" — so boarding down with a short clock is the captain's INFORMED
     // choice (the owner's Miranda maroon, warned instead of silent). A ship riding a berth carries no
-    // orbit risk; a kept orbit quotes pulses ÷ the Lab-25 trim rate; an unkept one says so plainly.
+    // orbit risk; a kept orbit quotes pulses ÷ the retired Lab-25 trim rate; an unkept one says so plainly.
     private string BoardingHoldQuote()
     {
         if (_dockedHavenId is not null)

@@ -37,8 +37,7 @@ public partial class Map
     // a click target of its own. #971 took the click target away ("the routes as a whole should not even be
     // selectable, since they just colour the page in that option") and hid the drawing by default. This
     // ruling archived the display outright — owner, 2026-08-25: "we have never used them to find anything."
-    // The three inks, the quad build and the draw that laid them are GONE; ShipLanes.Archived is where the
-    // decision is written down.
+    // The three inks, the quad build and the draw that laid them are GONE; the decision is #953's.
     //
     // What survives is the geometry, because it is not decoration: a lane names the two sweep actions in the
     // open-sky menu, and the telescope pass they enqueue puts real contacts in the tracking ledger.

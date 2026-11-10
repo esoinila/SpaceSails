@@ -139,8 +139,8 @@ public sealed class TheKeptParkIsOneRadiusTests
     /// metres of code away the loop parked at <c>min(that, #286's cap)</c>. Sentence versus sim.</para>
     ///
     /// <para><b>Why this world and not sol.json.</b> The lane was asked to fly this at a shipped body where
-    /// the clamp bites. There is none, and that was measured rather than assumed: across sol.json, sol-eu.json
-    /// and oops.json the cap is wider than the tide-stable park at EVERY body with mass — Luna by 18×, Titan
+    /// the clamp bites. There is none, and that was measured rather than assumed: across sol.json, the one shipped
+    /// scenario, the cap is wider than the tide-stable park at EVERY body with mass — Luna by 18×, Titan
     /// by 67×, the tightest real case (Miranda) by 363×. The only two bodies where the cap bites at all are
     /// μ=0 stations (Highport Satellite Works, Mercury Compute Farms), which the autopilot never parks at —
     /// <i>"Insert can never fire on a μ=0 body."</i> So a guard flown at a shipped body cannot fail, which is

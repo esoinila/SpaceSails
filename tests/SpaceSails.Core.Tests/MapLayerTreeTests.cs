@@ -137,8 +137,6 @@ public class MapLayerTreeTests
     [Fact]
     public void TheRoutesFamilyOffersNoTradeLanesRow()
     {
-        Assert.True(ShipLanes.Archived);
-
         MapLayerTree.Group routes = MapLayerTree.Groups.Single(g => g.Key == "routes");
         Assert.Equal(["routes.plan", "routes.rails"], routes.Leaves.Select(l => l.Key));
         Assert.DoesNotContain("routes.lanes", MapLayerTree.AllLeafKeys);

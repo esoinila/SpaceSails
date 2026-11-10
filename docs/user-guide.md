@@ -12,12 +12,9 @@ aboard.
 
 ## 1. Choosing a voyage
 
-- **Sol** — the classic system. Learn to fly here.
-- **Join the crew** — multiplayer: enter a callsign and share a live
-session. Warp runs at the *slowest* crew member's request (the min-warp rule),
-and you only see what your own sensors can see.
-- Any voyage can be loaded straight from a link: `/map?scenario=sol`. Append `&mp=1&callsign=YourName` to join multiplayer
-directly on that scenario, no home-page click needed.
+- **Sol** — the one sky: the real solar system. Learn to fly here.
+- Open `/map` from a link or the home page's Launch button; you arrive at the logbook. An old link that still
+carries `?scenario=…` lands in Sol too.
 
 
 
@@ -367,8 +364,7 @@ bar are Nebula Mutual selling you the policy that eases the clinic bill.
 ## 13. The scope
 
 - **Scope**, on the Nav toolbar, opens a small instrument overlay: auto-locks the nearest
-  interesting contact, draws it (freighters, pods, players, planets, the sun, plasma
-  wisps), and reads out distance and relative speed.
+  interesting contact, draws it (freighters, pods, derelicts, landmarks, planets, the sun), and reads out distance and relative speed.
 - **◀ / ▶** cycle targets manually; the middle button returns to **AUTO**. For every
   tracked target at once, full-screen, see the Sensors desk's scope wall instead (§9).
 

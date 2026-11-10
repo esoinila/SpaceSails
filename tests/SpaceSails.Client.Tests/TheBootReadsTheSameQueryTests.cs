@@ -113,173 +113,173 @@ public sealed class TheBootReadsTheSameQueryTests
     private static readonly IReadOnlyDictionary<string, string> WhatEachUrlSaid =
         new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["/map"] = "7340ef68183cdc20efd2162f0667957a",
-            ["/map?archive=1&land=1&nerve=2"] = "06bee9c2df60fc36b043e5a84477aedd",
-            ["/map?ashore=1&kaamos=bounce"] = "073b0a2c8904b2f4753b9ce15ac01be8",
-            ["/map?ashore=1&start=space-bar"] = "caa117814493b5a42acd71625c9cfa23",
-            ["/map?badge=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?barcase=1"] = "bc354594c7c4ef2ce8f68e497e52683f",
-            ["/map?bond=1"] = "54e148e6a3b6c1646b3dd96ae089c9d1",
-            ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "4da723e797d33350845960090030515d",
+            ["/map"] = "3f2ed050c4c0e043aa9057c02d1f09f9",
+            ["/map?archive=1&land=1&nerve=2"] = "955e1828f1312d8fdc1a0a8d821dc4e7",
+            ["/map?ashore=1&kaamos=bounce"] = "471a5c0454a5984623417306268e0f1e",
+            ["/map?ashore=1&start=space-bar"] = "51f54bd3246184e593eeaedc91899b5a",
+            ["/map?badge=1"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?barcase=1"] = "00d29fdec83399b5ff4e93e4a772bf72",
+            ["/map?bond=1"] = "cb73dd533d3794c33566d0a832e63b05",
+            ["/map?bond=1&oracle=1&converge=1&kaamos=all&nebula=all"] = "0f4739662b9674d319b8d42b5c7b8755",
             // #1151 slice 1 · ?claim=1: MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP; 1 new, 0 moved.
-            ["/map?claim=1"] = "3d2ef20ec20df6b1616fe30b454e1ebb",
+            ["/map?claim=1"] = "404f59e4576af4a36904d7e6204b42ac",
             // #1151 slice 2 · ?claim=2: MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP; 1 new, 0 moved (the query says exactly what
             // ?claim=1 says: the dock, the walk ashore, the ride down).
-            ["/map?claim=2"] = "3d2ef20ec20df6b1616fe30b454e1ebb",
+            ["/map?claim=2"] = "404f59e4576af4a36904d7e6204b42ac",
             // #1151 slice 3 · ?claim=3 and ?claim=3&signing=1: MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP; 2 new, 0 moved (the query says exactly what
             // ?claim=2 says; the signing flag is claimed and read nowhere at parse time).
-            ["/map?claim=3"] = "3d2ef20ec20df6b1616fe30b454e1ebb",
-            ["/map?claim=3&signing=1"] = "3d2ef20ec20df6b1616fe30b454e1ebb",
-            ["/map?converge=1"] = "1ca918e96cbdff70dde4de5806edc8a4",
-            ["/map?counter=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?counter=1&watch=2"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?counter=1&watch=5"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?credits=1234&fuel=7&simhours=9"] = "82b201bf278f1f89ba0e144b36d0c78d",
-            ["/map?credits=50000"] = "c69b07284cc2e6beec139d6d9faad42d",
+            ["/map?claim=3"] = "404f59e4576af4a36904d7e6204b42ac",
+            ["/map?claim=3&signing=1"] = "404f59e4576af4a36904d7e6204b42ac",
+            ["/map?converge=1"] = "1604c1b7d3df44eeb1dc4069dbf52c86",
+            ["/map?counter=1"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?counter=1&watch=2"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?counter=1&watch=5"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?credits=1234&fuel=7&simhours=9"] = "3d3202999c0a8317daade4a7cf5eaf2b",
+            ["/map?credits=50000"] = "3bc493fee1b79fa25a6ea0026a4fc363",
             // #1066 · the meeting's door. One new ROW and no moved ones: CrewCheat was already the 34th
             // field on the holder (#663 put it there), so every other URL's rendering is untouched and only
             // the value this key answers is new. It differs from ?crew=petition below by exactly that value,
             // which is the whole of what this file measures.
-            ["/map?crew=meeting"] = "11a4002c253c8c009f7cef45d7522c7c",
-            ["/map?crew=petition"] = "52bdfb7c33bfaf3f5ea1e78e6b9a72bf",
-            ["/map?death=collector&dock=selene-gate"] = "02d4180d629a5d155fc85fdc8d0ec50e",
-            ["/map?death=impact"] = "ed9fc4c8d47c9e16c80c9fdc4a651532",
-            ["/map?death=suffocated&dock=the-tilt&land=1"] = "8914bbd8534448bf0b18aeb2c3cb686c",
-            ["/map?deflection=1"] = "e7dea542ef94b5b7fd6887d9f727e49e",
-            ["/map?deflection=s&expedition=science&watchers=1&outpost=1&kit=1"] = "7449b01d89216446ed24971915233214",
-            ["/map?designate=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?dock=red-eye&body=ganymede&site=1&land=1"] = "40abe835c5fe0749acbde1c915b37157",
-            ["/map?dock=ringside-exchange&body=titan&site=1&land=1"] = "b152590aef8421c9dee5772dd5caa8be",
-            ["/map?dock=selene-gate&ashore=1&havenfloor=-1"] = "de0cacaa1af96adcd85717a88308c3a1",
+            ["/map?crew=meeting"] = "9bb86137176cd59e129ebb9ec51305c5",
+            ["/map?crew=petition"] = "ab60289b6de06024ec7e3fbe848dbb0a",
+            ["/map?death=collector&dock=selene-gate"] = "8bdd462aaf4ee4cf295b4b83ddda079b",
+            ["/map?death=impact"] = "8ac2d5680bb857d09c7af996980f2ba7",
+            ["/map?death=suffocated&dock=the-tilt&land=1"] = "5a111e11530717d0c11871abad541d35",
+            ["/map?deflection=1"] = "7e8a8b8c4cb9d07d9cf0521a09843c1a",
+            ["/map?deflection=s&expedition=science&watchers=1&outpost=1&kit=1"] = "2446baf0ca3708f624776b0a1557494e",
+            ["/map?designate=1"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?dock=red-eye&body=ganymede&site=1&land=1"] = "fd43c6ed1b5e250b19cc3003a3c74f2f",
+            ["/map?dock=ringside-exchange&body=titan&site=1&land=1"] = "fc35c74138f157e83bb875ccdda74bcd",
+            ["/map?dock=selene-gate&ashore=1&havenfloor=-1"] = "842294de586cad766134e307eee516a0",
             // #1332 B · the garden behind glass, one pace outside its door — dumped, not typed.
-            ["/map?dock=selene-gate&ashore=1&garden=1"] = "b2c968faa461e9be82ad1066efb7f7de",
+            ["/map?dock=selene-gate&ashore=1&garden=1"] = "a801e61fb90b930403989c730946340a",
             // #1332 A · the six floors the other hubs grew — each its own reading (the berth differs). Dumped with
             // SPACESAILS_QUERY_FINGERPRINT_DUMP; 6 new, 0 moved, 0 gone.
-            ["/map?dock=the-space-bar&ashore=1&havenfloor=-1"] = "24927699ae2ecc6f6c8f14e80ebd606c",
+            ["/map?dock=the-space-bar&ashore=1&havenfloor=-1"] = "90a6249aaaf2ebc47d9142b1f529a8cc",
             // #1332 B · the garden behind glass, one pace outside its door — dumped, not typed.
-            ["/map?dock=the-space-bar&ashore=1&garden=1"] = "a6b016573534d2329700612710b603f3",
-            ["/map?dock=cinder-roost&ashore=1&havenfloor=-1"] = "eb027ab996be15b6f21e8fe723bdf929",
-            ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1"] = "643010e988bda2224bb9cd641f359a34",
+            ["/map?dock=the-space-bar&ashore=1&garden=1"] = "d1723171b02e9e1747e37ffb14abb04c",
+            ["/map?dock=cinder-roost&ashore=1&havenfloor=-1"] = "33383ac47a1526d9df91818ad0d83dd4",
+            ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1"] = "92c72153b736609efc8c899883506769",
             // #1332 C · the Preservation office, shut and on the clerk's watch: MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP; 2 new, 0 moved.
-            ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=open"] = "643010e988bda2224bb9cd641f359a34",
-            ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=shut"] = "643010e988bda2224bb9cd641f359a34",
+            ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=open"] = "92c72153b736609efc8c899883506769",
+            ["/map?dock=ringside-exchange&ashore=1&havenfloor=-1&office=shut"] = "92c72153b736609efc8c899883506769",
             // #1332 D/E · the forwarding desk and the adjuster's room, shut and ajar: MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP; 4 new, 0 moved.
-            ["/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=open"] = "eb027ab996be15b6f21e8fe723bdf929",
-            ["/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=shut"] = "eb027ab996be15b6f21e8fe723bdf929",
-            ["/map?dock=the-deep&ashore=1&havenfloor=-1&office=open"] = "3d2ef20ec20df6b1616fe30b454e1ebb",
-            ["/map?dock=the-deep&ashore=1&havenfloor=-1&office=shut"] = "3d2ef20ec20df6b1616fe30b454e1ebb",
-            ["/map?dock=the-tilt&ashore=1&havenfloor=-1"] = "88112b3cdf4254091c5ef5996bc0fcbc",
-            ["/map?dock=red-eye&ashore=1&havenfloor=-1"] = "adf2e87e97a2c1204bab86b1ea14ab6e",
-            ["/map?dock=the-deep&ashore=1&havenfloor=-1"] = "3d2ef20ec20df6b1616fe30b454e1ebb",
+            ["/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=open"] = "33383ac47a1526d9df91818ad0d83dd4",
+            ["/map?dock=cinder-roost&ashore=1&havenfloor=-1&office=shut"] = "33383ac47a1526d9df91818ad0d83dd4",
+            ["/map?dock=the-deep&ashore=1&havenfloor=-1&office=open"] = "404f59e4576af4a36904d7e6204b42ac",
+            ["/map?dock=the-deep&ashore=1&havenfloor=-1&office=shut"] = "404f59e4576af4a36904d7e6204b42ac",
+            ["/map?dock=the-tilt&ashore=1&havenfloor=-1"] = "a9af8e66af1c8328813d88008e1f7330",
+            ["/map?dock=red-eye&ashore=1&havenfloor=-1"] = "06d15374a590b0cab6ec93901b9b8d44",
+            ["/map?dock=the-deep&ashore=1&havenfloor=-1"] = "404f59e4576af4a36904d7e6204b42ac",
             // #794 slice 2 · the chalk mark's two dev rows, moved from ?park=1 to the gallery with the drop.
             // ?chalk= is claimed and answers nothing, so the up row and the wiped row read one and the same
             // line — the park's two rows went, these two came, and no other line moved.
-            ["/map?dock=selene-gate&ashore=1&chalk=1"] = "216ca741bcc368d077020cf5c7391ec7",
-            ["/map?dock=selene-gate&ashore=1&chalk=wiped"] = "216ca741bcc368d077020cf5c7391ec7",
+            ["/map?dock=selene-gate&ashore=1&chalk=1"] = "45fd3d817b60916da1f7e4962f949882",
+            ["/map?dock=selene-gate&ashore=1&chalk=wiped"] = "45fd3d817b60916da1f7e4962f949882",
             // #1202 slice 2 · the spike's two dev rows. ?spike= writes no world and nothing the parse answers (it is
             // read off the address bar once ashore) — the chalk rows' own reason, and their pin. No other line moved.
-            ["/map?dock=selene-gate&ashore=1&spike=1"] = "216ca741bcc368d077020cf5c7391ec7",
+            ["/map?dock=selene-gate&ashore=1&spike=1"] = "45fd3d817b60916da1f7e4962f949882",
             // #1202 slice 3 · the spike composed with ?tailed=1. Measured: ?tailed= answers no query key this sweep
             // reads, so the row reads the spike=1 row's own line. No other line moved.
-            ["/map?dock=selene-gate&ashore=1&spike=1&tailed=1"] = "216ca741bcc368d077020cf5c7391ec7",
-            ["/map?dock=selene-gate&ashore=1&spike=spiked"] = "216ca741bcc368d077020cf5c7391ec7",
+            ["/map?dock=selene-gate&ashore=1&spike=1&tailed=1"] = "45fd3d817b60916da1f7e4962f949882",
+            ["/map?dock=selene-gate&ashore=1&spike=spiked"] = "45fd3d817b60916da1f7e4962f949882",
             // #1202 slice 4 · ?spike=paid — the same latch, read once ashore: measured, the spike rows' own line. No other line moved.
-            ["/map?dock=selene-gate&ashore=1&spike=paid"] = "216ca741bcc368d077020cf5c7391ec7",
-            ["/map?dock=selene-gate&body=luna&site=1&land=1"] = "c9dc1a2bef5794fe66f1143f6c35bab7",
+            ["/map?dock=selene-gate&ashore=1&spike=paid"] = "45fd3d817b60916da1f7e4962f949882",
+            ["/map?dock=selene-gate&body=luna&site=1&land=1"] = "0b2fb42d6b449aae84f15ca687cf9ece",
             // #319 slice 2 · the geocache sale's two dev rows. ?geocache= writes no world and nothing the parse
             // answers (it is read off the address bar once the berth is clamped) — dumped and diffed: these two
             // lines are the only thing the dump added, and no other line moved.
-            ["/map?dock=selene-gate&geocache=1"] = "c9dc1a2bef5794fe66f1143f6c35bab7",
-            ["/map?dock=selene-gate&geocache=lifted"] = "c9dc1a2bef5794fe66f1143f6c35bab7",
+            ["/map?dock=selene-gate&geocache=1"] = "0b2fb42d6b449aae84f15ca687cf9ece",
+            ["/map?dock=selene-gate&geocache=lifted"] = "0b2fb42d6b449aae84f15ca687cf9ece",
             // #1202 · the stringer's two dev rows. ?press= writes no world and nothing the parse answers (it is
             // read off the address bar once the berth is clamped) — the geocache rows' own reason, and their pin.
-            ["/map?dock=selene-gate&press=1"] = "c9dc1a2bef5794fe66f1143f6c35bab7",
-            ["/map?dock=selene-gate&press=filed"] = "c9dc1a2bef5794fe66f1143f6c35bab7",
+            ["/map?dock=selene-gate&press=1"] = "0b2fb42d6b449aae84f15ca687cf9ece",
+            ["/map?dock=selene-gate&press=filed"] = "0b2fb42d6b449aae84f15ca687cf9ece",
             // #1202 slice 2 QA · ?press=pending — the same latch, read after the clamp: the berth's own line, measured. No other line moved.
-            ["/map?dock=selene-gate&press=pending"] = "c9dc1a2bef5794fe66f1143f6c35bab7",
-            ["/map?dock=the-deep&body=triton&site=2&land=1"] = "17f06d123f92e3d86e550b66e8a39a56",
-            ["/map?dock=the-space-bar"] = "10ea7b2637ed6d83b9f72c0c58592e9a",
-            ["/map?dock=the-space-bar&body=phobos&site=0&land=1"] = "10ea7b2637ed6d83b9f72c0c58592e9a",
-            ["/map?dock=the-space-bar&body=phobos&site=0&land=1&watchers=1"] = "10ea7b2637ed6d83b9f72c0c58592e9a",
-            ["/map?dock=the-space-bar&body=phobos&site=1&land=1"] = "10ea7b2637ed6d83b9f72c0c58592e9a",
-            ["/map?dock=the-tilt&site=0"] = "6ba831ba248a0c1aa9399654edb69bb1",
-            ["/map?dock=the-tilt&site=0&land=1"] = "6ba831ba248a0c1aa9399654edb69bb1",
-            ["/map?dock=the-tilt&site=0&land=1&air=45&process=0&collectors=20&hurt=2&nerve=low"] = "807c3d0e85c7f05e310c486041f2cd57",
-            ["/map?dock=the-tilt&site=0&land=1&outpost=1&kit=1"] = "6ba831ba248a0c1aa9399654edb69bb1",
-            ["/map?dock=the-tilt&site=0&land=1&reevers=4"] = "6ba831ba248a0c1aa9399654edb69bb1",
-            ["/map?dock=the-tilt&site=0&land=1&shelter=1&mags=12"] = "6ba831ba248a0c1aa9399654edb69bb1",
-            ["/map?dock=the-tilt&site=1"] = "6ba831ba248a0c1aa9399654edb69bb1",
-            ["/map?dock=the-tilt&start=space-bar"] = "d1a0b0639d324111de4f03a994ed53d7",
-            ["/map?expedition=mining"] = "e2e48e6767a1b99572b5deb50ca5216d",
-            ["/map?fetch=intel&tip=route&hoard=both&crack=active&backroom=quest"] = "5c39b63aba4ee9e785f1000da1708ff1",
-            ["/map?found=1&land=1"] = "fa8ce2446b53915f638c086431d8ba7b",
-            ["/map?found=1&land=1&floor=17&card=all"] = "fa8ce2446b53915f638c086431d8ba7b",
-            ["/map?freight=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?frontdoor=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?goodscar=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?kaamos=all"] = "70cd7436edfa7933b028a287581a93a6",
-            ["/map?kaamos=hq&arrivalphase=2&land=1&floor=23"] = "efc1567aece6af9be5441932872dad41",
-            ["/map?kaamos=hq&land=1"] = "efc1567aece6af9be5441932872dad41",
-            ["/map?kaamos=pod&nebula=adjuster&arrivalphase=7"] = "2e606d577d96bc98757dc99bde61a745",
-            ["/map?nebula=all"] = "3f70359be3a869e18552416ab4a755e3",
-            ["/map?nopattern=1&death=impact"] = "5bd52e562cd1d3a815baba4c93514c8d",
-            ["/map?oldcrew=1"] = "02a2612dff0fb2fef89150f1e723e828",
-            ["/map?nonsense=1&start=there-is-no-such-start&dock=NOT+A+HAVEN&site=-3&floor=0"] = "36bee8e591da74bbcb9d8a55f56d71fb",
-            ["/map?park=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
+            ["/map?dock=selene-gate&press=pending"] = "0b2fb42d6b449aae84f15ca687cf9ece",
+            ["/map?dock=the-deep&body=triton&site=2&land=1"] = "f832e8025450053f18cf33dc3dc3e1b3",
+            ["/map?dock=the-space-bar"] = "66276a0add9b06e9f86d822a27e6fad1",
+            ["/map?dock=the-space-bar&body=phobos&site=0&land=1"] = "66276a0add9b06e9f86d822a27e6fad1",
+            ["/map?dock=the-space-bar&body=phobos&site=0&land=1&watchers=1"] = "66276a0add9b06e9f86d822a27e6fad1",
+            ["/map?dock=the-space-bar&body=phobos&site=1&land=1"] = "66276a0add9b06e9f86d822a27e6fad1",
+            ["/map?dock=the-tilt&site=0"] = "ace45ed87ab8ed76e78fd9c09f2b7b71",
+            ["/map?dock=the-tilt&site=0&land=1"] = "ace45ed87ab8ed76e78fd9c09f2b7b71",
+            ["/map?dock=the-tilt&site=0&land=1&air=45&process=0&collectors=20&hurt=2&nerve=low"] = "8eb8f533558734f05a1c46482a39f267",
+            ["/map?dock=the-tilt&site=0&land=1&outpost=1&kit=1"] = "ace45ed87ab8ed76e78fd9c09f2b7b71",
+            ["/map?dock=the-tilt&site=0&land=1&reevers=4"] = "ace45ed87ab8ed76e78fd9c09f2b7b71",
+            ["/map?dock=the-tilt&site=0&land=1&shelter=1&mags=12"] = "ace45ed87ab8ed76e78fd9c09f2b7b71",
+            ["/map?dock=the-tilt&site=1"] = "ace45ed87ab8ed76e78fd9c09f2b7b71",
+            ["/map?dock=the-tilt&start=space-bar"] = "bb179c5fd72495c12f0eefacb662b0dd",
+            ["/map?expedition=mining"] = "8a6b6daa5d180a098beaeada11f4b754",
+            ["/map?fetch=intel&tip=route&hoard=both&crack=active&backroom=quest"] = "df43127748ad8c046625fa6a8c38330d",
+            ["/map?found=1&land=1"] = "a14a329134e2b5a67c13faf1cae3d5b6",
+            ["/map?found=1&land=1&floor=17&card=all"] = "a14a329134e2b5a67c13faf1cae3d5b6",
+            ["/map?freight=1"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?frontdoor=1"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?goodscar=1"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?kaamos=all"] = "b4c36c4767584055a28f58c339e9dc31",
+            ["/map?kaamos=hq&arrivalphase=2&land=1&floor=23"] = "18de4c13c7fb4074c50272fdea4ba0c4",
+            ["/map?kaamos=hq&land=1"] = "18de4c13c7fb4074c50272fdea4ba0c4",
+            ["/map?kaamos=pod&nebula=adjuster&arrivalphase=7"] = "c739269bffa51f60e58add1f1790e14c",
+            ["/map?nebula=all"] = "3ad5b639576515e4823ebff2ca6bec00",
+            ["/map?nopattern=1&death=impact"] = "4761e5fc3124782c500f9f2509c263b0",
+            ["/map?oldcrew=1"] = "255d351b3247759ecf1b9ec68ba0db89",
+            ["/map?nonsense=1&start=there-is-no-such-start&dock=NOT+A+HAVEN&site=-3&floor=0"] = "5b4495b229d5a9450ff19f62e1451158",
+            ["/map?park=1"] = "ef8943f5773e688d4c2378fe7d7c78c0",
             // #759 · …and both of them read EXACTLY what ?park=1 reads, which is the honest answer and worth
             // the row rather than an exemption: `?parkphase=` writes two fields on the PAGE (which phase was
             // asked for, and whether the morning door was), and not one of the thirty BootQuery fields this
             // file renders. The park's clock is jumped where the site is known, long after the parse.
-            ["/map?park=1&parkphase=morning"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?park=1&parkphase=night"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?park=1&spread=1"] = "4ada70de5cae5abff721031c47bab393",
-            ["/map?parkback=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?parkwalk=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?patrol=2"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?reveal=derelict-roadster&reveal=nothing-at-all&ellipse=1"] = "0916b5f71b2e11c3d4cea2c6c138606c",
-            ["/map?ringoffice=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?rip=1"] = "4ada70de5cae5abff721031c47bab393",
-            ["/map?scenario=..%2Foops"] = "7340ef68183cdc20efd2162f0667957a",
-            ["/map?secretlab=1"] = "fa8ce2446b53915f638c086431d8ba7b",
+            ["/map?park=1&parkphase=morning"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?park=1&parkphase=night"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?park=1&spread=1"] = "71e1a5bddcd8f8db48928d80d1cb0e10",
+            ["/map?parkback=1"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?parkwalk=1"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?patrol=2"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?reveal=derelict-roadster&reveal=nothing-at-all&ellipse=1"] = "4ee866c03fc8ec70e9fda1df3ad91af3",
+            ["/map?ringoffice=1"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?rip=1"] = "71e1a5bddcd8f8db48928d80d1cb0e10",
+            ["/map?scenario=..%2Foops"] = "3f2ed050c4c0e043aa9057c02d1f09f9",
+            ["/map?secretlab=1"] = "a14a329134e2b5a67c13faf1cae3d5b6",
             // #618 · the man at the door, three windows: MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP; 3 new, 0 moved.
-            ["/map?secretlab=1&land=1&guard=absent"] = "fa8ce2446b53915f638c086431d8ba7b",
-            ["/map?secretlab=1&land=1&guard=posted"] = "fa8ce2446b53915f638c086431d8ba7b",
-            ["/map?secretlab=1&land=1&guard=round"] = "fa8ce2446b53915f638c086431d8ba7b",
-            ["/map?secretlab=deep&land=1&card=next"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?secretlab=deep&land=1&floor=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?secretlab=deep&land=1&floor=1&card=next"] = "127e5605c5a4998adb37a75eb9cb78c0",
+            ["/map?secretlab=1&land=1&guard=absent"] = "a14a329134e2b5a67c13faf1cae3d5b6",
+            ["/map?secretlab=1&land=1&guard=posted"] = "a14a329134e2b5a67c13faf1cae3d5b6",
+            ["/map?secretlab=1&land=1&guard=round"] = "a14a329134e2b5a67c13faf1cae3d5b6",
+            ["/map?secretlab=deep&land=1&card=next"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?secretlab=deep&land=1&floor=1"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?secretlab=deep&land=1&floor=1&card=next"] = "ef8943f5773e688d4c2378fe7d7c78c0",
             // #841 · ?perf=1 is read where the DeckView is built, not into BootQuery — it changes nothing
             // the parse answers, and this row says exactly that.
-            ["/map?secretlab=deep&land=1&floor=1&perf=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?secretlab=deep&land=1&floor=2&book=9&dark=1&roll=lo&approach=0&neighbour=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?secretlab=deep&land=1&floor=21"] = "127e5605c5a4998adb37a75eb9cb78c0",
+            ["/map?secretlab=deep&land=1&floor=1&perf=1"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?secretlab=deep&land=1&floor=2&book=9&dark=1&roll=lo&approach=0&neighbour=1"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?secretlab=deep&land=1&floor=21"] = "ef8943f5773e688d4c2378fe7d7c78c0",
             // #619 · the fourth cheat rock's own row — an ADDITION, not a change.
-            ["/map?secretlab=sealed&land=1&floor=3"] = "cf105423c9ac4aa039e5e11f473d1ecd",
-            ["/map?shuttle=1&land=1"] = "fa8ce2446b53915f638c086431d8ba7b",
-            ["/map?skim=saturn"] = "d67df16078c6405bb1ab8c11c585b31e",
-            ["/map?sling=jupiter"] = "f939637b4ea7931770ce7dc56d36aca2",
-            ["/map?spread=1"] = "4ada70de5cae5abff721031c47bab393",
-            ["/map?start=&dock=&fuel=&nerve=&site=&land="] = "36bee8e591da74bbcb9d8a55f56d71fb",
-            ["/map?start=wreck&fetch=active"] = "5426e9daa0c235229fa06e054e694ca9",
-            ["/map?start=wreck&dest=saturn"] = "e4ebf94a90c68842dca3272c8fddb1f3",
-            ["/map?start=wreck&target=collector"] = "cf7f8be1c254540a4c31eb80dd9a0671",
+            ["/map?secretlab=sealed&land=1&floor=3"] = "0ca2aa6f2a2c6c6b510a7245d37f7776",
+            ["/map?shuttle=1&land=1"] = "a14a329134e2b5a67c13faf1cae3d5b6",
+            ["/map?skim=saturn"] = "26aad28362ccaa485ad3eb0e3d57f9ea",
+            ["/map?sling=jupiter"] = "e929e9c46a5c137a0e37369e866526b1",
+            ["/map?spread=1"] = "71e1a5bddcd8f8db48928d80d1cb0e10",
+            ["/map?start=&dock=&fuel=&nerve=&site=&land="] = "5b4495b229d5a9450ff19f62e1451158",
+            ["/map?start=wreck&fetch=active"] = "a906e1e29cc9278b36a0b0d1055c978d",
+            ["/map?start=wreck&dest=saturn"] = "fcec1a00399fa25dfdf3cad2d02cdcf5",
+            ["/map?start=wreck&target=collector"] = "52a0ce68a7683d99517d66da997a3d33",
             // #653 · the dead station's dev door. ?station= is a NEW KEY ON THE HOLDER (StationCheat), so EVERY row of this
             // table moved with it — each hash reads every field, and the field list grew by one — and this row is new.
             // MEASURED with SPACESAILS_QUERY_FINGERPRINT_DUMP, never typed: 115 rows moved, 1 new, 0 gone.
-            ["/map?station=1&land=1"] = "9fc9fe05c4613c815f3bcaaaabd6d089",
-            ["/map?stool=1&neighbour=0"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?stool=1&neighbour=1"] = "127e5605c5a4998adb37a75eb9cb78c0",
-            ["/map?tablescene=free&approach=1"] = "4ada70de5cae5abff721031c47bab393",
+            ["/map?station=1&land=1"] = "a751b1fbdefe04bf8ca22ce31807401c",
+            ["/map?stool=1&neighbour=0"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?stool=1&neighbour=1"] = "ef8943f5773e688d4c2378fe7d7c78c0",
+            ["/map?tablescene=free&approach=1"] = "71e1a5bddcd8f8db48928d80d1cb0e10",
             // #973 L2 · …and the rep row hashes the SAME, which is correct and worth saying: this sweep
             // renders BootQuery's own public fields, and neither ?approach= nor ?rep= lives there — both are
             // read straight onto the page (_approachCheat, _repCheat). The query object really is identical;
             // what the two URLs build differently is pinned next door, in TheBootBuildsTheSameWorldTests.
-            ["/map?tablescene=free&rep=1&approach=0"] = "4ada70de5cae5abff721031c47bab393",
-            ["/map?tablescene=free&watch=5&approach=0"] = "4ada70de5cae5abff721031c47bab393",
-            ["/map?threads=1"] = "4ada70de5cae5abff721031c47bab393",
-            ["/map?threads=1&watch=5"] = "4ada70de5cae5abff721031c47bab393",
-            ["/map?wreck=drivefailure&land=1"] = "2af3baecd746ad681c2b40c18907a1c9",
-            ["/map?wreck=infested&land=1&sweep=3&mags=0&reevers=4"] = "4f8c60929b915f82dc116f68d8b221a4",
+            ["/map?tablescene=free&rep=1&approach=0"] = "71e1a5bddcd8f8db48928d80d1cb0e10",
+            ["/map?tablescene=free&watch=5&approach=0"] = "71e1a5bddcd8f8db48928d80d1cb0e10",
+            ["/map?threads=1"] = "71e1a5bddcd8f8db48928d80d1cb0e10",
+            ["/map?threads=1&watch=5"] = "71e1a5bddcd8f8db48928d80d1cb0e10",
+            ["/map?wreck=drivefailure&land=1"] = "5eef05420e3933261a3c49a4bd941932",
+            ["/map?wreck=infested&land=1&sweep=3&mags=0&reevers=4"] = "15e205a3ea043bb856c75947843468fc",
         };
 
     /// <summary>#1253 · The same dump door the world sweep next door has had since it was written
@@ -377,7 +377,10 @@ public sealed class TheBootReadsTheSameQueryTests
         // …and one more again (#653's StationCheat, the dev door onto the dead station: a pseudo-body a boot hangs off
         // the berth, which is the wreck cheat's own shape — so the key belongs on the holder beside WreckCheat, and the
         // number moves in the same commit as the key, which is what this row is for).
-        Assert.Equal(40, TheQuery("/map").GetType()
+        // …and one FEWER (BootQuery.ScenarioName, the scenario= name: Sol is the one sky, so ?scenario= is ignored and
+        // the key leaves the holder — every hash in the table moved with it, MEASURED with
+        // SPACESAILS_QUERY_FINGERPRINT_DUMP, never typed).
+        Assert.Equal(39, TheQuery("/map").GetType()
             .GetFields(BindingFlags.Instance | BindingFlags.Public).Length);
     }
 

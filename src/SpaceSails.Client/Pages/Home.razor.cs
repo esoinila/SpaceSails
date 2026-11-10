@@ -26,10 +26,4 @@ namespace SpaceSails.Client.Pages;
 // its markup; a code-behind partial is the same class.
 public partial class Home
 {
-    private static readonly (string Slug, string Title, string Tag, string Blurb)[] Scenarios =
-    [
-        ("sol", "Sol", "",
-         "The real solar system, pure Newtonian. Nine worlds on rails, He3 haulers inbound from Saturn, " +
-         "and Luna's mass drivers lobbing compute-core pods. Where every pirate learns the trade."),
-    ];
 }

@@ -35,25 +35,16 @@ public static class MapLayerTree
         bool Pinned = false,
         bool DefaultCollapsed = false);
 
-    /// <summary>#953 · THE ROUTES FAMILY, MINUS ITS ARCHIVED MEMBER. <see cref="ShipLanes.Archived"/> is the
-    /// one flag the owner's ruling ("we have never used them to find anything") is written on, and this is its
-    /// one consumer. While it stands there is no Trade lanes row to tick — not a row that ticks nothing, which
-    /// is the worse of the two ways to retire a layer. Flip the flag and the row is back in its old place.
+    /// <summary>#953 · THE ROUTES FAMILY. The Trade lanes row is archived for good (owner: "we have never used
+    /// them to find anything"): there is no row to tick, which beats a row that ticks nothing.
     ///
     /// <para>Declared ABOVE <see cref="Groups"/> on purpose: static field initialisers run in declaration
     /// order, and a list read before it is built is an empty Routes family and a very quiet bug.</para></summary>
-    private static readonly IReadOnlyList<Leaf> RouteLeaves = ShipLanes.Archived
-        ?
-        [
-            new("routes.plan", "Flight plan & burns", "✦"),
-            new("routes.rails", "Orbit rails / ellipses", "◯"),
-        ]
-        :
-        [
-            new("routes.lanes", "Trade lanes", "🛣"),
-            new("routes.plan", "Flight plan & burns", "✦"),
-            new("routes.rails", "Orbit rails / ellipses", "◯"),
-        ];
+    private static readonly IReadOnlyList<Leaf> RouteLeaves =
+    [
+        new("routes.plan", "Flight plan & burns", "✦"),
+        new("routes.rails", "Orbit rails / ellipses", "◯"),
+    ];
 
     /// <summary>The tree, in display order (top of the corner panel to the bottom). Parent order is
     /// the owner's #405 comment; Routes rides collapsed by default (the owner's habit), Threats is
@@ -116,19 +107,19 @@ public static class MapLayerTree
     /// The parameter stays because per-desk defaults are the shape of this call, not a historical accident —
     /// the next layer that needs one has a place to put it.</summary>
     public static HashSet<string> DefaultHidden(bool isSensorsDesk) =>
-        ShipLanes.Archived ? [] : ["routes.lanes"];
+        [];
 
     /// <summary>Where an old flat layer key (lanes / traffic / depots / scans) lands in the tree.
     /// Not called at runtime — the hidden sets are session-scoped, never persisted — but it pins the
     /// rename so a future save format (or a reader of old notes) has one authority, and it's tested.
     /// Note depots→{ports.depots, labels.minor}: the old "depots" key gated BOTH the depot markers and
     /// the #404 minor-station labels; the tree splits those responsibilities.
-    /// <para>#953: "lanes" now lands NOWHERE while the ship lanes are archived. An old note asking for that
+    /// <para>#953: "lanes" now lands NOWHERE now that the ship lanes are archived. An old note asking for that
     /// layer is asking for a layer that no longer exists, and answering with a key the tree does not carry
     /// would hand a caller a hidden-set entry that gates nothing.</para></summary>
     public static IReadOnlyList<string> MigrateLegacyKey(string oldKey) => oldKey switch
     {
-        "lanes" => ShipLanes.Archived ? [] : ["routes.lanes"],
+        "lanes" => [],
         "traffic" => ["traffic.live", "traffic.ghosts", "traffic.beacons"],
         "depots" => ["ports.depots", "labels.minor"],
         "scans" => ["sensors.scans", "sensors.corridors"],

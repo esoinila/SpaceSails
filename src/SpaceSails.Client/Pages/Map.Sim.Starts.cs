@@ -153,11 +153,10 @@ public partial class Map
     /// a wreck to sit on top of — and the ephemeris it is laid down against is whichever scenario the URL
     /// actually loaded.
     ///
-    /// <para>This table exists because <c>/map?scenario=sol-eu&amp;start=wreck</c> was a hard crash:
-    /// <c>KeyNotFoundException: derelict-roadster</c>, thrown out of <c>CircularOrbitEphemeris.Position</c>
-    /// through <c>BerthState.CoOrbital</c>, on the red error page — two whitelisted cheats, legally combined,
-    /// and the boot never asked whether the sky it built has the body the start names. Sol-eu holds eighteen
-    /// bodies and none of them is a roadster, a Selene Gate or a Red Eye.</para>
+    /// <para>This table exists because a start naming a body the loaded sky lacks was a hard crash
+    /// (<c>KeyNotFoundException: derelict-roadster</c> out of <c>CircularOrbitEphemeris.Position</c>). Only
+    /// Sol ships now; the placement below still lays a start whose anchor is missing at the standard spawn,
+    /// which is what keeps an old save from a retired sky from throwing.</para>
     ///
     /// <para><b>It is one table and not two.</b> <see cref="PlaceShipForStart"/> reads it to place the ship and
     /// <see cref="ThisSkyCanHonourTheStart"/> reads it to refuse — a second copy that agreed today is this
@@ -191,15 +190,6 @@ public partial class Map
             _ => null,
         };
     }
-
-    /// <summary>#1216 case 2 · <b>CAN THE SKY THAT WAS ACTUALLY LOADED HONOUR THIS START?</b> True when the id
-    /// names a berth this scenario has to clamp onto, or hangs off a body this scenario carries, or hangs off
-    /// nothing at all. False is the honest answer for a start point the loaded world has no anchor for, and
-    /// the boot then does what Appendix A has always said an unknown start does: the picker shows.</summary>
-    private bool ThisSkyCanHonourTheStart(string id) =>
-        ResolveDockStartId(id) is not null
-        || WhatAStartHangsOff(id) is not { } anchor
-        || _ephemeris?.Bodies.Any(b => b.Id == anchor.BodyId) == true;
 
     // The ship's state for a start point. Reuses InitializeShipState's finite-difference "co-moving
     // with a body" idiom, just keyed off a different body — a small radial offset keeps the ship clear

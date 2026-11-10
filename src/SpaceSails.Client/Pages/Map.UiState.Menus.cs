@@ -315,7 +315,7 @@ public partial class Map
     // #953 — the LANE is not one of the things a click can mean, and now it is not one of the things the
     // sky is painted with either. _corridorMenuLane, its anchor, CloseCorridorMenu and the CorridorAt
     // hit-test went with the per-lane menu (owner: "the routes as a whole should not even be selectable,
-    // since they just colour the page"); the drawing followed it out on the archive ruling (ShipLanes).
+    // since they just colour the page"); the drawing followed it out on the archive ruling (#953).
     // The two sweep actions stayed — they find ships — and live in the open-sky menu below, under the lane
     // that menu names from geometry the page still keeps.
     private Vector2d? _skyMenuWorld;

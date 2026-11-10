@@ -53,7 +53,7 @@ upgrade level), instead of a single small inset with a separate summary table.
 
 Each tile is a real [`ScopeView`](../../src/SpaceSails.Client/Rendering/ScopeView.cs) canvas — the
 same vector-art instrument Nav's own scope inset uses (auto-lit target, lock brackets, starfield
-parallax, plasma wisps) — aimed permanently at that one ledger entry, redrawn every animation
+parallax) — aimed permanently at that one ledger entry, redrawn every animation
 frame off the shared render loop. Below the canvas, a footer strip carries what the art can't:
 
 - **Callsign** (plus an **aware ⚠** tag if you've laser-ranged it from the [dark web](dark-web.md)).
