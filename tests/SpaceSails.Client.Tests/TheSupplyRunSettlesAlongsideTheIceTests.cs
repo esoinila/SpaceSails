@@ -85,4 +85,67 @@ public sealed class TheSupplyRunSettlesAlongsideTheIceTests
 
         Assert.Equal(Map.QuestState.Active, Quests(b).Single(q => q.Id == KaamosLore.SupplyRunQuestId).State);
     }
+
+    private static string Said(PastTheGateBench.Boot b) =>
+        b.Read<object>("_pulse") is { } p ? (string?)p.GetType().GetProperty("Message")!.GetValue(p) ?? "" : "";
+
+    [Fact]
+    public async Task TheBerthSignsForTheConsignmentInItsOwnVoiceAndNeverOnTheCounter()
+    {
+        PastTheGateBench.Boot b = await Alongside();
+        Map.Quest run = Quests(b).Single(q => q.Id == KaamosLore.SupplyRunQuestId);
+
+        Settle(b);
+
+        string said = Said(b);
+        Assert.Equal(KaamosLore.SupplyRunSettledLine(run.Reward), said);
+        Assert.Contains("The berth signs for the consignment", said);
+        Assert.Contains($"{run.Reward:N0} cr", said);
+        Assert.DoesNotContain("on the counter", said);
+    }
+
+    [Fact]
+    public async Task AnOrdinaryMoonHavenRunStillSaysOnTheCounter()
+    {
+        PastTheGateBench.Boot b = await Alongside();
+        List<Map.Quest> quests = Quests(b);
+        Map.Quest supply = quests.Single(q => q.Id == KaamosLore.SupplyRunQuestId);
+        quests.Remove(supply);
+        quests.Add(supply with { Id = "ordinary-run-to-the-ice" });
+        // Park her genuinely inside the moon's Hill sphere (100 km off, co-moving) so the ORDINARY rule settles it.
+        var ship = b.Read<ShipState>("_ship");
+        var eph = b.Read<ICelestialEphemeris>("_ephemeris");
+        double t = b.Read<double>("SimTime");
+        typeof(Map).GetField("_ship", Hidden)!.SetValue(b.Page, ship with
+        {
+            Position = eph.Position(KaamosLore.IceMoonBodyId, t) + new Vector2d(100_000.0, 0),
+            Velocity = TransferMath.BodyVelocity(eph, KaamosLore.IceMoonBodyId, t),
+        });
+
+        Settle(b);
+
+        Assert.Equal(Map.QuestState.TurnedIn, Quests(b).Single(q => q.Id == "ordinary-run-to-the-ice").State);
+        string said = Said(b);
+        Assert.Contains("on the counter", said);
+        Assert.DoesNotContain("berth signs", said);
+    }
+
+    [Fact]
+    public async Task TheLedgerReadsFilledOnceTheRunIsSignedForAlongside()
+    {
+        PastTheGateBench.Boot b = await Alongside();
+        var kaamos = b.Read<KaamosProgress>("_kaamos");
+        string before = KaamosLore.LedgerProgressLine(kaamos, 10 * 86_400.0, alongside: true, runFiled: true, runSignedFor: false);
+        Assert.DoesNotContain("FILLED", before);
+
+        Settle(b);
+
+        object tip = typeof(Map).GetMethod("KaamosLedgerTip", Hidden)!.Invoke(b.Page, null)!;
+        string[] lines = (string[])tip.GetType().GetProperty("Lines")!.GetValue(tip)!;
+        Assert.Contains(lines, l => l.Contains("The listing reads FILLED.", StringComparison.Ordinal));
+        Assert.Contains("run is signed for", KaamosLore.LedgerProgressLine(kaamos, 10 * 86_400.0, alongside: true, runFiled: false, runSignedFor: true));
+        // earlier branches unchanged
+        Assert.Equal(before, KaamosLore.LedgerProgressLine(kaamos, 10 * 86_400.0, alongside: true));
+        Assert.Contains("opens in 30 d", KaamosLore.LedgerProgressLine(kaamos, 10 * 86_400.0, alongside: false, runFiled: true, runSignedFor: true));
+    }
 }
